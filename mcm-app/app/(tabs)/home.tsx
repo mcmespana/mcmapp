@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   title: {
-    ...typography.h1,
+    ...(typography.h1 as object),
     color: colors.text,
   },
 });
