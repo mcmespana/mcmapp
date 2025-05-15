@@ -1,4 +1,4 @@
-// app/(tabs)/cancionero.tsx
+// app/(tabs)/calendario.tsx
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import colors from '@/constants/colors';
@@ -10,10 +10,10 @@ interface Styles {
   title: TextStyle;
 }
 
-export default function Cancionero() {
+export default function Calendario() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Aquí va el Cancionero 🎶</Text>
+      <Text style={styles.title}>Aquí va el Calendario 🎶</Text>
     </View>
   );
 }

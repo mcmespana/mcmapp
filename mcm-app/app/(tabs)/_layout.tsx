@@ -20,50 +20,40 @@ export default function TabsLayout() {
           tabBarStyle: { backgroundColor: colors.background },
         }}
       >
-        <Tabs.Screen
-          name="home"
+        <Tabs.Screen 
+          name="index" 
           options={{
             title: 'Inicio',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialIcons name="home" color={color} size={size} />
-            ),
-          }}
+            tabBarIcon: ({color, size}) => <MaterialIcons name="home" color={color} size={size}/>
+          }} 
         />
-        <Tabs.Screen
-          name="comunica"
+        <Tabs.Screen 
+          name="comunica" 
           options={{
             title: 'Comunica',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialIcons name="public" color={color} size={size} />
-            ),
-          }}
+            tabBarIcon: ({color, size}) => <MaterialIcons name="public" color={color} size={size}/>
+          }} 
         />
-        <Tabs.Screen
-          name="cancionero"
+        <Tabs.Screen 
+          name="cancionero" 
           options={{
             title: 'Cantoral',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialIcons name="music-note" color={color} size={size} />
-            ),
-          }}
+            tabBarIcon: ({color, size}) => <MaterialIcons name="music-note" color={color} size={size}/>
+          }} 
         />
-        <Tabs.Screen
-          name="calendario"
+        <Tabs.Screen 
+          name="calendario" 
           options={{
             title: 'Calendario',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialIcons name="calendar-today" color={color} size={size} />
-            ),
-          }}
+            tabBarIcon: ({color, size}) => <MaterialIcons name="calendar-today" color={color} size={size}/>
+          }} 
         />
-        <Tabs.Screen
-          name="fotos"
+        <Tabs.Screen 
+          name="fotos" 
           options={{
             title: 'Fotos',
-            tabBarIcon: ({ color, size }) => (
-              <MaterialIcons name="photo-library" color={color} size={size} />
-            ),
-          }}
+            tabBarIcon: ({color, size}) => <MaterialIcons name="photo-library" color={color} size={size}/>
+          }} 
         />
       </Tabs>
       <StatusBar style="auto" />
