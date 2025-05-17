@@ -8,7 +8,7 @@ import spacing from '@/constants/spacing';
 export default function Home() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>¡Bienvenido a “Quiénes somos”!</Text>
+      <Text style={styles.title}>¡Bienvenido a página Principal!</Text>
     </View>
   );
 }
