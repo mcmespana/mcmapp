@@ -1,17 +1,31 @@
+// tsconfig.json (raíz)
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "skipLibCheck": true,           // ✨ evita chequear tipos en node_modules
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "constants/**/*.ts",
+    "constants/**/*.tsx",
+    "hooks/**/*.ts",
+    "hooks/**/*.tsx",
+    "notifications/**/*.ts",
+    "notifications/**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "app/_layout.backup"  ]
+  ],
+  "exclude": [
+    "node_modules",
+    "**/__tests__/**",
+    "babel.config.js",
+    "metro.config.js"
+  ]
 }
