@@ -55,7 +55,15 @@ export default function TabsLayout() {
             tabBarIcon: ({color, size}) => <MaterialIcons name="photo-library" color={color} size={size}/>
           }} 
         />
+        <Tabs.Screen 
+          name="showToken" 
+          options={{
+            title: 'Token',
+            tabBarIcon: ({color, size}) => <MaterialIcons name="confirmation-num" color={color} size={size}/>
+          }} 
+        />
       </Tabs>
+    
       <StatusBar style="auto" />
     </ThemeProvider>
   );
