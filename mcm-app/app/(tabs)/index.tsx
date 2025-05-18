@@ -38,7 +38,7 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>¡Bienvenido a “Inicio”!</Text>
+      <Text style={styles.title}>¡Bienvenido a la página “Inicio”!</Text>
 
       <Button
         mode="contained"
