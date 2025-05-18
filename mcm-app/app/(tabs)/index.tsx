@@ -28,7 +28,11 @@ export default function Home() {
         body: 'Esta notificación se programó a 5 s',
         data: { tipo: 'retrasada' },
       },
-     trigger: null,
+      trigger: null,
+    /* trigger:  {
+        seconds: 5,  // Retraso de 5 segundos
+        repeats: false,  // No repetir
+     }*/
      });
   };
 
