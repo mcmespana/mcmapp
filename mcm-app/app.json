@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mcmespana.mcmapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -18,8 +19,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.mcmespana.mcmapp",
-      "googleServicesFile": "google-services.json",
-
+      "googleServicesFile": "google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -29,6 +29,10 @@
     "plugins": [
       "expo-router",
       "expo-notifications",
+      ["onesignal-expo-plugin", {
+        "mode": "development",     
+        "appId": "bf78779e-4d63-444f-a72e-ce5e0fb2bf80"
+      }],
       [
         "expo-splash-screen",
         {
@@ -47,6 +51,12 @@
       "eas": {
         "projectId": "aa9f2d3a-b74a-4169-bad4-e851015e30c6"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/aa9f2d3a-b74a-4169-bad4-e851015e30c6"
     }
   }
 }

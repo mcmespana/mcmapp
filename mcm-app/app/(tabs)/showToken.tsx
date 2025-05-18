@@ -1,4 +1,5 @@
 // app/(tabs)/showToken.tsx
+// Solo para desarrollo, te da el token para las notificaciones de EXPO pUSH
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import * as Notifications from 'expo-notifications';
@@ -12,7 +13,7 @@ export default function ShowToken() {
     (async () => {
       const { data } = await Notifications.getExpoPushTokenAsync();
       setToken(data);
-      console.log('🎫 Expo Push Token:', data);
+      console.log('🎫 Expo Push Token:', data); // consola para copiar y pegar - ExponentPushToken[AAGJdBK_ok_QFvhlVGaIaY]
     })();
   }, []);
 
