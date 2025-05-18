@@ -40,4 +40,5 @@ app-example
 
 /fcm-service-account.json
 /google-services.json
-google-services.jsong
+google-services.json
+firebase.json

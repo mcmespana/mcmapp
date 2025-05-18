@@ -18,7 +18,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.mcmespana.mcmapp",
-      "googleServicesFile": "google-services.json"
+      "googleServicesFile": "$GOOGLE_SERVICES_JSON"
 
     },
     "web": {
