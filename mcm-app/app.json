@@ -12,13 +12,14 @@
       "supportsTablet": true
     },
     "android": {
-      "googleServicesFile": "$GOOGLE_SERVICES_JSON",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.mcmespana.mcmapp"
+      "package": "com.mcmespana.mcmapp",
+      "googleServicesFile": "$GOOGLE_SERVICES_JSON"
+
     },
     "web": {
       "bundler": "metro",
