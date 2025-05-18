@@ -1,13 +1,13 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons'; // Asegúrate de tenerlo importado
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors from '@/constants/colors';
+import colors from '@/constants/colors'; //
 
 export default function TabsLayout() {
-  const scheme = useColorScheme();
+  const scheme = useColorScheme(); //
   const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
   return (
@@ -15,9 +15,9 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.secondary,
-          tabBarStyle: { backgroundColor: colors.background },
+          tabBarActiveTintColor: colors.primary, //
+          tabBarInactiveTintColor: colors.secondary, //
+          tabBarStyle: { backgroundColor: colors.background }, //
         }}
       >
         <Tabs.Screen 
@@ -55,12 +55,15 @@ export default function TabsLayout() {
             tabBarIcon: ({color, size}) => <MaterialIcons name="photo-library" color={color} size={size}/>
           }} 
         />
-        <Tabs.Screen 
-          name="showToken" 
+        {/* Nueva pestaña para el log de notificaciones */}
+        <Tabs.Screen
+          name="notificationsLog" // Nombre del archivo (sin .tsx)
           options={{
-            title: 'Token',
-            tabBarIcon: ({color, size}) => <MaterialIcons name="confirmation-num" color={color} size={size}/>
-          }} 
+            title: 'Avisos', // Título de la pestaña
+            tabBarIcon: ({ color, size }) => (
+              <MaterialIcons name="notifications" color={color} size={size} />
+            ),
+          }}
         />
       </Tabs>
     
