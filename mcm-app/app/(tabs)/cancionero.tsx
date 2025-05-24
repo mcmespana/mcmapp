@@ -9,7 +9,7 @@ import SongDetailScreen from '../screens/SongDetailScreen';
 export type RootStackParamList = {
   Categories: undefined;
   SongsList: { categoryId: string; categoryName: string };
-  SongDetail: { filename: string; title: string };
+  SongDetail: { filename: string; title: string; author?: string; key?: string; capo?: number };
 };
 
 // Tipos para las props de navegación

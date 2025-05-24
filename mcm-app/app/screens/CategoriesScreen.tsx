@@ -2,6 +2,9 @@ import { FlatList, TouchableOpacity, Text } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import songsData from '../../assets/songs.json';
 
+const ALL_SONGS_CATEGORY_ID = '__ALL__';
+const ALL_SONGS_CATEGORY_NAME = 'Todas las canciones';
+
 export default function CategoriesScreen({
   navigation
 }: {
@@ -11,20 +14,21 @@ export default function CategoriesScreen({
     SongDetail: { songId: string; songTitle?: string };
   }>
 }) {
-  const categories = Object.keys(songsData);
+  const actualCategories = Object.keys(songsData);
+  const displayCategories = [{ id: ALL_SONGS_CATEGORY_ID, name: ALL_SONGS_CATEGORY_NAME }, ...actualCategories.map(cat => ({ id: cat, name: `Categoría ${cat}` }))];
 
   return (
     <FlatList
-      data={categories}
-      keyExtractor={(item) => item}
+      data={displayCategories}
+      keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
         <TouchableOpacity
           onPress={() => navigation.navigate('SongsList', { 
-            categoryId: item, 
-            categoryName: `Categoría ${item}` 
+            categoryId: item.id, 
+            categoryName: item.name 
           })}
           style={{ padding: 20, borderBottomWidth: 1, borderColor: '#ddd' }}>
-          <Text style={{ fontSize: 18 }}>{`Categoría ${item}`}</Text>
+          <Text style={{ fontSize: 18 }}>{item.name}</Text>
         </TouchableOpacity>
       )}
     />
