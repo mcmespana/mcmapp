@@ -3,7 +3,7 @@ import { RouteProp } from '@react-navigation/native';
 
 // Importar pantallas
 import CategoriesScreen from '../screens/CategoriesScreen';
-import SongsListScreen from '../screens/SongListScreen';
+import SongListScreen from '../screens/SongListScreen';
 import SongDetailScreen from '../screens/SongDetailScreen';
 
 export type RootStackParamList = {
@@ -38,7 +38,7 @@ export default function CancioneroTab() {
         />
         <Stack.Screen 
           name="SongsList" 
-          component={SongsListScreen} 
+          component={SongListScreen} 
           options={({ route }) => ({ title: route.params?.categoryName || 'Canciones' })} 
         />
         <Stack.Screen 
