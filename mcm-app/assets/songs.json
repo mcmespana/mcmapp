@@ -1,15 +1,14 @@
 {
-      "A": [
-        { "title": "01. Ven a Celebrar", "filename": "ven_a_celebrar.cho", "author": "", "capo": "", "info": ""},
-        { "title": "02. Dios está aquí", "filename": "dios_esta_aqui.cho", "author": "", "capo": "1", "info": ""}
-      ],
-      "C": [
-        { "title": "01. El lote de mi Heredad", "filename": "lote_heredad.cho", "author": "", "capo": "", "info": ""},
-        { "title": "02. El Señor es mi Pastor", "filename": "senor_pastor.cho", "author": "Nico Montero", "capo": "2", "info": ""}
-      ],
-      "D": [
-        { "title": "01. Aleluya Cantará", "filename": "aleluya_cantara.cho",  "author": "Brotes de Olivo", "capo": "", "info": ""},
-        { "title": "02. Nunca dejaré de cantar", "filename": "nunca_dejare.cho", "author": "Kairoi", "capo": "2", "info": "" }
-      ]
-    }
-    
+  "A": [
+    { "title": "01. Ven a Celebrar", "filename": "ven_a_celebrar.cho", "author": "", "capo": "", "info": "" },
+    { "title": "02. Dios está aquí", "filename": "dios_esta_aqui.cho", "author": "", "capo": "1", "info": "" }
+  ],
+  "C": [
+    { "title": "01. El lote de mi Heredad", "filename": "lote_heredad.cho", "author": "", "capo": "", "info": "" },
+    { "title": "02. El Señor es mi Pastor", "filename": "senor_pastor.cho", "author": "Nico Montero", "capo": "2", "info": "" }
+  ],
+  "D": [
+    { "title": "01. Aleluya Cantará", "filename": "aleluya_cantara.cho", "author": "Brotes de Olivo", "capo": "", "info": "" },
+    { "title": "02. Nunca dejaré de cantar", "filename": "nunca_dejare.cho", "author": "Kairoi", "capo": "2", "info": "" }
+  ]
+}
