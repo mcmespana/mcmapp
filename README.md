@@ -20,16 +20,19 @@ Porque incluso los titanes a veces olvidan el hechizo correcto.
 ## 1️⃣ Ver la app en el navegador 🌐
 ```bash
 npx expo start --web
-# producción (build estático):
-npx expo export --platform web
 ```
 Esto arranca un servidor Webpack y abre tu default browser con recarga en caliente.  
 
+
+# producción (build estático):
+```bash
+npx expo export --platform web
+```
 ---
 
 ## 2️⃣ Android en **Expo Go** (emulador o móvil) 🤖⚡
+En emulador (o dispositivo conectado ↯):
 ```bash
-# En emulador (o dispositivo conectado ↯):
 npx expo start --android     # o solo ‘npx expo start’ y pulsa A
 ```
 Expo detecta si tienes un development build; si no, levanta Expo Go.  
@@ -37,10 +40,13 @@ Expo detecta si tienes un development build; si no, levanta Expo Go.
 ---
 
 ## 3️⃣ Android nativo (APK / AAB) 🏗️
-```bash
 # build local dev (firme con keystore temporal):
+
+```bash
 eas build -p android --profile development --local
+```
 # instalar en el emulador:
+```bash
 adb install ./tu_app.apk
 ```
 Perfiles (development, preview, production…) se definen en `eas.json`.  
@@ -48,13 +54,14 @@ Perfiles (development, preview, production…) se definen en `eas.json`.
 ---
 
 ## 4️⃣ iOS Simulator (Mac) 🍎🖥️
-```bash
 # vía Expo Go o development client:
+```bash
 npx expo start --ios
+```
 # …o si ya hiciste prebuild:
+```bash
 npx expo run:ios
 ```
-Recuerda aceptar la licencia Xcode la primera vez.  
 
 ---
 
