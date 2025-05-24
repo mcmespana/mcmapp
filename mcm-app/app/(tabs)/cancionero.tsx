@@ -1,34 +1,53 @@
-// app/(tabs)/cancionero.tsx
-import React from 'react';
-import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import colors from '@/constants/colors';
-import typography from '@/constants/typography';
-import spacing from '@/constants/spacing';
+import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp } from '@react-navigation/native';
 
-interface Styles {
-  container: ViewStyle;
-  title: TextStyle;
-}
+// Importar pantallas
+import CategoriesScreen from '../screens/CategoriesScreen';
+import SongsListScreen from '../screens/SongListScreen';
+import SongDetailScreen from '../screens/SongDetailScreen';
 
-export default function Cancionero() {
+export type RootStackParamList = {
+  Categories: undefined;
+  SongsList: { categoryId: string; categoryName: string };
+  SongDetail: { songId: string; songTitle?: string };
+};
+
+// Tipos para las props de navegación
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+export default function CancioneroTab() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Aquí va el Cancionero 🎶</Text>
-    </View>
+    <Stack.Navigator 
+        initialRouteName="Categories"
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#f4511e',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      >
+        <Stack.Screen 
+          name="Categories" 
+          component={CategoriesScreen} 
+          options={{ title: 'Categorías' }} 
+        />
+        <Stack.Screen 
+          name="SongsList" 
+          component={SongsListScreen} 
+          options={({ route }) => ({ title: route.params?.categoryName || 'Canciones' })} 
+        />
+        <Stack.Screen 
+          name="SongDetail" 
+          component={SongDetailScreen} 
+          options={({ route }) => ({ 
+            title: route.params?.songTitle || 'Letra y Acordes' 
+          })} 
+        />
+      </Stack.Navigator>
   );
 }
-
-const styles = StyleSheet.create<Styles>({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.md,
-  },
-  title: {
-    ...typography.h1,
-    fontWeight: 'bold', // or use a valid value like '700'
-    color: colors.text,
-  },
-});
