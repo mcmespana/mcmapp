@@ -19,17 +19,18 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function RootLayout() {
 
-  usePushNotifications(); // 3️⃣ inicializa el hook
+  //usePushNotifications(); // 3️⃣ inicializa el hook
 
 
 
- // Del histórico de notificaciones - lo de antes es lo original
     useEffect(() => {
   // Configuración de OneSignal - ELIMINAR DEBUG PRODUCCIÓN
-  OneSignal.Debug.setLogLevel(LogLevel.Verbose);   
-  OneSignal.initialize('bf78779e-4d63-444f-a72e-ce5e0fb2bf80');
-  OneSignal.Notifications.requestPermission(false);
+        /* OneSignal.Debug.setLogLevel(LogLevel.Verbose);   
+        //OneSignal.initialize('bf78779e-4d63-444f-a72e-ce5e0fb2bf80');
+        //OneSignal.Notifications.requestPermission(false);*/
     // Listener para cuando la app está en primer plano y se va a mostrar una notificación
+
+
     const foregroundWillDisplayHandler = async (event: any) => {
       console.log("OneSignal: foregroundWillDisplay global:", event);
       const newNotification = {
