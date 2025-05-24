@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { ScrollView, Text, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as FileSystem from 'expo-file-system';
-import { Asset } from 'expo-asset';
+import { Asset } from 'expo-asset'; // Asset might still be used if other assets were loaded, but not for .cho files with this change. Let's keep it for now and remove if truly unused later.
 import { ChordProParser, HtmlDivFormatter } from 'chordsheetjs';
-import { SongFilename } from '../../assets/songs';
-import { songAssets } from '../../assets/songs/index';
+// import { SongFilename } from '../../assets/songs'; // No longer needed
+// import { songAssets } from '../../assets/songs/index'; // No longer needed
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 
@@ -16,24 +16,23 @@ interface SongDetailScreenProps {
 }
 
 export default function SongDetailScreen({ route }: SongDetailScreenProps) {
-  const { filename, title } = route.params;
+  // title from params is for the navigation screen header, actual song title rendered by WebView
+  const { filename, title: navScreenTitle, author, key, capo } = route.params;
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
 
   useEffect(() => {
     (async () => {
       try {
-        // 1. Get the asset module (an internal number)
-        const assetModule = songAssets[filename as keyof typeof songAssets];
-        if (!assetModule) throw new Error(`Asset no encontrado: ${filename}`);
+        // 1. Construct the file URI directly within the app bundle
+        if (!FileSystem.bundleDirectory) {
+          throw new Error('FileSystem.bundleDirectory is null. Cannot load song from bundle.');
+        }
+        const fileUri = `${FileSystem.bundleDirectory}assets/songs/${filename}`;
 
-        // 2. Creamos el Asset de expo-asset y lo descargamos
-        const asset = Asset.fromModule(assetModule);
-        await asset.downloadAsync();
+        // 2. Read the raw content from the file URI
+        const chordPro = await FileSystem.readAsStringAsync(fileUri);
 
-        // 3. Leemos el contenido raw desde su localUri
-        const chordPro = await FileSystem.readAsStringAsync(asset.localUri!);
-
-        // 4. Parseamos y formateamos con chordsheetjs
+        // 3. Parseamos y formateamos con chordsheetjs
         const parser = new ChordProParser();
         const song = parser.parse(chordPro);
         const formatter = new HtmlDivFormatter();
@@ -51,8 +50,21 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
           .title { /* Para <h1 class="title"> */
             font-size: 1.5em; /* Más grande que el texto normal */
             font-weight: bold;
-            margin-bottom: 1em;
+            margin-bottom: 0.2em; /* Reducido para acercar metadatos */
             text-align: center;
+          }
+          .song-meta-author {
+            font-size: 0.9em;
+            color: #555;
+            text-align: center;
+            margin-bottom: 0.5em;
+          }
+          .song-meta-keycapo {
+            font-size: 1em;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            margin-bottom: 1.5em;
           }
           .chord-sheet { /* Para <div class="chord-sheet"> */
             /* Estilos para el contenedor principal si son necesarios */
@@ -84,6 +96,39 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
           }
         `;
 
+        let metaHtml = '';
+        if (author) {
+          metaHtml += `<div class="song-meta-author">${author}</div>`;
+        }
+        let keyCapoString = '';
+        if (key) {
+          keyCapoString += key.toUpperCase();
+        }
+        if (capo !== undefined && capo > 0) {
+          keyCapoString += (key ? ' - ' : '') + `Capo ${capo}`;
+        }
+        if (keyCapoString) {
+          metaHtml += `<div class="song-meta-keycapo">${keyCapoString}</div>`;
+        }
+
+        // metaHtml (for author, key, capo) is already prepared from the successfully applied part of the previous edit.
+        
+        let finalSongContentWithMeta = formattedSongContent;
+        const titleEndTag = '</h1>';
+        const titleEndIndex = formattedSongContent.indexOf(titleEndTag);
+
+        if (titleEndIndex !== -1 && metaHtml) {
+          const insertionPoint = titleEndIndex + titleEndTag.length;
+          finalSongContentWithMeta = 
+            formattedSongContent.substring(0, insertionPoint) +
+            metaHtml + // Inject author, key, capo here
+            formattedSongContent.substring(insertionPoint);
+        } else if (metaHtml) {
+          // Fallback: if no <h1> or metaHtml is empty, but we have meta, prepend it.
+          finalSongContentWithMeta = metaHtml + formattedSongContent;
+        }
+        // If metaHtml is empty, finalSongContentWithMeta remains formattedSongContent
+
         const finalHtml = `
           <!DOCTYPE html>
           <html>
@@ -95,7 +140,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
             </style>
           </head>
           <body>
-            ${formattedSongContent}
+            ${finalSongContentWithMeta} {/* Contains title, then injected meta, then rest of song */}
           </body>
           </html>
         `;
@@ -116,7 +161,9 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+      {/* The screen title for React Navigation is set in cancionero.tsx options */}
+      {/* The song's main title, author, key, capo are now rendered inside the WebView below */}
+      {/* <Text style={styles.title}>{navScreenTitle}</Text> */}
       <View style={webViewContainerStyle}>
         {songHtml.startsWith('❌') || songHtml === 'Cargando…' ? (
           <Text style={styles.content}>{songHtml}</Text>
