@@ -9,7 +9,7 @@ import SongDetailScreen from '../screens/SongDetailScreen';
 export type RootStackParamList = {
   Categories: undefined;
   SongsList: { categoryId: string; categoryName: string };
-  SongDetail: { songId: string; songTitle?: string };
+  SongDetail: { filename: string; title: string };
 };
 
 // Tipos para las props de navegación
@@ -23,7 +23,7 @@ export default function CancioneroTab() {
         initialRouteName="Categories"
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#f4511e',
+            backgroundColor: '#f4c11e',
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
@@ -43,10 +43,10 @@ export default function CancioneroTab() {
         />
         <Stack.Screen 
           name="SongDetail" 
-          component={SongDetailScreen} 
+          component={SongDetailScreen}
           options={({ route }) => ({ 
-            title: route.params?.songTitle || 'Letra y Acordes' 
-          })} 
+            title: route.params?.title || 'Letra y Acordes' 
+          })}
         />
       </Stack.Navigator>
   );

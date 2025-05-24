@@ -2,15 +2,15 @@
   "expo": {
     "name": "mcm-app",
     "slug": "mcm-app",
-    "version": "1.0.0",
+    "version": "1.0.1",
+    "runtimeVersion": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mcmapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "assetBundlePatterns": [
-      "assets/songs/*.cho"
-    ],
+    "assetBundlePatterns": ["assets/songs/*.cho"],
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mcmespana.mcmapp"
@@ -50,9 +50,6 @@
       "eas": {
         "projectId": "aa9f2d3a-b74a-4169-bad4-e851015e30c6"
       }
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/aa9f2d3a-b74a-4169-bad4-e851015e30c6"

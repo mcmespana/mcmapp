@@ -106,8 +106,8 @@ export default function SongsListScreen({ route, navigation }: {
   // Handle song press
   const handleSongPress = (song: Song) => {
     navigation.navigate('SongDetail', {
-      songId: song.filename,
-      songTitle: song.title
+      filename: song.filename,
+      title: song.title
     });
   };
 
