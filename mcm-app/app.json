@@ -8,6 +8,9 @@
     "scheme": "mcmapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "assetBundlePatterns": [
+      "assets/songs/*.cho"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mcmespana.mcmapp"
@@ -27,7 +30,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router", 
+      "expo-router",
       [
         "expo-splash-screen",
         {
@@ -36,7 +39,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
