@@ -1,5 +1,45 @@
 // app/(tabs)/notificationsLog.tsx
-import React, { useEffect, useState } from 'react';
+
+// app/(tabs)/calendario.tsx
+import React from 'react';
+import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import colors from '@/constants/colors';
+import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
+
+interface Styles {
+  container: ViewStyle;
+  title: TextStyle;
+}
+
+export default function Calendario() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Aquí van notificaciones si es que van </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create<Styles>({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  title: {
+    ...typography.h1,
+    fontWeight: 'bold', // or use a valid value like '700'
+    color: colors.text,
+  },
+});
+
+
+
+
+// NOTIS - El código de esta sección que nunca llegó a funcionar
+/* import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack } from 'expo-router';
@@ -195,4 +235,4 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     textAlign: 'right',
   },
-});
+}); */ 

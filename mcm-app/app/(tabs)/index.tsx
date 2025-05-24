@@ -2,14 +2,16 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle, TextStyle} from 'react-native';
 import { Text, Button } from 'react-native-paper';
-import * as Notifications from 'expo-notifications';
+import * as Notifications from 'expo-notifications'; // NOTIS - Se qutia el import
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
 import spacing from '@/constants/spacing';
 
 export default function Home() {
+
+  // NOTIS - Se quita el código de enviar notidficaciones
   // 1️⃣ Notif inmediata
-  const sendImmediateNotification = async () => {
+  /*const sendImmediateNotification = async () => {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '🚀 ¡Notif Inmediata!',
@@ -18,10 +20,10 @@ export default function Home() {
       },
       trigger: null,  // null = entrega inmediata
     });
-  };
+  };*/
 
   // 2️⃣ Notif a los 5 segundos
-  const sendDelayedNotification = async () => {
+  /*const sendDelayedNotification = async () => {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '⏱️ Notif 5 s',
@@ -29,33 +31,34 @@ export default function Home() {
         data: { tipo: 'retrasada' },
       },
       trigger: null,
-    /* trigger:  {
-        seconds: 5,  // Retraso de 5 segundos
-        repeats: false,  // No repetir
-     }*/
+    // trigger:  {
+     //   seconds: 5,  // Retraso de 5 segundos
+    //   repeats: false,  // No repetir
+     //}
      });
-  };
+  };*/
 
+  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>¡Bienvenido a la página “Inicio”!</Text>
 
       <Button
         mode="contained"
-        onPress={sendImmediateNotification}
+        //onPress={sendImmediateNotification}
         style={[styles.button, { marginBottom: spacing.sm }]}
         labelStyle={styles.buttonLabel}
       >
-        Enviar notif ¡ya!
+        Un botón
       </Button>
 
       <Button
-        mode="outlined"
-        onPress={sendDelayedNotification}
+        mode="contained"
+        //onPress={sendDelayedNotification}
         style={styles.button}
         labelStyle={styles.buttonLabel}
       >
-        Enviar notif en 5 s
+        Otro boton
       </Button>
     </View>
   );

@@ -55,16 +55,6 @@ export default function TabsLayout() {
             tabBarIcon: ({color, size}) => <MaterialIcons name="photo-library" color={color} size={size}/>
           }} 
         />
-        {/* Nueva pestaña para el log de notificaciones */}
-        <Tabs.Screen
-          name="notificationsLog" // Nombre del archivo (sin .tsx)
-          options={{
-            title: 'Avisos', // Título de la pestaña
-            tabBarIcon: ({ color, size }) => (
-              <MaterialIcons name="notifications" color={color} size={size} />
-            ),
-          }}
-        />
       </Tabs>
     
       <StatusBar style="auto" />

@@ -1,57 +1,3 @@
-/*import React from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
-import { WebView } from 'react-native-webview';
-import spacing from '@/constants/spacing';
-
-const URL = 'https://steelblue-mallard-178509.hostingersite.com/area-privada/';
-
-export default function Comunica() {
-  if (Platform.OS === 'web') {
-    return (
-      <View style={[styles.container, styles.webContainer]}>
-        <iframe
-          src={URL}
-          title="Área Privada"
-          style={{ ...styles.iframe, border: 0 }}
-        />
-      </View>
-    );
-  }
-  return (
-    <View style={styles.container}>
-      <WebView
-        source={{ uri: URL }}
-        style={styles.webview}
-        startInLoadingState
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    margin: spacing.sm,
-  },
-  // Solo web: quita márgenes y pon padding:0 para usar todo el espacio
-  webContainer: {
-    margin: 0,
-    padding: 0,
-  },
-  iframe: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    // border is not a valid React Native style property
-  },
-  webview: {
-    flex: 1,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-});
-*/
-
 // app/(tabs)/comunica.tsx
 
 import React from 'react';
@@ -112,3 +58,60 @@ const styles = StyleSheet.create({
     //border: 0,
   },
 });
+
+
+// Código original
+
+/*import React from 'react';
+import { StyleSheet, View, Platform } from 'react-native';
+import { WebView } from 'react-native-webview';
+import spacing from '@/constants/spacing';
+
+const URL = 'https://steelblue-mallard-178509.hostingersite.com/area-privada/';
+
+export default function Comunica() {
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.container, styles.webContainer]}>
+        <iframe
+          src={URL}
+          title="Área Privada"
+          style={{ ...styles.iframe, border: 0 }}
+        />
+      </View>
+    );
+  }
+  return (
+    <View style={styles.container}>
+      <WebView
+        source={{ uri: URL }}
+        style={styles.webview}
+        startInLoadingState
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    margin: spacing.sm,
+  },
+  // Solo web: quita márgenes y pon padding:0 para usar todo el espacio
+  webContainer: {
+    margin: 0,
+    padding: 0,
+  },
+  iframe: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    // border is not a valid React Native style property
+  },
+  webview: {
+    flex: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+});
+*/

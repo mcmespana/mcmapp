@@ -1,13 +1,14 @@
 // app/_layout.tsx
 
-// Importamos el manejador de notificaciones
+// NOTIS - Se queda en el branch notificaciones
+/*
 import '../notifications/NotificationHandler';   // 1️⃣ inicializa el handler
 import usePushNotifications from '../notifications/usePushNotifications'; // 2️⃣ nuestro hook
 
 import {OneSignal, LogLevel} from 'react-native-onesignal';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage'; *
 
-const NOTIFICATIONS_STORAGE_KEY = 'bf78779e-4d63-444f-a72e-ce5e0fb2bf80'; 
+ const NOTIFICATIONS_STORAGE_KEY = 'bf78779e-4d63-444f-a72e-ce5e0fb2bf80';  */
 
 
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
@@ -19,13 +20,13 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function RootLayout() {
 
-  usePushNotifications(); // 3️⃣ inicializa el hook
+  // NOTIS - Comentado para eliminar sistema notificaciones
+  //usePushNotifications(); // 3️⃣ inicializa el hook
 
 
-
- // Del histórico de notificaciones - lo de antes es lo original
-    useEffect(() => {
+   // useEffect(() => {
   // Configuración de OneSignal - ELIMINAR DEBUG PRODUCCIÓN
+  /* NOTIS - SEe queda en el branch notificaciones 
   OneSignal.Debug.setLogLevel(LogLevel.Verbose);   
   OneSignal.initialize('bf78779e-4d63-444f-a72e-ce5e0fb2bf80');
   OneSignal.Notifications.requestPermission(false);
@@ -84,6 +85,7 @@ export default function RootLayout() {
     OneSignal.Notifications.addEventListener("click", clickHandler);
 
 
+
     // Cleanup (importante para evitar leaks de memoria) 
     // La forma de remover listeners puede variar con la versión de react-native-onesignal.
     // Consulta su documentación oficial para la versión que estés usando.
@@ -91,7 +93,12 @@ export default function RootLayout() {
     //   OneSignal.Notifications.removeEventListener("foregroundWillDisplay", foregroundWillDisplayHandler);
     //   OneSignal.Notifications.removeEventListener("click", clickHandler);
     // };
-  }, []);
+
+    */
+  
+    // sigue use effect después de notificaciones
+  
+ // }, []);
 
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
