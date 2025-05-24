@@ -84,7 +84,7 @@ export default function RootLayout() {
     OneSignal.Notifications.addEventListener("click", clickHandler);
 
 
-    // Cleanup (importante para evitar leaks de memoria)
+    // Cleanup (importante para evitar leaks de memoria) 
     // La forma de remover listeners puede variar con la versión de react-native-onesignal.
     // Consulta su documentación oficial para la versión que estés usando.
     // return () => {
