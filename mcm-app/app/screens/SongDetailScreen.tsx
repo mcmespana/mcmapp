@@ -11,6 +11,12 @@ import { songAssets } from '../../assets/songs/index'; // Re-added
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 
+const availableFonts = [
+  { name: 'Monoespaciada', cssValue: "'Roboto Mono', 'Courier New', monospace" },
+  { name: 'Serif', cssValue: "'Georgia', 'Times New Roman', serif" },
+  { name: 'Sans-Serif', cssValue: "'Helvetica Neue', 'Arial', sans-serif" },
+];
+
 type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
 
 interface SongDetailScreenProps {
@@ -34,9 +40,11 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   const [isNotationFabActive, setIsNotationFabActive] = useState(false);
   const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // Base font size is 1em
   const [showFontSizeModal, setShowFontSizeModal] = useState(false);
+  const [currentFontFamily, setCurrentFontFamily] = useState(availableFonts[0].cssValue); // Default to mono, availableFonts is now at top
+  const [showFontFamilyModal, setShowFontFamilyModal] = useState(false);
 
   // Function to parse and display the song
-  const displaySong = async (chordProContent: string, transposeSteps: number, showChords: boolean, fontSize: number) => {
+  const displaySong = async (chordProContent: string, transposeSteps: number, showChords: boolean, fontSize: number, fontFamily: string) => {
     setIsLoading(true);
     try {
       let processedChordPro = chordProContent;
@@ -123,7 +131,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
           <style>
             body {
-              font-family: 'Roboto Mono', 'Courier New', monospace;
+              font-family: ${fontFamily};
               margin: 10px;
               background-color: #ffffff; /* UPDATED: White background */
               color: ${AppColors.textDark};
@@ -161,7 +169,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
               margin-bottom: 0.2em;
             }
             .column {
-              padding-right: 0.5em;
+              padding-right: 0; /* Ajustado para evitar espacios extra dentro de las palabras */
             }
             .chord-sheet .chord {
               color: ${AppColors.primary};
@@ -185,8 +193,8 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
             }
             /* Styles for song sections (verse, chorus, bridge) */
             .paragraph {
-              margin-top: 0.7em; /* Base vertical spacing for sections */
-              margin-bottom: 0.7em;
+              margin-top: 1.75em; /* Aumentado para mayor separación entre estrofas (0.7em * 2.5) */
+              margin-bottom: 1.75em; /* Aumentado para mayor separación entre estrofas (0.7em * 2.5) */
             }
             .paragraph.chorus {
               font-weight: bold;
@@ -217,156 +225,193 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   useEffect(() => {
     (async () => {
       if (!filename) {
-        setSongHtml('No se ha proporcionado un nombre de archivo para la canción.');
+        setSongHtml('Error: Nombre de archivo no proporcionado.');
         setIsLoading(false);
         return;
       }
       try {
-        const assetModule = songAssets[filename as SongFilename];
-        if (!assetModule) {
-          throw new Error(`Asset no encontrado para el filename: ${filename}.`);
-        }
-        const asset = Asset.fromModule(assetModule);
+        setIsLoading(true);
+        const asset = Asset.fromModule(songAssets[filename as SongFilename]);
         await asset.downloadAsync();
-        if (!asset.localUri) {
-          throw new Error(`Failed to download asset or localUri is not set for ${filename}`);
+        if (asset.localUri) {
+          const fileContent = await FileSystem.readAsStringAsync(asset.localUri);
+          setOriginalChordPro(fileContent); // Store original content
+          // Initial display:
+          displaySong(fileContent, currentTranspose, chordsVisible, currentFontSizeEm, currentFontFamily);
+        } else {
+          throw new Error('No se pudo obtener la URI local del archivo.');
         }
-        const rawChordPro = await FileSystem.readAsStringAsync(asset.localUri);
-        setOriginalChordPro(rawChordPro);
-      } catch (err) {
-        console.error('Error cargando canción en SongDetailScreen (useEffect filename):', err);
-        setSongHtml('❌ Error crítico al cargar datos de la canción.');
+      } catch (err: any) {
+        console.error('Error cargando la canción:', err);
+        setSongHtml(`Error al cargar la canción: ${err.message}`);
+      } finally {
         setIsLoading(false);
       }
     })();
   }, [filename]);
+
   useEffect(() => {
     if (originalChordPro) {
-      // Pass currentFontSizeEm to displaySong
-      displaySong(originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm);
+      displaySong(originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm, currentFontFamily);
     }
-  }, [originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm]); // Added currentFontSizeEm
+  }, [originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm, currentFontFamily]);
 
-  const handleToggleChords = () => setChordsVisible(!chordsVisible);
-  const handleOpenTransposeModal = () => setShowTransposeModal(true);
-  const handleOpenFontSizeModal = () => setShowFontSizeModal(true);
-  const handleChangeNotation = () => {
-    setIsNotationFabActive(!isNotationFabActive);
-    alert('Notación (Próximamente)');
-  };
-  const handleSetTranspose = (semitones: number) => {
-    let newTranspose = semitones;
-    // Wrap around at +12 and -12 to 0
-    if (newTranspose >= 12 || newTranspose <= -12) {
-      newTranspose = newTranspose % 12;
-    }
-    setCurrentTranspose(newTranspose);
-    setShowTransposeModal(false);
-  };
+const handleToggleChords = () => setChordsVisible(!chordsVisible);
+const handleOpenTransposeModal = () => setShowTransposeModal(true);
+const handleChangeNotation = () => {
+  setIsNotationFabActive(!isNotationFabActive);
+  alert('Notación (Próximamente)');
+};
+const handleOpenFontSizeModal = () => setShowFontSizeModal(true);
+const handleChangeFontFamily = () => setShowFontFamilyModal(true);
+const handleSetTranspose = (semitones: number) => {
+  let newTranspose = semitones;
+  // Wrap around at +12 and -12 to 0
+  if (newTranspose >= 12 || newTranspose <= -12) {
+    newTranspose = newTranspose % 12;
+  }
+  setCurrentTranspose(newTranspose);
+  setShowTransposeModal(false);
+};
 
-  const handleSetFontSize = (newSizeEm: number) => {
-    // Optional: Add min/max font size limits if desired
-    // Example: if (newSizeEm < 0.5) newSizeEm = 0.5;
-    //          if (newSizeEm > 2.0) newSizeEm = 2.0;
-    setCurrentFontSizeEm(newSizeEm);
-    // setShowFontSizeModal(false); // Keep modal open to see changes
-  };
+const handleSetFontSize = (newSizeEm: number) => {
+  // Optional: Add min/max font size limits if desired
+  // Example: if (newSizeEm < 0.5) newSizeEm = 0.5;
+  //          if (newSizeEm > 2.0) newSizeEm = 2.0;
+  setCurrentFontSizeEm(newSizeEm);
+  // setShowFontSizeModal(false); // Keep modal open to see changes
+};
 
-  return (
-    <View style={styles.container}>
-      {/* The screen title for React Navigation is set in cancionero.tsx options */}
-      {/* The song's main title, author, key, capo are now rendered inside the WebView below */}
-      {/* <Text style={styles.title}>{navScreenTitle}</Text> */}
-      <View style={styles.webViewContainer}>
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
-        ) : (
-          <WebView
-            originWhitelist={['*']}
-            source={{ html: songHtml }}
-            style={styles.webView}
-          />
-        )}
-      </View>
+const handleSetFontFamily = (newFontFamily: string) => {
+  setCurrentFontFamily(newFontFamily);
+  setShowFontFamilyModal(false);
+};
 
-      {/* FABs */}
-      <View style={styles.fabContainer}>
-        {showActionButtons && (
-          <View style={styles.fabActionsContainer}>
-            <TouchableOpacity style={[styles.fabAction, !chordsVisible && styles.fabActionActive]} onPress={handleToggleChords}>
-              <Text style={[styles.fabActionText, !chordsVisible && styles.fabActionTextActive]}>Acordes {chordsVisible ? 'ON' : 'OFF'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, currentTranspose !== 0 && styles.fabActionActive]} onPress={handleOpenTransposeModal}>
-              <Text style={[styles.fabActionText, currentTranspose !== 0 && styles.fabActionTextActive]}>Cambiar tono</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, isNotationFabActive && styles.fabActionActive]} onPress={handleChangeNotation}>
-              <Text style={[styles.fabActionText, isNotationFabActive && styles.fabActionTextActive]}>Notación</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, currentFontSizeEm !== 1.0 && styles.fabActionActive]} onPress={handleOpenFontSizeModal}>
-              <Text style={[styles.fabActionText, currentFontSizeEm !== 1.0 && styles.fabActionTextActive]}>Tamaño Letra</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        <TouchableOpacity style={styles.fabMain} onPress={() => setShowActionButtons(!showActionButtons)}>
-          <Text style={styles.fabMainText}>{showActionButtons ? '✕' : '🛠️'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Font Size Modal */}
-      <Modal
-        transparent={true}
-        visible={showFontSizeModal}
-        onRequestClose={() => setShowFontSizeModal(false)}
-        animationType="fade"
-      >
-        <TouchableWithoutFeedback onPress={() => setShowFontSizeModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Ajustar Tamaño Letra</Text>
-                <View style={styles.fontSizeButtonRow}>
-                  <Button title="A+" onPress={() => handleSetFontSize(currentFontSizeEm + 0.1)} />
-                  <Button title="A-" onPress={() => handleSetFontSize(Math.max(0.5, currentFontSizeEm - 0.1))} />
-                </View>
-                <Button title={`Original (${(currentFontSizeEm * 100).toFixed(0)}%)`} onPress={() => handleSetFontSize(1.0)} />
-                <Button title="Cerrar" onPress={() => setShowFontSizeModal(false)} color="#888"/>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* Transpose Modal */}
-      <Modal
-        transparent={true}
-        visible={showTransposeModal}
-        onRequestClose={() => setShowTransposeModal(false)}
-        animationType="fade"
-      >
-        <TouchableWithoutFeedback onPress={() => setShowTransposeModal(false)}>
-          <View style={styles.modalOverlay}>
-            {/* By wrapping modalContent with another View and stopping propagation, 
-                we prevent the modal from closing when tapping inside modalContent itself. */}
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Cambio tono</Text>
-            <View style={styles.transposeButtonRow}>
-              <Button title="+1/2 tono" onPress={() => handleSetTranspose(currentTranspose + 1)} />
-              <Button title="+1 tono" onPress={() => handleSetTranspose(currentTranspose + 2)} />
-            </View>
-            <View style={styles.transposeButtonRow}>
-              <Button title="-1/2 tono" onPress={() => handleSetTranspose(currentTranspose - 1)} />
-              <Button title="-1 tono" onPress={() => handleSetTranspose(currentTranspose - 2)} />
-            </View>
-            <Button title="Tono Original 🔄" onPress={() => handleSetTranspose(0)} />
-            <Button title="Volver" onPress={() => setShowTransposeModal(false)} color="#888"/>
-            </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+return (
+  <View style={styles.container}>
+    {/* The screen title for React Navigation is set in cancionero.tsx options */}
+    {/* The song's main title, author, key, capo are now rendered inside the WebView below */}
+    {/* <Text style={styles.title}>{navScreenTitle}</Text> */}
+    <View style={styles.webViewContainer}>
+      {isLoading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : (
+        <WebView
+          originWhitelist={['*']}
+          source={{ html: songHtml }}
+          style={styles.webView}
+        />
+      )}
     </View>
-  );
+
+    {/* FABs */}
+    <View style={styles.fabContainer}>
+      {showActionButtons && (
+        <View style={styles.fabActionsContainer}>
+          <TouchableOpacity style={[styles.fabAction, !chordsVisible && styles.fabActionActive]} onPress={handleToggleChords}>
+            <Text style={[styles.fabActionText, !chordsVisible && styles.fabActionTextActive]}>Acordes {chordsVisible ? 'ON' : 'OFF'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.fabAction, currentTranspose !== 0 && styles.fabActionActive]} onPress={handleOpenTransposeModal}>
+            <Text style={[styles.fabActionText, currentTranspose !== 0 && styles.fabActionTextActive]}>Cambiar tono</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.fabAction, isNotationFabActive && styles.fabActionActive]} onPress={handleChangeNotation}>
+            <Text style={[styles.fabActionText, isNotationFabActive && styles.fabActionTextActive]}>Notación</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.fabAction, currentFontSizeEm !== 1.0 && styles.fabActionActive]} onPress={handleOpenFontSizeModal}>
+            <Text style={[styles.fabActionText, currentFontSizeEm !== 1.0 && styles.fabActionTextActive]}>Tamaño Letra</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.fabAction, currentFontFamily !== availableFonts[0].cssValue && styles.fabActionActive]} onPress={handleChangeFontFamily}>
+            <Text style={[styles.fabActionText, currentFontFamily !== availableFonts[0].cssValue && styles.fabActionTextActive]}>Tipo de Letra</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      <TouchableOpacity style={styles.fabMain} onPress={() => setShowActionButtons(!showActionButtons)}>
+        <Text style={styles.fabMainText}>{showActionButtons ? '✕' : '🛠️'}</Text>
+      </TouchableOpacity>
+    </View>
+
+    {/* Font Size Modal */}
+    <Modal
+      transparent={true}
+      visible={showFontSizeModal}
+      onRequestClose={() => setShowFontSizeModal(false)}
+      animationType="fade"
+    >
+      <TouchableWithoutFeedback onPress={() => setShowFontSizeModal(false)}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Ajustar Tamaño Letra</Text>
+              <View style={styles.fontSizeButtonRow}>
+                <Button title="A+" onPress={() => handleSetFontSize(currentFontSizeEm + 0.1)} />
+                <Button title="A-" onPress={() => handleSetFontSize(Math.max(0.5, currentFontSizeEm - 0.1))} />
+              </View>
+              <Button title={`Original (${(currentFontSizeEm * 100).toFixed(0)}%)`} onPress={() => handleSetFontSize(1.0)} />
+              <Button title="Cerrar" onPress={() => setShowFontSizeModal(false)} color="#888"/>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+
+    {/* Font Family Modal */}
+    <Modal
+      transparent={true}
+      visible={showFontFamilyModal}
+      onRequestClose={() => setShowFontFamilyModal(false)}
+      animationType="fade"
+    >
+      <TouchableWithoutFeedback onPress={() => setShowFontFamilyModal(false)}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Seleccionar Tipo de Letra</Text>
+              {availableFonts.map((font) => (
+                <TouchableOpacity
+                  key={font.cssValue}
+                  style={styles.fontFamilyOptionButton}
+                  onPress={() => handleSetFontFamily(font.cssValue)}
+                >
+                  <Text style={[styles.fontFamilyOptionText, { fontFamily: font.cssValue }]}>{font.name}</Text>
+                </TouchableOpacity>
+              ))}
+              <Button title="Cerrar" onPress={() => setShowFontFamilyModal(false)} color="#888"/>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+
+    {/* Transpose Modal */}
+    <Modal
+      transparent={true}
+      visible={showTransposeModal}
+      onRequestClose={() => setShowTransposeModal(false)}
+      animationType="fade"
+    >
+      <TouchableWithoutFeedback onPress={() => setShowTransposeModal(false)}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Cambio tono</Text>
+              <View style={styles.transposeButtonRow}>
+                <Button title="+1/2 tono" onPress={() => handleSetTranspose(currentTranspose + 1)} />
+                <Button title="+1 tono" onPress={() => handleSetTranspose(currentTranspose + 2)} />
+              </View>
+              <View style={styles.transposeButtonRow}>
+                <Button title="-1/2 tono" onPress={() => handleSetTranspose(currentTranspose - 1)} />
+                <Button title="-1 tono" onPress={() => handleSetTranspose(currentTranspose - 2)} />
+              </View>
+              <Button title="Tono Original 🔄" onPress={() => handleSetTranspose(0)} />
+              <Button title="Volver" onPress={() => setShowTransposeModal(false)} color="#888"/>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  </View>
+);
+
 }
 
 const styles = StyleSheet.create({
@@ -440,6 +485,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
+  },
+  fontFamilyOptionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: '#e9ecef', // Using a light gray as AppColors.lightGray is not defined in theme
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  fontFamilyOptionText: {
+    fontSize: 16,
+    color: AppColors.textDark,
   },
   transposeButtonRow: {
     flexDirection: 'row',
