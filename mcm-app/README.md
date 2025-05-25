@@ -1,3 +1,7 @@
+---
+**Nota Importante:** Para obtener la información más completa y actualizada sobre la instalación, configuración, estructura del proyecto y cómo contribuir, por favor consulta el **[README principal en la raíz del proyecto](../README.md)**.
+---
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
