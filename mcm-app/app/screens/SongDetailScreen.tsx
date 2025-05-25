@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, StyleSheet, useWindowDimensions, ActivityIndicator, View, TouchableOpacity, Modal, Button } from 'react-native';
+import { ScrollView, Text, StyleSheet, useWindowDimensions, ActivityIndicator, View, TouchableOpacity, Modal, Button, TouchableWithoutFeedback } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as FileSystem from 'expo-file-system';
 import { Asset } from 'expo-asset';
+import { Ionicons } from '@expo/vector-icons';
+import { AppColors } from '../styles/theme';
 import { ChordProParser, HtmlDivFormatter } from 'chordsheetjs';
 import { SongFilename } from '../../assets/songs'; // Re-added
 import { songAssets } from '../../assets/songs/index'; // Re-added
@@ -30,24 +32,41 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposeModal, setShowTransposeModal] = useState(false);
   const [isNotationFabActive, setIsNotationFabActive] = useState(false);
+  const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // Base font size is 1em
+  const [showFontSizeModal, setShowFontSizeModal] = useState(false);
 
   // Function to parse and display the song
-  const displaySong = async (chordProContent: string, transposeSteps: number, showChords: boolean) => {
+  const displaySong = async (chordProContent: string, transposeSteps: number, showChords: boolean, fontSize: number) => {
     setIsLoading(true);
     try {
       let processedChordPro = chordProContent;
+
+      // Normalize ChordPro section tags (e.g., {soc} to {start_of_chorus})
+      processedChordPro = processedChordPro.replace(/\{sov\}/gi, '{start_of_verse}')
+                                     .replace(/\{eov\}/gi, '{end_of_verse}')
+                                     .replace(/\{soc\}/gi, '{start_of_chorus}')
+                                     .replace(/\{eoc\}/gi, '{end_of_chorus}')
+                                     .replace(/\{sob\}/gi, '{start_of_bridge}')
+                                     .replace(/\{eob\}/gi, '{end_of_bridge}');
 
       // Remove existing transpose directive if any, to apply a new one cleanly
       processedChordPro = processedChordPro.replace(/\{transpose:.*\}\n?/gi, '');
 
       if (transposeSteps !== 0) {
-        // currentTranspose (transposeSteps) is already in range -11 to 11 due to handleSetTranspose logic
         const chordProValueForDirective = transposeSteps < 0 ? transposeSteps + 12 : transposeSteps;
-        // Only add the directive if the final value is not 0 (e.g. if original transposeSteps was a multiple of 12)
         if (chordProValueForDirective !== 0) {
           processedChordPro = `{transpose: ${chordProValueForDirective}}\n${processedChordPro}`;
         }
       }
+
+      // Apply font size adjustments
+      // Ensure base font size for lyrics and chords is 1em in the main style block
+      // The title (h1) and meta info should not be affected by this specific adjustment
+      const fontSizeCss = `
+        .chord-sheet .lyrics, .chord-sheet .chord {
+          font-size: ${fontSize}em !important;
+        }
+      `;
 
       const parser = new ChordProParser();
       const song = parser.parse(processedChordPro);
@@ -59,18 +78,24 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
       if (author) {
         metaInsert += `<div class="song-meta-author">${author}</div>`;
       }
-      let keyCapoString = '';
+      let finalKeyCapoString = '';
       if (key) {
-        keyCapoString += key.toUpperCase();
+        finalKeyCapoString += `<strong>${key.toUpperCase()}</strong>`;
       }
+
       if (capo !== undefined && capo > 0) {
-        keyCapoString += (key ? ' - ' : '') + `Cejilla ${capo}`;
+        if (finalKeyCapoString) finalKeyCapoString += ' - ';
+        finalKeyCapoString += `Cejilla ${capo}`;
       }
+
       if (currentTranspose !== 0) {
-        keyCapoString += (keyCapoString ? ' | ' : '') + `Cambio tono: ${currentTranspose > 0 ? '+' : ''}${currentTranspose}`;
+        if (finalKeyCapoString) finalKeyCapoString += ' / ';
+        const transposeDisplay = currentTranspose > 0 ? `+${currentTranspose}` : `${currentTranspose}`;
+        finalKeyCapoString += `<strong>Semitonos: ${transposeDisplay}</strong>`;
       }
-      if (keyCapoString) {
-        metaInsert += `<div class="song-meta-keycapo">${keyCapoString}</div>`;
+
+      if (finalKeyCapoString) {
+        metaInsert += `<div class="song-meta-keycapo">${finalKeyCapoString}</div>`;
       }
 
       // Inject metaInsert after the main title in formattedSong
@@ -98,65 +123,80 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
           <style>
             body {
-              font-family: 'Menlo', 'DejaVu Sans Mono', 'Liberation Mono', 'Consolas', 'Courier New', monospace;
-              font-size: 15px;
-              line-height: 1.6;
+              font-family: 'Roboto Mono', 'Courier New', monospace;
               margin: 10px;
-              color: #000000;
+              background-color: #ffffff; /* UPDATED: White background */
+              color: ${AppColors.textDark};
+              font-size: 100%; /* Base for em units */
             }
-            /* Song Title (from ChordPro, e.g., h1 or .title) */
-            h1, .title {
-              font-size: 1.6em;
-              font-weight: bold;
-              color: #000;
-              margin-top: 0;
-              margin-bottom: 0.3em; /* Space after title */
-              text-align: center;
-            }
-            /* Meta information (author, key/capo) */
-            .song-meta-author, .song-meta-keycapo {
-              font-size: 1em;
+            h1 {
               color: #333;
-              text-align: center;
-              margin-bottom: 0.5em;
+              margin-bottom: 0.2em;
+              font-size: 1.6em; /* Fixed size relative to body */
+              text-align: center; /* ADDED: Centered title */
+            }
+            .song-meta-author {
+              color: #777; /* UPDATED: Lighter grey */
+              font-size: 0.9em; /* Relative to body */
+              margin-bottom: 5px; /* Adjusted margin */
+              font-style: italic; /* ADDED: Italic author */
+              text-align: center; /* ADDED: Centered author */
             }
             .song-meta-keycapo {
-              margin-bottom: 1.5em; /* More space before song content */
+              color: #555; /* Original color for non-bold parts */
+              font-size: 0.9em; /* Relative to body */
+              margin-bottom: 10px;
+              text-align: center; /* ADDED: Centered key/capo info */
             }
-            /* ChordSheetJS generated content */
-            .chord-sheet { /* Main container by chordsheetjs */
+            .song-meta-keycapo strong {
+              font-weight: bold; /* Ensures parts wrapped in <strong> are bold */
             }
-            .paragraph { /* Groups of rows, e.g., verse, chorus */
-              margin-bottom: 1em; /* Space between paragraphs/sections */
+            .chord-sheet {
+              margin-top: 1em;
+              text-align: left; /* Ensure song content itself is left-aligned */
             }
             .row {
-              line-height: 1.4; /* Specific line height for song lines */
-              margin-bottom: 0.2em; /* Minimal space after each song line */
+              display: flex;
+              flex-wrap: wrap;
+              margin-bottom: 0.2em;
             }
             .column {
-              display: inline-block;
-              vertical-align: bottom;
-              padding-right: 2px;
-              white-space: pre; /* CRITICAL for monospace alignment */
+              padding-right: 0.5em;
             }
-            .chord {
+            .chord-sheet .chord {
+              color: ${AppColors.primary};
               font-weight: bold;
-              color: #007bff; /* User likes this blue */
-              font-size: 0.95em;
+              white-space: pre;
               display: block;
-              min-height: 1.1em;
+              min-height: 1.2em;
             }
-            .lyrics {
-              font-size: 1em;
+            .chord-sheet .lyrics {
+              white-space: pre;
               display: block;
+              min-height: 1.2em;
             }
             .comment, .c {
-              color: #6c757d; /* Subtler comment color */
+              color: ${AppColors.secondaryText};
               font-style: italic;
+              white-space: pre;
+              display: block;
+              margin-top: 0.5em;
+              margin-bottom: 0.5em;
             }
-            .chorus .lyrics, .chorus .chord {
-              /* font-style: italic; */ /* User might not want this globally */
+            /* Styles for song sections (verse, chorus, bridge) */
+            .paragraph {
+              margin-top: 0.7em; /* Base vertical spacing for sections */
+              margin-bottom: 0.7em;
             }
+            .paragraph.chorus {
+              font-weight: bold;
+              margin-top: 1.2em; /* More spacing for choruses */
+              margin-bottom: 1.2em;
+            }
+            /* Verses and bridges will use .paragraph styling by default */
+            /* Add specific styles for .paragraph.verse or .paragraph.bridge if needed */
+
+            ${fontSizeCss} /* Injects: .chord-sheet .lyrics, .chord-sheet .chord { font-size: ${fontSize}em !important; } */
           </style>
           ${chordsCss}
         </head>
@@ -165,7 +205,6 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
         </body>
         </html>
       `;
-
       setSongHtml(finalHtml);
     } catch (err) {
       console.error('Error procesando canción en SongDetailScreen:', err);
@@ -202,13 +241,15 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
     })();
   }, [filename]);
   useEffect(() => {
-    if (originalChordPro !== null) {
-      displaySong(originalChordPro, currentTranspose, chordsVisible);
+    if (originalChordPro) {
+      // Pass currentFontSizeEm to displaySong
+      displaySong(originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm);
     }
-  }, [originalChordPro, currentTranspose, chordsVisible]);
+  }, [originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm]); // Added currentFontSizeEm
 
   const handleToggleChords = () => setChordsVisible(!chordsVisible);
   const handleOpenTransposeModal = () => setShowTransposeModal(true);
+  const handleOpenFontSizeModal = () => setShowFontSizeModal(true);
   const handleChangeNotation = () => {
     setIsNotationFabActive(!isNotationFabActive);
     alert('Notación (Próximamente)');
@@ -221,6 +262,14 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
     }
     setCurrentTranspose(newTranspose);
     setShowTransposeModal(false);
+  };
+
+  const handleSetFontSize = (newSizeEm: number) => {
+    // Optional: Add min/max font size limits if desired
+    // Example: if (newSizeEm < 0.5) newSizeEm = 0.5;
+    //          if (newSizeEm > 2.0) newSizeEm = 2.0;
+    setCurrentFontSizeEm(newSizeEm);
+    // setShowFontSizeModal(false); // Keep modal open to see changes
   };
 
   return (
@@ -245,13 +294,16 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
         {showActionButtons && (
           <View style={styles.fabActionsContainer}>
             <TouchableOpacity style={[styles.fabAction, !chordsVisible && styles.fabActionActive]} onPress={handleToggleChords}>
-              <Text style={[styles.fabActionText, !chordsVisible && styles.fabActionTextActive]}>{chordsVisible ? 'Acordes OFF' : 'Acordes ON'}</Text>
+              <Text style={[styles.fabActionText, !chordsVisible && styles.fabActionTextActive]}>Acordes {chordsVisible ? 'ON' : 'OFF'}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.fabAction, currentTranspose !== 0 && styles.fabActionActive]} onPress={handleOpenTransposeModal}>
               <Text style={[styles.fabActionText, currentTranspose !== 0 && styles.fabActionTextActive]}>Cambiar tono</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.fabAction, isNotationFabActive && styles.fabActionActive]} onPress={handleChangeNotation}>
               <Text style={[styles.fabActionText, isNotationFabActive && styles.fabActionTextActive]}>Notación</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.fabAction, currentFontSizeEm !== 1.0 && styles.fabActionActive]} onPress={handleOpenFontSizeModal}>
+              <Text style={[styles.fabActionText, currentFontSizeEm !== 1.0 && styles.fabActionTextActive]}>Tamaño Letra</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -260,6 +312,30 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
         </TouchableOpacity>
       </View>
 
+      {/* Font Size Modal */}
+      <Modal
+        transparent={true}
+        visible={showFontSizeModal}
+        onRequestClose={() => setShowFontSizeModal(false)}
+        animationType="fade"
+      >
+        <TouchableWithoutFeedback onPress={() => setShowFontSizeModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Ajustar Tamaño Letra</Text>
+                <View style={styles.fontSizeButtonRow}>
+                  <Button title="A+" onPress={() => handleSetFontSize(currentFontSizeEm + 0.1)} />
+                  <Button title="A-" onPress={() => handleSetFontSize(Math.max(0.5, currentFontSizeEm - 0.1))} />
+                </View>
+                <Button title={`Original (${(currentFontSizeEm * 100).toFixed(0)}%)`} onPress={() => handleSetFontSize(1.0)} />
+                <Button title="Cerrar" onPress={() => setShowFontSizeModal(false)} color="#888"/>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* Transpose Modal */}
       <Modal
         transparent={true}
@@ -267,7 +343,11 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
         onRequestClose={() => setShowTransposeModal(false)}
         animationType="fade"
       >
-        <View style={styles.modalOverlay}>
+        <TouchableWithoutFeedback onPress={() => setShowTransposeModal(false)}>
+          <View style={styles.modalOverlay}>
+            {/* By wrapping modalContent with another View and stopping propagation, 
+                we prevent the modal from closing when tapping inside modalContent itself. */}
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Cambio tono</Text>
             <View style={styles.transposeButtonRow}>
@@ -280,8 +360,10 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
             </View>
             <Button title="Tono Original 🔄" onPress={() => handleSetTranspose(0)} />
             <Button title="Volver" onPress={() => setShowTransposeModal(false)} color="#888"/>
+            </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );
@@ -299,7 +381,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   fabAction: { 
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: AppColors.backgroundLight, 
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
@@ -310,21 +392,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
     borderWidth: 1.5,
-    borderColor: '#007bff', 
+    borderColor: AppColors.primary, 
   },
   fabActionActive: { 
-    backgroundColor: '#007bff', 
-    borderColor: '#0056b3', 
+    backgroundColor: AppColors.primary, 
+    borderColor: AppColors.primaryDark, 
   },
   fabActionText: { 
-    color: '#007bff', 
+    color: AppColors.primary, 
     fontWeight: 'bold',
   },
   fabActionTextActive: { 
-    color: '#FFFFFF', 
+    color: AppColors.textLight, 
   },
   fabMain: { 
-    backgroundColor: '#f4c11e',
+    backgroundColor: AppColors.accentYellow,
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -337,7 +419,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   fabMainText: {
-    color: '#FFFFFF',
+    color: AppColors.textLight,
     fontSize: 28,
     fontWeight: 'bold',
   },
@@ -345,7 +427,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: AppColors.modalOverlay,
   },
   modalContent: {
     backgroundColor: 'white',
@@ -360,6 +442,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   transposeButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 15,
+    width: '100%',
+  },
+  fontSizeButtonRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
