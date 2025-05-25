@@ -98,7 +98,7 @@ export default function SongsListScreen({ route, navigation }: {
         }
       } catch (error) {
         console.error('Error loading songs:', error);
-        setError('Error al cargar las canciones. Por favor, inténtalo de nuevo.');
+        setError('Error al cargar las canciones, lo sentimos :(');
         setSongs([]);
       } finally {
         setIsLoading(false);
@@ -178,7 +178,7 @@ export default function SongsListScreen({ route, navigation }: {
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text>No se encontraron canciones que coincidan con la búsqueda</Text>
+            <Text>No hemos encontrado esa canción 🕵️‍♀️</Text>
           </View>
         }
       />
