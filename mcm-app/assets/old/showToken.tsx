@@ -1,12 +1,12 @@
 // app/(tabs)/showToken.tsx
 // Solo para desarrollo, te da el token para las notificaciones de EXPO pUSH
-
+/*
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import spacing from '@/constants/spacing';
-import colors from '@/constants/colors';
+import colors from '@/constants/colors';*/
 
 /*export default function ShowToken() {
   const [token, setToken] = useState<string | null>(null);
