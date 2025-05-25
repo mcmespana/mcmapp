@@ -11,14 +11,31 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; *
  const NOTIFICATIONS_STORAGE_KEY = 'bf78779e-4d63-444f-a72e-ce5e0fb2bf80';  */
 
 
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
 
 
 
 export default function RootLayout() {
+  const [showAnimation, setShowAnimation] = useState(true);
+  const scheme = useColorScheme(); // Keep existing hooks
+  const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
+
+  useEffect(() => {
+    // The HelloWave animation repeats 4 times, each sequence is 150ms + 150ms = 300ms.
+    // Total animation time = 4 * 300ms = 1200ms.
+    // Let's give it a bit more, say 1500ms (1.5 seconds), before hiding.
+    const timer = setTimeout(() => {
+      setShowAnimation(false);
+    }, 1500); // Adjust timing as needed
+
+    return () => clearTimeout(timer); // Cleanup timer on unmount
+  }, []);
 
   // NOTIS - Comentado para eliminar sistema notificaciones
   //usePushNotifications(); // 3️⃣ inicializa el hook
@@ -100,8 +117,13 @@ export default function RootLayout() {
   
  // }, []);
 
-  const scheme = useColorScheme();
-  const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  if (showAnimation) {
+    return (
+      <View style={styles.animationContainer}>
+        <HelloWave />
+      </View>
+    );
+  }
 
   return (
     <ThemeProvider value={theme}>
@@ -110,7 +132,14 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
-function useEffect(arg0: () => void, arg1: never[]) {
-  throw new Error('Function not implemented.');
-}
+
+// Add a StyleSheet for the animation container
+const styles = StyleSheet.create({
+  animationContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff', // Or use a theme color
+  },
+});
 

@@ -1,5 +1,6 @@
 import { PropsWithChildren, useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
+import spacing from '@/constants/spacing'; // Import spacing
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -36,10 +37,10 @@ const styles = StyleSheet.create({
   heading: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.sm, // Use spacing.sm for gap
   },
   content: {
-    marginTop: 6,
-    marginLeft: 24,
+    marginTop: spacing.sm, // Use spacing.sm for marginTop
+    marginLeft: spacing.lg, // Use spacing.lg for marginLeft
   },
 });
