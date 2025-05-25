@@ -39,7 +39,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   const [chordsVisible, setChordsVisible] = useState(true);
   const [currentTranspose, setCurrentTranspose] = useState(0); // Semitones: 0 is original, positive up, negative down
   // showActionButtons, showTransposeModal, showFontSizeModal, showFontFamilyModal states removed
-  const [isNotationFabActive, setIsNotationFabActive] = useState(false);
+  const [notation, setNotation] = useState<'english' | 'spanish'>('english');
   const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // Base font size is 1em
   const [currentFontFamily, setCurrentFontFamily] = useState(availableFonts[0].cssValue); // Default to mono, availableFonts is now at top
 
@@ -53,6 +53,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
     author, // Pass author from route.params
     key,    // Pass key from route.params
     capo,   // Pass capo from route.params
+    notation,
   });
 
   // Effect for loading the ChordPro file content
@@ -90,8 +91,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   const handleToggleChords = () => setChordsVisible(!chordsVisible);
 
   const handleChangeNotation = () => {
-    setIsNotationFabActive(!isNotationFabActive);
-    alert('Notación (Próximamente)');
+    setNotation(prev => prev === 'english' ? 'spanish' : 'english');
   };
 
   const handleSetTranspose = (semitones: number) => {
@@ -123,7 +123,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
         currentTranspose={currentTranspose}
         currentFontSizeEm={currentFontSizeEm}
         currentFontFamily={currentFontFamily}
-        isNotationFabActive={isNotationFabActive}
+        notation={notation} // Pass notation state
         availableFonts={availableFonts}
         onToggleChords={handleToggleChords}
         onSetTranspose={handleSetTranspose}
