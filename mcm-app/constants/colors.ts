@@ -38,4 +38,6 @@ export default {
   danger:    '#9D1E74', // Morado LC
   text:      '#002B81', // Azul COM
   background:'#ffffff', // Fondo blanco
+  white:     '#ffffff', // Blanco
+  black:     '#000000', // Negro
 };

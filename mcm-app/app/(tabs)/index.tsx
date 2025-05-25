@@ -3,7 +3,16 @@ import React from 'react';
 import { View, StyleSheet, ViewStyle, TextStyle, TouchableOpacity, Text, Platform, Dimensions } from 'react-native';
 // Removed Button from react-native-paper as it's no longer used directly for navigation buttons
 // import { Text, Button } from 'react-native-paper'; 
-import { Link } from 'expo-router';
+import { Link, LinkProps } from 'expo-router';
+
+// Define the type for our navigation items
+type NavigationItem = {
+  href?: LinkProps['href']; // This ensures the href matches Expo Router's expected types
+  label: string;
+  iconPlaceholder: string;
+  backgroundColor: string;
+  color: string;
+};
 import * as Notifications from 'expo-notifications'; // NOTIS - Se qutia el import
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
@@ -11,20 +20,20 @@ import spacing from '@/constants/spacing';
 import { commonShadow } from '@/constants/uiStyles'; // Import commonShadow
 
 // Define an array for navigation items to make rendering more DRY
-const navigationItems = [
+const navigationItems: NavigationItem[] = [
   {
     href: "/cancionero",
     label: "Cantoral",
     iconPlaceholder: "C",
-    backgroundColor: colors.primary,
-    color: colors.white, // Ensuring text is readable
+    backgroundColor: colors.warning,
+    color: colors.black, // Ensuring text is readable
   },
   {
     href: "/fotos",
     label: "Fotos",
     iconPlaceholder: "F",
     backgroundColor: colors.accent,
-    color: colors.white,
+    color: colors.black,
   },
   {
     href: "/calendario",
@@ -38,7 +47,7 @@ const navigationItems = [
     label: "Comunica",
     iconPlaceholder: "Co",
     backgroundColor: colors.success,
-    color: colors.white,
+    color: colors.black,
   },
   {
     // No href for placeholder
@@ -52,7 +61,7 @@ const navigationItems = [
     label: "Próximamente 2",
     iconPlaceholder: "?",
     backgroundColor: colors.danger,
-    color: colors.white,
+    color: colors.black,
   },
 ];
 
@@ -67,14 +76,18 @@ export default function Home() {
         {navigationItems.map((item, index) => {
           const rectangleContent = (
             <>
-              <Text style={[styles.iconPlaceholder, { color: item.color }]}>{item.iconPlaceholder}</Text>
-              <Text style={[styles.rectangleLabel, { color: item.color }]}>{item.label}</Text>
+              <Text key="icon" style={[styles.iconPlaceholder, { color: item.color }]}>{item.iconPlaceholder}</Text>
+              <Text key="label" style={[styles.rectangleLabel, { color: item.color }]}>{item.label}</Text>
             </>
           );
 
           if (item.href) {
             return (
-              <Link key={item.href} href={item.href} asChild>
+              <Link 
+                key={typeof item.href === 'string' ? item.href : item.href.pathname || index} 
+                href={item.href} 
+                asChild
+              >
                 <TouchableOpacity
                   style={[
                     styles.rectangle,
