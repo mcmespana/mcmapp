@@ -113,7 +113,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
           keyCapoString += key.toUpperCase();
         }
         if (capo !== undefined && capo > 0) {
-          keyCapoString += (key ? ' - ' : '') + `Capo ${capo}`;
+          keyCapoString += (key ? ' - ' : '') + `Cejilla ${capo}`;
         }
         if (keyCapoString) {
           metaHtml += `<div class="song-meta-keycapo">${keyCapoString}</div>`;
@@ -148,7 +148,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
             </style>
           </head>
           <body>
-            ${finalSongContentWithMeta} {/* Contains title, then injected meta, then rest of song */}
+            ${finalSongContentWithMeta} 
           </body>
           </html>
         `;
@@ -157,7 +157,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
         setSongHtml(finalHtml);
       } catch (err) {
         console.error('Error cargando canción en SongDetailScreen:', err);
-        setSongHtml('❌ Error cargando canción');
+        setSongHtml('❌ Error cargando canción disculpas 🥺');
       }
     })();
   }, [filename]);
@@ -206,81 +206,3 @@ const styles = StyleSheet.create({
   }
 });
 
-
-
-
-
-// ESTO FUE LA PRIMERA OPCIÓN
-
-
-/*import { useEffect, useState } from 'react';
-import { ScrollView, Text } from 'react-native';
-import * as FileSystem from 'expo-file-system';
-import { ChordProParser, HtmlDivFormatter } from 'chordsheetjs';
-import { RouteProp } from '@react-navigation/native';
-
-
-
-// Define the RootStackParamList here since we can't import from the tabs directory
-type RootStackParamList = {
-  SongDetail: {
-    songId: string;
-    songTitle?: string;
-  };
-  // Add other screen params as needed
-};
-
-interface Props {
-  route: RouteProp<RootStackParamList, 'SongDetail'>;
-}
-
-export default function SongDetailScreen({ route }: Props) {
-  const { songId, songTitle } = route.params;
-  const [songHtml, setSongHtml] = useState('');
-
-  useEffect(() => {
-    const loadSong = async () => {
-      try {
-        // Assuming songId is the filename or can be used to construct the path
-        /*const asset = Asset.fromModule(require(`songs/${songId}`));
-        await asset.downloadAsync(); // Asegurarse de que el asset esté descargado
-
-        const chordPro = await FileSystem.readAsStringAsync(asset.localUri || asset.uri);*/
-      
-      
-      //const chordPro = await FileSystem.readAsStringAsync(`songs/${songId}`);
-      //const fileUri = `${FileSystem.bundleDirectory}assets/songs/${songId}`;
-            
-      //const chordPro = await FileSystem.readAsStringAsync(fileUri);
-/*
-      const fileUri = `${FileSystem.bundleDirectory}assets/songs/${songId}`;
-      const chordPro = await FileSystem.readAsStringAsync(fileUri);
-      
-      const parser = new ChordProParser();
-      const song = parser.parse(chordPro);
-      const formatter = new HtmlDivFormatter();
-      setSongHtml(formatter.format(song));
-
-      } catch (error) {
-        console.error('Error cargando canción en SongDetailSecreen:', error);
-        // Handle error appropriately
-      }
-    };
-    
-    if (songId) {
-    loadSong();
-    }
-  }, [songId]);
-
-  return (
-    <ScrollView style={{ flex: 1, padding: 16 }}>
-      {songTitle && <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 16 }}>{songTitle}</Text>}
-      {songHtml ? (
-      <Text>{songHtml.replace(/<[^>]*>?/gm, '')}</Text>
-      ) : (
-        <Text>Loading song...</Text>
-      )}
-    </ScrollView>
-  );
-}
-*/
