@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { ScrollView, Text, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as FileSystem from 'expo-file-system';
-import { Asset } from 'expo-asset'; // Asset might still be used if other assets were loaded, but not for .cho files with this change. Let's keep it for now and remove if truly unused later.
+import { Asset } from 'expo-asset';
 import { ChordProParser, HtmlDivFormatter } from 'chordsheetjs';
-// import { SongFilename } from '../../assets/songs'; // No longer needed
-// import { songAssets } from '../../assets/songs/index'; // No longer needed
+import { SongFilename } from '../../assets/songs'; // Re-added
+import { songAssets } from '../../assets/songs/index'; // Re-added
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 
@@ -23,16 +23,24 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   useEffect(() => {
     (async () => {
       try {
-        // 1. Construct the file URI directly within the app bundle
-        if (!FileSystem.bundleDirectory) {
-          throw new Error('FileSystem.bundleDirectory is null. Cannot load song from bundle.');
+        // 1. Get the asset module (an internal number) using the static index
+        const assetModule = songAssets[filename as SongFilename]; // Cast filename to SongFilename
+        if (!assetModule) {
+          throw new Error(`Asset no encontrado para el filename: ${filename}. Asegúrate de que está en assets/songs/index.ts`);
         }
-        const fileUri = `${FileSystem.bundleDirectory}assets/songs/${filename}`;
 
-        // 2. Read the raw content from the file URI
-        const chordPro = await FileSystem.readAsStringAsync(fileUri);
+        // 2. Create the Asset from the module and download it
+        const asset = Asset.fromModule(assetModule);
+        await asset.downloadAsync();
 
-        // 3. Parseamos y formateamos con chordsheetjs
+        if (!asset.localUri) {
+          throw new Error(`Failed to download asset or localUri is not set for ${filename}`);
+        }
+
+        // 3. Read the raw content from its localUri
+        const chordPro = await FileSystem.readAsStringAsync(asset.localUri);
+
+        // 4. Parse and format with chordsheetjs
         const parser = new ChordProParser();
         const song = parser.parse(chordPro);
         const formatter = new HtmlDivFormatter();
