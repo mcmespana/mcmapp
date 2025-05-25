@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import { FlatList, TouchableOpacity, Text, View, StyleSheet } from 'react-native';
+import { FlatList, Text, View, StyleSheet } from 'react-native'; // TouchableOpacity removed
 import rawSongsData from '../../assets/songs.json';
 import SongSearch from '../../components/SongSearch';
+import SongListItem from '../../components/SongListItem'; // Added import
 
 // Type for song data
 interface Song {
   title: string;
   filename: string;
-  author: string;
-  key: string; 
-  capo: number;
-  info: string;
+  author?: string; // Optional
+  key?: string; // Optional
+  capo?: number; // Optional
+  info?: string; // Optional
 }
 
 // Ensure the data is in the correct format
@@ -97,7 +98,7 @@ export default function SongsListScreen({ route, navigation }: {
         }
       } catch (error) {
         console.error('Error loading songs:', error);
-        setError('Error al cargar las canciones. Por favor, inténtalo de nuevo.');
+        setError('Error al cargar las canciones, lo sentimos :(');
         setSongs([]);
       } finally {
         setIsLoading(false);
@@ -172,34 +173,12 @@ export default function SongsListScreen({ route, navigation }: {
       <FlatList
         data={filteredSongs}
         keyExtractor={(item) => item.filename}
-        renderItem={({ item }) => {
-          return (
-            <TouchableOpacity
-              onPress={() => handleSongPress(item)}
-              style={styles.songItem}
-            >
-              <View style={styles.songInfoContainer}>
-                <Text style={styles.songTitle}>
-                  {item.title.replace(/^\d+\.\s*/, '')} {/* Remove leading numbers */}
-                </Text>
-                {item.author ? (
-                  <Text style={styles.songAuthor}>{item.author}</Text>
-                ) : null}
-              </View>
-              <View style={styles.keyCapoContainer}>
-                {item.key ? (
-                  <Text style={styles.songKey}>{item.key.toUpperCase()}</Text>
-                ) : null}
-                {item.capo > 0 ? (
-                  <Text style={styles.songCapo}>{`C/${item.capo}`}</Text>
-                ) : null}
-              </View>
-            </TouchableOpacity>
-          );
-        }}
+        renderItem={({ item }) => (
+          <SongListItem song={item} onPress={handleSongPress} />
+        )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text>No se encontraron canciones que coincidan con la búsqueda</Text>
+            <Text>No hemos encontrado esa canción 🕵️‍♀️</Text>
           </View>
         }
       />
@@ -218,28 +197,6 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#f5f5f5',
     color: '#333',
-  },
-  songItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
-  songTitle: {
-    fontSize: 16,
-    color: '#333',
-  },
-  songInfoContainer: {
-    flex: 1, // Allows title/author to take up space and push key/capo to the right
-    marginRight: 8, // Adds a small gap
-  },
-  songAuthor: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-    fontStyle: 'italic',
   },
   loadingText: {
     fontSize: 16,
@@ -278,19 +235,5 @@ const styles = StyleSheet.create({
     color: '#888',
     fontStyle: 'italic',
     textAlign: 'center',
-  },
-  keyCapoContainer: {
-    flexDirection: 'column', // Stack key and capo vertically if both present
-    alignItems: 'flex-end', // Align to the right
-  },
-  songKey: {
-    fontSize: 16, // Slightly larger
-    fontWeight: 'bold',
-    color: '#000000', // Black
-  },
-  songCapo: {
-    fontSize: 13, // Slightly smaller
-    color: '#888', // Keep color
-    fontWeight: 'normal', // Normal weight
   },
 });
