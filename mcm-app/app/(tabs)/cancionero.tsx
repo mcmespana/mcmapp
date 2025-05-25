@@ -34,7 +34,7 @@ export default function CancioneroTab() {
         <Stack.Screen 
           name="Categories" 
           component={CategoriesScreen} 
-          options={{ title: 'Categorías' }} 
+          options={{ title: 'Índice de canciones' }} 
         />
         <Stack.Screen 
           name="SongsList" 

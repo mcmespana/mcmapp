@@ -8,8 +8,8 @@ interface Song {
   title: string;
   filename: string;
   author: string;
-  key: string; // Added key
-  capo: number; // Changed capo to number
+  key: string; 
+  capo: number;
   info: string;
 }
 
@@ -87,7 +87,7 @@ export default function SongsListScreen({ route, navigation }: {
             if (categorySongs && Array.isArray(categorySongs)) {
               setSongs(categorySongs); // Songs within a category are assumed to be pre-sorted or their order is as in JSON
             } else {
-              setError(`No se encontraron canciones en la categoría '${categoryKey}'`);
+              setError(`No se encontraron canciones de '${categoryKey}'`);
               setSongs([]);
             }
           } else {
@@ -108,15 +108,19 @@ export default function SongsListScreen({ route, navigation }: {
   }, [categoryId]);
 
   // Filter songs based on search
-  const filteredSongs = songs.filter(song =>
-    song && song.title && song.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredSongs = songs.filter(song => {
+    if (!song) return false;
+    const searchTerm = search.toLowerCase();
+    const titleMatch = song.title && song.title.toLowerCase().includes(searchTerm);
+    const authorMatch = song.author && song.author.toLowerCase().includes(searchTerm);
+    return titleMatch || authorMatch;
+  });
 
   // Handle song press
   const handleSongPress = (song: Song) => {
     navigation.navigate('SongDetail', {
       filename: song.filename,
-      title: song.title.replace(/^\d+\.\s*/, ''), // Pasamos el título limpio
+      title: song.title.replace(/^\d+\.\s*/, ''), // Pasamos el título limpio sin el numerito de delante
       author: song.author,
       key: song.key,
       capo: song.capo
@@ -151,9 +155,9 @@ export default function SongsListScreen({ route, navigation }: {
         <SongSearch searchText={search} setSearchText={setSearch} />
         <Text style={styles.categoryTitle}>{categoryName}</Text>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No se encontraron canciones</Text>
+          <Text style={styles.emptyText}>No hemos encontrado esa canción 🕵️‍♀️</Text>
           {search.length > 0 && (
-            <Text style={styles.hintText}>Intenta con otros términos de búsqueda</Text>
+            <Text style={styles.hintText}>Puedes buscar el título o el autor si está disponible</Text>
           )}
         </View>
       </View>
@@ -169,10 +173,6 @@ export default function SongsListScreen({ route, navigation }: {
         data={filteredSongs}
         keyExtractor={(item) => item.filename}
         renderItem={({ item }) => {
-          let keyCapoDisplay = item.key ? item.key.toUpperCase() : '';
-          if (item.capo > 0) {
-            keyCapoDisplay += ` C/${item.capo}`;
-          }
           return (
             <TouchableOpacity
               onPress={() => handleSongPress(item)}
@@ -186,9 +186,14 @@ export default function SongsListScreen({ route, navigation }: {
                   <Text style={styles.songAuthor}>{item.author}</Text>
                 ) : null}
               </View>
-              {keyCapoDisplay ? (
-                <Text style={styles.songKeyCapo}>{keyCapoDisplay}</Text>
-              ) : null}
+              <View style={styles.keyCapoContainer}>
+                {item.key ? (
+                  <Text style={styles.songKey}>{item.key.toUpperCase()}</Text>
+                ) : null}
+                {item.capo > 0 ? (
+                  <Text style={styles.songCapo}>{`C/${item.capo}`}</Text>
+                ) : null}
+              </View>
             </TouchableOpacity>
           );
         }}
@@ -274,9 +279,18 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
   },
-  songKeyCapo: {
-    fontSize: 14,
-    color: '#888',
+  keyCapoContainer: {
+    flexDirection: 'column', // Stack key and capo vertically if both present
+    alignItems: 'flex-end', // Align to the right
+  },
+  songKey: {
+    fontSize: 16, // Slightly larger
     fontWeight: 'bold',
+    color: '#000000', // Black
+  },
+  songCapo: {
+    fontSize: 13, // Slightly smaller
+    color: '#888', // Keep color
+    fontWeight: 'normal', // Normal weight
   },
 });
