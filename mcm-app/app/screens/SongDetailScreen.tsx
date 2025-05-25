@@ -29,6 +29,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   const [currentTranspose, setCurrentTranspose] = useState(0); // Semitones: 0 is original, positive up, negative down
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposeModal, setShowTransposeModal] = useState(false);
+  const [isNotationFabActive, setIsNotationFabActive] = useState(false);
 
   // Function to parse and display the song
   const displaySong = async (chordProContent: string, transposeSteps: number, showChords: boolean) => {
@@ -40,15 +41,12 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
       processedChordPro = processedChordPro.replace(/\{transpose:.*\}\n?/gi, '');
 
       if (transposeSteps !== 0) {
-        // ChordPro transpose: 1-11. 1 is +1 semitone, 11 is -1 semitone (or +11).
-        let chordProTransposeValue = transposeSteps > 0 ? transposeSteps % 12 : (transposeSteps % 12 + 12) % 12;
-        if (chordProTransposeValue === 0 && transposeSteps !==0) chordProTransposeValue = 12; // Should not happen if logic is correct, but as a fallback for full octave.
-        // Actually, chordsheetjs might handle negative values or values outside 1-11 directly or via its own logic.
-        // For simplicity with {transpose: N}, we'll stick to positive N for now and test.
-        // Let's assume chordsheetjs handles {transpose: N} where N is semitones directly.
-        // If not, we'd need to convert: e.g. -1 semitone -> {transpose: 11}, -2 -> {transpose: 10}
-        // For now, let's try passing the direct semitone count.
-        processedChordPro = `{transpose: ${transposeSteps}}\n${processedChordPro}`;
+        // currentTranspose (transposeSteps) is already in range -11 to 11 due to handleSetTranspose logic
+        const chordProValueForDirective = transposeSteps < 0 ? transposeSteps + 12 : transposeSteps;
+        // Only add the directive if the final value is not 0 (e.g. if original transposeSteps was a multiple of 12)
+        if (chordProValueForDirective !== 0) {
+          processedChordPro = `{transpose: ${chordProValueForDirective}}\n${processedChordPro}`;
+        }
       }
 
       const parser = new ChordProParser();
@@ -211,9 +209,17 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
 
   const handleToggleChords = () => setChordsVisible(!chordsVisible);
   const handleOpenTransposeModal = () => setShowTransposeModal(true);
-  const handleChangeNotation = () => { /* Placeholder */ alert('Notación (Próximamente)'); };
+  const handleChangeNotation = () => {
+    setIsNotationFabActive(!isNotationFabActive);
+    alert('Notación (Próximamente)');
+  };
   const handleSetTranspose = (semitones: number) => {
-    setCurrentTranspose(semitones);
+    let newTranspose = semitones;
+    // Wrap around at +12 and -12 to 0
+    if (newTranspose >= 12 || newTranspose <= -12) {
+      newTranspose = newTranspose % 12;
+    }
+    setCurrentTranspose(newTranspose);
     setShowTransposeModal(false);
   };
 
@@ -238,14 +244,14 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
       <View style={styles.fabContainer}>
         {showActionButtons && (
           <View style={styles.fabActionsContainer}>
-            <TouchableOpacity style={styles.fabAction} onPress={handleToggleChords}>
-              <Text style={styles.fabActionText}>{chordsVisible ? 'Acordes OFF' : 'Acordes ON'}</Text>
+            <TouchableOpacity style={[styles.fabAction, !chordsVisible && styles.fabActionActive]} onPress={handleToggleChords}>
+              <Text style={[styles.fabActionText, !chordsVisible && styles.fabActionTextActive]}>{chordsVisible ? 'Acordes OFF' : 'Acordes ON'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.fabAction} onPress={handleOpenTransposeModal}>
-              <Text style={styles.fabActionText}>Cambiar tono</Text>
+            <TouchableOpacity style={[styles.fabAction, currentTranspose !== 0 && styles.fabActionActive]} onPress={handleOpenTransposeModal}>
+              <Text style={[styles.fabActionText, currentTranspose !== 0 && styles.fabActionTextActive]}>Cambiar tono</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.fabAction} onPress={handleChangeNotation}>
-              <Text style={styles.fabActionText}>Notación</Text>
+            <TouchableOpacity style={[styles.fabAction, isNotationFabActive && styles.fabActionActive]} onPress={handleChangeNotation}>
+              <Text style={[styles.fabActionText, isNotationFabActive && styles.fabActionTextActive]}>Notación</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -282,7 +288,6 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  // ... existing styles ...
   fabContainer: {
     position: 'absolute',
     bottom: 20,
@@ -293,39 +298,47 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignItems: 'flex-end',
   },
-  fabMain: {
+  fabAction: { 
+    backgroundColor: '#FFFFFF', 
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginBottom: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+    borderWidth: 1.5,
+    borderColor: '#007bff', 
+  },
+  fabActionActive: { 
+    backgroundColor: '#007bff', 
+    borderColor: '#0056b3', 
+  },
+  fabActionText: { 
+    color: '#007bff', 
+    fontWeight: 'bold',
+  },
+  fabActionTextActive: { 
+    color: '#FFFFFF', 
+  },
+  fabMain: { 
     backgroundColor: '#f4c11e',
     width: 60,
     height: 60,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8, // Android shadow
+    elevation: 8, 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
   fabMainText: {
-    fontSize: 24,
-    color: 'white',
-  },
-  fabAction: {
-    backgroundColor: '#fff',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    marginBottom: 8,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-    borderWidth: 1,
-    borderColor: '#f4c11e',
-  },
-  fabActionText: {
-    color: '#f4c11e',
+    color: '#FFFFFF',
+    fontSize: 28,
     fontWeight: 'bold',
   },
   modalOverlay: {
