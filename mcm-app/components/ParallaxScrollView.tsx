@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   useScrollViewOffset,
 } from 'react-native-reanimated';
+import spacing from '@/constants/spacing'; // Import spacing
 
 import { ThemedView } from '@/components/ThemedView';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
@@ -75,8 +76,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 32,
-    gap: 16,
+    padding: spacing.xl, // Use spacing.xl
+    gap: spacing.md, // Use spacing.md
     overflow: 'hidden',
   },
 });
