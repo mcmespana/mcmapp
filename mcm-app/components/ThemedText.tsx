@@ -1,4 +1,6 @@
 import { StyleSheet, Text, type TextProps } from 'react-native';
+import typography from '@/constants/typography'; // Import typography
+import { Colors } from '@/constants/colors'; // Import Colors for link
 
 import { useThemeColor } from '@/hooks/useThemeColor';
 
@@ -16,17 +18,36 @@ export function ThemedText({
   ...rest
 }: ThemedTextProps) {
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const linkColor = useThemeColor({}, 'tint'); // Use theme's tint color for links
+
+  let textStyle;
+  switch (type) {
+    case 'default':
+      textStyle = styles.default;
+      break;
+    case 'title':
+      textStyle = styles.title;
+      break;
+    case 'defaultSemiBold':
+      textStyle = styles.defaultSemiBold;
+      break;
+    case 'subtitle':
+      textStyle = styles.subtitle;
+      break;
+    case 'link':
+      // Apply link-specific color directly here, overriding the general 'text' color
+      textStyle = [styles.link, { color: linkColor }]; 
+      break;
+    default:
+      textStyle = styles.default;
+  }
 
   return (
     <Text
       style={[
-        { color },
-        type === 'default' ? styles.default : undefined,
-        type === 'title' ? styles.title : undefined,
-        type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,
-        type === 'subtitle' ? styles.subtitle : undefined,
-        type === 'link' ? styles.link : undefined,
-        style,
+        type !== 'link' && { color }, // Apply general text color if not a link
+        textStyle,
+        style, // Allow custom styles to override
       ]}
       {...rest}
     />
@@ -35,26 +56,27 @@ export function ThemedText({
 
 const styles = StyleSheet.create({
   default: {
-    fontSize: 16,
-    lineHeight: 24,
+    ...typography.body, // Use typography.body
+    lineHeight: 24, // Keep existing lineHeight or adjust as needed
   },
   defaultSemiBold: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '600',
+    ...typography.body, // Use typography.body
+    fontWeight: '600', // Keep existing fontWeight
+    lineHeight: 24, // Keep existing lineHeight
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    lineHeight: 32,
+    ...typography.h1, // Use typography.h1
+    // Potentially adjust lineHeight if needed, e.g., typography.h1.fontSize * 1.2
+    lineHeight: (typography.h1.fontSize ?? 28) * 1.2, 
   },
   subtitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...typography.h2, // Use typography.h2
+    // Potentially adjust lineHeight
+    lineHeight: (typography.h2.fontSize ?? 22) * 1.2,
   },
   link: {
-    lineHeight: 30,
-    fontSize: 16,
-    color: '#0a7ea4',
+    ...typography.body, // Base link style on typography.body
+    lineHeight: 30, // Keep existing lineHeight or adjust
+    // color will be applied dynamically using useThemeColor('tint')
   },
 });
