@@ -22,6 +22,7 @@ export default function CancioneroTab() {
     <Stack.Navigator 
         initialRouteName="Categories"
         screenOptions={{
+          headerBackTitle: 'Volver',
           headerStyle: {
             backgroundColor: '#f4c11e',
           },
