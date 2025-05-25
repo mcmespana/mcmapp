@@ -1,7 +1,4 @@
-// app/(tabs)/notificationsLog.tsx
-
-// app/(tabs)/calendario.tsx
-import React from 'react';
+/*import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
@@ -34,7 +31,7 @@ const styles = StyleSheet.create<Styles>({
     color: colors.text,
   },
 });
-
+*/
 
 
 
