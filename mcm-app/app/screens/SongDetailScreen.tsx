@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 // Unused imports (TouchableOpacity, Modal, Button, TouchableWithoutFeedback) removed
 import { ScrollView, Text, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useUserSettings, UserSettings } from '../../hooks/useUserSettings';
 import * as FileSystem from 'expo-file-system';
 import { Asset } from 'expo-asset';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,24 +37,26 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
 
   // New states for controls
   const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
-  const [chordsVisible, setChordsVisible] = useState(true);
+  // const [chordsVisible, setChordsVisible] = useState(true); // Remove
   const [currentTranspose, setCurrentTranspose] = useState(0); // Semitones: 0 is original, positive up, negative down
   // showActionButtons, showTransposeModal, showFontSizeModal, showFontFamilyModal states removed
-  const [notation, setNotation] = useState<'english' | 'spanish'>('english');
-  const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // Base font size is 1em
-  const [currentFontFamily, setCurrentFontFamily] = useState(availableFonts[0].cssValue); // Default to mono, availableFonts is now at top
+  // const [notation, setNotation] = useState<'english' | 'spanish'>('english'); // Remove
+  // const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // Remove
+  // const [currentFontFamily, setCurrentFontFamily] = useState(availableFonts[0].cssValue); // Remove
+
+  const { settings, setChordsVisible, setFontSizeEm, setFontFamily, setNotation, isLoadingSettings } = useUserSettings();
 
   // Call the hook to process the song
   const { songHtml, isLoadingSong: isSongProcessing } = useSongProcessor({
     originalChordPro,
-    currentTranspose,
-    chordsVisible,
-    currentFontSizeEm,
-    currentFontFamily,
+    currentTranspose, // This remains from local state
+    chordsVisible: settings.chordsVisible,
+    currentFontSizeEm: settings.fontSizeEm,
+    currentFontFamily: settings.fontFamily,
     author, // Pass author from route.params
     key,    // Pass key from route.params
     capo,   // Pass capo from route.params
-    notation,
+    notation: settings.notation,
   });
 
   // Effect for loading the ChordPro file content
@@ -88,11 +91,11 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   // displaySong function and its useEffect have been removed, logic is in useSongProcessor.
 
   // Handlers for actual state changes (passed to SongControls)
-  const handleToggleChords = () => setChordsVisible(!chordsVisible);
+  // const handleToggleChords = () => setChordsVisible(!chordsVisible); // Remove
 
-  const handleChangeNotation = () => {
-    setNotation(prev => prev === 'english' ? 'spanish' : 'english');
-  };
+  // const handleChangeNotation = () => { // Remove
+  //   setNotation(prev => prev === 'english' ? 'spanish' : 'english');
+  // };
 
   const handleSetTranspose = (semitones: number) => {
     let newTranspose = semitones;
@@ -103,33 +106,33 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
     // setShowTransposeModal(false); // Modal state is now in SongControls
   };
 
-  const handleSetFontSize = (newSizeEm: number) => {
-    setCurrentFontSizeEm(newSizeEm);
-    // setShowFontSizeModal(false); // Modal state is now in SongControls
-  };
+  // const handleSetFontSize = (newSizeEm: number) => { // Remove
+  //   setCurrentFontSizeEm(newSizeEm);
+  //   // setShowFontSizeModal(false); // Modal state is now in SongControls
+  // };
 
-  const handleSetFontFamily = (newFontFamily: string) => {
-    setCurrentFontFamily(newFontFamily);
-    // setShowFontFamilyModal(false); // Modal state is now in SongControls
-  };
+  // const handleSetFontFamily = (newFontFamily: string) => { // Remove
+  //   setCurrentFontFamily(newFontFamily);
+  //   // setShowFontFamilyModal(false); // Modal state is now in SongControls
+  // };
 
   // Removed handleOpenTransposeModal, handleOpenFontSizeModal, handleOpenFontFamilyModal
 
   return (
     <View style={styles.container}>
-      <SongDisplay songHtml={songHtml} isLoading={isFileLoading || isSongProcessing} />
+      <SongDisplay songHtml={songHtml} isLoading={isFileLoading || isSongProcessing || isLoadingSettings} />
       <SongControls
-        chordsVisible={chordsVisible}
-        currentTranspose={currentTranspose}
-        currentFontSizeEm={currentFontSizeEm}
-        currentFontFamily={currentFontFamily}
-        notation={notation} // Pass notation state
+        chordsVisible={settings.chordsVisible}
+        currentTranspose={currentTranspose} // Remains local
+        currentFontSizeEm={settings.fontSizeEm}
+        currentFontFamily={settings.fontFamily}
+        notation={settings.notation}
         availableFonts={availableFonts}
-        onToggleChords={handleToggleChords}
-        onSetTranspose={handleSetTranspose}
-        onSetFontSize={handleSetFontSize}
-        onSetFontFamily={handleSetFontFamily}
-        onChangeNotation={handleChangeNotation}
+        onToggleChords={setChordsVisible} // Directly use setter from useUserSettings
+        onSetTranspose={handleSetTranspose} // Remains local handler
+        onSetFontSize={setFontSizeEm}     // Directly use setter
+        onSetFontFamily={setFontFamily}   // Directly use setter
+        onChangeNotation={() => setNotation(settings.notation === 'english' ? 'spanish' : 'english')} // Logic for toggling
       />
     </View>
   );

@@ -117,6 +117,9 @@ export const useSongProcessor = ({
           newLine.items = line.items.map(item => {
             if (item instanceof ChordLyricsPair) {
               const chordsToTranslate = item.chords;
+              // Ensure item.lyrics is preserved.
+              // const originalLyrics = item.lyrics; // Not strictly needed as item.lyrics isn't directly changed before return
+
               if (chordsToTranslate && chordsToTranslate.trim() !== '') {
                 const translatedChordsString = chordsToTranslate
                   .split(/(\s+)/) // Split by whitespace, keeping delimiters
@@ -129,15 +132,10 @@ export const useSongProcessor = ({
                   })
                   .join('');
 
-                // Reconstruct the ChordPro segment string, e.g., "[Lam]Lyrics"
-                // Ensure lyrics are included. If lyrics are null/empty, it becomes e.g. "[Lam]"
-                const newChordProSegment = `[${translatedChordsString}]${item.lyrics || ''}`;
-                try {
-                  return new ChordLyricsPair(newChordProSegment);
-                } catch (e) {
-                  console.error('Error creating new ChordLyricsPair with segment:', newChordProSegment, e);
-                  return item; // Fallback to original item on error
-                }
+                // Apply the fix:
+                item.chords = translatedChordsString;
+                // item.lyrics remains unchanged
+                return item;
               }
             }
             return item; // For other item types or items without chords, return them as is
