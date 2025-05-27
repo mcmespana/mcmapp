@@ -12,6 +12,7 @@ interface Song {
   key?: string; // Optional
   capo?: number; // Optional
   info?: string; // Optional
+  chordProContent: string; // Added field
 }
 
 // Ensure the data is in the correct format
@@ -124,7 +125,8 @@ export default function SongsListScreen({ route, navigation }: {
       title: song.title.replace(/^\d+\.\s*/, ''), // Pasamos el título limpio sin el numerito de delante
       author: song.author,
       key: song.key,
-      capo: song.capo
+      capo: song.capo,
+      chordProContent: song.chordProContent // Added chordProContent
     });
   };
 

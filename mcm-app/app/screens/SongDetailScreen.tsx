@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
 // Unused imports (TouchableOpacity, Modal, Button, TouchableWithoutFeedback) removed
 import { ScrollView, Text, StyleSheet, useWindowDimensions, View } from 'react-native';
-import * as FileSystem from 'expo-file-system';
-import { Asset } from 'expo-asset';
+// FileSystem, Asset, SongFilename, songAssets removed as content is passed via navigation
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../styles/theme';
 // ChordProParser and HtmlDivFormatter removed as they are now in the hook
-import { SongFilename } from '../../assets/songs';
-import { songAssets } from '../../assets/songs/index';
 import SongDisplay from '../../components/SongDisplay';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import SongControls from '../../components/SongControls'; // Added import
@@ -28,9 +25,9 @@ interface SongDetailScreenProps {
 
 export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   // title from params is for the navigation screen header, actual song title rendered by WebView
-  const { filename, title: navScreenTitle, author, key, capo } = route.params;
+  const { filename, title: navScreenTitle, author, key, capo, chordProContent } = route.params; // Added chordProContent
   // songHtml state is now managed by useSongProcessor
-  const [isFileLoading, setIsFileLoading] = useState(true); // Renamed from isLoading
+  // isFileLoading state removed
 
   const { width } = useWindowDimensions();
 
@@ -56,34 +53,16 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
     notation,
   });
 
-  // Effect for loading the ChordPro file content
+  // Effect to set originalChordPro from route parameter chordProContent
   useEffect(() => {
-    (async () => {
-      if (!filename) {
-        // setSongHtml('Error: Nombre de archivo no proporcionado.'); // This will be handled by the hook if originalChordPro is null
-        setIsFileLoading(false);
-        return;
-      }
-      try {
-        setIsFileLoading(true);
-        const asset = Asset.fromModule(songAssets[filename as SongFilename]);
-        await asset.downloadAsync();
-        if (asset.localUri) {
-          const fileContent = await FileSystem.readAsStringAsync(asset.localUri);
-          setOriginalChordPro(fileContent); // Store original content
-          // displaySong is now handled by the useSongProcessor hook via useEffect when originalChordPro changes
-        } else {
-          throw new Error('No se pudo obtener la URI local del archivo.');
-        }
-      } catch (err: any) {
-        console.error('Error cargando la canción:', err);
-        // setSongHtml(`Error al cargar la canción: ${err.message}`); // Hook will display its own error
-        setOriginalChordPro(null); // Ensure originalChordPro is null on error so hook can show error state
-      } finally {
-        setIsFileLoading(false);
-      }
-    })();
-  }, [filename]);
+    if (chordProContent) {
+      setOriginalChordPro(chordProContent);
+    } else {
+      // Handle case where chordProContent is not provided
+      setOriginalChordPro("Error: Contenido de la canción no disponible."); 
+      console.error('Error: chordProContent no fue proporcionado a SongDetailScreen');
+    }
+  }, [chordProContent]);
 
   // displaySong function and its useEffect have been removed, logic is in useSongProcessor.
 
@@ -117,7 +96,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
 
   return (
     <View style={styles.container}>
-      <SongDisplay songHtml={songHtml} isLoading={isFileLoading || isSongProcessing} />
+      <SongDisplay songHtml={songHtml} isLoading={isSongProcessing} />
       <SongControls
         chordsVisible={chordsVisible}
         currentTranspose={currentTranspose}
