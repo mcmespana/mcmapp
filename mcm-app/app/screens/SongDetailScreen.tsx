@@ -58,6 +58,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
 
   // Effect for loading the ChordPro file content
   useEffect(() => {
+
     (async () => {
       if (!filename) {
         // setSongHtml('Error: Nombre de archivo no proporcionado.'); // This will be handled by the hook if originalChordPro is null
@@ -92,6 +93,8 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
 
   const handleChangeNotation = () => {
     setNotation(prev => prev === 'english' ? 'spanish' : 'english');
+    //console.log(songHtml);
+
   };
 
   const handleSetTranspose = (semitones: number) => {
@@ -116,6 +119,7 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   // Removed handleOpenTransposeModal, handleOpenFontSizeModal, handleOpenFontFamilyModal
 
   return (
+
     <View style={styles.container}>
       <SongDisplay songHtml={songHtml} isLoading={isFileLoading || isSongProcessing} />
       <SongControls
@@ -133,6 +137,8 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
       />
     </View>
   );
+            console.log(songHtml)
+
 }
 
 const styles = StyleSheet.create({
