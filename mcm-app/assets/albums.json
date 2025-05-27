@@ -1,0 +1,51 @@
+[
+  {
+    "id": "1",
+    "title": "Summer Vacation",
+    "subtitle": "June 2023",
+    "imageUrl": "https://via.placeholder.com/400x200.png?text=Summer+Vacation",
+    "albumUrl": "https://photos.app.goo.gl/abcdef1234567890"
+  },
+  {
+    "id": "2",
+    "title": "Mountain Hike",
+    "subtitle": "September 2023",
+    "imageUrl": "https://via.placeholder.com/400x200.png?text=Mountain+Hike",
+    "albumUrl": "https://photos.app.goo.gl/abcdef1234567891"
+  },
+  {
+    "id": "3",
+    "title": "City Exploration",
+    "subtitle": "November 2023",
+    "imageUrl": "https://via.placeholder.com/400x200.png?text=City+Exploration",
+    "albumUrl": "https://photos.app.goo.gl/abcdef1234567892"
+  },
+  {
+    "id": "4",
+    "title": "Beach Days",
+    "subtitle": "July 2024",
+    "imageUrl": "https://via.placeholder.com/400x200.png?text=Beach+Days",
+    "albumUrl": "https://photos.app.goo.gl/abcdef1234567893"
+  },
+  {
+    "id": "5",
+    "title": "Winter Wonderland",
+    "subtitle": "December 2024",
+    "imageUrl": "https://via.placeholder.com/400x200.png?text=Winter+Wonderland",
+    "albumUrl": "https://photos.app.goo.gl/abcdef1234567894"
+  },
+  {
+    "id": "6",
+    "title": "Road Trip Adventures",
+    "subtitle": "August 2024",
+    "imageUrl": "https://via.placeholder.com/400x200.png?text=Road+Trip",
+    "albumUrl": "https://photos.app.goo.gl/abcdef1234567895"
+  },
+  {
+    "id": "7",
+    "title": "Family Gatherings",
+    "subtitle": "2023-2024",
+    "imageUrl": "https://via.placeholder.com/400x200.png?text=Family+Gatherings",
+    "albumUrl": "https://photos.app.goo.gl/abcdef1234567896"
+  }
+]
