@@ -4,13 +4,13 @@ import { ScrollView, Text, StyleSheet, useWindowDimensions, View } from 'react-n
 import * as FileSystem from 'expo-file-system';
 import { Asset } from 'expo-asset';
 import { Ionicons } from '@expo/vector-icons';
-import { AppColors } from '../styles/theme';
 // ChordProParser and HtmlDivFormatter removed as they are now in the hook
 import { SongFilename } from '../../assets/songs';
 import { songAssets } from '../../assets/songs/index';
 import SongDisplay from '../../components/SongDisplay';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import SongControls from '../../components/SongControls'; // Added import
+import { useThemeColor } from '@/hooks/useThemeColor'; // Import useThemeColor
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 
@@ -43,6 +43,11 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
   const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // Base font size is 1em
   const [currentFontFamily, setCurrentFontFamily] = useState(availableFonts[0].cssValue); // Default to mono, availableFonts is now at top
 
+  // Get themed colors for the hook
+  const themedTextDark = useThemeColor({}, 'textDark');
+  const themedPrimary = useThemeColor({}, 'primary');
+  const themedSecondaryText = useThemeColor({}, 'secondaryText');
+
   // Call the hook to process the song
   const { songHtml, isLoadingSong: isSongProcessing } = useSongProcessor({
     originalChordPro,
@@ -54,6 +59,10 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
     key,    // Pass key from route.params
     capo,   // Pass capo from route.params
     notation,
+    // Pass themed colors
+    themedTextDark,
+    themedPrimary,
+    themedSecondaryText,
   });
 
   // Effect for loading the ChordPro file content

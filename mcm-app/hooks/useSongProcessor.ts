@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { ChordProParser, HtmlDivFormatter, Song, Line, ChordLyricsPair } from 'chordsheetjs';
-import { AppColors } from '../app/styles/theme'; // Ensure this path is correct relative to the hooks folder
 
 // Placeholder dictionary for English to Spanish chord translation
 // USER: Please expand this dictionary with all common chords and their variations (m, 7, maj7, sus, dim, aug, #, b, slash chords like G/B, etc.)
@@ -57,6 +56,10 @@ interface UseSongProcessorParams {
   key?: string; // Added to pass key
   capo?: number; // Added to pass capo
   notation?: 'english' | 'spanish'; // Added for notation preference
+  // Colors to be passed in
+  themedTextDark: string;
+  themedPrimary: string;
+  themedSecondaryText: string;
 }
 
 export const useSongProcessor = ({
@@ -69,6 +72,9 @@ export const useSongProcessor = ({
   key,
   capo,
   notation = 'english', // Default to English
+  themedTextDark,
+  themedPrimary,
+  themedSecondaryText,
 }: UseSongProcessorParams) => {
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
@@ -226,7 +232,7 @@ export const useSongProcessor = ({
               font-family: ${currentFontFamily};
               margin: 10px;
               background-color: #ffffff;
-              color: ${AppColors.textDark};
+              color: ${themedTextDark};
               font-size: 100%;
             }
             h1 {
@@ -264,7 +270,7 @@ export const useSongProcessor = ({
               padding-right: 0;
             }
             .chord-sheet .chord {
-              color: ${AppColors.primary};
+              color: ${themedPrimary};
               font-weight: bold;
               white-space: pre;
               display: block;
@@ -276,7 +282,7 @@ export const useSongProcessor = ({
               min-height: 1.2em;
             }
             .comment, .c {
-              color: ${AppColors.secondaryText};
+              color: ${themedSecondaryText};
               font-style: italic;
               white-space: pre;
               display: block;

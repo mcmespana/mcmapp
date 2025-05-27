@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Button, StyleSheet, TouchableWithoutFeedback } from 'react-native';
-import { AppColors } from '../app/styles/theme'; // Adjust path as necessary
+import { useThemeColor } from '@/hooks/useThemeColor'; // Import useThemeColor
 
 // Define availableFonts structure if not already globally defined
 interface FontOption {
@@ -39,6 +39,17 @@ const SongControls: React.FC<SongControlsProps> = ({
   const [showTransposeModal, setShowTransposeModal] = useState(false);
   const [showFontSizeModal, setShowFontSizeModal] = useState(false);
   const [showFontFamilyModal, setShowFontFamilyModal] = useState(false);
+
+  // Dynamically get styles based on theme
+  const styles = getStyles({
+    backgroundLight: useThemeColor({}, 'backgroundLight'),
+    primary: useThemeColor({}, 'primary'),
+    primaryDark: useThemeColor({}, 'primaryDark'),
+    textLight: useThemeColor({}, 'textLight'),
+    accentYellow: useThemeColor({}, 'accentYellow'),
+    modalOverlay: useThemeColor({}, 'modalOverlay'),
+    textDark: useThemeColor({}, 'textDark'),
+  });
 
   const handleOpenTransposeModal = () => setShowTransposeModal(true);
   const handleOpenFontSizeModal = () => setShowFontSizeModal(true);
@@ -175,8 +186,8 @@ const SongControls: React.FC<SongControlsProps> = ({
   );
 };
 
-// Styles moved from SongDetailScreen.tsx
-const styles = StyleSheet.create({
+// Styles are now a function that receives themed colors
+const getStyles = (colors: Record<string, string>) => StyleSheet.create({
   fabContainer: {
     position: 'absolute',
     bottom: 20,
@@ -188,7 +199,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   fabAction: {
-    backgroundColor: AppColors.backgroundLight,
+    backgroundColor: colors.backgroundLight,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
@@ -199,21 +210,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
     borderWidth: 1.5,
-    borderColor: AppColors.primary,
+    borderColor: colors.primary,
   },
   fabActionActive: {
-    backgroundColor: AppColors.primary,
-    borderColor: AppColors.primaryDark,
+    backgroundColor: colors.primary,
+    borderColor: colors.primaryDark,
   },
   fabActionText: {
-    color: AppColors.primary,
+    color: colors.primary,
     fontWeight: 'bold',
   },
   fabActionTextActive: {
-    color: AppColors.textLight,
+    color: colors.textLight,
   },
   fabMain: {
-    backgroundColor: AppColors.accentYellow,
+    backgroundColor: colors.accentYellow,
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -226,7 +237,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   fabMainText: {
-    color: AppColors.textLight,
+    color: colors.textLight,
     fontSize: 28,
     fontWeight: 'bold',
   },
@@ -234,10 +245,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: AppColors.modalOverlay,
+    backgroundColor: colors.modalOverlay,
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: 'white', // Or use a themed background: colors.backgroundLight or similar
     padding: 20,
     borderRadius: 10,
     width: '80%',
@@ -253,7 +264,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
-    color: AppColors.textDark, // Ensure text color is appropriate
+    color: colors.textDark, // Ensure text color is appropriate
   },
   fontFamilyOptionButton: {
     paddingVertical: 12,
@@ -266,7 +277,7 @@ const styles = StyleSheet.create({
   },
   fontFamilyOptionText: {
     fontSize: 16,
-    color: AppColors.textDark,
+    color: colors.textDark,
   },
   transposeButtonRow: {
     flexDirection: 'row',

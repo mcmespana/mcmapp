@@ -14,30 +14,65 @@ export const Colors = {
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    headerBackground: '#f4c11e',
+    headerText: '#ffffff',
+
+    // From AppColors
+    primary: '#007bff',
+    primaryDark: '#0056b3',
+    accentYellow: '#f4c11e',
+    textLight: '#ffffff',
+    textDark: '#212529',
+    backgroundLight: '#ffffff',
+    modalOverlay: 'rgba(0, 0, 0, 0.5)',
+    secondaryText: '#6c757d',
+
+    // From default export
+    defaultPrimary:   '#253883',
+    secondary: '#95d2f2',
+    accent:    '#E15C62',
+    info:      '#31AADF',
+    success:   '#A3BD31',
+    warning:   '#FCD200',
+    danger:    '#9D1E74',
+    defaultText:      '#002B81',
+    defaultBackground:'#ffffff',
+    white:     '#ffffff',
+    black:     '#000000',
   },
   dark: {
     text: '#ECEDEE',
-    background: '#151718',
+    background: '#343A40',
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: '#ADB5BD',
+    tabIconDefault: '#ADB5BD',
     tabIconSelected: tintColorDark,
+    headerBackground: '#212529',
+    headerText: '#ECEDEE',
+
+    // From AppColors
+    primary: '#3390ff',
+    primaryDark: '#1a70cc',
+    accentYellow: '#f4c11e',
+    textLight: '#ffffff',
+    textDark: '#E0E0E0',
+    backgroundLight: '#424242',
+    modalOverlay: 'rgba(0, 0, 0, 0.6)',
+    secondaryText: '#adb5bd',
+
+    // From default export
+    defaultPrimary: '#5F7BC8',
+    secondary: '#B0E0E6',
+    accent: '#F08080',
+    info: '#7BC8F0',
+    success: '#B8D05A',
+    warning: '#FFD700',
+    danger: '#C75DAA',
+    defaultText: '#D0DFFF',
+    defaultBackground: '#3A3A3A',
+    white: '#ffffff',
+    black: '#000000',
   },
 
   
-};
-
-// constants/colors.js
-export default {
-  primary:   '#253883', // Azul fondo
-  secondary: '#95d2f2', // Azul letras
-  accent:    '#E15C62', // Rojo MIC
-  info:      '#31AADF', // Celeste
-  success:   '#A3BD31', // Verde COM
-  warning:   '#FCD200', // Amarillo COM
-  danger:    '#9D1E74', // Morado LC
-  text:      '#002B81', // Azul COM
-  background:'#ffffff', // Fondo blanco
-  white:     '#ffffff', // Blanco
-  black:     '#000000', // Negro
 };

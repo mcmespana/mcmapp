@@ -1,5 +1,7 @@
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { useColorScheme } from 'react-native'; // Or from @/hooks/useColorScheme if it exists
+import { Colors } from '@/constants/colors';
 
 // Importar pantallas
 import CategoriesScreen from '../screens/CategoriesScreen';
@@ -18,15 +20,17 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function CancioneroTab() {
+  const colorScheme = useColorScheme() ?? 'light';
+
   return (
     <Stack.Navigator 
         initialRouteName="Categories"
         screenOptions={{
           headerBackTitle: 'Volver',
           headerStyle: {
-            backgroundColor: '#f4c11e',
+            backgroundColor: Colors[colorScheme].headerBackground,
           },
-          headerTintColor: '#fff',
+          headerTintColor: Colors[colorScheme].headerText,
           headerTitleStyle: {
             fontWeight: 'bold',
           },
