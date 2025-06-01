@@ -1,8 +1,8 @@
-import React, { useContext, useRef } from 'react';
+import React, { useRef } from 'react';
 import { TouchableOpacity, Text, View, StyleSheet, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext'; // Corrected path
-import { IconSymbol } from '../ui/IconSymbol'; // Assuming IconSymbol is in ui folder
+import { IconSymbol } from './ui/IconSymbol';
 
 // Type for song data
 interface Song {
