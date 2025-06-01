@@ -5,11 +5,18 @@ import { RouteProp } from '@react-navigation/native';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import SongListScreen from '../screens/SongListScreen';
 import SongDetailScreen from '../screens/SongDetailScreen';
+import SelectedSongsScreen from '../screens/SelectedSongsScreen'; // Import the new screen
+
+// Importar el contexto de canciones seleccionadas
+import { SelectedSongsProvider } from '../../contexts/SelectedSongsContext';
+// Remove duplicate SongDetailScreen import if present, ensure others are fine.
+// Already imported SongDetailScreen above.
 
 export type RootStackParamList = {
   Categories: undefined;
   SongsList: { categoryId: string; categoryName: string };
   SongDetail: { filename: string; title: string; author?: string; key?: string; capo?: number };
+  SelectedSongs: undefined; // Add SelectedSongs screen
 };
 
 // Tipos para las props de navegación
@@ -19,7 +26,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function CancioneroTab() {
   return (
-    <Stack.Navigator 
+    <SelectedSongsProvider>
+      <Stack.Navigator
         initialRouteName="Categories"
         screenOptions={{
           headerBackTitle: 'Volver',
@@ -49,6 +57,12 @@ export default function CancioneroTab() {
             title: route.params?.title || 'Letra y Acordes' 
           })}
         />
+        <Stack.Screen
+          name="SelectedSongs"
+          component={SelectedSongsScreen}
+          options={{ title: 'Tu Selección' }}
+        />
       </Stack.Navigator>
+    </SelectedSongsProvider>
   );
 }
