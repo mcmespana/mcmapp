@@ -2,14 +2,18 @@ import React from 'react';
 import {
   View,
   StyleSheet,
-  ViewStyle,
-  TextStyle,
   Text,
   Dimensions,
-  Platform,
   Pressable,
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
 import { Link, LinkProps } from 'expo-router';
+
+import colors from '@/constants/colors';
+import typography from '@/constants/typography';
+import spacing from '@/constants/spacing';
+import { commonShadow } from '@/constants/uiStyles';
 
 type NavigationItem = {
   href?: LinkProps['href'];
@@ -18,10 +22,6 @@ type NavigationItem = {
   backgroundColor: string;
   color: string;
 };
-import colors from '@/constants/colors';
-import typography from '@/constants/typography';
-import spacing from '@/constants/spacing';
-import { commonShadow } from '@/constants/uiStyles';
 
 const navigationItems: NavigationItem[] = [
   {
@@ -66,6 +66,17 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
+const { width } = Dimensions.get('window');
+const gap = spacing.lg;
+const itemPerRow = width > 700 ? 3 : 2;
+const totalGapSize = (itemPerRow - 1) * gap;
+const windowWidth = width - (spacing.lg * 2);
+const maxRectSize = 180;
+const rectDimension = Math.min(
+  (windowWidth - totalGapSize) / itemPerRow,
+  maxRectSize
+);
+
 export default function Home() {
   return (
     <View style={styles.container}>
@@ -79,35 +90,24 @@ export default function Home() {
           );
 
           if (item.href) {
-            if (Platform.OS === 'web') {
-              return (
-                <Link
-                  key={typeof item.href === 'string' ? item.href : item.href.pathname || index}
-                  href={item.href}
+            return (
+              <Link
+                key={typeof item.href === 'string' ? item.href : item.href?.pathname || index}
+                href={item.href}
+                asChild
+              >
+                <Pressable
+                  style={({ pressed, hovered }) => [
+                    styles.rectangle,
+                    { backgroundColor: item.backgroundColor, opacity: pressed ? 0.85 : 1, width: rectDimension, height: rectDimension },
+                    hovered && styles.rectangleHover,
+                  ]}
+                  accessibilityRole="button"
                 >
-                  <View style={[styles.rectangle, styles.webRectangle, { backgroundColor: item.backgroundColor }]}>
-                    {rectangleContent}
-                  </View>
-                </Link>
-              );
-            } else {
-              return (
-                <Link
-                  key={typeof item.href === 'string' ? item.href : item.href.pathname || index}
-                  href={item.href}
-                  asChild
-                >
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.rectangle,
-                      { backgroundColor: item.backgroundColor, opacity: pressed ? 0.85 : 1 },
-                    ]}
-                  >
-                    {rectangleContent}
-                  </Pressable>
-                </Link>
-              );
-            }
+                  {rectangleContent}
+                </Pressable>
+              </Link>
+            );
           } else {
             return (
               <View
@@ -132,22 +132,12 @@ interface Styles {
   container: ViewStyle;
   gridContainer: ViewStyle;
   rectangle: ViewStyle;
-  webRectangle: ViewStyle;
-  webLink: ViewStyle;
+  rectangleHover: ViewStyle;
+  rectangleFocus: ViewStyle;
   placeholder: ViewStyle;
   iconPlaceholder: TextStyle;
   rectangleLabel: TextStyle;
-  title: TextStyle;
-  button: ViewStyle;
-  buttonLabel: TextStyle;
 }
-
-const { width } = Dimensions.get('window');
-const gap = spacing.lg;
-const itemPerRow = Platform.OS === 'web' && width > 700 ? 3 : 2;
-const totalGapSize = (itemPerRow - 1) * gap;
-const windowWidth = width - (spacing.lg * 2);
-const rectDimension = (windowWidth - totalGapSize) / itemPerRow;
 
 const styles = StyleSheet.create<Styles>({
   container: {
@@ -175,16 +165,20 @@ const styles = StyleSheet.create<Styles>({
     borderWidth: 1,
     borderColor: colors.border || '#e0e0e0',
     ...commonShadow,
-    transitionProperty: Platform.OS === 'web' ? 'box-shadow, transform' : undefined,
-    transitionDuration: Platform.OS === 'web' ? '0.2s' : undefined,
+    transitionProperty: 'box-shadow, transform',
+    transitionDuration: '0.2s',
   },
-  webRectangle: {
-    cursor: 'pointer',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+  rectangleHover: {
+    // Web-only hover effect
+    boxShadow: '0 4px 24px rgba(0,0,0,0.16)',
+    transform: [{ translateY: -2 }, { scale: 1.03 }],
   },
-  webLink: {
-    width: rectDimension,
-    height: rectDimension,
+  rectangleFocus: {
+    // Web-only focus effect
+    outlineWidth: 2,
+    outlineColor: colors.primary || '#007aff',
+    outlineStyle: 'solid',
+    outlineOffset: 2,
   },
   placeholder: {
     opacity: 0.6,
@@ -208,33 +202,4 @@ const styles = StyleSheet.create<Styles>({
     letterSpacing: 0.5,
     marginTop: 2,
   },
-  title: {
-    ...(typography.h1 as TextStyle),
-    color: colors.text,
-    marginBottom: spacing.lg,
-  },
-  button: {
-    width: '80%',
-    paddingVertical: spacing.sm,
-  },
-  buttonLabel: {
-    ...(typography.button as TextStyle),
-    color: '#fff',
-  },
 });
-
-// Web-only hover effect (injects global CSS)
-if (Platform.OS === 'web' && typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.innerHTML = `
-    a[style*="inline-block"]:hover > div {
-      box-shadow: 0 4px 24px rgba(0,0,0,0.16) !important;
-      transform: translateY(-2px) scale(1.03);
-    }
-    a[style*="inline-block"]:focus > div {
-      outline: 2px solid ${colors.primary || '#007aff'};
-      outline-offset: 2px;
-    }
-  `;
-  document.head.appendChild(style);
-}
