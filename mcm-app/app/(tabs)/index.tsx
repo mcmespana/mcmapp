@@ -1,111 +1,121 @@
-// app/(tabs)/index.tsx
 import React from 'react';
-import { View, StyleSheet, ViewStyle, TextStyle, TouchableOpacity, Text, Platform, Dimensions } from 'react-native';
-// Removed Button from react-native-paper as it's no longer used directly for navigation buttons
-// import { Text, Button } from 'react-native-paper'; 
+import {
+  View,
+  StyleSheet,
+  ViewStyle,
+  TextStyle,
+  Text,
+  Dimensions,
+  Platform,
+  Pressable,
+} from 'react-native';
 import { Link, LinkProps } from 'expo-router';
 
-// Define the type for our navigation items
 type NavigationItem = {
-  href?: LinkProps['href']; // This ensures the href matches Expo Router's expected types
+  href?: LinkProps['href'];
   label: string;
   iconPlaceholder: string;
   backgroundColor: string;
   color: string;
 };
-import * as Notifications from 'expo-notifications'; // NOTIS - Se qutia el import
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
 import spacing from '@/constants/spacing';
-import { commonShadow } from '@/constants/uiStyles'; // Import commonShadow
+import { commonShadow } from '@/constants/uiStyles';
 
-// Define an array for navigation items to make rendering more DRY
 const navigationItems: NavigationItem[] = [
   {
     href: "/cancionero",
     label: "Cantoral",
-    iconPlaceholder: "C",
+    iconPlaceholder: "🎵",
     backgroundColor: colors.warning,
-    color: colors.black, // Ensuring text is readable
+    color: colors.black,
   },
   {
     href: "/fotos",
     label: "Fotos",
-    iconPlaceholder: "F",
+    iconPlaceholder: "📷",
     backgroundColor: colors.accent,
     color: colors.black,
   },
   {
     href: "/calendario",
     label: "Calendario",
-    iconPlaceholder: "Ca",
+    iconPlaceholder: "📅",
     backgroundColor: colors.info,
-    color: colors.black, // info color might be light, ensure contrast
+    color: colors.black,
   },
   {
     href: "/comunica",
     label: "Comunica",
-    iconPlaceholder: "Co",
+    iconPlaceholder: "💬",
     backgroundColor: colors.success,
     color: colors.black,
   },
   {
-    // No href for placeholder
     label: "Próximamente 1",
-    iconPlaceholder: "P1",
+    iconPlaceholder: "🚧",
     backgroundColor: colors.warning,
-    color: colors.black, // Warning color is often light
+    color: colors.black,
   },
   {
-    // No href for placeholder
     label: "Próximamente 2",
-    iconPlaceholder: "?",
+    iconPlaceholder: "⏳",
     backgroundColor: colors.danger,
     color: colors.black,
   },
 ];
 
 export default function Home() {
-
-  // NOTIS - Se quita el código de enviar notidficaciones
-  // ... (notification code remains commented out)
-
   return (
     <View style={styles.container}>
       <View style={styles.gridContainer}>
         {navigationItems.map((item, index) => {
           const rectangleContent = (
             <>
-              <Text key="icon" style={[styles.iconPlaceholder, { color: item.color }]}>{item.iconPlaceholder}</Text>
-              <Text key="label" style={[styles.rectangleLabel, { color: item.color }]}>{item.label}</Text>
+              <Text style={[styles.iconPlaceholder, { color: item.color }]}>{item.iconPlaceholder}</Text>
+              <Text style={[styles.rectangleLabel, { color: item.color }]}>{item.label}</Text>
             </>
           );
 
           if (item.href) {
-            return (
-              <Link 
-                key={typeof item.href === 'string' ? item.href : item.href.pathname || index} 
-                href={item.href} 
-                asChild
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.rectangle,
-                    { backgroundColor: item.backgroundColor },
-                  ]}
+            if (Platform.OS === 'web') {
+              return (
+                <Link
+                  key={typeof item.href === 'string' ? item.href : item.href.pathname || index}
+                  href={item.href}
                 >
-                  {rectangleContent}
-                </TouchableOpacity>
-              </Link>
-            );
+                  <View style={[styles.rectangle, styles.webRectangle, { backgroundColor: item.backgroundColor }]}>
+                    {rectangleContent}
+                  </View>
+                </Link>
+              );
+            } else {
+              return (
+                <Link
+                  key={typeof item.href === 'string' ? item.href : item.href.pathname || index}
+                  href={item.href}
+                  asChild
+                >
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.rectangle,
+                      { backgroundColor: item.backgroundColor, opacity: pressed ? 0.85 : 1 },
+                    ]}
+                  >
+                    {rectangleContent}
+                  </Pressable>
+                </Link>
+              );
+            }
           } else {
-            // Render a non-navigable View or TouchableOpacity for placeholders
             return (
               <View
-                key={`placeholder-${index}`} // Use index for key as href is missing
+                key={`placeholder-${index}`}
                 style={[
                   styles.rectangle,
-                  { backgroundColor: item.backgroundColor },
+                  styles.placeholder,
+                  { backgroundColor: item.backgroundColor, opacity: 0.7 },
                 ]}
               >
                 {rectangleContent}
@@ -120,82 +130,111 @@ export default function Home() {
 
 interface Styles {
   container: ViewStyle;
-  gridContainer: ViewStyle; // For the 2x2 grid layout
+  gridContainer: ViewStyle;
   rectangle: ViewStyle;
-  // rectangleWide: ViewStyle; // For varying dimensions example
-  // rectangleTall: ViewStyle; // For varying dimensions example
+  webRectangle: ViewStyle;
+  webLink: ViewStyle;
+  placeholder: ViewStyle;
   iconPlaceholder: TextStyle;
   rectangleLabel: TextStyle;
-  // Keep existing styles if they are used elsewhere or for overall page theme
   title: TextStyle;
   button: ViewStyle;
   buttonLabel: TextStyle;
 }
 
 const { width } = Dimensions.get('window');
-const gap = spacing.md;
-const itemPerRow = 2;
+const gap = spacing.lg;
+const itemPerRow = Platform.OS === 'web' && width > 700 ? 3 : 2;
 const totalGapSize = (itemPerRow - 1) * gap;
-const windowWidth = width - (spacing.md * 2); // container padding
+const windowWidth = width - (spacing.lg * 2);
 const rectDimension = (windowWidth - totalGapSize) / itemPerRow;
-
 
 const styles = StyleSheet.create<Styles>({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'center', // Center the grid container vertically
-    alignItems: 'center', // Center the grid container horizontally
-    padding: spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between', // Distribute items evenly with space around
-    // alignItems: 'center', // Align items in the center of their row
-    width: '100%', // Take full width of the container
-    // maxHeight: rectDimension * 2 + gap, // Approximate height for 2 rows
+    justifyContent: 'center',
+    width: '100%',
+    maxWidth: 900,
+    gap,
   },
   rectangle: {
     width: rectDimension,
-    height: rectDimension, // Make them square
+    height: rectDimension,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: spacing.sm,
-    marginBottom: gap, // Gap between rows
-    // Shadow properties
-    ...commonShadow, // Apply common shadow style
+    borderRadius: 18,
+    margin: gap / 2,
+    borderWidth: 1,
+    borderColor: colors.border || '#e0e0e0',
+    ...commonShadow,
+    transitionProperty: Platform.OS === 'web' ? 'box-shadow, transform' : undefined,
+    transitionDuration: Platform.OS === 'web' ? '0.2s' : undefined,
   },
-  // rectangleWide: { // Example for varying sizes
-  //   width: (windowWidth - gap) / 2 * 1.2, // Wider
-  //   height: rectDimension * 0.8, // Shorter
-  // },
-  // rectangleTall: { // Example for varying sizes
-  //   width: (windowWidth - gap) / 2 * 0.8, // Narrower
-  //   height: rectDimension * 1.2, // Taller
-  // },
+  webRectangle: {
+    cursor: 'pointer',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+  },
+  webLink: {
+    width: rectDimension,
+    height: rectDimension,
+  },
+  placeholder: {
+    opacity: 0.6,
+    borderStyle: 'dashed',
+    borderColor: colors.border || '#bbb',
+  },
   iconPlaceholder: {
-    fontSize: 48, // Large icon placeholder
+    fontSize: 48,
     fontWeight: 'bold',
     marginBottom: spacing.sm,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.08)',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 2,
   },
   rectangleLabel: {
-    ...(typography.button as TextStyle), // Use existing button typography for consistency
+    ...(typography.button as TextStyle),
     fontWeight: 'bold',
     textAlign: 'center',
+    fontSize: 18,
+    letterSpacing: 0.5,
+    marginTop: 2,
   },
-  // Keep existing styles that might be used by other parts of the app or for general theming
   title: {
     ...(typography.h1 as TextStyle),
     color: colors.text,
     marginBottom: spacing.lg,
   },
-  button: { // This style was for the old buttons, might not be needed here
+  button: {
     width: '80%',
     paddingVertical: spacing.sm,
   },
-  buttonLabel: { // This style was for the old buttons
+  buttonLabel: {
     ...(typography.button as TextStyle),
     color: '#fff',
   },
 });
+
+// Web-only hover effect (injects global CSS)
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.innerHTML = `
+    a[style*="inline-block"]:hover > div {
+      box-shadow: 0 4px 24px rgba(0,0,0,0.16) !important;
+      transform: translateY(-2px) scale(1.03);
+    }
+    a[style*="inline-block"]:focus > div {
+      outline: 2px solid ${colors.primary || '#007aff'};
+      outline-offset: 2px;
+    }
+  `;
+  document.head.appendChild(style);
+}

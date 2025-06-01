@@ -40,4 +40,5 @@ export default {
   background:'#ffffff', // Fondo blanco
   white:     '#ffffff', // Blanco
   black:     '#000000', // Negro
+  border:   '#E0E0E0', // Gris claro para bordes
 };
