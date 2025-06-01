@@ -9,6 +9,8 @@ import SelectedSongsScreen from '../screens/SelectedSongsScreen'; // Import the 
 
 // Importar el contexto de canciones seleccionadas
 import { SelectedSongsProvider } from '../../contexts/SelectedSongsContext';
+// Importar el contexto de configuración
+import { SettingsProvider } from '../../contexts/SettingsContext'; // <<<--- ADD THIS IMPORT
 // Remove duplicate SongDetailScreen import if present, ensure others are fine.
 // Already imported SongDetailScreen above.
 
@@ -26,9 +28,13 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function CancioneroTab() {
   return (
-    <SelectedSongsProvider>
-      <Stack.Navigator
-        initialRouteName="Categories"
+    // Wrap SelectedSongsProvider with SettingsProvider, or vice versa. Order might matter if one depends on the other.
+    // In this case, they are independent, so the order is not critical.
+    // Let's put SettingsProvider outside to make settings available to everything within.
+    <SettingsProvider>
+      <SelectedSongsProvider>
+        <Stack.Navigator
+          initialRouteName="Categories"
         screenOptions={{
           headerBackTitle: 'Volver',
           headerStyle: {
@@ -64,5 +70,6 @@ export default function CancioneroTab() {
         />
       </Stack.Navigator>
     </SelectedSongsProvider>
+    </SettingsProvider> // <<<--- WRAP HERE
   );
 }
