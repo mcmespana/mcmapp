@@ -21,6 +21,7 @@
     "expo": "~53.0.9",
     "expo-asset": "~11.1.5",
     "expo-blur": "~14.1.4",
+    "expo-clipboard": "^7.1.4",
     "expo-constants": "~17.1.6",
     "expo-dev-client": "~5.1.8",
     "expo-file-system": "~18.1.10",
