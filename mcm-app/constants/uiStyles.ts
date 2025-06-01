@@ -21,3 +21,23 @@ export const commonBorder = {
   borderWidth: 1,
   borderColor: colors.border, // Assuming a border color is in colors.ts
 };
+
+export const textShadow = {
+  textShadowColor: 'rgba(0, 0, 0, 0.5)', // A semi-transparent black
+  textShadowOffset: { width: 0, height: 1 }, // Shadow slightly below the text
+  textShadowRadius: 2, // A little blur
+};
+
+export const pagePadding = {
+  paddingHorizontal: 16, // Default horizontal padding
+};
+
+export const buttonBorderRadius = {
+  borderRadius: 8, // Default border radius for buttons
+};
+
+export const commonStyles = {
+  textShadow: textShadow,
+  pagePadding: pagePadding,
+  buttonBorderRadius: buttonBorderRadius,
+};

@@ -14,7 +14,12 @@ export default function TabsLayout() {
     <ThemeProvider value={theme}>
       <Tabs
         screenOptions={{
-          headerShown: false,
+          headerShown: true, // Default to showing headers
+          headerTintColor: '#fff', // Default text/icon color for headers
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+          headerTitleAlign: 'center', // Center the title
           tabBarActiveTintColor: colors.primary, //
           tabBarInactiveTintColor: colors.secondary, //
           tabBarStyle: { backgroundColor: colors.background }, //
@@ -24,35 +29,40 @@ export default function TabsLayout() {
           name="index" 
           options={{
             title: 'Inicio',
-            tabBarIcon: ({color, size}) => <MaterialIcons name="home" color={color} size={size}/>
+            tabBarIcon: ({color, size}) => <MaterialIcons name="home" color={color} size={size}/>,
+            headerShown: false // No header for Inicio tab
           }} 
         />
         <Tabs.Screen 
           name="comunica" 
           options={{
             title: 'Comunica',
-            tabBarIcon: ({color, size}) => <MaterialIcons name="public" color={color} size={size}/>
+            tabBarIcon: ({color, size}) => <MaterialIcons name="public" color={color} size={size}/>,
+            headerStyle: { backgroundColor: '#31AADF' } // Info color
           }} 
         />
         <Tabs.Screen 
           name="cancionero" 
           options={{
             title: 'Cantoral',
-            tabBarIcon: ({color, size}) => <MaterialIcons name="music-note" color={color} size={size}/>
+            tabBarIcon: ({color, size}) => <MaterialIcons name="music-note" color={color} size={size}/>,
+            headerShown: false // Cantoral uses its own StackNavigator header
           }} 
         />
         <Tabs.Screen 
           name="calendario" 
           options={{
             title: 'Calendario',
-            tabBarIcon: ({color, size}) => <MaterialIcons name="calendar-today" color={color} size={size}/>
+            tabBarIcon: ({color, size}) => <MaterialIcons name="calendar-today" color={color} size={size}/>,
+            headerStyle: { backgroundColor: '#A3BD31' } // Éxito / Confirmación color
           }} 
         />
         <Tabs.Screen 
           name="fotos" 
           options={{
             title: 'Fotos',
-            tabBarIcon: ({color, size}) => <MaterialIcons name="photo-library" color={color} size={size}/>
+            tabBarIcon: ({color, size}) => <MaterialIcons name="photo-library" color={color} size={size}/>,
+            headerStyle: { backgroundColor: '#E15C62' } // Acento / Call to Action color
           }} 
         />
       </Tabs>
