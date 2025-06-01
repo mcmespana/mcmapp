@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useLayoutEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Platform, Share } from 'react-native';
 import { Button, Provider as PaperProvider, Snackbar } from 'react-native-paper';
 import * as Clipboard from 'expo-clipboard';
@@ -30,6 +30,8 @@ interface CategorizedSongs {
 type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SongDetail'>;
 
 const SelectedSongsScreen: React.FC = () => {
+  // const { selectedSongs, clearSelection } = useSelectedSongs(); // Moved up
+
   const { selectedSongs, clearSelection } = useSelectedSongs();
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
   const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<CategorizedSongs[]>([]);
@@ -61,7 +63,7 @@ const SelectedSongsScreen: React.FC = () => {
     processSongs();
   }, [selectedSongs]);
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     // 1. Generate Header
     const date = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase().replace('.', '');
     const musicalEmojis = ['🎹', '🎸', '🎤', '🎶', '🎵', '🎼', '🎷', '🎺', '🎻'];
@@ -126,15 +128,12 @@ const SelectedSongsScreen: React.FC = () => {
         // setSnackbarVisible(true);
       }
     }
-  };
+  }, [categorizedSelectedSongs, selectedSongs]); // Dependencies for useCallback
 
   const handleSongPress = (song: Song) => {
     navigation.navigate('SongDetail', {
-      filename: song.filename,
-      title: song.title,
-      author: song.author,
-      key: song.key,
-      capo: song.capo,
+      ...song, // Spread all properties from the song object
+      content: "" // Add the missing content property directly
     });
   };
 
@@ -151,11 +150,27 @@ const SelectedSongsScreen: React.FC = () => {
     </View>
   );
 
+  useLayoutEffect(() => {
+    if (selectedSongs.length > 0) {
+      navigation.setOptions({
+        headerRight: () => (
+          <TouchableOpacity onPress={handleExport} style={{ paddingHorizontal: 15 }}>
+            <IconSymbol name="square.and.arrow.up" size={24} color="#fff" />
+          </TouchableOpacity>
+        ),
+      });
+    } else {
+      navigation.setOptions({
+        headerRight: () => null, // No export button if no songs are selected
+      });
+    }
+  }, [navigation, handleExport, selectedSongs.length]);
+
   if (selectedSongs.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <IconSymbol name="music.note.list" size={60} color="#cccccc" />
-        <Text style={styles.emptyText}>No has seleccionado ninguna canción todavía.</Text>
+        <Text style={styles.emptyText}>Todavía no has seleccionado canciones</Text>
       </View>
     );
   }
@@ -169,14 +184,7 @@ const SelectedSongsScreen: React.FC = () => {
               <IconSymbol name="trash" size={20} color="#007AFF" />
               <Text style={styles.clearButtonText}>Limpiar selección</Text>
             </TouchableOpacity>
-            <Button
-              icon="export-variant"
-              mode="contained"
-              onPress={handleExport}
-              style={styles.exportButton}
-            >
-              Exportar
-            </Button>
+            {/* Export button moved to header */}
           </View>
       </View>
 
