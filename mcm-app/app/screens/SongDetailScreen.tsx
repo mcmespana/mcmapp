@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useLayoutEffect } from 'react'; // Added useLayoutEffect
 // Unused imports (TouchableOpacity, Modal, Button, TouchableWithoutFeedback) removed
-import { ScrollView, Text, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ScrollView, Text, StyleSheet, useWindowDimensions, View, TouchableOpacity } from 'react-native'; // Added TouchableOpacity
 import * as FileSystem from 'expo-file-system';
 import { Asset } from 'expo-asset';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,8 +11,10 @@ import { songAssets } from '../../assets/songs/index';
 import SongDisplay from '../../components/SongDisplay';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import SongControls from '../../components/SongControls'; // Added import
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, NavigationProp } from '@react-navigation/native'; // Added NavigationProp
 import { RootStackParamList } from '../(tabs)/cancionero';
+import { useSelectedSongs } from '../../contexts/SelectedSongsContext'; // Import context hook
+import { IconSymbol } from '../../components/ui/IconSymbol'; // Import IconSymbol
 
 const availableFonts = [
   { name: 'Monoespaciada', cssValue: "'Roboto Mono', 'Courier New', monospace" },
@@ -21,14 +23,19 @@ const availableFonts = [
 ];
 
 type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
+// Define navigation prop type
+type SongDetailScreenNavigationProp = NavigationProp<RootStackParamList, 'SongDetail'>;
 
 interface SongDetailScreenProps {
   route: SongDetailScreenRouteProp;
+  navigation: SongDetailScreenNavigationProp; // Add navigation to props
 }
 
-export default function SongDetailScreen({ route }: SongDetailScreenProps) {
+export default function SongDetailScreen({ route, navigation }: SongDetailScreenProps) { // Destructure navigation
   // title from params is for the navigation screen header, actual song title rendered by WebView
   const { filename, title: navScreenTitle, author, key, capo } = route.params;
+  const { addSong, removeSong, isSongSelected } = useSelectedSongs(); // Use context
+
   // songHtml state is now managed by useSongProcessor
   const [isFileLoading, setIsFileLoading] = useState(true); // Renamed from isLoading
 
@@ -56,9 +63,36 @@ export default function SongDetailScreen({ route }: SongDetailScreenProps) {
     notation,
   });
 
+  // Effect for setting header button
+  useLayoutEffect(() => {
+    if (!filename) return; // Don't set header if filename is not available
+
+    const currentlySelected = isSongSelected(filename);
+
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => {
+            if (currentlySelected) {
+              removeSong(filename);
+            } else {
+              addSong(filename);
+            }
+          }}
+          style={{ marginRight: 15 }} // Add some margin to the button
+        >
+          <IconSymbol
+            name={currentlySelected ? "checkmark.circle.fill" : "plus.circle"}
+            size={26}
+            color={'#fff'} // Assuming headerTintColor is white from cancionero.tsx
+          />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, filename, isSongSelected, addSong, removeSong]); // Dependencies
+
   // Effect for loading the ChordPro file content
   useEffect(() => {
-
     (async () => {
       if (!filename) {
         // setSongHtml('Error: Nombre de archivo no proporcionado.'); // This will be handled by the hook if originalChordPro is null
