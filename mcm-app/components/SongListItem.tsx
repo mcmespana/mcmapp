@@ -1,14 +1,17 @@
-import React from 'react';
-import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
+import React, { useContext, useRef } from 'react';
+import { TouchableOpacity, Text, View, StyleSheet, Animated } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
+import { useSelectedSongs } from '../contexts/SelectedSongsContext'; // Corrected path
+import { IconSymbol } from '../ui/IconSymbol'; // Assuming IconSymbol is in ui folder
 
-// Type for song data (ensure this matches the one in SongListScreen.tsx or a shared types file)
+// Type for song data
 interface Song {
   title: string;
   filename: string;
-  author?: string; // Made optional to match usage
+  author?: string;
   key?: string;
-  capo?: number; // Changed to number to match usage
-  info?: string; // Made optional
+  capo?: number;
+  info?: string;
 }
 
 interface SongListItemProps {
@@ -17,28 +20,85 @@ interface SongListItemProps {
 }
 
 const SongListItem: React.FC<SongListItemProps> = ({ song, onPress }) => {
+  const { addSong, removeSong, isSongSelected } = useSelectedSongs();
+  const swipeableRow = useRef<Swipeable>(null);
+
+  const isSelected = isSongSelected(song.filename);
+
+  const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+    const trans = dragX.interpolate({
+      inputRange: [-100, 0],
+      outputRange: [0, 100], // Adjust this for how much the button should "follow" the swipe
+      extrapolate: 'clamp',
+    });
+    return (
+      <TouchableOpacity
+        style={styles.rightAction}
+        onPress={() => {
+          addSong(song.filename);
+          swipeableRow.current?.close();
+        }}
+      >
+        <Animated.View style={{ transform: [{ translateX: trans }] }}>
+          <IconSymbol name="plus.circle" size={24} color="#fff" style={styles.actionIcon} />
+          <Text style={styles.actionText}>Seleccionar</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderLeftActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+    const trans = dragX.interpolate({
+      inputRange: [0, 100],
+      outputRange: [-100, 0], // Adjust this for how much the button should "follow" the swipe
+      extrapolate: 'clamp',
+    });
+    return (
+      <TouchableOpacity
+        style={styles.leftAction}
+        onPress={() => {
+          removeSong(song.filename);
+          swipeableRow.current?.close();
+        }}
+      >
+        <Animated.View style={{ transform: [{ translateX: trans }] }}>
+          <IconSymbol name="minus.circle" size={24} color="#fff" style={styles.actionIcon} />
+          <Text style={styles.actionText}>Quitar</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
-    <TouchableOpacity
-      onPress={() => onPress(song)}
-      style={styles.songItem}
+    <Swipeable
+      ref={swipeableRow}
+      renderRightActions={!isSelected ? renderRightActions : undefined} // Show add only if not selected
+      renderLeftActions={isSelected ? renderLeftActions : undefined}  // Show remove only if selected
+      overshootRight={false} // Prevent over-swiping for single action
+      overshootLeft={false}  // Prevent over-swiping for single action
     >
-      <View style={styles.songInfoContainer}>
-        <Text style={styles.songTitle}>
-          {song.title.replace(/^\d+\.\s*/, '')} {/* Remove leading numbers */}
-        </Text>
-        {song.author ? (
-          <Text style={styles.songAuthor}>{song.author}</Text>
-        ) : null}
-      </View>
-      <View style={styles.keyCapoContainer}>
-        {song.key ? (
-          <Text style={styles.songKey}>{song.key.toUpperCase()}</Text>
-        ) : null}
-        {song.capo && song.capo > 0 ? ( // Ensure capo is a number and greater than 0
-          <Text style={styles.songCapo}>{`C/${song.capo}`}</Text>
-        ) : null}
-      </View>
-    </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => onPress(song)}
+        style={[styles.songItem, isSelected && styles.selectedSongItem]}
+      >
+        <View style={styles.songInfoContainer}>
+          <Text style={styles.songTitle}>
+            {song.title.replace(/^\d+\.\s*/, '')} {/* Remove leading numbers */}
+          </Text>
+          {song.author ? (
+            <Text style={styles.songAuthor}>{song.author}</Text>
+          ) : null}
+        </View>
+        <View style={styles.keyCapoContainer}>
+          {song.key ? (
+            <Text style={styles.songKey}>{song.key.toUpperCase()}</Text>
+          ) : null}
+          {song.capo && song.capo > 0 ? (
+            <Text style={styles.songCapo}>{`C/${song.capo}`}</Text>
+          ) : null}
+        </View>
+      </TouchableOpacity>
+    </Swipeable>
   );
 };
 
@@ -47,9 +107,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20, // Added horizontal padding
     borderBottomWidth: 1,
-    borderColor: '#eee', // From SongListScreen styles
+    borderColor: '#eee',
+    backgroundColor: '#fff', // Default background
+  },
+  selectedSongItem: {
+    backgroundColor: '#e6ffed', // Light green for selected items
   },
   songInfoContainer: {
     flex: 1,
@@ -57,11 +122,11 @@ const styles = StyleSheet.create({
   },
   songTitle: {
     fontSize: 16,
-    color: '#333', // From SongListScreen styles
+    color: '#333',
   },
   songAuthor: {
     fontSize: 14,
-    color: '#666', // From SongListScreen styles
+    color: '#666',
     marginTop: 4,
     fontStyle: 'italic',
   },
@@ -72,12 +137,36 @@ const styles = StyleSheet.create({
   songKey: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000000', // From SongListScreen styles
+    color: '#000000',
   },
   songCapo: {
     fontSize: 13,
-    color: '#888', // From SongListScreen styles
+    color: '#888',
     fontWeight: 'normal',
+  },
+  rightAction: {
+    backgroundColor: '#4CAF50', // Green for add
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 100, // Fixed width for the action button
+    flexDirection: 'row',
+  },
+  leftAction: {
+    backgroundColor: '#f44336', // Red for remove
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 100, // Fixed width for the action button
+    flexDirection: 'row',
+  },
+  actionText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    paddingLeft: 10, // Space between icon and text
+  },
+  actionIcon: {
+    // No specific styles needed here if already applied in IconSymbol,
+    // but can be used for margin/padding if necessary
   },
 });
 
