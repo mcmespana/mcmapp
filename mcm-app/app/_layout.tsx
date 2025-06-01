@@ -14,18 +14,28 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; *
 import React, { useState, useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet } from 'react-native';
-import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import { ThemeProvider as NavThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
+import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme, adaptNavigationTheme } from 'react-native-paper';
+import { useMemo } from 'react';
 
 
 
 export default function RootLayout() {
   const [showAnimation, setShowAnimation] = useState(true);
   const scheme = useColorScheme(); // Keep existing hooks
-  const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  
+  // Configuración del tema de Paper
+  const paperTheme = useMemo(
+    () => (scheme === 'dark' ? { ...MD3DarkTheme } : { ...MD3LightTheme }),
+    [scheme]
+  );
+  
+  // Configuración del tema de navegación
+  const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
   useEffect(() => {
     // The HelloWave animation repeats 4 times, each sequence is 150ms + 150ms = 300ms.
@@ -128,10 +138,12 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={theme}>
-        <Slot />
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <PaperProvider theme={paperTheme}>
+        <NavThemeProvider value={navigationTheme}>
+          <Slot />
+          <StatusBar style="auto" />
+        </NavThemeProvider>
+      </PaperProvider>
     </GestureHandlerRootView>
   );
 }

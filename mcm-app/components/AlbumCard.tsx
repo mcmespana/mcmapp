@@ -21,34 +21,36 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
   const activeStyles = styles(width);
   const { location, date } = album; // Directly use from album prop
   return (
-    <TouchableOpacity style={activeStyles.card} onPress={onPress} activeOpacity={0.8}> {/* Wrapped with TouchableOpacity and passed onPress */}
-      <ImageBackground
-        source={{ uri: album.imageUrl }}
-        style={activeStyles.imageBackground}
-        imageStyle={activeStyles.image}
-        onError={(error) => console.log(`Error loading image for ${album.title}: ${error.nativeEvent.error}`)}
-      >
-        <View style={activeStyles.overlay} />
-        <View style={activeStyles.textContainer}>
-          <Text style={[activeStyles.title, whiteTextShadow]}>{album.title}</Text>
-          {(album.location || album.date) && (
-            <View style={activeStyles.subtitleContainer}>
-              {album.location && (
-                <View style={activeStyles.subtitleItem}>
-                  <MaterialIcons name="location-pin" size={activeStyles.subtitleText.fontSize || 14} color={Colors.dark.tint} style={activeStyles.icon} />
-                  <Text style={[activeStyles.subtitleText, whiteTextShadow]}>{album.location}</Text>
-                </View>
-              )}
-              {album.date && (
-                <View style={activeStyles.subtitleItem}>
-                  <MaterialIcons name="calendar-today" size={activeStyles.subtitleText.fontSize || 14} color={Colors.dark.tint} style={activeStyles.icon} />
-                  <Text style={[activeStyles.subtitleText, whiteTextShadow]}>{album.date}</Text>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-      </ImageBackground>
+    <TouchableOpacity style={activeStyles.card} onPress={onPress} activeOpacity={0.8}>
+      <View style={activeStyles.cardContent}>
+        <ImageBackground
+          source={{ uri: album.imageUrl }}
+          style={activeStyles.imageBackground}
+          imageStyle={activeStyles.image}
+          onError={(error) => console.log(`Error loading image for ${album.title}: ${error.nativeEvent.error}`)}
+        >
+          <View style={activeStyles.overlay} />
+          <View style={activeStyles.textContainer}>
+            <Text style={[activeStyles.title, whiteTextShadow]}>{album.title}</Text>
+            {(album.location || album.date) && (
+              <View style={activeStyles.subtitleContainer}>
+                {album.location && (
+                  <View style={activeStyles.subtitleItem}>
+                    <MaterialIcons name="location-pin" size={14} color={Colors.dark.tint} style={activeStyles.icon} />
+                    <Text style={[activeStyles.subtitleText, whiteTextShadow]}>{album.location}</Text>
+                  </View>
+                )}
+                {album.date && (
+                  <View style={activeStyles.subtitleItem}>
+                    <MaterialIcons name="calendar-today" size={14} color={Colors.dark.tint} style={activeStyles.icon} />
+                    <Text style={[activeStyles.subtitleText, whiteTextShadow]}>{album.date}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        </ImageBackground>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -64,7 +66,6 @@ const styles = (screenWidth: number) => StyleSheet.create({
     width: '100%', // Take full width of its column container
     aspectRatio: screenWidth > 600 ? 1.6 : 2, // Taller cards on desktop
     borderRadius: 15,
-    overflow: 'hidden',
     marginBottom: 20, // Vertical spacing between cards
     elevation: 5,
     shadowColor: Colors.light.shadow,
@@ -72,6 +73,11 @@ const styles = (screenWidth: number) => StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     backgroundColor: Colors.light.background, // Fallback background
+  },
+  cardContent: {
+    flex: 1,
+    overflow: 'hidden',
+    borderRadius: 15,
   },
   imageBackground: {
     flex: 1,
