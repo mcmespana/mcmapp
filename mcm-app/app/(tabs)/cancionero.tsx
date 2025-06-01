@@ -15,7 +15,7 @@ import { SelectedSongsProvider } from '../../contexts/SelectedSongsContext';
 export type RootStackParamList = {
   Categories: undefined;
   SongsList: { categoryId: string; categoryName: string };
-  SongDetail: { filename: string; title: string; author?: string; key?: string; capo?: number };
+  SongDetail: { filename: string; title: string; author?: string; key?: string; capo?: number; content: string; };
   SelectedSongs: undefined; // Add SelectedSongs screen
 };
 
