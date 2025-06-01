@@ -2,7 +2,7 @@
 
 Bienvenido/a al proyecto MCM App. Esta guía está diseñada para ayudarte a configurar el entorno de desarrollo, entender la estructura del proyecto y comenzar a trabajar con la aplicación.
 
-Expo es un framework de código abierto para construir aplicaciones universales con React Native. Simplifica significativamente el desarrollo para iOS, Android y Web, permitiendo compartir una gran base de código entre plataformas. Los comandos que encontrarás en esta guía te ayudarán a gestionar el ciclo de vida del desarrollo: desde iniciar los servidores de desarrollo hasta construir versiones de producción de la app.
+Expo es un framework de código abierto para construir aplicaciones universales con React Native. Simplifica significativamente el desarrollo para iOS, Android y Web, permitiendo compartir una gran base de código entre plataformas. Los comandos que encontrarás en esta guía te ayudararán a gestionar el ciclo de vida del desarrollo: desde iniciar los servidores de desarrollo hasta construir versiones de producción de la app.
 
 ##  Índice
 * [Instalación y Configuración Inicial](#instalación-y-configuración-inicial)
@@ -41,16 +41,27 @@ Para poner en marcha el proyecto, sigue estos pasos:
     ```bash
     cd mcm-app
     ```
-6.  **Instalar Dependencias del Proyecto:** Dentro de la carpeta `mcm-app`, ejecuta `npm install` para descargar e instalar todas las librerías y paquetes necesarios definidos en `package.json`.
-    ```bash
-    npm install
-    ```
+6.  **Verificar Versiones de React y Instalar Dependencias del Proyecto:**
+    *   **¡Importante! Compatibilidad de React:** Para asegurar la compatibilidad y evitar errores conocidos (como el error 'CSSStyleDeclaration' en la web), este proyecto (con Expo SDK 53) requiere **React 18.2.0** y **React DOM 18.2.0**.
+    *   Antes de ejecutar `npm install` por primera vez, o si ya tienes el proyecto y estás experimentando este error, verifica tu archivo `mcm-app/package.json`.
+    *   Asegúrate de que las siguientes líneas estén presentes en la sección `dependencies`:
+        ```json
+        "react": "18.2.0",
+        "react-dom": "18.2.0"
+        ```
+    *   Si necesitas cambiarlas, modifica `mcm-app/package.json`, luego elimina la carpeta `node_modules` y el archivo `package-lock.json` (o `yarn.lock` si usas Yarn) dentro de la subcarpeta `mcm-app` del proyecto.
+    *   Después de verificar y, si es necesario, corregir las versiones de React, instala todas las dependencias del proyecto. Dentro de la carpeta `mcm-app`, ejecuta:
+        ```bash
+        npm install
+        ```
+        Esto descargará e instalará todas las librerías y paquetes necesarios definidos en `package.json`.
+
 7.  **Configuración Específica de Plataforma:**
     *   **Android:** Necesitarás tener configurado Java y el Android SDK. Sigue la [guía oficial de Expo para configurar el entorno de desarrollo Android](https://docs.expo.dev/workflow/android-studio-emulator/).
     *   **iOS (macOS):** Necesitarás Xcode. Sigue la [guía oficial de Expo para configurar el entorno de desarrollo iOS](https://docs.expo.dev/workflow/ios-simulator/).
     *   **Cuenta de Apple Developer:** Requerida solo para builds de iOS en dispositivos físicos o para subir a TestFlight/App Store (costo anual).
 
-> **Nota sobre problemas:** Si algo explota durante la instalación o al ejecutar la app, prueba borrando la carpeta `node_modules` y el archivo `package-lock.json` (o `yarn.lock`), y luego ejecuta `npm install` (o `yarn install`) nuevamente. A veces, esto resuelve problemas de dependencias.
+> **Nota sobre problemas:** Si algo explota durante la instalación o al ejecutar la app (distinto al problema de versiones de React ya mencionado), prueba borrando la carpeta `node_modules` y el archivo `package-lock.json` (o `yarn.lock`), y luego ejecuta `npm install` (o `yarn install`) nuevamente. A veces, esto resuelve problemas de dependencias.
 
 ---
 
@@ -204,6 +215,3 @@ iPhone TestFlight (Build) ..... eas build -p ios --profile production
 iPhone TestFlight (Subir) ..... eas submit -p ios --latest
 Development Client (arrancar) . npx expo start --dev-client
 Instalar dependencias ......... npm install
-```
-
----
