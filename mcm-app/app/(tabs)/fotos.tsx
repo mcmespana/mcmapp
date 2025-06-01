@@ -1,35 +1,39 @@
 // app/(tabs)/fotos.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Platform, TouchableOpacity, ViewStyle, TextStyle, Linking, Alert } from 'react-native'; // Added Linking, Alert
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Linking, Alert, ActivityIndicator, useWindowDimensions, Platform, ViewStyle, TextStyle } from 'react-native'; // Added ActivityIndicator
 import AlbumCard from '@/components/AlbumCard';
 import allAlbumsData from '@/assets/albums.json';
-import { Colors } from '@/constants/colors';
+import { Colors as ThemeColors } from '@/constants/colors'; // Renamed for clarity
+import appBaseColors from '@/constants/colors'; // For base app colors
 import { commonStyles } from '@/constants/uiStyles';
 
-const ALBUMS_PER_PAGE = 3;
+const ALBUMS_PER_PAGE = 4;
 
 interface Album {
   id: string;
   title: string;
-  subtitle: string;
+  location?: string;
+  date?: string;
   imageUrl: string;
   albumUrl: string;
 }
 
 interface FotosScreenStyles {
   container: ViewStyle;
-  titleContainer: ViewStyle;
-  title: TextStyle;
+
   listContentContainer: ViewStyle;
+  albumCardContainerOneColumn: ViewStyle;
+  albumCardContainerTwoColumns: ViewStyle;
   loadMoreButton: ViewStyle;
   loadMoreButtonText: TextStyle;
 }
 
 export default function FotosScreen() {
+  const { width } = useWindowDimensions();
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
-
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   useEffect(() => {
     const initialAlbums = allAlbumsData.slice(0, ALBUMS_PER_PAGE);
     setDisplayedAlbums(initialAlbums);
@@ -39,26 +43,30 @@ export default function FotosScreen() {
   }, []);
 
   const loadMoreAlbums = () => {
-    if (allAlbumsLoaded) return;
+    if (allAlbumsLoaded || isLoadingMore) return;
 
-    const nextPage = currentPage + 1;
-    const startIndex = nextPage * ALBUMS_PER_PAGE;
-    const endIndex = startIndex + ALBUMS_PER_PAGE;
-    const newAlbums = allAlbumsData.slice(startIndex, endIndex);
+    setIsLoadingMore(true);
+    // Using a short timeout to ensure UI updates before heavy lifting, and to show spinner
+    setTimeout(() => {
+      const nextPage = currentPage + 1;
+      const startIndex = nextPage * ALBUMS_PER_PAGE;
+      const endIndex = startIndex + ALBUMS_PER_PAGE;
+      const newAlbums = allAlbumsData.slice(startIndex, endIndex);
 
-    if (newAlbums.length > 0) {
-      setDisplayedAlbums(prevAlbums => [...prevAlbums, ...newAlbums]);
-      setCurrentPage(nextPage);
-      if (newAlbums.length < ALBUMS_PER_PAGE || (displayedAlbums.length + newAlbums.length) === allAlbumsData.length) {
+      if (newAlbums.length > 0) {
+        setDisplayedAlbums(prevAlbums => [...prevAlbums, ...newAlbums]);
+        setCurrentPage(nextPage);
+        if (newAlbums.length < ALBUMS_PER_PAGE || (displayedAlbums.length + newAlbums.length) === allAlbumsData.length) {
+          setAllAlbumsLoaded(true);
+        }
+      } else {
         setAllAlbumsLoaded(true);
       }
-    } else {
-      setAllAlbumsLoaded(true);
-    }
+      setIsLoadingMore(false);
+    }, 200); // Small delay to allow spinner to show
   };
 
   const handleAlbumPress = async (albumUrl: string) => {
-    // Check if the URL is valid and can be opened
     const supported = await Linking.canOpenURL(albumUrl);
     if (supported) {
       try {
@@ -74,34 +82,41 @@ export default function FotosScreen() {
   };
 
   const renderFooter = () => {
+    if (isLoadingMore) {
+      return <ActivityIndicator size="large" color={ThemeColors.light.tint} style={{ marginVertical: 20 }} />;
+    }
     if (allAlbumsLoaded) {
       return null;
     }
     return (
-      <TouchableOpacity style={styles.loadMoreButton} onPress={loadMoreAlbums}>
-        <Text style={styles.loadMoreButtonText}>Load More</Text>
+      <TouchableOpacity style={styles.loadMoreButton} onPress={loadMoreAlbums} disabled={isLoadingMore}>
+        <Text style={styles.loadMoreButtonText}>Cargar Más</Text>
       </TouchableOpacity>
     );
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.titleContainer}>
-        <Text style={[styles.title, commonStyles.textShadow]}>Photo Albums</Text>
-      </View>
       <FlatList
         data={displayedAlbums}
         renderItem={({ item }) => (
-          <AlbumCard
-            album={item}
-            onPress={() => handleAlbumPress(item.albumUrl)} // Passed onPress handler
-          />
+          <View style={width > 600 ? styles.albumCardContainerTwoColumns : styles.albumCardContainerOneColumn}>
+            <AlbumCard album={item} onPress={() => handleAlbumPress(item.albumUrl)} />
+          </View>
         )}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContentContainer}
-        showsVerticalScrollIndicator={false}
-        ListFooterComponent={renderFooter} // Add Load More button footer
-        onEndReachedThreshold={0.1} // Optional: for triggering load on scroll end, though button is explicit
+        numColumns={width > 600 ? 2 : 1}
+        key={width > 600 ? 'TWO_COLUMNS' : 'ONE_COLUMN'} // Important for re-render on column change
+        contentContainerStyle={[
+          styles.listContentContainer, 
+          { 
+            maxWidth: width > 1200 ? 1600 : 1200, // Increase maxWidth on very wide screens
+            alignSelf: 'center' 
+          }
+        ]}
+        onEndReached={loadMoreAlbums}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
       />
     </View>
   );
@@ -110,40 +125,39 @@ export default function FotosScreen() {
 const styles = StyleSheet.create<FotosScreenStyles>({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
-    paddingTop: Platform.OS === 'android' ? 20 : 0,
+    backgroundColor: ThemeColors.light.background,
   },
-  titleContainer: {
-    paddingHorizontal: commonStyles.pagePadding.paddingHorizontal,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.light.text,
-  },
+
   listContentContainer: {
-    paddingHorizontal: commonStyles.pagePadding.paddingHorizontal,
+    paddingTop: 15,
+    // paddingHorizontal will be managed by column containers or screen width directly
     paddingBottom: 20,
-    alignItems: 'center',
+    // alignItems: 'center', // Removed, will be handled by alignSelf on FlatList or column styles
+  },
+  albumCardContainerOneColumn: {
+    width: '100%',
+    paddingHorizontal: 10, // Reduced side margins for mobile single column
+  },
+  albumCardContainerTwoColumns: {
+    width: '50%', // Each item takes half the width
+    paddingHorizontal: 5, // Reduced horizontal spacing between cards for desktop
   },
   loadMoreButton: {
     marginTop: 15,
-    marginBottom: 25, // Extra margin at the bottom of the list
+    marginBottom: 25,
     paddingVertical: 12,
     paddingHorizontal: 30,
-    backgroundColor: Colors.light.tint, // Use tint color for button
-    borderRadius: commonStyles.buttonBorderRadius.borderRadius, // Use common style for border radius
-    alignSelf: 'center', // Center button
-    elevation: 3, // Android shadow
-    shadowColor: Colors.light.shadow,
+    backgroundColor: ThemeColors.light.tint,
+    borderRadius: commonStyles.buttonBorderRadius.borderRadius,
+    alignSelf: 'center',
+    elevation: 3,
+    shadowColor: ThemeColors.light.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
   },
   loadMoreButtonText: {
-    color: Colors.dark.text, // Text color that contrasts with tint
+    color: ThemeColors.dark.text, // Ensure contrast with button background
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',

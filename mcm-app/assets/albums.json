@@ -1,51 +1,58 @@
 [
   {
     "id": "1",
-    "title": "Summer Vacation",
-    "subtitle": "June 2023",
-    "imageUrl": "https://via.placeholder.com/400x200.png?text=Summer+Vacation",
-    "albumUrl": "https://photos.app.goo.gl/abcdef1234567890"
+    "title": "Pascua Joven 2025",
+    "location": "Córdoba",
+    "date": "Abril 2025",
+    "imageUrl": "https://github.com/mcmespana/mcmapp/blob/main/25%20Pascua%20Joven.jpg?raw=true",
+    "albumUrl": "https://photos.app.goo.gl/wXEcRR9yH655rU8UA"
   },
   {
     "id": "2",
-    "title": "Mountain Hike",
-    "subtitle": "September 2023",
-    "imageUrl": "https://via.placeholder.com/400x200.png?text=Mountain+Hike",
-    "albumUrl": "https://photos.app.goo.gl/abcdef1234567891"
+    "title": "Congreso M+C 2025",
+    "location": "Benicàssim",
+    "date": "7-9 marzo",
+    "imageUrl": "https://github.com/mcmespana/mcmapp/blob/main/25%20Congreso%20MC.jpeg?raw=true",
+    "albumUrl": "https://photos.app.goo.gl/vmDd3U7UCfPxBPnJ77"
   },
   {
     "id": "3",
-    "title": "City Exploration",
-    "subtitle": "November 2023",
-    "imageUrl": "https://via.placeholder.com/400x200.png?text=City+Exploration",
-    "albumUrl": "https://photos.app.goo.gl/abcdef1234567892"
+    "title": "X Congreso MCM",
+    "location": "Tortosa",
+    "date": "1-3 febrero 2024",
+    "imageUrl": "https://github.com/mcmespana/mcmapp/blob/main/24%20Congreso.jpg?raw=true",
+    "albumUrl": "https://photos.app.goo.gl/zkYfRN7tbxzcAywY6"
   },
   {
     "id": "4",
-    "title": "Beach Days",
-    "subtitle": "July 2024",
-    "imageUrl": "https://via.placeholder.com/400x200.png?text=Beach+Days",
-    "albumUrl": "https://photos.app.goo.gl/abcdef1234567893"
+    "title": "Campamento COM 2024",
+    "location": "Albaida",
+    "date": "15-19 julio",
+    "imageUrl": "https://github.com/mcmespana/mcmapp/blob/main/24%20Pascua%20Encuentro.jpg?raw=true",
+    "albumUrl": "https://photos.app.goo.gl/2k9GBUe7Byis8bPZA"
   },
   {
     "id": "5",
-    "title": "Winter Wonderland",
-    "subtitle": "December 2024",
-    "imageUrl": "https://via.placeholder.com/400x200.png?text=Winter+Wonderland",
-    "albumUrl": "https://photos.app.goo.gl/abcdef1234567894"
+    "title": "Pascua Joven 2024",
+    "location": "Córdoba",
+    "date": "Marzo 2024",
+    "imageUrl": "https://github.com/mcmespana/mcmapp/blob/main/24%20Pascua%20Joven.jpg?raw=true",
+    "albumUrl": "https://photos.app.goo.gl/T42uNZfgLFBig87x5"
   },
   {
     "id": "6",
-    "title": "Road Trip Adventures",
-    "subtitle": "August 2024",
-    "imageUrl": "https://via.placeholder.com/400x200.png?text=Road+Trip",
-    "albumUrl": "https://photos.app.goo.gl/abcdef1234567895"
+    "title": "Post MAT24",
+    "location": "Tortosa",
+    "date": "Diciembre 2024",
+    "imageUrl": "https://github.com/mcmespana/mcmapp/blob/main/24%20Post%20MAT.jpg?raw=true",
+    "albumUrl": "https://photos.app.goo.gl/MmrpJ8VehN56Z5Mb6"
   },
   {
     "id": "7",
-    "title": "Family Gatherings",
-    "subtitle": "2023-2024",
-    "imageUrl": "https://via.placeholder.com/400x200.png?text=Family+Gatherings",
-    "albumUrl": "https://photos.app.goo.gl/abcdef1234567896"
+    "title": "MAT24",
+    "location": "Godelleta",
+    "date": "Agosto 2024",
+    "imageUrl": "https://github.com/mcmespana/mcmapp/blob/main/24%20MAT.jpg?raw=true",
+    "albumUrl": "https://photos.app.goo.gl/54DYB5XaTbWcS31NA"
   }
 ]
