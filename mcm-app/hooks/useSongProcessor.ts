@@ -226,7 +226,7 @@ export const useSongProcessor = ({
               font-family: ${currentFontFamily};
               margin: 10px;
               background-color: #ffffff;
-              color: ${AppColors.textDark};
+              color: ${AppColors.textDark || '#212529'};
               font-size: 100%;
             }
             h1 {

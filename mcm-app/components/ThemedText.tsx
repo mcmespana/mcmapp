@@ -1,7 +1,6 @@
-import { StyleSheet, Text, type TextProps } from 'react-native';
-import typography from '@/constants/typography'; // Import typography
-import { Colors } from '@/constants/colors'; // Import Colors for link
-
+import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
+import typography, { type Typography } from '@/constants/typography';
+import { Colors } from '@/constants/colors';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
 export type ThemedTextProps = TextProps & {
@@ -44,35 +43,40 @@ export function ThemedText({
 
   return (
     <Text
-      style={[
-        type !== 'link' && { color }, // Apply general text color if not a link
-        textStyle,
-        style, // Allow custom styles to override
-      ]}
+      style={(
+        [
+          type !== 'link' && { color },
+          textStyle,
+          style,
+        ].filter(Boolean) as any[]
+      )}
       {...rest}
     />
   );
 }
 
+const getLineHeight = (style: TextStyle, fallback: number): number => {
+  const size = style.fontSize ?? fallback;
+  return Math.round(size * 1.2);
+};
+
 const styles = StyleSheet.create({
   default: {
-    ...typography.body, // Use typography.body
-    lineHeight: 24, // Keep existing lineHeight or adjust as needed
+    ...typography.body,
+    lineHeight: 24,
   },
   defaultSemiBold: {
-    ...typography.body, // Use typography.body
-    fontWeight: '600', // Keep existing fontWeight
-    lineHeight: 24, // Keep existing lineHeight
+    ...typography.body,
+    fontWeight: '600' as const,
+    lineHeight: 24,
   },
   title: {
-    ...typography.h1, // Use typography.h1
-    // Potentially adjust lineHeight if needed, e.g., typography.h1.fontSize * 1.2
-    lineHeight: (typography.h1.fontSize ?? 28) * 1.2, 
+    ...typography.h1,
+    lineHeight: getLineHeight(typography.h1, 28),
   },
   subtitle: {
-    ...typography.h2, // Use typography.h2
-    // Potentially adjust lineHeight
-    lineHeight: (typography.h2.fontSize ?? 22) * 1.2,
+    ...typography.h2,
+    lineHeight: getLineHeight(typography.h2, 22),
   },
   link: {
     ...typography.body, // Base link style on typography.body

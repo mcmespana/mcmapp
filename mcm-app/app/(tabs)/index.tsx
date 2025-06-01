@@ -1,19 +1,11 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  Dimensions,
-  Pressable,
-  ViewStyle,
-  TextStyle,
-} from 'react-native';
+import { View, StyleSheet, Dimensions, ViewStyle, TextStyle, Text } from 'react-native';
 import { Link, LinkProps } from 'expo-router';
+import { Card } from 'react-native-paper';
 
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
 import spacing from '@/constants/spacing';
-import { commonShadow } from '@/constants/uiStyles';
 
 type NavigationItem = {
   href?: LinkProps['href'];
@@ -82,11 +74,23 @@ export default function Home() {
     <View style={styles.container}>
       <View style={styles.gridContainer}>
         {navigationItems.map((item, index) => {
-          const rectangleContent = (
-            <>
-              <Text style={[styles.iconPlaceholder, { color: item.color }]}>{item.iconPlaceholder}</Text>
-              <Text style={[styles.rectangleLabel, { color: item.color }]}>{item.label}</Text>
-            </>
+          const content = (
+            <Card
+              key={index}
+              style={[
+                styles.rectangle,
+                { backgroundColor: item.backgroundColor },
+                !item.href && styles.disabledRectangle,
+                !item.href && styles.placeholder,
+              ]}
+              contentStyle={styles.cardContent}
+              elevation={2}
+            >
+              <Card.Content style={styles.cardContent}>
+                <Text style={[styles.iconPlaceholder, { color: item.color }]}>{item.iconPlaceholder}</Text>
+                <Text style={[styles.rectangleLabel, { color: item.color }]}>{item.label}</Text>
+              </Card.Content>
+            </Card>
           );
 
           if (item.href) {
@@ -96,32 +100,14 @@ export default function Home() {
                 href={item.href}
                 asChild
               >
-                <Pressable
-                  style={({ pressed, hovered }) => [
-                    styles.rectangle,
-                    { backgroundColor: item.backgroundColor, opacity: pressed ? 0.85 : 1, width: rectDimension, height: rectDimension },
-                    hovered && styles.rectangleHover,
-                  ]}
-                  accessibilityRole="button"
-                >
-                  {rectangleContent}
-                </Pressable>
+                <View style={styles.linkWrapper}>
+                  {content}
+                </View>
               </Link>
             );
-          } else {
-            return (
-              <View
-                key={`placeholder-${index}`}
-                style={[
-                  styles.rectangle,
-                  styles.placeholder,
-                  { backgroundColor: item.backgroundColor, opacity: 0.7 },
-                ]}
-              >
-                {rectangleContent}
-              </View>
-            );
           }
+
+          return content;
         })}
       </View>
     </View>
@@ -132,8 +118,9 @@ interface Styles {
   container: ViewStyle;
   gridContainer: ViewStyle;
   rectangle: ViewStyle;
-  rectangleHover: ViewStyle;
-  rectangleFocus: ViewStyle;
+  cardContent: ViewStyle;
+  linkWrapper: ViewStyle;
+  disabledRectangle: ViewStyle;
   placeholder: ViewStyle;
   iconPlaceholder: TextStyle;
   rectangleLabel: TextStyle;
@@ -143,47 +130,40 @@ const styles = StyleSheet.create<Styles>({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: spacing.lg,
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    width: '100%',
-    maxWidth: 900,
-    gap,
+    justifyContent: 'space-between',
+    gap: gap,
   },
   rectangle: {
     width: rectDimension,
     height: rectDimension,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  cardContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 18,
-    margin: gap / 2,
-    borderWidth: 1,
-    borderColor: colors.border || '#e0e0e0',
-    ...commonShadow,
-    transitionProperty: 'box-shadow, transform',
-    transitionDuration: '0.2s',
+    height: '100%',
   },
-  rectangleHover: {
-    // Web-only hover effect
-    boxShadow: '0 4px 24px rgba(0,0,0,0.16)',
-    transform: [{ translateY: -2 }, { scale: 1.03 }],
-  },
-  rectangleFocus: {
-    // Web-only focus effect
-    outlineWidth: 2,
-    outlineColor: colors.primary || '#007aff',
+  linkWrapper: {
+    width: rectDimension,
+    height: rectDimension,
     outlineStyle: 'solid',
     outlineOffset: 2,
+  },
+  disabledRectangle: {
+    opacity: 0.5,
   },
   placeholder: {
     opacity: 0.6,
     borderStyle: 'dashed',
     borderColor: colors.border || '#bbb',
+    borderWidth: 1,
   },
   iconPlaceholder: {
     fontSize: 48,

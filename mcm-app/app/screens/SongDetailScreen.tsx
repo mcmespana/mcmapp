@@ -4,7 +4,6 @@ import { ScrollView, Text, StyleSheet, useWindowDimensions, View, TouchableOpaci
 import * as FileSystem from 'expo-file-system';
 import { Asset } from 'expo-asset';
 import { Ionicons } from '@expo/vector-icons';
-import { AppColors } from '../styles/theme';
 // ChordProParser and HtmlDivFormatter removed as they are now in the hook
 import { SongFilename } from '../../assets/songs';
 import { songAssets } from '../../assets/songs/index';

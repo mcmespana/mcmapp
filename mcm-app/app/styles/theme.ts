@@ -7,4 +7,11 @@ export const AppColors = {
   backgroundLight: '#ffffff', // Fondo blanco para FABs inactivos
   modalOverlay: 'rgba(0, 0, 0, 0.5)', // Fondo semitransparente para overlay de modales
   secondaryText: '#6c757d',   // Color para texto secundario o comentarios
-};
+} as const;
+
+export type AppColorsType = typeof AppColors;
+
+export default {
+  ...AppColors,
+  // Puedes agregar más configuraciones de tema aquí si es necesario
+} as const;
