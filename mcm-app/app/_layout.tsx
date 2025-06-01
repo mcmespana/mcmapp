@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; *
 
 
 import React, { useState, useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet } from 'react-native';
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { Slot } from 'expo-router';
@@ -126,10 +127,12 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={theme}>
-      <Slot />
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={theme}>
+        <Slot />
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
