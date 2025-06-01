@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Button, StyleSheet, TouchableWithoutFeedback } from 'react-native';
-import { AppColors } from '../app/styles/theme'; // Adjust path as necessary
+import theme from '../app/styles/theme'; // Default import for theme
 
 // Define availableFonts structure if not already globally defined
 interface FontOption {
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   fabAction: {
-    backgroundColor: AppColors.backgroundLight,
+    backgroundColor: theme.backgroundLight,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
@@ -199,21 +199,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
     borderWidth: 1.5,
-    borderColor: AppColors.primary,
+    borderColor: theme.primary,
   },
   fabActionActive: {
-    backgroundColor: AppColors.primary,
-    borderColor: AppColors.primaryDark,
+    backgroundColor: theme.primary,
+    borderColor: theme.primaryDark,
   },
   fabActionText: {
-    color: AppColors.primary,
+    color: theme.primary,
     fontWeight: 'bold',
   },
   fabActionTextActive: {
-    color: AppColors.textLight,
+    color: theme.textLight,
   },
   fabMain: {
-    backgroundColor: AppColors.accentYellow,
+    backgroundColor: theme.accentYellow,
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   fabMainText: {
-    color: AppColors.textLight,
+    color: theme.textLight,
     fontSize: 28,
     fontWeight: 'bold',
   },
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: AppColors.modalOverlay,
+    backgroundColor: theme.modalOverlay,
   },
   modalContent: {
     backgroundColor: 'white',
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
-    color: AppColors.textDark, // Ensure text color is appropriate
+    color: theme.textDark, // Ensure text color is appropriate
   },
   fontFamilyOptionButton: {
     paddingVertical: 12,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   },
   fontFamilyOptionText: {
     fontSize: 16,
-    color: AppColors.textDark,
+    color: theme.textDark,
   },
   transposeButtonRow: {
     flexDirection: 'row',
