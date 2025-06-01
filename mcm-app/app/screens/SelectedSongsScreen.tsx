@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Platform, Share } from 'react-native';
+import { Button, Provider as PaperProvider, Snackbar } from 'react-native-paper';
+import * as Clipboard from 'expo-clipboard';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -31,6 +33,8 @@ const SelectedSongsScreen: React.FC = () => {
   const { selectedSongs, clearSelection } = useSelectedSongs();
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
   const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<CategorizedSongs[]>([]);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   useEffect(() => {
     const processSongs = () => {
@@ -56,6 +60,73 @@ const SelectedSongsScreen: React.FC = () => {
 
     processSongs();
   }, [selectedSongs]);
+
+  const handleExport = () => {
+    // 1. Generate Header
+    const date = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase().replace('.', '');
+    const musicalEmojis = ['🎹', '🎸', '🎤', '🎶', '🎵', '🎼', '🎷', '🎺', '🎻'];
+    const randomEmoji = musicalEmojis[Math.floor(Math.random() * musicalEmojis.length)];
+    const header = `*CANCIONES ${date} ${randomEmoji}*`;
+
+    // 2. Process Selected Songs
+    const formattedSongLines: string[] = [];
+
+    categorizedSelectedSongs.forEach(category => {
+      const categoryLetter = category.categoryTitle.charAt(0).toUpperCase();
+
+      category.data.forEach(song => {
+        // Ensure this song is actually in the selectedSongs list (though categorizedSelectedSongs should already be filtered)
+        if (selectedSongs.includes(song.filename)) {
+          const songTitleClean = song.title.replace(/^\d+\.\s*/, '');
+
+          let chordCapoString = '';
+          if (song.key) {
+            chordCapoString = `\`${song.key}\``;
+            if (song.capo && song.capo > 0) {
+              chordCapoString += ` \`C/${song.capo}\``;
+            }
+          }
+
+          const songIdMatch = song.title.match(/^(\d+)\./);
+          const songId = songIdMatch ? songIdMatch[1] : '??';
+
+          let line = `*${categoryLetter}.* ${songTitleClean}`;
+          if (chordCapoString) {
+            line += ` · ${chordCapoString}`;
+          }
+          line += ` · *[#${songId}]*`;
+          formattedSongLines.push(line);
+        }
+      });
+    });
+
+    // 3. Assemble Final String
+    const finalText = [header, ...formattedSongLines].join('\n');
+
+    // 4. Platform-specific sharing/copying
+    if (Platform.OS === 'web' || Platform.OS === 'windows' || Platform.OS === 'macos') {
+      try {
+        Clipboard.setStringAsync(finalText);
+        setSnackbarMessage('Lista de canciones copiada al portapapeles');
+        setSnackbarVisible(true);
+      } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        setSnackbarMessage('Error al copiar la lista');
+        setSnackbarVisible(true);
+      }
+    } else { // For 'ios', 'android'
+      try {
+        Share.share({
+          message: finalText,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+        // Optionally set a snackbar message for sharing errors too
+        // setSnackbarMessage('Error al compartir la lista');
+        // setSnackbarVisible(true);
+      }
+    }
+  };
 
   const handleSongPress = (song: Song) => {
     navigation.navigate('SongDetail', {
@@ -93,10 +164,20 @@ const SelectedSongsScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.screenTitle}>Tu selección de canciones</Text>
-        <TouchableOpacity onPress={clearSelection} style={styles.clearButton}>
-          <IconSymbol name="trash" size={20} color="#007AFF" />
-          <Text style={styles.clearButtonText}>Limpiar selección</Text>
-        </TouchableOpacity>
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity onPress={clearSelection} style={styles.clearButton}>
+              <IconSymbol name="trash" size={20} color="#007AFF" />
+              <Text style={styles.clearButtonText}>Limpiar selección</Text>
+            </TouchableOpacity>
+            <Button
+              icon="export-variant"
+              mode="contained"
+              onPress={handleExport}
+              style={styles.exportButton}
+            >
+              Exportar
+            </Button>
+          </View>
       </View>
 
       <FlatList
@@ -105,9 +186,29 @@ const SelectedSongsScreen: React.FC = () => {
         keyExtractor={(item) => item.categoryTitle}
         contentContainerStyle={styles.listContentContainer}
       />
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        action={{
+          label: 'Cerrar',
+          onPress: () => {
+            setSnackbarVisible(false);
+          },
+        }}
+        duration={Snackbar.DURATION_MEDIUM}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </View>
   );
 };
+
+// Wrap the export with PaperProvider
+const SelectedSongsScreenWithProvider: React.FC = () => (
+  <PaperProvider>
+    <SelectedSongsScreen />
+  </PaperProvider>
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -129,22 +230,33 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
   },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 15,
+    alignItems: 'center', // Align items vertically
+  },
   clearButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingVertical: 10, // Keep similar padding
+    paddingHorizontal: 15, // Keep similar padding
     backgroundColor: '#e7e7ff',
     borderRadius: 8,
-    alignSelf: 'center', // Center button
-    marginBottom: 10,
+    flex: 0.48, // Adjust flex to slightly less than half to create a small gap if space-around is not enough
+    marginHorizontal: 5,
   },
   clearButtonText: {
     marginLeft: 8,
     color: '#007AFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  exportButton: {
+    flex: 0.48, // Adjust flex to slightly less than half
+    marginHorizontal: 5,
+    // backgroundColor: '#C8E6C9', // A light green, distinct from blue
   },
   listContentContainer: {
     paddingBottom: 20,
@@ -186,4 +298,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SelectedSongsScreen;
+export default SelectedSongsScreenWithProvider;
