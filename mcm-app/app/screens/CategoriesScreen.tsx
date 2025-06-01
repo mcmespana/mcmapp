@@ -4,6 +4,8 @@ import songsData from '../../assets/songs.json';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
+const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
+const SELECTED_SONGS_CATEGORY_NAME = '🎵 Tu selección de canciones';
 
 export default function CategoriesScreen({
   navigation
@@ -12,10 +14,15 @@ export default function CategoriesScreen({
     Categories: undefined;
     SongsList: { categoryId: string; categoryName: string };
     SongDetail: { songId: string; songTitle?: string };
+    SelectedSongs: undefined; // Added SelectedSongs for navigation
   }>
 }) {
   const actualCategories = Object.keys(songsData);
-  const displayCategories = [{ id: ALL_SONGS_CATEGORY_ID, name: ALL_SONGS_CATEGORY_NAME }, ...actualCategories.map(cat => ({ id: cat, name: `${cat}` }))];
+  const displayCategories = [
+    { id: ALL_SONGS_CATEGORY_ID, name: ALL_SONGS_CATEGORY_NAME },
+    { id: SELECTED_SONGS_CATEGORY_ID, name: SELECTED_SONGS_CATEGORY_NAME }, // Added new category
+    ...actualCategories.map(cat => ({ id: cat, name: `${cat}` }))
+  ];
 
   return (
     <FlatList
@@ -23,13 +30,21 @@ export default function CategoriesScreen({
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
         <TouchableOpacity
-          onPress={() => navigation.navigate('SongsList', { 
-            categoryId: item.id, 
-            categoryName: item.name 
-          })}
+          onPress={() => {
+            if (item.id === SELECTED_SONGS_CATEGORY_ID) {
+              navigation.navigate('SelectedSongs');
+            } else {
+              navigation.navigate('SongsList', { 
+                categoryId: item.id, 
+                categoryName: item.name 
+              });
+            }
+          }}
           style={{ padding: 20, borderBottomWidth: 1, borderColor: '#ddd' }}>
-          <Text style={[{ fontSize: 18 }, item.id === ALL_SONGS_CATEGORY_ID && { color: '#4A4A4A' } ]}>
-            {item.id === ALL_SONGS_CATEGORY_ID ? (
+          <Text style={[{ fontSize: 18 }, 
+            (item.id === ALL_SONGS_CATEGORY_ID || item.id === SELECTED_SONGS_CATEGORY_ID) && { color: '#4A4A4A' } 
+          ]}>
+            {item.id === ALL_SONGS_CATEGORY_ID || item.id === SELECTED_SONGS_CATEGORY_ID ? (
               item.name
             ) : (
               <>
