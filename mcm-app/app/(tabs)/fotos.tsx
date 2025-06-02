@@ -5,7 +5,6 @@ import { Button, ActivityIndicator } from 'react-native-paper';
 import AlbumCard from '@/components/AlbumCard';
 import allAlbumsData from '@/assets/albums.json';
 import { Colors as ThemeColors } from '@/constants/colors';
-import appBaseColors from '@/constants/colors';
 
 const ALBUMS_PER_PAGE = 4;
 

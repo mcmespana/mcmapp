@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useLayoutEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Platform, Share } from 'react-native';
-import { Button, Provider as PaperProvider, Snackbar } from 'react-native-paper';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, Share } from 'react-native';
+import { Provider as PaperProvider, Snackbar } from 'react-native-paper';
 import * as Clipboard from 'expo-clipboard';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext';
 import SongListItem from '../../components/SongListItem';
-import { IconSymbol } from '../../components/ui/IconSymbol'; // Corrected path
+import { IconSymbol } from '../../components/ui/IconSymbol';
 import allSongsData from '../../assets/songs.json';
-import { RootStackParamList } from '../(tabs)/cancionero'; // For navigation types
+import { RootStackParamList } from '../(tabs)/cancionero';
+import { songAssets, SongFilename } from '../../assets/songs'; // Add songAssets import
 
 // Define Song type based on songs.json structure
 interface Song {
@@ -30,13 +31,19 @@ interface CategorizedSongs {
 type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SongDetail'>;
 
 const SelectedSongsScreen: React.FC = () => {
-  // const { selectedSongs, clearSelection } = useSelectedSongs(); // Moved up
-
   const { selectedSongs, clearSelection } = useSelectedSongs();
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
   const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<CategorizedSongs[]>([]);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [randomEmoji, setRandomEmoji] = useState('');
+
+  // Generate random emoji when component mounts
+  useEffect(() => {
+    const musicalEmojis = ['🎵', '🎶', '🎤', '🎸', '🎹', '🎷', '🎺', '🎻'];
+    const randomIndex = Math.floor(Math.random() * musicalEmojis.length);
+    setRandomEmoji(musicalEmojis[randomIndex]);
+  }, []);
 
   useEffect(() => {
     const processSongs = () => {
@@ -89,14 +96,17 @@ const SelectedSongsScreen: React.FC = () => {
             }
           }
 
-          const songIdMatch = song.title.match(/^(\d+)\./);
-          const songId = songIdMatch ? songIdMatch[1] : '??';
+          const songIdMatch = song.title.match(/^\d+/); // Remove the dot from the regex to get just the number
+          const songId = songIdMatch ? songIdMatch[0] : '??';
 
           let line = `*${categoryLetter}.* ${songTitleClean}`;
           if (chordCapoString) {
             line += ` · ${chordCapoString}`;
           }
           line += ` · *[#${songId}]*`;
+          if (song.author) {
+            line += ` · ${song.author}`;
+          }
           formattedSongLines.push(line);
         }
       });
@@ -131,9 +141,27 @@ const SelectedSongsScreen: React.FC = () => {
   }, [categorizedSelectedSongs, selectedSongs]); // Dependencies for useCallback
 
   const handleSongPress = (song: Song) => {
+    // Get the complete song data from allSongsData
+    const completeSong = Object.values(allSongsData).flat().find(s => s.filename === song.filename);
+    if (!completeSong) {
+      console.error('Song not found in allSongsData:', song.filename);
+      return;
+    }
+
+    // Safely get the content using type assertion
+    const filename = completeSong.filename as SongFilename;
+    const content = songAssets[filename];
+    if (!content) {
+      console.error('Song content not found in songAssets:', filename);
+      return;
+    }
+
+    // Ensure content is a string
+    const contentString = typeof content === 'string' ? content : String(content);
+
     navigation.navigate('SongDetail', {
-      ...song, // Spread all properties from the song object
-      content: "" // Add the missing content property directly
+      ...completeSong,
+      content: contentString
     });
   };
 
@@ -144,7 +172,7 @@ const SelectedSongsScreen: React.FC = () => {
         <SongListItem
           key={song.filename}
           song={song}
-          onPress={() => handleSongPress(song)}
+          onPress={handleSongPress}
         />
       ))}
     </View>
@@ -186,10 +214,10 @@ const SelectedSongsScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.screenTitle}>Tu selección de temazos</Text>
+          <Text style={styles.screenTitle}>Tu selección de temazos {randomEmoji}</Text>
           <View style={styles.buttonsContainer}>
             <TouchableOpacity onPress={clearSelection} style={styles.clearButton}>
-              <IconSymbol name="trash" size={20} color="#007AFF" />
+               <IconSymbol name="trash" size={20} color="#FF4444" />
               <Text style={styles.clearButtonText}>Borrar selección</Text>
             </TouchableOpacity>
             {/* Export button moved to header */}
@@ -219,12 +247,13 @@ const SelectedSongsScreen: React.FC = () => {
   );
 };
 
-// Wrap the export with PaperProvider
-const SelectedSongsScreenWithProvider: React.FC = () => (
-  <PaperProvider>
-    <SelectedSongsScreen />
-  </PaperProvider>
-);
+function SelectedSongsScreenWithProvider() {
+  return (
+    <PaperProvider>
+      <SelectedSongsScreen />
+    </PaperProvider>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -241,7 +270,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginBottom: 15,
     color: '#333',
     textAlign: 'center',
@@ -250,51 +279,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 15,
-    alignItems: 'center', // Align items vertically
+    alignItems: 'center',
   },
   clearButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10, // Keep similar padding
-    paddingHorizontal: 15, // Keep similar padding
-    backgroundColor: '#e7e7ff',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: '#ffebee',
     borderRadius: 8,
-    flex: 0.48, // Adjust flex to slightly less than half to create a small gap if space-around is not enough
+    flex: 0.48,
     marginHorizontal: 5,
   },
   clearButtonText: {
     marginLeft: 8,
-    color: '#007AFF',
     fontSize: 16,
     fontWeight: '500',
-  },
-  exportButton: {
-    flex: 0.48, // Adjust flex to slightly less than half
-    marginHorizontal: 5,
-    // backgroundColor: '#C8E6C9', // A light green, distinct from blue
+    color: '#FF4444',
   },
   listContentContainer: {
     paddingBottom: 20,
   },
   categoryContainer: {
     marginTop: 15,
-    marginBottom: 5,
     marginHorizontal: 10,
     backgroundColor: '#fff',
     borderRadius: 8,
-    overflow: 'hidden', // Ensures SongListItem borders don't exceed rounded corners
-    elevation: 1, // for Android shadow
-    shadowColor: '#000', // for iOS shadow
+    overflow: 'hidden',
+    elevation: 1,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
   categoryTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     padding: 15,
-    backgroundColor: '#f0f0f0', // Light grey background for category header
+    backgroundColor: '#f0f0f0',
     color: '#444',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
@@ -312,6 +335,21 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
+  songNumber: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  songAuthor: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  songSubtitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
 });
 
-export default SelectedSongsScreenWithProvider;
+export default SelectedSongsScreenWithProvider; // Export the wrapped component with PaperProvider
