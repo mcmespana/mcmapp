@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react'; // Added useEffect
 import { TouchableOpacity, Text, View, StyleSheet, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext'; // Corrected path
@@ -12,18 +12,36 @@ interface Song {
   key?: string;
   capo?: number;
   info?: string;
+  originalCategoryKey?: string; // Added for 'Search All' mode
+  numericFilenamePart?: string; // Added for consistent number display
 }
 
 interface SongListItemProps {
   song: Song;
   onPress: (song: Song) => void;
+  isSearchAllMode?: boolean; // Optional, as it's specific to SongListScreen's usage
 }
 
-const SongListItem: React.FC<SongListItemProps> = ({ song, onPress }) => {
+const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllMode = false }) => {
   const { addSong, removeSong, isSongSelected } = useSelectedSongs();
   const swipeableRow = useRef<Swipeable>(null);
-
   const isSelected = isSongSelected(song.filename);
+  const backgroundColorAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(backgroundColorAnim, {
+      toValue: isSelected ? 1 : 0,
+      duration: 200, // Smooth transition
+      useNativeDriver: false, // backgroundColor is not supported by native driver
+    }).start();
+  }, [isSelected, backgroundColorAnim]);
+
+  const animatedStyle = {
+    backgroundColor: backgroundColorAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['#fff', '#e6ffed'], // White to light green
+    }),
+  };
 
   const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
     const trans = dragX.interpolate({
@@ -72,50 +90,93 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress }) => {
   return (
     <Swipeable
       ref={swipeableRow}
-      renderRightActions={!isSelected ? renderRightActions : undefined} // Show add only if not selected
-      renderLeftActions={isSelected ? renderLeftActions : undefined}  // Show remove only if selected
-      overshootRight={false} // Prevent over-swiping for single action
-      overshootLeft={false}  // Prevent over-swiping for single action
+      renderRightActions={!isSelected ? renderRightActions : undefined}
+      renderLeftActions={isSelected ? renderLeftActions : undefined}
+      onSwipeableOpen={(direction) => {
+        if (direction === 'right' && !isSelected) {
+          addSong(song.filename);
+          swipeableRow.current?.close();
+        } else if (direction === 'left' && isSelected) {
+          removeSong(song.filename);
+          swipeableRow.current?.close();
+        }
+      }}
     >
-      <TouchableOpacity
-        onPress={() => onPress(song)}
-        style={[styles.songItem, isSelected && styles.selectedSongItem]}
-      >
-        <View style={styles.songInfoContainer}>
-          <Text style={styles.songTitle}>
-            {song.title.replace(/^\d+\.\s*/, '')} {/* Remove leading numbers */}
-          </Text>
-          {song.author ? (
-            <Text style={styles.songAuthor}>{song.author}</Text>
-          ) : null}
-        </View>
-        <View style={styles.keyCapoContainer}>
-          {song.key ? (
-            <Text style={styles.songKey}>{song.key.toUpperCase()}</Text>
-          ) : null}
-          {song.capo && song.capo > 0 ? (
-            <Text style={styles.songCapo}>{`C/${song.capo}`}</Text>
-          ) : null}
-        </View>
-      </TouchableOpacity>
+      <Animated.View style={[styles.songItemOuter, animatedStyle]}>
+        <TouchableOpacity onPress={() => onPress(song)} style={styles.songItemInner}>
+          {/* Contenedor principal de la información de la canción y la tonalidad/capo */}
+          <View style={styles.songInfoContainer}>
+            <Text style={styles.songTitle} numberOfLines={1} ellipsizeMode="tail">
+              {song.title.replace(/^\d+\.\s*/, '')}
+            </Text>
+            <View style={styles.metaLine}>
+              {isSearchAllMode && song.originalCategoryKey && song.numericFilenamePart ? (
+                <Text style={styles.subtitleText} numberOfLines={1} ellipsizeMode="tail">
+                  {`${song.originalCategoryKey}.${song.numericFilenamePart}`}
+                  {song.author && (
+                    <Text style={styles.subtitleAuthor}>
+                      {`   ${song.author}`} {/* Three spaces for separation */}
+                    </Text>
+                  )}
+                </Text>
+              ) : (
+                <>
+                  {song.numericFilenamePart && (
+                    <Text style={styles.subtitleText}>#{song.numericFilenamePart}</Text>
+                  )}
+                  {song.author && (
+                    <Text style={[styles.subtitleText, styles.subtitleAuthor, song.numericFilenamePart ? { marginLeft: 0 } : {}]} numberOfLines={1} ellipsizeMode="tail">
+                      {/* Add three spaces if numericFilenamePart is NOT present, to maintain spacing logic, otherwise rely on structure */}
+                      {song.numericFilenamePart ? `   ${song.author}` : song.author}
+                    </Text>
+                  )}
+                </>
+              )}
+            </View>
+          </View>
+          <View style={styles.keyCapoContainer}>
+            {song.key ? (
+              <Text style={styles.songKey}>{song.key.toUpperCase()}</Text>
+            ) : null}
+            {song.capo && song.capo > 0 ? (
+              <Text style={styles.songCapo}>{`C/${song.capo}`}</Text>
+            ) : null}
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
     </Swipeable>
   );
 };
 
 const styles = StyleSheet.create({
-  songItem: {
+  songItemOuter: { // Renamed from songItem to be the Animated.View container
+    // backgroundColor will be handled by animatedStyle
+  },
+  songItemInner: { // This will contain the flexDirection and padding previously in songItem
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 16,
-    paddingHorizontal: 20, // Added horizontal padding
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderColor: '#eee',
-    backgroundColor: '#fff', // Default background
   },
-  selectedSongItem: {
-    backgroundColor: '#e6ffed', // Light green for selected items
-  },
+  // selectedSongItem: { // This style is now handled by the animation
+  //   backgroundColor: '#e6ffed',
+  // },
+  // songInfoContainer: { // This definition of songInfoContainer seems to be a leftover/duplicate
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-between',
+  //   alignItems: 'center',
+  //   paddingVertical: 16,
+  //   paddingHorizontal: 20, // Added horizontal padding
+  //   borderBottomWidth: 1,
+  //   borderColor: '#eee',
+  //   backgroundColor: '#fff', // Default background
+  // },
+  // selectedSongItem: { // This style is now handled by the animation
+  //   backgroundColor: '#e6ffed',
+  // },
   songInfoContainer: {
     flex: 1,
     marginRight: 8,
@@ -123,11 +184,18 @@ const styles = StyleSheet.create({
   songTitle: {
     fontSize: 16,
     color: '#333',
+    fontWeight: '500',
   },
-  songAuthor: {
-    fontSize: 14,
+  metaLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 3,
+  },
+  subtitleText: {
+    fontSize: 13,
     color: '#666',
-    marginTop: 4,
+  },
+  subtitleAuthor: {
     fontStyle: 'italic',
   },
   keyCapoContainer: {

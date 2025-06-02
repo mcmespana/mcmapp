@@ -152,10 +152,18 @@ const SelectedSongsScreen: React.FC = () => {
 
   useLayoutEffect(() => {
     if (selectedSongs.length > 0) {
+      const isDesktopLike = Platform.OS === 'web' || Platform.OS === 'windows' || Platform.OS === 'macos';
       navigation.setOptions({
         headerRight: () => (
-          <TouchableOpacity onPress={handleExport} style={{ paddingHorizontal: 15 }}>
-            <IconSymbol name="square.and.arrow.up" size={24} color="#fff" />
+          <TouchableOpacity onPress={handleExport} style={{ paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center' }}>
+            <IconSymbol 
+              name={isDesktopLike ? "doc.on.doc" : "square.and.arrow.up"} 
+              size={24} 
+              color="#fff" // Reverted to original white color, assuming header has dark background or text color will be set by theme
+            />
+            {isDesktopLike && (
+              <Text style={{ color: '#fff', marginLeft: 8, fontSize: 16, fontWeight: '500' }}>Copiar</Text>
+            )}
           </TouchableOpacity>
         ),
       });
@@ -178,11 +186,11 @@ const SelectedSongsScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.screenTitle}>Tu selección de canciones</Text>
+        <Text style={styles.screenTitle}>Tu selección de temazos</Text>
           <View style={styles.buttonsContainer}>
             <TouchableOpacity onPress={clearSelection} style={styles.clearButton}>
               <IconSymbol name="trash" size={20} color="#007AFF" />
-              <Text style={styles.clearButtonText}>Limpiar selección</Text>
+              <Text style={styles.clearButtonText}>Borrar selección</Text>
             </TouchableOpacity>
             {/* Export button moved to header */}
           </View>

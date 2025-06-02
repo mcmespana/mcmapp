@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FlatList, Text, View, StyleSheet } from 'react-native'; // TouchableOpacity removed
+import { Searchbar } from 'react-native-paper'; // Added Searchbar
 import rawSongsData from '../../assets/songs.json';
-import SongSearch from '../../components/SongSearch';
+// import SongSearch from '../../components/SongSearch'; // Removed SongSearch import
 import SongListItem from '../../components/SongListItem'; // Added import
 
 // Type for song data
@@ -13,6 +14,8 @@ interface Song {
   capo?: number; // Optional
   info?: string; // Optional
   content?: string; // Optional
+  originalCategoryKey?: string; // For 'Search All' mode
+  numericFilenamePart?: string; // For consistent number display
 }
 
 // Ensure the data is in the correct format
@@ -61,9 +64,27 @@ export default function SongsListScreen({ route, navigation }: {
       try {
         if (categoryId === '__ALL__') {
           let allSongs: Song[] = [];
-          for (const key in songsData) {
-            if (Object.prototype.hasOwnProperty.call(songsData, key)) {
-              allSongs = allSongs.concat(songsData[key]);
+          for (const originalCategoryKey in songsData) {
+            if (Object.prototype.hasOwnProperty.call(songsData, originalCategoryKey)) {
+              const categorySongs = songsData[originalCategoryKey];
+              const songsWithMetadata = categorySongs.map(song => {
+                const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
+                let numericPart = '';
+                if (titleMatch && titleMatch[1]) {
+                  numericPart = titleMatch[1].padStart(2, '0');
+                } else {
+                  const filenameMatch = song.filename.match(/_(\d+)\.html$/);
+                  if (filenameMatch && filenameMatch[1]) {
+                    numericPart = filenameMatch[1].padStart(2, '0');
+                  }
+                }
+                return {
+                  ...song,
+                  originalCategoryKey: originalCategoryKey.charAt(0).toUpperCase(), // Take only the first character and ensure it's uppercase
+                  numericFilenamePart: numericPart,
+                };
+              });
+              allSongs = allSongs.concat(songsWithMetadata);
             }
           }
           // Sort all songs alphabetically by title (removing leading numbers for sorting)
@@ -87,7 +108,20 @@ export default function SongsListScreen({ route, navigation }: {
             console.log(`Found category '${categoryKey}' with ${categorySongs?.length || 0} songs`);
             
             if (categorySongs && Array.isArray(categorySongs)) {
-              setSongs(categorySongs); // Songs within a category are assumed to be pre-sorted or their order is as in JSON
+              const songsWithNumericPart = categorySongs.map(song => {
+                const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
+                let numericPart = '';
+                if (titleMatch && titleMatch[1]) {
+                  numericPart = titleMatch[1].padStart(2, '0');
+                } else {
+                  const filenameMatch = song.filename.match(/_(\d+)\.html$/);
+                  if (filenameMatch && filenameMatch[1]) {
+                    numericPart = filenameMatch[1].padStart(2, '0');
+                  }
+                }
+                return { ...song, numericFilenamePart: numericPart };
+              });
+              setSongs(songsWithNumericPart);
             } else {
               setError(`No se encontraron canciones de '${categoryKey}'`);
               setSongs([]);
@@ -155,7 +189,15 @@ export default function SongsListScreen({ route, navigation }: {
   if (filteredSongs.length === 0) {
     return (
       <View style={styles.container}>
-        <SongSearch searchText={search} setSearchText={setSearch} />
+        <Searchbar
+          placeholder="Escribe el título de una canción o el autor"
+          placeholderTextColor="#8A8A8D"
+          iconColor="#8A8A8D"
+          onChangeText={setSearch}
+          value={search}
+          style={styles.searchbar} // Style will be updated below
+          inputStyle={styles.searchbarInput} // Style will be updated below
+        />
         <Text style={styles.categoryTitle}>{categoryName}</Text>
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No hemos encontrado esa canción 🕵️‍♀️</Text>
@@ -170,13 +212,29 @@ export default function SongsListScreen({ route, navigation }: {
   // Render song list
   return (
     <View style={styles.container}>
-      <SongSearch searchText={search} setSearchText={setSearch} />
-      <Text style={styles.categoryTitle}>{categoryName}</Text>
+      <Searchbar
+        placeholder="Escribe el título de una canción o el autor"
+        placeholderTextColor="#8A8A8D"
+        iconColor="#8A8A8D"
+        onChangeText={setSearch}
+        value={search}
+        style={styles.searchbar}
+        inputStyle={styles.searchbarInput}
+      />
+      {categoryName === '🔎 Buscar una canción...' ? (
+        <View style={styles.separator} />
+      ) : (
+        <Text style={styles.categoryTitle}>{categoryName}</Text>
+      )}
       <FlatList
         data={filteredSongs}
         keyExtractor={(item) => item.filename}
         renderItem={({ item }) => (
-          <SongListItem song={item} onPress={handleSongPress} />
+          <SongListItem 
+          song={item} 
+          onPress={handleSongPress} 
+          isSearchAllMode={categoryId === '__ALL__'} 
+        />
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -192,6 +250,39 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  separator: {
+    height: 5,
+    backgroundColor: '#E0E0E0', // Light gray color for the separator
+    marginHorizontal: 15,
+    marginVertical: 10, // Adjust spacing as needed
+  },
+  searchbar: {
+    marginHorizontal: 16,
+    marginVertical: 12,
+    borderRadius: 20, // Bordes más redondeados para elegancia
+    backgroundColor: '#fff',
+    elevation: 2, // Sombra sutil (Android)
+    shadowColor: '#000', // Sombra sutil (iOS)
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    height: 44, // Un poco menos alto
+    borderWidth: 1,
+    borderColor: '#E0E0E0', // Borde gris claro y elegante
+  },
+  searchbarInput: {
+    fontSize: 16,
+    paddingLeft: 0, // Remove default padding to align with custom icon
+    // paddingVertical: 0, // Removed to use paddingTop
+    // textAlignVertical: 'center', // This wasn't effective
+    // height: '100%', // Removed
+    // lineHeight: 44, // Removed
+    // Adjust paddingTop to lower the text. Start with a value around (SearchbarHeight - FontSize) / 2 - some_offset
+    // Searchbar height is 44, fontSize is 16.
+    // If paddingTop: 0 is still too low, try textAlignVertical: 'top'.
+    paddingTop: 0, 
+    textAlignVertical: 'top', // Align text to the top of its container
   },
   categoryTitle: {
     fontSize: 20,
