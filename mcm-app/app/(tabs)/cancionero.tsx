@@ -1,5 +1,4 @@
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
 
 // Importar pantallas
 import CategoriesScreen from '../screens/CategoriesScreen';
@@ -60,7 +59,7 @@ export default function CancioneroTab() {
         <Stack.Screen
           name="SelectedSongs"
           component={SelectedSongsScreen}
-          options={{ title: 'Tu Selección' }}
+          options={{ title: 'Seleccionadas' }}
         />
       </Stack.Navigator>
     </SelectedSongsProvider>

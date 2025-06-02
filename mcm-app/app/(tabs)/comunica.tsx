@@ -1,11 +1,12 @@
 // app/(tabs)/comunica.tsx
 
 import React, { useState } from 'react';
-import { Platform, View, StyleSheet, Alert } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
 import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
+import iframeStyles from './comunica.module.css';
 
 const URL = 'https://steelblue-mallard-178509.hostingersite.com/area-privada/';
 
@@ -38,7 +39,7 @@ export default function Comunica() {
         <iframe
           src={URL}
           title="Área Privada"
-          style={styles.iframe}
+          className={iframeStyles.iframe}
           onError={onError}
           onLoad={onLoadEnd}
         />
@@ -110,10 +111,4 @@ const styles = StyleSheet.create({
     padding: 0,
     position: 'relative',
   },
-  iframe: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    borderWidth: 0,
-  } as any,
 });
