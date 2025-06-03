@@ -6,7 +6,8 @@
       "author": "",
       "key": "G",
       "capo": 0,
-      "info": ""
+      "info": "",
+      "content": "{title: Ven a Celebrar}\n{key: G}\n\n\n[G]VEN A [bm]CELEBRAR EL [C]AMOR DE [G]DIOS, SE [C]DERRAMARÁ [G]COMO [C]AGUA [D]LIMPIA  \n[C]INUNDANDO [G]NUESTRAS [C]VIDAS DE [D]SU [D]PRESENCIA (bis)\n\n[em]Os [bm]aseguro [C]que [G]yo [C]estaré [G]cuando [C]dos o [D]más por [D]mí os reunáis.  \nEs [G]LA [C]mejor [D]forma de [D]creer en nuestra amistad (bis)\n"
     },
     {
       "title": "02. Dios está aquí",
@@ -14,7 +15,8 @@
       "author": "",
       "key": "C",
       "capo": 1,
-      "info": ""
+      "info": "",
+      "content": "\n{title: Dios Está Aquí}\n{key: C}\n{capo: 1}\n{chordsize:14}\n{soc}\n[C]DIOS [G]ESTÁ [am]AQUÍ TAN [F]CIERTO COMO EL [G]AIRE QUE [C]RESPIRO  \n[F]TAN [G]CIERTO COMO LA [C-em-am]MAÑANA SE LEVANTA  \n[F]TAN [G]CIERTO COMO [C]QUE ESTE CANTO LO PUEDES OÍR  \n{eoc}\n[G]LO [F]PUEDES [C]SENTIR MOVIÉNDOSE ENTRE LOS QUE AMAN  \n[G]LO [F]PUEDES [G]OÍR CANTANDO CON NOSOTROS [C]AQUÍ  \n[G]LO [F]PUEDES [C]LLEVAR CUANDO POR ESA PUERTA [G]SALGAS  \n[G]LO [F]PUEDES [G]GUARDAR POR SIEMPRE EN TU [C]CORAZÓN (G7)\n"
     }
   ],
   "C. Salmos 📖": [
@@ -24,15 +26,17 @@
       "author": "",
       "key": "D",
       "capo": 0,
-      "info": ""
+      "info": "",
+      "content": "{title: El Lote de Mi Heredad}\n{key: D}\n\n{start_of_chorus}\n[D]EL [A]SEÑOR ES EL [bm]LOTE DE MI [G]HEREDAD, [D]ALELUYA  \n[bm]POR [A]SIEMPRE MI [G]ALMA TE [A]CANTARÁ, [D]ALELUYA\n{end_of_chorus}\n\n[bm]Protégeme [G]Dios [D]mío, me [G]refugio en [A]ti. Yo [G]digo al [A]Señor tú [D]eres MI bien.  \n[D]Los dioses y [A]señores de [bm]LA tierra no [G]me satisfacen.  \n\n[D]El Señor es el [A]lote de MI [bm]heredad. MI [G]suerte está en [A]tu mano.  \n[G]Me ha tocado un [A]lote hermoso, me [G]encanta MI [A]heredad.  \n\n[D]Bendeciré al [A]Señor que me [G]aconseja. Hasta de [A]noche me instruye internamente.  \n[D]Tengo siempre [A]presente al [G]Señor, con él a [A]MI derecha, no vacilaré.  \n\n[D]Me enseñarás el [A]sendero de [em]LA vida, me [G]saciarás, de gozo en tu presencia  \n[A]de alegría. [D]Por siempre a [A]tu derecha.\n"
     },
     {
       "title": "02. El Señor es mi Pastor",
       "filename": "senor_pastor.cho",
       "author": "Nico Montero",
       "key": "G",
-      "capo": 1, 
-      "info": ""
+      "capo": 1,
+      "info": "",
+      "content": "{title: El Señor es Mi Pastor}\n{key: G}\n{capo: 1}\n\n[G]EL [D]SEÑOR ES MI [Em]PASTOR NADA ME [C]FALTA, EL SEÑOR ES MI [Am]PASTOR (bis)\n\n[G]En praderas [Bm]reposa [Em]MI alma, en su [C]agua descansa MI sed.  \n[C]Él me guía por [Am]senderos [D]justos, por amor por amor de su nombre.  \nAunque pase por valles oscuros, ningún  \n[Bm]mal ningún mal [Em]temeré, porque sé que el Señor va conmigo, su cayado sostiene mi feeeee.  \n[G]Tú preparas por mí una mesa, frente a aquellos que buscan MI mal. Con  \n[Em]Con aceite me ungiste Señor, y mi copa rebosa de ti, Gloria a Dios, Padre Omnipotente,  \n[Bm]y a su hijo Jesús, el Señor, y al Espíritu que habita en el mundo, por los siglos eternos amén  \n[C] [Am-A7] [D] [D7]\n"
     }
   ],
   "D. Aleluya - Palabra 🎊": [
@@ -42,7 +46,8 @@
       "author": "Brotes de Olivo",
       "key": "E",
       "capo": 0,
-      "info": ""
+      "info": "",
+      "content": "{title: Aleluya Cantará}\n{key: E}\n\n[E]ALELUYA [A]CANTARÁ [B]QUIEN [E]PERDIÓ LA ESPERANZA Y LA TIERRA SONREIRÁ, ALELUYA.  \n[f#m] [G#7] [c#m] [A] [B] [E] [c#m] [B] [E]\n"
     },
     {
       "title": "02. Aleluya",
@@ -50,7 +55,8 @@
       "author": "Kairoi",
       "key": "C",
       "capo": 2,
-      "info": ""
+      "info": "",
+      "content": "{title: Aleluya}\n{author: Kairoi}\n{key: C}\n{capo: 2}\n\n{soc}\n[C]ALELU[em]YA, [F]ALELU[G]YA, [C]ALELU[em]YA, [F]A[G]LELU[C]YA    \n{eoc}\n\n[C]Nunca [G]deja[am]ré [F]de can[dm]tar, \n[G]que tú eres LA luz y el amor  \n[C]Tu [G]ca[am]mi[F]no [dm]quie[G]ro seguir, no me dejes solo Señor.\n"
     }
   ]
 }
