@@ -62,19 +62,23 @@ const SelectedSongsScreen: React.FC = () => {
     navigation.navigate('SongDetail', {
       filename: song.filename,
       title: song.title,
-      author: song.author,
-      key: song.key,
-      capo: song.capo,
-      content: song.content, // Pass content to SongDetail
+      ...(song.author && { author: song.author }),
+      ...(song.key && { key: song.key }),
+      ...(typeof song.capo !== 'undefined' && { capo: song.capo }),
+      content: song.content || '', // Ensure content is not undefined
     });
   };
 
   const renderCategory = ({ item }: { item: CategorizedSongs }) => (
     <View style={styles.categoryContainer}>
       <Text style={styles.categoryTitle}>{item.categoryTitle}</Text>
-      {item.data.map(song => (
+      {item.data
+        .filter((song): song is Song & { filename: string } => 
+          song && typeof song.filename === 'string' && song.filename.length > 0
+        )
+        .map(song => (
         <SongListItem
-          key={song.filename}
+          key={song.filename} // Now song.filename is guaranteed to be a valid string
           song={song}
           onPress={() => handleSongPress(song)}
         />
