@@ -161,8 +161,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
         onChangeNotation={handleChangeNotation}
       />
     </View>
-  );
-            console.log(songHtml)
+    );
 
 }
 
