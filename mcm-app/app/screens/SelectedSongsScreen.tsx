@@ -166,7 +166,7 @@ const SelectedSongsScreen: React.FC = () => {
       ...(song.author && { author: song.author }),
       ...(song.key && { key: song.key }),
       ...(typeof song.capo !== 'undefined' && { capo: song.capo }),
-      content: song.content || '', // Ensure content is not undefined
+      content: song.content || '', // Pass content to SongDetail (with empty string fallback)
     });
   };
 
