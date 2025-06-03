@@ -2,7 +2,7 @@
 
 Bienvenido/a al proyecto MCM App. Esta guía está diseñada para ayudarte a configurar el entorno de desarrollo, entender la estructura del proyecto y comenzar a trabajar con la aplicación.
 
-Expo es un framework de código abierto para construir aplicaciones universales con React Native. Simplifica significativamente el desarrollo para iOS, Android y Web, permitiendo compartir una gran base de código entre plataformas. Los comandos que encontrarás en esta guía te ayudararán a gestionar el ciclo de vida del desarrollo: desde iniciar los servidores de desarrollo hasta construir versiones de producción de la app.
+Expo es un framework de código abierto para construir aplicaciones universales con React Native. Simplifica significativamente el desarrollo para iOS, Android y Web, permitiendo compartir una gran base de código entre plataformas. Los comandos que encontrarás en esta guía te ayudarán a gestionar el ciclo de vida del desarrollo: desde iniciar los servidores de desarrollo hasta construir versiones de producción de la app.
 
 ##  Índice
 * [Instalación y Configuración Inicial](#instalación-y-configuración-inicial)
