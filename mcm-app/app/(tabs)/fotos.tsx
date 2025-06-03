@@ -1,11 +1,10 @@
 // app/(tabs)/fotos.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Linking, Alert, ActivityIndicator, useWindowDimensions, Platform, ViewStyle, TextStyle } from 'react-native'; // Added ActivityIndicator
+import { View, FlatList, StyleSheet, Linking, useWindowDimensions, ViewStyle, TextStyle, Alert } from 'react-native';
+import { Button, ActivityIndicator } from 'react-native-paper';
 import AlbumCard from '@/components/AlbumCard';
 import allAlbumsData from '@/assets/albums.json';
-import { Colors as ThemeColors } from '@/constants/colors'; // Renamed for clarity
-import appBaseColors from '@/constants/colors'; // For base app colors
-import { commonStyles } from '@/constants/uiStyles';
+import { Colors as ThemeColors } from '@/constants/colors';
 
 const ALBUMS_PER_PAGE = 4;
 
@@ -25,7 +24,6 @@ interface FotosScreenStyles {
   albumCardContainerOneColumn: ViewStyle;
   albumCardContainerTwoColumns: ViewStyle;
   loadMoreButton: ViewStyle;
-  loadMoreButtonText: TextStyle;
 }
 
 export default function FotosScreen() {
@@ -89,9 +87,15 @@ export default function FotosScreen() {
       return null;
     }
     return (
-      <TouchableOpacity style={styles.loadMoreButton} onPress={loadMoreAlbums} disabled={isLoadingMore}>
-        <Text style={styles.loadMoreButtonText}>Cargar Más</Text>
-      </TouchableOpacity>
+      <Button 
+        mode="contained" 
+        onPress={loadMoreAlbums} 
+        loading={isLoadingMore}
+        style={styles.loadMoreButton}
+        contentStyle={{ paddingVertical: 8 }}
+      >
+        Cargar Más
+      </Button>
     );
   };
 
@@ -143,23 +147,8 @@ const styles = StyleSheet.create<FotosScreenStyles>({
     paddingHorizontal: 5, // Reduced horizontal spacing between cards for desktop
   },
   loadMoreButton: {
-    marginTop: 15,
-    marginBottom: 25,
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    backgroundColor: ThemeColors.light.tint,
-    borderRadius: commonStyles.buttonBorderRadius.borderRadius,
+    marginVertical: 20,
     alignSelf: 'center',
-    elevation: 3,
-    shadowColor: ThemeColors.light.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  loadMoreButtonText: {
-    color: ThemeColors.dark.text, // Ensure contrast with button background
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    backgroundColor: ThemeColors.light.tint,
   },
 });

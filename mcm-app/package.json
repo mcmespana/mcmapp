@@ -21,6 +21,7 @@
     "expo": "~53.0.9",
     "expo-asset": "~11.1.5",
     "expo-blur": "~14.1.4",
+    "expo-clipboard": "~7.1.4",
     "expo-constants": "~17.1.6",
     "expo-dev-client": "~5.1.8",
     "expo-file-system": "~18.1.10",
@@ -52,6 +53,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@react-native-community/cli": "^18.0.0",
+    "@types/node": "^22.15.29",
     "@types/react": "~19.0.10",
     "copy-webpack-plugin": "^13.0.0",
     "eslint": "^9.25.0",

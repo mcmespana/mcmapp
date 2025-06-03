@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { AppColors } from '../app/styles/theme'; // Assuming AppColors might be used for loading indicator or styles
+import theme from '../app/styles/theme'; // Using theme for colors
 
 interface SongDisplayProps {
   songHtml: string;
@@ -12,7 +12,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
   if (isLoading) {
     return (
       <View style={[styles.webViewContainer, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color={AppColors.primary} />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
