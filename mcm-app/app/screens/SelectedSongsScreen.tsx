@@ -17,6 +17,7 @@ interface Song {
   key?: string;
   capo?: number;
   info?: string;
+  content?: string; // Added content field
 }
 
 interface CategorizedSongs {
@@ -64,6 +65,7 @@ const SelectedSongsScreen: React.FC = () => {
       author: song.author,
       key: song.key,
       capo: song.capo,
+      content: song.content, // Pass content to SongDetail
     });
   };
 

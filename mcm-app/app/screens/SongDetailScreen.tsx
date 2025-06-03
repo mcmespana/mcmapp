@@ -33,7 +33,7 @@ interface SongDetailScreenProps {
 
 export default function SongDetailScreen({ route, navigation }: SongDetailScreenProps) { // Destructure navigation
   // title from params is for the navigation screen header, actual song title rendered by WebView
-  const { filename, title: navScreenTitle, author, key, capo } = route.params;
+  const { filename, title: navScreenTitle, author, key, capo, content } = route.params;
   const { addSong, removeSong, isSongSelected } = useSelectedSongs(); // Use context
 
   // songHtml state is now managed by useSongProcessor
@@ -93,32 +93,24 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 
   // Effect for loading the ChordPro file content
   useEffect(() => {
-    (async () => {
-      if (!filename) {
-        // setSongHtml('Error: Nombre de archivo no proporcionado.'); // This will be handled by the hook if originalChordPro is null
-        setIsFileLoading(false);
-        return;
-      }
-      try {
-        setIsFileLoading(true);
-        const asset = Asset.fromModule(songAssets[filename as SongFilename]);
-        await asset.downloadAsync();
-        if (asset.localUri) {
-          const fileContent = await FileSystem.readAsStringAsync(asset.localUri);
-          setOriginalChordPro(fileContent); // Store original content
-          // displaySong is now handled by the useSongProcessor hook via useEffect when originalChordPro changes
-        } else {
-          throw new Error('No se pudo obtener la URI local del archivo.');
-        }
-      } catch (err: any) {
-        console.error('Error cargando la canción:', err);
-        // setSongHtml(`Error al cargar la canción: ${err.message}`); // Hook will display its own error
-        setOriginalChordPro(null); // Ensure originalChordPro is null on error so hook can show error state
-      } finally {
-        setIsFileLoading(false);
-      }
-    })();
-  }, [filename]);
+    setIsFileLoading(true);
+    if (content) {
+      setOriginalChordPro(content);
+      setIsFileLoading(false);
+    } else if (filename) {
+      // Fallback or error handling if content is not provided but filename is
+      // This block could attempt to load from filename if that's desired,
+      // but per instructions, we should rely on content.
+      // For now, let's assume content should always be there.
+      console.error('Error: Contenido de la canción no proporcionado, pero sí el nombre del archivo.');
+      setOriginalChordPro(null); // Ensure originalChordPro is null on error so hook can show error state
+      setIsFileLoading(false);
+    } else {
+      console.error('Error: Ni el contenido de la canción ni el nombre del archivo fueron proporcionados.');
+      setOriginalChordPro(null);
+      setIsFileLoading(false);
+    }
+  }, [filename, content]); // Added content to dependencies
 
   // displaySong function and its useEffect have been removed, logic is in useSongProcessor.
 

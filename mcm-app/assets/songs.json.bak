@@ -1,0 +1,56 @@
+{
+  "A. Canciones Entrada 🎉": [
+    {
+      "title": "01. Ven a Celebrar",
+      "filename": "ven_a_celebrar.cho",
+      "author": "",
+      "key": "G",
+      "capo": 0,
+      "info": ""
+    },
+    {
+      "title": "02. Dios está aquí",
+      "filename": "dios_esta_aqui.cho",
+      "author": "",
+      "key": "C",
+      "capo": 1,
+      "info": ""
+    }
+  ],
+  "C. Salmos 📖": [
+    {
+      "title": "01. El lote de mi Heredad",
+      "filename": "lote_heredad.cho",
+      "author": "",
+      "key": "D",
+      "capo": 0,
+      "info": ""
+    },
+    {
+      "title": "02. El Señor es mi Pastor",
+      "filename": "senor_pastor.cho",
+      "author": "Nico Montero",
+      "key": "G",
+      "capo": 1,
+      "info": ""
+    }
+  ],
+  "D. Aleluya - Palabra 🎊": [
+    {
+      "title": "01. Aleluya Cantará",
+      "filename": "aleluya_cantara.cho",
+      "author": "Brotes de Olivo",
+      "key": "E",
+      "capo": 0,
+      "info": ""
+    },
+    {
+      "title": "02. Aleluya",
+      "filename": "nunca_dejare.cho",
+      "author": "Kairoi",
+      "key": "C",
+      "capo": 2,
+      "info": ""
+    }
+  ]
+}
