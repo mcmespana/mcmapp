@@ -1,6 +1,9 @@
-import { FlatList, TouchableOpacity, Text } from 'react-native';
+import { FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import songsData from '../../assets/songs.json';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useMemo } from 'react';
+import { Colors } from '@/constants/colors';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
@@ -17,6 +20,8 @@ export default function CategoriesScreen({
     SelectedSongs: undefined; // Added SelectedSongs for navigation
   }>
 }) {
+  const scheme = useColorScheme();
+  const styles = useMemo(() => createStyles(scheme), [scheme]);
   const actualCategories = Object.keys(songsData);
   const displayCategories = [
     { id: ALL_SONGS_CATEGORY_ID, name: ALL_SONGS_CATEGORY_NAME },
@@ -40,9 +45,9 @@ export default function CategoriesScreen({
               });
             }
           }}
-          style={{ padding: 20, borderBottomWidth: 1, borderColor: '#ddd' }}>
-          <Text style={[{ fontSize: 18 }, 
-            (item.id === ALL_SONGS_CATEGORY_ID || item.id === SELECTED_SONGS_CATEGORY_ID) && { color: '#4A4A4A' } 
+          style={styles.itemRow}>
+          <Text style={[styles.itemText,
+            (item.id === ALL_SONGS_CATEGORY_ID || item.id === SELECTED_SONGS_CATEGORY_ID) && styles.specialText
           ]}>
             {item.id === ALL_SONGS_CATEGORY_ID || item.id === SELECTED_SONGS_CATEGORY_ID ? (
               item.name
@@ -58,3 +63,22 @@ export default function CategoriesScreen({
     />
   );
 }
+
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const isDark = scheme === 'dark';
+  return StyleSheet.create({
+    itemRow: {
+      padding: 20,
+      borderBottomWidth: 1,
+      borderColor: isDark ? '#444' : '#ddd',
+      backgroundColor: isDark ? Colors.dark.background : Colors.light.background,
+    },
+    itemText: {
+      fontSize: 18,
+      color: isDark ? Colors.dark.text : Colors.light.text,
+    },
+    specialText: {
+      color: isDark ? '#BBBBBB' : '#4A4A4A',
+    },
+  });
+};
