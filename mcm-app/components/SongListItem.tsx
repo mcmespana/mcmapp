@@ -1,8 +1,10 @@
-import React, { useRef, useEffect } from 'react'; // Added useEffect
+import React, { useRef, useEffect, useMemo } from 'react'; // Added useEffect
 import { TouchableOpacity, Text, View, StyleSheet, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext'; // Corrected path
 import { IconSymbol } from './ui/IconSymbol';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/colors';
 
 // Type for song data
 interface Song {
@@ -24,6 +26,8 @@ interface SongListItemProps {
 
 const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllMode = false }) => {
   const { addSong, removeSong, isSongSelected } = useSelectedSongs();
+  const scheme = useColorScheme();
+  const styles = useMemo(() => createStyles(scheme), [scheme]);
   const swipeableRow = useRef<Swipeable>(null);
   const isSelected = isSongSelected(song.filename);
   const backgroundColorAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
@@ -36,10 +40,11 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
     }).start();
   }, [isSelected, backgroundColorAnim]);
 
+  const isDark = scheme === 'dark';
   const animatedStyle = {
     backgroundColor: backgroundColorAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: ['#fff', '#e6ffed'], // White to light green
+      outputRange: [isDark ? '#1C1C1E' : '#fff', isDark ? '#324831' : '#e6ffed'],
     }),
   };
 
@@ -148,19 +153,21 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
   );
 };
 
-const styles = StyleSheet.create({
-  songItemOuter: { // Renamed from songItem to be the Animated.View container
-    // backgroundColor will be handled by animatedStyle
-  },
-  songItemInner: { // This will contain the flexDirection and padding previously in songItem
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-  },
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const isDark = scheme === 'dark';
+  return StyleSheet.create({
+    songItemOuter: { // Renamed from songItem to be the Animated.View container
+      // backgroundColor will be handled by animatedStyle
+    },
+    songItemInner: { // This will contain the flexDirection and padding previously in songItem
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 16,
+      paddingHorizontal: 20,
+      borderBottomWidth: 1,
+      borderColor: isDark ? '#444' : '#eee',
+    },
   // selectedSongItem: { // This style is now handled by the animation
   //   backgroundColor: '#e6ffed',
   // },
@@ -181,20 +188,20 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  songTitle: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
+    songTitle: {
+      fontSize: 16,
+      color: isDark ? '#FFFFFF' : '#333',
+      fontWeight: '500',
+    },
   metaLine: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 3,
   },
-  subtitleText: {
-    fontSize: 13,
-    color: '#666',
-  },
+    subtitleText: {
+      fontSize: 13,
+      color: isDark ? '#CCCCCC' : '#666',
+    },
   subtitleAuthor: {
     fontStyle: 'italic',
   },
@@ -202,40 +209,41 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'flex-end',
   },
-  songKey: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  songCapo: {
-    fontSize: 13,
-    color: '#888',
-    fontWeight: 'normal',
-  },
-  rightAction: {
-    backgroundColor: '#4CAF50', // Green for add
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 100, // Fixed width for the action button
-    flexDirection: 'row',
-  },
-  leftAction: {
-    backgroundColor: '#f44336', // Red for remove
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 100, // Fixed width for the action button
-    flexDirection: 'row',
-  },
-  actionText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    paddingLeft: 10, // Space between icon and text
-  },
-  actionIcon: {
-    // No specific styles needed here if already applied in IconSymbol,
-    // but can be used for margin/padding if necessary
-  },
-});
+    songKey: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: isDark ? '#FFFFFF' : '#000000',
+    },
+    songCapo: {
+      fontSize: 13,
+      color: isDark ? '#CCCCCC' : '#888',
+      fontWeight: 'normal',
+    },
+    rightAction: {
+      backgroundColor: '#4CAF50', // Green for add
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: 100, // Fixed width for the action button
+      flexDirection: 'row',
+    },
+    leftAction: {
+      backgroundColor: '#f44336', // Red for remove
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: 100, // Fixed width for the action button
+      flexDirection: 'row',
+    },
+    actionText: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '600',
+      paddingLeft: 10, // Space between icon and text
+    },
+    actionIcon: {
+      // No specific styles needed here if already applied in IconSymbol,
+      // but can be used for margin/padding if necessary
+    },
+  });
+};
 
 export default SongListItem;
