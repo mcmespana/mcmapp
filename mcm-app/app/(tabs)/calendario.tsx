@@ -1,6 +1,6 @@
 // app/(tabs)/calendario.tsx
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, ViewStyle, TextStyle } from 'react-native';
 import { Calendar, CalendarProps } from 'react-native-calendars';
 import { Checkbox, Text } from 'react-native-paper';
 import colors from '@/constants/colors';
@@ -14,7 +14,11 @@ const calendarConfigs: CalendarConfig[] = [
     url: 'https://calendar.google.com/calendar/ical/consolacion.org_11dp4qj27sgud37d7fjanghfck%40group.calendar.google.com/public/basic.ics',
     color: '#A3BD31',
   },
-  // Agrega más calendarios aquí si es necesario
+  {
+    name: 'MCM Local',
+    url: 'https://calendar.google.com/calendar/ical/33j7mpbn86b2jj9sl8rds2e9m8%40group.calendar.google.com/public/basic.ics',
+    color: '#31AADF',
+  },
 ];
 
 export default function Calendario() {
@@ -90,19 +94,19 @@ export default function Calendario() {
 }
 
 interface Styles {
-  container: any;
-  calendar: any;
-  checkboxContainer: any;
-  checkboxItem: any;
-  checkboxLabel: any;
-  eventList: any;
-  eventListTitle: any;
-  eventItem: any;
-  eventTitle: any;
-  eventLocation: any;
-  dot: any;
-  eventTextContainer: any;
-  noEvents: any;
+  container: ViewStyle;
+  calendar: ViewStyle;
+  checkboxContainer: ViewStyle;
+  checkboxItem: ViewStyle;
+  checkboxLabel: TextStyle;
+  eventList: ViewStyle;
+  eventListTitle: TextStyle;
+  eventItem: ViewStyle;
+  eventTitle: TextStyle;
+  eventLocation: TextStyle;
+  dot: ViewStyle;
+  eventTextContainer: ViewStyle;
+  noEvents: TextStyle;
 }
 
 const styles = StyleSheet.create<Styles>({

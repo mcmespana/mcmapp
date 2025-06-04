@@ -15,10 +15,22 @@ export interface CalendarEvent {
 }
 
 function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
+  // Unfold lines that start with a space as specified in RFC 5545
+  const unfolded: string[] = [];
+  for (const rawLine of text.split(/\r?\n/)) {
+    if (rawLine.startsWith(' ')) {
+      if (unfolded.length) {
+        unfolded[unfolded.length - 1] += rawLine.slice(1);
+      }
+    } else {
+      unfolded.push(rawLine);
+    }
+  }
+
   const events: Omit<CalendarEvent, 'calendarIndex'>[] = [];
-  const lines = text.split(/\r?\n/);
   let current: Partial<Omit<CalendarEvent, 'calendarIndex'>> = {};
-  for (const line of lines) {
+
+  for (const line of unfolded) {
     if (line.startsWith('BEGIN:VEVENT')) {
       current = {};
     } else if (line.startsWith('END:VEVENT')) {
@@ -36,14 +48,15 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
     } else if (line.startsWith('LOCATION:')) {
       current.location = line.slice('LOCATION:'.length).trim();
     } else if (line.startsWith('DTSTART')) {
-      const parts = line.split(':');
-      const value = parts[1];
+      const value = line.split(':')[1];
       if (value) {
-        const datePart = value.trim().substring(0, 8); // YYYYMMDD
-        const year = datePart.substring(0, 4);
-        const month = datePart.substring(4, 6);
-        const day = datePart.substring(6, 8);
-        current.date = `${year}-${month}-${day}`;
+        const datePart = value.replace(/T.*$/, '').trim();
+        if (/^\d{8}$/.test(datePart)) {
+          const year = datePart.substring(0, 4);
+          const month = datePart.substring(4, 6);
+          const day = datePart.substring(6, 8);
+          current.date = `${year}-${month}-${day}`;
+        }
       }
     }
   }
