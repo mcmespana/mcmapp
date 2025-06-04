@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, Dimensions, ViewStyle, TextStyle, Text } from 'react-native';
 import { Link, LinkProps } from 'expo-router';
 import { Card } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { useSharedValue, withTiming, withDelay, useAnimatedStyle } from 'react-native-reanimated';
+import { HelloWave } from '@/components/HelloWave';
 
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
@@ -69,12 +72,30 @@ const rectDimension = Math.min(
   maxRectSize
 );
 
+function AnimatedCard({ children, index }: { children: React.ReactNode; index: number }) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withDelay(index * 100, withTiming(1, { duration: 500 }));
+  }, [index, progress]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: progress.value }],
+    opacity: progress.value,
+  }));
+
+  return <Animated.View style={animatedStyle}>{children}</Animated.View>;
+}
+
 export default function Home() {
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={[colors.primary, colors.accent]} style={styles.container}>
+      <View style={styles.header}>
+        <HelloWave />
+      </View>
       <View style={styles.gridContainer}>
         {navigationItems.map((item, index) => {
-          const content = (
+          const card = (
             <Card
               key={index}
               style={[
@@ -93,6 +114,8 @@ export default function Home() {
             </Card>
           );
 
+          const wrapped = <AnimatedCard index={index}>{card}</AnimatedCard>;
+
           if (item.href) {
             return (
               <Link
@@ -100,22 +123,21 @@ export default function Home() {
                 href={item.href}
                 asChild
               >
-                <View style={styles.linkWrapper}>
-                  {content}
-                </View>
+                <View style={styles.linkWrapper}>{wrapped}</View>
               </Link>
             );
           }
 
-          return content;
+          return wrapped;
         })}
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 interface Styles {
   container: ViewStyle;
+  header: ViewStyle;
   gridContainer: ViewStyle;
   rectangle: ViewStyle;
   cardContent: ViewStyle;
@@ -129,8 +151,11 @@ interface Styles {
 const styles = StyleSheet.create<Styles>({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
     padding: spacing.lg,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
   gridContainer: {
     flexDirection: 'row',
