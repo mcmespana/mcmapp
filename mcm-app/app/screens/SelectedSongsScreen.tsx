@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useLayoutEffect, useCallback } from 'react';
+import React, { useEffect, useState, useLayoutEffect, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, Share } from 'react-native';
 import { Provider as PaperProvider, Snackbar } from 'react-native-paper';
 import * as Clipboard from 'expo-clipboard';
@@ -11,6 +11,8 @@ import { IconSymbol } from '../../components/ui/IconSymbol';
 import allSongsData from '../../assets/songs.json';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { songAssets, SongFilename } from '../../assets/songs'; // Add songAssets import
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/colors';
 
 // Define Song type based on songs.json structure
 interface Song {
@@ -34,6 +36,8 @@ type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<RootStackPara
 const SelectedSongsScreen: React.FC = () => {
   const { selectedSongs, clearSelection } = useSelectedSongs();
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
+  const scheme = useColorScheme();
+  const styles = useMemo(() => createStyles(scheme), [scheme]);
   const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<CategorizedSongs[]>([]);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -264,101 +268,104 @@ function SelectedSongsScreenWithProvider() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f8f8',
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const isDark = scheme === 'dark';
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: isDark ? Colors.dark.background : '#f8f8f8',
+    },
+    headerContainer: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 10,
+      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? '#444' : '#e0e0e0',
+    },
+    screenTitle: {
+      fontSize: 24,
+      fontWeight: '600',
+      marginBottom: 15,
+      color: isDark ? '#FFFFFF' : '#333',
+      textAlign: 'center',
+    },
+    buttonsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginBottom: 15,
+      alignItems: 'center',
   },
-  headerContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 15,
-    color: '#333',
-    textAlign: 'center',
-  },
-  buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 15,
-    alignItems: 'center',
-  },
-  clearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    backgroundColor: '#ffebee',
-    borderRadius: 8,
-    flex: 0.48,
-    marginHorizontal: 5,
-  },
-  clearButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#FF4444',
-  },
-  listContentContainer: {
-    paddingBottom: 20,
-  },
-  categoryContainer: {
-    marginTop: 15,
-    marginHorizontal: 10,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    overflow: 'hidden',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  categoryTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    padding: 15,
-    backgroundColor: '#f0f0f0',
-    color: '#444',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#f8f8f8',
-  },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
-  },
-  songNumber: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  songAuthor: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  songSubtitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-});
+    clearButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+      backgroundColor: isDark ? '#663333' : '#ffebee',
+      borderRadius: 8,
+      flex: 0.48,
+      marginHorizontal: 5,
+    },
+    clearButtonText: {
+      marginLeft: 8,
+      fontSize: 16,
+      fontWeight: '500',
+      color: '#FF4444',
+    },
+    listContentContainer: {
+      paddingBottom: 20,
+    },
+    categoryContainer: {
+      marginTop: 15,
+      marginHorizontal: 10,
+      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      borderRadius: 8,
+      overflow: 'hidden',
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    categoryTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      padding: 15,
+      backgroundColor: isDark ? '#3A3A3C' : '#f0f0f0',
+      color: isDark ? '#FFFFFF' : '#444',
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? '#444' : '#e0e0e0',
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+      backgroundColor: isDark ? Colors.dark.background : '#f8f8f8',
+    },
+    emptyText: {
+      marginTop: 16,
+      fontSize: 18,
+      color: isDark ? '#CCCCCC' : '#666',
+      textAlign: 'center',
+    },
+    songNumber: {
+      fontSize: 12,
+      color: '#666',
+      marginLeft: 4,
+    },
+    songAuthor: {
+      fontSize: 12,
+      color: '#666',
+      marginLeft: 4,
+    },
+    songSubtitle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+    },
+  });
+};
 
 export default SelectedSongsScreenWithProvider; // Export the wrapped component with PaperProvider

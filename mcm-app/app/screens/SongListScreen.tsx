@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FlatList, Text, View, StyleSheet } from 'react-native'; // TouchableOpacity removed
 import { Searchbar } from 'react-native-paper'; // Added Searchbar
+import { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import rawSongsData from '../../assets/songs.json';
 // import SongSearch from '../../components/SongSearch'; // Removed SongSearch import
 import SongListItem from '../../components/SongListItem'; // Added import
@@ -48,6 +50,8 @@ export default function SongsListScreen({ route, navigation }: {
   navigation: any;
 }) {
   const { categoryId, categoryName } = route.params;
+  const scheme = useColorScheme();
+  const styles = useMemo(() => createStyles(scheme), [scheme]);
   const [search, setSearch] = useState('');
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -246,87 +250,84 @@ export default function SongsListScreen({ route, navigation }: {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  separator: {
-    height: 5,
-    backgroundColor: '#E0E0E0', // Light gray color for the separator
-    marginHorizontal: 15,
-    marginVertical: 10, // Adjust spacing as needed
-  },
-  searchbar: {
-    marginHorizontal: 16,
-    marginVertical: 12,
-    borderRadius: 20, // Bordes más redondeados para elegancia
-    backgroundColor: '#fff',
-    elevation: 2, // Sombra sutil (Android)
-    shadowColor: '#000', // Sombra sutil (iOS)
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    height: 44, // Un poco menos alto
-    borderWidth: 1,
-    borderColor: '#E0E0E0', // Borde gris claro y elegante
-  },
-  searchbarInput: {
-    fontSize: 16,
-    paddingLeft: 0, // Remove default padding to align with custom icon
-    // paddingVertical: 0, // Removed to use paddingTop
-    // textAlignVertical: 'center', // This wasn't effective
-    // height: '100%', // Removed
-    // lineHeight: 44, // Removed
-    // Adjust paddingTop to lower the text. Start with a value around (SearchbarHeight - FontSize) / 2 - some_offset
-    // Searchbar height is 44, fontSize is 16.
-    // If paddingTop: 0 is still too low, try textAlignVertical: 'top'.
-    paddingTop: 0, 
-    textAlignVertical: 'top', // Align text to the top of its container
-  },
-  categoryTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    padding: 16,
-    backgroundColor: '#f5f5f5',
-    color: '#333',
-  },
-  loadingText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
-    color: '#666',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#d32f2f',
-    textAlign: 'center',
-    margin: 20,
-    fontWeight: 'bold',
-  },
-  debugText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    margin: 10,
-    fontFamily: 'monospace',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  hintText: {
-    fontSize: 14,
-    color: '#888',
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-});
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const isDark = scheme === 'dark';
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: isDark ? Colors.dark.background : Colors.light.background,
+    },
+    separator: {
+      height: 5,
+      backgroundColor: isDark ? '#444' : '#E0E0E0',
+      marginHorizontal: 15,
+      marginVertical: 10,
+    },
+    searchbar: {
+      marginHorizontal: 16,
+      marginVertical: 12,
+      borderRadius: 20,
+      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      height: 44,
+      borderWidth: 1,
+      borderColor: isDark ? '#444' : '#E0E0E0',
+    },
+    searchbarInput: {
+      fontSize: 16,
+      paddingLeft: 0,
+      paddingTop: 0,
+      textAlignVertical: 'top',
+      color: isDark ? Colors.dark.text : Colors.light.text,
+    },
+    categoryTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      padding: 16,
+      backgroundColor: isDark ? '#2C2C2E' : '#f5f5f5',
+      color: isDark ? '#FFFFFF' : '#333',
+    },
+    loadingText: {
+      fontSize: 16,
+      textAlign: 'center',
+      marginTop: 20,
+      color: isDark ? '#CCCCCC' : '#666',
+    },
+    errorText: {
+      fontSize: 16,
+      color: '#d32f2f',
+      textAlign: 'center',
+      margin: 20,
+      fontWeight: 'bold',
+    },
+    debugText: {
+      fontSize: 14,
+      color: isDark ? '#AAAAAA' : '#666',
+      textAlign: 'center',
+      margin: 10,
+      fontFamily: 'monospace',
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    emptyText: {
+      fontSize: 16,
+      color: isDark ? '#CCCCCC' : '#666',
+      marginBottom: 10,
+      textAlign: 'center',
+    },
+    hintText: {
+      fontSize: 14,
+      color: isDark ? '#AAAAAA' : '#888',
+      fontStyle: 'italic',
+      textAlign: 'center',
+    },
+  });
+};
