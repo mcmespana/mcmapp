@@ -42,12 +42,12 @@ Para poner en marcha el proyecto, sigue estos pasos:
     cd mcm-app
     ```
 6.  **Verificar Versiones de React y Instalar Dependencias del Proyecto:**
-    *   **¡Importante! Compatibilidad de React:** Para asegurar la compatibilidad y evitar errores conocidos (como el error 'CSSStyleDeclaration' en la web), este proyecto (con Expo SDK 53) requiere **React 18.2.0** y **React DOM 18.2.0**.
+    *   **¡Importante! Compatibilidad de React:** Con Expo SDK 53 utiliza **React 19.0.0** y **React DOM 19.0.0**. Verifica tu `package.json` para asegurarte de que estas versiones estén presentes.
     *   Antes de ejecutar `npm install` por primera vez, o si ya tienes el proyecto y estás experimentando este error, verifica tu archivo `mcm-app/package.json`.
     *   Asegúrate de que las siguientes líneas estén presentes en la sección `dependencies`:
         ```json
-        "react": "18.2.0",
-        "react-dom": "18.2.0"
+        "react": "19.0.0",
+        "react-dom": "19.0.0"
         ```
     *   Si necesitas cambiarlas, modifica `mcm-app/package.json`, luego elimina la carpeta `node_modules` y el archivo `package-lock.json` (o `yarn.lock` si usas Yarn) dentro de la subcarpeta `mcm-app` del proyecto.
     *   Después de verificar y, si es necesario, corregir las versiones de React, instala todas las dependencias del proyecto. Dentro de la carpeta `mcm-app`, ejecuta:
