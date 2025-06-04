@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Dimensions, ViewStyle, TextStyle, Text } from 'react-native';
+import React, { useEffect, ComponentProps } from 'react';
+import { View, Text, StyleSheet, Dimensions, ViewStyle, TextStyle } from 'react-native';
 import { Link, LinkProps } from 'expo-router';
 import { Card } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, withTiming, withDelay, useAnimatedStyle } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialIcons } from '@expo/vector-icons';
 import { HelloWave } from '@/components/HelloWave';
 
 import colors from '@/constants/colors';
@@ -13,49 +15,53 @@ import spacing from '@/constants/spacing';
 type NavigationItem = {
   href?: LinkProps['href'];
   label: string;
-  iconPlaceholder: string;
+  icon: ComponentProps<typeof MaterialIcons>['name'];
   backgroundColor: string;
   color: string;
+  size?: 'default' | 'tall' | 'wide' | 'large';
 };
 
 const navigationItems: NavigationItem[] = [
   {
     href: "/cancionero",
     label: "Cantoral",
-    iconPlaceholder: "🎵",
+    icon: "library-music",
     backgroundColor: colors.warning,
     color: colors.black,
+    size: 'tall',
   },
   {
     href: "/fotos",
     label: "Fotos",
-    iconPlaceholder: "📷",
+    icon: "photo-library",
     backgroundColor: colors.accent,
     color: colors.black,
+    size: 'wide',
   },
   {
     href: "/calendario",
     label: "Calendario",
-    iconPlaceholder: "📅",
+    icon: "event",
     backgroundColor: colors.info,
     color: colors.black,
   },
   {
     href: "/comunica",
     label: "Comunica",
-    iconPlaceholder: "💬",
+    icon: "chat",
     backgroundColor: colors.success,
     color: colors.black,
   },
   {
     label: "Próximamente 1",
-    iconPlaceholder: "🚧",
+    icon: "build",
     backgroundColor: colors.warning,
     color: colors.black,
+    size: 'large',
   },
   {
     label: "Próximamente 2",
-    iconPlaceholder: "⏳",
+    icon: "hourglass-empty",
     backgroundColor: colors.danger,
     color: colors.black,
   },
@@ -63,14 +69,10 @@ const navigationItems: NavigationItem[] = [
 
 const { width } = Dimensions.get('window');
 const gap = spacing.lg;
-const itemPerRow = width > 700 ? 3 : 2;
+const itemPerRow = 2; // Two columns layout
 const totalGapSize = (itemPerRow - 1) * gap;
-const windowWidth = width - (spacing.lg * 2);
-const maxRectSize = 180;
-const rectDimension = Math.min(
-  (windowWidth - totalGapSize) / itemPerRow,
-  maxRectSize
-);
+const windowWidth = width - spacing.lg * 2;
+const baseRectSize = (windowWidth - totalGapSize) / itemPerRow;
 
 function AnimatedCard({ children, index }: { children: React.ReactNode; index: number }) {
   const progress = useSharedValue(0);
@@ -88,18 +90,40 @@ function AnimatedCard({ children, index }: { children: React.ReactNode; index: n
 }
 
 export default function Home() {
+  const insets = useSafeAreaInsets();
   return (
-    <LinearGradient colors={[colors.primary, colors.accent]} style={styles.container}>
+    <LinearGradient
+      colors={[colors.primary, colors.secondary]}
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top + spacing.lg,
+          paddingBottom: insets.bottom + spacing.lg,
+        },
+      ]}
+    >
       <View style={styles.header}>
         <HelloWave />
       </View>
       <View style={styles.gridContainer}>
         {navigationItems.map((item, index) => {
+          const dynamicSizeStyle: ViewStyle = {
+            width: baseRectSize,
+            height: baseRectSize,
+          };
+          if (item.size === 'wide' || item.size === 'large') {
+            dynamicSizeStyle.width = baseRectSize * 2 + gap;
+          }
+          if (item.size === 'tall' || item.size === 'large') {
+            dynamicSizeStyle.height = baseRectSize * 2 + gap;
+          }
+
           const card = (
             <Card
               key={index}
               style={[
                 styles.rectangle,
+                dynamicSizeStyle,
                 { backgroundColor: item.backgroundColor },
                 !item.href && styles.disabledRectangle,
                 !item.href && styles.placeholder,
@@ -108,7 +132,8 @@ export default function Home() {
               elevation={2}
             >
               <Card.Content style={styles.cardContent}>
-                <Text style={[styles.iconPlaceholder, { color: item.color }]}>{item.iconPlaceholder}</Text>
+                <View style={styles.circleDecoration} />
+                <MaterialIcons name={item.icon} style={styles.icon} size={48} color={item.color} />
                 <Text style={[styles.rectangleLabel, { color: item.color }]}>{item.label}</Text>
               </Card.Content>
             </Card>
@@ -144,7 +169,8 @@ interface Styles {
   linkWrapper: ViewStyle;
   disabledRectangle: ViewStyle;
   placeholder: ViewStyle;
-  iconPlaceholder: TextStyle;
+  icon: TextStyle;
+  circleDecoration: ViewStyle;
   rectangleLabel: TextStyle;
 }
 
@@ -164,8 +190,8 @@ const styles = StyleSheet.create<Styles>({
     gap: gap,
   },
   rectangle: {
-    width: rectDimension,
-    height: rectDimension,
+    width: baseRectSize,
+    height: baseRectSize,
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -176,8 +202,8 @@ const styles = StyleSheet.create<Styles>({
     height: '100%',
   },
   linkWrapper: {
-    width: rectDimension,
-    height: rectDimension,
+    width: baseRectSize,
+    height: baseRectSize,
     outlineStyle: 'solid',
     outlineOffset: 2,
   },
@@ -190,9 +216,17 @@ const styles = StyleSheet.create<Styles>({
     borderColor: colors.border || '#bbb',
     borderWidth: 1,
   },
-  iconPlaceholder: {
+  circleDecoration: {
+    position: 'absolute',
+    width: baseRectSize * 0.6,
+    height: baseRectSize * 0.6,
+    borderRadius: baseRectSize * 0.3,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    top: -baseRectSize * 0.2,
+    right: -baseRectSize * 0.2,
+  },
+  icon: {
     fontSize: 48,
-    fontWeight: 'bold',
     marginBottom: spacing.sm,
     textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.08)',
