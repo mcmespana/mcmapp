@@ -18,8 +18,6 @@ export type RootStackParamList = {
   SelectedSongs: undefined; // Add SelectedSongs screen
 };
 
-// Tipos para las props de navegación
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

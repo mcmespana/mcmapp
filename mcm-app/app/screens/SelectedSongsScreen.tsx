@@ -158,7 +158,6 @@ const SelectedSongsScreen: React.FC = () => {
     }
 
     // Ensure content is a string
-    const contentString = typeof content === 'string' ? content : String(content);
 
     navigation.navigate('SongDetail', {
       filename: song.filename,
