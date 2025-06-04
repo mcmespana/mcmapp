@@ -78,6 +78,17 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     saveSettings();
   }, [settings, isLoadingSettings]);
 
+  // Ensure latest settings are persisted if the provider unmounts before
+  // the save effect above runs (e.g. user quickly leaves the screen)
+  useEffect(() => {
+    return () => {
+      if (isLoadingSettings) return;
+      AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)).catch(error => {
+        console.error('Failed to save settings to AsyncStorage on unmount:', error);
+      });
+    };
+  }, [settings, isLoadingSettings]);
+
   const handleSetSettings = (newValues: Partial<SongSettings>) => {
     setAppSettings(prevSettings => ({
       ...prevSettings,
