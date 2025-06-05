@@ -15,7 +15,7 @@ const calendarConfigs: CalendarConfig[] = [
     color: '#A3BD31',
   },
   {
-    name: 'MCM Local',
+    name: 'MCM Castellón',
     url: 'https://calendar.google.com/calendar/ical/33j7mpbn86b2jj9sl8rds2e9m8%40group.calendar.google.com/public/basic.ics',
     color: '#31AADF',
   },

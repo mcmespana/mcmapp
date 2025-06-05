@@ -48,9 +48,12 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
     } else if (line.startsWith('LOCATION:')) {
       current.location = line.slice('LOCATION:'.length).trim();
     } else if (line.startsWith('DTSTART')) {
-      const value = line.split(':')[1];
-      if (value) {
-        const datePart = value.replace(/T.*$/, '').trim();
+      // Soporta DTSTART:YYYYMMDD y DTSTART;VALUE=DATE:YYYYMMDD y variantes
+      const idx = line.indexOf(':');
+      if (idx !== -1) {
+        const value = line.slice(idx + 1).trim();
+        // Solo nos quedamos con la parte de fecha (sin hora)
+        const datePart = value.replace(/T.*$/, '');
         if (/^\d{8}$/.test(datePart)) {
           const year = datePart.substring(0, 4);
           const month = datePart.substring(4, 6);
@@ -64,6 +67,7 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
 }
 
 export default function useCalendarEvents(calendars: CalendarConfig[]) {
+
   const [eventsByDate, setEventsByDate] = useState<Record<string, CalendarEvent[]>>({});
   const [loading, setLoading] = useState(true);
 
@@ -75,19 +79,23 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
       for (let i = 0; i < calendars.length; i++) {
         const cfg = calendars[i];
         try {
-          const res = await fetch(cfg.url);
+
+          const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(cfg.url);
+          const res = await fetch(proxyUrl);
           const text = await res.text();
           const events = parseICS(text);
+
           events.forEach((ev) => {
             const withCal: CalendarEvent = { ...ev, calendarIndex: i };
             if (!map[ev.date]) map[ev.date] = [];
             map[ev.date].push(withCal);
           });
         } catch (e) {
-          console.error('Error fetching calendar', cfg.url, e);
+
         }
       }
       if (mounted) {
+
         setEventsByDate(map);
         setLoading(false);
       }
