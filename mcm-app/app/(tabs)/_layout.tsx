@@ -49,16 +49,24 @@ export default function TabsLayout() {
             headerShown: false // Cantoral uses its own StackNavigator header
           }} 
         />
-        <Tabs.Screen 
-          name="calendario" 
+        <Tabs.Screen
+          name="calendario"
           options={{
             title: 'Calendario',
             tabBarIcon: ({color, size}) => <MaterialIcons name="calendar-today" color={color} size={size}/>,
             headerStyle: { backgroundColor: '#A3BD31' } // Éxito / Confirmación color
-          }} 
+          }}
         />
-        <Tabs.Screen 
-          name="fotos" 
+        <Tabs.Screen
+          name="jubileo"
+          options={{
+            title: 'Jubileo',
+            tabBarIcon: ({color, size}) => <MaterialIcons name="celebration" color={color} size={size}/>,
+            headerShown: false
+          }}
+        />
+        <Tabs.Screen
+          name="fotos"
           options={{
             title: 'Fotos',
             tabBarIcon: ({color, size}) => <MaterialIcons name="photo-library" color={color} size={size}/>,
