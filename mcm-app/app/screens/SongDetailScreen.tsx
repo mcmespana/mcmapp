@@ -14,6 +14,7 @@ import { RouteProp, NavigationProp } from '@react-navigation/native'; // Added N
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext'; // Import context hook
 import { IconSymbol } from '../../components/ui/IconSymbol'; // Import IconSymbol
+import { useSettings } from '../../contexts/SettingsContext'; // <<<--- ADD THIS IMPORT
 
 const availableFonts = [
   { name: 'Monoespaciada', cssValue: "'Roboto Mono', 'Courier New', monospace" },
@@ -35,6 +36,10 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   const { filename, title: navScreenTitle, author, key, capo, content } = route.params;
   const { addSong, removeSong, isSongSelected } = useSelectedSongs(); // Use context
 
+  // Settings from context
+  const { settings, setSettings, isLoadingSettings } = useSettings(); // <<<--- USE SETTINGS HOOK
+  const { chordsVisible, fontSize: currentFontSizeEm, fontFamily: currentFontFamily, notation } = settings;
+
   // songHtml state is now managed by useSongProcessor
   const [isFileLoading, setIsFileLoading] = useState(true); // Renamed from isLoading
 
@@ -42,24 +47,24 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 
   // New states for controls
   const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
-  const [chordsVisible, setChordsVisible] = useState(true);
-  const [currentTranspose, setCurrentTranspose] = useState(0); // Semitones: 0 is original, positive up, negative down
-  // showActionButtons, showTransposeModal, showFontSizeModal, showFontFamilyModal states removed
-  const [notation, setNotation] = useState<'english' | 'spanish'>('english');
-  const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // Base font size is 1em
-  const [currentFontFamily, setCurrentFontFamily] = useState(availableFonts[0].cssValue); // Default to mono, availableFonts is now at top
+  // const [chordsVisible, setChordsVisible] = useState(true); // From context
+  const [currentTranspose, setCurrentTranspose] = useState(0); // Transpose remains local
+  // const [notation, setNotation] = useState<'english' | 'spanish'>('english'); // From context
+  // const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // From context
+  // const [currentFontFamily, setCurrentFontFamily] = useState(availableFonts[0].cssValue); // From context
+
 
   // Call the hook to process the song
   const { songHtml, isLoadingSong: isSongProcessing } = useSongProcessor({
     originalChordPro,
     currentTranspose,
-    chordsVisible,
-    currentFontSizeEm,
-    currentFontFamily,
+    chordsVisible, // From context
+    currentFontSizeEm, // From context
+    currentFontFamily, // From context
     author, // Pass author from route.params
     key,    // Pass key from route.params
     capo,   // Pass capo from route.params
-    notation,
+    notation, // From context
   });
 
   // Effect for setting header button
@@ -114,12 +119,11 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   // displaySong function and its useEffect have been removed, logic is in useSongProcessor.
 
   // Handlers for actual state changes (passed to SongControls)
-  const handleToggleChords = () => setChordsVisible(!chordsVisible);
+  // Handlers for actual state changes, now using setSettings from context
+  const handleToggleChords = () => setSettings({ chordsVisible: !chordsVisible });
 
   const handleChangeNotation = () => {
-    setNotation(prev => prev === 'english' ? 'spanish' : 'english');
-    //console.log(songHtml);
-
+    setSettings({ notation: notation === 'english' ? 'spanish' : 'english' });
   };
 
   const handleSetTranspose = (semitones: number) => {
@@ -127,35 +131,40 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     if (newTranspose >= 12 || newTranspose <= -12) {
       newTranspose = newTranspose % 12;
     }
-    setCurrentTranspose(newTranspose);
-    // setShowTransposeModal(false); // Modal state is now in SongControls
+    setCurrentTranspose(newTranspose); // Transpose is local
   };
 
   const handleSetFontSize = (newSizeEm: number) => {
-    setCurrentFontSizeEm(newSizeEm);
-    // setShowFontSizeModal(false); // Modal state is now in SongControls
+    setSettings({ fontSize: newSizeEm });
   };
 
   const handleSetFontFamily = (newFontFamily: string) => {
-    setCurrentFontFamily(newFontFamily);
-    // setShowFontFamilyModal(false); // Modal state is now in SongControls
+    setSettings({ fontFamily: newFontFamily });
   };
+
+  // If settings are loading, you might want to show a loading indicator or return null
+  if (isLoadingSettings) {
+    // Optionally, render a loading indicator specific to settings being loaded
+    // For now, SongDisplay already handles its own loading state for song content
+    // and this screen handles file loading. If settings load quickly, this might not be noticeable.
+    // Consider if a brief blank or loading state is preferred here.
+  }
 
   // Removed handleOpenTransposeModal, handleOpenFontSizeModal, handleOpenFontFamilyModal
 
   return (
 
     <View style={styles.container}>
-      <SongDisplay songHtml={songHtml} isLoading={isFileLoading || isSongProcessing} />
+      <SongDisplay songHtml={songHtml} isLoading={isFileLoading || isSongProcessing || isLoadingSettings} />
       <SongControls
         chordsVisible={chordsVisible}
-        currentTranspose={currentTranspose}
+        currentTranspose={currentTranspose} // Transpose is local
         currentFontSizeEm={currentFontSizeEm}
         currentFontFamily={currentFontFamily}
         notation={notation} // Pass notation state
         availableFonts={availableFonts}
         onToggleChords={handleToggleChords}
-        onSetTranspose={handleSetTranspose}
+        onSetTranspose={handleSetTranspose} // Local handler
         onSetFontSize={handleSetFontSize}
         onSetFontFamily={handleSetFontFamily}
         onChangeNotation={handleChangeNotation}
