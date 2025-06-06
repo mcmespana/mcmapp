@@ -13,10 +13,29 @@ import { SettingsProvider } from '../../contexts/SettingsContext'; // <<<--- ADD
 // Remove duplicate SongDetailScreen import if present, ensure others are fine.
 // Already imported SongDetailScreen above.
 
+export interface SongNavItem {
+  title: string;
+  filename: string;
+  author?: string;
+  key?: string;
+  capo?: number;
+  content?: string;
+}
+
 export type RootStackParamList = {
   Categories: undefined;
   SongsList: { categoryId: string; categoryName: string };
-  SongDetail: { filename: string; title: string; author?: string; key?: string; capo?: number; content: string; };
+  SongDetail: {
+    filename: string;
+    title: string;
+    author?: string;
+    key?: string;
+    capo?: number;
+    content: string;
+    navigationList?: SongNavItem[];
+    currentIndex?: number;
+    source?: 'category' | 'selection';
+  };
   SelectedSongs: undefined; // Add SelectedSongs screen
 };
 

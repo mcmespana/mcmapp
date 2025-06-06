@@ -158,13 +158,17 @@ export default function SongsListScreen({ route, navigation }: {
 
   // Handle song press
   const handleSongPress = (song: Song) => {
+    const index = songs.findIndex(s => s.filename === song.filename);
     navigation.navigate('SongDetail', {
       filename: song.filename,
-      title: song.title.replace(/^\d+\.\s*/, ''), // Pasamos el título limpio sin el numerito de delante
+      title: song.title.replace(/^\d+\.\s*/, ''),
       author: song.author,
       key: song.key,
       capo: song.capo,
-      content: song.content
+      content: song.content || '',
+      navigationList: categoryId === '__ALL__' ? undefined : songs,
+      currentIndex: categoryId === '__ALL__' ? undefined : index,
+      source: categoryId === '__ALL__' ? undefined : 'category',
     });
   };
 
