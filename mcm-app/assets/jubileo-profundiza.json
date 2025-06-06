@@ -1,0 +1,14 @@
+{
+  "titulo": "Material de profundización",
+  "paginas": [
+    {
+      "titulo": "Tema 1",
+      "texto": "En esta sección encontrarás textos para orar y reflexionar cada día. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+    },
+    {
+      "titulo": "Tema 2",
+      "texto": "También añadiremos enlaces a recursos adicionales para seguir creciendo en la fe. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "subtitulo": "Subtema 2"
+    }
+  ]
+}

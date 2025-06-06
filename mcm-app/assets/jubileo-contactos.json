@@ -1,0 +1,22 @@
+[
+  {
+    "nombre": "María Fernández",
+    "responsabilidad": "Coordinadora",
+    "telefono": "+34 600 123 456"
+  },
+  {
+    "nombre": "Juan Gómez",
+    "responsabilidad": "Logística",
+    "telefono": "+34 600 654 321"
+  },
+  {
+    "nombre": "Sofía López",
+    "responsabilidad": "Comunicación",
+    "telefono": "+34 600 111 222"
+  },
+  {
+    "nombre": "Carlos Ruiz",
+    "responsabilidad": "Soporte",
+    "telefono": "+34 600 333 444"
+  }
+]
