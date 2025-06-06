@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import theme from '../app/styles/theme'; // Using theme for colors
 
@@ -13,6 +13,17 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
     return (
       <View style={[styles.webViewContainer, styles.loadingContainer]}>
         <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.webViewContainer}>
+        <div
+          style={{ flex: 1, width: '100%', height: '100%', overflowY: 'auto' }}
+          dangerouslySetInnerHTML={{ __html: songHtml }}
+        />
       </View>
     );
   }

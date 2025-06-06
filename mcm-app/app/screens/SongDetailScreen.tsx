@@ -1,12 +1,7 @@
 import { useEffect, useState, useLayoutEffect } from 'react'; // Added useLayoutEffect
 // Unused imports (TouchableOpacity, Modal, Button, TouchableWithoutFeedback) removed
 import { ScrollView, Text, StyleSheet, useWindowDimensions, View, TouchableOpacity } from 'react-native'; // Added TouchableOpacity
-import * as FileSystem from 'expo-file-system';
-import { Asset } from 'expo-asset';
-import { Ionicons } from '@expo/vector-icons';
-// ChordProParser and HtmlDivFormatter removed as they are now in the hook
-import { SongFilename } from '../../assets/songs';
-import { songAssets } from '../../assets/songs/index';
+import GestureRecognizer from 'react-native-swipe-gestures';
 import SongDisplay from '../../components/SongDisplay';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import SongControls from '../../components/SongControls'; // Added import
@@ -33,7 +28,17 @@ interface SongDetailScreenProps {
 
 export default function SongDetailScreen({ route, navigation }: SongDetailScreenProps) { // Destructure navigation
   // title from params is for the navigation screen header, actual song title rendered by WebView
-  const { filename, title: navScreenTitle, author, key, capo, content } = route.params;
+  const {
+    filename,
+    title: navScreenTitle,
+    author,
+    key,
+    capo,
+    content,
+    navigationList,
+    currentIndex,
+    source,
+  } = route.params;
   const { addSong, removeSong, isSongSelected } = useSelectedSongs(); // Use context
 
   // Settings from context
@@ -142,6 +147,34 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     setSettings({ fontFamily: newFontFamily });
   };
 
+  const handleSwipeLeft = () => {
+    if (navigationList && typeof currentIndex === 'number' && currentIndex > 0) {
+      const prevSong = navigationList[currentIndex - 1];
+      navigation.replace('SongDetail', {
+        ...prevSong,
+        navigationList,
+        currentIndex: currentIndex - 1,
+        source,
+      });
+    }
+  };
+
+  const handleSwipeRight = () => {
+    if (
+      navigationList &&
+      typeof currentIndex === 'number' &&
+      currentIndex < navigationList.length - 1
+    ) {
+      const nextSong = navigationList[currentIndex + 1];
+      navigation.replace('SongDetail', {
+        ...nextSong,
+        navigationList,
+        currentIndex: currentIndex + 1,
+        source,
+      });
+    }
+  };
+
   // If settings are loading, you might want to show a loading indicator or return null
   if (isLoadingSettings) {
     // Optionally, render a loading indicator specific to settings being loaded
@@ -152,8 +185,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 
   // Removed handleOpenTransposeModal, handleOpenFontSizeModal, handleOpenFontFamilyModal
 
-  return (
-
+  const contentView = (
     <View style={styles.container}>
       <SongDisplay songHtml={songHtml} isLoading={isFileLoading || isSongProcessing || isLoadingSettings} />
       <SongControls
@@ -170,7 +202,21 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
         onChangeNotation={handleChangeNotation}
       />
     </View>
+  );
+
+  if (navigationList && typeof currentIndex === 'number') {
+    return (
+      <GestureRecognizer
+        style={{ flex: 1 }}
+        onSwipeLeft={handleSwipeRight}
+        onSwipeRight={handleSwipeLeft}
+      >
+        {contentView}
+      </GestureRecognizer>
     );
+  }
+
+  return contentView;
 
 }
 
