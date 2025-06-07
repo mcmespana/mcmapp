@@ -10,7 +10,6 @@ import SongListItem from '../../components/SongListItem';
 import { IconSymbol } from '../../components/ui/IconSymbol';
 import allSongsData from '../../assets/songs.json';
 import { RootStackParamList } from '../(tabs)/cancionero';
-import { songAssets, SongFilename } from '../../assets/songs'; // Add songAssets import
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 
@@ -146,30 +145,29 @@ const SelectedSongsScreen: React.FC = () => {
   }, [categorizedSelectedSongs, selectedSongs]); // Dependencies for useCallback
 
   const handleSongPress = (song: Song) => {
-    // Get the complete song data from allSongsData
-    const completeSong = Object.values(allSongsData).flat().find(s => s.filename === song.filename);
+    // Retrieve full song info from JSON to ensure we have the content
+    const completeSong = Object.values(allSongsData).flat().find(
+      s => s.filename === song.filename
+    );
+
     if (!completeSong) {
       console.error('Song not found in allSongsData:', song.filename);
       return;
     }
 
-    // Safely get the content using type assertion
-    const filename = completeSong.filename as SongFilename;
-    const content = songAssets[filename];
-    if (!content) {
-      console.error('Song content not found in songAssets:', filename);
-      return;
-    }
-
-    // Ensure content is a string
+    const allSelected = categorizedSelectedSongs.flatMap(cat => cat.data);
+    const index = allSelected.findIndex(s => s.filename === completeSong.filename);
 
     navigation.navigate('SongDetail', {
-      filename: song.filename,
-      title: song.title,
-      ...(song.author && { author: song.author }),
-      ...(song.key && { key: song.key }),
-      ...(typeof song.capo !== 'undefined' && { capo: song.capo }),
-      content: song.content || '', // Pass content to SongDetail (with empty string fallback)
+      filename: completeSong.filename,
+      title: completeSong.title,
+      ...(completeSong.author && { author: completeSong.author }),
+      ...(completeSong.key && { key: completeSong.key }),
+      ...(typeof completeSong.capo !== 'undefined' && { capo: completeSong.capo }),
+      content: completeSong.content || '',
+      navigationList: allSelected,
+      currentIndex: index,
+      source: 'selection',
     });
   };
 
