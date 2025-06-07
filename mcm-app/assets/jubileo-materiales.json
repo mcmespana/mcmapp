@@ -41,6 +41,8 @@
     "actividades": [
       {
         "nombre": "Oración de la mañana",
+        "emoji": "☀️",
+        "color": "#4FC3F7",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -71,6 +73,8 @@
       },
       {
         "nombre": "Reflexión de la tarde",
+        "emoji": "🌙",
+        "color": "#BA68C8",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -90,6 +94,8 @@
     "actividades": [
       {
         "nombre": "Oración de la mañana",
+        "emoji": "🌅",
+        "color": "#4FC3F7",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -104,6 +110,8 @@
       },
       {
         "nombre": "Reflexión de la tarde",
+        "emoji": "🌆",
+        "color": "#FFA726",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -123,6 +131,8 @@
     "actividades": [
       {
         "nombre": "Oración de la mañana",
+        "emoji": "🌅",
+        "color": "#4FC3F7",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -158,6 +168,8 @@
     "actividades": [
       {
         "nombre": "Oración de la mañana",
+        "emoji": "🌅",
+        "color": "#4FC3F7",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -172,6 +184,8 @@
       },
       {
         "nombre": "Reflexión de la tarde",
+        "emoji": "🌆",
+        "color": "#FFA726",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -191,6 +205,8 @@
     "actividades": [
       {
         "nombre": "Oración de la mañana",
+        "emoji": "🌅",
+        "color": "#4FC3F7",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -205,6 +221,8 @@
       },
       {
         "nombre": "Reflexión de la tarde",
+        "emoji": "🌆",
+        "color": "#FFA726",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -224,6 +242,8 @@
     "actividades": [
       {
         "nombre": "Oración de la mañana",
+        "emoji": "🌅",
+        "color": "#4FC3F7",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -244,6 +264,21 @@
           {
             "titulo": "Seccion 1",
             "texto": "Celebramos juntos la culminación de este camino. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Envíanos a ser testigos de tu amor. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Envíanos a ser testigos de tu amor. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Envíanos a ser testigos de tu amor. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
           },
           {
             "titulo": "Seccion 2",

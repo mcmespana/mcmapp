@@ -45,6 +45,8 @@ const styles = StyleSheet.create({
   list: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
+    flexGrow: 1, // Allows the container to grow and fill the FlatList if items are few
+    justifyContent: 'center', // Centers items horizontally within the grown container
   },
   item: {
     paddingVertical: spacing.sm,

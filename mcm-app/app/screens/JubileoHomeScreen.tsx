@@ -32,7 +32,9 @@ export default function JubileoHomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
 
   const renderItem = ({ item }: { item: NavigationItem }) => (
-    <TouchableOpacity style={styles.item} onPress={() => navigation.navigate(item.target)}>
+    <TouchableOpacity style={styles.item} onPress={() => {
+      navigation.navigate(item.target as any);
+    }}>
       <Card style={[styles.card, { backgroundColor: item.backgroundColor }]} elevation={2}>
         <Card.Content style={styles.cardContent}>
           <Text style={[styles.iconPlaceholder, { color: item.color }]}>{item.icon}</Text>
