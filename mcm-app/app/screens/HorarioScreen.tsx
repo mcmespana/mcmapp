@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.danger,
     marginHorizontal: spacing.lg,
     padding: spacing.sm,
-    borderRadius: 8,
+    borderRadius: 50,
     marginBottom: spacing.md,
   },
   titleText: {

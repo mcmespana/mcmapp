@@ -33,13 +33,13 @@ export default function TabsLayout() {
             headerShown: true
           }}
         />
-        <Tabs.Screen 
-          name="comunica" 
+        <Tabs.Screen
+          name="jubileo"
           options={{
-            title: 'Comunica',
-            tabBarIcon: ({color, size}) => <MaterialIcons name="public" color={color} size={size}/>,
-            headerStyle: { backgroundColor: '#31AADF' } // Info color
-          }} 
+            title: 'Jubileo',
+            tabBarIcon: ({color, size}) => <MaterialIcons name="celebration" color={color} size={size}/>,
+            headerShown: false
+          }}
         />
         <Tabs.Screen 
           name="cancionero" 
@@ -57,20 +57,21 @@ export default function TabsLayout() {
             headerStyle: { backgroundColor: '#A3BD31' } // Éxito / Confirmación color
           }}
         />
-        <Tabs.Screen
-          name="jubileo"
-          options={{
-            title: 'Jubileo',
-            tabBarIcon: ({color, size}) => <MaterialIcons name="celebration" color={color} size={size}/>,
-            headerShown: false
-          }}
-        />
+
         <Tabs.Screen
           name="fotos"
           options={{
             title: 'Fotos',
             tabBarIcon: ({color, size}) => <MaterialIcons name="photo-library" color={color} size={size}/>,
             headerStyle: { backgroundColor: '#E15C62' } // Acento / Call to Action color
+          }} 
+        />
+        <Tabs.Screen 
+          name="comunica" 
+          options={{
+            title: 'Comunica',
+            tabBarIcon: ({color, size}) => <MaterialIcons name="public" color={color} size={size}/>,
+            headerStyle: { backgroundColor: '#31AADF' } // Info color
           }} 
         />
       </Tabs>
