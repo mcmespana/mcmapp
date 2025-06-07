@@ -51,7 +51,7 @@ export default function SongsListScreen({ route, navigation }: {
 }) {
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
-  const styles = useMemo(() => createStyles(scheme), [scheme]);
+  const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
   const [search, setSearch] = useState('');
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
