@@ -51,11 +51,11 @@ export default function JubileoHomeScreen() {
       keyExtractor={(item) => item.label}
       numColumns={numColumns}
       contentContainerStyle={styles.container}
-      ListHeaderComponent={
+      /*ListHeaderComponent={
         <View style={styles.headerWrapper}>
           <Text style={styles.headerText}>¡Bienvenido al Jubileo!</Text>
         </View>
-      }
+      }*/
     />
   );
 }

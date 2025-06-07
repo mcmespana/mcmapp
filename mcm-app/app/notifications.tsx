@@ -1,14 +1,88 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { MaterialIcons } from '@expo/vector-icons';
 import colors from '@/constants/colors';
+import spacing from '@/constants/spacing';
+import typography from '@/constants/typography';
 
 export default function NotificationsScreen() {
-  return <View style={styles.container} />;
+  const navigation = useNavigation();
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Notificaciones</Text>
+        <View style={styles.headerRight} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.emptyState}>
+          <MaterialIcons name="notifications-none" size={64} color={colors.secondary} />
+          <Text style={styles.emptyTitle}>No hay notificaciones</Text>
+          <Text style={styles.emptyText}>
+            Aquí aparecerán tus notificaciones cuando las tengas.
+            ¡Vuelve más tarde!
+          </Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  backButton: {
+    marginRight: spacing.md,
+  },
+  headerRight: {
+    width: 32, // Mismo ancho que el botón de atrás para centrar el título
+  },
+  title: {
+    ...(typography.h1 as any), // Usando h1 como alternativa a h5
+    fontSize: 18, // Tamaño más pequeño que h1
+    flex: 1,
+    textAlign: 'center',
+  },
+  content: {
+    flexGrow: 1,
+    padding: spacing.lg,
+    justifyContent: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  emptyTitle: {
+    ...(typography.h2 as any), // Usando h2 como alternativa a h6
+    fontSize: 16, // Tamaño más pequeño que h2
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+    color: colors.text,
+  },
+  emptyText: {
+    ...(typography.body as any),
+    textAlign: 'center',
+    color: colors.secondary, // Usando secondary en lugar de textSecondary
+    lineHeight: 22,
   },
 });

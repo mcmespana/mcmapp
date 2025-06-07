@@ -21,20 +21,45 @@ const navigationItems: NavigationItem[] = [
   { href: '/fotos', label: 'Fotos', icon: 'photo-library', backgroundColor: colors.accent, color: colors.black },
   { href: '/calendario', label: 'Calendario', icon: 'event', backgroundColor: colors.info, color: colors.black },
   { href: '/comunica', label: 'Comunica', icon: 'chat', backgroundColor: colors.success, color: colors.black },
-  { label: 'Mas cosas...', icon: 'build', backgroundColor: colors.warning, color: colors.black },
+  { href: '/jubileo', label: 'Jubileo', icon: 'party-mode', backgroundColor: colors.warning, color: colors.black },
   { label: 'Y mas cosas....', icon: 'hourglass-empty', backgroundColor: colors.danger, color: colors.black },
 ];
 
 function NotificationsButton() {
   return (
     <Link href="/notifications" asChild>
-      <TouchableOpacity style={{ marginRight: spacing.md }}>
+      <TouchableOpacity style={{ padding: 8, marginLeft: 4 }}>
         <View>
-          <MaterialIcons name="notifications" size={24} color="#fff" />
-          <Badge style={styles.badge} />
+          <MaterialIcons name="notifications" size={24} color={colors.primary} />
+          <View style={{
+            position: 'absolute',
+            right: -4,
+            top: -2,
+            backgroundColor: colors.danger,
+            borderRadius: 8,
+            width: 16,
+            height: 16,
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>1</Text>
+          </View>
         </View>
       </TouchableOpacity>
     </Link>
+  );
+}
+
+function SettingsButton() {
+  const handlePress = () => {
+    // Mostrar un alert temporal
+    alert('Configuración: Próximamente...');
+  };
+
+  return (
+    <TouchableOpacity onPress={handlePress} style={{ padding: 8, marginLeft: 0 }}>
+      <MaterialIcons name="settings" size={24} color={colors.primary} />
+    </TouchableOpacity>
   );
 }
 
@@ -43,7 +68,12 @@ export default function Home() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => <NotificationsButton />,
+      headerRight: () => (
+        <View style={[styles.headerButtons, { paddingRight: spacing.md }]}>
+          <SettingsButton />
+          <NotificationsButton />
+        </View>
+      ),
       title: 'Inicio',
     });
   }, [navigation]);
@@ -81,7 +111,7 @@ interface Styles {
   item: ViewStyle;
   icon: TextStyle;
   label: TextStyle;
-  badge: ViewStyle;
+  headerButtons: ViewStyle;
 }
 
 const styles = StyleSheet.create<Styles>({
@@ -110,9 +140,9 @@ const styles = StyleSheet.create<Styles>({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  badge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
+
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });
