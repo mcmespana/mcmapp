@@ -25,13 +25,13 @@ export default function TabsLayout() {
           tabBarStyle: { backgroundColor: colors.background }, //
         }}
       >
-        <Tabs.Screen 
-          name="index" 
+        <Tabs.Screen
+          name="index"
           options={{
             title: 'Inicio',
             tabBarIcon: ({color, size}) => <MaterialIcons name="home" color={color} size={size}/>,
-            headerShown: false // No header for Inicio tab
-          }} 
+            headerShown: true
+          }}
         />
         <Tabs.Screen 
           name="comunica" 
