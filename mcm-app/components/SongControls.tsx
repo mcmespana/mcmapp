@@ -87,9 +87,20 @@ const SongControls: React.FC<SongControlsProps> = ({
             </TouchableOpacity>
           </View>
         )}
-        <TouchableOpacity style={styles.fabMain} onPress={() => setShowActionButtons(!showActionButtons)}>
-          <Text style={styles.fabMainText}>{showActionButtons ? '✕' : '🛠️'}</Text>
-        </TouchableOpacity>
+        <View style={{ position: 'relative' }}>
+          {(currentTranspose !== 0 || !chordsVisible || notation === 'spanish' || currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && (
+            <View style={styles.badge} />
+          )}
+          <TouchableOpacity 
+            style={styles.fabMain} 
+            onPress={() => setShowActionButtons(!showActionButtons)}
+            accessibilityLabel="Configuración"
+          >
+            <Text style={styles.fabMainText}>
+              {showActionButtons ? '✕' : '⚙️'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Font Size Modal */}
@@ -235,6 +246,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: theme.modalOverlay,
+  },
+  badge: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    backgroundColor: 'red',
+    borderRadius: 5,
+    width: 10,
+    height: 10,
+    zIndex: 10,
+    borderWidth: 1,
+    borderColor: 'white',
   },
   modalContent: {
     backgroundColor: 'white',
