@@ -1,6 +1,6 @@
 import { useEffect, useState, useLayoutEffect } from 'react'; // Added useLayoutEffect
-// Unused imports (TouchableOpacity, Modal, Button, TouchableWithoutFeedback) removed
-import { ScrollView, Text, StyleSheet, useWindowDimensions, View, TouchableOpacity } from 'react-native'; // Added TouchableOpacity
+// Cleaned up unused imports
+import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
 import GestureRecognizer from 'react-native-swipe-gestures';
 import SongDisplay from '../../components/SongDisplay';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
@@ -27,10 +27,9 @@ interface SongDetailScreenProps {
 }
 
 export default function SongDetailScreen({ route, navigation }: SongDetailScreenProps) { // Destructure navigation
-  // title from params is for the navigation screen header, actual song title rendered by WebView
   const {
     filename,
-    title: navScreenTitle,
+    title: _navScreenTitle,
     author,
     key,
     capo,
@@ -48,7 +47,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   // songHtml state is now managed by useSongProcessor
   const [isFileLoading, setIsFileLoading] = useState(true); // Renamed from isLoading
 
-  const { width } = useWindowDimensions();
+  // Ancho de pantalla no utilizado
 
   // New states for controls
   const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
@@ -77,9 +76,10 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     if (!filename) return; // Don't set header if filename is not available
 
     const currentlySelected = isSongSelected(filename);
-
-    navigation.setOptions({
-      headerRight: () => (
+    
+    // Configuración del botón derecho
+    const headerRight = () => (
+      <View style={styles.headerButtonContainer}>
         <TouchableOpacity
           onPress={() => {
             if (currentlySelected) {
@@ -88,17 +88,37 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
               addSong(filename);
             }
           }}
-          style={{ marginRight: 15 }} // Add some margin to the button
+          style={styles.headerButton}
+          accessibilityLabel={currentlySelected ? 'Quitar de selección' : 'Añadir a selección'}
         >
           <IconSymbol
-            name={currentlySelected ? "checkmark.circle.fill" : "plus.circle"}
+            name={currentlySelected ? 'checkmark.circle.fill' : 'plus.circle'}
             size={26}
-            color={'#fff'} // Assuming headerTintColor is white from cancionero.tsx
+            color={'#fff'}
           />
         </TouchableOpacity>
-      ),
+      </View>
+    );
+
+    // Configurar opciones de navegación
+    navigation.setOptions({
+      headerRight,
+      // Asegurarse de que el header esté visible en web
+      headerShown: true,
     });
-  }, [navigation, filename, isSongSelected, addSong, removeSong]); // Dependencies
+
+    // Forzar actualización adicional para web
+    if (Platform.OS === 'web') {
+      const timer = setTimeout(() => {
+        navigation.setOptions({
+          headerRight,
+          headerShown: true,
+        });
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [navigation, filename, isSongSelected(filename), addSong, removeSong]);
 
   // Effect for loading the ChordPro file content
   useEffect(() => {
@@ -221,17 +241,45 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 }
 
 const styles = StyleSheet.create({
-  // Removed styles: fabContainer, fabActionsContainer, fabAction, fabActionActive,
-  // fabActionText, fabActionTextActive, fabMain, fabMainText, modalOverlay,
-  // modalContent, modalTitle, fontFamilyOptionButton, fontFamilyOptionText,
-  // transposeButtonRow, fontSizeButtonRow
-  container: { flex: 1, padding: 10 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
+  container: { 
+    flex: 1, 
+    padding: 10 
+  },
+  headerButtonContainer: {
+    marginRight: 16,
+    // Asegurar que el botón sea visible en web
+    zIndex: 1000,
+    position: 'relative',
+  },
+  headerButton: {
+    padding: 8,
+    // Hacer el área de toque más grande en web
+    minWidth: 40,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    // Estilo adicional para web
+    ...(Platform.OS === 'web' ? {
+      cursor: 'pointer',
+      ':hover': {
+        opacity: 0.8,
+      },
+    } : {}),
+  },
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    marginBottom: 10, 
+    textAlign: 'center' 
+  },
   messageContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: { fontSize: 16, fontFamily: 'monospace' },
+  content: { 
+    fontSize: 16, 
+    fontFamily: 'monospace' 
+  },
 });
 
