@@ -27,7 +27,7 @@ interface SongListItemProps {
 const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllMode = false }) => {
   const { addSong, removeSong, isSongSelected } = useSelectedSongs();
   const scheme = useColorScheme();
-  const styles = useMemo(() => createStyles(scheme), [scheme]);
+  const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
   const swipeableRow = useRef<Swipeable>(null);
   const isSelected = isSongSelected(song.filename);
   const backgroundColorAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
@@ -132,7 +132,7 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
                   {song.author && (
                     <Text style={[styles.subtitleText, styles.subtitleAuthor, song.numericFilenamePart ? { marginLeft: 0 } : {}]} numberOfLines={1} ellipsizeMode="tail">
                       {/* Add three spaces if numericFilenamePart is NOT present, to maintain spacing logic, otherwise rely on structure */}
-                      {song.numericFilenamePart ? `   ${song.author}` : song.author}
+                      {song.numericFilenamePart ? `ㅤ${song.author}` : song.author}
                     </Text>
                   )}
                 </>

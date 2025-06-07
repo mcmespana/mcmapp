@@ -1,12 +1,7 @@
 import { useEffect, useState, useLayoutEffect } from 'react'; // Added useLayoutEffect
-// Unused imports (TouchableOpacity, Modal, Button, TouchableWithoutFeedback) removed
-import { ScrollView, Text, StyleSheet, useWindowDimensions, View, TouchableOpacity } from 'react-native'; // Added TouchableOpacity
-import * as FileSystem from 'expo-file-system';
-import { Asset } from 'expo-asset';
-import { Ionicons } from '@expo/vector-icons';
-// ChordProParser and HtmlDivFormatter removed as they are now in the hook
-import { SongFilename } from '../../assets/songs';
-import { songAssets } from '../../assets/songs/index';
+// Cleaned up unused imports
+import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
+import GestureRecognizer from 'react-native-swipe-gestures';
 import SongDisplay from '../../components/SongDisplay';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import SongControls from '../../components/SongControls'; // Added import
@@ -24,7 +19,9 @@ const availableFonts = [
 
 type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
 // Define navigation prop type
-type SongDetailScreenNavigationProp = NavigationProp<RootStackParamList, 'SongDetail'>;
+type SongDetailScreenNavigationProp = NavigationProp<RootStackParamList, 'SongDetail'> & {
+  replace: (screen: keyof RootStackParamList, params: any) => void;
+};
 
 interface SongDetailScreenProps {
   route: SongDetailScreenRouteProp;
@@ -32,8 +29,17 @@ interface SongDetailScreenProps {
 }
 
 export default function SongDetailScreen({ route, navigation }: SongDetailScreenProps) { // Destructure navigation
-  // title from params is for the navigation screen header, actual song title rendered by WebView
-  const { filename, title: navScreenTitle, author, key, capo, content } = route.params;
+  const {
+    filename,
+    title: _navScreenTitle,
+    author,
+    key,
+    capo,
+    content,
+    navigationList,
+    currentIndex,
+    source,
+  } = route.params;
   const { addSong, removeSong, isSongSelected } = useSelectedSongs(); // Use context
 
   // Settings from context
@@ -43,7 +49,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   // songHtml state is now managed by useSongProcessor
   const [isFileLoading, setIsFileLoading] = useState(true); // Renamed from isLoading
 
-  const { width } = useWindowDimensions();
+  // Ancho de pantalla no utilizado
 
   // New states for controls
   const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
@@ -72,9 +78,10 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     if (!filename) return; // Don't set header if filename is not available
 
     const currentlySelected = isSongSelected(filename);
-
-    navigation.setOptions({
-      headerRight: () => (
+    
+    // Configuración del botón derecho
+    const headerRight = () => (
+      <View style={styles.headerButtonContainer}>
         <TouchableOpacity
           onPress={() => {
             if (currentlySelected) {
@@ -83,17 +90,37 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
               addSong(filename);
             }
           }}
-          style={{ marginRight: 15 }} // Add some margin to the button
+          style={styles.headerButton}
+          accessibilityLabel={currentlySelected ? 'Quitar de selección' : 'Añadir a selección'}
         >
           <IconSymbol
-            name={currentlySelected ? "checkmark.circle.fill" : "plus.circle"}
+            name={currentlySelected ? 'checkmark.circle.fill' : 'plus.circle'}
             size={26}
-            color={'#fff'} // Assuming headerTintColor is white from cancionero.tsx
+            color={'#fff'}
           />
         </TouchableOpacity>
-      ),
+      </View>
+    );
+
+    // Configurar opciones de navegación
+    navigation.setOptions({
+      headerRight,
+      // Asegurarse de que el header esté visible en web
+      headerShown: true,
     });
-  }, [navigation, filename, isSongSelected, addSong, removeSong]); // Dependencies
+
+    // Forzar actualización adicional para web
+    if (Platform.OS === 'web') {
+      const timer = setTimeout(() => {
+        navigation.setOptions({
+          headerRight,
+          headerShown: true,
+        });
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [navigation, filename, isSongSelected(filename), addSong, removeSong]);
 
   // Effect for loading the ChordPro file content
   useEffect(() => {
@@ -142,6 +169,34 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     setSettings({ fontFamily: newFontFamily });
   };
 
+  const handleSwipeLeft = () => {
+    if (navigationList && typeof currentIndex === 'number' && currentIndex > 0) {
+      const prevSong = navigationList[currentIndex - 1];
+      navigation.replace('SongDetail', {
+        ...prevSong,
+        navigationList,
+        currentIndex: currentIndex - 1,
+        source,
+      });
+    }
+  };
+
+  const handleSwipeRight = () => {
+    if (
+      navigationList &&
+      typeof currentIndex === 'number' &&
+      currentIndex < navigationList.length - 1
+    ) {
+      const nextSong = navigationList[currentIndex + 1];
+      navigation.replace('SongDetail', {
+        ...nextSong,
+        navigationList,
+        currentIndex: currentIndex + 1,
+        source,
+      });
+    }
+  };
+
   // If settings are loading, you might want to show a loading indicator or return null
   if (isLoadingSettings) {
     // Optionally, render a loading indicator specific to settings being loaded
@@ -152,8 +207,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 
   // Removed handleOpenTransposeModal, handleOpenFontSizeModal, handleOpenFontFamilyModal
 
-  return (
-
+  const contentView = (
     <View style={styles.container}>
       <SongDisplay songHtml={songHtml} isLoading={isFileLoading || isSongProcessing || isLoadingSettings} />
       <SongControls
@@ -170,22 +224,64 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
         onChangeNotation={handleChangeNotation}
       />
     </View>
+  );
+
+  if (navigationList && typeof currentIndex === 'number') {
+    return (
+      <GestureRecognizer
+        style={{ flex: 1 }}
+        onSwipeLeft={handleSwipeRight}
+        onSwipeRight={handleSwipeLeft}
+      >
+        {contentView}
+      </GestureRecognizer>
     );
+  }
+
+  return contentView;
 
 }
 
 const styles = StyleSheet.create({
-  // Removed styles: fabContainer, fabActionsContainer, fabAction, fabActionActive,
-  // fabActionText, fabActionTextActive, fabMain, fabMainText, modalOverlay,
-  // modalContent, modalTitle, fontFamilyOptionButton, fontFamilyOptionText,
-  // transposeButtonRow, fontSizeButtonRow
-  container: { flex: 1, padding: 10 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
+  container: { 
+    flex: 1, 
+    padding: 10 
+  },
+  headerButtonContainer: {
+    marginRight: 16,
+    // Asegurar que el botón sea visible en web
+    zIndex: 1000,
+    position: 'relative',
+  },
+  headerButton: {
+    padding: 8,
+    // Hacer el área de toque más grande en web
+    minWidth: 40,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    // Estilo adicional para web
+    ...(Platform.OS === 'web' ? {
+      cursor: 'pointer',
+      ':hover': {
+        opacity: 0.8,
+      },
+    } : {}),
+  },
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    marginBottom: 10, 
+    textAlign: 'center' 
+  },
   messageContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: { fontSize: 16, fontFamily: 'monospace' },
+  content: { 
+    fontSize: 16, 
+    fontFamily: 'monospace' 
+  },
 });
 
