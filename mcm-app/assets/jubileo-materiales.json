@@ -4,6 +4,8 @@
     "actividades": [
       {
         "nombre": "Oración de la mañana",
+        "emoji": "☀️",
+        "color": "#4FC3F7",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -18,6 +20,8 @@
       },
       {
         "nombre": "Reflexión de la tarde",
+        "emoji": "🌙",
+        "color": "#BA68C8",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -51,6 +55,8 @@
       },
       {
         "nombre": "Eucaristía",
+        "emoji": "✝️",
+        "color": "#FF8A65",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -131,6 +137,8 @@
       },
       {
         "nombre": "Oración al atardecer",
+        "emoji": "🌆",
+        "color": "#FFA726",
         "paginas": [
           {
             "titulo": "Seccion 1",
@@ -230,6 +238,8 @@
       },
       {
         "nombre": "Eucaristía final",
+        "emoji": "✝️",
+        "color": "#FF8A65",
         "paginas": [
           {
             "titulo": "Seccion 1",
