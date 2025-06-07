@@ -35,7 +35,7 @@ type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<RootStackPara
 const SelectedSongsScreen: React.FC = () => {
   const { selectedSongs, clearSelection } = useSelectedSongs();
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
-  const scheme = useColorScheme();
+  const scheme = useColorScheme() || 'light'; // Default to light theme if undefined
   const styles = useMemo(() => createStyles(scheme), [scheme]);
   const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<CategorizedSongs[]>([]);
   const [snackbarVisible, setSnackbarVisible] = useState(false);

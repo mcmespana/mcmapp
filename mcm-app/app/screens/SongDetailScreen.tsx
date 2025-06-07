@@ -19,7 +19,9 @@ const availableFonts = [
 
 type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
 // Define navigation prop type
-type SongDetailScreenNavigationProp = NavigationProp<RootStackParamList, 'SongDetail'>;
+type SongDetailScreenNavigationProp = NavigationProp<RootStackParamList, 'SongDetail'> & {
+  replace: (screen: keyof RootStackParamList, params: any) => void;
+};
 
 interface SongDetailScreenProps {
   route: SongDetailScreenRouteProp;
