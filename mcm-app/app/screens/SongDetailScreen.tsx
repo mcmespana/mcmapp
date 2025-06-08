@@ -1,11 +1,11 @@
-import { useEffect, useState, useLayoutEffect } from 'react'; // Added useLayoutEffect
+import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 // Cleaned up unused imports
-import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Platform, Dimensions, Animated } from 'react-native';
 import GestureRecognizer from 'react-native-swipe-gestures';
 import SongDisplay from '../../components/SongDisplay';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import SongControls from '../../components/SongControls'; // Added import
-import { RouteProp, NavigationProp } from '@react-navigation/native'; // Added NavigationProp
+import { RouteProp, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext'; // Import context hook
 import { IconSymbol } from '../../components/ui/IconSymbol'; // Import IconSymbol
@@ -58,6 +58,9 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   // const [notation, setNotation] = useState<'english' | 'spanish'>('english'); // From context
   // const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // From context
   // const [currentFontFamily, setCurrentFontFamily] = useState(availableFonts[0].cssValue); // From context
+
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const screenWidth = Dimensions.get('window').width;
 
 
   // Call the hook to process the song
@@ -169,15 +172,38 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     setSettings({ fontFamily: newFontFamily });
   };
 
+  const animateAndSet = (
+    params: any,
+    direction: 'next' | 'prev'
+  ) => {
+    const toValue = direction === 'next' ? -screenWidth : screenWidth;
+    Animated.timing(slideAnim, {
+      toValue,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.setParams(params);
+      slideAnim.setValue(-toValue);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
   const handleSwipeLeft = () => {
     if (navigationList && typeof currentIndex === 'number' && currentIndex > 0) {
       const prevSong = navigationList[currentIndex - 1];
-      navigation.replace('SongDetail', {
-        ...prevSong,
-        navigationList,
-        currentIndex: currentIndex - 1,
-        source,
-      });
+      animateAndSet(
+        {
+          ...prevSong,
+          navigationList,
+          currentIndex: currentIndex - 1,
+          source,
+        },
+        'prev'
+      );
     }
   };
 
@@ -188,12 +214,15 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
       currentIndex < navigationList.length - 1
     ) {
       const nextSong = navigationList[currentIndex + 1];
-      navigation.replace('SongDetail', {
-        ...nextSong,
-        navigationList,
-        currentIndex: currentIndex + 1,
-        source,
-      });
+      animateAndSet(
+        {
+          ...nextSong,
+          navigationList,
+          currentIndex: currentIndex + 1,
+          source,
+        },
+        'next'
+      );
     }
   };
 
@@ -208,7 +237,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   // Removed handleOpenTransposeModal, handleOpenFontSizeModal, handleOpenFontFamilyModal
 
   const contentView = (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { transform: [{ translateX: slideAnim }] }]}>
       <SongDisplay songHtml={songHtml} isLoading={isFileLoading || isSongProcessing || isLoadingSettings} />
       <SongControls
         chordsVisible={chordsVisible}
@@ -223,7 +252,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
         onSetFontFamily={handleSetFontFamily}
         onChangeNotation={handleChangeNotation}
       />
-    </View>
+    </Animated.View>
   );
 
   if (navigationList && typeof currentIndex === 'number') {
