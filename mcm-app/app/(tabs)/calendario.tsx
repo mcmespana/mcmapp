@@ -3,7 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, ViewStyle, TextStyle } from 'react-native';
 import { Calendar, CalendarProps } from 'react-native-calendars';
 import { Checkbox, Text } from 'react-native-paper';
-import colors from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarConfig, CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -22,6 +23,8 @@ const calendarConfigs: CalendarConfig[] = [
 ];
 
 export default function Calendario() {
+  const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const [visibleCalendars, setVisibleCalendars] = useState<boolean[]>(calendarConfigs.map(() => true));
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const { eventsByDate } = useCalendarEvents(calendarConfigs);
@@ -109,11 +112,13 @@ interface Styles {
   noEvents: TextStyle;
 }
 
-const styles = StyleSheet.create<Styles>({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const theme = Colors[scheme ?? 'light'];
+  return StyleSheet.create<Styles>({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
   calendar: {
     marginBottom: spacing.md,
   },
@@ -132,7 +137,7 @@ const styles = StyleSheet.create<Styles>({
   },
   checkboxLabel: {
     ...typography.body,
-    color: colors.text,
+    color: theme.text,
   },
   eventList: {
     paddingHorizontal: spacing.md,
@@ -140,7 +145,7 @@ const styles = StyleSheet.create<Styles>({
   },
   eventListTitle: {
     ...typography.h2,
-    color: colors.text,
+    color: theme.text,
     marginBottom: spacing.sm,
     fontWeight: 'bold',
   },
@@ -160,7 +165,7 @@ const styles = StyleSheet.create<Styles>({
   },
   eventTitle: {
     ...typography.body,
-    color: colors.text,
+    color: theme.text,
   },
   eventLocation: {
     ...typography.body,
@@ -168,7 +173,8 @@ const styles = StyleSheet.create<Styles>({
   },
   noEvents: {
     ...typography.body,
-    color: colors.text,
+    color: theme.text,
     fontStyle: 'italic',
   },
-});
+  });
+};

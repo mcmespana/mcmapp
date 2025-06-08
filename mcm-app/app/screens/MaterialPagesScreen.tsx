@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { View, StyleSheet, Dimensions, Text, FlatList, ScrollView, TouchableOpacity, Platform, DimensionValue, ViewStyle } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
-import colors from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
 
@@ -44,9 +45,10 @@ const generateRandomCircles = (count: number = 5) => {
 // Component for the Introduction Page
 interface IntroPageItemProps {
   actividad: Actividad;
+  fecha: string;
   width: number;
 }
-const IntroPageItem: React.FC<IntroPageItemProps> = ({ actividad, width }) => {
+const IntroPageItem: React.FC<IntroPageItemProps> = ({ actividad, fecha, width }) => {
   const circlesData = React.useMemo(() => generateRandomCircles(5), []);
 
   return (
@@ -68,8 +70,9 @@ const IntroPageItem: React.FC<IntroPageItemProps> = ({ actividad, width }) => {
         />
       ))}
       <Text style={styles.introEmoji}>{actividad.emoji}</Text>
-      <Text style={styles.introTitle}>{actividad.nombre}</Text>
-      <Text style={styles.introHint}>Desliza para seguir leyendo</Text>
+      <Text style={styles.introTitle}>{actividad.nombre.toUpperCase()}</Text>
+      <Text style={styles.introDate}>{fecha}</Text>
+      <Text style={styles.introHint}>Desliza para ver el material</Text>
     </View>
   );
 };
@@ -97,15 +100,17 @@ const ContentPageItem: React.FC<ContentPageItemProps> = ({ item, actividadColor,
 export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const flatListRef = useRef<FlatList<any>>(null);
-  const { actividad } = route.params;
+  const { actividad, fecha } = route.params;
   const introBackgroundColor = actividad.color || colors.primary; // Fallback color
+  const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme, introBackgroundColor), [scheme, introBackgroundColor]);
   const [index, setIndex] = useState(0);
   const pages = [{ intro: true }, ...actividad.paginas];
   const { width } = Dimensions.get('window');
 
   const renderItem = ({ item }: { item: any }) => {
     if (item.intro) {
-      return <IntroPageItem actividad={actividad} width={width} />;
+      return <IntroPageItem actividad={actividad} fecha={fecha} width={width} />;
     }
     // Assuming 'item' for content pages is of type 'Pagina'
     // You might need to adjust the type assertion if 'item' can be something else
@@ -156,10 +161,8 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
     }
   };
 
-  const containerBackgroundColor = index === 0 ? introBackgroundColor : colors.background;
-
   return (
-    <View style={[styles.container, { backgroundColor: containerBackgroundColor }]}>
+    <View style={[styles.container, { backgroundColor: Colors[scheme ?? 'light'].background }]}>
       <FlatList
         data={pages}
         keyExtractor={(_, i) => String(i)}
@@ -196,15 +199,16 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 /* backgroundColor is now dynamic */ },
+const createStyles = (scheme: 'light' | 'dark' | null, introColor: string) => {
+  const theme = Colors[scheme ?? 'light'];
+  return StyleSheet.create({
+    container: { flex: 1 },
   introPage: {
-    // backgroundColor is now set dynamically on the container for the intro page
-    // and transparent here to let the container's bg show, or handled by actividad.color if needed directly
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+    backgroundColor: introColor,
   },
   introEmoji: {
     fontSize: 64,
@@ -215,9 +219,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.white,
   },
+  introDate: {
+    fontSize: 16,
+    color: colors.white,
+    marginTop: 4,
+  },
   introHint: {
     marginTop: spacing.md,
     color: colors.white,
+    fontSize: 12,
   },
   page: {
     flex: 1,
@@ -275,4 +285,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     lineHeight: 28,
   },
-});
+  });
+};

@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Card } from 'react-native-paper';
 
-import colors from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
@@ -29,6 +29,7 @@ const navigationItems: NavigationItem[] = [
 export default function JubileoHomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
   const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { width } = useWindowDimensions();
 
   let numColumns = 2;
@@ -93,19 +94,20 @@ export default function JubileoHomeScreen() {
   const isMobile = width < 700;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: isMobile ? 'center' : 'flex-start' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background, justifyContent: isMobile ? 'center' : 'flex-start' }}>
       <FlatList
-        contentContainerStyle={isMobile ? { alignItems: 'center' } : undefined}
         data={itemsToShow}
         renderItem={renderItemWithPlaceholder}
         keyExtractor={(item, idx) => item.label + idx}
         numColumns={numColumns}
         key={numColumns.toString()}
-        contentContainerStyle={[ // si lo toco se rompe xdddd
+        contentContainerStyle={[
+          isMobile ? { alignItems: 'center' } : undefined,
           styles.container,
           { flexGrow: 1, paddingTop: spacing.md, paddingBottom: spacing.md },
           width >= 1100 && { alignSelf: 'center', maxWidth: 1200, justifyContent: 'flex-start', alignItems: 'center' },
-        ]}        showsVerticalScrollIndicator={false}
+        ]}
+        showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
@@ -122,11 +124,13 @@ interface Styles {
   rectangleLabel: TextStyle;
 }
 
-const styles = StyleSheet.create<Styles>({
-  container: {
-    backgroundColor: colors.background,
-    // padding eliminado para evitar espacio en blanco excesivo
-  },
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const theme = Colors[scheme ?? 'light'];
+  return StyleSheet.create<Styles>({
+    container: {
+      backgroundColor: theme.background,
+      // padding eliminado para evitar espacio en blanco excesivo
+    },
   item: {
     flex: 1,
     margin: spacing.sm,
@@ -154,7 +158,7 @@ const styles = StyleSheet.create<Styles>({
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: colors.text,
+    color: theme.text,
   },
   iconPlaceholder: {
     fontWeight: 'bold',
@@ -171,4 +175,5 @@ const styles = StyleSheet.create<Styles>({
     letterSpacing: 0.5,
     marginTop: 2,
   },
-});
+  });
+};
