@@ -141,7 +141,7 @@ export default function RootLayout() {
       <PaperProvider theme={paperTheme}>
         <NavThemeProvider value={navigationTheme}>
           <Slot />
-          <StatusBar style="auto" />
+          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         </NavThemeProvider>
       </PaperProvider>
     </GestureHandlerRootView>
