@@ -8,15 +8,29 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
-  const [isOpen, setIsOpen] = useState(false);
+export function Collapsible({
+  children,
+  title,
+  isOpen: controlledOpen,
+  onToggle,
+}: PropsWithChildren & { title: string; isOpen?: boolean; onToggle?: (open: boolean) => void }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = controlledOpen ?? internalOpen;
   const theme = useColorScheme() ?? 'light';
+
+  const toggle = () => {
+    const newValue = !isOpen;
+    if (controlledOpen === undefined) {
+      setInternalOpen(newValue);
+    }
+    onToggle?.(newValue);
+  };
 
   return (
     <ThemedView>
       <TouchableOpacity
         style={styles.heading}
-        onPress={() => setIsOpen((value) => !value)}
+        onPress={toggle}
         activeOpacity={0.8}>
         <IconSymbol
           name="chevron.right"
@@ -28,7 +42,14 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
 
         <ThemedText type="defaultSemiBold">{title}</ThemedText>
       </TouchableOpacity>
-      {isOpen && <ThemedView style={styles.content}>{children}</ThemedView>}
+      {isOpen && (
+        <ThemedView style={[
+          styles.content,
+          { borderColor: theme === 'light' ? Colors.light.border : Colors.dark.shadow }
+        ]}>
+          {children}
+        </ThemedView>
+      )}
     </ThemedView>
   );
 }
@@ -37,10 +58,14 @@ const styles = StyleSheet.create({
   heading: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm, // Use spacing.sm for gap
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   content: {
-    marginTop: spacing.sm, // Use spacing.sm for marginTop
-    marginLeft: spacing.lg, // Use spacing.lg for marginLeft
+    marginTop: spacing.sm,
+    marginLeft: spacing.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderRadius: 8,
   },
 });

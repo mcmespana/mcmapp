@@ -24,6 +24,7 @@ const navigationItems: NavigationItem[] = [
   { label: 'Visitas', icon: '🚌', target: 'Visitas', backgroundColor: '#81C784' },
   { label: 'Profundiza', icon: '📖', target: 'Profundiza', backgroundColor: '#BA68C8' },
   { label: 'Grupos', icon: '👥', target: 'Grupos', backgroundColor: '#FFD54F' },
+  { label: 'Contactos', icon: '📞', target: 'Contactos', backgroundColor: '#64B5F6' },
 ];
 
 export default function JubileoHomeScreen() {
