@@ -2,7 +2,8 @@ import React from 'react';
 import { ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { List, IconButton, Avatar } from 'react-native-paper';
 import contacts from '@/assets/jubileo-contactos.json';
-import colors from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface Contacto {
   nombre: string;
@@ -11,6 +12,8 @@ interface Contacto {
 }
 
 export default function ContactosScreen() {
+  const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const data = contacts as Contacto[];
 
   const getInitials = (name: string) =>
@@ -59,10 +62,13 @@ export default function ContactosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  actions: { flexDirection: 'row' },
-  name: { fontSize: 18, fontWeight: 'bold', marginTop: 4 },
-  avatar: { marginLeft: 8 },
-  itemContent: { paddingVertical: 8 },
-});
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const theme = Colors[scheme ?? 'light'];
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.background },
+    actions: { flexDirection: 'row' },
+    name: { fontSize: 18, fontWeight: 'bold', marginTop: 4, color: theme.text },
+    avatar: { marginLeft: 8 },
+    itemContent: { paddingVertical: 8 },
+  });
+};
