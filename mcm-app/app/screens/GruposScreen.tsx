@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { List, IconButton, Text } from 'react-native-paper';
-import colors from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import gruposData from '@/assets/jubileo-grupos.json';
 
 interface Grupo {
@@ -14,6 +15,8 @@ interface Grupo {
 type Data = Record<string, Grupo[]>;
 
 export default function GruposScreen() {
+  const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const data = gruposData as Data;
   const categorias = [
     { name: 'Movilidad', icon: 'walk', color: colors.info },
@@ -84,8 +87,10 @@ export default function GruposScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const theme = Colors[scheme ?? 'light'];
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   catList: { padding: 16 },
   catCard: {
     height: 120,
@@ -98,7 +103,8 @@ const styles = StyleSheet.create({
   catLabel: { fontSize: 18, fontWeight: 'bold', color: colors.white },
   groupListTitle: { fontSize: 16 },
   backWrapper: { padding: 8 },
-  sectionHeader: { fontSize: 16, fontWeight: 'bold' },
+  sectionHeader: { fontSize: 16, fontWeight: 'bold', color: theme.text },
   groupContainer: { paddingHorizontal: 16 },
-  groupTitle: { fontSize: 22, fontWeight: 'bold', marginVertical: 8 },
+  groupTitle: { fontSize: 22, fontWeight: 'bold', marginVertical: 8, color: theme.text },
 });
+};

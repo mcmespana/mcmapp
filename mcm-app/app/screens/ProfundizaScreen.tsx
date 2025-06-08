@@ -1,7 +1,8 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { List, Text } from 'react-native-paper';
-import colors from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import profundiza from '@/assets/jubileo-profundiza.json';
 
 interface Pagina {
@@ -12,6 +13,8 @@ interface Pagina {
 }
 
 export default function ProfundizaScreen() {
+  const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const data = profundiza as {
     titulo: string;
     introduccion: string;
@@ -44,20 +47,23 @@ export default function ProfundizaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16 },
-  mainTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
-  intro: { fontSize: 16, marginBottom: 16 },
-  accordion: { marginBottom: 12, borderRadius: 16 },
-  accordionTitle: { color: colors.white, fontWeight: 'bold' },
-  accordionContent: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 12,
-    margin: 8,
-  },
-  subtitulo: { fontWeight: 'bold', marginBottom: 8 },
-  texto: { marginBottom: 12 },
-});
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const theme = Colors[scheme ?? 'light'];
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.background },
+    content: { padding: 16 },
+    mainTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 8, color: theme.text },
+    intro: { fontSize: 16, marginBottom: 16, color: theme.text },
+    accordion: { marginBottom: 12, borderRadius: 16 },
+    accordionTitle: { color: colors.white, fontWeight: 'bold' },
+    accordionContent: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 12,
+      margin: 8,
+    },
+    subtitulo: { fontWeight: 'bold', marginBottom: 8, color: theme.text },
+    texto: { marginBottom: 12, color: theme.text },
+  });
+};

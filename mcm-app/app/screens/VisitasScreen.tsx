@@ -7,7 +7,8 @@ import {
   Image,
 } from 'react-native';
 import { Card, IconButton, Modal, Portal, Text } from 'react-native-paper';
-import colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import visitas from '@/assets/jubileo-visitas.json';
 
 interface Visita {
@@ -51,6 +52,8 @@ function formatDate(fecha?: string) {
 }
 
 export default function VisitasScreen() {
+  const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const [selected, setSelected] = useState<Visita | null>(null);
 
   const openMap = (url?: string) => {
@@ -114,10 +117,12 @@ export default function VisitasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const theme = Colors[scheme ?? 'light'];
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   list: { padding: 16 },
-  card: { marginBottom: 16 },
+  card: { marginBottom: 16, backgroundColor: theme.background },
   image: {
     width: '100%',
     height: 160,
@@ -128,15 +133,16 @@ const styles = StyleSheet.create({
     marginBottom: 16, // spacing below image
   },
   cardContent: { flexDirection: 'row', alignItems: 'center' },
-  title: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  subtitle: { fontSize: 14, marginBottom: 4 },
+  title: { fontSize: 16, fontWeight: 'bold', marginBottom: 4, color: theme.text },
+  subtitle: { fontSize: 14, marginBottom: 4, color: theme.text },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   modal: {
-    backgroundColor: 'white',
+    backgroundColor: theme.background,
     margin: 20,
     padding: 20,
     borderRadius: 8,
   },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
-  modalText: { fontSize: 14, marginBottom: 12 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8, color: theme.text },
+  modalText: { fontSize: 14, marginBottom: 12, color: theme.text },
 });
+};
