@@ -1,10 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, FlatList, useWindowDimensions, ViewStyle, TextStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Card } from 'react-native-paper';
 
 import colors from '@/constants/colors';
 import spacing from '@/constants/spacing';
@@ -28,7 +26,6 @@ const navigationItems: NavigationItem[] = [
 
 export default function JubileoHomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
-  const scheme = useColorScheme();
   const { width } = useWindowDimensions();
 
   let numColumns = 2;
@@ -95,17 +92,23 @@ export default function JubileoHomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: isMobile ? 'center' : 'flex-start' }}>
       <FlatList
-        contentContainerStyle={isMobile ? { alignItems: 'center' } : undefined}
         data={itemsToShow}
         renderItem={renderItemWithPlaceholder}
         keyExtractor={(item, idx) => item.label + idx}
         numColumns={numColumns}
         key={numColumns.toString()}
-        contentContainerStyle={[ // si lo toco se rompe xdddd
+        contentContainerStyle={[
+          isMobile ? { alignItems: 'center' } : null,
           styles.container,
           { flexGrow: 1, paddingTop: spacing.md, paddingBottom: spacing.md },
-          width >= 1100 && { alignSelf: 'center', maxWidth: 1200, justifyContent: 'flex-start', alignItems: 'center' },
-        ]}        showsVerticalScrollIndicator={false}
+          width >= 1100 && {
+            alignSelf: 'center',
+            maxWidth: 1200,
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );

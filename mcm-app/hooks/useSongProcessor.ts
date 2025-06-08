@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChordProParser, HtmlDivFormatter, Song, Line, ChordLyricsPair } from 'chordsheetjs';
+import { ChordProParser, HtmlDivFormatter, Song, ChordLyricsPair } from 'chordsheetjs';
 import { AppColors } from '../app/styles/theme'; // Ensure this path is correct relative to the hooks folder
 
 // Map of single note names used for translation
@@ -90,42 +90,16 @@ export const useSongProcessor = ({
 
       let songForFormatting: Song = originalParsedSong;
 
-      // Apply notation translation if needed, after transposition (which is handled by ChordProParser with {transpose} directive)
-      if (notation === 'spanish') {
-        songForFormatting.lines = songForFormatting.lines.map(line => {
-          const newLine = new Line();
-          newLine.items = line.items.map(item => {
-            if (item instanceof ChordLyricsPair) {
-              const chordsToTranslate = item.chords;
-              if (chordsToTranslate && chordsToTranslate.trim() !== '') {
-                const translatedChordsString = chordsToTranslate
-                  .split(/(\s+)/) // Split by whitespace, keeping delimiters
-                  .map(part => {
-                    if (part.match(/^\s+$/)) return part; // keep whitespace
-                    return translateChordToSpanish(part);
-                  })
-                  .join('');
 
-                try {
-                  return new ChordLyricsPair(
-                    translatedChordsString,
-                    item.lyrics || '',
-                    item.annotation || undefined
-                  );
-                } catch (e) {
-                  console.error('Error creating new ChordLyricsPair with chords:', translatedChordsString, e);
-                  return item; // Fallback to original item on error
-                }
-              }
-            }
-            return item; // For other item types or items without chords, return them as is
-          });
-          return newLine;
-        });
-      }
 
       const formatter = new HtmlDivFormatter();
       let formattedSong = formatter.format(songForFormatting);
+
+      if (notation === 'spanish') {
+        formattedSong = formattedSong.replace(/<span class="chord">(.*?)<\/span>/g, (_m, chordText) => {
+          return `<span class="chord">${translateChordToSpanish(chordText)}</span>`;
+        });
+      }
 
       let metaInsert = '';
       if (author) {
