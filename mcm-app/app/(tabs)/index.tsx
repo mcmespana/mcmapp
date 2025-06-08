@@ -4,7 +4,8 @@ import { Link, LinkProps } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Badge } from 'react-native-paper';
-import colors from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 
@@ -25,23 +26,27 @@ const navigationItems: NavigationItem[] = [
   { label: 'Y mas cosas....', icon: 'hourglass-empty', backgroundColor: colors.danger, color: colors.black },
 ];
 
-function NotificationsButton() {
+interface IconButtonProps { color: string }
+
+function NotificationsButton({ color }: IconButtonProps) {
   return (
     <Link href="/notifications" asChild>
       <TouchableOpacity style={{ padding: 8, marginLeft: 4 }}>
         <View>
-          <MaterialIcons name="notifications" size={24} color={colors.primary} />
-          <View style={{
-            position: 'absolute',
-            right: -4,
-            top: -2,
-            backgroundColor: colors.danger,
-            borderRadius: 8,
-            width: 16,
-            height: 16,
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
+          <MaterialIcons name="notifications" size={24} color={color} />
+          <View
+            style={{
+              position: 'absolute',
+              right: -4,
+              top: -2,
+              backgroundColor: colors.danger,
+              borderRadius: 8,
+              width: 16,
+              height: 16,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
             <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>1</Text>
           </View>
         </View>
@@ -50,7 +55,7 @@ function NotificationsButton() {
   );
 }
 
-function SettingsButton() {
+function SettingsButton({ color }: IconButtonProps) {
   const handlePress = () => {
     // Mostrar un alert temporal
     alert('Configuración: Próximamente...');
@@ -58,28 +63,30 @@ function SettingsButton() {
 
   return (
     <TouchableOpacity onPress={handlePress} style={{ padding: 8, marginLeft: 0 }}>
-      <MaterialIcons name="settings" size={24} color={colors.primary} />
+      <MaterialIcons name="settings" size={24} color={color} />
     </TouchableOpacity>
   );
 }
 
 export default function Home() {
   const navigation = useNavigation();
+  const scheme = useColorScheme();
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <View style={[styles.headerButtons, { paddingRight: spacing.md }]}>
-          <SettingsButton />
-          <NotificationsButton />
+          <SettingsButton color={Colors[scheme ?? 'light'].icon} />
+          <NotificationsButton color={Colors[scheme ?? 'light'].icon} />
         </View>
       ),
       title: 'Inicio',
     });
-  }, [navigation]);
+  }, [navigation, scheme]);
 
   return (
     <FlatList
+      style={{ backgroundColor: Colors[scheme ?? 'light'].background }}
       data={navigationItems}
       keyExtractor={(_, index) => index.toString()}
       numColumns={2}

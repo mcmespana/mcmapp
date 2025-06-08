@@ -5,6 +5,7 @@ import { Button, ActivityIndicator } from 'react-native-paper';
 import AlbumCard from '@/components/AlbumCard';
 import allAlbumsData from '@/assets/albums.json';
 import { Colors as ThemeColors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 const ALBUMS_PER_PAGE = 4;
 
@@ -28,6 +29,8 @@ interface FotosScreenStyles {
 
 export default function FotosScreen() {
   const { width } = useWindowDimensions();
+  const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
@@ -126,11 +129,13 @@ export default function FotosScreen() {
   );
 }
 
-const styles = StyleSheet.create<FotosScreenStyles>({
-  container: {
-    flex: 1,
-    backgroundColor: ThemeColors.light.background,
-  },
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const theme = ThemeColors[scheme ?? 'light'];
+  return StyleSheet.create<FotosScreenStyles>({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
 
   listContentContainer: {
     paddingTop: 15,
@@ -149,6 +154,7 @@ const styles = StyleSheet.create<FotosScreenStyles>({
   loadMoreButton: {
     marginVertical: 20,
     alignSelf: 'center',
-    backgroundColor: ThemeColors.light.tint,
+    backgroundColor: theme.tint,
   },
-});
+  });
+};

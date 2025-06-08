@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import colors from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import horarioData from '@/assets/jubileo-horario.json';
 import DateSelector from '@/components/DateSelector';
@@ -8,6 +9,8 @@ import EventItem from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
 
 export default function HorarioScreen() {
+  const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const [index, setIndex] = useState(0);
   const fechas = horarioData.map((d) => ({ fecha: d.fecha, titulo: d.titulo }));
   const dia = horarioData[index];
@@ -31,11 +34,13 @@ export default function HorarioScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const theme = Colors[scheme ?? 'light'];
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
   titleWrapper: {
     backgroundColor: colors.danger,
     marginHorizontal: spacing.lg,
@@ -53,4 +58,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
   },
-});
+  });
+};

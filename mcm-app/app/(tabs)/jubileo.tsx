@@ -14,7 +14,7 @@ export type JubileoStackParamList = {
   Home: undefined;
   Horario: undefined;
   Materiales: undefined;
-  MaterialPages: { actividad: any };
+  MaterialPages: { actividad: any; fecha: string };
   Visitas: undefined;
   Profundiza: undefined;
   Grupos: undefined;
