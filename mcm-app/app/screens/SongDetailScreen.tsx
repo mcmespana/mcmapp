@@ -44,7 +44,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 
   // Settings from context
   const { settings, setSettings, isLoadingSettings } = useSettings(); // <<<--- USE SETTINGS HOOK
-  const { chordsVisible, fontSize: currentFontSizeEm, fontFamily: currentFontFamily, notation } = settings;
+  const { chordsVisible, fontSize: currentFontSizeEm, fontFamily: currentFontFamily } = settings;
 
   // songHtml state is now managed by useSongProcessor
   const [isFileLoading, setIsFileLoading] = useState(true); // Renamed from isLoading
@@ -55,7 +55,6 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
   // const [chordsVisible, setChordsVisible] = useState(true); // From context
   const [currentTranspose, setCurrentTranspose] = useState(0); // Transpose remains local
-  // const [notation, setNotation] = useState<'english' | 'spanish'>('english'); // From context
   // const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // From context
   // const [currentFontFamily, setCurrentFontFamily] = useState(availableFonts[0].cssValue); // From context
 
@@ -73,7 +72,6 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     author, // Pass author from route.params
     key,    // Pass key from route.params
     capo,   // Pass capo from route.params
-    notation, // From context
   });
 
   // Effect for setting header button
@@ -152,9 +150,6 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   // Handlers for actual state changes, now using setSettings from context
   const handleToggleChords = () => setSettings({ chordsVisible: !chordsVisible });
 
-  const handleChangeNotation = () => {
-    setSettings({ notation: notation === 'english' ? 'spanish' : 'english' });
-  };
 
   const handleSetTranspose = (semitones: number) => {
     let newTranspose = semitones;
@@ -244,13 +239,11 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
         currentTranspose={currentTranspose} // Transpose is local
         currentFontSizeEm={currentFontSizeEm}
         currentFontFamily={currentFontFamily}
-        notation={notation} // Pass notation state
         availableFonts={availableFonts}
         onToggleChords={handleToggleChords}
         onSetTranspose={handleSetTranspose} // Local handler
         onSetFontSize={handleSetFontSize}
         onSetFontFamily={handleSetFontFamily}
-        onChangeNotation={handleChangeNotation}
       />
     </Animated.View>
   );

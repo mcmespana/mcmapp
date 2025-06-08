@@ -14,13 +14,11 @@ interface SongControlsProps {
   currentTranspose: number;
   currentFontSizeEm: number;
   currentFontFamily: string;
-  notation?: 'english' | 'spanish'; // Added notation prop
   availableFonts: FontOption[];
   onToggleChords: () => void;
   onSetTranspose: (semitones: number) => void;
   onSetFontSize: (sizeEm: number) => void;
   onSetFontFamily: (fontFamily: string) => void;
-  onChangeNotation: () => void; // For "Notación (Próximamente)"
 }
 
 const SongControls: React.FC<SongControlsProps> = ({
@@ -28,13 +26,11 @@ const SongControls: React.FC<SongControlsProps> = ({
   currentTranspose,
   currentFontSizeEm,
   currentFontFamily,
-  notation = 'english', // Default to English if not provided
   availableFonts,
   onToggleChords,
   onSetTranspose,
   onSetFontSize,
   onSetFontFamily,
-  onChangeNotation,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposeModal, setShowTransposeModal] = useState(false);
@@ -75,11 +71,6 @@ const SongControls: React.FC<SongControlsProps> = ({
             <TouchableOpacity style={[styles.fabAction, currentTranspose !== 0 && styles.fabActionActive]} onPress={handleOpenTransposeModal}>
               <Text style={[styles.fabActionText, currentTranspose !== 0 && styles.fabActionTextActive]}>Cambiar tono</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, notation === 'spanish' && styles.fabActionActive]} onPress={onChangeNotation}>
-              <Text style={[styles.fabActionText, notation === 'spanish' && styles.fabActionTextActive]}>
-                {notation === 'english' ? 'Notación (Esp)' : 'Notación (Eng)'}
-              </Text>
-            </TouchableOpacity>
             <TouchableOpacity style={[styles.fabAction, currentFontSizeEm !== 1.0 && styles.fabActionActive]} onPress={handleOpenFontSizeModal}>
               <Text style={[styles.fabActionText, currentFontSizeEm !== 1.0 && styles.fabActionTextActive]}>Tamaño Letra</Text>
             </TouchableOpacity>
@@ -89,7 +80,7 @@ const SongControls: React.FC<SongControlsProps> = ({
           </View>
         )}
         <View style={{ position: 'relative' }}>
-          {(currentTranspose !== 0 || !chordsVisible || notation === 'spanish' || currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && (
+          {(currentTranspose !== 0 || !chordsVisible || currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && (
             <View style={styles.badge} />
           )}
           <TouchableOpacity 
