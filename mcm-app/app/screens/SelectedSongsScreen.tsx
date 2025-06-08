@@ -217,6 +217,7 @@ const SelectedSongsScreen: React.FC = () => {
       <View style={styles.emptyContainer}>
         <IconSymbol name="music.note.list" size={60} color="#cccccc" />
         <Text style={styles.emptyText}>Todavía no has seleccionado canciones</Text>
+        <Text style={styles.swipeHint}>Desliza una canción hacia la izquierda para seleccionarla</Text>
       </View>
     );
   }
@@ -342,9 +343,16 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: isDark ? Colors.dark.background : '#f8f8f8',
     },
     emptyText: {
-      marginTop: 16,
-      fontSize: 18,
-      color: isDark ? '#CCCCCC' : '#666',
+      color: '#888',
+      fontSize: 16,
+      marginTop: 12,
+      textAlign: 'center',
+    },
+    swipeHint: {
+      color: '#bbb',
+      fontSize: 13,
+      fontStyle: 'italic',
+      marginTop: 6,
       textAlign: 'center',
     },
     songNumber: {

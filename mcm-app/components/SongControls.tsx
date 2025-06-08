@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Button, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import theme from '../app/styles/theme'; // Default import for theme
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 // Define availableFonts structure if not already globally defined
 interface FontOption {
@@ -96,9 +97,13 @@ const SongControls: React.FC<SongControlsProps> = ({
             onPress={() => setShowActionButtons(!showActionButtons)}
             accessibilityLabel="Configuración"
           >
-            <Text style={styles.fabMainText}>
-              {showActionButtons ? '✕' : '⚙️'}
-            </Text>
+            {/* Use IconSymbol for Material Design icons */}
+            <MaterialIcons
+              name={showActionButtons ? 'close' : 'settings'}
+              size={32}
+              color={theme.textLight}
+              style={styles.fabMainIcon}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -249,15 +254,21 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    right: 0,
-    top: 0,
+    right: -4,
+    top: -4,
     backgroundColor: 'red',
-    borderRadius: 5,
-    width: 10,
-    height: 10,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
     zIndex: 10,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabMainIcon: {
+    // Center icon in FAB
+    alignSelf: 'center',
   },
   modalContent: {
     backgroundColor: 'white',
