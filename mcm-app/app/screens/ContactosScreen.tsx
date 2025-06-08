@@ -1,0 +1,48 @@
+import React from 'react';
+import { ScrollView, StyleSheet, View, Linking } from 'react-native';
+import { List, IconButton } from 'react-native-paper';
+import contacts from '@/assets/jubileo-contactos.json';
+import colors from '@/constants/colors';
+
+interface Contacto {
+  nombre: string;
+  responsabilidad: string;
+  telefono: string;
+}
+
+export default function ContactosScreen() {
+  const data = contacts as Contacto[];
+
+  const call = (tel: string) => Linking.openURL(`tel:${tel}`);
+  const whatsapp = (tel: string) => {
+    const clean = tel.replace('+', '');
+    Linking.openURL(`https://wa.me/${clean}`);
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      {data.map((c, idx) => (
+        <List.Item
+          key={idx}
+          title={c.nombre}
+          description={c.responsabilidad}
+          right={() => (
+            <View style={styles.actions}>
+              <IconButton icon="phone" size={24} onPress={() => call(c.telefono)} />
+              <IconButton
+                icon="whatsapp"
+                size={24}
+                onPress={() => whatsapp(c.telefono)}
+              />
+            </View>
+          )}
+        />
+      ))}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  actions: { flexDirection: 'row' },
+});
