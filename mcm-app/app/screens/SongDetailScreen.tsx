@@ -172,7 +172,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   const handleSwipeLeft = () => {
     if (navigationList && typeof currentIndex === 'number' && currentIndex > 0) {
       const prevSong = navigationList[currentIndex - 1];
-      navigation.replace('SongDetail', {
+      navigation.setParams({
         ...prevSong,
         navigationList,
         currentIndex: currentIndex - 1,
@@ -188,7 +188,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
       currentIndex < navigationList.length - 1
     ) {
       const nextSong = navigationList[currentIndex + 1];
-      navigation.replace('SongDetail', {
+      navigation.setParams({
         ...nextSong,
         navigationList,
         currentIndex: currentIndex + 1,
