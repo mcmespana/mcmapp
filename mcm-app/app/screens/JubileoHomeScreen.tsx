@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import colors from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
@@ -27,6 +28,8 @@ const navigationItems: NavigationItem[] = [
 
 export default function JubileoHomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
+  const scheme = useColorScheme();
+  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { width } = useWindowDimensions();
 
   let numColumns = 2;
@@ -91,7 +94,7 @@ export default function JubileoHomeScreen() {
   const isMobile = width < 700;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: isMobile ? 'center' : 'flex-start' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background, justifyContent: isMobile ? 'center' : 'flex-start' }}>
       <FlatList
         data={itemsToShow}
         renderItem={renderItemWithPlaceholder}
@@ -126,9 +129,11 @@ interface Styles {
   rectangleLabel: TextStyle;
 }
 
-const styles = StyleSheet.create<Styles>({
-  container: {
-    backgroundColor: colors.background,
+const createStyles = (scheme: 'light' | 'dark' | null) => {
+  const theme = Colors[scheme ?? 'light'];
+  return StyleSheet.create<Styles>({
+    container: {
+    backgroundColor: theme.background,
     // padding eliminado para evitar espacio en blanco excesivo
   },
   item: {
@@ -158,7 +163,7 @@ const styles = StyleSheet.create<Styles>({
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: colors.text,
+    color: theme.text,
   },
   iconPlaceholder: {
     fontWeight: 'bold',
@@ -175,4 +180,5 @@ const styles = StyleSheet.create<Styles>({
     letterSpacing: 0.5,
     marginTop: 2,
   },
-});
+  });
+};
