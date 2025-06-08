@@ -96,18 +96,17 @@ export default function JubileoHomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: isMobile ? 'center' : 'flex-start' }}>
       <FlatList
+        contentContainerStyle={isMobile ? { alignItems: 'center' } : undefined}
         data={itemsToShow}
         renderItem={renderItemWithPlaceholder}
         keyExtractor={(item, idx) => item.label + idx}
         numColumns={numColumns}
         key={numColumns.toString()}
-        contentContainerStyle={[
+        contentContainerStyle={[ // si lo toco se rompe xdddd
           styles.container,
-          isMobile && { alignItems: 'center' },
           { flexGrow: 1, paddingTop: spacing.md, paddingBottom: spacing.md },
           width >= 1100 && { alignSelf: 'center', maxWidth: 1200, justifyContent: 'flex-start', alignItems: 'center' },
-        ]}
-        showsVerticalScrollIndicator={false}
+        ]}        showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );

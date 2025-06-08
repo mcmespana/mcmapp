@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   content: { padding: 16 },
   mainTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 8 },
   intro: { fontSize: 14, marginBottom: 16 },
-  accordion: { marginBottom: 12 },
+  accordion: { marginBottom: 12, borderRadius: 16 },
   accordionTitle: { color: colors.white, fontWeight: 'bold' },
   subtitulo: { fontWeight: 'bold', marginBottom: 8 },
   texto: { marginBottom: 12 },

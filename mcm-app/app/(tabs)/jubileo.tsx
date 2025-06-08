@@ -9,6 +9,7 @@ import ProfundizaScreen from '../screens/ProfundizaScreen';
 import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
 
+
 export type JubileoStackParamList = {
   Home: undefined;
   Horario: undefined;

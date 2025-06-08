@@ -118,7 +118,15 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   list: { padding: 16 },
   card: { marginBottom: 16 },
-  image: { width: '100%', height: 160 },
+  image: {
+    width: '100%',
+    height: 160,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    marginBottom: 16, // spacing below image
+  },
   cardContent: { flexDirection: 'row', alignItems: 'center' },
   title: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
   subtitle: { fontSize: 14, marginBottom: 4 },
