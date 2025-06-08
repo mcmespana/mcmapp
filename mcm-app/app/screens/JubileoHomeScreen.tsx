@@ -24,6 +24,7 @@ const navigationItems: NavigationItem[] = [
   { label: 'Visitas', icon: '🚌', target: 'Visitas', backgroundColor: '#81C784' },
   { label: 'Profundiza', icon: '📖', target: 'Profundiza', backgroundColor: '#BA68C8' },
   { label: 'Grupos', icon: '👥', target: 'Grupos', backgroundColor: '#FFD54F' },
+  { label: 'Contactos', icon: '☎️', target: 'Contactos', backgroundColor: '#9FA8DA' },
 ];
 
 export default function JubileoHomeScreen() {
@@ -95,17 +96,18 @@ export default function JubileoHomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: isMobile ? 'center' : 'flex-start' }}>
       <FlatList
-        contentContainerStyle={isMobile ? { alignItems: 'center' } : undefined}
         data={itemsToShow}
         renderItem={renderItemWithPlaceholder}
         keyExtractor={(item, idx) => item.label + idx}
         numColumns={numColumns}
         key={numColumns.toString()}
-        contentContainerStyle={[ // si lo toco se rompe xdddd
+        contentContainerStyle={[
           styles.container,
+          isMobile && { alignItems: 'center' },
           { flexGrow: 1, paddingTop: spacing.md, paddingBottom: spacing.md },
           width >= 1100 && { alignSelf: 'center', maxWidth: 1200, justifyContent: 'flex-start', alignItems: 'center' },
-        ]}        showsVerticalScrollIndicator={false}
+        ]}
+        showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
