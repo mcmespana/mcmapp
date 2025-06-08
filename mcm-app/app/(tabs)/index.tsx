@@ -26,23 +26,27 @@ const navigationItems: NavigationItem[] = [
   { label: 'Y mas cosas....', icon: 'hourglass-empty', backgroundColor: colors.danger, color: colors.black },
 ];
 
-function NotificationsButton() {
+interface IconButtonProps { color: string }
+
+function NotificationsButton({ color }: IconButtonProps) {
   return (
     <Link href="/notifications" asChild>
       <TouchableOpacity style={{ padding: 8, marginLeft: 4 }}>
         <View>
-          <MaterialIcons name="notifications" size={24} color={colors.primary} />
-          <View style={{
-            position: 'absolute',
-            right: -4,
-            top: -2,
-            backgroundColor: colors.danger,
-            borderRadius: 8,
-            width: 16,
-            height: 16,
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
+          <MaterialIcons name="notifications" size={24} color={color} />
+          <View
+            style={{
+              position: 'absolute',
+              right: -4,
+              top: -2,
+              backgroundColor: colors.danger,
+              borderRadius: 8,
+              width: 16,
+              height: 16,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
             <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>1</Text>
           </View>
         </View>
@@ -51,7 +55,7 @@ function NotificationsButton() {
   );
 }
 
-function SettingsButton() {
+function SettingsButton({ color }: IconButtonProps) {
   const handlePress = () => {
     // Mostrar un alert temporal
     alert('Configuración: Próximamente...');
@@ -59,7 +63,7 @@ function SettingsButton() {
 
   return (
     <TouchableOpacity onPress={handlePress} style={{ padding: 8, marginLeft: 0 }}>
-      <MaterialIcons name="settings" size={24} color={colors.primary} />
+      <MaterialIcons name="settings" size={24} color={color} />
     </TouchableOpacity>
   );
 }
@@ -72,13 +76,13 @@ export default function Home() {
     navigation.setOptions({
       headerRight: () => (
         <View style={[styles.headerButtons, { paddingRight: spacing.md }]}>
-          <SettingsButton />
-          <NotificationsButton />
+          <SettingsButton color={Colors[scheme ?? 'light'].icon} />
+          <NotificationsButton color={Colors[scheme ?? 'light'].icon} />
         </View>
       ),
       title: 'Inicio',
     });
-  }, [navigation]);
+  }, [navigation, scheme]);
 
   return (
     <FlatList
