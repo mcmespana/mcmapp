@@ -1,5 +1,5 @@
 {
-  "movilidad": [
+  "Movilidad": [
     {
       "nombre": "Grupo A",
       "responsable": "Laura Gómez",
@@ -182,9 +182,9 @@
       ]
     }
   ],
-  "consoPlus": [
+  "Conso+": [
     {
-      "nombre": "Equipo 1",
+      "nombre": "Grupo 1",
       "responsable": "Teresa Vidal",
       "miembros": [
         "Alejandro García (Madrid)",
@@ -201,7 +201,7 @@
       "subtitulo": "Animación y logística"
     },
     {
-      "nombre": "Equipo 2",
+      "nombre": "Grupo 2",
       "responsable": "Manuel Ortega",
       "miembros": [
         "Javier Jiménez (Madrid)",
@@ -217,7 +217,7 @@
       ]
     },
     {
-      "nombre": "Equipo 3",
+      "nombre": "Grupo 3",
       "responsable": "Inés Navarro",
       "miembros": [
         "Daniel Blanco (Madrid)",
@@ -233,7 +233,7 @@
       ]
     },
     {
-      "nombre": "Equipo 4",
+      "nombre": "Grupo 4",
       "responsable": "Santiago Pérez",
       "miembros": [
         "Rubén Cruz (Madrid)",
@@ -249,7 +249,7 @@
       ]
     },
     {
-      "nombre": "Equipo 5",
+      "nombre": "Grupo 5",
       "responsable": "Eva Martín",
       "miembros": [
         "Gabriel Cabrera (Madrid)",
@@ -265,7 +265,7 @@
       ]
     }
   ],
-  "autobuses": [
+  "Autobuses": [
     {
       "nombre": "Autobús 1 - Valle",
       "responsable": "Raquel Molina",

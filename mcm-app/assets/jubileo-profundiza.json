@@ -1,14 +1,33 @@
 {
-  "titulo": "Material de profundización",
+  "titulo": "Para ir a más",
+  "introduccion":"Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.",
   "paginas": [
     {
       "titulo": "Tema 1",
-      "texto": "En esta sección encontrarás textos para orar y reflexionar cada día. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+      "texto": "En esta sección encontrarás textos para orar y reflexionar cada día. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "color": "#E10600"
+   
     },
     {
       "titulo": "Tema 2",
       "texto": "También añadiremos enlaces a recursos adicionales para seguir creciendo en la fe. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "color": "#009639",
       "subtitulo": "Subtema 2"
+
+    },
+    {
+      "titulo": "Tema 3",
+      "texto": "También añadiremos enlaces a recursos adicionales para seguir creciendo en la fe. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "color": "#F47C20",
+      "subtitulo": "Subtema 2"
+
+    },
+    {
+      "titulo": "Tema 4",
+      "texto": "También añadiremos enlaces a recursos adicionales para seguir creciendo en la fe. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "color": "#005EB8",
+      "subtitulo": "Subtema 2"
+
     }
   ]
 }
