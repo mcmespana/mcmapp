@@ -1,9 +1,10 @@
 import { FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useLayoutEffect, useMemo } from 'react';
 import songsData from '../../assets/songs.json';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useMemo } from 'react';
 import { Colors } from '@/constants/colors';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
@@ -24,10 +25,27 @@ export default function CategoriesScreen({
   const styles = useMemo(() => createStyles(scheme), [scheme]);
   const actualCategories = Object.keys(songsData);
   const displayCategories = [
-    { id: ALL_SONGS_CATEGORY_ID, name: ALL_SONGS_CATEGORY_NAME },
-    { id: SELECTED_SONGS_CATEGORY_ID, name: SELECTED_SONGS_CATEGORY_NAME }, // Added new category
+    { id: SELECTED_SONGS_CATEGORY_ID, name: SELECTED_SONGS_CATEGORY_NAME },
     ...actualCategories.map(cat => ({ id: cat, name: `${cat}` }))
   ];
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('SongsList', {
+              categoryId: ALL_SONGS_CATEGORY_ID,
+              categoryName: ALL_SONGS_CATEGORY_NAME,
+            })
+          }
+          style={{ paddingHorizontal: 12 }}
+        >
+          <MaterialIcons name="search" size={26} color="#fff" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   return (
     <FlatList
