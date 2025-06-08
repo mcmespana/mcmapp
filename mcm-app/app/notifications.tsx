@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import colors from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
@@ -10,14 +11,10 @@ export default function NotificationsScreen() {
   const navigation = useNavigation();
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        >
-          <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Notificaciones</Text>
         <View style={styles.headerRight} />
@@ -33,7 +30,7 @@ export default function NotificationsScreen() {
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

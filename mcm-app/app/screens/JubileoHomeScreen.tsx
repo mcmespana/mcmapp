@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, FlatList, useWindowDimensions, ViewStyle, TextStyle } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -37,36 +38,73 @@ export default function JubileoHomeScreen() {
     numColumns = 3;
   }
 
-  const textColor = scheme === 'dark' ? colors.white : colors.black;
+  // Tamaños responsivos
+  // Tamaños responsivos SOLO para el cuadrado, icono/texto siempre igual
+  const iconSize = 48;
+  const labelFontSize = 18;
+  let dynamicMaxWidth = 220;
+  if (width < 400) {
+    dynamicMaxWidth = 120;
+  } else if (width < 700) {
+    dynamicMaxWidth = 180;
+  } else if (width >= 1100) {
+    dynamicMaxWidth = 800;
+  } else {
+    dynamicMaxWidth = 220;
+  }
 
-  const renderItem = ({ item }: { item: NavigationItem }) => (
-    <TouchableOpacity
-      style={styles.item}
-      onPress={() => {
-        navigation.navigate(item.target as any);
-      }}
-    >
-      <Card style={[styles.card, { backgroundColor: item.backgroundColor }]} elevation={2}>
-        <Card.Content style={styles.cardContent}>
-          <Text style={[styles.iconPlaceholder, { color: textColor }]}>{item.icon}</Text>
-          <Text style={[styles.rectangleLabel, { color: textColor }]}>{item.label}</Text>
-        </Card.Content>
-      </Card>
-    </TouchableOpacity>
-  );
+  const renderItem = ({ item }: { item: NavigationItem }) => {
+    return (
+      <TouchableOpacity
+        style={[styles.item, { maxWidth: dynamicMaxWidth, aspectRatio: 1 }]}
+        onPress={() => {
+          navigation.navigate(item.target as any);
+        }}
+        activeOpacity={0.85}
+      >
+        <View style={[styles.card, { backgroundColor: item.backgroundColor }]}> 
+          <View style={styles.cardContent}>
+            <Text style={[styles.iconPlaceholder, { color: '#fff', fontSize: iconSize }]}>{item.icon}</Text>
+            <Text style={[styles.rectangleLabel, { color: '#fff', fontSize: labelFontSize }]}>{item.label}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // Si el número de botones es impar, añade un placeholder invisible para cuadrar la última fila
+  let itemsToShow = navigationItems;
+  if (navigationItems.length % numColumns !== 0) {
+    const placeholdersToAdd = numColumns - (navigationItems.length % numColumns);
+    itemsToShow = [
+      ...navigationItems,
+      ...Array(placeholdersToAdd).fill({ label: '', icon: '', target: '' as any, backgroundColor: 'transparent', isPlaceholder: true })
+    ];
+  }
+
+  const renderItemWithPlaceholder = ({ item }: { item: NavigationItem & { isPlaceholder?: boolean } }) => {
+    if (item.isPlaceholder) {
+      return <View style={[styles.item, { backgroundColor: 'transparent' }]} pointerEvents="none" />;
+    }
+    return renderItem({ item });
+  };
 
   return (
-    <FlatList
-      data={navigationItems}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.label}
-      numColumns={numColumns}
-      key={numColumns.toString()}
-      contentContainerStyle={[
-        styles.container,
-        width >= 1100 && { alignSelf: 'center', maxWidth: 1200 },
-      ]}
-    />
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <FlatList
+        data={itemsToShow}
+        renderItem={renderItemWithPlaceholder}
+        keyExtractor={(item, idx) => item.label + idx}
+        numColumns={numColumns}
+        key={numColumns.toString()}
+        contentContainerStyle={[
+          styles.container,
+          { flexGrow: 1, paddingTop: spacing.md, paddingBottom: spacing.md },
+          width >= 1100 && { alignSelf: 'center', maxWidth: 1200, justifyContent: 'flex-start', alignItems: 'center' },
+        ]}
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -83,17 +121,23 @@ interface Styles {
 
 const styles = StyleSheet.create<Styles>({
   container: {
-    padding: spacing.lg,
     backgroundColor: colors.background,
+    // padding eliminado para evitar espacio en blanco excesivo
   },
   item: {
     flex: 1,
     margin: spacing.sm,
+    aspectRatio: 1,
+    alignItems: 'stretch',
+    minWidth: 100,
+    // maxWidth se aplica dinámicamente en el renderItem
   },
   card: {
-    aspectRatio: 1,
+    flex: 1,
     borderRadius: 16,
     overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardContent: {
     flex: 1,
@@ -110,7 +154,6 @@ const styles = StyleSheet.create<Styles>({
     color: colors.text,
   },
   iconPlaceholder: {
-    fontSize: 48,
     fontWeight: 'bold',
     marginBottom: spacing.sm,
     textAlign: 'center',
@@ -122,7 +165,6 @@ const styles = StyleSheet.create<Styles>({
     ...(typography.button as TextStyle),
     fontWeight: 'bold',
     textAlign: 'center',
-    fontSize: 18,
     letterSpacing: 0.5,
     marginTop: 2,
   },
