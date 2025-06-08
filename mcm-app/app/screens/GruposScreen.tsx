@@ -19,11 +19,25 @@ export default function GruposScreen() {
   const [categoria, setCategoria] = useState<string | null>(null);
   const [grupo, setGrupo] = useState<Grupo | null>(null);
 
+  const totals: Record<string, number> = React.useMemo(() => {
+    const result: Record<string, number> = {};
+    categorias.forEach(c => {
+      result[c] = data[c].reduce((acc, g) => acc + g.miembros.length, 0);
+    });
+    return result;
+  }, []);
+
   if (!categoria) {
     return (
       <ScrollView style={styles.container}>
         {categorias.map((c) => (
-          <List.Item key={c} title={c} onPress={() => setCategoria(c)} />
+          <List.Item
+            key={c}
+            title={c}
+            description={`${totals[c]} personas`}
+            onPress={() => setCategoria(c)}
+            titleStyle={styles.categoryTitle}
+          />
         ))}
       </ScrollView>
     );
@@ -34,8 +48,9 @@ export default function GruposScreen() {
       <ScrollView style={styles.container}>
         <List.Item
           title="Volver"
-          left={(props) => <IconButton {...props} icon="arrow-back" />}
+          left={() => <List.Icon icon="arrow-left" color={colors.text} />}
           onPress={() => setCategoria(null)}
+          titleStyle={styles.backTitle}
         />
         {data[categoria].map((g, idx) => (
           <List.Item
@@ -43,6 +58,7 @@ export default function GruposScreen() {
             title={g.nombre}
             description={g.subtitulo}
             onPress={() => setGrupo(g)}
+            titleStyle={styles.groupListTitle}
           />
         ))}
       </ScrollView>
@@ -53,16 +69,20 @@ export default function GruposScreen() {
     <ScrollView style={styles.container}>
       <List.Item
         title="Volver"
-        left={(props) => <IconButton {...props} icon="arrow-back" />}
+        left={() => <List.Icon icon="arrow-left" color={colors.text} />}
         onPress={() => setGrupo(null)}
+        titleStyle={styles.backTitle}
       />
       {grupo && (
         <View style={styles.groupContainer}>
           <Text style={styles.groupTitle}>{grupo.nombre}</Text>
           {grupo.responsable && (
-            <List.Item title="Responsable" description={grupo.responsable} />
+            <>
+              <List.Subheader style={styles.sectionHeader}>Responsable</List.Subheader>
+              <List.Item title={grupo.responsable} />
+            </>
           )}
-          <List.Subheader>Miembros</List.Subheader>
+          <List.Subheader style={styles.sectionHeader}>Miembros ({grupo.miembros.length})</List.Subheader>
           {grupo.miembros.map((m, idx) => (
             <List.Item key={idx} title={m} />
           ))}
@@ -74,6 +94,10 @@ export default function GruposScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  categoryTitle: { fontSize: 18, fontWeight: 'bold' },
+  groupListTitle: { fontSize: 16 },
+  backTitle: { fontSize: 16 },
+  sectionHeader: { fontSize: 16, fontWeight: 'bold' },
   groupContainer: { paddingHorizontal: 16 },
-  groupTitle: { fontSize: 20, fontWeight: 'bold', marginVertical: 8 },
+  groupTitle: { fontSize: 22, fontWeight: 'bold', marginVertical: 8 },
 });
