@@ -60,6 +60,15 @@ export default function Calendario() {
         markedDates={markedDates}
         markingType="multi-dot"
         style={styles.calendar}
+        theme={{
+          calendarBackground: Colors[scheme ?? 'light'].background,
+          dayTextColor: Colors[scheme ?? 'light'].text,
+          monthTextColor: Colors[scheme ?? 'light'].text,
+          textSectionTitleColor: Colors[scheme ?? 'light'].text,
+          selectedDayBackgroundColor: colors.primary,
+          selectedDayTextColor: colors.white,
+          arrowColor: Colors[scheme ?? 'light'].tint,
+        }}
       />
       <View style={styles.checkboxContainer}>
         {calendarConfigs.map((cal, idx) => (
@@ -169,7 +178,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   },
   eventLocation: {
     ...typography.body,
-    color: colors.secondary,
+    color: theme.icon,
   },
   noEvents: {
     ...typography.body,

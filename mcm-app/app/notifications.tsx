@@ -17,7 +17,7 @@ export default function NotificationsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[scheme ?? 'light'].background }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={Colors[scheme ?? 'light'].text} />
         </TouchableOpacity>
         <Text style={styles.title}>Notificaciones</Text>
         <View style={styles.headerRight} />
@@ -25,7 +25,7 @@ export default function NotificationsScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.emptyState}>
-          <MaterialIcons name="notifications-none" size={64} color={colors.secondary} />
+          <MaterialIcons name="notifications-none" size={64} color={Colors[scheme ?? 'light'].icon} />
           <Text style={styles.emptyTitle}>No hay notificaciones</Text>
           <Text style={styles.emptyText}>
             Aquí aparecerán tus notificaciones cuando las tengas.
@@ -63,6 +63,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     fontSize: 18, // Tamaño más pequeño que h1
     flex: 1,
     textAlign: 'center',
+    color: theme.text,
   },
   content: {
     flexGrow: 1,
@@ -79,12 +80,12 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
     textAlign: 'center',
-    color: colors.text,
+    color: theme.text,
   },
   emptyText: {
     ...(typography.body as any),
     textAlign: 'center',
-    color: colors.secondary, // Usando secondary en lugar de textSecondary
+    color: theme.icon,
     lineHeight: 22,
   },
   });
