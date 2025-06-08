@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons'; // Asegúrate de tenerlo imp
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors from '@/constants/colors'; //
+import colors, { Colors } from '@/constants/colors'; //
 
 export default function TabsLayout() {
   const scheme = useColorScheme(); //
@@ -20,9 +20,9 @@ export default function TabsLayout() {
             fontWeight: 'bold',
           },
           headerTitleAlign: 'center', // Center the title
-          tabBarActiveTintColor: colors.primary, //
-          tabBarInactiveTintColor: colors.secondary, //
-          tabBarStyle: { backgroundColor: colors.background }, //
+          tabBarActiveTintColor: Colors[scheme ?? 'light'].tint,
+          tabBarInactiveTintColor: Colors[scheme ?? 'light'].icon,
+          tabBarStyle: { backgroundColor: Colors[scheme ?? 'light'].background },
         }}
       >
         <Tabs.Screen
@@ -76,7 +76,7 @@ export default function TabsLayout() {
         />
       </Tabs>
     
-      <StatusBar style="auto" />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );
 }

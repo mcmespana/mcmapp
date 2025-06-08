@@ -4,7 +4,8 @@ import { Link, LinkProps } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Badge } from 'react-native-paper';
-import colors from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 
@@ -65,6 +66,7 @@ function SettingsButton() {
 
 export default function Home() {
   const navigation = useNavigation();
+  const scheme = useColorScheme();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -80,6 +82,7 @@ export default function Home() {
 
   return (
     <FlatList
+      style={{ backgroundColor: Colors[scheme ?? 'light'].background }}
       data={navigationItems}
       keyExtractor={(_, index) => index.toString()}
       numColumns={2}
