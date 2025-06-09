@@ -10,6 +10,7 @@ import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext'; // Import context hook
 import { IconSymbol } from '../../components/ui/IconSymbol'; // Import IconSymbol
 import { useSettings } from '../../contexts/SettingsContext'; // <<<--- ADD THIS IMPORT
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const availableFonts = [
   { name: 'Monoespaciada', cssValue: "'Roboto Mono', 'Courier New', monospace" },
@@ -101,6 +102,22 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
             size={26}
             color={'#fff'}
           />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('SongFullscreen', {
+              filename,
+              title: _navScreenTitle,
+              author,
+              key,
+              capo,
+              content: content || ''
+            })
+          }
+          style={[styles.headerButton, { marginLeft: 12 }]}
+          accessibilityLabel="Pantalla completa"
+        >
+          <MaterialIcons name="fullscreen" size={26} color="#fff" />
         </TouchableOpacity>
       </View>
     );
