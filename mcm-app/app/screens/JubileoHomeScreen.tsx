@@ -31,19 +31,32 @@ export default function JubileoHomeScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { width, height } = useWindowDimensions();
-  const itemWidth = width / 2;
-  const itemHeight = height / 3;
+  const containerPadding = spacing.md;
+  const gap = spacing.md;
+  const itemWidth = (width - containerPadding * 2 - gap) / 2;
+  const itemHeight = (height - containerPadding * 2 - gap * 2) / 3;
   const iconSize = 48;
   const labelFontSize = 18;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[scheme ?? 'light'].background }]}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { padding: containerPadding, backgroundColor: Colors[scheme ?? 'light'].background },
+      ]}
+    >
       {navigationItems.map((item, idx) => (
         <TouchableOpacity
           key={idx}
           style={[
             styles.item,
-            { width: itemWidth, height: itemHeight, backgroundColor: item.backgroundColor },
+            {
+              width: itemWidth,
+              height: itemHeight,
+              backgroundColor: item.backgroundColor,
+              marginRight: idx % 2 === 0 ? gap : 0,
+              marginBottom: Math.floor(idx / 2) < 2 ? gap : 0,
+            },
           ]}
           onPress={() => navigation.navigate(item.target as any)}
           activeOpacity={0.85}
