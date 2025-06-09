@@ -2,31 +2,6 @@ import { useState, useEffect } from 'react';
 import { ChordProParser, HtmlDivFormatter, Song, ChordLyricsPair } from 'chordsheetjs';
 import { AppColors } from '../app/styles/theme'; // Ensure this path is correct relative to the hooks folder
 
-// Map of single note names used for translation
-const NOTE_MAP: Record<string, string> = {
-  'C': 'DO',
-  'D': 'RE',
-  'E': 'MI',
-  'F': 'FA',
-  'G': 'SOL',
-  'A': 'LA',
-  'B': 'SI',
-};
-
-// Generic chord translator that keeps suffixes (m, 7, etc.) and supports slash chords
-const translateChordToSpanish = (chord: string): string => {
-  return chord
-    .split('/')
-    .map(part => {
-      const match = part.match(/^([A-G])([#b]?)(.*)$/);
-      if (!match) return part;
-      const [, root, accidental, rest] = match;
-      const translatedRoot = NOTE_MAP[root] || root;
-      return `${translatedRoot}${accidental || ''}${rest}`;
-    })
-    .join('/');
-};
-
 interface UseSongProcessorParams {
   originalChordPro: string | null;
   currentTranspose: number;
@@ -36,7 +11,6 @@ interface UseSongProcessorParams {
   author?: string; // Added to pass author
   key?: string; // Added to pass key
   capo?: number; // Added to pass capo
-  notation?: 'english' | 'spanish'; // Added for notation preference
 }
 
 export const useSongProcessor = ({
@@ -48,7 +22,6 @@ export const useSongProcessor = ({
   author,
   key,
   capo,
-  notation = 'english', // Default to English
 }: UseSongProcessorParams) => {
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
@@ -95,12 +68,6 @@ export const useSongProcessor = ({
       const formatter = new HtmlDivFormatter();
       let formattedSong = formatter.format(songForFormatting);
 
-      if (notation === 'spanish') {
-        formattedSong = formattedSong.replace(/<span class="chord">(.*?)<\/span>/g, (_m, chordText) => {
-          return `<span class="chord">${translateChordToSpanish(chordText)}</span>`;
-        });
-      }
-
       let metaInsert = '';
       if (author) {
         metaInsert += `<div class="song-meta-author">${author}</div>`;
@@ -127,9 +94,6 @@ export const useSongProcessor = ({
         }
       }
 
-      if (notation === 'spanish' && displayKey) {
-        displayKey = translateChordToSpanish(displayKey);
-      }
 
       if (displayKey) {
         finalKeyCapoString += `<strong>${displayKey}</strong>`;
@@ -258,7 +222,7 @@ export const useSongProcessor = ({
     } finally {
       setIsLoadingSong(false);
     }
-  }, [originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm, currentFontFamily, author, key, capo, notation]);
+  }, [originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm, currentFontFamily, author, key, capo]);
 
   return { songHtml, isLoadingSong };
 };

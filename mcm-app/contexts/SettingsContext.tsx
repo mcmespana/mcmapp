@@ -6,7 +6,6 @@ export interface SongSettings {
   chordsVisible: boolean;
   fontSize: number; // Using number for em value
   fontFamily: string;
-  notation: 'english' | 'spanish';
 }
 
 // Define the shape of the context value
@@ -21,7 +20,6 @@ const defaultSettings: SongSettings = {
   chordsVisible: true,
   fontSize: 1.0, // 1.0em
   fontFamily: "'Roboto Mono', 'Courier New', monospace", // Default font
-  notation: 'english',
 };
 
 // Storage key
@@ -48,8 +46,9 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         const storedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
         if (storedSettings) {
           const parsedSettings = JSON.parse(storedSettings);
+          const { notation, ...restParsed } = parsedSettings;
           // Merge with defaults to ensure all keys are present if some were missing
-          setAppSettings(prev => ({ ...defaultSettings, ...parsedSettings, fontSize: parsedSettings.fontSize || defaultSettings.fontSize }));
+          setAppSettings(prev => ({ ...defaultSettings, ...restParsed, fontSize: restParsed.fontSize || defaultSettings.fontSize }));
         } else {
           setAppSettings(defaultSettings);
         }
