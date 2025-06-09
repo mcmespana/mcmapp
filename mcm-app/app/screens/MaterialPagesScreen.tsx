@@ -54,7 +54,7 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
   const IntroPageItem = ({ actividad }: { actividad: Actividad; }) => {
     const circlesData = React.useMemo(() => generateRandomCircles(5), []);
     return (
-      <View style={[styles.introPage, { width, backgroundColor: 'transparent' }]}>
+      <View style={[styles.introPage, { width }]}>
         {circlesData.map((circle, idx) => (
           <View
             key={`deco-${idx}`}
