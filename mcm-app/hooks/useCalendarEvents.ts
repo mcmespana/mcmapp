@@ -7,10 +7,12 @@ export interface CalendarConfig {
 }
 
 export interface CalendarEvent {
-  date: string; // YYYY-MM-DD
+  startDate: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
   title: string;
   description?: string;
   location?: string;
+  url?: string;
   calendarIndex: number;
 }
 
@@ -34,7 +36,7 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
     if (line.startsWith('BEGIN:VEVENT')) {
       current = {};
     } else if (line.startsWith('END:VEVENT')) {
-      if (current.date && current.title) {
+      if (current.startDate && current.title) {
         events.push(current as Omit<CalendarEvent, 'calendarIndex'>);
       }
       current = {};
@@ -47,6 +49,8 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
         .trim();
     } else if (line.startsWith('LOCATION:')) {
       current.location = line.slice('LOCATION:'.length).trim();
+    } else if (line.startsWith('URL:')) {
+      current.url = line.slice('URL:'.length).trim();
     } else if (line.startsWith('DTSTART')) {
       // Soporta DTSTART:YYYYMMDD y DTSTART;VALUE=DATE:YYYYMMDD y variantes
       const idx = line.indexOf(':');
@@ -58,7 +62,19 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
           const year = datePart.substring(0, 4);
           const month = datePart.substring(4, 6);
           const day = datePart.substring(6, 8);
-          current.date = `${year}-${month}-${day}`;
+          current.startDate = `${year}-${month}-${day}`;
+        }
+      }
+    } else if (line.startsWith('DTEND')) {
+      const idx = line.indexOf(':');
+      if (idx !== -1) {
+        const value = line.slice(idx + 1).trim();
+        const datePart = value.replace(/T.*$/, '');
+        if (/^\d{8}$/.test(datePart)) {
+          const year = datePart.substring(0, 4);
+          const month = datePart.substring(4, 6);
+          const day = datePart.substring(6, 8);
+          current.endDate = `${year}-${month}-${day}`;
         }
       }
     }
@@ -87,8 +103,13 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
 
           events.forEach((ev) => {
             const withCal: CalendarEvent = { ...ev, calendarIndex: i };
-            if (!map[ev.date]) map[ev.date] = [];
-            map[ev.date].push(withCal);
+            const start = new Date(ev.startDate);
+            const end = ev.endDate ? new Date(ev.endDate) : new Date(ev.startDate);
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+              const dateStr = d.toISOString().split('T')[0];
+              if (!map[dateStr]) map[dateStr] = [];
+              map[dateStr].push(withCal);
+            }
           });
         } catch (e) {
 
