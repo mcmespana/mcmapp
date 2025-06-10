@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Text, FlatList, ScrollView, TouchableOpacity, Platform, DimensionValue, ViewStyle } from 'react-native';
+import { View, StyleSheet, Dimensions, Text, FlatList, ScrollView, TouchableOpacity, Platform, DimensionValue, ViewStyle, type ColorSchemeName } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -42,60 +42,6 @@ const generateRandomCircles = (count: number = 5) => {
   return circles;
 };
 
-// Component for the Introduction Page
-interface IntroPageItemProps {
-  actividad: Actividad;
-  fecha: string;
-  width: number;
-}
-const IntroPageItem: React.FC<IntroPageItemProps> = ({ actividad, fecha, width }) => {
-  const circlesData = React.useMemo(() => generateRandomCircles(5), []);
-
-  return (
-    <View style={[styles.introPage, { width, backgroundColor: 'transparent' }]}>
-      {circlesData.map((circle, idx) => (
-        <View
-          key={`deco-${idx}`}
-          style={{
-            position: 'absolute',
-            width: circle.size,
-            height: circle.size,
-            borderRadius: circle.size / 2,
-            backgroundColor: circle.color,
-            opacity: circle.opacity,
-            top: circle.top as DimensionValue,
-            left: circle.left as DimensionValue,
-            // transform: [{ translateX: -circle.size / 2 }, { translateY: -circle.size / 2 }],
-          } as ViewStyle}
-        />
-      ))}
-      <Text style={styles.introEmoji}>{actividad.emoji}</Text>
-      <Text style={styles.introTitle}>{actividad.nombre.toUpperCase()}</Text>
-      <Text style={styles.introDate}>{fecha}</Text>
-      <Text style={styles.introHint}>Desliza para ver el material</Text>
-    </View>
-  );
-};
-
-// Component for Content Pages
-interface ContentPageItemProps {
-  item: Pagina; // Assuming 'Pagina' is the type for a content page object
-  actividadColor: string;
-  width: number;
-}
-const ContentPageItem: React.FC<ContentPageItemProps> = ({ item, actividadColor, width }) => {
-  return (
-    <View style={[styles.page, { width }]}>
-      <View style={[styles.pageHeader, { backgroundColor: actividadColor }]}>
-        <Text style={styles.pageTitle}>{item.titulo}</Text>
-        {item.subtitulo && <Text style={styles.pageSubtitle}>{item.subtitulo}</Text>}
-      </View>
-      <ScrollView contentContainerStyle={styles.pageContent}>
-        <Text>{item.texto}</Text>
-      </ScrollView>
-    </View>
-  );
-};
 
 export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -104,17 +50,56 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
   const introBackgroundColor = actividad.color || colors.primary; // Fallback color
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme, introBackgroundColor), [scheme, introBackgroundColor]);
+
+  const IntroPageItem = ({ actividad }: { actividad: Actividad; }) => {
+    const circlesData = React.useMemo(() => generateRandomCircles(5), []);
+    return (
+      <View style={[styles.introPage, { width }]}>
+        {circlesData.map((circle, idx) => (
+          <View
+            key={`deco-${idx}`}
+            style={{
+              position: 'absolute',
+              width: circle.size,
+              height: circle.size,
+              borderRadius: circle.size / 2,
+              backgroundColor: circle.color,
+              opacity: circle.opacity,
+              top: circle.top as DimensionValue,
+              left: circle.left as DimensionValue,
+            } as ViewStyle}
+          />
+        ))}
+        <Text style={styles.introEmoji}>{actividad.emoji}</Text>
+        <Text style={styles.introTitle}>{actividad.nombre.toUpperCase()}</Text>
+        <Text style={styles.introDate}>{fecha}</Text>
+        <Text style={styles.introHint}>Desliza para ver el material</Text>
+      </View>
+    );
+  };
+
+  const ContentPageItem = ({ item }: { item: Pagina }) => {
+    return (
+      <View style={[styles.page, { width }]}>
+        <View style={[styles.pageHeader, { backgroundColor: actividad.color }]}>
+          <Text style={styles.pageTitle}>{item.titulo}</Text>
+          {item.subtitulo && <Text style={styles.pageSubtitle}>{item.subtitulo}</Text>}
+        </View>
+        <ScrollView contentContainerStyle={styles.pageContent}>
+          <Text>{item.texto}</Text>
+        </ScrollView>
+      </View>
+    );
+  };
   const [index, setIndex] = useState(0);
   const pages = [{ intro: true }, ...actividad.paginas];
   const { width } = Dimensions.get('window');
 
   const renderItem = ({ item }: { item: any }) => {
     if (item.intro) {
-      return <IntroPageItem actividad={actividad} fecha={fecha} width={width} />;
+      return <IntroPageItem actividad={actividad} />;
     }
-    // Assuming 'item' for content pages is of type 'Pagina'
-    // You might need to adjust the type assertion if 'item' can be something else
-    return <ContentPageItem item={item as Pagina} actividadColor={actividad.color} width={width} />;
+    return <ContentPageItem item={item as Pagina} />;
   };
 
   const getItemLayout = (_data: any, itemIndex: number) => ({
@@ -199,7 +184,8 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark' | null, introColor: string) => {
+
+const createStyles = (scheme: ColorSchemeName, introColor: string) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1 },

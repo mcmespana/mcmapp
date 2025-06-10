@@ -45,7 +45,7 @@ export default function DateSelector({ dates, selectedDate, onSelectDate }: Prop
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark' | null) => {
+const createStyles = (scheme: 'light' | 'dark') => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     list: {
