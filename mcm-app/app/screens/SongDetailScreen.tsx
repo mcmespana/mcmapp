@@ -103,22 +103,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
             color={'#fff'}
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('SongFullscreen', {
-              filename,
-              title: _navScreenTitle,
-              author,
-              key,
-              capo,
-              content: content || ''
-            })
-          }
-          style={[styles.headerButton, { marginLeft: 12 }]}
-          accessibilityLabel="Pantalla completa"
-        >
-          <MaterialIcons name="fullscreen" size={26} color="#fff" />
-        </TouchableOpacity>
+
       </View>
     );
 
@@ -187,6 +172,17 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 
   const handleSetFontFamily = (newFontFamily: string) => {
     setSettings({ fontFamily: newFontFamily });
+  };
+
+  const handleNavigateToFullscreen = () => {
+    navigation.navigate('SongFullscreen', {
+      filename,
+      title: _navScreenTitle,
+      author,
+      key,
+      capo,
+      content: content || ''
+    });
   };
 
   const animateAndSet = (
@@ -268,6 +264,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
         onSetFontSize={handleSetFontSize}
         onSetFontFamily={handleSetFontFamily}
         onChangeNotation={handleChangeNotation}
+        onNavigateToFullscreen={handleNavigateToFullscreen}
       />
     </Animated.View>
   );
