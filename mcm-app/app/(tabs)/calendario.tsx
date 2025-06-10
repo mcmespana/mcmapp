@@ -55,15 +55,18 @@ export default function Calendario() {
         ...event,
         day: date,
         name: event.title,
-        height: 80
+        height: 80,
       }));
     });
-
-    if (!items[selectedDate]) {
-      items[selectedDate] = [];
-    }
     return items;
-  }, [filteredByDate, selectedDate]);
+  }, [filteredByDate]);
+
+  const agendaItemsWithSelected = useMemo(() => {
+    return {
+      ...agendaItems,
+      [selectedDate]: agendaItems[selectedDate] ?? [],
+    };
+  }, [agendaItems, selectedDate]);
 
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
     const marks: { [date: string]: any } = {};
@@ -159,7 +162,7 @@ export default function Calendario() {
         </ScrollView>
       ) : (
         <Agenda
-          items={agendaItems}
+          items={agendaItemsWithSelected}
           selected={selectedDate}
           markedDates={markedDates}
           onDayPress={(day) => {
