@@ -22,12 +22,12 @@ const calendarConfigs: CalendarConfig[] = [
   {
     name: 'MCM Europa',
     url: 'https://calendar.google.com/calendar/ical/consolacion.org_11dp4qj27sgud37d7fjanghfck%40group.calendar.google.com/public/basic.ics',
-    color: '#A3BD31',
+    color: '#31AADF',
   },
   {
     name: 'MCM Castellón',
     url: 'https://calendar.google.com/calendar/ical/33j7mpbn86b2jj9sl8rds2e9m8%40group.calendar.google.com/public/basic.ics',
-    color: '#31AADF',
+    color: '#A3BD31',
   },
 ];
 
@@ -49,12 +49,21 @@ export default function Calendario() {
   }, [eventsByDate, visibleCalendars]);
 
   const agendaItems = useMemo(() => {
-    const map: Record<string, CalendarEvent[]> = {};
+    const items: Record<string, any[]> = {};
     Object.keys(filteredByDate).forEach(date => {
-      map[date] = filteredByDate[date];
+      items[date] = filteredByDate[date].map(event => ({
+        ...event,
+        day: date,
+        name: event.title,
+        height: 80
+      }));
     });
-    return map;
-  }, [filteredByDate]);
+
+    if (!items[selectedDate]) {
+      items[selectedDate] = [];
+    }
+    return items;
+  }, [filteredByDate, selectedDate]);
 
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
     const marks: { [date: string]: any } = {};
@@ -86,13 +95,18 @@ export default function Calendario() {
       {viewMode === 'calendar' ? (
         <ScrollView>
           <CalendarList
-            onDayPress={(day) => setSelectedDate(day.dateString)}
+            onDayPress={(day) => {
+              if (day.dateString !== selectedDate) {
+                setSelectedDate(day.dateString);
+              }
+            }}
             markedDates={markedDates}
             markingType="multi-period"
             horizontal
             pagingEnabled
             pastScrollRange={12}
             futureScrollRange={12}
+            firstDay={1}
             style={styles.calendar}
             theme={{
               calendarBackground: Colors[scheme ?? 'light'].background,
@@ -148,8 +162,13 @@ export default function Calendario() {
           items={agendaItems}
           selected={selectedDate}
           markedDates={markedDates}
-          onDayPress={(day) => setSelectedDate(day.dateString)}
-          renderItem={(item) => (
+          onDayPress={(day) => {
+            if (day.dateString !== selectedDate) {
+              setSelectedDate(day.dateString);
+            }
+          }}
+          firstDay={1}
+          renderItem={(item: any) => (
             <TouchableOpacity
               style={styles.eventItem}
               onPress={() => {
@@ -202,75 +221,75 @@ interface Styles {
   noEvents: TextStyle;
 }
 
-const createStyles = (scheme: 'light' | 'dark' | null) => {
-  const theme = Colors[scheme ?? 'light'];
+const createStyles = (scheme: 'light' | 'dark') => {
+  const theme = Colors[scheme];
   return StyleSheet.create<Styles>({
     container: {
       flex: 1,
       backgroundColor: theme.background,
     },
-  segmented: {
-    margin: spacing.md,
-  },
-  calendar: {
-    marginBottom: spacing.md,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
-  },
-  checkboxItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  checkboxLabel: {
-    ...typography.body,
-    color: theme.text,
-  },
-  eventList: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
-  },
-  eventListTitle: {
-    ...typography.h2,
-    color: theme.text,
-    marginBottom: spacing.sm,
-    fontWeight: 'bold',
-  },
-  eventItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-  },
-  rect: {
-    width: 12,
-    height: 6,
-    borderRadius: 2,
-    marginRight: spacing.sm,
-  },
-  eventTextContainer: {
-    flexDirection: 'column',
-  },
-  emptyDate: {
-    padding: spacing.md,
-  },
-  eventTitle: {
-    ...typography.body,
-    color: theme.text,
-  },
-  eventLocation: {
-    ...typography.body,
-    color: theme.icon,
-  },
-  noEvents: {
-    ...typography.body,
-    color: theme.text,
-    fontStyle: 'italic',
-  },
+    segmented: {
+      margin: spacing.md,
+    },
+    calendar: {
+      marginBottom: spacing.md,
+    },
+    checkboxContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.md,
+    },
+    checkboxItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginRight: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    checkboxLabel: {
+      ...typography.body,
+      color: theme.text,
+    },
+    eventList: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.lg,
+    },
+    eventListTitle: {
+      ...typography.h2,
+      color: theme.text,
+      marginBottom: spacing.sm,
+      fontWeight: 'bold',
+    },
+    eventItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.xs,
+    },
+    rect: {
+      width: 12,
+      height: 6,
+      borderRadius: 2,
+      marginRight: spacing.sm,
+    },
+    eventTextContainer: {
+      flexDirection: 'column',
+    },
+    emptyDate: {
+      padding: spacing.md,
+    },
+    eventTitle: {
+      ...typography.body,
+      color: theme.text,
+    },
+    eventLocation: {
+      ...typography.body,
+      color: theme.icon,
+    },
+    noEvents: {
+      ...typography.body,
+      color: theme.text,
+      fontStyle: 'italic',
+    },
   });
 };
