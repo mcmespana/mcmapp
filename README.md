@@ -221,3 +221,9 @@ iPhone TestFlight (Build) ..... eas build -p ios --profile production
 iPhone TestFlight (Subir) ..... eas submit -p ios --latest
 Development Client (arrancar) . npx expo start --dev-client
 Instalar dependencias ......... npm install
+
+## Variables de entorno
+
+Puedes definir algunas variables para ajustar ciertas funciones de la app.
+
+- `CORS_PROXY_URL`: URL base de un proxy para evitar problemas de CORS al descargar calendarios `.ics`. Un ejemplo es `https://corsproxy.io/?`. Si no se define, se intentará acceder a las URLs directamente.
