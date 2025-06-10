@@ -96,8 +96,20 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
         const cfg = calendars[i];
         try {
 
-          const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(cfg.url);
-          const res = await fetch(proxyUrl);
+          const proxyBase = process.env.CORS_PROXY_URL;
+          const proxyUrl = proxyBase ? proxyBase + encodeURIComponent(cfg.url) : null;
+          let res: Response | null = null;
+          if (proxyUrl) {
+            try {
+              res = await fetch(proxyUrl);
+              if (!res.ok) throw new Error('Proxy request failed');
+            } catch (err) {
+              // Fallback to direct fetch if proxy fails
+              res = await fetch(cfg.url);
+            }
+          } else {
+            res = await fetch(cfg.url);
+          }
           const text = await res.text();
           const events = parseICS(text);
 
