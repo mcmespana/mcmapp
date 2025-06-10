@@ -10,6 +10,7 @@ import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext'; // Import context hook
 import { IconSymbol } from '../../components/ui/IconSymbol'; // Import IconSymbol
 import { useSettings } from '../../contexts/SettingsContext'; // <<<--- ADD THIS IMPORT
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const availableFonts = [
   { name: 'Monoespaciada', cssValue: "'Roboto Mono', 'Courier New', monospace" },
@@ -100,6 +101,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
             color={'#fff'}
           />
         </TouchableOpacity>
+
       </View>
     );
 
@@ -165,6 +167,17 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 
   const handleSetFontFamily = (newFontFamily: string) => {
     setSettings({ fontFamily: newFontFamily });
+  };
+
+  const handleNavigateToFullscreen = () => {
+    navigation.navigate('SongFullscreen', {
+      filename,
+      title: _navScreenTitle,
+      author,
+      key,
+      capo,
+      content: content || ''
+    });
   };
 
   const animateAndSet = (
@@ -244,6 +257,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
         onSetTranspose={handleSetTranspose} // Local handler
         onSetFontSize={handleSetFontSize}
         onSetFontFamily={handleSetFontFamily}
+        onNavigateToFullscreen={handleNavigateToFullscreen}
       />
     </Animated.View>
   );

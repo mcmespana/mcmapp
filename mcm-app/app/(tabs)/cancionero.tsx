@@ -4,6 +4,7 @@ import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-na
 import CategoriesScreen from '../screens/CategoriesScreen';
 import SongListScreen from '../screens/SongListScreen';
 import SongDetailScreen from '../screens/SongDetailScreen';
+import SongFullscreenScreen from '../screens/SongFullscreenScreen';
 import SelectedSongsScreen from '../screens/SelectedSongsScreen'; // Import the new screen
 
 // Importar el contexto de canciones seleccionadas
@@ -35,6 +36,14 @@ export type RootStackParamList = {
     navigationList?: SongNavItem[];
     currentIndex?: number;
     source?: 'category' | 'selection';
+  };
+  SongFullscreen: {
+    filename: string;
+    title: string;
+    author?: string;
+    key?: string;
+    capo?: number;
+    content: string;
   };
   SelectedSongs: undefined; // Add SelectedSongs screen
 };
@@ -72,11 +81,18 @@ export default function CancioneroTab() {
           component={SongListScreen} 
           options={({ route }) => ({ title: route.params?.categoryName || 'Canciones' })} 
         />
-        <Stack.Screen 
-          name="SongDetail" 
+        <Stack.Screen
+          name="SongDetail"
           component={SongDetailScreen}
-          options={({ route }) => ({ 
-            title: route.params?.title || 'Letra y Acordes' 
+          options={({ route }) => ({
+            title: route.params?.title || 'Letra y Acordes'
+          })}
+        />
+        <Stack.Screen
+          name="SongFullscreen"
+          component={SongFullscreenScreen}
+          options={({ route }) => ({
+            title: route.params?.title || 'Pantalla completa'
           })}
         />
         <Stack.Screen

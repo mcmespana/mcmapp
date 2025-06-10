@@ -19,6 +19,7 @@ interface SongControlsProps {
   onSetTranspose: (semitones: number) => void;
   onSetFontSize: (sizeEm: number) => void;
   onSetFontFamily: (fontFamily: string) => void;
+  onNavigateToFullscreen: () => void;
 }
 
 const SongControls: React.FC<SongControlsProps> = ({
@@ -31,6 +32,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   onSetTranspose,
   onSetFontSize,
   onSetFontFamily,
+  onNavigateToFullscreen,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposeModal, setShowTransposeModal] = useState(false);
@@ -76,6 +78,9 @@ const SongControls: React.FC<SongControlsProps> = ({
             </TouchableOpacity>
             <TouchableOpacity style={[styles.fabAction, availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue && styles.fabActionActive]} onPress={handleOpenFontFamilyModal}>
               <Text style={[styles.fabActionText, availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue && styles.fabActionTextActive]}>Tipo de Letra</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.fabAction} onPress={onNavigateToFullscreen}>
+              <Text style={styles.fabActionText}>Pantalla completa</Text>
             </TouchableOpacity>
           </View>
         )}
