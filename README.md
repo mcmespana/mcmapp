@@ -1,5 +1,5 @@
 # mcmapp - Guía del Desarrollador
-[![Deploy Web](https://github.com/OWNER/REPO/actions/workflows/deploy-web.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/deploy-web.yml)
+[![Deploy Web](https://github.com/mcmespana/mcmapp/actions/workflows/deploy-web.yml/badge.svg?branch=main)](https://github.com/mcmespana/mcmapp/actions/workflows/deploy-web.yml)
 
 Bienvenido/a al proyecto MCM App. Esta guía está diseñada para ayudarte a configurar el entorno de desarrollo, entender la estructura del proyecto y comenzar a trabajar con la aplicación.
 
