@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ViewStyle, TextStyle, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ViewStyle, TextStyle, useWindowDimensions, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -34,43 +34,49 @@ export default function JubileoHomeScreen() {
   const containerPadding = spacing.md;
   const gap = spacing.md;
   const itemWidth = (width - containerPadding * 2 - gap) / 2;
-  const itemHeight = (height - containerPadding * 2 - gap * 2) / 3;
+  const itemHeight = Math.min(160, (height - containerPadding * 2 - gap * 3) / 3); // Limit max height
   const iconSize = 48;
   const labelFontSize = 18;
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { padding: containerPadding, backgroundColor: Colors[scheme ?? 'light'].background },
-      ]}
-    >
-      {navigationItems.map((item, idx) => (
-        <TouchableOpacity
-          key={idx}
-          style={[
-            styles.item,
-            {
-              width: itemWidth,
-              height: itemHeight,
-              backgroundColor: item.backgroundColor,
-              marginRight: idx % 2 === 0 ? gap : 0,
-              marginBottom: Math.floor(idx / 2) < 2 ? gap : 0,
-            },
-          ]}
-          onPress={() => navigation.navigate(item.target as any)}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.iconPlaceholder, { color: '#fff', fontSize: iconSize }]}>{item.icon}</Text>
-          <Text style={[styles.rectangleLabel, { color: '#fff', fontSize: labelFontSize }]}>{item.label}</Text>
-        </TouchableOpacity>
-      ))}
-    </SafeAreaView>
+    <View style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.gridContainer, { padding: containerPadding, backgroundColor: Colors[scheme].background }]}>
+          {navigationItems.map((item, idx) => (
+            <View key={idx} style={styles.itemWrapper}>
+              <TouchableOpacity
+                style={[
+                  styles.item,
+                  {
+                    width: itemWidth,
+                    height: itemHeight,
+                    backgroundColor: item.backgroundColor,
+                  },
+                ]}
+                onPress={() => navigation.navigate(item.target as any)}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.iconPlaceholder, { color: '#fff', fontSize: iconSize }]}>{item.icon}</Text>
+                <Text style={[styles.rectangleLabel, { color: '#fff', fontSize: labelFontSize }]}>{item.label}</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 interface Styles {
   container: ViewStyle;
+  scrollView: ViewStyle;
+  scrollContent: ViewStyle;
+  gridContainer: ViewStyle;
+  itemWrapper: ViewStyle;
   item: ViewStyle;
   headerWrapper: ViewStyle;
   headerText: TextStyle;
@@ -78,21 +84,34 @@ interface Styles {
   rectangleLabel: TextStyle;
 }
 
-const createStyles = (scheme: 'light' | 'dark' | null) => {
-  const theme = Colors[scheme ?? 'light'];
+const createStyles = (scheme: 'light' | 'dark') => {
+  const theme = Colors[scheme];
   return StyleSheet.create<Styles>({
     container: {
       flex: 1,
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      alignItems: 'center',
-      justifyContent: 'center',
       backgroundColor: theme.background,
     },
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 20,
+    },
+    scrollView: {
+    flex: 1,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  itemWrapper: {
+    width: '48%',
+    marginBottom: spacing.md,
+  },
     item: {
       justifyContent: 'center',
       alignItems: 'center',
       borderRadius: 16,
+      marginBottom: spacing.md,
     },
   headerWrapper: {
     marginBottom: spacing.lg,
