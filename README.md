@@ -202,6 +202,11 @@ Esto iniciará el servidor de desarrollo, y podrás abrir la app de Development 
 
 ---
 
+### Modo pantalla completa para canciones
+Desde la vista de detalle puedes pulsar el nuevo icono de *pantalla completa* para abrir la canción en modo presentación. El texto se muestra con una fuente grande y puedes activar o pausar el desplazamiento automático con el botón de reproducción.
+
+---
+
 ### 📝 Mini-post-it de comandos
 Un resumen rápido de los comandos más usados:
 
