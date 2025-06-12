@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { List, Text } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import profundiza from '@/assets/jubileo-profundiza.json';
+import { useJubileoData } from '@/contexts/JubileoDataContext';
 
 interface Pagina {
   titulo: string;
@@ -15,6 +15,7 @@ interface Pagina {
 export default function ProfundizaScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { profundiza } = useJubileoData();
   const data = profundiza as {
     titulo: string;
     introduccion: string;

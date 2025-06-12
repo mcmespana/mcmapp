@@ -227,3 +227,21 @@ Instalar dependencias ......... npm install
 Puedes definir algunas variables para ajustar ciertas funciones de la app.
 
 - `CORS_PROXY_URL`: URL base de un proxy para evitar problemas de CORS al descargar calendarios `.ics`. Un ejemplo es `https://corsproxy.io/?`. Si no se define, se intentará acceder a las URLs directamente.
+
+## Sincronización de JSON con Firebase
+
+La aplicación puede obtener los archivos `songs.json`, `albums.json` y todos los JSON relacionados con el Jubileo desde Firebase Realtime Database. Sigue estos pasos para configurarlo:
+
+1. Crea un proyecto en [Firebase](https://console.firebase.google.com/).
+2. En la sección **Realtime Database**, crea una base de datos y copia la URL que te proporciona Firebase.
+3. Genera un nuevo archivo en `mcm-app/constants/firebase.ts` con las credenciales de tu proyecto (`apiKey`, `authDomain`, `databaseURL`, etc.). Puedes obtenerlas en el apartado de configuración del proyecto.
+4. Dentro de la base de datos crea nodos para cada JSON, por ejemplo:
+   ```json
+   "songs": { "updatedAt": "2024-01-01T00:00:00Z", "data": { ... } }
+   ```
+   Repite el esquema con `albums`, `jubileo/horario`, `jubileo/materiales`, etc.
+5. Sube el contenido de tus archivos locales a esos nodos. Cada vez que modifiques un JSON actualiza también el campo `updatedAt` para que la app detecte los cambios.
+6. Instala las dependencias ejecutando `npm install` dentro de `mcm-app` (la librería `firebase` ya está incluida).
+7. Compila o inicia la app normalmente. La primera vez leerá los datos locales y los almacenará en caché. Cuando detecte un `updatedAt` diferente descargará el nuevo contenido mostrando una barra de progreso.
+
+Con esta configuración puedes añadir más secciones en el futuro reutilizando el hook `useFirebaseJson`.

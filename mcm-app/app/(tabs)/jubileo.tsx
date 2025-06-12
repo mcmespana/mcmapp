@@ -8,6 +8,7 @@ import VisitasScreen from '../screens/VisitasScreen';
 import ProfundizaScreen from '../screens/ProfundizaScreen';
 import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
+import { JubileoDataProvider } from '@/contexts/JubileoDataContext';
 
 
 export type JubileoStackParamList = {
@@ -25,6 +26,7 @@ const Stack = createNativeStackNavigator<JubileoStackParamList>();
 
 export default function JubileoTab() {
   return (
+    <JubileoDataProvider>
     <Stack.Navigator
       initialRouteName="Home"
       screenOptions={{
@@ -44,5 +46,6 @@ export default function JubileoTab() {
       <Stack.Screen name="Grupos" component={GruposScreen} options={{ title: 'Grupos' }} />
       <Stack.Screen name="Contactos" component={ContactosScreen} options={{ title: 'Contactos' }} />
     </Stack.Navigator>
+    </JubileoDataProvider>
   );
 }
