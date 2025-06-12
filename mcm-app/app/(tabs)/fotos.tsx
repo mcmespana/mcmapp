@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { View, FlatList, StyleSheet, Linking, useWindowDimensions, ViewStyle, TextStyle, Alert } from 'react-native';
 import { Button, ActivityIndicator } from 'react-native-paper';
 import AlbumCard from '@/components/AlbumCard';
-import allAlbumsData from '@/assets/albums.json';
+import { useFirebaseJson } from '@/hooks/useFirebaseJson';
+import allAlbumsLocal from '@/assets/albums.json';
+import LoadingBar from '@/components/LoadingBar';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -31,17 +33,19 @@ export default function FotosScreen() {
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { data: allAlbumsData, loading } = useFirebaseJson<Album[]>('albums', { storageKey: 'albums', defaultData: allAlbumsLocal });
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   useEffect(() => {
+    if (!allAlbumsData) return;
     const initialAlbums = allAlbumsData.slice(0, ALBUMS_PER_PAGE);
     setDisplayedAlbums(initialAlbums);
     if (initialAlbums.length < ALBUMS_PER_PAGE || allAlbumsData.length <= ALBUMS_PER_PAGE) {
       setAllAlbumsLoaded(true);
     }
-  }, []);
+  }, [allAlbumsData]);
 
   const loadMoreAlbums = () => {
     if (allAlbumsLoaded || isLoadingMore) return;
@@ -49,6 +53,7 @@ export default function FotosScreen() {
     setIsLoadingMore(true);
     // Using a short timeout to ensure UI updates before heavy lifting, and to show spinner
     setTimeout(() => {
+      if (!allAlbumsData) return;
       const nextPage = currentPage + 1;
       const startIndex = nextPage * ALBUMS_PER_PAGE;
       const endIndex = startIndex + ALBUMS_PER_PAGE;
@@ -101,6 +106,10 @@ export default function FotosScreen() {
       </Button>
     );
   };
+
+  if (loading && displayedAlbums.length === 0) {
+    return <LoadingBar message="Cargando álbumes..." />;
+  }
 
   return (
     <View style={styles.container}>

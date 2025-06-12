@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { List, IconButton, Avatar } from 'react-native-paper';
-import contacts from '@/assets/jubileo-contactos.json';
+import { useJubileoData } from '@/contexts/JubileoDataContext';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -14,7 +14,8 @@ interface Contacto {
 export default function ContactosScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const data = contacts as Contacto[];
+  const { contactos } = useJubileoData();
+  const data = contactos as Contacto[];
 
   const getInitials = (name: string) =>
     name

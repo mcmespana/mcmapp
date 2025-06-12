@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-nati
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
-import materialesData from '@/assets/jubileo-materiales.json';
+import { useJubileoData } from '@/contexts/JubileoDataContext';
 import DateSelector from '@/components/DateSelector';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,9 +22,13 @@ export default function MaterialesScreen() {
   const navigation = useNavigation<Nav>();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { materiales } = useJubileoData();
   const [index, setIndex] = useState(0);
-  const fechas = materialesData.map((d) => ({ fecha: d.fecha }));
-  const dia = materialesData[index];
+  const fechas = (materiales ?? []).map((d: any) => ({ fecha: d.fecha }));
+  const dia = materiales ? materiales[index] : { actividades: [], fecha: '' };
+  if (!materiales) {
+    return <View style={styles.container}><Text>Cargando...</Text></View>;
+  }
 
   return (
     <View style={styles.container}>

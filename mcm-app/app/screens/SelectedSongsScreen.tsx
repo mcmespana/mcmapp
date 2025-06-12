@@ -8,7 +8,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext';
 import SongListItem from '../../components/SongListItem';
 import { IconSymbol } from '../../components/ui/IconSymbol';
-import allSongsData from '../../assets/songs.json';
+import allSongsLocal from '../../assets/songs.json';
+import { useFirebaseJson } from '@/hooks/useFirebaseJson';
+import LoadingBar from '@/components/LoadingBar';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
@@ -37,6 +39,7 @@ const SelectedSongsScreen: React.FC = () => {
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
   const scheme = useColorScheme() || 'light'; // Default to light theme if undefined
   const styles = useMemo(() => createStyles(scheme), [scheme]);
+  const { data: allSongsData, loading } = useFirebaseJson<Record<string, Song[]>>('songs', { storageKey: 'songs', defaultData: allSongsLocal });
   const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<CategorizedSongs[]>([]);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -56,6 +59,10 @@ const SelectedSongsScreen: React.FC = () => {
         return;
       }
 
+      if (!allSongsData) {
+        return;
+      }
+
       const categories: CategorizedSongs[] = [];
       for (const categoryName in allSongsData) {
         const songsInCategory = (allSongsData as Record<string, Song[]>)[categoryName];
@@ -72,7 +79,7 @@ const SelectedSongsScreen: React.FC = () => {
     };
 
     processSongs();
-  }, [selectedSongs]);
+  }, [selectedSongs, allSongsData]);
 
   const handleExport = useCallback(() => {
     // 1. Generate Header
@@ -146,6 +153,7 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleSongPress = (song: Song) => {
     // Retrieve full song info from JSON to ensure we have the content
+    if (!allSongsData) return;
     const completeSong = Object.values(allSongsData).flat().find(
       s => s.filename === song.filename
     );
@@ -211,6 +219,10 @@ const SelectedSongsScreen: React.FC = () => {
       });
     }
   }, [navigation, handleExport, selectedSongs.length]);
+
+  if (loading && !allSongsData) {
+    return <LoadingBar message="Cargando canciones..." />;
+  }
 
   if (selectedSongs.length === 0) {
     return (

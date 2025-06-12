@@ -9,6 +9,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
+import { useJubileoData } from '@/contexts/JubileoDataContext';
+import LoadingBar from '@/components/LoadingBar';
 
 interface NavigationItem {
   label: string;
@@ -30,6 +32,7 @@ export default function JubileoHomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { loading } = useJubileoData();
   const { width, height } = useWindowDimensions();
   const containerPadding = spacing.md;
   const gap = spacing.md;
@@ -37,6 +40,10 @@ export default function JubileoHomeScreen() {
   const itemHeight = Math.min(160, (height - containerPadding * 2 - gap * 3) / 3); // Limit max height
   const iconSize = 48;
   const labelFontSize = 18;
+
+  if (loading) {
+    return <LoadingBar message="Recopilando información del jubileo..." />;
+  }
 
   return (
     <View style={styles.container}>

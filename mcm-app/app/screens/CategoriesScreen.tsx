@@ -1,7 +1,9 @@
 import { FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useLayoutEffect, useMemo } from 'react';
-import songsData from '../../assets/songs.json';
+import rawSongsLocal from '../../assets/songs.json';
+import { useFirebaseJson } from '@/hooks/useFirebaseJson';
+import LoadingBar from '@/components/LoadingBar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -23,7 +25,8 @@ export default function CategoriesScreen({
 }) {
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme), [scheme]);
-  const actualCategories = Object.keys(songsData);
+  const { data: songsData, loading } = useFirebaseJson<Record<string, any>>('songs', { storageKey: 'songs', defaultData: rawSongsLocal });
+  const actualCategories = Object.keys(songsData ?? {});
   const displayCategories = [
     { id: SELECTED_SONGS_CATEGORY_ID, name: SELECTED_SONGS_CATEGORY_NAME },
     ...actualCategories.map(cat => ({ id: cat, name: `${cat}` }))
@@ -46,6 +49,10 @@ export default function CategoriesScreen({
       ),
     });
   }, [navigation]);
+
+  if (loading && !songsData) {
+    return <LoadingBar message="Cargando canciones..." />;
+  }
 
   return (
     <FlatList

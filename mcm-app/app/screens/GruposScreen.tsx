@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { List, IconButton, Text } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import gruposData from '@/assets/jubileo-grupos.json';
+import { useJubileoData } from '@/contexts/JubileoDataContext';
 
 interface Grupo {
   nombre: string;
@@ -17,7 +17,8 @@ type Data = Record<string, Grupo[]>;
 export default function GruposScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const data = gruposData as Data;
+  const { grupos } = useJubileoData();
+  const data = grupos as Data;
   const categorias = [
     { name: 'Movilidad', icon: 'walk', color: colors.info },
     { name: 'Conso+', icon: 'cart', color: colors.success },

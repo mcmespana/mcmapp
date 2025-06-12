@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
-import horarioData from '@/assets/jubileo-horario.json';
+import { useJubileoData } from '@/contexts/JubileoDataContext';
 import DateSelector from '@/components/DateSelector';
 import EventItem from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
@@ -11,9 +11,13 @@ import { ThemedText } from '@/components/ThemedText';
 export default function HorarioScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { horario } = useJubileoData();
   const [index, setIndex] = useState(0);
-  const fechas = horarioData.map((d) => ({ fecha: d.fecha, titulo: d.titulo }));
-  const dia = horarioData[index];
+  const fechas = (horario ?? []).map((d: any) => ({ fecha: d.fecha, titulo: d.titulo }));
+  const dia = horario ? horario[index] : { eventos: [], titulo: '', fecha: '' };
+  if (!horario) {
+    return <View style={styles.container}><ThemedText>Cargando...</ThemedText></View>;
+  }
 
   return (
     <View style={styles.container}>
