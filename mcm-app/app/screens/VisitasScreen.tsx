@@ -9,7 +9,7 @@ import {
 import { Card, IconButton, Modal, Portal, Text } from 'react-native-paper';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import visitas from '@/assets/jubileo-visitas.json';
+import { useJubileoData } from '@/contexts/JubileoDataContext';
 
 interface Visita {
   titulo: string;
@@ -54,6 +54,7 @@ function formatDate(fecha?: string) {
 export default function VisitasScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { visitas } = useJubileoData();
   const [selected, setSelected] = useState<Visita | null>(null);
 
   const openMap = (url?: string) => {
@@ -63,7 +64,7 @@ export default function VisitasScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.list}>
-        {(visitas as Visita[]).map((v, idx) => (
+        {(visitas as any[] ?? []).map((v, idx) => (
           <Card key={idx} style={styles.card} onPress={() => setSelected(v)}>
             {v.imagen && (
               <Image
