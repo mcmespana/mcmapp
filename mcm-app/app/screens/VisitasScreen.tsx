@@ -9,7 +9,9 @@ import {
 import { Card, IconButton, Modal, Portal, Text } from 'react-native-paper';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import visitas from '@/assets/jubileo-visitas.json';
+import visitasFallback from '@/assets/jubileo-visitas.json';
+import useFirestoreDocument from '@/hooks/useFirestoreDocument';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 interface Visita {
   titulo: string;
@@ -54,11 +56,16 @@ function formatDate(fecha?: string) {
 export default function VisitasScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { data: visitas, loading: remoteLoading } = useFirestoreDocument<Visita[]>('jubileo', 'visitas', visitasFallback as any);
   const [selected, setSelected] = useState<Visita | null>(null);
 
   const openMap = (url?: string) => {
     if (url) Linking.openURL(url);
   };
+
+  if (remoteLoading) {
+    return <LoadingOverlay message="Cargando visitas..." />;
+  }
 
   return (
     <View style={styles.container}>

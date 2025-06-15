@@ -1,7 +1,9 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { List, IconButton, Avatar } from 'react-native-paper';
-import contacts from '@/assets/jubileo-contactos.json';
+import contactsFallback from '@/assets/jubileo-contactos.json';
+import useFirestoreDocument from '@/hooks/useFirestoreDocument';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -14,6 +16,7 @@ interface Contacto {
 export default function ContactosScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { data: contacts, loading: remoteLoading } = useFirestoreDocument<Contacto[]>('jubileo', 'contactos', contactsFallback as any);
   const data = contacts as Contacto[];
 
   const getInitials = (name: string) =>
@@ -29,6 +32,10 @@ export default function ContactosScreen() {
     const clean = tel.replace('+', '');
     Linking.openURL(`https://wa.me/${clean}`);
   };
+
+  if (remoteLoading) {
+    return <LoadingOverlay message="Cargando contactos..." />;
+  }
 
   return (
     <ScrollView style={styles.container}>

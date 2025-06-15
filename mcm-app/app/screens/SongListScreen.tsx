@@ -4,6 +4,8 @@ import { Searchbar } from 'react-native-paper'; // Added Searchbar
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import rawSongsData from '../../assets/songs.json';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import useFirestoreDocument from '@/hooks/useFirestoreDocument';
 // import SongSearch from '../../components/SongSearch'; // Removed SongSearch import
 import SongListItem from '../../components/SongListItem'; // Added import
 
@@ -42,13 +44,14 @@ const getSongsData = (data: any): Record<string, Song[]> => {
   }
 };
 
-const songsData = getSongsData(rawSongsData);
-console.log('Available categories:', Object.keys(songsData));
-
 export default function SongsListScreen({ route, navigation }: {
   route: { params: { categoryId: string; categoryName: string } };
   navigation: any;
 }) {
+  const { data: songsDataRaw, loading: remoteLoading } = useFirestoreDocument<Record<string, Song[]>>('data', 'songs', rawSongsData);
+  const songsData = useMemo(() => getSongsData(songsDataRaw), [songsDataRaw]);
+  console.log('Available categories:', Object.keys(songsData));
+
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
@@ -173,12 +176,8 @@ export default function SongsListScreen({ route, navigation }: {
   };
 
   // Render loading state
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Cargando canciones...</Text>
-      </View>
-    );
+  if (isLoading || remoteLoading) {
+    return <LoadingOverlay message="Cargando canciones..." />;
   }
 
   // Render error state

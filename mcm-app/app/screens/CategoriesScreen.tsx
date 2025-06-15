@@ -1,7 +1,9 @@
 import { FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useLayoutEffect, useMemo } from 'react';
-import songsData from '../../assets/songs.json';
+import songsDataFallback from '../../assets/songs.json';
+import useFirestoreDocument from '@/hooks/useFirestoreDocument';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -23,6 +25,7 @@ export default function CategoriesScreen({
 }) {
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme), [scheme]);
+  const { data: songsData, loading: remoteLoading } = useFirestoreDocument<Record<string, any>>('data', 'songs', songsDataFallback);
   const actualCategories = Object.keys(songsData);
   const displayCategories = [
     { id: SELECTED_SONGS_CATEGORY_ID, name: SELECTED_SONGS_CATEGORY_NAME },
@@ -46,6 +49,10 @@ export default function CategoriesScreen({
       ),
     });
   }, [navigation]);
+
+  if (remoteLoading) {
+    return <LoadingOverlay message="Cargando categorías..." />;
+  }
 
   return (
     <FlatList

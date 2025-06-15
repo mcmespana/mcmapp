@@ -222,6 +222,17 @@ iPhone TestFlight (Subir) ..... eas submit -p ios --latest
 Development Client (arrancar) . npx expo start --dev-client
 Instalar dependencias ......... npm install
 
+## Cargar los JSON en Firebase (Cloud Firestore)
+
+1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com/) y habilita **Cloud Firestore**.
+2. Dentro de la base de datos crea una colección llamada `data` y documentos para `songs`, `albums` y cada archivo de jubileo (`horario`, `materiales`, `visitas`, `profundiza`, `grupos`, `contactos`).
+3. En cada documento guarda un objeto con dos campos:
+   - `data`: el contenido JSON tal cual.
+   - `updatedAt`: marca temporal para detectar actualizaciones.
+4. Copia las credenciales de tu app web de Firebase y colócalas en `mcm-app/services/firebase.ts` sustituyendo los valores `YOUR_API_KEY`, etc.
+5. Ejecuta `npm install` para asegurarte de tener las dependencias de Firebase y luego inicia la app.
+6. Cuando modifiques alguno de los JSON en Firestore actualiza el campo `updatedAt`; la aplicación solo descargará de nuevo si detecta una versión más reciente.
+
 ## Variables de entorno
 
 Puedes definir algunas variables para ajustar ciertas funciones de la app.

@@ -9,6 +9,14 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
+import useFirestoreDocument from '@/hooks/useFirestoreDocument';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import horarioFallback from '@/assets/jubileo-horario.json';
+import materialesFallback from '@/assets/jubileo-materiales.json';
+import visitasFallback from '@/assets/jubileo-visitas.json';
+import profundizaFallback from '@/assets/jubileo-profundiza.json';
+import gruposFallback from '@/assets/jubileo-grupos.json';
+import contactosFallback from '@/assets/jubileo-contactos.json';
 
 interface NavigationItem {
   label: string;
@@ -37,6 +45,19 @@ export default function JubileoHomeScreen() {
   const itemHeight = Math.min(160, (height - containerPadding * 2 - gap * 3) / 3); // Limit max height
   const iconSize = 48;
   const labelFontSize = 18;
+
+  const horario = useFirestoreDocument('jubileo', 'horario', horarioFallback);
+  const materiales = useFirestoreDocument('jubileo', 'materiales', materialesFallback);
+  const visitas = useFirestoreDocument('jubileo', 'visitas', visitasFallback);
+  const profundiza = useFirestoreDocument('jubileo', 'profundiza', profundizaFallback);
+  const grupos = useFirestoreDocument('jubileo', 'grupos', gruposFallback);
+  const contactos = useFirestoreDocument('jubileo', 'contactos', contactosFallback);
+  const remoteLoading =
+    horario.loading || materiales.loading || visitas.loading || profundiza.loading || grupos.loading || contactos.loading;
+
+  if (remoteLoading) {
+    return <LoadingOverlay message="Cargando información del Jubileo..." />;
+  }
 
   return (
     <View style={styles.container}>

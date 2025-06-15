@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { View, FlatList, StyleSheet, Linking, useWindowDimensions, ViewStyle, TextStyle, Alert } from 'react-native';
 import { Button, ActivityIndicator } from 'react-native-paper';
 import AlbumCard from '@/components/AlbumCard';
-import allAlbumsData from '@/assets/albums.json';
+import albumsFallback from '@/assets/albums.json';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import useFirestoreDocument from '@/hooks/useFirestoreDocument';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -31,17 +33,20 @@ export default function FotosScreen() {
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { data: allAlbumsData, loading: remoteLoading } = useFirestoreDocument<Album[]>('data', 'albums', albumsFallback);
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+
   useEffect(() => {
+    if (remoteLoading) return;
     const initialAlbums = allAlbumsData.slice(0, ALBUMS_PER_PAGE);
     setDisplayedAlbums(initialAlbums);
     if (initialAlbums.length < ALBUMS_PER_PAGE || allAlbumsData.length <= ALBUMS_PER_PAGE) {
       setAllAlbumsLoaded(true);
     }
-  }, []);
+  }, [allAlbumsData, remoteLoading]);
 
   const loadMoreAlbums = () => {
     if (allAlbumsLoaded || isLoadingMore) return;
@@ -101,6 +106,10 @@ export default function FotosScreen() {
       </Button>
     );
   };
+
+  if (remoteLoading && displayedAlbums.length === 0) {
+    return <LoadingOverlay message="Cargando álbumes..." />;
+  }
 
   return (
     <View style={styles.container}>

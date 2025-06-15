@@ -3,7 +3,9 @@ import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { List, IconButton, Text } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import gruposData from '@/assets/jubileo-grupos.json';
+import gruposFallback from '@/assets/jubileo-grupos.json';
+import useFirestoreDocument from '@/hooks/useFirestoreDocument';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 interface Grupo {
   nombre: string;
@@ -17,6 +19,7 @@ type Data = Record<string, Grupo[]>;
 export default function GruposScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { data: gruposData, loading: remoteLoading } = useFirestoreDocument<Data>('jubileo', 'grupos', gruposFallback as any);
   const data = gruposData as Data;
   const categorias = [
     { name: 'Movilidad', icon: 'walk', color: colors.info },
@@ -25,6 +28,10 @@ export default function GruposScreen() {
   ];
   const [categoria, setCategoria] = useState<string | null>(null);
   const [grupo, setGrupo] = useState<Grupo | null>(null);
+
+  if (remoteLoading) {
+    return <LoadingOverlay message="Cargando grupos..." />;
+  }
 
   if (!categoria) {
     return (
