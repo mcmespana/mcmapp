@@ -1,7 +1,8 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { List, IconButton, Avatar } from 'react-native-paper';
-import contacts from '@/assets/jubileo-contactos.json';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -14,7 +15,8 @@ interface Contacto {
 export default function ContactosScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const data = contacts as Contacto[];
+  const { data: contacts, loading } = useFirebaseData<Contacto[]>('jubileo/contactos', 'jubileo_contactos');
+  const data = contacts as Contacto[] | undefined;
 
   const getInitials = (name: string) =>
     name
@@ -30,9 +32,13 @@ export default function ContactosScreen() {
     Linking.openURL(`https://wa.me/${clean}`);
   };
 
+  if (loading || !data) {
+    return <ProgressWithMessage message="Cargando contactos..." />;
+  }
+
   return (
     <ScrollView style={styles.container}>
-      {data.map((c, idx) => (
+      {(data || []).map((c, idx) => (
         <List.Item
           key={idx}
           title={c.nombre}

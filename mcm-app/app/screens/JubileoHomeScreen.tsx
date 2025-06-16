@@ -9,6 +9,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 
 interface NavigationItem {
   label: string;
@@ -30,6 +32,13 @@ export default function JubileoHomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { loading: lh } = useFirebaseData('jubileo/horario', 'jubileo_horario');
+  const { loading: lm } = useFirebaseData('jubileo/materiales', 'jubileo_materiales');
+  const { loading: lv } = useFirebaseData('jubileo/visitas', 'jubileo_visitas');
+  const { loading: lp } = useFirebaseData('jubileo/profundiza', 'jubileo_profundiza');
+  const { loading: lg } = useFirebaseData('jubileo/grupos', 'jubileo_grupos');
+  const { loading: lc } = useFirebaseData('jubileo/contactos', 'jubileo_contactos');
+  const isLoading = lh || lm || lv || lp || lg || lc;
   const { width, height } = useWindowDimensions();
   const containerPadding = spacing.md;
   const gap = spacing.md;
@@ -37,6 +46,10 @@ export default function JubileoHomeScreen() {
   const itemHeight = Math.min(160, (height - containerPadding * 2 - gap * 3) / 3); // Limit max height
   const iconSize = 48;
   const labelFontSize = 18;
+
+  if (isLoading) {
+    return <ProgressWithMessage message="Cargando información..." />;
+  }
 
   return (
     <View style={styles.container}>

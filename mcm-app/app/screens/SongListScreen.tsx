@@ -3,7 +3,8 @@ import { FlatList, Text, View, StyleSheet } from 'react-native'; // TouchableOpa
 import { Searchbar } from 'react-native-paper'; // Added Searchbar
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import rawSongsData from '../../assets/songs.json';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 // import SongSearch from '../../components/SongSearch'; // Removed SongSearch import
 import SongListItem from '../../components/SongListItem'; // Added import
 
@@ -42,13 +43,12 @@ const getSongsData = (data: any): Record<string, Song[]> => {
   }
 };
 
-const songsData = getSongsData(rawSongsData);
-console.log('Available categories:', Object.keys(songsData));
-
 export default function SongsListScreen({ route, navigation }: {
   route: { params: { categoryId: string; categoryName: string } };
   navigation: any;
 }) {
+  const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<Record<string, Song[]>>('songs', 'songs');
+  const songsData = useMemo(() => getSongsData(firebaseSongs), [firebaseSongs]);
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
@@ -58,6 +58,7 @@ export default function SongsListScreen({ route, navigation }: {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!songsData) return;
     console.log('Accessing category:', categoryId);
     console.log('Available categories:', Object.keys(songsData));
     
@@ -145,7 +146,7 @@ export default function SongsListScreen({ route, navigation }: {
     };
     
     loadSongs();
-  }, [categoryId]);
+  }, [categoryId, songsData]);
 
   // Filter songs based on search
   const filteredSongs = songs.filter(song => {
@@ -173,12 +174,8 @@ export default function SongsListScreen({ route, navigation }: {
   };
 
   // Render loading state
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Cargando canciones...</Text>
-      </View>
-    );
+  if (isLoading || loadingSongs) {
+    return <ProgressWithMessage message="Cargando canciones..." />;
   }
 
   // Render error state
@@ -187,7 +184,7 @@ export default function SongsListScreen({ route, navigation }: {
       <View style={styles.container}>
         <Text style={styles.errorText}>{error}</Text>
         <Text style={styles.debugText}>
-          Categorías disponibles: {Object.keys(songsData).join(', ')}
+          Categorías disponibles: {songsData ? Object.keys(songsData).join(', ') : 'N/A'}
         </Text>
       </View>
     );

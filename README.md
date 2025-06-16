@@ -227,3 +227,15 @@ Instalar dependencias ......... npm install
 Puedes definir algunas variables para ajustar ciertas funciones de la app.
 
 - `CORS_PROXY_URL`: URL base de un proxy para evitar problemas de CORS al descargar calendarios `.ics`. Un ejemplo es `https://corsproxy.io/?`. Si no se define, se intentará acceder a las URLs directamente.
+
+### Configuración de Firebase
+
+1. Crea un proyecto en [Firebase](https://console.firebase.google.com/) y habilita **Realtime Database**.
+2. Dentro de la base de datos crea estos nodos:
+   - `songs`
+   - `albums`
+   - `jubileo` con las subclaves `horario`, `materiales`, `visitas`, `profundiza`, `grupos` y `contactos`.
+   Cada nodo debe contener dos campos: `updatedAt` (timestamp) y `data` (con el contenido del JSON correspondiente).
+3. Genera las credenciales web de Firebase y cópialas en un archivo `.env.local` siguiendo el formato de `.env.example` en la carpeta `mcm-app`.
+4. El archivo `.env.local` se encuentra en `.gitignore`, por lo que tus claves no se subirán al repositorio.
+5. Al arrancar la app (`npm start`) se cargará la configuración de Firebase automáticamente desde ese archivo.
