@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Constants from 'expo-constants';
 
 export interface CalendarConfig {
   url: string;
@@ -96,7 +97,7 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
         const cfg = calendars[i];
         try {
 
-          const proxyBase = process.env.CORS_PROXY_URL;
+          const proxyBase = Constants.expoConfig?.extra?.corsProxyUrl ?? process.env.CORS_PROXY_URL;
           const proxyUrl = proxyBase ? proxyBase + encodeURIComponent(cfg.url) : null;
           let res: Response | null = null;
           if (proxyUrl) {
