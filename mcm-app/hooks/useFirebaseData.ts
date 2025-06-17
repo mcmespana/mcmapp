@@ -1,15 +1,7 @@
 import { useEffect, useState } from 'react';
-import { initializeApp, getApps } from 'firebase/app';
 import { getDatabase, ref, get } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { firebaseConfig } from '@/constants/firebase';
-
-function getFirebaseApp() {
-  if (!getApps().length) {
-    initializeApp(firebaseConfig);
-  }
-  return getApps()[0];
-}
+import { getFirebaseApp } from './firebaseApp';
 
 export function useFirebaseData<T>(path: string, storageKey: string) {
   const [data, setData] = useState<T | null>(null);
