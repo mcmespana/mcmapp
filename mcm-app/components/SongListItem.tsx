@@ -5,6 +5,8 @@ import { useSelectedSongs } from '../contexts/SelectedSongsContext'; // Correcte
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
+import { useSettings } from '../contexts/SettingsContext';
+import { convertChord } from '../utils/chordNotation';
 
 // Type for song data
 interface Song {
@@ -26,6 +28,8 @@ interface SongListItemProps {
 
 const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllMode = false }) => {
   const { addSong, removeSong, isSongSelected } = useSelectedSongs();
+  const { settings } = useSettings();
+  const { notation } = settings;
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
   const swipeableRow = useRef<Swipeable>(null);
@@ -141,7 +145,7 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
           </View>
           <View style={styles.keyCapoContainer}>
             {song.key ? (
-              <Text style={styles.songKey}>{song.key.toUpperCase()}</Text>
+              <Text style={styles.songKey}>{convertChord(song.key.toUpperCase(), notation)}</Text>
             ) : null}
             {song.capo && song.capo > 0 ? (
               <Text style={styles.songCapo}>{`C/${song.capo}`}</Text>
