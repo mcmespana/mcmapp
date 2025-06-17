@@ -240,3 +240,26 @@ Puedes definir algunas variables para ajustar ciertas funciones de la app.
 3. Genera las credenciales web de Firebase y cópialas en un archivo `.env.local` siguiendo el formato de `.env.example` en la carpeta `mcm-app`.
 4. El archivo `.env.local` se encuentra en `.gitignore`, por lo que tus claves no se subirán al repositorio.
 5. Al arrancar la app (`npm start`) se cargará la configuración de Firebase automáticamente desde ese archivo.
+
+### Estructura del nodo `jubileo/compartiendo`
+
+El panel **Compartiendo** guarda las reflexiones en la base de datos con el siguiente formato:
+
+```json
+{
+  "updatedAt": "<timestamp>",
+  "data": {
+    "<idFirebase>": {
+      "id": "<id>",
+      "titulo": "<texto>",
+      "contenido": "<texto>",
+      "fecha": "YYYY-MM-DD",
+      "grupal": true,
+      "grupo": "<nombre del grupo>",
+      "autor": "<nombre opcional>"
+    }
+  }
+}
+```
+
+Los campos `grupo` y `autor` solo se incluyen cuando tienen valor.
