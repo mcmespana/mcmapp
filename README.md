@@ -221,6 +221,7 @@ iPhone TestFlight (Build) ..... eas build -p ios --profile production
 iPhone TestFlight (Subir) ..... eas submit -p ios --latest
 Development Client (arrancar) . npx expo start --dev-client
 Instalar dependencias ......... npm install
+```
 
 ## Variables de entorno
 
