@@ -21,17 +21,22 @@ interface Song {
   numericFilenamePart?: string; // For consistent number display
 }
 
+interface SongCategory {
+  categoryTitle: string;
+  songs: Song[];
+}
+
 // Ensure the data is in the correct format
-const getSongsData = (data: any): Record<string, Song[]> => {
+const getSongsData = (data: any): Record<string, SongCategory> => {
   try {
     // If the data is already in the correct format, return it
     if (data && typeof data === 'object' && !Array.isArray(data)) {
-      return data as Record<string, Song[]>;
+      return data as Record<string, SongCategory>;
     }
     
     // If the data is an array, try to convert it to the correct format
     if (Array.isArray(data)) {
-      return { 'All': data };
+      return { All: { categoryTitle: 'All', songs: data } };
     }
     
     // If we can't determine the format, return an empty object
@@ -47,7 +52,8 @@ export default function SongsListScreen({ route, navigation }: {
   route: { params: { categoryId: string; categoryName: string } };
   navigation: any;
 }) {
-  const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<Record<string, Song[]>>('songs', 'songs');
+  const { data: firebaseSongs, loading: loadingSongs } =
+    useFirebaseData<Record<string, SongCategory>>('songs', 'songs');
   const songsData = useMemo(() => getSongsData(firebaseSongs), [firebaseSongs]);
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
@@ -71,7 +77,7 @@ export default function SongsListScreen({ route, navigation }: {
           let allSongs: Song[] = [];
           for (const originalCategoryKey in songsData) {
             if (Object.prototype.hasOwnProperty.call(songsData, originalCategoryKey)) {
-              const categorySongs = songsData[originalCategoryKey];
+              const categorySongs = songsData[originalCategoryKey].songs;
               const songsWithMetadata = categorySongs.map(song => {
                 const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
                 let numericPart = '';
@@ -109,9 +115,11 @@ export default function SongsListScreen({ route, navigation }: {
           console.log('Found category key:', categoryKey);
           
           if (categoryKey) {
-            const categorySongs = songsData[categoryKey];
-            console.log(`Found category '${categoryKey}' with ${categorySongs?.length || 0} songs`);
-            
+            const categorySongs = songsData[categoryKey].songs;
+            console.log(
+              `Found category '${categoryKey}' with ${categorySongs?.length || 0} songs`
+            );
+
             if (categorySongs && Array.isArray(categorySongs)) {
               const songsWithNumericPart = categorySongs.map(song => {
                 const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
