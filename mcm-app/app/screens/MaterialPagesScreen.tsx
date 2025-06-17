@@ -72,7 +72,7 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
         ))}
         <Text style={styles.introEmoji}>{actividad.emoji}</Text>
         <Text style={styles.introTitle}>{actividad.nombre.toUpperCase()}</Text>
-        <Text style={styles.introDate}>{fecha}</Text>
+        <Text style={styles.introDate}>{new Date(fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '').toUpperCase()}</Text>
         <Text style={styles.introHint}>Desliza para ver el material</Text>
       </View>
     );
