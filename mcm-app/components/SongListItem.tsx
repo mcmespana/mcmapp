@@ -117,10 +117,10 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
             <View style={styles.metaLine}>
               {isSearchAllMode && song.originalCategoryKey && song.numericFilenamePart ? (
                 <Text style={styles.subtitleText} numberOfLines={1} ellipsizeMode="tail">
-                  {`${song.originalCategoryKey}.${song.numericFilenamePart}`}
+                  {`${song.originalCategoryKey}${song.numericFilenamePart}`}
                   {song.author && (
                     <Text style={styles.subtitleAuthor}>
-                      {`   ${song.author}`} {/* Three spaces for separation */}
+                      {`   ${song.author}`}
                     </Text>
                   )}
                 </Text>
