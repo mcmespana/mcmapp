@@ -9,7 +9,8 @@ import {
 import { Card, IconButton, Modal, Portal, Text } from 'react-native-paper';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import visitas from '@/assets/jubileo-visitas.json';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 
 interface Visita {
   titulo: string;
@@ -54,16 +55,21 @@ function formatDate(fecha?: string) {
 export default function VisitasScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { data: visitas, loading } = useFirebaseData<Visita[]>('jubileo/visitas', 'jubileo_visitas');
   const [selected, setSelected] = useState<Visita | null>(null);
 
   const openMap = (url?: string) => {
     if (url) Linking.openURL(url);
   };
 
+  if (loading || !visitas) {
+    return <ProgressWithMessage message="Cargando visitas..." />;
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.list}>
-        {(visitas as Visita[]).map((v, idx) => (
+        {(visitas || []).map((v, idx) => (
           <Card key={idx} style={styles.card} onPress={() => setSelected(v)}>
             {v.imagen && (
               <Image

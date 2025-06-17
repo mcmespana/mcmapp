@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { View, FlatList, StyleSheet, Linking, useWindowDimensions, ViewStyle, TextStyle, Alert } from 'react-native';
 import { Button, ActivityIndicator } from 'react-native-paper';
 import AlbumCard from '@/components/AlbumCard';
-import allAlbumsData from '@/assets/albums.json';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -31,20 +32,22 @@ export default function FotosScreen() {
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { data: allAlbumsData, loading } = useFirebaseData<Album[]>('albums', 'albums');
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   useEffect(() => {
+    if (!allAlbumsData) return;
     const initialAlbums = allAlbumsData.slice(0, ALBUMS_PER_PAGE);
     setDisplayedAlbums(initialAlbums);
     if (initialAlbums.length < ALBUMS_PER_PAGE || allAlbumsData.length <= ALBUMS_PER_PAGE) {
       setAllAlbumsLoaded(true);
     }
-  }, []);
+  }, [allAlbumsData]);
 
   const loadMoreAlbums = () => {
-    if (allAlbumsLoaded || isLoadingMore) return;
+    if (!allAlbumsData || allAlbumsLoaded || isLoadingMore) return;
 
     setIsLoadingMore(true);
     // Using a short timeout to ensure UI updates before heavy lifting, and to show spinner
@@ -101,6 +104,10 @@ export default function FotosScreen() {
       </Button>
     );
   };
+
+  if (loading && displayedAlbums.length === 0) {
+    return <ProgressWithMessage message="Cargando álbumes..." />;
+  }
 
   return (
     <View style={styles.container}>
