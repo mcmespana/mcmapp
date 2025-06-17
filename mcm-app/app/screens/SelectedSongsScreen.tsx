@@ -38,7 +38,11 @@ const SelectedSongsScreen: React.FC = () => {
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
   const scheme = useColorScheme() || 'light'; // Default to light theme if undefined
   const styles = useMemo(() => createStyles(scheme), [scheme]);
-  const { data: allSongsData, loading } = useFirebaseData<Record<string, Song[]>>('songs', 'songs');
+  const { data: allSongsData, loading } =
+    useFirebaseData<Record<string, { categoryTitle: string; songs: Song[] }>>(
+      'songs',
+      'songs'
+    );
   const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<CategorizedSongs[]>([]);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -65,12 +69,20 @@ const SelectedSongsScreen: React.FC = () => {
 
       const categories: CategorizedSongs[] = [];
       for (const categoryName in allSongsData) {
-        const songsInCategory = (allSongsData as Record<string, Song[]>)[categoryName];
-        const selectedInCategory = songsInCategory.filter(song => selectedSongs.includes(song.filename));
+        const songsInCategory =
+          (allSongsData as Record<string, { categoryTitle: string; songs: Song[] }>)[
+            categoryName
+          ].songs;
+        const selectedInCategory = songsInCategory.filter(song =>
+          selectedSongs.includes(song.filename)
+        );
 
         if (selectedInCategory.length > 0) {
           categories.push({
-            categoryTitle: categoryName,
+            categoryTitle:
+              (allSongsData as Record<string, { categoryTitle: string; songs: Song[] }>)[
+                categoryName
+              ].categoryTitle,
             data: selectedInCategory,
           });
         }
@@ -154,9 +166,9 @@ const SelectedSongsScreen: React.FC = () => {
   const handleSongPress = (song: Song) => {
     if (!allSongsData) return;
     // Retrieve full song info from JSON to ensure we have the content
-    const completeSong = Object.values(allSongsData).flat().find(
-      s => s.filename === song.filename
-    );
+    const completeSong = Object.values(allSongsData)
+      .flatMap(cat => cat.songs)
+      .find(s => s.filename === song.filename);
 
     if (!completeSong) {
       console.error('Song not found in allSongsData:', song.filename);
