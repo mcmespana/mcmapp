@@ -1,13 +1,13 @@
 export type Notation = 'EN' | 'ES';
 
 const EN_TO_ES_MAP: Record<string,string> = {
-  A: 'La',
-  B: 'Si',
-  C: 'Do',
-  D: 'Re',
-  E: 'Mi',
-  F: 'Fa',
-  G: 'Sol',
+  A: 'LA',
+  B: 'SI',
+  C: 'DO',
+  D: 'RE',
+  E: 'MI',
+  F: 'FA',
+  G: 'SOL',
 };
 
 export function convertChord(chord: string, notation: Notation): string {
