@@ -29,6 +29,11 @@ interface SongCategory {
 // Ensure the data is in the correct format
 const getSongsData = (data: any): Record<string, SongCategory> => {
   try {
+    // If the data is null (expected during initial loading), return empty object
+    if (data === null) {
+      return {};
+    }
+    
     // If the data is already in the correct format, return it
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       return data as Record<string, SongCategory>;
@@ -65,6 +70,7 @@ export default function SongsListScreen({ route, navigation }: {
 
   useEffect(() => {
     if (!songsData) return;
+    // TODO - Eliminar estos comentarios
     console.log('Accessing category:', categoryId);
     console.log('Available categories:', Object.keys(songsData));
     
