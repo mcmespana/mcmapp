@@ -3,7 +3,8 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
-import horarioData from '@/assets/jubileo-horario.json';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 import DateSelector from '@/components/DateSelector';
 import EventItem from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
@@ -11,9 +12,14 @@ import { ThemedText } from '@/components/ThemedText';
 export default function HorarioScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { data: horarioData, loading } = useFirebaseData<any[]>('jubileo/horario', 'jubileo_horario');
   const [index, setIndex] = useState(0);
-  const fechas = horarioData.map((d) => ({ fecha: d.fecha, titulo: d.titulo }));
-  const dia = horarioData[index];
+  const fechas = horarioData ? horarioData.map((d) => ({ fecha: d.fecha, titulo: d.titulo })) : [];
+  const dia = horarioData ? horarioData[index] : null;
+
+  if (loading || !dia) {
+    return <ProgressWithMessage message="Cargando horario..." />;
+  }
 
   return (
     <View style={styles.container}>

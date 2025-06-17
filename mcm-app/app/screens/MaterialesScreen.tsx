@@ -3,7 +3,8 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-nati
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
-import materialesData from '@/assets/jubileo-materiales.json';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 import DateSelector from '@/components/DateSelector';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,9 +23,14 @@ export default function MaterialesScreen() {
   const navigation = useNavigation<Nav>();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { data: materialesData, loading } = useFirebaseData<any[]>('jubileo/materiales', 'jubileo_materiales');
   const [index, setIndex] = useState(0);
-  const fechas = materialesData.map((d) => ({ fecha: d.fecha }));
-  const dia = materialesData[index];
+  const fechas = materialesData ? materialesData.map((d) => ({ fecha: d.fecha })) : [];
+  const dia = materialesData ? materialesData[index] : null;
+
+  if (loading || !dia) {
+    return <ProgressWithMessage message="Cargando materiales..." />;
+  }
 
   return (
     <View style={styles.container}>

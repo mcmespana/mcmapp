@@ -3,7 +3,8 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { List, Text } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import profundiza from '@/assets/jubileo-profundiza.json';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 
 interface Pagina {
   titulo: string;
@@ -15,11 +16,16 @@ interface Pagina {
 export default function ProfundizaScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const data = profundiza as {
+  const { data: profundizaData, loading } = useFirebaseData<any>('jubileo/profundiza', 'jubileo_profundiza');
+  const data = profundizaData as {
     titulo: string;
     introduccion: string;
     paginas: Pagina[];
   };
+
+  if (loading || !data) {
+    return <ProgressWithMessage message="Cargando profundiza..." />;
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
