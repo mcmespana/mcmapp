@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Card, Text, FAB, Portal, Modal, TextInput, Switch, Button, Chip } from 'react-native-paper';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
@@ -30,7 +31,14 @@ export default function ReflexionesScreen() {
 
   const [list, setList] = useState<Reflexion[]>([]);
 
-  useEffect(() => { if (dataRef) setList(dataRef); }, [dataRef]);
+  useEffect(() => {
+    if (dataRef) {
+      const arrayData = Array.isArray(dataRef)
+        ? dataRef
+        : Object.values(dataRef as Record<string, Reflexion>);
+      setList(arrayData);
+    }
+  }, [dataRef]);
 
   const [showForm, setShowForm] = useState(false);
   const [titulo, setTitulo] = useState('');
@@ -39,16 +47,19 @@ export default function ReflexionesScreen() {
   const [grupal, setGrupal] = useState(false);
   const [grupo, setGrupo] = useState<string | undefined>(undefined);
   const [autor, setAutor] = useState('');
+  const [showDateSelector, setShowDateSelector] = useState(false);
 
   const showDatePicker = () => {
-    const { DateTimePickerAndroid } = require('@react-native-community/datetimepicker');
-    DateTimePickerAndroid.open({
-      value: fecha,
-      mode: 'date',
-      onChange: (_, selected) => {
-        if (selected) setFecha(selected);
-      },
-    });
+    if (Platform.OS === 'android') {
+      const { DateTimePickerAndroid } = require('@react-native-community/datetimepicker');
+      DateTimePickerAndroid.open({
+        value: fecha,
+        mode: 'date',
+        onChange: (_, selected) => selected && setFecha(selected),
+      });
+    } else {
+      setShowDateSelector(true);
+    }
   };
 
   const formatFecha = (f: string | Date) => {
@@ -64,8 +75,7 @@ export default function ReflexionesScreen() {
       contenido,
       fecha: fecha.toISOString().slice(0, 10),
       grupal,
-      grupo: grupal ? grupo : undefined,
-      autor: grupal ? undefined : autor,
+      ...(grupal ? (grupo ? { grupo } : {}) : { autor }),
     };
     try {
       const db = getDatabase(getFirebaseApp());
@@ -113,7 +123,7 @@ export default function ReflexionesScreen() {
             <Button mode="contained" onPress={addReflexion} style={styles.saveBtn}>Guardar</Button>
             <TextInput label="Título" value={titulo} onChangeText={setTitulo} style={styles.input} />
             <TextInput
-              label="Reflexión"
+              label="Compartiendo..."
               value={contenido}
               onChangeText={setContenido}
               multiline
@@ -128,8 +138,8 @@ export default function ReflexionesScreen() {
               style={styles.input}
             />
             <View style={styles.row}>
-              <Switch value={grupal} onValueChange={setGrupal} />
-              <Text style={styles.switchLabel}>Reflexión grupal</Text>
+              <Switch value={grupal} onValueChange={(v) => setGrupal(v)} color={colors.success} />
+              <Text style={styles.switchLabel}>Compartiendo en grupo</Text>
             </View>
             {grupal ? (
               <ScrollView horizontal>
@@ -153,6 +163,23 @@ export default function ReflexionesScreen() {
               />
             )}
           </ScrollView>
+        </Modal>
+      </Portal>
+      <Portal>
+        <Modal
+          visible={showDateSelector}
+          onDismiss={() => setShowDateSelector(false)}
+          contentContainerStyle={styles.dateModal}
+        >
+          <DateTimePicker
+            value={fecha}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(_, selected) => {
+              setShowDateSelector(false);
+              if (selected) setFecha(selected);
+            }}
+          />
         </Modal>
       </Portal>
     </View>
@@ -182,6 +209,13 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     row: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
     switchLabel: { marginLeft: spacing.sm, color: theme.text },
     chip: { marginRight: spacing.sm },
-    saveBtn: { marginTop: spacing.md },
+    saveBtn: { marginTop: spacing.md, marginBottom: spacing.md },
+    dateModal: {
+      backgroundColor: theme.background,
+      padding: spacing.md,
+      margin: spacing.md,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
   });
 };
