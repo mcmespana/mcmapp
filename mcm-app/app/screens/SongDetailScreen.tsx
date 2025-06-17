@@ -45,7 +45,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 
   // Settings from context
   const { settings, setSettings, isLoadingSettings } = useSettings(); // <<<--- USE SETTINGS HOOK
-  const { chordsVisible, fontSize: currentFontSizeEm, fontFamily: currentFontFamily } = settings;
+  const { chordsVisible, fontSize: currentFontSizeEm, fontFamily: currentFontFamily, notation } = settings;
 
   // songHtml state is now managed by useSongProcessor
   const [isFileLoading, setIsFileLoading] = useState(true); // Renamed from isLoading
@@ -70,6 +70,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     chordsVisible, // From context
     currentFontSizeEm, // From context
     currentFontFamily, // From context
+    notation,
     author, // Pass author from route.params
     key,    // Pass key from route.params
     capo,   // Pass capo from route.params
@@ -169,6 +170,10 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     setSettings({ fontFamily: newFontFamily });
   };
 
+  const handleToggleNotation = () => {
+    setSettings({ notation: notation === 'EN' ? 'ES' : 'EN' });
+  };
+
   const handleNavigateToFullscreen = () => {
     navigation.navigate('SongFullscreen', {
       filename,
@@ -253,10 +258,12 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
         currentFontSizeEm={currentFontSizeEm}
         currentFontFamily={currentFontFamily}
         availableFonts={availableFonts}
+        notation={notation}
         onToggleChords={handleToggleChords}
         onSetTranspose={handleSetTranspose} // Local handler
         onSetFontSize={handleSetFontSize}
         onSetFontFamily={handleSetFontFamily}
+        onToggleNotation={handleToggleNotation}
         onNavigateToFullscreen={handleNavigateToFullscreen}
       />
     </Animated.View>
