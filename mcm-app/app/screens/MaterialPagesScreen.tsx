@@ -86,7 +86,7 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
           {item.subtitulo && <Text style={styles.pageSubtitle}>{item.subtitulo}</Text>}
         </View>
         <ScrollView contentContainerStyle={styles.pageContent}>
-          <Text>{item.texto}</Text>
+          <Text style={styles.pageText}>{item.texto}</Text>
         </ScrollView>
       </View>
     );
@@ -233,6 +233,10 @@ const createStyles = (scheme: ColorSchemeName, introColor: string) => {
   },
   pageContent: {
     padding: spacing.lg,
+  },
+  pageText: {
+    color: theme.text,
+    fontSize: 16,
   },
   dotsContainer: {
     flexDirection: 'row',

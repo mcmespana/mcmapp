@@ -84,20 +84,26 @@ export default function SongsListScreen({ route, navigation }: {
           for (const originalCategoryKey in songsData) {
             if (Object.prototype.hasOwnProperty.call(songsData, originalCategoryKey)) {
               const categorySongs = songsData[originalCategoryKey].songs;
+              const categoryTitle = songsData[originalCategoryKey].categoryTitle;
+              const categoryLetterMatch = categoryTitle.match(/^[A-Za-z]/);
+              const categoryLetter = categoryLetterMatch
+                ? categoryLetterMatch[0].toUpperCase()
+                : originalCategoryKey.charAt(0).toUpperCase();
+
               const songsWithMetadata = categorySongs.map(song => {
                 const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
                 let numericPart = '';
                 if (titleMatch && titleMatch[1]) {
-                  numericPart = titleMatch[1].padStart(2, '0');
+                  numericPart = String(parseInt(titleMatch[1], 10));
                 } else {
                   const filenameMatch = song.filename.match(/_(\d+)\.html$/);
                   if (filenameMatch && filenameMatch[1]) {
-                    numericPart = filenameMatch[1].padStart(2, '0');
+                    numericPart = String(parseInt(filenameMatch[1], 10));
                   }
                 }
                 return {
                   ...song,
-                  originalCategoryKey: originalCategoryKey.charAt(0).toUpperCase(), // Take only the first character and ensure it's uppercase
+                  originalCategoryKey: categoryLetter,
                   numericFilenamePart: numericPart,
                 };
               });
@@ -296,7 +302,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontSize: 16,
       paddingLeft: 0,
       paddingTop: 0,
-      textAlignVertical: 'top',
+      textAlignVertical: 'center',
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     categoryTitle: {
