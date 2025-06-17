@@ -20,6 +20,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
 import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme, adaptNavigationTheme } from 'react-native-paper';
+import colors from '@/constants/colors';
 import { useMemo } from 'react';
 
 
@@ -29,10 +30,10 @@ export default function RootLayout() {
   const scheme = useColorScheme(); // Keep existing hooks
   
   // Configuración del tema de Paper
-  const paperTheme = useMemo(
-    () => (scheme === 'dark' ? { ...MD3DarkTheme } : { ...MD3LightTheme }),
-    [scheme]
-  );
+  const paperTheme = useMemo(() => {
+    const base = scheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
+    return { ...base, colors: { ...base.colors, primary: colors.success } };
+  }, [scheme]);
   
   // Configuración del tema de navegación
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
