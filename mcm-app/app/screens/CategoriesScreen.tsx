@@ -24,11 +24,23 @@ export default function CategoriesScreen({
 }) {
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme), [scheme]);
-  const { data: songsData, loading } = useFirebaseData<Record<string, any[]>>('songs', 'songs');
+  const { data: songsData, loading } =
+    useFirebaseData<Record<string, { categoryTitle: string; songs: any[] }>>(
+      'songs',
+      'songs'
+    );
   const actualCategories = songsData ? Object.keys(songsData) : [];
+  const sortedCategories = actualCategories.sort((a, b) => {
+    const titleA = songsData?.[a]?.categoryTitle ?? a;
+    const titleB = songsData?.[b]?.categoryTitle ?? b;
+    return titleA.localeCompare(titleB);
+  });
   const displayCategories = [
     { id: SELECTED_SONGS_CATEGORY_ID, name: SELECTED_SONGS_CATEGORY_NAME },
-    ...actualCategories.map(cat => ({ id: cat, name: `${cat}` }))
+    ...sortedCategories.map(cat => ({
+      id: cat,
+      name: songsData?.[cat]?.categoryTitle ?? cat,
+    }))
   ];
 
   useLayoutEffect(() => {
