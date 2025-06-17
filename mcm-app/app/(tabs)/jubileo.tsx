@@ -54,7 +54,11 @@ export default function JubileoTab() {
       <Stack.Screen name="Profundiza" component={ProfundizaScreen} options={{ title: 'Profundiza' }} />
       <Stack.Screen name="Grupos" component={GruposScreen} options={{ title: 'Grupos' }} />
       <Stack.Screen name="Contactos" component={ContactosScreen} options={{ title: 'Contactos' }} />
-      <Stack.Screen name="Reflexiones" component={ReflexionesScreen} options={{ title: 'Compartir' }} />
+      <Stack.Screen
+        name="Reflexiones"
+        component={ReflexionesScreen}
+        options={{ title: 'Compartiendo', headerStyle: { backgroundColor: '#A3BD31' } }}
+      />
     </Stack.Navigator>
   );
 }
