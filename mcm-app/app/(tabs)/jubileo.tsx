@@ -8,6 +8,8 @@ import VisitasScreen from '../screens/VisitasScreen';
 import ProfundizaScreen from '../screens/ProfundizaScreen';
 import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
+import ReflexionesScreen from '../screens/ReflexionesScreen';
+import { IconButton } from 'react-native-paper';
 
 
 export type JubileoStackParamList = {
@@ -19,6 +21,7 @@ export type JubileoStackParamList = {
   Profundiza: undefined;
   Grupos: undefined;
   Contactos: undefined;
+  Reflexiones: undefined;
 };
 
 const Stack = createNativeStackNavigator<JubileoStackParamList>();
@@ -27,13 +30,21 @@ export default function JubileoTab() {
   return (
     <Stack.Navigator
       initialRouteName="Home"
-      screenOptions={{
+      screenOptions={({ navigation }) => ({
         headerBackTitle: 'Atrás',
         headerStyle: { backgroundColor: '#9D1E74' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: 'bold' },
         headerTitleAlign: 'center',
-      }}
+        headerRight: () => (
+          <IconButton
+            icon="forum"
+            size={24}
+            iconColor="#fff"
+            onPress={() => navigation.navigate('Reflexiones')}
+          />
+        ),
+      })}
     >
       <Stack.Screen name="Home" component={JubileoHomeScreen} options={{ title: 'Jubileo' }} />
       <Stack.Screen name="Horario" component={HorarioScreen} options={{ title: 'Horario' }} />
@@ -43,6 +54,7 @@ export default function JubileoTab() {
       <Stack.Screen name="Profundiza" component={ProfundizaScreen} options={{ title: 'Profundiza' }} />
       <Stack.Screen name="Grupos" component={GruposScreen} options={{ title: 'Grupos' }} />
       <Stack.Screen name="Contactos" component={ContactosScreen} options={{ title: 'Contactos' }} />
+      <Stack.Screen name="Reflexiones" component={ReflexionesScreen} options={{ title: 'Compartir' }} />
     </Stack.Navigator>
   );
 }
