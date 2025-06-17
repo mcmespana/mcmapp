@@ -15,10 +15,12 @@ interface SongControlsProps {
   currentFontSizeEm: number;
   currentFontFamily: string;
   availableFonts: FontOption[];
+  notation: 'EN' | 'ES';
   onToggleChords: () => void;
   onSetTranspose: (semitones: number) => void;
   onSetFontSize: (sizeEm: number) => void;
   onSetFontFamily: (fontFamily: string) => void;
+  onToggleNotation: () => void;
   onNavigateToFullscreen: () => void;
 }
 
@@ -28,10 +30,12 @@ const SongControls: React.FC<SongControlsProps> = ({
   currentFontSizeEm,
   currentFontFamily,
   availableFonts,
+  notation,
   onToggleChords,
   onSetTranspose,
   onSetFontSize,
   onSetFontFamily,
+  onToggleNotation,
   onNavigateToFullscreen,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
@@ -79,13 +83,16 @@ const SongControls: React.FC<SongControlsProps> = ({
             <TouchableOpacity style={[styles.fabAction, availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue && styles.fabActionActive]} onPress={handleOpenFontFamilyModal}>
               <Text style={[styles.fabActionText, availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue && styles.fabActionTextActive]}>Tipo de Letra</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={[styles.fabAction, notation !== 'EN' && styles.fabActionActive]} onPress={onToggleNotation}>
+              <Text style={[styles.fabActionText, notation !== 'EN' && styles.fabActionTextActive]}>Notación: {notation}</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.fabAction} onPress={onNavigateToFullscreen}>
               <Text style={styles.fabActionText}>Pantalla completa</Text>
             </TouchableOpacity>
           </View>
         )}
         <View style={{ position: 'relative' }}>
-          {(currentTranspose !== 0 || !chordsVisible || currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && (
+          {(currentTranspose !== 0 || !chordsVisible || currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue) || notation !== 'EN') && (
             <View style={styles.badge} />
           )}
           <TouchableOpacity 

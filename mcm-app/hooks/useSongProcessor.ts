@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChordProParser, HtmlDivFormatter, Song, ChordLyricsPair } from 'chordsheetjs';
 import { AppColors } from '../app/styles/theme'; // Ensure this path is correct relative to the hooks folder
+import { convertHtmlChords, convertChord, Notation } from '../utils/chordNotation';
 
 interface UseSongProcessorParams {
   originalChordPro: string | null;
@@ -8,6 +9,7 @@ interface UseSongProcessorParams {
   chordsVisible: boolean;
   currentFontSizeEm: number;
   currentFontFamily: string;
+  notation: Notation;
   author?: string; // Added to pass author
   key?: string; // Added to pass key
   capo?: number; // Added to pass capo
@@ -19,6 +21,7 @@ export const useSongProcessor = ({
   chordsVisible,
   currentFontSizeEm,
   currentFontFamily,
+  notation,
   author,
   key,
   capo,
@@ -96,7 +99,7 @@ export const useSongProcessor = ({
 
 
       if (displayKey) {
-        finalKeyCapoString += `<strong>${displayKey}</strong>`;
+        finalKeyCapoString += `<strong>${convertChord(displayKey, notation)}</strong>`;
       }
 
       if (capo !== undefined && capo > 0) {
@@ -131,7 +134,7 @@ export const useSongProcessor = ({
 
       const chordsCss = chordsVisible ? '' : '<style>.chord { display: none !important; }</style>';
 
-      const finalHtml = `
+      let finalHtml = `
         <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -215,6 +218,7 @@ export const useSongProcessor = ({
         </body>
         </html>
       `;
+      finalHtml = convertHtmlChords(finalHtml, notation);
       setSongHtml(finalHtml);
     } catch (err) {
       console.error('Error procesando canción en useSongProcessor:', err);
@@ -222,7 +226,7 @@ export const useSongProcessor = ({
     } finally {
       setIsLoadingSong(false);
     }
-  }, [originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm, currentFontFamily, author, key, capo]);
+  }, [originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm, currentFontFamily, notation, author, key, capo]);
 
   return { songHtml, isLoadingSong };
 };
