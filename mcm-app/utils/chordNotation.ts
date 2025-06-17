@@ -12,7 +12,12 @@ const EN_TO_ES_MAP: Record<string,string> = {
 
 export function convertChord(chord: string, notation: Notation): string {
   if (notation === 'EN') return chord;
-  return chord.replace(/(^|[\\/|-])([A-G])/g, (_, prefix: string, root: string) => prefix + EN_TO_ES_MAP[root] || root);
+  const converted = chord.replace(/(^|[\\/|-])([A-G])/g, (_, prefix: string, root: string) => {
+    return prefix + (EN_TO_ES_MAP[root] || root);
+  });
+
+  const isMinor = /[A-G][#b]?m(?![a-z])/i.test(chord);
+  return isMinor ? converted.toLowerCase() : converted;
 }
 
 export function convertHtmlChords(html: string, notation: Notation): string {
