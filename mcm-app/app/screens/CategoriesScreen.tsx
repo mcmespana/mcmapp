@@ -30,9 +30,14 @@ export default function CategoriesScreen({
       'songs'
     );
   const actualCategories = songsData ? Object.keys(songsData) : [];
+  const sortedCategories = actualCategories.sort((a, b) => {
+    const titleA = songsData?.[a]?.categoryTitle ?? a;
+    const titleB = songsData?.[b]?.categoryTitle ?? b;
+    return titleA.localeCompare(titleB);
+  });
   const displayCategories = [
     { id: SELECTED_SONGS_CATEGORY_ID, name: SELECTED_SONGS_CATEGORY_NAME },
-    ...actualCategories.map(cat => ({
+    ...sortedCategories.map(cat => ({
       id: cat,
       name: songsData?.[cat]?.categoryTitle ?? cat,
     }))

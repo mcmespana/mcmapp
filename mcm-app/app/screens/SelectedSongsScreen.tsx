@@ -87,6 +87,9 @@ const SelectedSongsScreen: React.FC = () => {
           });
         }
       }
+      categories.sort((a, b) =>
+        a.categoryTitle.localeCompare(b.categoryTitle)
+      );
       setCategorizedSelectedSongs(categories);
     };
 
