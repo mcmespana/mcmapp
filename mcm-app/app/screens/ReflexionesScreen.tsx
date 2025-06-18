@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { Card, Text, FAB, Portal, Modal, TextInput, Switch, Button, Chip } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -19,6 +19,9 @@ interface Reflexion {
   grupo?: string;
   autor?: string;
 }
+
+const MONTHS_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const WEEKDAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
 export default function ReflexionesScreen() {
   const scheme = useColorScheme();
@@ -48,6 +51,7 @@ export default function ReflexionesScreen() {
   const [grupo, setGrupo] = useState<string | undefined>(undefined);
   const [autor, setAutor] = useState('');
   const [showDateSelector, setShowDateSelector] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const showDatePicker = () => {
     if (Platform.OS === 'android') {
@@ -64,11 +68,15 @@ export default function ReflexionesScreen() {
 
   const formatFecha = (f: string | Date) => {
     const d = typeof f === 'string' ? new Date(f) : f;
-    return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    const weekday = WEEKDAYS_ES[d.getDay()];
+    const day = d.getDate();
+    const month = MONTHS_ES[d.getMonth()];
+    return `${weekday} ${day}-${month}`;
   };
 
   async function addReflexion() {
-    if (!titulo.trim() || !contenido.trim() || !fecha) return;
+    if (!titulo.trim() || !fecha) return;
+    setSaving(true);
     const nuevo: Reflexion = {
       id: Date.now().toString(),
       titulo,
@@ -93,6 +101,7 @@ export default function ReflexionesScreen() {
     setGrupal(false);
     setGrupo(undefined);
     setAutor('');
+    setSaving(false);
   };
 
   const getGrupoLabel = (nombre?: string) => {
@@ -108,7 +117,7 @@ export default function ReflexionesScreen() {
           <Card key={r.id} style={[styles.card, r.grupal && styles.cardGroup]}>
             <Card.Title
               title={r.titulo}
-              subtitle={`${formatFecha(r.fecha)} - ${r.grupal ? getGrupoLabel(r.grupo) : r.autor}`}
+              subtitle={`${formatFecha(r.fecha)} - ${r.grupal ? getGrupoLabel(r.grupo) : r.autor || 'Anónimo'}`}
             />
             <Card.Content>
               <Text>{r.contenido}</Text>
@@ -118,10 +127,21 @@ export default function ReflexionesScreen() {
       </ScrollView>
       <FAB icon="plus" style={styles.fab} onPress={() => setShowForm(true)} />
       <Portal>
-        <Modal visible={showForm} onDismiss={() => setShowForm(false)} contentContainerStyle={styles.modal}>
+        <Modal
+          visible={showForm}
+          onDismiss={() => setShowForm(false)}
+          contentContainerStyle={styles.modal}
+          style={styles.modalWrapper}
+        >
           <ScrollView>
             <Button mode="contained" onPress={addReflexion} style={styles.saveBtn}>Guardar</Button>
-            <TextInput label="Título" value={titulo} onChangeText={setTitulo} style={styles.input} />
+            <TextInput
+              label="Título"
+              value={titulo}
+              onChangeText={setTitulo}
+              style={styles.input}
+              theme={{ colors: { primary: colors.success } }}
+            />
             <TextInput
               label="Compartiendo..."
               value={contenido}
@@ -129,6 +149,7 @@ export default function ReflexionesScreen() {
               multiline
               numberOfLines={4}
               style={[styles.input, { minHeight: 100 }]}
+              theme={{ colors: { primary: colors.success } }}
             />
             <TextInput
               label="Fecha"
@@ -136,9 +157,17 @@ export default function ReflexionesScreen() {
               onPressIn={showDatePicker}
               editable={false}
               style={styles.input}
+              theme={{ colors: { primary: colors.success } }}
             />
             <View style={styles.row}>
-              <Switch value={grupal} onValueChange={(v) => setGrupal(v)} color={colors.success} />
+              <Switch
+                value={grupal}
+                onValueChange={(v) => {
+                  setGrupal(v);
+                  setTimeout(() => setGrupal(v), 300);
+                }}
+                color={colors.success}
+              />
               <Text style={styles.switchLabel}>Compartiendo en grupo</Text>
             </View>
             {grupal ? (
@@ -148,7 +177,12 @@ export default function ReflexionesScreen() {
                     key={g.nombre}
                     selected={grupo === g.nombre}
                     onPress={() => setGrupo(g.nombre)}
-                    style={styles.chip}
+                    style={[
+                      styles.chip,
+                      grupo === g.nombre && { backgroundColor: colors.success },
+                    ]}
+                    selectedColor={grupo === g.nombre ? colors.white : colors.text}
+                    theme={{ colors: { secondaryContainer: colors.success } }}
                   >
                     {getGrupoLabel(g.nombre)}
                   </Chip>
@@ -160,6 +194,7 @@ export default function ReflexionesScreen() {
                 value={autor}
                 onChangeText={setAutor}
                 style={styles.input}
+                theme={{ colors: { primary: colors.success } }}
               />
             )}
           </ScrollView>
@@ -175,11 +210,18 @@ export default function ReflexionesScreen() {
             value={fecha}
             mode="date"
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            locale="es-ES"
             onChange={(_, selected) => {
               setShowDateSelector(false);
               if (selected) setFecha(selected);
             }}
           />
+        </Modal>
+      </Portal>
+      <Portal>
+        <Modal visible={saving} dismissable={false} contentContainerStyle={styles.savingModal}>
+          <ActivityIndicator size="large" color={colors.success} />
+          <Text style={styles.savingText}>Enviando...</Text>
         </Modal>
       </Portal>
     </View>
@@ -205,6 +247,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       padding: 20,
       borderRadius: 8,
     },
+    modalWrapper: {
+      justifyContent: 'flex-start',
+    },
     input: { marginBottom: spacing.md },
     row: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
     switchLabel: { marginLeft: spacing.sm, color: theme.text },
@@ -216,6 +261,17 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       margin: spacing.md,
       borderRadius: 8,
       alignItems: 'center',
+    },
+    savingModal: {
+      backgroundColor: theme.background,
+      padding: spacing.lg,
+      margin: spacing.md,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    savingText: {
+      marginTop: spacing.md,
+      color: theme.text,
     },
   });
 };
