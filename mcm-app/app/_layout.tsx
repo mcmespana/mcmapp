@@ -18,6 +18,7 @@ import { ThemeProvider as NavThemeProvider, DarkTheme, DefaultTheme } from '@rea
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
 import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme, adaptNavigationTheme } from 'react-native-paper';
 import colors from '@/constants/colors';
@@ -26,6 +27,14 @@ import { useMemo } from 'react';
 
 
 export default function RootLayout() {
+  return (
+    <AppSettingsProvider>
+      <InnerLayout />
+    </AppSettingsProvider>
+  );
+}
+
+function InnerLayout() {
   const [showAnimation, setShowAnimation] = useState(true);
   const scheme = useColorScheme(); // Keep existing hooks
   

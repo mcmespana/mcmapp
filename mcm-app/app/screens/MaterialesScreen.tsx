@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -22,7 +23,8 @@ type Nav = NativeStackNavigationProp<JubileoStackParamList, 'MaterialPages'>;
 export default function MaterialesScreen() {
   const navigation = useNavigation<Nav>();
   const scheme = useColorScheme();
-  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const fontScale = useFontScale(1.2);
+  const styles = React.useMemo(() => createStyles(scheme, fontScale), [scheme, fontScale]);
   const { data: materialesData, loading } = useFirebaseData<any[]>('jubileo/materiales', 'jubileo_materiales');
   const [index, setIndex] = useState(0);
   const fechas = materialesData ? materialesData.map((d) => ({ fecha: d.fecha })) : [];
@@ -51,7 +53,7 @@ export default function MaterialesScreen() {
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark') => {
+const createStyles = (scheme: 'light' | 'dark', scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
@@ -67,13 +69,13 @@ const createStyles = (scheme: 'light' | 'dark') => {
       marginBottom: spacing.md,
     },
     emoji: {
-      fontSize: 40,
+      fontSize: 40 * scale,
       marginBottom: spacing.sm,
     },
     cardText: {
       color: colors.white,
       fontWeight: 'bold',
-      fontSize: 18,
+      fontSize: 18 * scale,
     },
   });
 };

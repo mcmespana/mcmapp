@@ -3,6 +3,7 @@ import { View, StyleSheet, Dimensions, Text, FlatList, ScrollView, TouchableOpac
 import { RouteProp } from '@react-navigation/native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
 
@@ -49,7 +50,8 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
   const { actividad, fecha } = route.params;
   const introBackgroundColor = actividad.color || colors.primary; // Fallback color
   const scheme = useColorScheme();
-  const styles = React.useMemo(() => createStyles(scheme, introBackgroundColor), [scheme, introBackgroundColor]);
+  const fontScale = useFontScale(1.2);
+  const styles = React.useMemo(() => createStyles(scheme, introBackgroundColor, fontScale), [scheme, introBackgroundColor, fontScale]);
 
   const IntroPageItem = ({ actividad }: { actividad: Actividad; }) => {
     const circlesData = React.useMemo(() => generateRandomCircles(5), []);
@@ -185,7 +187,7 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
 }
 
 
-const createStyles = (scheme: ColorSchemeName, introColor: string) => {
+const createStyles = (scheme: ColorSchemeName, introColor: string, scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1 },
@@ -197,23 +199,23 @@ const createStyles = (scheme: ColorSchemeName, introColor: string) => {
     backgroundColor: introColor,
   },
   introEmoji: {
-    fontSize: 64,
+    fontSize: 64 * scale,
     marginBottom: spacing.lg,
   },
   introTitle: {
-    fontSize: 26,
+    fontSize: 26 * scale,
     fontWeight: 'bold',
     color: colors.white,
   },
   introDate: {
-    fontSize: 16,
+    fontSize: 16 * scale,
     color: colors.white,
     marginTop: 4,
   },
   introHint: {
     marginTop: spacing.md,
     color: colors.white,
-    fontSize: 12,
+    fontSize: 12 * scale,
   },
   page: {
     flex: 1,
@@ -222,12 +224,12 @@ const createStyles = (scheme: ColorSchemeName, introColor: string) => {
     padding: spacing.md,
   },
   pageTitle: {
-    fontSize: 20,
+    fontSize: 20 * scale,
     fontWeight: 'bold',
     color: colors.white,
   },
   pageSubtitle: {
-    fontSize: 16,
+    fontSize: 16 * scale,
     color: colors.white,
     marginTop: 4,
   },
@@ -236,7 +238,7 @@ const createStyles = (scheme: ColorSchemeName, introColor: string) => {
   },
   pageText: {
     color: theme.text,
-    fontSize: 16,
+    fontSize: 16 * scale,
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -271,7 +273,7 @@ const createStyles = (scheme: ColorSchemeName, introColor: string) => {
   },
   arrowText: {
     color: colors.white,
-    fontSize: 28,
+    fontSize: 28 * scale,
     fontWeight: 'bold',
     lineHeight: 28,
   },

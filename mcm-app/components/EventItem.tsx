@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Card } from 'react-native-paper';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 
 export interface EventItemData {
@@ -15,7 +16,8 @@ export interface EventItemData {
 
 export default function EventItem({ event }: { event: EventItemData }) {
   const scheme = useColorScheme();
-  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const fontScale = useFontScale();
+  const styles = React.useMemo(() => createStyles(scheme, fontScale), [scheme, fontScale]);
   return (
     <Card style={styles.card}>
       <Card.Content>
@@ -32,7 +34,7 @@ export default function EventItem({ event }: { event: EventItemData }) {
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark' | null) => {
+const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     card: {
@@ -45,15 +47,15 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       gap: spacing.md,
     },
     emoji: {
-      fontSize: 24,
+      fontSize: 24 * scale,
     },
     title: {
-      fontSize: 16,
+      fontSize: 16 * scale,
       fontWeight: 'bold',
       color: theme.text,
     },
     subtitle: {
-      fontSize: 14,
+      fontSize: 14 * scale,
       color: theme.text,
     },
   });
