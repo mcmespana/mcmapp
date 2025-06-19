@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, Button, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import theme from '../app/styles/theme'; // Default import for theme
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import SongFontPanel from './SongFontPanel';
+import TransposePanel from './TransposePanel';
 
 // Define availableFonts structure if not already globally defined
 interface FontOption {
@@ -39,30 +41,15 @@ const SongControls: React.FC<SongControlsProps> = ({
   onNavigateToFullscreen,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
-  const [showTransposeModal, setShowTransposeModal] = useState(false);
-  const [showFontSizeModal, setShowFontSizeModal] = useState(false);
-  const [showFontFamilyModal, setShowFontFamilyModal] = useState(false);
+  const [showTransposePanel, setShowTransposePanel] = useState(false);
+  const [showFontPanel, setShowFontPanel] = useState(false);
 
-  const handleOpenTransposeModal = () => setShowTransposeModal(true);
-  const handleOpenFontSizeModal = () => setShowFontSizeModal(true);
-  const handleOpenFontFamilyModal = () => setShowFontFamilyModal(true);
+  const handleOpenTransposePanel = () => setShowTransposePanel(true);
+  const handleOpenFontPanel = () => setShowFontPanel(true);
 
   // Wrapper for onSetTranspose to also close the modal
-  const handleSetTransposeAndClose = (semitones: number) => {
+  const handleSetTranspose = (semitones: number) => {
     onSetTranspose(semitones);
-    //setShowTransposeModal(false); // Keep modal open to see changes, or close if preferred
-  };
-  
-  // Wrapper for onSetFontSize, modal can be kept open
-  const handleSetFontSizeAndClose = (size: number) => {
-    onSetFontSize(size);
-    // setShowFontSizeModal(false); // Keep modal open
-  }
-
-  // Wrapper for onSetFontFamily to also close the modal
-  const handleSetFontFamilyAndClose = (fontFamily: string) => {
-    onSetFontFamily(fontFamily);
-    setShowFontFamilyModal(false);
   };
 
   return (
@@ -74,17 +61,14 @@ const SongControls: React.FC<SongControlsProps> = ({
             <TouchableOpacity style={[styles.fabAction, !chordsVisible && styles.fabActionActive]} onPress={onToggleChords}>
               <Text style={[styles.fabActionText, !chordsVisible && styles.fabActionTextActive]}>Acordes {chordsVisible ? 'ON' : 'OFF'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, currentTranspose !== 0 && styles.fabActionActive]} onPress={handleOpenTransposeModal}>
+            <TouchableOpacity style={[styles.fabAction, notation !== 'ES' && styles.fabActionActive]} onPress={onToggleNotation}>
+              <Text style={[styles.fabActionText, notation !== 'ES' && styles.fabActionTextActive]}>Notación: {notation}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.fabAction, currentTranspose !== 0 && styles.fabActionActive]} onPress={handleOpenTransposePanel}>
               <Text style={[styles.fabActionText, currentTranspose !== 0 && styles.fabActionTextActive]}>Cambiar tono</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, currentFontSizeEm !== 1.0 && styles.fabActionActive]} onPress={handleOpenFontSizeModal}>
-              <Text style={[styles.fabActionText, currentFontSizeEm !== 1.0 && styles.fabActionTextActive]}>Tamaño Letra</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue && styles.fabActionActive]} onPress={handleOpenFontFamilyModal}>
-              <Text style={[styles.fabActionText, availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue && styles.fabActionTextActive]}>Tipo de Letra</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, notation !== 'EN' && styles.fabActionActive]} onPress={onToggleNotation}>
-              <Text style={[styles.fabActionText, notation !== 'EN' && styles.fabActionTextActive]}>Notación: {notation}</Text>
+            <TouchableOpacity style={[styles.fabAction, (currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && styles.fabActionActive]} onPress={handleOpenFontPanel}>
+              <Text style={[styles.fabActionText, (currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && styles.fabActionTextActive]}>Tipo de letra</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.fabAction} onPress={onNavigateToFullscreen}>
               <Text style={styles.fabActionText}>Pantalla completa</Text>
@@ -92,7 +76,7 @@ const SongControls: React.FC<SongControlsProps> = ({
           </View>
         )}
         <View style={{ position: 'relative' }}>
-          {(currentTranspose !== 0 || !chordsVisible || currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue) || notation !== 'EN') && (
+          {(currentTranspose !== 0 || !chordsVisible || currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue) || notation !== 'ES') && (
             <View style={styles.badge} />
           )}
           <TouchableOpacity 
@@ -111,85 +95,22 @@ const SongControls: React.FC<SongControlsProps> = ({
         </View>
       </View>
 
-      {/* Font Size Modal */}
-      <Modal
-        transparent={true}
-        visible={showFontSizeModal}
-        onRequestClose={() => setShowFontSizeModal(false)}
-        animationType="fade"
-      >
-        <TouchableWithoutFeedback onPress={() => setShowFontSizeModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Ajustar Tamaño Letra</Text>
-                <View style={styles.fontSizeButtonRow}>
-                  <Button title="A+" onPress={() => handleSetFontSizeAndClose(currentFontSizeEm + 0.1)} />
-                  <Button title="A-" onPress={() => handleSetFontSizeAndClose(Math.max(0.5, currentFontSizeEm - 0.1))} />
-                </View>
-                <Button title={`Original (${(currentFontSizeEm * 100).toFixed(0)}%)`} onPress={() => handleSetFontSizeAndClose(1.0)} />
-                <Button title="Cerrar" onPress={() => setShowFontSizeModal(false)} color="#888"/>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+      <SongFontPanel
+        visible={showFontPanel}
+        onClose={() => setShowFontPanel(false)}
+        availableFonts={availableFonts}
+        currentFontSize={currentFontSizeEm}
+        currentFontFamily={currentFontFamily}
+        onSetFontSize={onSetFontSize}
+        onSetFontFamily={onSetFontFamily}
+      />
 
-      {/* Font Family Modal */}
-      <Modal
-        transparent={true}
-        visible={showFontFamilyModal}
-        onRequestClose={() => setShowFontFamilyModal(false)}
-        animationType="fade"
-      >
-        <TouchableWithoutFeedback onPress={() => setShowFontFamilyModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Seleccionar Tipo de Letra</Text>
-                {availableFonts.map((font) => (
-                  <TouchableOpacity
-                    key={font.cssValue}
-                    style={styles.fontFamilyOptionButton}
-                    onPress={() => handleSetFontFamilyAndClose(font.cssValue)}
-                  >
-                    <Text style={[styles.fontFamilyOptionText, { fontFamily: font.cssValue }]}>{font.name}</Text>
-                  </TouchableOpacity>
-                ))}
-                <Button title="Cerrar" onPress={() => setShowFontFamilyModal(false)} color="#888"/>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* Transpose Modal */}
-      <Modal
-        transparent={true}
-        visible={showTransposeModal}
-        onRequestClose={() => setShowTransposeModal(false)}
-        animationType="fade"
-      >
-        <TouchableWithoutFeedback onPress={() => setShowTransposeModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Cambio tono</Text>
-                <View style={styles.transposeButtonRow}>
-                  <Button title="+1/2 tono" onPress={() => handleSetTransposeAndClose(currentTranspose + 1)} />
-                  <Button title="+1 tono" onPress={() => handleSetTransposeAndClose(currentTranspose + 2)} />
-                </View>
-                <View style={styles.transposeButtonRow}>
-                  <Button title="-1/2 tono" onPress={() => handleSetTransposeAndClose(currentTranspose - 1)} />
-                  <Button title="-1 tono" onPress={() => handleSetTransposeAndClose(currentTranspose - 2)} />
-                </View>
-                <Button title="Tono Original 🔄" onPress={() => handleSetTransposeAndClose(0)} />
-                <Button title="Volver" onPress={() => setShowTransposeModal(false)} color="#888"/>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+      <TransposePanel
+        visible={showTransposePanel}
+        onClose={() => setShowTransposePanel(false)}
+        currentTranspose={currentTranspose}
+        onSetTranspose={handleSetTranspose}
+      />
     </>
   );
 };
@@ -207,7 +128,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   fabAction: {
-    backgroundColor: theme.backgroundLight,
+    backgroundColor: theme.accentYellow,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
@@ -217,15 +138,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
-    borderWidth: 1.5,
-    borderColor: theme.primary,
   },
   fabActionActive: {
     backgroundColor: theme.primary,
-    borderColor: theme.primaryDark,
   },
   fabActionText: {
-    color: theme.primary,
+    color: theme.textDark,
     fontWeight: 'bold',
   },
   fabActionTextActive: {
@@ -249,12 +167,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.modalOverlay,
-  },
   badge: {
     position: 'absolute',
     right: -4,
@@ -272,50 +184,6 @@ const styles = StyleSheet.create({
   fabMainIcon: {
     // Center icon in FAB
     alignSelf: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-    alignItems: 'center',
-    // Add shadow for modals if desired, e.g.:
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 0.25,
-    // shadowRadius: 3.84,
-    // elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: theme.textDark, // Ensure text color is appropriate
-  },
-  fontFamilyOptionButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    backgroundColor: '#e9ecef',
-    marginBottom: 10,
-    alignItems: 'center',
-    width: '100%', // Make buttons take full width of modal content
-  },
-  fontFamilyOptionText: {
-    fontSize: 16,
-    color: theme.textDark,
-  },
-  transposeButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around', // Or 'space-between'
-    marginBottom: 15,
-    width: '100%',
-  },
-  fontSizeButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around', // Or 'space-between'
-    width: '100%',
-    marginBottom: 10,
   },
   // Ensure all necessary styles from SongDetailScreen related to FABs and Modals are here
 });
