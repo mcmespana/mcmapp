@@ -18,6 +18,12 @@ export default function ContactosScreen() {
   const { data: contacts, loading } = useFirebaseData<Contacto[]>('jubileo/contactos', 'jubileo_contactos');
   const data = contacts as Contacto[] | undefined;
 
+  const palette = ['#FF8A65', '#4FC3F7', '#81C784', '#BA68C8', '#FFD54F', '#9FA8DA'];
+  const colorsForContacts = React.useMemo(
+    () => (data || []).map(() => palette[Math.floor(Math.random() * palette.length)]),
+    [data]
+  );
+
   const getInitials = (name: string) =>
     name
       .split(' ')
@@ -48,7 +54,7 @@ export default function ContactosScreen() {
             <Avatar.Text
               size={40}
               label={getInitials(c.nombre)}
-              style={styles.avatar}
+              style={[styles.avatar, { backgroundColor: colorsForContacts[idx] }]}
             />
           )}
           right={() => (
@@ -74,7 +80,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     container: { flex: 1, backgroundColor: theme.background },
     actions: { flexDirection: 'row' },
     name: { fontSize: 18, fontWeight: 'bold', marginTop: 4, color: theme.text },
-    avatar: { marginLeft: 8 },
-    itemContent: { paddingVertical: 8 },
+    avatar: { marginLeft: 8, marginRight: 12, alignSelf: 'center' },
+    itemContent: { paddingVertical: 8, alignItems: 'center' },
   });
 };
