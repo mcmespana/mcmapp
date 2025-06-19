@@ -32,7 +32,10 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
   const webViewRef = useRef<WebView>(null);
   const divRef = useRef<HTMLDivElement | null>(null);
   const [autoScroll, setAutoScroll] = useState(false);
-  const [scrollSpeed, setScrollSpeed] = useState(1);
+  // Slider value ranges from 0 to 1. We'll multiply by `maxSpeed` for the actual
+  // pixels scrolled on each interval. Start at 25% of the range.
+  const [scrollSpeed, setScrollSpeed] = useState(0.25);
+  const maxSpeed = 3; // slightly slower than previous max
   const [sliderVisible, setSliderVisible] = useState(false);
   const sliderOpacity = useRef(new Animated.Value(0)).current;
   const sliderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -66,12 +69,13 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
   useEffect(() => {
     if (!autoScroll) return;
     const id = setInterval(() => {
+      const delta = scrollSpeed * maxSpeed;
       if (Platform.OS === 'web') {
         if (divRef.current) {
-          divRef.current.scrollBy({ top: scrollSpeed });
+          divRef.current.scrollBy({ top: delta });
         }
       } else {
-        webViewRef.current?.injectJavaScript(`window.scrollBy(0,${scrollSpeed}); true;`);
+        webViewRef.current?.injectJavaScript(`window.scrollBy(0,${delta}); true;`);
       }
     }, 50);
     return () => clearInterval(id);
@@ -103,8 +107,9 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
         <Animated.View style={[styles.sliderWrapper, { opacity: sliderOpacity }]}>
           <Slider
             style={styles.slider}
-            minimumValue={1}
-            maximumValue={10}
+            minimumValue={0}
+            maximumValue={1}
+            step={0.01}
             value={scrollSpeed}
             onValueChange={value => {
               setScrollSpeed(value);
@@ -137,16 +142,15 @@ const styles = StyleSheet.create({
   },
   sliderWrapper: {
     position: 'absolute',
-    right: 0,
-    bottom: 100,
-    transform: [{ rotate: '-90deg' }],
-    width: 150,
+    right: 20,
+    bottom: 80,
+    width: 160,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   slider: {
-    width: 150,
+    width: '100%',
     height: 40,
   },
 });
