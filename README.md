@@ -214,7 +214,7 @@ Instalar dependencias ......... npm install
 
 
 Update web .................... npx expo export --platform web
-Update web 2 .................. npx eas deploy prod
+Update web 2 .................. npx eas deploy --prod
 ```
 
 ## Variables de entorno
