@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useNavigation, NavigationProp } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { RootStackParamList } from '../(tabs)/cancionero';
@@ -12,6 +12,7 @@ type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
 export default function SongFullscreenScreen({ route }: { route: SongFullscreenRouteProp }) {
   const { author, key, capo, content } = route.params;
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;
 
@@ -30,6 +31,14 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
   const webViewRef = useRef<WebView>(null);
   const divRef = useRef<HTMLDivElement | null>(null);
   const [autoScroll, setAutoScroll] = useState(false);
+
+  useEffect(() => {
+    const parent = navigation.getParent();
+    parent?.setOptions({ tabBarStyle: { display: 'none' } });
+    return () => {
+      parent?.setOptions({ tabBarStyle: undefined });
+    };
+  }, [navigation]);
 
   useEffect(() => {
     if (!autoScroll) return;
