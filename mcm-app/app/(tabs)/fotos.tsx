@@ -1,6 +1,6 @@
 // app/(tabs)/fotos.tsx
 import React, { useState, useEffect } from 'react';
-import { View, FlatList, StyleSheet, Linking, useWindowDimensions, ViewStyle, TextStyle, Alert } from 'react-native';
+import { View, FlatList, StyleSheet, Linking, useWindowDimensions, ViewStyle, Alert } from 'react-native';
 import { Button, ActivityIndicator } from 'react-native-paper';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';

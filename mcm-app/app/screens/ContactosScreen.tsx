@@ -3,8 +3,10 @@ import { ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { List, IconButton, Avatar } from 'react-native-paper';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import colors, { Colors } from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+
+const PALETTE = ['#FF8A65', '#4FC3F7', '#81C784', '#BA68C8', '#FFD54F', '#9FA8DA'];
 
 interface Contacto {
   nombre: string;
@@ -18,9 +20,8 @@ export default function ContactosScreen() {
   const { data: contacts, loading } = useFirebaseData<Contacto[]>('jubileo/contactos', 'jubileo_contactos');
   const data = contacts as Contacto[] | undefined;
 
-  const palette = ['#FF8A65', '#4FC3F7', '#81C784', '#BA68C8', '#FFD54F', '#9FA8DA'];
   const colorsForContacts = React.useMemo(
-    () => (data || []).map(() => palette[Math.floor(Math.random() * palette.length)]),
+    () => (data || []).map(() => PALETTE[Math.floor(Math.random() * PALETTE.length)]),
     [data]
   );
 
