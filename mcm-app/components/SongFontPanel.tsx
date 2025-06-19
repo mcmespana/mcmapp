@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { DEFAULT_FONT_SIZE_EM } from '@/contexts/SettingsContext';
 
 interface FontOption {
   name: string;
@@ -32,6 +33,13 @@ export default function SongFontPanel({
   const scheme = useColorScheme();
   const theme = Colors[scheme];
 
+  const reset = () => {
+    onSetFontSize(DEFAULT_FONT_SIZE_EM);
+    if (availableFonts[0]) {
+      onSetFontFamily(availableFonts[0].cssValue);
+    }
+  };
+
   const increase = () => onSetFontSize(currentFontSize + 0.1);
   const decrease = () => onSetFontSize(Math.max(0.6, currentFontSize - 0.1));
 
@@ -46,7 +54,12 @@ export default function SongFontPanel({
         <TouchableOpacity onPress={decrease}>
           <MaterialIcons name="text-fields" size={24} color={theme.text} style={{ transform: [{ scaleY: 0.8 }] }} />
         </TouchableOpacity>
-        <Text style={[styles.value, { color: theme.text }]}>{(currentFontSize * 100).toFixed(0)}%</Text>
+        <Text
+          style={[styles.value, { color: theme.text }]}
+          onPress={reset}
+        >
+          {((currentFontSize / DEFAULT_FONT_SIZE_EM) * 100).toFixed(0)}%
+        </Text>
         <TouchableOpacity onPress={increase}>
           <MaterialIcons name="text-fields" size={32} color={theme.text} />
         </TouchableOpacity>
@@ -62,6 +75,9 @@ export default function SongFontPanel({
           </TouchableOpacity>
         ))}
       </View>
+      <TouchableOpacity style={styles.resetButton} onPress={reset}>
+        <Text style={[styles.resetText, { color: theme.tint }]}>Restablecer</Text>
+      </TouchableOpacity>
     </BottomSheet>
   );
 }
@@ -90,4 +106,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
+  resetButton: { marginTop: 10, alignItems: 'center' },
+  resetText: { fontWeight: 'bold' },
 });

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import theme from '../app/styles/theme'; // Default import for theme
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import SongFontPanel from './SongFontPanel';
 import TransposePanel from './TransposePanel';
 
@@ -67,8 +68,8 @@ const SongControls: React.FC<SongControlsProps> = ({
             <TouchableOpacity style={[styles.fabAction, currentTranspose !== 0 && styles.fabActionActive]} onPress={handleOpenTransposePanel}>
               <Text style={[styles.fabActionText, currentTranspose !== 0 && styles.fabActionTextActive]}>Cambiar tono</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, (currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && styles.fabActionActive]} onPress={handleOpenFontPanel}>
-              <Text style={[styles.fabActionText, (currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && styles.fabActionTextActive]}>Tipo de letra</Text>
+            <TouchableOpacity style={[styles.fabAction, (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && styles.fabActionActive]} onPress={handleOpenFontPanel}>
+              <Text style={[styles.fabActionText, (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && styles.fabActionTextActive]}>Tipo de letra</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.fabAction} onPress={onNavigateToFullscreen}>
               <Text style={styles.fabActionText}>Pantalla completa</Text>
@@ -76,7 +77,7 @@ const SongControls: React.FC<SongControlsProps> = ({
           </View>
         )}
         <View style={{ position: 'relative' }}>
-          {(currentTranspose !== 0 || !chordsVisible || currentFontSizeEm !== 1.0 || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue) || notation !== 'ES') && (
+          {(currentTranspose !== 0 || !chordsVisible || currentFontSizeEm !== DEFAULT_FONT_SIZE_EM || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue) || notation !== 'ES') && (
             <View style={styles.badge} />
           )}
           <TouchableOpacity 
