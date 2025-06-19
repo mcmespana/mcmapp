@@ -14,7 +14,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const availableFonts = [
   { name: 'Monoespaciada', cssValue: "'Roboto Mono', 'Courier New', monospace" },
-  { name: 'Serif', cssValue: "'Georgia', 'Times New Roman', serif" },
+  { name: 'Serif', cssValue: "'Palatino Linotype', 'Book Antiqua', Palatino, serif" },
   { name: 'Sans-Serif', cssValue: "'Helvetica Neue', 'Arial', sans-serif" },
 ];
 

@@ -16,10 +16,12 @@ interface SettingsContextType {
   isLoadingSettings: boolean;
 }
 
+export const DEFAULT_FONT_SIZE_EM = 1.1; // baseline font size
+
 // Default settings
 const defaultSettings: SongSettings = {
   chordsVisible: true,
-  fontSize: 1.0, // 1.0em
+  fontSize: DEFAULT_FONT_SIZE_EM,
   fontFamily: "'Roboto Mono', 'Courier New', monospace", // Default font
   notation: 'ES',
 };
