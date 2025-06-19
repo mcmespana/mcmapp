@@ -21,7 +21,7 @@ const defaultSettings: SongSettings = {
   chordsVisible: true,
   fontSize: 1.0, // 1.0em
   fontFamily: "'Roboto Mono', 'Courier New', monospace", // Default font
-  notation: 'EN',
+  notation: 'ES',
 };
 
 // Storage key
