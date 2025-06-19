@@ -12,7 +12,7 @@ import { getFirebaseApp } from '@/hooks/firebaseApp';
 interface Grupo { nombre: string; subtitulo?: string; }
 interface Reflexion {
   id: string;
-  titulo: string;
+  titulo?: string;  // El título es opcional, pero en Firebase será string | ''
   contenido: string;
   fecha: string;
   grupal: boolean;
@@ -44,7 +44,7 @@ export default function ReflexionesScreen() {
   }, [dataRef]);
 
   const [showForm, setShowForm] = useState(false);
-  const [titulo, setTitulo] = useState('');
+  const [titulo, setTitulo] = useState('');  // Inicializar con cadena vacía
   const [contenido, setContenido] = useState('');
   const [fecha, setFecha] = useState(new Date());
   const [grupal, setGrupal] = useState(false);
@@ -75,11 +75,11 @@ export default function ReflexionesScreen() {
   };
 
   async function addReflexion() {
-    if (!titulo.trim() || !fecha) return;
+    if (!fecha) return;  // Solo validamos que haya fecha
     setSaving(true);
     const nuevo: Reflexion = {
       id: Date.now().toString(),
-      titulo,
+      titulo: titulo.trim(),  // Si está vacío, será cadena vacía
       contenido,
       fecha: fecha.toISOString().slice(0, 10),
       grupal,
@@ -92,7 +92,7 @@ export default function ReflexionesScreen() {
       await set(ref(db, 'jubileo/compartiendo/updatedAt'), Date.now().toString());
       setList([nuevo, ...list]);
     } catch (e) {
-      console.error('Error adding reflection', e);
+      console.error('Error adding post', e);
     }
     setShowForm(false);
     setTitulo('');
@@ -115,12 +115,16 @@ export default function ReflexionesScreen() {
       <ScrollView contentContainerStyle={styles.list}>
         {list.sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map(r => (
           <Card key={r.id} style={[styles.card, r.grupal && styles.cardGroup]}>
-            <Card.Title
-              title={r.titulo}
-              subtitle={`${formatFecha(r.fecha)} - ${r.grupal ? getGrupoLabel(r.grupo) : r.autor || 'Anónimo'}`}
-            />
-            <Card.Content>
+            {r.titulo && (
+              <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 0 }}>
+                <Text style={{ fontWeight: '600', color: '#222', fontSize: 16 }}>{r.titulo}</Text>
+              </View>
+            )}
+            <Card.Content style={{ paddingTop: 8 }}>
               <Text>{r.contenido}</Text>
+              <Text style={{ color: '#888', marginTop: 4, fontSize: 12 }}>
+                {formatFecha(r.fecha)}{r.grupal ? ` - ${getGrupoLabel(r.grupo)}` : r.autor ? ` - ${r.autor}` : ''}
+              </Text>
             </Card.Content>
           </Card>
         ))}
@@ -136,7 +140,7 @@ export default function ReflexionesScreen() {
           <ScrollView>
             <Button mode="contained" onPress={addReflexion} style={styles.saveBtn}>Guardar</Button>
             <TextInput
-              label="Título"
+              label="Título (opcional)"
               value={titulo}
               onChangeText={setTitulo}
               style={styles.input}

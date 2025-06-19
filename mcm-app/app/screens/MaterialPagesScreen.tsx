@@ -203,19 +203,20 @@ const createStyles = (scheme: ColorSchemeName, introColor: string, scale: number
     marginBottom: spacing.lg,
   },
   introTitle: {
-    fontSize: 26 * scale,
+    fontSize: 22 * scale,
+    textAlign: 'center',
     fontWeight: 'bold',
     color: colors.white,
   },
   introDate: {
-    fontSize: 16 * scale,
+    fontSize: 14 * scale,
     color: colors.white,
     marginTop: 4,
   },
   introHint: {
     marginTop: spacing.md,
     color: colors.white,
-    fontSize: 12 * scale,
+    fontSize: 10 * scale,
   },
   page: {
     flex: 1,
