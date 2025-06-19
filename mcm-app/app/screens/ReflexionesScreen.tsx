@@ -117,12 +117,24 @@ export default function ReflexionesScreen() {
           <Card key={r.id} style={[styles.card, r.grupal && styles.cardGroup]}>
             {r.titulo && (
               <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 0 }}>
-                <Text style={{ fontWeight: '600', color: '#222', fontSize: 16 }}>{r.titulo}</Text>
+                <Text style={[
+                  { fontWeight: '600', fontSize: 16 },
+                  r.grupal 
+                    ? { color: '#000' } // Texto negro para tarjetas grupales (fondo verde)
+                    : { color: scheme === 'dark' ? '#fff' : '#222' } // Texto blanco en modo oscuro, oscuro en modo claro
+                ]}>
+                  {r.titulo}
+                </Text>
               </View>
             )}
             <Card.Content style={{ paddingTop: 8 }}>
-              <Text>{r.contenido}</Text>
-              <Text style={{ color: '#888', marginTop: 4, fontSize: 12 }}>
+              <Text style={r.grupal ? { color: '#333' } : {}}>{r.contenido}</Text>
+              <Text style={[
+                { marginTop: 4, fontSize: 12 },
+                r.grupal 
+                  ? { color: '#555' } // Texto más oscuro para tarjetas grupales
+                  : { color: scheme === 'dark' ? '#aaa' : '#888' } // Gris claro en modo oscuro, gris en modo claro
+              ]}>
                 {formatFecha(r.fecha)}{r.grupal ? ` - ${getGrupoLabel(r.grupo)}` : r.autor ? ` - ${r.autor}` : ''}
               </Text>
             </Card.Content>
@@ -238,7 +250,11 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     container: { flex: 1, backgroundColor: theme.background },
     list: { padding: spacing.md },
     card: { marginBottom: spacing.md },
-    cardGroup: { backgroundColor: '#E6F4D7' },
+    cardGroup: { 
+      backgroundColor: '#E6F4D7',
+      // Asegurar que el texto sea legible en el fondo verde claro
+      color: '#333'
+    },
     fab: {
       position: 'absolute',
       right: 16,
