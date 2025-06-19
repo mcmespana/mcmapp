@@ -225,9 +225,9 @@ Instalar dependencias ......... npm install
 
 ## Variables de entorno
 
-Puedes definir algunas variables para ajustar ciertas funciones de la app.
+Puedes definir algunas variables para ajustar ciertas funciones de la app. Expo cargará automáticamente las variables que empiecen por `EXPO_PUBLIC_` desde los archivos `.env`.
 
-- `CORS_PROXY_URL`: URL base de un proxy para evitar problemas de CORS al descargar calendarios `.ics`. Un ejemplo es `https://corsproxy.io/?`. Si no se define, se intentará acceder a las URLs directamente.
+- `EXPO_PUBLIC_CORS_PROXY_URL`: URL base de un proxy para evitar problemas de CORS al descargar calendarios `.ics`. Un ejemplo es `https://corsproxy.io/?`. Si no se define, se intentará acceder a las URLs directamente.
 
 ### Configuración de Firebase
 
@@ -238,5 +238,6 @@ Puedes definir algunas variables para ajustar ciertas funciones de la app.
    - `jubileo` con las subclaves `horario`, `materiales`, `visitas`, `profundiza`, `grupos` y `contactos`.
    Cada nodo debe contener dos campos: `updatedAt` (timestamp) y `data` (con el contenido del JSON correspondiente).
 3. Genera las credenciales web de Firebase y cópialas en un archivo `.env.local` siguiendo el formato de `.env.example` en la carpeta `mcm-app`.
+   Asegúrate de que todas las variables empiecen con `EXPO_PUBLIC_`.
 4. El archivo `.env.local` se encuentra en `.gitignore`, por lo que tus claves no se subirán al repositorio.
-5. Al arrancar la app (`npm start`) se cargará la configuración de Firebase automáticamente desde ese archivo.
+5. Al arrancar la app (`npm start`) Expo cargará automáticamente dichas variables de entorno.
