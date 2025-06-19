@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ViewStyle, TextStyl
 import { Link, LinkProps } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Badge } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';

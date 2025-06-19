@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, ViewStyle, TextStyle, useWindowDimensions, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import colors, { Colors } from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
