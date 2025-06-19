@@ -30,20 +30,21 @@ export default function JubileoTab() {
   return (
     <Stack.Navigator
       initialRouteName="Home"
-      screenOptions={({ navigation }) => ({
+      screenOptions={({ navigation, route }) => ({
         headerBackTitle: 'Atrás',
         headerStyle: { backgroundColor: '#9D1E74' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: 'bold' },
         headerTitleAlign: 'center',
-        headerRight: () => (
-          <IconButton
-            icon="forum"
-            size={24}
-            iconColor="#fff"
-            onPress={() => navigation.navigate('Reflexiones')}
-          />
-        ),
+        headerRight: () =>
+          route.name !== 'Reflexiones' ? (
+            <IconButton
+              icon="forum"
+              size={24}
+              iconColor="#fff"
+              onPress={() => navigation.navigate('Reflexiones')}
+            />
+          ) : null,
       })}
     >
       <Stack.Screen name="Home" component={JubileoHomeScreen} options={{ title: 'Jubileo' }} />
