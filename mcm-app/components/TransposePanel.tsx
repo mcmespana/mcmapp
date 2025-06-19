@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -17,6 +18,11 @@ export default function TransposePanel({ visible, onClose, currentTranspose, onS
 
   return (
     <BottomSheet visible={visible} onClose={onClose}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onClose} accessibilityLabel="Cerrar">
+          <MaterialIcons name="close" size={24} color={theme.text} />
+        </TouchableOpacity>
+      </View>
       <Text style={[styles.title, { color: theme.text }]}>Cambio tono</Text>
       <View style={styles.row}>
         <TouchableOpacity style={styles.button} onPress={() => onSetTranspose(currentTranspose + 1)}>
@@ -42,6 +48,11 @@ export default function TransposePanel({ visible, onClose, currentTranspose, onS
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 10,
+  },
   title: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
   row: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 },
   button: {

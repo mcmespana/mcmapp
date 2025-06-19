@@ -37,6 +37,11 @@ export default function SongFontPanel({
 
   return (
     <BottomSheet visible={visible} onClose={onClose}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onClose} accessibilityLabel="Cerrar">
+          <MaterialIcons name="close" size={24} color={theme.text} />
+        </TouchableOpacity>
+      </View>
       <View style={styles.row}>
         <TouchableOpacity onPress={decrease}>
           <MaterialIcons name="text-fields" size={24} color={theme.text} style={{ transform: [{ scaleY: 0.8 }] }} />
@@ -62,6 +67,11 @@ export default function SongFontPanel({
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 10,
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
