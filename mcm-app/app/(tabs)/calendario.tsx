@@ -203,8 +203,11 @@ export default function Calendario() {
             sections={agendaSections}
           keyExtractor={(item, index) => `${item.title}-${index}`}
           renderSectionHeader={({ section: { title, data } }) => {
+            // Don't render header if there are no events for this day
+            if (!data || data.length === 0) return null;
+            
             const isPast = title < todayStr;
-            const isToday = title === todayStr && data.length > 0;
+            const isToday = title === todayStr;
             return (
               <View style={styles.sectionHeader}>
                 <Text style={[styles.eventListTitle, isPast && styles.pastText]}>
