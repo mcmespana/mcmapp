@@ -4,7 +4,6 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext'; // Corrected path
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
 
