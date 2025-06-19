@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, ViewStyle, TextStyle, TouchableOpacity, Alert, SectionList } from 'react-native';
 import { CalendarList, CalendarProps, LocaleConfig } from 'react-native-calendars';
-import { Checkbox, Text, SegmentedButtons } from 'react-native-paper';
+import { Checkbox, Text, SegmentedButtons, IconButton } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
@@ -39,6 +39,28 @@ export default function Calendario() {
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
   const { eventsByDate } = useCalendarEvents(calendarConfigs);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const formatDate = (date: string) =>
+    new Date(date + 'T00:00:00')
+      .toLocaleDateString('es-ES', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      })
+      .replace(',', '');
+
+  const monthLabel = useMemo(() => {
+    const d = new Date(selectedDate + 'T00:00:00');
+    return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  }, [selectedDate]);
+
+  const changeMonth = (delta: number) => {
+    const d = new Date(selectedDate + 'T00:00:00');
+    d.setMonth(d.getMonth() + delta, 1);
+    setSelectedDate(d.toISOString().split('T')[0]);
+  };
+
   const filteredByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
     Object.keys(eventsByDate).forEach((date) => {
@@ -49,19 +71,17 @@ export default function Calendario() {
   }, [eventsByDate, visibleCalendars]);
 
   const agendaSections = useMemo(() => {
-    const dates = Object.keys(filteredByDate).sort();
-    if (dates.length === 0) {
-      return [
-        {
-          title: selectedDate,
-          data: [] as CalendarEvent[],
-        },
-      ];
+    const firstDay = new Date(selectedDate + 'T00:00:00');
+    firstDay.setDate(1);
+    const lastDay = new Date(firstDay);
+    lastDay.setMonth(firstDay.getMonth() + 1);
+    lastDay.setDate(0);
+    const sections: { title: string; data: CalendarEvent[] }[] = [];
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      sections.push({ title: dateStr, data: filteredByDate[dateStr] || [] });
     }
-    return dates.map((date) => ({
-      title: date,
-      data: filteredByDate[date],
-    }));
+    return sections;
   }, [filteredByDate, selectedDate]);
 
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
@@ -134,7 +154,7 @@ export default function Calendario() {
             ))}
           </View>
           <View style={styles.eventList}>
-            <Text style={styles.eventListTitle}>Eventos para {selectedDate}</Text>
+            <Text style={[styles.eventListTitle, selectedDate < todayStr && styles.pastText]}>Eventos {formatDate(selectedDate)}</Text>
             {eventsForSelected.map((ev, i) => (
               <TouchableOpacity
                 key={i}
@@ -146,8 +166,8 @@ export default function Calendario() {
               >
                 <View style={[styles.rect, { backgroundColor: calendarConfigs[ev.calendarIndex].color }]} />
                 <View style={styles.eventTextContainer}>
-                  <Text style={styles.eventTitle}>{ev.title}</Text>
-                  {ev.location ? <Text style={styles.eventLocation}>{ev.location}</Text> : null}
+                  <Text style={[styles.eventTitle, selectedDate < todayStr && styles.pastText]}>{ev.title}</Text>
+                  {ev.location ? <Text style={[styles.eventLocation, selectedDate < todayStr && styles.pastText]}>{ev.location}</Text> : null}
                 </View>
               </TouchableOpacity>
             ))}
@@ -157,35 +177,70 @@ export default function Calendario() {
           </View>
         </ScrollView>
       ) : (
-        <SectionList
-          sections={agendaSections}
-          keyExtractor={(item, index) => `${item.title}-${index}`}
-          renderSectionHeader={({ section: { title } }) => (
-            <View style={styles.sectionHeader}>
-              <Text style={styles.eventListTitle}>{title}</Text>
-            </View>
-          )}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.eventItem}
-              onPress={() => {
-                const info = `${item.title}\n${item.location ?? ''}\n${item.description ?? ''}`.trim();
-                Alert.alert('Evento', info || item.title, [{ text: 'OK' }]);
-              }}
-            >
-              <View style={[styles.rect, { backgroundColor: calendarConfigs[item.calendarIndex].color }]} />
-              <View style={styles.eventTextContainer}>
-                <Text style={styles.eventTitle}>{item.title}</Text>
-                {item.location ? <Text style={styles.eventLocation}>{item.location}</Text> : null}
+        <>
+          <View style={styles.agendaHeader}>
+            <IconButton icon="chevron-left" onPress={() => changeMonth(-1)} />
+            <Text style={styles.monthLabel}>{monthLabel}</Text>
+            <IconButton icon="chevron-right" onPress={() => changeMonth(1)} />
+          </View>
+          <View style={styles.checkboxContainer}>
+            {calendarConfigs.map((cal, idx) => (
+              <View key={idx} style={styles.checkboxItem}>
+                <Checkbox
+                  status={visibleCalendars[idx] ? 'checked' : 'unchecked'}
+                  onPress={() => {
+                    const copy = [...visibleCalendars];
+                    copy[idx] = !copy[idx];
+                    setVisibleCalendars(copy);
+                  }}
+                  color={cal.color}
+                />
+                <Text style={styles.checkboxLabel}>{cal.name}</Text>
               </View>
-            </TouchableOpacity>
-          )}
+            ))}
+          </View>
+          <SectionList
+            sections={agendaSections}
+          keyExtractor={(item, index) => `${item.title}-${index}`}
+          renderSectionHeader={({ section: { title, data } }) => {
+            // Don't render header if there are no events for this day
+            if (!data || data.length === 0) return null;
+            
+            const isPast = title < todayStr;
+            const isToday = title === todayStr;
+            return (
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.eventListTitle, isPast && styles.pastText]}>
+                  {formatDate(title)}{isToday ? ' (HOY)' : ''}
+                </Text>
+              </View>
+            );
+          }}
+          renderItem={({ item, section }) => {
+            const isPast = section.title < todayStr;
+            return (
+              <TouchableOpacity
+                style={styles.eventItem}
+                onPress={() => {
+                  const info = `${item.title}\n${item.location ?? ''}\n${item.description ?? ''}`.trim();
+                  Alert.alert('Evento', info || item.title, [{ text: 'OK' }]);
+                }}
+              >
+                <View style={[styles.rect, { backgroundColor: calendarConfigs[item.calendarIndex].color }]} />
+                <View style={styles.eventTextContainer}>
+                  <Text style={[styles.eventTitle, isPast && styles.pastText]}>{item.title}</Text>
+                  {item.location ? <Text style={[styles.eventLocation, isPast && styles.pastText]}>{item.location}</Text> : null}
+                </View>
+              </TouchableOpacity>
+            );
+          }}
           ListEmptyComponent={
             <View style={styles.emptyDate}>
               <Text style={styles.noEvents}>No hay eventos para este día.</Text>
             </View>
           }
         />
+        </>
       )}
     </View>
   );
@@ -208,6 +263,9 @@ interface Styles {
   sectionHeader: ViewStyle;
   emptyDate: ViewStyle;
   noEvents: TextStyle;
+  agendaHeader: ViewStyle;
+  monthLabel: TextStyle;
+  pastText: TextStyle;
 }
 
 const createStyles = (scheme: 'light' | 'dark') => {
@@ -250,10 +308,22 @@ const createStyles = (scheme: 'light' | 'dark') => {
       marginBottom: spacing.sm,
       fontWeight: 'bold',
     },
+    monthLabel: {
+      ...typography.h2,
+      color: theme.text,
+      marginHorizontal: spacing.sm,
+    },
+    agendaHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.sm,
+    },
     eventItem: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: spacing.xs,
+      paddingLeft: spacing.md,
     },
     rect: {
       width: 12,
@@ -284,6 +354,9 @@ const createStyles = (scheme: 'light' | 'dark') => {
       ...typography.body,
       color: theme.text,
       fontStyle: 'italic',
+    },
+    pastText: {
+      color: theme.icon,
     },
   });
 };
