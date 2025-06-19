@@ -59,7 +59,7 @@ export default function ReflexionesScreen() {
       DateTimePickerAndroid.open({
         value: fecha,
         mode: 'date',
-        onChange: (_, selected) => selected && setFecha(selected),
+        onChange: (_: any, selected: any) => selected && setFecha(selected),
       });
     } else {
       setShowDateSelector(true);
@@ -181,7 +181,7 @@ export default function ReflexionesScreen() {
                       styles.chip,
                       grupo === g.nombre && { backgroundColor: colors.success },
                     ]}
-                    selectedColor={grupo === g.nombre ? colors.white : colors.text}
+                    selectedColor={grupo === g.nombre ? colors.white : '#444'}
                     theme={{ colors: { secondaryContainer: colors.success } }}
                   >
                     {getGrupoLabel(g.nombre)}
