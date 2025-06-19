@@ -10,7 +10,6 @@ import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext'; // Import context hook
 import { IconSymbol } from '../../components/ui/IconSymbol'; // Import IconSymbol
 import { useSettings } from '../../contexts/SettingsContext'; // <<<--- ADD THIS IMPORT
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const availableFonts = [
   { name: 'Monoespaciada', cssValue: "'Roboto Mono', 'Courier New', monospace" },
@@ -77,10 +76,11 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   });
 
   // Effect for setting header button
+  const isSelected = isSongSelected(filename);
   useLayoutEffect(() => {
     if (!filename) return; // Don't set header if filename is not available
 
-    const currentlySelected = isSongSelected(filename);
+    const currentlySelected = isSelected;
     
     // Configuración del botón derecho
     const headerRight = () => (
@@ -124,7 +124,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
       
       return () => clearTimeout(timer);
     }
-  }, [navigation, filename, isSongSelected(filename), addSong, removeSong]);
+  }, [navigation, filename, isSelected, addSong, removeSong]);
 
   // Effect for loading the ChordPro file content
   useEffect(() => {

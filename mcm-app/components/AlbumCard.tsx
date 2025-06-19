@@ -19,7 +19,6 @@ interface AlbumCardProps {
 const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
   const { width } = useWindowDimensions();
   const activeStyles = styles(width);
-  const { location, date } = album; // Directly use from album prop
   return (
     <TouchableOpacity style={activeStyles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={activeStyles.cardContent}>

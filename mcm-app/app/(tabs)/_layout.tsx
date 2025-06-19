@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons'; // Asegúrate de tenerlo imp
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors, { Colors } from '@/constants/colors'; //
+import { Colors } from '@/constants/colors';
 
 export default function TabsLayout() {
   const scheme = useColorScheme(); //

@@ -1,4 +1,4 @@
-import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Importar pantallas
 import CategoriesScreen from '../screens/CategoriesScreen';
