@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { List, Text } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useFontScale from '@/hooks/useFontScale';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 
@@ -15,7 +16,8 @@ interface Pagina {
 
 export default function ProfundizaScreen() {
   const scheme = useColorScheme();
-  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const fontScale = useFontScale(1.2);
+  const styles = React.useMemo(() => createStyles(scheme, fontScale), [scheme, fontScale]);
   const { data: profundizaData, loading } = useFirebaseData<any>('jubileo/profundiza', 'jubileo_profundiza');
   const data = profundizaData as {
     titulo: string;
@@ -53,13 +55,13 @@ export default function ProfundizaScreen() {
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark') => {
+const createStyles = (scheme: 'light' | 'dark', scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     content: { padding: 16 },
-    mainTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 8, color: theme.text },
-    intro: { fontSize: 16, marginBottom: 16, color: theme.text },
+    mainTitle: { fontSize: 24 * scale, fontWeight: 'bold', marginBottom: 8, color: theme.text },
+    intro: { fontSize: 16 * scale, marginBottom: 16, color: theme.text },
     accordion: { marginBottom: 12, borderRadius: 16 },
     accordionTitle: { color: colors.white, fontWeight: 'bold' },
     accordionContent: {
@@ -69,7 +71,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       padding: 12,
       margin: 8,
     },
-    subtitulo: { fontWeight: 'bold', marginBottom: 8, color: theme.text },
-    texto: { marginBottom: 12, color: theme.text },
+    subtitulo: { fontWeight: 'bold', marginBottom: 8, color: theme.text, fontSize: 14 * scale },
+    texto: { marginBottom: 12, color: theme.text, fontSize: 14 * scale },
   });
 };
