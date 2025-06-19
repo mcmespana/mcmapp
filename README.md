@@ -42,20 +42,10 @@ Para poner en marcha el proyecto, sigue estos pasos:
     ```bash
     cd mcm-app
     ```
-6.  **Verificar Versiones de React y Instalar Dependencias del Proyecto:**
-    *   **¡Importante! Compatibilidad de React:** Con Expo SDK 53 utiliza **React 19.0.0** y **React DOM 19.0.0**. Verifica tu `package.json` para asegurarte de que estas versiones estén presentes.
-    *   Antes de ejecutar `npm install` por primera vez, o si ya tienes el proyecto y estás experimentando este error, verifica tu archivo `mcm-app/package.json`.
-    *   Asegúrate de que las siguientes líneas estén presentes en la sección `dependencies`:
-        ```json
-        "react": "19.0.0",
-        "react-dom": "19.0.0"
-        ```
-    *   Si necesitas cambiarlas, modifica `mcm-app/package.json`, luego elimina la carpeta `node_modules` y el archivo `package-lock.json` (o `yarn.lock` si usas Yarn) dentro de la subcarpeta `mcm-app` del proyecto.
-    *   Después de verificar y, si es necesario, corregir las versiones de React, instala todas las dependencias del proyecto. Dentro de la carpeta `mcm-app`, ejecuta:
-        ```bash
-        npm install
-        ```
-        Esto descargará e instalará todas las librerías y paquetes necesarios definidos en `package.json`.
+6.  **Instalar dependencias:**
+    ```bash
+    npm install
+    ```
 
 7.  **Configuración Específica de Plataforma:**
     *   **Android:** Necesitarás tener configurado Java y el Android SDK. Sigue la [guía oficial de Expo para configurar el entorno de desarrollo Android](https://docs.expo.dev/workflow/android-studio-emulator/).
@@ -225,9 +215,9 @@ Instalar dependencias ......... npm install
 
 ## Variables de entorno
 
-Puedes definir algunas variables para ajustar ciertas funciones de la app.
+Puedes definir algunas variables para ajustar ciertas funciones de la app. Expo cargará automáticamente las variables que empiecen por `EXPO_PUBLIC_` desde los archivos `.env`.
 
-- `CORS_PROXY_URL`: URL base de un proxy para evitar problemas de CORS al descargar calendarios `.ics`. Un ejemplo es `https://corsproxy.io/?`. Si no se define, se intentará acceder a las URLs directamente.
+- `EXPO_PUBLIC_CORS_PROXY_URL`: URL base de un proxy para evitar problemas de CORS al descargar calendarios `.ics`. Un ejemplo es `https://corsproxy.io/?`. Si no se define, se intentará acceder a las URLs directamente.
 
 ### Configuración de Firebase
 
@@ -238,5 +228,6 @@ Puedes definir algunas variables para ajustar ciertas funciones de la app.
    - `jubileo` con las subclaves `horario`, `materiales`, `visitas`, `profundiza`, `grupos` y `contactos`.
    Cada nodo debe contener dos campos: `updatedAt` (timestamp) y `data` (con el contenido del JSON correspondiente).
 3. Genera las credenciales web de Firebase y cópialas en un archivo `.env.local` siguiendo el formato de `.env.example` en la carpeta `mcm-app`.
+   Asegúrate de que todas las variables empiecen con `EXPO_PUBLIC_`.
 4. El archivo `.env.local` se encuentra en `.gitignore`, por lo que tus claves no se subirán al repositorio.
-5. Al arrancar la app (`npm start`) se cargará la configuración de Firebase automáticamente desde ese archivo.
+5. Al arrancar la app (`npm start`) Expo cargará automáticamente dichas variables de entorno.

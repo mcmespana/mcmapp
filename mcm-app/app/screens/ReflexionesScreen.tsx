@@ -55,7 +55,7 @@ export default function ReflexionesScreen() {
       DateTimePickerAndroid.open({
         value: fecha,
         mode: 'date',
-        onChange: (_, selected) => selected && setFecha(selected),
+        onChange: (_: any, selected: any) => selected && setFecha(selected),
       });
     } else {
       setShowDateSelector(true);
