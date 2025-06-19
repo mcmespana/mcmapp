@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, ComponentProps } from 'react';
+import React, { useLayoutEffect, ComponentProps, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 import { Link, LinkProps } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
+import SettingsPanel from '@/components/SettingsPanel';
 
 interface NavigationItem {
   href?: LinkProps['href'];
@@ -26,7 +27,7 @@ const navigationItems: NavigationItem[] = [
   { label: 'Y mas cosas....', icon: 'hourglass-empty', backgroundColor: colors.danger, color: colors.black },
 ];
 
-interface IconButtonProps { color: string }
+interface IconButtonProps { color: string; onPress?: () => void }
 
 function NotificationsButton({ color }: IconButtonProps) {
   return (
@@ -55,14 +56,9 @@ function NotificationsButton({ color }: IconButtonProps) {
   );
 }
 
-function SettingsButton({ color }: IconButtonProps) {
-  const handlePress = () => {
-    // Mostrar un alert temporal
-    alert('Configuración: Próximamente...');
-  };
-
+function SettingsButton({ color, onPress }: IconButtonProps & { onPress: () => void }) {
   return (
-    <TouchableOpacity onPress={handlePress} style={{ padding: 8, marginLeft: 0 }}>
+    <TouchableOpacity onPress={onPress} style={{ padding: 8, marginLeft: 0 }}>
       <MaterialIcons name="settings" size={24} color={color} />
     </TouchableOpacity>
   );
@@ -71,12 +67,13 @@ function SettingsButton({ color }: IconButtonProps) {
 export default function Home() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <View style={[styles.headerButtons, { paddingRight: spacing.md }]}>
-          <SettingsButton color={Colors[scheme ?? 'light'].icon} />
+          <SettingsButton color={Colors[scheme ?? 'light'].icon} onPress={() => setSettingsVisible(true)} />
           <NotificationsButton color={Colors[scheme ?? 'light'].icon} />
         </View>
       ),
@@ -85,7 +82,9 @@ export default function Home() {
   }, [navigation, scheme]);
 
   return (
-    <FlatList
+    <>
+      <SettingsPanel visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
+      <FlatList
       style={{ backgroundColor: Colors[scheme ?? 'light'].background }}
       data={navigationItems}
       keyExtractor={(_, index) => index.toString()}
@@ -94,7 +93,7 @@ export default function Home() {
       contentContainerStyle={styles.container}
       renderItem={({ item }) => {
         const content = (
-          <View style={[styles.item, { backgroundColor: item.backgroundColor }]}>
+          <View style={[styles.item, { backgroundColor: item.backgroundColor }]}> 
             <MaterialIcons name={item.icon} size={48} color={item.color} style={styles.icon} />
             <Text style={[styles.label, { color: item.color }]}>{item.label}</Text>
           </View>
@@ -108,6 +107,7 @@ export default function Home() {
         );
       }}
     />
+    </>
   );
 }
 

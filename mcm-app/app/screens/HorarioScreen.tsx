@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -11,7 +12,8 @@ import { ThemedText } from '@/components/ThemedText';
 
 export default function HorarioScreen() {
   const scheme = useColorScheme();
-  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const fontScale = useFontScale();
+  const styles = React.useMemo(() => createStyles(scheme, fontScale), [scheme, fontScale]);
   const { data: horarioData, loading } = useFirebaseData<any[]>('jubileo/horario', 'jubileo_horario');
   const [index, setIndex] = useState(0);
   const fechas = horarioData ? horarioData.map((d) => ({ fecha: d.fecha, titulo: d.titulo })) : [];
@@ -40,7 +42,7 @@ export default function HorarioScreen() {
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark') => {
+const createStyles = (scheme: 'light' | 'dark', scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: {
@@ -58,7 +60,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     color: colors.white,
     textAlign: 'center',
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 18 * scale,
   },
   eventsContainer: {
     paddingHorizontal: spacing.lg,
