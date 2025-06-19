@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Modal from 'react-native-modal';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
-import { useAppSettings } from '@/contexts/AppSettingsContext';
+import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -26,8 +26,8 @@ export default function SettingsPanel({ visible, onClose }: Props) {
     setSettings({ fontScale: Math.max(1, settings.fontScale - 0.1) });
   };
 
-  const toggleTheme = () => {
-    setSettings({ theme: settings.theme === 'light' ? 'dark' : 'light' });
+  const setTheme = (theme: ThemeScheme) => {
+    setSettings({ theme });
   };
 
   return (
@@ -49,13 +49,35 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             <MaterialIcons name="text-fields" size={32} color={theme.text} />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
-          <MaterialIcons
-            name={settings.theme === 'light' ? 'dark-mode' : 'light-mode'}
-            size={28}
-            color={theme.text}
-          />
-        </TouchableOpacity>
+        <View style={styles.themeToggleRow}>
+          <TouchableOpacity
+            onPress={() => setTheme('light')}
+            style={[
+              styles.themeButton,
+              settings.theme === 'light' && styles.themeSelected,
+            ]}
+          >
+            <MaterialIcons name="light-mode" size={28} color={theme.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setTheme('dark')}
+            style={[
+              styles.themeButton,
+              settings.theme === 'dark' && styles.themeSelected,
+            ]}
+          >
+            <MaterialIcons name="dark-mode" size={28} color={theme.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setTheme('system')}
+            style={[
+              styles.themeButton,
+              settings.theme === 'system' && styles.themeSelected,
+            ]}
+          >
+            <MaterialIcons name="brightness-auto" size={28} color={theme.text} />
+          </TouchableOpacity>
+        </View>
       </View>
     </Modal>
   );
@@ -77,8 +99,16 @@ const styles = StyleSheet.create({
   value: {
     fontWeight: 'bold',
   },
-  themeToggle: {
+  themeToggleRow: {
     marginTop: 20,
-    alignSelf: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  themeButton: {
+    opacity: 0.6,
+  },
+  themeSelected: {
+    opacity: 1,
   },
 });
