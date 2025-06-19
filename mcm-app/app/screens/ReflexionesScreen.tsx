@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { Card, Text, FAB, Portal, Modal, TextInput, Switch, Button, Chip } from 'react-native-paper';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
@@ -27,7 +27,7 @@ export default function ReflexionesScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
 
-  const { data: dataRef, loading } = useFirebaseData<Reflexion[]>('jubileo/compartiendo', 'jubileo_compartiendo');
+  const { data: dataRef } = useFirebaseData<Reflexion[]>('jubileo/compartiendo', 'jubileo_compartiendo');
   const { data: gruposData } = useFirebaseData<Record<string, Grupo[]>>('jubileo/grupos', 'jubileo_grupos');
 
   const grupos = gruposData?.['Conso+'] ?? [];
@@ -55,7 +55,6 @@ export default function ReflexionesScreen() {
 
   const showDatePicker = () => {
     if (Platform.OS === 'android') {
-      const { DateTimePickerAndroid } = require('@react-native-community/datetimepicker');
       DateTimePickerAndroid.open({
         value: fecha,
         mode: 'date',
