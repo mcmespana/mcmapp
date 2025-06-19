@@ -1,7 +1,7 @@
 // app/(tabs)/calendario.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, ViewStyle, TextStyle, TouchableOpacity, Alert } from 'react-native';
-import { CalendarList, CalendarProps, Agenda, LocaleConfig } from 'react-native-calendars';
+import { CalendarList, CalendarProps, Agenda, LocaleConfig, DateData } from 'react-native-calendars';
 import { Checkbox, Text, SegmentedButtons } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -39,6 +39,12 @@ export default function Calendario() {
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
   const { eventsByDate } = useCalendarEvents(calendarConfigs);
 
+  const handleDayPress = useCallback((day: DateData) => {
+    if (day.dateString !== selectedDate) {
+      setSelectedDate(day.dateString);
+    }
+  }, [selectedDate]);
+
   const filteredByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
     Object.keys(eventsByDate).forEach((date) => {
@@ -55,15 +61,15 @@ export default function Calendario() {
         ...event,
         day: date,
         name: event.title,
-        height: 80
+        height: 80,
       }));
     });
-
-    if (!items[selectedDate]) {
-      items[selectedDate] = [];
-    }
     return items;
-  }, [filteredByDate, selectedDate]);
+  }, [filteredByDate]);
+
+  const agendaData = useMemo(() => {
+    return { ...agendaItems, [selectedDate]: agendaItems[selectedDate] || [] };
+  }, [agendaItems, selectedDate]);
 
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
     const marks: { [date: string]: any } = {};
@@ -95,11 +101,7 @@ export default function Calendario() {
       {viewMode === 'calendar' ? (
         <ScrollView>
           <CalendarList
-            onDayPress={(day) => {
-              if (day.dateString !== selectedDate) {
-                setSelectedDate(day.dateString);
-              }
-            }}
+            onDayPress={handleDayPress}
             markedDates={markedDates}
             markingType="multi-period"
             horizontal
@@ -159,14 +161,10 @@ export default function Calendario() {
         </ScrollView>
       ) : (
         <Agenda
-          items={agendaItems}
+          items={agendaData}
           selected={selectedDate}
           markedDates={markedDates}
-          onDayPress={(day) => {
-            if (day.dateString !== selectedDate) {
-              setSelectedDate(day.dateString);
-            }
-          }}
+          onDayPress={handleDayPress}
           firstDay={1}
           renderItem={(item: any) => (
             <TouchableOpacity
