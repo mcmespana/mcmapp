@@ -1,94 +1,154 @@
-// app/(tabs)/index.tsx
-import React from 'react';
-import { View, StyleSheet, ViewStyle, TextStyle} from 'react-native';
-import { Text, Button } from 'react-native-paper';
-import * as Notifications from 'expo-notifications';
-import colors from '@/constants/colors';
-import typography from '@/constants/typography';
+import React, { useLayoutEffect, ComponentProps, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import { Link, LinkProps } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
+import { MaterialIcons } from '@expo/vector-icons';
+import colors, { Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
+import typography from '@/constants/typography';
+import SettingsPanel from '@/components/SettingsPanel';
+
+interface NavigationItem {
+  href?: LinkProps['href'];
+  label: string;
+  icon: ComponentProps<typeof MaterialIcons>['name'];
+  backgroundColor: string;
+  color: string;
+}
+
+const navigationItems: NavigationItem[] = [
+  { href: '/cancionero', label: 'Cantoral', icon: 'library-music', backgroundColor: colors.warning, color: colors.black },
+  { href: '/fotos', label: 'Fotos', icon: 'photo-library', backgroundColor: colors.accent, color: colors.black },
+  { href: '/calendario', label: 'Calendario', icon: 'event', backgroundColor: colors.info, color: colors.black },
+  { href: '/comunica', label: 'Comunica', icon: 'chat', backgroundColor: colors.success, color: colors.black },
+  { href: '/jubileo', label: 'Jubileo', icon: 'party-mode', backgroundColor: colors.warning, color: colors.black },
+  { label: 'Y mas cosas....', icon: 'hourglass-empty', backgroundColor: colors.danger, color: colors.black },
+];
+
+interface IconButtonProps { color: string; onPress?: () => void }
+
+function NotificationsButton({ color }: IconButtonProps) {
+  return (
+    <Link href="/notifications" asChild>
+      <TouchableOpacity style={{ padding: 8, marginLeft: 4 }}>
+        <View>
+          <MaterialIcons name="notifications" size={24} color={color} />
+          <View
+            style={{
+              position: 'absolute',
+              right: -4,
+              top: -2,
+              backgroundColor: colors.danger,
+              borderRadius: 8,
+              width: 16,
+              height: 16,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>1</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Link>
+  );
+}
+
+function SettingsButton({ color, onPress }: IconButtonProps & { onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} style={{ padding: 8, marginLeft: 0 }}>
+      <MaterialIcons name="settings" size={24} color={color} />
+    </TouchableOpacity>
+  );
+}
 
 export default function Home() {
-  // 1️⃣ Notif inmediata
-  const sendImmediateNotification = async () => {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🚀 ¡Notif Inmediata!',
-        body: 'Esta notificación llegó al vuelo',
-        data: { tipo: 'inmediata' },
-      },
-      trigger: null,  // null = entrega inmediata
-    });
-  };
+  const navigation = useNavigation();
+  const scheme = useColorScheme();
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
-  // 2️⃣ Notif a los 5 segundos
-  const sendDelayedNotification = async () => {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '⏱️ Notif 5 s',
-        body: 'Esta notificación se programó a 5 s',
-        data: { tipo: 'retrasada' },
-      },
-      trigger: null,
-    /* trigger:  {
-        seconds: 5,  // Retraso de 5 segundos
-        repeats: false,  // No repetir
-     }*/
-     });
-  };
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={[styles.headerButtons, { paddingRight: spacing.md }]}>
+          <SettingsButton color={Colors[scheme ?? 'light'].icon} onPress={() => setSettingsVisible(true)} />
+          <NotificationsButton color={Colors[scheme ?? 'light'].icon} />
+        </View>
+      ),
+      title: 'Inicio',
+    });
+  }, [navigation, scheme]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>¡Bienvenido a la página “Inicio”!</Text>
-
-      <Button
-        mode="contained"
-        onPress={sendImmediateNotification}
-        style={[styles.button, { marginBottom: spacing.sm }]}
-        labelStyle={styles.buttonLabel}
-      >
-        Enviar notif ¡ya!
-      </Button>
-
-      <Button
-        mode="outlined"
-        onPress={sendDelayedNotification}
-        style={styles.button}
-        labelStyle={styles.buttonLabel}
-      >
-        Enviar notif en 5 s
-      </Button>
-    </View>
+    <>
+      <SettingsPanel visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
+      <FlatList
+      style={{ backgroundColor: Colors[scheme ?? 'light'].background }}
+      data={navigationItems}
+      keyExtractor={(_, index) => index.toString()}
+      numColumns={2}
+      columnWrapperStyle={styles.row}
+      contentContainerStyle={styles.container}
+      renderItem={({ item }) => {
+        const content = (
+          <View style={[styles.item, { backgroundColor: item.backgroundColor }]}> 
+            <MaterialIcons name={item.icon} size={48} color={item.color} style={styles.icon} />
+            <Text style={[styles.label, { color: item.color }]}>{item.label}</Text>
+          </View>
+        );
+        return item.href ? (
+          <Link href={item.href} asChild>
+            <TouchableOpacity style={styles.itemWrapper}>{content}</TouchableOpacity>
+          </Link>
+        ) : (
+          <View style={styles.itemWrapper}>{content}</View>
+        );
+      }}
+    />
+    </>
   );
 }
 
 interface Styles {
   container: ViewStyle;
-  title: TextStyle;
-  button: ViewStyle;
-  buttonLabel: TextStyle;
+  row: ViewStyle;
+  itemWrapper: ViewStyle;
+  item: ViewStyle;
+  icon: TextStyle;
+  label: TextStyle;
+  headerButtons: ViewStyle;
 }
 
 const styles = StyleSheet.create<Styles>({
   container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.lg,
   },
-  title: {
-    // CAST AQUÍ para que TS se lo crea como TextStyle
-    ...(typography.h1 as TextStyle),
-    color: colors.text,
+  row: {
+    justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
-  button: {
-    width: '80%',
-    paddingVertical: spacing.sm,
+  itemWrapper: {
+    flex: 1,
+    marginHorizontal: spacing.sm / 2,
   },
-  buttonLabel: {
-    // Y también aquí
+  item: {
+    aspectRatio: 1,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    marginBottom: spacing.sm,
+  },
+  label: {
     ...(typography.button as TextStyle),
-    color: '#fff',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });

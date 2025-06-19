@@ -1,0 +1,292 @@
+[
+  {
+    "fecha": "2025-07-29",
+    "actividades": [
+      {
+        "nombre": "Oración de la mañana",
+        "emoji": "☀️",
+        "color": "#4FC3F7",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Bienvenido al primer día de nuestro Jubileo. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Hoy te invitamos a abrir tu corazón y a escuchar con atención. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      },
+      {
+        "nombre": "Reflexión de la tarde",
+        "emoji": "🌙",
+        "color": "#BA68C8",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Piensa en los momentos en los que has sentido la presencia de Dios en tu vida. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Comparte con tu grupo alguna experiencia significativa. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "fecha": "2025-07-30",
+    "actividades": [
+      {
+        "nombre": "Oración de la mañana",
+        "emoji": "☀️",
+        "color": "#4FC3F7",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Señor, gracias por este nuevo día de encuentro. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Acompáñanos en las actividades que realizaremos. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      },
+      {
+        "nombre": "Eucaristía",
+        "emoji": "✝️",
+        "color": "#FF8A65",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Lecturas del día con comentarios breves. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Invitación a vivir la eucaristía con alegría. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      },
+      {
+        "nombre": "Reflexión de la tarde",
+        "emoji": "🌙",
+        "color": "#BA68C8",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "¿Qué has aprendido hoy que te ayude a crecer en tu fe? Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Escribe una pequeña oración personal. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "fecha": "2025-07-31",
+    "actividades": [
+      {
+        "nombre": "Oración de la mañana",
+        "emoji": "🌅",
+        "color": "#4FC3F7",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Cada amanecer es un regalo, agradezcamos juntos. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Descubramos la presencia de Dios en los hermanos. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      },
+      {
+        "nombre": "Reflexión de la tarde",
+        "emoji": "🌆",
+        "color": "#FFA726",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Hoy hemos visitado a la comunidad, comparte tus impresiones. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "¿Qué te ha conmovido más? Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "fecha": "2025-08-01",
+    "actividades": [
+      {
+        "nombre": "Oración de la mañana",
+        "emoji": "🌅",
+        "color": "#4FC3F7",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Gracias por la oportunidad de conocer nuevas culturas. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Que esta salida nos ayude a ver más allá de nosotros mismos. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      },
+      {
+        "nombre": "Oración al atardecer",
+        "emoji": "🌆",
+        "color": "#FFA726",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Al finalizar el día, ponemos en tus manos nuestras alegrías y desafíos. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Contemplamos la belleza del atardecer como un reflejo de tu amor. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "fecha": "2025-08-02",
+    "actividades": [
+      {
+        "nombre": "Oración de la mañana",
+        "emoji": "🌅",
+        "color": "#4FC3F7",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Iniciamos la jornada escuchando tu palabra, Señor. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Danos fuerza para compartir lo que recibimos. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      },
+      {
+        "nombre": "Reflexión de la tarde",
+        "emoji": "🌆",
+        "color": "#FFA726",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "¿Qué testimonios te han impactado hoy? Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Anota alguna frase que quieras recordar.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\nLorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "fecha": "2025-08-03",
+    "actividades": [
+      {
+        "nombre": "Oración de la mañana",
+        "emoji": "🌅",
+        "color": "#4FC3F7",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Nos ponemos en camino dispuestos a servir. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Ilumina nuestras decisiones, Señor. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      },
+      {
+        "nombre": "Reflexión de la tarde",
+        "emoji": "🌆",
+        "color": "#FFA726",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Después del rally, ¿qué lugares te hablaron más de Dios? Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Es momento de agradecer y compartir. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "fecha": "2025-08-04",
+    "actividades": [
+      {
+        "nombre": "Oración de la mañana",
+        "emoji": "🌅",
+        "color": "#4FC3F7",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "En esta despedida, te damos gracias por todo lo vivido. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Que volvamos a casa transformados. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      },
+      {
+        "nombre": "Eucaristía final",
+        "emoji": "✝️",
+        "color": "#FF8A65",
+        "paginas": [
+          {
+            "titulo": "Seccion 1",
+            "texto": "Celebramos juntos la culminación de este camino. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Envíanos a ser testigos de tu amor. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Envíanos a ser testigos de tu amor. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Envíanos a ser testigos de tu amor. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          },
+          {
+            "titulo": "Seccion 2",
+            "texto": "Envíanos a ser testigos de tu amor. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "subtitulo": "Subseccion 2"
+          }
+        ]
+      }
+    ]
+  }
+]

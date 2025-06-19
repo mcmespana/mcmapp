@@ -14,14 +14,16 @@ export const Colors = {
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    shadow: '#000000', // Added shadow color for light theme
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: '#FFFFFF',
+    background: '#2C2C2E',
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: '#C5C5C7',
+    tabIconDefault: '#C5C5C7',
     tabIconSelected: tintColorDark,
+    shadow: '#000000', // Added shadow color for dark theme (can be adjusted)
   },
 
   
@@ -38,4 +40,7 @@ export default {
   danger:    '#9D1E74', // Morado LC
   text:      '#002B81', // Azul COM
   background:'#ffffff', // Fondo blanco
+  white:     '#ffffff', // Blanco
+  black:     '#000000', // Negro
+  border:   '#E0E0E0', // Gris claro para bordes
 };

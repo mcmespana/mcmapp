@@ -1,0 +1,163 @@
+[
+  {
+    "fecha": "2025-07-29",
+    "titulo": "Acogida",
+    "eventos": [
+      {
+        "nombre": "Bienvenida y registro",
+        "hora": "09:00",
+        "subtitulo": "Recepción de participantes",
+        "lugar": "Centro Juvenil",
+        "icono": "🎉"
+      },
+      {
+        "nombre": "Oración de apertura",
+        "hora": "12:00",
+        "subtitulo": "Comenzamos juntos",
+        "lugar": "Capilla principal",
+        "icono": "🙏"
+      },
+      {
+        "nombre": "Cena comunitaria",
+        "hora": "20:00",
+        "subtitulo": "Convivencia",
+        "lugar": "Comedor",
+        "icono": "🍽️"
+      }
+    ]
+  },
+  {
+    "fecha": "2025-07-30",
+    "titulo": "Encuentro",
+    "eventos": [
+      {
+        "nombre": "Oración de la mañana",
+        "hora": "08:30",
+        "subtitulo": "Momento de silencio",
+        "lugar": "Jardín",
+        "icono": "🌅"
+      },
+      {
+        "nombre": "Talleres creativos",
+        "hora": "10:00",
+        "subtitulo": "Actividades por grupos",
+        "lugar": "Aulas 1-4",
+        "icono": "🎨"
+      },
+      {
+        "nombre": "Eucaristía",
+        "hora": "19:00",
+        "subtitulo": "Celebración diaria",
+        "lugar": "Iglesia local",
+        "icono": "✝️"
+      }
+    ]
+  },
+  {
+    "fecha": "2025-07-31",
+    "titulo": "Servicio",
+    "eventos": [
+      {
+        "nombre": "Visita solidaria",
+        "hora": "09:30",
+        "subtitulo": "Encuentro con la comunidad",
+        "lugar": "Barrio Nuevo",
+        "icono": "🤝"
+      },
+      {
+        "nombre": "Reflexión vespertina",
+        "hora": "18:00",
+        "subtitulo": "Compartir experiencias",
+        "lugar": "Sala de reuniones",
+        "icono": "💬"
+      },
+      {
+        "nombre": "Concierto nocturno",
+        "hora": "21:00",
+        "subtitulo": "Música y alabanza",
+        "lugar": "Patio central",
+        "icono": "🎵"
+      }
+    ]
+  },
+  {
+    "fecha": "2025-08-01",
+    "titulo": "Cultura",
+    "eventos": [
+      {
+        "nombre": "Salida cultural",
+        "hora": "10:00",
+        "subtitulo": "Museo local",
+        "lugar": "Centro histórico",
+        "icono": "🏛️"
+      },
+      {
+        "nombre": "Oración al atardecer",
+        "hora": "19:30",
+        "subtitulo": "Tiempo de meditación",
+        "lugar": "Mirador",
+        "icono": "🌇"
+      }
+    ]
+  },
+  {
+    "fecha": "2025-08-02",
+    "titulo": "Hermandad",
+    "eventos": [
+      {
+        "nombre": "Encuentro con testigos",
+        "hora": "11:00",
+        "subtitulo": "Historias de vida",
+        "lugar": "Auditorio",
+        "icono": "🗣️"
+      },
+      {
+        "nombre": "Velada fraterna",
+        "hora": "20:30",
+        "subtitulo": "Cantos y juegos",
+        "lugar": "Patio central",
+        "icono": "🔥"
+      }
+    ]
+  },
+  {
+    "fecha": "2025-08-03",
+    "titulo": "Misión",
+    "eventos": [
+      {
+        "nombre": "Oración de envío",
+        "hora": "09:00",
+        "subtitulo": "Nos preparamos para la misión",
+        "lugar": "Capilla principal",
+        "icono": "🚀"
+      },
+      {
+        "nombre": "Rally por la ciudad",
+        "hora": "15:00",
+        "subtitulo": "Búsqueda del tesoro",
+        "lugar": "Diversos puntos",
+        "icono": "🗺️"
+      }
+    ]
+  },
+  {
+    "fecha": "2025-08-04",
+    "titulo": "Envío",
+    "eventos": [
+      {
+        "nombre": "Eucaristía final",
+        "hora": "10:00",
+        "subtitulo": "Acción de gracias",
+        "lugar": "Iglesia local",
+        "icono": "✝️"
+      },
+      {
+        "nombre": "Despedida",
+        "hora": "12:30",
+        "subtitulo": "Cierre del encuentro",
+        "lugar": "Centro Juvenil",
+        "icono": "👋"
+      }
+    ]
+  }
+]

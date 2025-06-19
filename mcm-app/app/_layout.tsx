@@ -1,27 +1,62 @@
 // app/_layout.tsx
 
-// Importamos el manejador de notificaciones
+// NOTIS - Se queda en el branch notificaciones
+/*
 import '../notifications/NotificationHandler';   // 1️⃣ inicializa el handler
 import usePushNotifications from '../notifications/usePushNotifications'; // 2️⃣ nuestro hook
 
 import {OneSignal, LogLevel} from 'react-native-onesignal';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage'; *
 
-const NOTIFICATIONS_STORAGE_KEY = 'bf78779e-4d63-444f-a72e-ce5e0fb2bf80'; 
+ const NOTIFICATIONS_STORAGE_KEY = 'bf78779e-4d63-444f-a72e-ce5e0fb2bf80';  */
 
 
-import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { View, StyleSheet } from 'react-native';
+import { ThemeProvider as NavThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
+import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
+import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
+import colors from '@/constants/colors';
 
 
 
 export default function RootLayout() {
+  return (
+    <AppSettingsProvider>
+      <InnerLayout />
+    </AppSettingsProvider>
+  );
+}
 
   //usePushNotifications(); // 3️⃣ inicializa el hook
+  const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  // Configuración del tema de navegación
+  }, [scheme]);
+  
+    return { ...base, colors: { ...base.colors, primary: colors.success } };
+    const base = scheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
+  const paperTheme = useMemo(() => {
+  // Configuración del tema de Paper
+  
+  const [showAnimation, setShowAnimation] = useState(true);
+function InnerLayout() {
+  const scheme = useColorScheme(); // Keep existing hooks
 
+  useEffect(() => {
+    // The HelloWave animation repeats 4 times, each sequence is 150ms + 150ms = 300ms.
+    // Total animation time = 4 * 300ms = 1200ms.
+    // Let's give it a bit more, say 1500ms (1.5 seconds), before hiding.
+    const timer = setTimeout(() => {
+      setShowAnimation(false);
+    }, 1500); // Adjust timing as needed
 
+    return () => clearTimeout(timer); // Cleanup timer on unmount
+  }, []);
 
     useEffect(() => {
   // Configuración de OneSignal - ELIMINAR DEBUG PRODUCCIÓN
@@ -85,6 +120,7 @@ export default function RootLayout() {
     OneSignal.Notifications.addEventListener("click", clickHandler);
 
 
+
     // Cleanup (importante para evitar leaks de memoria) 
     // La forma de remover listeners puede variar con la versión de react-native-onesignal.
     // Consulta su documentación oficial para la versión que estés usando.
@@ -92,19 +128,40 @@ export default function RootLayout() {
     //   OneSignal.Notifications.removeEventListener("foregroundWillDisplay", foregroundWillDisplayHandler);
     //   OneSignal.Notifications.removeEventListener("click", clickHandler);
     // };
-  }, []);
 
-  const scheme = useColorScheme();
-  const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
+    */
+  
+    // sigue use effect después de notificaciones
+  
+ // }, []);
+
+  if (showAnimation) {
+    return (
+      <View style={styles.animationContainer}>
+        <HelloWave />
+      </View>
+    );
+  }
 
   return (
-    <ThemeProvider value={theme}>
-      <Slot />
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider theme={paperTheme}>
+        <NavThemeProvider value={navigationTheme}>
+          <Slot />
+          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        </NavThemeProvider>
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 }
-function useEffect(arg0: () => void, arg1: never[]) {
-  throw new Error('Function not implemented.');
-}
+
+// Add a StyleSheet for the animation container
+const styles = StyleSheet.create({
+  animationContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff', // Or use a theme color
+  },
+});
 

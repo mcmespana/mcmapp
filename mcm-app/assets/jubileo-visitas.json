@@ -1,0 +1,18 @@
+[
+  {
+    "titulo": "Catedral de San Ejemplo",
+    "subtitulo": "Historia viva de la ciudad",
+    "fecha": "2025-08-01",
+    "imagen": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Palencia_Cathedral_2023_-_South_Fa%C3%A7ade.jpg/960px-Palencia_Cathedral_2023_-_South_Fa%C3%A7ade.jpg",
+    "texto": "Durante esta visita conoceremos la arquitectura gótica de la catedral y su influencia en la comunidad local. También tendremos un espacio para la oración personal en la capilla del silencio.",
+    "mapa": "https://maps.google.com/?q=Catedral+de+San+Ejemplo"
+  },
+  {
+    "titulo": "Ruta de los Mártires",
+    "subtitulo": "Recorrido por lugares emblemáticos",
+    "fecha": "2025-07-31",
+    "imagen": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTG8Hofzk6IfqmyIDuGupkhnaW3H1hcvqQUsg&s",
+    "texto": "Caminaremos por distintos puntos donde la historia de la fe dejó huella. Será un tiempo para recordar y agradecer el testimonio de tantos creyentes.",
+    "mapa": "https://maps.google.com/?q=Ruta+de+los+Martires"
+  }
+]
