@@ -27,7 +27,13 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   };
 
   const toggleTheme = () => {
-    setSettings({ theme: settings.theme === 'light' ? 'dark' : 'light' });
+    const nextTheme =
+      settings.theme === 'light'
+        ? 'dark'
+        : settings.theme === 'dark'
+        ? 'system'
+        : 'light';
+    setSettings({ theme: nextTheme });
   };
 
   return (
@@ -51,7 +57,13 @@ export default function SettingsPanel({ visible, onClose }: Props) {
         </View>
         <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
           <MaterialIcons
-            name={settings.theme === 'light' ? 'dark-mode' : 'light-mode'}
+            name={
+              settings.theme === 'light'
+                ? 'dark-mode'
+                : settings.theme === 'dark'
+                ? 'brightness-auto'
+                : 'light-mode'
+            }
             size={28}
             color={theme.text}
           />
