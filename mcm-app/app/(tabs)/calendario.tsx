@@ -1,7 +1,7 @@
 // app/(tabs)/calendario.tsx
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, ViewStyle, TextStyle, TouchableOpacity, Alert } from 'react-native';
-import { CalendarList, CalendarProps, Agenda, LocaleConfig } from 'react-native-calendars';
+import { View, StyleSheet, ScrollView, ViewStyle, TextStyle, TouchableOpacity, Alert, SectionList } from 'react-native';
+import { CalendarList, CalendarProps, LocaleConfig } from 'react-native-calendars';
 import { Checkbox, Text, SegmentedButtons } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -48,21 +48,20 @@ export default function Calendario() {
     return map;
   }, [eventsByDate, visibleCalendars]);
 
-  const agendaItems = useMemo(() => {
-    const items: Record<string, any[]> = {};
-    Object.keys(filteredByDate).forEach(date => {
-      items[date] = filteredByDate[date].map(event => ({
-        ...event,
-        day: date,
-        name: event.title,
-        height: 80
-      }));
-    });
-
-    if (!items[selectedDate]) {
-      items[selectedDate] = [];
+  const agendaSections = useMemo(() => {
+    const dates = Object.keys(filteredByDate).sort();
+    if (dates.length === 0) {
+      return [
+        {
+          title: selectedDate,
+          data: [] as CalendarEvent[],
+        },
+      ];
     }
-    return items;
+    return dates.map((date) => ({
+      title: date,
+      data: filteredByDate[date],
+    }));
   }, [filteredByDate, selectedDate]);
 
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
@@ -158,17 +157,15 @@ export default function Calendario() {
           </View>
         </ScrollView>
       ) : (
-        <Agenda
-          items={agendaItems}
-          selected={selectedDate}
-          markedDates={markedDates}
-          onDayPress={(day) => {
-            if (day.dateString !== selectedDate) {
-              setSelectedDate(day.dateString);
-            }
-          }}
-          firstDay={1}
-          renderItem={(item: any) => (
+        <SectionList
+          sections={agendaSections}
+          keyExtractor={(item, index) => `${item.title}-${index}`}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.eventListTitle}>{title}</Text>
+            </View>
+          )}
+          renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.eventItem}
               onPress={() => {
@@ -183,20 +180,11 @@ export default function Calendario() {
               </View>
             </TouchableOpacity>
           )}
-          renderEmptyData={() => (
+          ListEmptyComponent={
             <View style={styles.emptyDate}>
               <Text style={styles.noEvents}>No hay eventos para este día.</Text>
             </View>
-          )}
-          markingType="multi-period"
-          theme={{
-            calendarBackground: Colors[scheme ?? 'light'].background,
-            agendaKnobColor: Colors[scheme ?? 'light'].tint,
-            dayTextColor: Colors[scheme ?? 'light'].text,
-            monthTextColor: Colors[scheme ?? 'light'].text,
-            selectedDayBackgroundColor: colors.primary,
-            selectedDayTextColor: colors.white,
-          }}
+          }
         />
       )}
     </View>
@@ -217,6 +205,7 @@ interface Styles {
   eventLocation: TextStyle;
   rect: ViewStyle;
   eventTextContainer: ViewStyle;
+  sectionHeader: ViewStyle;
   emptyDate: ViewStyle;
   noEvents: TextStyle;
 }
@@ -274,6 +263,11 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     eventTextContainer: {
       flexDirection: 'column',
+    },
+    sectionHeader: {
+      backgroundColor: theme.background,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
     },
     emptyDate: {
       padding: spacing.md,
