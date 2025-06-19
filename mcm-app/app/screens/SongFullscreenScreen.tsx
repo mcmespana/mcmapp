@@ -35,7 +35,7 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
   // Slider value ranges from 0 to 1. We'll multiply by `maxSpeed` for the actual
   // pixels scrolled on each interval. Start at 25% of the range.
   const [scrollSpeed, setScrollSpeed] = useState(0.25);
-  const maxSpeed = 7.5; // slightly slower than previous max
+  const maxSpeed = 3; // slightly slower than previous max
   const [sliderVisible, setSliderVisible] = useState(false);
   const sliderOpacity = useRef(new Animated.Value(0)).current;
   const sliderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
