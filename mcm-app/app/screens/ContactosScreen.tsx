@@ -3,10 +3,27 @@ import { ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { List, IconButton, Avatar } from 'react-native-paper';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import { Colors } from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { AppColors } from '@/app/styles/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-const PALETTE = ['#FF8A65', '#4FC3F7', '#81C784', '#BA68C8', '#FFD54F', '#9FA8DA'];
+const PALETTE = [
+  '#FF8A65',
+  '#4FC3F7',
+  '#81C784',
+  '#BA68C8',
+  '#FFD54F',
+  '#9FA8DA',
+  colors.primary,
+  colors.secondary,
+  colors.accent,
+  colors.info,
+  colors.success,
+  colors.warning,
+  colors.danger,
+  AppColors.primary,
+  AppColors.accentYellow,
+];
 
 interface Contacto {
   nombre: string;
@@ -52,11 +69,13 @@ export default function ContactosScreen() {
           titleStyle={styles.name}
           description={c.responsabilidad}
           left={() => (
-            <Avatar.Text
-              size={40}
-              label={getInitials(c.nombre)}
-              style={[styles.avatar, { backgroundColor: colorsForContacts[idx] }]}
-            />
+            <View style={styles.avatarWrapper}>
+              <Avatar.Text
+                size={40}
+                label={getInitials(c.nombre)}
+                style={[styles.avatar, { backgroundColor: colorsForContacts[idx] }]}
+              />
+            </View>
           )}
           right={() => (
             <View style={styles.actions}>
@@ -80,8 +99,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     actions: { flexDirection: 'row' },
-    name: { fontSize: 18, fontWeight: 'bold', marginTop: 4, color: theme.text },
-    avatar: { marginLeft: 8, marginRight: 12, alignSelf: 'center' },
+    name: { fontSize: 18, fontWeight: 'bold', color: theme.text },
+    avatarWrapper: { justifyContent: 'center' },
+    avatar: { marginLeft: 8, marginRight: 12 },
     itemContent: { paddingVertical: 8, alignItems: 'center' },
   });
 };
