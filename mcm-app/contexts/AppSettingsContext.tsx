@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Appearance } from 'react-native';
 
-export type ThemeScheme = 'light' | 'dark';
+export type ThemeScheme = 'light' | 'dark' | null;
 
 interface AppSettings {
   fontScale: number;
@@ -17,7 +16,7 @@ interface AppSettingsContextType {
 
 const defaultSettings: AppSettings = {
   fontScale: 1,
-  theme: Appearance.getColorScheme() === 'dark' ? 'dark' : 'light',
+  theme: null,
 };
 
 const STORAGE_KEY = '@app_settings';
