@@ -42,20 +42,10 @@ Para poner en marcha el proyecto, sigue estos pasos:
     ```bash
     cd mcm-app
     ```
-6.  **Verificar Versiones de React y Instalar Dependencias del Proyecto:**
-    *   **¡Importante! Compatibilidad de React:** Con Expo SDK 53 utiliza **React 19.0.0** y **React DOM 19.0.0**. Verifica tu `package.json` para asegurarte de que estas versiones estén presentes.
-    *   Antes de ejecutar `npm install` por primera vez, o si ya tienes el proyecto y estás experimentando este error, verifica tu archivo `mcm-app/package.json`.
-    *   Asegúrate de que las siguientes líneas estén presentes en la sección `dependencies`:
-        ```json
-        "react": "19.0.0",
-        "react-dom": "19.0.0"
-        ```
-    *   Si necesitas cambiarlas, modifica `mcm-app/package.json`, luego elimina la carpeta `node_modules` y el archivo `package-lock.json` (o `yarn.lock` si usas Yarn) dentro de la subcarpeta `mcm-app` del proyecto.
-    *   Después de verificar y, si es necesario, corregir las versiones de React, instala todas las dependencias del proyecto. Dentro de la carpeta `mcm-app`, ejecuta:
-        ```bash
-        npm install
-        ```
-        Esto descargará e instalará todas las librerías y paquetes necesarios definidos en `package.json`.
+6.  **Instalar dependencias:**
+    ```bash
+    npm install
+    ```
 
 7.  **Configuración Específica de Plataforma:**
     *   **Android:** Necesitarás tener configurado Java y el Android SDK. Sigue la [guía oficial de Expo para configurar el entorno de desarrollo Android](https://docs.expo.dev/workflow/android-studio-emulator/).
