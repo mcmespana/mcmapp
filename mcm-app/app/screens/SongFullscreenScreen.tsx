@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, Platform, Animated } from 'react-native';
+import Slider from '@react-native-community/slider';
 import { RouteProp, useNavigation, NavigationProp } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -31,6 +32,28 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
   const webViewRef = useRef<WebView>(null);
   const divRef = useRef<HTMLDivElement | null>(null);
   const [autoScroll, setAutoScroll] = useState(false);
+  const [scrollSpeed, setScrollSpeed] = useState(1);
+  const [sliderVisible, setSliderVisible] = useState(false);
+  const sliderOpacity = useRef(new Animated.Value(0)).current;
+  const sliderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showSlider = useCallback(() => {
+    setSliderVisible(true);
+    Animated.timing(sliderOpacity, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+
+    if (sliderTimeoutRef.current) clearTimeout(sliderTimeoutRef.current);
+    sliderTimeoutRef.current = setTimeout(() => {
+      Animated.timing(sliderOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setSliderVisible(false));
+    }, 3000);
+  }, [sliderOpacity]);
 
   useEffect(() => {
     const parent = navigation.getParent();
@@ -45,14 +68,14 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
     const id = setInterval(() => {
       if (Platform.OS === 'web') {
         if (divRef.current) {
-          divRef.current.scrollBy({ top: 1 });
+          divRef.current.scrollBy({ top: scrollSpeed });
         }
       } else {
-        webViewRef.current?.injectJavaScript('window.scrollBy(0,1); true;');
+        webViewRef.current?.injectJavaScript(`window.scrollBy(0,${scrollSpeed}); true;`);
       }
     }, 50);
     return () => clearInterval(id);
-  }, [autoScroll]);
+  }, [autoScroll, scrollSpeed]);
 
   return (
     <View style={styles.container}>
@@ -67,9 +90,29 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
           showsVerticalScrollIndicator={false}
         />
       )}
-      <TouchableOpacity style={styles.scrollButton} onPress={() => setAutoScroll(s => !s)}>
+      <TouchableOpacity
+        style={styles.scrollButton}
+        onPress={() => {
+          setAutoScroll(s => !s);
+          showSlider();
+        }}
+      >
         <MaterialIcons name={autoScroll ? 'pause' : 'play-arrow'} color="#fff" size={28} />
       </TouchableOpacity>
+      {sliderVisible && (
+        <Animated.View style={[styles.sliderWrapper, { opacity: sliderOpacity }]}>
+          <Slider
+            style={styles.slider}
+            minimumValue={1}
+            maximumValue={10}
+            value={scrollSpeed}
+            onValueChange={value => {
+              setScrollSpeed(value);
+              showSlider();
+            }}
+          />
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -91,5 +134,19 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 30,
     opacity: 0.7,
+  },
+  sliderWrapper: {
+    position: 'absolute',
+    right: 0,
+    bottom: 100,
+    transform: [{ rotate: '-90deg' }],
+    width: 150,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  slider: {
+    width: 150,
+    height: 40,
   },
 });
