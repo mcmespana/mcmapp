@@ -5,5 +5,9 @@ export function useColorScheme(): 'light' | 'dark' {
   const { settings } = useAppSettings();
   const scheme = useRNColorScheme();
   const deviceScheme = scheme === 'dark' ? 'dark' : 'light';
-  return settings.theme || deviceScheme;
+
+  if (settings.theme === 'system') {
+    return deviceScheme;
+  }
+  return settings.theme;
 }
