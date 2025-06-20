@@ -2,6 +2,9 @@ import React, { useEffect, useState, useLayoutEffect, useCallback, useMemo } fro
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform, Share } from 'react-native';
 import { Provider as PaperProvider, Snackbar } from 'react-native-paper';
 import * as Clipboard from 'expo-clipboard';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -166,6 +169,40 @@ const SelectedSongsScreen: React.FC = () => {
     }
   }, [categorizedSelectedSongs, selectedSongs]); // Dependencies for useCallback
 
+  const handleShareFile = useCallback(async () => {
+    try {
+      const path = FileSystem.cacheDirectory + 'playlist.mcm.json';
+      await FileSystem.writeAsStringAsync(path, JSON.stringify(selectedSongs), {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      await Sharing.shareAsync(path, {
+        mimeType: 'application/json',
+        dialogTitle: 'Compartir playlist',
+      });
+    } catch (err) {
+      console.error('Error sharing file', err);
+    }
+  }, [selectedSongs]);
+
+  const handleImportFile = useCallback(async () => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
+      if (res.canceled || !res.assets || res.assets.length === 0) return;
+      const file = res.assets[0];
+      const content = await FileSystem.readAsStringAsync(file.uri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((fn: string) => addSong(fn));
+        setSnackbarMessage('Playlist importada');
+        setSnackbarVisible(true);
+      }
+    } catch (err) {
+      console.error('Error importing playlist', err);
+    }
+  }, []);
+
   const handleSongPress = (song: Song) => {
     if (!allSongsData) return;
     // Retrieve full song info from JSON to ensure we have the content
@@ -258,7 +295,14 @@ const SelectedSongsScreen: React.FC = () => {
                <IconSymbol name="trash" size={20} color="#FF4444" />
               <Text style={styles.clearButtonText}>Borrar selección</Text>
             </TouchableOpacity>
-            {/* Export button moved to header */}
+            <TouchableOpacity onPress={handleShareFile} style={styles.shareButton}>
+               <IconSymbol name="square.and.arrow.up.on.square" size={20} color="#007AFF" />
+              <Text style={styles.shareButtonText}>Compartir archivo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleImportFile} style={styles.shareButton}>
+               <IconSymbol name="tray.and.arrow.down" size={20} color="#007AFF" />
+              <Text style={styles.shareButtonText}>Importar</Text>
+            </TouchableOpacity>
           </View>
       </View>
 
@@ -337,6 +381,23 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontSize: 16,
       fontWeight: '500',
       color: '#FF4444',
+    },
+    shareButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+      backgroundColor: isDark ? '#333366' : '#eef2ff',
+      borderRadius: 8,
+      flex: 0.48,
+      marginHorizontal: 5,
+    },
+    shareButtonText: {
+      marginLeft: 8,
+      fontSize: 16,
+      fontWeight: '500',
+      color: '#007AFF',
     },
     listContentContainer: {
       paddingBottom: 20,

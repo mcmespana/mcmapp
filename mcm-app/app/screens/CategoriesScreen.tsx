@@ -24,7 +24,7 @@ export default function CategoriesScreen({
 }) {
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme), [scheme]);
-  const { data: songsData, loading } =
+  const { data: songsData, loading, offline } =
     useFirebaseData<Record<string, { categoryTitle: string; songs: any[] }>>(
       'songs',
       'songs'
@@ -69,6 +69,11 @@ export default function CategoriesScreen({
     <FlatList
       data={displayCategories}
       keyExtractor={(item) => item.id}
+      ListHeaderComponent={offline ? (
+        <Text style={{ textAlign: 'center', marginVertical: 8 }}>
+          Mostrando datos sin conexión
+        </Text>
+      ) : null}
       renderItem={({ item }) => (
         <TouchableOpacity
           onPress={() => {

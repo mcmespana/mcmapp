@@ -31,7 +31,7 @@ export default function JubileoHomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { loading: lh } = useFirebaseData('jubileo/horario', 'jubileo_horario');
+  const { loading: lh, offline } = useFirebaseData('jubileo/horario', 'jubileo_horario');
   const { loading: lm } = useFirebaseData('jubileo/materiales', 'jubileo_materiales');
   const { loading: lv } = useFirebaseData('jubileo/visitas', 'jubileo_visitas');
   const { loading: lp } = useFirebaseData('jubileo/profundiza', 'jubileo_profundiza');
@@ -52,11 +52,16 @@ export default function JubileoHomeScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
+        {offline && (
+          <Text style={{ textAlign: 'center', marginBottom: 8 }}>
+            Modo sin conexión
+          </Text>
+        )}
         <View style={[styles.gridContainer, { padding: containerPadding, backgroundColor: Colors[scheme].background }]}>
           {navigationItems.map((item, idx) => (
             <View key={idx} style={styles.itemWrapper}>
