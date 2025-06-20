@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Network from 'expo-network';
 
 export interface CalendarConfig {
   url: string;
@@ -91,6 +93,14 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
     let mounted = true;
     async function fetchCalendars() {
       setLoading(true);
+      const state = await Network.getNetworkStateAsync();
+      const connected = state.isConnected && state.isInternetReachable !== false;
+      const cachedStr = await AsyncStorage.getItem('calendar_events');
+      if (!connected && cachedStr) {
+        setEventsByDate(JSON.parse(cachedStr));
+        setLoading(false);
+        return;
+      }
       const map: Record<string, CalendarEvent[]> = {};
       for (let i = 0; i < calendars.length; i++) {
         const cfg = calendars[i];
@@ -128,8 +138,8 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
         }
       }
       if (mounted) {
-
         setEventsByDate(map);
+        AsyncStorage.setItem('calendar_events', JSON.stringify(map)).catch(() => {});
         setLoading(false);
       }
     }
