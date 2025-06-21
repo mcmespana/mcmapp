@@ -13,11 +13,11 @@ Esta guía resume los pasos necesarios para habilitar la autenticación con Goog
    {
      "email": "usuario@example.com",
      "displayName": "Nombre Apellido",
-     "location": "MCM Castellon",
+     "profile": "MCM Castellon",
      "admin": false
    }
    ```
-5. En **Remote Config** crea un parámetro llamado `locations` con valor por defecto:
+5. En **Remote Config** crea un parámetro llamado `profiles` con valor por defecto:
    ```json
    ["MCM Castellon","MCM nacional","MCM Villacañas","MCM Madrid"]
    ```
@@ -35,13 +35,16 @@ EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=...
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 EXPO_PUBLIC_FIREBASE_APP_ID=...
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=... # Client ID del inicio de sesión con Google
+EXPO_PUBLIC_ENABLE_APPLE_SIGNIN=false
+EXPO_PUBLIC_APPLE_SERVICE_ID=
+EXPO_PUBLIC_APPLE_REDIRECT_URI=
 ```
 
 Al arrancar la aplicación (`npm start` desde `mcm-app`) Expo cargará estas variables.
 
 ## 3. Comportamiento de la App
 - Desde la pantalla principal se puede abrir el panel de ajustes.
-- Si no hay sesión iniciada aparecerán los botones para iniciar sesión con Google o Apple (este último aún no funcional).
-- Tras iniciar sesión se mostrará el nombre del usuario, sus iniciales y un selector de localidad basado en Remote Config.
+- Si no hay sesión iniciada aparecerán los botones para iniciar sesión con Google y, si lo habilitas, con Apple.
+- Tras iniciar sesión se mostrará el nombre del usuario, sus iniciales y un selector de perfil basado en Remote Config.
 - El usuario puede cerrar la sesión desde este mismo panel.
 

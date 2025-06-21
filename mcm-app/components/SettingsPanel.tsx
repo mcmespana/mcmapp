@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import Modal from 'react-native-modal';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
@@ -7,7 +7,7 @@ import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/contexts/AuthContext';
-import useLocations from '@/hooks/useLocations';
+import useProfiles from '@/hooks/useProfiles';
 import { Picker } from '@react-native-picker/picker';
 
 interface Props {
@@ -20,12 +20,13 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const fontScale = useFontScale();
-  const { user, profile, signInWithGoogle, signOutUser, setLocation } = useAuth();
-  const locations = useLocations();
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const { user, profile, signInWithGoogle, signInWithApple, signOutUser, setProfile } = useAuth();
+  const enableApple = process.env.EXPO_PUBLIC_ENABLE_APPLE_SIGNIN === 'true';
+  const profiles = useProfiles();
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
 
   useEffect(() => {
-    setSelectedLocation(profile?.location ?? null);
+    setSelectedProfile(profile?.profile ?? null);
   }, [profile]);
 
   const increase = () => {
@@ -70,14 +71,14 @@ export default function SettingsPanel({ visible, onClose }: Props) {
               </TouchableOpacity>
             </View>
             <View style={{ marginVertical: 10 }}>
-              <Text style={{ color: theme.text, marginBottom: 4 }}>Localidad</Text>
+              <Text style={{ color: theme.text, marginBottom: 4 }}>Perfil</Text>
               <Picker
-                selectedValue={selectedLocation ?? undefined}
-                onValueChange={(v) => { setSelectedLocation(v); setLocation(v); }}
+                selectedValue={selectedProfile ?? undefined}
+                onValueChange={(v) => { setSelectedProfile(v); setProfile(v); }}
                 style={{ color: theme.text }}
               >
-                {locations.map(loc => (
-                  <Picker.Item label={loc} value={loc} key={loc} />
+                {profiles.map(p => (
+                  <Picker.Item label={p} value={p} key={p} />
                 ))}
               </Picker>
             </View>
@@ -88,10 +89,12 @@ export default function SettingsPanel({ visible, onClose }: Props) {
               <MaterialIcons name="login" size={24} color={theme.text} />
               <Text style={[styles.loginText, { color: theme.text }]}>Iniciar sesión con Google</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.loginButton} disabled>
-              <MaterialIcons name="apple" size={24} color={theme.text} />
-              <Text style={[styles.loginText, { color: theme.text }]}>Iniciar sesión con Apple</Text>
-            </TouchableOpacity>
+            {enableApple && Platform.OS !== 'android' && (
+              <TouchableOpacity style={styles.loginButton} onPress={signInWithApple}>
+                <MaterialIcons name="apple" size={24} color={theme.text} />
+                <Text style={[styles.loginText, { color: theme.text }]}>Iniciar sesión con Apple</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
         <View style={styles.row}>
