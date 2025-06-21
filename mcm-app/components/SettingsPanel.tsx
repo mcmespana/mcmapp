@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Modal from 'react-native-modal';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -6,6 +6,9 @@ import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useAuth } from '@/contexts/AuthContext';
+import useLocations from '@/hooks/useLocations';
+import { Picker } from '@react-native-picker/picker';
 
 interface Props {
   visible: boolean;
@@ -17,6 +20,13 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const fontScale = useFontScale();
+  const { user, profile, signInWithGoogle, signOutUser, setLocation } = useAuth();
+  const locations = useLocations();
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedLocation(profile?.location ?? null);
+  }, [profile]);
 
   const increase = () => {
     setSettings({ fontScale: Math.min(settings.fontScale + 0.1, 2) });
@@ -40,6 +50,50 @@ export default function SettingsPanel({ visible, onClose }: Props) {
       backdropOpacity={0.3}
     >
       <View style={[styles.container, { backgroundColor: theme.background }]}>
+        {user ? (
+          <>
+            <View style={styles.userRow}>
+              <View style={styles.avatar}>
+                <Text style={{ color: theme.text, fontWeight: 'bold' }}>
+                  {user.displayName?.split(' ').map(w => w[0]).join('').slice(0,2)}
+                </Text>
+                {profile?.admin && (
+                  <MaterialIcons name="star" size={16} color={theme.text} style={{ position: 'absolute', top: -4, right: -4 }} />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.text, fontWeight: 'bold' }}>{user.displayName}</Text>
+                <Text style={{ color: theme.text, fontSize: 12 }}>{user.email}</Text>
+              </View>
+              <TouchableOpacity onPress={signOutUser}>
+                <MaterialIcons name="logout" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ marginVertical: 10 }}>
+              <Text style={{ color: theme.text, marginBottom: 4 }}>Localidad</Text>
+              <Picker
+                selectedValue={selectedLocation ?? undefined}
+                onValueChange={(v) => { setSelectedLocation(v); setLocation(v); }}
+                style={{ color: theme.text }}
+              >
+                {locations.map(loc => (
+                  <Picker.Item label={loc} value={loc} key={loc} />
+                ))}
+              </Picker>
+            </View>
+          </>
+        ) : (
+          <View style={{ marginBottom: 20 }}>
+            <TouchableOpacity style={styles.loginButton} onPress={signInWithGoogle}>
+              <MaterialIcons name="login" size={24} color={theme.text} />
+              <Text style={[styles.loginText, { color: theme.text }]}>Iniciar sesión con Google</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.loginButton} disabled>
+              <MaterialIcons name="apple" size={24} color={theme.text} />
+              <Text style={[styles.loginText, { color: theme.text }]}>Iniciar sesión con Apple</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={styles.row}>
           <TouchableOpacity onPress={decrease} disabled={settings.fontScale <= 1}>
             <MaterialIcons name="text-fields" size={24} color={theme.text} style={{ transform: [{ scaleY: 0.8 }] }} />
@@ -110,5 +164,28 @@ const styles = StyleSheet.create({
   },
   themeSelected: {
     opacity: 1,
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  loginText: {
+    marginLeft: 8,
+    fontWeight: 'bold',
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
 });
