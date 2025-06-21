@@ -222,16 +222,22 @@ Update web 2 .................. npx eas deploy --prod
 Puedes definir algunas variables para ajustar ciertas funciones de la app. Expo cargará automáticamente las variables que empiecen por `EXPO_PUBLIC_` desde los archivos `.env`.
 
 - `EXPO_PUBLIC_CORS_PROXY_URL`: URL base de un proxy para evitar problemas de CORS al descargar calendarios `.ics`. Un ejemplo es `https://corsproxy.io/?`. Si no se define, se intentará acceder a las URLs directamente.
+- `EXPO_PUBLIC_ENABLE_APPLE_SIGNIN`: Ponlo a `true` si quieres mostrar el botón de inicio con Apple.
+- `EXPO_PUBLIC_APPLE_SERVICE_ID` y `EXPO_PUBLIC_APPLE_REDIRECT_URI`: datos de tu identificador de servicio de Apple para el inicio de sesión.
 
 ### Configuración de Firebase
 
-1. Crea un proyecto en [Firebase](https://console.firebase.google.com/) y habilita **Realtime Database**.
+1. Crea un proyecto en [Firebase](https://console.firebase.google.com/).
+   - Activa **Authentication** y habilita el proveedor de Google. Si dispones de cuenta de Apple Developer puedes habilitar también el inicio con Apple.
+   - Habilita **Realtime Database** en modo producción.
 2. Dentro de la base de datos crea estos nodos:
    - `songs`
    - `albums`
    - `jubileo` con las subclaves `horario`, `materiales`, `visitas`, `profundiza`, `grupos` y `contactos`.
+   - `users` para almacenar los perfiles de usuario (campos `profile` y `admin`).
    Cada nodo debe contener dos campos: `updatedAt` (timestamp) y `data` (con el contenido del JSON correspondiente).
-3. Genera las credenciales web de Firebase y cópialas en un archivo `.env.local` siguiendo el formato de `.env.example` en la carpeta `mcm-app`.
+3. En **Remote Config** crea el parámetro `profiles` con un valor por defecto similar a `["MCM Castellon","MCM nacional"]` para actualizar la lista sin publicar nuevas versiones.
+4. Genera las credenciales web de Firebase y cópialas en un archivo `.env.local` siguiendo el formato de `.env.example` en la carpeta `mcm-app`.
    Asegúrate de que todas las variables empiecen con `EXPO_PUBLIC_`.
-4. El archivo `.env.local` se encuentra en `.gitignore`, por lo que tus claves no se subirán al repositorio.
-5. Al arrancar la app (`npm start`) Expo cargará automáticamente dichas variables de entorno.
+5. El archivo `.env.local` se encuentra en `.gitignore`, por lo que tus claves no se subirán al repositorio.
+6. Al arrancar la app (`npm start`) Expo cargará automáticamente dichas variables de entorno.
