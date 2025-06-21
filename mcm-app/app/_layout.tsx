@@ -25,10 +25,14 @@ import colors from '@/constants/colors';
 
 
 
+import { AuthProvider } from '@/contexts/AuthContext';
+
 export default function RootLayout() {
   return (
     <AppSettingsProvider>
-      <InnerLayout />
+      <AuthProvider>
+        <InnerLayout />
+      </AuthProvider>
     </AppSettingsProvider>
   );
 }
