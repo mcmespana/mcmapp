@@ -3,6 +3,7 @@ import { ExpoConfig, ConfigContext } from '@expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
+  
   extra: {
     ...config.extra,
     firebaseApiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -12,5 +13,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     firebaseStorageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
     firebaseMessagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     firebaseAppId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    enableAppleSignIn: process.env.EXPO_PUBLIC_ENABLE_APPLE_SIGNIN,
   },
 });
