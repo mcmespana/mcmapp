@@ -2,11 +2,12 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { getAuth, onAuthStateChanged, signOut, signInWithCredential, GoogleAuthProvider, OAuthProvider, User } from 'firebase/auth';
 import { getDatabase, ref, get, set, update } from 'firebase/database';
 import * as Google from 'expo-auth-session/providers/google';
-import * as Apple from 'expo-auth-session/providers/apple';
-import * as AppleAuthentication from 'expo-apple-authentication';
+//import * as AppleAuthentication from 'expo-apple-authentication';
+// import { useAuthRequest } from 'expo-auth-session/providers/apple';
+
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '../hooks/firebaseApp';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -19,7 +20,7 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   signInWithGoogle: () => void;
-  signInWithApple: () => void;
+  //signInWithApple: () => void;
   signOutUser: () => void;
   setProfile: (p: string) => Promise<void>;
 }
@@ -36,12 +37,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   });
 
-  const enableApple = process.env.EXPO_PUBLIC_ENABLE_APPLE_SIGNIN === 'true';
-  const [appleRequest, appleResponse, promptAppleAsync] = Apple.useAuthRequest({
+  /*const enableApple = process.env.EXPO_PUBLIC_ENABLE_APPLE_SIGNIN === 'true';
+  const [appleRequest, appleResponse, promptAppleAsync] = AppleAuthentication.signInAsync({
     clientId: process.env.EXPO_PUBLIC_APPLE_SERVICE_ID ?? '',
     redirectUri: process.env.EXPO_PUBLIC_APPLE_REDIRECT_URI,
     scopes: ['name', 'email'],
-  });
+  });*/
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -74,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [response]);
 
-  useEffect(() => {
+  /*useEffect(() => {
     if (appleResponse?.type === 'success') {
       const { id_token } = appleResponse.params as any;
       if (id_token) {
@@ -84,12 +85,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
   }, [appleResponse]);
-
+*/
   const signInWithGoogle = () => {
     promptAsync().catch(console.error);
   };
 
-  const signInWithApple = async () => {
+  /*const signInWithApple = async () => {
     if (!enableApple) return;
     if (Platform.OS === 'ios') {
       try {
@@ -111,7 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       promptAppleAsync().catch(console.error);
     }
   };
-
+*/
   const signOutUser = () => signOut(auth);
 
   const setProfileValue = async (pVal: string) => {
@@ -120,8 +121,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile((p) => (p ? { ...p, profile: pVal } : p));
   };
 
+
   return (
-    <AuthContext.Provider value={{ user, profile, signInWithGoogle, signInWithApple, signOutUser, setProfile: setProfileValue }}>
+    <AuthContext.Provider value={{ user, profile, signInWithGoogle, /*signInWithApple,*/ signOutUser, setProfile: setProfileValue }}>
+
       {children}
     </AuthContext.Provider>
   );
