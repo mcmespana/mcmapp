@@ -72,15 +72,17 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             </View>
             <View style={{ marginVertical: 10 }}>
               <Text style={{ color: theme.text, marginBottom: 4 }}>Perfil</Text>
-              <Picker
-                selectedValue={selectedProfile ?? undefined}
-                onValueChange={(v) => { setSelectedProfile(v); setProfile(v); }}
-                style={{ color: theme.text }}
-              >
-                {profiles.map(p => (
-                  <Picker.Item label={p} value={p} key={p} />
-                ))}
-              </Picker>
+              <View style={[styles.pickerContainer, { borderColor: colors.border }]}> 
+                <Picker
+                  selectedValue={selectedProfile ?? undefined}
+                  onValueChange={(v) => { setSelectedProfile(v); setProfile(v); }}
+                  style={{ color: theme.text }}
+                >
+                  {profiles.map(p => (
+                    <Picker.Item label={p} value={p} key={p} />
+                  ))}
+                </Picker>
+              </View>
             </View>
           </>
         ) : (
@@ -190,5 +192,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
 });
