@@ -27,8 +27,14 @@ export function useFirebaseData<T>(path: string, storageKey: string) {
           const val = snapshot.val();
           const remoteUpdatedAt = String(val.updatedAt ?? '0');
           if (!localUpdatedAt || localUpdatedAt !== remoteUpdatedAt) {
-            await AsyncStorage.setItem(`${storageKey}_data`, JSON.stringify(val.data));
-            await AsyncStorage.setItem(`${storageKey}_updatedAt`, remoteUpdatedAt);
+            await AsyncStorage.setItem(
+              `${storageKey}_data`,
+              JSON.stringify(val.data),
+            );
+            await AsyncStorage.setItem(
+              `${storageKey}_updatedAt`,
+              remoteUpdatedAt,
+            );
             if (isMounted) setData(val.data as T);
           }
         }
@@ -39,7 +45,9 @@ export function useFirebaseData<T>(path: string, storageKey: string) {
       }
     }
     fetchData();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [path, storageKey]);
 
   return { data, loading } as const;

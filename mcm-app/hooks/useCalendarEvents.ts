@@ -83,8 +83,9 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
 }
 
 export default function useCalendarEvents(calendars: CalendarConfig[]) {
-
-  const [eventsByDate, setEventsByDate] = useState<Record<string, CalendarEvent[]>>({});
+  const [eventsByDate, setEventsByDate] = useState<
+    Record<string, CalendarEvent[]>
+  >({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -95,9 +96,10 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
       for (let i = 0; i < calendars.length; i++) {
         const cfg = calendars[i];
         try {
-
           const proxyBase = process.env.EXPO_PUBLIC_CORS_PROXY_URL;
-          const proxyUrl = proxyBase ? proxyBase + encodeURIComponent(cfg.url) : null;
+          const proxyUrl = proxyBase
+            ? proxyBase + encodeURIComponent(cfg.url)
+            : null;
           let res: Response | null = null;
           if (proxyUrl) {
             try {
@@ -116,19 +118,22 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
           events.forEach((ev) => {
             const withCal: CalendarEvent = { ...ev, calendarIndex: i };
             const start = new Date(ev.startDate);
-            const end = ev.endDate ? new Date(ev.endDate) : new Date(ev.startDate);
-            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const end = ev.endDate
+              ? new Date(ev.endDate)
+              : new Date(ev.startDate);
+            for (
+              let d = new Date(start);
+              d <= end;
+              d.setDate(d.getDate() + 1)
+            ) {
               const dateStr = d.toISOString().split('T')[0];
               if (!map[dateStr]) map[dateStr] = [];
               map[dateStr].push(withCal);
             }
           });
-        } catch (e) {
-
-        }
+        } catch (e) {}
       }
       if (mounted) {
-
         setEventsByDate(map);
         setLoading(false);
       }

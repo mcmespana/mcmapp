@@ -10,20 +10,25 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; *
 
  const NOTIFICATIONS_STORAGE_KEY = 'bf78779e-4d63-444f-a72e-ce5e0fb2bf80';  */
 
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet } from 'react-native';
-import { ThemeProvider as NavThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import {
+  ThemeProvider as NavThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+} from '@react-navigation/native';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
-import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
+import {
+  Provider as PaperProvider,
+  MD3LightTheme,
+  MD3DarkTheme,
+} from 'react-native-paper';
 import colors from '@/constants/colors';
-
-
 
 export default function RootLayout() {
   return (
@@ -36,13 +41,13 @@ export default function RootLayout() {
 function InnerLayout() {
   const [showAnimation, setShowAnimation] = useState(true);
   const scheme = useColorScheme(); // Keep existing hooks
-  
+
   // Configuración del tema de Paper
   const paperTheme = useMemo(() => {
     const base = scheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
     return { ...base, colors: { ...base.colors, primary: colors.success } };
   }, [scheme]);
-  
+
   // Configuración del tema de navegación
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
@@ -60,8 +65,7 @@ function InnerLayout() {
   // NOTIS - Comentado para eliminar sistema notificaciones
   //usePushNotifications(); // 3️⃣ inicializa el hook
 
-
-   // useEffect(() => {
+  // useEffect(() => {
   // Configuración de OneSignal - ELIMINAR DEBUG PRODUCCIÓN
   /* NOTIS - SEe queda en el branch notificaciones 
   OneSignal.Debug.setLogLevel(LogLevel.Verbose);   
@@ -132,10 +136,10 @@ function InnerLayout() {
     // };
 
     */
-  
-    // sigue use effect después de notificaciones
-  
- // }, []);
+
+  // sigue use effect después de notificaciones
+
+  // }, []);
 
   if (showAnimation) {
     return (
@@ -166,4 +170,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', // Or use a theme color
   },
 });
-

@@ -1,4 +1,10 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  ReactNode,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define the shape of the settings
@@ -30,7 +36,9 @@ const defaultSettings: SongSettings = {
 const SETTINGS_STORAGE_KEY = '@mcm_song_settings';
 
 // Create the context
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+const SettingsContext = createContext<SettingsContextType | undefined>(
+  undefined,
+);
 
 // Define the props for the provider
 interface SettingsProviderProps {
@@ -38,7 +46,9 @@ interface SettingsProviderProps {
 }
 
 // Create the provider component
-export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
+export const SettingsProvider: React.FC<SettingsProviderProps> = ({
+  children,
+}) => {
   const [settings, setAppSettings] = useState<SongSettings>(defaultSettings);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
@@ -51,7 +61,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         if (storedSettings) {
           const parsedSettings = JSON.parse(storedSettings);
           // Merge with defaults to ensure all keys are present if some were missing
-          setAppSettings(prev => ({
+          setAppSettings((prev) => ({
             ...defaultSettings,
             ...parsedSettings,
             fontSize: parsedSettings.fontSize || defaultSettings.fontSize,
@@ -75,7 +85,10 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       // Don't save during initial loading or if settings are still the default ones (unless explicitly set)
       if (isLoadingSettings) return;
       try {
-        await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        await AsyncStorage.setItem(
+          SETTINGS_STORAGE_KEY,
+          JSON.stringify(settings),
+        );
       } catch (error) {
         console.error('Failed to save settings to AsyncStorage:', error);
       }
@@ -89,21 +102,29 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   useEffect(() => {
     return () => {
       if (isLoadingSettings) return;
-      AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)).catch(error => {
-        console.error('Failed to save settings to AsyncStorage on unmount:', error);
+      AsyncStorage.setItem(
+        SETTINGS_STORAGE_KEY,
+        JSON.stringify(settings),
+      ).catch((error) => {
+        console.error(
+          'Failed to save settings to AsyncStorage on unmount:',
+          error,
+        );
       });
     };
   }, [settings, isLoadingSettings]);
 
   const handleSetSettings = (newValues: Partial<SongSettings>) => {
-    setAppSettings(prevSettings => ({
+    setAppSettings((prevSettings) => ({
       ...prevSettings,
       ...newValues,
     }));
   };
 
   return (
-    <SettingsContext.Provider value={{ settings, setSettings: handleSetSettings, isLoadingSettings }}>
+    <SettingsContext.Provider
+      value={{ settings, setSettings: handleSetSettings, isLoadingSettings }}
+    >
       {children}
     </SettingsContext.Provider>
   );

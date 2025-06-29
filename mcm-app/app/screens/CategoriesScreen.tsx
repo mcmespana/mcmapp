@@ -13,22 +13,20 @@ const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
 const SELECTED_SONGS_CATEGORY_NAME = '🎵 Tu selección de canciones';
 
 export default function CategoriesScreen({
-  navigation
+  navigation,
 }: {
   navigation: NativeStackNavigationProp<{
     Categories: undefined;
     SongsList: { categoryId: string; categoryName: string };
     SongDetail: { songId: string; songTitle?: string };
     SelectedSongs: undefined; // Added SelectedSongs for navigation
-  }>
+  }>;
 }) {
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme), [scheme]);
-  const { data: songsData, loading } =
-    useFirebaseData<Record<string, { categoryTitle: string; songs: any[] }>>(
-      'songs',
-      'songs'
-    );
+  const { data: songsData, loading } = useFirebaseData<
+    Record<string, { categoryTitle: string; songs: any[] }>
+  >('songs', 'songs');
   const actualCategories = songsData ? Object.keys(songsData) : [];
   const sortedCategories = actualCategories.sort((a, b) => {
     const titleA = songsData?.[a]?.categoryTitle ?? a;
@@ -37,10 +35,10 @@ export default function CategoriesScreen({
   });
   const displayCategories = [
     { id: SELECTED_SONGS_CATEGORY_ID, name: SELECTED_SONGS_CATEGORY_NAME },
-    ...sortedCategories.map(cat => ({
+    ...sortedCategories.map((cat) => ({
       id: cat,
       name: songsData?.[cat]?.categoryTitle ?? cat,
-    }))
+    })),
   ];
 
   useLayoutEffect(() => {
@@ -75,21 +73,30 @@ export default function CategoriesScreen({
             if (item.id === SELECTED_SONGS_CATEGORY_ID) {
               navigation.navigate('SelectedSongs');
             } else {
-              navigation.navigate('SongsList', { 
-                categoryId: item.id, 
-                categoryName: item.name 
+              navigation.navigate('SongsList', {
+                categoryId: item.id,
+                categoryName: item.name,
               });
             }
           }}
-          style={styles.itemRow}>
-          <Text style={[styles.itemText,
-            (item.id === ALL_SONGS_CATEGORY_ID || item.id === SELECTED_SONGS_CATEGORY_ID) && styles.specialText
-          ]}>
-            {item.id === ALL_SONGS_CATEGORY_ID || item.id === SELECTED_SONGS_CATEGORY_ID ? (
+          style={styles.itemRow}
+        >
+          <Text
+            style={[
+              styles.itemText,
+              (item.id === ALL_SONGS_CATEGORY_ID ||
+                item.id === SELECTED_SONGS_CATEGORY_ID) &&
+                styles.specialText,
+            ]}
+          >
+            {item.id === ALL_SONGS_CATEGORY_ID ||
+            item.id === SELECTED_SONGS_CATEGORY_ID ? (
               item.name
             ) : (
               <>
-                <Text style={{ fontWeight: 'bold' }}>{item.name.substring(0, 2)}</Text>
+                <Text style={{ fontWeight: 'bold' }}>
+                  {item.name.substring(0, 2)}
+                </Text>
                 {item.name.substring(2)}
               </>
             )}
@@ -107,7 +114,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       padding: 20,
       borderBottomWidth: 1,
       borderColor: isDark ? '#444' : '#ddd',
-      backgroundColor: isDark ? Colors.dark.background : Colors.light.background,
+      backgroundColor: isDark
+        ? Colors.dark.background
+        : Colors.light.background,
     },
     itemText: {
       fontSize: 18,

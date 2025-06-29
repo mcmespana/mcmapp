@@ -1,5 +1,11 @@
 import React, { useRef, useEffect, useMemo } from 'react'; // Added useEffect
-import { TouchableOpacity, Text, View, StyleSheet, Animated } from 'react-native';
+import {
+  TouchableOpacity,
+  Text,
+  View,
+  StyleSheet,
+  Animated,
+} from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext'; // Corrected path
 import { IconSymbol } from './ui/IconSymbol';
@@ -25,7 +31,11 @@ interface SongListItemProps {
   isSearchAllMode?: boolean; // Optional, as it's specific to SongListScreen's usage
 }
 
-const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllMode = false }) => {
+const SongListItem: React.FC<SongListItemProps> = ({
+  song,
+  onPress,
+  isSearchAllMode = false,
+}) => {
   const { addSong, removeSong, isSongSelected } = useSelectedSongs();
   const { settings } = useSettings();
   const { notation } = settings;
@@ -33,7 +43,9 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
   const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
   const swipeableRow = useRef<Swipeable>(null);
   const isSelected = isSongSelected(song.filename);
-  const backgroundColorAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
+  const backgroundColorAnim = useRef(
+    new Animated.Value(isSelected ? 1 : 0),
+  ).current;
 
   useEffect(() => {
     Animated.timing(backgroundColorAnim, {
@@ -47,11 +59,17 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
   const animatedStyle = {
     backgroundColor: backgroundColorAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [isDark ? '#1C1C1E' : '#fff', isDark ? '#324831' : '#e6ffed'],
+      outputRange: [
+        isDark ? '#1C1C1E' : '#fff',
+        isDark ? '#324831' : '#e6ffed',
+      ],
     }),
   };
 
-  const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>,
+  ) => {
     const trans = dragX.interpolate({
       inputRange: [-100, 0],
       outputRange: [0, 100], // Adjust this for how much the button should "follow" the swipe
@@ -66,14 +84,22 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
         }}
       >
         <Animated.View style={{ transform: [{ translateX: trans }] }}>
-          <IconSymbol name="plus.circle" size={24} color="#fff" style={styles.actionIcon} />
+          <IconSymbol
+            name="plus.circle"
+            size={24}
+            color="#fff"
+            style={styles.actionIcon}
+          />
           <Text style={styles.actionText}>Seleccionar</Text>
         </Animated.View>
       </TouchableOpacity>
     );
   };
 
-  const renderLeftActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+  const renderLeftActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>,
+  ) => {
     const trans = dragX.interpolate({
       inputRange: [0, 100],
       outputRange: [-100, 0], // Adjust this for how much the button should "follow" the swipe
@@ -88,7 +114,12 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
         }}
       >
         <Animated.View style={{ transform: [{ translateX: trans }] }}>
-          <IconSymbol name="minus.circle" size={24} color="#fff" style={styles.actionIcon} />
+          <IconSymbol
+            name="minus.circle"
+            size={24}
+            color="#fff"
+            style={styles.actionIcon}
+          />
           <Text style={styles.actionText}>Quitar</Text>
         </Animated.View>
       </TouchableOpacity>
@@ -111,15 +142,28 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
       }}
     >
       <Animated.View style={[styles.songItemOuter, animatedStyle]}>
-        <TouchableOpacity onPress={() => onPress(song)} style={styles.songItemInner}>
+        <TouchableOpacity
+          onPress={() => onPress(song)}
+          style={styles.songItemInner}
+        >
           {/* Contenedor principal de la información de la canción y la tonalidad/capo */}
           <View style={styles.songInfoContainer}>
-            <Text style={styles.songTitle} numberOfLines={1} ellipsizeMode="tail">
+            <Text
+              style={styles.songTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {song.title.replace(/^\d+\.\s*/, '')}
             </Text>
             <View style={styles.metaLine}>
-              {isSearchAllMode && song.originalCategoryKey && song.numericFilenamePart ? (
-                <Text style={styles.subtitleText} numberOfLines={1} ellipsizeMode="tail">
+              {isSearchAllMode &&
+              song.originalCategoryKey &&
+              song.numericFilenamePart ? (
+                <Text
+                  style={styles.subtitleText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {`${song.originalCategoryKey}${song.numericFilenamePart}`}
                   {song.author && (
                     <Text style={styles.subtitleAuthor}>
@@ -130,12 +174,24 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
               ) : (
                 <>
                   {song.numericFilenamePart && (
-                    <Text style={styles.subtitleText}>#{song.numericFilenamePart}</Text>
+                    <Text style={styles.subtitleText}>
+                      #{song.numericFilenamePart}
+                    </Text>
                   )}
                   {song.author && (
-                    <Text style={[styles.subtitleText, styles.subtitleAuthor, song.numericFilenamePart ? { marginLeft: 0 } : {}]} numberOfLines={1} ellipsizeMode="tail">
+                    <Text
+                      style={[
+                        styles.subtitleText,
+                        styles.subtitleAuthor,
+                        song.numericFilenamePart ? { marginLeft: 0 } : {},
+                      ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
                       {/* Add three spaces if numericFilenamePart is NOT present, to maintain spacing logic, otherwise rely on structure */}
-                      {song.numericFilenamePart ? `ㅤ${song.author}` : song.author}
+                      {song.numericFilenamePart
+                        ? `ㅤ${song.author}`
+                        : song.author}
                     </Text>
                   )}
                 </>
@@ -144,7 +200,9 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
           </View>
           <View style={styles.keyCapoContainer}>
             {song.key ? (
-              <Text style={styles.songKey}>{convertChord(song.key.toUpperCase(), notation)}</Text>
+              <Text style={styles.songKey}>
+                {convertChord(song.key.toUpperCase(), notation)}
+              </Text>
             ) : null}
             {song.capo && song.capo > 0 ? (
               <Text style={styles.songCapo}>{`C/${song.capo}`}</Text>
@@ -159,10 +217,12 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, onPress, isSearchAllM
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';
   return StyleSheet.create({
-    songItemOuter: { // Renamed from songItem to be the Animated.View container
+    songItemOuter: {
+      // Renamed from songItem to be the Animated.View container
       // backgroundColor will be handled by animatedStyle
     },
-    songItemInner: { // This will contain the flexDirection and padding previously in songItem
+    songItemInner: {
+      // This will contain the flexDirection and padding previously in songItem
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
@@ -171,47 +231,47 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderBottomWidth: 1,
       borderColor: isDark ? '#444' : '#eee',
     },
-  // selectedSongItem: { // This style is now handled by the animation
-  //   backgroundColor: '#e6ffed',
-  // },
-  // songInfoContainer: { // This definition of songInfoContainer seems to be a leftover/duplicate
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-between',
-  //   alignItems: 'center',
-  //   paddingVertical: 16,
-  //   paddingHorizontal: 20, // Added horizontal padding
-  //   borderBottomWidth: 1,
-  //   borderColor: '#eee',
-  //   backgroundColor: '#fff', // Default background
-  // },
-  // selectedSongItem: { // This style is now handled by the animation
-  //   backgroundColor: '#e6ffed',
-  // },
-  songInfoContainer: {
-    flex: 1,
-    marginRight: 8,
-  },
+    // selectedSongItem: { // This style is now handled by the animation
+    //   backgroundColor: '#e6ffed',
+    // },
+    // songInfoContainer: { // This definition of songInfoContainer seems to be a leftover/duplicate
+    //   flexDirection: 'row',
+    //   justifyContent: 'space-between',
+    //   alignItems: 'center',
+    //   paddingVertical: 16,
+    //   paddingHorizontal: 20, // Added horizontal padding
+    //   borderBottomWidth: 1,
+    //   borderColor: '#eee',
+    //   backgroundColor: '#fff', // Default background
+    // },
+    // selectedSongItem: { // This style is now handled by the animation
+    //   backgroundColor: '#e6ffed',
+    // },
+    songInfoContainer: {
+      flex: 1,
+      marginRight: 8,
+    },
     songTitle: {
       fontSize: 16,
       color: isDark ? '#FFFFFF' : '#333',
       fontWeight: '500',
     },
-  metaLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 3,
-  },
+    metaLine: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 3,
+    },
     subtitleText: {
       fontSize: 13,
       color: isDark ? '#CCCCCC' : '#666',
     },
-  subtitleAuthor: {
-    fontStyle: 'italic',
-  },
-  keyCapoContainer: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-  },
+    subtitleAuthor: {
+      fontStyle: 'italic',
+    },
+    keyCapoContainer: {
+      flexDirection: 'column',
+      alignItems: 'flex-end',
+    },
     songKey: {
       fontSize: 16,
       fontWeight: 'bold',

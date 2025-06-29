@@ -20,7 +20,7 @@ export default function ProgressWithMessage({ message }: { message?: string }) {
           duration: 800,
           useNativeDriver: false,
         }),
-      ])
+      ]),
     );
     animation.start();
     return () => animation.stop();
@@ -35,16 +35,27 @@ export default function ProgressWithMessage({ message }: { message?: string }) {
   return (
     <View style={styles.container}>
       <View style={styles.barBackground}>
-        <Animated.View style={[styles.barFill, { width, backgroundColor: theme.tint }]} />
+        <Animated.View
+          style={[styles.barFill, { width, backgroundColor: theme.tint }]}
+        />
       </View>
-      <Text style={[styles.message, { color: theme.text }]}> {message || 'Recopilando la información...'} </Text>
+      <Text style={[styles.message, { color: theme.text }]}>
+        {' '}
+        {message || 'Recopilando la información...'}{' '}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { padding: 20, alignItems: 'center', justifyContent: 'center' },
-  barBackground: { width: '80%', height: 6, backgroundColor: '#ccc', borderRadius: 3, overflow: 'hidden' },
+  barBackground: {
+    width: '80%',
+    height: 6,
+    backgroundColor: '#ccc',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
   barFill: { height: '100%', borderRadius: 3 },
   message: { marginTop: 10, fontSize: 16 },
 });

@@ -10,7 +10,9 @@ interface SelectedSongsContextType {
 }
 
 // Create the context with a default undefined value
-const SelectedSongsContext = createContext<SelectedSongsContextType | undefined>(undefined);
+const SelectedSongsContext = createContext<
+  SelectedSongsContextType | undefined
+>(undefined);
 
 // Define the props for the provider
 interface SelectedSongsProviderProps {
@@ -18,11 +20,13 @@ interface SelectedSongsProviderProps {
 }
 
 // Create the provider component
-export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({ children }) => {
+export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({
+  children,
+}) => {
   const [selectedSongs, setSelectedSongs] = useState<string[]>([]);
 
   const addSong = (filename: string) => {
-    setSelectedSongs(prevSelectedSongs => {
+    setSelectedSongs((prevSelectedSongs) => {
       if (!prevSelectedSongs.includes(filename)) {
         return [...prevSelectedSongs, filename];
       }
@@ -31,7 +35,9 @@ export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({ ch
   };
 
   const removeSong = (filename: string) => {
-    setSelectedSongs(prevSelectedSongs => prevSelectedSongs.filter(song => song !== filename));
+    setSelectedSongs((prevSelectedSongs) =>
+      prevSelectedSongs.filter((song) => song !== filename),
+    );
   };
 
   const isSongSelected = (filename: string): boolean => {
@@ -44,7 +50,13 @@ export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({ ch
 
   return (
     <SelectedSongsContext.Provider
-      value={{ selectedSongs, addSong, removeSong, isSongSelected, clearSelection }}
+      value={{
+        selectedSongs,
+        addSong,
+        removeSong,
+        isSongSelected,
+        clearSelection,
+      }}
     >
       {children}
     </SelectedSongsContext.Provider>
@@ -55,7 +67,9 @@ export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({ ch
 export const useSelectedSongs = (): SelectedSongsContextType => {
   const context = useContext(SelectedSongsContext);
   if (context === undefined) {
-    throw new Error('useSelectedSongs must be used within a SelectedSongsProvider');
+    throw new Error(
+      'useSelectedSongs must be used within a SelectedSongsProvider',
+    );
   }
   return context;
 };

@@ -1,5 +1,14 @@
 import React, { useLayoutEffect, ComponentProps, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ViewStyle, TextStyle, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ViewStyle,
+  TextStyle,
+  useWindowDimensions,
+} from 'react-native';
 import { Link, LinkProps } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -18,15 +27,53 @@ interface NavigationItem {
 }
 
 const navigationItems: NavigationItem[] = [
-  { href: '/cancionero', label: 'Cantoral', icon: 'library-music', backgroundColor: colors.warning, color: colors.black },
-  { href: '/fotos', label: 'Fotos', icon: 'photo-library', backgroundColor: colors.accent, color: colors.black },
-  { href: '/calendario', label: 'Calendario', icon: 'event', backgroundColor: colors.info, color: colors.black },
-  { href: '/comunica', label: 'Comunica', icon: 'chat', backgroundColor: colors.success, color: colors.black },
-  { href: '/jubileo', label: 'Jubileo', icon: 'celebration', backgroundColor: colors.warning, color: colors.black },
-  { label: 'Y mas cosas....', icon: 'hourglass-empty', backgroundColor: colors.danger, color: colors.black },
+  {
+    href: '/cancionero',
+    label: 'Cantoral',
+    icon: 'library-music',
+    backgroundColor: colors.warning,
+    color: colors.black,
+  },
+  {
+    href: '/fotos',
+    label: 'Fotos',
+    icon: 'photo-library',
+    backgroundColor: colors.accent,
+    color: colors.black,
+  },
+  {
+    href: '/calendario',
+    label: 'Calendario',
+    icon: 'event',
+    backgroundColor: colors.info,
+    color: colors.black,
+  },
+  {
+    href: '/comunica',
+    label: 'Comunica',
+    icon: 'chat',
+    backgroundColor: colors.success,
+    color: colors.black,
+  },
+  {
+    href: '/jubileo',
+    label: 'Jubileo',
+    icon: 'celebration',
+    backgroundColor: colors.warning,
+    color: colors.black,
+  },
+  {
+    label: 'Y mas cosas....',
+    icon: 'hourglass-empty',
+    backgroundColor: colors.danger,
+    color: colors.black,
+  },
 ];
 
-interface IconButtonProps { color: string; onPress?: () => void }
+interface IconButtonProps {
+  color: string;
+  onPress?: () => void;
+}
 
 function NotificationsButton({ color }: IconButtonProps) {
   return (
@@ -47,7 +94,9 @@ function NotificationsButton({ color }: IconButtonProps) {
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>1</Text>
+            <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+              1
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -55,7 +104,10 @@ function NotificationsButton({ color }: IconButtonProps) {
   );
 }
 
-function SettingsButton({ color, onPress }: IconButtonProps & { onPress: () => void }) {
+function SettingsButton({
+  color,
+  onPress,
+}: IconButtonProps & { onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} style={{ padding: 8, marginLeft: 0 }}>
       <MaterialIcons name="settings" size={24} color={color} />
@@ -80,13 +132,19 @@ export default function Home() {
   const containerPadding = spacing.md;
   const gap = spacing.md;
   const itemWidth = (width - containerPadding * 2 - gap) / 2;
-  const itemHeight = Math.min(160, (height - containerPadding * 2 - gap * 3) / 3);
+  const itemHeight = Math.min(
+    160,
+    (height - containerPadding * 2 - gap * 3) / 3,
+  );
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <View style={[styles.headerButtons, { paddingRight: spacing.md }]}>
-          <SettingsButton color={Colors[scheme ?? 'light'].icon} onPress={() => setSettingsVisible(true)} />
+          <SettingsButton
+            color={Colors[scheme ?? 'light'].icon}
+            onPress={() => setSettingsVisible(true)}
+          />
           <NotificationsButton color={Colors[scheme ?? 'light'].icon} />
         </View>
       ),
@@ -96,33 +154,55 @@ export default function Home() {
 
   return (
     <>
-      <SettingsPanel visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
+      <SettingsPanel
+        visible={settingsVisible}
+        onClose={() => setSettingsVisible(false)}
+      />
       <FlatList
-      style={{ backgroundColor: Colors[scheme ?? 'light'].background }}
-      data={navigationItems}
-      keyExtractor={(_, index) => index.toString()}
-      numColumns={2}
-      columnWrapperStyle={styles.row}
-      contentContainerStyle={[styles.container, { padding: containerPadding }]}
-      renderItem={({ item }) => {
-        const content = (
-          <View
-            style={[styles.item, { backgroundColor: item.backgroundColor, width: itemWidth, height: itemHeight }]}
-          >
-            <DecorationCircles />
-            <MaterialIcons name={item.icon} size={48} color={item.color} style={styles.icon} />
-            <Text style={[styles.label, { color: item.color }]}>{item.label}</Text>
-          </View>
-        );
-        return item.href ? (
-          <Link href={item.href} asChild>
-            <TouchableOpacity style={styles.itemWrapper}>{content}</TouchableOpacity>
-          </Link>
-        ) : (
-          <View style={styles.itemWrapper}>{content}</View>
-        );
-      }}
-    />
+        style={{ backgroundColor: Colors[scheme ?? 'light'].background }}
+        data={navigationItems}
+        keyExtractor={(_, index) => index.toString()}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={[
+          styles.container,
+          { padding: containerPadding },
+        ]}
+        renderItem={({ item }) => {
+          const content = (
+            <View
+              style={[
+                styles.item,
+                {
+                  backgroundColor: item.backgroundColor,
+                  width: itemWidth,
+                  height: itemHeight,
+                },
+              ]}
+            >
+              <DecorationCircles />
+              <MaterialIcons
+                name={item.icon}
+                size={48}
+                color={item.color}
+                style={styles.icon}
+              />
+              <Text style={[styles.label, { color: item.color }]}>
+                {item.label}
+              </Text>
+            </View>
+          );
+          return item.href ? (
+            <Link href={item.href} asChild>
+              <TouchableOpacity style={styles.itemWrapper}>
+                {content}
+              </TouchableOpacity>
+            </Link>
+          ) : (
+            <View style={styles.itemWrapper}>{content}</View>
+          );
+        }}
+      />
     </>
   );
 }

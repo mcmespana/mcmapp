@@ -20,7 +20,9 @@ export default function Comunica() {
   };
 
   const onError = () => {
-    setError('Error al cargar el contenido. Por favor, verifica tu conexión a internet.');
+    setError(
+      'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+    );
     setVisible(true);
     setIsLoading(false);
   };
