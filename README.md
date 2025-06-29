@@ -224,6 +224,7 @@ Puedes definir algunas variables para ajustar ciertas funciones de la app. Expo 
 - `EXPO_PUBLIC_CORS_PROXY_URL`: URL base de un proxy para evitar problemas de CORS al descargar calendarios `.ics`. Un ejemplo es `https://corsproxy.io/?`. Si no se define, se intentará acceder a las URLs directamente.
 - `EXPO_PUBLIC_ENABLE_APPLE_SIGNIN`: Ponlo a `true` si quieres mostrar el botón de inicio con Apple.
 - `EXPO_PUBLIC_APPLE_SERVICE_ID` y `EXPO_PUBLIC_APPLE_REDIRECT_URI`: datos de tu identificador de servicio de Apple para el inicio de sesión.
+  Consulta `APPLE_SIGNIN_SETUP.md` para obtener las instrucciones completas de configuración.
 
 ### Configuración de Firebase
 
