@@ -13,10 +13,18 @@ import { ThemedText } from '@/components/ThemedText';
 export default function HorarioScreen() {
   const scheme = useColorScheme();
   const fontScale = useFontScale();
-  const styles = React.useMemo(() => createStyles(scheme, fontScale), [scheme, fontScale]);
-  const { data: horarioData, loading } = useFirebaseData<any[]>('jubileo/horario', 'jubileo_horario');
+  const styles = React.useMemo(
+    () => createStyles(scheme, fontScale),
+    [scheme, fontScale],
+  );
+  const { data: horarioData, loading } = useFirebaseData<any[]>(
+    'jubileo/horario',
+    'jubileo_horario',
+  );
   const [index, setIndex] = useState(0);
-  const fechas = horarioData ? horarioData.map((d) => ({ fecha: d.fecha, titulo: d.titulo })) : [];
+  const fechas = horarioData
+    ? horarioData.map((d) => ({ fecha: d.fecha, titulo: d.titulo }))
+    : [];
   const dia = horarioData ? horarioData[index] : null;
 
   if (loading || !dia) {
@@ -49,22 +57,22 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
       flex: 1,
       backgroundColor: theme.background,
     },
-  titleWrapper: {
-    backgroundColor: colors.danger,
-    marginHorizontal: spacing.lg,
-    padding: spacing.sm,
-    borderRadius: 50,
-    marginBottom: spacing.md,
-  },
-  titleText: {
-    color: colors.white,
-    textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: 18 * scale,
-  },
-  eventsContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
+    titleWrapper: {
+      backgroundColor: colors.danger,
+      marginHorizontal: spacing.lg,
+      padding: spacing.sm,
+      borderRadius: 50,
+      marginBottom: spacing.md,
+    },
+    titleText: {
+      color: colors.white,
+      textAlign: 'center',
+      fontWeight: 'bold',
+      fontSize: 18 * scale,
+    },
+    eventsContainer: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.lg,
+    },
   });
 };

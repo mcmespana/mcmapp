@@ -34,7 +34,7 @@ export function ThemedText({
       break;
     case 'link':
       // Apply link-specific color directly here, overriding the general 'text' color
-      textStyle = [styles.link, { color: linkColor }]; 
+      textStyle = [styles.link, { color: linkColor }];
       break;
     default:
       textStyle = styles.default;
@@ -42,13 +42,11 @@ export function ThemedText({
 
   return (
     <Text
-      style={(
-        [
-          type !== 'link' && { color },
-          textStyle,
-          style,
-        ].filter(Boolean) as any[]
-      )}
+      style={
+        [type !== 'link' && { color }, textStyle, style].filter(
+          Boolean,
+        ) as any[]
+      }
       {...rest}
     />
   );

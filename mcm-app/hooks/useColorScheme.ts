@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 export function useColorScheme(): 'light' | 'dark' {
   const { settings } = useAppSettings();
   const [deviceScheme, setDeviceScheme] = useState<'light' | 'dark'>(
-    Appearance.getColorScheme() === 'dark' ? 'dark' : 'light'
+    Appearance.getColorScheme() === 'dark' ? 'dark' : 'light',
   );
 
   useEffect(() => {

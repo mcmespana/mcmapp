@@ -52,12 +52,14 @@ export default function SongFontPanel({
       </View>
       <View style={styles.row}>
         <TouchableOpacity onPress={decrease}>
-          <MaterialIcons name="text-fields" size={24} color={theme.text} style={{ transform: [{ scaleY: 0.8 }] }} />
+          <MaterialIcons
+            name="text-fields"
+            size={24}
+            color={theme.text}
+            style={{ transform: [{ scaleY: 0.8 }] }}
+          />
         </TouchableOpacity>
-        <Text
-          style={[styles.value, { color: theme.text }]}
-          onPress={reset}
-        >
+        <Text style={[styles.value, { color: theme.text }]} onPress={reset}>
           {((currentFontSize / DEFAULT_FONT_SIZE_EM) * 100).toFixed(0)}%
         </Text>
         <TouchableOpacity onPress={increase}>
@@ -68,15 +70,36 @@ export default function SongFontPanel({
         {availableFonts.map((font) => (
           <TouchableOpacity
             key={font.cssValue}
-            style={[styles.fontButton, { backgroundColor: font.cssValue === currentFontFamily ? theme.tint : theme.background }]}
+            style={[
+              styles.fontButton,
+              {
+                backgroundColor:
+                  font.cssValue === currentFontFamily
+                    ? theme.tint
+                    : theme.background,
+              },
+            ]}
             onPress={() => onSetFontFamily(font.cssValue)}
           >
-            <Text style={[styles.fontText, { fontFamily: font.cssValue, color: font.cssValue === currentFontFamily ? '#fff' : theme.text }]}>{font.name}</Text>
+            <Text
+              style={[
+                styles.fontText,
+                {
+                  fontFamily: font.cssValue,
+                  color:
+                    font.cssValue === currentFontFamily ? '#fff' : theme.text,
+                },
+              ]}
+            >
+              {font.name}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
       <TouchableOpacity style={styles.resetButton} onPress={reset}>
-        <Text style={[styles.resetText, { color: theme.tint }]}>Restablecer</Text>
+        <Text style={[styles.resetText, { color: theme.tint }]}>
+          Restablecer
+        </Text>
       </TouchableOpacity>
     </BottomSheet>
   );
