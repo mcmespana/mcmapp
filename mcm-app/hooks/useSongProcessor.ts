@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
-import { ChordProParser, HtmlDivFormatter, Song, ChordLyricsPair } from 'chordsheetjs';
+import {
+  ChordProParser,
+  HtmlDivFormatter,
+  Song,
+  ChordLyricsPair,
+} from 'chordsheetjs';
 import { AppColors } from '../app/styles/theme'; // Ensure this path is correct relative to the hooks folder
-import { convertHtmlChords, convertChord, Notation } from '../utils/chordNotation';
+import {
+  convertHtmlChords,
+  convertChord,
+  Notation,
+} from '../utils/chordNotation';
 
 interface UseSongProcessorParams {
   originalChordPro: string | null;
@@ -40,16 +49,21 @@ export const useSongProcessor = ({
     try {
       let processedChordPro = originalChordPro;
 
-      processedChordPro = processedChordPro.replace(/\{sov\}/gi, '{start_of_verse}')
-                                     .replace(/\{eov\}/gi, '{end_of_verse}')
-                                     .replace(/\{soc\}/gi, '{start_of_chorus}')
-                                     .replace(/\{eoc\}/gi, '{end_of_chorus}')
-                                     .replace(/\{sob\}/gi, '{start_of_bridge}')
-                                     .replace(/\{eob\}/gi, '{end_of_bridge}');
-      processedChordPro = processedChordPro.replace(/\{transpose:.*\}\n?/gi, '');
+      processedChordPro = processedChordPro
+        .replace(/\{sov\}/gi, '{start_of_verse}')
+        .replace(/\{eov\}/gi, '{end_of_verse}')
+        .replace(/\{soc\}/gi, '{start_of_chorus}')
+        .replace(/\{eoc\}/gi, '{end_of_chorus}')
+        .replace(/\{sob\}/gi, '{start_of_bridge}')
+        .replace(/\{eob\}/gi, '{end_of_bridge}');
+      processedChordPro = processedChordPro.replace(
+        /\{transpose:.*\}\n?/gi,
+        '',
+      );
 
       if (currentTranspose !== 0) {
-        const chordProValueForDirective = currentTranspose < 0 ? currentTranspose + 12 : currentTranspose;
+        const chordProValueForDirective =
+          currentTranspose < 0 ? currentTranspose + 12 : currentTranspose;
         if (chordProValueForDirective !== 0) {
           processedChordPro = `{transpose: ${chordProValueForDirective}}\n${processedChordPro}`;
         }
@@ -66,8 +80,6 @@ export const useSongProcessor = ({
 
       let songForFormatting: Song = originalParsedSong;
 
-
-
       const formatter = new HtmlDivFormatter();
       let formattedSong = formatter.format(songForFormatting);
 
@@ -83,9 +95,14 @@ export const useSongProcessor = ({
       // We parse a minimal song with the original key and transpose it.
       if (key && currentTranspose !== 0) {
         try {
-          const tempSongForKey = new ChordProParser().parse(`{key: ${key}}\n[${key}]`);
+          const tempSongForKey = new ChordProParser().parse(
+            `{key: ${key}}\n[${key}]`,
+          );
           const transposedTempSong = tempSongForKey.transpose(currentTranspose);
-          if (transposedTempSong.lines.length > 0 && transposedTempSong.lines[0].items.length > 0) {
+          if (
+            transposedTempSong.lines.length > 0 &&
+            transposedTempSong.lines[0].items.length > 0
+          ) {
             const firstItem = transposedTempSong.lines[0].items[0];
             if (firstItem instanceof ChordLyricsPair && firstItem.chords) {
               displayKey = firstItem.chords.toUpperCase();
@@ -96,7 +113,6 @@ export const useSongProcessor = ({
           // displayKey remains original key if transposition calculation fails
         }
       }
-
 
       if (displayKey) {
         finalKeyCapoString += `<strong>${convertChord(displayKey, notation)}</strong>`;
@@ -109,7 +125,8 @@ export const useSongProcessor = ({
 
       if (currentTranspose !== 0) {
         if (finalKeyCapoString) finalKeyCapoString += ' | ';
-        const transposeDisplay = currentTranspose > 0 ? `+${currentTranspose}` : `${currentTranspose}`;
+        const transposeDisplay =
+          currentTranspose > 0 ? `+${currentTranspose}` : `${currentTranspose}`;
         finalKeyCapoString += `<strong>Semitonos: ${transposeDisplay}</strong>`;
       }
 
@@ -132,7 +149,9 @@ export const useSongProcessor = ({
         }
       }
 
-      const chordsCss = chordsVisible ? '' : '<style>.chord { display: none !important; }</style>';
+      const chordsCss = chordsVisible
+        ? ''
+        : '<style>.chord { display: none !important; }</style>';
 
       let finalHtml = `
         <html>
@@ -226,7 +245,17 @@ export const useSongProcessor = ({
     } finally {
       setIsLoadingSong(false);
     }
-  }, [originalChordPro, currentTranspose, chordsVisible, currentFontSizeEm, currentFontFamily, notation, author, key, capo]);
+  }, [
+    originalChordPro,
+    currentTranspose,
+    chordsVisible,
+    currentFontSizeEm,
+    currentFontFamily,
+    notation,
+    author,
+    key,
+    capo,
+  ]);
 
   return { songHtml, isLoadingSong };
 };

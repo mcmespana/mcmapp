@@ -1,6 +1,13 @@
 import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 // Cleaned up unused imports
-import { StyleSheet, View, TouchableOpacity, Platform, Dimensions, Animated } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Platform,
+  Dimensions,
+  Animated,
+} from 'react-native';
 import GestureRecognizer from 'react-native-swipe-gestures';
 import SongDisplay from '../../components/SongDisplay';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
@@ -12,14 +19,23 @@ import { IconSymbol } from '../../components/ui/IconSymbol'; // Import IconSymbo
 import { useSettings } from '../../contexts/SettingsContext'; // <<<--- ADD THIS IMPORT
 
 const availableFonts = [
-  { name: 'Monoespaciada', cssValue: "'Roboto Mono', 'Courier New', monospace" },
-  { name: 'Serif', cssValue: "'Palatino Linotype', 'Book Antiqua', Palatino, serif" },
+  {
+    name: 'Monoespaciada',
+    cssValue: "'Roboto Mono', 'Courier New', monospace",
+  },
+  {
+    name: 'Serif',
+    cssValue: "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
+  },
   { name: 'Sans-Serif', cssValue: "'Helvetica Neue', 'Arial', sans-serif" },
 ];
 
 type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
 // Define navigation prop type
-type SongDetailScreenNavigationProp = NavigationProp<RootStackParamList, 'SongDetail'> & {
+type SongDetailScreenNavigationProp = NavigationProp<
+  RootStackParamList,
+  'SongDetail'
+> & {
   replace: (screen: keyof RootStackParamList, params: any) => void;
 };
 
@@ -28,7 +44,11 @@ interface SongDetailScreenProps {
   navigation: SongDetailScreenNavigationProp; // Add navigation to props
 }
 
-export default function SongDetailScreen({ route, navigation }: SongDetailScreenProps) { // Destructure navigation
+export default function SongDetailScreen({
+  route,
+  navigation,
+}: SongDetailScreenProps) {
+  // Destructure navigation
   const {
     filename,
     title: _navScreenTitle,
@@ -44,7 +64,12 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 
   // Settings from context
   const { settings, setSettings, isLoadingSettings } = useSettings(); // <<<--- USE SETTINGS HOOK
-  const { chordsVisible, fontSize: currentFontSizeEm, fontFamily: currentFontFamily, notation } = settings;
+  const {
+    chordsVisible,
+    fontSize: currentFontSizeEm,
+    fontFamily: currentFontFamily,
+    notation,
+  } = settings;
 
   // songHtml state is now managed by useSongProcessor
   const [isFileLoading, setIsFileLoading] = useState(true); // Renamed from isLoading
@@ -61,7 +86,6 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   const slideAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
 
-
   // Call the hook to process the song
   const { songHtml, isLoadingSong: isSongProcessing } = useSongProcessor({
     originalChordPro,
@@ -71,8 +95,8 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     currentFontFamily, // From context
     notation,
     author, // Pass author from route.params
-    key,    // Pass key from route.params
-    capo,   // Pass capo from route.params
+    key, // Pass key from route.params
+    capo, // Pass capo from route.params
   });
 
   // Effect for setting header button
@@ -81,7 +105,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
     if (!filename) return; // Don't set header if filename is not available
 
     const currentlySelected = isSelected;
-    
+
     // Configuración del botón derecho
     const headerRight = () => (
       <View style={styles.headerButtonContainer}>
@@ -94,7 +118,9 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
             }
           }}
           style={styles.headerButton}
-          accessibilityLabel={currentlySelected ? 'Quitar de selección' : 'Añadir a selección'}
+          accessibilityLabel={
+            currentlySelected ? 'Quitar de selección' : 'Añadir a selección'
+          }
         >
           <IconSymbol
             name={currentlySelected ? 'checkmark.circle.fill' : 'plus.circle'}
@@ -102,7 +128,6 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
             color={'#fff'}
           />
         </TouchableOpacity>
-
       </View>
     );
 
@@ -121,7 +146,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
           headerShown: true,
         });
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
   }, [navigation, filename, isSelected, addSong, removeSong]);
@@ -137,11 +162,15 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
       // This block could attempt to load from filename if that's desired,
       // but per instructions, we should rely on content.
       // For now, let's assume content should always be there.
-      console.error('Error: Contenido de la canción no proporcionado, pero sí el nombre del archivo.');
+      console.error(
+        'Error: Contenido de la canción no proporcionado, pero sí el nombre del archivo.',
+      );
       setOriginalChordPro(null); // Ensure originalChordPro is null on error so hook can show error state
       setIsFileLoading(false);
     } else {
-      console.error('Error: Ni el contenido de la canción ni el nombre del archivo fueron proporcionados.');
+      console.error(
+        'Error: Ni el contenido de la canción ni el nombre del archivo fueron proporcionados.',
+      );
       setOriginalChordPro(null);
       setIsFileLoading(false);
     }
@@ -151,8 +180,8 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
 
   // Handlers for actual state changes (passed to SongControls)
   // Handlers for actual state changes, now using setSettings from context
-  const handleToggleChords = () => setSettings({ chordsVisible: !chordsVisible });
-
+  const handleToggleChords = () =>
+    setSettings({ chordsVisible: !chordsVisible });
 
   const handleSetTranspose = (semitones: number) => {
     let newTranspose = semitones;
@@ -181,14 +210,11 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
       author,
       key,
       capo,
-      content: content || ''
+      content: content || '',
     });
   };
 
-  const animateAndSet = (
-    params: any,
-    direction: 'next' | 'prev'
-  ) => {
+  const animateAndSet = (params: any, direction: 'next' | 'prev') => {
     const toValue = direction === 'next' ? -screenWidth : screenWidth;
     Animated.timing(slideAnim, {
       toValue,
@@ -206,7 +232,11 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   };
 
   const handleSwipeLeft = () => {
-    if (navigationList && typeof currentIndex === 'number' && currentIndex > 0) {
+    if (
+      navigationList &&
+      typeof currentIndex === 'number' &&
+      currentIndex > 0
+    ) {
       const prevSong = navigationList[currentIndex - 1];
       animateAndSet(
         {
@@ -215,7 +245,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
           currentIndex: currentIndex - 1,
           source,
         },
-        'prev'
+        'prev',
       );
     }
   };
@@ -234,7 +264,7 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
           currentIndex: currentIndex + 1,
           source,
         },
-        'next'
+        'next',
       );
     }
   };
@@ -250,8 +280,13 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   // Removed handleOpenTransposeModal, handleOpenFontSizeModal, handleOpenFontFamilyModal
 
   const contentView = (
-    <Animated.View style={[styles.container, { transform: [{ translateX: slideAnim }] }]}>
-      <SongDisplay songHtml={songHtml} isLoading={isFileLoading || isSongProcessing || isLoadingSettings} />
+    <Animated.View
+      style={[styles.container, { transform: [{ translateX: slideAnim }] }]}
+    >
+      <SongDisplay
+        songHtml={songHtml}
+        isLoading={isFileLoading || isSongProcessing || isLoadingSettings}
+      />
       <SongControls
         chordsVisible={chordsVisible}
         currentTranspose={currentTranspose} // Transpose is local
@@ -282,13 +317,12 @@ export default function SongDetailScreen({ route, navigation }: SongDetailScreen
   }
 
   return contentView;
-
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 10 
+  container: {
+    flex: 1,
+    padding: 10,
   },
   headerButtonContainer: {
     marginRight: 16,
@@ -304,27 +338,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     // Estilo adicional para web
-    ...(Platform.OS === 'web' ? {
-      cursor: 'pointer',
-      ':hover': {
-        opacity: 0.8,
-      },
-    } : {}),
+    ...(Platform.OS === 'web'
+      ? {
+          cursor: 'pointer',
+          ':hover': {
+            opacity: 0.8,
+          },
+        }
+      : {}),
   },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    marginBottom: 10, 
-    textAlign: 'center' 
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
   },
   messageContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: { 
-    fontSize: 16, 
-    fontFamily: 'monospace' 
+  content: {
+    fontSize: 16,
+    fontFamily: 'monospace',
   },
 });
-

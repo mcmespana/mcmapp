@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+} from 'react-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
@@ -24,10 +30,18 @@ export default function MaterialesScreen() {
   const navigation = useNavigation<Nav>();
   const scheme = useColorScheme();
   const fontScale = useFontScale(1.2);
-  const styles = React.useMemo(() => createStyles(scheme, fontScale), [scheme, fontScale]);
-  const { data: materialesData, loading } = useFirebaseData<any[]>('jubileo/materiales', 'jubileo_materiales');
+  const styles = React.useMemo(
+    () => createStyles(scheme, fontScale),
+    [scheme, fontScale],
+  );
+  const { data: materialesData, loading } = useFirebaseData<any[]>(
+    'jubileo/materiales',
+    'jubileo_materiales',
+  );
   const [index, setIndex] = useState(0);
-  const fechas = materialesData ? materialesData.map((d) => ({ fecha: d.fecha })) : [];
+  const fechas = materialesData
+    ? materialesData.map((d) => ({ fecha: d.fecha }))
+    : [];
   const dia = materialesData ? materialesData[index] : null;
 
   if (loading || !dia) {
@@ -36,13 +50,25 @@ export default function MaterialesScreen() {
 
   return (
     <View style={styles.container}>
-      <DateSelector dates={fechas} selectedDate={dia.fecha} onSelectDate={(_, i) => setIndex(i)} />
+      <DateSelector
+        dates={fechas}
+        selectedDate={dia.fecha}
+        onSelectDate={(_, i) => setIndex(i)}
+      />
       <ScrollView contentContainerStyle={styles.list}>
         {dia.actividades.map((act: Actividad, idx: number) => (
           <TouchableOpacity
             key={idx}
-            style={[styles.card, { backgroundColor: act.color || colors.primary }]}
-            onPress={() => navigation.navigate('MaterialPages', { actividad: act, fecha: dia.fecha })}
+            style={[
+              styles.card,
+              { backgroundColor: act.color || colors.primary },
+            ]}
+            onPress={() =>
+              navigation.navigate('MaterialPages', {
+                actividad: act,
+                fecha: dia.fecha,
+              })
+            }
           >
             <Text style={styles.emoji}>{act.emoji}</Text>
             <Text style={styles.cardText}>{act.nombre.toUpperCase()}</Text>

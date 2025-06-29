@@ -25,22 +25,20 @@ export const Colors = {
     tabIconSelected: tintColorDark,
     shadow: '#000000', // Added shadow color for dark theme (can be adjusted)
   },
-
-  
 };
 
 // constants/colors.js
 export default {
-  primary:   '#253883', // Azul fondo
+  primary: '#253883', // Azul fondo
   secondary: '#95d2f2', // Azul letras
-  accent:    '#E15C62', // Rojo MIC
-  info:      '#31AADF', // Celeste
-  success:   '#A3BD31', // Verde COM
-  warning:   '#FCD200', // Amarillo COM
-  danger:    '#9D1E74', // Morado LC
-  text:      '#002B81', // Azul COM
-  background:'#ffffff', // Fondo blanco
-  white:     '#ffffff', // Blanco
-  black:     '#000000', // Negro
-  border:   '#E0E0E0', // Gris claro para bordes
+  accent: '#E15C62', // Rojo MIC
+  info: '#31AADF', // Celeste
+  success: '#A3BD31', // Verde COM
+  warning: '#FCD200', // Amarillo COM
+  danger: '#9D1E74', // Morado LC
+  text: '#002B81', // Azul COM
+  background: '#ffffff', // Fondo blanco
+  white: '#ffffff', // Blanco
+  black: '#000000', // Negro
+  border: '#E0E0E0', // Gris claro para bordes
 };

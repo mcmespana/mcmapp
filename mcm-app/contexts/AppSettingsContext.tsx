@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type ThemeScheme = 'light' | 'dark' | 'system';
@@ -21,7 +27,9 @@ const defaultSettings: AppSettings = {
 
 const STORAGE_KEY = '@app_settings';
 
-const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
+const AppSettingsContext = createContext<AppSettingsContextType | undefined>(
+  undefined,
+);
 
 export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettingsState] = useState<AppSettings>(defaultSettings);
@@ -32,7 +40,7 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
       try {
         const data = await AsyncStorage.getItem(STORAGE_KEY);
         if (data) {
-          setSettingsState(prev => ({ ...prev, ...JSON.parse(data) }));
+          setSettingsState((prev) => ({ ...prev, ...JSON.parse(data) }));
         }
       } catch (e) {
         console.error('Failed loading app settings', e);
@@ -45,17 +53,19 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (loading) return;
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings)).catch(e => {
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings)).catch((e) => {
       console.error('Failed saving app settings', e);
     });
   }, [settings, loading]);
 
   const update = (values: Partial<AppSettings>) => {
-    setSettingsState(prev => ({ ...prev, ...values }));
+    setSettingsState((prev) => ({ ...prev, ...values }));
   };
 
   return (
-    <AppSettingsContext.Provider value={{ settings, setSettings: update, loading }}>
+    <AppSettingsContext.Provider
+      value={{ settings, setSettings: update, loading }}
+    >
       {children}
     </AppSettingsContext.Provider>
   );
@@ -63,6 +73,7 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAppSettings = () => {
   const ctx = useContext(AppSettingsContext);
-  if (!ctx) throw new Error('useAppSettings must be used within AppSettingsProvider');
+  if (!ctx)
+    throw new Error('useAppSettings must be used within AppSettingsProvider');
   return ctx;
 };

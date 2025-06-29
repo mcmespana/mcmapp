@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Linking,
-  Image,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, Linking, Image } from 'react-native';
 import { Card, IconButton, Modal, Portal, Text } from 'react-native-paper';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -55,7 +49,10 @@ function formatDate(fecha?: string) {
 export default function VisitasScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { data: visitas, loading } = useFirebaseData<Visita[]>('jubileo/visitas', 'jubileo_visitas');
+  const { data: visitas, loading } = useFirebaseData<Visita[]>(
+    'jubileo/visitas',
+    'jubileo_visitas',
+  );
   const [selected, setSelected] = useState<Visita | null>(null);
 
   const openMap = (url?: string) => {
@@ -81,7 +78,9 @@ export default function VisitasScreen() {
             <Card.Content style={styles.cardContent}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.title}>{v.titulo}</Text>
-                {v.subtitulo && <Text style={styles.subtitle}>{v.subtitulo}</Text>}
+                {v.subtitulo && (
+                  <Text style={styles.subtitle}>{v.subtitulo}</Text>
+                )}
                 {v.fecha && (
                   <View style={styles.dateRow}>
                     <IconButton icon="calendar-today" size={18} />
@@ -109,10 +108,15 @@ export default function VisitasScreen() {
           {selected && (
             <View>
               <Text style={styles.modalTitle}>{selected.titulo}</Text>
-              {selected.texto && <Text style={styles.modalText}>{selected.texto}</Text>}
+              {selected.texto && (
+                <Text style={styles.modalText}>{selected.texto}</Text>
+              )}
               {selected.mapa && (
                 <View style={{ alignItems: 'flex-end' }}>
-                  <IconButton icon="map" onPress={() => openMap(selected.mapa)} />
+                  <IconButton
+                    icon="map"
+                    onPress={() => openMap(selected.mapa)}
+                  />
                 </View>
               )}
             </View>
@@ -126,29 +130,39 @@ export default function VisitasScreen() {
 const createStyles = (scheme: 'light' | 'dark') => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background },
-  list: { padding: 16 },
-  card: { marginBottom: 16, backgroundColor: theme.background },
-  image: {
-    width: '100%',
-    height: 160,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    marginBottom: 16, // spacing below image
-  },
-  cardContent: { flexDirection: 'row', alignItems: 'center' },
-  title: { fontSize: 16, fontWeight: 'bold', marginBottom: 4, color: theme.text },
-  subtitle: { fontSize: 14, marginBottom: 4, color: theme.text },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  modal: {
-    backgroundColor: theme.background,
-    margin: 20,
-    padding: 20,
-    borderRadius: 8,
-  },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8, color: theme.text },
-  modalText: { fontSize: 14, marginBottom: 12, color: theme.text },
-});
+    container: { flex: 1, backgroundColor: theme.background },
+    list: { padding: 16 },
+    card: { marginBottom: 16, backgroundColor: theme.background },
+    image: {
+      width: '100%',
+      height: 160,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+      marginBottom: 16, // spacing below image
+    },
+    cardContent: { flexDirection: 'row', alignItems: 'center' },
+    title: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginBottom: 4,
+      color: theme.text,
+    },
+    subtitle: { fontSize: 14, marginBottom: 4, color: theme.text },
+    dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    modal: {
+      backgroundColor: theme.background,
+      margin: 20,
+      padding: 20,
+      borderRadius: 8,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 8,
+      color: theme.text,
+    },
+    modalText: { fontSize: 14, marginBottom: 12, color: theme.text },
+  });
 };

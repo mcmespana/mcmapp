@@ -1,6 +1,14 @@
 // app/(tabs)/fotos.tsx
 import React, { useState, useEffect } from 'react';
-import { View, FlatList, StyleSheet, Linking, useWindowDimensions, ViewStyle, Alert } from 'react-native';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  Linking,
+  useWindowDimensions,
+  ViewStyle,
+  Alert,
+} from 'react-native';
 import { Button, ActivityIndicator } from 'react-native-paper';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
@@ -32,7 +40,10 @@ export default function FotosScreen() {
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { data: allAlbumsData, loading } = useFirebaseData<Album[]>('albums', 'albums');
+  const { data: allAlbumsData, loading } = useFirebaseData<Album[]>(
+    'albums',
+    'albums',
+  );
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
@@ -41,7 +52,10 @@ export default function FotosScreen() {
     if (!allAlbumsData) return;
     const initialAlbums = allAlbumsData.slice(0, ALBUMS_PER_PAGE);
     setDisplayedAlbums(initialAlbums);
-    if (initialAlbums.length < ALBUMS_PER_PAGE || allAlbumsData.length <= ALBUMS_PER_PAGE) {
+    if (
+      initialAlbums.length < ALBUMS_PER_PAGE ||
+      allAlbumsData.length <= ALBUMS_PER_PAGE
+    ) {
       setAllAlbumsLoaded(true);
     }
   }, [allAlbumsData]);
@@ -58,9 +72,12 @@ export default function FotosScreen() {
       const newAlbums = allAlbumsData.slice(startIndex, endIndex);
 
       if (newAlbums.length > 0) {
-        setDisplayedAlbums(prevAlbums => [...prevAlbums, ...newAlbums]);
+        setDisplayedAlbums((prevAlbums) => [...prevAlbums, ...newAlbums]);
         setCurrentPage(nextPage);
-        if (newAlbums.length < ALBUMS_PER_PAGE || (displayedAlbums.length + newAlbums.length) === allAlbumsData.length) {
+        if (
+          newAlbums.length < ALBUMS_PER_PAGE ||
+          displayedAlbums.length + newAlbums.length === allAlbumsData.length
+        ) {
           setAllAlbumsLoaded(true);
         }
       } else {
@@ -76,26 +93,32 @@ export default function FotosScreen() {
       try {
         await Linking.openURL(albumUrl);
       } catch (error) {
-        console.error("Failed to open URL:", error);
-        Alert.alert("Error", "Could not open the album link.");
+        console.error('Failed to open URL:', error);
+        Alert.alert('Error', 'Could not open the album link.');
       }
     } else {
       console.warn(`Don't know how to open this URL: ${albumUrl}`);
-      Alert.alert("Invalid Link", `Cannot open this URL: ${albumUrl}`);
+      Alert.alert('Invalid Link', `Cannot open this URL: ${albumUrl}`);
     }
   };
 
   const renderFooter = () => {
     if (isLoadingMore) {
-      return <ActivityIndicator size="large" color={ThemeColors.light.tint} style={{ marginVertical: 20 }} />;
+      return (
+        <ActivityIndicator
+          size="large"
+          color={ThemeColors.light.tint}
+          style={{ marginVertical: 20 }}
+        />
+      );
     }
     if (allAlbumsLoaded) {
       return null;
     }
     return (
-      <Button 
-        mode="contained" 
-        onPress={loadMoreAlbums} 
+      <Button
+        mode="contained"
+        onPress={loadMoreAlbums}
         loading={isLoadingMore}
         style={styles.loadMoreButton}
         contentStyle={{ paddingVertical: 8 }}
@@ -114,19 +137,28 @@ export default function FotosScreen() {
       <FlatList
         data={displayedAlbums}
         renderItem={({ item }) => (
-          <View style={width > 600 ? styles.albumCardContainerTwoColumns : styles.albumCardContainerOneColumn}>
-            <AlbumCard album={item} onPress={() => handleAlbumPress(item.albumUrl)} />
+          <View
+            style={
+              width > 600
+                ? styles.albumCardContainerTwoColumns
+                : styles.albumCardContainerOneColumn
+            }
+          >
+            <AlbumCard
+              album={item}
+              onPress={() => handleAlbumPress(item.albumUrl)}
+            />
           </View>
         )}
         keyExtractor={(item) => item.id}
         numColumns={width > 600 ? 2 : 1}
         key={width > 600 ? 'TWO_COLUMNS' : 'ONE_COLUMN'} // Important for re-render on column change
         contentContainerStyle={[
-          styles.listContentContainer, 
-          { 
+          styles.listContentContainer,
+          {
             maxWidth: width > 1200 ? 1600 : 1200, // Increase maxWidth on very wide screens
-            alignSelf: 'center' 
-          }
+            alignSelf: 'center',
+          },
         ]}
         onEndReached={loadMoreAlbums}
         onEndReachedThreshold={0.5}
@@ -144,24 +176,24 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: theme.background,
     },
 
-  listContentContainer: {
-    paddingTop: 15,
-    // paddingHorizontal will be managed by column containers or screen width directly
-    paddingBottom: 20,
-    // alignItems: 'center', // Removed, will be handled by alignSelf on FlatList or column styles
-  },
-  albumCardContainerOneColumn: {
-    width: '100%',
-    paddingHorizontal: 10, // Reduced side margins for mobile single column
-  },
-  albumCardContainerTwoColumns: {
-    width: '50%', // Each item takes half the width
-    paddingHorizontal: 5, // Reduced horizontal spacing between cards for desktop
-  },
-  loadMoreButton: {
-    marginVertical: 20,
-    alignSelf: 'center',
-    backgroundColor: theme.tint,
-  },
+    listContentContainer: {
+      paddingTop: 15,
+      // paddingHorizontal will be managed by column containers or screen width directly
+      paddingBottom: 20,
+      // alignItems: 'center', // Removed, will be handled by alignSelf on FlatList or column styles
+    },
+    albumCardContainerOneColumn: {
+      width: '100%',
+      paddingHorizontal: 10, // Reduced side margins for mobile single column
+    },
+    albumCardContainerTwoColumns: {
+      width: '50%', // Each item takes half the width
+      paddingHorizontal: 5, // Reduced horizontal spacing between cards for desktop
+    },
+    loadMoreButton: {
+      marginVertical: 20,
+      alignSelf: 'center',
+      backgroundColor: theme.tint,
+    },
   });
 };

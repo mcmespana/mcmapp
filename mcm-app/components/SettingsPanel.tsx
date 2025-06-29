@@ -41,10 +41,25 @@ export default function SettingsPanel({ visible, onClose }: Props) {
     >
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.row}>
-          <TouchableOpacity onPress={decrease} disabled={settings.fontScale <= 1}>
-            <MaterialIcons name="text-fields" size={24} color={theme.text} style={{ transform: [{ scaleY: 0.8 }] }} />
+          <TouchableOpacity
+            onPress={decrease}
+            disabled={settings.fontScale <= 1}
+          >
+            <MaterialIcons
+              name="text-fields"
+              size={24}
+              color={theme.text}
+              style={{ transform: [{ scaleY: 0.8 }] }}
+            />
           </TouchableOpacity>
-          <Text style={[styles.value, { color: theme.text, fontSize: 16 * fontScale }]}>{(settings.fontScale * 100).toFixed(0)}%</Text>
+          <Text
+            style={[
+              styles.value,
+              { color: theme.text, fontSize: 16 * fontScale },
+            ]}
+          >
+            {(settings.fontScale * 100).toFixed(0)}%
+          </Text>
           <TouchableOpacity onPress={increase}>
             <MaterialIcons name="text-fields" size={32} color={theme.text} />
           </TouchableOpacity>
@@ -75,7 +90,11 @@ export default function SettingsPanel({ visible, onClose }: Props) {
               settings.theme === 'system' && styles.themeSelected,
             ]}
           >
-            <MaterialIcons name="brightness-auto" size={28} color={theme.text} />
+            <MaterialIcons
+              name="brightness-auto"
+              size={28}
+              color={theme.text}
+            />
           </TouchableOpacity>
         </View>
       </View>

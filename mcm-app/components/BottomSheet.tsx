@@ -10,7 +10,11 @@ interface BottomSheetProps {
   children: React.ReactNode;
 }
 
-export default function BottomSheet({ visible, onClose, children }: BottomSheetProps) {
+export default function BottomSheet({
+  visible,
+  onClose,
+  children,
+}: BottomSheetProps) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
 
@@ -23,7 +27,9 @@ export default function BottomSheet({ visible, onClose, children }: BottomSheetP
       onSwipeComplete={onClose}
       backdropOpacity={0.3}
     >
-      <View style={[styles.container, { backgroundColor: theme.background }]}>{children}</View>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        {children}
+      </View>
     </Modal>
   );
 }

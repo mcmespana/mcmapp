@@ -3,10 +3,27 @@ import { ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { List, IconButton, Avatar } from 'react-native-paper';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import { Colors } from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
+import { AppColors } from '@/app/styles/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-const PALETTE = ['#FF8A65', '#4FC3F7', '#81C784', '#BA68C8', '#FFD54F', '#9FA8DA'];
+const PALETTE = [
+  '#FF8A65',
+  '#4FC3F7',
+  '#81C784',
+  '#BA68C8',
+  '#FFD54F',
+  '#9FA8DA',
+  colors.primary,
+  colors.secondary,
+  colors.accent,
+  colors.info,
+  colors.success,
+  colors.warning,
+  colors.danger,
+  AppColors.primary,
+  AppColors.accentYellow,
+];
 
 interface Contacto {
   nombre: string;
@@ -17,12 +34,18 @@ interface Contacto {
 export default function ContactosScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { data: contacts, loading } = useFirebaseData<Contacto[]>('jubileo/contactos', 'jubileo_contactos');
+  const { data: contacts, loading } = useFirebaseData<Contacto[]>(
+    'jubileo/contactos',
+    'jubileo_contactos',
+  );
   const data = contacts as Contacto[] | undefined;
 
   const colorsForContacts = React.useMemo(
-    () => (data || []).map(() => PALETTE[Math.floor(Math.random() * PALETTE.length)]),
-    [data]
+    () =>
+      (data || []).map(
+        () => PALETTE[Math.floor(Math.random() * PALETTE.length)],
+      ),
+    [data],
   );
 
   const getInitials = (name: string) =>
@@ -52,15 +75,24 @@ export default function ContactosScreen() {
           titleStyle={styles.name}
           description={c.responsabilidad}
           left={() => (
-            <Avatar.Text
-              size={40}
-              label={getInitials(c.nombre)}
-              style={[styles.avatar, { backgroundColor: colorsForContacts[idx] }]}
-            />
+            <View style={styles.avatarWrapper}>
+              <Avatar.Text
+                size={40}
+                label={getInitials(c.nombre)}
+                style={[
+                  styles.avatar,
+                  { backgroundColor: colorsForContacts[idx] },
+                ]}
+              />
+            </View>
           )}
           right={() => (
             <View style={styles.actions}>
-              <IconButton icon="phone" size={24} onPress={() => call(c.telefono)} />
+              <IconButton
+                icon="phone"
+                size={24}
+                onPress={() => call(c.telefono)}
+              />
               <IconButton
                 icon="whatsapp"
                 size={24}
@@ -80,8 +112,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     actions: { flexDirection: 'row' },
-    name: { fontSize: 18, fontWeight: 'bold', marginTop: 4, color: theme.text },
-    avatar: { marginLeft: 8, marginRight: 12, alignSelf: 'center' },
+    name: { fontSize: 18, fontWeight: 'bold', color: theme.text },
+    avatarWrapper: { justifyContent: 'center' },
+    avatar: { marginLeft: 8, marginRight: 12 },
     itemContent: { paddingVertical: 8, alignItems: 'center' },
   });
 };

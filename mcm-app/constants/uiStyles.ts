@@ -7,8 +7,8 @@ export const commonShadow = {
     ios: {
       shadowColor: colors.black, // Or '#000'
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.20, // Slightly more subtle than 0.25
-      shadowRadius: 3.00, // Slightly smaller radius
+      shadowOpacity: 0.2, // Slightly more subtle than 0.25
+      shadowRadius: 3.0, // Slightly smaller radius
     },
     android: {
       elevation: 4, // Slightly less pronounced elevation

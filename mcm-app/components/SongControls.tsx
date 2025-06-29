@@ -59,29 +59,93 @@ const SongControls: React.FC<SongControlsProps> = ({
       <View style={styles.fabContainer}>
         {showActionButtons && (
           <View style={styles.fabActionsContainer}>
-            <TouchableOpacity style={[styles.fabAction, !chordsVisible && styles.fabActionActive]} onPress={onToggleChords}>
-              <Text style={[styles.fabActionText, !chordsVisible && styles.fabActionTextActive]}>Acordes {chordsVisible ? 'ON' : 'OFF'}</Text>
+            <TouchableOpacity
+              style={[
+                styles.fabAction,
+                !chordsVisible && styles.fabActionActive,
+              ]}
+              onPress={onToggleChords}
+            >
+              <Text
+                style={[
+                  styles.fabActionText,
+                  !chordsVisible && styles.fabActionTextActive,
+                ]}
+              >
+                Acordes {chordsVisible ? 'ON' : 'OFF'}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, notation !== 'ES' && styles.fabActionActive]} onPress={onToggleNotation}>
-              <Text style={[styles.fabActionText, notation !== 'ES' && styles.fabActionTextActive]}>Notación: {notation}</Text>
+            <TouchableOpacity
+              style={[
+                styles.fabAction,
+                notation !== 'ES' && styles.fabActionActive,
+              ]}
+              onPress={onToggleNotation}
+            >
+              <Text
+                style={[
+                  styles.fabActionText,
+                  notation !== 'ES' && styles.fabActionTextActive,
+                ]}
+              >
+                Notación: {notation}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, currentTranspose !== 0 && styles.fabActionActive]} onPress={handleOpenTransposePanel}>
-              <Text style={[styles.fabActionText, currentTranspose !== 0 && styles.fabActionTextActive]}>Cambiar tono</Text>
+            <TouchableOpacity
+              style={[
+                styles.fabAction,
+                currentTranspose !== 0 && styles.fabActionActive,
+              ]}
+              onPress={handleOpenTransposePanel}
+            >
+              <Text
+                style={[
+                  styles.fabActionText,
+                  currentTranspose !== 0 && styles.fabActionTextActive,
+                ]}
+              >
+                Cambiar tono
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && styles.fabActionActive]} onPress={handleOpenFontPanel}>
-              <Text style={[styles.fabActionText, (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && styles.fabActionTextActive]}>Tipo de letra</Text>
+            <TouchableOpacity
+              style={[
+                styles.fabAction,
+                (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+                  (availableFonts.length > 0 &&
+                    currentFontFamily !== availableFonts[0].cssValue)) &&
+                  styles.fabActionActive,
+              ]}
+              onPress={handleOpenFontPanel}
+            >
+              <Text
+                style={[
+                  styles.fabActionText,
+                  (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+                    (availableFonts.length > 0 &&
+                      currentFontFamily !== availableFonts[0].cssValue)) &&
+                    styles.fabActionTextActive,
+                ]}
+              >
+                Tipo de letra
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.fabAction} onPress={onNavigateToFullscreen}>
+            <TouchableOpacity
+              style={styles.fabAction}
+              onPress={onNavigateToFullscreen}
+            >
               <Text style={styles.fabActionText}>Pantalla completa</Text>
             </TouchableOpacity>
           </View>
         )}
         <View style={{ position: 'relative' }}>
-          {(currentTranspose !== 0 || !chordsVisible || currentFontSizeEm !== DEFAULT_FONT_SIZE_EM || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue) || notation !== 'ES') && (
-            <View style={styles.badge} />
-          )}
-          <TouchableOpacity 
-            style={styles.fabMain} 
+          {(currentTranspose !== 0 ||
+            !chordsVisible ||
+            currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+            (availableFonts.length > 0 &&
+              currentFontFamily !== availableFonts[0].cssValue) ||
+            notation !== 'ES') && <View style={styles.badge} />}
+          <TouchableOpacity
+            style={styles.fabMain}
             onPress={() => setShowActionButtons(!showActionButtons)}
             accessibilityLabel="Configuración"
           >
