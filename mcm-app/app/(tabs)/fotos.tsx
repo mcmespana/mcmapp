@@ -4,6 +4,7 @@ import { View, FlatList, StyleSheet, Linking, useWindowDimensions, ViewStyle, Al
 import { Button, ActivityIndicator } from 'react-native-paper';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -32,7 +33,7 @@ export default function FotosScreen() {
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { data: allAlbumsData, loading } = useFirebaseData<Album[]>('albums', 'albums');
+  const { data: allAlbumsData, loading, offline } = useFirebaseData<Album[]>('albums', 'albums');
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
@@ -111,6 +112,7 @@ export default function FotosScreen() {
 
   return (
     <View style={styles.container}>
+      {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
       <FlatList
         data={displayedAlbums}
         renderItem={({ item }) => (

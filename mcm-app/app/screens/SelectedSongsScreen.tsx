@@ -37,7 +37,7 @@ interface CategorizedSongs {
 type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SongDetail'>;
 
 const SelectedSongsScreen: React.FC = () => {
-  const { selectedSongs, clearSelection } = useSelectedSongs();
+  const { selectedSongs, clearSelection, addSong } = useSelectedSongs();
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
   const scheme = useColorScheme() || 'light'; // Default to light theme if undefined
   const styles = useMemo(() => createStyles(scheme), [scheme]);
@@ -171,7 +171,11 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleShareFile = useCallback(async () => {
     try {
-      const path = FileSystem.cacheDirectory + 'playlist.mcm.json';
+      const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+      const now = new Date();
+      const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
+      const fileName = `Playlist ${dateStr}.mcmsongs`;
+      const path = FileSystem.cacheDirectory + fileName;
       await FileSystem.writeAsStringAsync(path, JSON.stringify(selectedSongs), {
         encoding: FileSystem.EncodingType.UTF8,
       });
@@ -186,7 +190,7 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleImportFile = useCallback(async () => {
     try {
-      const res = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
+      const res = await DocumentPicker.getDocumentAsync({ type: '*/*' });
       if (res.canceled || !res.assets || res.assets.length === 0) return;
       const file = res.assets[0];
       const content = await FileSystem.readAsStringAsync(file.uri, {
@@ -201,7 +205,7 @@ const SelectedSongsScreen: React.FC = () => {
     } catch (err) {
       console.error('Error importing playlist', err);
     }
-  }, []);
+  }, [addSong]);
 
   const handleSongPress = (song: Song) => {
     if (!allSongsData) return;
@@ -282,6 +286,10 @@ const SelectedSongsScreen: React.FC = () => {
         <IconSymbol name="music.note.list" size={60} color="#cccccc" />
         <Text style={styles.emptyText}>Todavía no has seleccionado canciones</Text>
         <Text style={styles.swipeHint}>Desliza una canción hacia la izquierda para seleccionarla</Text>
+        <TouchableOpacity onPress={handleImportFile} style={[styles.shareButton, { marginTop: 20 }]}> 
+          <IconSymbol name="tray.and.arrow.down" size={20} color="#007AFF" />
+          <Text style={styles.shareButtonText}>Importar</Text>
+        </TouchableOpacity>
       </View>
     );
   }

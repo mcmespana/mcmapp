@@ -2,6 +2,7 @@ import { FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useLayoutEffect, useMemo } from 'react';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
@@ -70,9 +71,7 @@ export default function CategoriesScreen({
       data={displayCategories}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={offline ? (
-        <Text style={{ textAlign: 'center', marginVertical: 8 }}>
-          Mostrando datos sin conexión
-        </Text>
+        <OfflineBanner text="Mostrando datos sin conexión" />
       ) : null}
       renderItem={({ item }) => (
         <TouchableOpacity
