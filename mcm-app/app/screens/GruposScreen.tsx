@@ -1,10 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  View,
-  TouchableOpacity,
-} from 'react-native';
+import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { List, IconButton, Text, Searchbar } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -23,7 +18,10 @@ type Data = Record<string, Grupo[]>;
 export default function GruposScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { data: gruposData, loading } = useFirebaseData<Data>('jubileo/grupos', 'jubileo_grupos');
+  const { data: gruposData, loading } = useFirebaseData<Data>(
+    'jubileo/grupos',
+    'jubileo_grupos',
+  );
   const data = gruposData as Data | undefined;
   const categorias = [
     { name: 'Movilidad', icon: 'walk', color: colors.info },
@@ -99,12 +97,16 @@ export default function GruposScreen() {
           </View>
         ) : searchResults.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No se han encontrado resultados</Text>
+            <Text style={styles.emptyText}>
+              No se han encontrado resultados
+            </Text>
           </View>
         ) : (
           Object.entries(grouped).map(([cat, grupos]) => (
             <View key={cat}>
-              <List.Subheader style={styles.sectionHeader}>{cat}</List.Subheader>
+              <List.Subheader style={styles.sectionHeader}>
+                {cat}
+              </List.Subheader>
               {grupos.map(({ grupo: g, matches }, idx) => (
                 <View key={idx}>
                   <List.Item
@@ -134,9 +136,16 @@ export default function GruposScreen() {
 
   if (!categoria && !showSearch) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.catList}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.catList}
+      >
         <View style={styles.searchButtonWrapper}>
-          <IconButton icon="magnify" size={24} onPress={() => setShowSearch(true)} />
+          <IconButton
+            icon="magnify"
+            size={24}
+            onPress={() => setShowSearch(true)}
+          />
         </View>
         {categorias.map((c) => (
           <TouchableOpacity
@@ -145,7 +154,11 @@ export default function GruposScreen() {
             onPress={() => setCategoria(c.name)}
             activeOpacity={0.8}
           >
-            <List.Icon icon={c.icon} color={colors.white} style={styles.catIcon} />
+            <List.Icon
+              icon={c.icon}
+              color={colors.white}
+              style={styles.catIcon}
+            />
             <Text style={styles.catLabel}>{c.name}</Text>
           </TouchableOpacity>
         ))}
@@ -157,7 +170,11 @@ export default function GruposScreen() {
     return (
       <ScrollView style={styles.container}>
         <View style={styles.backWrapper}>
-          <IconButton icon="arrow-left" size={24} onPress={() => setCategoria(null)} />
+          <IconButton
+            icon="arrow-left"
+            size={24}
+            onPress={() => setCategoria(null)}
+          />
         </View>
         {(data?.[categoria] || []).map((g, idx) => (
           <List.Item
@@ -175,18 +192,26 @@ export default function GruposScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.backWrapper}>
-        <IconButton icon="arrow-left" size={24} onPress={() => setGrupo(null)} />
+        <IconButton
+          icon="arrow-left"
+          size={24}
+          onPress={() => setGrupo(null)}
+        />
       </View>
       {grupo && (
         <View style={styles.groupContainer}>
           <Text style={styles.groupTitle}>{grupo.nombre}</Text>
           {grupo.responsable && (
             <>
-              <List.Subheader style={styles.sectionHeader}>Responsable</List.Subheader>
+              <List.Subheader style={styles.sectionHeader}>
+                Responsable
+              </List.Subheader>
               <List.Item title={grupo.responsable} />
             </>
           )}
-          <List.Subheader style={styles.sectionHeader}>Miembros ({grupo.miembros.length})</List.Subheader>
+          <List.Subheader style={styles.sectionHeader}>
+            Miembros ({grupo.miembros.length})
+          </List.Subheader>
           {grupo.miembros.map((m, idx) => (
             <List.Item key={idx} title={m} />
           ))}
@@ -199,57 +224,67 @@ export default function GruposScreen() {
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background },
-  catList: { padding: 16 },
-  catCard: {
-    height: 120,
-    borderRadius: 16,
-    marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  catIcon: { marginBottom: 4 },
-  catLabel: { fontSize: 18, fontWeight: 'bold', color: colors.white },
-  groupListTitle: { fontSize: 16 },
-  backWrapper: { padding: 8 },
-  sectionHeader: { fontSize: 16, fontWeight: 'bold', color: theme.text },
-  groupContainer: { paddingHorizontal: 16 },
-  groupTitle: { fontSize: 22, fontWeight: 'bold', marginVertical: 8, color: theme.text },
-  searchbar: {
-    marginHorizontal: 16,
-    marginVertical: 12,
-    borderRadius: 20,
-    backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    height: 44,
-    borderWidth: 1,
-    borderColor: scheme === 'dark' ? '#444' : '#E0E0E0',
-  },
-  searchbarInput: {
-    fontSize: 16,
-    paddingLeft: 0,
-    paddingTop: 0,
-    textAlignVertical: 'center',
-    color: scheme === 'dark' ? Colors.dark.text : Colors.light.text,
-  },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  emptyText: {
-    fontSize: 16,
-    color: scheme === 'dark' ? '#CCCCCC' : '#666',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  hintText: {
-    fontSize: 14,
-    color: scheme === 'dark' ? '#AAAAAA' : '#888',
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-  searchButtonWrapper: { alignItems: 'flex-end', padding: 8 },
-  matchItem: { paddingLeft: 32 },
-});
+    container: { flex: 1, backgroundColor: theme.background },
+    catList: { padding: 16 },
+    catCard: {
+      height: 120,
+      borderRadius: 16,
+      marginBottom: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    catIcon: { marginBottom: 4 },
+    catLabel: { fontSize: 18, fontWeight: 'bold', color: colors.white },
+    groupListTitle: { fontSize: 16 },
+    backWrapper: { padding: 8 },
+    sectionHeader: { fontSize: 16, fontWeight: 'bold', color: theme.text },
+    groupContainer: { paddingHorizontal: 16 },
+    groupTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      marginVertical: 8,
+      color: theme.text,
+    },
+    searchbar: {
+      marginHorizontal: 16,
+      marginVertical: 12,
+      borderRadius: 20,
+      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      height: 44,
+      borderWidth: 1,
+      borderColor: scheme === 'dark' ? '#444' : '#E0E0E0',
+    },
+    searchbarInput: {
+      fontSize: 16,
+      paddingLeft: 0,
+      paddingTop: 0,
+      textAlignVertical: 'center',
+      color: scheme === 'dark' ? Colors.dark.text : Colors.light.text,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    emptyText: {
+      fontSize: 16,
+      color: scheme === 'dark' ? '#CCCCCC' : '#666',
+      marginBottom: 10,
+      textAlign: 'center',
+    },
+    hintText: {
+      fontSize: 14,
+      color: scheme === 'dark' ? '#AAAAAA' : '#888',
+      fontStyle: 'italic',
+      textAlign: 'center',
+    },
+    searchButtonWrapper: { alignItems: 'flex-end', padding: 8 },
+    matchItem: { paddingLeft: 32 },
+  });
 };

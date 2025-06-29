@@ -11,7 +11,6 @@ import ContactosScreen from '../screens/ContactosScreen';
 import ReflexionesScreen from '../screens/ReflexionesScreen';
 import { IconButton } from 'react-native-paper';
 
-
 export type JubileoStackParamList = {
   Home: undefined;
   Horario: undefined;
@@ -47,18 +46,53 @@ export default function JubileoTab() {
           ) : null,
       })}
     >
-      <Stack.Screen name="Home" component={JubileoHomeScreen} options={{ title: 'Jubileo' }} />
-      <Stack.Screen name="Horario" component={HorarioScreen} options={{ title: 'Horario' }} />
-  <Stack.Screen name="Materiales" component={MaterialesScreen} options={{ title: 'Materiales' }} />
-      <Stack.Screen name="MaterialPages" component={MaterialPagesScreen} options={{ title: 'Material' }} />
-      <Stack.Screen name="Visitas" component={VisitasScreen} options={{ title: 'Visitas' }} />
-      <Stack.Screen name="Profundiza" component={ProfundizaScreen} options={{ title: 'Profundiza' }} />
-      <Stack.Screen name="Grupos" component={GruposScreen} options={{ title: 'Grupos' }} />
-      <Stack.Screen name="Contactos" component={ContactosScreen} options={{ title: 'Contactos' }} />
+      <Stack.Screen
+        name="Home"
+        component={JubileoHomeScreen}
+        options={{ title: 'Jubileo' }}
+      />
+      <Stack.Screen
+        name="Horario"
+        component={HorarioScreen}
+        options={{ title: 'Horario' }}
+      />
+      <Stack.Screen
+        name="Materiales"
+        component={MaterialesScreen}
+        options={{ title: 'Materiales' }}
+      />
+      <Stack.Screen
+        name="MaterialPages"
+        component={MaterialPagesScreen}
+        options={{ title: 'Material' }}
+      />
+      <Stack.Screen
+        name="Visitas"
+        component={VisitasScreen}
+        options={{ title: 'Visitas' }}
+      />
+      <Stack.Screen
+        name="Profundiza"
+        component={ProfundizaScreen}
+        options={{ title: 'Profundiza' }}
+      />
+      <Stack.Screen
+        name="Grupos"
+        component={GruposScreen}
+        options={{ title: 'Grupos' }}
+      />
+      <Stack.Screen
+        name="Contactos"
+        component={ContactosScreen}
+        options={{ title: 'Contactos' }}
+      />
       <Stack.Screen
         name="Reflexiones"
         component={ReflexionesScreen}
-        options={{ title: 'Compartiendo', headerStyle: { backgroundColor: '#A3BD31' } }}
+        options={{
+          title: 'Compartiendo',
+          headerStyle: { backgroundColor: '#A3BD31' },
+        }}
       />
     </Stack.Navigator>
   );

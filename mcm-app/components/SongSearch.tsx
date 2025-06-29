@@ -5,13 +5,22 @@ interface SongSearchProps {
   setSearchText: (text: string) => void;
 }
 
-export default function SongSearch({ searchText, setSearchText }: SongSearchProps) {
+export default function SongSearch({
+  searchText,
+  setSearchText,
+}: SongSearchProps) {
   return (
     <TextInput
       placeholder="Escribe aquí para buscar...."
       value={searchText}
       onChangeText={setSearchText}
-      style={{ padding: 10, margin: 10, borderWidth: 1, borderColor: '#ddd', borderRadius: 5 }}
+      style={{
+        padding: 10,
+        margin: 10,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 5,
+      }}
     />
   );
 }

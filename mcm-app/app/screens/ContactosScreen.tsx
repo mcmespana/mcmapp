@@ -34,12 +34,18 @@ interface Contacto {
 export default function ContactosScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { data: contacts, loading } = useFirebaseData<Contacto[]>('jubileo/contactos', 'jubileo_contactos');
+  const { data: contacts, loading } = useFirebaseData<Contacto[]>(
+    'jubileo/contactos',
+    'jubileo_contactos',
+  );
   const data = contacts as Contacto[] | undefined;
 
   const colorsForContacts = React.useMemo(
-    () => (data || []).map(() => PALETTE[Math.floor(Math.random() * PALETTE.length)]),
-    [data]
+    () =>
+      (data || []).map(
+        () => PALETTE[Math.floor(Math.random() * PALETTE.length)],
+      ),
+    [data],
   );
 
   const getInitials = (name: string) =>
@@ -73,13 +79,20 @@ export default function ContactosScreen() {
               <Avatar.Text
                 size={40}
                 label={getInitials(c.nombre)}
-                style={[styles.avatar, { backgroundColor: colorsForContacts[idx] }]}
+                style={[
+                  styles.avatar,
+                  { backgroundColor: colorsForContacts[idx] },
+                ]}
               />
             </View>
           )}
           right={() => (
             <View style={styles.actions}>
-              <IconButton icon="phone" size={24} onPress={() => call(c.telefono)} />
+              <IconButton
+                icon="phone"
+                size={24}
+                onPress={() => call(c.telefono)}
+              />
               <IconButton
                 icon="whatsapp"
                 size={24}

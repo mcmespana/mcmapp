@@ -33,8 +33,6 @@ const styles = StyleSheet.create<Styles>({
 });
 */
 
-
-
 // NOTIS - El código de esta sección que nunca llegó a funcionar
 /* import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Platform } from 'react-native';
@@ -232,4 +230,4 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     textAlign: 'right',
   },
-}); */ 
+}); */

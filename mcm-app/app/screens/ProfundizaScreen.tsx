@@ -17,8 +17,14 @@ interface Pagina {
 export default function ProfundizaScreen() {
   const scheme = useColorScheme();
   const fontScale = useFontScale(1.2);
-  const styles = React.useMemo(() => createStyles(scheme, fontScale), [scheme, fontScale]);
-  const { data: profundizaData, loading } = useFirebaseData<any>('jubileo/profundiza', 'jubileo_profundiza');
+  const styles = React.useMemo(
+    () => createStyles(scheme, fontScale),
+    [scheme, fontScale],
+  );
+  const { data: profundizaData, loading } = useFirebaseData<any>(
+    'jubileo/profundiza',
+    'jubileo_profundiza',
+  );
   const data = profundizaData as {
     titulo: string;
     introduccion: string;
@@ -41,10 +47,15 @@ export default function ProfundizaScreen() {
               id={String(idx)}
               title={p.titulo}
               titleStyle={styles.accordionTitle}
-              style={[styles.accordion, { backgroundColor: p.color || colors.primary }]}
+              style={[
+                styles.accordion,
+                { backgroundColor: p.color || colors.primary },
+              ]}
             >
               <View style={styles.accordionContent}>
-                {p.subtitulo && <Text style={styles.subtitulo}>{p.subtitulo}</Text>}
+                {p.subtitulo && (
+                  <Text style={styles.subtitulo}>{p.subtitulo}</Text>
+                )}
                 {p.texto && <Text style={styles.texto}>{p.texto}</Text>}
               </View>
             </List.Accordion>
@@ -60,7 +71,12 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     content: { padding: 16 },
-    mainTitle: { fontSize: 24 * scale, fontWeight: 'bold', marginBottom: 8, color: theme.text },
+    mainTitle: {
+      fontSize: 24 * scale,
+      fontWeight: 'bold',
+      marginBottom: 8,
+      color: theme.text,
+    },
     intro: { fontSize: 16 * scale, marginBottom: 16, color: theme.text },
     accordion: { marginBottom: 12, borderRadius: 16 },
     accordionTitle: { color: colors.white, fontWeight: 'bold' },
@@ -71,7 +87,12 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
       padding: 12,
       margin: 8,
     },
-    subtitulo: { fontWeight: 'bold', marginBottom: 8, color: theme.text, fontSize: 14 * scale },
+    subtitulo: {
+      fontWeight: 'bold',
+      marginBottom: 8,
+      color: theme.text,
+      fontSize: 14 * scale,
+    },
     texto: { marginBottom: 12, color: theme.text, fontSize: 14 * scale },
   });
 };

@@ -1,18 +1,73 @@
 // app/(tabs)/calendario.tsx
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, ViewStyle, TextStyle, TouchableOpacity, Alert, SectionList } from 'react-native';
-import { CalendarList, CalendarProps, LocaleConfig } from 'react-native-calendars';
-import { Checkbox, Text, SegmentedButtons, IconButton } from 'react-native-paper';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ViewStyle,
+  TextStyle,
+  TouchableOpacity,
+  Alert,
+  SectionList,
+} from 'react-native';
+import {
+  CalendarList,
+  CalendarProps,
+  LocaleConfig,
+} from 'react-native-calendars';
+import {
+  Checkbox,
+  Text,
+  SegmentedButtons,
+  IconButton,
+} from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
-import useCalendarEvents, { CalendarConfig, CalendarEvent } from '@/hooks/useCalendarEvents';
+import useCalendarEvents, {
+  CalendarConfig,
+  CalendarEvent,
+} from '@/hooks/useCalendarEvents';
 
 LocaleConfig.locales['es'] = {
-  monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
-  monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
-  dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+  monthNames: [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ],
+  monthNamesShort: [
+    'Ene',
+    'Feb',
+    'Mar',
+    'Abr',
+    'May',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dic',
+  ],
+  dayNames: [
+    'Domingo',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+  ],
   dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
   today: 'Hoy',
 };
@@ -34,8 +89,12 @@ const calendarConfigs: CalendarConfig[] = [
 export default function Calendario() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const [visibleCalendars, setVisibleCalendars] = useState<boolean[]>(calendarConfigs.map(() => true));
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [visibleCalendars, setVisibleCalendars] = useState<boolean[]>(
+    calendarConfigs.map(() => true),
+  );
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split('T')[0],
+  );
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
   const { eventsByDate } = useCalendarEvents(calendarConfigs);
 
@@ -64,7 +123,9 @@ export default function Calendario() {
   const filteredByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
     Object.keys(eventsByDate).forEach((date) => {
-      const events = eventsByDate[date].filter(ev => visibleCalendars[ev.calendarIndex]);
+      const events = eventsByDate[date].filter(
+        (ev) => visibleCalendars[ev.calendarIndex],
+      );
       if (events.length) map[date] = events;
     });
     return map;
@@ -87,14 +148,18 @@ export default function Calendario() {
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
     const marks: { [date: string]: any } = {};
     Object.keys(filteredByDate).forEach((date) => {
-      const periods = filteredByDate[date].map(ev => ({
+      const periods = filteredByDate[date].map((ev) => ({
         startingDay: date === ev.startDate,
         endingDay: date === (ev.endDate || ev.startDate),
         color: calendarConfigs[ev.calendarIndex].color,
       }));
       marks[date] = { periods };
     });
-    marks[selectedDate] = { ...(marks[selectedDate] || {}), selected: true, selectedColor: colors.primary };
+    marks[selectedDate] = {
+      ...(marks[selectedDate] || {}),
+      selected: true,
+      selectedColor: colors.primary,
+    };
     return marks;
   }, [filteredByDate, selectedDate]);
 
@@ -154,20 +219,51 @@ export default function Calendario() {
             ))}
           </View>
           <View style={styles.eventList}>
-            <Text style={[styles.eventListTitle, selectedDate < todayStr && styles.pastText]}>Eventos {formatDate(selectedDate)}</Text>
+            <Text
+              style={[
+                styles.eventListTitle,
+                selectedDate < todayStr && styles.pastText,
+              ]}
+            >
+              Eventos {formatDate(selectedDate)}
+            </Text>
             {eventsForSelected.map((ev, i) => (
               <TouchableOpacity
                 key={i}
                 style={styles.eventItem}
                 onPress={() => {
-                  const info = `${ev.title}\n${ev.location ?? ''}\n${ev.description ?? ''}`.trim();
+                  const info =
+                    `${ev.title}\n${ev.location ?? ''}\n${ev.description ?? ''}`.trim();
                   Alert.alert('Evento', info || ev.title, [{ text: 'OK' }]);
                 }}
               >
-                <View style={[styles.rect, { backgroundColor: calendarConfigs[ev.calendarIndex].color }]} />
+                <View
+                  style={[
+                    styles.rect,
+                    {
+                      backgroundColor: calendarConfigs[ev.calendarIndex].color,
+                    },
+                  ]}
+                />
                 <View style={styles.eventTextContainer}>
-                  <Text style={[styles.eventTitle, selectedDate < todayStr && styles.pastText]}>{ev.title}</Text>
-                  {ev.location ? <Text style={[styles.eventLocation, selectedDate < todayStr && styles.pastText]}>{ev.location}</Text> : null}
+                  <Text
+                    style={[
+                      styles.eventTitle,
+                      selectedDate < todayStr && styles.pastText,
+                    ]}
+                  >
+                    {ev.title}
+                  </Text>
+                  {ev.location ? (
+                    <Text
+                      style={[
+                        styles.eventLocation,
+                        selectedDate < todayStr && styles.pastText,
+                      ]}
+                    >
+                      {ev.location}
+                    </Text>
+                  ) : null}
                 </View>
               </TouchableOpacity>
             ))}
@@ -201,45 +297,72 @@ export default function Calendario() {
           </View>
           <SectionList
             sections={agendaSections}
-          keyExtractor={(item, index) => `${item.title}-${index}`}
-          renderSectionHeader={({ section: { title, data } }) => {
-            // Don't render header if there are no events for this day
-            if (!data || data.length === 0) return null;
-            
-            const isPast = title < todayStr;
-            const isToday = title === todayStr;
-            return (
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.eventListTitle, isPast && styles.pastText]}>
-                  {formatDate(title)}{isToday ? ' (HOY)' : ''}
+            keyExtractor={(item, index) => `${item.title}-${index}`}
+            renderSectionHeader={({ section: { title, data } }) => {
+              // Don't render header if there are no events for this day
+              if (!data || data.length === 0) return null;
+
+              const isPast = title < todayStr;
+              const isToday = title === todayStr;
+              return (
+                <View style={styles.sectionHeader}>
+                  <Text
+                    style={[styles.eventListTitle, isPast && styles.pastText]}
+                  >
+                    {formatDate(title)}
+                    {isToday ? ' (HOY)' : ''}
+                  </Text>
+                </View>
+              );
+            }}
+            renderItem={({ item, section }) => {
+              const isPast = section.title < todayStr;
+              return (
+                <TouchableOpacity
+                  style={styles.eventItem}
+                  onPress={() => {
+                    const info =
+                      `${item.title}\n${item.location ?? ''}\n${item.description ?? ''}`.trim();
+                    Alert.alert('Evento', info || item.title, [{ text: 'OK' }]);
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.rect,
+                      {
+                        backgroundColor:
+                          calendarConfigs[item.calendarIndex].color,
+                      },
+                    ]}
+                  />
+                  <View style={styles.eventTextContainer}>
+                    <Text
+                      style={[styles.eventTitle, isPast && styles.pastText]}
+                    >
+                      {item.title}
+                    </Text>
+                    {item.location ? (
+                      <Text
+                        style={[
+                          styles.eventLocation,
+                          isPast && styles.pastText,
+                        ]}
+                      >
+                        {item.location}
+                      </Text>
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+            ListEmptyComponent={
+              <View style={styles.emptyDate}>
+                <Text style={styles.noEvents}>
+                  No hay eventos para este día.
                 </Text>
               </View>
-            );
-          }}
-          renderItem={({ item, section }) => {
-            const isPast = section.title < todayStr;
-            return (
-              <TouchableOpacity
-                style={styles.eventItem}
-                onPress={() => {
-                  const info = `${item.title}\n${item.location ?? ''}\n${item.description ?? ''}`.trim();
-                  Alert.alert('Evento', info || item.title, [{ text: 'OK' }]);
-                }}
-              >
-                <View style={[styles.rect, { backgroundColor: calendarConfigs[item.calendarIndex].color }]} />
-                <View style={styles.eventTextContainer}>
-                  <Text style={[styles.eventTitle, isPast && styles.pastText]}>{item.title}</Text>
-                  {item.location ? <Text style={[styles.eventLocation, isPast && styles.pastText]}>{item.location}</Text> : null}
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-          ListEmptyComponent={
-            <View style={styles.emptyDate}>
-              <Text style={styles.noEvents}>No hay eventos para este día.</Text>
-            </View>
-          }
-        />
+            }
+          />
         </>
       )}
     </View>
