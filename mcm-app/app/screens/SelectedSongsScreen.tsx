@@ -171,18 +171,46 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleShareFile = useCallback(async () => {
     try {
-      const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+      const monthNames = [
+        'ene',
+        'feb',
+        'mar',
+        'abr',
+        'may',
+        'jun',
+        'jul',
+        'ago',
+        'sep',
+        'oct',
+        'nov',
+        'dic',
+      ];
       const now = new Date();
       const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
       const fileName = `Playlist ${dateStr}.mcmsongs`;
-      const path = FileSystem.cacheDirectory + fileName;
-      await FileSystem.writeAsStringAsync(path, JSON.stringify(selectedSongs), {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-      await Sharing.shareAsync(path, {
-        mimeType: 'application/json',
-        dialogTitle: 'Compartir playlist',
-      });
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([JSON.stringify(selectedSongs)], {
+          type: 'application/json',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      } else {
+        const path = FileSystem.cacheDirectory + fileName;
+        await FileSystem.writeAsStringAsync(path, JSON.stringify(selectedSongs), {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        await Sharing.shareAsync(path, {
+          mimeType: 'application/json',
+          dialogTitle: 'Compartir playlist',
+        });
+      }
     } catch (err) {
       console.error('Error sharing file', err);
     }
@@ -190,9 +218,14 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleImportFile = useCallback(async () => {
     try {
-      const res = await DocumentPicker.getDocumentAsync({ type: '*/*' });
+      const res = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
       if (res.canceled || !res.assets || res.assets.length === 0) return;
       const file = res.assets[0];
+      if (file.name && !file.name.endsWith('.mcmsongs')) {
+        setSnackbarMessage('Selecciona un archivo .mcmsongs');
+        setSnackbarVisible(true);
+        return;
+      }
       const content = await FileSystem.readAsStringAsync(file.uri, {
         encoding: FileSystem.EncodingType.UTF8,
       });
@@ -283,13 +316,15 @@ const SelectedSongsScreen: React.FC = () => {
   if (selectedSongs.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <IconSymbol name="music.note.list" size={60} color="#cccccc" />
-        <Text style={styles.emptyText}>Todavía no has seleccionado canciones</Text>
-        <Text style={styles.swipeHint}>Desliza una canción hacia la izquierda para seleccionarla</Text>
-        <TouchableOpacity onPress={handleImportFile} style={[styles.shareButton, { marginTop: 20 }]}> 
+        <TouchableOpacity onPress={handleImportFile} style={styles.importButton}>
           <IconSymbol name="tray.and.arrow.down" size={20} color="#007AFF" />
           <Text style={styles.shareButtonText}>Importar</Text>
         </TouchableOpacity>
+        <View style={styles.emptyContent}>
+          <IconSymbol name="music.note.list" size={60} color="#cccccc" />
+          <Text style={styles.emptyText}>Todavía no has seleccionado canciones</Text>
+          <Text style={styles.swipeHint}>Desliza una canción hacia la izquierda para seleccionarla</Text>
+        </View>
       </View>
     );
   }
@@ -401,6 +436,18 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 0.48,
       marginHorizontal: 5,
     },
+    importButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+      backgroundColor: isDark ? '#333366' : '#eef2ff',
+      borderRadius: 8,
+      alignSelf: 'stretch',
+      marginHorizontal: 20,
+      marginTop: 10,
+    },
     shareButtonText: {
       marginLeft: 8,
       fontSize: 16,
@@ -433,10 +480,13 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     emptyContainer: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
       padding: 20,
       backgroundColor: isDark ? Colors.dark.background : '#f8f8f8',
+    },
+    emptyContent: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     emptyText: {
       color: '#888',
