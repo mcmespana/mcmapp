@@ -9,10 +9,12 @@
     "scheme": "mcmapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mcmespana.mcmapp"
+      "bundleIdentifier": "com.mcmespana.mcmapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
