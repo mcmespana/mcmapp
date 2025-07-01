@@ -23,7 +23,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.mcmespana.mcmapp",
-      "googleServicesFile": "google-services.json"
+      "googleServicesFile": "./assets/google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -41,7 +41,15 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "googleServicesFile": "./assets/google-services.json"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
