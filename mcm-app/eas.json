@@ -9,9 +9,6 @@
       "distribution": "internal",
       "env": {
         "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON"
-      },
-      "hooks": {
-        "prebuild": "node scripts/write-google-services-json.js"
       }
     },
     "preview": {
@@ -28,9 +25,6 @@
       },
       "env": {
         "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON"
-      },
-      "hooks": {
-        "prebuild": "node scripts/write-google-services-json.js"
       },
       "environment": "development"
     }
