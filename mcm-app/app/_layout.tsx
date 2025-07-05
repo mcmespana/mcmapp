@@ -22,6 +22,7 @@ import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
 import {
   Provider as PaperProvider,
@@ -32,9 +33,11 @@ import colors from '@/constants/colors';
 
 export default function RootLayout() {
   return (
-    <AppSettingsProvider>
-      <InnerLayout />
-    </AppSettingsProvider>
+    <AuthProvider>
+      <AppSettingsProvider>
+        <InnerLayout />
+      </AppSettingsProvider>
+    </AuthProvider>
   );
 }
 

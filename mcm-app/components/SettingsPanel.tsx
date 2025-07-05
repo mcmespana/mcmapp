@@ -1,11 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import Modal from 'react-native-modal';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useAuth } from '@/contexts/AuthContext';
+import { Picker } from '@react-native-picker/picker';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 interface Props {
   visible: boolean;
@@ -17,6 +26,15 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const fontScale = useFontScale();
+  const {
+    user,
+    signInWithGoogle,
+    signInWithApple,
+    signOut,
+    profiles,
+    profile,
+    setProfile,
+  } = useAuth();
 
   const increase = () => {
     setSettings({ fontScale: Math.min(settings.fontScale + 0.1, 2) });
@@ -97,6 +115,54 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             />
           </TouchableOpacity>
         </View>
+        <View style={styles.loginSection}>
+          {user ? (
+            <>
+              <Text style={[styles.loggedText, { color: theme.text }]}>
+                Sesión iniciada como {user.displayName}
+              </Text>
+              {profiles.length > 0 && (
+                <Picker
+                  selectedValue={profile ?? profiles[0]}
+                  onValueChange={(v) => setProfile(v)}
+                  style={[styles.picker, { color: theme.text }]}
+                >
+                  {profiles.map((p) => (
+                    <Picker.Item key={p} label={p} value={p} />
+                  ))}
+                </Picker>
+              )}
+              <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
+                <Text style={{ color: theme.text }}>Cerrar sesión</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={signInWithGoogle}
+                style={styles.loginButton}
+              >
+                <MaterialIcons name="login" size={24} color={theme.text} />
+                <Text style={{ marginLeft: 8, color: theme.text }}>
+                  Iniciar con Google
+                </Text>
+              </TouchableOpacity>
+              {Platform.OS === 'ios' && (
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={
+                    AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+                  }
+                  buttonStyle={
+                    AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                  }
+                  cornerRadius={5}
+                  style={styles.appleButton}
+                  onPress={signInWithApple}
+                />
+              )}
+            </>
+          )}
+        </View>
       </View>
     </Modal>
   );
@@ -130,4 +196,14 @@ const styles = StyleSheet.create({
   themeSelected: {
     opacity: 1,
   },
+  loginSection: { marginTop: 20 },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  appleButton: { width: '100%', height: 44, marginTop: 10 },
+  logoutButton: { marginTop: 10 },
+  loggedText: { fontWeight: '500', marginBottom: 10 },
+  picker: { marginTop: 10 },
 });
