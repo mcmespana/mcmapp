@@ -12,6 +12,7 @@ export type ThemeScheme = 'light' | 'dark' | 'system';
 interface AppSettings {
   fontScale: number;
   theme: ThemeScheme;
+  profile: string;
 }
 
 interface AppSettingsContextType {
@@ -23,6 +24,7 @@ interface AppSettingsContextType {
 const defaultSettings: AppSettings = {
   fontScale: 1,
   theme: 'system',
+  profile: 'MCM Nacional',
 };
 
 const STORAGE_KEY = '@app_settings';

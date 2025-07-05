@@ -1,11 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import Modal from 'react-native-modal';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { Picker } from '@react-native-picker/picker';
+import { Button } from 'react-native-paper';
+import { useAuth } from '@/contexts/AuthContext';
+import useProfiles from '@/hooks/useProfiles';
 
 interface Props {
   visible: boolean;
@@ -17,6 +27,8 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const fontScale = useFontScale();
+  const { user, signInWithGoogle, signInWithApple, signOut } = useAuth();
+  const { profiles } = useProfiles();
 
   const increase = () => {
     setSettings({ fontScale: Math.min(settings.fontScale + 0.1, 2) });
@@ -96,6 +108,49 @@ export default function SettingsPanel({ visible, onClose }: Props) {
               color={theme.text}
             />
           </TouchableOpacity>
+        </View>
+        {profiles.length > 0 && (
+          <View style={{ marginTop: 20 }}>
+            <Text style={{ color: theme.text, marginBottom: 8 }}>
+              Perfil de la app
+            </Text>
+            <Picker
+              selectedValue={settings.profile}
+              onValueChange={(v) => setSettings({ profile: v })}
+              style={{ color: theme.text }}
+            >
+              {profiles.map((p) => (
+                <Picker.Item key={p} label={p} value={p} />
+              ))}
+            </Picker>
+          </View>
+        )}
+        <View style={{ marginTop: 20 }}>
+          {user ? (
+            <>
+              <Text style={{ color: theme.text, marginBottom: 8 }}>
+                Sesión iniciada como {user.email || user.displayName}
+              </Text>
+              <Button mode="contained" onPress={signOut}>
+                Cerrar sesión
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                mode="contained"
+                onPress={signInWithGoogle}
+                style={{ marginBottom: 8 }}
+              >
+                Entrar con Google
+              </Button>
+              {Platform.OS === 'ios' && (
+                <Button mode="contained" onPress={signInWithApple}>
+                  Entrar con Apple
+                </Button>
+              )}
+            </>
+          )}
         </View>
       </View>
     </Modal>
