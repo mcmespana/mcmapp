@@ -5,6 +5,7 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { filterSongsData } from '@/utils/filterSongsData';
 // import SongSearch from '../../components/SongSearch'; // Removed SongSearch import
 import SongListItem from '../../components/SongListItem'; // Added import
 
@@ -62,7 +63,7 @@ export default function SongsListScreen({
 }) {
   const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<
     Record<string, SongCategory>
-  >('songs', 'songs');
+  >('songs', 'songs', filterSongsData);
   const songsData = useMemo(() => getSongsData(firebaseSongs), [firebaseSongs]);
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
