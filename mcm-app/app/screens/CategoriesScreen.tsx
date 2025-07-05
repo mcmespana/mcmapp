@@ -215,6 +215,7 @@ export default function CategoriesScreen({
               onPress={enviarCancion}
               loading={saving}
               style={styles.saveBtn}
+              buttonColor={colors.warning}
             >
               Enviar
             </Button>
@@ -223,14 +224,14 @@ export default function CategoriesScreen({
               value={titulo}
               onChangeText={setTitulo}
               style={styles.input}
-              theme={{ colors: { primary: colors.success } }}
+              theme={{ colors: { primary: colors.warning } }}
             />
             <TextInput
               label="Artista"
               value={artista}
               onChangeText={setArtista}
               style={styles.input}
-              theme={{ colors: { primary: colors.success } }}
+              theme={{ colors: { primary: colors.warning } }}
             />
             <TextInput
               label="Letra o acordes (opcional)"
@@ -239,12 +240,14 @@ export default function CategoriesScreen({
               multiline
               numberOfLines={4}
               style={[styles.input, { minHeight: 100 }]}
-              theme={{ colors: { primary: colors.success } }}
+              theme={{ colors: { primary: colors.warning } }}
             />
             <View style={styles.pickerWrapper}>
               <Picker
                 selectedValue={categoria}
                 onValueChange={(v) => setCategoria(v)}
+                style={styles.picker}
+                itemStyle={styles.picker}
               >
                 {sortedCategories.map((cat) => (
                   <Picker.Item
@@ -256,8 +259,13 @@ export default function CategoriesScreen({
               </Picker>
             </View>
             <View style={styles.pickerWrapper}>
-              <Picker selectedValue={tono} onValueChange={(v) => setTono(v)}>
-                <Picker.Item label="(Tono opcional)" value="" />
+              <Picker
+                selectedValue={tono}
+                onValueChange={(v) => setTono(v)}
+                style={styles.picker}
+                itemStyle={styles.picker}
+              >
+                <Picker.Item label="(Indica el tono si lo sabes)" value="" />
                 {tonos.map((t) => (
                   <Picker.Item key={t} label={t} value={t} />
                 ))}
@@ -267,6 +275,8 @@ export default function CategoriesScreen({
               <Picker
                 selectedValue={cejilla}
                 onValueChange={(v) => setCejilla(Number(v))}
+                style={styles.picker}
+                itemStyle={styles.picker}
               >
                 {[...Array(9).keys()].map((n) => (
                   <Picker.Item key={n} label={`Cejilla ${n}`} value={n} />
@@ -302,7 +312,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       position: 'absolute',
       right: 16,
       bottom: 16,
-      backgroundColor: colors.success,
+      backgroundColor: colors.warning,
     },
     modal: {
       backgroundColor: isDark
@@ -317,6 +327,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     input: { marginBottom: spacing.md },
     pickerWrapper: { marginBottom: spacing.md },
+    picker: {
+      color: isDark ? Colors.dark.text : Colors.light.text,
+    },
     saveBtn: { marginTop: spacing.md, marginBottom: spacing.md },
   });
 };
