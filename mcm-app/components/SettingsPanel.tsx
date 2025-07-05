@@ -6,6 +6,7 @@ import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import LoginSection from './LoginSection';
 
 interface Props {
   visible: boolean;
@@ -97,6 +98,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             />
           </TouchableOpacity>
         </View>
+        <LoginSection />
       </View>
     </Modal>
   );
