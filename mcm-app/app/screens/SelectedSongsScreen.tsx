@@ -292,9 +292,9 @@ const SelectedSongsScreen: React.FC = () => {
         headerRight: () => (
           <TouchableOpacity onPress={handleExport} style={{ paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center' }}>
             <IconSymbol 
-              name={isDesktopLike ? "doc.on.doc" : "square.and.arrow.up"} 
+              name={isDesktopLike ? "doc.on.doc" : "doc.on.clipboard"} 
               size={24} 
-              color="#fff" // Reverted to original white color, assuming header has dark background or text color will be set by theme
+              color="#fff" // Usamos icono distinto solo para móviles
             />
             {isDesktopLike && (
               <Text style={{ color: '#fff', marginLeft: 8, fontSize: 16, fontWeight: '500' }}>Copiar</Text>
