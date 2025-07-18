@@ -79,10 +79,7 @@ export default function ContactosScreen() {
               <Avatar.Text
                 size={40}
                 label={getInitials(c.nombre)}
-                style={[
-                  styles.avatar,
-                  { backgroundColor: colorsForContacts[idx] },
-                ]}
+                style={[styles.avatar, { backgroundColor: colorsForContacts[idx] }]}
               />
             </View>
           )}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirebaseApp } from './firebaseApp';
+import * as Network from 'expo-network';
 
 export function useFirebaseData<T>(
   path: string,
@@ -10,12 +11,16 @@ export function useFirebaseData<T>(
 ) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     async function fetchData() {
       setLoading(true);
       try {
+        const state = await Network.getNetworkStateAsync();
+        const connected = state.isConnected && state.isInternetReachable !== false;
+        setOffline(!connected);
         const [localDataStr, localUpdatedAt] = await Promise.all([
           AsyncStorage.getItem(`${storageKey}_data`),
           AsyncStorage.getItem(`${storageKey}_updatedAt`),
@@ -56,5 +61,5 @@ export function useFirebaseData<T>(
     };
   }, [path, storageKey, transform]);
 
-  return { data, loading } as const;
+  return { data, loading, offline } as const;
 }

@@ -19,6 +19,7 @@ import typography from '@/constants/typography';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import OfflineBanner from '@/components/OfflineBanner';
 
 interface NavigationItem {
   label: string;
@@ -104,15 +105,10 @@ export default function JubileoHomeScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={[
-            styles.gridContainer,
-            {
-              padding: containerPadding,
-              backgroundColor: Colors[scheme].background,
-            },
-          ]}
-        >
+        {offline && (
+          <OfflineBanner text="Mostrando datos sin conexión" />
+        )}
+        <View style={[styles.gridContainer, { padding: containerPadding, backgroundColor: Colors[scheme].background }]}>
           {navigationItems.map((item, idx) => (
             <View key={idx} style={styles.itemWrapper}>
               <TouchableOpacity

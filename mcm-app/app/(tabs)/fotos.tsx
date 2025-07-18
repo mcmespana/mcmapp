@@ -12,6 +12,7 @@ import {
 import { Button, ActivityIndicator } from 'react-native-paper';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -134,6 +135,7 @@ export default function FotosScreen() {
 
   return (
     <View style={styles.container}>
+      {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
       <FlatList
         data={displayedAlbums}
         renderItem={({ item }) => (

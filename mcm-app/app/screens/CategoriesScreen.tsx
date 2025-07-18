@@ -10,6 +10,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useLayoutEffect, useMemo, useState, useEffect } from 'react';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors } from '@/constants/colors';
