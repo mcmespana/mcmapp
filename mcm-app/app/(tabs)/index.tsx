@@ -17,6 +17,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import SettingsPanel from '@/components/SettingsPanel';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 
 interface NavigationItem {
   href?: LinkProps['href'];
@@ -27,35 +28,35 @@ interface NavigationItem {
 }
 
 const navigationItems: NavigationItem[] = [
-  {
+  featureFlags.tabs.cancionero && {
     href: '/cancionero',
     label: 'Cantoral',
     icon: 'library-music',
     backgroundColor: colors.warning,
     color: colors.black,
   },
-  {
+  featureFlags.tabs.fotos && {
     href: '/fotos',
     label: 'Fotos',
     icon: 'photo-library',
     backgroundColor: colors.accent,
     color: colors.black,
   },
-  {
+  featureFlags.tabs.calendario && {
     href: '/calendario',
     label: 'Calendario',
     icon: 'event',
     backgroundColor: colors.info,
     color: colors.black,
   },
-  {
+  featureFlags.tabs.comunica && {
     href: '/comunica',
     label: 'Comunica',
     icon: 'chat',
     backgroundColor: colors.success,
     color: colors.black,
   },
-  {
+  featureFlags.tabs.jubileo && {
     href: '/jubileo',
     label: 'Jubileo',
     icon: 'celebration',
@@ -68,7 +69,7 @@ const navigationItems: NavigationItem[] = [
     backgroundColor: colors.danger,
     color: colors.black,
   },
-];
+].filter(Boolean) as NavigationItem[];
 
 interface IconButtonProps {
   color: string;
@@ -127,6 +128,7 @@ function DecorationCircles() {
 export default function Home() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
+  const featureFlags = useFeatureFlags();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const { width, height } = useWindowDimensions();
   const containerPadding = spacing.md;
@@ -145,7 +147,9 @@ export default function Home() {
             color={Colors[scheme ?? 'light'].icon}
             onPress={() => setSettingsVisible(true)}
           />
-          <NotificationsButton color={Colors[scheme ?? 'light'].icon} />
+          {featureFlags.showNotificationsIcon && (
+            <NotificationsButton color={Colors[scheme ?? 'light'].icon} />
+          )}
         </View>
       ),
       title: 'Inicio',
