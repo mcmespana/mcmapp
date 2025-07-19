@@ -9,6 +9,7 @@ import ProfundizaScreen from '../screens/ProfundizaScreen';
 import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
 import ReflexionesScreen from '../screens/ReflexionesScreen';
+import AppsScreen from '../screens/AppsScreen';
 import { IconButton } from 'react-native-paper';
 
 export type JubileoStackParamList = {
@@ -20,6 +21,7 @@ export type JubileoStackParamList = {
   Profundiza: undefined;
   Grupos: undefined;
   Contactos: undefined;
+  Apps: undefined;
   Reflexiones: undefined;
 };
 
@@ -85,6 +87,11 @@ export default function JubileoTab() {
         name="Contactos"
         component={ContactosScreen}
         options={{ title: 'Contactos' }}
+      />
+      <Stack.Screen
+        name="Apps"
+        component={AppsScreen}
+        options={{ title: 'Apps' }}
       />
       <Stack.Screen
         name="Reflexiones"

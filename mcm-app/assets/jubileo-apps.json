@@ -1,0 +1,57 @@
+[
+  {
+    "orden": 1,
+    "nombre": "WhatsApp",
+    "descripcion": "Mensajería instantánea y llamadas gratuitas",
+    "tipo": "Necesaria",
+    "icono": "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",
+    "iosLink": "https://apps.apple.com/app/whatsapp-messenger/id310633997",
+    "androidLink": "https://play.google.com/store/apps/details?id=com.whatsapp",
+    "iosScheme": "whatsapp://",
+    "androidScheme": "whatsapp://"
+  },
+  {
+    "orden": 2,
+    "nombre": "Google Maps",
+    "descripcion": "Navegación GPS y mapas sin conexión",
+    "tipo": "Necesaria",
+    "icono": "https://upload.wikimedia.org/wikipedia/commons/9/99/Google_Maps_Logo.svg",
+    "iosLink": "https://apps.apple.com/app/google-maps/id585027354",
+    "androidLink": "https://play.google.com/store/apps/details?id=com.google.android.apps.maps",
+    "iosScheme": "comgooglemaps://",
+    "androidScheme": "geo:0,0?q="
+  },
+  {
+    "orden": 3,
+    "nombre": "Spotify",
+    "descripcion": "Escucha y descubre música de todo el mundo",
+    "tipo": "Opcional",
+    "icono": "https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg",
+    "iosLink": "https://apps.apple.com/app/spotify-music/id324684580",
+    "androidLink": "https://play.google.com/store/apps/details?id=com.spotify.music",
+    "iosScheme": "spotify://",
+    "androidScheme": "spotify://"
+  },
+  {
+    "orden": 4,
+    "nombre": "YouVersion",
+    "descripcion": "La Biblia en múltiples idiomas y planes",
+    "tipo": "Opcional",
+    "icono": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/YouVersion.svg/512px-YouVersion.svg.png",
+    "iosLink": "https://apps.apple.com/app/bible/id282935706",
+    "androidLink": "https://play.google.com/store/apps/details?id=com.sirma.mobile.bible.android",
+    "iosScheme": "youversion://",
+    "androidScheme": "youversion://"
+  },
+  {
+    "orden": 5,
+    "nombre": "Slack",
+    "descripcion": "Comunicación en equipo y colaboración",
+    "tipo": "Opcional",
+    "icono": "https://upload.wikimedia.org/wikipedia/commons/7/76/Slack_Icon.png",
+    "iosLink": "https://apps.apple.com/app/slack/id618783545",
+    "androidLink": "https://play.google.com/store/apps/details?id=com.Slack",
+    "iosScheme": "slack://",
+    "androidScheme": "slack://"
+  }
+]
