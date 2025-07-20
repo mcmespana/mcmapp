@@ -164,6 +164,9 @@ export const useSongProcessor = ({
               background-color: #ffffff;
               color: ${AppColors.textDark || '#212529'};
               font-size: 100%;
+              max-width: 100%;
+              overflow-wrap: break-word;
+              word-wrap: break-word;
             }
             h1 {
               color: #333;
@@ -190,14 +193,20 @@ export const useSongProcessor = ({
             .chord-sheet {
               margin-top: 1em;
               text-align: left;
+              max-width: 100%;
+              overflow: hidden;
             }
             .row {
               display: flex;
               flex-wrap: wrap;
               margin-bottom: 0.2em;
+              max-width: 100%;
             }
             .column {
               padding-right: 0;
+              max-width: 100%;
+              overflow-wrap: break-word;
+              word-wrap: break-word;
             }
             .chord-sheet .chord {
               color: ${AppColors.primary};
@@ -207,26 +216,40 @@ export const useSongProcessor = ({
               min-height: 1.2em;
             }
             .chord-sheet .lyrics {
-              white-space: pre;
+              white-space: pre-wrap;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
               display: block;
               min-height: 1.2em;
+              max-width: 100%;
             }
             .comment, .c {
               color: ${AppColors.secondaryText};
               font-style: italic;
-              white-space: pre;
+              white-space: pre-wrap;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
               display: block;
               margin-top: 0.5em;
               margin-bottom: 0.5em;
+              max-width: 100%;
             }
             .paragraph {
               margin-top: 1.75em;
               margin-bottom: 1.75em;
+              white-space: pre-wrap;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+              max-width: 100%;
             }
             .paragraph.chorus {
               font-weight: bold;
               margin-top: 1.2em;
               margin-bottom: 1.2em;
+              white-space: pre-wrap;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+              max-width: 100%;
             }
             ${fontSizeCss}
           </style>
