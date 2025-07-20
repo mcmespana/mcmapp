@@ -6,6 +6,7 @@ import {
   View,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useLayoutEffect, useMemo, useState, useEffect } from 'react';
@@ -15,9 +16,15 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors } from '@/constants/colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { FAB, Portal, Modal, TextInput, Button } from 'react-native-paper';
+import { 
+  FAB, 
+  Portal, 
+  Modal, 
+  TextInput, 
+  Button,
+  Snackbar,
+} from 'react-native-paper';
 
-import { Picker } from '@react-native-picker/picker';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import spacing from '@/constants/spacing';
@@ -40,9 +47,10 @@ export default function CategoriesScreen({
 }) {
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme), [scheme]);
-  const { data: songsData, loading } = useFirebaseData<
-    Record<string, { categoryTitle: string; songs: any[] }>
-  >('songs', 'songs', filterSongsData);
+  const { data: songsData, loading } = useFirebaseData<Record<
+    string,
+    { categoryTitle: string; songs: any[] }
+  > | null>('songs', 'songs', filterSongsData);
   const actualCategories = songsData ? Object.keys(songsData) : [];
   const sortedCategories = actualCategories.sort((a, b) => {
     const titleA = songsData?.[a]?.categoryTitle ?? a;
@@ -62,36 +70,8 @@ export default function CategoriesScreen({
   const [artista, setArtista] = useState('');
   const [letra, setLetra] = useState('');
   const [categoria, setCategoria] = useState('');
-  const [tono, setTono] = useState('');
-  const [cejilla, setCejilla] = useState(0);
   const [saving, setSaving] = useState(false);
-
-  const tonos = [
-    'C',
-    'Cm',
-    'C#',
-    'C#m',
-    'D',
-    'Dm',
-    'D#',
-    'D#m',
-    'E',
-    'Em',
-    'F',
-    'Fm',
-    'F#',
-    'F#m',
-    'G',
-    'Gm',
-    'G#',
-    'G#m',
-    'A',
-    'Am',
-    'A#',
-    'A#m',
-    'B',
-    'Bm',
-  ];
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   // Set initial selected category when data loads
   useEffect(() => {
@@ -109,33 +89,32 @@ export default function CategoriesScreen({
     try {
       const db = getDatabase(getFirebaseApp());
       const newRef = push(ref(db, 'songs/solicitudes'));
-      const keyVal = tono || 'REVISAR';
-      const capoVal = cejilla ?? 0;
-      const contenido = `{title: ${titulo}}\n{author: ${artista}}\n{key: ${keyVal}}\n{capo: ${capoVal}}\n\n${letra}`;
+      const contenido = `{title: ${titulo}}\n{author: ${artista}}\n\n${letra}`;
       await set(newRef, {
         title: titulo,
         author: artista,
-        ...(tono ? { key: tono } : {}),
-        ...(cejilla ? { capo: cejilla } : {}),
         category: categoria,
         content: contenido,
         status: 'pendiente',
       });
       await set(ref(db, 'songs/updatedAt'), Date.now().toString());
-      Alert.alert(
-        'Enviado',
-        'Se ha enviado tu petición de canción, se revisará y añadirá a la base de datos en unos días',
-      );
+      
+      // Mostrar toast de éxito en lugar del Alert
+      setShowSuccessToast(true);
+      
+      // Limpiar el formulario y cerrarlo
+      setShowForm(false);
+      setTitulo('');
+      setArtista('');
+      setLetra('');
     } catch (e) {
       console.error('Error enviando canción', e);
+      Alert.alert(
+        'Error',
+        'No se pudo enviar la sugerencia. Inténtalo de nuevo.',
+      );
     }
     setSaving(false);
-    setShowForm(false);
-    setTitulo('');
-    setArtista('');
-    setLetra('');
-    setTono('');
-    setCejilla(0);
   }
 
   useLayoutEffect(() => {
@@ -218,7 +197,7 @@ export default function CategoriesScreen({
               style={styles.saveBtn}
               buttonColor={colors.warning}
             >
-              Enviar
+              Sugerir canción
             </Button>
             <TextInput
               label="Título"
@@ -243,50 +222,58 @@ export default function CategoriesScreen({
               style={[styles.input, { minHeight: 100 }]}
               theme={{ colors: { primary: colors.warning } }}
             />
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={categoria}
-                onValueChange={(v) => setCategoria(v)}
-                style={styles.picker}
-                itemStyle={styles.picker}
-              >
+            
+            {/* Selector elegante de categoría */}
+            <View style={styles.categorySelector}>
+              <Text style={styles.categoryLabel}>Categoría:</Text>
+              <View style={styles.categoryOptions}>
                 {sortedCategories.map((cat) => (
-                  <Picker.Item
+                  <TouchableOpacity
                     key={cat}
-                    label={songsData?.[cat]?.categoryTitle ?? cat}
-                    value={cat}
-                  />
+                    style={[
+                      styles.categoryOption,
+                      categoria === cat && styles.categoryOptionSelected,
+                    ]}
+                    onPress={() => setCategoria(cat)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryOptionText,
+                        categoria === cat && styles.categoryOptionTextSelected,
+                      ]}
+                    >
+                      {songsData?.[cat]?.categoryTitle ?? cat}
+                    </Text>
+                  </TouchableOpacity>
                 ))}
-              </Picker>
-            </View>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={tono}
-                onValueChange={(v) => setTono(v)}
-                style={styles.picker}
-                itemStyle={styles.picker}
-              >
-                <Picker.Item label="(Indica el tono si lo sabes)" value="" />
-                {tonos.map((t) => (
-                  <Picker.Item key={t} label={t} value={t} />
-                ))}
-              </Picker>
-            </View>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={cejilla}
-                onValueChange={(v) => setCejilla(Number(v))}
-                style={styles.picker}
-                itemStyle={styles.picker}
-              >
-                {[...Array(9).keys()].map((n) => (
-                  <Picker.Item key={n} label={`Cejilla ${n}`} value={n} />
-                ))}
-              </Picker>
+              </View>
             </View>
           </ScrollView>
         </Modal>
       </Portal>
+      
+      {/* Toast de éxito */}
+      <Snackbar
+        visible={showSuccessToast}
+        onDismiss={() => setShowSuccessToast(false)}
+        duration={3000}
+        style={{
+          backgroundColor: colors.warning,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+        }}
+        action={{
+          label: '✨',
+          textColor: '#000',
+          onPress: () => setShowSuccessToast(false),
+        }}
+      >
+        <Text style={{ color: '#000', fontWeight: 'bold' }}>
+          ¡Sugerencia de canción enviada! 📮
+        </Text>
+      </Snackbar>
     </View>
   );
 }
@@ -313,7 +300,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       position: 'absolute',
       right: 16,
       bottom: 16,
-      backgroundColor: colors.warning,
+      backgroundColor: '#f4c11e', // Mismo amarillo que el header
     },
     modal: {
       backgroundColor: isDark
@@ -332,5 +319,43 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     saveBtn: { marginTop: spacing.md, marginBottom: spacing.md },
+    // Estilos para el selector elegante de categorías
+    categorySelector: {
+      marginBottom: spacing.md,
+    },
+    categoryLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: spacing.sm,
+      color: isDark ? Colors.dark.text : Colors.light.text,
+    },
+    categoryOptions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    categoryOption: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.warning,
+      backgroundColor: isDark
+        ? Colors.dark.background
+        : Colors.light.background,
+      marginBottom: spacing.sm,
+    },
+    categoryOptionSelected: {
+      backgroundColor: colors.warning,
+    },
+    categoryOptionText: {
+      fontSize: 14,
+      color: isDark ? Colors.dark.text : Colors.light.text,
+      fontWeight: '500',
+    },
+    categoryOptionTextSelected: {
+      color: '#000',
+      fontWeight: 'bold',
+    },
   });
 };
