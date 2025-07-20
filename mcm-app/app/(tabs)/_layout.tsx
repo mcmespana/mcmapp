@@ -68,7 +68,7 @@ export default function TabsLayout() {
             tabBarIcon: ({ color, size }) => (
               <MaterialIcons name="calendar-today" color={color} size={size} />
             ),
-            headerStyle: { backgroundColor: '#A3BD31' }, // Éxito / Confirmación color
+            headerStyle: { backgroundColor: '#31AADF' }, // Color info
           }}
         />
 
@@ -89,7 +89,7 @@ export default function TabsLayout() {
             tabBarIcon: ({ color, size }) => (
               <MaterialIcons name="public" color={color} size={size} />
             ),
-            headerStyle: { backgroundColor: '#31AADF' }, // Info color
+            headerStyle: { backgroundColor: '#9D1E74dd' }, // Moradito
           }}
         />
       </Tabs>
