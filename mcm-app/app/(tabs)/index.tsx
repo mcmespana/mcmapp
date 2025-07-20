@@ -18,6 +18,7 @@ import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import SettingsPanel from '@/components/SettingsPanel';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import featureFlags from '@/constants/featureFlags';
 
 interface NavigationItem {
   href?: LinkProps['href'];

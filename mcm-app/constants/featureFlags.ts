@@ -20,10 +20,10 @@ const featureFlags: FeatureFlags = {
     cancionero: true,
     calendario: true,
     fotos: true,
-    comunica: false,
+    comunica: true,
   },
   defaultTab: 'index',
-  showNotificationsIcon: true,
+  showNotificationsIcon: false,
 };
 
 export default featureFlags;
