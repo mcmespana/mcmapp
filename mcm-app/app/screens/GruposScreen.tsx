@@ -1,16 +1,30 @@
 import React, { useState, useMemo } from 'react';
-import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Linking,
+} from 'react-native';
 import { List, IconButton, Text, Searchbar } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 
+const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
+  Movilidad: { icon: 'walk', color: colors.info },
+  'Conso+': { icon: 'cart', color: colors.success },
+  Autobuses: { icon: 'bus', color: colors.warning },
+  Alojamiento: { icon: 'home', color: colors.accent },
+};
+
 interface Grupo {
   nombre: string;
   responsable?: string;
   miembros: string[];
   subtitulo?: string;
+  mapa?: string;
 }
 
 type Data = Record<string, Grupo[]>;
@@ -23,15 +37,34 @@ export default function GruposScreen() {
     'jubileo_grupos',
   );
   const data = gruposData as Data | undefined;
-  const categorias = [
-    { name: 'Movilidad', icon: 'walk', color: colors.info },
-    { name: 'Conso+', icon: 'cart', color: colors.success },
-    { name: 'Autobuses', icon: 'bus', color: colors.warning },
-  ];
+
+  const categorias = useMemo(() => {
+    const base = Object.keys(CATEGORY_CONFIG).map((name) => ({
+      name,
+      icon: CATEGORY_CONFIG[name].icon,
+      color: CATEGORY_CONFIG[name].color,
+    }));
+    if (data) {
+      Object.keys(data).forEach((cat) => {
+        if (!CATEGORY_CONFIG[cat]) {
+          base.push({
+            name: cat,
+            icon: 'account-group',
+            color: colors.primary,
+          });
+        }
+      });
+    }
+    return base;
+  }, [data]);
   const [categoria, setCategoria] = useState<string | null>(null);
   const [grupo, setGrupo] = useState<Grupo | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [search, setSearch] = useState('');
+
+  const openMap = (url?: string) => {
+    if (url) Linking.openURL(url);
+  };
 
   const searchResults = useMemo(() => {
     if (!data || search.trim().length < 3) return [];
@@ -204,17 +237,37 @@ export default function GruposScreen() {
       </View>
       {grupo && (
         <View style={styles.groupContainer}>
-          <Text style={styles.groupTitle}>{grupo.nombre}</Text>
+          <View style={styles.groupHeader}>
+            <Text style={styles.groupTitle}>{grupo.nombre}</Text>
+          </View>
+          
+          {grupo.subtitulo && (
+            <View style={styles.quoteContainer}>
+              <View style={styles.quoteBorder} />
+              <Text style={styles.quoteText}>{grupo.subtitulo}</Text>
+            </View>
+          )}
+          
+          {grupo.mapa && (
+            <TouchableOpacity
+              style={styles.locationButton}
+              onPress={() => openMap(grupo.mapa)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.locationButtonText}>📍 Ubicación</Text>
+            </TouchableOpacity>
+          )}
+          
           {grupo.responsable && (
             <>
               <List.Subheader style={styles.sectionHeader}>
-                Responsable
+                Acompaña...
               </List.Subheader>
               <List.Item title={grupo.responsable} />
             </>
           )}
           <List.Subheader style={styles.sectionHeader}>
-            Miembros ({grupo.miembros.length})
+            Forman parte... ({grupo.miembros.length})
           </List.Subheader>
           {grupo.miembros.map((m, idx) => (
             <List.Item key={idx} title={m} />
@@ -243,6 +296,11 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     backWrapper: { padding: 8 },
     sectionHeader: { fontSize: 16, fontWeight: 'bold', color: theme.text },
     groupContainer: { paddingHorizontal: 16 },
+    groupHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
     groupTitle: {
       fontSize: 22,
       fontWeight: 'bold',
@@ -290,5 +348,44 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     searchButtonWrapper: { alignItems: 'flex-end', padding: 8 },
     matchItem: { paddingLeft: 32 },
+    quoteContainer: {
+      flexDirection: 'row',
+      marginVertical: 12,
+      marginHorizontal: 4,
+    },
+    quoteBorder: {
+      width: 4,
+      backgroundColor: colors.info,
+      borderRadius: 2,
+      marginRight: 12,
+    },
+    quoteText: {
+      flex: 1,
+      fontSize: 16,
+      fontStyle: 'italic',
+      color: scheme === 'dark' ? '#CCCCCC' : '#666',
+      lineHeight: 22,
+      paddingVertical: 8,
+    },
+    locationButton: {
+      backgroundColor: colors.info,
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      marginVertical: 12,
+      marginHorizontal: 4,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    locationButtonText: {
+      color: colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+    },
   });
 };
