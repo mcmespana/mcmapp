@@ -52,14 +52,14 @@ const navigationItems: NavigationItem[] = [
     href: '/comunica',
     label: 'Comunica',
     icon: 'chat',
-    backgroundColor: colors.success,
+    backgroundColor: colors.info,
     color: colors.black,
   },
   {
     href: '/jubileo',
     label: 'Jubileo',
     icon: 'celebration',
-    backgroundColor: colors.warning,
+    backgroundColor: colors.success,
     color: colors.black,
   },
   {
