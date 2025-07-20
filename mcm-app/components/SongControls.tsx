@@ -57,7 +57,7 @@ const SongControls: React.FC<SongControlsProps> = ({
 
   const handleOpenTransposePanel = () => setShowTransposePanel(true);
   const handleOpenFontPanel = () => setShowFontPanel(true);
-  
+
   const handleReportSuccess = () => {
     setShowSuccessToast(true);
   };

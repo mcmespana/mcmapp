@@ -33,7 +33,7 @@ export default function SuggestSongModal({
 }: SuggestSongModalProps) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
-  
+
   const [titulo, setTitulo] = useState('');
   const [artista, setArtista] = useState('');
   const [letra, setLetra] = useState('');
@@ -59,7 +59,7 @@ export default function SuggestSongModal({
       const db = getDatabase(getFirebaseApp());
       const newRef = push(ref(db, 'songs/solicitudes'));
       const contenido = `{title: ${titulo}}\n{author: ${artista}}\n\n${letra}`;
-      
+
       await set(newRef, {
         title: titulo,
         author: artista,
@@ -70,7 +70,7 @@ export default function SuggestSongModal({
         platform: Platform.OS,
         requestedAt: new Date().toISOString(),
       });
-      
+
       await set(ref(db, 'songs/updatedAt'), Date.now().toString());
 
       // Limpiar formulario

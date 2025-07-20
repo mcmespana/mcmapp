@@ -76,7 +76,11 @@ export default function TabsLayout() {
             options={{
               title: 'Calendario',
               tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="calendar-today" color={color} size={size} />
+                <MaterialIcons
+                  name="calendar-today"
+                  color={color}
+                  size={size}
+                />
               ),
               headerStyle: { backgroundColor: '#31AADF' }, // Éxito / Confirmación color
             }}

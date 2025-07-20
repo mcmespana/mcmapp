@@ -7,7 +7,7 @@ import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import DateSelector from '@/components/DateSelector';
-import EventItem from '@/components/EventItem';
+import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
 
 export default function HorarioScreen() {
@@ -46,9 +46,11 @@ export default function HorarioScreen() {
         <ThemedText style={styles.titleText}>{dia.titulo}</ThemedText>
       </View>
       <ScrollView contentContainerStyle={styles.eventsContainer}>
-        {dia.eventos.map((ev, idx) => (
-          <EventItem key={idx} event={ev} />
-        ))}
+        {dia.eventos.map(
+          (ev: EventItemData, idx: React.Key | null | undefined) => (
+            <EventItem key={idx} event={ev} />
+          ),
+        )}
       </ScrollView>
     </View>
   );

@@ -50,21 +50,21 @@ export default function ReportBugsModal({
 
     try {
       const db = getDatabase(getFirebaseApp());
-      
+
       // Determinar la categoría basándose en el filename
       const category = songFilename
         ? getCategoryFromFilename(songFilename)
         : 'otros';
-      
+
       // Limpiar el título de la canción
       const cleanTitle = songTitle ? cleanSongTitle(songTitle) : 'Sin título';
-      
+
       // Crear el path en Firebase: songs/fallitos/{categoria}/{titulo-de-cancion}
       const fallitosRef = ref(db, `songs/fallitos/${category}/${cleanTitle}`);
-      
+
       // Crear un nuevo fallito en el array
       const newFallitoRef = push(fallitosRef);
-      
+
       await set(newFallitoRef, {
         description: bugDescription.trim(),
         timestamp: Date.now(),
@@ -178,7 +178,9 @@ export default function ReportBugsModal({
               style={[
                 styles.submitButton,
                 {
-                  backgroundColor: bugDescription.trim() ? '#FF6B6B' : theme.icon,
+                  backgroundColor: bugDescription.trim()
+                    ? '#FF6B6B'
+                    : theme.icon,
                   opacity: isSubmitting ? 0.7 : 1,
                 },
               ]}

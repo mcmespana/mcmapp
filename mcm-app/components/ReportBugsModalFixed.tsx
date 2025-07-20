@@ -50,21 +50,21 @@ export default function ReportBugsModal({
 
     try {
       const db = getDatabase(getFirebaseApp());
-      
+
       // Determinar la categoría basándose en el filename
       const category = songFilename
         ? getCategoryFromFilename(songFilename)
         : 'otros';
-      
+
       // Limpiar el título de la canción
       const cleanTitle = songTitle ? cleanSongTitle(songTitle) : 'Sin título';
-      
+
       // Crear el path en Firebase: songs/fallitos/{categoria}/{titulo-de-cancion}
       const fallitosRef = ref(db, `songs/fallitos/${category}/${cleanTitle}`);
-      
+
       // Crear un nuevo fallito en el array
       const newFallitoRef = push(fallitosRef);
-      
+
       await set(newFallitoRef, {
         description: bugDescription.trim(),
         timestamp: Date.now(),
@@ -201,8 +201,8 @@ export default function ReportBugsModal({
 
                 <Text style={[styles.disclaimer, { color: theme.icon }]}>
                   Tus comentarios nos ayudan a mejorar la calidad del cantoral.
-                  Incluye detalles como acordes incorrectos, mal puestos, errores
-                  en las letras o problemas de formato.
+                  Incluye detalles como acordes incorrectos, mal puestos,
+                  errores en las letras o problemas de formato.
                 </Text>
               </KeyboardAvoidingView>
             </View>

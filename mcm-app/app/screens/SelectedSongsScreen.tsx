@@ -376,7 +376,7 @@ const SelectedSongsScreen: React.FC = () => {
             }}
           >
             <IconSymbol
-              name={isDesktopLike ? 'doc.on.doc' : 'doc.on.clipboard'}
+              name={isDesktopLike ? 'doc.on.doc' : 'square.and.arrow.up'}
               size={24}
               color="#fff" // Usamos icono distinto solo para móviles
             />
@@ -424,7 +424,7 @@ const SelectedSongsScreen: React.FC = () => {
           <Text style={styles.swipeHint}>
             Esta sección te permite seleccionar canciones para crear una
             playlist. Podrás guardarlas para más tarde o compartirlas con otros.
-            {'\n'}{'\n'}
+            {'\n\n'}
             Desliza una canción hacia la izquierda para seleccionarla o presiona
             el botón + en la pantalla de canción.
           </Text>

@@ -161,7 +161,7 @@ function ContextualDecoration({ type }: { type: string }) {
           <View style={[styles.star, styles.star2]} />
         </Animated.View>
       );
-    
+
     case 'Cantoral':
       return (
         <Animated.View style={[styles.decorationContainer, animatedStyle]}>
@@ -172,7 +172,7 @@ function ContextualDecoration({ type }: { type: string }) {
           <View style={[styles.musicWave, styles.wave2]} />
         </Animated.View>
       );
-    
+
     case 'Calendario':
       return (
         <Animated.View style={[styles.decorationContainer, animatedStyle]}>
@@ -184,7 +184,7 @@ function ContextualDecoration({ type }: { type: string }) {
           <View style={[styles.timelineBar, styles.timeline2]} />
         </Animated.View>
       );
-    
+
     case 'Fotos':
       return (
         <Animated.View style={[styles.decorationContainer, animatedStyle]}>
@@ -195,7 +195,7 @@ function ContextualDecoration({ type }: { type: string }) {
           <View style={[styles.flashRay, styles.ray2]} />
         </Animated.View>
       );
-    
+
     case 'Comunica':
       return (
         <Animated.View style={[styles.decorationContainer, animatedStyle]}>
@@ -206,7 +206,7 @@ function ContextualDecoration({ type }: { type: string }) {
           <View style={[styles.connectionLine, styles.connection2]} />
         </Animated.View>
       );
-    
+
     default:
       return (
         <Animated.View style={[styles.decorationContainer, animatedStyle]}>

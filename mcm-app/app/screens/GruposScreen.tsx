@@ -240,14 +240,14 @@ export default function GruposScreen() {
           <View style={styles.groupHeader}>
             <Text style={styles.groupTitle}>{grupo.nombre}</Text>
           </View>
-          
+
           {grupo.subtitulo && (
             <View style={styles.quoteContainer}>
               <View style={styles.quoteBorder} />
               <Text style={styles.quoteText}>{grupo.subtitulo}</Text>
             </View>
           )}
-          
+
           {grupo.mapa && (
             <TouchableOpacity
               style={styles.locationButton}
@@ -257,7 +257,7 @@ export default function GruposScreen() {
               <Text style={styles.locationButtonText}>📍 Ubicación</Text>
             </TouchableOpacity>
           )}
-          
+
           {grupo.responsable && (
             <>
               <List.Subheader style={styles.sectionHeader}>

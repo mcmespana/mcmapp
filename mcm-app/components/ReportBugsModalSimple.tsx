@@ -46,21 +46,21 @@ export default function ReportBugsModal({
 
     try {
       const db = getDatabase(getFirebaseApp());
-      
+
       // Determinar la categoría basándose en el filename
       const category = songFilename
         ? getCategoryFromFilename(songFilename)
         : 'otros';
-      
+
       // Limpiar el título de la canción
       const cleanTitle = songTitle ? cleanSongTitle(songTitle) : 'Sin título';
-      
+
       // Crear el path en Firebase: songs/fallitos/{categoria}/{titulo-de-cancion}
       const fallitosRef = ref(db, `songs/fallitos/${category}/${cleanTitle}`);
-      
+
       // Crear un nuevo fallito en el array
       const newFallitoRef = push(fallitosRef);
-      
+
       await set(newFallitoRef, {
         description: bugDescription.trim(),
         timestamp: Date.now(),
@@ -81,10 +81,7 @@ export default function ReportBugsModal({
       }
     } catch (error) {
       console.error('Error submitting bug report:', error);
-      Alert.alert(
-        'Error',
-        'No se pudo enviar el reporte. Inténtalo de nuevo.',
-      );
+      Alert.alert('Error', 'No se pudo enviar el reporte. Inténtalo de nuevo.');
     } finally {
       setIsSubmitting(false);
     }

@@ -13,7 +13,6 @@ import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
 import ReflexionesScreen from '../screens/ReflexionesScreen';
 import AppsScreen from '../screens/AppsScreen';
-import { IconButton } from 'react-native-paper';
 import SettingsPanel from '@/components/SettingsPanel';
 
 export type JubileoStackParamList = {
@@ -35,89 +34,92 @@ export default function JubileoTab() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   return (
     <>
-      <SettingsPanel visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
+      <SettingsPanel
+        visible={settingsVisible}
+        onClose={() => setSettingsVisible(false)}
+      />
       <Stack.Navigator
-      initialRouteName="Home"
-      screenOptions={({ navigation, route }) => ({
-        headerBackTitle: 'Atrás',
-        headerStyle: { backgroundColor: '#A3BD31' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: 'bold' },
-        headerTitleAlign: 'center',
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity
-              onPress={() => setSettingsVisible(true)}
-              style={{ padding: 8, marginRight: 4 }}
-            >
-              <MaterialIcons name="settings" size={24} color="#fff" />
-            </TouchableOpacity>
-            {route.name !== 'Reflexiones' && (
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Reflexiones')}
-                style={{ padding: 8 }}
-              >
-                <MaterialIcons name="forum" size={24} color="#fff" />
-              </TouchableOpacity>
-            )}
-          </View>
-        ),
-      })}
-    >
-      <Stack.Screen
-        name="Home"
-        component={JubileoHomeScreen}
-        options={{ title: 'Jubileo' }}
-      />
-      <Stack.Screen
-        name="Horario"
-        component={HorarioScreen}
-        options={{ title: 'Horario' }}
-      />
-      <Stack.Screen
-        name="Materiales"
-        component={MaterialesScreen}
-        options={{ title: 'Materiales' }}
-      />
-      <Stack.Screen
-        name="MaterialPages"
-        component={MaterialPagesScreen}
-        options={{ title: 'Material' }}
-      />
-      <Stack.Screen
-        name="Visitas"
-        component={VisitasScreen}
-        options={{ title: 'Visitas' }}
-      />
-      <Stack.Screen
-        name="Profundiza"
-        component={ProfundizaScreen}
-        options={{ title: 'Profundiza' }}
-      />
-      <Stack.Screen
-        name="Grupos"
-        component={GruposScreen}
-        options={{ title: 'Grupos' }}
-      />
-      <Stack.Screen
-        name="Contactos"
-        component={ContactosScreen}
-        options={{ title: 'Contactos' }}
-      />
-      <Stack.Screen
-        name="Apps"
-        component={AppsScreen}
-        options={{ title: 'Apps' }}
-      />
-      <Stack.Screen
-        name="Reflexiones"
-        component={ReflexionesScreen}
-        options={{
-          title: 'Compartiendo',
+        initialRouteName="Home"
+        screenOptions={({ navigation, route }) => ({
+          headerBackTitle: 'Atrás',
           headerStyle: { backgroundColor: '#A3BD31' },
-        }}
-      />
-    </Stack.Navigator>
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          headerTitleAlign: 'center',
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={() => setSettingsVisible(true)}
+                style={{ padding: 8, marginRight: 4 }}
+              >
+                <MaterialIcons name="settings" size={24} color="#fff" />
+              </TouchableOpacity>
+              {route.name !== 'Reflexiones' && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('Reflexiones')}
+                  style={{ padding: 8 }}
+                >
+                  <MaterialIcons name="forum" size={24} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </View>
+          ),
+        })}
+      >
+        <Stack.Screen
+          name="Home"
+          component={JubileoHomeScreen}
+          options={{ title: 'Jubileo' }}
+        />
+        <Stack.Screen
+          name="Horario"
+          component={HorarioScreen}
+          options={{ title: 'Horario' }}
+        />
+        <Stack.Screen
+          name="Materiales"
+          component={MaterialesScreen}
+          options={{ title: 'Materiales' }}
+        />
+        <Stack.Screen
+          name="MaterialPages"
+          component={MaterialPagesScreen}
+          options={{ title: 'Material' }}
+        />
+        <Stack.Screen
+          name="Visitas"
+          component={VisitasScreen}
+          options={{ title: 'Visitas' }}
+        />
+        <Stack.Screen
+          name="Profundiza"
+          component={ProfundizaScreen}
+          options={{ title: 'Profundiza' }}
+        />
+        <Stack.Screen
+          name="Grupos"
+          component={GruposScreen}
+          options={{ title: 'Grupos' }}
+        />
+        <Stack.Screen
+          name="Contactos"
+          component={ContactosScreen}
+          options={{ title: 'Contactos' }}
+        />
+        <Stack.Screen
+          name="Apps"
+          component={AppsScreen}
+          options={{ title: 'Apps' }}
+        />
+        <Stack.Screen
+          name="Reflexiones"
+          component={ReflexionesScreen}
+          options={{
+            title: 'Compartiendo',
+            headerStyle: { backgroundColor: '#A3BD31' },
+          }}
+        />
+      </Stack.Navigator>
     </>
   );
 }

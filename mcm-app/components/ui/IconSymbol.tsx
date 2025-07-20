@@ -22,6 +22,8 @@ type IconMapping = {
   'music.note.list': 'queue-music';
   trash: 'delete';
   'checkmark.circle.fill': 'check-circle';
+  'tray.and.arrow.down': 'file-download';
+  'square.and.arrow.up.on.square': 'file-upload';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -48,6 +50,8 @@ const MAPPING: IconMapping = {
   'music.note.list': 'queue-music',
   trash: 'delete',
   'checkmark.circle.fill': 'check-circle',
+  'tray.and.arrow.down': 'file-download',
+  'square.and.arrow.up.on.square': 'file-upload',
 };
 
 /**

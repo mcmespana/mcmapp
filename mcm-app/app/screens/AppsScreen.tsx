@@ -44,7 +44,8 @@ export default function AppsScreen() {
 
   const openApp = async (app: AppInfo) => {
     try {
-      const schemeUrl = Platform.OS === 'ios' ? app.iosScheme : app.androidScheme;
+      const schemeUrl =
+        Platform.OS === 'ios' ? app.iosScheme : app.androidScheme;
       if (schemeUrl) {
         const canOpen = await Linking.canOpenURL(schemeUrl);
         if (canOpen) {
@@ -83,13 +84,14 @@ export default function AppsScreen() {
         {/* Texto de introducción */}
         <View style={styles.introContainer}>
           <Text style={styles.introText}>
-            Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo.
+            Lista de aplicaciones móviles (algunas necesarias 🌟, otras
+            opcionales ℹ️) que necesitaremos durante el Jubileo.
           </Text>
           <Text style={styles.introSubtext}>
             Si tocas el icono de la app te la abrirá directamente ✨
           </Text>
         </View>
-        
+
         <List.Section>
           {apps.map((app, idx) => (
             <TouchableOpacity
@@ -109,9 +111,9 @@ export default function AppsScreen() {
                   {app.tipo.toLowerCase() === 'necesaria' && (
                     <View style={styles.starBadge}>
                       <View style={styles.starBadgeContainer}>
-                        <IconButton 
-                          icon="star" 
-                          size={16} 
+                        <IconButton
+                          icon="star"
+                          size={16}
                           iconColor="#FFF"
                           style={styles.starBadgeIcon}
                         />
@@ -154,14 +156,14 @@ export default function AppsScreen() {
                     styles.chip,
                     selected.tipo.toLowerCase() === 'necesaria'
                       ? styles.chipNecesaria
-                      : styles.chipOpcional
+                      : styles.chipOpcional,
                   ]}
                   textStyle={styles.chipText}
                   theme={{
                     colors: {
                       primary: '#FFFFFF', // Color del ícono
                       onSurface: '#FFFFFF', // Color del texto
-                    }
+                    },
                   }}
                 >
                   {selected.tipo}
@@ -225,17 +227,17 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       marginRight: 16,
     },
-    icon: { 
-      width: 48, 
-      height: 48, 
+    icon: {
+      width: 48,
+      height: 48,
       borderRadius: 12,
     },
     contentContainer: {
       flex: 1,
       justifyContent: 'center',
     },
-    title: { 
-      fontWeight: 'bold', 
+    title: {
+      fontWeight: 'bold',
       color: theme.text,
       fontSize: 16,
       marginBottom: 4,

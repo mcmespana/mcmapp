@@ -123,7 +123,7 @@ export default function CategoriesScreen({
         )}
       />
       <FAB icon="plus" style={styles.fab} onPress={() => setShowForm(true)} />
-      
+
       <SuggestSongModal
         visible={showForm}
         onClose={() => setShowForm(false)}
@@ -131,7 +131,7 @@ export default function CategoriesScreen({
         songsData={songsData}
         onSuccess={handleSuccessSubmit}
       />
-      
+
       {/* Toast de éxito */}
       <Snackbar
         visible={showSuccessToast}
