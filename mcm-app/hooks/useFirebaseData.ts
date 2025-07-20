@@ -4,6 +4,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirebaseApp } from './firebaseApp';
 import * as Network from 'expo-network';
 
+function getFallbackData(path: string): any | null {
+  switch (path) {
+    case 'albums':
+      return require('../assets/albums.json');
+    case 'songs':
+      return require('../assets/songs.json');
+    case 'jubileo/horario':
+      return require('../assets/jubileo-horario.json');
+    case 'jubileo/materiales':
+      return require('../assets/jubileo-materiales.json');
+    case 'jubileo/visitas':
+      return require('../assets/jubileo-visitas.json');
+    case 'jubileo/profundiza':
+      return require('../assets/jubileo-profundiza.json');
+    case 'jubileo/grupos':
+      return require('../assets/jubileo-grupos.json');
+    case 'jubileo/contactos':
+      return require('../assets/jubileo-contactos.json');
+    default:
+      return null;
+  }
+}
+
 export function useFirebaseData<T>(
   path: string,
   storageKey: string,
@@ -25,28 +48,42 @@ export function useFirebaseData<T>(
           AsyncStorage.getItem(`${storageKey}_data`),
           AsyncStorage.getItem(`${storageKey}_updatedAt`),
         ]);
+
         if (localDataStr) {
           const parsed = JSON.parse(localDataStr);
           const transformed = transform ? transform(parsed) : (parsed as T);
           if (isMounted) setData(transformed);
-        }
-
-        const db = getDatabase(getFirebaseApp());
-        const snapshot = await get(ref(db, path));
-        if (snapshot.exists()) {
-          const val = snapshot.val();
-          const remoteUpdatedAt = String(val.updatedAt ?? '0');
-          if (!localUpdatedAt || localUpdatedAt !== remoteUpdatedAt) {
-            const remoteData = transform ? transform(val.data) : (val.data as T);
+        } else {
+          const fallback = getFallbackData(path);
+          if (fallback) {
+            const transformed = transform ? transform(fallback) : (fallback as T);
             await AsyncStorage.setItem(
               `${storageKey}_data`,
-              JSON.stringify(remoteData),
+              JSON.stringify(transformed),
             );
-            await AsyncStorage.setItem(
-              `${storageKey}_updatedAt`,
-              remoteUpdatedAt,
-            );
-            if (isMounted) setData(remoteData);
+            await AsyncStorage.setItem(`${storageKey}_updatedAt`, '0');
+            if (isMounted) setData(transformed);
+          }
+        }
+
+        if (connected) {
+          const db = getDatabase(getFirebaseApp());
+          const snapshot = await get(ref(db, path));
+          if (snapshot.exists()) {
+            const val = snapshot.val();
+            const remoteUpdatedAt = String(val.updatedAt ?? '0');
+            if (!localUpdatedAt || localUpdatedAt !== remoteUpdatedAt) {
+              const remoteData = transform ? transform(val.data) : (val.data as T);
+              await AsyncStorage.setItem(
+                `${storageKey}_data`,
+                JSON.stringify(remoteData),
+              );
+              await AsyncStorage.setItem(
+                `${storageKey}_updatedAt`,
+                remoteUpdatedAt,
+              );
+              if (isMounted) setData(remoteData);
+            }
           }
         }
       } catch (e) {
