@@ -73,7 +73,10 @@ export default function JubileoHomeScreen() {
     useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { loading: lh } = useFirebaseData('jubileo/horario', 'jubileo_horario');
+  const { loading: lh, offline } = useFirebaseData(
+    'jubileo/horario',
+    'jubileo_horario',
+  );
   const { loading: lm } = useFirebaseData(
     'jubileo/materiales',
     'jubileo_materiales',

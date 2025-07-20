@@ -41,7 +41,7 @@ export default function FotosScreen() {
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { data: allAlbumsData, loading } = useFirebaseData<Album[]>(
+  const { data: allAlbumsData, loading, offline } = useFirebaseData<Album[]>(
     'albums',
     'albums',
   );

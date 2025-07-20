@@ -439,7 +439,21 @@
         "Luis Nieto",
         "Silvia Salazar"
       ],
-      "subtitulo": "Incluye parada intermedia"
+    "subtitulo": "Incluye parada intermedia"
+    }
+  ],
+  "Alojamiento": [
+    {
+      "nombre": "Casa San Marcos",
+      "subtitulo": "Habitaciones compartidas",
+      "miembros": ["Ana", "Luis", "Marta"],
+      "mapa": "https://maps.google.com/?q=Casa+San+Marcos"
+    },
+    {
+      "nombre": "Hostal El Camino",
+      "subtitulo": "Plazas limitadas",
+      "miembros": ["Pepe", "Carlos"],
+      "mapa": "https://maps.google.com/?q=Hostal+El+Camino"
     }
   ]
 }
