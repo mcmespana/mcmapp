@@ -26,6 +26,14 @@ export default function BottomSheet({
       swipeDirection="down"
       onSwipeComplete={onClose}
       backdropOpacity={0.3}
+      animationIn="slideInUp"
+      animationOut="slideOutDown"
+      animationInTiming={300}
+      animationOutTiming={250}
+      backdropTransitionInTiming={300}
+      backdropTransitionOutTiming={250}
+      useNativeDriverForBackdrop={true}
+      hideModalContentWhileAnimating={true}
     >
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         {children}

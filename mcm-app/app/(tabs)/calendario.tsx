@@ -79,11 +79,11 @@ const calendarConfigs: CalendarConfig[] = [
     url: 'https://calendar.google.com/calendar/ical/consolacion.org_11dp4qj27sgud37d7fjanghfck%40group.calendar.google.com/public/basic.ics',
     color: '#31AADF',
   },
-  {
+  /*{
     name: 'MCM Castellón',
     url: 'https://calendar.google.com/calendar/ical/33j7mpbn86b2jj9sl8rds2e9m8%40group.calendar.google.com/public/basic.ics',
     color: '#A3BD31',
-  },
+  },*/
 ];
 
 export default function Calendario() {

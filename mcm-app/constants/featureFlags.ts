@@ -20,7 +20,7 @@ const featureFlags: FeatureFlags = {
     cancionero: true,
     calendario: true,
     fotos: true,
-    comunica: true,
+    comunica: false,
   },
   defaultTab: 'index',
   showNotificationsIcon: false,

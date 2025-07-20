@@ -422,7 +422,11 @@ const SelectedSongsScreen: React.FC = () => {
             Todavía no has seleccionado canciones
           </Text>
           <Text style={styles.swipeHint}>
-            Desliza una canción hacia la izquierda para seleccionarla
+            Esta sección te permite seleccionar canciones para crear una
+            playlist. Podrás guardarlas para más tarde o compartirlas con otros.
+            {'\n'}{'\n'}
+            Desliza una canción hacia la izquierda para seleccionarla o presiona
+            el botón + en la pantalla de canción.
           </Text>
         </View>
       </View>

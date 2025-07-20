@@ -41,21 +41,28 @@ export default function FotosScreen() {
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { data: allAlbumsData, loading, offline } = useFirebaseData<Album[]>(
-    'albums',
-    'albums',
-  );
+  const {
+    data: allAlbumsData,
+    loading,
+    offline,
+  } = useFirebaseData<Album[]>('albums', 'albums');
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   useEffect(() => {
     if (!allAlbumsData) return;
-    const initialAlbums = allAlbumsData.slice(0, ALBUMS_PER_PAGE);
+
+    // Ordenar álbumes por ID en orden inverso (más nuevos primero)
+    const sortedAlbums = [...allAlbumsData].sort((a, b) =>
+      b.id.localeCompare(a.id),
+    );
+
+    const initialAlbums = sortedAlbums.slice(0, ALBUMS_PER_PAGE);
     setDisplayedAlbums(initialAlbums);
     if (
       initialAlbums.length < ALBUMS_PER_PAGE ||
-      allAlbumsData.length <= ALBUMS_PER_PAGE
+      sortedAlbums.length <= ALBUMS_PER_PAGE
     ) {
       setAllAlbumsLoaded(true);
     }
@@ -67,17 +74,22 @@ export default function FotosScreen() {
     setIsLoadingMore(true);
     // Using a short timeout to ensure UI updates before heavy lifting, and to show spinner
     setTimeout(() => {
+      // Ordenar álbumes por ID en orden inverso (más nuevos primero)
+      const sortedAlbums = [...allAlbumsData].sort((a, b) =>
+        b.id.localeCompare(a.id),
+      );
+
       const nextPage = currentPage + 1;
       const startIndex = nextPage * ALBUMS_PER_PAGE;
       const endIndex = startIndex + ALBUMS_PER_PAGE;
-      const newAlbums = allAlbumsData.slice(startIndex, endIndex);
+      const newAlbums = sortedAlbums.slice(startIndex, endIndex);
 
       if (newAlbums.length > 0) {
         setDisplayedAlbums((prevAlbums) => [...prevAlbums, ...newAlbums]);
         setCurrentPage(nextPage);
         if (
           newAlbums.length < ALBUMS_PER_PAGE ||
-          displayedAlbums.length + newAlbums.length === allAlbumsData.length
+          displayedAlbums.length + newAlbums.length === sortedAlbums.length
         ) {
           setAllAlbumsLoaded(true);
         }

@@ -300,6 +300,8 @@ export default function SongDetailScreen({
         onSetFontFamily={handleSetFontFamily}
         onToggleNotation={handleToggleNotation}
         onNavigateToFullscreen={handleNavigateToFullscreen}
+        songTitle={_navScreenTitle}
+        songFilename={filename}
       />
     </Animated.View>
   );
