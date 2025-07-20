@@ -31,8 +31,12 @@ export default function ProfundizaScreen() {
     paginas: Pagina[];
   };
 
-  if (loading || !data) {
+  if (!data) {
     return <ProgressWithMessage message="Cargando profundiza..." />;
+  }
+
+  if (loading) {
+    return <ProgressWithMessage message="Actualizando profundiza..." />;
   }
 
   return (

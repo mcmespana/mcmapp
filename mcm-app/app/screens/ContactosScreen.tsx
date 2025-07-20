@@ -62,8 +62,12 @@ export default function ContactosScreen() {
     Linking.openURL(`https://wa.me/${clean}`);
   };
 
-  if (loading || !data) {
+  if (!data) {
     return <ProgressWithMessage message="Cargando contactos..." />;
+  }
+
+  if (loading) {
+    return <ProgressWithMessage message="Actualizando contactos..." />;
   }
 
   return (

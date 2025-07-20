@@ -44,8 +44,12 @@ export default function MaterialesScreen() {
     : [];
   const dia = materialesData ? materialesData[index] : null;
 
-  if (loading || !dia) {
+  if (!dia) {
     return <ProgressWithMessage message="Cargando materiales..." />;
+  }
+
+  if (loading) {
+    return <ProgressWithMessage message="Actualizando materiales..." />;
   }
 
   return (
