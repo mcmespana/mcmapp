@@ -43,16 +43,32 @@ export default function AppsScreen() {
   const [selected, setSelected] = useState<AppInfo | null>(null);
 
   const openApp = async (app: AppInfo) => {
-    const schemeUrl = Platform.OS === 'ios' ? app.iosScheme : app.androidScheme;
-    if (schemeUrl) {
-      const can = await Linking.canOpenURL(schemeUrl);
-      if (can) {
-        Linking.openURL(schemeUrl);
-        return;
+    try {
+      const schemeUrl = Platform.OS === 'ios' ? app.iosScheme : app.androidScheme;
+      if (schemeUrl) {
+        const canOpen = await Linking.canOpenURL(schemeUrl);
+        if (canOpen) {
+          await Linking.openURL(schemeUrl);
+          return;
+        }
+      }
+      // Si no puede abrir la app o no está instalada, abre la store
+      const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
+      if (storeUrl) {
+        await Linking.openURL(storeUrl);
+      }
+    } catch (error) {
+      // Si hay cualquier error, intenta abrir la store como fallback
+      console.log('Error opening app:', error);
+      const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
+      if (storeUrl) {
+        try {
+          await Linking.openURL(storeUrl);
+        } catch (storeError) {
+          console.log('Error opening store:', storeError);
+        }
       }
     }
-    const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
-    if (storeUrl) Linking.openURL(storeUrl);
   };
 
   if (loading || !appsData) {
@@ -64,22 +80,56 @@ export default function AppsScreen() {
   return (
     <View style={styles.container}>
       <ScrollView>
+        {/* Texto de introducción */}
+        <View style={styles.introContainer}>
+          <Text style={styles.introText}>
+            Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo.
+          </Text>
+          <Text style={styles.introSubtext}>
+            Si tocas el icono de la app te la abrirá directamente ✨
+          </Text>
+        </View>
+        
         <List.Section>
           {apps.map((app, idx) => (
-            <List.Item
+            <TouchableOpacity
               key={idx}
-              title={app.nombre}
-              description={app.descripcion}
-              left={() => (
-                <TouchableOpacity onPress={() => openApp(app)}>
+              onPress={() => openApp(app)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.listItemContainer}>
+                <View style={styles.iconContainer}>
                   <Image source={{ uri: app.icono }} style={styles.icon} />
-                </TouchableOpacity>
-              )}
-              right={() => (
-                <IconButton icon="plus" onPress={() => setSelected(app)} />
-              )}
-              titleStyle={styles.title}
-            />
+                </View>
+                <View style={styles.contentContainer}>
+                  <Text style={styles.title}>{app.nombre}</Text>
+                  <Text style={styles.description}>{app.descripcion}</Text>
+                </View>
+                <View style={styles.rightContainer}>
+                  {app.tipo.toLowerCase() === 'necesaria' && (
+                    <View style={styles.starBadge}>
+                      <View style={styles.starBadgeContainer}>
+                        <IconButton 
+                          icon="star" 
+                          size={16} 
+                          iconColor="#FFF"
+                          style={styles.starBadgeIcon}
+                        />
+                      </View>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setSelected(app);
+                    }}
+                    style={styles.plusButton}
+                  >
+                    <IconButton icon="plus" size={24} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
           ))}
         </List.Section>
       </ScrollView>
@@ -100,7 +150,19 @@ export default function AppsScreen() {
                       ? 'star'
                       : 'information'
                   }
-                  style={styles.chip}
+                  style={[
+                    styles.chip,
+                    selected.tipo.toLowerCase() === 'necesaria'
+                      ? styles.chipNecesaria
+                      : styles.chipOpcional
+                  ]}
+                  textStyle={styles.chipText}
+                  theme={{
+                    colors: {
+                      primary: '#FFFFFF', // Color del ícono
+                      onSurface: '#FFFFFF', // Color del texto
+                    }
+                  }}
                 >
                   {selected.tipo}
                 </Chip>
@@ -129,8 +191,92 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    icon: { width: 40, height: 40, borderRadius: 8, marginRight: 8 },
-    title: { fontWeight: 'bold', color: theme.text },
+    introContainer: {
+      padding: 20,
+      paddingBottom: 16,
+      backgroundColor: theme.background,
+    },
+    introText: {
+      fontSize: 16,
+      color: theme.text,
+      textAlign: 'center',
+      lineHeight: 22,
+      marginBottom: 8,
+      fontWeight: '500',
+    },
+    introSubtext: {
+      fontSize: 14,
+      color: theme.text,
+      textAlign: 'center',
+      opacity: 0.7,
+      fontStyle: 'italic',
+    },
+    listItemContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: theme.background,
+      borderBottomWidth: 1,
+      borderBottomColor: scheme === 'dark' ? '#333' : '#f0f0f0',
+    },
+    iconContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 16,
+    },
+    icon: { 
+      width: 48, 
+      height: 48, 
+      borderRadius: 12,
+    },
+    contentContainer: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    title: { 
+      fontWeight: 'bold', 
+      color: theme.text,
+      fontSize: 16,
+      marginBottom: 4,
+    },
+    description: {
+      color: theme.text,
+      opacity: 0.7,
+      fontSize: 14,
+      lineHeight: 18,
+    },
+    rightContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    starBadge: {
+      marginRight: 8,
+    },
+    starBadgeContainer: {
+      backgroundColor: '#F5A623',
+      borderRadius: 12,
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    starBadgeIcon: {
+      margin: 0,
+      width: 24,
+      height: 24,
+    },
+    starIcon: {
+      fontSize: 18,
+    },
+    plusButton: {
+      // El IconButton ya tiene su propio estilo
+    },
     modal: {
       backgroundColor: theme.background,
       padding: 20,
@@ -152,6 +298,16 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     chipRow: { alignItems: 'center', marginBottom: 12 },
     chip: { alignSelf: 'center' },
+    chipNecesaria: {
+      backgroundColor: '#F5A623',
+    },
+    chipOpcional: {
+      backgroundColor: '#4A90E2',
+    },
+    chipText: {
+      color: '#FFFFFF',
+      fontWeight: 'bold',
+    },
     downloadRow: {
       flexDirection: 'row',
       justifyContent: 'space-around',
