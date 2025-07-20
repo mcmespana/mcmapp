@@ -239,24 +239,35 @@ export default function GruposScreen() {
         <View style={styles.groupContainer}>
           <View style={styles.groupHeader}>
             <Text style={styles.groupTitle}>{grupo.nombre}</Text>
-            {grupo.mapa && (
-              <IconButton
-                icon="map"
-                size={24}
-                onPress={() => openMap(grupo.mapa)}
-              />
-            )}
           </View>
+          
+          {grupo.subtitulo && (
+            <View style={styles.quoteContainer}>
+              <View style={styles.quoteBorder} />
+              <Text style={styles.quoteText}>{grupo.subtitulo}</Text>
+            </View>
+          )}
+          
+          {grupo.mapa && (
+            <TouchableOpacity
+              style={styles.locationButton}
+              onPress={() => openMap(grupo.mapa)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.locationButtonText}>📍 Ubicación</Text>
+            </TouchableOpacity>
+          )}
+          
           {grupo.responsable && (
             <>
               <List.Subheader style={styles.sectionHeader}>
-                Responsable
+                Acompaña...
               </List.Subheader>
               <List.Item title={grupo.responsable} />
             </>
           )}
           <List.Subheader style={styles.sectionHeader}>
-            Miembros ({grupo.miembros.length})
+            Forman parte... ({grupo.miembros.length})
           </List.Subheader>
           {grupo.miembros.map((m, idx) => (
             <List.Item key={idx} title={m} />
@@ -337,5 +348,44 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     searchButtonWrapper: { alignItems: 'flex-end', padding: 8 },
     matchItem: { paddingLeft: 32 },
+    quoteContainer: {
+      flexDirection: 'row',
+      marginVertical: 12,
+      marginHorizontal: 4,
+    },
+    quoteBorder: {
+      width: 4,
+      backgroundColor: colors.info,
+      borderRadius: 2,
+      marginRight: 12,
+    },
+    quoteText: {
+      flex: 1,
+      fontSize: 16,
+      fontStyle: 'italic',
+      color: scheme === 'dark' ? '#CCCCCC' : '#666',
+      lineHeight: 22,
+      paddingVertical: 8,
+    },
+    locationButton: {
+      backgroundColor: colors.info,
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      marginVertical: 12,
+      marginHorizontal: 4,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    locationButtonText: {
+      color: colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+    },
   });
 };
