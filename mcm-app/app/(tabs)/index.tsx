@@ -28,10 +28,24 @@ interface NavigationItem {
 
 const navigationItems: NavigationItem[] = [
   {
+    href: '/jubileo',
+    label: 'Jubileo',
+    icon: 'celebration',
+    backgroundColor: colors.success,
+    color: colors.black,
+  },
+  {
     href: '/cancionero',
     label: 'Cantoral',
     icon: 'library-music',
     backgroundColor: colors.warning,
+    color: colors.black,
+  },
+  {
+    href: '/calendario',
+    label: 'Calendario',
+    icon: 'event',
+    backgroundColor: colors.info, // Morado Jubileo
     color: colors.black,
   },
   {
@@ -42,30 +56,16 @@ const navigationItems: NavigationItem[] = [
     color: colors.black,
   },
   {
-    href: '/calendario',
-    label: 'Calendario',
-    icon: 'event',
-    backgroundColor: colors.info,
-    color: colors.black,
-  },
-  {
     href: '/comunica',
     label: 'Comunica',
     icon: 'chat',
-    backgroundColor: colors.info,
+    backgroundColor: '#9D1E74dd',
     color: colors.black,
   },
   {
-    href: '/jubileo',
-    label: 'Jubileo',
-    icon: 'celebration',
-    backgroundColor: colors.success,
-    color: colors.black,
-  },
-  {
-    label: 'Y mas cosas....',
+    label: 'Próximamente...',
     icon: 'hourglass-empty',
-    backgroundColor: colors.danger,
+    backgroundColor: '#2e2e2e ',
     color: colors.black,
   },
 ];
