@@ -1,16 +1,30 @@
 import React, { useState, useMemo } from 'react';
-import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Linking,
+} from 'react-native';
 import { List, IconButton, Text, Searchbar } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 
+const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
+  Movilidad: { icon: 'walk', color: colors.info },
+  'Conso+': { icon: 'cart', color: colors.success },
+  Autobuses: { icon: 'bus', color: colors.warning },
+  Alojamiento: { icon: 'home', color: colors.accent },
+};
+
 interface Grupo {
   nombre: string;
   responsable?: string;
   miembros: string[];
   subtitulo?: string;
+  mapa?: string;
 }
 
 type Data = Record<string, Grupo[]>;
@@ -23,15 +37,34 @@ export default function GruposScreen() {
     'jubileo_grupos',
   );
   const data = gruposData as Data | undefined;
-  const categorias = [
-    { name: 'Movilidad', icon: 'walk', color: colors.info },
-    { name: 'Conso+', icon: 'cart', color: colors.success },
-    { name: 'Autobuses', icon: 'bus', color: colors.warning },
-  ];
+
+  const categorias = useMemo(() => {
+    const base = Object.keys(CATEGORY_CONFIG).map((name) => ({
+      name,
+      icon: CATEGORY_CONFIG[name].icon,
+      color: CATEGORY_CONFIG[name].color,
+    }));
+    if (data) {
+      Object.keys(data).forEach((cat) => {
+        if (!CATEGORY_CONFIG[cat]) {
+          base.push({
+            name: cat,
+            icon: 'account-group',
+            color: colors.primary,
+          });
+        }
+      });
+    }
+    return base;
+  }, [data]);
   const [categoria, setCategoria] = useState<string | null>(null);
   const [grupo, setGrupo] = useState<Grupo | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [search, setSearch] = useState('');
+
+  const openMap = (url?: string) => {
+    if (url) Linking.openURL(url);
+  };
 
   const searchResults = useMemo(() => {
     if (!data || search.trim().length < 3) return [];
@@ -204,7 +237,16 @@ export default function GruposScreen() {
       </View>
       {grupo && (
         <View style={styles.groupContainer}>
-          <Text style={styles.groupTitle}>{grupo.nombre}</Text>
+          <View style={styles.groupHeader}>
+            <Text style={styles.groupTitle}>{grupo.nombre}</Text>
+            {grupo.mapa && (
+              <IconButton
+                icon="map"
+                size={24}
+                onPress={() => openMap(grupo.mapa)}
+              />
+            )}
+          </View>
           {grupo.responsable && (
             <>
               <List.Subheader style={styles.sectionHeader}>
@@ -243,6 +285,11 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     backWrapper: { padding: 8 },
     sectionHeader: { fontSize: 16, fontWeight: 'bold', color: theme.text },
     groupContainer: { paddingHorizontal: 16 },
+    groupHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
     groupTitle: {
       fontSize: 22,
       fontWeight: 'bold',
