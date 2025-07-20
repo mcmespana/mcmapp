@@ -260,8 +260,8 @@ export default function SuggestSongModal({
         </TouchableOpacity>
 
         <Text style={[styles.disclaimer, { color: theme.icon }]}>
-          Tu sugerencia será revisada por nuestro equipo y, si es aprobada, se
-          añadirá al cantoral. Los campos marcados con * son obligatorios.
+          Recibiremos tu sugerencia de canción y, con algo de tiempo y suerte,
+          la añadiremos al cantoral. ¡Gracias por ayudarnos a mejorar!
         </Text>
       </ScrollView>
     </BottomSheet>
