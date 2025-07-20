@@ -208,7 +208,7 @@ export default function SongsListScreen({
   };
 
   // Render loading state
-  if (isLoading || loadingSongs) {
+  if ((isLoading || loadingSongs) && songs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
 

@@ -366,7 +366,7 @@ const SelectedSongsScreen: React.FC = () => {
     }
   }, [navigation, handleExport, selectedSongs.length]);
 
-  if (loading) {
+  if (loading && selectedSongs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
 

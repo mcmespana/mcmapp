@@ -59,8 +59,12 @@ export default function GruposScreen() {
     return res;
   }, [search, data]);
 
-  if (categoria && (loading || !data)) {
+  if (categoria && !data) {
     return <ProgressWithMessage message="Cargando grupos..." />;
+  }
+
+  if (categoria && loading) {
+    return <ProgressWithMessage message="Actualizando grupos..." />;
   }
 
   if (showSearch) {
