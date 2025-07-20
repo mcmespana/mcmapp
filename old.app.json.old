@@ -30,8 +30,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.mespanamc.mcmapp",
-      "googleServicesFile": "./assets/google-services.json"
+      "package": "com.mespanamc.mcmapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"

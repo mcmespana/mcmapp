@@ -11,6 +11,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "icon": {
+        "light": "./assets/images/ios-light.png",
+        "dark": "./assets/images/ios-dark.png",
+        "tinted": "./assets/images/ios-tinted.png"
+      },
       "bundleIdentifier": "com.mcmespana.mcmapp",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -22,8 +27,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.mcmespana.mcmapp",
-      "googleServicesFile": "./assets/google-services.json"
+      "package": "com.mcmespana.mcmapp"
     },
     "web": {
       "bundler": "metro",
@@ -35,7 +39,11 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/splash-icon-light.png",
+          "dark": {
+            "image": "./assets/images/splash-icon-dark.png",
+            "backgroundColor": "#000000"
+          },
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -43,12 +51,7 @@
       ],
       "expo-asset",
       [
-        "expo-build-properties",
-        {
-          "android": {
-            "googleServicesFile": "./assets/google-services.json"
-          }
-        }
+        "expo-build-properties"
       ]
     ],
     "experiments": {
