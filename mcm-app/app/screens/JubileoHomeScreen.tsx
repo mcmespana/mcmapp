@@ -60,6 +60,12 @@ const navigationItems: NavigationItem[] = [
     target: 'Contactos',
     backgroundColor: '#9FA8DA',
   },
+  {
+    label: 'Apps',
+    icon: '📲',
+    target: 'Apps',
+    backgroundColor: '#FFB74D',
+  },
 ];
 
 export default function JubileoHomeScreen() {
@@ -85,7 +91,8 @@ export default function JubileoHomeScreen() {
     'jubileo/contactos',
     'jubileo_contactos',
   );
-  const isLoading = lh || lm || lv || lp || lg || lc;
+  const { loading: la } = useFirebaseData('jubileo/apps', 'jubileo_apps');
+  const isLoading = lh || lm || lv || lp || lg || lc || la;
   const { width, height } = useWindowDimensions();
   const containerPadding = spacing.md;
   const gap = spacing.md;
@@ -108,10 +115,16 @@ export default function JubileoHomeScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        {offline && (
-          <OfflineBanner text="Mostrando datos sin conexión" />
-        )}
-        <View style={[styles.gridContainer, { padding: containerPadding, backgroundColor: Colors[scheme].background }]}>
+        {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
+        <View
+          style={[
+            styles.gridContainer,
+            {
+              padding: containerPadding,
+              backgroundColor: Colors[scheme].background,
+            },
+          ]}
+        >
           {navigationItems.map((item, idx) => (
             <View key={idx} style={styles.itemWrapper}>
               <TouchableOpacity
