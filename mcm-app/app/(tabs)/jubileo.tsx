@@ -1,4 +1,7 @@
+import React, { useState } from 'react';
+import { View, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import JubileoHomeScreen from '../screens/JubileoHomeScreen';
 import HorarioScreen from '../screens/HorarioScreen';
@@ -9,7 +12,9 @@ import ProfundizaScreen from '../screens/ProfundizaScreen';
 import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
 import ReflexionesScreen from '../screens/ReflexionesScreen';
+import AppsScreen from '../screens/AppsScreen';
 import { IconButton } from 'react-native-paper';
+import SettingsPanel from '@/components/SettingsPanel';
 
 export type JubileoStackParamList = {
   Home: undefined;
@@ -20,30 +25,43 @@ export type JubileoStackParamList = {
   Profundiza: undefined;
   Grupos: undefined;
   Contactos: undefined;
+  Apps: undefined;
   Reflexiones: undefined;
 };
 
 const Stack = createNativeStackNavigator<JubileoStackParamList>();
 
 export default function JubileoTab() {
+  const [settingsVisible, setSettingsVisible] = useState(false);
   return (
-    <Stack.Navigator
+    <>
+      <SettingsPanel visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
+      <Stack.Navigator
       initialRouteName="Home"
       screenOptions={({ navigation, route }) => ({
         headerBackTitle: 'Atrás',
-        headerStyle: { backgroundColor: '#9D1E74' },
+        headerStyle: { backgroundColor: '#A3BD31' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: 'bold' },
         headerTitleAlign: 'center',
-        headerRight: () =>
-          route.name !== 'Reflexiones' ? (
-            <IconButton
-              icon="forum"
-              size={24}
-              iconColor="#fff"
-              onPress={() => navigation.navigate('Reflexiones')}
-            />
-          ) : null,
+        headerRight: () => (
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={() => setSettingsVisible(true)}
+              style={{ padding: 8, marginRight: 4 }}
+            >
+              <MaterialIcons name="settings" size={24} color="#fff" />
+            </TouchableOpacity>
+            {route.name !== 'Reflexiones' && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Reflexiones')}
+                style={{ padding: 8 }}
+              >
+                <MaterialIcons name="forum" size={24} color="#fff" />
+              </TouchableOpacity>
+            )}
+          </View>
+        ),
       })}
     >
       <Stack.Screen
@@ -87,6 +105,11 @@ export default function JubileoTab() {
         options={{ title: 'Contactos' }}
       />
       <Stack.Screen
+        name="Apps"
+        component={AppsScreen}
+        options={{ title: 'Apps' }}
+      />
+      <Stack.Screen
         name="Reflexiones"
         component={ReflexionesScreen}
         options={{
@@ -95,5 +118,6 @@ export default function JubileoTab() {
         }}
       />
     </Stack.Navigator>
+    </>
   );
 }

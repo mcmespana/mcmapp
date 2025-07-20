@@ -59,8 +59,12 @@ export default function VisitasScreen() {
     if (url) Linking.openURL(url);
   };
 
-  if (loading || !visitas) {
+  if (!visitas) {
     return <ProgressWithMessage message="Cargando visitas..." />;
+  }
+
+  if (loading) {
+    return <ProgressWithMessage message="Actualizando visitas..." />;
   }
 
   return (

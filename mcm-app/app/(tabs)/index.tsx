@@ -53,7 +53,7 @@ const navigationItems: NavigationItem[] = [
     href: '/comunica',
     label: 'Comunica',
     icon: 'chat',
-    backgroundColor: colors.success,
+    backgroundColor: '#9D1E74dd',
     color: colors.black,
   },
   featureFlags.tabs.jubileo && {
@@ -66,7 +66,7 @@ const navigationItems: NavigationItem[] = [
   {
     label: 'Y mas cosas....',
     icon: 'hourglass-empty',
-    backgroundColor: colors.danger,
+    backgroundColor: '#2e2e2e ',
     color: colors.black,
   },
 ].filter(Boolean) as NavigationItem[];

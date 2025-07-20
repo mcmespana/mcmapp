@@ -241,9 +241,13 @@ const SelectedSongsScreen: React.FC = () => {
         setTimeout(() => window.URL.revokeObjectURL(url), 1000);
       } else {
         const path = FileSystem.cacheDirectory + fileName;
-        await FileSystem.writeAsStringAsync(path, JSON.stringify(selectedSongs), {
-          encoding: FileSystem.EncodingType.UTF8,
-        });
+        await FileSystem.writeAsStringAsync(
+          path,
+          JSON.stringify(selectedSongs),
+          {
+            encoding: FileSystem.EncodingType.UTF8,
+          },
+        );
         await Sharing.shareAsync(path, {
           mimeType: 'application/json',
           dialogTitle: 'Compartir playlist',
@@ -256,22 +260,47 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleImportFile = useCallback(async () => {
     try {
-      const res = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
-      if (res.canceled || !res.assets || res.assets.length === 0) return;
-      const file = res.assets[0];
-      if (file.name && !file.name.endsWith('.mcmsongs')) {
-        setSnackbarMessage('Selecciona un archivo .mcmsongs');
-        setSnackbarVisible(true);
-        return;
-      }
-      const content = await FileSystem.readAsStringAsync(file.uri, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        parsed.forEach((fn: string) => addSong(fn));
-        setSnackbarMessage('Playlist importada');
-        setSnackbarVisible(true);
+      if (Platform.OS === 'web') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.mcmsongs,application/json';
+        input.onchange = async () => {
+          if (!input.files || input.files.length === 0) return;
+          const file = input.files[0];
+          if (file.name && !file.name.endsWith('.mcmsongs')) {
+            setSnackbarMessage('Selecciona un archivo .mcmsongs');
+            setSnackbarVisible(true);
+            return;
+          }
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((fn: string) => addSong(fn));
+            setSnackbarMessage('Playlist importada');
+            setSnackbarVisible(true);
+          }
+        };
+        input.click();
+      } else {
+        const res = await DocumentPicker.getDocumentAsync({
+          type: 'application/json',
+        });
+        if (res.canceled || !res.assets || res.assets.length === 0) return;
+        const file = res.assets[0];
+        if (file.name && !file.name.endsWith('.mcmsongs')) {
+          setSnackbarMessage('Selecciona un archivo .mcmsongs');
+          setSnackbarVisible(true);
+          return;
+        }
+        const content = await FileSystem.readAsStringAsync(file.uri, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((fn: string) => addSong(fn));
+          setSnackbarMessage('Playlist importada');
+          setSnackbarVisible(true);
+        }
       }
     } catch (err) {
       console.error('Error importing playlist', err);
@@ -338,10 +367,17 @@ const SelectedSongsScreen: React.FC = () => {
         Platform.OS === 'macos';
       navigation.setOptions({
         headerRight: () => (
-          <TouchableOpacity onPress={handleExport} style={{ paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center' }}>
-            <IconSymbol 
-              name={isDesktopLike ? "doc.on.doc" : "doc.on.clipboard"} 
-              size={24} 
+          <TouchableOpacity
+            onPress={handleExport}
+            style={{
+              paddingHorizontal: 15,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
+          >
+            <IconSymbol
+              name={isDesktopLike ? 'doc.on.doc' : 'doc.on.clipboard'}
+              size={24}
               color="#fff" // Usamos icono distinto solo para móviles
             />
             {isDesktopLike && (
@@ -366,21 +402,28 @@ const SelectedSongsScreen: React.FC = () => {
     }
   }, [navigation, handleExport, selectedSongs.length]);
 
-  if (loading) {
+  if (loading && selectedSongs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
 
   if (selectedSongs.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <TouchableOpacity onPress={handleImportFile} style={styles.importButton}>
+        <TouchableOpacity
+          onPress={handleImportFile}
+          style={styles.importButton}
+        >
           <IconSymbol name="tray.and.arrow.down" size={20} color="#007AFF" />
           <Text style={styles.shareButtonText}>Importar</Text>
         </TouchableOpacity>
         <View style={styles.emptyContent}>
           <IconSymbol name="music.note.list" size={60} color="#cccccc" />
-          <Text style={styles.emptyText}>Todavía no has seleccionado canciones</Text>
-          <Text style={styles.swipeHint}>Desliza una canción hacia la izquierda para seleccionarla</Text>
+          <Text style={styles.emptyText}>
+            Todavía no has seleccionado canciones
+          </Text>
+          <Text style={styles.swipeHint}>
+            Desliza una canción hacia la izquierda para seleccionarla
+          </Text>
         </View>
       </View>
     );
@@ -389,21 +432,33 @@ const SelectedSongsScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-          <Text style={styles.screenTitle}>Tu selección de temazos {randomEmoji}</Text>
-          <View style={styles.buttonsContainer}>
-            <TouchableOpacity onPress={clearSelection} style={styles.clearButton}>
-               <IconSymbol name="trash" size={20} color="#FF4444" />
-              <Text style={styles.clearButtonText}>Borrar selección</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleShareFile} style={styles.shareButton}>
-               <IconSymbol name="square.and.arrow.up.on.square" size={20} color="#007AFF" />
-              <Text style={styles.shareButtonText}>Compartir archivo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleImportFile} style={styles.shareButton}>
-               <IconSymbol name="tray.and.arrow.down" size={20} color="#007AFF" />
-              <Text style={styles.shareButtonText}>Importar</Text>
-            </TouchableOpacity>
-          </View>
+        <Text style={styles.screenTitle}>
+          Tu selección de temazos {randomEmoji}
+        </Text>
+        <View style={styles.buttonsContainer}>
+          <TouchableOpacity onPress={clearSelection} style={styles.clearButton}>
+            <IconSymbol name="trash" size={20} color="#FF4444" />
+            <Text style={styles.clearButtonText}>Borrar selección</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleShareFile}
+            style={styles.shareButton}
+          >
+            <IconSymbol
+              name="square.and.arrow.up.on.square"
+              size={20}
+              color="#007AFF"
+            />
+            <Text style={styles.shareButtonText}>Compartir archivo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleImportFile}
+            style={styles.shareButton}
+          >
+            <IconSymbol name="tray.and.arrow.down" size={20} color="#007AFF" />
+            <Text style={styles.shareButtonText}>Importar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList

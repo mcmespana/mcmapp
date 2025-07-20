@@ -27,8 +27,12 @@ export default function HorarioScreen() {
     : [];
   const dia = horarioData ? horarioData[index] : null;
 
-  if (loading || !dia) {
+  if (!dia) {
     return <ProgressWithMessage message="Cargando horario..." />;
+  }
+
+  if (loading) {
+    return <ProgressWithMessage message="Actualizando horario..." />;
   }
 
   return (
