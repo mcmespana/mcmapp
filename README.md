@@ -205,16 +205,35 @@ Web (desarrollo) .............. npx expo start --web
 Web (producción) .............. npx expo export --platform web
 Android (Expo Go) ............. npx expo start --android
 Android (Build local dev) ..... eas build -p android --profile development --local
+
 iOS Simulator (Expo Go/Dev) ... npx expo start --ios
 iOS Simulator (Nativo) ........ npx expo run:ios
+
 iPhone TestFlight (Build) ..... eas build -p ios --profile production
 iPhone TestFlight (Subir) ..... eas submit -p ios --latest
 Development Client (arrancar) . npx expo start --dev-client
+
 Instalar dependencias ......... npm install
+```
+## 📝 Comnandos para publicación
+```
+Update web - paso 1 .................... npx expo export --platform web
+Update web - paso 2 .................. npx eas deploy --prod
 
 
-Update web .................... npx expo export --platform web
-Update web 2 .................. npx eas deploy --prod
+Compilar para producción en la nube ............ eas build --profile production --platform android
+Subir a la playstore ........................... eas submit --profile production --platform android
+Post subidas ................................... eas submit -p android  
+iOS???
+
+eas credentials
+
+```
+
+## 📝 Actualizaciones Over The Air
+```
+eas update --branch production --message "Descripción de la actualización"
+# revisar bien la rama
 ```
 
 ## Variables de entorno
