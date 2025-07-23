@@ -24,6 +24,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
+import AddToHomeBanner from '@/components/AddToHomeBanner';
 import {
   Provider as PaperProvider,
   MD3LightTheme,
@@ -158,6 +159,7 @@ function InnerLayout() {
         <NavThemeProvider value={navigationTheme}>
           <Slot />
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+          <AddToHomeBanner />
         </NavThemeProvider>
       </PaperProvider>
     </GestureHandlerRootView>
