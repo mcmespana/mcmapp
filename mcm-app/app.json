@@ -28,7 +28,39 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "meta": {
+        "apple": {
+          "mobileWebAppCapable": "yes",
+          "statusBarStyle": "default",
+          "title": "mcm-app",
+          "icons": {
+            "120": "./assets/images/icon.png",
+            "152": "./assets/images/icon.png",
+            "180": "./assets/images/icon.png"
+          }
+        }
+      },
+      "manifest": {
+        "name": "MCM App",
+        "short_name": "MCMApp",
+        "start_url": ".",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#253883",
+        "icons": [
+          {
+            "src": "./assets/images/icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+          },
+          {
+            "src": "./assets/images/icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+          }
+        ]
+      }
     },
     "plugins": [
       "expo-router",

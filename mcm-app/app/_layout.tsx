@@ -24,6 +24,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
+import AddToHomeScreenPrompt from '@/components/AddToHomeScreenPrompt';
 import {
   Provider as PaperProvider,
   MD3LightTheme,
@@ -157,6 +158,7 @@ function InnerLayout() {
       <PaperProvider theme={paperTheme}>
         <NavThemeProvider value={navigationTheme}>
           <Slot />
+          <AddToHomeScreenPrompt />
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         </NavThemeProvider>
       </PaperProvider>
