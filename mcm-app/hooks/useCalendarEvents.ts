@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Network from 'expo-network';
-
-export interface CalendarConfig {
-  url: string;
-  color: string;
-  name: string;
-}
+import type { CalendarConfig } from './useCalendarConfigs';
 
 export interface CalendarEvent {
   startDate: string; // YYYY-MM-DD
@@ -16,6 +11,8 @@ export interface CalendarEvent {
   location?: string;
   url?: string;
   calendarIndex: number;
+  isAllDay?: boolean; // Track if this is an all-day event
+  isSingleDay?: boolean; // Track if this is effectively a single day event (after corrections)
 }
 
 function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
@@ -39,6 +36,25 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
       current = {};
     } else if (line.startsWith('END:VEVENT')) {
       if (current.startDate && current.title) {
+        // Post-process to handle all-day events correctly
+        if (current.isAllDay && current.endDate) {
+          // For all-day events, DTEND is exclusive (next day)
+          // So we need to subtract one day from endDate
+          const endDate = new Date(current.endDate + 'T12:00:00'); // Use noon to avoid timezone issues
+          endDate.setDate(endDate.getDate() - 1);
+          const adjustedEndDate = endDate.toISOString().split('T')[0];
+          
+          // If after adjustment the end date equals start date,
+          // it's a single-day event, mark it as such but keep the original endDate for processing
+          if (adjustedEndDate === current.startDate) {
+            current.isSingleDay = true;
+            // Keep endDate for internal processing but mark as single day
+          } else {
+            current.endDate = adjustedEndDate;
+            current.isSingleDay = false;
+          }
+        }
+        
         events.push(current as Omit<CalendarEvent, 'calendarIndex'>);
       }
       current = {};
@@ -58,6 +74,12 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
       const idx = line.indexOf(':');
       if (idx !== -1) {
         const value = line.slice(idx + 1).trim();
+        // Check if this is a date-only value (all-day event)
+        const isDateOnly = !value.includes('T') && /^\d{8}$/.test(value);
+        if (isDateOnly) {
+          current.isAllDay = true;
+        }
+        
         // Solo nos quedamos con la parte de fecha (sin hora)
         const datePart = value.replace(/T.*$/, '');
         if (/^\d{8}$/.test(datePart)) {
@@ -95,7 +117,8 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
     async function fetchCalendars() {
       setLoading(true);
       const state = await Network.getNetworkStateAsync();
-      const connected = state.isConnected && state.isInternetReachable !== false;
+      const connected =
+        state.isConnected && state.isInternetReachable !== false;
       const cachedStr = await AsyncStorage.getItem('calendar_events');
       if (!connected && cachedStr) {
         setEventsByDate(JSON.parse(cachedStr));
@@ -115,7 +138,7 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
             try {
               res = await fetch(proxyUrl);
               if (!res.ok) throw new Error('Proxy request failed');
-            } catch (err) {
+            } catch {
               // Fallback to direct fetch if proxy fails
               res = await fetch(cfg.url);
             }
@@ -141,11 +164,13 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
               map[dateStr].push(withCal);
             }
           });
-        } catch (e) {}
+        } catch {}
       }
       if (mounted) {
         setEventsByDate(map);
-        AsyncStorage.setItem('calendar_events', JSON.stringify(map)).catch(() => {});
+        AsyncStorage.setItem('calendar_events', JSON.stringify(map)).catch(
+          () => {},
+        );
         setLoading(false);
       }
     }

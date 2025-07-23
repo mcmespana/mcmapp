@@ -15,7 +15,7 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 import DateSelector from '@/components/DateSelector';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 
 interface Actividad {
   nombre: string;
@@ -25,9 +25,11 @@ interface Actividad {
 }
 
 type Nav = NativeStackNavigationProp<JubileoStackParamList, 'MaterialPages'>;
+type MaterialesScreenRoute = RouteProp<JubileoStackParamList, 'Materiales'>;
 
 export default function MaterialesScreen() {
   const navigation = useNavigation<Nav>();
+  const route = useRoute<MaterialesScreenRoute>();
   const scheme = useColorScheme();
   const fontScale = useFontScale(1.2);
   const styles = React.useMemo(
@@ -38,7 +40,10 @@ export default function MaterialesScreen() {
     'jubileo/materiales',
     'jubileo_materiales',
   );
-  const [index, setIndex] = useState(0);
+  
+  // Get initial day index from navigation params, default to 0
+  const initialDayIndex = route.params?.initialDayIndex ?? 0;
+  const [index, setIndex] = useState(initialDayIndex);
   const fechas = materialesData
     ? materialesData.map((d) => ({ fecha: d.fecha }))
     : [];

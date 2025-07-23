@@ -6,7 +6,6 @@ import {
   ScrollView,
   ViewStyle,
   TextStyle,
-  TouchableOpacity,
   Alert,
   SectionList,
 } from 'react-native';
@@ -16,19 +15,20 @@ import {
   LocaleConfig,
 } from 'react-native-calendars';
 import {
-  Checkbox,
   Text,
   SegmentedButtons,
   IconButton,
+  Chip,
+  Card,
 } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
-import useCalendarEvents, {
-  CalendarConfig,
-  CalendarEvent,
-} from '@/hooks/useCalendarEvents';
+import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
+import ProgressWithMessage from '@/components/ProgressWithMessage';
+import OfflineBanner from '@/components/OfflineBanner';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -73,30 +73,26 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
-const calendarConfigs: CalendarConfig[] = [
-  {
-    name: 'MCM Europa',
-    url: 'https://calendar.google.com/calendar/ical/consolacion.org_11dp4qj27sgud37d7fjanghfck%40group.calendar.google.com/public/basic.ics',
-    color: '#31AADF',
-  },
-  /*{
-    name: 'MCM Castellón',
-    url: 'https://calendar.google.com/calendar/ical/33j7mpbn86b2jj9sl8rds2e9m8%40group.calendar.google.com/public/basic.ics',
-    color: '#A3BD31',
-  },*/
-];
-
 export default function Calendario() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const [visibleCalendars, setVisibleCalendars] = useState<boolean[]>(
-    calendarConfigs.map(() => true),
-  );
+  
+  const {
+    calendarConfigs,
+    visibleCalendars,
+    toggleCalendarVisibility,
+    loading: configsLoading,
+    offline,
+  } = useCalendarConfigs();
+  
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0],
   );
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
-  const { eventsByDate } = useCalendarEvents(calendarConfigs);
+  const { eventsByDate, loading: eventsLoading } =
+    useCalendarEvents(calendarConfigs);
+
+  const loading = configsLoading || eventsLoading;
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -115,9 +111,13 @@ export default function Calendario() {
   }, [selectedDate]);
 
   const changeMonth = (delta: number) => {
-    const d = new Date(selectedDate + 'T00:00:00');
-    d.setMonth(d.getMonth() + delta, 1);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    const currentDate = new Date(selectedDate + 'T00:00:00');
+    const newDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + delta,
+      1,
+    );
+    setSelectedDate(newDate.toISOString().split('T')[0]);
   };
 
   const filteredByDate = useMemo(() => {
@@ -147,26 +147,60 @@ export default function Calendario() {
 
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
     const marks: { [date: string]: any } = {};
+    
     Object.keys(filteredByDate).forEach((date) => {
-      const periods = filteredByDate[date].map((ev) => ({
-        startingDay: date === ev.startDate,
-        endingDay: date === (ev.endDate || ev.startDate),
-        color: calendarConfigs[ev.calendarIndex].color,
-      }));
-      marks[date] = { periods };
+      const eventsForDate = filteredByDate[date];
+      
+      if (eventsForDate.length > 0) {
+        // Use periods (bars) for ALL events - both single day and multi-day
+        const periods = eventsForDate.map((ev) => {
+          // For single-day events (including corrected all-day events), show as a complete bar for that day
+          const isEffectivelySingleDay =
+            ev.isSingleDay === true ||
+            !ev.endDate ||
+            ev.startDate === ev.endDate;
+          
+          if (isEffectivelySingleDay) {
+            // Single day event: show as a complete bar for just this day
+            return {
+              startingDay: true,
+              endingDay: true,
+              color: calendarConfigs[ev.calendarIndex].color,
+            };
+          } else {
+            // Multi-day event: show as part of a continuous bar
+            return {
+              startingDay: date === ev.startDate,
+              endingDay: date === (ev.endDate || ev.startDate),
+              color: calendarConfigs[ev.calendarIndex].color,
+            };
+          }
+        });
+        
+        marks[date] = { periods };
+      }
     });
+    
+    // Handle selected date
     marks[selectedDate] = {
       ...(marks[selectedDate] || {}),
       selected: true,
       selectedColor: colors.primary,
+      selectedTextColor: colors.white,
     };
+    
     return marks;
-  }, [filteredByDate, selectedDate]);
+  }, [filteredByDate, selectedDate, calendarConfigs]);
 
   const eventsForSelected = filteredByDate[selectedDate] || [];
 
+  if (loading && calendarConfigs.length === 0) {
+    return <ProgressWithMessage message="Cargando calendarios..." />;
+  }
+
   return (
     <View style={styles.container}>
+      {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
       <SegmentedButtons
         value={viewMode}
         onValueChange={(v) => setViewMode(v as 'calendar' | 'agenda')}
@@ -202,20 +236,44 @@ export default function Calendario() {
               arrowColor: Colors[scheme ?? 'light'].tint,
             }}
           />
-          <View style={styles.checkboxContainer}>
+          <View style={styles.chipsContainer}>
             {calendarConfigs.map((cal, idx) => (
-              <View key={idx} style={styles.checkboxItem}>
-                <Checkbox
-                  status={visibleCalendars[idx] ? 'checked' : 'unchecked'}
-                  onPress={() => {
-                    const copy = [...visibleCalendars];
-                    copy[idx] = !copy[idx];
-                    setVisibleCalendars(copy);
-                  }}
-                  color={cal.color}
-                />
-                <Text style={styles.checkboxLabel}>{cal.name}</Text>
-              </View>
+              <Chip
+                key={idx}
+                selected={visibleCalendars[idx]}
+                onPress={() => toggleCalendarVisibility(idx)}
+                style={[
+                  styles.calendarChip,
+                  {
+                    backgroundColor: visibleCalendars[idx]
+                      ? cal.color
+                      : Colors[scheme ?? 'light'].background,
+                  },
+                ]}
+                textStyle={[
+                  styles.chipText,
+                  {
+                    color: visibleCalendars[idx]
+                      ? colors.white
+                      : Colors[scheme ?? 'light'].text,
+                  },
+                ]}
+                showSelectedOverlay={false}
+                icon={
+                  visibleCalendars[idx]
+                    ? ({ size, color }) => (
+                        <IconButton
+                          icon="check"
+                          size={16}
+                          iconColor={colors.white}
+                          style={{ margin: 0 }}
+                        />
+                      )
+                    : undefined
+                }
+              >
+                {cal.name}
+              </Chip>
             ))}
           </View>
           <View style={styles.eventList}>
@@ -228,44 +286,78 @@ export default function Calendario() {
               Eventos {formatDate(selectedDate)}
             </Text>
             {eventsForSelected.map((ev, i) => (
-              <TouchableOpacity
+              <Card
                 key={i}
-                style={styles.eventItem}
+                style={[
+                  styles.eventCard,
+                  selectedDate < todayStr && styles.pastEventCard,
+                ]}
                 onPress={() => {
                   const info =
                     `${ev.title}\n${ev.location ?? ''}\n${ev.description ?? ''}`.trim();
                   Alert.alert('Evento', info || ev.title, [{ text: 'OK' }]);
                 }}
               >
-                <View
-                  style={[
-                    styles.rect,
-                    {
-                      backgroundColor: calendarConfigs[ev.calendarIndex].color,
-                    },
-                  ]}
-                />
-                <View style={styles.eventTextContainer}>
-                  <Text
-                    style={[
-                      styles.eventTitle,
-                      selectedDate < todayStr && styles.pastText,
-                    ]}
-                  >
-                    {ev.title}
-                  </Text>
-                  {ev.location ? (
+                <Card.Content style={styles.eventCardContent}>
+                  <View style={styles.eventHeader}>
+                    <View
+                      style={[
+                        styles.eventIndicator,
+                        {
+                          backgroundColor:
+                            calendarConfigs[ev.calendarIndex].color,
+                        },
+                      ]}
+                    />
                     <Text
                       style={[
-                        styles.eventLocation,
+                        styles.eventTitle,
                         selectedDate < todayStr && styles.pastText,
                       ]}
+                      numberOfLines={2}
                     >
-                      {ev.location}
+                      {ev.title}
                     </Text>
-                  ) : null}
-                </View>
-              </TouchableOpacity>
+                  </View>
+                  {ev.location && (
+                    <View style={styles.eventMeta}>
+                      <IconButton
+                        icon="map-marker"
+                        size={16}
+                        style={styles.metaIcon}
+                        iconColor={Colors[scheme ?? 'light'].icon}
+                      />
+                      <Text
+                        style={[
+                          styles.eventLocation,
+                          selectedDate < todayStr && styles.pastText,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {ev.location}
+                      </Text>
+                    </View>
+                  )}
+                  {ev.endDate && ev.startDate !== ev.endDate && (
+                    <View style={styles.eventMeta}>
+                      <IconButton
+                        icon="calendar-range"
+                        size={16}
+                        style={styles.metaIcon}
+                        iconColor={Colors[scheme ?? 'light'].icon}
+                      />
+                      <Text
+                        style={[
+                          styles.eventDuration,
+                          selectedDate < todayStr && styles.pastText,
+                        ]}
+                      >
+                        Hasta {formatDate(ev.endDate)}
+                      </Text>
+                    </View>
+                  )}
+                </Card.Content>
+              </Card>
             ))}
             {eventsForSelected.length === 0 && (
               <Text style={styles.noEvents}>No hay eventos para este día.</Text>
@@ -279,20 +371,44 @@ export default function Calendario() {
             <Text style={styles.monthLabel}>{monthLabel}</Text>
             <IconButton icon="chevron-right" onPress={() => changeMonth(1)} />
           </View>
-          <View style={styles.checkboxContainer}>
+          <View style={styles.chipsContainer}>
             {calendarConfigs.map((cal, idx) => (
-              <View key={idx} style={styles.checkboxItem}>
-                <Checkbox
-                  status={visibleCalendars[idx] ? 'checked' : 'unchecked'}
-                  onPress={() => {
-                    const copy = [...visibleCalendars];
-                    copy[idx] = !copy[idx];
-                    setVisibleCalendars(copy);
-                  }}
-                  color={cal.color}
-                />
-                <Text style={styles.checkboxLabel}>{cal.name}</Text>
-              </View>
+              <Chip
+                key={idx}
+                selected={visibleCalendars[idx]}
+                onPress={() => toggleCalendarVisibility(idx)}
+                style={[
+                  styles.calendarChip,
+                  {
+                    backgroundColor: visibleCalendars[idx]
+                      ? cal.color
+                      : Colors[scheme ?? 'light'].background,
+                  },
+                ]}
+                textStyle={[
+                  styles.chipText,
+                  {
+                    color: visibleCalendars[idx]
+                      ? colors.white
+                      : Colors[scheme ?? 'light'].text,
+                  },
+                ]}
+                showSelectedOverlay={false}
+                icon={
+                  visibleCalendars[idx]
+                    ? ({ size, color }) => (
+                        <IconButton
+                          icon="check"
+                          size={16}
+                          iconColor={colors.white}
+                          style={{ margin: 0 }}
+                        />
+                      )
+                    : undefined
+                }
+              >
+                {cal.name}
+              </Chip>
             ))}
           </View>
           <SectionList
@@ -304,13 +420,34 @@ export default function Calendario() {
 
               const isPast = title < todayStr;
               const isToday = title === todayStr;
+              const isTomorrow =
+                new Date(title + 'T00:00:00').getTime() ===
+                new Date(todayStr + 'T00:00:00').getTime() +
+                  24 * 60 * 60 * 1000;
+
               return (
-                <View style={styles.sectionHeader}>
+                <View
+                  style={[
+                    styles.sectionHeader,
+                    isToday && styles.todaySectionHeader,
+                    isPast && styles.pastSectionHeader,
+                  ]}
+                >
                   <Text
-                    style={[styles.eventListTitle, isPast && styles.pastText]}
+                    style={[
+                      styles.sectionHeaderText,
+                      isPast && styles.pastText,
+                      isToday && styles.todayText,
+                    ]}
                   >
-                    {formatDate(title)}
-                    {isToday ? ' (HOY)' : ''}
+                    {isToday
+                      ? '🌟 HOY'
+                      : isTomorrow
+                        ? '📅 MAÑANA'
+                        : formatDate(title)}
+                  </Text>
+                  <Text style={[styles.eventCount, isPast && styles.pastText]}>
+                    {data.length} evento{data.length !== 1 ? 's' : ''}
                   </Text>
                 </View>
               );
@@ -318,41 +455,75 @@ export default function Calendario() {
             renderItem={({ item, section }) => {
               const isPast = section.title < todayStr;
               return (
-                <TouchableOpacity
-                  style={styles.eventItem}
+                <Card
+                  style={[
+                    styles.eventCard,
+                    isPast && styles.pastEventCard,
+                    { marginHorizontal: spacing.md, marginBottom: spacing.xs },
+                  ]}
                   onPress={() => {
                     const info =
                       `${item.title}\n${item.location ?? ''}\n${item.description ?? ''}`.trim();
                     Alert.alert('Evento', info || item.title, [{ text: 'OK' }]);
                   }}
                 >
-                  <View
-                    style={[
-                      styles.rect,
-                      {
-                        backgroundColor:
-                          calendarConfigs[item.calendarIndex].color,
-                      },
-                    ]}
-                  />
-                  <View style={styles.eventTextContainer}>
-                    <Text
-                      style={[styles.eventTitle, isPast && styles.pastText]}
-                    >
-                      {item.title}
-                    </Text>
-                    {item.location ? (
-                      <Text
+                  <Card.Content style={styles.eventCardContent}>
+                    <View style={styles.eventHeader}>
+                      <View
                         style={[
-                          styles.eventLocation,
-                          isPast && styles.pastText,
+                          styles.eventIndicator,
+                          {
+                            backgroundColor:
+                              calendarConfigs[item.calendarIndex].color,
+                          },
                         ]}
+                      />
+                      <Text
+                        style={[styles.eventTitle, isPast && styles.pastText]}
+                        numberOfLines={2}
                       >
-                        {item.location}
+                        {item.title}
                       </Text>
-                    ) : null}
-                  </View>
-                </TouchableOpacity>
+                    </View>
+                    {item.location && (
+                      <View style={styles.eventMeta}>
+                        <IconButton
+                          icon="map-marker"
+                          size={16}
+                          style={styles.metaIcon}
+                          iconColor={Colors[scheme ?? 'light'].icon}
+                        />
+                        <Text
+                          style={[
+                            styles.eventLocation,
+                            isPast && styles.pastText,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.location}
+                        </Text>
+                      </View>
+                    )}
+                    {item.endDate && item.startDate !== item.endDate && (
+                      <View style={styles.eventMeta}>
+                        <IconButton
+                          icon="calendar-range"
+                          size={16}
+                          style={styles.metaIcon}
+                          iconColor={Colors[scheme ?? 'light'].icon}
+                        />
+                        <Text
+                          style={[
+                            styles.eventDuration,
+                            isPast && styles.pastText,
+                          ]}
+                        >
+                          Hasta {formatDate(item.endDate)}
+                        </Text>
+                      </View>
+                    )}
+                  </Card.Content>
+                </Card>
               );
             }}
             ListEmptyComponent={
@@ -376,14 +547,30 @@ interface Styles {
   checkboxContainer: ViewStyle;
   checkboxItem: ViewStyle;
   checkboxLabel: TextStyle;
+  chipsContainer: ViewStyle;
+  calendarChip: ViewStyle;
+  chipText: TextStyle;
   eventList: ViewStyle;
   eventListTitle: TextStyle;
   eventItem: ViewStyle;
+  eventCard: ViewStyle;
+  pastEventCard: ViewStyle;
+  eventCardContent: ViewStyle;
+  eventHeader: ViewStyle;
+  eventIndicator: ViewStyle;
+  eventMeta: ViewStyle;
+  metaIcon: ViewStyle;
+  eventDuration: TextStyle;
   eventTitle: TextStyle;
   eventLocation: TextStyle;
   rect: ViewStyle;
   eventTextContainer: ViewStyle;
   sectionHeader: ViewStyle;
+  todaySectionHeader: ViewStyle;
+  pastSectionHeader: ViewStyle;
+  sectionHeaderText: TextStyle;
+  todayText: TextStyle;
+  eventCount: TextStyle;
   emptyDate: ViewStyle;
   noEvents: TextStyle;
   agendaHeader: ViewStyle;
@@ -421,6 +608,23 @@ const createStyles = (scheme: 'light' | 'dark') => {
       ...typography.body,
       color: theme.text,
     },
+    chipsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.md,
+      gap: spacing.sm,
+    },
+    calendarChip: {
+      marginBottom: spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.icon,
+    },
+    chipText: {
+      ...typography.caption,
+      fontWeight: '600',
+    },
     eventList: {
       paddingHorizontal: spacing.md,
       paddingBottom: spacing.lg,
@@ -448,6 +652,46 @@ const createStyles = (scheme: 'light' | 'dark') => {
       paddingVertical: spacing.xs,
       paddingLeft: spacing.md,
     },
+    eventCard: {
+      marginBottom: spacing.sm,
+      marginHorizontal: spacing.md,
+      elevation: 2,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    pastEventCard: {
+      opacity: 0.6,
+    },
+    eventCardContent: {
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    eventHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: spacing.xs,
+    },
+    eventIndicator: {
+      width: 4,
+      height: 20,
+      borderRadius: 2,
+      marginRight: spacing.sm,
+    },
+    eventMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: spacing.xs,
+    },
+    metaIcon: {
+      margin: 0,
+      marginRight: spacing.xs,
+    },
+    eventDuration: {
+      ...typography.caption,
+      color: theme.icon,
+      flex: 1,
+    },
     rect: {
       width: 12,
       height: 6,
@@ -461,6 +705,32 @@ const createStyles = (scheme: 'light' | 'dark') => {
       backgroundColor: theme.background,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: theme.icon + '20',
+    },
+    todaySectionHeader: {
+      backgroundColor: colors.primary + '10',
+      borderBottomColor: colors.primary + '40',
+    },
+    pastSectionHeader: {
+      opacity: 0.7,
+    },
+    sectionHeaderText: {
+      ...typography.h2,
+      color: theme.text,
+      fontWeight: 'bold',
+      fontSize: 18,
+    },
+    todayText: {
+      color: colors.primary,
+    },
+    eventCount: {
+      ...typography.caption,
+      color: theme.icon,
+      fontWeight: '500',
     },
     emptyDate: {
       padding: spacing.md,

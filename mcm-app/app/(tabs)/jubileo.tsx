@@ -18,7 +18,7 @@ import SettingsPanel from '@/components/SettingsPanel';
 export type JubileoStackParamList = {
   Home: undefined;
   Horario: undefined;
-  Materiales: undefined;
+  Materiales: { initialDayIndex?: number } | undefined;
   MaterialPages: { actividad: any; fecha: string };
   Visitas: undefined;
   Profundiza: undefined;
