@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; *
 import React, { useState, useEffect, useMemo } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   ThemeProvider as NavThemeProvider,
   DarkTheme,
@@ -155,13 +156,15 @@ function InnerLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PaperProvider theme={paperTheme}>
-        <NavThemeProvider value={navigationTheme}>
-          <Slot />
-          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-          <AddToHomeBanner />
-        </NavThemeProvider>
-      </PaperProvider>
+      <SafeAreaProvider>
+        <PaperProvider theme={paperTheme}>
+          <NavThemeProvider value={navigationTheme}>
+            <Slot />
+            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            <AddToHomeBanner />
+          </NavThemeProvider>
+        </PaperProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { Platform } from 'react-native';
 
 export default function TabsLayout() {
   const scheme = useColorScheme(); //
@@ -21,12 +22,14 @@ export default function TabsLayout() {
       <Tabs
         initialRouteName={featureFlags.defaultTab}
         screenOptions={{
-          headerShown: true, // Default to showing headers
-          headerTintColor: '#fff', // Default text/icon color for headers
+          headerShown: true,
+          headerTintColor: '#fff',
           headerTitleStyle: {
             fontWeight: 'bold',
+            fontSize: 18,
           },
-          headerTitleAlign: 'center', // Center the title
+          headerTitleAlign: 'center',
+          headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
           tabBarActiveTintColor: Colors[scheme ?? 'light'].tint,
           tabBarInactiveTintColor: Colors[scheme ?? 'light'].icon,
           tabBarStyle: {
