@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Platform } from 'react-native';
 
 // Importar pantallas
 import CategoriesScreen from '../screens/CategoriesScreen';
@@ -67,7 +68,9 @@ export default function CancioneroTab() {
             headerTintColor: '#fff',
             headerTitleStyle: {
               fontWeight: 'bold',
+              fontSize: 18,
             },
+            headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
           }}
         >
           <Stack.Screen

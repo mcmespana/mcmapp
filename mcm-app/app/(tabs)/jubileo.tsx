@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -44,8 +44,9 @@ export default function JubileoTab() {
           headerBackTitle: 'Atrás',
           headerStyle: { backgroundColor: '#A3BD31' },
           headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: 'bold' },
+          headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
           headerTitleAlign: 'center',
+          headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TouchableOpacity

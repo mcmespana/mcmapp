@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     overflowY: 'auto',
-    padding: 16,
+    padding: 8,
     boxSizing: 'border-box',
   },
   scrollButton: {
@@ -165,6 +165,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 30,
     opacity: 0.7,
+    zIndex: 2,
   },
   sliderWrapper: {
     position: 'absolute',
@@ -174,6 +175,7 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 2,
   },
   slider: {
     width: '100%',
