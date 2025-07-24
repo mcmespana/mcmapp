@@ -49,3 +49,9 @@ firebase.json
 # prebuils
 ios/
 android/
+
+# builds
+*.apk
+*.aab
+/builds/
+/android/app/build/
