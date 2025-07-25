@@ -161,18 +161,22 @@ export const useSongProcessor = ({
             body {
               font-family: ${currentFontFamily};
               margin: 0px;
+              padding: 4px 6px;
               background-color: #ffffff;
               color: ${AppColors.textDark || '#212529'};
               font-size: 100%;
               max-width: 100%;
               overflow-wrap: break-word;
               word-wrap: break-word;
+              box-sizing: border-box;
             }
             h1 {
               color: #333;
               margin-bottom: 0.2em;
+              margin-top: 0.2em;
               font-size: 1.6em;
               text-align: center;
+              line-height: 1.2;
             }
             .song-meta-author {
               color: #777;
@@ -191,7 +195,7 @@ export const useSongProcessor = ({
               font-weight: bold;
             }
             .chord-sheet {
-              margin-top: 1em;
+              margin-top: 0.8em;
               text-align: left;
               max-width: 100%;
               overflow: hidden;
@@ -235,8 +239,8 @@ export const useSongProcessor = ({
               max-width: 100%;
             }
             .paragraph {
-              margin-top: 1.75em;
-              margin-bottom: 1.75em;
+              margin-top: 1.2em;
+              margin-bottom: 1.2em;
               white-space: pre-wrap;
               word-wrap: break-word;
               overflow-wrap: break-word;
@@ -244,8 +248,8 @@ export const useSongProcessor = ({
             }
             .paragraph.chorus {
               font-weight: bold;
-              margin-top: 1.2em;
-              margin-bottom: 1.2em;
+              margin-top: 1em;
+              margin-bottom: 1em;
               white-space: pre-wrap;
               word-wrap: break-word;
               overflow-wrap: break-word;

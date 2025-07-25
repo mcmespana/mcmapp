@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     overflowY: 'auto',
-    padding: 8,
+    padding: 4,
     boxSizing: 'border-box',
   },
   scrollButton: {

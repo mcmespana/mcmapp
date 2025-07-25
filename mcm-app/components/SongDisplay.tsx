@@ -25,7 +25,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
             width: '100%',
             maxWidth: '100%',
             margin: 0,
-            padding: '8px 12px',
+            padding: '4px 8px',
             backgroundColor: 'white',
             boxSizing: 'border-box',
             minHeight: '100%',
