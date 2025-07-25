@@ -48,6 +48,7 @@
       "manifest": {
         "name": "mcm-app",
         "short_name": "MCM",
+        "description": "Aplicación móvil de MCM España para seguimiento de actividades, cantoral y mucho más",
         "start_url": ".",
         "display": "standalone",
         "background_color": "#ffffff",
@@ -77,9 +78,7 @@
         }
       ],
       "expo-asset",
-      [
-        "expo-build-properties"
-      ]
+      ["expo-build-properties"]
     ],
     "experiments": {
       "typedRoutes": true
