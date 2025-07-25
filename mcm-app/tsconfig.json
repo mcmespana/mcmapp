@@ -4,7 +4,7 @@
   "compilerOptions": {
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true,           // ✨ evita chequear tipos en node_modules
+    "skipLibCheck": true, // ✨ evita chequear tipos en node_modules
     "module": "ES2020",
     "paths": {
       "@/*": ["./*"]

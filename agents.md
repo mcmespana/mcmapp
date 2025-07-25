@@ -109,3 +109,7 @@ To effectively understand and interact with this codebase, AI agents should cons
     *   For calendar features, look into `calendario.tsx`.
     *   For photo gallery features, investigate `fotos.tsx`.
 *   **Understanding Code Modifications:** When asked to modify or add features, identify the relevant screens in `mcm-app/app/`, components in `mcm-app/components/`, and any associated contexts or hooks.
+
+## Feature Flags
+
+The application supports feature flags defined in `mcm-app/constants/featureFlags.ts` and accessed via `FeatureFlagsProvider` in `mcm-app/contexts/FeatureFlagsContext.tsx`. Flags allow enabling or disabling sections like tabs or UI elements. Update the configuration file to control which tabs are visible, set the default tab, or hide the notifications icon on the home screen.

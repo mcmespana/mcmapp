@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Snackbar } from 'react-native-paper';
 import theme from '../app/styles/theme'; // Default import for theme
+import colors from '@/constants/colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import SongFontPanel from './SongFontPanel';
 import TransposePanel from './TransposePanel';
+import ReportBugsModal from './ReportBugsModal';
 
 // Define availableFonts structure if not already globally defined
 interface FontOption {
@@ -25,6 +28,9 @@ interface SongControlsProps {
   onSetFontFamily: (fontFamily: string) => void;
   onToggleNotation: () => void;
   onNavigateToFullscreen: () => void;
+  // Añadir props para el reporte de fallitos
+  songTitle?: string;
+  songFilename?: string;
 }
 
 const SongControls: React.FC<SongControlsProps> = ({
@@ -40,13 +46,21 @@ const SongControls: React.FC<SongControlsProps> = ({
   onSetFontFamily,
   onToggleNotation,
   onNavigateToFullscreen,
+  songTitle,
+  songFilename,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposePanel, setShowTransposePanel] = useState(false);
   const [showFontPanel, setShowFontPanel] = useState(false);
+  const [showReportBugsModal, setShowReportBugsModal] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   const handleOpenTransposePanel = () => setShowTransposePanel(true);
   const handleOpenFontPanel = () => setShowFontPanel(true);
+
+  const handleReportSuccess = () => {
+    setShowSuccessToast(true);
+  };
 
   // Wrapper for onSetTranspose to also close the modal
   const handleSetTranspose = (semitones: number) => {
@@ -59,29 +73,99 @@ const SongControls: React.FC<SongControlsProps> = ({
       <View style={styles.fabContainer}>
         {showActionButtons && (
           <View style={styles.fabActionsContainer}>
-            <TouchableOpacity style={[styles.fabAction, !chordsVisible && styles.fabActionActive]} onPress={onToggleChords}>
-              <Text style={[styles.fabActionText, !chordsVisible && styles.fabActionTextActive]}>Acordes {chordsVisible ? 'ON' : 'OFF'}</Text>
+            <TouchableOpacity
+              style={[
+                styles.fabAction,
+                !chordsVisible && styles.fabActionActive,
+              ]}
+              onPress={onToggleChords}
+            >
+              <Text
+                style={[
+                  styles.fabActionText,
+                  !chordsVisible && styles.fabActionTextActive,
+                ]}
+              >
+                Acordes {chordsVisible ? 'ON' : 'OFF'}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, notation !== 'ES' && styles.fabActionActive]} onPress={onToggleNotation}>
-              <Text style={[styles.fabActionText, notation !== 'ES' && styles.fabActionTextActive]}>Notación: {notation}</Text>
+            <TouchableOpacity
+              style={[
+                styles.fabAction,
+                notation !== 'ES' && styles.fabActionActive,
+              ]}
+              onPress={onToggleNotation}
+            >
+              <Text
+                style={[
+                  styles.fabActionText,
+                  notation !== 'ES' && styles.fabActionTextActive,
+                ]}
+              >
+                Notación: {notation}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, currentTranspose !== 0 && styles.fabActionActive]} onPress={handleOpenTransposePanel}>
-              <Text style={[styles.fabActionText, currentTranspose !== 0 && styles.fabActionTextActive]}>Cambiar tono</Text>
+            <TouchableOpacity
+              style={[
+                styles.fabAction,
+                currentTranspose !== 0 && styles.fabActionActive,
+              ]}
+              onPress={handleOpenTransposePanel}
+            >
+              <Text
+                style={[
+                  styles.fabActionText,
+                  currentTranspose !== 0 && styles.fabActionTextActive,
+                ]}
+              >
+                Cambiar tono
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.fabAction, (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && styles.fabActionActive]} onPress={handleOpenFontPanel}>
-              <Text style={[styles.fabActionText, (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue)) && styles.fabActionTextActive]}>Tipo de letra</Text>
+            <TouchableOpacity
+              style={[
+                styles.fabAction,
+                (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+                  (availableFonts.length > 0 &&
+                    currentFontFamily !== availableFonts[0].cssValue)) &&
+                  styles.fabActionActive,
+              ]}
+              onPress={handleOpenFontPanel}
+            >
+              <Text
+                style={[
+                  styles.fabActionText,
+                  (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+                    (availableFonts.length > 0 &&
+                      currentFontFamily !== availableFonts[0].cssValue)) &&
+                    styles.fabActionTextActive,
+                ]}
+              >
+                Tipo de letra
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.fabAction} onPress={onNavigateToFullscreen}>
+            <TouchableOpacity
+              style={styles.fabAction}
+              onPress={onNavigateToFullscreen}
+            >
               <Text style={styles.fabActionText}>Pantalla completa</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.fabAction}
+              onPress={() => setShowReportBugsModal(true)}
+            >
+              <Text style={styles.fabActionText}>¿Fallitos? 🐛</Text>
             </TouchableOpacity>
           </View>
         )}
         <View style={{ position: 'relative' }}>
-          {(currentTranspose !== 0 || !chordsVisible || currentFontSizeEm !== DEFAULT_FONT_SIZE_EM || (availableFonts.length > 0 && currentFontFamily !== availableFonts[0].cssValue) || notation !== 'ES') && (
-            <View style={styles.badge} />
-          )}
-          <TouchableOpacity 
-            style={styles.fabMain} 
+          {(currentTranspose !== 0 ||
+            !chordsVisible ||
+            currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+            (availableFonts.length > 0 &&
+              currentFontFamily !== availableFonts[0].cssValue) ||
+            notation !== 'ES') && <View style={styles.badge} />}
+          <TouchableOpacity
+            style={styles.fabMain}
             onPress={() => setShowActionButtons(!showActionButtons)}
             accessibilityLabel="Configuración"
           >
@@ -112,6 +196,38 @@ const SongControls: React.FC<SongControlsProps> = ({
         currentTranspose={currentTranspose}
         onSetTranspose={handleSetTranspose}
       />
+
+      <ReportBugsModal
+        visible={showReportBugsModal}
+        onClose={() => setShowReportBugsModal(false)}
+        songTitle={songTitle}
+        songFilename={songFilename}
+        onSuccess={handleReportSuccess}
+      />
+
+      {/* Toast de éxito */}
+      <Snackbar
+        visible={showSuccessToast}
+        onDismiss={() => setShowSuccessToast(false)}
+        duration={3000}
+        style={{
+          backgroundColor: colors.warning,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+        }}
+        action={{
+          label: '🐛',
+          textColor: '#000',
+          onPress: () => setShowSuccessToast(false),
+        }}
+      >
+        <Text style={{ color: '#000', fontWeight: 'bold' }}>
+          ¡Gracias por reportar los fallitos! � Nos ayudas a mejorar el
+          cantoral.
+        </Text>
+      </Snackbar>
     </>
   );
 };

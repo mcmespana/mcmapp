@@ -23,13 +23,14 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
         <div
           style={{
             width: '100%',
-            maxWidth: '800px',
-            margin: '0 auto',
-            padding: '16px 24px',
+            maxWidth: '100%',
+            margin: 0,
+            padding: '8px 12px',
             backgroundColor: 'white',
             boxSizing: 'border-box',
             minHeight: '100%',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            overflowY: 'auto',
           }}
           dangerouslySetInnerHTML={{ __html: songHtml }}
         />
@@ -53,7 +54,7 @@ const styles = StyleSheet.create({
   webViewContainer: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    ...(Platform.OS === 'web' ? { paddingVertical: 16 } : {}),
+    ...(Platform.OS === 'web' ? { paddingVertical: 8 } : {}),
   },
   loadingContainer: {
     justifyContent: 'center',

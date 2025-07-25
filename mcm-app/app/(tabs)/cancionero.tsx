@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Platform } from 'react-native';
 
 // Importar pantallas
 import CategoriesScreen from '../screens/CategoriesScreen';
@@ -48,7 +49,6 @@ export type RootStackParamList = {
   SelectedSongs: undefined; // Add SelectedSongs screen
 };
 
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function CancioneroTab() {
@@ -60,48 +60,52 @@ export default function CancioneroTab() {
       <SelectedSongsProvider>
         <Stack.Navigator
           initialRouteName="Categories"
-        screenOptions={{
-          headerBackTitle: 'Volver',
-          headerStyle: {
-            backgroundColor: '#f4c11e',
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }}
-      >
-        <Stack.Screen 
-          name="Categories" 
-          component={CategoriesScreen} 
-          options={{ title: 'Índice de canciones' }} 
-        />
-        <Stack.Screen 
-          name="SongsList" 
-          component={SongListScreen} 
-          options={({ route }) => ({ title: route.params?.categoryName || 'Canciones' })} 
-        />
-        <Stack.Screen
-          name="SongDetail"
-          component={SongDetailScreen}
-          options={({ route }) => ({
-            title: route.params?.title || 'Letra y Acordes'
-          })}
-        />
-        <Stack.Screen
-          name="SongFullscreen"
-          component={SongFullscreenScreen}
-          options={({ route }) => ({
-            title: route.params?.title || 'Pantalla completa'
-          })}
-        />
-        <Stack.Screen
-          name="SelectedSongs"
-          component={SelectedSongsScreen}
-          options={{ title: 'Seleccionadas' }}
-        />
-      </Stack.Navigator>
-    </SelectedSongsProvider>
+          screenOptions={{
+            headerBackTitle: 'Volver',
+            headerStyle: {
+              backgroundColor: '#f4c11e',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+              fontSize: 18,
+            },
+            headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
+          }}
+        >
+          <Stack.Screen
+            name="Categories"
+            component={CategoriesScreen}
+            options={{ title: 'Índice de canciones' }}
+          />
+          <Stack.Screen
+            name="SongsList"
+            component={SongListScreen}
+            options={({ route }) => ({
+              title: route.params?.categoryName || 'Canciones',
+            })}
+          />
+          <Stack.Screen
+            name="SongDetail"
+            component={SongDetailScreen}
+            options={({ route }) => ({
+              title: route.params?.title || 'Letra y Acordes',
+            })}
+          />
+          <Stack.Screen
+            name="SongFullscreen"
+            component={SongFullscreenScreen}
+            options={({ route }) => ({
+              title: route.params?.title || 'Pantalla completa',
+            })}
+          />
+          <Stack.Screen
+            name="SelectedSongs"
+            component={SelectedSongsScreen}
+            options={{ title: 'Seleccionadas' }}
+          />
+        </Stack.Navigator>
+      </SelectedSongsProvider>
     </SettingsProvider> // <<<--- WRAP HERE
   );
 }

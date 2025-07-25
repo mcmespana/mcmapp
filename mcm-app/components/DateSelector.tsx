@@ -1,13 +1,43 @@
 import React from 'react';
-import { FlatList, TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import {
+  FlatList,
+  TouchableOpacity,
+  View,
+  Text,
+  StyleSheet,
+} from 'react-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 
-const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const WEEKDAYS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MONTHS = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+const WEEKDAYS = [
+  'domingo',
+  'lunes',
+  'martes',
+  'miércoles',
+  'jueves',
+  'viernes',
+  'sábado',
+];
 
-export interface DateOption { fecha: string; titulo?: string }
+export interface DateOption {
+  fecha: string;
+  titulo?: string;
+}
 
 interface Props {
   dates: DateOption[];
@@ -15,7 +45,11 @@ interface Props {
   onSelectDate: (date: string, index: number) => void;
 }
 
-export default function DateSelector({ dates, selectedDate, onSelectDate }: Props) {
+export default function DateSelector({
+  dates,
+  selectedDate,
+  onSelectDate,
+}: Props) {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
 
@@ -27,8 +61,12 @@ export default function DateSelector({ dates, selectedDate, onSelectDate }: Prop
     return (
       <TouchableOpacity onPress={() => onSelectDate(item.fecha, index)}>
         <View style={[styles.item, selected && styles.itemSelected]}>
-          <Text style={[styles.dateText, selected && styles.textSelected]}>{label}</Text>
-          <Text style={[styles.weekdayText, selected && styles.textSelected]}>{weekday}</Text>
+          <Text style={[styles.dateText, selected && styles.textSelected]}>
+            {label}
+          </Text>
+          <Text style={[styles.weekdayText, selected && styles.textSelected]}>
+            {weekday}
+          </Text>
         </View>
       </TouchableOpacity>
     );

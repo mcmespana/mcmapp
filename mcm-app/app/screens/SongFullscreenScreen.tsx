@@ -1,17 +1,31 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform, Animated } from 'react-native';
-import Slider from '@react-native-community/slider';
-import { RouteProp, useNavigation, NavigationProp } from '@react-navigation/native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+  Animated,
+} from 'react-native';
+import {
+  RouteProp,
+  useNavigation,
+  NavigationProp,
+} from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
+import CrossPlatformSlider from '../../components/CrossPlatformSlider';
 
 // Route type for this screen
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
-export default function SongFullscreenScreen({ route }: { route: SongFullscreenRouteProp }) {
+export default function SongFullscreenScreen({
+  route,
+}: {
+  route: SongFullscreenRouteProp;
+}) {
   const { author, key, capo, content } = route.params;
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { settings } = useSettings();
@@ -75,7 +89,9 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
           divRef.current.scrollBy({ top: delta });
         }
       } else {
-        webViewRef.current?.injectJavaScript(`window.scrollBy(0,${delta}); true;`);
+        webViewRef.current?.injectJavaScript(
+          `window.scrollBy(0,${delta}); true;`,
+        );
       }
     }, 50);
     return () => clearInterval(id);
@@ -84,7 +100,11 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
   return (
     <View style={styles.container}>
       {Platform.OS === 'web' ? (
-        <div ref={divRef} style={styles.webContainer as any} dangerouslySetInnerHTML={{ __html: songHtml }} />
+        <div
+          ref={divRef}
+          style={styles.webContainer as any}
+          dangerouslySetInnerHTML={{ __html: songHtml }}
+        />
       ) : (
         <WebView
           ref={webViewRef}
@@ -97,21 +117,27 @@ export default function SongFullscreenScreen({ route }: { route: SongFullscreenR
       <TouchableOpacity
         style={styles.scrollButton}
         onPress={() => {
-          setAutoScroll(s => !s);
+          setAutoScroll((s) => !s);
           showSlider();
         }}
       >
-        <MaterialIcons name={autoScroll ? 'pause' : 'play-arrow'} color="#fff" size={28} />
+        <MaterialIcons
+          name={autoScroll ? 'pause' : 'play-arrow'}
+          color="#fff"
+          size={28}
+        />
       </TouchableOpacity>
       {sliderVisible && (
-        <Animated.View style={[styles.sliderWrapper, { opacity: sliderOpacity }]}>
-          <Slider
+        <Animated.View
+          style={[styles.sliderWrapper, { opacity: sliderOpacity }]}
+        >
+          <CrossPlatformSlider
             style={styles.slider}
             minimumValue={0}
             maximumValue={1}
             step={0.01}
             value={scrollSpeed}
-            onValueChange={value => {
+            onValueChange={(value: number) => {
               setScrollSpeed(value);
               showSlider();
             }}
@@ -128,7 +154,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     overflowY: 'auto',
-    padding: 16,
+    padding: 8,
     boxSizing: 'border-box',
   },
   scrollButton: {
@@ -139,6 +165,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 30,
     opacity: 0.7,
+    zIndex: 2,
   },
   sliderWrapper: {
     position: 'absolute',
@@ -148,6 +175,7 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 2,
   },
   slider: {
     width: '100%',

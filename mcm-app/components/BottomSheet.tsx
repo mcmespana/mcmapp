@@ -10,7 +10,11 @@ interface BottomSheetProps {
   children: React.ReactNode;
 }
 
-export default function BottomSheet({ visible, onClose, children }: BottomSheetProps) {
+export default function BottomSheet({
+  visible,
+  onClose,
+  children,
+}: BottomSheetProps) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
 
@@ -22,8 +26,18 @@ export default function BottomSheet({ visible, onClose, children }: BottomSheetP
       swipeDirection="down"
       onSwipeComplete={onClose}
       backdropOpacity={0.3}
+      animationIn="slideInUp"
+      animationOut="slideOutDown"
+      animationInTiming={300}
+      animationOutTiming={250}
+      backdropTransitionInTiming={300}
+      backdropTransitionOutTiming={250}
+      useNativeDriverForBackdrop={true}
+      hideModalContentWhileAnimating={true}
     >
-      <View style={[styles.container, { backgroundColor: theme.background }]}>{children}</View>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        {children}
+      </View>
     </Modal>
   );
 }

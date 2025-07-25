@@ -9,10 +9,17 @@
     "scheme": "mcmapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mcmespana.mcmapp"
+      "icon": {
+        "light": "./assets/images/ios-light.png",
+        "dark": "./assets/images/ios-dark.png",
+        "tinted": "./assets/images/ios-tinted.png"
+      },
+      "bundleIdentifier": "com.mcmespana.mcmapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -20,26 +27,71 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.mcmespana.mcmapp",
-      "googleServicesFile": "google-services.json"
+      "package": "com.mcmespana.mcmapp"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "meta": {
+        "apple": {
+          "mobileWebAppCapable": "yes",
+          "statusBarStyle": "black-translucent",
+          "title": "MCM App · Web",
+          "touchIcon": "./assets/images/icon.png",
+          "icons": {
+            "120": "./assets/images/icon-120.png",
+            "152": "./assets/images/icon-152.png",
+            "167": "./assets/images/icon-167.png",
+            "180": "./assets/images/icon-180.png",
+            "1024": "./assets/images/icon-1024.png"
+          }
+        },
+        "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+      },
+      "manifest": {
+        "name": "MCM App · Web",
+        "short_name": "MCM",
+        "description": "Aplicación móvil de MCM España para seguimiento de actividades, cantoral y mucho más",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait",
+        "background_color": "#ffffff",
+        "theme_color": "#253883",
+        "icons": [
+          {
+            "src": "./assets/images/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+          },
+          {
+            "src": "./assets/images/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+          }
+        ]
+      }
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/splash-icon-light.png",
+          "dark": {
+            "image": "./assets/images/splash-icon-dark.png",
+            "backgroundColor": "#000000"
+          },
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      ["expo-build-properties"]
     ],
     "experiments": {
       "typedRoutes": true
@@ -51,7 +103,9 @@
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/aa9f2d3a-b74a-4169-bad4-e851015e30c6"
+      "url": "https://u.expo.dev/aa9f2d3a-b74a-4169-bad4-e851015e30c6",
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
     }
   }
 }

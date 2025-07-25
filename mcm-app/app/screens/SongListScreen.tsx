@@ -5,6 +5,7 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { filterSongsData } from '@/utils/filterSongsData';
 // import SongSearch from '../../components/SongSearch'; // Removed SongSearch import
 import SongListItem from '../../components/SongListItem'; // Added import
 
@@ -33,17 +34,17 @@ const getSongsData = (data: any): Record<string, SongCategory> => {
     if (data === null) {
       return {};
     }
-    
+
     // If the data is already in the correct format, return it
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       return data as Record<string, SongCategory>;
     }
-    
+
     // If the data is an array, try to convert it to the correct format
     if (Array.isArray(data)) {
       return { All: { categoryTitle: 'All', songs: data } };
     }
-    
+
     // If we can't determine the format, return an empty object
     console.error('Unexpected songs data format:', data);
     return {};
@@ -53,12 +54,16 @@ const getSongsData = (data: any): Record<string, SongCategory> => {
   }
 };
 
-export default function SongsListScreen({ route, navigation }: {
+export default function SongsListScreen({
+  route,
+  navigation,
+}: {
   route: { params: { categoryId: string; categoryName: string } };
   navigation: any;
 }) {
-  const { data: firebaseSongs, loading: loadingSongs } =
-    useFirebaseData<Record<string, SongCategory>>('songs', 'songs');
+  const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<
+    Record<string, SongCategory>
+  >('songs', 'songs', filterSongsData);
   const songsData = useMemo(() => getSongsData(firebaseSongs), [firebaseSongs]);
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
@@ -73,24 +78,30 @@ export default function SongsListScreen({ route, navigation }: {
     // TODO - Eliminar estos comentarios
     console.log('Accessing category:', categoryId);
     console.log('Available categories:', Object.keys(songsData));
-    
+
     const loadSongs = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
         if (categoryId === '__ALL__') {
           let allSongs: Song[] = [];
           for (const originalCategoryKey in songsData) {
-            if (Object.prototype.hasOwnProperty.call(songsData, originalCategoryKey)) {
+            if (
+              Object.prototype.hasOwnProperty.call(
+                songsData,
+                originalCategoryKey,
+              )
+            ) {
               const categorySongs = songsData[originalCategoryKey].songs;
-              const categoryTitle = songsData[originalCategoryKey].categoryTitle;
+              const categoryTitle =
+                songsData[originalCategoryKey].categoryTitle;
               const categoryLetterMatch = categoryTitle.match(/^[A-Za-z]/);
               const categoryLetter = categoryLetterMatch
                 ? categoryLetterMatch[0].toUpperCase()
                 : originalCategoryKey.charAt(0).toUpperCase();
 
-              const songsWithMetadata = categorySongs.map(song => {
+              const songsWithMetadata = categorySongs.map((song) => {
                 const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
                 let numericPart = '';
                 if (titleMatch && titleMatch[1]) {
@@ -121,19 +132,20 @@ export default function SongsListScreen({ route, navigation }: {
         } else {
           // Try to find the category (case insensitive)
           const categoryKey = Object.keys(songsData).find(
-            key => key.trim().toLowerCase() === categoryId.trim().toLowerCase()
+            (key) =>
+              key.trim().toLowerCase() === categoryId.trim().toLowerCase(),
           );
 
           console.log('Found category key:', categoryKey);
-          
+
           if (categoryKey) {
             const categorySongs = songsData[categoryKey].songs;
             console.log(
-              `Found category '${categoryKey}' with ${categorySongs?.length || 0} songs`
+              `Found category '${categoryKey}' with ${categorySongs?.length || 0} songs`,
             );
 
             if (categorySongs && Array.isArray(categorySongs)) {
-              const songsWithNumericPart = categorySongs.map(song => {
+              const songsWithNumericPart = categorySongs.map((song) => {
                 const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
                 let numericPart = '';
                 if (titleMatch && titleMatch[1]) {
@@ -164,22 +176,24 @@ export default function SongsListScreen({ route, navigation }: {
         setIsLoading(false);
       }
     };
-    
+
     loadSongs();
   }, [categoryId, songsData]);
 
   // Filter songs based on search
-  const filteredSongs = songs.filter(song => {
+  const filteredSongs = songs.filter((song) => {
     if (!song) return false;
     const searchTerm = search.toLowerCase();
-    const titleMatch = song.title && song.title.toLowerCase().includes(searchTerm);
-    const authorMatch = song.author && song.author.toLowerCase().includes(searchTerm);
+    const titleMatch =
+      song.title && song.title.toLowerCase().includes(searchTerm);
+    const authorMatch =
+      song.author && song.author.toLowerCase().includes(searchTerm);
     return titleMatch || authorMatch;
   });
 
   // Handle song press
   const handleSongPress = (song: Song) => {
-    const index = songs.findIndex(s => s.filename === song.filename);
+    const index = songs.findIndex((s) => s.filename === song.filename);
     navigation.navigate('SongDetail', {
       filename: song.filename,
       title: song.title.replace(/^\d+\.\s*/, ''),
@@ -194,7 +208,7 @@ export default function SongsListScreen({ route, navigation }: {
   };
 
   // Render loading state
-  if (isLoading || loadingSongs) {
+  if ((isLoading || loadingSongs) && songs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
 
@@ -204,7 +218,8 @@ export default function SongsListScreen({ route, navigation }: {
       <View style={styles.container}>
         <Text style={styles.errorText}>{error}</Text>
         <Text style={styles.debugText}>
-          Categorías disponibles: {songsData ? Object.keys(songsData).join(', ') : 'N/A'}
+          Categorías disponibles:{' '}
+          {songsData ? Object.keys(songsData).join(', ') : 'N/A'}
         </Text>
       </View>
     );
@@ -225,9 +240,13 @@ export default function SongsListScreen({ route, navigation }: {
         />
         <Text style={styles.categoryTitle}>{categoryName}</Text>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No hemos encontrado esa canción 🕵️‍♀️</Text>
+          <Text style={styles.emptyText}>
+            No hemos encontrado esa canción 🕵️‍♀️
+          </Text>
           {search.length > 0 && (
-            <Text style={styles.hintText}>Puedes buscar el título o el autor si está disponible</Text>
+            <Text style={styles.hintText}>
+              Puedes buscar el título o el autor si está disponible
+            </Text>
           )}
         </View>
       </View>
@@ -255,11 +274,11 @@ export default function SongsListScreen({ route, navigation }: {
         data={filteredSongs}
         keyExtractor={(item) => item.filename}
         renderItem={({ item }) => (
-          <SongListItem 
-          song={item} 
-          onPress={handleSongPress} 
-          isSearchAllMode={categoryId === '__ALL__'} 
-        />
+          <SongListItem
+            song={item}
+            onPress={handleSongPress}
+            isSearchAllMode={categoryId === '__ALL__'}
+          />
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -276,7 +295,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? Colors.dark.background : Colors.light.background,
+      backgroundColor: isDark
+        ? Colors.dark.background
+        : Colors.light.background,
     },
     separator: {
       height: 5,

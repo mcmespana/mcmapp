@@ -11,17 +11,19 @@ type IconMapping = {
   'paperplane.fill': 'send';
   'chevron.left.forwardslash.chevron.right': 'code';
   'chevron.right': 'chevron-right';
-  'close': 'close';
-  'settings': 'settings';
-  
+  close: 'close';
+  settings: 'settings';
+
   // Song related icons
   'plus.circle': 'add-circle';
   'minus.circle': 'remove-circle';
   'doc.on.doc': 'content-copy';
   'square.and.arrow.up': 'share';
   'music.note.list': 'queue-music';
-  'trash': 'delete';
+  trash: 'delete';
   'checkmark.circle.fill': 'check-circle';
+  'tray.and.arrow.down': 'file-download';
+  'square.and.arrow.up.on.square': 'file-upload';
 };
 
 type IconSymbolName = keyof IconMapping;
@@ -37,17 +39,19 @@ const MAPPING: IconMapping = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
-  'close': 'close',
-  'settings': 'settings',
-  
+  close: 'close',
+  settings: 'settings',
+
   // Song related icons
   'plus.circle': 'add-circle',
   'minus.circle': 'remove-circle',
   'doc.on.doc': 'content-copy',
   'square.and.arrow.up': 'share',
   'music.note.list': 'queue-music',
-  'trash': 'delete',
+  trash: 'delete',
   'checkmark.circle.fill': 'check-circle',
+  'tray.and.arrow.down': 'file-download',
+  'square.and.arrow.up.on.square': 'file-upload',
 };
 
 /**
@@ -67,5 +71,12 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  return (
+    <MaterialIcons
+      color={color}
+      size={size}
+      name={MAPPING[name]}
+      style={style}
+    />
+  );
 }

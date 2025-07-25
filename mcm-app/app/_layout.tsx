@@ -10,42 +10,60 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; *
 
  const NOTIFICATIONS_STORAGE_KEY = 'bf78779e-4d63-444f-a72e-ce5e0fb2bf80';  */
 
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet } from 'react-native';
-import { ThemeProvider as NavThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
-import { Slot } from 'expo-router';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  ThemeProvider as NavThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+} from '@react-navigation/native';
+import { Slot, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useStatusBarTheme } from '@/hooks/useStatusBarTheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
+import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
-import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
+import AddToHomeBanner from '@/components/AddToHomeBanner';
+import {
+  Provider as PaperProvider,
+  MD3LightTheme,
+  MD3DarkTheme,
+} from 'react-native-paper';
 import colors from '@/constants/colors';
 
-
+// Importar iconos para asegurar que se incluyan en el build
+import '@/constants/iconAssets';
 
 export default function RootLayout() {
   return (
-    <AppSettingsProvider>
-      <InnerLayout />
-    </AppSettingsProvider>
+    <FeatureFlagsProvider>
+      <AppSettingsProvider>
+        <InnerLayout />
+      </AppSettingsProvider>
+    </FeatureFlagsProvider>
   );
 }
 
-  //usePushNotifications(); // 3️⃣ inicializa el hook
-  const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
-  // Configuración del tema de navegación
-  }, [scheme]);
-  
-    return { ...base, colors: { ...base.colors, primary: colors.success } };
-    const base = scheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
-  const paperTheme = useMemo(() => {
-  // Configuración del tema de Paper
-  
-  const [showAnimation, setShowAnimation] = useState(true);
 function InnerLayout() {
+  const [showAnimation, setShowAnimation] = useState(true);
   const scheme = useColorScheme(); // Keep existing hooks
+  const pathname = usePathname();
+  //usePushNotifications(); // 3️⃣ inicializa el hook
+  
+  // Hook para actualizar el tema de la barra de estado dinámicamente
+  useStatusBarTheme(pathname);
+
+  // Configuración del tema de Paper
+  const paperTheme = useMemo(() => {
+    const base = scheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
+    return { ...base, colors: { ...base.colors, primary: colors.success } };
+  }, [scheme]);
+
+  // Configuración del tema de navegación
+  const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
   useEffect(() => {
     // The HelloWave animation repeats 4 times, each sequence is 150ms + 150ms = 300ms.
@@ -58,7 +76,10 @@ function InnerLayout() {
     return () => clearTimeout(timer); // Cleanup timer on unmount
   }, []);
 
-    useEffect(() => {
+  // NOTIS - Comentado para eliminar sistema notificaciones
+  //usePushNotifications(); // 3️⃣ inicializa el hook
+
+  // useEffect(() => {
   // Configuración de OneSignal - ELIMINAR DEBUG PRODUCCIÓN
         /* OneSignal.Debug.setLogLevel(LogLevel.Verbose);   
         //OneSignal.initialize('bf78779e-4d63-444f-a72e-ce5e0fb2bf80');
@@ -130,10 +151,10 @@ function InnerLayout() {
     // };
 
     */
-  
-    // sigue use effect después de notificaciones
-  
- // }, []);
+
+  // sigue use effect después de notificaciones
+
+  // }, []);
 
   if (showAnimation) {
     return (
@@ -145,12 +166,15 @@ function InnerLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PaperProvider theme={paperTheme}>
-        <NavThemeProvider value={navigationTheme}>
-          <Slot />
-          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        </NavThemeProvider>
-      </PaperProvider>
+      <SafeAreaProvider>
+        <PaperProvider theme={paperTheme}>
+          <NavThemeProvider value={navigationTheme}>
+            <Slot />
+            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            <AddToHomeBanner />
+          </NavThemeProvider>
+        </PaperProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
@@ -164,4 +188,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', // Or use a theme color
   },
 });
-

@@ -11,10 +11,13 @@ export default function usePushNotifications() {
   useEffect(() => {
     // 1️⃣ Pedir permiso de notifs
     askNotificationPermission()
-      .then(status => {
-        if (status as unknown as Notifications.PermissionStatus === Notifications.PermissionStatus.GRANTED) {
+      .then((status) => {
+        if (
+          (status as unknown as Notifications.PermissionStatus) ===
+          Notifications.PermissionStatus.GRANTED
+        ) {
           // 2️⃣ Si ok, registra canal y token
-          registerForPushNotificationsAsync().then(token => {
+          registerForPushNotificationsAsync().then((token) => {
             console.log('🥳 Expo Push Token:', token);
           });
         }
@@ -22,16 +25,20 @@ export default function usePushNotifications() {
       .catch(console.error);
 
     // 3️⃣ Listeners
-    notificationListener.current = Notifications.addNotificationReceivedListener(n => {
-      console.log('🔔 Notificación recibida:', n);
-    });
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(r => {
-      console.log('📲 Usuario tocó notificación:', r);
-    });
+    notificationListener.current =
+      Notifications.addNotificationReceivedListener((n) => {
+        console.log('🔔 Notificación recibida:', n);
+      });
+    responseListener.current =
+      Notifications.addNotificationResponseReceivedListener((r) => {
+        console.log('📲 Usuario tocó notificación:', r);
+      });
 
     // 4️⃣ Cleanup
     return () => {
-      Notifications.removeNotificationSubscription(notificationListener.current);
+      Notifications.removeNotificationSubscription(
+        notificationListener.current,
+      );
       Notifications.removeNotificationSubscription(responseListener.current);
     };
   }, []);
@@ -52,8 +59,8 @@ async function askNotificationPermission(): Promise<Notifications.NotificationPe
       'Activa las notificaciones en los ajustes de la app',
       [
         { text: 'Abrir Ajustes', onPress: () => Linking.openSettings() },
-        { text: 'Cancelar', style: 'cancel' }
-      ]
+        { text: 'Cancelar', style: 'cancel' },
+      ],
     );
   }
   return finalStatus as unknown as Notifications.NotificationPermissionsStatus;
