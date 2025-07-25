@@ -17,6 +17,7 @@ Expo es un framework de código abierto para construir aplicaciones universales 
     * [iPhone físico (TestFlight)](#5️⃣-iphone-físico-testflight-)
     * [Modo “Development Build”]($6️⃣-modo-development-build-universo-paralelo-)
 * [Mini-post-it de comandos](#-mini-post-it-de-comandos)
+* [Instalar como app en tu móvil](#instalar-como-app-en-tu-móvil)
 
 ---
 
@@ -194,6 +195,12 @@ Esto iniciará el servidor de desarrollo, y podrás abrir la app de Development 
 
 ### Modo pantalla completa para canciones
 Desde la vista de detalle puedes pulsar el nuevo icono de *pantalla completa* para abrir la canción en modo presentación. El texto se muestra con una fuente grande y puedes activar o pausar el desplazamiento automático con el botón de reproducción.
+
+---
+
+### Instalar como app en tu móvil
+
+Cuando visites la versión web desde Safari o Chrome en tu teléfono, verás un mensaje animado invitándote a añadir la app a la pantalla de inicio. Pulsa el icono de compartir y selecciona **Añadir a pantalla de inicio**. Tendrás un acceso directo con icono propio y la aplicación se abrirá a pantalla completa.
 
 ---
 
