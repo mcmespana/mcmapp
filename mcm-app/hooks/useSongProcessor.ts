@@ -160,7 +160,7 @@ export const useSongProcessor = ({
           <style>
             body {
               font-family: ${currentFontFamily};
-              margin: 10px;
+              margin: 0px;
               background-color: #ffffff;
               color: ${AppColors.textDark || '#212529'};
               font-size: 100%;

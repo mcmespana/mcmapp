@@ -19,9 +19,10 @@ import {
   DarkTheme,
   DefaultTheme,
 } from '@react-navigation/native';
-import { Slot } from 'expo-router';
+import { Slot, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useStatusBarTheme } from '@/hooks/useStatusBarTheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
@@ -32,6 +33,9 @@ import {
   MD3DarkTheme,
 } from 'react-native-paper';
 import colors from '@/constants/colors';
+
+// Importar iconos para asegurar que se incluyan en el build
+import '@/constants/iconAssets';
 
 export default function RootLayout() {
   return (
@@ -46,6 +50,10 @@ export default function RootLayout() {
 function InnerLayout() {
   const [showAnimation, setShowAnimation] = useState(true);
   const scheme = useColorScheme(); // Keep existing hooks
+  const pathname = usePathname();
+  
+  // Hook para actualizar el tema de la barra de estado dinámicamente
+  useStatusBarTheme(pathname);
 
   // Configuración del tema de Paper
   const paperTheme = useMemo(() => {

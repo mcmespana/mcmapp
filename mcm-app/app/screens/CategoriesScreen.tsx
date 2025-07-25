@@ -122,7 +122,12 @@ export default function CategoriesScreen({
           </TouchableOpacity>
         )}
       />
-      <FAB icon="plus" style={styles.fab} onPress={() => setShowForm(true)} />
+      <FAB
+        icon="plus"
+        style={styles.fab}
+        color="#222"
+        onPress={() => setShowForm(true)}
+      />
 
       <SuggestSongModal
         visible={showForm}
@@ -180,7 +185,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       position: 'absolute',
       right: 16,
       bottom: 16,
-      backgroundColor: '#f4c11e', // Mismo amarillo que el header
+      backgroundColor: '#f4c11e', // Mismo amarillo que el header - funciona en ambos modos
     },
   });
 };

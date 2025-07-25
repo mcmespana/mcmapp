@@ -6,7 +6,6 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
 import {
   RouteProp,
   useNavigation,
@@ -17,6 +16,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
+import CrossPlatformSlider from '../../components/CrossPlatformSlider';
 
 // Route type for this screen
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
@@ -131,13 +131,13 @@ export default function SongFullscreenScreen({
         <Animated.View
           style={[styles.sliderWrapper, { opacity: sliderOpacity }]}
         >
-          <Slider
+          <CrossPlatformSlider
             style={styles.slider}
             minimumValue={0}
             maximumValue={1}
             step={0.01}
             value={scrollSpeed}
-            onValueChange={(value) => {
+            onValueChange={(value: number) => {
               setScrollSpeed(value);
               showSlider();
             }}

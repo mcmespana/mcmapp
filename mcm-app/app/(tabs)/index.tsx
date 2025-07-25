@@ -14,6 +14,7 @@ import {
   TextStyle,
   useWindowDimensions,
   Animated,
+  Alert,
 } from 'react-native';
 import { Link, LinkProps } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
@@ -23,6 +24,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import SettingsPanel from '@/components/SettingsPanel';
+import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import featureFlags from '@/constants/featureFlags';
 
@@ -32,6 +34,7 @@ interface NavigationItem {
   icon: ComponentProps<typeof MaterialIcons>['name'];
   backgroundColor: string;
   color: string;
+  onPress?: string; // Para acciones especiales como 'feedback'
 }
 
 const navigationItems: NavigationItem[] = [
@@ -71,10 +74,11 @@ const navigationItems: NavigationItem[] = [
     color: '#222',
   },
   {
-    label: 'Próximamente...',
-    icon: 'hourglass-empty',
+    label: '¿Nos ayudas?',
+    icon: 'bug-report',
     backgroundColor: '#8E9AAFdd',
     color: '#222',
+    onPress: 'feedback', // Indicador especial para abrir feedback
   },
 ].filter(Boolean) as NavigationItem[];
 
@@ -207,10 +211,22 @@ function ContextualDecoration({ type }: { type: string }) {
         </Animated.View>
       );
 
+    case '¿Fallitos?':
+      return (
+        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
+          {/* Decoración para fallitos/bugs */}
+          <View style={[styles.bugDot, styles.bug1]} />
+          <View style={[styles.bugDot, styles.bug2]} />
+          <View style={[styles.bugDot, styles.bug3]} />
+          <View style={[styles.debugLine, styles.debug1]} />
+          <View style={[styles.debugLine, styles.debug2]} />
+        </Animated.View>
+      );
+
     default:
       return (
         <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Decoración minimalista para "Próximamente" */}
+          {/* Decoración minimalista para otros casos */}
           <View style={[styles.hourglass, styles.sand1]} />
           <View style={[styles.hourglass, styles.sand2]} />
           <View style={[styles.dots, styles.loadingDot1]} />
@@ -226,6 +242,7 @@ export default function Home() {
   const scheme = useColorScheme();
   const featureFlags = useFeatureFlags();
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
   const { width, height } = useWindowDimensions();
   const containerPadding = spacing.md;
   const gap = spacing.md;
@@ -244,6 +261,22 @@ export default function Home() {
       scale: new Animated.Value(0.8),
     })),
   );
+
+  // Función para manejar acciones especiales
+  const handleSpecialAction = (action: string) => {
+    if (action === 'feedback') {
+      setFeedbackVisible(true);
+    }
+  };
+
+  // Función para mostrar toast de éxito
+  const handleFeedbackSuccess = () => {
+    Alert.alert(
+      '¡Gracias!',
+      'Tu comentario ha sido enviado correctamente. Nos ayudas a mejorar la app 🙌',
+      [{ text: 'De nada cracks 😊' }],
+    );
+  };
 
   useEffect(() => {
     // Definir direcciones de entrada para cada elemento
@@ -394,10 +427,24 @@ export default function Home() {
                 {content}
               </TouchableOpacity>
             </Link>
+          ) : item.onPress ? (
+            <TouchableOpacity
+              style={styles.itemWrapper}
+              onPress={() => handleSpecialAction(item.onPress!)}
+            >
+              {content}
+            </TouchableOpacity>
           ) : (
             <View style={styles.itemWrapper}>{content}</View>
           );
         }}
+      />
+
+      {/* Modal de feedback */}
+      <AppFeedbackModal
+        visible={feedbackVisible}
+        onClose={() => setFeedbackVisible(false)}
+        onSuccess={handleFeedbackSuccess}
       />
     </>
   );
@@ -453,6 +500,14 @@ interface Styles {
   connectionLine: ViewStyle;
   connection1: ViewStyle;
   connection2: ViewStyle;
+  // Fallitos - bugs y debug
+  bugDot: ViewStyle;
+  bug1: ViewStyle;
+  bug2: ViewStyle;
+  bug3: ViewStyle;
+  debugLine: ViewStyle;
+  debug1: ViewStyle;
+  debug2: ViewStyle;
   // Próximamente - reloj de arena
   hourglass: ViewStyle;
   sand1: ViewStyle;
@@ -739,6 +794,48 @@ const styles = StyleSheet.create<Styles>({
     height: 2,
     bottom: 20,
     left: 12,
+  },
+
+  // Fallitos - bugs y debug
+  bugDot: {
+    position: 'absolute',
+    opacity: 0.3,
+    backgroundColor: '#666',
+    borderRadius: 2,
+    width: 4,
+    height: 4,
+  },
+  bug1: {
+    top: 14,
+    left: 14,
+  },
+  bug2: {
+    top: 20,
+    right: 20,
+    backgroundColor: '#888',
+  },
+  bug3: {
+    bottom: 18,
+    left: 18,
+    backgroundColor: '#999',
+  },
+  debugLine: {
+    position: 'absolute',
+    opacity: 0.2,
+    backgroundColor: '#666',
+    borderRadius: 1,
+  },
+  debug1: {
+    width: 2,
+    height: 12,
+    top: 16,
+    right: 16,
+  },
+  debug2: {
+    width: 10,
+    height: 2,
+    bottom: 22,
+    right: 14,
   },
 
   // Próximamente - reloj de arena
