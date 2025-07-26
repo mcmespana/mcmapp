@@ -27,6 +27,7 @@ import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import featureFlags from '@/constants/featureFlags';
+import useWordleStats from '@/hooks/useWordleStats';
 
 interface NavigationItem {
   href?: LinkProps['href'];
@@ -71,6 +72,13 @@ const navigationItems: NavigationItem[] = [
     label: 'Comunica',
     icon: 'chat',
     backgroundColor: '#9D1E74dd',
+    color: '#222',
+  },
+  {
+    href: '/wordle',
+    label: 'Wordle',
+    icon: 'sports-esports',
+    backgroundColor: '#A3BD31',
     color: '#222',
   },
   {
@@ -241,6 +249,8 @@ export default function Home() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
   const featureFlags = useFeatureFlags();
+  const { stats } = useWordleStats();
+  const [pendingWordle, setPendingWordle] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const { width, height } = useWindowDimensions();
@@ -277,6 +287,25 @@ export default function Home() {
       [{ text: 'De nada cracks 😊' }],
     );
   };
+
+  useEffect(() => {
+    const check = () => {
+      const now = new Date();
+      let dateKey = now.toISOString().slice(0, 10);
+      let cycle: 'morning' | 'evening' = 'morning';
+      if (now.getHours() < 7) {
+        const y = new Date(now);
+        y.setDate(y.getDate() - 1);
+        dateKey = y.toISOString().slice(0, 10);
+        cycle = 'evening';
+      } else if (now.getHours() >= 19) {
+        cycle = 'evening';
+      }
+      const key = `${dateKey}_${cycle}`;
+      setPendingWordle(stats.lastPlayedKey !== key);
+    };
+    check();
+  }, [stats]);
 
   useEffect(() => {
     // Definir direcciones de entrada para cada elemento
@@ -410,12 +439,27 @@ export default function Home() {
                 ]}
               />
               <ContextualDecoration type={item.label} />
-              <MaterialIcons
-                name={item.icon}
-                size={48}
-                color={item.color}
-                style={styles.icon}
-              />
+              <View>
+                <MaterialIcons
+                  name={item.icon}
+                  size={48}
+                  color={item.color}
+                  style={styles.icon}
+                />
+                {item.label === 'Wordle' && pendingWordle && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      backgroundColor: colors.danger,
+                      width: 12,
+                      height: 12,
+                      borderRadius: 6,
+                    }}
+                  />
+                )}
+              </View>
               <Text style={[styles.label, { color: item.color }]}>
                 {item.label}
               </Text>
