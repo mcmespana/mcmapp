@@ -13,6 +13,8 @@ import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
 import ReflexionesScreen from '../screens/ReflexionesScreen';
 import AppsScreen from '../screens/AppsScreen';
+import ComidaScreen from '../screens/ComidaScreen';
+import ComidaWebScreen from '../screens/ComidaWebScreen';
 import SettingsPanel from '@/components/SettingsPanel';
 
 export type JubileoStackParamList = {
@@ -21,6 +23,8 @@ export type JubileoStackParamList = {
   Materiales: { initialDayIndex?: number } | undefined;
   MaterialPages: { actividad: any; fecha: string };
   Visitas: undefined;
+  Comida: undefined;
+  ComidaWeb: { url: string; title: string };
   Profundiza: undefined;
   Grupos: undefined;
   Contactos: undefined;
@@ -86,6 +90,16 @@ export default function JubileoTab() {
           name="MaterialPages"
           component={MaterialPagesScreen}
           options={{ title: 'Material' }}
+        />
+        <Stack.Screen
+          name="Comida"
+          component={ComidaScreen}
+          options={{ title: 'Comida' }}
+        />
+        <Stack.Screen
+          name="ComidaWeb"
+          component={ComidaWebScreen}
+          options={{ title: 'Comida' }}
         />
         <Stack.Screen
           name="Visitas"
