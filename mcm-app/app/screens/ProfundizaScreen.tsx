@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { List, Text } from 'react-native-paper';
+import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
@@ -42,7 +43,7 @@ export default function ProfundizaScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.mainTitle}>{data.titulo}</Text>
-      <Text style={styles.intro}>{data.introduccion}</Text>
+      <FormattedContent text={data.introduccion} />
       <View style={{ marginTop: 16 }}>
         <List.AccordionGroup>
           {data.paginas.map((p, idx) => (
@@ -60,7 +61,7 @@ export default function ProfundizaScreen() {
                 {p.subtitulo && (
                   <Text style={styles.subtitulo}>{p.subtitulo}</Text>
                 )}
-                {p.texto && <Text style={styles.texto}>{p.texto}</Text>}
+                {p.texto && <FormattedContent text={p.texto} />}
               </View>
             </List.Accordion>
           ))}
@@ -81,7 +82,6 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
       marginBottom: 8,
       color: theme.text,
     },
-    intro: { fontSize: 16 * scale, marginBottom: 16, color: theme.text },
     accordion: { marginBottom: 12, borderRadius: 16 },
     accordionTitle: { color: colors.white, fontWeight: 'bold' },
     accordionContent: {
@@ -97,6 +97,5 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
       color: theme.text,
       fontSize: 14 * scale,
     },
-    texto: { marginBottom: 12, color: theme.text, fontSize: 14 * scale },
   });
 };
