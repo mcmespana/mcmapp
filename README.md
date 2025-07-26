@@ -261,3 +261,22 @@ Puedes definir algunas variables para ajustar ciertas funciones de la app. Expo 
    Asegúrate de que todas las variables empiecen con `EXPO_PUBLIC_`.
 4. El archivo `.env.local` se encuentra en `.gitignore`, por lo que tus claves no se subirán al repositorio.
 5. Al arrancar la app (`npm start`) Expo cargará automáticamente dichas variables de entorno.
+
+## Formato de texto para "Materiales" y "Profundiza"
+
+Los textos que se reciben en formato JSON admiten un pequeño sistema de etiquetas para dar estilo. Se basa en un lenguaje similar a BBCode y se convierte a HTML dentro de la app.
+
+Etiquetas disponibles:
+
+- `[b]negrita[/b]`, `[i]cursiva[/i]`, `[u]subrayado[/u]`
+- `[h1]Encabezado[/h1]`
+- `[url=https://ejemplo.com]Enlace[/url]`
+- `[btn-primary=https://ejemplo.com]Botón principal[/btn-primary]`
+- `[btn-secondary=https://ejemplo.com]Botón secundario[/btn-secondary]`
+- `[color=primary]texto azul[/color]`, también `accent`, `info` o `success`
+- `[quote]cita corta[/quote]`
+- `[gquote]cita larga o evangelio[/gquote]`
+- Listas: `[list][*]primer punto[*]segundo punto[/list]`
+- Saltos de línea: `[br]`
+
+Estas etiquetas permiten resaltar información importante y enlazar a recursos externos dentro de la app.

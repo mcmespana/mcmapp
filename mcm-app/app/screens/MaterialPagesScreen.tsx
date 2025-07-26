@@ -17,6 +17,7 @@ import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
+import FormattedContent from '@/components/FormattedContent';
 import { JubileoStackParamList } from '../(tabs)/jubileo';
 
 interface Pagina {
@@ -115,7 +116,7 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
           )}
         </View>
         <ScrollView contentContainerStyle={styles.pageContent}>
-          <Text style={styles.pageText}>{item.texto}</Text>
+          {item.texto && <FormattedContent text={item.texto} />}
         </ScrollView>
       </View>
     );
