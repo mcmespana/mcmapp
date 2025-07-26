@@ -42,6 +42,12 @@ const navigationItems: NavigationItem[] = [
     backgroundColor: '#4FC3F7',
   },
   {
+    label: 'Comida',
+    icon: '🍽️',
+    target: 'Comida',
+    backgroundColor: '#F06292',
+  },
+  {
     label: 'Visitas',
     icon: '🚌',
     target: 'Visitas',
