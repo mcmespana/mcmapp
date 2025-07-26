@@ -66,6 +66,12 @@ const navigationItems: NavigationItem[] = [
     target: 'Apps',
     backgroundColor: '#FFB74D',
   },
+  {
+    label: 'Wordle',
+    icon: '🟩',
+    target: 'Wordle',
+    backgroundColor: '#A3BD31',
+  },
 ];
 
 export default function JubileoHomeScreen() {
