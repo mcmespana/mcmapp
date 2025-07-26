@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useLayoutEffect } from 'react';
+import React, { useMemo, useState, useLayoutEffect, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -12,6 +12,9 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 import useWordleGame from '@/hooks/useWordleGame';
 import dailyWords from '@/assets/wordle-daily.json';
 import validWords from '@/assets/wordle-valid.json';
+import useWordleStats from '@/hooks/useWordleStats';
+import { getDatabase, ref, get } from 'firebase/database';
+import { getFirebaseApp } from '@/hooks/firebaseApp';
 
 const QWERTY = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -20,12 +23,34 @@ const QWERTY = [
 ];
 
 const FALLBACK = ['ROMAN', 'AMIGO', 'JOVEN', 'SALVE', 'MARIA'];
+const EMOJIS = ['😀', '😁', '😊', '😎', '🤩', '🥳'];
 
 export default function WordleScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const emoji = useMemo(() => EMOJIS[Math.floor(Math.random() * EMOJIS.length)], []);
+
+  const { stats, recordGame, saveResultToServer } = useWordleStats();
+
+  const now = new Date();
+  let dateKey = now.toISOString().slice(0, 10);
+  let cycle: 'morning' | 'evening' = 'morning';
+  if (now.getHours() < 7) {
+    const y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    dateKey = y.toISOString().slice(0, 10);
+    cycle = 'evening';
+  } else if (now.getHours() >= 19) {
+    cycle = 'evening';
+  }
+  const todayKey = dateKey;
+  const cycleIndex = cycle === 'morning' ? 0 : 1;
+  const hash = todayKey.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const target = (dailyWords as Record<string, string[]>)[todayKey]?.[cycleIndex] ||
+    FALLBACK[hash % FALLBACK.length];
+  const playKey = `${todayKey}_${cycle}`;
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const hash = todayKey.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -44,22 +69,35 @@ export default function WordleScreen() {
   } = useWordleGame(target, validWords as string[]);
 
   const [showInfo, setShowInfo] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [rank, setRank] = useState<number | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'Wordle Jubileo',
       headerRight: () => (
         <View style={{ flexDirection: 'row' }}>
+          {status !== 'playing' && (
+            <IconButton
+              icon="share-variant"
+              iconColor="#fff"
+              onPress={shareResult}
+            />
+          )}
+          <IconButton
+            icon="poll"
+            iconColor="#fff"
+            onPress={() => setShowStats(true)}
+          />
           <IconButton
             icon="information-outline"
             iconColor="#fff"
             onPress={() => setShowInfo(true)}
           />
-          <IconButton icon="poll" disabled onPress={() => {}} iconColor="#fff" />
         </View>
       ),
     });
-  }, [navigation]);
+  }, [navigation, status, shareResult]);
 
   const handleKey = (k: string) => {
     if (k === 'ENTER') {
@@ -90,6 +128,29 @@ export default function WordleScreen() {
       </View>
     );
   };
+
+  useEffect(() => {
+    if (status === 'won' || status === 'lost') {
+      const attempts = status === 'won' ? guesses.length : 6;
+      recordGame(attempts as 1 | 2 | 3 | 4 | 5 | 6, playKey);
+      saveResultToServer(playKey, attempts);
+      const fetchRank = async () => {
+        try {
+          const db = getDatabase(getFirebaseApp());
+          const snap = await get(ref(db, `wordle/${todayKey}/${cycle}`));
+          if (snap.exists()) {
+            const arr = Object.values(snap.val() || []) as any[];
+            arr.sort((a, b) => a.attempts - b.attempts || a.timestamp - b.timestamp);
+            const idx = arr.findIndex((r) => r.userId === stats.userId);
+            if (idx !== -1) setRank(idx + 1);
+          }
+        } catch (e) {
+          console.error('Error ranking', e);
+        }
+      };
+      fetchRank();
+    }
+  }, [status]);
 
   return (
     <View style={styles.container}>
@@ -155,6 +216,27 @@ export default function WordleScreen() {
         <Text style={styles.infoText}>Verde: letra en posición correcta. Amarillo: letra en la palabra pero en otra posición. Gris: letra ausente.</Text>
       </BottomSheet>
 
+      <BottomSheet visible={showStats} onClose={() => setShowStats(false)}>
+        <Text style={styles.infoTitle}>Estadísticas</Text>
+        <Text style={styles.infoText}>Partidas jugadas: {stats.played}</Text>
+        {Object.entries(stats.distribution).map(([k, v]) => {
+          const max = Math.max(...Object.values(stats.distribution), 1);
+          const width = `${(Number(v) / max) * 100}%`;
+          return (
+            <View key={k} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Text style={{ width: 20 }}>{k}</Text>
+              <View style={{ flex: 1, backgroundColor: '#d3d6da', height: 10, marginHorizontal: 4 }}>
+                <View style={{ backgroundColor: '#6aaa64', height: 10, width: width }} />
+              </View>
+              <Text>{v}</Text>
+            </View>
+          );
+        })}
+        {rank && (
+          <Text style={[styles.infoText, { marginTop: 8 }]}>Hoy has quedado en el ranking #{rank}</Text>
+        )}
+      </BottomSheet>
+
       {status === 'won' && (
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <ConfettiCannon count={80} origin={{ x: -10, y: 0 }} fadeOut={true} />
@@ -163,6 +245,7 @@ export default function WordleScreen() {
           </TouchableOpacity>
         </View>
       )}
+      <Text style={styles.footerText}>Súper Wordle Jubilar Consolación Chulo {emoji}</Text>
     </View>
   );
 }
@@ -212,5 +295,11 @@ const createStyles = (theme: typeof Colors.light) =>
       alignItems: 'center',
     },
     shareBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+    footerText: {
+      textAlign: 'center',
+      marginTop: 20,
+      fontWeight: 'bold',
+      color: theme.text,
+    },
   });
 
