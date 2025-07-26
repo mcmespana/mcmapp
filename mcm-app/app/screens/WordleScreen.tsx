@@ -64,8 +64,13 @@ export default function WordleScreen() {
   const handleKey = (k: string) => {
     if (k === 'ENTER') {
       const res = submitGuess();
-      if (res === 'not-enough') alert('No hay suficientes letras');
-      else if (res === 'invalid') alert('Palabra no válida');
+      if (res === 'not-enough') {
+        setModalMessage('No hay suficientes letras');
+        setIsModalVisible(true);
+      } else if (res === 'invalid') {
+        setModalMessage('Palabra no válida');
+        setIsModalVisible(true);
+      }
     } else if (k === 'DEL') {
       removeLetter();
     } else {
