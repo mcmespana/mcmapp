@@ -150,7 +150,7 @@ export default function WordleScreen() {
       };
       fetchRank();
     }
-  }, [status]);
+  }, [status, playKey, todayKey, cycle, stats.userId]);
 
   return (
     <View style={styles.container}>
