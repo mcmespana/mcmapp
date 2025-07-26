@@ -28,8 +28,9 @@ export default function WordleScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const todayKey = new Date().toISOString().slice(0, 10);
+  const hash = todayKey.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const target = (dailyWords as Record<string, string>)[todayKey] ||
-    FALLBACK[Math.floor(Math.random() * FALLBACK.length)];
+    FALLBACK[hash % FALLBACK.length];
 
   const {
     guesses,
