@@ -93,7 +93,7 @@ export default function useWordleGame(word: string, validWords: string[]) {
 
   const shareText = useMemo(() => {
     if (status === 'playing') return '';
-    const dateStr = new Date().toLocaleDateString('es-ES');
+    const dateStr = new Date().toISOString().slice(0, 10);
     const lines = guesses.map((g) =>
       g.letters
         .map((l) => {
