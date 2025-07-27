@@ -14,7 +14,6 @@ import {
   TextStyle,
   useWindowDimensions,
   Animated,
-  Alert,
 } from 'react-native';
 import { Link, LinkProps } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
@@ -25,6 +24,7 @@ import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
+import Toast from '@/components/Toast';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import featureFlags from '@/constants/featureFlags';
 
@@ -243,6 +243,7 @@ export default function Home() {
   const featureFlags = useFeatureFlags();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
   const { width, height } = useWindowDimensions();
   const containerPadding = spacing.md;
   const gap = spacing.md;
@@ -271,11 +272,7 @@ export default function Home() {
 
   // Función para mostrar toast de éxito
   const handleFeedbackSuccess = () => {
-    Alert.alert(
-      '¡Gracias!',
-      'Tu comentario ha sido enviado correctamente. Nos ayudas a mejorar la app 🙌',
-      [{ text: 'De nada cracks 😊' }],
-    );
+    setToastVisible(true);
   };
 
   useEffect(() => {
@@ -445,6 +442,15 @@ export default function Home() {
         visible={feedbackVisible}
         onClose={() => setFeedbackVisible(false)}
         onSuccess={handleFeedbackSuccess}
+      />
+
+      {/* Toast de éxito para feedback */}
+      <Toast
+        visible={toastVisible}
+        message="¡Gracias! Tu comentario ha sido enviado correctamente. Nos ayudas a mejorar la app 🙌"
+        type="success"
+        duration={4000}
+        onDismiss={() => setToastVisible(false)}
       />
     </>
   );

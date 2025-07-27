@@ -195,7 +195,7 @@ export default function SuggestSongModal({
           multiline
           numberOfLines={4}
           textAlignVertical="top"
-          maxLength={1000}
+          maxLength={10000}
         />
 
         <Text style={[styles.charCount, { color: theme.icon }]}>
