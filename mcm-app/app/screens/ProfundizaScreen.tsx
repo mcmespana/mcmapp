@@ -43,7 +43,7 @@ export default function ProfundizaScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.mainTitle}>{data.titulo}</Text>
-      <FormattedContent text={data.introduccion} />
+      <FormattedContent text={data.introduccion} scale={fontScale} />
       <View style={{ marginTop: 16 }}>
         <List.AccordionGroup>
           {data.paginas.map((p, idx) => (
@@ -61,7 +61,9 @@ export default function ProfundizaScreen() {
                 {p.subtitulo && (
                   <Text style={styles.subtitulo}>{p.subtitulo}</Text>
                 )}
-                {p.texto && <FormattedContent text={p.texto} />}
+                {p.texto && (
+                  <FormattedContent text={p.texto} scale={fontScale} />
+                )}
               </View>
             </List.Accordion>
           ))}

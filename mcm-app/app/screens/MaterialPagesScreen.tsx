@@ -6,7 +6,6 @@ import {
   Text,
   FlatList,
   ScrollView,
-  TouchableOpacity,
   Platform,
   DimensionValue,
   ViewStyle,
@@ -107,6 +106,42 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
   };
 
   const ContentPageItem = ({ item }: { item: Pagina }) => {
+    const content = item.texto ? (
+      <FormattedContent text={item.texto} scale={fontScale} />
+    ) : null;
+
+    if (Platform.OS === 'web') {
+      // Calculate the remaining height after header, dots, and tab bar
+      const headerHeight = 80; // Approximate header height
+      const dotsHeight = 60; // Approximate dots container height
+      const tabBarHeight = 80; // Approximate tab bar height at bottom
+      const contentHeight = height - headerHeight - dotsHeight - tabBarHeight;
+      
+      return (
+        <View style={[styles.page, { width, height }]}>
+          <View
+            style={[styles.pageHeader, { backgroundColor: actividad.color }]}
+          >
+            <Text style={styles.pageTitle}>{item.titulo}</Text>
+            {item.subtitulo && (
+              <Text style={styles.pageSubtitle}>{item.subtitulo}</Text>
+            )}
+          </View>
+          <div
+            style={{
+              height: contentHeight,
+              overflowY: 'auto',
+              padding: spacing.lg,
+              boxSizing: 'border-box',
+              marginBottom: dotsHeight, // Add margin to avoid overlap with dots
+            }}
+          >
+            {content}
+          </div>
+        </View>
+      );
+    }
+
     return (
       <View style={[styles.page, { width }]}>
         <View style={[styles.pageHeader, { backgroundColor: actividad.color }]}>
@@ -115,15 +150,22 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
             <Text style={styles.pageSubtitle}>{item.subtitulo}</Text>
           )}
         </View>
-        <ScrollView contentContainerStyle={styles.pageContent}>
-          {item.texto && <FormattedContent text={item.texto} />}
+        <ScrollView
+          contentContainerStyle={styles.pageContent}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+          overScrollMode={'auto'}
+          style={{ flex: 1 }}
+          scrollEnabled={true}
+        >
+          {content}
         </ScrollView>
       </View>
     );
   };
   const [index, setIndex] = useState(0);
   const pages = [{ intro: true }, ...actividad.paginas];
-  const { width } = Dimensions.get('window');
+  const { width, height } = Dimensions.get('window');
 
   const renderItem = ({ item }: { item: any }) => {
     if (item.intro) {
@@ -137,13 +179,6 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
     offset: width * itemIndex,
     index: itemIndex,
   });
-
-  const goToPage = (newIndex: number) => {
-    if (newIndex >= 0 && newIndex < pages.length && index !== newIndex) {
-      setIndex(newIndex);
-      flatListRef.current?.scrollToIndex({ animated: true, index: newIndex });
-    }
-  };
 
   const handleWebScroll = (event: any) => {
     if (Platform.OS !== 'web') return;
@@ -204,26 +239,6 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
         getItemLayout={getItemLayout}
         ref={flatListRef}
       />
-      {Platform.OS === 'web' && (
-        <>
-          {index > 0 && (
-            <TouchableOpacity
-              style={[styles.arrowButton, styles.leftArrow]}
-              onPress={() => goToPage(index - 1)}
-            >
-              <Text style={styles.arrowText}>‹</Text>
-            </TouchableOpacity>
-          )}
-          {index < pages.length - 1 && (
-            <TouchableOpacity
-              style={[styles.arrowButton, styles.rightArrow]}
-              onPress={() => goToPage(index + 1)}
-            >
-              <Text style={styles.arrowText}>›</Text>
-            </TouchableOpacity>
-          )}
-        </>
-      )}
       <View style={styles.dotsContainer}>
         {pages.map((_, i) => (
           <View key={i} style={[styles.dot, index === i && styles.dotActive]} />
@@ -275,17 +290,19 @@ const createStyles = (
       padding: spacing.md,
     },
     pageTitle: {
-      fontSize: 20 * scale,
+      fontSize: 20, // Remove scale multiplication
       fontWeight: 'bold',
       color: colors.white,
     },
     pageSubtitle: {
-      fontSize: 16 * scale,
+      fontSize: 16, // Remove scale multiplication
       color: colors.white,
       marginTop: 4,
     },
     pageContent: {
       padding: spacing.lg,
+      flexGrow: 1,
+      minHeight: '100%',
     },
     pageText: {
       color: theme.text,
