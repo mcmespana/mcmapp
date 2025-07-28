@@ -270,6 +270,7 @@ export default function WordleScreen() {
     recordGame,
     saveResultToServer,
     buttonAnimation,
+    copyVictoryMessage,
   ]);
 
   return (
