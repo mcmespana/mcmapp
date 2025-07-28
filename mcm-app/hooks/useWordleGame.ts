@@ -18,7 +18,7 @@ export type GameStatus = 'playing' | 'won' | 'lost';
 const WORD_LEN = 5;
 const MAX_TRIES = 6;
 
-export default function useWordleGame(word: string, validWords: string[]) {
+export default function useWordleGame(word: string, validWords: string[] = []) {
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [currentGuess, setCurrentGuess] = useState('');
   const [status, setStatus] = useState<GameStatus>('playing');
@@ -65,7 +65,6 @@ export default function useWordleGame(word: string, validWords: string[]) {
   const submitGuess = (): 'not-enough' | 'invalid' | 'accepted' => {
     if (status !== 'playing') return 'invalid';
     if (currentGuess.length < WORD_LEN) return 'not-enough';
-    if (!validWords.includes(currentGuess.toUpperCase())) return 'invalid';
 
     const evaluated = evaluateGuess(currentGuess.toUpperCase());
     setGuesses((g) => [...g, { letters: evaluated }]);

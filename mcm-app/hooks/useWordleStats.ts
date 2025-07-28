@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDatabase, push, ref, set } from 'firebase/database';
 import { getFirebaseApp } from './firebaseApp';
-import 'react-native-get-random-values';
-import { v4 as uuidv4 } from 'uuid';
+
+// Función simple para generar IDs únicos
+const generateId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+};
 
 export interface WordleStats {
   played: number;
@@ -31,7 +34,7 @@ export default function useWordleStats() {
         if (saved) {
           setStats(JSON.parse(saved));
         } else {
-          const userId = uuidv4();
+          const userId = generateId();
           const initial = { ...defaultStats, userId };
           await AsyncStorage.setItem(STATS_KEY, JSON.stringify(initial));
           setStats(initial);

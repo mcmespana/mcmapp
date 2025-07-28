@@ -219,6 +219,18 @@ function ContextualDecoration({ type }: { type: string }) {
         </Animated.View>
       );
 
+    case 'Wordle':
+      return (
+        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
+          {/* Cuadrados y líneas de Wordle */}
+          <View style={[styles.wordleSquare, styles.wordleCorrect]} />
+          <View style={[styles.wordleSquare, styles.wordlePresent]} />
+          <View style={[styles.wordleSquare, styles.wordleAbsent]} />
+          <View style={[styles.wordleLine, styles.wordleRow1]} />
+          <View style={[styles.wordleLine, styles.wordleRow2]} />
+        </Animated.View>
+      );
+
     case '¿Fallitos?':
       return (
         <Animated.View style={[styles.decorationContainer, animatedStyle]}>
@@ -544,6 +556,14 @@ interface Styles {
   connectionLine: ViewStyle;
   connection1: ViewStyle;
   connection2: ViewStyle;
+  // Wordle - cuadrados y líneas
+  wordleSquare: ViewStyle;
+  wordleCorrect: ViewStyle;
+  wordlePresent: ViewStyle;
+  wordleAbsent: ViewStyle;
+  wordleLine: ViewStyle;
+  wordleRow1: ViewStyle;
+  wordleRow2: ViewStyle;
   // Fallitos - bugs y debug
   bugDot: ViewStyle;
   bug1: ViewStyle;
@@ -838,6 +858,48 @@ const styles = StyleSheet.create<Styles>({
     height: 2,
     bottom: 20,
     left: 12,
+  },
+
+  // Wordle - cuadrados y líneas
+  wordleSquare: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 2,
+    opacity: 0.3,
+  },
+  wordleCorrect: {
+    backgroundColor: '#6AAA64',
+    top: 14,
+    left: 14,
+  },
+  wordlePresent: {
+    backgroundColor: '#C9B458',
+    top: 16,
+    right: 18,
+  },
+  wordleAbsent: {
+    backgroundColor: '#787C7E',
+    bottom: 18,
+    left: 16,
+  },
+  wordleLine: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 1,
+    opacity: 0.4,
+  },
+  wordleRow1: {
+    width: 20,
+    height: 2,
+    top: 20,
+    right: 12,
+  },
+  wordleRow2: {
+    width: 16,
+    height: 2,
+    bottom: 22,
+    right: 14,
   },
 
   // Fallitos - bugs y debug
