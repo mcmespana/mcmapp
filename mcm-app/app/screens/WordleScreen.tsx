@@ -86,6 +86,7 @@ export default function WordleScreen() {
   const [rank, setRank] = useState<number | null>(null);
   const [buttonAnimation] = useState(new Animated.Value(0));
   const [isGameLocked, setIsGameLocked] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const showInfo = internalShowInfo;
   const setShowInfo = setInternalShowInfo;
@@ -250,32 +251,34 @@ export default function WordleScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.gameArea}>
-        {guesses.map((g, idx) => (
-          <View key={idx} style={styles.row}>
-            {g.letters.map((l, i) => (
-              <View key={`guess-${idx}-${i}`}>
-                {renderCell(l.letter, l.state)}
-              </View>
-            ))}
-          </View>
-        ))}
-        {status === 'playing' && (
-          <View style={styles.row}>
-            {[...currentGuess.padEnd(5)].map((ch, i) => (
-              <View key={`current-${i}`}>{renderCell(ch)}</View>
-            ))}
-          </View>
-        )}
-        {Array.from({
-          length: 6 - guesses.length - (status === 'playing' ? 1 : 0),
-        }).map((_, idx) => (
-          <View key={`empty-${idx}`} style={styles.row}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <View key={`empty-cell-${idx}-${i}`}>{renderCell('')}</View>
-            ))}
-          </View>
-        ))}
+      <View style={{ flex: 1, justifyContent: 'center' }}>
+        <View style={styles.gameArea}>
+          {guesses.map((g, idx) => (
+            <View key={idx} style={styles.row}>
+              {g.letters.map((l, i) => (
+                <View key={`guess-${idx}-${i}`}>
+                  {renderCell(l.letter, l.state)}
+                </View>
+              ))}
+            </View>
+          ))}
+          {status === 'playing' && (
+            <View style={styles.row}>
+              {[...currentGuess.padEnd(5)].map((ch, i) => (
+                <View key={`current-${i}`}>{renderCell(ch)}</View>
+              ))}
+            </View>
+          )}
+          {Array.from({
+            length: 6 - guesses.length - (status === 'playing' ? 1 : 0),
+          }).map((_, idx) => (
+            <View key={`empty-${idx}`} style={styles.row}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <View key={`empty-cell-${idx}-${i}`}>{renderCell('')}</View>
+              ))}
+            </View>
+          ))}
+        </View>
       </View>
 
       <View style={styles.keyboard}>
@@ -319,9 +322,17 @@ export default function WordleScreen() {
         ))}
       </View>
 
-      <Text style={styles.footerText}>
-        Súper Wordle Jubilar Consolación Chulo {emoji}
-      </Text>
+      {Platform.OS === 'web' ? (
+        <View style={{ marginTop: 8, alignItems: 'center' }}>
+          <Text style={[styles.footerText, { fontSize: 12 }]}>
+            Wordle Jubileo {emoji}
+          </Text>
+        </View>
+      ) : (
+        <Text style={styles.footerText}>
+          Súper Wordle Jubilar Consolación Chulo {emoji}
+        </Text>
+      )}
 
       <BottomSheet visible={showInfo} onClose={() => setShowInfo(false)}>
         <Text style={styles.infoTitle}>¿Cómo jugar?</Text>
@@ -446,13 +457,19 @@ const createStyles = (theme: typeof Colors.light) =>
       paddingTop: spacing.xs,
       paddingBottom: spacing.xs,
       backgroundColor: theme.background,
-      justifyContent: 'flex-start',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      maxWidth: Platform.OS === 'web' ? 500 : '100%',
+      alignSelf: 'center',
+      width: '100%',
     },
     gameArea: {
       flex: 0,
-      justifyContent: 'flex-start',
+      justifyContent: 'center',
       paddingVertical: 10,
       marginBottom: 10,
+      width: '100%',
+      alignItems: 'center',
     },
     row: {
       flexDirection: 'row',
@@ -460,8 +477,8 @@ const createStyles = (theme: typeof Colors.light) =>
       marginBottom: 6,
     },
     cell: {
-      width: 60,
-      height: 60,
+      width: Platform.OS === 'web' ? 50 : 60,
+      height: Platform.OS === 'web' ? 50 : 60,
       marginHorizontal: 3,
       borderWidth: 2,
       borderRadius: 8,
@@ -474,13 +491,15 @@ const createStyles = (theme: typeof Colors.light) =>
       shadowRadius: 2,
     },
     cellText: {
-      fontSize: 28,
+      fontSize: Platform.OS === 'web' ? 24 : 28,
       fontWeight: 'bold',
       color: theme.text,
     },
     keyboard: {
       marginTop: 8,
       paddingBottom: 10,
+      width: '100%',
+      alignItems: 'center',
     },
     kbRow: {
       flexDirection: 'row',
@@ -488,12 +507,12 @@ const createStyles = (theme: typeof Colors.light) =>
       marginBottom: 6,
     },
     key: {
-      paddingVertical: 16,
-      paddingHorizontal: 12,
+      paddingVertical: Platform.OS === 'web' ? 12 : 16,
+      paddingHorizontal: Platform.OS === 'web' ? 8 : 12,
       marginHorizontal: 3,
       borderRadius: 8,
       backgroundColor: '#d3d6da',
-      minWidth: 32,
+      minWidth: Platform.OS === 'web' ? 28 : 32,
       justifyContent: 'center',
       alignItems: 'center',
       elevation: 2,
@@ -503,13 +522,13 @@ const createStyles = (theme: typeof Colors.light) =>
       shadowRadius: 1,
     },
     specialKey: {
-      minWidth: 60,
-      paddingHorizontal: 8,
+      minWidth: Platform.OS === 'web' ? 50 : 60,
+      paddingHorizontal: Platform.OS === 'web' ? 6 : 8,
     },
     keyText: {
       color: '#000',
       fontWeight: 'bold',
-      fontSize: 16,
+      fontSize: Platform.OS === 'web' ? 14 : 16,
     },
     infoTitle: {
       fontSize: 20,

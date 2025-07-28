@@ -116,7 +116,7 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
       const dotsHeight = 60; // Approximate dots container height
       const tabBarHeight = 80; // Approximate tab bar height at bottom
       const contentHeight = height - headerHeight - dotsHeight - tabBarHeight;
-      
+
       return (
         <View style={[styles.page, { width, height }]}>
           <View
