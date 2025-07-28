@@ -10,6 +10,7 @@
       "env": {
         "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON"
       },
+      "prebuildCommand": "node scripts/write-google-services-json.js",
       "channel": "development"
     },
     "preview": {
@@ -17,13 +18,21 @@
       "android": {
         "buildType": "apk"
       },
+      "env": {
+        "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON"
+      },
+      "prebuildCommand": "node scripts/write-google-services-json.js",
       "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "apk"
       },
+      "env": {
+        "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON"
+      },
+      "prebuildCommand": "node scripts/write-google-services-json.js",
       "channel": "production"
     },
     "development-simulator": {

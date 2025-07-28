@@ -222,13 +222,16 @@ Development Client (arrancar) . npx expo start --dev-client
 
 Instalar dependencias ......... npm install
 ```
-## 📝 Comnandos para publicación
+## 📝 Comandos para publicación
 ```
 Update web - paso 1 .................... npx expo export --platform web
 Update web - paso 2 .................. npx eas deploy --prod
 
+Preview antes de producción (APK) .............. eas build -p android --profile preview
+Preview local (APK) ............................ eas build -p android --profile preview --local
 
-Compilar para producción en la nube ............ eas build --profile production --platform android
+Compilar para producción en la nube (AAB) ...... eas build --profile production --platform android
+Compilar para producción local (AAB) ........... eas build --profile production --platform android --local
 Subir a la playstore ........................... eas submit --profile production --platform android
 Post subidas ................................... eas submit -p android  
 iOS???
