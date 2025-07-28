@@ -13,6 +13,7 @@ import {
   Animated,
   Share,
   Platform,
+  Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -158,6 +159,23 @@ export default function WordleScreen() {
     }
   };
 
+  const copyVictoryMessage = async () => {
+    const emojiGrid = generateEmojiResult();
+    const attempts = guesses.length;
+    const message = `🎯 Mi intento hoy en el Wordle-Jubilar-Consolación ha sido:\n\n${attempts}/6 intentos\n\n${emojiGrid}\n🎉 ¡Súper Wordle Jubilar Consolación Chulo! 🎊`;
+
+    try {
+      await Clipboard.setStringAsync(message);
+      Alert.alert(
+        '🎉 ¡Felicidades!',
+        'Te hemos copiado un mensaje en el portapapeles, compártelo en WhatsApp y demuestra quién manda!',
+        [{ text: 'OK', style: 'default' }]
+      );
+    } catch (error) {
+      console.error('Error copiando al portapapeles:', error);
+    }
+  };
+
   const handleKey = (k: string) => {
     // Bloquear input si el juego está completado para esta palabra
     if (isGameLocked) return;
@@ -207,6 +225,11 @@ export default function WordleScreen() {
         const lockKey = `wordle_completed_${playKey}`;
         AsyncStorage.setItem(lockKey, 'true').catch(console.error);
         setIsGameLocked(true);
+
+        // Copiar automáticamente el mensaje al portapapeles y mostrar alert
+        setTimeout(() => {
+          copyVictoryMessage();
+        }, 1000); // Esperar 1 segundo para que se vea el confeti primero
 
         // Animar el botón de compartir - aparece una vez y se queda
         const showButtonAnimation = () => {
