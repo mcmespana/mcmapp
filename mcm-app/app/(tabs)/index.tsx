@@ -27,6 +27,7 @@ import AppFeedbackModal from '@/components/AppFeedbackModal';
 import Toast from '@/components/Toast';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import featureFlags from '@/constants/featureFlags';
+import useWordleStats from '@/hooks/useWordleStats';
 
 interface NavigationItem {
   href?: LinkProps['href'];
@@ -71,6 +72,13 @@ const navigationItems: NavigationItem[] = [
     label: 'Comunica',
     icon: 'chat',
     backgroundColor: '#9D1E74dd',
+    color: '#222',
+  },
+  {
+    href: '/wordle',
+    label: 'Wordle',
+    icon: 'sports-esports',
+    backgroundColor: '#A3BD31',
     color: '#222',
   },
   {
@@ -211,6 +219,18 @@ function ContextualDecoration({ type }: { type: string }) {
         </Animated.View>
       );
 
+    case 'Wordle':
+      return (
+        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
+          {/* Cuadrados y líneas de Wordle */}
+          <View style={[styles.wordleSquare, styles.wordleCorrect]} />
+          <View style={[styles.wordleSquare, styles.wordlePresent]} />
+          <View style={[styles.wordleSquare, styles.wordleAbsent]} />
+          <View style={[styles.wordleLine, styles.wordleRow1]} />
+          <View style={[styles.wordleLine, styles.wordleRow2]} />
+        </Animated.View>
+      );
+
     case '¿Fallitos?':
       return (
         <Animated.View style={[styles.decorationContainer, animatedStyle]}>
@@ -241,6 +261,8 @@ export default function Home() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
   const featureFlags = useFeatureFlags();
+  const { stats } = useWordleStats();
+  const [pendingWordle, setPendingWordle] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
@@ -274,6 +296,25 @@ export default function Home() {
   const handleFeedbackSuccess = () => {
     setToastVisible(true);
   };
+
+  useEffect(() => {
+    const check = () => {
+      const now = new Date();
+      let dateKey = now.toISOString().slice(0, 10);
+      let cycle: 'morning' | 'evening' = 'morning';
+      if (now.getHours() < 7) {
+        const y = new Date(now);
+        y.setDate(y.getDate() - 1);
+        dateKey = y.toISOString().slice(0, 10);
+        cycle = 'evening';
+      } else if (now.getHours() >= 19) {
+        cycle = 'evening';
+      }
+      const key = `${dateKey}_${cycle}`;
+      setPendingWordle(stats.lastPlayedKey !== key);
+    };
+    check();
+  }, [stats]);
 
   useEffect(() => {
     // Definir direcciones de entrada para cada elemento
@@ -407,12 +448,27 @@ export default function Home() {
                 ]}
               />
               <ContextualDecoration type={item.label} />
-              <MaterialIcons
-                name={item.icon}
-                size={48}
-                color={item.color}
-                style={styles.icon}
-              />
+              <View>
+                <MaterialIcons
+                  name={item.icon}
+                  size={48}
+                  color={item.color}
+                  style={styles.icon}
+                />
+                {item.label === 'Wordle' && pendingWordle && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      backgroundColor: colors.danger,
+                      width: 12,
+                      height: 12,
+                      borderRadius: 6,
+                    }}
+                  />
+                )}
+              </View>
               <Text style={[styles.label, { color: item.color }]}>
                 {item.label}
               </Text>
@@ -506,6 +562,14 @@ interface Styles {
   connectionLine: ViewStyle;
   connection1: ViewStyle;
   connection2: ViewStyle;
+  // Wordle - cuadrados y líneas
+  wordleSquare: ViewStyle;
+  wordleCorrect: ViewStyle;
+  wordlePresent: ViewStyle;
+  wordleAbsent: ViewStyle;
+  wordleLine: ViewStyle;
+  wordleRow1: ViewStyle;
+  wordleRow2: ViewStyle;
   // Fallitos - bugs y debug
   bugDot: ViewStyle;
   bug1: ViewStyle;
@@ -800,6 +864,48 @@ const styles = StyleSheet.create<Styles>({
     height: 2,
     bottom: 20,
     left: 12,
+  },
+
+  // Wordle - cuadrados y líneas
+  wordleSquare: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 2,
+    opacity: 0.3,
+  },
+  wordleCorrect: {
+    backgroundColor: '#6AAA64',
+    top: 14,
+    left: 14,
+  },
+  wordlePresent: {
+    backgroundColor: '#C9B458',
+    top: 16,
+    right: 18,
+  },
+  wordleAbsent: {
+    backgroundColor: '#787C7E',
+    bottom: 18,
+    left: 16,
+  },
+  wordleLine: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 1,
+    opacity: 0.4,
+  },
+  wordleRow1: {
+    width: 20,
+    height: 2,
+    top: 20,
+    right: 12,
+  },
+  wordleRow2: {
+    width: 16,
+    height: 2,
+    bottom: 22,
+    right: 14,
   },
 
   // Fallitos - bugs y debug

@@ -13,6 +13,7 @@ import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
 import ReflexionesScreen from '../screens/ReflexionesScreen';
 import AppsScreen from '../screens/AppsScreen';
+import WordleScreen from '../screens/WordleScreen';
 import ComidaScreen from '../screens/ComidaScreen';
 import ComidaWebScreen from '../screens/ComidaWebScreen';
 import SettingsPanel from '@/components/SettingsPanel';
@@ -29,6 +30,7 @@ export type JubileoStackParamList = {
   Grupos: undefined;
   Contactos: undefined;
   Apps: undefined;
+  Wordle: undefined;
   Reflexiones: undefined;
 };
 
@@ -125,6 +127,11 @@ export default function JubileoTab() {
           name="Apps"
           component={AppsScreen}
           options={{ title: 'Apps' }}
+        />
+        <Stack.Screen
+          name="Wordle"
+          component={WordleScreen}
+          options={{ title: 'Wordle Jubileo' }}
         />
         <Stack.Screen
           name="Reflexiones"

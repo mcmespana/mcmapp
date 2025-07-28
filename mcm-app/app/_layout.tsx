@@ -19,7 +19,7 @@ import {
   DarkTheme,
   DefaultTheme,
 } from '@react-navigation/native';
-import { Slot, usePathname } from 'expo-router';
+import { usePathname, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useStatusBarTheme } from '@/hooks/useStatusBarTheme';
@@ -51,7 +51,7 @@ function InnerLayout() {
   const [showAnimation, setShowAnimation] = useState(true);
   const scheme = useColorScheme(); // Keep existing hooks
   const pathname = usePathname();
-  
+
   // Hook para actualizar el tema de la barra de estado dinámicamente
   useStatusBarTheme(pathname);
 
@@ -167,7 +167,20 @@ function InnerLayout() {
       <SafeAreaProvider>
         <PaperProvider theme={paperTheme}>
           <NavThemeProvider value={navigationTheme}>
-            <Slot />
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="wordle"
+                options={{
+                  headerShown: true,
+                  title: 'Wordle Jubileo',
+                }}
+              />
+              <Stack.Screen
+                name="notifications"
+                options={{ headerShown: true }}
+              />
+            </Stack>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             <AddToHomeBanner />
           </NavThemeProvider>
