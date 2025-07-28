@@ -169,7 +169,13 @@ function InnerLayout() {
           <NavThemeProvider value={navigationTheme}>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="wordle" options={{ headerShown: true }} />
+              <Stack.Screen 
+                name="wordle" 
+                options={{ 
+                  headerShown: true,
+                  title: 'Wordle Jubileo'
+                }} 
+              />
               <Stack.Screen name="notifications" options={{ headerShown: true }} />
             </Stack>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />

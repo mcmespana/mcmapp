@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useLayoutEffect, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import colors, { Colors } from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import BottomSheet from '@/components/BottomSheet';
@@ -12,6 +12,8 @@ import useWordleStats from '@/hooks/useWordleStats';
 import useWordleWords from '@/hooks/useWordleWords';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { Share, Platform } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 
 const QWERTY = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -32,7 +34,7 @@ export default function WordleScreen() {
   );
 
   const { stats, recordGame, saveResultToServer } = useWordleStats();
-  const { getWordForDate, loading } = useWordleWords();
+  const { getWordForDate } = useWordleWords();
 
   // Determinar la fecha y ciclo actual
   const now = new Date();
@@ -60,12 +62,12 @@ export default function WordleScreen() {
     submitGuess,
     status,
     keyboard,
-    shareResult,
   } = useWordleGame(target, []);
 
   const [internalShowInfo, setInternalShowInfo] = useState(false);
   const [internalShowStats, setInternalShowStats] = useState(false);
   const [rank, setRank] = useState<number | null>(null);
+  const [buttonAnimation] = useState(new Animated.Value(0));
 
   const showInfo = internalShowInfo;
   const setShowInfo = setInternalShowInfo;
@@ -96,7 +98,32 @@ export default function WordleScreen() {
         </View>
       ),
     });
-  }, [navigation]);
+  }, [navigation, setShowInfo, setShowStats]);
+
+  const generateEmojiResult = () => {
+    let result = '';
+    guesses.forEach((guess) => {
+      guess.letters.forEach((letter) => {
+        if (letter.state === 'correct') result += '🟩';
+        else if (letter.state === 'present') result += '🟨';
+        else result += '⬜';
+      });
+      result += '\n';
+    });
+    return result;
+  };
+
+  const shareCustomResult = async () => {
+    const emojiGrid = generateEmojiResult();
+    const attempts = guesses.length;
+    const message = `🎯 Mi intento hoy en el Wordle-Jubilar-Consolación ha sido:\n\n${attempts}/6 intentos\n\n${emojiGrid}\n🎉 ¡Súper Wordle Jubilar Consolación Chulo! 🎊`;
+    
+    if (Platform.OS === 'web') {
+      await Clipboard.setStringAsync(message);
+    } else {
+      await Share.share({ message });
+    }
+  };
 
   const handleKey = (k: string) => {
     if (k === 'ENTER') {
@@ -131,6 +158,35 @@ export default function WordleScreen() {
       const attempts = status === 'won' ? guesses.length : 6;
       recordGame(attempts as 1 | 2 | 3 | 4 | 5 | 6, playKey);
       saveResultToServer(playKey, attempts);
+      
+      // Animar el botón de compartir cuando gana
+      if (status === 'won') {
+        const bounceAnimation = () => {
+          Animated.sequence([
+            Animated.timing(buttonAnimation, {
+              toValue: 1,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.loop(
+              Animated.sequence([
+                Animated.timing(buttonAnimation, {
+                  toValue: 1.1,
+                  duration: 800,
+                  useNativeDriver: true,
+                }),
+                Animated.timing(buttonAnimation, {
+                  toValue: 1,
+                  duration: 800,
+                  useNativeDriver: true,
+                }),
+              ]),
+            ),
+          ]).start();
+        };
+        bounceAnimation();
+      }
+      
       const fetchRank = async () => {
         try {
           const db = getDatabase(getFirebaseApp());
@@ -149,35 +205,47 @@ export default function WordleScreen() {
       };
       fetchRank();
     }
-  }, [status, playKey, todayKey, cycle, stats.userId]);
+  }, [
+    status,
+    playKey,
+    todayKey,
+    cycle,
+    stats.userId,
+    guesses.length,
+    recordGame,
+    saveResultToServer,
+    buttonAnimation,
+  ]);
 
   return (
     <View style={styles.container}>
-      {guesses.map((g, idx) => (
-        <View key={idx} style={styles.row}>
-          {g.letters.map((l, i) => (
-            <View key={`guess-${idx}-${i}`}>
-              {renderCell(l.letter, l.state)}
-            </View>
-          ))}
-        </View>
-      ))}
-      {status === 'playing' && (
-        <View style={styles.row}>
-          {[...currentGuess.padEnd(5)].map((ch, i) => (
-            <View key={`current-${i}`}>{renderCell(ch)}</View>
-          ))}
-        </View>
-      )}
-      {Array.from({
-        length: 6 - guesses.length - (status === 'playing' ? 1 : 0),
-      }).map((_, idx) => (
-        <View key={`empty-${idx}`} style={styles.row}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <View key={`empty-cell-${idx}-${i}`}>{renderCell('')}</View>
-          ))}
-        </View>
-      ))}
+      <View style={styles.gameArea}>
+        {guesses.map((g, idx) => (
+          <View key={idx} style={styles.row}>
+            {g.letters.map((l, i) => (
+              <View key={`guess-${idx}-${i}`}>
+                {renderCell(l.letter, l.state)}
+              </View>
+            ))}
+          </View>
+        ))}
+        {status === 'playing' && (
+          <View style={styles.row}>
+            {[...currentGuess.padEnd(5)].map((ch, i) => (
+              <View key={`current-${i}`}>{renderCell(ch)}</View>
+            ))}
+          </View>
+        )}
+        {Array.from({
+          length: 6 - guesses.length - (status === 'playing' ? 1 : 0),
+        }).map((_, idx) => (
+          <View key={`empty-${idx}`} style={styles.row}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <View key={`empty-cell-${idx}-${i}`}>{renderCell('')}</View>
+            ))}
+          </View>
+        ))}
+      </View>
 
       <View style={styles.keyboard}>
         {QWERTY.map((row, idx) => (
@@ -220,11 +288,16 @@ export default function WordleScreen() {
         ))}
       </View>
 
+      <Text style={styles.footerText}>
+        Súper Wordle Jubilar Consolación Chulo {emoji}
+      </Text>
+
       <BottomSheet visible={showInfo} onClose={() => setShowInfo(false)}>
         <Text style={styles.infoTitle}>¿Cómo jugar?</Text>
         <Text style={styles.infoText}>
-          Adivina la palabra de 5 letras en 6 intentos. Cada letra cambia de
-          color:
+          Adivina una palabra de 5 letras en 6 intentos.{'\n'}
+          Cada día a las 7h y a las 19h una palabra nueva.{'\n\n'}
+          Cuando le das a enviar, las letras cambian de color:
         </Text>
         <View style={{ flexDirection: 'row', marginVertical: 8 }}>
           {renderCell('R', 'correct')}
@@ -232,8 +305,9 @@ export default function WordleScreen() {
           {renderCell('Z', 'absent')}
         </View>
         <Text style={styles.infoText}>
-          Verde: letra en posición correcta. Amarillo: letra en la palabra pero
-          en otra posición. Gris: letra ausente.
+          🟩 Verde: Letra en posición correcta, vas bien.{'\n'}
+          🟡 Amarillo: La letra está en la palabra pero en otra posición.{'\n'}
+          ⚪ Gris: Esa letra no está, no lo intentes.
         </Text>
       </BottomSheet>
 
@@ -242,7 +316,7 @@ export default function WordleScreen() {
         <Text style={styles.infoText}>Partidas jugadas: {stats.played}</Text>
         {Object.entries(stats.distribution).map(([k, v]) => {
           const max = Math.max(...Object.values(stats.distribution), 1);
-          const width = `${(Number(v) / max) * 100}%`;
+          const width = (Number(v) / max) * 100;
           return (
             <View
               key={k}
@@ -265,7 +339,7 @@ export default function WordleScreen() {
                   style={{
                     backgroundColor: '#6aaa64',
                     height: 10,
-                    width: width,
+                    width: `${width}%`,
                   }}
                 />
               </View>
@@ -283,14 +357,25 @@ export default function WordleScreen() {
       {status === 'won' && (
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <ConfettiCannon count={80} origin={{ x: -10, y: 0 }} fadeOut={true} />
-          <TouchableOpacity style={styles.shareBtn} onPress={shareResult}>
-            <Text style={styles.shareBtnText}>Compartir resultado</Text>
-          </TouchableOpacity>
+          <Animated.View
+            style={[
+              styles.shareBtn,
+              {
+                transform: [{ scale: buttonAnimation }],
+              },
+            ]}
+          >
+            <TouchableOpacity
+              onPress={shareCustomResult}
+              style={{ width: '100%', alignItems: 'center' }}
+            >
+              <Text style={styles.shareBtnText}>
+                🎉 ¡Compartir mi victoria! 🎊
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       )}
-      <Text style={styles.footerText}>
-        Súper Wordle Jubilar Consolación Chulo {emoji}
-      </Text>
     </View>
   );
 }
@@ -299,56 +384,112 @@ const createStyles = (theme: typeof Colors.light) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      padding: spacing.md,
+      padding: spacing.sm,
       backgroundColor: theme.background,
+      justifyContent: 'space-between',
+    },
+    gameArea: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingVertical: 20,
     },
     row: {
       flexDirection: 'row',
       justifyContent: 'center',
-      marginBottom: 4,
+      marginBottom: 6,
     },
     cell: {
-      width: 48,
-      height: 48,
-      marginHorizontal: 2,
+      width: 60,
+      height: 60,
+      marginHorizontal: 3,
       borderWidth: 2,
+      borderRadius: 8,
       justifyContent: 'center',
       alignItems: 'center',
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
     },
-    cellText: { fontSize: 24, fontWeight: 'bold', color: theme.text },
-    keyboard: { marginTop: 20 },
-    kbRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 4 },
+    cellText: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: theme.text,
+    },
+    keyboard: {
+      marginTop: 16,
+      paddingBottom: 20,
+    },
+    kbRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
     key: {
-      paddingVertical: 10,
-      paddingHorizontal: 6,
-      marginHorizontal: 2,
-      borderRadius: 4,
+      paddingVertical: 16,
+      paddingHorizontal: 12,
+      marginHorizontal: 3,
+      borderRadius: 8,
       backgroundColor: '#d3d6da',
+      minWidth: 32,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 1,
     },
-    specialKey: { minWidth: 48 },
-    keyText: { color: '#000', fontWeight: 'bold' },
+    specialKey: {
+      minWidth: 60,
+      paddingHorizontal: 8,
+    },
+    keyText: {
+      color: '#000',
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
     infoTitle: {
       fontSize: 20,
       fontWeight: 'bold',
       marginBottom: 8,
       color: theme.text,
     },
-    infoText: { color: theme.text, marginBottom: 8 },
+    infoText: {
+      color: theme.text,
+      marginBottom: 8,
+      lineHeight: 24,
+    },
     shareBtn: {
       position: 'absolute',
-      bottom: 40,
-      left: 20,
-      right: 20,
-      backgroundColor: colors.success,
-      padding: 12,
-      borderRadius: 8,
+      bottom: 60,
+      left: 30,
+      right: 30,
+      backgroundColor: '#A3BD31',
+      padding: 18,
+      borderRadius: 25,
       alignItems: 'center',
+      elevation: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      borderWidth: 3,
+      borderColor: '#fff',
     },
-    shareBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+    shareBtnText: {
+      color: '#fff',
+      fontWeight: 'bold',
+      fontSize: 18,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
     footerText: {
       textAlign: 'center',
-      marginTop: 20,
+      marginTop: 16,
       fontWeight: 'bold',
       color: theme.text,
+      fontSize: 16,
     },
   });
