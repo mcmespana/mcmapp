@@ -51,7 +51,7 @@ function InnerLayout() {
   const [showAnimation, setShowAnimation] = useState(true);
   const scheme = useColorScheme(); // Keep existing hooks
   const pathname = usePathname();
-  
+
   // Hook para actualizar el tema de la barra de estado dinámicamente
   useStatusBarTheme(pathname);
 
@@ -169,14 +169,17 @@ function InnerLayout() {
           <NavThemeProvider value={navigationTheme}>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen 
-                name="wordle" 
-                options={{ 
+              <Stack.Screen
+                name="wordle"
+                options={{
                   headerShown: true,
-                  title: 'Wordle Jubileo'
-                }} 
+                  title: 'Wordle Jubileo',
+                }}
               />
-              <Stack.Screen name="notifications" options={{ headerShown: true }} />
+              <Stack.Screen
+                name="notifications"
+                options={{ headerShown: true }}
+              />
             </Stack>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             <AddToHomeBanner />

@@ -1,5 +1,19 @@
-import React, { useMemo, useState, useLayoutEffect, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import React, {
+  useMemo,
+  useState,
+  useLayoutEffect,
+  useEffect,
+  useRef,
+} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Share,
+  Platform,
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Colors } from '@/constants/colors';
@@ -12,8 +26,8 @@ import useWordleStats from '@/hooks/useWordleStats';
 import useWordleWords from '@/hooks/useWordleWords';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
-import { Share, Platform } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const QWERTY = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -35,6 +49,9 @@ export default function WordleScreen() {
 
   const { stats, recordGame, saveResultToServer } = useWordleStats();
   const { getWordForDate } = useWordleWords();
+
+  // Usar ref para evitar múltiples ejecuciones del efecto
+  const gameProcessedRef = useRef<string | null>(null);
 
   // Determinar la fecha y ciclo actual
   const now = new Date();
@@ -68,11 +85,26 @@ export default function WordleScreen() {
   const [internalShowStats, setInternalShowStats] = useState(false);
   const [rank, setRank] = useState<number | null>(null);
   const [buttonAnimation] = useState(new Animated.Value(0));
+  const [isGameLocked, setIsGameLocked] = useState(false);
 
   const showInfo = internalShowInfo;
   const setShowInfo = setInternalShowInfo;
   const showStats = internalShowStats;
   const setShowStats = setInternalShowStats;
+
+  // Verificar si el juego está bloqueado para esta palabra
+  useEffect(() => {
+    const checkGameLock = async () => {
+      try {
+        const lockKey = `wordle_completed_${playKey}`;
+        const completed = await AsyncStorage.getItem(lockKey);
+        setIsGameLocked(completed === 'true');
+      } catch (error) {
+        console.error('Error checking game lock:', error);
+      }
+    };
+    checkGameLock();
+  }, [playKey]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -117,7 +149,7 @@ export default function WordleScreen() {
     const emojiGrid = generateEmojiResult();
     const attempts = guesses.length;
     const message = `🎯 Mi intento hoy en el Wordle-Jubilar-Consolación ha sido:\n\n${attempts}/6 intentos\n\n${emojiGrid}\n🎉 ¡Súper Wordle Jubilar Consolación Chulo! 🎊`;
-    
+
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(message);
     } else {
@@ -126,6 +158,9 @@ export default function WordleScreen() {
   };
 
   const handleKey = (k: string) => {
+    // Bloquear input si el juego está completado para esta palabra
+    if (isGameLocked) return;
+
     if (k === 'ENTER') {
       const res = submitGuess();
       if (res === 'not-enough') {
@@ -154,39 +189,35 @@ export default function WordleScreen() {
   };
 
   useEffect(() => {
-    if (status === 'won' || status === 'lost') {
+    const gameKey = `${status}_${playKey}_${guesses.length}`;
+
+    if (
+      (status === 'won' || status === 'lost') &&
+      gameProcessedRef.current !== gameKey
+    ) {
+      gameProcessedRef.current = gameKey;
+
       const attempts = status === 'won' ? guesses.length : 6;
       recordGame(attempts as 1 | 2 | 3 | 4 | 5 | 6, playKey);
       saveResultToServer(playKey, attempts);
-      
-      // Animar el botón de compartir cuando gana
+
+      // Si gana, bloquear el juego hasta la siguiente palabra
       if (status === 'won') {
-        const bounceAnimation = () => {
-          Animated.sequence([
-            Animated.timing(buttonAnimation, {
-              toValue: 1,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.loop(
-              Animated.sequence([
-                Animated.timing(buttonAnimation, {
-                  toValue: 1.1,
-                  duration: 800,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(buttonAnimation, {
-                  toValue: 1,
-                  duration: 800,
-                  useNativeDriver: true,
-                }),
-              ]),
-            ),
-          ]).start();
+        const lockKey = `wordle_completed_${playKey}`;
+        AsyncStorage.setItem(lockKey, 'true').catch(console.error);
+        setIsGameLocked(true);
+
+        // Animar el botón de compartir - aparece una vez y se queda
+        const showButtonAnimation = () => {
+          Animated.timing(buttonAnimation, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }).start();
         };
-        bounceAnimation();
+        showButtonAnimation();
       }
-      
+
       const fetchRank = async () => {
         try {
           const db = getDatabase(getFirebaseApp());
@@ -356,7 +387,22 @@ export default function WordleScreen() {
 
       {status === 'won' && (
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          <ConfettiCannon count={80} origin={{ x: -10, y: 0 }} fadeOut={true} />
+          {/* Confeti cayendo desde la parte superior de la pantalla */}
+          <ConfettiCannon
+            count={60}
+            origin={{ x: -10, y: -50 }}
+            fallSpeed={2500}
+            fadeOut={true}
+            autoStart={true}
+          />
+          <ConfettiCannon
+            count={60}
+            origin={{ x: 10, y: -50 }}
+            fallSpeed={2500}
+            fadeOut={true}
+            autoStart={true}
+          />
+
           <Animated.View
             style={[
               styles.shareBtn,
@@ -376,6 +422,18 @@ export default function WordleScreen() {
           </Animated.View>
         </View>
       )}
+
+      {isGameLocked && status !== 'won' && status !== 'lost' && (
+        <View style={styles.lockedGameMessage}>
+          <Text style={styles.lockedGameText}>
+            🎯 ¡Ya completaste el Wordle de este turno!
+          </Text>
+          <Text style={styles.lockedGameSubtext}>
+            Vuelve a las {cycle === 'morning' ? '19:00' : '07:00'} para una
+            nueva palabra
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -384,14 +442,17 @@ const createStyles = (theme: typeof Colors.light) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      padding: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      paddingTop: spacing.xs,
+      paddingBottom: spacing.xs,
       backgroundColor: theme.background,
-      justifyContent: 'space-between',
+      justifyContent: 'flex-start',
     },
     gameArea: {
-      flex: 1,
-      justifyContent: 'center',
-      paddingVertical: 20,
+      flex: 0,
+      justifyContent: 'flex-start',
+      paddingVertical: 10,
+      marginBottom: 10,
     },
     row: {
       flexDirection: 'row',
@@ -418,13 +479,13 @@ const createStyles = (theme: typeof Colors.light) =>
       color: theme.text,
     },
     keyboard: {
-      marginTop: 16,
-      paddingBottom: 20,
+      marginTop: 8,
+      paddingBottom: 10,
     },
     kbRow: {
       flexDirection: 'row',
       justifyContent: 'center',
-      marginBottom: 8,
+      marginBottom: 6,
     },
     key: {
       paddingVertical: 16,
@@ -487,9 +548,37 @@ const createStyles = (theme: typeof Colors.light) =>
     },
     footerText: {
       textAlign: 'center',
-      marginTop: 16,
+      marginTop: 8,
       fontWeight: 'bold',
       color: theme.text,
-      fontSize: 16,
+      fontSize: 14,
+    },
+    lockedGameMessage: {
+      position: 'absolute',
+      top: '50%',
+      left: 20,
+      right: 20,
+      backgroundColor: '#A3BD31',
+      padding: 20,
+      borderRadius: 15,
+      alignItems: 'center',
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+    },
+    lockedGameText: {
+      color: '#fff',
+      fontSize: 18,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    lockedGameSubtext: {
+      color: '#fff',
+      fontSize: 14,
+      textAlign: 'center',
+      opacity: 0.9,
     },
   });

@@ -57,20 +57,12 @@ export default function useWordleWords() {
 
     // 1. Intentar obtener palabra de Firebase (si ya cargó)
     if (!loading && words[dateKey] && words[dateKey][cycleIndex]) {
-      console.log(
-        `🎯 Palabra obtenida de Firebase para ${dateKey} (${cycle}):`,
-        words[dateKey][cycleIndex],
-      );
       return words[dateKey][cycleIndex];
     }
 
     // 2. Fallback a wordle-daily.json local
     const localWords = dailyWordsLocal as DailyWords;
     if (localWords[dateKey] && localWords[dateKey][cycleIndex]) {
-      console.log(
-        `📄 Palabra obtenida de wordle-daily.json para ${dateKey} (${cycle}):`,
-        localWords[dateKey][cycleIndex],
-      );
       return localWords[dateKey][cycleIndex];
     }
 
@@ -80,15 +72,11 @@ export default function useWordleWords() {
       const randomDate = availableDates[hash % availableDates.length];
       const randomWord =
         localWords[randomDate][cycleIndex] || localWords[randomDate][0];
-      console.log(
-        `🔄 Usando palabra aleatoria de wordle-daily.json: ${randomWord} (de ${randomDate})`,
-      );
       return randomWord;
     }
 
     // 4. Fallback final (solo si wordle-daily.json está completamente vacío)
     const fallbackWord = FALLBACK_WORDS[hash % FALLBACK_WORDS.length];
-    console.log(`⚠️ Usando palabra fallback final:`, fallbackWord);
     return fallbackWord;
   };
   return {
