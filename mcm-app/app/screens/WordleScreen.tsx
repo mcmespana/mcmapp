@@ -1,9 +1,7 @@
 import React, { useMemo, useState, useLayoutEffect, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { IconButton } from 'react-native-paper';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { JubileoStackParamList } from '../(tabs)/jubileo';
 import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -21,12 +19,10 @@ const QWERTY = [
   ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
 ];
 
-const FALLBACK = ['ROMAN', 'AMIGO', 'JOVEN', 'SALVE', 'MARIA'];
 const EMOJIS = ['😀', '😁', '😊', '😎', '🤩', '🥳'];
 
 export default function WordleScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
+  const navigation = useNavigation();
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -67,48 +63,48 @@ export default function WordleScreen() {
     shareResult,
   } = useWordleGame(target, []);
 
-  const [showInfo, setShowInfo] = useState(false);
-  const [showStats, setShowStats] = useState(false);
+  const [internalShowInfo, setInternalShowInfo] = useState(false);
+  const [internalShowStats, setInternalShowStats] = useState(false);
   const [rank, setRank] = useState<number | null>(null);
-  const [modalMessage, setModalMessage] = useState('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const showInfo = internalShowInfo;
+  const setShowInfo = setInternalShowInfo;
+  const showStats = internalShowStats;
+  const setShowStats = setInternalShowStats;
 
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'Wordle Jubileo',
+      headerStyle: { backgroundColor: '#A3BD31' },
+      headerTintColor: '#fff',
+      headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
+      headerTitleAlign: 'center',
       headerRight: () => (
-        <View style={{ flexDirection: 'row' }}>
-          {status !== 'playing' && (
-            <IconButton
-              icon="share-variant"
-              iconColor="#fff"
-              onPress={shareResult}
-            />
-          )}
-          <IconButton
-            icon="poll"
-            iconColor="#fff"
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity
             onPress={() => setShowStats(true)}
-          />
-          <IconButton
-            icon="information-outline"
-            iconColor="#fff"
+            style={{ padding: 8, marginRight: 4 }}
+          >
+            <MaterialIcons name="poll" size={24} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => setShowInfo(true)}
-          />
+            style={{ padding: 8 }}
+          >
+            <MaterialIcons name="info" size={24} color="#fff" />
+          </TouchableOpacity>
         </View>
       ),
     });
-  }, [navigation, status, shareResult]);
+  }, [navigation]);
 
   const handleKey = (k: string) => {
     if (k === 'ENTER') {
       const res = submitGuess();
       if (res === 'not-enough') {
-        setModalMessage('No hay suficientes letras');
-        setIsModalVisible(true);
+        console.log('No hay suficientes letras');
       } else if (res === 'invalid') {
-        setModalMessage('Palabra no válida');
-        setIsModalVisible(true);
+        console.log('Palabra no válida');
       }
     } else if (k === 'DEL') {
       removeLetter();
@@ -159,19 +155,27 @@ export default function WordleScreen() {
     <View style={styles.container}>
       {guesses.map((g, idx) => (
         <View key={idx} style={styles.row}>
-          {g.letters.map((l, i) => renderCell(l.letter, l.state))}
+          {g.letters.map((l, i) => (
+            <View key={`guess-${idx}-${i}`}>
+              {renderCell(l.letter, l.state)}
+            </View>
+          ))}
         </View>
       ))}
       {status === 'playing' && (
         <View style={styles.row}>
-          {[...currentGuess.padEnd(5)].map((ch, i) => renderCell(ch))}
+          {[...currentGuess.padEnd(5)].map((ch, i) => (
+            <View key={`current-${i}`}>{renderCell(ch)}</View>
+          ))}
         </View>
       )}
       {Array.from({
         length: 6 - guesses.length - (status === 'playing' ? 1 : 0),
       }).map((_, idx) => (
         <View key={`empty-${idx}`} style={styles.row}>
-          {Array.from({ length: 5 }).map((_, i) => renderCell(''))}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <View key={`empty-cell-${idx}-${i}`}>{renderCell('')}</View>
+          ))}
         </View>
       ))}
 
