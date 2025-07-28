@@ -16,6 +16,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     ...config.android,
-    googleServicesFile: './android/app/google-services.json', // <- ubicación correcta para builds nativas
+    googleServicesFile: './google-services.json', // <- ubicación para Prebuild/CNG
   },
 });

@@ -10,7 +10,7 @@
       "env": {
         "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON"
       },
-      "prebuildCommand": "node scripts/write-google-services-json.js",
+      "prebuildCommand": "./scripts/prebuild.sh",
       "channel": "development"
     },
     "preview": {
@@ -21,7 +21,7 @@
       "env": {
         "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON"
       },
-      "prebuildCommand": "node scripts/write-google-services-json.js",
+      "prebuildCommand": "./scripts/prebuild.sh",
       "channel": "preview"
     },
     "production": {
@@ -32,7 +32,7 @@
       "env": {
         "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON"
       },
-      "prebuildCommand": "node scripts/write-google-services-json.js",
+      "prebuildCommand": "./scripts/prebuild.sh",
       "channel": "production"
     },
     "development-simulator": {

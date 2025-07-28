@@ -47,7 +47,7 @@ GoogleService-Info.plist
 firebase.json
 
 
-# prebuils
+# prebuilds (CNG/Prebuild generated folders)
 ios/
 android/
 
