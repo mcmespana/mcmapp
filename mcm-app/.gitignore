@@ -48,6 +48,8 @@ firebase.json
 
 
 # prebuilds (CNG/Prebuild generated folders)
+/android
+/ios
 ios/
 android/
 

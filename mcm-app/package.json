@@ -12,6 +12,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@expo/config": "^11.0.13",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/datetimepicker": "8.4.1",
@@ -75,7 +76,7 @@
     "@react-native-community/cli": "^18.0.0",
     "@testing-library/jest-native": "^5.4.2",
     "@testing-library/react-native": "^12.5.0",
-    "@types/node": "^22.15.29",
+    "@types/node": "^22.16.5",
     "@types/react": "~19.0.10",
     "copy-webpack-plugin": "^13.0.0",
     "eslint": "^9.25.0",
@@ -93,7 +94,9 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "listUnknownPackages": false,
-        "exclude": ["react-native-confetti-cannon"]
+        "exclude": [
+          "react-native-confetti-cannon"
+        ]
       }
     }
   }
