@@ -1,18 +1,24 @@
 [
   {
-    "titulo": "Catedral de San Ejemplo",
-    "subtitulo": "Historia viva de la ciudad",
-    "fecha": "2025-08-01",
-    "imagen": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Palencia_Cathedral_2023_-_South_Fa%C3%A7ade.jpg/960px-Palencia_Cathedral_2023_-_South_Fa%C3%A7ade.jpg",
-    "texto": "Durante esta visita conoceremos la arquitectura gótica de la catedral y su influencia en la comunidad local. También tendremos un espacio para la oración personal en la capilla del silencio.",
-    "mapa": "https://maps.google.com/?q=Catedral+de+San+Ejemplo"
+    "titulo": "Google Maps · Jubileo Consolación",
+    "subtitulo": "Lista de Google Maps",
+    "imagen": "https://regnumchristi.org/es/wp-content/uploads/2025/04/thmb-jubileo.png",
+    "texto": "Lista de todos los lugares de alojamiento, sitios importantes, paradas de metro...",
+    "mapa": "https://maps.app.goo.gl/pjPzZMt5HRLRxdA68"
   },
   {
-    "titulo": "Ruta de los Mártires",
-    "subtitulo": "Recorrido por lugares emblemáticos",
+    "titulo": "Google Maps · Turisteo",
+    "subtitulo": "Lista de Google Maps",
+    "fecha": "2025-07-30",
+    "imagen": "https://content-viajes.nationalgeographic.com.es/medio/2024/09/13/coliseo_37c26845_240913142611_1200x800.jpg",
+    "texto": "Lista de todos los lugares propuestos en las rutas de Turisteo del miércoles y jueves, puedes consultar el detalle del texto en la seccion Materiales",
+    "mapa": "https://maps.app.goo.gl/AMosy52cvtR7zeM38"
+  },
+  {
+    "titulo": "Tiempo Libre para descubrir Roma",
+    "subtitulo": "Revisa la Sección 'Material'",
     "fecha": "2025-07-31",
-    "imagen": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTG8Hofzk6IfqmyIDuGupkhnaW3H1hcvqQUsg&s",
-    "texto": "Caminaremos por distintos puntos donde la historia de la fe dejó huella. Será un tiempo para recordar y agradecer el testimonio de tantos creyentes.",
-    "mapa": "https://maps.google.com/?q=Ruta+de+los+Martires"
+    "imagen": "https://content-viajes.nationalgeographic.com.es/medio/2024/09/13/coliseo_37c26845_240913142611_1200x800.jpg",
+    "texto": "Roma, conocida como la Ciudad Eterna, podemos decir que es un museo al aire libre gracias a sus monumentos de más de 2000 años, cientos de antiguas iglesias y barrios llenos de encanto... ¡Y nos acogerá durante el Jubileo! Pese a que habrá mucha gente y habrá actividades preparadas para estos días, tendremos la oportunidad de pasear por Roma muchos de los días dado que la mayoría de los eventos se desarrollarán por estas calles y plazas. Por tanto, aprovecha cada momento con tranquilidad y ganas de compartir con otros."
   }
 ]

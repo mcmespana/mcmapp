@@ -1,163 +1,308 @@
 [
   {
-    "fecha": "2025-07-29",
-    "titulo": "Acogida",
     "eventos": [
       {
-        "nombre": "Bienvenida y registro",
-        "hora": "09:00",
-        "subtitulo": "Recepción de participantes",
-        "lugar": "Centro Juvenil",
-        "icono": "🎉"
+        "hora": "08:40",
+        "icono": "🚌",
+        "lugar": "Consolación Castellón",
+        "nombre": "Convocatoria autobuses",
+        "subtitulo": "Grupos La Plana + Caravaca/Espinardo. Salida 9h"
       },
       {
-        "nombre": "Oración de apertura",
-        "hora": "12:00",
-        "subtitulo": "Comenzamos juntos",
-        "lugar": "Capilla principal",
-        "icono": "🙏"
-      },
-      {
-        "nombre": "Cena comunitaria",
-        "hora": "20:00",
-        "subtitulo": "Convivencia",
-        "lugar": "Comedor",
-        "icono": "🍽️"
-      }
-    ]
-  },
-  {
-    "fecha": "2025-07-30",
-    "titulo": "Encuentro",
-    "eventos": [
-      {
-        "nombre": "Oración de la mañana",
-        "hora": "08:30",
-        "subtitulo": "Momento de silencio",
-        "lugar": "Jardín",
-        "icono": "🌅"
-      },
-      {
-        "nombre": "Talleres creativos",
-        "hora": "10:00",
-        "subtitulo": "Actividades por grupos",
-        "lugar": "Aulas 1-4",
-        "icono": "🎨"
-      },
-      {
-        "nombre": "Eucaristía",
-        "hora": "19:00",
-        "subtitulo": "Celebración diaria",
-        "lugar": "Iglesia local",
-        "icono": "✝️"
-      }
-    ]
-  },
-  {
-    "fecha": "2025-07-31",
-    "titulo": "Servicio",
-    "eventos": [
-      {
-        "nombre": "Visita solidaria",
-        "hora": "09:30",
-        "subtitulo": "Encuentro con la comunidad",
-        "lugar": "Barrio Nuevo",
-        "icono": "🤝"
-      },
-      {
-        "nombre": "Reflexión vespertina",
-        "hora": "18:00",
-        "subtitulo": "Compartir experiencias",
-        "lugar": "Sala de reuniones",
-        "icono": "💬"
-      },
-      {
-        "nombre": "Concierto nocturno",
-        "hora": "21:00",
-        "subtitulo": "Música y alabanza",
-        "lugar": "Patio central",
-        "icono": "🎵"
-      }
-    ]
-  },
-  {
-    "fecha": "2025-08-01",
-    "titulo": "Cultura",
-    "eventos": [
-      {
-        "nombre": "Salida cultural",
-        "hora": "10:00",
-        "subtitulo": "Museo local",
-        "lugar": "Centro histórico",
-        "icono": "🏛️"
-      },
-      {
-        "nombre": "Oración al atardecer",
-        "hora": "19:30",
-        "subtitulo": "Tiempo de meditación",
-        "lugar": "Mirador",
-        "icono": "🌇"
-      }
-    ]
-  },
-  {
-    "fecha": "2025-08-02",
-    "titulo": "Hermandad",
-    "eventos": [
-      {
-        "nombre": "Encuentro con testigos",
         "hora": "11:00",
-        "subtitulo": "Historias de vida",
-        "lugar": "Auditorio",
-        "icono": "🗣️"
+        "icono": "📍",
+        "lugar": "Casal Loiola",
+        "maps": "https://maps.app.goo.gl/tZGWhguiKmCE7fuE6",
+        "nombre": "Llegadas a Barcelona",
+        "subtitulo": "Entre las 11 y las 12:30 h. Tiempo para comprarse la cena y pasear"
       },
       {
-        "nombre": "Velada fraterna",
+        "hora": "14:00",
+        "icono": "🍽️",
+        "lugar": "Parque Casal Loiola",
+        "nombre": "Comida de bienvenida",
+        "subtitulo": "La llevamos de casa"
+      },
+      {
+        "hora": "16:00",
+        "icono": "👋",
+        "lugar": "Casal Loiola",
+        "materiales": true,
+        "nombre": "Actividades de bienvenida",
+        "subtitulo": "¿Preparados para salir?"
+      },
+      {
+        "hora": "17:00",
+        "icono": "⛪️",
+        "lugar": "Casal Loiola",
+        "nombre": "Eucaristía de Envío",
+        "subtitulo": "Merienda al finalizar"
+      },
+      {
+        "hora": "19:00",
+        "icono": "🚎",
+        "lugar": "",
+        "nombre": "Salida hacia Roma",
+        "subtitulo": "3 autobuses: Camino-Verdad-Vida. Cena por el camino"
+      }
+    ],
+    "fecha": "2025-07-29",
+    "titulo": "Inicio en Barcelona"
+  },
+  {
+    "eventos": [
+      {
+        "hora": "??",
+        "icono": "🌅",
+        "lugar": "En ruta",
+        "nombre": "Desayuno",
+        "subtitulo": "Incluido. Lo serviremos en área de servicio"
+      },
+      {
+        "icono": "☀️",
+        "lugar": "En ruta",
+        "materiales": true,
+        "nombre": "Oración de la mañana",
+        "subtitulo": "A tu ritmo, de camino, con la app"
+      },
+      {
+        "hora": "??",
+        "icono": "🥐",
+        "lugar": "En ruta",
+        "nombre": "Comida",
+        "subtitulo": "Cada uno la compra en las paradas"
+      },
+      {
+        "hora": "15:30",
+        "icono": "🇮🇹🇻",
+        "lugar": "Monte Mario Alto",
+        "maps": "https://maps.app.goo.gl/rKHy8mi6XAyqS2yd6",
+        "nombre": "Llegada a Roma",
+        "subtitulo": "Distribución en los alojamientos"
+      },
+      {
+        "icono": "👥",
+        "lugar": "Alojamientos",
+        "materiales": true,
+        "nombre": "Grupos Conso+",
+        "subtitulo": "Primer encuentro ya en Roma"
+      },
+      {
+        "icono": "🏛️",
+        "lugar": "Alrededores de Monte Mario",
+        "nombre": "Paseo por Roma",
+        "subtitulo": "Conseguir la cena"
+      },
+      {
+        "hora": "21:30",
+        "icono": "🌙",
+        "lugar": "Por definir",
+        "materiales": true,
+        "nombre": "Ruta Nocturna",
+        "subtitulo": "[Opcional] Ruta nocturna por lugares emblemáticos usando la app Cicero"
+      },
+      {
+        "hora": "23:40",
+        "icono": "💤",
+        "lugar": "Alojamientos",
+        "nombre": "Buenas noches",
+        "subtitulo": "¡A descansar!"
+      }
+    ],
+    "fecha": "2025-07-30",
+    "titulo": "Llegada a Roma"
+  },
+  {
+    "eventos": [
+      {
+        "hora": "??:??",
+        "icono": "🍳",
+        "lugar": "Alojamientos",
+        "nombre": "Desayuno",
+        "subtitulo": ""
+      },
+      {
+        "hora": "11:00",
+        "icono": "🙏🏼",
+        "lugar": "Iglesia San Alfonso Mª Ligorio",
+        "maps": "https://maps.app.goo.gl/3bpLS86XmcXN8zH27",
+        "materiales": true,
+        "nombre": "Paso por la Puerta Santa I",
+        "subtitulo": "Comenzamos juntos en una iglesia cercana"
+      },
+      {
+        "hora": "12:00",
+        "icono": "🚪",
+        "lugar": "Iglesia Santa Mª la Mayor",
+        "maps": "https://maps.app.goo.gl/KHRcEHDGdJNAjRu8A",
+        "materiales": true,
+        "nombre": "Paso por la Puerta Santa II",
+        "subtitulo": "Visitamos la tumba del Papa Francisco"
+      },
+      {
+        "hora": "",
+        "icono": "👣",
+        "lugar": "Distintas rutas propuestas",
+        "nombre": "Tarde visitas en Roma",
+        "subtitulo": "Revisa las propuestas y las actividades 'diálogo con la ciudad'"
+      },
+      {
+        "hora": "",
+        "icono": "🏠",
+        "lugar": "Casa Generalicia Consolación",
+        "maps": "https://maps.app.goo.gl/CibtxKkecgzfcz6c8",
+        "nombre": "Encuentro Jubileo Consolación",
+        "subtitulo": "Conseguir la cena previamente. Encuentro con las Hermanas y Familia Consolación"
+      }
+    ],
+    "fecha": "2025-07-31",
+    "titulo": "Paso por la puerta Santa"
+  },
+  {
+    "eventos": [
+      {
+        "hora": "??:??",
+        "icono": "🍳",
+        "lugar": "Alojamientos",
+        "nombre": "Desayuno",
+        "subtitulo": ""
+      },
+      {
+        "hora": "10:30",
+        "icono": "🙏🏼",
+        "lugar": "Circo Máximo",
+        "maps": "https://maps.app.goo.gl/M1JCcddQrxHPVsaL7",
+        "materiales": true,
+        "nombre": "Celebración del perdón",
+        "subtitulo": "Posibilidad recibir sacramento reconciliación"
+      },
+      {
+        "hora": "14:00",
+        "icono": "🥪",
+        "lugar": "Cerca San Pedro",
+        "maps": "https://maps.app.goo.gl/RLk8hVceXqv7KSQP7",
+        "nombre": "Comida",
+        "subtitulo": "Recogida de 11 a 14 h en punto acordado - ¡NO ES LIBRE!"
+      },
+      {
+        "hora": "16:00",
+        "icono": "📍",
+        "lugar": "Plaza San Pedro",
+        "maps": "https://maps.app.goo.gl/bioXAdhkNYbbpJe29",
+        "nombre": "Entrada Encuentro Españoles",
+        "subtitulo": "A partir de las 16 h apertura de accesos, entraremos juntos"
+      },
+      {
+        "hora": "18:00",
+        "icono": "🇪🇸",
+        "lugar": "Plaza San Pedro",
+        "nombre": "Encuentro Españoles",
+        "subtitulo": "Ambientación y TestimoniosEucaristía"
+      },
+      {
         "hora": "20:30",
-        "subtitulo": "Cantos y juegos",
-        "lugar": "Patio central",
-        "icono": "🔥"
-      }
-    ]
-  },
-  {
-    "fecha": "2025-08-03",
-    "titulo": "Misión",
-    "eventos": [
-      {
-        "nombre": "Oración de envío",
-        "hora": "09:00",
-        "subtitulo": "Nos preparamos para la misión",
-        "lugar": "Capilla principal",
-        "icono": "🚀"
+        "icono": "🇪🇸",
+        "lugar": "Plaza San Pedro",
+        "nombre": "Encuentro Españoles",
+        "subtitulo": "Eucaristía"
       },
       {
-        "nombre": "Rally por la ciudad",
+        "hora": "22:00",
+        "icono": "🍽️",
+        "lugar": "Cerca de San Pedro",
+        "nombre": "Cena",
+        "subtitulo": "La habremos recogido por la mañana"
+      }
+    ],
+    "fecha": "2025-08-01",
+    "titulo": "Día de Reconciliación"
+  },
+  {
+    "eventos": [
+      {
+        "hora": "??:??",
+        "icono": "🍳",
+        "lugar": "Alojamientos",
+        "nombre": "Desayuno",
+        "subtitulo": ""
+      },
+      {
+        "hora": "11:00",
+        "icono": "🛺",
+        "lugar": "Desde alojamientos",
+        "nombre": "Traslado el bus a Tor Vergata",
+        "subtitulo": "Nos dejan en una zona cercana, caminamos"
+      },
+      {
         "hora": "15:00",
-        "subtitulo": "Búsqueda del tesoro",
-        "lugar": "Diversos puntos",
-        "icono": "🗺️"
-      }
-    ]
-  },
-  {
-    "fecha": "2025-08-04",
-    "titulo": "Envío",
-    "eventos": [
-      {
-        "nombre": "Eucaristía final",
-        "hora": "10:00",
-        "subtitulo": "Acción de gracias",
-        "lugar": "Iglesia local",
-        "icono": "✝️"
+        "icono": "🎶",
+        "lugar": "Tor Vergata",
+        "nombre": "Música y testimonios",
+        "subtitulo": "Amenizando la espera, buscando sombras"
       },
       {
-        "nombre": "Despedida",
-        "hora": "12:30",
-        "subtitulo": "Cierre del encuentro",
-        "lugar": "Centro Juvenil",
-        "icono": "👋"
+        "hora": "20:30",
+        "icono": "🔥",
+        "lugar": "Tor Vergata",
+        "nombre": "Vigilia de Oración",
+        "subtitulo": "Acompañados por el Papa León XIV"
       }
-    ]
+    ],
+    "fecha": "2025-08-02",
+    "titulo": "Caminito a Tor Vergata"
+  },
+  {
+    "eventos": [
+      {
+        "hora": "09:30",
+        "icono": "🚀",
+        "lugar": "Tor Vergata",
+        "nombre": "Eucaristía de envío",
+        "subtitulo": "Broche final a la experiencia"
+      },
+      {
+        "hora": "15:30",
+        "icono": "🗺️",
+        "lugar": "Cerca Tor Vergata",
+        "nombre": "Recogida y salida en Bus",
+        "subtitulo": "Empezando la vuelta a casa"
+      },
+      {
+        "hora": "??:??",
+        "icono": "🍽️",
+        "lugar": "En Ruta",
+        "nombre": "Cena",
+        "subtitulo": "Incluida, la repartiremos en una parada"
+      }
+    ],
+    "fecha": "2025-08-03",
+    "titulo": "Envío"
+  },
+  {
+    "eventos": [
+      {
+        "hora": "??",
+        "icono": "🌅",
+        "lugar": "En ruta",
+        "nombre": "Desayuno",
+        "subtitulo": "Incluido. Lo serviremos en área de servicio"
+      },
+      {
+        "hora": "12:30",
+        "icono": "👋",
+        "lugar": "Barcelona",
+        "nombre": "Llegada y despedida",
+        "subtitulo": "Volvemos, pero volvemos así: ❤️‍🔥"
+      },
+      {
+        "hora": "15:00",
+        "icono": "🚌",
+        "lugar": "Barcelona a Castellón",
+        "nombre": "Salida autobuses La Plana",
+        "subtitulo": "Llegada aprox entre las 18 y las 20 h"
+      }
+    ],
+    "fecha": "2025-08-04",
+    "titulo": "Volviendo a casa"
   }
 ]

@@ -160,6 +160,11 @@ export default function HorarioScreen() {
           selectedDate={dia.fecha}
           onSelectDate={(_, i) => setIndex(i)}
         />
+      </View>
+      <ScrollView
+        contentContainerStyle={styles.eventsContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View
           style={[
             dynamicStyles.titleWrapper,
@@ -172,11 +177,6 @@ export default function HorarioScreen() {
           <ThemedText style={styles.titleText}>{dia.titulo}</ThemedText>
           {isLastDay && <ThemedText style={styles.sadEmoji}>😢</ThemedText>}
         </Animated.View>
-      </View>
-      <ScrollView
-        contentContainerStyle={styles.eventsContainer}
-        showsVerticalScrollIndicator={false}
-      >
         {dia.eventos.map(
           (ev: EventItemData, idx: React.Key | null | undefined) => (
             <EventItem
@@ -244,6 +244,7 @@ const createDynamicStyles = (
     titleWrapper: {
       backgroundColor: currentColor,
       marginHorizontal: spacing.lg,
+      marginTop: spacing.md, // Espaciado desde el navegador de días
       padding: spacing.md,
       borderRadius: 16,
       marginBottom: spacing.sm,

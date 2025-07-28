@@ -6,7 +6,6 @@
     "strict": true,
     "skipLibCheck": true, // ✨ evita chequear tipos en node_modules
     "module": "ES2020",
-    "types": ["node"],
     "paths": {
       "@/*": ["./*"]
     }
@@ -23,8 +22,7 @@
     "notifications/**/*.ts",
     "notifications/**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts",
-    "app.config.ts"
+    "expo-env.d.ts"
   ],
   "exclude": [
     "node_modules",

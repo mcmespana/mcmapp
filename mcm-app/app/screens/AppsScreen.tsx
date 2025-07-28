@@ -44,16 +44,21 @@ export default function AppsScreen() {
 
   const openApp = async (app: AppInfo) => {
     try {
-      const schemeUrl =
-        Platform.OS === 'ios' ? app.iosScheme : app.androidScheme;
-      if (schemeUrl) {
-        const canOpen = await Linking.canOpenURL(schemeUrl);
-        if (canOpen) {
-          await Linking.openURL(schemeUrl);
-          return;
+      // En plataformas móviles nativas, intentar abrir la app directamente
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        const schemeUrl =
+          Platform.OS === 'ios' ? app.iosScheme : app.androidScheme;
+        if (schemeUrl) {
+          const canOpen = await Linking.canOpenURL(schemeUrl);
+          if (canOpen) {
+            await Linking.openURL(schemeUrl);
+            return;
+          }
         }
       }
-      // Si no puede abrir la app o no está instalada, abre la store
+      
+      // Si no puede abrir la app o no está instalada, o si estamos en web,
+      // abre la store correspondiente a la plataforma
       const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
       if (storeUrl) {
         await Linking.openURL(storeUrl);
@@ -88,7 +93,10 @@ export default function AppsScreen() {
             opcionales ℹ️) que necesitaremos durante el Jubileo.
           </Text>
           <Text style={styles.introSubtext}>
-            Si tocas el icono de la app te la abrirá directamente ✨
+            {Platform.OS === 'web' 
+              ? 'Si tocas el icono de la app te la abrirá directamente. En el modal puedes elegir entre iOS y Android ✨'
+              : 'Si tocas el icono de la app te la abrirá directamente o te llevará a la tienda de tu plataforma ✨'
+            }
           </Text>
         </View>
 
@@ -170,16 +178,28 @@ export default function AppsScreen() {
                 </Chip>
               </View>
               <View style={styles.downloadRow}>
-                <IconButton
-                  icon="apple"
-                  size={28}
-                  onPress={() => Linking.openURL(selected.iosLink)}
-                />
-                <IconButton
-                  icon="android"
-                  size={28}
-                  onPress={() => Linking.openURL(selected.androidLink)}
-                />
+                {Platform.OS === 'web' ? (
+                  // En web, mostrar ambos botones como antes
+                  <>
+                    <IconButton
+                      icon="apple"
+                      size={28}
+                      onPress={() => Linking.openURL(selected.iosLink)}
+                    />
+                    <IconButton
+                      icon="android"
+                      size={28}
+                      onPress={() => Linking.openURL(selected.androidLink)}
+                    />
+                  </>
+                ) : (
+                  // En móvil, mostrar solo el botón de la plataforma actual
+                  <IconButton
+                    icon={Platform.OS === 'ios' ? 'apple' : 'android'}
+                    size={28}
+                    onPress={() => openApp(selected)}
+                  />
+                )}
               </View>
             </View>
           )}

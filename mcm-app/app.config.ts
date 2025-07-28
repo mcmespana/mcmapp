@@ -1,7 +1,4 @@
-import { config } from 'dotenv';
 import { ExpoConfig, ConfigContext } from '@expo/config';
-
-config();
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -15,9 +12,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     firebaseMessagingSenderId:
       process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     firebaseAppId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-  },
-  android: {
-    ...config.android,
-    googleServicesFile: './google-services.json', // <- ubicación para Prebuild/CNG
   },
 });
