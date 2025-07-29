@@ -8,12 +8,12 @@
         "color": "#00ACC1",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "Nos preguntamos...",
+            "texto": "[list][*]¿Qué parte del logo te llama más la atención y por qué? [*]¿De qué manera te invita este logo a ser “peregrino de la esperanza” en tu vida cotidiana? [*]¿Qué mensaje personal crees que Dios te quiere transmitir a través de este símbolo en este tiempo de Jubileo? [*]¿Por qué es importante caminar juntos y apoyarnos unos a otros en la vida? [/list]"
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Nos conosemos...",
+            "texto": "[list][*]¿A qué actividades de nivel nacional has participado? (Samuel, pascua, campamentos,…) [*]¿Cuántos años llevas en el movimiento?, ¿Quién te invito a participar de los grupos del COM? [*]¿Qué esperas de vivir en esta experiencia? [*]¿Hay algo que te preocupe o te inquiete sobre estos días que vamos a vivir en Roma? [*]¿Qué momentos de este jubileo esperas con más ilusión (encuentro con jóvenes, con el Papa, el ambiente,…? ¿Por qué? [*]¿Crees que los jóvenes necesitan esperanza, por qué? [*] ¿Crees que está experiencia fortalecerá tu fe? [/list]"
           }
         ]
       },
@@ -23,12 +23,68 @@
         "color": "#FF8A65",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "Monición de Entrada",
+            "texto": "Queridos jóvenes del Movimiento Consolación para el mundo, sed todos bienvenidos a esta celebración. [br] Hoy nos reunimos con alegría venidos de diferentes países y ciudades de España: Argentina (nos encontraremos con ellos en Roma), Benicarló, Caravaca, Córdoba, Castellón, Eslovaquia, Espinardo, Madrid, Nules, L’Alcora, Onda, Quintanar, Valencia, Vila-real, Villacañas y Zaragoza. Queremos poner en manos de Dios esta comunidad que vamos a formar juntos, este grupo que dentro de poco emprenderá el camino hacia Roma para participar en el Jubileo de los Jóvenes, convocado por el Papa en este Año Santo. [br] Este envío no es solo un viaje, sino una peregrinación de fe, de esperanza y de renovación espiritual. En comunión con miles de jóvenes de todo el mundo, nos disponemos a vivir una experiencia profunda de encuentro con Cristo, con la Iglesia y con otros corazones jóvenes que también le buscan. [br] [br] Iniciemos esta Eucaristía pidiendo al Señor que abra nuestros corazones, para que, fortalecidos por su Palabra y su Cuerpo, podamos ser verdaderos testigos de esperanza en medio del mundo. [br][br]Nos ponemos de pie y con alegría entonamos el canto de entrada."
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Surgirá un mundo nuevo",
+            "texto": "SURGIRÁ UN MUNDO NUEVO LEVANTADO POR LA FUERZA DEL AMOR, [br] HECHO POR HOMBRES [br] CON EL CORAZÓN ABIERTO[br] AL ESPÍRITU DE DIOS.[br] Y SU LEY SERÁ EL PERDÓN[br] Y SU JUSTICIA EL AMOR,[br] CON LA FUERZA DE SU FE EN EL SEÑOR. [br][br]Un solo Dios nos reúne en su paz, derribando las murallas con que fuimos separados. [br] Un solo bautismo, una misma fe. [br] Por su cruz El ha vencido a la muerte, ha creado en si mismo un hombre nuevo"
+          },
+          {
+            "titulo": "Lectura de San Pablo a los Romanos",
+            "texto": "Hermanos: La esperanza no defrauda, porque el amor de Dios ha sido derramado en nuestros corazones por el Espíritu Santo que se nos ha dado. En efecto, cuando nosotros estábamos aún sin fuerza, en el tiempo señalado, Cristo murió por los impíos; ciertamente, apenas habrá quien muera por un justo; por una persona buena tal vez se atrevería alguien a morir; pues bien: Dios nos demostró su amor en que, siendo nosotros todavía pecadores, Cristo murió por nosotros. [br][br]¡Con cuánta más razón, pues, justificados ahora por su sangre, seremos por él salvados del castigo! Si, cuando éramos enemigos, fuimos reconciliados con Dios por la muerte de su Hijo, ¡con cuánta más razón, estando ya reconciliados, seremos salvados por su vida! Y no solo eso, sino que también nos gloriamos en Dios, por nuestro Señor Jesucristo, por quien hemos obtenido ahora la reconciliación."
+          },
+          {
+            "titulo": "El Señor es mi Pastor",
+            "texto:": "[b]EL SEÑOR ES MI PASTOR NADA ME FALTA EL SEÑOR ES MI PASTOR. (bis)[/b][br][br] 1. En praderas reposa mi alma, en su agua descansa mi sed. Él me guía por senderos justos por amor, por amor de su nombre.[br] 2. Aunque pase por valles oscuros ningún mal, ningún mal temeré porque sé que el Señor va conmigo su cayado sostiene mi fe. [br]3. Tú preparas por mi una mesa frente a aquellos que buscan mi mal. Con aceite me ungiste, Señor y mi copa rebosa de ti. [br] 4. Gloria a Dios, padre omnipotente y a su hijo Jesús, el Señor, y al Espíritu que habita en el mundo por los siglos eternos. Amén."
+          },
+          {
+            "titulo" : "Aleluya Cantará",
+            "texto" : "Aleluya cantará quien perdió la esperanza y la tierra sonreirá, aleluya (bis)"
+          },
+          {
+            "titulo": "Lectura del Santo Evangelio según San Lucas",
+            "texto": "En aquel tiempo, Jesús fue a Nazaret, donde se había criado, entró en la sinagoga, como era su costumbre los sábados, y se puso en pie para hacer la lectura. Le entregaron el rollo del profeta Isaías y, desenrollándolo, encontró el pasaje donde estaba escrito: «El Espíritu del Señor está sobre mí, porque él me ha ungido. Me ha enviado a evangelizar a los pobres, a proclamar a los cautivos la libertad, y a los ciegos, la vista; a poner en libertad a los oprimidos; a proclamar el año de gracia del Señor». Y, enrollando el rollo y devolviéndolo al que lo ayudaba, se sentó. Toda la sinagoga tenía los ojos clavados en él. Y él comenzó a decirles: [i]«Hoy se ha cumplido esta Escritura que acabáis de oír».[/i]"
+          },
+          {
+            "titulo": "Peticiones",
+            "texto": "[list][*]Por la Iglesia, para que siga siendo hogar de todos, especialmente de quienes más necesitan esperanza. Que sepamos anunciar con alegría el Evangelio y llevar consuelo allí donde hay sufrimiento [*] Por el Papa León XIV, para que abra el corazón al Espíritu Santo y reciba la fuerza para guiar a la Iglesia según el corazón de Jesús [*] Por las necesidades del mundo, por quienes sufren a causa de la guerra, el hambre, la soledad o la injusticia. Que no pasemos de largo ante el dolor y que sepamos ser consuelo en lo pequeño de cada día. [*]Por este Jubileo de la Esperanza, para que sea un tiempo de gracia, de perdón y de renovación para toda la Iglesia. Que vivamos este camino como auténticos peregrinos con el corazón abierto[*]Por nuestro Movimiento Consolación para el Mundo, para que sigamos creciendo en el deseo de ser consuelo donde haya dolor, alegría donde falte el entusiasmo y esperanza en medio de la desesperación. [*]Por las Hermanas de la Consolación, por su entrega y acompañamiento constante. Que el Señor les siga regalando fe, esperanza y caridad para hacer presente la ternura de Dios [/list]"
+          },
+          {
+            "titulo": "Ofertorio",
+            "texto": "[b]1. Pañuelos del MCM[/b] [br]Te presentamos, Señor, los pañuelos del Movimiento Consolación para el Mundo en sus diferentes etapas. Ponemos con ellos en el altar las vidas de los jóvenes que estamos aquí en las etapas de conocimiento, crecimiento y opción responsable. [br][br] [b]2. Libro de vida[/b] [br] Ponemos ante ti el libro de vida, representan nuestros deseos de vivir como tú y ser consolación, de hacer realidad el proyecto de vida que Jesús y María Rosa Molas nos han regalado.  [br][br] [b]3. Pan y vino[/b] [br]Finalmente ofrecemos el pan y vino que se van a convertir en tu cuerpo y sangre, que ellos sean nuestra fuerza para convertir nuestras vidas en esperanza y consolación para nuestro mundo."
+          },
+          {
+            "titulo": "Ofertorio",
+            "texto": "Siento LA vida como un regalo, que Tú me das cada día, Tú me lo has dado y a Ti te lo doy, pongo MI vida en tus manos. [br] [b]TODO LO QUE TENGO VIENE DE TI. HE DE DAR GRATIS LO QUE GRATIS RECIBO DE TI, SEÑOR (bis) [br][/b] Te ofrezco hoy junto al pan y el vino, mis dudas mis alegrías. Conviértelos en tu cuerpo y sangre, yo quiero amar como Tú."
+          },
+          {
+            "titulo": "Santo (TSNC)",
+            "texto": "[b]SANTO SANTO SANTO, OOOOH SANTO ES EL SEÑOR DIOS DEL UNIVERSO, DIOS DEL UNIVERO (2)[/b][br][br]Llenos están el cielo y tierra de su gloria, Hosanna en el cielo, hosanna en cielo[br]Bendito el que viene en nombre del señor, Hosanna en el cielo, hosanna en el cielo"
+          },
+          {
+            "titulo": "El amor no tiene fronteras (Inma Vírseda)",
+            "texto": "1. Sólo sé que fuiste Tú quien me llamó a ser instrumento de Consolación, hoy te doy mi sí de nuevo aunque sé de mi pecado, pues confío en Ti, Señor, que vas conmigo. No se puede amar a Dios a quien no vemos, si no amamos al hermano a quien vemos; cuando quiera yo medir cómo va mi amor a Dios miraré si amo a todos mis hermanos.[br][b]EL AMOOOOOR NO TIENE FRONTERAS, EL AMOOOOR NO TIENE FRONTERAS. (BIS)[/b][br] 2. Cada día siento que Tú me lo pides, que yo dé mi vida por llevarte a todos, con detalles muy pequeños y con gestos muy humanos para hacer feliz a quien está a mi lado. Pero no podemos dar si no tenemos y por eso es necesaria la oración, para amar como Tú amas, perdonar como Tú hiciste y sembrar paz y alegría al caminar. [br][b] EL AMOOR NO TIENE FRONTERAS, EL AMOOOR NO TIENE FRONTERAS. (BIS)[/b]  [br] 3. Como Tú quiero estar siempre disponible y que todo el que me busque a Ti te encuentre, porque yo les dé mi vida como la darías Tú y así puedan darte gracias y seguirte. Haz que no pase de largo ante mi hermano y que sean para mí los preferidos, los enfermos, los pequeños, los que sufren y los pobres porque Tú, Señor Jesús, vives en ellos. [br][b]EL AMOOOR NO TIENE FRONTERAS, EL AMOOOOR NO TIENE FRONTERAS. (BIS)[/b]"
+          },
+          {
+            "titulo": "A ti te alabo (Hakuna)",
+            "texto": "A ti te alabo, Señor en tu templo[br]A ti te alabo con todo el firmamento[br]A ti te alabo por todo lo que tú has hecho[br]A ti te alabo por crear sin merecerlo[br]A ti te alabo, con trompas y flautas[br]A ti te alabo con tambores y danzas[br]A ti te alaban criaturitas y animales[br]A ti te alaban las montañas y los mares[br]A ti te alaaaaban..."
+          },
+          {
+            "titulo": "Acción de Gracias",
+            "texto": "Señor, hoy queremos darte gracias porque nos invitas a vivir este Jubileo como un regalo. Un tiempo para renovar la fe, para reencontrarnos contigo, y abrir de nuevo el corazón a la esperanza. [br] Gracias por tu misericordia, por ese perdón que no se agota, y por la indulgencia que nos regalas como abrazo de Padre. [br] Gracias por recordarnos que no caminamos solos, que siempre sales a nuestro encuentro. [br]Te damos gracias por la Iglesia, por las personas que nos acompañan en este camino, y por el  deseo que has puesto en nosotros de ser consuelo para el mundo.  [br]Al iniciar esta peregrinación hacia Roma, Jesús, sé nuestro compañero de camino.  [br]Que este Jubileo no quede solo en una fecha, sino que transforme nuestra vida, para que seamos sembradores de esperanza, rostros de tu ternura, y testigos del perdón que todo lo renueva."
+          },
+          {
+            "titulo": "María de Nazaret",
+            "texto": "[b]MARÍA DE NAZARET, MARÍA MADRE DE DIOS, MARÍA MADRE NUESTRA, MADRE DE CONSOLACIÓN[/b][br][br]Vives atenta al Señor, dejas tus planes por Él, como exclava de Dios, le dices SÍ en Nazaret.[br] Y así has hecho posible, que tomara carne en ti, Cristo el hijo de Dios, que es nuestra Consolación..."
+          },
+          {
+            "titulo": "Bendición de peregrinos",
+            "texto": "Queridos jóvenes: A punto de emprender esta peregrinación, recordad cuál ha sido vuestra intención al iniciar este camino hacia Roma. Los lugares que vais a visitar atestiguan la fe y devoción del pueblo de Dios que acude allí durante el Jubileo, en gran número, para volver fortalecidos en su deseo de vivir al modo de Jesús y de llevar a todos alegría del amor y la consolación. [br]También vosotros, los jóvenes peregrinos, debéis aportar algo a los fieles de todo el mundo que os verán estos días de jubileo en Roma, a saber, el ejemplo de vuestra alegría, fe, esperanza y caridad, para que todos, los que allí viven y os verán por los medios, se sientan fortalecidos por vuestro testimonio. Recibid esta bendición del peregrino inclinando la cabeza."
+          },
+          {
+            "titulo": "Oración de bendición",
+            "texto": "          Dios todopoderoso, que otorgas tu misericordia a los que te aman y en ningún lugar estás lejos de los que te buscan, asiste a estos jóvenes que emprenden esta peregrinación y dirige su camino según tu voluntad; que de día los cubra tu sombra protectora y de noche los alumbre la luz de tu gracia, para que, acompañados por ti, puedan llegar felizmente al lugar de su destino. Por Jesucristo, nuestro Señor. [br][b]R. Amén. [/b] [br][br][i]Respondemos todos Amén.[br][br][/i] El Señor dirija nuestro camino y lo haga próspero y saludable. [br][b]R. Amén.[/b] [br] El Señor nos asista y se digne ser nuestro acompañante.  [br][b]R. Amén. [/b][br] Que el camino que ahora confiadamente emprendemos lo terminemos felizmente con la ayuda de Dios. [br] [b]R. Amén[/b]"
           }
         ]
       },
@@ -38,12 +94,8 @@
         "color": "#607D8B",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
-          },
-          {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Saca tu libreta y recoge el día...",
+            "texto": "[b]Te invitamos a escribir...[/b] [br] ✏️ Un Sentimiento / emoción predominante del día de hoy [br] 💬 Palabra (que no sea un sentimiento) [br] 🔜 Deseo para continuar en el camino"
           }
         ]
       }

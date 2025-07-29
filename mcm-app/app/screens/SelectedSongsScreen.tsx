@@ -225,7 +225,7 @@ const SelectedSongsScreen: React.FC = () => {
       ];
       const now = new Date();
       const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
-      const fileName = `Playlist ${dateStr}.mcmsongs`;
+      const fileName = `Playlist ${dateStr}.json`;
 
       if (Platform.OS === 'web') {
         const blob = new Blob([JSON.stringify(selectedSongs)], {
@@ -255,6 +255,8 @@ const SelectedSongsScreen: React.FC = () => {
       }
     } catch (err) {
       console.error('Error sharing file', err);
+      setSnackbarMessage('Error al exportar la playlist');
+      setSnackbarVisible(true);
     }
   }, [selectedSongs]);
 
@@ -263,20 +265,38 @@ const SelectedSongsScreen: React.FC = () => {
       if (Platform.OS === 'web') {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.mcmsongs,application/json';
+        input.accept = '.json,.mcmsongs,application/json';
         input.onchange = async () => {
           if (!input.files || input.files.length === 0) return;
           const file = input.files[0];
-          if (file.name && !file.name.endsWith('.mcmsongs')) {
-            setSnackbarMessage('Selecciona un archivo .mcmsongs');
+          if (
+            file.name &&
+            !file.name.endsWith('.json') &&
+            !file.name.endsWith('.mcmsongs')
+          ) {
+            setSnackbarMessage('Selecciona un archivo .json o .mcmsongs');
             setSnackbarVisible(true);
             return;
           }
           const text = await file.text();
-          const parsed = JSON.parse(text);
-          if (Array.isArray(parsed)) {
-            parsed.forEach((fn: string) => addSong(fn));
-            setSnackbarMessage('Playlist importada');
+          try {
+            const parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) {
+              if (parsed.length === 0) {
+                setSnackbarMessage('El archivo está vacío');
+                setSnackbarVisible(true);
+                return;
+              }
+              parsed.forEach((fn: string) => addSong(fn));
+              setSnackbarMessage('Playlist importada');
+              setSnackbarVisible(true);
+            } else {
+              setSnackbarMessage('Formato de archivo inválido');
+              setSnackbarVisible(true);
+            }
+          } catch (parseError) {
+            console.error('Error parsing JSON:', parseError);
+            setSnackbarMessage('El archivo no es un JSON válido');
             setSnackbarVisible(true);
           }
         };
@@ -287,23 +307,43 @@ const SelectedSongsScreen: React.FC = () => {
         });
         if (res.canceled || !res.assets || res.assets.length === 0) return;
         const file = res.assets[0];
-        if (file.name && !file.name.endsWith('.mcmsongs')) {
-          setSnackbarMessage('Selecciona un archivo .mcmsongs');
+        if (
+          file.name &&
+          !file.name.endsWith('.json') &&
+          !file.name.endsWith('.mcmsongs')
+        ) {
+          setSnackbarMessage('Selecciona un archivo .json o .mcmsongs');
           setSnackbarVisible(true);
           return;
         }
         const content = await FileSystem.readAsStringAsync(file.uri, {
           encoding: FileSystem.EncodingType.UTF8,
         });
-        const parsed = JSON.parse(content);
-        if (Array.isArray(parsed)) {
-          parsed.forEach((fn: string) => addSong(fn));
-          setSnackbarMessage('Playlist importada');
+        try {
+          const parsed = JSON.parse(content);
+          if (Array.isArray(parsed)) {
+            if (parsed.length === 0) {
+              setSnackbarMessage('El archivo está vacío');
+              setSnackbarVisible(true);
+              return;
+            }
+            parsed.forEach((fn: string) => addSong(fn));
+            setSnackbarMessage('Playlist importada');
+            setSnackbarVisible(true);
+          } else {
+            setSnackbarMessage('Formato de archivo inválido');
+            setSnackbarVisible(true);
+          }
+        } catch (parseError) {
+          console.error('Error parsing JSON:', parseError);
+          setSnackbarMessage('El archivo no es un JSON válido');
           setSnackbarVisible(true);
         }
       }
     } catch (err) {
       console.error('Error importing playlist', err);
+      setSnackbarMessage('Error al importar la playlist');
+      setSnackbarVisible(true);
     }
   }, [addSong]);
 
