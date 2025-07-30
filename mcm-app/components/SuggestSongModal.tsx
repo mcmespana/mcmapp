@@ -15,6 +15,7 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 interface SuggestSongModalProps {
   visible: boolean;
@@ -33,6 +34,7 @@ export default function SuggestSongModal({
 }: SuggestSongModalProps) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
+  const { profile } = useUserProfile();
 
   const [titulo, setTitulo] = useState('');
   const [artista, setArtista] = useState('');
@@ -69,6 +71,8 @@ export default function SuggestSongModal({
         timestamp: Date.now(),
         platform: Platform.OS,
         requestedAt: new Date().toISOString(),
+        userName: profile.name,
+        userLocation: profile.location,
       });
 
       await set(ref(db, 'songs/updatedAt'), Date.now().toString());

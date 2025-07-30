@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Modal from 'react-native-modal';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import UserProfileModal from './UserProfileModal';
 
 interface Props {
   visible: boolean;
@@ -17,6 +18,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const fontScale = useFontScale();
+  const [editVisible, setEditVisible] = useState(false);
 
   const increase = () => {
     setSettings({ fontScale: Math.min(settings.fontScale + 0.1, 2) });
@@ -97,7 +99,20 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             />
           </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={styles.nameButton}
+          onPress={() => setEditVisible(true)}
+        >
+          <MaterialIcons name="person" size={24} color={theme.text} />
+          <Text style={[styles.nameButtonText, { color: theme.text }]}>
+            Cambia tu nombre
+          </Text>
+        </TouchableOpacity>
       </View>
+      <UserProfileModal
+        visible={editVisible}
+        onClose={() => setEditVisible(false)}
+      />
     </Modal>
   );
 }
@@ -129,5 +144,15 @@ const styles = StyleSheet.create({
   },
   themeSelected: {
     opacity: 1,
+  },
+  nameButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  nameButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

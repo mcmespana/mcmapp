@@ -25,6 +25,11 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useStatusBarTheme } from '@/hooks/useStatusBarTheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
+import {
+  UserProfileProvider,
+  useUserProfile,
+} from '@/contexts/UserProfileContext';
+import UserProfileModal from '@/components/UserProfileModal';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
 import AddToHomeBanner from '@/components/AddToHomeBanner';
 import {
@@ -41,7 +46,9 @@ export default function RootLayout() {
   return (
     <FeatureFlagsProvider>
       <AppSettingsProvider>
-        <InnerLayout />
+        <UserProfileProvider>
+          <InnerLayout />
+        </UserProfileProvider>
       </AppSettingsProvider>
     </FeatureFlagsProvider>
   );
@@ -51,6 +58,8 @@ function InnerLayout() {
   const [showAnimation, setShowAnimation] = useState(true);
   const scheme = useColorScheme(); // Keep existing hooks
   const pathname = usePathname();
+  const { profile, loading: profileLoading } = useUserProfile();
+  const [profileVisible, setProfileVisible] = useState(false);
 
   // Hook para actualizar el tema de la barra de estado dinámicamente
   useStatusBarTheme(pathname);
@@ -74,6 +83,13 @@ function InnerLayout() {
 
     return () => clearTimeout(timer); // Cleanup timer on unmount
   }, []);
+
+  useEffect(() => {
+    if (showAnimation) return;
+    if (!profileLoading && (!profile.name || !profile.location)) {
+      setProfileVisible(true);
+    }
+  }, [showAnimation, profileLoading, profile]);
 
   // NOTIS - Comentado para eliminar sistema notificaciones
   //usePushNotifications(); // 3️⃣ inicializa el hook
@@ -183,6 +199,10 @@ function InnerLayout() {
             </Stack>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             <AddToHomeBanner />
+            <UserProfileModal
+              visible={profileVisible}
+              onClose={() => setProfileVisible(false)}
+            />
           </NavThemeProvider>
         </PaperProvider>
       </SafeAreaProvider>

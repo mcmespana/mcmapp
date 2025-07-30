@@ -15,6 +15,7 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 interface AppFeedbackModalProps {
   visible: boolean;
@@ -70,6 +71,7 @@ export default function AppFeedbackModal({
 }: AppFeedbackModalProps) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
+  const { profile } = useUserProfile();
   const [selectedCategory, setSelectedCategory] =
     useState<FeedbackCategory | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
@@ -104,6 +106,8 @@ export default function AppFeedbackModal({
         status: 'pending', // pending, reviewed, resolved
         reportedAt: new Date().toISOString(),
         category: selectedCategory,
+        userName: profile.name,
+        userLocation: profile.location,
       });
 
       // Limpiar y cerrar
