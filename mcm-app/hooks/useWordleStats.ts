@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDatabase, push, ref, set } from 'firebase/database';
 import { getFirebaseApp } from './firebaseApp';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 // Función simple para generar IDs únicos
 const generateId = () => {
@@ -26,6 +27,7 @@ const defaultStats: WordleStats = {
 export default function useWordleStats() {
   const [stats, setStats] = useState<WordleStats>(defaultStats);
   const [loading, setLoading] = useState(true);
+  const { profile } = useUserProfile();
 
   useEffect(() => {
     const load = async () => {
@@ -68,6 +70,8 @@ export default function useWordleStats() {
       const entryRef = push(ref(db, `wordle/${date}/${cycle}`));
       await set(entryRef, {
         userId: stats.userId,
+        userName: profile.name,
+        userLocation: profile.location,
         attempts,
         timestamp: Date.now(),
       });

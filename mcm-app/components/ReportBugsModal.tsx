@@ -17,6 +17,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { getCategoryFromFilename, cleanSongTitle } from '@/utils/songUtils';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 interface ReportBugsModalProps {
   visible: boolean;
@@ -35,6 +36,7 @@ export default function ReportBugsModal({
 }: ReportBugsModalProps) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
+  const { profile } = useUserProfile();
   const [bugDescription, setBugDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -71,6 +73,8 @@ export default function ReportBugsModal({
         platform: Platform.OS,
         status: 'pending', // pending, reviewed, fixed
         reportedAt: new Date().toISOString(),
+        userName: profile.name,
+        userLocation: profile.location,
       });
 
       // Limpiar y cerrar
