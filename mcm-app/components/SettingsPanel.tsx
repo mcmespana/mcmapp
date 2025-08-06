@@ -105,7 +105,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
         >
           <MaterialIcons name="person" size={24} color={theme.text} />
           <Text style={[styles.nameButtonText, { color: theme.text }]}>
-            Cambiar tu nombre
+            ¿Cambiamos tu nombre?
           </Text>
         </TouchableOpacity>
       </View>
