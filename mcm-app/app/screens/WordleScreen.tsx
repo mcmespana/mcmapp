@@ -4,6 +4,7 @@ import React, {
   useLayoutEffect,
   useEffect,
   useRef,
+  useCallback,
 } from 'react';
 import {
   View,
@@ -29,6 +30,7 @@ import { getDatabase, ref, get } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import useWordleLeaderboard from '@/hooks/useWordleLeaderboard';
 
 const QWERTY = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -87,12 +89,15 @@ export default function WordleScreen() {
   const [rank, setRank] = useState<number | null>(null);
   const [buttonAnimation] = useState(new Animated.Value(0));
   const [isGameLocked, setIsGameLocked] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [statsTab, setStatsTab] = useState<'today' | 'history'>('today');
 
   const showInfo = internalShowInfo;
   const setShowInfo = setInternalShowInfo;
   const showStats = internalShowStats;
   const setShowStats = setInternalShowStats;
+
+  const { topToday, generalRanking, participationRanking, globalRank } =
+    useWordleLeaderboard(todayKey, cycle, stats.userId, showStats);
 
   // Verificar si el juego está bloqueado para esta palabra
   useEffect(() => {
@@ -134,7 +139,7 @@ export default function WordleScreen() {
     });
   }, [navigation, setShowInfo, setShowStats]);
 
-  const generateEmojiResult = () => {
+  const generateEmojiResult = useCallback(() => {
     let result = '';
     guesses.forEach((guess) => {
       guess.letters.forEach((letter) => {
@@ -145,7 +150,7 @@ export default function WordleScreen() {
       result += '\n';
     });
     return result;
-  };
+  }, [guesses]);
 
   const shareCustomResult = async () => {
     const emojiGrid = generateEmojiResult();
@@ -156,23 +161,6 @@ export default function WordleScreen() {
       await Clipboard.setStringAsync(message);
     } else {
       await Share.share({ message });
-    }
-  };
-
-  const copyVictoryMessage = async () => {
-    const emojiGrid = generateEmojiResult();
-    const attempts = guesses.length;
-    const message = `🎯 Mi intento hoy en el Wordle-Jubilar-Consolación ha sido:\n\n${attempts}/6 intentos\n\n${emojiGrid}\n🎉 ¡Súper Wordle Jubilar Consolación Chulo! 🎊`;
-
-    try {
-      await Clipboard.setStringAsync(message);
-      Alert.alert(
-        '🎉 ¡Felicidades!',
-        'Te hemos copiado un mensaje en el portapapeles, compártelo en WhatsApp y demuestra quién manda!',
-        [{ text: 'OK', style: 'default' }]
-      );
-    } catch (error) {
-      console.error('Error copiando al portapapeles:', error);
     }
   };
 
@@ -228,7 +216,20 @@ export default function WordleScreen() {
 
         // Copiar automáticamente el mensaje al portapapeles y mostrar alert
         setTimeout(() => {
-          copyVictoryMessage();
+          const emojiGrid = generateEmojiResult();
+          const attempts = guesses.length;
+          const message = `🎯 Mi intento hoy en el Wordle-Jubilar-Consolación ha sido:\n\n${attempts}/6 intentos\n\n${emojiGrid}\n🎉 ¡Súper Wordle Jubilar Consolación Chulo! 🎊`;
+          Clipboard.setStringAsync(message)
+            .then(() =>
+              Alert.alert(
+                '🎉 ¡Felicidades!',
+                'Te hemos copiado un mensaje en el portapapeles, compártelo en WhatsApp y demuestra quién manda!',
+                [{ text: 'OK', style: 'default' }],
+              ),
+            )
+            .catch((error) =>
+              console.error('Error copiando al portapapeles:', error),
+            );
         }, 1000); // Esperar 1 segundo para que se vea el confeti primero
 
         // Animar el botón de compartir - aparece una vez y se queda
@@ -270,7 +271,7 @@ export default function WordleScreen() {
     recordGame,
     saveResultToServer,
     buttonAnimation,
-    copyVictoryMessage,
+    generateEmojiResult,
   ]);
 
   return (
@@ -378,45 +379,122 @@ export default function WordleScreen() {
       </BottomSheet>
 
       <BottomSheet visible={showStats} onClose={() => setShowStats(false)}>
-        <Text style={styles.infoTitle}>Estadísticas</Text>
-        <Text style={styles.infoText}>Partidas jugadas: {stats.played}</Text>
-        {Object.entries(stats.distribution).map(([k, v]) => {
-          const max = Math.max(...Object.values(stats.distribution), 1);
-          const width = (Number(v) / max) * 100;
-          return (
-            <View
-              key={k}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 4,
-              }}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[
+              styles.tabItem,
+              statsTab === 'today' && styles.tabItemActive,
+            ]}
+            onPress={() => setStatsTab('today')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                statsTab === 'today' && styles.tabTextActive,
+              ]}
             >
-              <Text style={{ width: 20 }}>{k}</Text>
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: '#d3d6da',
-                  height: 10,
-                  marginHorizontal: 4,
-                }}
-              >
+              Hoy
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tabItem,
+              statsTab === 'history' && styles.tabItemActive,
+            ]}
+            onPress={() => setStatsTab('history')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                statsTab === 'history' && styles.tabTextActive,
+              ]}
+            >
+              Histórico
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {statsTab === 'today' ? (
+          <View>
+            <Text style={styles.infoText}>
+              Partidas jugadas: {stats.played}
+            </Text>
+            {Object.entries(stats.distribution).map(([k, v]) => {
+              const max = Math.max(...Object.values(stats.distribution), 1);
+              const width = (Number(v) / max) * 100;
+              return (
                 <View
+                  key={k}
                   style={{
-                    backgroundColor: '#6aaa64',
-                    height: 10,
-                    width: `${width}%`,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 4,
                   }}
-                />
-              </View>
-              <Text>{v}</Text>
-            </View>
-          );
-        })}
-        {rank && (
-          <Text style={[styles.infoText, { marginTop: 8 }]}>
-            Hoy has quedado en el ranking #{rank}
-          </Text>
+                >
+                  <Text style={{ width: 20 }}>{k}</Text>
+                  <View
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#d3d6da',
+                      height: 10,
+                      marginHorizontal: 4,
+                    }}
+                  >
+                    <View
+                      style={{
+                        backgroundColor: '#6aaa64',
+                        height: 10,
+                        width: `${width}%`,
+                      }}
+                    />
+                  </View>
+                  <Text>{v}</Text>
+                </View>
+              );
+            })}
+            {rank && (
+              <Text style={[styles.infoText, { marginTop: 8 }]}>
+                Hoy has quedado en el ranking #{rank}
+              </Text>
+            )}
+            <Text style={[styles.infoTitle, { marginTop: 16 }]}>
+              Top 3 de hoy
+            </Text>
+            {topToday.length === 0 && (
+              <Text style={styles.infoText}>Sin datos suficientes</Text>
+            )}
+            {topToday.map((p, idx) => (
+              <Text key={p.userId} style={styles.infoText}>
+                {idx + 1}. {p.name}
+                {p.place ? ` (${p.place})` : ''} - {p.attempts} intentos
+              </Text>
+            ))}
+          </View>
+        ) : (
+          <View>
+            {globalRank && (
+              <Text style={styles.infoText}>
+                Tu posición en el ranking general: #{globalRank}
+              </Text>
+            )}
+            <Text style={[styles.infoTitle, { marginTop: 8 }]}>
+              Ranking general
+            </Text>
+            {generalRanking.map((p, idx) => (
+              <Text key={p.userId} style={styles.infoText}>
+                {idx + 1}. {p.name}
+                {p.place ? ` (${p.place})` : ''} - {p.average?.toFixed(2)} media
+              </Text>
+            ))}
+            <Text style={[styles.infoTitle, { marginTop: 8 }]}>
+              Ranking de participaciones
+            </Text>
+            {participationRanking.map((p, idx) => (
+              <Text key={p.userId} style={styles.infoText}>
+                {idx + 1}. {p.name}
+                {p.place ? ` (${p.place})` : ''} - {p.played} partidas
+              </Text>
+            ))}
+          </View>
         )}
       </BottomSheet>
 
@@ -595,6 +673,27 @@ const createStyles = (theme: typeof Colors.light) =>
       fontWeight: 'bold',
       color: theme.text,
       fontSize: 14,
+    },
+    tabContainer: {
+      flexDirection: 'row',
+      marginBottom: 12,
+    },
+    tabItem: {
+      flex: 1,
+      paddingVertical: 8,
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+      alignItems: 'center',
+    },
+    tabItemActive: {
+      borderBottomColor: '#A3BD31',
+    },
+    tabText: {
+      fontWeight: 'bold',
+      color: theme.text,
+    },
+    tabTextActive: {
+      color: '#A3BD31',
     },
     lockedGameMessage: {
       position: 'absolute',
