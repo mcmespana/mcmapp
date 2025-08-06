@@ -88,9 +88,13 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
             }
           />
         ))}
-        <Text style={styles.introEmoji}>{actividad.emoji}</Text>
-        <Text style={styles.introTitle}>{actividad.nombre.toUpperCase()}</Text>
-        <Text style={styles.introDate}>
+        <Text style={styles.introEmoji} selectable>
+          {actividad.emoji}
+        </Text>
+        <Text style={styles.introTitle} selectable>
+          {actividad.nombre.toUpperCase()}
+        </Text>
+        <Text style={styles.introDate} selectable>
           {new Date(fecha)
             .toLocaleDateString('es-ES', {
               weekday: 'long',
@@ -100,7 +104,9 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
             .replace(',', '')
             .toUpperCase()}
         </Text>
-        <Text style={styles.introHint}>Desliza para ver el material</Text>
+        <Text style={styles.introHint} selectable>
+          Desliza para ver el material
+        </Text>
       </View>
     );
   };
@@ -122,9 +128,13 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
           <View
             style={[styles.pageHeader, { backgroundColor: actividad.color }]}
           >
-            <Text style={styles.pageTitle}>{item.titulo}</Text>
+            <Text style={styles.pageTitle} selectable>
+              {item.titulo}
+            </Text>
             {item.subtitulo && (
-              <Text style={styles.pageSubtitle}>{item.subtitulo}</Text>
+              <Text style={styles.pageSubtitle} selectable>
+                {item.subtitulo}
+              </Text>
             )}
           </View>
           <div
@@ -145,9 +155,13 @@ export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
     return (
       <View style={[styles.page, { width }]}>
         <View style={[styles.pageHeader, { backgroundColor: actividad.color }]}>
-          <Text style={styles.pageTitle}>{item.titulo}</Text>
+          <Text style={styles.pageTitle} selectable>
+            {item.titulo}
+          </Text>
           {item.subtitulo && (
-            <Text style={styles.pageSubtitle}>{item.subtitulo}</Text>
+            <Text style={styles.pageSubtitle} selectable>
+              {item.subtitulo}
+            </Text>
           )}
         </View>
         <ScrollView

@@ -40,7 +40,7 @@ export default function MaterialesScreen() {
     'jubileo/materiales',
     'jubileo_materiales',
   );
-  
+
   // Get initial day index from navigation params, default to 0
   const initialDayIndex = route.params?.initialDayIndex ?? 0;
   const [index, setIndex] = useState(initialDayIndex);
@@ -79,8 +79,12 @@ export default function MaterialesScreen() {
               })
             }
           >
-            <Text style={styles.emoji}>{act.emoji}</Text>
-            <Text style={styles.cardText}>{act.nombre.toUpperCase()}</Text>
+            <Text style={styles.emoji} selectable>
+              {act.emoji}
+            </Text>
+            <Text style={styles.cardText} selectable>
+              {act.nombre.toUpperCase()}
+            </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>

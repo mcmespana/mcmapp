@@ -28,6 +28,7 @@ interface SongControlsProps {
   onSetFontFamily: (fontFamily: string) => void;
   onToggleNotation: () => void;
   onNavigateToFullscreen: () => void;
+  onCopyLyrics: () => void;
   // Añadir props para el reporte de fallitos
   songTitle?: string;
   songFilename?: string;
@@ -46,6 +47,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   onSetFontFamily,
   onToggleNotation,
   onNavigateToFullscreen,
+  onCopyLyrics,
   songTitle,
   songFilename,
 }) => {
@@ -54,6 +56,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showReportBugsModal, setShowReportBugsModal] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showCopyToast, setShowCopyToast] = useState(false);
 
   const handleOpenTransposePanel = () => setShowTransposePanel(true);
   const handleOpenFontPanel = () => setShowFontPanel(true);
@@ -151,6 +154,15 @@ const SongControls: React.FC<SongControlsProps> = ({
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.fabAction}
+              onPress={() => {
+                onCopyLyrics();
+                setShowCopyToast(true);
+              }}
+            >
+              <Text style={styles.fabActionText}>Copiar letra</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.fabAction}
               onPress={() => setShowReportBugsModal(true)}
             >
               <Text style={styles.fabActionText}>¿Fallitos? 🐛</Text>
@@ -204,6 +216,23 @@ const SongControls: React.FC<SongControlsProps> = ({
         songFilename={songFilename}
         onSuccess={handleReportSuccess}
       />
+
+      <Snackbar
+        visible={showCopyToast}
+        onDismiss={() => setShowCopyToast(false)}
+        duration={2000}
+        style={{
+          backgroundColor: colors.info,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+        }}
+      >
+        <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+          Letra copiada al portapapeles
+        </Text>
+      </Snackbar>
 
       {/* Toast de éxito */}
       <Snackbar
