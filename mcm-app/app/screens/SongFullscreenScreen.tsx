@@ -41,6 +41,7 @@ export default function SongFullscreenScreen({
     key,
     capo,
     notation,
+    isFullscreen: true,
   });
 
   const webViewRef = useRef<WebView>(null);

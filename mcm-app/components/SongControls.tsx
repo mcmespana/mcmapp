@@ -148,18 +148,18 @@ const SongControls: React.FC<SongControlsProps> = ({
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.fabAction}
-              onPress={onNavigateToFullscreen}
-            >
-              <Text style={styles.fabActionText}>Pantalla completa</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.fabAction}
               onPress={() => {
                 onCopyLyrics();
                 setShowCopyToast(true);
               }}
             >
               <Text style={styles.fabActionText}>Copiar letra</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.fabAction}
+              onPress={onNavigateToFullscreen}
+            >
+              <Text style={styles.fabActionText}>Pantalla completa</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.fabAction}

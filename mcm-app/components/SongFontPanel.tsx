@@ -5,6 +5,7 @@ import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DEFAULT_FONT_SIZE_EM } from '@/contexts/SettingsContext';
+import { getNativeFontFamily } from '@/utils/fontUtils';
 
 interface FontOption {
   name: string;
@@ -75,8 +76,15 @@ export default function SongFontPanel({
               {
                 backgroundColor:
                   font.cssValue === currentFontFamily
-                    ? theme.tint
-                    : theme.background,
+                    ? '#e3f2fd'
+                    : '#f8f9fa',
+                borderWidth: 1,
+                borderColor: font.cssValue === currentFontFamily ? '#90caf9' : '#dee2e6',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+                elevation: font.cssValue === currentFontFamily ? 2 : 1,
               },
             ]}
             onPress={() => onSetFontFamily(font.cssValue)}
@@ -85,9 +93,10 @@ export default function SongFontPanel({
               style={[
                 styles.fontText,
                 {
-                  fontFamily: font.cssValue,
+                  ...(getNativeFontFamily(font.cssValue) && { fontFamily: getNativeFontFamily(font.cssValue) }),
                   color:
-                    font.cssValue === currentFontFamily ? '#fff' : theme.text,
+                    font.cssValue === currentFontFamily ? '#1565c0' : '#495057',
+                  fontWeight: font.cssValue === currentFontFamily ? '600' : 'normal',
                 },
               ]}
             >
@@ -96,8 +105,23 @@ export default function SongFontPanel({
           </TouchableOpacity>
         ))}
       </View>
-      <TouchableOpacity style={styles.resetButton} onPress={reset}>
-        <Text style={[styles.resetText, { color: theme.tint }]}>
+      <TouchableOpacity 
+        style={[styles.resetButton, { 
+          backgroundColor: '#e9ecef', 
+          borderWidth: 1,
+          borderColor: '#ced4da',
+          paddingVertical: 10, 
+          paddingHorizontal: 20, 
+          borderRadius: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          elevation: 2
+        }]} 
+        onPress={reset}
+      >
+        <Text style={[styles.resetText, { color: '#495057', fontWeight: '600' }]}>
           Restablecer
         </Text>
       </TouchableOpacity>
@@ -120,10 +144,10 @@ const styles = StyleSheet.create({
   value: { fontWeight: 'bold', fontSize: 16 },
   fontList: {},
   fontButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginBottom: 12,
   },
   fontText: {
     fontSize: 16,
