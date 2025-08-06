@@ -16,6 +16,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Colors } from '@/constants/colors';
@@ -275,8 +276,8 @@ export default function WordleScreen() {
   ]);
 
   return (
-    <View style={styles.container}>
-      <View style={{ flex: 1, justifyContent: 'center' }}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={styles.contentContainer}>
         <View style={styles.gameArea}>
           {guesses.map((g, idx) => (
             <View key={idx} style={styles.row}>
@@ -348,15 +349,68 @@ export default function WordleScreen() {
       </View>
 
       {Platform.OS === 'web' ? (
-        <View style={{ marginTop: 8, alignItems: 'center' }}>
+        <View style={styles.footerContainer}>
           <Text style={[styles.footerText, { fontSize: 12 }]}>
             Wordle Jubileo {emoji}
           </Text>
         </View>
       ) : (
-        <Text style={styles.footerText}>
-          Súper Wordle Jubilar Consolación Chulo {emoji}
-        </Text>
+        <View style={styles.footerContainer}>
+          <Text style={styles.footerText}>
+            Súper Wordle Jubilar Consolación Chulo {emoji}
+          </Text>
+        </View>
+      )}
+
+      {/* Mensajes y overlays */}
+      {status === 'won' && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          {/* Confeti cayendo desde la parte superior de la pantalla */}
+          <ConfettiCannon
+            count={60}
+            origin={{ x: -10, y: -50 }}
+            fallSpeed={2500}
+            fadeOut={true}
+            autoStart={true}
+          />
+          <ConfettiCannon
+            count={60}
+            origin={{ x: 10, y: -50 }}
+            fallSpeed={2500}
+            fadeOut={true}
+            autoStart={true}
+          />
+
+          <Animated.View
+            style={[
+              styles.shareBtn,
+              {
+                transform: [{ scale: buttonAnimation }],
+              },
+            ]}
+          >
+            <TouchableOpacity
+              onPress={shareCustomResult}
+              style={{ width: '100%', alignItems: 'center' }}
+            >
+              <Text style={styles.shareBtnText}>
+                🎉 ¡Compartir mi victoria! 🎊
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      )}
+
+      {isGameLocked && status !== 'won' && status !== 'lost' && (
+        <View style={styles.lockedGameMessage}>
+          <Text style={styles.lockedGameText}>
+            🎯 ¡Ya completaste el Wordle de este turno!
+          </Text>
+          <Text style={styles.lockedGameSubtext}>
+            Vuelve a las {cycle === 'morning' ? '19:00' : '07:00'} para una
+            nueva palabra
+          </Text>
+        </View>
       )}
 
       <BottomSheet visible={showInfo} onClose={() => setShowInfo(false)}>
@@ -547,7 +601,7 @@ export default function WordleScreen() {
           </Text>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -555,11 +609,12 @@ const createStyles = (theme: typeof Colors.light) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      paddingHorizontal: spacing.sm,
-      paddingTop: spacing.xs,
-      paddingBottom: spacing.xs,
       backgroundColor: theme.background,
-      justifyContent: 'space-between',
+      paddingHorizontal: spacing.sm,
+    },
+    contentContainer: {
+      flex: 1,
+      justifyContent: 'center',
       alignItems: 'center',
       maxWidth: Platform.OS === 'web' ? 500 : '100%',
       alignSelf: 'center',
@@ -569,7 +624,7 @@ const createStyles = (theme: typeof Colors.light) =>
       flex: 0,
       justifyContent: 'center',
       paddingVertical: 10,
-      marginBottom: 10,
+      marginBottom: 20,
       width: '100%',
       alignItems: 'center',
     },
@@ -598,8 +653,8 @@ const createStyles = (theme: typeof Colors.light) =>
       color: theme.text,
     },
     keyboard: {
-      marginTop: 8,
-      paddingBottom: 10,
+      marginTop: 'auto',
+      paddingBottom: spacing.sm,
       width: '100%',
       alignItems: 'center',
     },
@@ -667,9 +722,12 @@ const createStyles = (theme: typeof Colors.light) =>
       textTransform: 'uppercase',
       letterSpacing: 1,
     },
+    footerContainer: {
+      alignItems: 'center',
+      paddingTop: spacing.xs,
+    },
     footerText: {
       textAlign: 'center',
-      marginTop: 8,
       fontWeight: 'bold',
       color: theme.text,
       fontSize: 14,
