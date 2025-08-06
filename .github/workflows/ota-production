@@ -1,0 +1,24 @@
+# .github/workflows/ota-production.yml
+name: OTA Production
+
+on:
+  push:
+    branches: [ production ]
+
+jobs:
+  publish-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Instala EAS CLI
+        run: npm install -g eas-cli
+      - name: Login en Expo
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas login --token $EXPO_TOKEN
+      - name: Publicar OTA en production
+        run: |
+          eas update \
+            --branch production \
+            --message "🚀 OTA Production: $GITHUB_SHA" \
+            --non-interactive
