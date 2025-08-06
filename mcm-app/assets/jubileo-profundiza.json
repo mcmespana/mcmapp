@@ -1,29 +1,30 @@
 {
   "titulo": "Para ir a más",
-  "introduccion": "Vuelve pronto",
+  "introduccion": "En la tradición católica, el Jubileo es un [b]año santo[/b], un tiempo especial de gracia, perdón y renovación espiritual que se remonta a la ley mosaica (cf. Levítico 25). Cada [b]25 años[/b], el Papa convoca un Año Jubilar, en el que los fieles son invitados a peregrinar, reconciliarse, practicar la caridad y renovar su fe. Es una ocasión para redescubrir la misericordia de Dios, la centralidad de Cristo y la belleza de la vida cristiana. Como dijo San Juan Pablo II:[br][quote]El Jubileo es una fuerte llamada a la conversión. Nos invita a abandonar la senda del pecado para recorrer el camino del Evangelio[/quote]",
   "paginas": [
     {
-      "titulo": "Coso 1",
-      "texto": "Muy pronto...",
-      "color": "#E10600"
+      "titulo": "La raíz Bíblica",
+      "texto": "El Jubileo tiene su origen en la ley de Moisés. Cada 50 años, el pueblo de Israel celebraba un año santo en el que se proclamaba la libertad, se restituían las tierras y se perdonaban las deudas (cf. Levítico 25, 8-13). Este tiempo simbolizaba la justicia, la restauración y la misericordia divina.[br]Jesús retoma esta tradición y le da un cumplimiento pleno:[br][quote]“El Espíritu del Señor está sobre mí, porque me ha ungido para anunciar la Buena Nueva a los pobres… para proclamar un año de gracia del Señor” (Lucas 4,18-19)[/quote][br]Con Jesús, el Jubileo deja de ser solo una práctica social y se convierte en una realidad salvífica: el perdón de los pecados, la libertad de los oprimidos y la restitución de la dignidad perdida.[br][quote]“La misericordia es el rostro de Dios revelado en Jesucristo” – Papa Francisco, Misericordiae Vultus, 1.[/quote]",
+      "color": "#E10600",
+      "subtitulo": "Un año de gracia"
     },
     {
-      "titulo": "Coso 2",
-      "texto": "En sus pantallas...",
+      "titulo": "El Perdón y la Indulgencia",
+      "texto": "Uno de los elementos más característicos del Jubileo es la posibilidad de obtener indulgencias plenarias, que borran la pena temporal por los pecados ya perdonados. Esta práctica, a menudo mal entendida, refleja la abundancia de la misericordia divina que actúa a través de la Iglesia.[br][quote]La indulgencia es la expresión del amor del Padre que perdona a sus hijos y les brinda un camino de purificación – Catecismo de la Iglesia Católica, n. 1478-1479.[/quote][br]San Agustín decía que “Dios no mandaría algo imposible, sino que al mandarlo te invita a hacer lo que puedas y a pedir lo que no puedas”. En el Jubileo, la gracia nos asiste para vivir ese deseo de santidad que, por nosotros solos, no alcanzaríamos.[br]Para obtener la indulgencia, se requiere: La Confesión, la Comunión, Rezar por las intenciones del Papa y el desapego del pecado[br]Este camino no es mecánico, sino profundamente espiritual y eclesial: nos reconcilia con Dios, con la Iglesia y con nosotros mismos.",
       "color": "#009639",
-      "subtitulo": "Subtema 2"
+      "subtitulo": "Liberados por el amor"
     },
     {
       "titulo": "Coso 3",
-      "texto": "Las cositas...",
+      "texto": "Durante el Jubileo [b]se nos invita a peregrinar[/b] a templos jubilares, especialmente a las basílicas mayores de Roma o a las catedrales designadas. Cruzar la Puerta Santa simboliza el paso del pecado a la gracia, del viejo al nuevo hombre.[br][quote]“La vida cristiana es un camino, una peregrinación hacia el Padre” – San Buenaventura.[/quote][br]Pero la verdadera peregrinación comienza en el corazón: dejar nuestras seguridades, renunciar al pecado, y avanzar con humildad hacia Jesús. San Bernardo de Claraval lo expresó así:[br][quote]“Busca la puerta por la cual puedas entrar a Cristo. Esa puerta es la humildad”.[/quote][br]En cada paso físico se esconde una transformación interior. El Jubileo nos recuerda que no estamos estancados: somos un pueblo en marcha, sostenido por la gracia.",
       "color": "#F47C20",
-      "subtitulo": "Subtema 2"
+      "subtitulo": "Caminar hacia la puerta de misericordia"
     },
     {
-      "titulo": "Coso 4",
-      "texto": "Para ir a más...",
+      "titulo": "Restaurar lo que ha sido herido",
+      "texto": "El Jubileo no es solo un evento espiritual, sino también una llamada a la acción concreta. En la Biblia, el año jubilar implicaba devolver lo que se había tomado injustamente, liberar a los esclavos y cuidar de los pobres. Hoy, se nos invita a vivir esa misma lógica del Reino: perdonar deudas morales, tender puentes, sanar heridas sociales.[br][b]La caridad y la justicia son dos formas de mostrar del amor cristiano.[/b] Quien ha experimentado el perdón de Dios no puede permanecer indiferente ante el dolor ajeno. Como enseña San Gregorio Magno:[br][quote]“El que da al pobre lo que tiene, ofrece a Dios lo que de Dios recibió”.[/quote][br]En este Jubileo, preguntémonos: [br][list][*]¿A quién necesito perdonar?[*]¿Qué puedo restituir o reparar?[*]¿Dónde puedo servir concretamente al que sufre?[/list]",
       "color": "#005EB8",
-      "subtitulo": "Subtema 2"
+      "subtitulo": "Caridad y Justicia"
     }
   ]
 }

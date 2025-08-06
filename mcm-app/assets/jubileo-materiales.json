@@ -36,7 +36,7 @@
           },
           {
             "titulo": "El Señor es mi Pastor",
-            "texto:": "[b]EL SEÑOR ES MI PASTOR NADA ME FALTA EL SEÑOR ES MI PASTOR. (bis)[/b][br][br] 1. En praderas reposa mi alma, en su agua descansa mi sed. Él me guía por senderos justos por amor, por amor de su nombre.[br] 2. Aunque pase por valles oscuros ningún mal, ningún mal temeré porque sé que el Señor va conmigo su cayado sostiene mi fe. [br]3. Tú preparas por mi una mesa frente a aquellos que buscan mi mal. Con aceite me ungiste, Señor y mi copa rebosa de ti. [br] 4. Gloria a Dios, padre omnipotente y a su hijo Jesús, el Señor, y al Espíritu que habita en el mundo por los siglos eternos. Amén."
+            "texto": "[b]EL SEÑOR ES MI PASTOR NADA ME FALTA EL SEÑOR ES MI PASTOR. (bis)[/b][br][br] 1. En praderas reposa mi alma, en su agua descansa mi sed. Él me guía por senderos justos por amor, por amor de su nombre.[br] 2. Aunque pase por valles oscuros ningún mal, ningún mal temeré porque sé que el Señor va conmigo su cayado sostiene mi fe. [br]3. Tú preparas por mi una mesa frente a aquellos que buscan mi mal. Con aceite me ungiste, Señor y mi copa rebosa de ti. [br] 4. Gloria a Dios, padre omnipotente y a su hijo Jesús, el Señor, y al Espíritu que habita en el mundo por los siglos eternos. Amén."
           },
           {
             "titulo" : "Aleluya Cantará",
@@ -110,12 +110,28 @@
         "color": "#4FC3F7",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "¡Buenos días!",
+            "texto": "👣 Ponerse en camino es algo muy típico de quien está buscando algo más en la vida, de quienes no se conforman y quieren descubrir su propósito. Caminar, hacer una peregrinación, sobre todo a pie (recuerda que vamos a patera toda Roma), ayuda mucho a volver a lo esencial: el silencio, el esfuerzo, el encuentro con uno mismo y con Dios. [br] 👥 Miles de jóvenes se han lanzado a esta aventura como peregrinos de esperanza, recorriendo caminos antiguos y nuevos para vivir intensamente el Jubileo. En Roma, además de los recorridos clásicos, habrá rutas de fe nuevas que invitan a vivir el Jubileo desde otras perspectivas. [br] 🚍 Viajar de un país a otro, cruzar ciudades, contemplar la belleza de la creación, del arte, de la historia… todo esto ayuda a abrir el corazón y a descubrir otras culturas, otras formas de vivir la fe, y así aprender a valorar más lo que tenemos y agradecer a Dios por tantas maravillas. [br][b]¿Está preparado para peregrinar?[/b]"
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Escucha 🎧",
+            "texto": "[btn-primary=https://www.youtube.com/watch?v=2-0wBkLPDA0]Alza la Vista - YouTube[/btn-primary][br][br][br][btn-secondary=https://open.spotify.com/intl-es/track/7eZWK3YLrQWQweC2jaaAS1?si=2e3b65b806934a00]Alza la Vista - Spotify[/btn-secondary]"
+          },
+          {
+            "titulo": "Lee 📖",
+            "texto": "[gquote]«Justificados, entonces, por la fe, estamos en paz con Dios, por medio de nuestro Señor Jesucristo. Por él hemos alcanzado, mediante la fe, la gracia en la que estamos afianzados, y por él nos gloriamos en la esperanza de la gloria de Dios. [...] Y la esperanza no quedará defraudada, porque el amor de Dios ha sido derramado en nuestros corazones por el Espíritu Santo, que nos ha sido dado»[/gquote][br][i](Rm 5,1-2.5)[/i]"
+          },
+          {
+            "titulo": "Un poco más... 🤔",
+            "texto": "[quote]La esperanza que no decepciona (Romanos 5,5) [/quote][br] Esta frase de san Pablo no es solo una frase bonita: es una bomba de ánimo que él lanzó a los cristianos de Roma en medio de sus luchas. Es actual para el medio millón de jóvenes que se convertirán en peregrinos de esperanza viajando a Roma. Lo importante de esta peregrinación es que es una oportunidad real y personal de encuentro con Jesús, que es como una puerta abierta a algo nuevo (cf. Jn 10,7.9). [br] Él es el que la Iglesia anuncia sin cansarse: Jesús es nuestra esperanza (1 Tim 1,1). No es un eslogan, es alguien real, que camina con nosotros y no se baja del barco aunque las cosas se pongan difíciles. [br]Y sí, todos esperamos algo. Cada persona, incluso la más escéptica, lleva dentro el deseo de algo mejor: amor, sentido, paz, futuro. A veces, eso sí, nos gana la incertidumbre. El futuro puede asustar: hay guerras, injusticias, ansiedad, problemas que parecen no acabar nunca. Muchos sienten que no hay salida, que todo está perdido. Y sin embargo… la esperanza no es ingenuidad, ni optimismo vacío. Es confiar en que Dios no se ha olvidado de nosotros y que el bien tiene la última palabra. [br]Este Jubileo quiere ser un chispazo de esperanza en medio del caos, una oportunidad para mirar hacia adelante con ojos nuevos. Para eso necesitamos dejarnos inspirar y transformar por la Palabra de Dios, como lo hizo aquella comunidad cristiana en Roma. [br] Así que tú, joven, no apagues tu esperanza. No te conformes con sobrevivir. Deja que este Año Santo sea un tiempo para volver a conectar con Jesús, con la comunidad y con tu misión en el mundo. Porque sí, hay razones para creer, esperar y seguir soñando."
+          },
+          {
+            "titulo": "Piensa y escribe... ✏️",
+            "texto": "Detente un momento y pregúntate: [list][*]¿Cómo vengo? [*] ¿Qué me preocupa? [*] ¿A qué vengo a Roma? [*] ¿Qué espero de esta experiencia? [/list][br]Escríbelo en tu libreta y [b] comparte alguna pregunta con tu compañero de al lado [/b]"
+          },
+          {
+            "titulo": "Oración final",
+            "texto": "Padre que estás en el cielo,[br]la fe que nos has donado en[br]tu Hijo Jesucristo, nuestro hermano ✝️,[br]y la llama del amor 🔥[br]derramada en nuestros corazones por el Espíritu Santo 🕊️,[br]despierten en nosotros la feliz esperanza[br]en la venida de tu Reino 👑.[br][br]Tu gracia nos transforme[br]en jóvenes que cultiven de las semillas del Evangelio 🌱[br]que sean fermento en la humanidad y el cosmos 🌌,[br]en espera confiada[br]de los cielos nuevos y de la tierra nueva,[br]cuando las fuerzas del mal sean vencidas 💪,[br]y se manifieste para siempre tu gloria ✨.[br][br]La gracia del Jubileo[br]reavive en nosotros, Peregrinos de Esperanza 🚶‍♂️🚶‍♀️,[br]el anhelo de los regalos del cielo 🎁[br]y llene el mundo entero[br]la alegría y la paz 😊🕊️[br]de nuestro Redentor.[br]A ti, Dios bendito eternamente 🙌,[br]sea la alabanza y la gloria por los siglos.[br]Amén. 🙏"
           }
         ]
       },
@@ -125,12 +141,8 @@
         "color": "#303F9F",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
-          },
-          {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Descarga la App",
+            "texto": "Utiliza la app [b]Cicero: Genius Travel App[/b] (sección apps) para poder visitar...[br] [list][*]Plaza del Pópolo[*]San Carlos en el Corso[*]Plaza de España[*]St. Andrea della Frate[*]Fontana di Trevi[*]Victor Manuel II[*]Santa Maria en Arocoeli[*]Mercado de Trajano[*]Coliseo[/list]"
           }
         ]
       },
@@ -140,12 +152,20 @@
         "color": "#8BC34A",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "¿Qué y para qué?",
+            "texto": "Cada día intentaremos buscar un momento por grupos de referencia en el que recoger los días que pasan. [br]No tiene porque ser por la noche, sino que buscamos un hueco durante el día para ver lo que hemos vivido desde la última vez que nos juntmaos, eso es [b]recoger el día[/b][br][i]Tres pasos que podéis ir adaptando...[/i]"
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Paso 1 🟢",
+            "texto": "[b]Dialogamos en grupo:[/b] [br]¿Cómo estoy? [br]¿Qué cosas/actividades/momentos me han gustado más hasta ahora? [br]¿Qué es lo que más me está costando? "
+          },
+          {
+            "titulo": "Paso 2 ⭕",
+            "texto": "[b] Vamos escribiendo en nuestro cuaderno de ruta[/b] (Elegimos 2-3 para cada día):[br]💬 Un sentimiento / emoción predominante [br]💬 Palabra[br]💬 Deseo para continuar en el camino[br][br]Si en tu grupo buscas algo más avanzado puedes hablar de... [br]💬 Una luz / novedad[br]💬 Un titular [br]💬 Una persona[br]💬Una imagen[br][br][i]Seleccionamos solo 2 o 3 cada día[/i]"
+          },
+          {
+            "titulo": "Paso 3 🟨",
+            "texto": "[b] Escribimos en el cuaderno y podems compartir[/b] (Elegimos solo una cada día):[br]❓ ¿Por dónde intuyes que está pasando Dios en estos días? [br]❓ ¿Qué te puede estar queriendo decir? [br]❓ ¿Por qué te gustaría dar las gracias hoy? ¿Hay algo en lo que crees que podrías mejorar?  "
           }
         ]
       }
@@ -160,12 +180,72 @@
         "color": "#9C27B0",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "Paso por la Puerta Santa",
+            "texto": "[h1]La Puerta Santa: un abrazo divino[/h1][br][br]Estamos a punto de cruzar la [b]Puerta Santa[/b], es un gesto que va mucho más allá de simplemente pasar por una puerta física. Imagina por un momento que esta puerta es un [i]abrazo[/i]. Sí, un abrazo de Dios que te está esperando con los brazos abiertos. 🤗[br]Piensa en el [b]amor de Dios[/b]: un amor [i]inmenso, incondicional[/i], que no juzga y que siempre acoge. Al pasar por esta Puerta Santa, estás expresando el deseo de [u]dejarte abrazar[/u] por ese amor infinito.[br]Es un momento para recordar que, sin importar lo que hayas vivido, las dudas que tengas o los caminos que hayas tomado, el [b]amor de Dios[/b] es una [i]fuente inagotable[/i] que te recibe siempre de vuelta. 💧[br][br]Pero hay más. Esta puerta también es un símbolo de entrada en la [b]comunidad de la Iglesia[/b]. La Iglesia no es solo un edificio o una institución; [i]somos nosotros[/i], cada uno de nosotros.[br]Al cruzar esta puerta, estás reafirmando tu [b]pertenencia a esta gran familia de fe[/b].[br]Es un recordatorio de que [u]no estás solo[/u] en tu camino espiritual. En la Iglesia encontrarás [i]apoyo, compañía[/i] y la oportunidad de crecer juntos en la fe, compartiendo alegrías y desafíos. 🤝[br][br]Así que, mientras te acercas a la Puerta Santa, tómate un instante, párate al pasar por ella un instante.[br]Déjate [b]abrazar por el amor de Dios[/b] que la puerta simboliza y deja que Él te meta en su corazón y en el corazón de la Iglesia.[br]Siente esa invitación al [i]amor de Dios[/i] y la [i]bienvenida a la comunidad[/i].[br][b]Es un paso de fe[/b], un [u]compromiso personal[/u] y un recordatorio visible de que el abrazo de Dios y el apoyo de la Iglesia están siempre disponibles para ti.[br][br]¡Que este paso por la Puerta Santa sea un momento de [b]profunda conexión[/b] y [i]renovación[/i] para cada uno! ✨"
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Preparándonos",
+            "texto": "[h1]¿Qué me gustaría que Dios abrazara de mí o de mi vida?[/h1][h1] ¿Qué personas me gustaría que Dios abrazara? [/h1]"
+          },
+          {
+            "titulo": "La peregrinación: más que un viaje",
+            "texto": "La peregrinación es una de las prácticas más antiguas y significativas de la fe, y en un Jubileo adquiere una dimensión aún más poderosa. [br]Porque más que un viaje, la peregrinación es una [i]metáfora de la vida[/i]."
+          },
+          {
+            "titulo": "Salir de uno mismo y de la rutina",
+            "texto": "[b]Salir de uno mismo y de la rutina[/b]: En esta etapa de vuestras vidas, muchos estáis inmersos en estudios, trabajo, nuevas experiencias, en la construcción de vuestra identidad. [br]La peregrinación os invita a [u]salir[/u]: salir de la comodidad, de las rutinas, de los espacios conocidos. [br]Es un acto físico que refleja una disposición interior: la de dejar atrás lo que pesa, lo que distrae, para enfocarse en lo esencial. [br]Para quienes estáis definiendo vuestro camino, esta 'salida' puede ser una poderosa oportunidad para [i]discernir[/i], para escuchar esa [i]voz interior[/i] que tantas veces se pierde en el ruido del día a día."
+          },
+          {
+            "titulo": "El destino y el camino",
+            "texto": "[b]El destino y el camino[/b]: Toda peregrinación tiene un destino: una Puerta Santa, un Santuario, un lugar de gracia. [br]Ese destino no es solo un punto geográfico, sino un [i]símbolo de Cristo mismo[/i], la meta de nuestra fe. [br]Pero no es solo llegar lo que importa, sino [i]el camino[/i]. La peregrinación es un proceso. Hay cansancio, pueden surgir dudas, pero también hay compañerismo, apoyo mutuo, momentos de profunda belleza y revelación. [br]Pensadlo bien: ¿no es la vida misma una peregrinación? Con sus altibajos, sus desafíos, sus encuentros inesperados y sus momentos de pura alegría. [br]En el Jubileo, este camino físico se convierte en una [i]metáfora de vuestro propio camino de fe y de vida[/i]. ✨"
+          },
+          {
+            "titulo": "Encuentro y misericordia",
+            "texto": "[b]Encuentro con Dios y con los demás[/b]: Al peregrinar, uno se abre al [i]encuentro[/i]. Encontramos a Dios de manera nueva, en la oración silenciosa mientras caminamos, en la belleza de la creación, en la fragilidad de nuestros pasos. [br]Y también nos encontramos con otros peregrinos: jóvenes y mayores, de distintos lugares, todos unidos por la misma búsqueda. [br]En un mundo que muchas veces divide, la peregrinación nos recuerda que somos parte de algo mucho más grande: una [u]comunidad de fe[/u] que camina unida. [br]Para quienes estáis construyendo redes y buscando vuestro lugar en el mundo, esta experiencia puede ser una forma única de [i]conexión humana y espiritual[/i]. 🤝"
+          },
+          {
+            "titulo": "La indulgencia plenaria",
+            "texto": "[b]La Indulgencia Plenaria: un regalo de misericordia[/b]: No podemos olvidar que uno de los frutos del Jubileo es la posibilidad de recibir la Indulgencia Plenaria. [br]Esto no es magia, sino un don de la [i]misericordia de Dios[/i], que perdona incluso las consecuencias de nuestros pecados. [br]Es un recordatorio de que, a pesar de nuestras caídas, la [b]gracia de Dios[/b] siempre está ahí para levantarnos y renovarnos. [br]Y para vosotros, que estáis en momentos de decisión y construcción de futuro, recibir esta gracia puede ser un [i]impulso enorme[/i] para vivir con más [u]libertad[/u] y [u]propósito[/u]. 🙏"
+          },
+          {
+            "titulo": "Inicio de la celebración",
+            "texto": "[color=primary]En la Iglesia, el guía inicia diciendo:[/color][br]En el nombre del Padre, del Hijo y del Espíritu Santo.[br][color=primary]Todos responden:[/color][br]Amén.[br][color=primary]Guía:[/color][br]El Dios de la esperanza,[br]que, en el Verbo hecho carne,[br]nos llena de todo gozo y paz en nuestra fe,[br]por la potencia del Espíritu Santo,[br]esté en medio de nosotros.[br][color=primary]Todos responden:[/color][br]Bendito sea el Señor, nuestra esperanza."
+          },
+          {
+            "titulo": "Cantamos 🎶",
+            "texto": "[i]Habla, Señor que tu siervo escucha, habla Señor que tu siervo escucha[br]Muéstrame tu voluntad a través de la palabra, quiero conocerte más para amarte y seguirte.[/i]"
+          },
+          {
+            "titulo": "Carta a los Romanos 5, 1-5",
+            "texto": "[gquote]Justificados, entonces, por la fe, estamos en paz con Dios, por medio de nuestro Señor Jesucristo. Por él hemos alcanzado, mediante la fe, la gracia en la que estamos afianzados, y por él nos gloriamos en la esperanza de la gloria de Dios. Más aún, nos gloriamos hasta de las mismas tribulaciones, porque sabemos que la tribulación produce la constancia; la constancia, la virtud probada; la virtud probada, la esperanza. Y la esperanza no quedará defraudada, porque el amor de Dios ha sido derramado en nuestros corazones por el Espíritu Santo, que nos ha sido dado.[/gquote][br](Después de la lectura se hace un breve silencio.)"
+          },
+          {
+            "titulo": "Nos ponemos en camino",
+            "texto": "[color=primary]Guía:[/color][br]Nos ponemos en camino en el nombre de Cristo:[br]camino que lleva al Padre,[br]verdad que nos hace libres,[br]vida que renueva el mundo."
+          },
+          {
+            "titulo": "Cantos para el camino",
+            "texto": "[b]Cantos sugeridos:[/b][br]- Somos Consolación[br]- Gustad y ved[br]- Salmo 145 Alma mía[br][br][b]Otros cantos:[/b][br]- Himno del COM[br]- Consolad (Nati)[br]- El mapa de mi destino[br]- Eres Tú[br]- María Rosa es"
+          },
+          {
+            "titulo": "Camino hacia la Puerta Santa",
+            "texto": "Vamos cantando hasta el control de seguridad. [br]Cuando todos hemos pasado el control, nos reagrupamos y volvemos a tener un momento juntos para convocarnos y situarnos de nuevo."
+          },
+          {
+            "titulo": "Paso de la Puerta Santa y visita",
+            "texto": "[b]Tercer momento:[/b][br]Paso de la Puerta Santa y visita a la Iglesia de Santa María La Mayor y a la tumba del Papa Francisco."
+          },
+          {
+            "titulo": "Oraciones por las intenciones del Papa",
+            "texto": "Después de ingresar a la Basílica, se rezan las siguientes oraciones por las intenciones del Santo Padre:[br]- Padre Nuestro[br]- 3 Avemarías[br]- Gloria"
+          },
+          {
+            "titulo": "Profesión de fe",
+            "texto": "Tras llegar a la Tumba del Papa Francisco, se hace la Profesión de Fe:[br]- [b]Credo[/b]"
+          },
+          {
+            "titulo": "Despedida",
+            "texto": "[color=primary]Guía:[/color][br]Bendigamos al Señor.[br][color=primary]Todos responden:[/color][br]Demos gracias a Dios."
           }
         ]
       },
@@ -175,29 +255,77 @@
         "color": "#FBC02D",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "Ruta 1",
+            "texto": "[h1]Santa María la mayor a Casa Generalicia[/h1]"
           },
-          {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
-          }
+        {
+          "titulo": "Parte 1",
+          "texto": "[h1]1. Inicio en Santa Maria Maggiore[/h1] Visita la basílica: mosaicos del milagro de la nieve, el campanile más alto de Roma, el relicario del pesebre y la tumba de Bernini. [br] En la plaza puedes admirar la Colonna della Pace y una pequeña fuente barroca. [br] [h1]2. Basílica de Santa Prassede[/h1] A solo 2 min a pie (72 m). Tesoro bizantino con [b]mosaicos espectaculares[/b] y [i]restos de la flagelación de Cristo[/i]. [br] [h1]3. Coliseo y Parque Colle Oppio[/h1] Avanza por Via Merulana (trazada por los papas Gregorio XIII y Sixto V), pasando junto a iglesias menores y el ninfeo de Mecenas. [br] En Colle Oppio, disfruta de una [i]vista privilegiada del Coliseo[/i] y haz una pausa en sus jardines. 🌿"
+        },
+        {
+          "titulo": "Parte 2",
+          "texto": "[h1]4. Foros Imperiales y Piazza Venezia[/h1] Continúa por la Via dei Fori Imperiali tras disfrutar del Coliseo. Un paseo impresionante entre [b]ruinas históricas[/b] y memorias del Imperio. [br] [h1]5. Piazza del Campidoglio[/h1] Sube una breve cuesta hasta esta plaza [i]renacentista diseñada por Miguel Ángel[/i], con vistas elevadas al Foro Romano. 🏛️ [br] [h1]6. Piazza Venezia y Via del Corso[/h1] Baja hacia el [b]corazón del centro histórico[/b]: la mole del Vittoriano te da la bienvenida junto a tiendas, cafés y palacios barrocos. ☕🛍️ [br] [h1]7. Fontana di Trevi[/h1] Pasea por callejuelas típicas (Via del Corso o Atlante) hasta llegar a la [i]icónica fuente[/i]. Lanza tu moneda, pide un deseo y déjate llevar por el bullicio. 💧✨"
+        },
+        {
+          "titulo": "Parte 3",
+          "texto": "[h1]8. Piazza di Spagna y Escalinata[/h1] (Opcional según tiempo disponible) Cruza plazas llenas de vida, sube los escalones de la Escalinata de la Plaza de España y disfruta del [i]ambiente cosmopolita[/i]. [br] [h1]9. Castillo de Sant’Angelo[/h1] Ya en camino hacia la Casa Generalicia, cruza por el Ponte Umberto I o Sant’Angelo para pasar junto al castillo y bordear el río. [br] Una última postal majestuosa del centro histórico antes de salir de él. 🏰🌉 [br] [h1]10. Camino a la Casa Generalicia[/h1] La Casa Generalicia de las Hermanas de la Consolación se encuentra en La Giustiniana, al noroeste de Roma, a unos 15 km del centro. [br] [i]El destino final del peregrino consolacionista, donde termina el camino y comienza la acogida. 🤍[/i]"
+        }
         ]
       },
       {
-        "nombre": "Visitas en Roma 2",
-        "emoji": "🏛️",
-        "color": "#FBC02D",
+        "nombre": "Casa Generalicia",
+        "emoji": "🏠",
+        "color":"#FF8A65",
         "paginas": [
-          {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
-          },
-          {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
-          }
-        ]
+            {
+              "titulo": "Jubileo Consolación 🏠",
+              "texto": "[h1]Bienvenidos a la Casa Generalicia [/h1][i]Consolad, consolad… [/i][br]El espíritu sigue suscitando a través del tiempo nuevos profetas de un Dios que llene el corazón de amor y de luz a una vida nueva [br]Es llamada a adentrarnos en el misterio, a renovar nuestro ser consolación a descubrir nuevos horizontes en nuestro servicio a Dios y a los hombres[br][b]ES UN HOY ES UN MAÑANA, ESPERANZA Y CERTEZA, ES UN DON UN COMPROMISO UN RETO UNA PROMESA (CONSOLAD) NUESTRO SER CONSOLACION[/b] [br] Amaremos nuestro carisma, dando LA vida, sin limitación Viviendo dentro de LA iglesia, renovando cada día nuestra consagración [br]Es un proyecto a vivir, es apertura, es contemplación, es hacer sentir al mundo, LA fuerza de un Dios que es consolación"
+            },
+            {
+              "titulo": "Escuchamos 👂",
+              "texto": "Nos situamos en ese momento, 14 de noviembre de 1858, Mª Rosa Molas y las primeras hermanas reciben una carta del Vicario Capitular donde dice: [br] [gquote]Atendiendo a que las obras en que de ordinario se ejercitan las Hermanas de su Instituto se dirigen todas a consolar a sus prójimos, ya cuando se hallan postrados en el lecho del dolor en los Hospitales, ya también en los tiernos niños huérfanos, que se cobijan bajo su protección y amparo; he creído conveniente imponer por nombre a esa Comunidad, a las demás que de ella tomaren origen, Congregación de Hermanas de la Consolación.[/gquote]"
+            },
+            {
+              "titulo": "Cantamos 🎶",
+              "texto": "[b]María Rosa es, la mujer que vivió el desafío del amor para entregar a cristo el Consolador[/b][br][i]Paseando por calles y plazas el mensaje del amor y buscando nuevas sendas donde el hombre necesite Consolación[/i]"
+            },
+            {
+              "titulo": "Para esuchar la palabra 🎶",
+              "texto": "[b]Habla Señor, que tu siervo escucha, Habla Señor que tu siervo escucha[/b][br][i]Muéstrame tu voluntad a través de la palabra, quiero conocerte más para amarte y seguirte[/i]"
+            },
+            {
+              "titulo": "De Isaías 40 libro 📖",
+              "texto": "[gquote]Consolad, consolad a mi pueblo, dice vuestro Dios: hablad al corazón de Jerusalén, gritadle que se ha cumplido su servicio y está pagado su crimen, pues de la mano del Señor ha recibido doble castigo por sus pecados. Una voz grita: En el desierto preparad un camino al Señor; allanad en la estepa una calzada para nuestro Dios; que los valles se levanten, que montes y colinas se abajen, que lo torcido se enderece y lo escabroso se nivele; y se revelará la gloria del Señor y la verán todos los hombres juntos –ha hablado la boca del Señor–. Dice una voz: Grita. Respondo: ¿Qué debo gritar? Toda carne es hierba y su belleza como flor campestre: se agosta la hierba, se marchita la flor, cuando el aliento del Señor sopla sobre ellos; se agosta la hierba, se marchita la flor, pero la Palabra de nuestro Dios se cumple siempre. Súbete a un monte elevado, mensajero de Sión; alza fuerte la voz, mensajero de Jerusalén; álzala, no temas, di a las ciudades de Judá: Aquí está vuestro Dios. [/gquote][br][i]Dejamos un momento de silencio... [/i]"
+            },
+            {
+              "titulo": "Querido joven de la Consolación... 💬",
+              "texto": "Si estás aquí, no es por casualidad. El mundo de hoy te necesita. Por eso, la Iglesia, que cree en vos, te convoca y te dice: Ayúdame a seguir construyendo la civilización de amor. Te necesito caminante, portador de esperanza, que dejes huellas de consolación a cada pisada ¿Te animas a decirle que SÍ? [br] El Jubileo que estamos viviendo nos interpela a enfrentarnos al camino de nuestra vida. No se trata de tener todo claro. Sino de testimonear nuestra experiencia de Dios, como peregrinos de corazones ardientes, peregrinos inconformistas, inquietos, sensibles. Jóvenes que no se permiten quedarse de brazos cruzados frente ante una realidad que los escandaliza. Esa en una misión que nace del consuelo recibido. Porque hemos sido consolados por amor, y quien ha experimentado el consuelo de Dios no puede permanecer quieto e indiferente ante el desconsuelo del mundo. [br] [quote]“Consolad a mi pueblo, dice el Señor”.[/quote] [br]Con el anuncio de Isaías, Dios te llama personalmente a ser instrumento de consolación para los demás. Pero no con un acto puntual o como algo pasajero, sino como un estilo de vida, en donde cada palabra, cada gesto, cada elección esté atravesada por la ternura y el consuelo de Dios. Como un modo peregrinar nuestro día a día hacia nuevos horizontes, más humanos, más humildes, más entregados, como una opción radical por el amor, al modo de María Rosa Molas.  [br][quote]¿Y tú, dónde quieres dejar tu huella? [/quote]"
+            },
+            {
+              "titulo": "Oración 🙏🏼",
+              "texto": "Señor, hoy me llamás a ser peregrino de una esperanza que consuele.[br] A dejar que tus palabras pasen por mi voz, y tus abrazos por mis brazos. [br]Dame un corazón que arda por ti. [br]Dame la fuerza de María Rosa. [br]Haz de mí un peregrino que no se detiene, porque sé que el mundo necesita de tu consuelo [br]Y vos, Señor, querés dejar tu huella con cada uno de mis pasos. [br]Amén"
+            },
+            {
+              "titulo": "Cantamos 🎶",
+              "texto": "Consolad a mi pueblo dice el Señor, hablad al corazón del hombre Gritad que mi amor ha vencido, preparad el camino, que viene tu redentor. [br] [b]YO TE HE ELEGIDO PARA AMAR, TE DOY MI FUERZA Y LUZ PARA GUIAR,  YO SOY CONSUELO EN TU MIRAR, GLORIA A DIOS.[/b][br] Consolad a mi pueblo dice el Señor, sacad de la ceguera a mi pueblo.  Yo he sellado contigo la alianza perpetua. Yo soy el único Dios. [br] [b]YO TE HE ELEGIDO PARA AMAR, TE DOY MI FUERZA Y LUZ PARA GUIAR,  YO SOY CONSUELO EN TU MIRAR, GLORIA A DIOS.[/b] [br]Consolad a mi pueblo dice el Señor, mostradles el camino de libertad. Yo os daré fuertes alas, transformaré tus pisadas en sendas de eternidad."
+            },
+            {
+              "titulo": "Escuchamos 👂",
+              "texto": "[h1]Testimonios[/h1]"
+            },
+            {
+              "titulo": "Cantamos 🎶",
+              "texto": "[b]El amor, no tiene fronteras, el amor no tiene fronteras...[/b][br][br][br][b]ES UN HOY ES UN MAÑANA, ESPERANZA Y CERTEZA, ES UN DON UN COMPROMISO UN RETO UNA PROMESA (CONSOLAD) NUESTRO SER CONSOLACION[/b]"
+            },
+            {
+              "titulo": "Escuchamos 👂",
+              "texto": "[h1]Mensajes[/h1]"
+            },
+            {
+              "titulo": "Cantamos 🎶",
+              "texto": "Nos reunimos aquí de tantos lugares, tantos amigos, unidos por un ideal, el Evangelio de Jesús, unidos por una experiencia vivida en el corazón: Dios nos da su Consolación. [br][b]SOMOS CONSOLACIÓN, LLEVAMOS LA ESPERANZA Y LA PAZ DE DIOS. SOMOS CONSOLACIÓN, SEGUIMOS TRAS LAS HUELLAS DEL SEÑOR JESÚS QUEREMOS SER SUS MANOS Y SU CORAZÓN EN MEDIO DE UN MUNDO SEDIENTO DE AMOR. ¡¡SOMOS, ¡SOMOS, SOMOS CONSOLACIÓN! [/b][br] Nos reunimos aquí y recordamos tantos momentos vividos en grupos del COM, que animaron nuestra fe. Roma, Tortosa… y por todo el mundo se Extiende ya como una luz, la gente del COM. [br]Nos reunimos aquí y hacemos presente a Mª Rosa, aquella mujer que vivió en la Iglesia para Dios, que sólo buscó Consolar al que sufre, en nombre de Dios y empezó un Carisma que todos vivimos hoy."
+            }
+          ]
       },
       {
         "nombre": "Grupos Conso+",
@@ -205,12 +333,20 @@
         "color": "#8BC34A",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "¿Qué y para qué?",
+            "texto": "Cada día intentaremos buscar un momento por grupos de referencia en el que recoger los días que pasan. [br]No tiene porque ser por la noche, sino que buscamos un hueco durante el día para ver lo que hemos vivido desde la última vez que nos juntmaos, eso es [b]recoger el día[/b][br][i]Tres pasos que podéis ir adaptando...[/i]"
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Paso 1 🟢",
+            "texto": "[b]Dialogamos en grupo:[/b] [br]¿Cómo estoy? [br]¿Qué cosas/actividades/momentos me han gustado más hasta ahora? [br]¿Qué es lo que más me está costando? "
+          },
+          {
+            "titulo": "Paso 2 ⭕",
+            "texto": "[b] Vamos escribiendo en nuestro cuaderno de ruta[/b] (Elegimos 2-3 para cada día):[br]💬 Un sentimiento / emoción predominante [br]💬 Palabra[br]💬 Deseo para continuar en el camino[br][br]Si en tu grupo buscas algo más avanzado puedes hablar de... [br]💬 Una luz / novedad[br]💬 Un titular [br]💬 Una persona[br]💬Una imagen[br][br][i]Seleccionamos solo 2 o 3 cada día[/i]"
+          },
+          {
+            "titulo": "Paso 3 🟨",
+            "texto": "[b] Escribimos en el cuaderno y podems compartir[/b] (Elegimos solo una cada día):[br]❓ ¿Por dónde intuyes que está pasando Dios en estos días? [br]❓ ¿Qué te puede estar queriendo decir? [br]❓ ¿Por qué te gustaría dar las gracias hoy? ¿Hay algo en lo que crees que podrías mejorar?  "
           }
         ]
       }
@@ -225,12 +361,101 @@
         "color": "#4FC3F7",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "Parte 1",
+            "texto": "[h1]Oración: La misericordia de Dios[/h1] [br][b]Dicen que Dios es Amor,[/b] y que su nombre es [b]MISERICORDIA[/b]. [br][br][i]¿Has sentido alguna vez la misericordia de Dios?[/i] ¿Lo has vivido?, ¿Lo has celebrado alguna vez? Hoy, en el Jubileo de Jóvenes, tienes la oportunidad de experimentarlo. [br][br][color=primary]Pero antes, quiero decirte algo:[/color] Dios [b]siempre sale a nuestro encuentro[/b], ¡así es Dios y su misericordia! [br]Dios nos da la oportunidad de [b]volver a empezar SIEMPRE[/b], siempre que nosotros y nosotras queramos, pues Él respeta nuestra libertad, nuestras decisiones. [br]Es por eso que Él [u]siempre espera[/u] a que decidamos volver a Él. 🙏🏼 [br][br][b]ESTRIBILLO:[/b] [br][i]Yendo contigo, nada me inquieta, marcho con paz y fuerza. [br]Yendo contigo todo se espera, cada mañana es nueva.[/i] 🎶"
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Parte 2",
+            "texto": "[b]Te invito a que recordemos juntos cómo es nuestro Padre Dios,[/b] cómo es su misericordia. Para ello, vamos a escuchar una de las parábolas que Jesús utilizó para hablarnos del Padre y su misericordia: [br][gquote]Evangelio según San Lucas 15, 11-33[/gquote] [br][br][btn-primary=https://www.youtube.com/watch?v=KgG3TPlwSEc]Ver Evangelio en vídeo[/btn-primary][br][br][h1]Reflexión[/h1] El padre de los dos hijos representa a nuestro Padre Dios. [br][i]¿Cómo dirías que es Él?[/i] ¿Cómo es su corazón? [br]Puedes observar cómo trata al hijo menor —el que se marchó y lo perdió todo— y al hijo mayor, al que le cuesta alegrarse por el regreso de su hermano. [br][br][b]¿Has experimentado alguna vez una fractura?[/b] Tras un golpe, los huesos se rompen y duele. [br]Algo parecido sucede cuando nos alejamos de Dios. Al principio, como el hijo menor, todo parece libertad… pero cuando falta lo esencial, [u]algo se rompe por dentro[/u]. [br][b]Lo que perdió no fueron cosas, sino el amor del Padre.[/b]"
+          },
+          {
+            "titulo": "Parte 3",
+            "texto": "[i]¿Y tú?[/i] [br][list][*]¿Has tenido esa sensación de malestar por hacer solo lo que te apetecía, sin tener en cuenta a quienes te quieren?[br][*]¿Has roto compromisos con tu familia, amigos o compañeros?[br][*]¿Y tu relación con Dios? ¿La cuidas o la has dejado de lado?[br][/list] [br][b]Alejarse de Dios, tomar caminos distintos a los suyos… duele.[/b] [br]Quizás te ayude leer esta experiencia del hijo que se alejó del Padre: [br][gquote]¿Cómo te va, joven, por aquel país lejano? Me gustaría saber si encontraste lo que buscabas. Si al caer el día, cuando te acuestas, crees que mereció la pena marchar. O si, por el contrario, recuerdas con tristeza aquel lugar que llamabas hogar y esos brazos que con amor te sostuvieron. Me gustaría saber si te sientes querido, si tienes quien te acepte como eres y comparta contigo alegrías y, sobre todo, penas. O si, por el contrario, solo ves rivales que miran lo que tienes y no lo que eres mientras tú mendigas algo de sinceridad. Me gustaría saber qué fue de tu fortuna. Si te ayudó a seguir creciendo y disfrutar, y si multiplicaste tus muchos dones. O si, por el contrario, te fundiste todo en placeres que aumentan tus vacíos y enterraste tus talentos en terreno baldío. ¿Cómo te va, joven, por aquel país lejano? (Óscar Cala, sj)[/gquote]"
+          },
+          {
+            "titulo": "Parte 4",
+            "texto": "[h1]Preparación interior[/h1] Hoy vamos a celebrar el [b]Sacramento de la Misericordia o Reconciliación[/b]. [br]Dejemos un tiempo de silencio para prepararnos interiormente y vivir la [color=success][b]ALEGRÍA[/b][/color] de la [color=accent][b]MISERICORDIA[/b][/color] de nuestro PADRE DIOS. [br][br][i]¿Te identificas con el joven que se marchó?[/i] [br]¿En qué te has alejado del Padre? ¿Qué necesitas dejar atrás para volver con autenticidad? [br][br][b]Tiempo de silencio:[/b] [br]Coge tu libreta personal y tu boli. Si te ayuda, escribe una carta a Dios. Exprésale tu deseo de volver a Él como el hijo menor: [br][i]«Volveré a casa de mi padre, y le diré…»[/i] [br][br][btn-primary=https://www.youtube.com/watch?v=vfwSnpLsk6c&t=125s]Escuchar canción “Dime Padre” (Hakuna)[/btn-primary][br][br]"
+          }
+        ]
+      },
+      {
+        "nombre": "Preparación reconciliación",
+        "emoji": "🙏🏼",
+        "color": "#FBCDFD",
+        "paginas": [
+          {
+            "titulo": "Parte 1",
+            "texto": "[h1]Preparación interior para celebrar el Sacramento de la Misericordia[/h1][br]Te invito a prepararte interiormente para celebrar el [b]Sacramento de la Misericordia de Dios[/b] o de la Reconciliación. [br]Aquí tienes algunos puntos para orarlos tranquilamente en presencia de Dios:[br][br][list][*][b]1.[/b] Pide al Señor que te dé su luz y te guíe en este momento de interiorización.[*][b]2.[/b] Pasa unos momentos en actitud de agradecimiento, dando gracias a Dios por lo bueno, grande o pequeño, que has vivido durante este curso.[*][b]3.[/b] Reflexiona sobre tu relación con Dios. Habla de ella con Él. ¿Qué tal va nuestra relación? ¿Nos llevamos bien? ¿Me siento cercano o distante? ¿Qué emociones me despierta pensar en Dios: alegría, miedo, vergüenza...? Habla con Él con confianza.[/list]"
+          },
+          {
+            "titulo": "Parte 2",
+            "texto": "[list][*][b]4.[/b] Habla con Dios de tu relación con los demás. ¿Qué actitudes has tenido? ¿Has sido amable, paciente, pasivo, gruñón? ¿Hubo alguna relación especialmente buena o amarga? Pídele a Dios que te muestre cómo lo ve Él.[*][b]5.[/b] Habla con Dios de tu relación contigo mismo. ¿Te gustas? ¿Estás enfadado contigo? ¿Eres duro o compasivo contigo? ¿Qué te ha llevado a tratarte así? Habla con Dios y escucha su opinión.[*][b]6.[/b] Repasa las tres relaciones: con Dios, con los demás, contigo mismo. Pide perdón, da gracias, y ruega a Dios una inspiración, una verdad nueva que te ayude a crecer en esas relaciones.[/list]"
+          },
+          {
+            "titulo": "Parte 3",
+            "texto": "[list][*][b]7.[/b] Pregúntale a Dios: ¿Qué aspectos de mis relaciones podría mejorar o dejar atrás?[*][b]8.[/b] Pregúntale: ¿Qué puedo hacer en concreto para avanzar?[*][b]9.[/b] Pídele ayuda para tomar ese camino en el día a día.[*][b]10.[/b] Termina confiando en Dios y agradeciendo la oportunidad de volver a empezar.[/list][br][br][color=accent][b]Ahora ya puedes ir a celebrar el Sacramento de la Misericordia de Dios.[/b][/color][br]Como el joven de la parábola, ve y dile a tu Padre aquello que deseas que te perdone. [br][color=primary][b]¡Confía! ¡Él te ESPERA con los BRAZOS ABIERTOS! ¡ÉL ES EL PADRE BUENO Y MISERICORDIOSO![/b][/color]"
+          }
+        ]
+      },
+      {
+        "nombre": "Prara profundizar",
+        "emoji": "➕",
+        "color": "#FBDCFD",
+        "paginas": [
+          {
+            "titulo": "Reconciliación",
+            "texto": "[h1]El Sacramento de la Reconciliación[/h1][br]El [b]Sacramento de la Reconciliación[/b] es un sacramento de la Iglesia católica que permite a los bautizados recibir el perdón o la misericordia de Dios y la reconciliación con Dios y la comunidad eclesial. [br]Para nosotros, jóvenes, es una oportunidad para [b]renovar nuestra relación con Dios[/b], [i]crecer en la vida cristiana[/i] y [i]experimentar la misericordia del Padre[/i]. [br]En el contexto del Jubileo es un elemento central, porque el Jubileo es un signo de reconciliación por sí mismo, es un [color=accent]“tiempo favorable”[/color]. [br]Durante este tiempo especial de gracia, se nos anima a todos a [b]redescubrir el valor de la confesión[/b] y a [i]recibir el perdón o misericordia de Dios[/i], buscando la renovación del corazón y la conversión sincera."
+          },
+          {
+            "titulo": "Indulgencia (1)",
+            "texto": "[h1]¿Qué es la indulgencia?[/h1][br]En los Jubileos se dice que se puede [b]ganar la indulgencia[/b]. Quizás esta palabra te suene rara. [br]La indulgencia es una manifestación concreta de la [i]misericordia de Dios[/i] que permite liberar el propio corazón del peso del mal en nuestro interior. [br]Son como [i]“un empujón”[/i], una [b]sobre-ayuda gratuita[/b] por intercesión de la Iglesia. [br]La abundancia de la misericordia de Dios, a través de la Iglesia, quiere [b]complementar lo que nos falta[/b] por apatía, pereza o falta de entrega en el camino del Evangelio."
+          },
+          {
+            "titulo": "Indulgencia (2)",
+            "texto": "[h1]La indulgencia en este Jubileo[/h1][br]En este jubileo tenemos la oportunidad de [b]celebrar el sacramento de la misericordia[/b] y volver a recibir ese [i]empujón[/i] que da el saberse amados y perdonados por Dios. [br]En este contexto, junto a las celebraciones litúrgicas y el Sacramento de la Reconciliación, [b]vivimos la indulgencia[/b] como una [color=primary]“gracia de Dios”[/color] para seguir adelante. [br][br]El Papa Francisco nos lo explica mejor con estas palabras:"
+          },
+          {
+            "titulo": "Del Papa Francisco (1)",
+            "texto": "[quote]AUDIENCIA GENERAL - Plaza de San Pedro, miércoles 19 de febrero de 2014[/quote][br][b]Queridos hermanos y hermanas, ¡buenos días![/b][br]A través de los sacramentos de iniciación cristiana, el Bautismo, la Confirmación y la Eucaristía, el hombre recibe la vida nueva en Cristo. [br]Pero llevamos esta vida [i]«en vasijas de barro»[/i] (2 Cor 4, 7), y podemos perderla a causa del pecado. [br]Por ello el Señor quiso que la Iglesia ofreciera también [b]los sacramentos de curación[/b]: la Reconciliación y la Unción de los enfermos."
+          },
+          {
+            "titulo": "Del Papa Francisco (2)",
+            "texto": "[b]La Confesión es sanación[/b]. Cuando voy a confesarme, es para [i]sanar el alma, el corazón, lo que no funciona bien[/i]. [br]La imagen más clara está en el perdón al paralítico (Mc 2, 1-12): Jesús sana cuerpo y alma. [br]Este sacramento nace del misterio pascual: [i]«Recibid el Espíritu Santo… a quienes les perdonéis los pecados, les quedan perdonados»[/i] (Jn 20, 21-23). [br][b]El perdón es don, no esfuerzo personal.[/b] No podemos perdonarnos solos. Pedimos perdón a Jesús."
+          },
+          {
+            "titulo": "Del Papa Francisco (3)",
+            "texto": "[b]Sólo Jesús da esa paz interior[/b]. Cuando te confiesas, aunque entres con tristeza o vergüenza, sales con una paz que sólo Él puede dar. [br]La confesión pasó de ser pública a privada, pero [i]no pierde su raíz comunitaria[/i]. El sacerdote representa a Dios y a la Iglesia entera, que acoge, escucha y acompaña. [br]Nuestros pecados también afectan a los hermanos: por eso [b]no basta pedir perdón solo a Dios[/b], sino también a la Iglesia, en la persona del sacerdote."
+          },
+          {
+            "titulo": "Del Papa Francisco (4)",
+            "texto": "[i]“Padre, me da vergüenza…”[/i] ¡La vergüenza hace bien! Nos hace humildes. [br]El sacerdote acoge con ternura y perdona en nombre de Dios. [br]Incluso humanamente, [b]desahogarse libera el corazón[/b]. No tengas miedo de la Confesión. Aunque en la fila sientas nervios, [i]al salir te sientes libre, perdonado, feliz.[/i] [br][color=success]¡Eso es lo hermoso de la Confesión![/color]"
+          },
+          {
+            "titulo": "Del Papa Francisco (5)",
+            "texto": "[b]La Confesión es un abrazo[/b]. Cada vez que nos confesamos, [color=accent]Dios nos abraza[/color], hace fiesta. [br]Recordad al hijo pródigo: volvió hecho polvo, pero su padre no lo dejó ni hablar. [br][i]Le abrazó, le besó, hizo fiesta.[/i] [br]Así es Dios. Así es la Reconciliación. [br][color=primary]Sigamos adelante por este camino. ¡Que Dios os bendiga![/color]"
+          }
+        ]
+      },
+      {
+        "nombre": "Visitas en Roma 2",
+        "emoji": "🏛️",
+        "color": "#FBC02D",
+        "paginas": [
+          {
+            "titulo": "Ruta 2",
+            "texto": "[h1]Del Circo Máximo a la Plaza San Pedro[/h1][br] [i](para el Encuentro españoles)[/i][br][br][b]Recuerda que tenemos que recoger la comida entre las 11 y las 14 h Cerca de San Pedro[/b] (consulta el horario)"
+          },
+          {
+            "titulo": "Parte 1",
+            "texto": "[h1]🏁 Inicio: Circo Máximo[/h1] Qué ver: Antiguo estadio romano para carreras de carros, uno de los más grandes jamás construidos. [br] Tip: Súbete al monte Aventino (cerca del Circo) para una excelente vista del sitio. [br] [h1]1. Colina Aventino y la Plaza de los Caballeros de Malta[/h1] Qué ver: El famoso 'ojo de la cerradura' del Priorato de los Caballeros de Malta, donde puedes ver la cúpula de San Pedro perfectamente alineada. [br] Por qué parar aquí: Es un momento mágico y único, menos turístico. ✨"
+          },
+          {
+            "titulo": "Parte 2",
+            "texto": "[h1]2. Bajada hacia el río Tíber y el barrio de Trastevere[/h1] Ruta: Baja hacia el río, cruzando hacia el Trastevere por el Ponte Palatino o Ponte Cestio si decides pasar por la Isla Tiberina. [br] Qué ver: Calles empedradas, casas medievales, y una vibrante vida local. [br] Parada sugerida: Santa Maria in Trastevere, una de las iglesias más antiguas de Roma. 🏘️"
+          },
+          {
+            "titulo": "Parte 3",
+            "texto": "[h1]3. Gianicolo (Colina del Janículo)[/h1] Opcional, pero recomendado: Sube al Gianicolo para tener una de las mejores vistas panorámicas de Roma. [br] Qué ver: Monumento a Garibaldi, cañonazo del mediodía, fuentes y vistas de la ciudad. 🔭 [br] [h1]4. Descenso hacia el Vaticano[/h1] Ruta: Baja por Via delle Mura Aurelie o Via di Porta Cavalleggeri hacia la Ciudad del Vaticano. [br] En camino: Pasas por parte de las antiguas murallas vaticanas. [br] [h1]🏁 Final: Plaza de San Pedro[/h1]"
           }
         ]
       },
@@ -240,12 +465,20 @@
         "color": "#8BC34A",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "¿Qué y para qué?",
+            "texto": "Cada día intentaremos buscar un momento por grupos de referencia en el que recoger los días que pasan. [br]No tiene porque ser por la noche, sino que buscamos un hueco durante el día para ver lo que hemos vivido desde la última vez que nos juntmaos, eso es [b]recoger el día[/b][br][i]Tres pasos que podéis ir adaptando...[/i]"
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Paso 1 🟢",
+            "texto": "[b]Dialogamos en grupo:[/b] [br]¿Cómo estoy? [br]¿Qué cosas/actividades/momentos me han gustado más hasta ahora? [br]¿Qué es lo que más me está costando? "
+          },
+          {
+            "titulo": "Paso 2 ⭕",
+            "texto": "[b] Vamos escribiendo en nuestro cuaderno de ruta[/b] (Elegimos 2-3 para cada día):[br]💬 Un sentimiento / emoción predominante [br]💬 Palabra[br]💬 Deseo para continuar en el camino[br][br]Si en tu grupo buscas algo más avanzado puedes hablar de... [br]💬 Una luz / novedad[br]💬 Un titular [br]💬 Una persona[br]💬Una imagen[br][br][i]Seleccionamos solo 2 o 3 cada día[/i]"
+          },
+          {
+            "titulo": "Paso 3 🟨",
+            "texto": "[b] Escribimos en el cuaderno y podems compartir[/b] (Elegimos solo una cada día):[br]❓ ¿Por dónde intuyes que está pasando Dios en estos días? [br]❓ ¿Qué te puede estar queriendo decir? [br]❓ ¿Por qué te gustaría dar las gracias hoy? ¿Hay algo en lo que crees que podrías mejorar?  "
           }
         ]
       }
@@ -255,17 +488,37 @@
     "fecha": "2025-08-02",
     "actividades": [
       {
-        "nombre": "Camino a Tor Vergata",
+        "nombre": "Antes de Tor Vergata...",
         "emoji": "🚌➡️",
         "color": "#795548",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "Monición inicial leer 📖",
+            "texto": "En esta mañana os invitamos a mirar a María. Ella, una chica joven como tú, desde el momento del anuncio del ángel Gabriel, esperó con amor en lo que Dios le proponía. Ella mejor que nadie puede guiarnos a conocer y amar más a Jesucristo y ayudarnos a confiar y tener esperanza. Dejemos que ella nos acompañe; que sus sentimientos nos animen, para que nos preparemos con sinceridad de corazón y apertura de espíritu al encuentro con el Papa en Tor Vergata."
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Canto 🎶",
+            "texto": "MARÍA DE NAZARET, MARÍA MADRE DE DIOS,  MARÍA MADRE NUESTRA, MADRE DE CONSOLACIÓN [br] Vives atenta al Señor, dejas tus planes por Él, como exclava de Dios, le dices SÍ en Nazaret. [br] Y así has hecho posible, que tomara carne en ti, Cristo el hijo de Dios, que es nuestra Consolación..."
+          },
+          {
+            "titulo": "Lectura 📖",
+            "texto": "[gquote]Entonces se volvieron a Jerusalén, desde el monte que llaman de los Olivos, que dista de Jerusalén lo que se permite caminar en sábado. Cuando llegaron, subieron a la sala superior, donde se alojaban: Pedro y Juan y Santiago y Andrés, Felipe y Tomás, Bartolomé y Mateo, Santiago el de Alfeo y Simón el Zelotes y Judas el de Santiago. Todos ellos perseveraban unánimes en la oración, junto con algunas mujeres y María, la madre de Jesús, y con sus hermanos.[/gquote] [i](Hch 1, 12-14)[/i]"
+          },
+          {
+            "titulo": "Reflexión (1) 🤔",
+            "texto": "María aparece en los Evangelios como una mujer silenciosa, que a menudo no comprende todo lo que le ocurre alrededor, pero que medita cada palabra y acontecimiento en su corazón. En esta disposición hay un rasgo bellísimo de la psicología de María: no es una mujer que se deprime ante las incertidumbres de la vida, especialmente cuando nada parece ir en la dirección correcta.[br] (…) es una mujer que escucha: no os olvidéis de que siempre hay una gran relación entre la esperanza y la escucha, y María es una mujer que escucha. María acoge la existencia tal y como se nos entrega, con sus días felices, pero también con sus tragedias con las que nunca querríamos habernos cruzados. Hasta la noche suprema de María, cuando su Hijo está clavado en el madero de la cruz."
+          },
+          {
+            "titulo": "Reflexión (2) 🤔",
+            "texto": "(…) La volveremos a encontrar en el primer día de la Iglesia, Ella, madre de esperanza, en medio de esa comunidad de discípulos tan frágiles: uno había renegado, muchos habían huido, todos habían tenido miedo. Pero Ella simplemente estaba allí, en el más normal de los modos, como si fuera una cosa completamente normal: en la primera Iglesia envuelta por la luz de la Resurrección, pero también de los temblores de los primeros pasos que debía dar en el mundo. Por esto todos nosotros la amamos como Madre."
+          },
+          {
+            "titulo": "Reflexión (3) 🤔",
+            "texto": "No somos huérfanos: tenemos una Madre en el cielo, que es la Santa Madre de Dios. Porque nos enseña la virtud de la espera, incluso cuando todo parece sin sentido: Ella siempre confiada en el misterio de Dios, también cuando Él parece eclipsarse por culpa del mal del mundo. Que, en los momentos de dificultad, María, la Madre que Jesús nos ha regalado a todos nosotros, pueda siempre sostener nuestros pasos, pueda siempre decir a nuestro corazón: [quote]¡levántate!, mira adelante, mira el horizonte[/quote] porque Ella es Madre de esperanza"
+          },
+          {
+            "titulo": "Oración final ✔️",
+            "texto": "Madre de la esperanza. [br]Santa María, Madre de Dios, [br] Madre nuestra, [br]enséñanos a creer, esperar y amar contigo. [br]Indícanos el camino hacia su reino. [br]Estrella del mar, brilla sobre nosotros [br]y guíanos en nuestro camino. [br]Amén."
           }
         ]
       }
@@ -274,18 +527,26 @@
   {
     "fecha": "2025-08-03",
     "actividades": [
-      {
+     {
         "nombre": "Grupos Conso+",
         "emoji": "💬",
         "color": "#8BC34A",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "¿Qué y para qué?",
+            "texto": "Cada día intentaremos buscar un momento por grupos de referencia en el que recoger los días que pasan. [br]No tiene porque ser por la noche, sino que buscamos un hueco durante el día para ver lo que hemos vivido desde la última vez que nos juntmaos, eso es [b]recoger el día[/b][br][i]Tres pasos que podéis ir adaptando...[/i]"
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Paso 1 🟢",
+            "texto": "[b]Dialogamos en grupo:[/b] [br]¿Cómo estoy? [br]¿Qué cosas/actividades/momentos me han gustado más hasta ahora? [br]¿Qué es lo que más me está costando? "
+          },
+          {
+            "titulo": "Paso 2 ⭕",
+            "texto": "[b] Vamos escribiendo en nuestro cuaderno de ruta[/b] (Elegimos 2-3 para cada día):[br]💬 Un sentimiento / emoción predominante [br]💬 Palabra[br]💬 Deseo para continuar en el camino[br][br]Si en tu grupo buscas algo más avanzado puedes hablar de... [br]💬 Una luz / novedad[br]💬 Un titular [br]💬 Una persona[br]💬Una imagen[br][br][i]Seleccionamos solo 2 o 3 cada día[/i]"
+          },
+          {
+            "titulo": "Paso 3 🟨",
+            "texto": "[b] Escribimos en el cuaderno y podems compartir[/b] (Elegimos solo una cada día):[br]❓ ¿Por dónde intuyes que está pasando Dios en estos días? [br]❓ ¿Qué te puede estar queriendo decir? [br]❓ ¿Por qué te gustaría dar las gracias hoy? ¿Hay algo en lo que crees que podrías mejorar?  "
           }
         ]
       }
@@ -315,12 +576,20 @@
         "color": "#8BC34A",
         "paginas": [
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "..."
+            "titulo": "¿Qué y para qué?",
+            "texto": "Cada día intentaremos buscar un momento por grupos de referencia en el que recoger los días que pasan. [br]No tiene porque ser por la noche, sino que buscamos un hueco durante el día para ver lo que hemos vivido desde la última vez que nos juntmaos, eso es [b]recoger el día[/b][br][i]Tres pasos que podéis ir adaptando...[/i]"
           },
           {
-            "titulo": "Vuelve pronto...",
-            "texto": "El material estará disponible en breve, no quieras hacerte spoiler 😏"
+            "titulo": "Paso 1 🟢",
+            "texto": "[b]Dialogamos en grupo:[/b] [br]¿Cómo estoy? [br]¿Qué cosas/actividades/momentos me han gustado más hasta ahora? [br]¿Qué es lo que más me está costando? "
+          },
+          {
+            "titulo": "Paso 2 ⭕",
+            "texto": "[b] Vamos escribiendo en nuestro cuaderno de ruta[/b] (Elegimos 2-3 para cada día):[br]💬 Un sentimiento / emoción predominante [br]💬 Palabra[br]💬 Deseo para continuar en el camino[br][br]Si en tu grupo buscas algo más avanzado puedes hablar de... [br]💬 Una luz / novedad[br]💬 Un titular [br]💬 Una persona[br]💬Una imagen[br][br][i]Seleccionamos solo 2 o 3 cada día[/i]"
+          },
+          {
+            "titulo": "Paso 3 🟨",
+            "texto": "[b] Escribimos en el cuaderno y podems compartir[/b] (Elegimos solo una cada día):[br]❓ ¿Por dónde intuyes que está pasando Dios en estos días? [br]❓ ¿Qué te puede estar queriendo decir? [br]❓ ¿Por qué te gustaría dar las gracias hoy? ¿Hay algo en lo que crees que podrías mejorar?  "
           }
         ]
       },

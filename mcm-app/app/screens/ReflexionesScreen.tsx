@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -26,6 +26,7 @@ import spacing from '@/constants/spacing';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 interface Grupo {
   nombre: string;
@@ -60,6 +61,19 @@ const WEEKDAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 export default function ReflexionesScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { profile } = useUserProfile();
+
+  // Generate default author string from user profile
+  const getDefaultAuthor = useCallback(() => {
+    const parts = [];
+    if (profile.name.trim()) {
+      parts.push(profile.name.trim());
+    }
+    if (profile.location.trim()) {
+      parts.push(profile.location.trim());
+    }
+    return parts.join(' · ');
+  }, [profile.name, profile.location]);
 
   const { data: dataRef } = useFirebaseData<Reflexion[]>(
     'jubileo/compartiendo',
@@ -83,13 +97,18 @@ export default function ReflexionesScreen() {
     }
   }, [dataRef]);
 
+  // Update author field when user profile changes
+  useEffect(() => {
+    setAutor(getDefaultAuthor());
+  }, [getDefaultAuthor]);
+
   const [showForm, setShowForm] = useState(false);
   const [titulo, setTitulo] = useState(''); // Inicializar con cadena vacía
   const [contenido, setContenido] = useState('');
   const [fecha, setFecha] = useState(new Date());
   const [grupal, setGrupal] = useState(false);
   const [grupo, setGrupo] = useState<string | undefined>(undefined);
-  const [autor, setAutor] = useState('');
+  const [autor, setAutor] = useState(getDefaultAuthor());
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -142,7 +161,7 @@ export default function ReflexionesScreen() {
     setFecha(new Date());
     setGrupal(false);
     setGrupo(undefined);
-    setAutor('');
+    setAutor(getDefaultAuthor());
     setSaving(false);
   }
 
