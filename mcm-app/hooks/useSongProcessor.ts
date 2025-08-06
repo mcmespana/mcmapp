@@ -22,6 +22,7 @@ interface UseSongProcessorParams {
   author?: string; // Added to pass author
   key?: string; // Added to pass key
   capo?: number; // Added to pass capo
+  isFullscreen?: boolean; // Added for fullscreen mode
 }
 
 export const useSongProcessor = ({
@@ -34,6 +35,7 @@ export const useSongProcessor = ({
   author,
   key,
   capo,
+  isFullscreen = false,
 }: UseSongProcessorParams) => {
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
@@ -84,7 +86,7 @@ export const useSongProcessor = ({
       let formattedSong = formatter.format(songForFormatting);
 
       let metaInsert = '';
-      if (author) {
+      if (author && !isFullscreen) {
         metaInsert += `<div class="song-meta-author">${author}</div>`;
       }
       let finalKeyCapoString = '';
@@ -120,7 +122,7 @@ export const useSongProcessor = ({
 
       if (capo !== undefined && capo > 0) {
         if (finalKeyCapoString) finalKeyCapoString += ' - ';
-        finalKeyCapoString += `Cejilla ${capo}`;
+        finalKeyCapoString += `<strong>Cejilla ${capo}</strong>`;
       }
 
       if (currentTranspose !== 0) {
@@ -171,28 +173,39 @@ export const useSongProcessor = ({
               box-sizing: border-box;
             }
             h1 {
-              color: #333;
-              margin-bottom: 0.2em;
-              margin-top: 0.2em;
-              font-size: 1.6em;
+              color: ${AppColors.primary || '#007bff'};
+              margin-bottom: 0.1em;
+              margin-top: 0.1em;
+              font-size: 1.5em;
+              font-weight: 600;
               text-align: center;
               line-height: 1.2;
+              padding-bottom: 4px;
+              border-bottom: 1px solid ${AppColors.accentYellow || '#ffc107'};
+              ${isFullscreen ? 'display: none;' : ''}
             }
             .song-meta-author {
-              color: #777;
-              font-size: 0.9em;
-              margin-bottom: 5px;
+              color: #666;
+              font-size: 0.85em;
+              margin-bottom: 4px;
               font-style: italic;
+              font-weight: 400;
               text-align: center;
             }
             .song-meta-keycapo {
               color: #555;
-              font-size: 0.9em;
-              margin-bottom: 10px;
+              font-size: 0.85em;
+              font-weight: 500;
+              margin-bottom: 8px;
               text-align: center;
+              background-color: #f0f1f2;
+              padding: 6px 10px;
+              border-radius: 4px;
+              border-left: 2px solid ${AppColors.primary || '#007bff'};
             }
             .song-meta-keycapo strong {
-              font-weight: bold;
+              font-weight: 600;
+              color: ${AppColors.primary || '#007bff'};
             }
             .chord-sheet {
               margin-top: 0.8em;

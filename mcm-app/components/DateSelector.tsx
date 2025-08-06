@@ -61,10 +61,16 @@ export default function DateSelector({
     return (
       <TouchableOpacity onPress={() => onSelectDate(item.fecha, index)}>
         <View style={[styles.item, selected && styles.itemSelected]}>
-          <Text style={[styles.dateText, selected && styles.textSelected]}>
+          <Text
+            style={[styles.dateText, selected && styles.textSelected]}
+            selectable
+          >
             {label}
           </Text>
-          <Text style={[styles.weekdayText, selected && styles.textSelected]}>
+          <Text
+            style={[styles.weekdayText, selected && styles.textSelected]}
+            selectable
+          >
             {weekday}
           </Text>
         </View>

@@ -65,11 +65,15 @@ export default function EventItem({
       <Card.Content style={styles.cardContent}>
         <View style={styles.row}>
           <View style={styles.iconContainer}>
-            <Text style={styles.emoji}>{event.icono || '📅'}</Text>
+            <Text style={styles.emoji} selectable>
+              {event.icono || '📅'}
+            </Text>
           </View>
           <View style={styles.contentContainer}>
             <View style={styles.headerRow}>
-              <Text style={styles.title}>{event.nombre}</Text>
+              <Text style={styles.title} selectable>
+                {event.nombre}
+              </Text>
               <View style={styles.rightSection}>
                 {event.materiales && (
                   <TouchableOpacity
@@ -82,18 +86,24 @@ export default function EventItem({
                       size={12 * fontScale}
                       color="#fff"
                     />
-                    <Text style={styles.materialsText}>Materiales</Text>
+                    <Text style={styles.materialsText} selectable>
+                      Materiales
+                    </Text>
                   </TouchableOpacity>
                 )}
                 {shouldShowHour(event.hora) && (
                   <View style={styles.timeContainer}>
-                    <Text style={styles.timeText}>{event.hora}</Text>
+                    <Text style={styles.timeText} selectable>
+                      {event.hora}
+                    </Text>
                   </View>
                 )}
               </View>
             </View>
             {event.subtitulo && (
-              <Text style={styles.subtitle}>{event.subtitulo}</Text>
+              <Text style={styles.subtitle} selectable>
+                {event.subtitulo}
+              </Text>
             )}
             <View style={styles.bottomRow}>
               {event.lugar && (
@@ -103,7 +113,9 @@ export default function EventItem({
                     size={14 * fontScale}
                     color="#999"
                   />
-                  <Text style={styles.location}>{event.lugar}</Text>
+                  <Text style={styles.location} selectable>
+                    {event.lugar}
+                  </Text>
                 </View>
               )}
               {event.maps && (
@@ -117,7 +129,9 @@ export default function EventItem({
                     size={16 * fontScale}
                     color="#4285F4"
                   />
-                  <Text style={styles.mapsText}>Ver en Maps</Text>
+                  <Text style={styles.mapsText} selectable>
+                    Ver en Maps
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>

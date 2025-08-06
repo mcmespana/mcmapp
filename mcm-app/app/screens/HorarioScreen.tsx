@@ -254,8 +254,14 @@ export default function HorarioScreen() {
             },
           ]}
         >
-          <ThemedText style={styles.titleText}>{dia.titulo}</ThemedText>
-          {isLastDay && <ThemedText style={styles.sadEmoji}>😢</ThemedText>}
+          <ThemedText style={styles.titleText} selectable>
+            {dia.titulo}
+          </ThemedText>
+          {isLastDay && (
+            <ThemedText style={styles.sadEmoji} selectable>
+              😢
+            </ThemedText>
+          )}
         </Animated.View>
         {dia.eventos.map(
           (ev: EventItemData, idx: React.Key | null | undefined) => (

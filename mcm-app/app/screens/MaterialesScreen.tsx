@@ -160,8 +160,12 @@ export default function MaterialesScreen() {
               })
             }
           >
-            <Text style={styles.emoji}>{act.emoji}</Text>
-            <Text style={styles.cardText}>{act.nombre.toUpperCase()}</Text>
+            <Text style={styles.emoji} selectable>
+              {act.emoji}
+            </Text>
+            <Text style={styles.cardText} selectable>
+              {act.nombre.toUpperCase()}
+            </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>

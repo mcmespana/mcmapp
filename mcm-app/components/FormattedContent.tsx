@@ -220,12 +220,13 @@ export default function FormattedContent({
     <RenderHTML
       contentWidth={width}
       source={{ html }}
+      defaultTextProps={{ selectable: true }}
       tagsStyles={dynamicTagsStyles as any}
       classesStyles={dynamicClassesStyles as any}
       renderers={{
         span: ({ tnode }: { tnode: any }) => {
           const className = tnode.attributes?.class;
-          
+
           if (className === 'btn-primary') {
             const buttonStyles = {
               backgroundColor: colors.primary,
@@ -262,7 +263,7 @@ export default function FormattedContent({
               </TouchableOpacity>
             );
           }
-          
+
           if (className === 'btn-secondary') {
             const buttonStyles = {
               backgroundColor: colors.accent,
@@ -299,7 +300,7 @@ export default function FormattedContent({
               </TouchableOpacity>
             );
           }
-          
+
           // Para otros spans, usar el renderizador por defecto
           return undefined;
         },

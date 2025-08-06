@@ -17,6 +17,7 @@ import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext'; // Import context hook
 import { IconSymbol } from '../../components/ui/IconSymbol'; // Import IconSymbol
 import { useSettings } from '../../contexts/SettingsContext'; // <<<--- ADD THIS IMPORT
+import * as Clipboard from 'expo-clipboard';
 
 const availableFonts = [
   {
@@ -215,6 +216,22 @@ export default function SongDetailScreen({
     });
   };
 
+  const handleCopyLyrics = async () => {
+    if (!originalChordPro) return;
+    let lyrics = originalChordPro
+      .replace(/\[[^\]]+\]/g, '')
+      .replace(/\{[^}]+\}\n?/g, '')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/ *\n */g, '\n');
+    lyrics = lyrics
+      .split('\n')
+      .map((line) => line.trim())
+      .join('\n')
+      .replace(/\n{2,}/g, '\n\n')
+      .trim();
+    await Clipboard.setStringAsync(lyrics);
+  };
+
   const animateAndSet = (params: any, direction: 'next' | 'prev') => {
     const toValue = direction === 'next' ? -screenWidth : screenWidth;
     Animated.timing(slideAnim, {
@@ -301,6 +318,7 @@ export default function SongDetailScreen({
         onSetFontFamily={handleSetFontFamily}
         onToggleNotation={handleToggleNotation}
         onNavigateToFullscreen={handleNavigateToFullscreen}
+        onCopyLyrics={handleCopyLyrics}
         songTitle={_navScreenTitle}
         songFilename={filename}
         firebaseCategory={firebaseCategory}
