@@ -1,0 +1,6 @@
+# Disable specific YAML warnings for GitHub Actions workflows
+**/.github/workflows/*.yml
+**/.github/workflows/*.yaml
+
+# This file tells VS Code to ignore linting warnings in workflow files
+# while still maintaining syntax highlighting and basic validation
