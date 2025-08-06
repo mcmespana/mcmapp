@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import Modal from 'react-native-modal';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -33,17 +33,27 @@ export default function BottomSheet({
       backdropTransitionInTiming={300}
       backdropTransitionOutTiming={250}
       useNativeDriverForBackdrop={true}
-      hideModalContentWhileAnimating={true}
+      hideModalContentWhileAnimating={false}
+      avoidKeyboard={true}
+      scrollOffset={0}
+      scrollOffsetMax={0}
+      propagateSwipe={true}
     >
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        {children}
-      </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          {children}
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   modal: { justifyContent: 'flex-end', margin: 0 },
+  keyboardView: { flex: 1, justifyContent: 'flex-end' },
   container: {
     padding: 20,
     paddingBottom: 40,

@@ -22,7 +22,7 @@ const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
 interface Grupo {
   nombre: string;
   responsable?: string;
-  miembros: string[];
+  miembros?: string[];
   subtitulo?: string;
   mapa?: string;
 }
@@ -71,19 +71,23 @@ export default function GruposScreen() {
     const q = search.trim().toLowerCase();
     const res: { categoria: string; grupo: Grupo; matches: string[] }[] = [];
     Object.entries(data).forEach(([cat, grupos]) => {
+      if (!grupos || !Array.isArray(grupos)) return;
       grupos.forEach((g) => {
+        if (!g) return;
         const matches: string[] = [];
-        if (g.nombre.toLowerCase().includes(q)) {
+        if (g.nombre && typeof g.nombre === 'string' && g.nombre.toLowerCase().includes(q)) {
           matches.push('__match_name__');
         }
-        if (g.responsable && g.responsable.toLowerCase().includes(q)) {
+        if (g.responsable && typeof g.responsable === 'string' && g.responsable.toLowerCase().includes(q)) {
           matches.push(g.responsable);
         }
-        g.miembros.forEach((m) => {
-          if (m.toLowerCase().includes(q)) {
-            matches.push(m);
-          }
-        });
+        if (g.miembros && Array.isArray(g.miembros)) {
+          g.miembros.forEach((m) => {
+            if (m && typeof m === 'string' && m.toLowerCase().includes(q)) {
+              matches.push(m);
+            }
+          });
+        }
         if (matches.length > 0) {
           res.push({ categoria: cat, grupo: g, matches });
         }
@@ -100,12 +104,8 @@ export default function GruposScreen() {
     return <ProgressWithMessage message="Actualizando grupos..." />;
   }
 
-  if (showSearch) {
-    const grouped: Record<string, { grupo: Grupo; matches: string[] }[]> = {};
-    searchResults.forEach((r) => {
-      if (!grouped[r.categoria]) grouped[r.categoria] = [];
-      grouped[r.categoria].push({ grupo: r.grupo, matches: r.matches });
-    });
+  // Si hay un grupo seleccionado, mostrar la vista del grupo (prioridad máxima)
+  if (grupo) {
     return (
       <ScrollView style={styles.container}>
         <View style={styles.backWrapper}>
@@ -113,21 +113,78 @@ export default function GruposScreen() {
             icon="arrow-left"
             size={24}
             onPress={() => {
-              setShowSearch(false);
-              setSearch('');
+              setGrupo(null);
+              // Si había búsqueda activa, volver a los resultados de búsqueda
+              if (search.trim().length >= 3) {
+                setShowSearch(true);
+                setCategoria(null);
+              }
             }}
           />
         </View>
-        <Searchbar
-          placeholder="Buscar grupo o persona"
-          placeholderTextColor="#8A8A8D"
-          iconColor="#8A8A8D"
-          onChangeText={setSearch}
-          value={search}
-          style={styles.searchbar}
-          inputStyle={styles.searchbarInput}
-          autoFocus
-        />
+        <View style={styles.groupContainer}>
+          <View style={styles.groupHeader}>
+            <Text style={styles.groupTitle}>{grupo.nombre}</Text>
+          </View>
+
+          {grupo.subtitulo && (
+            <View style={styles.quoteContainer}>
+              <View style={styles.quoteBorder} />
+              <Text style={styles.quoteText}>{grupo.subtitulo}</Text>
+            </View>
+          )}
+
+          {grupo.mapa && (
+            <TouchableOpacity
+              style={styles.locationButton}
+              onPress={() => openMap(grupo.mapa)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.locationButtonText}>📍 Ubicación</Text>
+            </TouchableOpacity>
+          )}
+
+          {grupo.responsable && (
+            <>
+              <List.Subheader style={styles.sectionHeader}>
+                Acompaña...
+              </List.Subheader>
+              <List.Item title={grupo.responsable} />
+            </>
+          )}
+          <List.Subheader style={styles.sectionHeader}>
+            Forman parte... ({grupo.miembros?.length || 0})
+          </List.Subheader>
+          {(grupo.miembros || []).filter(m => m && typeof m === 'string').map((m, idx) => (
+            <List.Item key={idx} title={m} />
+          ))}
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (showSearch || search.trim().length >= 3) {
+    const grouped: Record<string, { grupo: Grupo; matches: string[] }[]> = {};
+    searchResults.forEach((r) => {
+      if (!grouped[r.categoria]) grouped[r.categoria] = [];
+      grouped[r.categoria].push({ grupo: r.grupo, matches: r.matches });
+    });
+    return (
+      <ScrollView style={styles.container}>
+        <View style={styles.searchContainer}>
+          <Searchbar
+            placeholder="Buscar grupo o persona"
+            placeholderTextColor="#8A8A8D"
+            iconColor="#8A8A8D"
+            onChangeText={setSearch}
+            value={search}
+            style={styles.searchbar}
+            inputStyle={styles.searchbarInput}
+            autoFocus={showSearch}
+            clearIcon="close"
+            onClearIconPress={() => setSearch('')}
+          />
+        </View>
         {search.trim().length < 3 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.hintText}>Escribe al menos 3 caracteres</Text>
@@ -135,7 +192,7 @@ export default function GruposScreen() {
         ) : searchResults.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
-              No se han encontrado resultados
+              No he encontrado nada, ya lo siento 😔
             </Text>
           </View>
         ) : (
@@ -153,7 +210,6 @@ export default function GruposScreen() {
                       setCategoria(cat);
                       setGrupo(g);
                       setShowSearch(false);
-                      setSearch('');
                     }}
                     titleStyle={styles.groupListTitle}
                   />
@@ -171,7 +227,7 @@ export default function GruposScreen() {
     );
   }
 
-  if (!categoria && !showSearch) {
+  if (!categoria && !showSearch && search.trim().length < 3) {
     return (
       <ScrollView
         style={styles.container}
@@ -232,48 +288,18 @@ export default function GruposScreen() {
         <IconButton
           icon="arrow-left"
           size={24}
-          onPress={() => setGrupo(null)}
+          onPress={() => setCategoria(null)}
         />
       </View>
-      {grupo && (
-        <View style={styles.groupContainer}>
-          <View style={styles.groupHeader}>
-            <Text style={styles.groupTitle}>{grupo.nombre}</Text>
-          </View>
-
-          {grupo.subtitulo && (
-            <View style={styles.quoteContainer}>
-              <View style={styles.quoteBorder} />
-              <Text style={styles.quoteText}>{grupo.subtitulo}</Text>
-            </View>
-          )}
-
-          {grupo.mapa && (
-            <TouchableOpacity
-              style={styles.locationButton}
-              onPress={() => openMap(grupo.mapa)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.locationButtonText}>📍 Ubicación</Text>
-            </TouchableOpacity>
-          )}
-
-          {grupo.responsable && (
-            <>
-              <List.Subheader style={styles.sectionHeader}>
-                Acompaña...
-              </List.Subheader>
-              <List.Item title={grupo.responsable} />
-            </>
-          )}
-          <List.Subheader style={styles.sectionHeader}>
-            Forman parte... ({grupo.miembros.length})
-          </List.Subheader>
-          {grupo.miembros.map((m, idx) => (
-            <List.Item key={idx} title={m} />
-          ))}
-        </View>
-      )}
+      {(data?.[categoria] || []).map((g, idx) => (
+        <List.Item
+          key={idx}
+          title={g.nombre}
+          description={g.subtitulo}
+          onPress={() => setGrupo(g)}
+          titleStyle={styles.groupListTitle}
+        />
+      ))}
     </ScrollView>
   );
 }
@@ -308,8 +334,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: theme.text,
     },
     searchbar: {
-      marginHorizontal: 16,
-      marginVertical: 12,
       borderRadius: 20,
       backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
       elevation: 2,
@@ -320,6 +344,10 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       height: 44,
       borderWidth: 1,
       borderColor: scheme === 'dark' ? '#444' : '#E0E0E0',
+    },
+    searchContainer: {
+      marginHorizontal: 16,
+      marginVertical: 12,
     },
     searchbarInput: {
       fontSize: 16,

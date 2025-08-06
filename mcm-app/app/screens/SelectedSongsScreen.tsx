@@ -13,6 +13,9 @@ import {
   StyleSheet,
   Platform,
   Share,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Provider as PaperProvider, Snackbar } from 'react-native-paper';
 import * as Clipboard from 'expo-clipboard';
@@ -67,6 +70,8 @@ const SelectedSongsScreen: React.FC = () => {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [randomEmoji, setRandomEmoji] = useState('');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFileName, setExportFileName] = useState('');
 
   // Generate random emoji when component mounts
   useEffect(() => {
@@ -208,24 +213,32 @@ const SelectedSongsScreen: React.FC = () => {
   }, [categorizedSelectedSongs, selectedSongs]); // Dependencies for useCallback
 
   const handleShareFile = useCallback(async () => {
+    // Generar nombre por defecto
+    const monthNames = [
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
+    ];
+    const now = new Date();
+    const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
+    const defaultFileName = `Playlist ${dateStr}`;
+    
+    setExportFileName(defaultFileName);
+    setShowExportModal(true);
+  }, []);
+
+  const handleConfirmExport = useCallback(async () => {
     try {
-      const monthNames = [
-        'ene',
-        'feb',
-        'mar',
-        'abr',
-        'may',
-        'jun',
-        'jul',
-        'ago',
-        'sep',
-        'oct',
-        'nov',
-        'dic',
-      ];
-      const now = new Date();
-      const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
-      const fileName = `Playlist ${dateStr}.json`;
+      const fileName = `${exportFileName}.json`;
 
       if (Platform.OS === 'web') {
         const blob = new Blob([JSON.stringify(selectedSongs)], {
@@ -253,12 +266,17 @@ const SelectedSongsScreen: React.FC = () => {
           dialogTitle: 'Compartir playlist',
         });
       }
+      
+      setShowExportModal(false);
+      setSnackbarMessage('Playlist exportada correctamente');
+      setSnackbarVisible(true);
     } catch (err) {
       console.error('Error sharing file', err);
+      setShowExportModal(false);
       setSnackbarMessage('Error al exportar la playlist');
       setSnackbarVisible(true);
     }
-  }, [selectedSongs]);
+  }, [selectedSongs, exportFileName]);
 
   const handleImportFile = useCallback(async () => {
     try {
@@ -511,6 +529,58 @@ const SelectedSongsScreen: React.FC = () => {
         keyExtractor={(item) => item.categoryTitle}
         contentContainerStyle={styles.listContentContainer}
       />
+      
+      {/* Modal para personalizar nombre del archivo */}
+      <Modal
+        visible={showExportModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowExportModal(false)}
+      >
+        <KeyboardAvoidingView 
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Nombre del archivo</Text>
+            <Text style={styles.modalSubtitle}>
+              Elige un nombre para tu playlist
+            </Text>
+            
+            <TextInput
+              style={styles.modalInput}
+              value={exportFileName}
+              onChangeText={setExportFileName}
+              placeholder="Playlist 7-ago"
+              placeholderTextColor="#999"
+              autoFocus={true}
+              selectTextOnFocus={true}
+            />
+            
+            <Text style={styles.modalNote}>
+              Exportaremos la lista de canciones en formato JSON 🥸
+            </Text>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowExportModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={handleConfirmExport}
+                disabled={!exportFileName.trim()}
+              >
+                <Text style={styles.modalConfirmText}>Exportar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
@@ -671,6 +741,84 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexDirection: 'row',
       alignItems: 'center',
       marginTop: 4,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    modalContainer: {
+      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      borderRadius: 12,
+      padding: 24,
+      width: '100%',
+      maxWidth: 400,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      marginBottom: 8,
+      textAlign: 'center',
+      color: isDark ? '#FFFFFF' : '#333',
+    },
+    modalSubtitle: {
+      fontSize: 14,
+      color: isDark ? '#CCCCCC' : '#666',
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    modalInput: {
+      borderWidth: 1,
+      borderColor: isDark ? '#444' : '#ddd',
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      marginBottom: 8,
+      backgroundColor: isDark ? '#1C1C1E' : '#fff',
+      color: isDark ? '#FFFFFF' : '#333',
+    },
+    modalNote: {
+      fontSize: 12,
+      color: isDark ? '#999' : '#666',
+      textAlign: 'center',
+      marginBottom: 24,
+      fontStyle: 'italic',
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    modalCancelButton: {
+      flex: 1,
+      padding: 12,
+      borderRadius: 8,
+      backgroundColor: isDark ? '#444' : '#f0f0f0',
+      alignItems: 'center',
+    },
+    modalCancelText: {
+      color: isDark ? '#CCCCCC' : '#666',
+      fontSize: 16,
+      fontWeight: '500',
+    },
+    modalConfirmButton: {
+      flex: 1,
+      padding: 12,
+      borderRadius: 8,
+      backgroundColor: '#007AFF',
+      alignItems: 'center',
+    },
+    modalConfirmText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
     },
   });
 };

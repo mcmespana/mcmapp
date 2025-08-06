@@ -59,6 +59,7 @@ export default function SongDetailScreen({
     navigationList,
     currentIndex,
     source,
+    firebaseCategory,
   } = route.params;
   const { addSong, removeSong, isSongSelected } = useSelectedSongs(); // Use context
 
@@ -302,6 +303,7 @@ export default function SongDetailScreen({
         onNavigateToFullscreen={handleNavigateToFullscreen}
         songTitle={_navScreenTitle}
         songFilename={filename}
+        firebaseCategory={firebaseCategory}
       />
     </Animated.View>
   );

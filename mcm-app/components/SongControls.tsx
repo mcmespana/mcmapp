@@ -31,6 +31,7 @@ interface SongControlsProps {
   // Añadir props para el reporte de fallitos
   songTitle?: string;
   songFilename?: string;
+  firebaseCategory?: string;
 }
 
 const SongControls: React.FC<SongControlsProps> = ({
@@ -48,6 +49,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   onNavigateToFullscreen,
   songTitle,
   songFilename,
+  firebaseCategory,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposePanel, setShowTransposePanel] = useState(false);
@@ -202,6 +204,7 @@ const SongControls: React.FC<SongControlsProps> = ({
         onClose={() => setShowReportBugsModal(false)}
         songTitle={songTitle}
         songFilename={songFilename}
+        firebaseCategory={firebaseCategory}
         onSuccess={handleReportSuccess}
       />
 

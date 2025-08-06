@@ -4,67 +4,361 @@
     "songs": [
       {
         "title": "01. Ven a Celebrar",
-        "filename": "ven_a_celebrar.cho",
-        "author": "",
+        "filename": "01.ven_a_celebrar.cho",
+        "author": "Alborada",
         "key": "G",
         "capo": 0,
         "info": "",
-        "content": "{title: Ven a Celebrar}\n{key: G}\n\n\n[G]VEN A [bm]CELEBRAR EL [C]AMOR DE [G]DIOS, SE [C]DERRAMARÁ [G]COMO [C]AGUA [D]LIMPIA  \n[C]INUNDANDO [G]NUESTRAS [C]VIDAS DE [D]SU [D]PRESENCIA (bis)\n\n[em]Os [bm]aseguro [C]que [G]yo [C]estaré [G]cuando [C]dos o [D]más por [D]mí os reunáis.  \nEs [G]LA [C]mejor [D]forma de [D]creer en nuestra amistad (bis)\n"
+        "content": "{title: Ven a Celebrar}\n{artist: Alborada}\n{key: G}\n\n\n{soc}\n[G]VEN A CELEBRAR EL [bm]AMOR DE DIOS, [C]SE DERRAMARÁ COMO [G]AGUA LIMPIA  \n[C]EMPAPANDO NUESTRAS [G]VIDAS DE [C]SU [D]PRESENCIA (bis)\n{eoc}\n\n[Em]Os aseguro que [Bm]yo estaré [C]cuando [C]dos o más por [G]mí os reunáis.  \n[C]Es la mejor forma [G]de creer en [C]nuestra amistad, [D]en nuestra amistad...\n\nNos has traído al desierto para hablarnos al corazón \ny transformar nuestras vidas con tus palabras de amor, \npalabras de amor..."
       },
       {
-        "title": "02. Dios está aquí",
-        "filename": "dios_esta_aqui.cho",
+        "title": "02. Dios Está Aquí",
+        "filename": "02.dios_esta_aqui.cho",
         "author": "",
         "key": "C",
         "capo": 1,
         "info": "",
-        "content": "\n{title: Dios Está Aquí}\n{key: C}\n{capo: 1}\n{chordsize:14}\n{soc}\n[C]DIOS [G]ESTÁ [am]AQUÍ TAN [F]CIERTO COMO EL [G]AIRE QUE [C]RESPIRO  \n[F]TAN [G]CIERTO COMO LA [C-em-am]MAÑANA SE LEVANTA  \n[F]TAN [G]CIERTO COMO [C]QUE ESTE CANTO LO PUEDES OÍR  \n{eoc}\n[G]LO [F]PUEDES [C]SENTIR MOVIÉNDOSE ENTRE LOS QUE AMAN  \n[G]LO [F]PUEDES [G]OÍR CANTANDO CON NOSOTROS [C]AQUÍ  \n[G]LO [F]PUEDES [C]LLEVAR CUANDO POR ESA PUERTA [G]SALGAS  \n[G]LO [F]PUEDES [G]GUARDAR POR SIEMPRE EN TU [C]CORAZÓN (G7)\n"
-      }
-    ]
-  },
-  "salmos": {
-    "categoryTitle": "C. Salmos 📖",
-    "songs": [
+        "content": "\n{title: Dios Está Aquí}\n{key: C}\n{capo: 1}\n\n{soc}\n[C]DIOS ES[G]TÁ A[Am]QUÍ TAN [F]CIERTO COMO EL AIRE [G]QUE [C]RESPIRO [C7] \nTAN [F]CIERTO COMO LA [G]MAÑANA SE LE[C]VAAA[Em]AAAAN[Am]TA  \nTAN [F]CIERTO COMO [G]QUE ESTE CANTO LO PUEDES [C]OÍR  \n{eoc}\n\nLO PUEDES [G]SENTIR MO[F]VIÉNDOSE ENTRE LOS QUE [C]AMAN  \nLO PUEDES [G]OÍR CAN[F]TANDO CON NOSOTROS [C]AQUÍ  \nLO PUEDES LLE[G]VAR CUAN[F]DO POR ESA PUERTA [C]SALGAS  \nLO PUEDES GUAR[G]DAR POR SI[F]EMPRE EN [G]TU CORA[G]ZÓN [G7]\n"
+      },
       {
-        "title": "01. El lote de mi Heredad",
-        "filename": "lote_heredad.cho",
+        "title": "03. Herederos",
+        "filename": "03.herederos.cho",
+        "author": "Nati Escudero, nsc",
+        "key": "C",
+        "capo": 1,
+        "info": "",
+        "content": "{title: Herederos}\n{artist: Nati Escudero, nsc}\n{key: C}\n{capo: 1}\n\n\n{soc}\nVE[C]NID BEND[F]ITOS DE MI P[C]ADRE \nHERE[Am]DAD EL REINO DE SU [G]AMOR \nPORQUE T[C]UVE HAMBRE Y [F]SED\nY ME [Am]DISTEIS DE C[G]OMER Y DE B[C]EBE[G]R\n{eoc}"
+      },
+      {
+        "title": "04. Ven a la Fiesta",
+        "filename": "04.ven_fiesta.cho",
+        "author": "Toño Casado",
+        "key": "D",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Ven a la Fiesta}\n{artist: Toño Casado}\n{key: D}\n\n\n{soc}\nV[D]EN [A]A LA [Bm]FIESTA ES EL M[G]OMENTO DE RE[Em]ZAR Y DE CAN[A]TAR\n[D]HOY [A]CELE[Bm]BRAMOS QUE EN NUESTRAS [G]VIDAS DIOS VIVI[A]ENDO SIEMPRE ES[D]TÁ\n{eoc}\n\n[G]Ven a la f[A]iesta a [D]part[A]ici[Bm]par, [G]nos hace falta [A]tu calor[Bm]\n[G]Jesús te inv[A]ita para [D]cele[A]brar su [Bm]amor\nAte[C]nto tú estar[A]ás a responder por eso"
+      },
+      {
+        "title": "05. Ven, no lo dudes",
+        "filename": "05.ven_no_lo_dudes.cho",
         "author": "",
         "key": "D",
         "capo": 0,
         "info": "",
-        "content": "{title: El Lote de Mi Heredad}\n{key: D}\n\n{start_of_chorus}\n[D]EL [A]SEÑOR ES EL [bm]LOTE DE MI [G]HEREDAD, [D]ALELUYA  \n[bm]POR [A]SIEMPRE MI [G]ALMA TE [A]CANTARÁ, [D]ALELUYA\n{end_of_chorus}\n\n[bm]Protégeme [G]Dios [D]mío, me [G]refugio en [A]ti. Yo [G]digo al [A]Señor tú [D]eres MI bien.  \n[D]Los dioses y [A]señores de [bm]LA tierra no [G]me satisfacen.  \n\n[D]El Señor es el [A]lote de MI [bm]heredad. MI [G]suerte está en [A]tu mano.  \n[G]Me ha tocado un [A]lote hermoso, me [G]encanta MI [A]heredad.  \n\n[D]Bendeciré al [A]Señor que me [G]aconseja. Hasta de [A]noche me instruye internamente.  \n[D]Tengo siempre [A]presente al [G]Señor, con él a [A]MI derecha, no vacilaré.  \n\n[D]Me enseñarás el [A]sendero de [em]LA vida, me [G]saciarás, de gozo en tu presencia  \n[A]de alegría. [D]Por siempre a [A]tu derecha.\n"
+        "content": "{title: Ven, no lo dudes}\n{artist: }\n{key: D}\n\n[D]Si piensas que e[G]sta noche ha sid[D]o de esas para o[A]lvidar\nSi apena[D]s has pegado ojo [G]y te tienes que [D]levantar[A]\nSi en la [D]cabeza mil hist[G]orias no paran d[D]e molestar[A]\nSi el estrés, la [D]pris[A]a, el mi[Bm]edo, te acompaña[G]n al [A]andar[D]\n\n{soc}\n[D]VEN, NO LO [G]DUDES NO LO [D]PIENSES, TOMA [F#m]FUERZA Y SE [Bm]VALIENTE \nTE IN[G]VITO A CELE[A]BRAR\n[D]VEN AL EN[G]CUENTRO DE LA [D]GENTE, DE LA [F#m]VIDA Y DE SU [Bm]SUERTE \n[G]DESDE NIÑO[A]HASTA ABUELO\n[F#m]SIEMPRE ES CRISTO QUIEN SE [Bm]PONE EN MEDIO\nESTA[G] ES LA FIESTA, DEL [A]PAN DE, LA UNI[D]DAD.\n{eoc}\n\n[D]Si la vida te sonríe o [G]es la espalda la [D]que te da[A]\n[D]Si eres pobre y t[G]e haces rico y [D]del suelo levant[A]aras\n[D]Si vas de chulo [G]y te sobra todo, si está[D]s pasando hasta de pasar[A]\n[D]O Si te importa el que [G]está a tu lado y estás ca[D]nsado de descansar.[A]"
       },
       {
-        "title": "02. El Señor es mi Pastor",
-        "filename": "senor_pastor.cho",
+        "title": "06. Nos reunimos aquí",
+        "filename": "06.nos_reunimos_aqui.cho",
+        "author": "Expresarte",
+        "key": "G",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Nos reunimos aquí}\n{artist: Expresarte}\n{key: G}\n\n\n{soc}\n[G]NOS REUNIMOS AQUÍ, AL PAR[C]TIR EL [G]PAN,\nDANDO G[G]RACIAS EN TU NOMBRE, AL PAR[C]TIR EL [D]AN,\nRECOR[G]DANDO TU PALABRA, AL PAR[Bm]TIR EL [Em]PAN,\nFOR[C]MANDO UN SOLO C[G]UERPO CAMI[C]NAMOS A TU [G]ALTAR,\nALZ[C]ANDO NUESTRAS [G]VOCES AL [F]PARTIR EL P[C]AN. (2)\n{eoc}\nNeces[G]itamos de tu Pan y de tu [D]Vino,\ny que hagamos el c[C]amino como un solo cora[D]zón.\nNecesi[G]tamos ofrecerte nuestras [D]vidas\nceleb[F]rar el gran misterio de tu [C]muerte y resurrecc[D]ión\n\nNecesitamos que resuenen que tus perdones nuestras faltas, que resuenen tus palabras que cantemos al amor\nNecesitamos ofrecerte nuestras vidas, que la paz sea con nosotros, recibir tu bendición."
+      },
+      {
+        "title": "07. Somos Hijas de la Iglesia",
+        "filename": "07.somos_hijas_iglesia.cho",
+        "author": "Inma Vírseda",
+        "key": "D",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Somos Hijas de la Iglesia}\n{artist: Inma Vírseda}\n{key: D}\n\n\n{soc}\nSOMOS  HIJAS  DE  [D]LA  IGLESIA  ([A]bis).  S[Bm]OMOS  HI[G]JAS  DE  LA  IG[D]LESIA  PARA CONS[Bm]OLAR.  (b[D]is)\n{eoc}\n[C]Iglesia  Ma[G]dre,  [D]por  el  bautismo  [F#m]nos  engendraste  a  LA  san[G]tidad.  Iglesia, [A][F#m]\n[G]Maestra, [Bm]nos ens[Em]eñas, có[Bm]mo hoy p[Em]roclamar a Cristo [A]Vida, Camino y Verdad."
+      },
+      {
+        "title": "08. Viviré Alabándote",
+        "filename": "08.vivire_alabandote.cho",
+        "author": "Maite López",
+        "key": "G",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Viviré Alabándote}\n{artist: Maite López}\n{key: G}\n\n{soc}\n[G]Viviré alabánd[D]ote, adoránd[C]ote y sirviénd[G]ote\n[Em]toda mi cap[Bm]acidad de amar [C]es para ti (b[D]is)\n{eoc}\n[Am]Todo lo que tengo es [D]tuyo, [Am]en todo puedo encontrar[D]te\n[B7]haz que sepa utilizar[C]lo, solo [G]si me ayuda amar[D]te."
+      },
+      {
+        "title": "09. Aclamad Cielos",
+        "filename": "09.aclamad_cielos.cho",
+        "author": "",
+        "key": "D",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Aclamad Cielos}\n{key: D}\n\n\n{soc}\nACLAM[D]AD CIELOS, EXULTA [Bm]TIERRA\nPORQUE Y[Em]AVEH HA CONSOLADO A S[A]U PUEBLO\t[D]\nY DE SUS POBRES SE [Bm]HA COMPA[Em]DECI[A]DO[D]\n{eoc}\n\n[D]En tiempo fav[Bm]orable te escucho, [Em]yo te formé[A][D]\nY t[Bm]e he desti[D]nado a [G]ser alianza de un p[A]ueblo, d[D]ice el Señ[A]or."
+      }
+    ]
+  },
+  "salmos": {
+    "categoryTitle": "C. Salmos 📚",
+    "songs": [
+      {
+        "title": "01. Salmo 15 - El Lote de mi Heredad",
+        "filename": "01.salmo15_lote_heredad.cho",
+        "author": "",
+        "key": "D",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Salmo 15 - El Lote de mi Heredad}\n{key: D}\n\n{comment: Intro: RE | LA | sim | SOL | RE | LA}\n\n{soc}\nEL [D]SEÑOR ES EL [A]LOTE DE MI [Bm]HEREDAD, [G]AAAA[D]LELUUU[A]YA  \nPOR [Bm]SIEMPRE MI ALMA TE [A]CANTARÁ, [G]AAAA[A]LELUUU[D]YA  \n{eoc}\n\n1. Pro[bm]tégeme Dios [G]mío, me re[D]fugio en ti. [G]Yo digo al Señor tú eres MI [A]bien.  \nLos [G]dioses y señores de la [A]tierra [G]no me [A]satis[D]facen.  \n\n2. [D]El Señor es el [A]lote de mi here[bm]dad. Mi [G]suerte está en tu [A]mano.  \n[G]  Me ha tocado un lote her[A]moso, me en[G]canta [A]mi here[D]dad. [A] \n\n3. Bendeci[D]ré al Se[A]ñor que me acon[Bm]seja. Hasta de [G]noche me instruye interna[A]mente.  \n[D]Tengo [A]siempre pre[G]sente al Se[A]ñor, con [G]él a mi de[A]recha, [G]no va[A]cila[D]ré..[A]. \n\n4. Me enseña[D]rás el sen[A]dero de la vida, [em]me saciarás, de [G]gozo en tu pre[D]sencia  \nde ale[A]gría... \nPor [D]siempre a tu de[A]recha (bis)\n"
+      },
+      {
+        "title": "02. Salmo 23 - El Señor es Mi Pastor",
+        "filename": "02.salmo23_senor_pastor.cho",
         "author": "Nico Montero",
         "key": "G",
         "capo": 1,
         "info": "",
-        "content": "{title: El Señor es Mi Pastor}\n{key: G}\n{capo: 1}\n\n[G]EL [D]SEÑOR ES MI [Em]PASTOR NADA ME [C]FALTA, EL SEÑOR ES MI [Am]PASTOR (bis)\n\n[G]En praderas [Bm]reposa [Em]MI alma, en su [C]agua descansa MI sed.  \n[C]Él me guía por [Am]senderos [D]justos, por amor por amor de su nombre.  \nAunque pase por valles oscuros, ningún  \n[Bm]mal ningún mal [Em]temeré, porque sé que el Señor va conmigo, su cayado sostiene mi feeeee.  \n[G]Tú preparas por mí una mesa, frente a aquellos que buscan MI mal. Con  \n[Em]Con aceite me ungiste Señor, y mi copa rebosa de ti, Gloria a Dios, Padre Omnipotente,  \n[Bm]y a su hijo Jesús, el Señor, y al Espíritu que habita en el mundo, por los siglos eternos amén  \n[C] [Am-A7] [D] [D7]\n"
+        "content": "{title: Salmo 23 - El Señor es Mi Pastor}\n{artist: Nico Montero}\n{key: G}\n{capo: 1}\n{soc}\nEL [G]SEÑOR ES MI [D]PASTOR NADA ME [Em]FALTA, EL [C]SEÑOR ES [Am]MI PAS[D]TOR\nEL [G]SEÑOR ES MI [D]PASTOR NADA ME [Em]FALTA, EL [C]SEÑOR ES [Am]MI PAS[D]TOR..[G].\n{eoc}\n\n1. En pra[G]deras reposa mi alma,\nen su ag[Bm]ua descansa mi sed.\nEl me gu[Em]ía por senderos j[C]ustos\npor a[Am]mor, por amor de su n[D]ombre.\n\nAunque [G]pase por valles oscuros\nningún [Bm]mal, ningún mal temeré\nporque [Em]se que el Señor va con[C]migo\nsu [Am]cayado [A7]sostiene mi [D]feee[D7]ee....\n\n{soc}\nEL [G]SEÑOR ES MI [D]PASTOR NADA ME [Em]FALTA, EL [C]SEÑOR ES [Am]MI PAS[D]TOR\nEL [G]SEÑOR ES MI [D]PASTOR NADA ME [Em]FALTA, EL [C]SEÑOR ES [Am]MI PAS[D]TOR..[G].\n{eoc}\n\n2. Tu pre[G]paras por mi una mesa\nfrente a[Bm] aquellos que buscan mi mal.\nCon ace[Em]ite me ungiste ,S[C]eñor\ny mi cop[Am]a rebosa de [D]ti.\n\nGloria a [G]Dios, padre omnipotente\ny a su [Bm]hijo Jesús, el Señor\ny al [Em]Espíritu que habita en el [C]mundo\npor los [Am]siglos [A7]eternos a[D]méeee[D7]eeeen...\n\n"
+      },
+      {
+        "title": "04. Salmo 115 - ¿Cómo te podré pagar?",
+        "filename": "04.salmo115.cho",
+        "author": "Belén Raigal, nsc",
+        "key": "Dm",
+        "capo": 1,
+        "info": "",
+        "content": "{title: Salmo 115 - ¿Cómo te podré pagar?}\n{artist: Belén Raigal, nsc}\n{key: Dm}\n{capo: 1}\n\n\n[C]¿CÓMO [C]TE PODRÉ PA[F]GAR POR TANTO [Em]BIEN QUE ME HAS HECHO? \n¿CÓMO [F]PUEDO AGRADE[D7]CER TU GRAN BON[G]DAD?\n\n1. Alza[C]ré la copa [F]de la salva[C]ción, invo[Am]cando el nombre [D7]del Se[G]ñor. Cumpli[Em]ré al Señor mis [Am]votos, todo el [F]pueblo lo pre[G]sencia[C]rá. (Bis)\n\n2. Quiero [C]proclamar tu [F]nombre, eres [C]mi Señor, soy tu [Am]siervo, ¿cómo [F]puedo agrade[G]cer? Mira[Em]ré siempre tu [Am]rostro, junto a [F]ti yo quiero [G]cami[C]nar. (Bis)\n\n3. Has sol[C]tado mis ca[F]denas, te a[C]labaré y mi [Am]vida ante tu al[D7]tar ofrece[G]ré. Cumpli[Em]ré al Señor mis [Am]votos, todo el [F]pueblo lo pre[G]sencia[C]rá.(Bis)\n"
+      },
+      {
+        "title": "06. Salmo 33 - Gustad y Ved",
+        "filename": "06.salmo33.cho",
+        "author": "Inma Vírseda",
+        "key": "D",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Salmo 33 - Gustad y Ved}\n{artist: Inma Vírseda}\n{key: D}\n\n\n1. [D] Bendigo [A]siempre al Señor[G], su alabanza es[A]tá siempre en mi boca,[F#m] mi alma se glo[Bm]ría en el Señor,[G] que los humildes lo es[A]cuchen y se alegren.\n{soc}\nGUS[Em]TAD Y VED QUÉ  [A]BUENO ES, DI[F#m]CHOSO EL QUE SE A[Bm]COGE A ÉL. GUS[Em]TAD Y VED QUÉ [A]BUENO ES NUESTRO [D]DIOS. (Bis)\n{eoc}\n2. [D]Persigue y [A]busca la paz,[G] haz el bien y vence[A] al mal.[F#m] Clamó este [Bm]pobre a Yahvé,[G] y lo libró de [A]todas sus angustias.\n{soc}\nGUS[Em]TAD Y VED QUÉ  [A]BUENO ES, DI[F#m]CHOSO EL QUE SE A[Bm]COGE A ÉL. GUS[Em]TAD Y VED QUÉ [A]BUENO ES NUESTRO [D]DIOS. (Bis)\n{eoc}\n"
+      },
+      {
+        "title": "07. Salmo 4 - En el aprieto",
+        "filename": "07.salmo4.cho",
+        "author": "Belén Raigal, nsc",
+        "key": "C",
+        "capo": 1,
+        "info": "",
+        "content": "{title: Salmo 4 - En el aprieto}\n{artist: Belén Raigal, nsc}\n{key: C}\n{capo: 1}\n\n{comment: Intro: lam | SOL | DO | SOL  x2}\n\n\n{soc}\n[C]TÚ QUE EN EL A[G]PRIETO ME DISTE AN[Am]CHURA, QUE EN EL DO[Em]LOR FUISTE MI CON[F]SUELO, [Dm]TEN PIEDAD DE [G]MI, ESCUCHA MI ORA[C]CIÓN[G] (bis){eoc}\n\nSa[C]bedlo, el Señor hizo mi[G]lagros, que [Am]tiemble el corazón en su pre[Em]sencia, [F]ofreced la [G]vida con sinceri[C]dad y confiad en [E]el Señor.  \n\n{comment: Instrumental: lam | SOL | DO | SOL  x2}\n\n\nMi [C]corazón se llena de [G]alegría, con[Am]tigo mucho más que mil [Em]tesoros, [F]que tu luz sea mi [G]luz y solo tú mi [C]Dios[E]\n\n{soc}\n[C]TÚ QUE HAS REGA[G]LADO DE PAZ MI [Am]VIDA, QUE SOLO EN [Em]TI PUEDO ESTAR TRAN[F]QUILO, [Dm]TEN PIEDAD DE [G]MI, ESCUCHA MI ORA[C]CIÓN[G].\n[C]TÚ QUE EN EL A[G]PRIETO ME DISTE AN[Am]CHURA, QUE EN EL DO[Em]LOR FUISTE MI CON[F]SUELO, [Dm]TEN PIEDAD DE [G]MI, ESCUCHA MI ORA[C]CIÓN[G]. \n\n[C]TÚ QUE HAS REGA[G]LADO DE PAZ MI [Am]VIDA, QUE SOLO EN [Em]TI PUEDO ESTAR TRAN[F]QUILO, [Dm]TEN PIEDAD DE [G]MI, ESCUCHA MI ORA[C]CIÓN[G]\n[C]\n{eoc}\n"
+      },
+      {
+        "title": "13. Salmo 114 - Alma mía recobra tu calma",
+        "filename": "13.salmo114.cho",
+        "author": "Inma Vírseda",
+        "key": "Dm",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Salmo 114 - Alma mía recobra tu calma}\n{artist: Inma Vírseda}\n{key: Dm}\n\n{soc}\nALMA [Dm]MÍA RE[C]COBRA TU [Dm]CALMA QUE EL SEÑOR[Bb] FUE [C]BUENO CON[Dm]TIGO (BIS)\n{eoc}\n\n1. [Dm]Amo al [C]Señor porque es[Dm]cucha mi [Bb]voz [C]supli[Dm]cante. Porque inclina su [C]oído hacia [Dm]mí, el [Bb]día [C]que lo in[Dm]voco (Bis).\n\n2. Me envol[Dm]vían [C]redes de [Dm]muerte, me alcan[Bb]zaron [C]los lazos del a[Dm]bismo. Caí en [C]tristeza y an[Dm]gustia. Invo[Bb]qué el [C]nombre del [Dm]Señor: “¡Se[Bb]ñor [C]salva mi [Dm]vida!”.\n\n3. El Se[Dm]ñor es [C]benigno y [Dm]justo, nuestro [Bb]Dios es [C]compasivo. El Se[Dm]ñor guarda [C]a los sen[Dm]cillos. Es[Bb]tando yo [C]sin fuerzas me [Dm]salvó. (Bis)\n\n4. Arran[Dm]có mi [C]alma de la [Dm]muerte y mis [Bb]ojos [C]de las [Dm]lágrimas. Arrancó mis [C]pies de la ca[Dm]ída. Camina[Bb]ré en pre[C]sencia del [Dm]Señor, [Bb]en el [C]país de la [Dm]vida.\n"
+      },
+      {
+        "title": "14. Cántico de Habacuc",
+        "filename": "14.cantico_habacuc.cho",
+        "author": "Belén Raigal, nsc",
+        "key": "D",
+        "capo": 3,
+        "info": "",
+        "content": "{title: Cántico de Habacuc}\n{artist: Belén Raigal, nsc}\n{key: D}\n{capo: 3}\n\n\n1. Se[D]ñor, he oído tu [E]mfama,[A] tu obra me ha impresio[D]nado. Lo escuché y tem[Em]blaron mis entrañas,[G] al oírlo se estremeció mi [A]voz.[G] En medio de los [A]años manifiésta[D]la;[G] en medio de los [A]años realíza[D]la[G] y ten [A]miseri[D]cordia.\n\n2. [D] El Señor vi[A]ene de Temán,[Bm] el santo del [F#m]monte Farán;[G] su resplandor[Em] eclipsa el [D]cielo. Sales a sal[A]var a tu pueblo,[Bm] sales a sal[F#m]var a tu Ungido,[G] pisas el [Em]mar con tus ca[D]ballos. Lo escuché y tem[Em]blaron mis entrañas,[G] al oírlo se estremeció mi [A]voz.\n\n3. [G] Y aunque la hi[A]guera no echa [Bm]yemas[G] y las [Em]viñas no tienen [A]fruto[G] y los [Em]campos no dan co[D]secha, yo exulta[Em]ré con el Señor,[G] me gloriaré en Dios, mi salva[A]dor.\n\n4. [[D] El Señor sobe[A]rano es mi fuerza,[Bm] él me da [F#m]piernas de gacela,[G] me hace cami[Em]nar por las al[D]turas. Yo exultar[Em]é con el Señor,[Cl] me gloriaré en Dios mi salva[A]dor. [D]\n"
+      },
+      {
+        "title": "16. Ven Espíritu Creador",
+        "filename": "16.ven_espiritu_creador.cho",
+        "author": "Nati Escudero, nsc",
+        "key": "Em",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Ven Espíritu Creador}\n{artist: Nati Escudero, nsc}\n{key: Em}\n\n\n{comment: Intro: mim | RE | lam x4}\n{soc}\n[Em] VEN ES[D]PÍRITU CRE[Am]ADOR,[Em] VEN ES[D]PÍRITU CRE[Am]ADOR. \n{eoc}\n1. Y vi[Em]sita las [D]almas de tus[G] fieles, [Am]llena de tu gracia el cora[B7]zón. Don de [Em]Dios, [D]fuente [Am]viva, [Em]fuego, caridad, un[G]ción espíritu[B7]al.\n{soc}\n[Em] VEN ES[D]PÍRITU CRE[Am]ADOR,[Em] VEN ES[D]PÍRITU CRE[Am]ADOR. \n{eoc}\n2. Tú la [Em]mano de Dios el prome[D]tido del[G] Padre, [Am]pon en nuestros labios su Pa[B7]labra. In[Em]funde en [D]nuestro cora[Am]zón el[Em] fuego de tu amor, forta[G]lece nuestra débili[B7]dad.\n{soc}\n[Em] VEN ES[D]PÍRITU CRE[Am]ADOR,[Em] VEN ES[D]PÍRITU CRE[Am]ADOR. \n{eoc}\n3. Y en[Em]ciende con tu luz [D]nuestros sen[G]tidos, [Am]tú nuestro consuelo danos [B7]paz. Y por [Em]ti conoz[D]camos al[Am] Padre, y al [Em]Hijo y que en ti, cre[G]amos por los siglos. A[B7]mén.\n{soc}\n[Em] VEN ES[D]PÍRITU CRE[Am]ADOR,[Em] VEN ES[D]PÍRITU CRE[Am]ADOR (4)\n{eoc}\n\n"
+      },
+      {
+        "title": "18. Salmo 32 - Que la tierra entera",
+        "filename": "18.salmo32.cho",
+        "author": "Belén Raigal, nsc",
+        "key": "G",
+        "capo": 2,
+        "info": "",
+        "content": "{title: Salmo 32 - Que la tierra entera}\n{artist: Belén Raigal, nsc}\n{key: G}\n{capo: 2}\n\n[G]Aclamemos todos [Am]juntos, al Señor que nos re[G]úne, pues merece la ala[Am]banza de aquellos que Él se escogi[G]ó. [C]Tocad en su honor el [D]arpa y la [G]cítara, instru[C]mentos que ale[D]gren su cora[G]zón; cantad[B7]le un cántico un[Em]evo, ¡[C]demos [D]gracias al Se[G]ñor! \nSu Palabra es sin[Am]cera, es leal, llena la tie[G]rra, hizo el cielo y con su ali[Am]ento los ejércitos cre[G]ó. Que la [C]tierra entera [D]cante su ala[G]banza, porque [Am]Él lo dijo y todo exis[G]tió; quiso al [B7]hombre en su pre[Em]sencia, [C]por su Es[D]píritu de a[G]mor.\n\n{soc}\nQUE LA TI[C]ERRA EN[D]TERA [G]CANTE, POR SU [Am]]AMOR TODO EXIS[D]TIÓ. \nQUE LA TI[C]ERRA EN[D]TERA [G]CANTE, DEMOS [C]GRACIAS [D]AL SE[G]ÑOR. \n{eoc}\n\n[G]Mira el Señor a los fi[Am]eles que esperan miseri[G]cordia, de la muerte nos res[Am]cata y nos sacia con su a[G]mor. Aguar[C]damos confi[D]ados al Se[G]ñor, pues con [Am]Él se alegra nuestro cora[G]zón; baje a [B7]nosotros tu [Em]gracia [C]y nos [D]haga prospe[G]rar. \n[G]Su Palabra nos da [Am]vida, es la luz en el cami[G]no, nunca dejes de mi[Am]rarnos, trátanos según tu [G]amor. A la [C]luz de tu Pa[D]labra cami[G]namos, sólo en [Am]ti descansa nuestro cora[G]zón, muéstra[B7]nos, Señor tu ros[Em]tro, [C]tu pre[D]sencia es nuestra [G]paz. \n\n{soc}\nQUE LA TI[C]ERRA EN[D]TERA [G]CANTE, POR SU [Am]]AMOR TODO EXIS[D]TIÓ. \nQUE LA TI[C]ERRA EN[D]TERA [G]CANTE, DEMOS [C]GRACIAS [D]AL SE[G]ÑOR. \n{eoc}\n"
+      },
+      {
+        "title": "19. Salmo 42 - Como busca la cierva",
+        "filename": "19.salmo42.cho",
+        "author": "Belén Raigal, nsc",
+        "key": "Em",
+        "capo": 2,
+        "info": "",
+        "content": "\n{title: Salmo 42 - Como busca la cierva}\n{artist: Belén Raigal, nsc}\n{key: Em}\n{capo: 2}\n\n{comment: Intro: mim | DO | lam | RE x2}\n\n[Em]COMO BUSCA LA CIERVA CORRIENTES DE AGUA, [C]ASÍ MI ALMA TE [Em]BUSCA (BIS) TIENE [C]SED DE TI MI [Em]ALMA, TIENE [C]SED DEL DIOS [B7]VIVO. [C]¿CUÁNDO PODRÉ EN[D]TRAR A [G]VER EL ROSTRO DE [B7]DIOS? \n\n1. [Am]Yo lo recuerdo den[D]tro de mi alma, [G]cómo marchaba a la [Em]tienda, [Am]cómo a la casa de [D]Dios [G]entre el gentío en [B7]fiesta. [Am]Espera en Dios, alma [D]mía espera, [G]nunca te canses que [Em]lo alabarás, [C]aunque en el fondo te [D]digan ¿[G]dónde está tu [B7]Dios? \n\n2. [Am]Todas tus olas me [D]han arrollado,[G] toda tu fuerza es[Em]tá sobre mí, [Am]aunque en el fondo a[D]ún me repiten ¿[G]dónde está tu [B7]Dios? [Am]En la mañana re[D]cibo tu Gracia [G]y por la noche te [Em]canto Señor, [C]eres el Dios de mi [D]vida, mi [G]roca y salva[B7]ción.\n"
+      },
+      {
+        "title": "20. Vuelve - Lc 15",
+        "filename": "20.vuelve_lc15.cho",
+        "author": "Nati Escudero, nsc",
+        "key": "D",
+        "capo": 2,
+        "info": "",
+        "content": "{title: Vuelve - Lc 15}\n{artist: Nati Escudero, nsc}\n{key: D}\n{capo: 2}\n\n1. [D]Llevo [F#m]tiempo espe[G]rándo[A]te, [D]con mis [F#m]brazos [G]abier[A]tos, \n[D]la espe[F#m]ranza me acom[G]paña y siempre es[Em]pero tu vuelta cada ma[A]ñana.\n[D]Hijo mío [F#m]Yo con[G]fío en [A]ti, [D]entra en [F#m]ti mismo y des[G]cubre la verdad [Em]del Amor que nos [A]tiene unidos.\n\n{soc}\n[D]VUELVE, [G]VUELVE A LA [A]VIDA, [D]VUELVE Y NO TE [G]SIENTAS PERDI[A]DO, [G]VEN A LA CASA DE TU [D]PADRE  Y [G]QUÉDA[A]TE CON[D]MIGO (BIS).\n{eoc}\n\n2. [D]Sólo de[F#m]seo que vu[G]el[A]vas, [D]lo dejes to[F#m]do y [G]ven[A]gas. [D]Yo nece[F#m]sito de [G]ti, a pe[Em]sar de tus fallos. \n¿[G]Qué  padre no perdona a su hijo a[A]mado? \n[D]Yo[F#m] te [G]acogeré, [A]te amaré, [D]pero [F#m]vuelve a mí tu [G]cora[A]zón, [D]y de a[F#m]mor y de ale[G]gría, [Em]Yo lo llena[A]ré.\n\n{soc}\n[D]VUELVE, [G]VUELVE A LA [A]VIDA, [D]VUELVE Y NO TE [G]SIENTAS PERDI[A]DO, [G]VEN A LA CASA DE TU [D]PADRE  Y [G]QUÉDA[A]TE CON[D]MIGO (BIS).\n{eoc}\n"
+      },
+      {
+        "title": "21. Shema Israel - Os 11",
+        "filename": "21.shema_israel.cho",
+        "author": "Nati Escudero, nsc",
+        "key": "A",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Shema Israel - Os 11}\n{artist: Nati Escudero, nsc}\n{key: A}\n\n1. [A] Cuando era [F#m]niño yo te a[C#m]mé, te cui[D]dé e hijo [E]mío te [A]llamé[E].[A] Con cuerdas [F#m]dulces te lle[C#m]vaba, con lazos de a[D]mor y [E]ternura te cui[A]dé[E].\n[A] Yo te enseñé a cami[C#m]nar,[D]  yo te llevaba entre mis [E]brazos. [A] Tú te alzabas hasta [C#m]mí y [D]yo me inclinaba para seguirte a[E]mando.\n\n{soc}\nSHE[A]MA ISRA[C#m]EL, ES[D]CUCHA MI VOZ, YO TE AMÉ, TE [C#m]AMO Y TE AMA[F#m]RÉ. MIS [D]ENTRAÑAS SE ESTRE[E]MECEN POR [A]TI[F#m], IN[F]CLINA TU [G]CORAZÓN A [A]MÍ. \n{eoc}\n\n2. [A] En el de[F#m]sierto te he encon[C#m]trado perdida en la [D]tierra ar[E]diente y [A]seca[E].[A] Tu cora[F#m]zón me olvi[C#m]dó, la cera y el [D]humo, eran [E]para otro [A]dios[E].[A] Mi amor y mi ver[C#m]dad, [D]siempre te mira[E]rán. She[A]ma Isra[C#m]el, que tu [D]Dios con misericordia te an[E]sía.\n\n{soc}\nSHE[A]MA ISRA[C#m]EL, ES[D]CUCHA MI VOZ, YO TE AMÉ, TE [C#m]AMO Y TE AMA[F#m]RÉ. MIS [D]ENTRAÑAS SE ESTRE[E]MECEN POR [A]TI[F#m], IN[F]CLINA TU [G]CORAZÓN A [A]MÍ. \n{eoc}\n"
       }
     ]
   },
   "aleluya": {
-    "categoryTitle": "D. Aleluya - Palabra 🎊",
+    "categoryTitle": "D. Aleluya - Palabra 📖",
     "songs": [
       {
         "title": "01. Aleluya Cantará",
-        "filename": "aleluya_cantara.cho",
+        "filename": "01.aleluya_cantara.cho",
         "author": "Brotes de Olivo",
         "key": "E",
         "capo": 0,
         "info": "",
-        "content": "{title: Aleluya Cantará}\n{key: E}\n\n[E]ALELUYA [A]CANTARÁ [B]QUIEN [E]PERDIÓ LA ESPERANZA Y LA TIERRA SONREIRÁ, ALELUYA.  \n[f#m] [G#7] [c#m] [A] [B] [E] [c#m] [B] [E]\n"
+        "content": "{title: Aleluya Cantará}\n{artist: Brotes de Olivo}\n{key: E}\n\n{comment: Intro: MI}\n{soc}\nALE[A]LUYA [B]CANTA[E]RÁ QUIEN PER[F#m]DIÓ LA [G#m7]ESPERAN[C#m]ZA \nY LA [A]TIERRA [B]SONREI[E]RÁ, ALE[c#m]LUUUUU[E]UUUU[E]YA.  \n{eoc}\n\n{comment: Ver versión completa como 'Aleluya de la Tierra' que inlcuye dos estrofas}\n"
       },
       {
         "title": "02. Aleluya",
-        "filename": "nunca_dejare.cho",
+        "filename": "02.nunca_dejare.cho",
         "author": "Kairoi",
         "key": "C",
         "capo": 2,
         "info": "",
-        "content": "{title: Aleluya}\n{author: Kairoi}\n{key: C}\n{capo: 2}\n\n{soc}\n[C]ALELU[em]YA, [F]ALELU[G]YA, [C]ALELU[em]YA, [F]A[G]LELU[C]YA    \n{eoc}\n\n[C]Nunca [G]deja[am]ré [F]de can[dm]tar, \n[G]que tú eres LA luz y el amor  \n[C]Tu [G]ca[am]mi[F]no [dm]quie[G]ro seguir, no me dejes solo Señor.\n"
+        "content": "{title: Aleluya}\n{artist: Kairoi}\n{key: C}\n{capo: 2}\n\n{soc}\n[C]ALELU[em]YA, [F]ALELU[G]YA, [C]ALELU[em]YA, [F]A[G]LELU[C]YA    \n{eoc}\n\n[C]Nunca deja[G]ré de can[Am]tar, \n[F]que tú eres la [Dm]luz y el [G]amor  \n[C]Tu camino [G]quiero se[Am]guir, [F]no me dejes [Dm]solo Se[G]ñor.\n"
+      },
+      {
+        "title": "11. Habla Señor",
+        "filename": "11.habla_senor.cho",
+        "author": "Inmaculada Vírseda",
+        "key": "A",
+        "capo": 0,
+        "info": "",
+        "content": "\n{title: Habla Señor}\n{author: Inmaculada Vírseda}\n{key: A}\n{capo: 0}\n\n{soc}\n[A]Habla Se[C#m]ñor, que tu [D]siervo es[E]cucha [A]Habla Se[C#m]ñor, que tu [D]siervo es[B7]cucha. \n{eoc}\n\nMuéstra[F#m]me tu volun[C#m]tad, a tra[D]vés de la Pa[A]labra, quiero [Bm]conocerte [C#m]más, para a[D]marte [E]y se[A]guirte (bis)\n"
+      },
+      {
+        "title": "30. Aleluya de la Tierra",
+        "filename": "30.aleluya_tierra.cho",
+        "author": "Brotes de Olivo",
+        "key": "E",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Aleluya de la Tierra}\n{artist: Brotes de Olivo}\n{key: E}\n{comment: Versión completa con estrofas}\n\n\n{comment: Intro: MI}\n\n[E]¿Quién quiere resuci[A]tar, a este [B]mundo que se [E]muere?\n[A]¿Quién cantará el al[B]eluya, de esa [A]nueva [B]luz que [E]viene?\n[E]¿Quién cuando mire la [A]tierra, y las [F#m]tragedias obs[G#7]erve,\n\nSentirá en su cora[C#m]zón, el [F#m]dolor de quien se [B]muere?\n¿Quién es capaz[A] de salvar, a este mundo [B]decadente,\nY man[F#m]tiene la espe[B]ranza de los muchos que la [A]pier[E]den?\n\n\n{soc}\n[E]EL QUE [A]SUFRE  [B7]MATA Y [E]MUERE, \nDESESPE[A]RA Y [B7]ENLOQ[E]UECE,\nY OTROS [A]SON ESPEC[B7]TADO[E]RES, [E]NO LO [A]SIEE[B7]EEEEN[E]TEN\n{eoc}\n\n¿Quién bajará de la cruz  a tanto Cristo sufriente mientras los hombres miramos impasivos, indolentes?\n\n¿Quién grita desde el silencio de un ser que a su Dios retiene, porque se hace palabra que sin hablar se le entiende?\n\n¿Quién se torna en Aleluya porque traduce la muerte  como el trigo que se pudre y de uno cientos vienen?\n\n{soc}\nALE[A]LUYA [B]CANTA[E]RÁ QUIEN PER[F#m]DIÓ LA [G#m7]ESPERAN[C#m]ZA \nY LA [A]TIERRA [B]SONREI[E]RÁ, ALE[c#m]LUUUUU[E]UUUU[E]YA.  \n{eoc}\n"
+      }
+    ]
+  },
+  "comunion": {
+    "categoryTitle": "I. Comunión 🎶",
+    "songs": [
+      {
+        "title": "36. El amor no tiene fronteras",
+        "filename": "36. El amor no tiene fronteras.cho",
+        "author": "Inma Vírseda",
+        "key": "D",
+        "capo": 1,
+        "info": "",
+        "content": "{title: El amor no tiene fronteras}\n{artist: Inma Vírseda}\n{key: D}\n{capo: 1}\n{comment: A Mª Teresa González Justo}\n\n1. Sólo [D]sé que fuiste [G]Tú quien me lla[D]mó a ser instrumento [Em7]de Consola[A]ción, hoy te [G]doy mi sí de [A]nuevo aunque [F#m]sé de mi pe[Bm]cado, pues con[G]fío en Ti, Señor, que vas con[A]migo.\nNo se [D]puede amar a [G]Dios a quien no ve[D]mos, si no amamos al her[Em7]mano a quien [A]vemos; cuando [G]quiera yo me[A]dir cómo [F#m]va mi amor a [Bm]Dios mira[G]ré si amo a todos mis her[A]manos.\n\n{soc}\nEL A[D]MOOO[A]OOOR [Bm]NO TIENE FRON[G]TERAS, EL A[D]MOOO[G]OOOR NO TIENE FRON[A]TERAS. (BIS)\n{eoc}\n\n2. Cada [D]día siento [G]que Tú me lo [D]pides, que yo dé mi vida [Em7]por llevarte a [A]todos, con de[G]talles muy pe[A]queños y con [F#m]gestos muy hu[Bm]manos para [G]hacer feliz a quien está a mi [A]lado. \nPero [D]no podemos [G]dar si no te[D]nemos y por eso es nece[Em7]saria la ora[A]ción, para a[G]mar como Tú [A]amas, perdo[F#m]nar como Tú hi[Bm]ciste y sem[G]brar paz y alegría al cami[A]nar.\n\n{soc}\nEL A[D]MOOO[A]OOOR [Bm]NO TIENE FRON[G]TERAS, EL A[D]MOOO[G]OOOR NO TIENE FRON[A]TERAS. (BIS)\n{eoc}\n\n3. Como [D]Tú quiero estar [G]siempre dispo[D]nible y que todo el que me [Em7]busque a Ti te en[A]cuentre, porque [G]yo les dé mi [A]vida como [F#m]la darías [Bm]Tú y así [G]puedan darte gracias y se[A]guirte. \nHaz que [D]no pase de [G]largo ante mi her[D]mano y que sean para [Em7]mí los prefe[A]ridos, los en[G]fermos, los pe[A]queños, los que [F#m]sufren y los [Bm]pobres porque [G]Tú, Señor Jesús, vives en [A]ellos.\n\n{soc}\nEL A[D]MOOO[A]OOOR [Bm]NO TIENE FRON[G]TERAS, EL A[D]MOOO[G]OOOR NO TIENE FRON[A]TERAS. (BIS)\n{eoc}"
+      },
+      {
+        "title": "38. Un Sí contesta otro Sí",
+        "filename": "38. Un sí contesta a otro sí.cho",
+        "author": "Virginia Barea y María Garza",
+        "key": "D",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Un Sí contesta otro Sí}\n{artist: Virginia Barea y María Garza}\n{key: D}\n{comment: 150 años fundación de la Congregación Hnas. de la Consolación}\n\n1. [G]Dando gracias al [A]sí de [Bm]tantas personas [G]que contestaron al [A]gran sí de Dios; [G]mirando la [A]realidad escu[Bm]charon el grito [G]de la humanidad [A]rota… \n\n{soc}\n[G]¡Un [A]grito de[Bm] Dios! [G]¡un grito de[A] Dios! [G]Súbete a un [A]alto monte a[Bm]legre mensajero de Si[G]ón, el futuro está[A] en ti, [G]en tus [A]manos está el[D] sí. \n\t\n[G]UN SÍ CON[A]TESTA A OTRO [Bm]SÍ, GRANDES DI[G]ÁLOGOS SE [A]OYEN POR ENCIMA DEL [D]MAR, DE [G]MUNDO A [A]MUNDO SÍ[D]... UN SÍ CONTESTA A OTRO[A] SÍ, [D]SÍ\n{eoc}\n\n2. [G]No basta decir[A] sí una [Bm]vez en la vida, [G]mantén tu sí reno[A]vado en el tiempo. [G]Quien tiene espe[A]ranza a[Bm]rriesga su vida, [G]se le ha dado una [A]vida nueva…\n\n{comment: Un grito de Dios...}\n\n3. [G]La mies es [A]mucha y [Bm]siempre seremos [G]pocos ante el descon[A]suelo del mundo. [G]Engendra en tu [A]ser la [Bm]vida del Reino. [G]Hoy en ti es posible el [A]sueño de Dios…\n\n{comment: Un grito de Dios...}\n"
+      },
+      {
+        "title": "55. No Temas - Is 43",
+        "filename": "55.no_temas_nati.cho",
+        "author": "Nati Escudero, nsc",
+        "key": "G",
+        "capo": 3,
+        "info": "",
+        "content": "{title: No Temas - Is 43}\n{artist: Nati Escudero, nsc}\n{key: G}\n{capo: 3}\n\n{comment: Intro: SOL | DO | SOL | lam | RE | lam | RE | SOL | DO...}\n\n1. [G]Tu eres mi [D]sierva, mi ele[C]gida,[Am] en quien yo me com[D]plazco. [G] En ti he puesto mi Es[C]píritu,[B] yo que te llamé y [Em]te llamo,[C] eres va[Am]liosa para[G] mi yo te for[Em]mé, arran[Am]qué los cerrojos de tus [C]puertas y  te tomé de la [D]mano.\n\n{soc}\nNO [G]TEMAS NO [D]TEMAS [C] TE HE LLAMADO POR TU [D]NOMBRE. NO [G]TEMAS NO [D]TEMAS  SI ATRA[C]VIESAS LAS [B7]AGUAS[Em] YO ESTARÉ CON[C]TIGO,  SI [G]PASAS  POR EL [Em]FUEGO [C]NO TE QUEMA[D]RÁS.\nNO [G]TEMAS NO [D]TEMAS[C] TE HE LLAMADO POR TU [D]NOMBRE.  NO [G]TEMAS NO [D]TEMAS CAMINA[C]RÉ DELANTE DE [B7]TI Y EN [Em]MI HALLARÁS LA [C]FUERZA PARA EN [G]TODO[C], PARA EN [G]TODO[C], PARA EN [G]TODO, A[C]MAR [D]Y SER[G]VIR.\n{eoc}\n\n2. [G] Tu eres mi [D]sierva, mi ele[C]gida,[Am] en quien yo me com[D]plazco. [G] Yo soy quien te [C]habita, te recons[B]truyo y te le[Em]vanto.[C] Consuela a mi [G]pueblo,[C] háblales al [G]corazón, [Am]amales y diles que Yo [C]soy su Consola[D]ción.\n\n{soc}\nNO [G]TEMAS NO [D]TEMAS [C] TE HE LLAMADO POR TU [D]NOMBRE. NO [G]TEMAS NO [D]TEMAS  SI ATRA[C]VIESAS LAS [B7]AGUAS[Em] YO ESTARÉ CON[C]TIGO,  SI [G]PASAS  POR EL [Em]FUEGO [C]NO TE QUEMA[D]RÁS.\nNO [G]TEMAS NO [D]TEMAS[C] TE HE LLAMADO POR TU [D]NOMBRE.  NO [G]TEMAS NO [D]TEMAS CAMINA[C]RÉ DELANTE DE [B7]TI Y EN [Em]MI HALLARÁS LA [C]FUERZA\nPARA EN [G]TODO[C], PARA EN [G]TODO[C], PARA EN [G]TODO, A[C]MAR [D]Y SER[G]VIR.\n{eoc}\n"
+      }
+    ]
+  },
+  "salida": {
+    "categoryTitle": "J. Salida 👣",
+    "songs": [
+      {
+        "title": "01. Madre enséñame a vivir como tú",
+        "filename": "01. Madre enséñame a vivir como tú.cho",
+        "author": "Inma Vírseda",
+        "key": "D",
+        "capo": 2,
+        "info": "",
+        "content": "{title: Madre enséñame a vivir como tú}\n{artist: Inma Vírseda}\n{key: D}\n{capo: 2}\n{comment: A María Rosa Molas}\n\n1. [D]Tu vida no se entiende [G]si no es por A[D]mooor [G](x2).\n[D]Tu vida no se entiende [G]si no es desde [A]Dios.... Te des[Bm]cubro hoy, [F#m]Madre, abis[G]mada en Dios por la [A]fe, con en[Bm]trañas de mi[F#m]sericordia, [G]transparentas a [A]Dios.\n\n{soc}\n[D]MADRE, ENSÉ[A]ÑAME A VIVIR COMO TÚ[Bm], QUIERO [G]SER CON[A]SOLACIÓN[D]. ENSÉÑAME [A]A SEGUIR A [G]CRISTO[A] (BIS)\n{eoc}\n\n2. [D]Tu vida no se entiende [G]sin fraterni[D]daaaad [G](x2). \nTu [D]vida no se entiende [G]sin comuni[A]dad. \nTe des[Bm]cubro hoy,  [F#]Madre, siempre o[G]rante y llena de ac[A]ción, inde[Bm]fensa pero [F#m]invencible, [G]vives y haces vi[A]vir.\n\n\n3. [D]Tu vida no se entiende [G]sin Consola[D]cióoon [G](x2). \nTú [D]vida no se entiende [G]sin la humil[A]dad. \nTe des[Bm]cubro hoy, [F#m]Madre, escon[G]dida con Cristo en [A]Dios, la Espe[Bm]ranza impulsa [F#m]tu vivir: [G]VIVES EN CARI[A]DAD. \n\n\n{soc}\n[D]MADRE, ENSÉ[A]ÑAME A VIVIR COMO TÚ[Bm], QUIERO [G]SER CON[A]SOLACIÓN[D]. ENSÉÑAME [A]A SEGUIR A [G]CRISTO[A] (BIS)\n\n{comment: +1 tono}\n[E]MADRE, ENSÉ[B]ÑAME A VIVIR COMO TÚ[C#m], QUIERO [A]SER CON[B]SOLACIÓN[E]. ENSÉÑAME [B]A SEGUIR A [A]CRISTO[B] (BIS)\n{eoc}"
+      }
+    ]
+  },
+  "himnos": {
+    "categoryTitle": "K. Himnos 🔝",
+    "songs": [
+      {
+        "title": "01. Somos Consolación",
+        "filename": "01. Somos Consolacion.cho",
+        "author": "Inma Vírseda",
+        "key": "D",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Somos Consolación}\n{artist: Inma Vírseda}\n{key: D}\n{comment: VI Congreso Internacional del COM · Tortosa · 2007}\n\n{comment: Intro: RE | SOL | RE | LA x2}\n\n1. [D]Nos reunimos a[A]quí de tantos lu[Bm]gares, tantos a[G]migos, [D]unidos por [A]un ideal: el Evan[G]gelio de Je[A]sús. [Bm]Unidos por [F#m]una experiencia vi[G]vida en el cora[D]zón: [G]Dios nos da[Em] su Consola[A]ción.\n\n{soc}\n[D]SOMOS CON[G]SOLA[D]CIÓN, LLEVAMOS LA ESPE[G]RANZA Y LA PAZ DE [A]DIOS. [D]SOMOS CON[G]SOLA[D]CIÓN, SEGUIMOS TRAS LAS [G]HUELLAS DEL SEÑOR JE[A]SÚS. QUEREMOS SER SUS [G]MANOS Y SU CORA[A]ZÓN EN MEDIO DE UN [F#m]MUNDO SEDIENTO DE A[G]MOR. ¡¡SOMOS, [D]SO[G]MOS, [D]SOMOS CON[A]SOLA[D]CIÓN[G]!!\n{comment: Instrumental: RE | SOL | RE | LA x2}\n{eoc}\n\n2. [D] Nos reunimos aquí[A] y recor[Bm]damos tantos mo[G]mentos [D]vividos en [A]grupos del COM, que ani[G]maron nuestra [A]fe. [Bm]Roma, Tor[F#m]tosa… y por todo el [G]mundo se extiende [D]ya [G]como una [Em]luz, la gente del [A]COM.\n\n{soc}\n[D]SOMOS CON[G]SOLA[D]CIÓN, LLEVAMOS LA ESPE[G]RANZA Y LA PAZ DE [A]DIOS. [D]SOMOS CON[G]SOLA[D]CIÓN, SEGUIMOS TRAS LAS [G]HUELLAS DEL SEÑOR JE[A]SÚS. QUEREMOS SER SUS [G]MANOS Y SU CORA[A]ZÓN EN MEDIO DE UN [F#m]MUNDO SEDIENTO DE A[G]MOR. ¡¡SOMOS, [D]SO[G]MOS, [D]SOMOS CON[A]SOLA[D]CIÓN[G]!!\n{comment: Instrumental: RE | SOL | RE | LA x2}\n{eoc}\n\n3. [D]Nos reunimos aquí[A] y hacemos pre[Bm]sente a Mª [G]Rosa, [D]aquella mujer[A] que vivió en la I[G]glesia para [A]Dios, [Bm]que sólo bus[F#m]có Consolar al que [G]sufre, en nombre de [D]Dios y [G]empezó un Ca[Em]risma que todos vi[A]vimos hoy.\n\n{soc}\n[D]SOMOS CON[G]SOLA[D]CIÓN, LLEVAMOS LA ESPE[G]RANZA Y LA PAZ DE [A]DIOS. [D]SOMOS CON[G]SOLA[D]CIÓN, SEGUIMOS TRAS LAS [G]HUELLAS DEL SEÑOR JE[A]SÚS. QUEREMOS SER SUS [G]MANOS Y SU CORA[A]ZÓN EN MEDIO DE UN [F#m]MUNDO SEDIENTO DE A[G]MOR. ¡¡SOMOS, [D]SO[G]MOS, [D]SOMOS CON[A]SOLA[D]CIÓN[G]!!\n{comment: Instrumental: RE | SOL | RE | LA x2}\n¡¡SOMOS, [D]SO[G]MOS, [D]SOMOS CON[A]SOLA[D]CIÓN[G]!!\n{eoc}"
+      },
+      {
+        "title": "02. Himno Delwende",
+        "filename": "02. Himno ONGD Delwende.cho",
+        "author": "Inma Vírseda",
+        "key": "D",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Himno Delwende}\n{artist: Inma Vírseda}\n{key: D}\n{comment: Himno ONGD Delwende: Al servicio de la Vida}\n\n1. No te[G]nemos en nuestras [D]manos la res[A]puesta al dolor del mundo. Pero [Bm]frente al dolor del [G]mundo, tenemos nuestras [A]manos. Cuando [G]Dios de la historia venga, [A]nos mirará las [Bm]manos, [G]nos mirará las [A]mano[Bm]s\n\n{soc}\n[Bm]Por un mundo [E]más humano [G]y un futuro [Bm]para los pueblos del Sur (bis)\nDELWEN[Bm]DEEE[E]EE,“AL SER[G]VICIO DE LA [Bm]VIDA”,   DELWEN[Bm]DEEE[E]EE “AL SER[G]VICIO DE LA [Bm]VIDA\" (bis)\n{eoc}\n\n[D]Como un signo de los tiempos [G]vive ya[A] DELWEN[D]DE, como cauce para ti de [G]solidaridad. [Bm]Para tender una [G]mano [A]a los hermanos más [D]pobres, luchar por su desa[G]rrollo y potenciar su ri[A]queza. [G]Es la me[A]jor inver[D]sión, al fi[G]nal de la vida, sólo el A[A]mor con[Bm]tará.\n\n{soc}\nDELWEN[Bm]DEEE[E]EE,“AL SER[G]VICIO DE LA [Bm]VIDA”,   DELWEN[Bm]DEEE[E]EE “AL SER[G]VICIO DE LA [Bm]VIDA\" (bis)\n{eoc}\n\n[D]Es un reto para todos [G]extender[A] DELWEN[D]DE una nueva cultura de [G]solidaridad, [Bm]defender siempre la [G]vida, [A]sembrando paz y jus[D]ticia, sin miedo a comprome[G]ternos para ayudar a vi[A]vir. [G]Si somos [A]CONSOLA[D]CIÓN, el ser[G]vir a quien sufre debe ser [A]hoy nuestra [Bm]opción."
+      },
+      {
+        "title": "03. Himno del COM",
+        "filename": "03. Himno del COM.cho",
+        "author": "Mª Dolores García",
+        "key": "Em",
+        "capo": 1,
+        "info": "",
+        "content": "{title: Himno del COM}\n{author: Mª Dolores García}\n{key: Em}\n{capo: 1}\n\nEs[Em]toy viendo en [Am]torno a mí [D]gente que pasa va[G]cía, her[Am]manos que miran sin [Em]ver, he[B7]rmanos que sufren y [Em]lloran. Estoy viendo en [Am]torno a mí un [D]mundo sin espe[G]ranza, un [B7]mundo que no tiene [Em]paz, un [B7]mundo que no tiene a[Em]mor. \n\n{soc}\nY DIOS ME [Am]GRITA DESDE EL FONDO DE MI [Em]SER: ¡CONSO[B7]LAD A MI [Em]PUEBLO! Y DIOS ME [Am]GRITA DESDE EL FONDO DE MI [Em]SER: ¡[B7]CONSO[Em]LAD!\nTÚ PUEDES [Am]SER CONSOLA[Em]CIÓN, CONSOLA[B7]CIÓN PARA EL [Em]MUNDO. TÚ PUEDES [Am]SER CAMINO DE [Em]PAZ. TÚ PUEDES [B7]SER: ¡CONSOLA[Em]CIÓN!\n{eoc}\n\nSiento muy den[Am]tro de mí la ur[D]gencia de la Pa[G]labra: “[Am]Permaneced en mi a[Em]mor, ¡[B7]sed mensajeros del [Em]Reino! Os daré al Con[Am]solador, [D]nunca os dejaré [G]solos y en [B7]Él podréis comprar[Em]tir, y en [B7]Él podréis conso[Em]lar”. \n\n{soc}\nY DIOS ME [Am]GRITA DESDE EL FONDO DE MI [Em]SER: ¡CONSO[B7]LAD A MI [Em]PUEBLO! Y DIOS ME [Am]GRITA DESDE EL FONDO DE MI [Em]SER: ¡[B7]CONSO[Em]LAD!\nTÚ PUEDES [Am]SER CONSOLA[Em]CIÓN, CONSOLA[B7]CIÓN PARA EL [Em]MUNDO. TÚ PUEDES [Am]SER CAMINO DE [Em]PAZ. TÚ PUEDES [B7]SER: ¡CONSOLA[Em]CIÓN!\n\n¡CONSOLA[Am]CIÓN PARA EL [Em]MUNDO! ¡CONSOLA[B7]CIÓN [Em]HOY! ¡CONSOLA[Am]CIÓN PARA [Em]HOMBRE! ¡[B7]QUIERO [Em]SER! ¡[B7]QUIERO [Em]SER!\n{eoc}"
+      },
+      {
+        "title": "05. Rompe tus Cadenas",
+        "filename": "05. Rompe tus cadenas.cho",
+        "author": "Inma Vírseda",
+        "key": "D",
+        "capo": 1,
+        "info": "",
+        "content": "{title: Rompe tus Cadenas}\n{artist: Inma Vírseda}\n{key: D}\n{capo: 1}\n{comment: V Congreso Internacional del COM · Zaragoza · 2004}\n\n{soc}\n[D]ROMPE TUS CA[C]DENAS, [G]VEN ARRIÉSGA[A]TE (BIS) A [G]SER CONSOLACIÓN, A LLE[Em]VAR A LA [A]PAZ DE DIOS.[D] (BIS)\n{eoc}\n\nPor ca[D]minos dife[C]rentes nos vol[G]vemos a encon[D]trar. Es Je[D]sús quien nos re[C]úne, quién nos [G]da la liber[A]tad para [G]dar su a[A]mor, su Evan[G]gelio de esper[E]anza y de [A]paz.\n\n{soc}\n[D]ROMPE TUS CA[C]DENAS, [G]VEN ARRIÉSGA[A]TE (BIS) A [G]SER CONSOLACIÓN, A LLE[Em]VAR A LA [A]PAZ DE DIOS.[D] (BIS)\n{eoc}\n\nSi Je[D]sús rompió ca[C]denas de quien [G]no contaba [D]ya, consolando, levan[C]tando, dando [G]vida a los de[A]más, dile [G]hoy que [A]sí, conti[G]núa su Evan[Em]gelio y su Mi[A]sión\n[D]Abre tus manos, [C]abre tus ojos, ¡[Em]muchos nece[A]sitan de ti! (bis)\n\n{soc}\n[D]ROMPE TUS CA[C]DENAS, [G]VEN ARRIÉSGA[A]TE (BIS) A [G]SER CONSOLACIÓN, A LLE[Em]VAR A LA [A]PAZ DE DIOS.[D]. [D]ROMPE TUS CA[C]DENAS, [G]VEN ARRIÉSGA[A]TE (BIS) A [G]SER CONSOLACIÓN, A LLE[Em]VAR A LA [A]PAZ DE DIOS.[D]   (SUBE [B]TONO)\n\n[E]ROMPE TUS CA[D]DENAS, [A]VEN ARRIÉSGA[B]TE (BIS) A [A]SER CONSOLACIÓN, A LLE[F#m]VAR A LA PAZ DE [B]DIOS. (BIS) [E]\n{eoc}"
+      },
+      {
+        "title": "08. Somos Jóvenes del COM",
+        "filename": "08. Jóvenes del COM.cho",
+        "author": "Inma Vírseda",
+        "key": "D",
+        "capo": 1,
+        "info": "",
+        "content": "{title: Somos Jóvenes del COM}\n{artist: Inma Vírseda}\n{key: D}\n{capo: 1}\n{comment: III Congreso Internacional del COM · Tortosa y Reus · 1996}\n\n1. [D]La familia con[A]solación, reci[Bm]bimos la antorcha de [G]nuestro ca[A]risma. [D]En la Iglesia, que[A]remos vivir, reali[Bm]zando en el mundo [G]el Evan[A]gelio.[D] Nos llamó Je[A]sús el Señor para [G]se[A]r,[Bm] esperanza, [G]vida y fra[A]tern[D]idad.\n\n{soc}\nSOMOS [G]JÓVE[A]NES DEL [D]COM, ENVI[E]ADOS A CONSO[F#]LAR, SOMOS AN[G]TORCHA[A] DE [D]DIOS [F#]PARA EL 20[Bm]00. (BIS)\n{eoc}\n\n2. [D]El silencio [A]y la oración, nos con[Bm]forman con Cristo [G]Consola[A]dor[D] y nos lanzan [A]a Consolar, desgas[Bm]tando la vida [G]como la [A]Madre.[D] Viviremos [A]en libertad para [G]da[A]r[Bm] nuestra antorcha [G]a los que[A] sufren [D]hoy.\n\n3. [D]El Carisma [A]crece también y se ex[Bm]tiende en el tiempo [G]y en el es[A]pacio.[D]  Somos todo [A]un eslabón de esta in[Bm]mensa familia [G]univer[A]sal,[D] para amar a [A]Cristo Jesús, para [G]se[A]r[Bm] de los pobres [G]siervos por [A]el a[D]mor.\n\n{soc}\nSOMOS [G]JÓVE[A]NES DEL [D]COM, ENVI[E]ADOS A CONSO[F#]LAR, SOMOS AN[G]TORCHA[A] DE [D]DIOS [F#]PARA EL 20[Bm]00. (BIS)  \n[G]COM ANTORCHA DE [D]DIOS [F#]PARA EL 20[Bm]00\n{eoc}"
+      },
+      {
+        "title": "09. Testigos de la Palabra",
+        "filename": "09. Testigos de la Palabra.cho",
+        "author": "Nati Escudero, nsc",
+        "key": "A",
+        "capo": 1,
+        "info": "",
+        "content": "{title: Testigos de la Palabra}\n{artist: Nati Escudero, nsc}\n{key: A}\n{capo: 1}\n{comment: IV Congreso Internacional del COM, JMJ y Jubileo · Roma · 1996}\n\n1. [A]2000 a[D]ños de his[E]toria,[A] levantando a [D]la humani[E]dad,[F#m] Cristo ayer, [C#m]hoy y siempre con no[D]sotros esta[E]rá. [A]Abrid puertas [D]y ven[E]tanas, [A]dilatad el [D]hori[E]zonte, [F#m]vivid el [C#m]Evangelio y lle[D]vad su noticia a to[E]dos los hombres y sed...\n\n{soc}\nTES[A]TIGOS DE [D]LA PA[E]LABRA, TES[A]TIGOS DE [D]LA VER[E]DAD SOMOS [F#m]JÓVENES DEL [C#m]COM, LLA[D]MADOS A CONSO[E]LAR. Y SER…  TES[A]TIGOS DE [D]LA PA[E]LABRA, TES[A]TIGOS DE [D]LA VER[E]DAD SOMOS [F#m]JÓVENES DEL [C#m]COM, LLA[D]MADOS A CONSO[E]LAR.\n{eoc}\n\n2. [A]En este a[D]ño de [E]gracia,[A] vivamos la fra[D]terni[E]dad universal [F#m]y con júbi[C#m]lo cantemos,[D] porque es tiempo de jus[E]ticia y paz. [A]Unidos a [D]toda la I[E]glesia, [A]nos ponemos [D]en ca[E]mino, [F#m]haciendo del Carisma [C#m]nuestra vida y [D]junto con la Madre [E]ser peregrinos y ser…\n\n{soc}\nTES[A]TIGOS DE [D]LA PA[E]LABRA, TES[A]TIGOS DE [D]LA VER[E]DAD SOMOS [F#m]JÓVENES DEL [C#m]COM, LLA[D]MADOS A CONSO[E]LAR. Y SER…  TES[A]TIGOS DE [D]LA PA[E]LABRA, TES[A]TIGOS DE [D]LA VER[E]DAD SOMOS [F#m]JÓVENES DEL [C#m]COM, LLA[D]MADOS A CONSO[E]LAR.\n{eoc}"
+      },
+      {
+        "title": "11. Haciendo Camino",
+        "filename": "11. Haciendo Camino.cho",
+        "author": "Nati Escudero, nsc",
+        "key": "Am",
+        "capo": 3,
+        "info": "",
+        "content": "{title: Haciendo Camino}\n{artist: Nati Escudero, nsc}\n{key: Am}\n{capo: 3}\n{comment: I Ruta de la Madre · Tortosa a Reus}\n\n[Am]Abriendo ca[Em]mino hacia [F]nuevos hori[G]zontes, [Am]deja que el Es[Em]píritu ca[F]mine conti[G]go y te a[Am]dentrarás en ti[Em]erra nueva, [F]bajo un cielo [G]nuevo, [Am]caminando sobre las [Em]huellas, [F]de una mujer que descubrió, que descubrió, senderos de vida y consolación[G].\n\n{soc}\n[Am]HACIENDO CA[Em]MINO TRAS EL [F]ECO DE SUS [G]HUELLAS, [Am]TESTIMONIO [Em]VIVO DE [F]DIOS HECHO EXPE[G]RIENCIA. [Am]SAL DE TU [Em]TIERRA Y VIVE LA [F]FUERZA DEL [G]AMOR, [F]QUE DENTRO DE TI QUIERE SER CONSOLACI[C]ÓN. (BIS)\n{eoc}\n\n[Am]Apoyados en la [Em]Palabra y [F]mirando [G]siempre en Cristo, [Am]confiando en el [Em]Padre y [F]como pere[G]grinos, [Am]al igual que [Em]Mª Rosa [F]compartimos fe y fraternidad, siendo Iglesia viva y con nuestra vida a Dios en todo alabar[G]…\n\n{soc}\n[Am]HACIENDO CA[Em]MINO TRAS EL [F]ECO DE SUS [G]HUELLAS, [Am]TESTIMONIO [Em]VIVO DE [F]DIOS HECHO EXPE[G]RIENCIA. [Am]SAL DE TU [Em]TIERRA Y VIVE LA [F]FUERZA DEL [G]AMOR, [F]QUE DENTRO DE TI QUIERE SER CONSOLACI[C]ÓN. (BIS)\n{eoc}"
+      },
+      {
+        "title": "20. Firmes en la fe para Consolar",
+        "filename": "20. Firmes en la fe para consolar.cho",
+        "author": "Nati Escudero, nsc",
+        "key": "E",
+        "capo": 0,
+        "info": "",
+        "content": "{title: Firmes en la fe para Consolar}\n{artist: Nati Escudero, nsc}\n{key: E}\n{comment: VII Congreso Internacional del COM y JMJ · Madrid · 2011}\n\n[E]De nuevo en ca[B]mino[C#m]  sedientos de encon[G#m]trarte,[A] Tú que nos has lla[E]mado [A]y nos has hecho a tu i[B]magen.[E] Abrid de nuevo el [B]corazón,[C#m] vivid con fuerza la [G#m]comunión.[A] Construid el [E]Reino sien[A]do testigos [B]de su amor.\n\n{soc}\nFIRMES EN LA FE[E] Y ENRAI[A]ZADOS EN[B] TI. FIRMES EN LA FE[E] Y APO[A]YADOS EN TU PA[B]LABRA, QUE[A]REMOS SER TU LUZ[Bm], TU PAZ, TU [G#m]VIDA Y TU VER[C#m]DAD, ¡HA[A]BLAD AL CORAZÓN DEL HOMBRE Y [Bm]CONSOLAD! \nFIRMES EN LA FE[E] Y ENRAI[A]ZADOS EN[Bm] TI. FIRMES EN LA FE[E] Y APO[A]YADOS EN TU PA[B]LABRA. [A]SACIA NUESTRA SED, SÓLO EN [B]TI QUEREMOS SER Y VIVIR, FIRMES EN LA FE.\n{eoc}\n\n[E]Nos llamas a [Bm]Consolar,[C#m] al amor hecho [G#m]gratuidad,[A] a ser testigos de [E]tu Palabra[A] en horizontes de [B]sequedad.[E] Fecunda nuestra tie[B]rra,[C#m] haznos fuertes en [G#m]la debilidad,[A] somos Iglesia [E]viva que al [E]mundo quiere [B]consolar.\n\n{soc}\nFIRMES EN LA FE[E] Y ENRAI[A]ZADOS EN[B] TI. FIRMES EN LA FE[E] Y APO[A]YADOS EN TU PA[B]LABRA, QUE[A]REMOS SER TU LUZ[Bm], TU PAZ, TU [G#m]VIDA Y TU VER[C#m]DAD, ¡HA[A]BLAD AL CORAZÓN DEL HOMBRE Y [Bm]CONSOLAD! \nFIRMES EN LA FE[E] Y ENRAI[A]ZADOS EN[Bm] TI. FIRMES EN LA FE[E] Y APO[A]YADOS EN TU PA[B]LABRA. [A]SACIA NUESTRA SED, SÓLO EN [B]TI QUEREMOS SER Y VIVIR, FIRMES EN LA FE.\n{eoc}"
       }
     ]
   }

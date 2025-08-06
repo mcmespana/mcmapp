@@ -332,7 +332,7 @@ export default function Calendario() {
                           styles.eventLocation,
                           selectedDate < todayStr && styles.pastText,
                         ]}
-                        numberOfLines={1}
+                        numberOfLines={2}
                       >
                         {ev.location}
                       </Text>
@@ -498,7 +498,7 @@ export default function Calendario() {
                             styles.eventLocation,
                             isPast && styles.pastText,
                           ]}
-                          numberOfLines={1}
+                          numberOfLines={2}
                         >
                           {item.location}
                         </Text>

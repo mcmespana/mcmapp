@@ -37,6 +37,7 @@ export type RootStackParamList = {
     navigationList?: SongNavItem[];
     currentIndex?: number;
     source?: 'category' | 'selection';
+    firebaseCategory?: string;
   };
   SongFullscreen: {
     filename: string;

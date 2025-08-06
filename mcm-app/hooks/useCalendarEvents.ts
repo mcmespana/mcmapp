@@ -45,14 +45,17 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
           const adjustedEndDate = endDate.toISOString().split('T')[0];
           
           // If after adjustment the end date equals start date,
-          // it's a single-day event, mark it as such but keep the original endDate for processing
+          // it's a single-day event, remove endDate completely
           if (adjustedEndDate === current.startDate) {
+            current.endDate = undefined;
             current.isSingleDay = true;
-            // Keep endDate for internal processing but mark as single day
           } else {
             current.endDate = adjustedEndDate;
             current.isSingleDay = false;
           }
+        } else if (!current.endDate) {
+          // Events without endDate are single-day by default
+          current.isSingleDay = true;
         }
         
         events.push(current as Omit<CalendarEvent, 'calendarIndex'>);
@@ -66,7 +69,14 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
         .replace(/\\n/g, ' ')
         .trim();
     } else if (line.startsWith('LOCATION:')) {
-      current.location = line.slice('LOCATION:'.length).trim();
+      current.location = line
+        .slice('LOCATION:'.length)
+        .replace(/\\n/g, '\n')
+        .trim()
+        .split('\n')
+        .filter(part => part.trim().toLowerCase() !== 'españa')
+        .join('\n')
+        .trim() || undefined;
     } else if (line.startsWith('URL:')) {
       current.url = line.slice('URL:'.length).trim();
     } else if (line.startsWith('DTSTART')) {
@@ -150,18 +160,25 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
 
           events.forEach((ev) => {
             const withCal: CalendarEvent = { ...ev, calendarIndex: i };
-            const start = new Date(ev.startDate);
-            const end = ev.endDate
-              ? new Date(ev.endDate)
-              : new Date(ev.startDate);
-            for (
-              let d = new Date(start);
-              d <= end;
-              d.setDate(d.getDate() + 1)
-            ) {
-              const dateStr = d.toISOString().split('T')[0];
+            
+            // If no endDate or it's a single-day event, only add to the start date
+            if (!ev.endDate || ev.isSingleDay) {
+              const dateStr = ev.startDate;
               if (!map[dateStr]) map[dateStr] = [];
               map[dateStr].push(withCal);
+            } else {
+              // For multi-day events, iterate through the range
+              const start = new Date(ev.startDate);
+              const end = new Date(ev.endDate);
+              for (
+                let d = new Date(start);
+                d <= end;
+                d.setDate(d.getDate() + 1)
+              ) {
+                const dateStr = d.toISOString().split('T')[0];
+                if (!map[dateStr]) map[dateStr] = [];
+                map[dateStr].push(withCal);
+              }
             }
           });
         } catch {}

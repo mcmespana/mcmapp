@@ -7,8 +7,6 @@ import {
   TextInput,
   Alert,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -16,7 +14,7 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
-import { getCategoryFromFilename, cleanSongTitle } from '@/utils/songUtils';
+import { getCategoryFromFirebaseCategory, cleanSongTitle } from '@/utils/songUtils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 
 interface ReportBugsModalProps {
@@ -24,6 +22,7 @@ interface ReportBugsModalProps {
   onClose: () => void;
   songTitle?: string;
   songFilename?: string;
+  firebaseCategory?: string;
   onSuccess?: () => void; // Para mostrar toast desde el componente padre
 }
 
@@ -32,6 +31,7 @@ export default function ReportBugsModal({
   onClose,
   songTitle,
   songFilename,
+  firebaseCategory,
   onSuccess,
 }: ReportBugsModalProps) {
   const scheme = useColorScheme();
@@ -51,10 +51,10 @@ export default function ReportBugsModal({
     try {
       const db = getDatabase(getFirebaseApp());
 
-      // Determinar la categoría basándose en el filename
-      const category = songFilename
-        ? getCategoryFromFilename(songFilename)
-        : 'otros';
+      // Determinar la categoría basándose en la categoría de Firebase
+      const category = firebaseCategory
+        ? getCategoryFromFirebaseCategory(firebaseCategory)
+        : 'catZotros';
 
       // Limpiar el título de la canción
       const cleanTitle = songTitle ? cleanSongTitle(songTitle) : 'Sin título';
@@ -120,79 +120,82 @@ export default function ReportBugsModal({
 
   return (
     <BottomSheet visible={visible} onClose={handleClose}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={handleClose} accessibilityLabel="Cerrar">
-              <MaterialIcons name="close" size={24} color={theme.text} />
-            </TouchableOpacity>
-            <Text style={[styles.title, { color: theme.text }]}>
-              ¿Fallitos? 🐛
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          {songTitle && (
-            <Text style={[styles.songInfo, { color: theme.icon }]}>
-              Avisando de fallitos en la canción: &ldquo;{songTitle}&rdquo;
-            </Text>
-          )}
-
-          <Text style={[styles.label, { color: theme.text }]}>
-            He encontrado estos fallitos...
-          </Text>
-
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: theme.background,
-                color: theme.text,
-                borderColor: theme.icon,
-              },
-            ]}
-            placeholder="Describe aquí los fallos que has encontrado en esta canción"
-            placeholderTextColor={theme.icon}
-            value={bugDescription}
-            onChangeText={setBugDescription}
-            multiline
-            numberOfLines={6}
-            textAlignVertical="top"
-            maxLength={500}
-          />
-
-          <Text style={[styles.charCount, { color: theme.icon }]}>
-            {bugDescription.length}/500 caracteres
-          </Text>
-
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              {
-                backgroundColor: bugDescription.trim() ? '#FF6B6B' : theme.icon,
-                opacity: isSubmitting ? 0.7 : 1,
-              },
-            ]}
-            onPress={handleSubmit}
-            disabled={!bugDescription.trim() || isSubmitting}
-          >
-            <MaterialIcons
-              name={isSubmitting ? 'hourglass-empty' : 'bug-report'}
-              size={20}
-              color="#fff"
-            />
-            <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Enviando...' : 'Notificar fallitos'}
-            </Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleClose} accessibilityLabel="Cerrar">
+            <MaterialIcons name="close" size={24} color={theme.text} />
           </TouchableOpacity>
-
-          <Text style={[styles.disclaimer, { color: theme.icon }]}>
-            Con tus avisos nos ayudas a mejorar la calidad del cantoral. Puedes
-            incluir detalles como acordes incorrectos o mal colocados, letras
-            con errores o problemas de formato.
+          <Text style={[styles.title, { color: theme.text }]}>
+            ¿Fallitos? 🐛
           </Text>
+          <View style={{ width: 24 }} />
         </View>
-      </TouchableWithoutFeedback>
+
+        {songTitle && (
+          <Text style={[styles.songInfo, { color: theme.icon }]}>
+            Avisando de fallitos en la canción: &ldquo;{songTitle}&rdquo;
+          </Text>
+        )}
+
+        <Text style={[styles.label, { color: theme.text }]}>
+          He encontrado estos fallitos...
+        </Text>
+
+        <TextInput
+          style={[
+            styles.textInput,
+            {
+              backgroundColor: theme.background,
+              color: theme.text,
+              borderColor: theme.icon,
+            },
+          ]}
+          placeholder="Describe aquí los fallos que has encontrado en esta canción"
+          placeholderTextColor={theme.icon}
+          value={bugDescription}
+          onChangeText={setBugDescription}
+          multiline
+          numberOfLines={6}
+          textAlignVertical="top"
+          maxLength={500}
+          autoFocus={false}
+          blurOnSubmit={false}
+          returnKeyType="default"
+          scrollEnabled={true}
+          editable={!isSubmitting}
+        />
+
+        <Text style={[styles.charCount, { color: theme.icon }]}>
+          {bugDescription.length}/500 caracteres
+        </Text>
+
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            {
+              backgroundColor: bugDescription.trim() ? '#FF6B6B' : theme.icon,
+              opacity: isSubmitting ? 0.7 : 1,
+            },
+          ]}
+          onPress={handleSubmit}
+          disabled={!bugDescription.trim() || isSubmitting}
+        >
+          <MaterialIcons
+            name={isSubmitting ? 'hourglass-empty' : 'bug-report'}
+            size={20}
+            color="#fff"
+          />
+          <Text style={styles.submitButtonText}>
+            {isSubmitting ? 'Enviando...' : 'Notificar fallitos'}
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.disclaimer, { color: theme.icon }]}>
+          Con tus avisos nos ayudas a mejorar la calidad del cantoral. Puedes
+          incluir detalles como acordes incorrectos o mal colocados, letras
+          con errores o problemas de formato.
+        </Text>
+      </View>
     </BottomSheet>
   );
 }

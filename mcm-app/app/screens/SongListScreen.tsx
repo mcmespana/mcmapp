@@ -75,9 +75,8 @@ export default function SongsListScreen({
 
   useEffect(() => {
     if (!songsData) return;
-    // TODO - Eliminar estos comentarios
-    console.log('Accessing category:', categoryId);
-    console.log('Available categories:', Object.keys(songsData));
+    setIsLoading(true);
+    setError(null);
 
     const loadSongs = async () => {
       setIsLoading(true);
@@ -128,7 +127,6 @@ export default function SongsListScreen({
             return titleA.localeCompare(titleB);
           });
           setSongs(allSongs);
-          console.log(`Loaded ${allSongs.length} songs for '__ALL__' category`);
         } else {
           // Try to find the category (case insensitive)
           const categoryKey = Object.keys(songsData).find(
@@ -136,13 +134,8 @@ export default function SongsListScreen({
               key.trim().toLowerCase() === categoryId.trim().toLowerCase(),
           );
 
-          console.log('Found category key:', categoryKey);
-
           if (categoryKey) {
             const categorySongs = songsData[categoryKey].songs;
-            console.log(
-              `Found category '${categoryKey}' with ${categorySongs?.length || 0} songs`,
-            );
 
             if (categorySongs && Array.isArray(categorySongs)) {
               const songsWithNumericPart = categorySongs.map((song) => {
@@ -194,6 +187,7 @@ export default function SongsListScreen({
   // Handle song press
   const handleSongPress = (song: Song) => {
     const index = songs.findIndex((s) => s.filename === song.filename);
+    
     navigation.navigate('SongDetail', {
       filename: song.filename,
       title: song.title.replace(/^\d+\.\s*/, ''),
@@ -204,6 +198,7 @@ export default function SongsListScreen({
       navigationList: categoryId === '__ALL__' ? undefined : songs,
       currentIndex: categoryId === '__ALL__' ? undefined : index,
       source: categoryId === '__ALL__' ? undefined : 'category',
+      firebaseCategory: categoryId === '__ALL__' ? song.originalCategoryKey : categoryId,
     });
   };
 
