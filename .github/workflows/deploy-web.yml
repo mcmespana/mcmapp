@@ -8,25 +8,31 @@ on:
 jobs:
   build-and-deploy-web:
     runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout código
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      - name: Install dependencies
+      - name: Instalar dependencias
+        working-directory: ./mcm-app
         run: npm ci
 
-      - name: Login to Expo
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx expo login --non-interactive --token $EXPO_TOKEN
+      - name: Instalar EAS CLI
+        run: npm install -g eas-cli@latest
+
+      - name: Verificar autenticación Expo
+        run: eas whoami
 
       - name: Build web assets
+        working-directory: ./mcm-app
         run: npx expo export --platform web
 
       - name: Deploy to Expo Hosting
+        working-directory: ./mcm-app
         run: npx eas deploy --platform web --prod --non-interactive

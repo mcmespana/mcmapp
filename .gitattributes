@@ -1,0 +1,6 @@
+# Suppress GitHub Actions linting warnings for workflow files
+*.yml linguist-language=YAML
+*.yaml linguist-language=YAML
+
+# Treat workflow files as YAML for proper syntax highlighting
+/.github/workflows/* linguist-language=YAML

@@ -8,17 +8,27 @@ on:
 jobs:
   publish-preview:
     runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line
     steps:
-      - uses: actions/checkout@v3
-      - name: Instala EAS CLI
-        run: npm install -g eas-cli
-      - name: Login en Expo
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas login --token $EXPO_TOKEN
+      - name: Checkout código
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Instalar EAS CLI
+        run: npm install -g eas-cli@latest
+        
+      - name: Verificar autenticación
+        run: eas whoami
+        
       - name: Publicar OTA en preview
+        working-directory: ./mcm-app
         run: |
           eas update \
             --branch preview \
-            --message "🔎 OTA Preview: $GITHUB_SHA" \
+            --message "🔎 OTA Preview: ${{ github.sha }}" \
             --non-interactive

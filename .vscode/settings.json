@@ -1,0 +1,28 @@
+{
+  "yaml.validate": true,
+  "yaml.schemaStore.enable": true,
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml"
+  },
+  "yaml.customTags": [
+    "!ENV scalar",
+    "!ENV_FILE scalar"
+  ],
+  "[yaml]": {
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    }
+  },
+  "github-actions.workflows.pinned.workflows": [
+    ".github/workflows/ota-production.yml",
+    ".github/workflows/ota-preview.yml", 
+    ".github/workflows/deploy-web.yml"
+  ],
+  "yaml.completion": true,
+  "redhat.telemetry.enabled": false,
+  "problems.decorations.enabled": false,
+  "typescript.validate.enable": false,
+  "eslint.enable": false
+}
