@@ -1,0 +1,24 @@
+# .github/workflows/ota-preview.yml
+name: OTA Preview
+
+on:
+  push:
+    branches: [ preview ]
+
+jobs:
+  publish-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Instala EAS CLI
+        run: npm install -g eas-cli
+      - name: Login en Expo
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas login --token $EXPO_TOKEN
+      - name: Publicar OTA en preview
+        run: |
+          eas update \
+            --branch preview \
+            --message "🔎 OTA Preview: $GITHUB_SHA" \
+            --non-interactive
