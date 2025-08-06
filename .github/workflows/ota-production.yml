@@ -22,6 +22,10 @@ jobs:
       - name: Instalar EAS CLI
         run: npm install -g eas-cli@latest
         
+      - name: Instalar dependencias
+        working-directory: ./mcm-app
+        run: npm ci
+        
       - name: Verificar autenticación
         run: eas whoami
         

@@ -35,4 +35,4 @@ jobs:
 
       - name: Deploy to Expo Hosting
         working-directory: ./mcm-app
-        run: npx eas deploy --platform web --prod --non-interactive
+        run: npx eas deploy --prod --non-interactive

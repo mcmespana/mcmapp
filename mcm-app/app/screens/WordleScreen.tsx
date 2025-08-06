@@ -373,7 +373,7 @@ export default function WordleScreen() {
         <Text style={styles.infoText}>
           🟩 Verde: Letra en posición correcta, vas bien.{'\n'}
           🟡 Amarillo: La letra está en la palabra pero en otra posición.{'\n'}
-          ⚪ Gris: Esa letra no está, no lo intentes.
+          ⚪ Gris: Esa letra no está, no la vuelvas a usar.
         </Text>
       </BottomSheet>
 
