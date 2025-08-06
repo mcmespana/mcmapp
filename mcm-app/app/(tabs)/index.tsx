@@ -25,6 +25,7 @@ import typography from '@/constants/typography';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import Toast from '@/components/Toast';
+import { VersionDisplay } from '@/components/VersionDisplay';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import featureFlags from '@/constants/featureFlags';
 import useWordleStats from '@/hooks/useWordleStats';
@@ -493,6 +494,9 @@ export default function Home() {
         }}
       />
 
+      {/* Versión de la app */}
+      <VersionDisplay style={styles.versionContainer} />
+
       {/* Modal de feedback */}
       <AppFeedbackModal
         visible={feedbackVisible}
@@ -586,6 +590,7 @@ interface Styles {
   loadingDot1: ViewStyle;
   loadingDot2: ViewStyle;
   loadingDot3: ViewStyle;
+  versionContainer: ViewStyle;
 }
 
 const styles = StyleSheet.create<Styles>({
@@ -990,5 +995,9 @@ const styles = StyleSheet.create<Styles>({
     top: 20,
     right: 8,
     opacity: 0.1,
+  },
+  versionContainer: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
   },
 });
