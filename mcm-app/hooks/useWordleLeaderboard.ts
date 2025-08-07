@@ -45,8 +45,8 @@ export default function useWordleLeaderboard(
           );
           const top = arr.slice(0, 3).map((r) => ({
             userId: r.userId,
-            name: users[r.userId]?.name || 'Anónimo',
-            place: users[r.userId]?.place || '',
+            name: r.userName || users[r.userId]?.name || 'Anónimo',
+            place: r.userLocation || users[r.userId]?.place || '',
             attempts: r.attempts,
           }));
           setTopToday(top);
@@ -67,8 +67,8 @@ export default function useWordleLeaderboard(
             const avg = played ? totalAttempts / played : Infinity;
             return {
               userId: uid,
-              name: users[uid]?.name || 'Anónimo',
-              place: users[uid]?.place || '',
+              name: data.userName || users[uid]?.name || 'Anónimo',
+              place: data.userLocation || users[uid]?.place || '',
               played,
               average: avg,
             };
