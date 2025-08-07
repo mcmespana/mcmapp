@@ -76,6 +76,22 @@ export default function useWordleStats() {
         timestamp: Date.now(),
       });
       await set(ref(db, `wordle/${date}/updatedAt`), Date.now().toString());
+
+      const newStats = {
+        played: stats.played + 1,
+        distribution: {
+          ...stats.distribution,
+          [attempts as 1 | 2 | 3 | 4 | 5 | 6]:
+            stats.distribution[attempts as 1 | 2 | 3 | 4 | 5 | 6] + 1,
+        },
+        userName: profile.name,
+        userLocation: profile.location,
+      };
+      await set(ref(db, `wordle/stats/${stats.userId}`), newStats);
+      await set(ref(db, `wordle/users/${stats.userId}`), {
+        name: profile.name,
+        place: profile.location,
+      });
     } catch (e) {
       console.error('Error saving wordle result', e);
     }

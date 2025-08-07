@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import { Share, Platform } from 'react-native';
 
@@ -18,11 +18,38 @@ export type GameStatus = 'playing' | 'won' | 'lost';
 const WORD_LEN = 5;
 const MAX_TRIES = 6;
 
-export default function useWordleGame(word: string, validWords: string[] = []) {
-  const [guesses, setGuesses] = useState<Guess[]>([]);
+export default function useWordleGame(
+  word: string,
+  initialGuesses: Guess[] = [],
+) {
+  const [guesses, setGuesses] = useState<Guess[]>(initialGuesses);
   const [currentGuess, setCurrentGuess] = useState('');
   const [status, setStatus] = useState<GameStatus>('playing');
   const [keyboard, setKeyboard] = useState<Record<string, LetterState>>({});
+
+  // Rebuild state when initial guesses change (e.g. loaded from storage)
+  useEffect(() => {
+    setGuesses(initialGuesses);
+
+    // Determine current status
+    let newStatus: GameStatus = 'playing';
+    if (initialGuesses.some((g) => g.letters.every((l) => l.state === 'correct')))
+      newStatus = 'won';
+    else if (initialGuesses.length >= MAX_TRIES) newStatus = 'lost';
+    setStatus(newStatus);
+
+    // Build keyboard state from guesses
+    const kb: Record<string, LetterState> = {};
+    initialGuesses.forEach((g) => {
+      g.letters.forEach(({ letter, state }) => {
+        const prev = kb[letter];
+        if (prev === 'correct') return;
+        if (prev === 'present' && state === 'absent') return;
+        kb[letter] = state;
+      });
+    });
+    setKeyboard(kb);
+  }, [initialGuesses, word]);
 
   const addLetter = (l: string) => {
     if (status !== 'playing') return;
