@@ -1,14 +1,8 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  ImageBackground,
-  StyleSheet,
-  TouchableOpacity,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
+import GPhoto from '@/components/GPhoto';
 // textShadow from uiStyles is for dark text, we'll define a new one for white text
 
 interface AlbumCardProps {
@@ -17,8 +11,7 @@ interface AlbumCardProps {
     title: string;
     location?: string; // New field, optional
     date?: string; // New field, optional
-    imageUrl: string;
-    albumUrl?: string; // Assuming albumUrl is part of the album object, for completeness
+    albumUrl: string; // Link to the shared album
   };
   onPress: () => void;
 }
@@ -26,6 +19,7 @@ interface AlbumCardProps {
 const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
   const { width } = useWindowDimensions();
   const activeStyles = styles(width);
+  const cardWidth = width > 600 ? width / 2 : width;
   return (
     <TouchableOpacity
       style={activeStyles.card}
@@ -33,16 +27,12 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
       activeOpacity={0.8}
     >
       <View style={activeStyles.cardContent}>
-        <ImageBackground
-          source={{ uri: album.imageUrl }}
-          style={activeStyles.imageBackground}
-          imageStyle={activeStyles.image}
-          onError={(error) =>
-            console.log(
-              `Error loading image for ${album.title}: ${error.nativeEvent.error}`,
-            )
-          }
-        >
+        <View style={activeStyles.imageBackground}>
+          <GPhoto
+            sharedUrl={album.albumUrl}
+            width={Math.floor(cardWidth)}
+            style={activeStyles.image}
+          />
           <View style={activeStyles.overlay} />
           <View style={activeStyles.textContainer}>
             <Text style={[activeStyles.title, whiteTextShadow]}>
@@ -79,7 +69,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
               </View>
             )}
           </View>
-        </ImageBackground>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -115,7 +105,7 @@ const styles = (screenWidth: number) =>
       justifyContent: 'flex-end', // Align text to the bottom
     },
     image: {
-      // borderRadius: 15, // Already handled by card's overflow: 'hidden'
+      ...StyleSheet.absoluteFillObject,
     },
     overlay: {
       ...StyleSheet.absoluteFillObject,

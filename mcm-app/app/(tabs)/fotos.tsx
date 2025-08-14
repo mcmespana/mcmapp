@@ -24,7 +24,6 @@ interface Album {
   title: string;
   location?: string;
   date?: string;
-  imageUrl: string;
   albumUrl: string;
 }
 
