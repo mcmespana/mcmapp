@@ -8,6 +8,7 @@ import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import SongFontPanel from './SongFontPanel';
 import TransposePanel from './TransposePanel';
 import ReportBugsModal from './ReportBugsModal';
+import SecretPanelModal from './SecretPanelModal';
 
 // Define availableFonts structure if not already globally defined
 interface FontOption {
@@ -29,9 +30,14 @@ interface SongControlsProps {
   onToggleNotation: () => void;
   onNavigateToFullscreen: () => void;
   onCopyLyrics: () => void;
-  // Añadir props para el reporte de fallitos
+  // Props para reportar fallitos y panel secreto
   songTitle?: string;
   songFilename?: string;
+  songAuthor?: string;
+  songKey?: string;
+  songCapo?: number;
+  songInfo?: string;
+  songContent?: string;
   firebaseCategory?: string;
 }
 
@@ -51,12 +57,18 @@ const SongControls: React.FC<SongControlsProps> = ({
   onCopyLyrics,
   songTitle,
   songFilename,
+  songAuthor,
+  songKey,
+  songCapo,
+  songInfo,
+  songContent,
   firebaseCategory,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposePanel, setShowTransposePanel] = useState(false);
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showReportBugsModal, setShowReportBugsModal] = useState(false);
+  const [showSecretPanel, setShowSecretPanel] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
 
@@ -64,6 +76,10 @@ const SongControls: React.FC<SongControlsProps> = ({
   const handleOpenFontPanel = () => setShowFontPanel(true);
 
   const handleReportSuccess = () => {
+    setShowSuccessToast(true);
+  };
+
+  const handleSecretPanelSuccess = () => {
     setShowSuccessToast(true);
   };
 
@@ -216,8 +232,28 @@ const SongControls: React.FC<SongControlsProps> = ({
         onClose={() => setShowReportBugsModal(false)}
         songTitle={songTitle}
         songFilename={songFilename}
+        songAuthor={songAuthor}
+        songKey={songKey}
+        songCapo={songCapo}
+        songInfo={songInfo}
+        songContent={songContent}
         firebaseCategory={firebaseCategory}
         onSuccess={handleReportSuccess}
+        onOpenSecretPanel={() => setShowSecretPanel(true)}
+      />
+
+      <SecretPanelModal
+        visible={showSecretPanel}
+        onClose={() => setShowSecretPanel(false)}
+        songTitle={songTitle}
+        songFilename={songFilename}
+        songAuthor={songAuthor}
+        songKey={songKey}
+        songCapo={songCapo}
+        songInfo={songInfo}
+        songContent={songContent}
+        firebaseCategory={firebaseCategory}
+        onSuccess={handleSecretPanelSuccess}
       />
 
       <Snackbar

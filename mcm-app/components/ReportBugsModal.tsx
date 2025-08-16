@@ -7,6 +7,7 @@ import {
   TextInput,
   Alert,
   Platform,
+  ScrollView,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -22,8 +23,14 @@ interface ReportBugsModalProps {
   onClose: () => void;
   songTitle?: string;
   songFilename?: string;
+  songAuthor?: string;
+  songKey?: string;
+  songCapo?: number;
+  songInfo?: string;
+  songContent?: string;
   firebaseCategory?: string;
   onSuccess?: () => void; // Para mostrar toast desde el componente padre
+  onOpenSecretPanel?: () => void; // Para abrir el panel secreto
 }
 
 export default function ReportBugsModal({
@@ -31,8 +38,14 @@ export default function ReportBugsModal({
   onClose,
   songTitle,
   songFilename,
+  songAuthor,
+  songKey,
+  songCapo,
+  songInfo,
+  songContent,
   firebaseCategory,
   onSuccess,
+  onOpenSecretPanel,
 }: ReportBugsModalProps) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
@@ -120,7 +133,12 @@ export default function ReportBugsModal({
 
   return (
     <BottomSheet visible={visible} onClose={handleClose}>
-      <View style={styles.container}>
+      <ScrollView 
+        style={styles.container}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.header}>
           <TouchableOpacity onPress={handleClose} accessibilityLabel="Cerrar">
             <MaterialIcons name="close" size={24} color={theme.text} />
@@ -190,20 +208,53 @@ export default function ReportBugsModal({
           </Text>
         </TouchableOpacity>
 
+        {/* Divisor */}
+        <View style={styles.divider}>
+          <View style={[styles.line, { backgroundColor: theme.icon }]} />
+          <Text style={[styles.dividerText, { color: theme.icon }]}>o</Text>
+          <View style={[styles.line, { backgroundColor: theme.icon }]} />
+        </View>
+
+        {/* Botón Panel Secreto */}
+        <TouchableOpacity
+          style={[
+            styles.secretButton,
+            { backgroundColor: '#4CAF50' }
+          ]}
+          onPress={() => {
+            onClose();
+            if (onOpenSecretPanel) {
+              onOpenSecretPanel();
+            }
+          }}
+        >
+          <MaterialIcons
+            name="admin-panel-settings"
+            size={20}
+            color="#fff"
+          />
+          <Text style={styles.secretButtonText}>
+            Panel Secreto
+          </Text>
+        </TouchableOpacity>
+
         <Text style={[styles.disclaimer, { color: theme.icon }]}>
           Con tus avisos nos ayudas a mejorar la calidad del cantoral. Puedes
           incluir detalles como acordes incorrectos o mal colocados, letras
           con errores o problemas de formato.
         </Text>
-      </View>
+      </ScrollView>
     </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: '80%', // Hacer el modal más grande (60% de la pantalla)
-    paddingBottom: 60, // Más espacio en la parte inferior para el teclado
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 60,
+    flexGrow: 1,
   },
   header: {
     flexDirection: 'row',
@@ -258,5 +309,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     textAlign: 'center',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  line: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  secretButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  secretButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 });

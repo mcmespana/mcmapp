@@ -331,6 +331,11 @@ export default function SongDetailScreen({
         onCopyLyrics={handleCopyLyrics}
         songTitle={_navScreenTitle}
         songFilename={filename}
+        songAuthor={author}
+        songKey={key}
+        songCapo={capo}
+        songInfo="" // No tenemos info en route.params, se puede agregar después
+        songContent={content}
         firebaseCategory={firebaseCategory}
       />
     </Animated.View>
