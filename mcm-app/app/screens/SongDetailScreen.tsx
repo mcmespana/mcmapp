@@ -218,7 +218,17 @@ export default function SongDetailScreen({
 
   const handleCopyLyrics = async () => {
     if (!originalChordPro) return;
-    let lyrics = originalChordPro
+    // 1) Normaliza etiquetas de estribillo y pone en MAYÚSCULAS el contenido del estribillo
+    let textWithUppercaseChorus = originalChordPro
+      .replace(/\{soc\}/gi, '{start_of_chorus}')
+      .replace(/\{eoc\}/gi, '{end_of_chorus}')
+      .replace(
+        /\{start_of_chorus\}([\s\S]*?)\{end_of_chorus\}/gi,
+        (_match, inner) => `{start_of_chorus}` + String(inner).toUpperCase() + `{end_of_chorus}`,
+      );
+
+    // 2) Quita acordes y directivas, limpia espacios y saltos de línea
+    let lyrics = textWithUppercaseChorus
       .replace(/\[[^\]]+\]/g, '')
       .replace(/\{[^}]+\}\n?/g, '')
       .replace(/[ \t]+/g, ' ')

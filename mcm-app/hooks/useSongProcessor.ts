@@ -268,6 +268,9 @@ export const useSongProcessor = ({
               overflow-wrap: break-word;
               max-width: 100%;
             }
+            .paragraph.chorus .lyrics {
+              text-transform: uppercase;
+            }
             ${fontSizeCss}
           </style>
           ${chordsCss}
