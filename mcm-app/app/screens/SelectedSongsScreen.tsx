@@ -394,6 +394,7 @@ const SelectedSongsScreen: React.FC = () => {
       navigationList: allSelected,
       currentIndex: index,
       source: 'selection',
+      firebaseCategory: (completeSong as any).originalCategoryKey || 'entrada', // Fallback por defecto
     });
   };
 
