@@ -172,12 +172,20 @@ export default function SecretPanelModal({
         if (originalValues[field] !== newValues[field]) {
           changes[`${field}Old`] = originalValues[field];
           changes[`${field}New`] = newValues[field];
+          console.log(`🔄 Campo '${field}' cambió:`, 
+            `"${originalValues[field]}" → "${newValues[field]}"`);
         }
       });
 
+      console.log('📊 Total de cambios detectados:', Object.keys(changes).length / 2);
+
       // Si no hay cambios, no hacer nada
       if (Object.keys(changes).length === 0) {
-        Alert.alert('Sin cambios', 'No se detectaron cambios en la canción.');
+        Alert.alert(
+          '💭 Sin cambios detectados', 
+          'No se han realizado modificaciones en ningún campo de la canción.\n\nNada que guardar en Firebase.',
+          [{ text: 'Entendido', style: 'default' }]
+        );
         setIsSubmitting(false);
         return;
       }
@@ -214,19 +222,26 @@ export default function SecretPanelModal({
         throw new Error('No se encontró la canción en la base de datos');
       }
 
-      // 2. Actualizar directamente la canción en Firebase
+      // 2. Actualizar solo los campos que cambiaron en Firebase
       const songUpdateRef = ref(db, `songs/data/${category}/songs/${songIndex}`);
-      const updatedSong = {
-        ...songs[songIndex],
-        title: newValues.title,
-        author: newValues.author,
-        key: newValues.key,
-        capo: newValues.capo,
-        info: newValues.info,
-        content: newValues.content,
-      };
+      
+      // Crear objeto con solo los campos que cambiaron
+      const fieldsToUpdate = {};
+      Object.keys(changes).forEach(key => {
+        if (key.endsWith('New')) {
+          const fieldName = key.replace('New', '');
+          fieldsToUpdate[fieldName] = newValues[fieldName];
+        }
+      });
 
-      await set(songUpdateRef, updatedSong);
+      // Actualizar solo los campos que cambiaron
+      if (Object.keys(fieldsToUpdate).length > 0) {
+        await Promise.all(
+          Object.entries(fieldsToUpdate).map(([field, value]) =>
+            set(ref(db, `songs/data/${category}/songs/${songIndex}/${field}`), value)
+          )
+        );
+      }
 
       // 3. Guardar rastro de cambios en ediciones (solo los campos que cambiaron)
       const edicionesRef = ref(db, 'songs/ediciones');
@@ -256,12 +271,26 @@ export default function SecretPanelModal({
         onSuccess();
       }
 
-      const changedFields = Object.keys(changes).filter(key => key.endsWith('New')).map(key => key.replace('New', ''));
+      // Crear lista de campos cambiados para el mensaje
+      const changedFields = Object.keys(changes)
+        .filter(key => key.endsWith('New'))
+        .map(key => {
+          const fieldName = key.replace('New', '');
+          const fieldLabels = {
+            title: 'Título',
+            author: 'Autor',
+            key: 'Tonalidad',
+            capo: 'Capo',
+            info: 'Info',
+            content: 'Contenido'
+          };
+          return fieldLabels[fieldName] || fieldName;
+        });
       
       Alert.alert(
         '✅ Canción Actualizada', 
-        `Se han guardado los cambios en: ${changedFields.join(', ')}`,
-        [{ text: 'Genial', style: 'default' }]
+        `Se han guardado los cambios en: ${changedFields.join(', ')}.\n\nSolo se actualizaron los campos modificados.`,
+        [{ text: 'Perfecto', style: 'default' }]
       );
 
     } catch (error) {
