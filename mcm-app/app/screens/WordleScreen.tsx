@@ -32,6 +32,7 @@ import { getFirebaseApp } from '@/hooks/firebaseApp';
 import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import useWordleLeaderboard from '@/hooks/useWordleLeaderboard';
+import type { Guess } from '@/hooks/useWordleGame';
 
 const QWERTY = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -71,9 +72,13 @@ export default function WordleScreen() {
   }
   const todayKey = dateKey;
   const playKey = `${todayKey}_${cycle}`;
+  const progressKey = `wordle_progress_${playKey}`;
 
   // Obtener la palabra del día desde Firebase o fallback
   const target = getWordForDate(todayKey, cycle);
+
+  const [storedGuesses, setStoredGuesses] = useState<Guess[]>([]);
+  const [progressLoaded, setProgressLoaded] = useState(false);
 
   const {
     guesses,
@@ -83,7 +88,7 @@ export default function WordleScreen() {
     submitGuess,
     status,
     keyboard,
-  } = useWordleGame(target, []);
+  } = useWordleGame(target, storedGuesses);
 
   const [internalShowInfo, setInternalShowInfo] = useState(false);
   const [internalShowStats, setInternalShowStats] = useState(false);
@@ -100,6 +105,27 @@ export default function WordleScreen() {
   const { topToday, generalRanking, participationRanking, globalRank } =
     useWordleLeaderboard(todayKey, cycle, stats.userId, showStats);
 
+  // Cargar progreso guardado
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(progressKey);
+        if (saved) {
+          setStoredGuesses(JSON.parse(saved) as Guess[]);
+        } else {
+          setStoredGuesses([]);
+        }
+      } catch (e) {
+        console.error('Error loading progress:', e);
+        setStoredGuesses([]);
+      } finally {
+        setProgressLoaded(true);
+      }
+    };
+    setProgressLoaded(false);
+    loadProgress();
+  }, [progressKey]);
+
   // Verificar si el juego está bloqueado para esta palabra
   useEffect(() => {
     const checkGameLock = async () => {
@@ -113,6 +139,21 @@ export default function WordleScreen() {
     };
     checkGameLock();
   }, [playKey]);
+
+  // Guardar progreso en cada cambio de guesses
+  useEffect(() => {
+    if (!progressLoaded) return;
+    AsyncStorage.setItem(progressKey, JSON.stringify(guesses)).catch((e) =>
+      console.error('Error saving progress:', e),
+    );
+  }, [guesses, progressKey, progressLoaded]);
+
+  // Limpiar progreso cuando el juego termine
+  useEffect(() => {
+    if (status === 'won' || status === 'lost') {
+      AsyncStorage.removeItem(progressKey).catch(console.error);
+    }
+  }, [status, progressKey]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -533,6 +574,9 @@ export default function WordleScreen() {
             <Text style={[styles.infoTitle, { marginTop: 8 }]}>
               Ranking general
             </Text>
+            {generalRanking.length === 0 && (
+              <Text style={styles.infoText}>Sin datos suficientes</Text>
+            )}
             {generalRanking.map((p, idx) => (
               <Text key={p.userId} style={styles.infoText}>
                 {idx + 1}. {p.name}
@@ -542,6 +586,9 @@ export default function WordleScreen() {
             <Text style={[styles.infoTitle, { marginTop: 8 }]}>
               Ranking de participaciones
             </Text>
+            {participationRanking.length === 0 && (
+              <Text style={styles.infoText}>Sin datos suficientes</Text>
+            )}
             {participationRanking.map((p, idx) => (
               <Text key={p.userId} style={styles.infoText}>
                 {idx + 1}. {p.name}
