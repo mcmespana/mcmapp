@@ -12,5 +12,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     firebaseMessagingSenderId:
       process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     firebaseAppId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    googleAndroidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    googleCorsProxyUrl: process.env.EXPO_PUBLIC_CORS_PROXY_URL,
   },
 });
