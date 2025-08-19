@@ -3,7 +3,11 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-export default function OfflineBanner({ text = 'Mostrando datos sin conexión' }: { text?: string }) {
+export default function OfflineBanner({
+  text = 'Mostrando datos sin conexión',
+}: {
+  text?: string;
+}) {
   const scheme = useColorScheme() || 'light';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
 

@@ -187,7 +187,7 @@ export default function SongsListScreen({
   // Handle song press
   const handleSongPress = (song: Song) => {
     const index = songs.findIndex((s) => s.filename === song.filename);
-    
+
     navigation.navigate('SongDetail', {
       filename: song.filename,
       title: song.title.replace(/^\d+\.\s*/, ''),
@@ -198,7 +198,8 @@ export default function SongsListScreen({
       navigationList: categoryId === '__ALL__' ? undefined : songs,
       currentIndex: categoryId === '__ALL__' ? undefined : index,
       source: categoryId === '__ALL__' ? undefined : 'category',
-      firebaseCategory: categoryId === '__ALL__' ? song.originalCategoryKey : categoryId,
+      firebaseCategory:
+        categoryId === '__ALL__' ? song.originalCategoryKey : categoryId,
     });
   };
 

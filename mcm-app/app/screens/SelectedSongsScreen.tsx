@@ -231,7 +231,7 @@ const SelectedSongsScreen: React.FC = () => {
     const now = new Date();
     const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
     const defaultFileName = `Playlist ${dateStr}`;
-    
+
     setExportFileName(defaultFileName);
     setShowExportModal(true);
   }, []);
@@ -266,7 +266,7 @@ const SelectedSongsScreen: React.FC = () => {
           dialogTitle: 'Compartir playlist',
         });
       }
-      
+
       setShowExportModal(false);
       setSnackbarMessage('Playlist exportada correctamente');
       setSnackbarVisible(true);
@@ -530,7 +530,7 @@ const SelectedSongsScreen: React.FC = () => {
         keyExtractor={(item) => item.categoryTitle}
         contentContainerStyle={styles.listContentContainer}
       />
-      
+
       {/* Modal para personalizar nombre del archivo */}
       <Modal
         visible={showExportModal}
@@ -538,7 +538,7 @@ const SelectedSongsScreen: React.FC = () => {
         animationType="fade"
         onRequestClose={() => setShowExportModal(false)}
       >
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           style={styles.modalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
@@ -547,7 +547,7 @@ const SelectedSongsScreen: React.FC = () => {
             <Text style={styles.modalSubtitle}>
               Elige un nombre para tu playlist
             </Text>
-            
+
             <TextInput
               style={styles.modalInput}
               value={exportFileName}
@@ -557,11 +557,11 @@ const SelectedSongsScreen: React.FC = () => {
               autoFocus={true}
               selectTextOnFocus={true}
             />
-            
+
             <Text style={styles.modalNote}>
               Exportaremos la lista de canciones en formato JSON 🥸
             </Text>
-            
+
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
@@ -569,7 +569,7 @@ const SelectedSongsScreen: React.FC = () => {
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.modalConfirmButton}
                 onPress={handleConfirmExport}
@@ -581,7 +581,7 @@ const SelectedSongsScreen: React.FC = () => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-      
+
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}

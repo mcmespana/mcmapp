@@ -5,6 +5,7 @@ export interface TabsFlags {
   calendario: boolean;
   fotos: boolean;
   comunica: boolean;
+  cuentas: boolean;
 }
 
 export interface FeatureFlags {
@@ -21,6 +22,7 @@ const featureFlags: FeatureFlags = {
     calendario: true,
     fotos: true,
     comunica: false,
+    cuentas: true,
   },
   defaultTab: 'index',
   showNotificationsIcon: false,

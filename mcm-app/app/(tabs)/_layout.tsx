@@ -102,6 +102,22 @@ export default function TabsLayout() {
             }}
           />
         )}
+        {featureFlags.tabs.cuentas && (
+          <Tabs.Screen
+            name="cuentas"
+            options={{
+              title: 'Cuentas',
+              tabBarIcon: ({ color, size }) => (
+                <MaterialIcons
+                  name="account-balance"
+                  color={color}
+                  size={size}
+                />
+              ),
+              headerStyle: { backgroundColor: '#4CAF50' }, // Verde para cuentas
+            }}
+          />
+        )}
         {featureFlags.tabs.comunica && (
           <Tabs.Screen
             name="comunica"

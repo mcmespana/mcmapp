@@ -17,10 +17,21 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDatabase, ref, set, push, get } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
-import { getCategoryFromFirebaseCategory, cleanSongTitle } from '@/utils/songUtils';
+import {
+  getCategoryFromFirebaseCategory,
+  cleanSongTitle,
+} from '@/utils/songUtils';
 
 // Custom BottomSheet para el SecretPanel que ocupa más espacio
-const FullBottomSheet = ({ visible, onClose, children }: { visible: boolean; onClose: () => void; children: React.ReactNode }) => {
+const FullBottomSheet = ({
+  visible,
+  onClose,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) => {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
 
@@ -49,7 +60,12 @@ const FullBottomSheet = ({ visible, onClose, children }: { visible: boolean; onC
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <View style={[styles.fullModalContainer, { backgroundColor: theme.background }]}>
+        <View
+          style={[
+            styles.fullModalContainer,
+            { backgroundColor: theme.background },
+          ]}
+        >
           {children}
         </View>
       </KeyboardAvoidingView>
@@ -86,11 +102,11 @@ export default function SecretPanelModal({
 }: SecretPanelModalProps) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
-  
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Campos editables
   const [editTitle, setEditTitle] = useState('');
   const [editAuthor, setEditAuthor] = useState('');
@@ -111,14 +127,25 @@ export default function SecretPanelModal({
       setIsAuthenticated(false);
       setPassword('');
     }
-  }, [visible, songTitle, songAuthor, songKey, songCapo, songInfo, songContent]);
+  }, [
+    visible,
+    songTitle,
+    songAuthor,
+    songKey,
+    songCapo,
+    songInfo,
+    songContent,
+  ]);
 
   const handlePasswordSubmit = () => {
     if (password.toLowerCase() === 'coco') {
       setIsAuthenticated(true);
       setPassword('');
     } else {
-      Alert.alert('🔒 Acceso Denegado', 'Contraseña incorrecta. Este panel es solo para usuarios autorizados.');
+      Alert.alert(
+        '🔒 Acceso Denegado',
+        'Contraseña incorrecta. Este panel es solo para usuarios autorizados.',
+      );
       setPassword('');
     }
   };
@@ -128,7 +155,7 @@ export default function SecretPanelModal({
     console.log('songTitle:', songTitle);
     console.log('songFilename:', songFilename);
     console.log('firebaseCategory:', firebaseCategory);
-    
+
     if (!editTitle.trim()) {
       Alert.alert('Error', 'El título es obligatorio');
       return;
@@ -166,25 +193,37 @@ export default function SecretPanelModal({
 
       // Detectar cambios específicos
       const changes = {};
-      const fieldsToCheck = ['title', 'author', 'key', 'capo', 'info', 'content'];
-      
-      fieldsToCheck.forEach(field => {
+      const fieldsToCheck = [
+        'title',
+        'author',
+        'key',
+        'capo',
+        'info',
+        'content',
+      ];
+
+      fieldsToCheck.forEach((field) => {
         if (originalValues[field] !== newValues[field]) {
           changes[`${field}Old`] = originalValues[field];
           changes[`${field}New`] = newValues[field];
-          console.log(`🔄 Campo '${field}' cambió:`, 
-            `"${originalValues[field]}" → "${newValues[field]}"`);
+          console.log(
+            `🔄 Campo '${field}' cambió:`,
+            `"${originalValues[field]}" → "${newValues[field]}"`,
+          );
         }
       });
 
-      console.log('📊 Total de cambios detectados:', Object.keys(changes).length / 2);
+      console.log(
+        '📊 Total de cambios detectados:',
+        Object.keys(changes).length / 2,
+      );
 
       // Si no hay cambios, no hacer nada
       if (Object.keys(changes).length === 0) {
         Alert.alert(
-          '💭 Sin cambios detectados', 
+          '💭 Sin cambios detectados',
           'No se han realizado modificaciones en ningún campo de la canción.\n\nNada que guardar en Firebase.',
-          [{ text: 'Entendido', style: 'default' }]
+          [{ text: 'Entendido', style: 'default' }],
         );
         setIsSubmitting(false);
         return;
@@ -192,25 +231,30 @@ export default function SecretPanelModal({
 
       // La categoría de Firebase ya viene en el formato correcto (ej: "adoracion")
       const category = firebaseCategory;
-      
+
       console.log('Buscando en categoría:', category);
       console.log('Ruta completa:', `songs/data/${category}/songs`);
-      
+
       // 1. Leer todas las canciones de la categoría para encontrar la canción específica
       const songsRef = ref(db, `songs/data/${category}/songs`);
       const songsSnapshot = await get(songsRef);
-      
+
       console.log('songsSnapshot exists:', songsSnapshot.exists());
-      
+
       if (!songsSnapshot.exists()) {
-        console.error('No se encontró la ruta:', `songs/data/${category}/songs`);
+        console.error(
+          'No se encontró la ruta:',
+          `songs/data/${category}/songs`,
+        );
         console.error('firebaseCategory recibido:', firebaseCategory);
-        throw new Error(`No se encontró la categoría de canciones en: songs/data/${category}/songs`);
+        throw new Error(
+          `No se encontró la categoría de canciones en: songs/data/${category}/songs`,
+        );
       }
 
       const songs = songsSnapshot.val();
       let songIndex = -1;
-      
+
       // Buscar la canción por filename
       songs.forEach((song, index) => {
         if (song && song.filename === songFilename) {
@@ -223,11 +267,14 @@ export default function SecretPanelModal({
       }
 
       // 2. Actualizar solo los campos que cambiaron en Firebase
-      const songUpdateRef = ref(db, `songs/data/${category}/songs/${songIndex}`);
-      
+      const songUpdateRef = ref(
+        db,
+        `songs/data/${category}/songs/${songIndex}`,
+      );
+
       // Crear objeto con solo los campos que cambiaron
       const fieldsToUpdate = {};
-      Object.keys(changes).forEach(key => {
+      Object.keys(changes).forEach((key) => {
         if (key.endsWith('New')) {
           const fieldName = key.replace('New', '');
           fieldsToUpdate[fieldName] = newValues[fieldName];
@@ -238,8 +285,11 @@ export default function SecretPanelModal({
       if (Object.keys(fieldsToUpdate).length > 0) {
         await Promise.all(
           Object.entries(fieldsToUpdate).map(([field, value]) =>
-            set(ref(db, `songs/data/${category}/songs/${songIndex}/${field}`), value)
-          )
+            set(
+              ref(db, `songs/data/${category}/songs/${songIndex}/${field}`),
+              value,
+            ),
+          ),
         );
       }
 
@@ -273,8 +323,8 @@ export default function SecretPanelModal({
 
       // Crear lista de campos cambiados para el mensaje
       const changedFields = Object.keys(changes)
-        .filter(key => key.endsWith('New'))
-        .map(key => {
+        .filter((key) => key.endsWith('New'))
+        .map((key) => {
           const fieldName = key.replace('New', '');
           const fieldLabels = {
             title: 'Título',
@@ -282,22 +332,21 @@ export default function SecretPanelModal({
             key: 'Tonalidad',
             capo: 'Capo',
             info: 'Info',
-            content: 'Contenido'
+            content: 'Contenido',
           };
           return fieldLabels[fieldName] || fieldName;
         });
-      
-      Alert.alert(
-        '✅ Canción Actualizada', 
-        `Se han guardado los cambios en: ${changedFields.join(', ')}.\n\nSolo se actualizaron los campos modificados.`,
-        [{ text: 'Perfecto', style: 'default' }]
-      );
 
+      Alert.alert(
+        '✅ Canción Actualizada',
+        `Se han guardado los cambios en: ${changedFields.join(', ')}.\n\nSolo se actualizaron los campos modificados.`,
+        [{ text: 'Perfecto', style: 'default' }],
+      );
     } catch (error) {
       console.error('Error updating song:', error);
       Alert.alert(
         'Error',
-        `No se pudieron guardar los cambios: ${error.message}`
+        `No se pudieron guardar los cambios: ${error.message}`,
       );
     } finally {
       setIsSubmitting(false);
@@ -343,19 +392,20 @@ export default function SecretPanelModal({
           </View>
 
           <View style={styles.mysteriousContent}>
-            <MaterialIcons 
-              name="security" 
-              size={64} 
-              color={theme.icon} 
+            <MaterialIcons
+              name="security"
+              size={64}
+              color={theme.icon}
               style={{ alignSelf: 'center', marginBottom: 20 }}
             />
-            
+
             <Text style={[styles.mysteriousText, { color: theme.text }]}>
               Solo para usuarios autorizados...
             </Text>
-            
+
             <Text style={[styles.mysteriousSubtext, { color: theme.icon }]}>
-              Este panel permite editar directamente los datos de las canciones en Firebase.
+              Este panel permite editar directamente los datos de las canciones
+              en Firebase.
             </Text>
 
             <TextInput
@@ -402,11 +452,11 @@ export default function SecretPanelModal({
     <FullBottomSheet visible={visible} onClose={handleClose}>
       <View style={styles.fullContainer}>
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => {
               console.log('Close button pressed');
               handleClose();
-            }} 
+            }}
             accessibilityLabel="Cerrar"
             style={styles.closeButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -426,8 +476,8 @@ export default function SecretPanelModal({
           </Text>
         )}
 
-        <ScrollView 
-          style={styles.scrollContainer} 
+        <ScrollView
+          style={styles.scrollContainer}
           showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scrollContent}
@@ -435,7 +485,14 @@ export default function SecretPanelModal({
           {/* Título */}
           <Text style={[styles.label, { color: theme.text }]}>Título *</Text>
           <TextInput
-            style={[styles.textInput, { backgroundColor: theme.background, color: theme.text, borderColor: theme.icon }]}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: theme.background,
+                color: theme.text,
+                borderColor: theme.icon,
+              },
+            ]}
             placeholder="Título de la canción"
             placeholderTextColor={theme.icon}
             value={editTitle}
@@ -446,7 +503,14 @@ export default function SecretPanelModal({
           {/* Autor */}
           <Text style={[styles.label, { color: theme.text }]}>Autor</Text>
           <TextInput
-            style={[styles.textInput, { backgroundColor: theme.background, color: theme.text, borderColor: theme.icon }]}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: theme.background,
+                color: theme.text,
+                borderColor: theme.icon,
+              },
+            ]}
             placeholder="Autor de la canción"
             placeholderTextColor={theme.icon}
             value={editAuthor}
@@ -459,7 +523,14 @@ export default function SecretPanelModal({
             <View style={styles.halfWidth}>
               <Text style={[styles.label, { color: theme.text }]}>Key</Text>
               <TextInput
-                style={[styles.textInput, { backgroundColor: theme.background, color: theme.text, borderColor: theme.icon }]}
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.background,
+                    color: theme.text,
+                    borderColor: theme.icon,
+                  },
+                ]}
                 placeholder="Ej: G, Am, C"
                 placeholderTextColor={theme.icon}
                 value={editKey}
@@ -470,7 +541,14 @@ export default function SecretPanelModal({
             <View style={styles.halfWidth}>
               <Text style={[styles.label, { color: theme.text }]}>Capo</Text>
               <TextInput
-                style={[styles.textInput, { backgroundColor: theme.background, color: theme.text, borderColor: theme.icon }]}
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.background,
+                    color: theme.text,
+                    borderColor: theme.icon,
+                  },
+                ]}
                 placeholder="0"
                 placeholderTextColor={theme.icon}
                 value={editCapo}
@@ -482,9 +560,18 @@ export default function SecretPanelModal({
           </View>
 
           {/* Info */}
-          <Text style={[styles.label, { color: theme.text }]}>Info adicional</Text>
+          <Text style={[styles.label, { color: theme.text }]}>
+            Info adicional
+          </Text>
           <TextInput
-            style={[styles.textInput, { backgroundColor: theme.background, color: theme.text, borderColor: theme.icon }]}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: theme.background,
+                color: theme.text,
+                borderColor: theme.icon,
+              },
+            ]}
             placeholder="Información adicional sobre la canción"
             placeholderTextColor={theme.icon}
             value={editInfo}
@@ -495,12 +582,18 @@ export default function SecretPanelModal({
           />
 
           {/* Content */}
-          <Text style={[styles.label, { color: theme.text }]}>Contenido de la canción *</Text>
+          <Text style={[styles.label, { color: theme.text }]}>
+            Contenido de la canción *
+          </Text>
           <TextInput
             style={[
               styles.textInput,
               styles.contentInput,
-              { backgroundColor: theme.background, color: theme.text, borderColor: theme.icon }
+              {
+                backgroundColor: theme.background,
+                color: theme.text,
+                borderColor: theme.icon,
+              },
             ]}
             placeholder="Contenido completo de la canción (ChordPro format)"
             placeholderTextColor={theme.icon}
@@ -517,7 +610,10 @@ export default function SecretPanelModal({
             style={[
               styles.saveButton,
               {
-                backgroundColor: editTitle.trim() && editContent.trim() ? '#4CAF50' : theme.icon,
+                backgroundColor:
+                  editTitle.trim() && editContent.trim()
+                    ? '#4CAF50'
+                    : theme.icon,
                 opacity: isSubmitting ? 0.7 : 1,
               },
             ]}
@@ -535,8 +631,9 @@ export default function SecretPanelModal({
           </TouchableOpacity>
 
           <Text style={[styles.disclaimer, { color: theme.icon }]}>
-            🔮 Este panel registra ediciones que serán revisadas y aplicadas en la base de datos. 
-            Asegúrate de que los cambios sean correctos antes de enviar.
+            🔮 Este panel registra ediciones que serán revisadas y aplicadas en
+            la base de datos. Asegúrate de que los cambios sean correctos antes
+            de enviar.
           </Text>
         </ScrollView>
       </View>
@@ -550,9 +647,9 @@ const styles = StyleSheet.create({
     margin: 0,
     justifyContent: 'flex-end',
   },
-  keyboardView: { 
-    flex: 1, 
-    justifyContent: 'flex-end' 
+  keyboardView: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   fullModalContainer: {
     padding: 20,
