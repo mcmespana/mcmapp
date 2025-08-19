@@ -76,7 +76,7 @@ LocaleConfig.defaultLocale = 'es';
 export default function Calendario() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  
+
   const {
     calendarConfigs,
     visibleCalendars,
@@ -84,7 +84,7 @@ export default function Calendario() {
     loading: configsLoading,
     offline,
   } = useCalendarConfigs();
-  
+
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0],
   );
@@ -147,10 +147,10 @@ export default function Calendario() {
 
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
     const marks: { [date: string]: any } = {};
-    
+
     Object.keys(filteredByDate).forEach((date) => {
       const eventsForDate = filteredByDate[date];
-      
+
       if (eventsForDate.length > 0) {
         // Use periods (bars) for ALL events - both single day and multi-day
         const periods = eventsForDate.map((ev) => {
@@ -159,7 +159,7 @@ export default function Calendario() {
             ev.isSingleDay === true ||
             !ev.endDate ||
             ev.startDate === ev.endDate;
-          
+
           if (isEffectivelySingleDay) {
             // Single day event: show as a complete bar for just this day
             return {
@@ -176,11 +176,11 @@ export default function Calendario() {
             };
           }
         });
-        
+
         marks[date] = { periods };
       }
     });
-    
+
     // Handle selected date
     marks[selectedDate] = {
       ...(marks[selectedDate] || {}),
@@ -188,7 +188,7 @@ export default function Calendario() {
       selectedColor: colors.primary,
       selectedTextColor: colors.white,
     };
-    
+
     return marks;
   }, [filteredByDate, selectedDate, calendarConfigs]);
 

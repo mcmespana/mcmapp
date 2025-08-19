@@ -224,7 +224,8 @@ export default function SongDetailScreen({
       .replace(/\{eoc\}/gi, '{end_of_chorus}')
       .replace(
         /\{start_of_chorus\}([\s\S]*?)\{end_of_chorus\}/gi,
-        (_match, inner) => `{start_of_chorus}` + String(inner).toUpperCase() + `{end_of_chorus}`,
+        (_match, inner) =>
+          `{start_of_chorus}` + String(inner).toUpperCase() + `{end_of_chorus}`,
       );
 
     // 2) Quita acordes y directivas, limpia espacios y saltos de línea

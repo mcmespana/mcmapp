@@ -54,17 +54,28 @@ export default function ComidaScreen() {
   const containerPadding = spacing.md;
   const gap = spacing.md;
   const itemWidth = (width - containerPadding * 2 - gap) / 2;
-  const itemHeight = Math.min(160, (height - containerPadding * 2 - gap * 3) / 3);
+  const itemHeight = Math.min(
+    160,
+    (height - containerPadding * 2 - gap * 3) / 3,
+  );
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.gridContainer}>
           {OPTIONS.map((opt, idx) => (
             <View key={idx} style={styles.itemWrapper}>
               <TouchableOpacity
                 style={[styles.item, { width: itemWidth, height: itemHeight }]}
-                onPress={() => navigation.navigate('ComidaWeb', { url: opt.url, title: opt.label })}
+                onPress={() =>
+                  navigation.navigate('ComidaWeb', {
+                    url: opt.url,
+                    title: opt.label,
+                  })
+                }
                 activeOpacity={0.85}
               >
                 <Text style={styles.icon}>{opt.icon}</Text>

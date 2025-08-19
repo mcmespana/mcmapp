@@ -175,7 +175,8 @@ const SongListItem: React.FC<SongListItemProps> = ({
                 <>
                   {song.numericFilenamePart && (
                     <Text style={styles.subtitleText}>
-                      #{song.numericFilenamePart}{song.author ? ' · ' : ''}
+                      #{song.numericFilenamePart}
+                      {song.author ? ' · ' : ''}
                     </Text>
                   )}
                   {song.author && (
@@ -189,9 +190,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
                       ellipsizeMode="tail"
                     >
                       {/* Spacing between number and author */}
-                      {song.numericFilenamePart
-                        ? song.author
-                        : song.author}
+                      {song.numericFilenamePart ? song.author : song.author}
                     </Text>
                   )}
                 </>
