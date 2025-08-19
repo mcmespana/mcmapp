@@ -11,6 +11,7 @@ export interface FeatureFlags {
   tabs: TabsFlags;
   defaultTab: keyof TabsFlags;
   showNotificationsIcon: boolean;
+  showUserProfilePrompt: boolean;
 }
 
 const featureFlags: FeatureFlags = {
@@ -24,6 +25,7 @@ const featureFlags: FeatureFlags = {
   },
   defaultTab: 'index',
   showNotificationsIcon: false,
+  showUserProfilePrompt: false,
 };
 
 export default featureFlags;

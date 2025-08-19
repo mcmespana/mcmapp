@@ -86,8 +86,8 @@ export default function ReportBugsModal({
         platform: Platform.OS,
         status: 'pending', // pending, reviewed, fixed
         reportedAt: new Date().toISOString(),
-        userName: profile.name,
-        userLocation: profile.location,
+        userName: profile.name || 'Anónimo',
+        userLocation: profile.location || 'Sin ubicación',
       });
 
       // Limpiar y cerrar

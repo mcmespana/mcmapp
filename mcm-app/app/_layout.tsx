@@ -24,7 +24,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useStatusBarTheme } from '@/hooks/useStatusBarTheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
-import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
+import { FeatureFlagsProvider, useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import {
   UserProfileProvider,
   useUserProfile,
@@ -60,6 +60,7 @@ function InnerLayout() {
   const pathname = usePathname();
   const { profile, loading: profileLoading } = useUserProfile();
   const [profileVisible, setProfileVisible] = useState(false);
+  const featureFlags = useFeatureFlags();
 
   // Hook para actualizar el tema de la barra de estado dinámicamente
   useStatusBarTheme(pathname);
@@ -86,10 +87,10 @@ function InnerLayout() {
 
   useEffect(() => {
     if (showAnimation) return;
-    if (!profileLoading && (!profile.name || !profile.location)) {
+    if (featureFlags.showUserProfilePrompt && !profileLoading && (!profile.name || !profile.location)) {
       setProfileVisible(true);
     }
-  }, [showAnimation, profileLoading, profile]);
+  }, [showAnimation, profileLoading, profile, featureFlags.showUserProfilePrompt]);
 
   // NOTIS - Comentado para eliminar sistema notificaciones
   //usePushNotifications(); // 3️⃣ inicializa el hook

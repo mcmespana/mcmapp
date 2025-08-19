@@ -71,8 +71,8 @@ export default function SuggestSongModal({
         timestamp: Date.now(),
         platform: Platform.OS,
         requestedAt: new Date().toISOString(),
-        userName: profile.name,
-        userLocation: profile.location,
+        userName: profile.name || 'Anónimo',
+        userLocation: profile.location || 'Sin ubicación',
       });
 
       await set(ref(db, 'songs/updatedAt'), Date.now().toString());
