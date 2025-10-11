@@ -6,7 +6,7 @@ import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
 import iframeStyles from '../(tabsdesactivados)/comunica.module.css';
 
-const URL = 'http://movimientoconsolacion.sinergiacrm.org/';
+const URL = 'https://movimientoconsolacion.sinergiacrm.org/';
 
 // CSS para inyectar y ocultar elementos
 const INJECTED_CSS = `
