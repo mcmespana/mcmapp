@@ -5,7 +5,11 @@
       "Bash(node:*)",
       "Bash(git log:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npm install:*)",
+      "Bash(npx expo-doctor:*)",
+      "Bash(npm dedupe)"
     ],
     "deny": [],
     "ask": []
