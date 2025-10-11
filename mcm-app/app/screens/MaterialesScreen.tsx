@@ -13,7 +13,7 @@ import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import DateSelector from '@/components/DateSelector';
-import { JubileoStackParamList } from '../(tabs)/jubileo';
+import { MasStackParamList } from '../(tabs)/mas';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 
@@ -24,8 +24,8 @@ interface Actividad {
   paginas: any[];
 }
 
-type Nav = NativeStackNavigationProp<JubileoStackParamList, 'MaterialPages'>;
-type MaterialesScreenRoute = RouteProp<JubileoStackParamList, 'Materiales'>;
+type Nav = NativeStackNavigationProp<MasStackParamList, 'MaterialPages'>;
+type MaterialesScreenRoute = RouteProp<MasStackParamList, 'Materiales'>;
 
 export default function MaterialesScreen() {
   const navigation = useNavigation<Nav>();

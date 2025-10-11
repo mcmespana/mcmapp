@@ -11,13 +11,13 @@ import { WebView } from 'react-native-webview';
 import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { JubileoStackParamList } from '../(tabs)/jubileo';
+import { MasStackParamList } from '../(tabs)/mas';
 import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 // Usando el mismo CSS que funcionó en comunica.tsx
 import iframeStyles from '../(tabsdesactivados)/comunica.module.css';
-type Route = RouteProp<JubileoStackParamList, 'ComidaWeb'>;
+type Route = RouteProp<MasStackParamList, 'ComidaWeb'>;
 
 export default function ComidaWebScreen() {
   const route = useRoute<Route>();

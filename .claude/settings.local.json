@@ -9,7 +9,8 @@
       "Bash(npx expo install:*)",
       "Bash(npm install:*)",
       "Bash(npx expo-doctor:*)",
-      "Bash(npm dedupe)"
+      "Bash(npm dedupe)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

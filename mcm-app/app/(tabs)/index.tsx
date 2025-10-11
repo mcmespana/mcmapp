@@ -40,13 +40,6 @@ interface NavigationItem {
 }
 
 const navigationItems: NavigationItem[] = [
-  featureFlags.tabs.jubileo && {
-    href: '/jubileo',
-    label: 'Jubileo',
-    icon: 'celebration',
-    backgroundColor: colors.success,
-    color: '#222',
-  },
   featureFlags.tabs.cancionero && {
     href: '/cancionero',
     label: 'Cantoral',
@@ -163,18 +156,6 @@ function ContextualDecoration({ type }: { type: string }) {
   };
 
   switch (type) {
-    case 'Jubileo':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Confeti y formas celebrativas */}
-          <View style={[styles.confetti, styles.confetti1]} />
-          <View style={[styles.confetti, styles.confetti2]} />
-          <View style={[styles.confetti, styles.confetti3]} />
-          <View style={[styles.star, styles.star1]} />
-          <View style={[styles.star, styles.star2]} />
-        </Animated.View>
-      );
-
     case 'Cantoral':
       return (
         <Animated.View style={[styles.decorationContainer, animatedStyle]}>
@@ -529,14 +510,6 @@ interface Styles {
   circleLarge: ViewStyle;
   // Decoraciones contextuales
   decorationContainer: ViewStyle;
-  // Jubileo - confeti y estrellas
-  confetti: ViewStyle;
-  confetti1: ViewStyle;
-  confetti2: ViewStyle;
-  confetti3: ViewStyle;
-  star: ViewStyle;
-  star1: ViewStyle;
-  star2: ViewStyle;
   // Cantoral - notas musicales
   musicNote: ViewStyle;
   note1: ViewStyle;
@@ -653,56 +626,6 @@ const styles = StyleSheet.create<Styles>({
     right: 0,
     bottom: 0,
     zIndex: 1,
-  },
-
-  // Jubileo - confeti y estrellas
-  confetti: {
-    position: 'absolute',
-    opacity: 0.4,
-    backgroundColor: '#FFD700',
-    borderRadius: 3,
-  },
-  confetti1: {
-    width: 12,
-    height: 20,
-    top: 10,
-    left: 12,
-    transform: [{ rotate: '25deg' }],
-  },
-  confetti2: {
-    width: 16,
-    height: 16,
-    top: 20,
-    right: 16,
-    backgroundColor: '#FF6B9D',
-    borderRadius: 8,
-  },
-  confetti3: {
-    width: 8,
-    height: 16,
-    bottom: 16,
-    left: 8,
-    backgroundColor: '#4ECDC4',
-    transform: [{ rotate: '-15deg' }],
-  },
-  star: {
-    position: 'absolute',
-    opacity: 0.35,
-    backgroundColor: '#FFEB3B',
-    width: 14,
-    height: 14,
-    transform: [{ rotate: '45deg' }],
-  },
-  star1: {
-    top: 12,
-    right: 8,
-  },
-  star2: {
-    bottom: 12,
-    right: 20,
-    backgroundColor: '#FF9800',
-    width: 10,
-    height: 10,
   },
 
   // Cantoral - notas musicales

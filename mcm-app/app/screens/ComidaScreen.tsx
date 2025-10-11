@@ -13,7 +13,7 @@ import { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { JubileoStackParamList } from '../(tabs)/jubileo';
+import { MasStackParamList } from '../(tabs)/mas';
 
 interface Option {
   label: string;
@@ -44,7 +44,7 @@ const OPTIONS: Option[] = [
   },
 ];
 
-type Nav = NativeStackNavigationProp<JubileoStackParamList, 'ComidaWeb'>;
+type Nav = NativeStackNavigationProp<MasStackParamList, 'ComidaWeb'>;
 
 export default function ComidaScreen() {
   const navigation = useNavigation<Nav>();

@@ -1,6 +1,6 @@
 export interface TabsFlags {
   index: boolean;
-  jubileo: boolean;
+  mas: boolean;
   cancionero: boolean;
   calendario: boolean;
   fotos: boolean;
@@ -17,7 +17,7 @@ export interface FeatureFlags {
 const featureFlags: FeatureFlags = {
   tabs: {
     index: true,
-    jubileo: true,
+    mas: true,
     cancionero: true,
     calendario: true,
     fotos: true,

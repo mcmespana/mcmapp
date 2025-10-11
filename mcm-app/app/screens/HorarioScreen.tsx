@@ -11,9 +11,9 @@ import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { JubileoStackParamList } from '../(tabs)/jubileo';
+import { MasStackParamList } from '../(tabs)/mas';
 
-type Nav = NativeStackNavigationProp<JubileoStackParamList, 'Materiales'>;
+type Nav = NativeStackNavigationProp<MasStackParamList, 'Materiales'>;
 
 export default function HorarioScreen() {
   const navigation = useNavigation<Nav>();
