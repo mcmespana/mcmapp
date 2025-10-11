@@ -12,11 +12,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.familiaconsolacion.mcmapp",
-      "icon": {
-        "light": "./assets/images/ios-light.png",
-        "dark": "./assets/images/ios-dark.png",
-        "tinted": "./assets/images/ios-tinted.png"
-      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
