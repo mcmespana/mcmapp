@@ -11,12 +11,12 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.familiaconsolacion.mcmapp",
       "icon": {
         "light": "./assets/images/ios-light.png",
         "dark": "./assets/images/ios-dark.png",
         "tinted": "./assets/images/ios-tinted.png"
       },
-      "bundleIdentifier": "com.mcmespana.mcmapp",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
