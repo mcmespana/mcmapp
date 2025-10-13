@@ -75,11 +75,10 @@ export default function SongFontPanel({
               styles.fontButton,
               {
                 backgroundColor:
-                  font.cssValue === currentFontFamily
-                    ? '#e3f2fd'
-                    : '#f8f9fa',
+                  font.cssValue === currentFontFamily ? '#e3f2fd' : '#f8f9fa',
                 borderWidth: 1,
-                borderColor: font.cssValue === currentFontFamily ? '#90caf9' : '#dee2e6',
+                borderColor:
+                  font.cssValue === currentFontFamily ? '#90caf9' : '#dee2e6',
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.05,
@@ -93,10 +92,13 @@ export default function SongFontPanel({
               style={[
                 styles.fontText,
                 {
-                  ...(getNativeFontFamily(font.cssValue) && { fontFamily: getNativeFontFamily(font.cssValue) }),
+                  ...(getNativeFontFamily(font.cssValue) && {
+                    fontFamily: getNativeFontFamily(font.cssValue),
+                  }),
                   color:
                     font.cssValue === currentFontFamily ? '#1565c0' : '#495057',
-                  fontWeight: font.cssValue === currentFontFamily ? '600' : 'normal',
+                  fontWeight:
+                    font.cssValue === currentFontFamily ? '600' : 'normal',
                 },
               ]}
             >
@@ -105,23 +107,28 @@ export default function SongFontPanel({
           </TouchableOpacity>
         ))}
       </View>
-      <TouchableOpacity 
-        style={[styles.resetButton, { 
-          backgroundColor: '#e9ecef', 
-          borderWidth: 1,
-          borderColor: '#ced4da',
-          paddingVertical: 10, 
-          paddingHorizontal: 20, 
-          borderRadius: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
-          elevation: 2
-        }]} 
+      <TouchableOpacity
+        style={[
+          styles.resetButton,
+          {
+            backgroundColor: '#e9ecef',
+            borderWidth: 1,
+            borderColor: '#ced4da',
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            borderRadius: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 2,
+            elevation: 2,
+          },
+        ]}
         onPress={reset}
       >
-        <Text style={[styles.resetText, { color: '#495057', fontWeight: '600' }]}>
+        <Text
+          style={[styles.resetText, { color: '#495057', fontWeight: '600' }]}
+        >
           Restablecer
         </Text>
       </TouchableOpacity>

@@ -56,7 +56,7 @@ export default function AppsScreen() {
           }
         }
       }
-      
+
       // Si no puede abrir la app o no está instalada, o si estamos en web,
       // abre la store correspondiente a la plataforma
       const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
@@ -93,10 +93,9 @@ export default function AppsScreen() {
             opcionales ℹ️) que necesitaremos durante el Jubileo.
           </Text>
           <Text style={styles.introSubtext}>
-            {Platform.OS === 'web' 
+            {Platform.OS === 'web'
               ? 'Si tocas el icono de la app te la abrirá directamente. En el modal puedes elegir entre iOS y Android ✨'
-              : 'Si tocas el icono de la app te la abrirá directamente o te llevará a la tienda de tu plataforma ✨'
-            }
+              : 'Si tocas el icono de la app te la abrirá directamente o te llevará a la tienda de tu plataforma ✨'}
           </Text>
         </View>
 

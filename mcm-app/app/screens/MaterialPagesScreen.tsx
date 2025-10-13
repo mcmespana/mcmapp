@@ -17,7 +17,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import FormattedContent from '@/components/FormattedContent';
-import { JubileoStackParamList } from '../(tabs)/jubileo';
+import { MasStackParamList } from '../(tabs)/mas';
 
 interface Pagina {
   titulo?: string;
@@ -33,7 +33,7 @@ interface Actividad {
   paginas: Pagina[];
 }
 
-type RouteProps = RouteProp<JubileoStackParamList, 'MaterialPages'>;
+type RouteProps = RouteProp<MasStackParamList, 'MaterialPages'>;
 
 const generateRandomCircles = (count: number = 5) => {
   const circles = [];

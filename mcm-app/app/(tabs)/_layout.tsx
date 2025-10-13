@@ -49,18 +49,6 @@ export default function TabsLayout() {
             }}
           />
         )}
-        {featureFlags.tabs.jubileo && (
-          <Tabs.Screen
-            name="jubileo"
-            options={{
-              title: 'Jubileo',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="celebration" color={color} size={size} />
-              ),
-              headerShown: false,
-            }}
-          />
-        )}
         {featureFlags.tabs.cancionero && (
           <Tabs.Screen
             name="cancionero"
@@ -111,6 +99,18 @@ export default function TabsLayout() {
                 <MaterialIcons name="public" color={color} size={size} />
               ),
               headerStyle: { backgroundColor: '#9D1E74dd' }, // Info color
+            }}
+          />
+        )}
+        {featureFlags.tabs.mas && (
+          <Tabs.Screen
+            name="mas"
+            options={{
+              title: 'Más',
+              tabBarIcon: ({ color, size }) => (
+                <MaterialIcons name="more-horiz" color={color} size={size} />
+              ),
+              headerShown: false,
             }}
           />
         )}

@@ -16,7 +16,7 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
-import { JubileoStackParamList } from '../(tabs)/jubileo';
+import { MasStackParamList } from '../(tabs)/mas';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import OfflineBanner from '@/components/OfflineBanner';
@@ -24,7 +24,7 @@ import OfflineBanner from '@/components/OfflineBanner';
 interface NavigationItem {
   label: string;
   icon: string;
-  target: keyof JubileoStackParamList;
+  target: keyof MasStackParamList;
   backgroundColor: string;
 }
 
@@ -76,7 +76,7 @@ const navigationItems: NavigationItem[] = [
 
 export default function JubileoHomeScreen() {
   const navigation =
-    useNavigation<NativeStackNavigationProp<JubileoStackParamList>>();
+    useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { loading: lh, offline } = useFirebaseData(

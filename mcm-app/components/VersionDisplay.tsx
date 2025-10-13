@@ -21,7 +21,9 @@ export const VersionDisplay: React.FC<{ style?: any }> = ({ style }) => {
 
           if (update.isAvailable) {
             // Hay un update disponible pero no aplicado aún
-            setUpdateInfo(`v${appVersion} • actualización disponible reiniciando la app 🔄✅`);
+            setUpdateInfo(
+              `v${appVersion} • actualización disponible reiniciando la app 🔄✅`,
+            );
           } else {
             // Verificar si estamos en un update OTA
             const currentUpdate = Updates.updateId;

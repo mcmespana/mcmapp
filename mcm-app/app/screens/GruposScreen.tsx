@@ -75,10 +75,18 @@ export default function GruposScreen() {
       grupos.forEach((g) => {
         if (!g) return;
         const matches: string[] = [];
-        if (g.nombre && typeof g.nombre === 'string' && g.nombre.toLowerCase().includes(q)) {
+        if (
+          g.nombre &&
+          typeof g.nombre === 'string' &&
+          g.nombre.toLowerCase().includes(q)
+        ) {
           matches.push('__match_name__');
         }
-        if (g.responsable && typeof g.responsable === 'string' && g.responsable.toLowerCase().includes(q)) {
+        if (
+          g.responsable &&
+          typeof g.responsable === 'string' &&
+          g.responsable.toLowerCase().includes(q)
+        ) {
           matches.push(g.responsable);
         }
         if (g.miembros && Array.isArray(g.miembros)) {
@@ -155,9 +163,11 @@ export default function GruposScreen() {
           <List.Subheader style={styles.sectionHeader}>
             Forman parte... ({grupo.miembros?.length || 0})
           </List.Subheader>
-          {(grupo.miembros || []).filter(m => m && typeof m === 'string').map((m, idx) => (
-            <List.Item key={idx} title={m} />
-          ))}
+          {(grupo.miembros || [])
+            .filter((m) => m && typeof m === 'string')
+            .map((m, idx) => (
+              <List.Item key={idx} title={m} />
+            ))}
         </View>
       </ScrollView>
     );

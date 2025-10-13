@@ -106,8 +106,8 @@ export default function AppFeedbackModal({
         status: 'pending', // pending, reviewed, resolved
         reportedAt: new Date().toISOString(),
         category: selectedCategory,
-        userName: profile.name,
-        userLocation: profile.location,
+        userName: profile.name || 'Anónimo',
+        userLocation: profile.location || 'Sin ubicación',
       });
 
       // Limpiar y cerrar

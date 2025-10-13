@@ -28,16 +28,24 @@ export default function TransposePanel({
           <MaterialIcons name="close" size={24} color={theme.text} />
         </TouchableOpacity>
       </View>
-      <Text style={[styles.title, { color: theme.text }]}>Cambiar semitonos</Text>
+      <Text style={[styles.title, { color: theme.text }]}>
+        Cambiar semitonos
+      </Text>
       <View style={styles.row}>
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: '#d1f2d1', borderColor: '#9bd49b' }]}
+          style={[
+            styles.button,
+            { backgroundColor: '#d1f2d1', borderColor: '#9bd49b' },
+          ]}
           onPress={() => onSetTranspose(currentTranspose + 1)}
         >
           <Text style={[styles.buttonText, { color: '#2d5a2d' }]}>+1</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: '#d1f2d1', borderColor: '#9bd49b' }]}
+          style={[
+            styles.button,
+            { backgroundColor: '#d1f2d1', borderColor: '#9bd49b' },
+          ]}
           onPress={() => onSetTranspose(currentTranspose + 2)}
         >
           <Text style={[styles.buttonText, { color: '#2d5a2d' }]}>+2</Text>
@@ -45,32 +53,45 @@ export default function TransposePanel({
       </View>
       <View style={styles.row}>
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: '#f8d7da', borderColor: '#f1b0b7' }]}
+          style={[
+            styles.button,
+            { backgroundColor: '#f8d7da', borderColor: '#f1b0b7' },
+          ]}
           onPress={() => onSetTranspose(currentTranspose - 1)}
         >
           <Text style={[styles.buttonText, { color: '#721c24' }]}>-1</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: '#f8d7da', borderColor: '#f1b0b7' }]}
+          style={[
+            styles.button,
+            { backgroundColor: '#f8d7da', borderColor: '#f1b0b7' },
+          ]}
           onPress={() => onSetTranspose(currentTranspose - 2)}
         >
           <Text style={[styles.buttonText, { color: '#721c24' }]}>-2</Text>
         </TouchableOpacity>
       </View>
       <TouchableOpacity
-        style={[styles.reset, { 
-          backgroundColor: '#e9ecef', 
-          borderWidth: 1,
-          borderColor: '#ced4da',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
-          elevation: 2
-        }]}
+        style={[
+          styles.reset,
+          {
+            backgroundColor: '#e9ecef',
+            borderWidth: 1,
+            borderColor: '#ced4da',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 2,
+            elevation: 2,
+          },
+        ]}
         onPress={() => onSetTranspose(0)}
       >
-        <Text style={[styles.resetText, { color: '#495057', fontWeight: '600' }]}>Tono Original</Text>
+        <Text
+          style={[styles.resetText, { color: '#495057', fontWeight: '600' }]}
+        >
+          Tono Original
+        </Text>
       </TouchableOpacity>
     </BottomSheet>
   );
@@ -106,7 +127,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  buttonText: { 
+  buttonText: {
     fontSize: 16,
     fontWeight: '600',
   },

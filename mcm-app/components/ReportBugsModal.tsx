@@ -15,7 +15,10 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
-import { getCategoryFromFirebaseCategory, cleanSongTitle } from '@/utils/songUtils';
+import {
+  getCategoryFromFirebaseCategory,
+  cleanSongTitle,
+} from '@/utils/songUtils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 
 interface ReportBugsModalProps {
@@ -86,8 +89,8 @@ export default function ReportBugsModal({
         platform: Platform.OS,
         status: 'pending', // pending, reviewed, fixed
         reportedAt: new Date().toISOString(),
-        userName: profile.name,
-        userLocation: profile.location,
+        userName: profile.name || 'Anónimo',
+        userLocation: profile.location || 'Sin ubicación',
       });
 
       // Limpiar y cerrar
@@ -133,7 +136,7 @@ export default function ReportBugsModal({
 
   return (
     <BottomSheet visible={visible} onClose={handleClose}>
-      <ScrollView 
+      <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={true}
         keyboardShouldPersistTaps="handled"
@@ -217,10 +220,7 @@ export default function ReportBugsModal({
 
         {/* Botón Panel Secreto */}
         <TouchableOpacity
-          style={[
-            styles.secretButton,
-            { backgroundColor: '#4CAF50' }
-          ]}
+          style={[styles.secretButton, { backgroundColor: '#4CAF50' }]}
           onPress={() => {
             onClose();
             if (onOpenSecretPanel) {
@@ -228,20 +228,14 @@ export default function ReportBugsModal({
             }
           }}
         >
-          <MaterialIcons
-            name="admin-panel-settings"
-            size={20}
-            color="#fff"
-          />
-          <Text style={styles.secretButtonText}>
-            Panel Secreto
-          </Text>
+          <MaterialIcons name="admin-panel-settings" size={20} color="#fff" />
+          <Text style={styles.secretButtonText}>Panel Secreto</Text>
         </TouchableOpacity>
 
         <Text style={[styles.disclaimer, { color: theme.icon }]}>
           Con tus avisos nos ayudas a mejorar la calidad del cantoral. Puedes
-          incluir detalles como acordes incorrectos o mal colocados, letras
-          con errores o problemas de formato.
+          incluir detalles como acordes incorrectos o mal colocados, letras con
+          errores o problemas de formato.
         </Text>
       </ScrollView>
     </BottomSheet>

@@ -11,14 +11,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "icon": {
-        "light": "./assets/images/ios-light.png",
-        "dark": "./assets/images/ios-dark.png",
-        "tinted": "./assets/images/ios-tinted.png"
-      },
-      "bundleIdentifier": "com.mcmespana.mcmapp",
+      "bundleIdentifier": "com.familiaconsolacion.mcmapp",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "La app puede usar tu ubicación para habilitar funciones basadas en ubicación cuando estén disponibles (por ejemplo, mostrar información relevante cerca de ti)."
       }
     },
     "android": {

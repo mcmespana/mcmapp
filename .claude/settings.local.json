@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(node:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npm install:*)",
+      "Bash(npx expo-doctor:*)",
+      "Bash(npm dedupe)",
+      "Bash(npx tsc:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
