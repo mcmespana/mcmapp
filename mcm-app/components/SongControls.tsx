@@ -304,9 +304,10 @@ const SongControls: React.FC<SongControlsProps> = ({
 const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
-    bottom: 20,
+    bottom: Platform.OS === 'ios' ? 100 : 20, // Más alto en iOS para no quedar debajo de native tabs
     right: 20,
     alignItems: 'flex-end',
+    zIndex: 1000, // Asegurar que esté por encima del tab bar
   },
   fabActionsContainer: {
     marginBottom: 10,

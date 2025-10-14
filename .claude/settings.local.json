@@ -10,7 +10,10 @@
       "Bash(npm install:*)",
       "Bash(npx expo-doctor:*)",
       "Bash(npm dedupe)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(cat:*)",
+      "Bash(awk:*)",
+      "Bash(xargs kill:*)"
     ],
     "deny": [],
     "ask": []

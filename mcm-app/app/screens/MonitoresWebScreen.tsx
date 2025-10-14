@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
 import spacing from '@/constants/spacing';
@@ -171,7 +172,7 @@ export default function MonitoresWebScreen() {
 
   // En iOS/Android usamos el WebView nativo con CSS inyectado
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <WebView
         source={{ uri: URL }}
         style={styles.webview}
@@ -201,7 +202,7 @@ export default function MonitoresWebScreen() {
           {error}
         </Snackbar>
       </Portal>
-    </View>
+    </SafeAreaView>
   );
 }
 

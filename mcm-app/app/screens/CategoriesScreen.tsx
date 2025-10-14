@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   View,
+  Platform,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useLayoutEffect, useMemo, useState } from 'react';
@@ -15,6 +16,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { FAB, Snackbar } from 'react-native-paper';
 import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
+import GlassFAB from '@/components/ui/GlassFAB.ios';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
@@ -68,7 +70,8 @@ export default function CategoriesScreen({
               categoryName: ALL_SONGS_CATEGORY_NAME,
             })
           }
-          style={{ paddingHorizontal: 12 }}
+          style={{ padding: 10, marginRight: 8 }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <MaterialIcons name="search" size={26} color="#fff" />
         </TouchableOpacity>
@@ -85,6 +88,7 @@ export default function CategoriesScreen({
       <FlatList
         data={displayCategories}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => {
@@ -122,12 +126,21 @@ export default function CategoriesScreen({
           </TouchableOpacity>
         )}
       />
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        color="#222"
-        onPress={() => setShowForm(true)}
-      />
+      {Platform.OS === 'ios' ? (
+        <GlassFAB
+          icon="add"
+          onPress={() => setShowForm(true)}
+          tintColor="#f4c11e"
+          iconColor="#222"
+        />
+      ) : (
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          color="#222"
+          onPress={() => setShowForm(true)}
+        />
+      )}
 
       <SuggestSongModal
         visible={showForm}

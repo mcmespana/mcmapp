@@ -1,132 +1,80 @@
-// app/(tabs)/_layout.tsx
-import { Tabs } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons'; // Asegúrate de tenerlo importado
-import {
-  ThemeProvider,
-  DarkTheme,
-  DefaultTheme,
-} from '@react-navigation/native';
-import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+// app/(tabs)/_layout.tsx - Native Tabs Implementation
+import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
 import { Platform } from 'react-native';
-import { HapticTab } from '@/components/HapticTab';
-import GlassTabBarBackground from '@/components/ui/GlassTabBarBackground.ios';
-import GlassHeader from '@/components/ui/GlassHeader.ios';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { StatusBar } from 'expo-status-bar';
 
 export default function TabsLayout() {
-  const scheme = useColorScheme(); //
-  const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const scheme = useColorScheme();
   const featureFlags = useFeatureFlags();
 
   return (
-    <ThemeProvider value={theme}>
-      <Tabs
-        initialRouteName={featureFlags.defaultTab}
-        screenOptions={{
-          headerShown: true,
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-            fontSize: 18,
-          },
-          headerTitleAlign: 'center',
-          headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
-          headerTransparent: Platform.OS === 'ios',
-          headerBlurEffect: Platform.OS === 'ios' ? 'systemChromeMaterial' : undefined,
-          tabBarActiveTintColor: Colors[scheme ?? 'light'].tint,
-          tabBarInactiveTintColor: Colors[scheme ?? 'light'].icon,
-          tabBarStyle: {
-            backgroundColor: Colors[scheme ?? 'light'].background,
-          },
-          tabBarBackground: () => Platform.OS === 'ios' ? <GlassTabBarBackground /> : undefined,
-          tabBarButton: HapticTab,
-        }}
-      >
+    <>
+      <NativeTabs>
         {featureFlags.tabs.index && (
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: 'Inicio',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="home" color={color} size={size} />
-              ),
-              headerShown: true,
-            }}
-          />
+          <NativeTabs.Trigger name="index">
+            <Label>Inicio</Label>
+            {Platform.select({
+              ios: <Icon sf={{ default: 'house', selected: 'house.fill' }} />,
+              default: <MaterialIcons name="home" size={24} />,
+            })}
+          </NativeTabs.Trigger>
         )}
+
         {featureFlags.tabs.cancionero && (
-          <Tabs.Screen
-            name="cancionero"
-            options={{
-              title: 'Cantoral',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="music-note" color={color} size={size} />
-              ),
-              headerShown: false, // Cantoral uses its own StackNavigator header
-            }}
-          />
+          <NativeTabs.Trigger name="cancionero">
+            <Label>Cantoral</Label>
+            {Platform.select({
+              ios: <Icon sf={{ default: 'music.note', selected: 'music.note' }} />,
+              default: <MaterialIcons name="music-note" size={24} />,
+            })}
+          </NativeTabs.Trigger>
         )}
+
         {featureFlags.tabs.calendario && (
-          <Tabs.Screen
-            name="calendario"
-            options={{
-              title: 'Calendario',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons
-                  name="calendar-today"
-                  color={color}
-                  size={size}
-                />
-              ),
-              headerStyle: { backgroundColor: '#31AADF' }, // Éxito / Confirmación color
-              headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#31AADF" /> : undefined,
-            }}
-          />
+          <NativeTabs.Trigger name="calendario">
+            <Label>Calendario</Label>
+            {Platform.select({
+              ios: <Icon sf={{ default: 'calendar', selected: 'calendar' }} />,
+              default: <MaterialIcons name="calendar-today" size={24} />,
+            })}
+          </NativeTabs.Trigger>
         )}
 
         {featureFlags.tabs.fotos && (
-          <Tabs.Screen
-            name="fotos"
-            options={{
-              title: 'Fotos',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="photo-library" color={color} size={size} />
-              ),
-              headerStyle: { backgroundColor: '#E15C62' }, // Acento / Call to Action color
-              headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#E15C62" /> : undefined,
-            }}
-          />
+          <NativeTabs.Trigger name="fotos">
+            <Label>Fotos</Label>
+            {Platform.select({
+              ios: <Icon sf={{ default: 'photo', selected: 'photo.fill' }} />,
+              default: <MaterialIcons name="photo-library" size={24} />,
+            })}
+          </NativeTabs.Trigger>
         )}
+
         {featureFlags.tabs.comunica && (
-          <Tabs.Screen
-            name="comunica"
-            options={{
-              title: 'Comunica',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="public" color={color} size={size} />
-              ),
-              headerStyle: { backgroundColor: '#9D1E74dd' }, // Info color
-              headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#9D1E74dd" /> : undefined,
-            }}
-          />
+          <NativeTabs.Trigger name="comunica">
+            <Label>Comunica</Label>
+            {Platform.select({
+              ios: <Icon sf={{ default: 'globe', selected: 'globe' }} />,
+              default: <MaterialIcons name="public" size={24} />,
+            })}
+          </NativeTabs.Trigger>
         )}
+
         {featureFlags.tabs.mas && (
-          <Tabs.Screen
-            name="mas"
-            options={{
-              title: 'Más',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="more-horiz" color={color} size={size} />
-              ),
-              headerShown: false,
-            }}
-          />
+          <NativeTabs.Trigger name="mas">
+            <Label>Más</Label>
+            {Platform.select({
+              ios: <Icon sf={{ default: 'ellipsis', selected: 'ellipsis' }} />,
+              default: <MaterialIcons name="more-horiz" size={24} />,
+            })}
+          </NativeTabs.Trigger>
         )}
-      </Tabs>
+      </NativeTabs>
 
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-    </ThemeProvider>
+    </>
   );
 }

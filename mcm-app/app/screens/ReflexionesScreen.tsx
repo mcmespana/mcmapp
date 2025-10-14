@@ -27,6 +27,7 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import GlassFAB from '@/components/ui/GlassFAB.ios';
 
 interface Grupo {
   nombre: string;
@@ -177,7 +178,10 @@ export default function ReflexionesScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.list}>
+      <ScrollView contentContainerStyle={[
+        styles.list,
+        Platform.OS === 'ios' && { paddingBottom: 100 }
+      ]}>
         {list
           .sort(
             (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
@@ -230,7 +234,16 @@ export default function ReflexionesScreen() {
             </Card>
           ))}
       </ScrollView>
-      <FAB icon="plus" style={styles.fab} onPress={() => setShowForm(true)} />
+      {Platform.OS === 'ios' ? (
+        <GlassFAB
+          icon="add"
+          onPress={() => setShowForm(true)}
+          tintColor="#A3BD31"
+          iconColor="#fff"
+        />
+      ) : (
+        <FAB icon="plus" style={styles.fab} onPress={() => setShowForm(true)} />
+      )}
       <Portal>
         <Modal
           visible={showForm}

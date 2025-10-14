@@ -55,13 +55,12 @@ export default function MasTab() {
         initialRouteName="MasHome"
         screenOptions={({ navigation, route }) => ({
           headerBackTitle: 'Atrás',
-          headerStyle: { backgroundColor: '#78909C' },
+          headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#78909C' },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
           headerTitleAlign: 'center',
           headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
-          headerTransparent: Platform.OS === 'ios',
-          headerBlurEffect: Platform.OS === 'ios' ? 'systemChromeMaterial' : undefined,
+          headerTransparent: false,
           headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#78909C" /> : undefined,
           headerRight: () => {
             // Solo mostrar los botones en las pantallas de Jubileo
@@ -69,19 +68,21 @@ export default function MasTab() {
             if (!isJubileoScreen) return null;
 
             return (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
                 <TouchableOpacity
                   onPress={() => setSettingsVisible(true)}
-                  style={{ padding: 8, marginRight: 4 }}
+                  style={{ padding: 10 }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <MaterialIcons name="settings" size={24} color="#fff" />
+                  <MaterialIcons name="settings" size={26} color="#fff" />
                 </TouchableOpacity>
                 {route.name !== 'Reflexiones' && (
                   <TouchableOpacity
                     onPress={() => navigation.navigate('Reflexiones')}
-                    style={{ padding: 8 }}
+                    style={{ padding: 10 }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <MaterialIcons name="forum" size={24} color="#fff" />
+                    <MaterialIcons name="forum" size={26} color="#fff" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -101,10 +102,7 @@ export default function MasTab() {
           name="MonitoresWeb"
           component={MonitoresWebScreen}
           options={{
-            title: 'Comunica MCM · Monitores',
-            headerStyle: { backgroundColor: '#607D8B' },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#607D8B" /> : undefined,
-            headerRight: undefined,
+            headerShown: false, // Sin header para ganar espacio - volver con tab "Más"
           }}
         />
         <Stack.Screen
@@ -112,7 +110,7 @@ export default function MasTab() {
           component={JubileoHomeScreen}
           options={{
             title: 'Jubileo',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
             headerRight: undefined, // No mostrar botones en la home del jubileo
           }}
@@ -122,7 +120,7 @@ export default function MasTab() {
           component={HorarioScreen}
           options={{
             title: 'Horario',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -131,7 +129,7 @@ export default function MasTab() {
           component={MaterialesScreen}
           options={{
             title: 'Materiales',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -140,7 +138,7 @@ export default function MasTab() {
           component={MaterialPagesScreen}
           options={{
             title: 'Material',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -149,7 +147,7 @@ export default function MasTab() {
           component={ComidaScreen}
           options={{
             title: 'Comida',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -158,7 +156,7 @@ export default function MasTab() {
           component={ComidaWebScreen}
           options={{
             title: 'Comida',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -167,7 +165,7 @@ export default function MasTab() {
           component={VisitasScreen}
           options={{
             title: 'Visitas',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -176,7 +174,7 @@ export default function MasTab() {
           component={ProfundizaScreen}
           options={{
             title: 'Profundiza',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -185,7 +183,7 @@ export default function MasTab() {
           component={GruposScreen}
           options={{
             title: 'Grupos',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -194,7 +192,7 @@ export default function MasTab() {
           component={ContactosScreen}
           options={{
             title: 'Contactos',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -203,7 +201,7 @@ export default function MasTab() {
           component={AppsScreen}
           options={{
             title: 'Apps',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -212,7 +210,7 @@ export default function MasTab() {
           component={WordleScreen}
           options={{
             title: 'Wordle Jubileo',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
@@ -221,7 +219,7 @@ export default function MasTab() {
           component={ReflexionesScreen}
           options={{
             title: 'Compartiendo',
-            headerStyle: { backgroundColor: '#A3BD31' },
+            headerStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : { backgroundColor: '#A3BD31' },
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
           }}
         />
