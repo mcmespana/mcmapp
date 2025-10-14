@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Platform } from 'react-native';
+import GlassHeader from '@/components/ui/GlassHeader.ios';
 
 // Importar pantallas
 import CategoriesScreen from '../screens/CategoriesScreen';
@@ -72,6 +73,9 @@ export default function CancioneroTab() {
               fontSize: 18,
             },
             headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
+            headerTransparent: Platform.OS === 'ios',
+            headerBlurEffect: Platform.OS === 'ios' ? 'systemChromeMaterial' : undefined,
+            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#f4c11e" /> : undefined,
           }}
         >
           <Stack.Screen
