@@ -25,8 +25,8 @@ const featureFlags: FeatureFlags = {
     fotos: true,
     comunica: false,
   },
-  defaultTab: 'index',
-  showNotificationsIcon: false,
+  defaultTab: 'iqndex',
+  showNotificationsIcon: true,
   showUserProfilePrompt: false,
 };
 

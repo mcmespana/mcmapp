@@ -234,8 +234,9 @@ Compilar para producción en la nube (AAB) ...... eas build --profile production
 Compilar para producción local (AAB) ........... eas build --profile production --platform android --local
 Subir a la playstore ........................... eas submit --profile production --platform android
 Post subidas ................................... eas submit -p android  
-iOS???
 
+
+iOS (build en la nube y subir) ................ npx eas build --platform ios --profile production --auto-submit
 eas credentials
 
 ```
