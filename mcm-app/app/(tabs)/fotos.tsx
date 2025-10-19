@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, ActivityIndicator } from 'react-native-paper';
+import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
@@ -147,7 +148,7 @@ export default function FotosScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <TabScreenWrapper style={styles.container} edges={['top']}>
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
       <FlatList
         data={displayedAlbums}
@@ -179,7 +180,7 @@ export default function FotosScreen() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
       />
-    </SafeAreaView>
+    </TabScreenWrapper>
   );
 }
 

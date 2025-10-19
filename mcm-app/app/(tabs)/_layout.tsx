@@ -18,63 +18,99 @@ import {
   DarkTheme,
   DefaultTheme,
 } from '@react-navigation/native';
-import { Colors } from '@/constants/colors';
+import { Colors, TabHeaderColors } from '@/constants/colors';
 import { HapticTab } from '@/components/HapticTab';
-import { BlurView } from 'expo-blur';
-import GlassHeader from '@/components/ui/GlassHeader.ios';
 
+// ============================================================================
+// CENTRALIZED TABS CONFIGURATION
+// ============================================================================
+interface TabConfig {
+  name: string;
+  label: string;
+  iosIcon: {
+    default: string;
+    selected: string;
+  };
+  androidIcon: string;
+  headerColor?: string;
+  headerShown?: boolean;
+}
+
+const TABS_CONFIG: TabConfig[] = [
+  {
+    name: 'index',
+    label: 'Inicio',
+    iosIcon: { default: 'house', selected: 'house.fill' },
+    androidIcon: 'home',
+    headerShown: true,
+  },
+  {
+    name: 'cancionero',
+    label: 'Cantoral',
+    iosIcon: { default: 'music.note', selected: 'music.note' },
+    androidIcon: 'music-note',
+    headerShown: false, // Cantoral uses its own StackNavigator header
+  },
+  {
+    name: 'calendario',
+    label: 'Calendario',
+    iosIcon: { default: 'calendar', selected: 'calendar' },
+    androidIcon: 'calendar-today',
+    headerColor: TabHeaderColors.calendario,
+    headerShown: true,
+  },
+  {
+    name: 'fotos',
+    label: 'Fotos',
+    iosIcon: { default: 'photo', selected: 'photo.fill' },
+    androidIcon: 'photo-library',
+    headerColor: TabHeaderColors.fotos,
+    headerShown: true,
+  },
+  {
+    name: 'comunica',
+    label: 'Comunica',
+    iosIcon: { default: 'globe', selected: 'globe' },
+    androidIcon: 'public',
+    headerColor: TabHeaderColors.comunica,
+    headerShown: true,
+  },
+  {
+    name: 'mas',
+    label: 'Más',
+    iosIcon: { default: 'ellipsis', selected: 'ellipsis' },
+    androidIcon: 'more-horiz',
+    headerShown: false,
+  },
+];
+
+// ============================================================================
 // iOS NativeTabs Component
-function iOSNativeTabsLayout() {
+// ============================================================================
+function IOSNativeTabsLayout() {
   const featureFlags = useFeatureFlags();
 
   return (
     <NativeTabs>
-      {featureFlags.tabs.index && (
-        <NativeTabs.Trigger name="index">
-          <Label>Inicio</Label>
-          <Icon sf={{ default: 'house', selected: 'house.fill' }} />
-        </NativeTabs.Trigger>
-      )}
+      {TABS_CONFIG.map((tab) => {
+        const isEnabled = featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
 
-      {featureFlags.tabs.cancionero && (
-        <NativeTabs.Trigger name="cancionero">
-          <Label>Cantoral</Label>
-          <Icon sf={{ default: 'music.note', selected: 'music.note' }} />
-        </NativeTabs.Trigger>
-      )}
+        if (!isEnabled) return null;
 
-      {featureFlags.tabs.calendario && (
-        <NativeTabs.Trigger name="calendario">
-          <Label>Calendario</Label>
-          <Icon sf={{ default: 'calendar', selected: 'calendar' }} />
-        </NativeTabs.Trigger>
-      )}
-
-      {featureFlags.tabs.fotos && (
-        <NativeTabs.Trigger name="fotos">
-          <Label>Fotos</Label>
-          <Icon sf={{ default: 'photo', selected: 'photo.fill' }} />
-        </NativeTabs.Trigger>
-      )}
-
-      {featureFlags.tabs.comunica && (
-        <NativeTabs.Trigger name="comunica">
-          <Label>Comunica</Label>
-          <Icon sf={{ default: 'globe', selected: 'globe' }} />
-        </NativeTabs.Trigger>
-      )}
-
-      {featureFlags.tabs.mas && (
-        <NativeTabs.Trigger name="mas">
-          <Label>Más</Label>
-          <Icon sf={{ default: 'ellipsis', selected: 'ellipsis' }} />
-        </NativeTabs.Trigger>
-      )}
+        return (
+          <NativeTabs.Trigger key={tab.name} name={tab.name}>
+            <Label>{tab.label}</Label>
+            <Icon sf={tab.iosIcon} />
+          </NativeTabs.Trigger>
+        );
+      })}
     </NativeTabs>
   );
 }
 
+// ============================================================================
 // Android/Web Traditional Tabs Component
+// ============================================================================
 function AndroidWebTabsLayout() {
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
@@ -99,106 +135,57 @@ function AndroidWebTabsLayout() {
             backgroundColor: Colors[scheme ?? 'light'].background,
             borderTopWidth: 1,
             borderTopColor: Colors[scheme ?? 'light'].icon + '20',
-            paddingBottom: Platform.OS === 'web' ? 8 : 0,
-            paddingTop: 8,
-            height: Platform.OS === 'web' ? 70 : 60,
+            paddingBottom: Platform.OS === 'web' ? 12 : 8,
+            paddingTop: 12,
+            height: Platform.OS === 'web' ? 60 : 80,
+            elevation: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
           },
           tabBarButton: HapticTab,
+          animation: 'shift',
         }}
       >
-        {featureFlags.tabs.index && (
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: 'Inicio',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="home" color={color} size={size} />
-              ),
-              headerShown: true,
-            }}
-          />
-        )}
-        {featureFlags.tabs.cancionero && (
-          <Tabs.Screen
-            name="cancionero"
-            options={{
-              title: 'Cantoral',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="music-note" color={color} size={size} />
-              ),
-              headerShown: false, // Cantoral uses its own StackNavigator header
-            }}
-          />
-        )}
-        {featureFlags.tabs.calendario && (
-          <Tabs.Screen
-            name="calendario"
-            options={{
-              title: 'Calendario',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons
-                  name="calendar-today"
-                  color={color}
-                  size={size}
-                />
-              ),
-              headerStyle: { backgroundColor: '#31AADF' },
-              headerTransparent: false,
-            }}
-          />
-        )}
+        {TABS_CONFIG.map((tab) => {
+          const isEnabled = featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
 
-        {featureFlags.tabs.fotos && (
-          <Tabs.Screen
-            name="fotos"
-            options={{
-              title: 'Fotos',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="photo-library" color={color} size={size} />
-              ),
-              headerStyle: { backgroundColor: '#E15C62' },
-              headerTransparent: false,
-            }}
-          />
-        )}
-        {featureFlags.tabs.comunica && (
-          <Tabs.Screen
-            name="comunica"
-            options={{
-              title: 'Comunica',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="public" color={color} size={size} />
-              ),
-              headerStyle: { backgroundColor: '#9D1E74dd' },
-              headerTransparent: false,
-            }}
-          />
-        )}
-        {featureFlags.tabs.mas && (
-          <Tabs.Screen
-            name="mas"
-            options={{
-              title: 'Más',
-              tabBarIcon: ({ color, size }) => (
-                <MaterialIcons name="more-horiz" color={color} size={size} />
-              ),
-              headerShown: false,
-            }}
-          />
-        )}
+          if (!isEnabled) return null;
+
+          return (
+            <Tabs.Screen
+              key={tab.name}
+              name={tab.name}
+              options={{
+                title: tab.label,
+                tabBarIcon: ({ color, size }) => (
+                  <MaterialIcons name={tab.androidIcon as any} color={color} size={size} />
+                ),
+                headerShown: tab.headerShown ?? true,
+                ...(tab.headerColor && {
+                  headerStyle: { backgroundColor: tab.headerColor },
+                  headerTransparent: false,
+                }),
+              }}
+            />
+          );
+        })}
       </Tabs>
     </ThemeProvider>
   );
 }
 
+// ============================================================================
 // Main TabsLayout Component - Platform-specific rendering
+// ============================================================================
 export default function TabsLayout() {
   const scheme = useColorScheme();
 
   return (
     <>
       {Platform.OS === 'ios' ? (
-        <iOSNativeTabsLayout />
+        <IOSNativeTabsLayout />
       ) : (
         <AndroidWebTabsLayout />
       )}

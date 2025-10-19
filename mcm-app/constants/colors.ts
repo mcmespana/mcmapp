@@ -42,3 +42,10 @@ export default {
   black: '#000000', // Negro
   border: '#E0E0E0', // Gris claro para bordes
 };
+
+// Tab header colors
+export const TabHeaderColors = {
+  calendario: '#31AADF', // Celeste
+  fotos: '#E15C62', // Rojo MIC
+  comunica: '#9D1E74dd', // Morado LC con transparencia
+};

@@ -14,11 +14,13 @@ export interface FeatureFlags {
   showUserProfilePrompt: boolean;
 }
 
+// Default feature flags (hardcoded fallback)
+// These will be overridden by remote config if available
 const featureFlags: FeatureFlags = {
   tabs: {
     index: true,
     mas: true,
-    cancionero: true,
+    cancionero: false, // Disabled by default, enable via OTA update
     calendario: true,
     fotos: true,
     comunica: false,
