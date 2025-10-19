@@ -9,6 +9,8 @@ import {
   Alert,
   SectionList,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import {
   CalendarList,
   CalendarProps,
@@ -199,7 +201,7 @@ export default function Calendario() {
   }
 
   return (
-    <View style={styles.container}>
+    <TabScreenWrapper style={styles.container} edges={['top']}>
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
       <SegmentedButtons
         value={viewMode}
@@ -536,7 +538,7 @@ export default function Calendario() {
           />
         </>
       )}
-    </View>
+    </TabScreenWrapper>
   );
 }
 

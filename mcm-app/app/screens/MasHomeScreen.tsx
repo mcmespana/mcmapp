@@ -8,7 +8,9 @@ import {
   TextStyle,
   useWindowDimensions,
   ScrollView,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -52,7 +54,7 @@ export default function MasHomeScreen() {
   const labelFontSize = 18;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         style={styles.scrollView}
@@ -99,7 +101,7 @@ export default function MasHomeScreen() {
           ))}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
