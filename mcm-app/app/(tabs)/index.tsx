@@ -15,6 +15,7 @@ import {
   useWindowDimensions,
   Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, LinkProps } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -380,7 +381,7 @@ export default function Home() {
   }, [navigation, scheme, featureFlags.showNotificationsIcon]);
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <SettingsPanel
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
@@ -493,7 +494,7 @@ export default function Home() {
         duration={4000}
         onDismiss={() => setToastVisible(false)}
       />
-    </>
+    </SafeAreaView>
   );
 }
 

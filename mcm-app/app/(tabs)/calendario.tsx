@@ -9,6 +9,7 @@ import {
   Alert,
   SectionList,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CalendarList,
   CalendarProps,
@@ -199,7 +200,7 @@ export default function Calendario() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
       <SegmentedButtons
         value={viewMode}
@@ -536,7 +537,7 @@ export default function Calendario() {
           />
         </>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

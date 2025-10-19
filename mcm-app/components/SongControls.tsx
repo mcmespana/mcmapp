@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Snackbar } from 'react-native-paper';
 import theme from '../app/styles/theme'; // Default import for theme
 import colors from '@/constants/colors';

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
@@ -251,7 +252,7 @@ export default function HorarioScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.headerSection}>
         <DateSelector
           dates={fechas}
@@ -292,7 +293,7 @@ export default function HorarioScreen() {
           ),
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
