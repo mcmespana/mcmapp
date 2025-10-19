@@ -15,7 +15,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "La app puede usar tu ubicación para habilitar funciones basadas en ubicación cuando estén disponibles (por ejemplo, mostrar información relevante cerca de ti)."
-      }
+      },
+      "appleTeamId": "5P53S6QB23"
     },
     "android": {
       "adaptiveIcon": {
@@ -96,7 +97,9 @@
         }
       ],
       "expo-asset",
-      ["expo-build-properties"]
+      [
+        "expo-build-properties"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
