@@ -86,6 +86,15 @@
           "backgroundColor": "#ffffff"
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/adaptive-icon.png",
+          "color": "#253883",
+          "sounds": [],
+          "mode": "production"
+        }
+      ],
       "expo-asset",
       ["expo-build-properties"]
     ],
