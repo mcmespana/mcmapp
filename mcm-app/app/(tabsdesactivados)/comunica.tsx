@@ -8,7 +8,7 @@ import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
 import iframeStyles from './comunica.module.css';
 
-const URL = 'https://steelblue-mallard-178509.hostingersite.com/area-privada/';
+const URL = 'https://comunica.movimientoconsolacion.com';
 
 export default function Comunica() {
   const [isLoading, setIsLoading] = useState(true);
