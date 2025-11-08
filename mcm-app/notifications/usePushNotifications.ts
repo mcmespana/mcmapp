@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { saveTokenToFirebase, updateLastActive, saveReceivedNotificationLocally } from '@/services/pushNotificationService';
+import { saveTokenToFirebase, updateLastActive, saveReceivedNotificationLocally, markNotificationAsRead } from '@/services/pushNotificationService';
 import { ReceivedNotification } from '@/types/notifications';
 import { router } from 'expo-router';
 
@@ -51,8 +51,10 @@ export default function usePushNotifications() {
         console.log('🔔 Notificación recibida:', notification.request.content);
 
         // Guardar en historial local
+        // ⚠️ CRÍTICO: Usar data.id si existe (ID de Firebase), sino usar identifier de Expo
+        const notificationId = notification.request.content.data?.id || notification.request.identifier;
         const receivedNotification: ReceivedNotification = {
-          id: notification.request.identifier,
+          id: notificationId,
           title: notification.request.content.title || 'Notificación',
           body: notification.request.content.body || '',
           icon: notification.request.content.data?.icon as string | undefined,
@@ -87,24 +89,33 @@ export default function usePushNotifications() {
           }
         }
 
-        // Guardar en historial local si no estaba ya
+        // Guardar en historial local si no estaba ya (sin marcar como leída todavía)
+        // ⚠️ CRÍTICO: Usar data.id si existe (ID de Firebase), sino usar identifier de Expo
+        const notificationId = data?.id || response.notification.request.identifier;
         const receivedNotification: ReceivedNotification = {
-          id: response.notification.request.identifier,
+          id: notificationId,
           title: response.notification.request.content.title || 'Notificación',
           body: response.notification.request.content.body || '',
           icon: data?.icon as string | undefined,
           imageUrl: data?.imageUrl as string | undefined,
           actionButton: data?.actionButton as any,
           receivedAt: new Date().toISOString(),
-          isRead: true, // Marcada como leída porque la tocó
+          isRead: false, // No marcar como leída automáticamente
           category: data?.category as any,
           internalRoute: data?.internalRoute as string | undefined,
           data,
         };
 
-        saveReceivedNotificationLocally(receivedNotification).catch(err =>
-          console.error('Error guardando notificación localmente:', err)
-        );
+        saveReceivedNotificationLocally(receivedNotification)
+          .then(() => {
+            // Marcar como leída usando la función que actualiza el contador
+            markNotificationAsRead(receivedNotification.id).catch(err =>
+              console.error('Error marcando notificación como leída:', err)
+            );
+          })
+          .catch(err =>
+            console.error('Error guardando notificación localmente:', err)
+          );
       });
 
     // Cleanup

@@ -8,6 +8,7 @@ import { DeviceToken, NotificationData, ReceivedNotification } from '@/types/not
 
 const DEVICE_ID_KEY = '@mcm_device_id';
 const NOTIFICATIONS_HISTORY_KEY = '@mcm_notifications_history';
+const READ_NOTIFICATIONS_KEY = '@mcm_read_notifications'; // IDs de notificaciones leídas (Firebase + locales)
 
 /**
  * Genera o recupera el ID único del dispositivo
@@ -199,21 +200,68 @@ export const getLocalNotificationsHistory = async (): Promise<ReceivedNotificati
 };
 
 /**
- * Marca una notificación como leída
+ * Obtiene el conjunto de IDs de notificaciones leídas
+ */
+export const getReadNotificationIds = async (): Promise<Set<string>> => {
+  try {
+    const data = await AsyncStorage.getItem(READ_NOTIFICATIONS_KEY);
+    return data ? new Set(JSON.parse(data)) : new Set();
+  } catch (error) {
+    console.error('Error obteniendo notificaciones leídas:', error);
+    return new Set();
+  }
+};
+
+/**
+ * Marca una notificación como leída (tanto locales como de Firebase)
  */
 export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
   try {
+    // Actualizar notificaciones locales si existe
     const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
-    if (!data) return;
-
+    if (data) {
     const notifications: ReceivedNotification[] = JSON.parse(data);
     const updated = notifications.map(n =>
       n.id === notificationId ? { ...n, isRead: true } : n
     );
+      await AsyncStorage.setItem(NOTIFICATIONS_HISTORY_KEY, JSON.stringify(updated));
+    }
 
-    await AsyncStorage.setItem(NOTIFICATIONS_HISTORY_KEY, JSON.stringify(updated));
+    // Añadir a la lista de notificaciones leídas (para Firebase también)
+    const readIds = await getReadNotificationIds();
+    readIds.add(notificationId);
+    await AsyncStorage.setItem(READ_NOTIFICATIONS_KEY, JSON.stringify(Array.from(readIds)));
   } catch (error) {
     console.error('Error marcando notificación como leída:', error);
+  }
+};
+
+/**
+ * Cuenta las notificaciones sin leer
+ * Combina notificaciones locales y de Firebase
+ */
+export const getUnreadNotificationsCount = async (): Promise<number> => {
+  try {
+    const readIds = await getReadNotificationIds();
+    
+    // Contar notificaciones locales sin leer
+    const localNotifications = await getLocalNotificationsHistory();
+    const unreadLocal = localNotifications.filter(n => !readIds.has(n.id) && !n.isRead);
+    
+    // Contar notificaciones de Firebase sin leer
+    const firebaseNotifications = await getNotificationsHistory();
+    const unreadFirebase = firebaseNotifications.filter(n => !readIds.has(n.id));
+    
+    // Eliminar duplicados por ID y contar
+    const allUnreadIds = new Set([
+      ...unreadLocal.map(n => n.id),
+      ...unreadFirebase.map(n => n.id),
+    ]);
+    
+    return allUnreadIds.size;
+  } catch (error) {
+    console.error('Error contando notificaciones sin leer:', error);
+    return 0;
   }
 };
 

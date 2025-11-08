@@ -12,6 +12,8 @@ export interface FeatureFlags {
   defaultTab: keyof TabsFlags;
   showNotificationsIcon: boolean;
   showUserProfilePrompt: boolean;
+  showMonitores: boolean;
+  showChangeNameButton: boolean;
 }
 
 // Default feature flags (hardcoded fallback)
@@ -25,9 +27,11 @@ const featureFlags: FeatureFlags = {
     fotos: true,
     comunica: false,
   },
-  defaultTab: 'iqndex',
+  defaultTab: 'index',
   showNotificationsIcon: true,
   showUserProfilePrompt: false,
+  showMonitores: false,
+  showChangeNameButton: false,
 };
 
 export default featureFlags;

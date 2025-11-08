@@ -8,7 +8,6 @@ import {
   TextStyle,
   useWindowDimensions,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +18,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { MasStackParamList } from '../(tabs)/mas';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 
 interface NavigationItem {
   label: string;
@@ -27,21 +27,29 @@ interface NavigationItem {
   backgroundColor: string;
 }
 
-const navigationItems: NavigationItem[] = [
-  {
-    label: 'Comunica MCM · Monitores',
-    icon: '💬',
-    target: 'MonitoresWeb',
-    backgroundColor: '#607D8B',
-  },
-  {
+const getAllNavigationItems = (showMonitores: boolean): NavigationItem[] => {
+  const items: NavigationItem[] = [];
+  
+  if (showMonitores) {
+    items.push({
+      label: 'Comunica MCM · Monitores',
+      icon: '💬',
+      target: 'MonitoresWeb',
+      backgroundColor: '#607D8B',
+    });
+  }
+  
+  items.push({
     label: 'Jubileo',
     icon: '🎉',
     target: 'JubileoHome',
     backgroundColor: '#A3BD31',
-  },
+  });
+  
   // Aquí puedes agregar más secciones archivadas en el futuro
-];
+  
+  return items;
+};
 
 export default function MasHomeScreen() {
   const navigation =
@@ -52,6 +60,11 @@ export default function MasHomeScreen() {
   const containerPadding = spacing.lg;
   const iconSize = 48;
   const labelFontSize = 18;
+  const featureFlags = useFeatureFlags();
+  const navigationItems = React.useMemo(
+    () => getAllNavigationItems(featureFlags.showMonitores),
+    [featureFlags.showMonitores],
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

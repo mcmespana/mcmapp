@@ -112,7 +112,7 @@ function InnerLayout() {
               />
               <Stack.Screen
                 name="notifications"
-                options={{ headerShown: true }}
+                options={{ headerShown: false }}
               />
             </Stack>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />

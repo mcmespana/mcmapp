@@ -30,6 +30,7 @@ import { VersionDisplay } from '@/components/VersionDisplay';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import featureFlags from '@/constants/featureFlags';
 import useWordleStats from '@/hooks/useWordleStats';
+import useUnreadNotificationsCount from '@/hooks/useUnreadNotificationsCount';
 
 interface NavigationItem {
   href?: LinkProps['href'];
@@ -91,6 +92,23 @@ interface IconButtonProps {
 }
 
 function NotificationsButton({ color }: IconButtonProps) {
+  const { unreadCount } = useUnreadNotificationsCount();
+
+  // No mostrar badge si no hay notificaciones sin leer
+  if (unreadCount === 0) {
+    return (
+      <Link href="/notifications" asChild>
+        <TouchableOpacity style={{ padding: 8, marginLeft: 4 }}>
+          <MaterialIcons name="notifications" size={24} color={color} />
+        </TouchableOpacity>
+      </Link>
+    );
+  }
+
+  // Mostrar badge con el número de notificaciones sin leer
+  const badgeText = unreadCount > 99 ? '99+' : unreadCount.toString();
+  const badgeWidth = unreadCount > 9 ? 20 : 16;
+
   return (
     <Link href="/notifications" asChild>
       <TouchableOpacity style={{ padding: 8, marginLeft: 4 }}>
@@ -102,15 +120,16 @@ function NotificationsButton({ color }: IconButtonProps) {
               right: -4,
               top: -2,
               backgroundColor: colors.danger,
-              borderRadius: 8,
-              width: 16,
+              borderRadius: 10,
+              minWidth: badgeWidth,
               height: 16,
+              paddingHorizontal: unreadCount > 9 ? 4 : 0,
               justifyContent: 'center',
               alignItems: 'center',
             }}
           >
             <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
-              1
+              {badgeText}
             </Text>
           </View>
         </View>

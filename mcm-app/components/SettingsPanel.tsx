@@ -6,6 +6,7 @@ import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import UserProfileModal from './UserProfileModal';
 
 interface Props {
@@ -18,6 +19,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const fontScale = useFontScale();
+  const featureFlags = useFeatureFlags();
   const [editVisible, setEditVisible] = useState(false);
 
   const increase = () => {
@@ -99,15 +101,17 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.nameButton}
-          onPress={() => setEditVisible(true)}
-        >
-          <MaterialIcons name="person" size={24} color={theme.text} />
-          <Text style={[styles.nameButtonText, { color: theme.text }]}>
-            ¿Cambiamos tu nombre?
-          </Text>
-        </TouchableOpacity>
+        {featureFlags.showChangeNameButton && (
+          <TouchableOpacity
+            style={styles.nameButton}
+            onPress={() => setEditVisible(true)}
+          >
+            <MaterialIcons name="person" size={24} color={theme.text} />
+            <Text style={[styles.nameButtonText, { color: theme.text }]}>
+              ¿Cambiamos tu nombre?
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
       <UserProfileModal
         visible={editVisible}

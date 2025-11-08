@@ -62,20 +62,23 @@ export default function CategoriesScreen({
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('SongsList', {
-              categoryId: ALL_SONGS_CATEGORY_ID,
-              categoryName: ALL_SONGS_CATEGORY_NAME,
-            })
-          }
-          style={{ padding: 10, marginRight: 8 }}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <MaterialIcons name="search" size={26} color="#fff" />
-        </TouchableOpacity>
-      ),
+      headerRight: () => {
+        const iconColor = Platform.OS === 'ios' ? '#1a1a1a' : Platform.OS === 'web' ? '#1a1a1a' : '#fff';
+        return (
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('SongsList', {
+                categoryId: ALL_SONGS_CATEGORY_ID,
+                categoryName: ALL_SONGS_CATEGORY_NAME,
+              })
+            }
+            style={{ padding: 10, marginRight: 8 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <MaterialIcons name="search" size={26} color={iconColor} />
+          </TouchableOpacity>
+        );
+      },
     });
   }, [navigation]);
 
