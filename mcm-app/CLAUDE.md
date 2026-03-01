@@ -158,7 +158,7 @@ Archivo: `constants/featureFlags.ts`
 tabs: {
   index: true,
   mas: true,
-  cancionero: false,    // ← DESACTIVADO — activar cuando esté listo
+  cancionero: true,     // ← ACTIVO
   calendario: true,
   fotos: true,
   comunica: false,      // ← DESACTIVADO — tab movida a (tabsdesactivados)/
@@ -166,8 +166,6 @@ tabs: {
 ```
 
 Los flags controlan tanto la visibilidad de los tabs como los botones en la Home. Se pueden cambiar via OTA update (ver `FEATURE_FLAGS_OTA.md`).
-
-**Para activar cantoral:** cambiar `cancionero: false` → `cancionero: true`
 
 ## Firebase
 
@@ -294,10 +292,10 @@ Documentar NO:
 - **App version**: 1.0.1
 - **Runtime version**: 1.0.1
 
-## Código muerto conocido (pendiente de limpiar)
+## Notas importantes
 
-- `components/ReportBugsModal.tsx` — reemplazado por `AppFeedbackModal.tsx`
-- `components/ReportBugsModalFixed.tsx` — variante antigua
-- `components/ReportBugsModalNew.tsx` — variante antigua
-- `components/ReportBugsModalSimple.tsx` — variante antigua
-- `test-calendar-fix.js`, `test-firebase.js`, `test-new-logic.js` — scripts de debug, no tests de Jest
+- `ReportBugsModal.tsx` es usado por `SongControls.tsx` — NO eliminar (las variantes *Fixed, *New, *Simple ya fueron eliminadas)
+- `ErrorBoundary.tsx` envuelve toda la app en `_layout.tsx`
+- Splash screen: HelloWave con 3 repeticiones (900ms total)
+- Feature flag `cancionero: true` — cantoral activo
+- Sistema de notificaciones push: ver `NOTIFICACIONES.md` en la raíz del monorepo

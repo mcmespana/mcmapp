@@ -10,8 +10,7 @@
 ├── portadas-albumes/      ← Assets de portadas de álbumes (imágenes)
 ├── README.md              ← Guía rápida para humanos
 ├── AGENTS.md              ← Definición de agentes especializados
-├── NOTIS_*.md             ← Documentación del sistema de notificaciones push
-└── PANEL_NOTIFICACIONES_NEXTJS.md ← Documentación del panel admin (Next.js, no implementado)
+└── NOTIFICACIONES.md      ← Documentación completa del sistema de notificaciones push
 ```
 
 ## Reglas para agentes
@@ -32,6 +31,6 @@ npm run format         # Prettier
 npm test               # Jest (no hay tests escritos aún)
 ```
 
-## Notas sobre la documentación NOTIS_*
+## Notas sobre notificaciones push
 
-Los archivos `NOTIS_APP_MEJORAS.md`, `NOTIS_DEVELOP_BACKEND.md`, `NOTIS_GUIA_PRUEBAS.md` y `PANEL_NOTIFICACIONES_NEXTJS.md` documentan un sistema de notificaciones push que está parcialmente implementado. El backend (panel Next.js) no existe aún. La app tiene la parte cliente lista (`mcm-app/notifications/`, `mcm-app/services/pushNotificationService.ts`). Estos archivos son referencia para cuando se retome el desarrollo del backend.
+`NOTIFICACIONES.md` documenta el sistema completo de notificaciones push (cliente implementado, backend pendiente). Consultar ese archivo para el estado actual, plan de implementación y guía de pruebas.

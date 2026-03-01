@@ -22,7 +22,7 @@ const featureFlags: FeatureFlags = {
   tabs: {
     index: true,
     mas: true,
-    cancionero: false, // Disabled by default, enable via OTA update
+    cancionero: true,
     calendario: true,
     fotos: true,
     comunica: false,

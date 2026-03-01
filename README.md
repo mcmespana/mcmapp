@@ -76,7 +76,7 @@ mcmapp/
 ├── portadas-albumes/         Imágenes de portadas
 ├── AGENTS.md                 Definición de agentes IA
 ├── CLAUDE.md                 Guía para agentes IA (raíz)
-└── NOTIS_*.md                Documentación de notificaciones
+└── NOTIFICACIONES.md         Documentación de notificaciones push
 ```
 
 ## Feature flags

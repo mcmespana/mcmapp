@@ -25,6 +25,7 @@ import {
 import UserProfileModal from '@/components/UserProfileModal';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
 import AddToHomeBanner from '@/components/AddToHomeBanner';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import {
   Provider as PaperProvider,
   MD3LightTheme,
@@ -37,13 +38,15 @@ import '@/constants/iconAssets';
 
 export default function RootLayout() {
   return (
-    <FeatureFlagsProvider>
-      <AppSettingsProvider>
-        <UserProfileProvider>
-          <InnerLayout />
-        </UserProfileProvider>
-      </AppSettingsProvider>
-    </FeatureFlagsProvider>
+    <ErrorBoundary>
+      <FeatureFlagsProvider>
+        <AppSettingsProvider>
+          <UserProfileProvider>
+            <InnerLayout />
+          </UserProfileProvider>
+        </AppSettingsProvider>
+      </FeatureFlagsProvider>
+    </ErrorBoundary>
   );
 }
 
@@ -68,14 +71,10 @@ function InnerLayout() {
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
   useEffect(() => {
-    // The HelloWave animation repeats 4 times, each sequence is 150ms + 150ms = 300ms.
-    // Total animation time = 4 * 300ms = 1200ms.
-    // Let's give it a bit more, say 1500ms (1.5 seconds), before hiding.
     const timer = setTimeout(() => {
       setShowAnimation(false);
-    }, 1500); // Adjust timing as needed
-
-    return () => clearTimeout(timer); // Cleanup timer on unmount
+    }, 900);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {

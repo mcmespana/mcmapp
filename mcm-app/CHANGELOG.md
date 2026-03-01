@@ -13,13 +13,27 @@
 
 ---
 
-## 2026-03-01 — Reorganización de documentación para agentes IA
+## 2026-03-01 — Mantenimiento general y reorganización de documentación
 
+### Cambios funcionales
+- **Cantoral activado**: `cancionero: true` en `constants/featureFlags.ts`
+- **ErrorBoundary global**: nuevo `components/ErrorBoundary.tsx`, envuelve toda la app en `_layout.tsx`
+- **Splash screen más rápido**: reducido de 1.5s a 0.9s (3 repeticiones en HelloWave)
+
+### Limpieza de código
+- Eliminados componentes muertos: `ReportBugsModalNew.tsx`, `ReportBugsModalFixed.tsx`, `ReportBugsModalSimple.tsx`, `.bak`, `.broken`, `.complex`
+- Eliminados scripts de debug: `test-calendar-fix.js`, `test-firebase.js`, `test-new-logic.js`
+- Eliminado `jest.config.js` y dependencias de test (jest-expo, @testing-library/*, react-test-renderer)
+- Eliminado `dotenv` de dependencies (solo se usaba en script eliminado)
+- Movido `eslint-config-expo` de dependencies a devDependencies
+- Script `npm test` cambiado a placeholder hasta que se configuren tests
+
+### Documentación
 - Creado `CLAUDE.md` en raíz del monorepo (orientación para agentes)
 - Reescrito `mcm-app/CLAUDE.md` con referencia técnica completa
-- Creado `CHANGELOG.md` para registro de cambios (este archivo)
-- Creado `TODO.md` con checklist de mantenimiento y mejoras
-- Simplificado `README.md` para humanos
+- Creado `CHANGELOG.md` y `TODO.md`
+- Simplificado `README.md` para humanos con chuletas de comandos
+- Consolidado 4 archivos `NOTIS_*.md` + `PANEL_NOTIFICACIONES_NEXTJS.md` → `NOTIFICACIONES.md`
 - Eliminado `agents.md` (duplicado de `AGENTS.md`)
 
 ## 2025-11 — Estado conocido al crear esta documentación
