@@ -1,0 +1,55 @@
+# CI - Tests, Lint y Type Check
+# Se ejecuta en cada Pull Request y en pushes a main/master/production
+# Objetivo: que nada se rompa cuando se desarrolla algo nuevo
+
+name: CI - Tests & Quality
+
+on:
+  pull_request:
+    branches: [main, master, production, preview]
+  push:
+    branches: [main, master]
+
+jobs:
+  quality-check:
+    name: Tests, Lint & Types
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: mcm-app/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: ./mcm-app
+        run: npm ci
+
+      # 1. Ejecutar tests
+      - name: Ejecutar tests
+        working-directory: ./mcm-app
+        run: npm test -- --ci --coverage --forceExit
+
+      # 2. Comprobar que TypeScript compila sin errores
+      - name: Verificar tipos TypeScript
+        working-directory: ./mcm-app
+        run: npx tsc --noEmit
+
+      # 3. Ejecutar linter
+      - name: Ejecutar ESLint
+        working-directory: ./mcm-app
+        run: npm run lint
+
+      # 4. Subir reporte de cobertura como artefacto
+      - name: Subir reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: mcm-app/coverage/
+          retention-days: 7
