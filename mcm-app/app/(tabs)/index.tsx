@@ -3,6 +3,8 @@ import React, {
   ComponentProps,
   useState,
   useEffect,
+  useRef,
+  memo,
 } from 'react';
 import {
   View,
@@ -98,7 +100,11 @@ function NotificationsButton({ color }: IconButtonProps) {
   if (unreadCount === 0) {
     return (
       <Link href="/notifications" asChild>
-        <TouchableOpacity style={{ padding: 8, marginLeft: 4 }}>
+        <TouchableOpacity
+          style={{ padding: 8, marginLeft: 4 }}
+          accessibilityLabel="Notificaciones"
+          accessibilityRole="button"
+        >
           <MaterialIcons name="notifications" size={24} color={color} />
         </TouchableOpacity>
       </Link>
@@ -111,7 +117,11 @@ function NotificationsButton({ color }: IconButtonProps) {
 
   return (
     <Link href="/notifications" asChild>
-      <TouchableOpacity style={{ padding: 8, marginLeft: 4 }}>
+      <TouchableOpacity
+        style={{ padding: 8, marginLeft: 4 }}
+        accessibilityLabel={`Notificaciones, ${unreadCount} sin leer`}
+        accessibilityRole="button"
+      >
         <View>
           <MaterialIcons name="notifications" size={24} color={color} />
           <View
@@ -143,16 +153,25 @@ function SettingsButton({
   onPress,
 }: IconButtonProps & { onPress: () => void }) {
   return (
-    <TouchableOpacity onPress={onPress} style={{ padding: 8, marginLeft: 0 }}>
+    <TouchableOpacity
+      onPress={onPress}
+      style={{ padding: 8, marginLeft: 0 }}
+      accessibilityLabel="Ajustes"
+      accessibilityRole="button"
+    >
       <MaterialIcons name="settings" size={24} color={color} />
     </TouchableOpacity>
   );
 }
 
-// Decoraciones contextuales para cada botón
-function ContextualDecoration({ type }: { type: string }) {
-  const [fadeAnim] = useState(() => new Animated.Value(0));
-  const [scaleAnim] = useState(() => new Animated.Value(0.8));
+// Decoraciones contextuales para cada botón (memoized para evitar re-renders)
+const ContextualDecoration = memo(function ContextualDecoration({
+  type,
+}: {
+  type: string;
+}) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -257,7 +276,7 @@ function ContextualDecoration({ type }: { type: string }) {
         </Animated.View>
       );
   }
-}
+});
 
 export default function Home() {
   const navigation = useNavigation();
@@ -277,15 +296,15 @@ export default function Home() {
     (height - containerPadding * 2 - gap * 3) / 3,
   );
 
-  // Animaciones para cada elemento
-  const [itemAnimations] = useState(() =>
+  // Animaciones para cada elemento (useRef evita recreación en re-renders)
+  const itemAnimations = useRef(
     navigationItems.map(() => ({
       translateX: new Animated.Value(0),
       translateY: new Animated.Value(0),
       opacity: new Animated.Value(0),
       scale: new Animated.Value(0.8),
     })),
-  );
+  ).current;
 
   // Función para manejar acciones especiales
   const handleSpecialAction = (action: string) => {
@@ -478,7 +497,11 @@ export default function Home() {
           );
           return item.href ? (
             <Link href={item.href} asChild>
-              <TouchableOpacity style={styles.itemWrapper}>
+              <TouchableOpacity
+                style={styles.itemWrapper}
+                accessibilityLabel={item.label}
+                accessibilityRole="button"
+              >
                 {content}
               </TouchableOpacity>
             </Link>
@@ -486,6 +509,8 @@ export default function Home() {
             <TouchableOpacity
               style={styles.itemWrapper}
               onPress={() => handleSpecialAction(item.onPress!)}
+              accessibilityLabel={item.label}
+              accessibilityRole="button"
             >
               {content}
             </TouchableOpacity>

@@ -1,6 +1,6 @@
 // app/_layout.tsx
 
-import '../notifications/NotificationHandler';   // Inicializa el handler de notificaciones
+import '../notifications/NotificationHandler'; // Inicializa el handler de notificaciones
 import usePushNotifications from '../notifications/usePushNotifications'; // Hook para notificaciones push
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -17,7 +17,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useStatusBarTheme } from '@/hooks/useStatusBarTheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
-import { FeatureFlagsProvider, useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import {
+  FeatureFlagsProvider,
+  useFeatureFlags,
+} from '@/contexts/FeatureFlagsContext';
 import {
   UserProfileProvider,
   useUserProfile,
@@ -25,6 +28,8 @@ import {
 import UserProfileModal from '@/components/UserProfileModal';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
 import AddToHomeBanner from '@/components/AddToHomeBanner';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import {
   Provider as PaperProvider,
   MD3LightTheme,
@@ -37,13 +42,17 @@ import '@/constants/iconAssets';
 
 export default function RootLayout() {
   return (
-    <FeatureFlagsProvider>
-      <AppSettingsProvider>
-        <UserProfileProvider>
-          <InnerLayout />
-        </UserProfileProvider>
-      </AppSettingsProvider>
-    </FeatureFlagsProvider>
+    <ErrorBoundary>
+      <FeatureFlagsProvider>
+        <AppSettingsProvider>
+          <UserProfileProvider>
+            <NotificationsProvider>
+              <InnerLayout />
+            </NotificationsProvider>
+          </UserProfileProvider>
+        </AppSettingsProvider>
+      </FeatureFlagsProvider>
+    </ErrorBoundary>
   );
 }
 
@@ -68,22 +77,27 @@ function InnerLayout() {
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
   useEffect(() => {
-    // The HelloWave animation repeats 4 times, each sequence is 150ms + 150ms = 300ms.
-    // Total animation time = 4 * 300ms = 1200ms.
-    // Let's give it a bit more, say 1500ms (1.5 seconds), before hiding.
     const timer = setTimeout(() => {
       setShowAnimation(false);
-    }, 1500); // Adjust timing as needed
-
-    return () => clearTimeout(timer); // Cleanup timer on unmount
+    }, 900);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (showAnimation) return;
-    if (featureFlags.showUserProfilePrompt && !profileLoading && (!profile.name || !profile.location)) {
+    if (
+      featureFlags.showUserProfilePrompt &&
+      !profileLoading &&
+      (!profile.name || !profile.location)
+    ) {
       setProfileVisible(true);
     }
-  }, [showAnimation, profileLoading, profile, featureFlags.showUserProfilePrompt]);
+  }, [
+    showAnimation,
+    profileLoading,
+    profile,
+    featureFlags.showUserProfilePrompt,
+  ]);
 
   // Inicializa el sistema de notificaciones push
   usePushNotifications();

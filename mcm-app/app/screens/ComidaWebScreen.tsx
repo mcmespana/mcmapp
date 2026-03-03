@@ -114,7 +114,7 @@ export default function ComidaWebScreen() {
         />
         {isLoading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ThemeColors.light.tint} />
+            <ActivityIndicator size="large" color={ThemeColors[scheme].tint} />
           </View>
         )}
       </View>
@@ -129,7 +129,7 @@ export default function ComidaWebScreen() {
         startInLoadingState={true}
         renderLoading={() => (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ThemeColors.light.tint} />
+            <ActivityIndicator size="large" color={ThemeColors[scheme].tint} />
           </View>
         )}
         onLoadEnd={onLoadEnd}
@@ -171,7 +171,8 @@ const createStyles = (scheme: 'light' | 'dark') => {
       ...StyleSheet.absoluteFillObject,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      backgroundColor:
+        scheme === 'dark' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.8)',
     },
     containerWeb: {
       flex: 1,
@@ -241,7 +242,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       paddingVertical: spacing.sm,
     },
     backButtonText: {
-      color: '#666',
+      color: scheme === 'dark' ? '#aaa' : '#666',
       fontSize: 16,
     } as any,
   });

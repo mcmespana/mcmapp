@@ -4,7 +4,11 @@ import { getFirebaseApp } from '@/hooks/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { DeviceToken, NotificationData, ReceivedNotification } from '@/types/notifications';
+import {
+  DeviceToken,
+  NotificationData,
+  ReceivedNotification,
+} from '@/types/notifications';
 
 const DEVICE_ID_KEY = '@mcm_device_id';
 const NOTIFICATIONS_HISTORY_KEY = '@mcm_notifications_history';
@@ -74,7 +78,10 @@ export const updateLastActive = async (): Promise<void> => {
     const deviceId = await getDeviceId();
     const db = getDatabase(getFirebaseApp());
 
-    await set(ref(db, `pushTokens/${deviceId}/lastActive`), new Date().toISOString());
+    await set(
+      ref(db, `pushTokens/${deviceId}/lastActive`),
+      new Date().toISOString(),
+    );
   } catch (error) {
     console.error('Error actualizando lastActive:', error);
   }
@@ -99,7 +106,9 @@ export const updateLastActive = async (): Promise<void> => {
  *     internalRoute: "/(tabs)/calendario" (opcional)
  *     data: { ... } (opcional)
  */
-export const getNotificationsHistory = async (): Promise<NotificationData[]> => {
+export const getNotificationsHistory = async (): Promise<
+  NotificationData[]
+> => {
   try {
     const db = getDatabase(getFirebaseApp());
     const notificationsRef = ref(db, 'notifications');
@@ -114,8 +123,9 @@ export const getNotificationsHistory = async (): Promise<NotificationData[]> => 
     const notifications: NotificationData[] = Object.values(notificationsData);
 
     // Ordenar por fecha de creación (más recientes primero)
-    return notifications.sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return notifications.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   } catch (error) {
     console.error('Error obteniendo historial de notificaciones:', error);
@@ -127,7 +137,7 @@ export const getNotificationsHistory = async (): Promise<NotificationData[]> => 
  * Suscribirse a cambios en tiempo real del historial de notificaciones
  */
 export const subscribeToNotifications = (
-  callback: (notifications: NotificationData[]) => void
+  callback: (notifications: NotificationData[]) => void,
 ): (() => void) => {
   try {
     const db = getDatabase(getFirebaseApp());
@@ -136,11 +146,13 @@ export const subscribeToNotifications = (
     const unsubscribe = onValue(notificationsRef, (snapshot) => {
       if (snapshot.exists()) {
         const notificationsData = snapshot.val();
-        const notifications: NotificationData[] = Object.values(notificationsData);
+        const notifications: NotificationData[] =
+          Object.values(notificationsData);
 
         // Ordenar por fecha
-        const sorted = notifications.sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        const sorted = notifications.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
 
         callback(sorted);
@@ -162,7 +174,7 @@ export const subscribeToNotifications = (
  * Esto permite que el usuario vea notificaciones incluso sin conexión
  */
 export const saveReceivedNotificationLocally = async (
-  notification: ReceivedNotification
+  notification: ReceivedNotification,
 ): Promise<void> => {
   try {
     const existingData = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
@@ -171,14 +183,17 @@ export const saveReceivedNotificationLocally = async (
       : [];
 
     // Evitar duplicados
-    const isDuplicate = notifications.some(n => n.id === notification.id);
+    const isDuplicate = notifications.some((n) => n.id === notification.id);
     if (!isDuplicate) {
       notifications.unshift(notification); // Añadir al principio
 
       // Limitar a 100 notificaciones más recientes
       const limited = notifications.slice(0, 100);
 
-      await AsyncStorage.setItem(NOTIFICATIONS_HISTORY_KEY, JSON.stringify(limited));
+      await AsyncStorage.setItem(
+        NOTIFICATIONS_HISTORY_KEY,
+        JSON.stringify(limited),
+      );
       console.log('📝 Notificación guardada localmente:', notification.title);
     }
   } catch (error) {
@@ -189,7 +204,9 @@ export const saveReceivedNotificationLocally = async (
 /**
  * Obtiene el historial local de notificaciones recibidas
  */
-export const getLocalNotificationsHistory = async (): Promise<ReceivedNotification[]> => {
+export const getLocalNotificationsHistory = async (): Promise<
+  ReceivedNotification[]
+> => {
   try {
     const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
     return data ? JSON.parse(data) : [];
@@ -215,24 +232,68 @@ export const getReadNotificationIds = async (): Promise<Set<string>> => {
 /**
  * Marca una notificación como leída (tanto locales como de Firebase)
  */
-export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
+export const markNotificationAsRead = async (
+  notificationId: string,
+): Promise<void> => {
   try {
     // Actualizar notificaciones locales si existe
     const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
     if (data) {
-    const notifications: ReceivedNotification[] = JSON.parse(data);
-    const updated = notifications.map(n =>
-      n.id === notificationId ? { ...n, isRead: true } : n
-    );
-      await AsyncStorage.setItem(NOTIFICATIONS_HISTORY_KEY, JSON.stringify(updated));
+      const notifications: ReceivedNotification[] = JSON.parse(data);
+      const updated = notifications.map((n) =>
+        n.id === notificationId ? { ...n, isRead: true } : n,
+      );
+      await AsyncStorage.setItem(
+        NOTIFICATIONS_HISTORY_KEY,
+        JSON.stringify(updated),
+      );
     }
 
     // Añadir a la lista de notificaciones leídas (para Firebase también)
     const readIds = await getReadNotificationIds();
     readIds.add(notificationId);
-    await AsyncStorage.setItem(READ_NOTIFICATIONS_KEY, JSON.stringify(Array.from(readIds)));
+    await AsyncStorage.setItem(
+      READ_NOTIFICATIONS_KEY,
+      JSON.stringify(Array.from(readIds)),
+    );
   } catch (error) {
     console.error('Error marcando notificación como leída:', error);
+  }
+};
+
+/**
+ * Marca varias notificaciones como leídas a la vez
+ */
+export const markAllNotificationsAsRead = async (
+  notificationIds: string[],
+): Promise<void> => {
+  try {
+    // Actualizar notificaciones locales
+    const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
+    if (data) {
+      const notifications: ReceivedNotification[] = JSON.parse(data);
+      const idsSet = new Set(notificationIds);
+      const updated = notifications.map((n) =>
+        idsSet.has(n.id) ? { ...n, isRead: true } : n,
+      );
+      await AsyncStorage.setItem(
+        NOTIFICATIONS_HISTORY_KEY,
+        JSON.stringify(updated),
+      );
+    }
+
+    // Añadir todos a la lista de leídas
+    const readIds = await getReadNotificationIds();
+    notificationIds.forEach((id) => readIds.add(id));
+    await AsyncStorage.setItem(
+      READ_NOTIFICATIONS_KEY,
+      JSON.stringify(Array.from(readIds)),
+    );
+  } catch (error) {
+    console.error(
+      'Error marcando todas las notificaciones como leídas:',
+      error,
+    );
   }
 };
 
@@ -243,21 +304,25 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
 export const getUnreadNotificationsCount = async (): Promise<number> => {
   try {
     const readIds = await getReadNotificationIds();
-    
+
     // Contar notificaciones locales sin leer
     const localNotifications = await getLocalNotificationsHistory();
-    const unreadLocal = localNotifications.filter(n => !readIds.has(n.id) && !n.isRead);
-    
+    const unreadLocal = localNotifications.filter(
+      (n) => !readIds.has(n.id) && !n.isRead,
+    );
+
     // Contar notificaciones de Firebase sin leer
     const firebaseNotifications = await getNotificationsHistory();
-    const unreadFirebase = firebaseNotifications.filter(n => !readIds.has(n.id));
-    
+    const unreadFirebase = firebaseNotifications.filter(
+      (n) => !readIds.has(n.id),
+    );
+
     // Eliminar duplicados por ID y contar
     const allUnreadIds = new Set([
-      ...unreadLocal.map(n => n.id),
-      ...unreadFirebase.map(n => n.id),
+      ...unreadLocal.map((n) => n.id),
+      ...unreadFirebase.map((n) => n.id),
     ]);
-    
+
     return allUnreadIds.size;
   } catch (error) {
     console.error('Error contando notificaciones sin leer:', error);

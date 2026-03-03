@@ -178,10 +178,12 @@ export default function ReflexionesScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={[
-        styles.list,
-        Platform.OS === 'ios' && { paddingBottom: 100 }
-      ]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.list,
+          Platform.OS === 'ios' && { paddingBottom: 100 },
+        ]}
+      >
         {list
           .sort(
             (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
@@ -203,8 +205,8 @@ export default function ReflexionesScreen() {
                     style={[
                       { fontWeight: '600', fontSize: 16 },
                       r.grupal
-                        ? { color: '#000' } // Texto negro para tarjetas grupales (fondo verde)
-                        : { color: scheme === 'dark' ? '#fff' : '#222' }, // Texto blanco en modo oscuro, oscuro en modo claro
+                        ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
+                        : { color: scheme === 'dark' ? '#fff' : '#222' },
                     ]}
                   >
                     {r.titulo}
@@ -212,15 +214,21 @@ export default function ReflexionesScreen() {
                 </View>
               )}
               <Card.Content style={{ paddingTop: 8 }}>
-                <Text style={r.grupal ? { color: '#333' } : {}}>
+                <Text
+                  style={
+                    r.grupal
+                      ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
+                      : {}
+                  }
+                >
                   {r.contenido}
                 </Text>
                 <Text
                   style={[
                     { marginTop: 4, fontSize: 12 },
                     r.grupal
-                      ? { color: '#555' } // Texto más oscuro para tarjetas grupales
-                      : { color: scheme === 'dark' ? '#aaa' : '#888' }, // Gris claro en modo oscuro, gris en modo claro
+                      ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
+                      : { color: scheme === 'dark' ? '#aaa' : '#888' },
                   ]}
                 >
                   {formatFecha(r.fecha)}
@@ -363,9 +371,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     list: { padding: spacing.md },
     card: { marginBottom: spacing.md },
     cardGroup: {
-      backgroundColor: '#E6F4D7',
-      // Asegurar que el texto sea legible en el fondo verde claro
-      color: '#333',
+      backgroundColor: scheme === 'dark' ? '#2D3B20' : '#E6F4D7',
     },
     fab: {
       position: 'absolute',
