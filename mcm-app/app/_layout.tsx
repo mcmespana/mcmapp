@@ -1,6 +1,6 @@
 // app/_layout.tsx
 
-import '../notifications/NotificationHandler';   // Inicializa el handler de notificaciones
+import '../notifications/NotificationHandler'; // Inicializa el handler de notificaciones
 import usePushNotifications from '../notifications/usePushNotifications'; // Hook para notificaciones push
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -17,7 +17,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useStatusBarTheme } from '@/hooks/useStatusBarTheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
-import { FeatureFlagsProvider, useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import {
+  FeatureFlagsProvider,
+  useFeatureFlags,
+} from '@/contexts/FeatureFlagsContext';
 import {
   UserProfileProvider,
   useUserProfile,
@@ -26,6 +29,7 @@ import UserProfileModal from '@/components/UserProfileModal';
 import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
 import AddToHomeBanner from '@/components/AddToHomeBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import {
   Provider as PaperProvider,
   MD3LightTheme,
@@ -42,7 +46,9 @@ export default function RootLayout() {
       <FeatureFlagsProvider>
         <AppSettingsProvider>
           <UserProfileProvider>
-            <InnerLayout />
+            <NotificationsProvider>
+              <InnerLayout />
+            </NotificationsProvider>
           </UserProfileProvider>
         </AppSettingsProvider>
       </FeatureFlagsProvider>
@@ -79,10 +85,19 @@ function InnerLayout() {
 
   useEffect(() => {
     if (showAnimation) return;
-    if (featureFlags.showUserProfilePrompt && !profileLoading && (!profile.name || !profile.location)) {
+    if (
+      featureFlags.showUserProfilePrompt &&
+      !profileLoading &&
+      (!profile.name || !profile.location)
+    ) {
       setProfileVisible(true);
     }
-  }, [showAnimation, profileLoading, profile, featureFlags.showUserProfilePrompt]);
+  }, [
+    showAnimation,
+    profileLoading,
+    profile,
+    featureFlags.showUserProfilePrompt,
+  ]);
 
   // Inicializa el sistema de notificaciones push
   usePushNotifications();

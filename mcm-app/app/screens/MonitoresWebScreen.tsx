@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
 import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import iframeStyles from '../(tabsdesactivados)/comunica.module.css';
 
 const URL = 'https://movimientoconsolacion.sinergiacrm.org/';
@@ -71,6 +72,8 @@ const INJECTED_JAVASCRIPT = `
 `;
 
 export default function MonitoresWebScreen() {
+  const scheme = useColorScheme();
+  const dynamicStyles = useMemo(() => createDynamicStyles(scheme), [scheme]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
@@ -98,11 +101,14 @@ export default function MonitoresWebScreen() {
   if (Platform.OS === 'web') {
     // Para web, inyectamos los estilos mediante un script cuando carga el iframe
     React.useEffect(() => {
-      const iframe = document.querySelector('iframe[title="Comunica MCM - Monitores"]') as HTMLIFrameElement;
+      const iframe = document.querySelector(
+        'iframe[title="Comunica MCM - Monitores"]',
+      ) as HTMLIFrameElement;
       if (iframe) {
         const injectStyles = () => {
           try {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            const iframeDoc =
+              iframe.contentDocument || iframe.contentWindow?.document;
             if (iframeDoc) {
               // Inyectar CSS
               const style = iframeDoc.createElement('style');
@@ -111,7 +117,9 @@ export default function MonitoresWebScreen() {
 
               // También ocultar directamente con JavaScript
               const hideElements = () => {
-                const elementsToHide = iframeDoc.querySelectorAll('.p_login_top, .p_login_bottom');
+                const elementsToHide = iframeDoc.querySelectorAll(
+                  '.p_login_top, .p_login_bottom',
+                );
                 elementsToHide.forEach((el: Element) => {
                   const htmlEl = el as HTMLElement;
                   htmlEl.style.display = 'none';
@@ -129,7 +137,7 @@ export default function MonitoresWebScreen() {
               const observer = new MutationObserver(hideElements);
               observer.observe(iframeDoc.body, {
                 childList: true,
-                subtree: true
+                subtree: true,
               });
 
               // Ejecutar periódicamente durante los primeros 2 segundos
@@ -162,8 +170,8 @@ export default function MonitoresWebScreen() {
           onLoad={onLoadEnd}
         />
         {isLoading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ThemeColors.light.tint} />
+          <View style={dynamicStyles.loadingContainer}>
+            <ActivityIndicator size="large" color={ThemeColors[scheme].tint} />
           </View>
         )}
       </View>
@@ -180,8 +188,8 @@ export default function MonitoresWebScreen() {
         injectedJavaScript={INJECTED_JAVASCRIPT}
         onMessage={() => {}}
         renderLoading={() => (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ThemeColors.light.tint} />
+          <View style={dynamicStyles.loadingContainer}>
+            <ActivityIndicator size="large" color={ThemeColors[scheme].tint} />
           </View>
         )}
         onLoadEnd={onLoadEnd}
@@ -206,8 +214,18 @@ export default function MonitoresWebScreen() {
   );
 }
 
+const createDynamicStyles = (scheme: 'light' | 'dark') =>
+  StyleSheet.create({
+    loadingContainer: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor:
+        scheme === 'dark' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.8)',
+    },
+  });
+
 const styles = StyleSheet.create({
-  // Estilos comunes para móvil
   container: {
     flex: 1,
     margin: spacing.sm,
@@ -218,13 +236,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   } as any,
-  loadingContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  },
-  // Estilos para web: eliminamos márgenes y aprovechamos todo el espacio
   containerWeb: {
     flex: 1,
     margin: 0,

@@ -3,13 +3,27 @@ import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { saveTokenToFirebase, updateLastActive, saveReceivedNotificationLocally, markNotificationAsRead } from '@/services/pushNotificationService';
+import {
+  saveTokenToFirebase,
+  updateLastActive,
+  saveReceivedNotificationLocally,
+  markNotificationAsRead,
+} from '@/services/pushNotificationService';
 import { ReceivedNotification } from '@/types/notifications';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import { router } from 'expo-router';
+
+// Mapeo de actionIdentifier de iOS a rutas internas
+const ACTION_ROUTES: Record<string, string> = {
+  view: '/notifications',
+  view_event: '/(tabs)/calendario',
+  view_photos: '/(tabs)/fotos',
+};
 
 export default function usePushNotifications() {
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
+  const { refreshCount } = useNotifications();
 
   useEffect(() => {
     // Pedir permiso de notificaciones
@@ -19,79 +33,96 @@ export default function usePushNotifications() {
           (status as unknown as Notifications.PermissionStatus) ===
           Notifications.PermissionStatus.GRANTED
         ) {
-          // Si se conceden permisos, registra canal y obtén token
           registerForPushNotificationsAsync().then((token) => {
             if (token) {
               console.log('🥳 Expo Push Token:', token);
-              console.log('📋 Copia este token para enviar notificaciones desde:');
-              console.log('https://expo.dev/notifications');
-
-              // Guardar token en Firebase
-              saveTokenToFirebase(token).catch(err =>
-                console.error('Error guardando token:', err)
+              saveTokenToFirebase(token).catch((err) =>
+                console.error('Error guardando token:', err),
               );
             }
           });
-        } else {
-          console.log('⚠️ Permisos de notificaciones denegados');
         }
       })
       .catch(console.error);
 
     // Actualizar última actividad periódicamente (cada 5 minutos)
-    const intervalId = setInterval(() => {
-      updateLastActive().catch(err =>
-        console.error('Error actualizando lastActive:', err)
-      );
-    }, 5 * 60 * 1000);
+    const intervalId = setInterval(
+      () => {
+        updateLastActive().catch((err) =>
+          console.error('Error actualizando lastActive:', err),
+        );
+      },
+      5 * 60 * 1000,
+    );
 
     // Listener para notificaciones recibidas (app en foreground)
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
         console.log('🔔 Notificación recibida:', notification.request.content);
 
-        // Guardar en historial local
-        // ⚠️ CRÍTICO: Usar data.id si existe (ID de Firebase), sino usar identifier de Expo
-        const notificationId = notification.request.content.data?.id || notification.request.identifier;
+        const notificationId =
+          notification.request.content.data?.id ||
+          notification.request.identifier;
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: notification.request.content.title || 'Notificación',
           body: notification.request.content.body || '',
           icon: notification.request.content.data?.icon as string | undefined,
-          imageUrl: notification.request.content.data?.imageUrl as string | undefined,
+          imageUrl: notification.request.content.data?.imageUrl as
+            | string
+            | undefined,
           actionButton: notification.request.content.data?.actionButton as any,
           receivedAt: new Date().toISOString(),
           isRead: false,
           category: notification.request.content.data?.category as any,
-          internalRoute: notification.request.content.data?.internalRoute as string | undefined,
+          internalRoute: notification.request.content.data?.internalRoute as
+            | string
+            | undefined,
           data: notification.request.content.data,
         };
 
-        saveReceivedNotificationLocally(receivedNotification).catch(err =>
-          console.error('Error guardando notificación localmente:', err)
-        );
+        saveReceivedNotificationLocally(receivedNotification)
+          .then(() => {
+            // Actualizar badge en tiempo real al recibir en foreground
+            refreshCount();
+          })
+          .catch((err) =>
+            console.error('Error guardando notificación localmente:', err),
+          );
       });
 
     // Listener para cuando el usuario toca la notificación
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log('📲 Usuario tocó la notificación:', response.notification.request.content);
-
         const data = response.notification.request.content.data;
+        const actionIdentifier = response.actionIdentifier;
 
-        // Navegación interna si hay una ruta especificada
-        if (data?.internalRoute) {
+        // Determinar ruta de navegación
+        let targetRoute: string | undefined;
+
+        // 1. iOS action buttons (view, view_event, view_photos)
+        if (
+          actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER &&
+          ACTION_ROUTES[actionIdentifier]
+        ) {
+          targetRoute = ACTION_ROUTES[actionIdentifier];
+        }
+        // 2. Ruta interna especificada en la notificación
+        else if (data?.internalRoute) {
+          targetRoute = data.internalRoute as string;
+        }
+
+        if (targetRoute) {
           try {
-            router.push(data.internalRoute as any);
-            console.log('🧭 Navegando a:', data.internalRoute);
+            router.push(targetRoute as any);
           } catch (error) {
-            console.error('Error navegando a ruta interna:', error);
+            console.error('Error navegando a ruta:', error);
           }
         }
 
-        // Guardar en historial local si no estaba ya (sin marcar como leída todavía)
-        // ⚠️ CRÍTICO: Usar data.id si existe (ID de Firebase), sino usar identifier de Expo
-        const notificationId = data?.id || response.notification.request.identifier;
+        // Guardar y marcar como leída
+        const notificationId =
+          data?.id || response.notification.request.identifier;
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: response.notification.request.content.title || 'Notificación',
@@ -100,35 +131,31 @@ export default function usePushNotifications() {
           imageUrl: data?.imageUrl as string | undefined,
           actionButton: data?.actionButton as any,
           receivedAt: new Date().toISOString(),
-          isRead: false, // No marcar como leída automáticamente
+          isRead: false,
           category: data?.category as any,
           internalRoute: data?.internalRoute as string | undefined,
           data,
         };
 
         saveReceivedNotificationLocally(receivedNotification)
-          .then(() => {
-            // Marcar como leída usando la función que actualiza el contador
-            markNotificationAsRead(receivedNotification.id).catch(err =>
-              console.error('Error marcando notificación como leída:', err)
-            );
-          })
-          .catch(err =>
-            console.error('Error guardando notificación localmente:', err)
-          );
+          .then(() => markNotificationAsRead(receivedNotification.id))
+          .then(() => refreshCount())
+          .catch((err) => console.error('Error procesando notificación:', err));
       });
 
     // Cleanup
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        Notifications.removeNotificationSubscription(
+          notificationListener.current,
+        );
       }
       if (responseListener.current) {
         Notifications.removeNotificationSubscription(responseListener.current);
       }
       clearInterval(intervalId);
     };
-  }, []);
+  }, [refreshCount]);
 }
 
 /** Solicita permisos de notificaciones */
@@ -146,7 +173,6 @@ async function askNotificationPermission(): Promise<Notifications.NotificationPe
 
 /** Registra el dispositivo para recibir notificaciones push */
 async function registerForPushNotificationsAsync(): Promise<string | null> {
-  // Configurar canal de Android
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Notificaciones MCM',
@@ -156,7 +182,6 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
     });
   }
 
-  // Obtener token solo en dispositivo real
   if (Constants.isDevice) {
     try {
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
@@ -168,8 +193,6 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
       console.error('Error obteniendo token de notificaciones:', error);
       return null;
     }
-  } else {
-    console.log('⚠️ Las notificaciones push solo funcionan en dispositivos reales');
-    return null;
   }
+  return null;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,6 +9,9 @@ import {
   Linking,
   RefreshControl,
   Animated,
+  Modal,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -20,37 +23,34 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import {
-  getNotificationsHistory,
   getLocalNotificationsHistory,
   markNotificationAsRead,
   getReadNotificationIds,
+  markAllNotificationsAsRead,
 } from '@/services/pushNotificationService';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
-import useUnreadNotificationsCount from '@/hooks/useUnreadNotificationsCount';
+import { useNotifications } from '@/contexts/NotificationsContext';
 
 export default function NotificationsScreen() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { refresh: refreshUnreadCount } = useUnreadNotificationsCount();
+  const { firebaseNotifications, refreshCount } = useNotifications();
 
-  const [notifications, setNotifications] = useState<NotificationData[]>([]);
-  const [localNotifications, setLocalNotifications] = useState<ReceivedNotification[]>([]);
+  const [localNotifications, setLocalNotifications] = useState<
+    ReceivedNotification[]
+  >([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<
+    (NotificationData | ReceivedNotification) | null
+  >(null);
 
-  const loadNotifications = async () => {
+  const loadLocalData = useCallback(async () => {
     try {
-      // Cargar desde Firebase (historial completo del panel admin)
-      const firebaseNotifs = await getNotificationsHistory();
-      setNotifications(firebaseNotifs);
-
-      // Cargar historial local (notificaciones recibidas en este dispositivo)
       const localNotifs = await getLocalNotificationsHistory();
       setLocalNotifications(localNotifs);
-
-      // Cargar IDs de notificaciones leídas
       const readNotificationIds = await getReadNotificationIds();
       setReadIds(readNotificationIds);
     } catch (error) {
@@ -59,58 +59,64 @@ export default function NotificationsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    loadNotifications();
   }, []);
 
-  // Refrescar cuando la pantalla recibe foco (para actualizar el contador)
   useFocusEffect(
-    React.useCallback(() => {
-      loadNotifications();
-      refreshUnreadCount();
-    }, [refreshUnreadCount])
+    useCallback(() => {
+      loadLocalData();
+      refreshCount();
+    }, [loadLocalData, refreshCount]),
   );
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadNotifications();
+    loadLocalData();
   };
 
   const handleMarkAsRead = async (notificationId: string) => {
     await markNotificationAsRead(notificationId);
-    await loadNotifications();
-    refreshUnreadCount();
+    await loadLocalData();
+    refreshCount();
   };
 
-  const handleNotificationPress = async (notification: NotificationData | ReceivedNotification) => {
-    // Marcar como leída si no está leída
-    const isRead = readIds.has(notification.id) || ('isRead' in notification && notification.isRead);
+  const handleMarkAllAsRead = async () => {
+    const unreadIds = allNotifications
+      .filter((n) => !readIds.has(n.id) && !('isRead' in n && n.isRead))
+      .map((n) => n.id);
+    if (unreadIds.length === 0) return;
+    await markAllNotificationsAsRead(unreadIds);
+    await loadLocalData();
+    refreshCount();
+  };
+
+  const handleNotificationPress = async (
+    notification: NotificationData | ReceivedNotification,
+  ) => {
+    const isRead =
+      readIds.has(notification.id) ||
+      ('isRead' in notification && notification.isRead);
     if (!isRead) {
       await handleMarkAsRead(notification.id);
     }
 
-    // Navegar si tiene ruta interna
+    // Si tiene ruta interna, navegar directamente
     if (notification.internalRoute) {
       try {
         router.push(notification.internalRoute as any);
       } catch (error) {
         console.error('Error navegando:', error);
       }
+      return;
     }
-    // Abrir URL externa si tiene botón de acción
-    else if (notification.actionButton && !notification.actionButton.isInternal) {
-      Linking.openURL(notification.actionButton.url).catch(err =>
-        console.error('Error abriendo URL:', err)
-      );
-    }
+
+    // Mostrar detalle
+    setSelectedNotification(notification);
   };
 
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
     dragX: Animated.AnimatedInterpolation<number>,
-    notificationId: string
+    notificationId: string,
   ) => {
     const scale = dragX.interpolate({
       inputRange: [-100, 0],
@@ -122,8 +128,12 @@ export default function NotificationsScreen() {
       <TouchableOpacity
         style={styles.rightAction}
         onPress={() => handleMarkAsRead(notificationId)}
+        accessibilityLabel="Marcar como leída"
+        accessibilityRole="button"
       >
-        <Animated.View style={[styles.actionContent, { transform: [{ scale }] }]}>
+        <Animated.View
+          style={[styles.actionContent, { transform: [{ scale }] }]}
+        >
           <MaterialIcons name="check" size={24} color="#fff" />
           <Text style={styles.actionText}>Leída</Text>
         </Animated.View>
@@ -131,11 +141,20 @@ export default function NotificationsScreen() {
     );
   };
 
-  const renderNotification = ({ item: notification, index }: { item: NotificationData | ReceivedNotification; index: number }) => {
-    // Determinar si está leída: verificar en readIds o en la propiedad isRead local
-    const isRead = readIds.has(notification.id) || ('isRead' in notification && notification.isRead);
+  const renderNotification = ({
+    item: notification,
+  }: {
+    item: NotificationData | ReceivedNotification;
+  }) => {
+    const isRead =
+      readIds.has(notification.id) ||
+      ('isRead' in notification && notification.isRead);
     const isUnread = !isRead;
-    const date = new Date('receivedAt' in notification ? notification.receivedAt : notification.createdAt);
+    const date = new Date(
+      'receivedAt' in notification
+        ? notification.receivedAt
+        : notification.createdAt,
+    );
 
     return (
       <Swipeable
@@ -149,9 +168,15 @@ export default function NotificationsScreen() {
           style={[styles.notificationCard, isUnread && styles.unreadCard]}
           onPress={() => handleNotificationPress(notification)}
           activeOpacity={0.7}
+          accessibilityLabel={`${isUnread ? 'No leída: ' : ''}${notification.title}`}
+          accessibilityRole="button"
         >
           {notification.icon && (
-            <Image source={{ uri: notification.icon }} style={styles.notificationIcon} />
+            <Image
+              source={{ uri: notification.icon }}
+              style={styles.notificationIcon}
+              accessibilityLabel="Icono de notificación"
+            />
           )}
 
           <View style={styles.notificationContent}>
@@ -167,8 +192,14 @@ export default function NotificationsScreen() {
                       handleMarkAsRead(notification.id);
                     }}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    accessibilityLabel="Marcar como leída"
+                    accessibilityRole="button"
                   >
-                    <MaterialIcons name="check-circle-outline" size={20} color={colors.primary} />
+                    <MaterialIcons
+                      name="check-circle-outline"
+                      size={20}
+                      color={colors.primary}
+                    />
                   </TouchableOpacity>
                 )}
               </View>
@@ -178,9 +209,7 @@ export default function NotificationsScreen() {
               {notification.body}
             </Text>
 
-            <Text style={styles.notificationDate}>
-              {formatDate(date)}
-            </Text>
+            <Text style={styles.notificationDate}>{formatDate(date)}</Text>
 
             {notification.actionButton && (
               <View style={styles.actionButtonContainer}>
@@ -188,7 +217,11 @@ export default function NotificationsScreen() {
                   {notification.actionButton.text}
                 </Text>
                 <MaterialIcons
-                  name={notification.actionButton.isInternal ? 'arrow-forward' : 'open-in-new'}
+                  name={
+                    notification.actionButton.isInternal
+                      ? 'arrow-forward'
+                      : 'open-in-new'
+                  }
                   size={16}
                   color={colors.primary}
                 />
@@ -200,17 +233,21 @@ export default function NotificationsScreen() {
     );
   };
 
-  // Combinar y ordenar notificaciones
-  const allNotifications = [...localNotifications, ...notifications]
+  // Combinar Firebase (real-time) + locales, deduplicar, ordenar
+  const allNotifications = [...localNotifications, ...firebaseNotifications]
     .sort((a, b) => {
       const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
       const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
       return dateB.getTime() - dateA.getTime();
     })
-    // Eliminar duplicados por ID
-    .filter((notification, index, self) =>
-      index === self.findIndex(n => n.id === notification.id)
+    .filter(
+      (notification, index, self) =>
+        index === self.findIndex((n) => n.id === notification.id),
     );
+
+  const hasUnread = allNotifications.some(
+    (n) => !readIds.has(n.id) && !('isRead' in n && n.isRead),
+  );
 
   return (
     <SafeAreaView
@@ -223,6 +260,8 @@ export default function NotificationsScreen() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          accessibilityLabel="Volver"
+          accessibilityRole="button"
         >
           <Ionicons
             name="arrow-back"
@@ -231,7 +270,18 @@ export default function NotificationsScreen() {
           />
         </TouchableOpacity>
         <Text style={styles.title}>Notificaciones</Text>
-        <View style={styles.headerRight} />
+        {hasUnread ? (
+          <TouchableOpacity
+            onPress={handleMarkAllAsRead}
+            style={styles.markAllButton}
+            accessibilityLabel="Marcar todas como leídas"
+            accessibilityRole="button"
+          >
+            <MaterialIcons name="done-all" size={22} color={colors.primary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerRight} />
+        )}
       </View>
 
       {loading ? (
@@ -247,7 +297,7 @@ export default function NotificationsScreen() {
           />
           <Text style={styles.emptyTitle}>No hay notificaciones</Text>
           <Text style={styles.emptyText}>
-            Aquí aparecerán tus notificaciones cuando las tengas. ¡Vuelve más tarde!
+            Aquí aparecerán tus notificaciones cuando las tengas.
           </Text>
         </View>
       ) : (
@@ -261,9 +311,174 @@ export default function NotificationsScreen() {
           }
         />
       )}
+
+      {/* Modal de detalle de notificación */}
+      <NotificationDetailModal
+        notification={selectedNotification}
+        onClose={() => setSelectedNotification(null)}
+        scheme={scheme}
+      />
     </SafeAreaView>
   );
 }
+
+// ============================================================================
+// Notification Detail Modal
+// ============================================================================
+
+function NotificationDetailModal({
+  notification,
+  onClose,
+  scheme,
+}: {
+  notification: (NotificationData | ReceivedNotification) | null;
+  onClose: () => void;
+  scheme: 'light' | 'dark';
+}) {
+  if (!notification) return null;
+
+  const theme = Colors[scheme ?? 'light'];
+  const date = new Date(
+    'receivedAt' in notification
+      ? notification.receivedAt
+      : notification.createdAt,
+  );
+
+  const handleActionButton = () => {
+    if (!notification.actionButton) return;
+    if (notification.actionButton.isInternal) {
+      onClose();
+      try {
+        router.push(notification.actionButton.url as any);
+      } catch (error) {
+        console.error('Error navegando:', error);
+      }
+    } else {
+      Linking.openURL(notification.actionButton.url).catch((err) =>
+        console.error('Error abriendo URL:', err),
+      );
+    }
+  };
+
+  return (
+    <Modal
+      visible={!!notification}
+      animationType="slide"
+      presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}
+      onRequestClose={onClose}
+    >
+      <SafeAreaView
+        style={[dStyles.container, { backgroundColor: theme.background }]}
+      >
+        <View style={dStyles.header}>
+          <TouchableOpacity
+            onPress={onClose}
+            accessibilityLabel="Cerrar"
+            accessibilityRole="button"
+          >
+            <Ionicons name="close" size={28} color={theme.text} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView contentContainerStyle={dStyles.content}>
+          {notification.icon && (
+            <Image source={{ uri: notification.icon }} style={dStyles.icon} />
+          )}
+
+          <Text style={[dStyles.title, { color: theme.text }]}>
+            {notification.title}
+          </Text>
+
+          <Text style={[dStyles.date, { color: theme.icon }]}>
+            {date.toLocaleDateString('es-ES', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Text>
+
+          {notification.imageUrl && (
+            <Image
+              source={{ uri: notification.imageUrl }}
+              style={dStyles.image}
+              resizeMode="cover"
+            />
+          )}
+
+          <Text style={[dStyles.body, { color: theme.text }]}>
+            {notification.body}
+          </Text>
+
+          {notification.actionButton && (
+            <TouchableOpacity
+              style={dStyles.actionButton}
+              onPress={handleActionButton}
+              accessibilityLabel={notification.actionButton.text}
+              accessibilityRole="button"
+            >
+              <Text style={dStyles.actionButtonText}>
+                {notification.actionButton.text}
+              </Text>
+              <MaterialIcons
+                name={
+                  notification.actionButton.isInternal
+                    ? 'arrow-forward'
+                    : 'open-in-new'
+                }
+                size={18}
+                color="#fff"
+              />
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+const dStyles = StyleSheet.create({
+  container: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: spacing.md,
+  },
+  content: { padding: spacing.lg, paddingTop: 0 },
+  icon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginBottom: spacing.md,
+    alignSelf: 'center',
+  },
+  title: { fontSize: 22, fontWeight: '700', marginBottom: spacing.sm },
+  date: { fontSize: 14, marginBottom: spacing.lg },
+  image: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginBottom: spacing.lg,
+  },
+  body: { fontSize: 16, lineHeight: 24, marginBottom: spacing.lg },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+  },
+  actionButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+});
+
+// ============================================================================
+// Helpers & Styles
+// ============================================================================
 
 function formatDate(date: Date): string {
   const now = new Date();
@@ -287,10 +502,7 @@ function formatDate(date: Date): string {
 const createStyles = (scheme: 'light' | 'dark') => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.background,
-    },
+    container: { flex: 1, backgroundColor: theme.background },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -299,12 +511,9 @@ const createStyles = (scheme: 'light' | 'dark') => {
       borderBottomColor: colors.border,
       backgroundColor: theme.background,
     },
-    backButton: {
-      marginRight: spacing.md,
-    },
-    headerRight: {
-      width: 32,
-    },
+    backButton: { marginRight: spacing.md },
+    headerRight: { width: 32 },
+    markAllButton: { padding: 4 },
     title: {
       ...(typography.h1 as any),
       fontSize: 18,
@@ -312,9 +521,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       textAlign: 'center',
       color: theme.text,
     },
-    content: {
-      padding: spacing.md,
-    },
+    content: { padding: spacing.md },
     emptyState: {
       flex: 1,
       justifyContent: 'center',
@@ -360,9 +567,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       marginRight: spacing.md,
       backgroundColor: colors.border,
     },
-    notificationContent: {
-      flex: 1,
-    },
+    notificationContent: { flex: 1 },
     notificationHeader: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -388,9 +593,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       borderRadius: 4,
       backgroundColor: colors.primary,
     },
-    markAsReadButton: {
-      padding: 4,
-    },
+    markAsReadButton: { padding: 4 },
     rightAction: {
       backgroundColor: colors.success,
       justifyContent: 'center',
@@ -400,10 +603,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       paddingRight: spacing.md,
       minWidth: 100,
     },
-    actionContent: {
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
+    actionContent: { alignItems: 'center', justifyContent: 'center' },
     actionText: {
       color: '#fff',
       fontWeight: '600',

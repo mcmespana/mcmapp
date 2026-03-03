@@ -525,11 +525,12 @@ export default function WordleScreen() {
                     marginBottom: 4,
                   }}
                 >
-                  <Text style={{ width: 20 }}>{k}</Text>
+                  <Text style={{ width: 20, color: theme.text }}>{k}</Text>
                   <View
                     style={{
                       flex: 1,
-                      backgroundColor: '#d3d6da',
+                      backgroundColor:
+                        theme.background === '#2C2C2E' ? '#555' : '#d3d6da',
                       height: 10,
                       marginHorizontal: 4,
                     }}
@@ -542,7 +543,7 @@ export default function WordleScreen() {
                       }}
                     />
                   </View>
-                  <Text>{v}</Text>
+                  <Text style={{ color: theme.text }}>{v}</Text>
                 </View>
               );
             })}
@@ -715,7 +716,7 @@ const createStyles = (theme: typeof Colors.light) =>
       paddingHorizontal: Platform.OS === 'web' ? 8 : 12,
       marginHorizontal: 3,
       borderRadius: 8,
-      backgroundColor: '#d3d6da',
+      backgroundColor: theme.background === '#2C2C2E' ? '#555' : '#d3d6da',
       minWidth: Platform.OS === 'web' ? 28 : 32,
       justifyContent: 'center',
       alignItems: 'center',
@@ -730,7 +731,7 @@ const createStyles = (theme: typeof Colors.light) =>
       paddingHorizontal: Platform.OS === 'web' ? 6 : 8,
     },
     keyText: {
-      color: '#000',
+      color: theme.text,
       fontWeight: 'bold',
       fontSize: Platform.OS === 'web' ? 14 : 16,
     },
@@ -760,7 +761,7 @@ const createStyles = (theme: typeof Colors.light) =>
       shadowOpacity: 0.3,
       shadowRadius: 8,
       borderWidth: 3,
-      borderColor: '#fff',
+      borderColor: theme.background,
     },
     shareBtnText: {
       color: '#fff',

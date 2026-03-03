@@ -16,6 +16,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
+import { useColorScheme } from '../../hooks/useColorScheme';
+import { Colors } from '../../constants/colors';
 import CrossPlatformSlider from '../../components/CrossPlatformSlider';
 
 // Route type for this screen
@@ -28,6 +30,8 @@ export default function SongFullscreenScreen({
 }) {
   const { author, key, capo, content } = route.params;
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const scheme = useColorScheme();
+  const theme = Colors[scheme];
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;
 
@@ -99,7 +103,7 @@ export default function SongFullscreenScreen({
   }, [autoScroll, scrollSpeed]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {Platform.OS === 'web' ? (
         <div
           ref={divRef}
@@ -150,7 +154,7 @@ export default function SongFullscreenScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
   webContainer: {
     width: '100%',
     height: '100%',

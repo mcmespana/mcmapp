@@ -1,5 +1,12 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Appearance,
+} from 'react-native';
 
 interface Props {
   children: ReactNode;
@@ -30,18 +37,20 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const isDark = Appearance.getColorScheme() === 'dark';
+      const dynamicStyles = getDynamicStyles(isDark);
       return (
-        <View style={styles.container}>
+        <View style={dynamicStyles.container}>
           <Text style={styles.emoji}>😵</Text>
           <Text style={styles.title}>Algo ha ido mal</Text>
-          <Text style={styles.subtitle}>
+          <Text style={dynamicStyles.subtitle}>
             La app ha encontrado un error inesperado.
           </Text>
           <TouchableOpacity style={styles.button} onPress={this.handleReset}>
             <Text style={styles.buttonText}>Reintentar</Text>
           </TouchableOpacity>
           {__DEV__ && this.state.error && (
-            <ScrollView style={styles.errorBox}>
+            <ScrollView style={dynamicStyles.errorBox}>
               <Text style={styles.errorText}>
                 {this.state.error.toString()}
               </Text>
@@ -55,14 +64,32 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 }
 
+const getDynamicStyles = (isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 32,
+      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+    },
+    subtitle: {
+      fontSize: 16,
+      color: isDark ? '#aaa' : '#666',
+      textAlign: 'center',
+      marginBottom: 24,
+    },
+    errorBox: {
+      marginTop: 24,
+      maxHeight: 200,
+      width: '100%',
+      backgroundColor: isDark ? '#3a3a3c' : '#f5f5f5',
+      borderRadius: 8,
+      padding: 12,
+    },
+  });
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-    backgroundColor: '#fff',
-  },
   emoji: {
     fontSize: 48,
     marginBottom: 16,
@@ -72,12 +99,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#253883',
     marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 24,
   },
   button: {
     backgroundColor: '#253883',
@@ -89,14 +110,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  errorBox: {
-    marginTop: 24,
-    maxHeight: 200,
-    width: '100%',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 12,
   },
   errorText: {
     fontSize: 12,

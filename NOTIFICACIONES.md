@@ -13,17 +13,17 @@
 - Handler de foreground (sonido, alerta, categorías iOS)
 - Almacenamiento local de notificaciones recibidas (AsyncStorage, max 100)
 - Pantalla de notificaciones con lista, leído/no-leído, swipe, pull-to-refresh
-- Badge de no-leídas en icono de campana (Home)
+- Badge de no-leídas en icono de campana (Home) — **actualización en tiempo real via NotificationsContext**
 - Deep linking al tocar notificación (usa `internalRoute`)
 - Fix de IDs: `data?.id || notification.request.identifier` (aplicado)
+- **Suscripción en tiempo real a Firebase** via `NotificationsContext` (usa `subscribeToNotifications()`)
+- **Contador foreground**: badge se actualiza al instante cuando llega notificación con app abierta
+- **Vista detalle**: modal completo con body, imagen, botón de acción (pageSheet en iOS)
+- **Marcar todas como leídas**: botón en header de la pantalla de notificaciones
+- **Categorías iOS action buttons**: `actionIdentifier` mapeado a rutas (view→notifications, view_event→calendario, view_photos→fotos)
 
-### Lo que NO funciona / falta
-- **Backend/panel admin** (Next.js): no existe. No se pueden enviar notificaciones
-- **Suscripción en tiempo real**: `subscribeToNotifications()` existe en el servicio pero NO se usa en `notifications.tsx` (solo carga al abrir/focus)
-- **Contador foreground**: cuando llega una notificación con la app abierta, el badge no se actualiza (falta contexto compartido)
-- **Vista detalle**: el body se trunca a 3 líneas, no hay pantalla para leer la notificación completa
-- **Marcar todas como leídas**: no implementado
-- **Categorías iOS action buttons**: definidas pero `actionIdentifier` no se inspecciona en el handler de respuesta
+### Lo que falta
+- **Backend/panel admin** (Next.js): asumido como implementado en mcmespana/mcmpanel (marzo 2026)
 
 ### Rama `origin/notificaciones`
 Analizada y **descartable**. Solo tiene 1 commit sobre main con código OneSignal comentado. Todo el sistema actual (Expo Notifications + Firebase) se construyó en main y lo supera completamente. Se puede borrar la rama.
@@ -35,14 +35,16 @@ Analizada y **descartable**. Solo tiene 1 commit sobre main con código OneSigna
 ```
 app/_layout.tsx
 ├── import '../notifications/NotificationHandler'   ← Side-effect: configura handler foreground
-├── usePushNotifications()                           ← Hook: permisos, token, listeners, heartbeat
+├── <NotificationsProvider>                          ← Contexto: suscripción real-time, unreadCount
+│   └── usePushNotifications()                       ← Hook: permisos, token, listeners, heartbeat
 │
+├── contexts/NotificationsContext.tsx                 ← Contexto: subscribeToNotifications, badge
 ├── notifications/NotificationHandler.ts             ← Configuración global + categorías iOS
-├── notifications/usePushNotifications.ts            ← Lifecycle completo de notificaciones
+├── notifications/usePushNotifications.ts            ← Lifecycle + iOS action button routing
 ├── services/pushNotificationService.ts              ← Capa de datos: Firebase + AsyncStorage
-├── hooks/useUnreadNotificationsCount.ts             ← Badge: cuenta no-leídas
+├── hooks/useUnreadNotificationsCount.ts             ← Badge: delega a NotificationsContext
 ├── types/notifications.ts                           ← Tipos TypeScript
-└── app/notifications.tsx                            ← Pantalla de notificaciones (UI)
+└── app/notifications.tsx                            ← Pantalla (real-time, detalle modal, mark all)
 ```
 
 ### Firebase paths
