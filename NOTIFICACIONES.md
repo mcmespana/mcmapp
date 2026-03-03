@@ -22,8 +22,11 @@
 - **Marcar todas como leídas**: botón en header de la pantalla de notificaciones
 - **Categorías iOS action buttons**: `actionIdentifier` mapeado a rutas (view→notifications, view_event→calendario, view_photos→fotos)
 
-### Lo que falta
-- **Backend/panel admin** (Next.js): asumido como implementado en mcmespana/mcmpanel (marzo 2026)
+### Backend (panel admin)
+- **Repositorio**: `mcmespana/mcmpanel` — en desarrollo (marzo 2026)
+- El cliente de la app está **completamente listo** para recibir y mostrar notificaciones
+- El backend solo necesita: enviar via Expo Push API + guardar en Firebase `/notifications/{id}`
+- Ver Fase 2 más abajo para la especificación completa del backend
 
 ### Rama `origin/notificaciones`
 Analizada y **descartable**. Solo tiene 1 commit sobre main con código OneSignal comentado. Todo el sistema actual (Expo Notifications + Firebase) se construyó en main y lo supera completamente. Se puede borrar la rama.
@@ -57,32 +60,21 @@ app/_layout.tsx
 
 ## Plan para completar el sistema
 
-### Fase 1: Mejoras del cliente (sin backend)
-Estas se pueden hacer ya, mejoran la UX sin necesitar el panel:
+### Fase 1: Mejoras del cliente — COMPLETADA (marzo 2026)
 
-1. **Suscripción en tiempo real en notifications.tsx**
-   - Usar `subscribeToNotifications()` de `pushNotificationService.ts` en vez de cargar solo al abrir
-   - Archivo: `mcm-app/app/notifications.tsx`
+Todo implementado:
+- `contexts/NotificationsContext.tsx` — suscripción real-time a Firebase, badge en foreground
+- `app/notifications.tsx` — reescrita con modal de detalle, botón "Marcar todas como leídas"
+- `notifications/usePushNotifications.ts` — routing de iOS action buttons (`actionIdentifier`)
+- `services/pushNotificationService.ts` — `markAllNotificationsAsRead()` batch
+- `hooks/useUnreadNotificationsCount.ts` — simplificado, delega a NotificationsContext
 
-2. **Contexto de notificaciones para badge en tiempo real**
-   - Crear `contexts/NotificationsContext.tsx`
-   - Emitir evento desde `usePushNotifications.ts` cuando llega una notificación
-   - `useUnreadNotificationsCount` escucha ese contexto
-   - Archivos: nuevo contexto + modificar hook + modificar usePushNotifications
-
-3. **Vista detalle de notificación**
-   - Crear `app/notification-detail.tsx` (o modal expandido)
-   - Al tocar una notificación sin `internalRoute`, muestra body completo + imagen + botón de acción
-   - Archivo: nueva pantalla
-
-4. **Botón "Marcar todas como leídas"** en la pantalla de notificaciones
-
-### Fase 2: Backend (panel admin Next.js)
-Crear el panel de administración para enviar notificaciones:
+### Fase 2: Backend (panel admin) — EN DESARROLLO en `mcmespana/mcmpanel`
+Panel de administración en `mcmespana/mcmpanel` para enviar notificaciones:
 
 #### Estructura propuesta
 ```
-panel-notificaciones/           ← Nuevo proyecto Next.js
+mcmpanel/                       ← Repositorio mcmespana/mcmpanel
 ├── app/
 │   ├── admin/notifications/
 │   │   └── page.tsx            ← UI: formulario + estadísticas
@@ -215,10 +207,13 @@ Nota: `/(tabs)/comunica` está desactivada actualmente.
 - [ ] Token guardado en Firebase `/pushTokens/{deviceId}`
 - [ ] Notificación recibida en foreground (banner/alerta)
 - [ ] Notificación recibida en background (bandeja del sistema)
-- [ ] Aparece en pantalla de notificaciones
-- [ ] Badge de no-leídas se muestra
+- [ ] Aparece en pantalla de notificaciones (real-time, sin pull-to-refresh)
+- [ ] Badge de no-leídas se muestra y se actualiza en foreground
 - [ ] Swipe para marcar como leída funciona
 - [ ] Deep linking funciona al tocar (si tiene `internalRoute`)
+- [ ] Modal de detalle muestra body completo, imagen y botón de acción
+- [ ] Botón "Marcar todas como leídas" funciona (icono done-all en header)
+- [ ] iOS action buttons (view, view_event, view_photos) navegan correctamente
 
 ### Plataformas
 - **iOS real**: todo funciona
@@ -235,7 +230,7 @@ Nota: `/(tabs)/comunica` está desactivada actualmente.
 | No obtiene token | Simulador, permisos denegados, sin projectId | Usar dispositivo real, verificar permisos, verificar `eas.projectId` en app.json |
 | Notificación no llega | Credenciales APNs/FCM, token inválido | Ejecutar `eas credentials`, verificar token en Firebase |
 | IDs no coinciden | Backend no envía `data.id` | Backend DEBE incluir `data.id` con el UUID de Firebase |
-| Badge no se actualiza | Falta contexto compartido | Implementar `NotificationsContext` (Fase 1) |
+| Badge no se actualiza | Error en NotificationsContext | Verificar que `NotificationsProvider` envuelve `_layout.tsx`, revisar logs de `subscribeToNotifications` |
 | Historial vacío | Firebase rules, ID mismatch | Verificar `.read: true` en `/notifications`, verificar IDs |
 | Navegación no funciona | Ruta inválida, tab desactivada | Verificar ruta existe, verificar feature flags |
 
