@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,md}'",
-    "test": "echo \"No tests configured yet\""
+    "test": "jest"
   },
   "dependencies": {
     "@expo/config": "~12.0.7",

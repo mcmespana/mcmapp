@@ -1,4 +1,5 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# EAS Build ignore file
+# Based on .gitignore + extra exclusions for EAS
 
 # dependencies
 node_modules/
@@ -8,10 +9,6 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
-.claude/
-.agent/
-.agents/
-credentials.json
 
 # Native
 .kotlin/
@@ -50,7 +47,6 @@ google-services.json
 GoogleService-Info.plist
 firebase.json
 
-
 # prebuilds (CNG/Prebuild generated folders)
 /android
 /ios
@@ -62,3 +58,9 @@ android/
 *.aab
 /builds/
 /android/app/build/
+
+# Claude Code agent skills (symlinks that break EAS)
+.agent/
+.agents/
+.claude/
+credentials.json
