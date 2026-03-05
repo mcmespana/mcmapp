@@ -75,7 +75,7 @@
     "@react-native-community/cli": "^18.0.0",
     "@types/node": "^22.16.5",
     "@types/react": "~19.1.10",
-    "copy-webpack-plugin": "^13.0.0",
+    "copy-webpack-plugin": "^14.0.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "eslint-config-prettier": "^9.1.0",
