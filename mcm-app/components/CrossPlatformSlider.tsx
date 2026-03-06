@@ -103,15 +103,7 @@ const CrossPlatformSlider: React.FC<SliderProps> = ({
       onValueChange={onValueChange}
       minimumTrackTintColor="#253883"
       maximumTrackTintColor="#ddd"
-      thumbStyle={{
-        backgroundColor: '#253883',
-        width: 20,
-        height: 20,
-      }}
-      trackStyle={{
-        height: 8,
-        borderRadius: 4,
-      }}
+      thumbTintColor="#253883"
     />
   );
 };

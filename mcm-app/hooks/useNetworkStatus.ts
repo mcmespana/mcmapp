@@ -8,9 +8,9 @@ export default function useNetworkStatus() {
     let subscription: any;
     const subscribe = async () => {
       const state = await Network.getNetworkStateAsync();
-      setIsConnected(state.isConnected && state.isInternetReachable !== false);
+      setIsConnected(state.isConnected ?? null);
       subscription = Network.addNetworkStateListener((s) => {
-        setIsConnected(s.isConnected && s.isInternetReachable !== false);
+        setIsConnected(s.isConnected ?? null);
       });
     };
     subscribe();

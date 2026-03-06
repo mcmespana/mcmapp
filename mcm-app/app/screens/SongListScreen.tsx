@@ -63,7 +63,7 @@ export default function SongsListScreen({
 }) {
   const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<
     Record<string, SongCategory>
-  >('songs', 'songs', filterSongsData);
+  >('songs', 'songs', filterSongsData as (data: any) => Record<string, SongCategory>);
   const songsData = useMemo(() => getSongsData(firebaseSongs), [firebaseSongs]);
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();

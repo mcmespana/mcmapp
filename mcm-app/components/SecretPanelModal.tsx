@@ -192,7 +192,7 @@ export default function SecretPanelModal({
       };
 
       // Detectar cambios específicos
-      const changes = {};
+      const changes: Record<string, any> = {};
       const fieldsToCheck = [
         'title',
         'author',
@@ -200,15 +200,15 @@ export default function SecretPanelModal({
         'capo',
         'info',
         'content',
-      ];
+      ] as const;
 
       fieldsToCheck.forEach((field) => {
-        if (originalValues[field] !== newValues[field]) {
-          changes[`${field}Old`] = originalValues[field];
-          changes[`${field}New`] = newValues[field];
+        if ((originalValues as any)[field] !== (newValues as any)[field]) {
+          changes[`${field}Old`] = (originalValues as any)[field];
+          changes[`${field}New`] = (newValues as any)[field];
           console.log(
             `🔄 Campo '${field}' cambió:`,
-            `"${originalValues[field]}" → "${newValues[field]}"`,
+            `"${(originalValues as any)[field]}" → "${(newValues as any)[field]}"`,
           );
         }
       });
@@ -256,7 +256,7 @@ export default function SecretPanelModal({
       let songIndex = -1;
 
       // Buscar la canción por filename
-      songs.forEach((song, index) => {
+      songs.forEach((song: any, index: number) => {
         if (song && song.filename === songFilename) {
           songIndex = index;
         }
@@ -273,11 +273,11 @@ export default function SecretPanelModal({
       );
 
       // Crear objeto con solo los campos que cambiaron
-      const fieldsToUpdate = {};
+      const fieldsToUpdate: Record<string, any> = {};
       Object.keys(changes).forEach((key) => {
         if (key.endsWith('New')) {
           const fieldName = key.replace('New', '');
-          fieldsToUpdate[fieldName] = newValues[fieldName];
+          fieldsToUpdate[fieldName] = (newValues as any)[fieldName];
         }
       });
 
@@ -334,7 +334,7 @@ export default function SecretPanelModal({
             info: 'Info',
             content: 'Contenido',
           };
-          return fieldLabels[fieldName] || fieldName;
+          return (fieldLabels as Record<string, string>)[fieldName] || fieldName;
         });
 
       Alert.alert(
@@ -346,7 +346,7 @@ export default function SecretPanelModal({
       console.error('Error updating song:', error);
       Alert.alert(
         'Error',
-        `No se pudieron guardar los cambios: ${error.message}`,
+        `No se pudieron guardar los cambios: ${(error as Error).message}`,
       );
     } finally {
       setIsSubmitting(false);

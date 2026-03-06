@@ -15,8 +15,9 @@ export default function GlassHeader({ tintColor }: GlassHeaderProps) {
   // Para colores claros (amarillo, gris claro), usar opacidad más alta
   // Para colores oscuros, usar opacidad más baja para mantener el efecto glass
   let backgroundColor: string;
-  let glassStyle: 'clear' | 'light' | 'dark' = 'clear';
-  
+  let glassStyle: 'clear' | 'regular' | 'none' = 'clear';
+  let isDark = false;
+
   if (tintColor) {
     // Convertir hex a RGB para determinar si es claro u oscuro
     const hex = tintColor.replace('#', '');
@@ -25,19 +26,20 @@ export default function GlassHeader({ tintColor }: GlassHeaderProps) {
     const g = parseInt(hex.length === 6 ? hex.substring(2, 4) : hex[1] + hex[1], 16);
     const b = parseInt(hex.length === 6 ? hex.substring(4, 6) : hex[2] + hex[2], 16);
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    
+
     if (brightness > 180) {
       // Color claro - usar más opacidad para mejor legibilidad
       backgroundColor = tintColor + 'F0'; // 94% opacidad
-      glassStyle = 'light';
+      glassStyle = 'regular';
     } else {
       // Color oscuro - usar menos opacidad para efecto glass
       backgroundColor = tintColor + 'D0'; // 82% opacidad
-      glassStyle = 'dark';
+      glassStyle = 'regular';
+      isDark = true;
     }
   } else {
     backgroundColor = 'rgba(255, 255, 255, 0.95)';
-    glassStyle = 'light';
+    glassStyle = 'regular';
   }
 
   if (glassAvailable) {
@@ -67,8 +69,8 @@ export default function GlassHeader({ tintColor }: GlassHeaderProps) {
   return (
     <View style={StyleSheet.absoluteFill}>
       <BlurView
-        tint={glassStyle === 'dark' ? 'dark' : 'light'}
-        intensity={glassStyle === 'dark' ? 80 : 100}
+        tint={isDark ? 'dark' : 'light'}
+        intensity={isDark ? 80 : 100}
         style={[
           StyleSheet.absoluteFill,
           { backgroundColor },

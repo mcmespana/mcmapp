@@ -61,7 +61,7 @@ export default function usePushNotifications() {
         console.log('🔔 Notificación recibida:', notification.request.content);
 
         const notificationId =
-          notification.request.content.data?.id ||
+          (notification.request.content.data?.id as string) ||
           notification.request.identifier;
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
@@ -122,7 +122,7 @@ export default function usePushNotifications() {
 
         // Guardar y marcar como leída
         const notificationId =
-          data?.id || response.notification.request.identifier;
+          (data?.id as string) || response.notification.request.identifier;
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: response.notification.request.content.title || 'Notificación',
@@ -146,12 +146,10 @@ export default function usePushNotifications() {
     // Cleanup
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(
-          notificationListener.current,
-        );
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
       clearInterval(intervalId);
     };

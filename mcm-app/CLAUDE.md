@@ -6,7 +6,7 @@
 
 MCM App es la aplicación de MCM España (Misioneros y Misioneras Claretianos). Proporciona cantoral/cancionero con acordes, calendario de eventos, fotos, grupos, reflexiones, materiales, juego Wordle y notificaciones push.
 
-**Stack:** Expo 54 · React Native 0.81 · React 19 · TypeScript · Firebase Realtime Database · React Native Paper · ChordSheetJS
+**Stack:** Expo 55 · React Native 0.83 · React 19.2 · TypeScript · Firebase Realtime Database · React Native Paper · ChordSheetJS
 
 ## Comandos de desarrollo
 
@@ -21,6 +21,25 @@ npm run format         # Prettier
 npm test               # Jest (sin tests escritos aún)
 npx tsc --noEmit       # Verificar tipos TypeScript
 ```
+
+### Builds EAS (IMPORTANTE)
+
+**NUNCA uses `npx eas-cli build` directamente.** Usa siempre los scripts npm que limpian los symlinks de skills de Claude Code (`.agent/`, `.agents/`) antes de comprimir. Sin esto, EAS falla en Windows con error `EPERM: operation not permitted, symlink`.
+
+```bash
+# Desde mcm-app/
+npm run eas:build:ios -- --profile development    # Build iOS development (instalar en dispositivo)
+npm run eas:build:ios -- --profile production      # Build iOS producción (App Store)
+npm run eas:build:android -- --profile development # Build Android development
+npm run eas:build:android -- --profile production  # Build Android producción (Play Store)
+npm run eas:build -- --profile production          # Build ambas plataformas
+```
+
+**Perfiles disponibles en `eas.json`:**
+- `development` — Dev client, distribución interna (instalar en dispositivo físico)
+- `preview` — Build de preview, APK en Android
+- `production` — Build de producción (App Store / Play Store)
+- `development-simulator` — Dev client para simulador iOS
 
 ## Estructura de archivos
 

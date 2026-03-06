@@ -8,7 +8,7 @@ import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { StatusBar } from 'expo-status-bar';
 
 // Import iOS-specific NativeTabs
-import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 
 // Import Android/Web-specific Traditional Tabs
@@ -99,8 +99,8 @@ function IOSNativeTabsLayout() {
 
         return (
           <NativeTabs.Trigger key={tab.name} name={tab.name}>
-            <Label>{tab.label}</Label>
-            <Icon sf={tab.iosIcon} />
+            <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Icon sf={tab.iosIcon as any} />
           </NativeTabs.Trigger>
         );
       })}

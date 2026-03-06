@@ -64,7 +64,7 @@ export default function CancioneroTab() {
           initialRouteName="Categories"
           screenOptions={{
             headerBackTitle: 'Volver',
-            headerStyle: Platform.OS === 'ios' 
+            headerStyle: (Platform.OS === 'ios'
               ? { backgroundColor: 'transparent' }
               : Platform.OS === 'web'
               ? {
@@ -79,14 +79,14 @@ export default function CancioneroTab() {
                 }
               : {
                   backgroundColor: '#f4c11e',
-                },
+                }) as any,
             headerTintColor: Platform.OS === 'ios' ? '#1a1a1a' : Platform.OS === 'web' ? '#1a1a1a' : '#fff',
             headerTitleStyle: {
               fontWeight: '700',
               fontSize: 18,
               color: Platform.OS === 'ios' ? '#1a1a1a' : Platform.OS === 'web' ? '#1a1a1a' : '#fff',
             },
-            headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
+            ...(Platform.OS === 'web' && { headerStatusBarHeight: 0 } as any),
             headerTransparent: false,
             headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#f4c11e" /> : undefined,
           }}

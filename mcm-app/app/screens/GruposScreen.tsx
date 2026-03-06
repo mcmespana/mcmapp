@@ -301,7 +301,7 @@ export default function GruposScreen() {
           onPress={() => setCategoria(null)}
         />
       </View>
-      {(data?.[categoria] || []).map((g, idx) => (
+      {(categoria && data?.[categoria] ? data[categoria] : []).map((g: any, idx: number) => (
         <List.Item
           key={idx}
           title={g.nombre}

@@ -31,6 +31,17 @@ npm run format         # Prettier
 npm test               # Jest (no hay tests escritos aún)
 ```
 
+### Builds EAS
+
+**NUNCA uses `npx eas-cli build` directamente** — usa los scripts npm que limpian symlinks de Claude Code:
+
+```bash
+npm run eas:build:ios -- --profile development     # iOS para dispositivo
+npm run eas:build:ios -- --profile production       # iOS para App Store
+npm run eas:build:android -- --profile development  # Android para dispositivo
+npm run eas:build:android -- --profile production   # Android para Play Store
+```
+
 ## Notas sobre notificaciones push
 
 `NOTIFICACIONES.md` documenta el sistema completo de notificaciones push (cliente implementado, backend pendiente). Consultar ese archivo para el estado actual, plan de implementación y guía de pruebas.
