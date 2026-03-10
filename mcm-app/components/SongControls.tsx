@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  Animated,
+} from 'react-native';
 import { Snackbar } from 'react-native-paper';
-import theme from '../app/styles/theme'; // Default import for theme
-import colors from '@/constants/colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import SongFontPanel from './SongFontPanel';
 import TransposePanel from './TransposePanel';
 import ReportBugsModal from './ReportBugsModal';
 import SecretPanelModal from './SecretPanelModal';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
-// Define availableFonts structure if not already globally defined
 interface FontOption {
   name: string;
   cssValue: string;
@@ -30,7 +35,6 @@ interface SongControlsProps {
   onToggleNotation: () => void;
   onNavigateToFullscreen: () => void;
   onCopyLyrics: () => void;
-  // Props para reportar fallitos y panel secreto
   songTitle?: string;
   songFilename?: string;
   songAuthor?: string;
@@ -71,6 +75,32 @@ const SongControls: React.FC<SongControlsProps> = ({
   const [showSecretPanel, setShowSecretPanel] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  const hasModifications =
+    currentTranspose !== 0 ||
+    !chordsVisible ||
+    currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+    (availableFonts.length > 0 &&
+      currentFontFamily !== availableFonts[0].cssValue) ||
+    notation !== 'ES';
+
+  const toggleMenu = () => {
+    const toOpen = !showActionButtons;
+    setShowActionButtons(toOpen);
+    Animated.spring(rotateAnim, {
+      toValue: toOpen ? 1 : 0,
+      useNativeDriver: true,
+      friction: 6,
+    }).start();
+  };
+
+  const rotateInterpolation = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '45deg'],
+  });
 
   const handleOpenTransposePanel = () => setShowTransposePanel(true);
   const handleOpenFontPanel = () => setShowFontPanel(true);
@@ -83,129 +113,150 @@ const SongControls: React.FC<SongControlsProps> = ({
     setShowSuccessToast(true);
   };
 
-  // Wrapper for onSetTranspose to also close the modal
   const handleSetTranspose = (semitones: number) => {
     onSetTranspose(semitones);
   };
 
+  const ActionButton = ({
+    icon,
+    label,
+    onPress,
+    isActive = false,
+  }: {
+    icon: keyof typeof MaterialIcons.glyphMap;
+    label: string;
+    onPress: () => void;
+    isActive?: boolean;
+  }) => (
+    <TouchableOpacity
+      style={[
+        styles.actionButton,
+        isActive &&
+          (isDark
+            ? styles.actionButtonActiveDark
+            : styles.actionButtonActive),
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <MaterialIcons
+        name={icon}
+        size={18}
+        color={
+          isActive
+            ? isDark
+              ? '#7AB3FF'
+              : '#253883'
+            : isDark
+              ? '#AEAEB2'
+              : '#636366'
+        }
+      />
+      <Text
+        style={[
+          styles.actionButtonText,
+          isDark && styles.actionButtonTextDark,
+          isActive &&
+            (isDark
+              ? styles.actionButtonTextActiveDark
+              : styles.actionButtonTextActive),
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <>
-      {/* FABs */}
+      {/* FAB & Action Menu */}
       <View style={styles.fabContainer}>
         {showActionButtons && (
-          <View style={styles.fabActionsContainer}>
-            <TouchableOpacity
-              style={[
-                styles.fabAction,
-                !chordsVisible && styles.fabActionActive,
-              ]}
+          <View
+            style={[
+              styles.menuContainer,
+              isDark && styles.menuContainerDark,
+            ]}
+          >
+            <ActionButton
+              icon={chordsVisible ? 'music-note' : 'music-off'}
+              label={`Acordes ${chordsVisible ? 'ON' : 'OFF'}`}
               onPress={onToggleChords}
-            >
-              <Text
-                style={[
-                  styles.fabActionText,
-                  !chordsVisible && styles.fabActionTextActive,
-                ]}
-              >
-                Acordes {chordsVisible ? 'ON' : 'OFF'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.fabAction,
-                notation !== 'ES' && styles.fabActionActive,
-              ]}
+              isActive={!chordsVisible}
+            />
+            <ActionButton
+              icon="translate"
+              label={`Notación: ${notation}`}
               onPress={onToggleNotation}
-            >
-              <Text
-                style={[
-                  styles.fabActionText,
-                  notation !== 'ES' && styles.fabActionTextActive,
-                ]}
-              >
-                Notación: {notation}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.fabAction,
-                currentTranspose !== 0 && styles.fabActionActive,
-              ]}
+              isActive={notation !== 'ES'}
+            />
+            <ActionButton
+              icon="swap-vert"
+              label={
+                currentTranspose !== 0
+                  ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose}`
+                  : 'Cambiar tono'
+              }
               onPress={handleOpenTransposePanel}
-            >
-              <Text
-                style={[
-                  styles.fabActionText,
-                  currentTranspose !== 0 && styles.fabActionTextActive,
-                ]}
-              >
-                Cambiar tono
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.fabAction,
-                (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
-                  (availableFonts.length > 0 &&
-                    currentFontFamily !== availableFonts[0].cssValue)) &&
-                  styles.fabActionActive,
-              ]}
+              isActive={currentTranspose !== 0}
+            />
+            <ActionButton
+              icon="text-fields"
+              label="Tipo de letra"
               onPress={handleOpenFontPanel}
-            >
-              <Text
-                style={[
-                  styles.fabActionText,
-                  (currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
-                    (availableFonts.length > 0 &&
-                      currentFontFamily !== availableFonts[0].cssValue)) &&
-                    styles.fabActionTextActive,
-                ]}
-              >
-                Tipo de letra
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.fabAction}
+              isActive={
+                currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
+                (availableFonts.length > 0 &&
+                  currentFontFamily !== availableFonts[0].cssValue)
+              }
+            />
+
+            <View
+              style={[
+                styles.menuDivider,
+                isDark && styles.menuDividerDark,
+              ]}
+            />
+
+            <ActionButton
+              icon="content-copy"
+              label="Copiar letra"
               onPress={() => {
                 onCopyLyrics();
                 setShowCopyToast(true);
               }}
-            >
-              <Text style={styles.fabActionText}>Copiar letra</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.fabAction}
+            />
+            <ActionButton
+              icon="fullscreen"
+              label="Pantalla completa"
               onPress={onNavigateToFullscreen}
-            >
-              <Text style={styles.fabActionText}>Pantalla completa</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.fabAction}
+            />
+            <ActionButton
+              icon="bug-report"
+              label="Reportar error"
               onPress={() => setShowReportBugsModal(true)}
-            >
-              <Text style={styles.fabActionText}>¿Fallitos? 🐛</Text>
-            </TouchableOpacity>
+            />
           </View>
         )}
         <View style={{ position: 'relative' }}>
-          {(currentTranspose !== 0 ||
-            !chordsVisible ||
-            currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
-            (availableFonts.length > 0 &&
-              currentFontFamily !== availableFonts[0].cssValue) ||
-            notation !== 'ES') && <View style={styles.badge} />}
+          {hasModifications && (
+            <View style={[styles.badge, isDark && styles.badgeDark]} />
+          )}
           <TouchableOpacity
-            style={styles.fabMain}
-            onPress={() => setShowActionButtons(!showActionButtons)}
+            style={[styles.fabMain, isDark && styles.fabMainDark]}
+            onPress={toggleMenu}
             accessibilityLabel="Configuración"
+            activeOpacity={0.8}
           >
-            {/* Use IconSymbol for Material Design icons */}
-            <MaterialIcons
-              name={showActionButtons ? 'close' : 'settings'}
-              size={32}
-              color={theme.textLight}
-              style={styles.fabMainIcon}
-            />
+            <Animated.View
+              style={{ transform: [{ rotate: rotateInterpolation }] }}
+            >
+              <MaterialIcons
+                name={showActionButtons ? 'close' : 'tune'}
+                size={26}
+                color="#1C1C1E"
+              />
+            </Animated.View>
           </TouchableOpacity>
         </View>
       </View>
@@ -260,118 +311,160 @@ const SongControls: React.FC<SongControlsProps> = ({
         visible={showCopyToast}
         onDismiss={() => setShowCopyToast(false)}
         duration={2000}
-        style={{
-          backgroundColor: colors.info,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-        }}
+        style={styles.snackbar}
       >
-        <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+        <Text style={{ color: '#fff', fontWeight: '600' }}>
           Letra copiada al portapapeles
         </Text>
       </Snackbar>
 
-      {/* Toast de éxito */}
       <Snackbar
         visible={showSuccessToast}
         onDismiss={() => setShowSuccessToast(false)}
         duration={3000}
-        style={{
-          backgroundColor: colors.warning,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-        }}
+        style={[styles.snackbar, styles.snackbarSuccess]}
         action={{
-          label: '🐛',
-          textColor: '#000',
+          label: 'OK',
+          textColor: '#fff',
           onPress: () => setShowSuccessToast(false),
         }}
       >
-        <Text style={{ color: '#000', fontWeight: 'bold' }}>
-          ¡Gracias por reportar los fallitos! � Nos ayudas a mejorar el
-          cantoral.
+        <Text style={{ color: '#fff', fontWeight: '600' }}>
+          ¡Gracias por tu reporte!
         </Text>
       </Snackbar>
     </>
   );
 };
 
-// Styles moved from SongDetailScreen.tsx
 const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 100 : 20, // Más alto en iOS para no quedar debajo de native tabs
+    bottom: Platform.OS === 'ios' ? 100 : 24,
     right: 20,
     alignItems: 'flex-end',
-    zIndex: 1000, // Asegurar que esté por encima del tab bar
+    zIndex: 1000,
   },
-  fabActionsContainer: {
-    marginBottom: 10,
-    alignItems: 'flex-end',
-  },
-  fabAction: {
-    backgroundColor: theme.accentYellow,
+  menuContainer: {
+    marginBottom: 12,
+    backgroundColor: '#fff',
+    borderRadius: 16,
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    marginBottom: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
+    paddingHorizontal: 4,
+    minWidth: 200,
+    ...Platform.select({
+      web: {
+        boxShadow:
+          '0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+      },
+    }),
   },
-  fabActionActive: {
-    backgroundColor: theme.primary,
+  menuContainerDark: {
+    backgroundColor: '#2C2C2E',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+      },
+      default: {
+        shadowOpacity: 0.4,
+      },
+    }),
   },
-  fabActionText: {
-    color: theme.textDark,
-    fontWeight: 'bold',
+  menuDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    marginVertical: 4,
+    marginHorizontal: 12,
   },
-  fabActionTextActive: {
-    color: theme.textLight,
+  menuDividerDark: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    marginHorizontal: 4,
+    marginVertical: 1,
+  },
+  actionButtonActive: {
+    backgroundColor: '#E8F0FE',
+  },
+  actionButtonActiveDark: {
+    backgroundColor: '#1A2744',
+  },
+  actionButtonText: {
+    marginLeft: 10,
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#1C1C1E',
+  },
+  actionButtonTextDark: {
+    color: '#EBEBF0',
+  },
+  actionButtonTextActive: {
+    color: '#253883',
+    fontWeight: '600',
+  },
+  actionButtonTextActiveDark: {
+    color: '#7AB3FF',
+    fontWeight: '600',
   },
   fabMain: {
-    backgroundColor: theme.accentYellow,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    backgroundColor: '#f4c11e',
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 12px rgba(244,193,30,0.4)',
+      },
+      default: {
+        shadowColor: '#f4c11e',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 8,
+      },
+    }),
   },
-  fabMainText: {
-    color: theme.textLight,
-    fontSize: 28,
-    fontWeight: 'bold',
+  fabMainDark: {
+    backgroundColor: '#f4c11e',
   },
   badge: {
     position: 'absolute',
-    right: -4,
-    top: -4,
-    backgroundColor: 'red',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    right: -2,
+    top: -2,
+    backgroundColor: '#FF453A',
+    borderRadius: 8,
+    width: 16,
+    height: 16,
     zIndex: 10,
-    borderWidth: 1.5,
-    borderColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#F2F2F7',
   },
-  fabMainIcon: {
-    // Center icon in FAB
-    alignSelf: 'center',
+  badgeDark: {
+    borderColor: '#1C1C1E',
   },
-  // Ensure all necessary styles from SongDetailScreen related to FABs and Modals are here
+  snackbar: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    marginBottom: 8,
+    marginHorizontal: 16,
+  },
+  snackbarSuccess: {
+    backgroundColor: '#34C759',
+  },
 });
 
 export default SongControls;
