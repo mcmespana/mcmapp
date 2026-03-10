@@ -1,536 +1,236 @@
 import React, {
   useLayoutEffect,
   ComponentProps,
-  useState,
-  useEffect,
   useRef,
-  memo,
+  useEffect,
+  useState,
+  useMemo,
 } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
+  Animated,
+  Linking,
   ViewStyle,
   TextStyle,
-  useWindowDimensions,
-  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link, LinkProps } from 'expo-router';
+import { router } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
-import typography from '@/constants/typography';
+import useFontScale from '@/hooks/useFontScale';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import Toast from '@/components/Toast';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import featureFlags from '@/constants/featureFlags';
-import useWordleStats from '@/hooks/useWordleStats';
-import useUnreadNotificationsCount from '@/hooks/useUnreadNotificationsCount';
+import { useNotifications } from '@/contexts/NotificationsContext';
+import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
+import useCalendarEvents from '@/hooks/useCalendarEvents';
+import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
-interface NavigationItem {
-  href?: LinkProps['href'];
+const MONTHS_SHORT = [
+  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+];
+
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function getUpcomingEvents(
+  eventsByDate: Record<string, CalendarEvent[]>,
+  limit: number,
+  visibleCalendars: boolean[],
+): CalendarEvent[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
+  const seen = new Set<string>();
+  const events: CalendarEvent[] = [];
+
+  Object.entries(eventsByDate)
+    .filter(([date]) => date >= todayStr)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .forEach(([, evts]) => {
+      evts.forEach((evt) => {
+        if (visibleCalendars[evt.calendarIndex] === false) return;
+        const key = `${evt.title}|${evt.startDate}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          events.push(evt);
+        }
+      });
+    });
+
+  return events.slice(0, limit);
+}
+
+interface QuickItem {
+  key: string;
   label: string;
   icon: ComponentProps<typeof MaterialIcons>['name'];
-  backgroundColor: string;
-  color: string;
-  onPress?: string; // Para acciones especiales como 'feedback'
+  iconBg: string;
+  iconColor: string;
+  href?: string;
+  dashed?: boolean;
 }
-
-const navigationItems: NavigationItem[] = [
-  featureFlags.tabs.cancionero && {
-    href: '/cancionero',
-    label: 'Cantoral',
-    icon: 'library-music',
-    backgroundColor: colors.warning,
-    color: '#222',
-  },
-  featureFlags.tabs.calendario && {
-    href: '/calendario',
-    label: 'Calendario',
-    icon: 'event',
-    backgroundColor: colors.info, // Morado Jubileo
-    color: '#222',
-  },
-  featureFlags.tabs.fotos && {
-    href: '/fotos',
-    label: 'Fotos',
-    icon: 'photo-library',
-    backgroundColor: colors.accent,
-    color: '#222',
-  },
-  featureFlags.tabs.comunica && {
-    href: '/comunica',
-    label: 'Comunica',
-    icon: 'chat',
-    backgroundColor: '#9D1E74dd',
-    color: '#222',
-  },
-  {
-    href: '/wordle',
-    label: 'Wordle',
-    icon: 'sports-esports',
-    backgroundColor: '#A3BD31',
-    color: '#222',
-  },
-  {
-    label: '¿Nos ayudas?',
-    icon: 'bug-report',
-    backgroundColor: '#8E9AAFdd',
-    color: '#222',
-    onPress: 'feedback', // Indicador especial para abrir feedback
-  },
-].filter(Boolean) as NavigationItem[];
-
-interface IconButtonProps {
-  color: string;
-  onPress?: () => void;
-}
-
-function NotificationsButton({ color }: IconButtonProps) {
-  const { unreadCount } = useUnreadNotificationsCount();
-
-  // No mostrar badge si no hay notificaciones sin leer
-  if (unreadCount === 0) {
-    return (
-      <Link href="/notifications" asChild>
-        <TouchableOpacity
-          style={{ padding: 8, marginLeft: 4 }}
-          accessibilityLabel="Notificaciones"
-          accessibilityRole="button"
-        >
-          <MaterialIcons name="notifications" size={24} color={color} />
-        </TouchableOpacity>
-      </Link>
-    );
-  }
-
-  // Mostrar badge con el número de notificaciones sin leer
-  const badgeText = unreadCount > 99 ? '99+' : unreadCount.toString();
-  const badgeWidth = unreadCount > 9 ? 20 : 16;
-
-  return (
-    <Link href="/notifications" asChild>
-      <TouchableOpacity
-        style={{ padding: 8, marginLeft: 4 }}
-        accessibilityLabel={`Notificaciones, ${unreadCount} sin leer`}
-        accessibilityRole="button"
-      >
-        <View>
-          <MaterialIcons name="notifications" size={24} color={color} />
-          <View
-            style={{
-              position: 'absolute',
-              right: -4,
-              top: -2,
-              backgroundColor: colors.danger,
-              borderRadius: 10,
-              minWidth: badgeWidth,
-              height: 16,
-              paddingHorizontal: unreadCount > 9 ? 4 : 0,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
-              {badgeText}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    </Link>
-  );
-}
-
-function SettingsButton({
-  color,
-  onPress,
-}: IconButtonProps & { onPress: () => void }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{ padding: 8, marginLeft: 0 }}
-      accessibilityLabel="Ajustes"
-      accessibilityRole="button"
-    >
-      <MaterialIcons name="settings" size={24} color={color} />
-    </TouchableOpacity>
-  );
-}
-
-// Decoraciones contextuales para cada botón (memoized para evitar re-renders)
-const ContextualDecoration = memo(function ContextualDecoration({
-  type,
-}: {
-  type: string;
-}) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 20,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, scaleAnim]);
-
-  const animatedStyle = {
-    opacity: fadeAnim,
-    transform: [{ scale: scaleAnim }],
-  };
-
-  switch (type) {
-    case 'Cantoral':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Notas musicales y ondas */}
-          <View style={[styles.musicNote, styles.note1]} />
-          <View style={[styles.musicNote, styles.note2]} />
-          <View style={[styles.musicWave, styles.wave1]} />
-          <View style={[styles.musicWave, styles.wave2]} />
-        </Animated.View>
-      );
-
-    case 'Calendario':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Puntos de calendario y líneas temporales */}
-          <View style={[styles.calendarDot, styles.dot1]} />
-          <View style={[styles.calendarDot, styles.dot2]} />
-          <View style={[styles.calendarDot, styles.dot3]} />
-          <View style={[styles.timelineBar, styles.timeline1]} />
-          <View style={[styles.timelineBar, styles.timeline2]} />
-        </Animated.View>
-      );
-
-    case 'Fotos':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Marcos de fotos y flashes */}
-          <View style={[styles.photoFrame, styles.frame1]} />
-          <View style={[styles.photoFrame, styles.frame2]} />
-          <View style={[styles.flashRay, styles.ray1]} />
-          <View style={[styles.flashRay, styles.ray2]} />
-        </Animated.View>
-      );
-
-    case 'Comunica':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Burbujas de chat y conexiones */}
-          <View style={[styles.chatBubble, styles.bubble1]} />
-          <View style={[styles.chatBubble, styles.bubble2]} />
-          <View style={[styles.connectionLine, styles.connection1]} />
-          <View style={[styles.connectionLine, styles.connection2]} />
-        </Animated.View>
-      );
-
-    case 'Wordle':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Cuadrados y líneas de Wordle */}
-          <View style={[styles.wordleSquare, styles.wordleCorrect]} />
-          <View style={[styles.wordleSquare, styles.wordlePresent]} />
-          <View style={[styles.wordleSquare, styles.wordleAbsent]} />
-          <View style={[styles.wordleLine, styles.wordleRow1]} />
-          <View style={[styles.wordleLine, styles.wordleRow2]} />
-        </Animated.View>
-      );
-
-    case '¿Fallitos?':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Decoración para fallitos/bugs */}
-          <View style={[styles.bugDot, styles.bug1]} />
-          <View style={[styles.bugDot, styles.bug2]} />
-          <View style={[styles.bugDot, styles.bug3]} />
-          <View style={[styles.debugLine, styles.debug1]} />
-          <View style={[styles.debugLine, styles.debug2]} />
-        </Animated.View>
-      );
-
-    default:
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Decoración minimalista para otros casos */}
-          <View style={[styles.hourglass, styles.sand1]} />
-          <View style={[styles.hourglass, styles.sand2]} />
-          <View style={[styles.dots, styles.loadingDot1]} />
-          <View style={[styles.dots, styles.loadingDot2]} />
-          <View style={[styles.dots, styles.loadingDot3]} />
-        </Animated.View>
-      );
-  }
-});
 
 export default function Home() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
+  const theme = Colors[scheme ?? 'light'];
   const featureFlags = useFeatureFlags();
-  const { stats } = useWordleStats();
-  const [pendingWordle, setPendingWordle] = useState(false);
+  const fontScale = useFontScale();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
-  const { width, height } = useWindowDimensions();
-  const containerPadding = spacing.md;
-  const gap = spacing.md;
-  const itemWidth = (width - containerPadding * 2 - gap) / 2;
-  const itemHeight = Math.min(
-    160,
-    (height - containerPadding * 2 - gap * 3) / 3,
+
+  // Primary color readable on both light and dark backgrounds
+  const accentColor = scheme === 'dark' ? colors.info : colors.primary;
+
+  // Notifications
+  const { firebaseNotifications, readIds, unreadCount } = useNotifications();
+  const latestNotification = firebaseNotifications[0] ?? null;
+  const isUnread = latestNotification
+    ? !readIds.has(latestNotification.id)
+    : false;
+
+  // Animated ping for notification badge
+  const pingAnim = useRef(new Animated.Value(1)).current;
+  const pingOpacity = useRef(new Animated.Value(0.6)).current;
+  useEffect(() => {
+    if (unreadCount > 0) {
+      const loop = Animated.loop(
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(pingAnim, {
+              toValue: 1.8,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pingAnim, {
+              toValue: 1,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(pingOpacity, {
+              toValue: 0,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pingOpacity, {
+              toValue: 0.6,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+      );
+      loop.start();
+      return () => loop.stop();
+    }
+    pingAnim.setValue(1);
+    pingOpacity.setValue(0.6);
+  }, [unreadCount, pingAnim, pingOpacity]);
+
+  // Calendar events — filtered by user's visible calendars
+  const { calendarConfigs, visibleCalendars } = useCalendarConfigs();
+  const { eventsByDate } = useCalendarEvents(calendarConfigs);
+  const upcomingEvents = useMemo(
+    () => getUpcomingEvents(eventsByDate, 2, visibleCalendars),
+    [eventsByDate, visibleCalendars],
   );
 
-  // Animaciones para cada elemento (useRef evita recreación en re-renders)
-  const itemAnimations = useRef(
-    navigationItems.map(() => ({
-      translateX: new Animated.Value(0),
-      translateY: new Animated.Value(0),
-      opacity: new Animated.Value(0),
-      scale: new Animated.Value(0.8),
-    })),
-  ).current;
+  const hasAnyVisibleCalendar =
+    calendarConfigs.length > 0 && visibleCalendars.some(Boolean);
 
-  // Función para manejar acciones especiales
-  const handleSpecialAction = (action: string) => {
-    if (action === 'feedback') {
-      setFeedbackVisible(true);
+  // Quick grid items
+  const quickItems = useMemo<QuickItem[]>(
+    () =>
+      [
+        {
+          key: 'comunica',
+          label: 'Comunica',
+          icon: 'forum' as const,
+          iconBg: scheme === 'dark' ? '#3A2200' : '#FFF0E0',
+          iconColor: '#E08A3C',
+        },
+        featureFlags.tabs.cancionero && {
+          key: 'cancionero',
+          label: 'Cantoral',
+          icon: 'music-note' as const,
+          iconBg: scheme === 'dark' ? '#1A1A3A' : '#E8E0FF',
+          iconColor: '#6366F1',
+          href: '/cancionero',
+        },
+        featureFlags.tabs.fotos && {
+          key: 'fotos',
+          label: 'Fotos',
+          icon: 'image' as const,
+          iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
+          iconColor: '#34D399',
+          href: '/fotos',
+        },
+        {
+          key: 'mas',
+          label: 'Más',
+          icon: 'add' as const,
+          iconBg: 'transparent',
+          iconColor: theme.icon,
+          href: '/mas',
+          dashed: true,
+        },
+      ].filter(Boolean) as QuickItem[],
+    [featureFlags.tabs, scheme, theme.icon],
+  );
+
+  // Hide the tab navigator header — we render our own
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
+  // Notification card content
+  const notifTitle = latestNotification
+    ? latestNotification.title
+    : 'Bienvenido a MCM App';
+  const notifBody = latestNotification
+    ? latestNotification.body
+    : 'Mantente al día con las novedades de la comunidad.';
+
+  const handleActionButton = () => {
+    const btn = latestNotification?.actionButton;
+    if (!btn) return;
+    if (btn.isInternal) {
+      router.push(btn.url as any);
+    } else {
+      Linking.openURL(btn.url).catch((e) => console.error(e));
     }
   };
 
-  // Función para mostrar toast de éxito
-  const handleFeedbackSuccess = () => {
-    setToastVisible(true);
-  };
-
-  useEffect(() => {
-    const check = () => {
-      const now = new Date();
-      let dateKey = now.toISOString().slice(0, 10);
-      let cycle: 'morning' | 'evening' = 'morning';
-      if (now.getHours() < 7) {
-        const y = new Date(now);
-        y.setDate(y.getDate() - 1);
-        dateKey = y.toISOString().slice(0, 10);
-        cycle = 'evening';
-      } else if (now.getHours() >= 19) {
-        cycle = 'evening';
-      }
-      const key = `${dateKey}_${cycle}`;
-      setPendingWordle(stats.lastPlayedKey !== key);
-    };
-    check();
-  }, [stats]);
-
-  useEffect(() => {
-    // Definir direcciones de entrada para cada elemento
-    const getInitialPosition = (index: number) => {
-      switch (index % 6) {
-        case 0:
-          return { x: -100, y: 0 }; // Desde la izquierda
-        case 1:
-          return { x: 100, y: 0 }; // Desde la derecha
-        case 2:
-          return { x: -80, y: -50 }; // Desde izquierda-arriba
-        case 3:
-          return { x: 80, y: -50 }; // Desde derecha-arriba
-        case 4:
-          return { x: -60, y: 50 }; // Desde izquierda-abajo
-        case 5:
-          return { x: 60, y: 50 }; // Desde derecha-abajo
-        default:
-          return { x: 0, y: -80 }; // Desde arriba
-      }
-    };
-
-    // Establecer posiciones iniciales
-    itemAnimations.forEach((anim, index) => {
-      const { x, y } = getInitialPosition(index);
-      anim.translateX.setValue(x);
-      anim.translateY.setValue(y);
-      anim.opacity.setValue(0);
-      anim.scale.setValue(0.8);
-    });
-
-    // Animar entrada con delay escalonado
-    const animations = itemAnimations.map((anim, index) =>
-      Animated.parallel([
-        Animated.timing(anim.translateX, {
-          toValue: 0,
-          duration: 400,
-          delay: index * 80, // Delay muy breve entre elementos
-          useNativeDriver: true,
-        }),
-        Animated.timing(anim.translateY, {
-          toValue: 0,
-          duration: 400,
-          delay: index * 80,
-          useNativeDriver: true,
-        }),
-        Animated.timing(anim.opacity, {
-          toValue: 1,
-          duration: 300,
-          delay: index * 80,
-          useNativeDriver: true,
-        }),
-        Animated.spring(anim.scale, {
-          toValue: 1,
-          tension: 100,
-          friction: 8,
-          delay: index * 80,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    Animated.stagger(0, animations).start();
-  }, [itemAnimations]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={[styles.headerButtons, { paddingRight: spacing.md }]}>
-          <SettingsButton
-            color={Colors[scheme ?? 'light'].icon}
-            onPress={() => setSettingsVisible(true)}
-          />
-          {featureFlags.showNotificationsIcon && (
-            <NotificationsButton color={Colors[scheme ?? 'light'].icon} />
-          )}
-        </View>
-      ),
-      title: 'Inicio',
-    });
-  }, [navigation, scheme, featureFlags.showNotificationsIcon]);
-
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
+      edges={['top']}
+    >
       <SettingsPanel
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
       />
-      <FlatList
-        style={{ backgroundColor: Colors[scheme ?? 'light'].background }}
-        data={navigationItems}
-        keyExtractor={(_, index) => index.toString()}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={[
-          styles.container,
-          { padding: containerPadding },
-        ]}
-        renderItem={({ item, index }) => {
-          const animStyle = itemAnimations[index]
-            ? {
-                opacity: itemAnimations[index].opacity,
-                transform: [
-                  { translateX: itemAnimations[index].translateX },
-                  { translateY: itemAnimations[index].translateY },
-                  { scale: itemAnimations[index].scale },
-                ],
-              }
-            : {};
-
-          const content = (
-            <Animated.View
-              style={[
-                styles.item,
-                {
-                  backgroundColor: item.backgroundColor, // Color principal
-                  width: itemWidth,
-                  height: itemHeight,
-                },
-                animStyle,
-              ]}
-            >
-              {/* Overlay sutil para dar profundidad */}
-              <View
-                style={[
-                  StyleSheet.absoluteFillObject,
-                  {
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    borderRadius: 16,
-                  },
-                ]}
-              />
-              <ContextualDecoration type={item.label} />
-              <View>
-                <MaterialIcons
-                  name={item.icon}
-                  size={48}
-                  color={item.color}
-                  style={styles.icon}
-                />
-                {item.label === 'Wordle' && pendingWordle && (
-                  <View
-                    style={{
-                      position: 'absolute',
-                      top: -4,
-                      right: -4,
-                      backgroundColor: colors.danger,
-                      width: 12,
-                      height: 12,
-                      borderRadius: 6,
-                    }}
-                  />
-                )}
-              </View>
-              <Text style={[styles.label, { color: item.color }]}>
-                {item.label}
-              </Text>
-            </Animated.View>
-          );
-          return item.href ? (
-            <Link href={item.href} asChild>
-              <TouchableOpacity
-                style={styles.itemWrapper}
-                accessibilityLabel={item.label}
-                accessibilityRole="button"
-              >
-                {content}
-              </TouchableOpacity>
-            </Link>
-          ) : item.onPress ? (
-            <TouchableOpacity
-              style={styles.itemWrapper}
-              onPress={() => handleSpecialAction(item.onPress!)}
-              accessibilityLabel={item.label}
-              accessibilityRole="button"
-            >
-              {content}
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.itemWrapper}>{content}</View>
-          );
-        }}
-      />
-
-      {/* Versión de la app */}
-      <VersionDisplay style={styles.versionContainer} />
-
-      {/* Modal de feedback */}
       <AppFeedbackModal
         visible={feedbackVisible}
         onClose={() => setFeedbackVisible(false)}
-        onSuccess={handleFeedbackSuccess}
+        onSuccess={() => setToastVisible(true)}
       />
-
-      {/* Toast de éxito para feedback */}
       <Toast
         visible={toastVisible}
         message="¡Gracias! Tu comentario ha sido enviado correctamente. Nos ayudas a mejorar la app 🙌"
@@ -538,434 +238,719 @@ export default function Home() {
         duration={4000}
         onDismiss={() => setToastVisible(false)}
       />
+
+      {/* ── Custom Header ── */}
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
+        <View style={styles.headerLeft}>
+          <View style={styles.logoBox}>
+            <MaterialIcons name="device-hub" size={20} color="white" />
+          </View>
+          <Text style={[styles.logoText, { color: theme.text }]}>MCM App</Text>
+        </View>
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={() => setSettingsVisible(true)}
+            style={styles.headerIconBtn}
+            accessibilityLabel="Perfil y ajustes"
+            accessibilityRole="button"
+          >
+            <MaterialIcons
+              name="account-circle"
+              size={26}
+              color={theme.icon}
+            />
+          </TouchableOpacity>
+
+          {featureFlags.showNotificationsIcon && (
+            <TouchableOpacity
+              style={styles.headerIconBtn}
+              onPress={() => router.push('/notifications')}
+              accessibilityLabel={
+                unreadCount > 0
+                  ? `Notificaciones, ${unreadCount} sin leer`
+                  : 'Notificaciones'
+              }
+              accessibilityRole="button"
+            >
+              <View style={styles.bellWrap}>
+                <MaterialIcons
+                  name="notifications"
+                  size={24}
+                  color={theme.icon}
+                />
+                {unreadCount > 0 && (
+                  <View style={styles.dotWrap}>
+                    <Animated.View
+                      style={[
+                        styles.dotPing,
+                        {
+                          transform: [{ scale: pingAnim }],
+                          opacity: pingOpacity,
+                        },
+                      ]}
+                    />
+                    <View style={styles.dot} />
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      <ScrollView
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Novedades ── */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={StyleSheet.flatten([
+              styles.notifCard,
+              {
+                backgroundColor: scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                borderColor:
+                  scheme === 'dark'
+                    ? 'rgba(255,255,255,0.09)'
+                    : 'rgba(0,0,0,0.07)',
+              },
+            ])}
+            onPress={() => router.push('/notifications')}
+            activeOpacity={0.78}
+            accessibilityLabel={`${notifTitle}. Toca para leer`}
+            accessibilityRole="button"
+          >
+            {/* Top row: content + icon */}
+            <View style={styles.notifRow}>
+              {/* Content */}
+              <View style={styles.notifContent}>
+                {isUnread && (
+                  <View
+                    style={[
+                      styles.newBadge,
+                      { backgroundColor: accentColor + '15' },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.newBadgeText, { color: accentColor }]}
+                    >
+                      NUEVO
+                    </Text>
+                  </View>
+                )}
+                <Text
+                  style={[
+                    styles.notifTitle,
+                    {
+                      color: theme.text,
+                      fontSize: 16 * fontScale,
+                    },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {notifTitle}
+                </Text>
+                <Text
+                  style={[
+                    styles.notifDescription,
+                    {
+                      color: theme.icon,
+                      fontSize: 13 * fontScale,
+                    },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {notifBody}
+                </Text>
+              </View>
+
+              {/* Megaphone icon — right */}
+              <View
+                style={[
+                  styles.notifIconCircle,
+                  {
+                    backgroundColor:
+                      scheme === 'dark'
+                        ? accentColor + '20'
+                        : accentColor + '12',
+                  },
+                ]}
+              >
+                <MaterialIcons name="campaign" size={26} color={accentColor} />
+              </View>
+            </View>
+
+            {/* CTA row */}
+            <View style={styles.notifCtaRow}>
+              {latestNotification?.actionButton ? (
+                <TouchableOpacity
+                  style={[
+                    styles.actionBtn,
+                    { backgroundColor: accentColor + '12' },
+                  ]}
+                  onPress={handleActionButton}
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={[styles.actionBtnText, { color: accentColor }]}
+                  >
+                    {latestNotification.actionButton.text ?? 'Voy a verlo'}
+                  </Text>
+                  <MaterialIcons
+                    name={
+                      latestNotification.actionButton.isInternal
+                        ? 'arrow-forward'
+                        : 'open-in-new'
+                    }
+                    size={14}
+                    color={accentColor}
+                  />
+                </TouchableOpacity>
+              ) : (
+                <View
+                  style={[
+                    styles.arrowPill,
+                    { backgroundColor: accentColor + '10' },
+                  ]}
+                >
+                  <MaterialIcons name="east" size={14} color={accentColor} />
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Accesos rápidos ── */}
+        <View style={styles.section}>
+          <View style={styles.quickGrid}>
+            {quickItems.map((item) => (
+              <TouchableOpacity
+                key={item.key}
+                style={styles.quickItem}
+                accessibilityLabel={item.label}
+                accessibilityRole="button"
+                onPress={() => {
+                  if (item.href) router.push(item.href as any);
+                }}
+                activeOpacity={item.href ? 0.65 : 1}
+              >
+                <View
+                  style={StyleSheet.flatten([
+                    styles.quickIconCircle,
+                    { backgroundColor: item.iconBg },
+                    item.dashed
+                      ? {
+                          borderWidth: 1.5,
+                          borderStyle: 'dashed',
+                          borderColor: theme.icon + '40',
+                        }
+                      : undefined,
+                  ])}
+                >
+                  <MaterialIcons
+                    name={item.icon}
+                    size={24}
+                    color={item.iconColor}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.quickLabel,
+                    {
+                      color: theme.icon,
+                      fontSize: 10 * fontScale,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* ── Próximos eventos ── */}
+        <View style={styles.section}>
+          <Text
+            style={[
+              styles.sectionLabel,
+              {
+                color: theme.icon,
+                fontSize: 11 * fontScale,
+              },
+            ]}
+          >
+            PRÓXIMOS EVENTOS
+          </Text>
+
+          {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
+            /* User has calendars but all hidden */
+            <TouchableOpacity
+              style={[
+                styles.emptyEventsCard,
+                {
+                  backgroundColor: scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                  borderColor:
+                    scheme === 'dark'
+                      ? 'rgba(255,255,255,0.08)'
+                      : 'rgba(0,0,0,0.06)',
+                },
+              ]}
+              onPress={() => router.push('/calendario')}
+              accessibilityRole="button"
+            >
+              <MaterialIcons
+                name="event-note"
+                size={28}
+                color={theme.icon}
+                style={{ opacity: 0.5 }}
+              />
+              <Text
+                style={[
+                  styles.emptyEventsTitle,
+                  { color: theme.text, fontSize: 14 * fontScale },
+                ]}
+              >
+                Activa algún calendario
+              </Text>
+              <Text
+                style={[
+                  styles.emptyEventsBody,
+                  { color: theme.icon, fontSize: 12 * fontScale },
+                ]}
+              >
+                Selecciona un calendario para ver los próximos eventos aquí.
+              </Text>
+            </TouchableOpacity>
+          ) : upcomingEvents.length > 0 ? (
+            upcomingEvents.map((evt, idx) => {
+              const evtDate = parseLocalDate(evt.startDate);
+              const calColor =
+                calendarConfigs[evt.calendarIndex]?.color ?? accentColor;
+              const calName = calendarConfigs[evt.calendarIndex]?.name;
+              return (
+                <TouchableOpacity
+                  key={`${evt.title}|${evt.startDate}|${idx}`}
+                  style={StyleSheet.flatten([
+                    styles.eventCard,
+                    {
+                      backgroundColor:
+                        scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                      borderColor:
+                        scheme === 'dark'
+                          ? 'rgba(255,255,255,0.09)'
+                          : 'rgba(0,0,0,0.06)',
+                      borderLeftColor: calColor,
+                    },
+                  ])}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/calendario',
+                      params: { date: evt.startDate },
+                    } as any)
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`Evento: ${evt.title}`}
+                >
+                  <View
+                    style={[
+                      styles.eventDateBox,
+                      { backgroundColor: calColor + '18' },
+                    ]}
+                  >
+                    <Text style={[styles.eventMonth, { color: calColor }]}>
+                      {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
+                    </Text>
+                    <Text style={[styles.eventDay, { color: calColor }]}>
+                      {evtDate.getDate()}
+                    </Text>
+                  </View>
+
+                  <View style={styles.eventInfo}>
+                    <Text
+                      style={[
+                        styles.eventTitle,
+                        {
+                          color: theme.text,
+                          fontSize: 13 * fontScale,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {evt.title}
+                    </Text>
+                    {calName && (
+                      <View
+                        style={[
+                          styles.calBadge,
+                          { backgroundColor: calColor + '18' },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.calBadgeText,
+                            { color: calColor },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {calName}
+                        </Text>
+                      </View>
+                    )}
+                    {evt.location ? (
+                      <View style={styles.eventMeta}>
+                        <MaterialIcons
+                          name="schedule"
+                          size={11}
+                          color={theme.icon}
+                        />
+                        <Text
+                          style={[
+                            styles.eventMetaText,
+                            {
+                              color: theme.icon,
+                              fontSize: 11 * fontScale,
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {evt.location}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={20}
+                    color={theme.icon}
+                    style={{ opacity: 0.3 }}
+                  />
+                </TouchableOpacity>
+              );
+            })
+          ) : (
+            /* No upcoming events */
+            <Text
+              style={[
+                styles.emptyEvents,
+                { color: theme.icon, fontSize: 13 * fontScale },
+              ]}
+            >
+              Sin eventos próximos
+            </Text>
+          )}
+
+          <TouchableOpacity
+            style={StyleSheet.flatten([
+              styles.calendarButton,
+              { borderColor: accentColor + '30' },
+            ])}
+            onPress={() => router.push('/calendario')}
+            accessibilityRole="button"
+          >
+            <Text
+              style={[
+                styles.calendarButtonText,
+                { color: accentColor, fontSize: 14 * fontScale },
+              ]}
+            >
+              Ver calendario
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Pie ── */}
+        <View style={styles.footer}>
+          <VersionDisplay />
+          <TouchableOpacity
+            onPress={() => setFeedbackVisible(true)}
+            style={styles.feedbackLink}
+          >
+            <Text style={[styles.feedbackText, { color: theme.icon }]}>
+              ¿Algún fallo? Cuéntanoslo
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.tagline, { color: theme.icon }]}>
+            Movimiento Consolación para el Mundo
+          </Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-interface Styles {
-  container: ViewStyle;
-  row: ViewStyle;
-  itemWrapper: ViewStyle;
-  item: ViewStyle;
-  icon: TextStyle;
-  label: TextStyle;
-  headerButtons: ViewStyle;
-  circle: ViewStyle;
-  circleSmall: ViewStyle;
-  circleLarge: ViewStyle;
-  // Decoraciones contextuales
-  decorationContainer: ViewStyle;
-  // Cantoral - notas musicales
-  musicNote: ViewStyle;
-  note1: ViewStyle;
-  note2: ViewStyle;
-  musicWave: ViewStyle;
-  wave1: ViewStyle;
-  wave2: ViewStyle;
-  // Calendario - puntos y líneas
-  calendarDot: ViewStyle;
-  dot1: ViewStyle;
-  dot2: ViewStyle;
-  dot3: ViewStyle;
-  timelineBar: ViewStyle;
-  timeline1: ViewStyle;
-  timeline2: ViewStyle;
-  // Fotos - marcos y flashes
-  photoFrame: ViewStyle;
-  frame1: ViewStyle;
-  frame2: ViewStyle;
-  flashRay: ViewStyle;
-  ray1: ViewStyle;
-  ray2: ViewStyle;
-  // Comunica - burbujas y conexiones
-  chatBubble: ViewStyle;
-  bubble1: ViewStyle;
-  bubble2: ViewStyle;
-  connectionLine: ViewStyle;
-  connection1: ViewStyle;
-  connection2: ViewStyle;
-  // Wordle - cuadrados y líneas
-  wordleSquare: ViewStyle;
-  wordleCorrect: ViewStyle;
-  wordlePresent: ViewStyle;
-  wordleAbsent: ViewStyle;
-  wordleLine: ViewStyle;
-  wordleRow1: ViewStyle;
-  wordleRow2: ViewStyle;
-  // Fallitos - bugs y debug
-  bugDot: ViewStyle;
-  bug1: ViewStyle;
-  bug2: ViewStyle;
-  bug3: ViewStyle;
-  debugLine: ViewStyle;
-  debug1: ViewStyle;
-  debug2: ViewStyle;
-  // Próximamente - reloj de arena
-  hourglass: ViewStyle;
-  sand1: ViewStyle;
-  sand2: ViewStyle;
-  dots: ViewStyle;
-  loadingDot1: ViewStyle;
-  loadingDot2: ViewStyle;
-  loadingDot3: ViewStyle;
-  versionContainer: ViewStyle;
-}
+const styles = StyleSheet.create({
+  safeArea: { flex: 1 } as ViewStyle,
 
-const styles = StyleSheet.create<Styles>({
-  container: {
-    padding: spacing.md,
-  },
-  row: {
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  itemWrapper: {
-    flex: 1,
-    marginHorizontal: spacing.sm / 2,
-  },
-  item: {
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  icon: {
-    marginBottom: spacing.sm,
-    zIndex: 2,
-  },
-  label: {
-    ...(typography.button as TextStyle),
-    fontWeight: 'bold',
-    textAlign: 'center',
-    zIndex: 2,
-  },
-  headerButtons: {
+  // ── Header ──
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  circle: {
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  } as ViewStyle,
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  } as ViewStyle,
+  logoBox: {
+    backgroundColor: colors.primary,
+    padding: 8,
+    borderRadius: 10,
+  } as ViewStyle,
+  logoText: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  } as TextStyle,
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  } as ViewStyle,
+  headerIconBtn: { padding: 8, marginLeft: 4 } as ViewStyle,
+  bellWrap: { position: 'relative' } as ViewStyle,
+  dotWrap: {
     position: 'absolute',
-    opacity: 0.2,
-    backgroundColor: '#ffffff',
-  },
-  circleSmall: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    top: 8,
-    left: 8,
-  },
-  circleLarge: {
-    width: 40,
-    height: 40,
+    top: -1,
+    right: -1,
+    width: 12,
+    height: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  dotPing: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+  } as ViewStyle,
+  dot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  } as ViewStyle,
+
+  // ── ScrollView ──
+  scrollContent: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xl,
+  } as ViewStyle,
+  section: { marginBottom: spacing.lg + 4 } as ViewStyle,
+  sectionLabel: {
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
+  } as TextStyle,
+
+  // ── Notification card ──
+  notifCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: spacing.md + 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 3,
+  } as ViewStyle,
+  notifRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm + 2,
+  } as ViewStyle,
+  notifContent: {
+    flex: 1,
+    gap: 5,
+  } as ViewStyle,
+  newBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  } as ViewStyle,
+  newBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  } as TextStyle,
+  notifTitle: {
+    fontWeight: '700',
+    lineHeight: 22,
+  } as TextStyle,
+  notifDescription: {
+    lineHeight: 19,
+  } as TextStyle,
+  notifIconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+    marginTop: 2,
+  } as ViewStyle,
+  notifCtaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm + 2,
+  } as ViewStyle,
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 20,
-    bottom: 8,
-    right: 8,
-  },
+  } as ViewStyle,
+  actionBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  } as TextStyle,
+  arrowPill: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  } as ViewStyle,
 
-  // Decoraciones contextuales
-  decorationContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
+  // ── Quick grid ──
+  quickGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  } as ViewStyle,
+  quickItem: {
+    alignItems: 'center',
+    gap: 7,
+    width: 70,
+  } as ViewStyle,
+  quickIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  } as ViewStyle,
+  quickLabel: {
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    textAlign: 'center',
+  } as TextStyle,
 
-  // Cantoral - notas musicales
-  musicNote: {
-    position: 'absolute',
-    opacity: 0.25,
-    backgroundColor: '#333',
-    borderRadius: 6,
-  },
-  note1: {
-    width: 6,
-    height: 6,
-    top: 14,
-    left: 14,
-  },
-  note2: {
-    width: 4,
-    height: 4,
-    bottom: 20,
-    right: 16,
-    backgroundColor: '#555',
-  },
-  musicWave: {
-    position: 'absolute',
-    opacity: 0.2,
-    backgroundColor: 'transparent',
-    borderTopWidth: 2,
-    borderTopColor: '#333',
-    borderStyle: 'solid',
-  },
-  wave1: {
-    width: 20,
-    height: 2,
-    top: 18,
-    right: 12,
-    borderRadius: 1,
-  },
-  wave2: {
-    width: 16,
-    height: 2,
-    bottom: 24,
-    left: 14,
-    borderRadius: 1,
-  },
+  // ── Event cards ──
+  eventCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderLeftWidth: 4,
+    padding: spacing.sm + 4,
+    marginBottom: spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  } as ViewStyle,
+  eventDateBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+    flexShrink: 0,
+  } as ViewStyle,
+  eventMonth: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  } as TextStyle,
+  eventDay: {
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 18,
+  } as TextStyle,
+  eventInfo: {
+    flex: 1,
+    overflow: 'hidden',
+    gap: 3,
+  } as ViewStyle,
+  eventTitle: {
+    fontWeight: '700',
+  } as TextStyle,
+  calBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    maxWidth: 110,
+  } as ViewStyle,
+  calBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.2,
+  } as TextStyle,
+  eventMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  } as ViewStyle,
+  eventMetaText: { flex: 1 } as TextStyle,
+  emptyEvents: {
+    textAlign: 'center',
+    opacity: 0.6,
+    paddingVertical: spacing.md,
+  } as TextStyle,
+  emptyEventsCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: spacing.lg,
+    marginBottom: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.xs,
+  } as ViewStyle,
+  emptyEventsTitle: {
+    fontWeight: '700',
+    textAlign: 'center',
+  } as TextStyle,
+  emptyEventsBody: {
+    textAlign: 'center',
+    lineHeight: 18,
+    opacity: 0.7,
+  } as TextStyle,
+  calendarButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    paddingVertical: 11,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  } as ViewStyle,
+  calendarButtonText: {
+    fontWeight: '700',
+  } as TextStyle,
 
-  // Calendario - puntos y líneas
-  calendarDot: {
-    position: 'absolute',
+  // ── Footer ──
+  footer: { alignItems: 'center', paddingTop: spacing.xs } as ViewStyle,
+  feedbackLink: { padding: spacing.sm, marginTop: 4 } as ViewStyle,
+  feedbackText: { fontSize: 12, opacity: 0.6 } as TextStyle,
+  tagline: {
+    fontSize: 11,
     opacity: 0.3,
-    backgroundColor: '#673AB7',
-    borderRadius: 3,
-    width: 6,
-    height: 6,
-  },
-  dot1: {
-    top: 16,
-    left: 16,
-  },
-  dot2: {
-    top: 20,
-    right: 20,
-    backgroundColor: '#9C27B0',
-  },
-  dot3: {
-    bottom: 20,
-    left: 20,
-    backgroundColor: '#3F51B5',
-  },
-  timelineBar: {
-    position: 'absolute',
-    opacity: 0.2,
-    backgroundColor: '#673AB7',
-    borderRadius: 1,
-  },
-  timeline1: {
-    width: 2,
-    height: 20,
-    top: 12,
-    right: 14,
-  },
-  timeline2: {
-    width: 16,
-    height: 2,
-    bottom: 16,
-    right: 12,
-  },
-
-  // Fotos - marcos y flashes
-  photoFrame: {
-    position: 'absolute',
-    opacity: 0.25,
-    borderWidth: 2,
-    borderColor: '#FFF',
-    backgroundColor: 'transparent',
-  },
-  frame1: {
-    width: 16,
-    height: 12,
-    top: 12,
-    left: 12,
-    borderRadius: 2,
-  },
-  frame2: {
-    width: 12,
-    height: 10,
-    bottom: 16,
-    right: 14,
-    borderRadius: 1,
-  },
-  flashRay: {
-    position: 'absolute',
-    opacity: 0.3,
-    backgroundColor: '#FFEB3B',
-    transform: [{ rotate: '45deg' }],
-  },
-  ray1: {
-    width: 12,
-    height: 2,
-    top: 20,
-    right: 20,
-    borderRadius: 1,
-  },
-  ray2: {
-    width: 8,
-    height: 1,
-    bottom: 24,
-    left: 18,
-    borderRadius: 0.5,
-  },
-
-  // Comunica - burbujas y conexiones
-  chatBubble: {
-    position: 'absolute',
-    opacity: 0.25,
-    backgroundColor: '#FFF',
-    borderRadius: 6,
-  },
-  bubble1: {
-    width: 12,
-    height: 8,
-    top: 14,
-    left: 14,
-  },
-  bubble2: {
-    width: 8,
-    height: 6,
-    bottom: 18,
-    right: 16,
-  },
-  connectionLine: {
-    position: 'absolute',
-    opacity: 0.2,
-    backgroundColor: '#FFF',
-    borderRadius: 1,
-  },
-  connection1: {
-    width: 2,
-    height: 16,
-    top: 16,
-    right: 12,
-  },
-  connection2: {
-    width: 14,
-    height: 2,
-    bottom: 20,
-    left: 12,
-  },
-
-  // Wordle - cuadrados y líneas
-  wordleSquare: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 2,
-    opacity: 0.3,
-  },
-  wordleCorrect: {
-    backgroundColor: '#6AAA64',
-    top: 14,
-    left: 14,
-  },
-  wordlePresent: {
-    backgroundColor: '#C9B458',
-    top: 16,
-    right: 18,
-  },
-  wordleAbsent: {
-    backgroundColor: '#787C7E',
-    bottom: 18,
-    left: 16,
-  },
-  wordleLine: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 1,
-    opacity: 0.4,
-  },
-  wordleRow1: {
-    width: 20,
-    height: 2,
-    top: 20,
-    right: 12,
-  },
-  wordleRow2: {
-    width: 16,
-    height: 2,
-    bottom: 22,
-    right: 14,
-  },
-
-  // Fallitos - bugs y debug
-  bugDot: {
-    position: 'absolute',
-    opacity: 0.3,
-    backgroundColor: '#666',
-    borderRadius: 2,
-    width: 4,
-    height: 4,
-  },
-  bug1: {
-    top: 14,
-    left: 14,
-  },
-  bug2: {
-    top: 20,
-    right: 20,
-    backgroundColor: '#888',
-  },
-  bug3: {
-    bottom: 18,
-    left: 18,
-    backgroundColor: '#999',
-  },
-  debugLine: {
-    position: 'absolute',
-    opacity: 0.2,
-    backgroundColor: '#666',
-    borderRadius: 1,
-  },
-  debug1: {
-    width: 2,
-    height: 12,
-    top: 16,
-    right: 16,
-  },
-  debug2: {
-    width: 10,
-    height: 2,
-    bottom: 22,
-    right: 14,
-  },
-
-  // Próximamente - reloj de arena
-  hourglass: {
-    position: 'absolute',
-    opacity: 0.25,
-    backgroundColor: '#FFF',
-    borderRadius: 1,
-  },
-  sand1: {
-    width: 6,
-    height: 3,
-    top: 16,
-    left: 16,
-  },
-  sand2: {
-    width: 4,
-    height: 2,
-    bottom: 20,
-    right: 18,
-  },
-  dots: {
-    position: 'absolute',
-    opacity: 0.3,
-    backgroundColor: '#FFF',
-    borderRadius: 2,
-    width: 4,
-    height: 4,
-  },
-  loadingDot1: {
-    top: 20,
-    right: 24,
-  },
-  loadingDot2: {
-    top: 20,
-    right: 16,
-    opacity: 0.2,
-  },
-  loadingDot3: {
-    top: 20,
-    right: 8,
-    opacity: 0.1,
-  },
-  versionContainer: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
-  },
+    marginTop: spacing.sm,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
+  } as TextStyle,
 });

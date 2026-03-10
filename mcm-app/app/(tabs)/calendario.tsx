@@ -1,5 +1,5 @@
 // app/(tabs)/calendario.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -31,6 +31,7 @@ import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
+import { useLocalSearchParams } from 'expo-router';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -78,6 +79,7 @@ LocaleConfig.defaultLocale = 'es';
 export default function Calendario() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const params = useLocalSearchParams<{ date?: string }>();
 
   const {
     calendarConfigs,
@@ -91,6 +93,12 @@ export default function Calendario() {
     new Date().toISOString().split('T')[0],
   );
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
+
+  useEffect(() => {
+    if (params.date && typeof params.date === 'string') {
+      setSelectedDate(params.date);
+    }
+  }, [params.date]);
   const { eventsByDate, loading: eventsLoading } =
     useCalendarEvents(calendarConfigs);
 
