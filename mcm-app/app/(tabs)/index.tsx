@@ -1,6 +1,8 @@
 import React, {
   useLayoutEffect,
   ComponentProps,
+  useRef,
+  useEffect,
   useState,
   useMemo,
 } from 'react';
@@ -10,6 +12,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Animated,
   ViewStyle,
   TextStyle,
 } from 'react-native';
@@ -92,6 +95,46 @@ export default function Home() {
     ? !readIds.has(latestNotification.id)
     : false;
 
+  // Animated ping for notification badge
+  const pingAnim = useRef(new Animated.Value(1)).current;
+  const pingOpacity = useRef(new Animated.Value(0.6)).current;
+  useEffect(() => {
+    if (unreadCount > 0) {
+      const loop = Animated.loop(
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(pingAnim, {
+              toValue: 1.8,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pingAnim, {
+              toValue: 1,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(pingOpacity, {
+              toValue: 0,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pingOpacity, {
+              toValue: 0.6,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+      );
+      loop.start();
+      return () => loop.stop();
+    }
+    pingAnim.setValue(1);
+    pingOpacity.setValue(0.6);
+  }, [unreadCount, pingAnim, pingOpacity]);
+
   // Calendar events
   const { calendarConfigs } = useCalendarConfigs();
   const { eventsByDate } = useCalendarEvents(calendarConfigs);
@@ -140,72 +183,19 @@ export default function Home() {
     [featureFlags.tabs, scheme, theme.icon],
   );
 
-  // Notification content (always show something)
+  // Hide the tab navigator header — we render our own below
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
+  // Notification display content
   const notifTitle = latestNotification
     ? latestNotification.title
     : 'Bienvenido a MCM App';
   const notifBody = latestNotification
     ? latestNotification.body
     : 'Mantente al día con las novedades de la comunidad.';
-
-  // Header setup
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <View style={[styles.headerLeft, { paddingLeft: spacing.md }]}>
-          <View style={styles.logoBox}>
-            <MaterialIcons name="device-hub" size={20} color="white" />
-          </View>
-          <Text style={[styles.logoText, { color: theme.text }]}>MCM App</Text>
-        </View>
-      ),
-      headerTitle: '',
-      headerRight: () => (
-        <View style={[styles.headerButtons, { paddingRight: spacing.md }]}>
-          <TouchableOpacity
-            onPress={() => setSettingsVisible(true)}
-            style={styles.headerIconBtn}
-            accessibilityLabel="Perfil y ajustes"
-            accessibilityRole="button"
-          >
-            <MaterialIcons
-              name="account-circle"
-              size={26}
-              color={theme.icon}
-            />
-          </TouchableOpacity>
-          {featureFlags.showNotificationsIcon && (
-            <Link href="/notifications" asChild>
-              <TouchableOpacity
-                style={styles.headerIconBtn}
-                accessibilityLabel={
-                  unreadCount > 0
-                    ? `Notificaciones, ${unreadCount} sin leer`
-                    : 'Notificaciones'
-                }
-                accessibilityRole="button"
-              >
-                <View>
-                  <MaterialIcons
-                    name="notifications"
-                    size={24}
-                    color={theme.icon}
-                  />
-                  {unreadCount > 0 && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            </Link>
-          )}
-        </View>
-      ),
-    });
-  }, [navigation, theme, featureFlags.showNotificationsIcon, unreadCount]);
+  const notifCta = latestNotification ? 'Leer notificación' : 'Ver novedades';
 
   return (
     <SafeAreaView
@@ -229,12 +219,77 @@ export default function Home() {
         onDismiss={() => setToastVisible(false)}
       />
 
+      {/* ── Custom Header ── */}
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
+        {/* Left: logo */}
+        <View style={styles.headerLeft}>
+          <View style={styles.logoBox}>
+            <MaterialIcons name="device-hub" size={20} color="white" />
+          </View>
+          <Text style={[styles.logoText, { color: theme.text }]}>MCM App</Text>
+        </View>
+
+        {/* Right: user + bell */}
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={() => setSettingsVisible(true)}
+            style={styles.headerIconBtn}
+            accessibilityLabel="Perfil y ajustes"
+            accessibilityRole="button"
+          >
+            <MaterialIcons
+              name="account-circle"
+              size={26}
+              color={theme.icon}
+            />
+          </TouchableOpacity>
+
+          {featureFlags.showNotificationsIcon && (
+            <Link href="/notifications" asChild>
+              <TouchableOpacity
+                style={styles.headerIconBtn}
+                accessibilityLabel={
+                  unreadCount > 0
+                    ? `Notificaciones, ${unreadCount} sin leer`
+                    : 'Notificaciones'
+                }
+                accessibilityRole="button"
+              >
+                <View style={styles.bellWrap}>
+                  <MaterialIcons
+                    name="notifications"
+                    size={24}
+                    color={theme.icon}
+                  />
+                  {unreadCount > 0 && (
+                    <View style={styles.dotWrap}>
+                      {/* Animated ping ring */}
+                      <Animated.View
+                        style={[
+                          styles.dotPing,
+                          {
+                            transform: [{ scale: pingAnim }],
+                            opacity: pingOpacity,
+                          },
+                        ]}
+                      />
+                      {/* Solid dot */}
+                      <View style={styles.dot} />
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </Link>
+          )}
+        </View>
+      </View>
+
       <ScrollView
         style={{ backgroundColor: theme.background }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Novedades — siempre visible */}
+        {/* ── Novedades — siempre visible ── */}
         <View style={styles.section}>
           <Link href="/notifications" asChild>
             <TouchableOpacity
@@ -242,13 +297,34 @@ export default function Home() {
                 styles.notifCard,
                 {
                   backgroundColor: theme.background,
-                  borderColor: theme.icon + '20',
+                  borderColor: theme.icon + '1A',
                 },
               ])}
-              accessibilityLabel={`Novedad: ${notifTitle}. Toca para ver notificaciones`}
+              accessibilityLabel={`${notifTitle}. Toca para leer`}
               accessibilityRole="button"
+              activeOpacity={0.75}
             >
-              <View style={styles.notifContent}>
+              {/* Megaphone icon — top right */}
+              <View
+                style={[
+                  styles.notifIconCircle,
+                  {
+                    backgroundColor:
+                      scheme === 'dark'
+                        ? colors.primary + '22'
+                        : '#EAF4FE',
+                  },
+                ]}
+              >
+                <MaterialIcons
+                  name="campaign"
+                  size={26}
+                  color={colors.primary}
+                />
+              </View>
+
+              {/* Content */}
+              <View style={styles.notifBody}>
                 {isUnread && (
                   <View style={styles.newBadge}>
                     <Text style={styles.newBadgeText}>NUEVO</Text>
@@ -261,32 +337,36 @@ export default function Home() {
                   {notifTitle}
                 </Text>
                 <Text
-                  style={[styles.notifBody, { color: theme.icon }]}
+                  style={[styles.notifDescription, { color: theme.icon }]}
                   numberOfLines={2}
                 >
                   {notifBody}
                 </Text>
-              </View>
-              <View
-                style={[
-                  styles.notifIconCircle,
-                  {
-                    backgroundColor:
-                      scheme === 'dark' ? colors.primary + '25' : '#E8F4FD',
-                  },
-                ]}
-              >
-                <MaterialIcons
-                  name="campaign"
-                  size={28}
-                  color={colors.primary}
-                />
+
+                {/* CTA pill */}
+                <View style={styles.ctaRow}>
+                  <View
+                    style={[
+                      styles.ctaPill,
+                      { backgroundColor: colors.primary + '12' },
+                    ]}
+                  >
+                    <Text style={[styles.ctaText, { color: colors.primary }]}>
+                      {notifCta}
+                    </Text>
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={13}
+                      color={colors.primary}
+                    />
+                  </View>
+                </View>
               </View>
             </TouchableOpacity>
           </Link>
         </View>
 
-        {/* Accesos rápidos — iconos circulares */}
+        {/* ── Accesos rápidos ── */}
         <View style={styles.section}>
           <View style={styles.quickGrid}>
             {quickItems.map((item) => (
@@ -298,18 +378,20 @@ export default function Home() {
                 onPress={() => {
                   if (item.href) router.push(item.href as any);
                 }}
-                activeOpacity={item.href ? 0.6 : 1}
+                activeOpacity={item.href ? 0.65 : 1}
               >
                 <View
-                  style={[
+                  style={StyleSheet.flatten([
                     styles.quickIconCircle,
                     { backgroundColor: item.iconBg },
-                    item.dashed && {
-                      borderWidth: 1.5,
-                      borderStyle: 'dashed',
-                      borderColor: theme.icon + '40',
-                    },
-                  ]}
+                    item.dashed
+                      ? {
+                          borderWidth: 1.5,
+                          borderStyle: 'dashed',
+                          borderColor: theme.icon + '40',
+                        }
+                      : undefined,
+                  ])}
                 >
                   <MaterialIcons
                     name={item.icon}
@@ -328,7 +410,7 @@ export default function Home() {
           </View>
         </View>
 
-        {/* Próximos eventos */}
+        {/* ── Próximos eventos ── */}
         <View style={styles.section}>
           <Text style={[styles.sectionLabel, { color: theme.icon }]}>
             PRÓXIMOS EVENTOS
@@ -363,9 +445,7 @@ export default function Home() {
                         { backgroundColor: calColor + '18' },
                       ]}
                     >
-                      <Text
-                        style={[styles.eventMonth, { color: calColor }]}
-                      >
+                      <Text style={[styles.eventMonth, { color: calColor }]}>
                         {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
                       </Text>
                       <Text style={[styles.eventDay, { color: calColor }]}>
@@ -452,7 +532,7 @@ export default function Home() {
           </Link>
         </View>
 
-        {/* Pie */}
+        {/* ── Pie ── */}
         <View style={styles.footer}>
           <VersionDisplay />
           <TouchableOpacity
@@ -473,13 +553,72 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   } as ViewStyle,
+
+  // ── Custom Header ──
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  } as ViewStyle,
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  } as ViewStyle,
+  logoBox: {
+    backgroundColor: colors.primary,
+    padding: 8,
+    borderRadius: 10,
+  } as ViewStyle,
+  logoText: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  } as TextStyle,
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  } as ViewStyle,
+  headerIconBtn: {
+    padding: 8,
+    marginLeft: 4,
+  } as ViewStyle,
+  bellWrap: {
+    position: 'relative',
+  } as ViewStyle,
+  dotWrap: {
+    position: 'absolute',
+    top: -1,
+    right: -1,
+    width: 12,
+    height: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  dotPing: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+  } as ViewStyle,
+  dot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  } as ViewStyle,
+
+  // ── ScrollView ──
   scrollContent: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.xl,
   } as ViewStyle,
   section: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.lg + 4,
   } as ViewStyle,
   sectionLabel: {
     fontSize: 11,
@@ -488,112 +627,82 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   } as TextStyle,
 
-  // Header
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // ── Notification card ──
+  notifCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: spacing.md + 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 3,
+    gap: spacing.sm,
   } as ViewStyle,
-  logoBox: {
-    backgroundColor: colors.primary,
-    padding: 7,
-    borderRadius: 10,
-  } as ViewStyle,
-  logoText: {
-    marginLeft: 8,
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  } as TextStyle,
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  } as ViewStyle,
-  headerIconBtn: {
-    padding: 8,
-    marginLeft: 2,
-  } as ViewStyle,
-  badge: {
-    position: 'absolute',
-    right: -4,
-    top: -2,
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    minWidth: 16,
-    height: 16,
-    paddingHorizontal: 3,
+  notifIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    alignSelf: 'flex-start',
   } as ViewStyle,
-  badgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-  } as TextStyle,
-
-  // Notification card — always visible
-  notifCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  } as ViewStyle,
-  notifContent: {
-    flex: 1,
-    marginRight: spacing.sm,
+  notifBody: {
+    gap: spacing.xs,
   } as ViewStyle,
   newBadge: {
     backgroundColor: colors.primary + '15',
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 5,
+    borderRadius: 6,
     alignSelf: 'flex-start',
-    marginBottom: 6,
   } as ViewStyle,
   newBadgeText: {
     color: colors.primary,
     fontSize: 9,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   } as TextStyle,
   notifTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    marginBottom: 4,
-    lineHeight: 20,
+    lineHeight: 22,
   } as TextStyle,
-  notifBody: {
+  notifDescription: {
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 19,
   } as TextStyle,
-  notifIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
+  ctaRow: {
+    marginTop: spacing.xs,
   } as ViewStyle,
+  ctaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  } as ViewStyle,
+  ctaText: {
+    fontSize: 12,
+    fontWeight: '700',
+  } as TextStyle,
 
-  // Quick grid — circular icons
+  // ── Quick grid ──
   quickGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
   } as ViewStyle,
   quickItem: {
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
     width: 70,
   } as ViewStyle,
   quickIconCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   } as ViewStyle,
@@ -605,14 +714,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   } as TextStyle,
 
-  // Event cards
+  // ── Event cards ──
   eventCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 14,
     borderWidth: 1,
     borderLeftWidth: 4,
-    padding: spacing.sm + 2,
+    padding: spacing.sm + 4,
     marginBottom: spacing.sm,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -694,7 +803,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   } as TextStyle,
 
-  // Footer
+  // ── Footer ──
   footer: {
     alignItems: 'center',
     paddingTop: spacing.xs,
