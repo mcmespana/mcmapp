@@ -37,11 +37,8 @@
 
 - [ ] **Pantalla de inicio (Home)**: rediseñar la home screen (ver sección Ideas más abajo).
 - [ ] **Notificaciones — backend (panel admin)**: en desarrollo en `mcmespana/mcmpanel`. La app (cliente) ya está lista para recibir notificaciones. Ver `NOTIFICACIONES.md` para la especificación del backend y formato de mensajes Expo Push.
-- [ ] **Firebase Remote Config para feature flags**: actualmente los flags están hardcodeados en `constants/featureFlags.ts`. Alternativas:
-  - **Firebase Remote Config** (recomendado): requiere `firebase/remote-config` en el cliente. Ventaja: dashboard en Firebase Console, cambios sin deploy. Desventaja: añade latencia al arranque.
-  - **Firebase Realtime Database** (alternativa simple): guardar flags en un nodo `/config/featureFlags`. Usa el mismo patrón `useFirebaseData` que ya tiene la app. Menos sofisticado pero no requiere SDKs adicionales.
-  - **Expo Updates OTA** (actual): cambiar flags y publicar OTA update. Funciona pero requiere un deploy (aunque sea rápido).
-  - El `FeatureFlagsContext.tsx` ya está preparado para recibir flags remotos.
+- [ ] **Sistema de perfiles de usuario**: onboarding con selección de perfil (Familia / Monitor/a / Miembro MCM) + delegación local. Config remota en Firebase RTDB que controla tabs, home, calendarios, álbumes y notificaciones por perfil/delegación. Absorbe y reemplaza el sistema de feature flags actual. **Ver `TODO_SISTEMA_PERFILES.md` para el diseño técnico completo.**
+- [ ] **Firebase Remote Config para feature flags**: ~~actualmente los flags están hardcodeados en `constants/featureFlags.ts`~~. **NOTA**: este punto queda absorbido por el sistema de perfiles (ver arriba). La config remota se haría via Firebase RTDB con el patrón `useFirebaseData` existente, no con Remote Config SDK.
 - [ ] **Configurar tests**: cuando se retome testing, instalar jest-expo, @testing-library/react-native, crear jest.config.js. Priorizar tests para utils/ y hooks/.
 
 ## Prioridad baja (nice to have)
