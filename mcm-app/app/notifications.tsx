@@ -99,17 +99,7 @@ export default function NotificationsScreen() {
       await handleMarkAsRead(notification.id);
     }
 
-    // Si tiene ruta interna, navegar directamente
-    if (notification.internalRoute) {
-      try {
-        router.push(notification.internalRoute as any);
-      } catch (error) {
-        console.error('Error navegando:', error);
-      }
-      return;
-    }
-
-    // Mostrar detalle
+    // Mostrar detalle siempre (la acción de navegar está en el modal)
     setSelectedNotification(notification);
   };
 
@@ -468,12 +458,18 @@ const dStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    gap: 8,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    gap: 10,
+    marginTop: spacing.md,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  actionButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  actionButtonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
 });
 
 // ============================================================================

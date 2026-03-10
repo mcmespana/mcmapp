@@ -13,16 +13,18 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  Linking,
   ViewStyle,
   TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
+import useFontScale from '@/hooks/useFontScale';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import Toast from '@/components/Toast';
@@ -46,6 +48,7 @@ function parseLocalDate(dateStr: string): Date {
 function getUpcomingEvents(
   eventsByDate: Record<string, CalendarEvent[]>,
   limit: number,
+  visibleCalendars: boolean[],
 ): CalendarEvent[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -58,6 +61,7 @@ function getUpcomingEvents(
     .sort(([a], [b]) => a.localeCompare(b))
     .forEach(([, evts]) => {
       evts.forEach((evt) => {
+        if (visibleCalendars[evt.calendarIndex] === false) return;
         const key = `${evt.title}|${evt.startDate}`;
         if (!seen.has(key)) {
           seen.add(key);
@@ -84,9 +88,13 @@ export default function Home() {
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
   const featureFlags = useFeatureFlags();
+  const fontScale = useFontScale();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
+
+  // Primary color readable on both light and dark backgrounds
+  const accentColor = scheme === 'dark' ? colors.info : colors.primary;
 
   // Notifications
   const { firebaseNotifications, readIds, unreadCount } = useNotifications();
@@ -135,13 +143,16 @@ export default function Home() {
     pingOpacity.setValue(0.6);
   }, [unreadCount, pingAnim, pingOpacity]);
 
-  // Calendar events
-  const { calendarConfigs } = useCalendarConfigs();
+  // Calendar events — filtered by user's visible calendars
+  const { calendarConfigs, visibleCalendars } = useCalendarConfigs();
   const { eventsByDate } = useCalendarEvents(calendarConfigs);
   const upcomingEvents = useMemo(
-    () => getUpcomingEvents(eventsByDate, 2),
-    [eventsByDate],
+    () => getUpcomingEvents(eventsByDate, 2, visibleCalendars),
+    [eventsByDate, visibleCalendars],
   );
+
+  const hasAnyVisibleCalendar =
+    calendarConfigs.length > 0 && visibleCalendars.some(Boolean);
 
   // Quick grid items
   const quickItems = useMemo<QuickItem[]>(
@@ -183,19 +194,28 @@ export default function Home() {
     [featureFlags.tabs, scheme, theme.icon],
   );
 
-  // Hide the tab navigator header — we render our own below
+  // Hide the tab navigator header — we render our own
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  // Notification display content
+  // Notification card content
   const notifTitle = latestNotification
     ? latestNotification.title
     : 'Bienvenido a MCM App';
   const notifBody = latestNotification
     ? latestNotification.body
     : 'Mantente al día con las novedades de la comunidad.';
-  const notifCta = latestNotification ? 'Leer notificación' : 'Ver novedades';
+
+  const handleActionButton = () => {
+    const btn = latestNotification?.actionButton;
+    if (!btn) return;
+    if (btn.isInternal) {
+      router.push(btn.url as any);
+    } else {
+      Linking.openURL(btn.url).catch((e) => console.error(e));
+    }
+  };
 
   return (
     <SafeAreaView
@@ -221,7 +241,6 @@ export default function Home() {
 
       {/* ── Custom Header ── */}
       <View style={[styles.header, { backgroundColor: theme.background }]}>
-        {/* Left: logo */}
         <View style={styles.headerLeft}>
           <View style={styles.logoBox}>
             <MaterialIcons name="device-hub" size={20} color="white" />
@@ -229,7 +248,6 @@ export default function Home() {
           <Text style={[styles.logoText, { color: theme.text }]}>MCM App</Text>
         </View>
 
-        {/* Right: user + bell */}
         <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={() => setSettingsVisible(true)}
@@ -245,41 +263,38 @@ export default function Home() {
           </TouchableOpacity>
 
           {featureFlags.showNotificationsIcon && (
-            <Link href="/notifications" asChild>
-              <TouchableOpacity
-                style={styles.headerIconBtn}
-                accessibilityLabel={
-                  unreadCount > 0
-                    ? `Notificaciones, ${unreadCount} sin leer`
-                    : 'Notificaciones'
-                }
-                accessibilityRole="button"
-              >
-                <View style={styles.bellWrap}>
-                  <MaterialIcons
-                    name="notifications"
-                    size={24}
-                    color={theme.icon}
-                  />
-                  {unreadCount > 0 && (
-                    <View style={styles.dotWrap}>
-                      {/* Animated ping ring */}
-                      <Animated.View
-                        style={[
-                          styles.dotPing,
-                          {
-                            transform: [{ scale: pingAnim }],
-                            opacity: pingOpacity,
-                          },
-                        ]}
-                      />
-                      {/* Solid dot */}
-                      <View style={styles.dot} />
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            </Link>
+            <TouchableOpacity
+              style={styles.headerIconBtn}
+              onPress={() => router.push('/notifications')}
+              accessibilityLabel={
+                unreadCount > 0
+                  ? `Notificaciones, ${unreadCount} sin leer`
+                  : 'Notificaciones'
+              }
+              accessibilityRole="button"
+            >
+              <View style={styles.bellWrap}>
+                <MaterialIcons
+                  name="notifications"
+                  size={24}
+                  color={theme.icon}
+                />
+                {unreadCount > 0 && (
+                  <View style={styles.dotWrap}>
+                    <Animated.View
+                      style={[
+                        styles.dotPing,
+                        {
+                          transform: [{ scale: pingAnim }],
+                          opacity: pingOpacity,
+                        },
+                      ]}
+                    />
+                    <View style={styles.dot} />
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -289,85 +304,122 @@ export default function Home() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Novedades — siempre visible ── */}
+        {/* ── Novedades ── */}
         <View style={styles.section}>
-          <Link href="/notifications" asChild>
-            <TouchableOpacity
-              style={StyleSheet.flatten([
-                styles.notifCard,
-                {
-                  backgroundColor:
-                    scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
-                  borderColor:
-                    scheme === 'dark'
-                      ? 'rgba(255,255,255,0.09)'
-                      : 'rgba(0,0,0,0.07)',
-                },
-              ])}
-              accessibilityLabel={`${notifTitle}. Toca para leer`}
-              accessibilityRole="button"
-              activeOpacity={0.75}
-            >
-              {/* Megaphone icon — top right */}
+          <TouchableOpacity
+            style={StyleSheet.flatten([
+              styles.notifCard,
+              {
+                backgroundColor: scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                borderColor:
+                  scheme === 'dark'
+                    ? 'rgba(255,255,255,0.09)'
+                    : 'rgba(0,0,0,0.07)',
+              },
+            ])}
+            onPress={() => router.push('/notifications')}
+            activeOpacity={0.78}
+            accessibilityLabel={`${notifTitle}. Toca para leer`}
+            accessibilityRole="button"
+          >
+            {/* Top row: content + icon */}
+            <View style={styles.notifRow}>
+              {/* Content */}
+              <View style={styles.notifContent}>
+                {isUnread && (
+                  <View
+                    style={[
+                      styles.newBadge,
+                      { backgroundColor: accentColor + '15' },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.newBadgeText, { color: accentColor }]}
+                    >
+                      NUEVO
+                    </Text>
+                  </View>
+                )}
+                <Text
+                  style={[
+                    styles.notifTitle,
+                    {
+                      color: theme.text,
+                      fontSize: 16 * fontScale,
+                    },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {notifTitle}
+                </Text>
+                <Text
+                  style={[
+                    styles.notifDescription,
+                    {
+                      color: theme.icon,
+                      fontSize: 13 * fontScale,
+                    },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {notifBody}
+                </Text>
+              </View>
+
+              {/* Megaphone icon — right */}
               <View
                 style={[
                   styles.notifIconCircle,
                   {
                     backgroundColor:
                       scheme === 'dark'
-                        ? colors.primary + '22'
-                        : '#EAF4FE',
+                        ? accentColor + '20'
+                        : accentColor + '12',
                   },
                 ]}
               >
-                <MaterialIcons
-                  name="campaign"
-                  size={26}
-                  color={colors.primary}
-                />
+                <MaterialIcons name="campaign" size={26} color={accentColor} />
               </View>
+            </View>
 
-              {/* Content */}
-              <View style={styles.notifBody}>
-                {isUnread && (
-                  <View style={styles.newBadge}>
-                    <Text style={styles.newBadgeText}>NUEVO</Text>
-                  </View>
-                )}
-                <Text
-                  style={[styles.notifTitle, { color: theme.text }]}
-                  numberOfLines={2}
+            {/* CTA row */}
+            <View style={styles.notifCtaRow}>
+              {latestNotification?.actionButton ? (
+                <TouchableOpacity
+                  style={[
+                    styles.actionBtn,
+                    { backgroundColor: accentColor + '12' },
+                  ]}
+                  onPress={handleActionButton}
+                  accessibilityRole="button"
                 >
-                  {notifTitle}
-                </Text>
-                <Text
-                  style={[styles.notifDescription, { color: theme.icon }]}
-                  numberOfLines={2}
-                >
-                  {notifBody}
-                </Text>
-
-                {/* CTA pill */}
-                <View style={styles.ctaRow}>
-                  <View
-                    style={[
-                      styles.ctaPill,
-                      { backgroundColor: colors.primary + '12' },
-                    ]}
+                  <Text
+                    style={[styles.actionBtnText, { color: accentColor }]}
                   >
-                    <Text style={[styles.ctaText, { color: colors.primary }]}>
-                      {notifCta}
-                    </Text>
-                    <MaterialIcons
-                      name="arrow-forward"
-                      size={13}
-                      color={colors.primary}
-                    />
-                  </View>
+                    {latestNotification.actionButton.text ?? 'Voy a verlo'}
+                  </Text>
+                  <MaterialIcons
+                    name={
+                      latestNotification.actionButton.isInternal
+                        ? 'arrow-forward'
+                        : 'open-in-new'
+                    }
+                    size={14}
+                    color={accentColor}
+                  />
+                </TouchableOpacity>
+              ) : (
+                <View
+                  style={[
+                    styles.arrowPill,
+                    { backgroundColor: accentColor + '10' },
+                  ]}
+                >
+                  <MaterialIcons name="east" size={14} color={accentColor} />
                 </View>
-              </View>
-            </TouchableOpacity>
-          </Link>
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* ── Accesos rápidos ── */}
@@ -404,7 +456,13 @@ export default function Home() {
                   />
                 </View>
                 <Text
-                  style={[styles.quickLabel, { color: theme.icon }]}
+                  style={[
+                    styles.quickLabel,
+                    {
+                      color: theme.icon,
+                      fontSize: 10 * fontScale,
+                    },
+                  ]}
                   numberOfLines={1}
                 >
                   {item.label}
@@ -416,128 +474,193 @@ export default function Home() {
 
         {/* ── Próximos eventos ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: theme.icon }]}>
+          <Text
+            style={[
+              styles.sectionLabel,
+              {
+                color: theme.icon,
+                fontSize: 11 * fontScale,
+              },
+            ]}
+          >
             PRÓXIMOS EVENTOS
           </Text>
 
-          {upcomingEvents.length > 0 ? (
+          {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
+            /* User has calendars but all hidden */
+            <TouchableOpacity
+              style={[
+                styles.emptyEventsCard,
+                {
+                  backgroundColor: scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                  borderColor:
+                    scheme === 'dark'
+                      ? 'rgba(255,255,255,0.08)'
+                      : 'rgba(0,0,0,0.06)',
+                },
+              ]}
+              onPress={() => router.push('/calendario')}
+              accessibilityRole="button"
+            >
+              <MaterialIcons
+                name="event-note"
+                size={28}
+                color={theme.icon}
+                style={{ opacity: 0.5 }}
+              />
+              <Text
+                style={[
+                  styles.emptyEventsTitle,
+                  { color: theme.text, fontSize: 14 * fontScale },
+                ]}
+              >
+                Activa algún calendario
+              </Text>
+              <Text
+                style={[
+                  styles.emptyEventsBody,
+                  { color: theme.icon, fontSize: 12 * fontScale },
+                ]}
+              >
+                Selecciona un calendario para ver los próximos eventos aquí.
+              </Text>
+            </TouchableOpacity>
+          ) : upcomingEvents.length > 0 ? (
             upcomingEvents.map((evt, idx) => {
               const evtDate = parseLocalDate(evt.startDate);
               const calColor =
-                calendarConfigs[evt.calendarIndex]?.color ?? colors.info;
+                calendarConfigs[evt.calendarIndex]?.color ?? accentColor;
               const calName = calendarConfigs[evt.calendarIndex]?.name;
               return (
-                <Link
+                <TouchableOpacity
                   key={`${evt.title}|${evt.startDate}|${idx}`}
-                  href="/calendario"
-                  asChild
+                  style={StyleSheet.flatten([
+                    styles.eventCard,
+                    {
+                      backgroundColor:
+                        scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                      borderColor:
+                        scheme === 'dark'
+                          ? 'rgba(255,255,255,0.09)'
+                          : 'rgba(0,0,0,0.06)',
+                      borderLeftColor: calColor,
+                    },
+                  ])}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/calendario',
+                      params: { date: evt.startDate },
+                    } as any)
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`Evento: ${evt.title}`}
                 >
-                  <TouchableOpacity
-                    style={StyleSheet.flatten([
-                      styles.eventCard,
-                      {
-                        backgroundColor:
-                          scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
-                        borderColor:
-                          scheme === 'dark'
-                            ? 'rgba(255,255,255,0.09)'
-                            : 'rgba(0,0,0,0.06)',
-                        borderLeftColor: calColor,
-                      },
-                    ])}
-                    accessibilityRole="button"
+                  <View
+                    style={[
+                      styles.eventDateBox,
+                      { backgroundColor: calColor + '18' },
+                    ]}
                   >
-                    <View
-                      style={[
-                        styles.eventDateBox,
-                        { backgroundColor: calColor + '18' },
-                      ]}
-                    >
-                      <Text style={[styles.eventMonth, { color: calColor }]}>
-                        {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
-                      </Text>
-                      <Text style={[styles.eventDay, { color: calColor }]}>
-                        {evtDate.getDate()}
-                      </Text>
-                    </View>
+                    <Text style={[styles.eventMonth, { color: calColor }]}>
+                      {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
+                    </Text>
+                    <Text style={[styles.eventDay, { color: calColor }]}>
+                      {evtDate.getDate()}
+                    </Text>
+                  </View>
 
-                    <View style={styles.eventInfo}>
-                      <View style={styles.eventTitleRow}>
+                  <View style={styles.eventInfo}>
+                    <Text
+                      style={[
+                        styles.eventTitle,
+                        {
+                          color: theme.text,
+                          fontSize: 13 * fontScale,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {evt.title}
+                    </Text>
+                    {calName && (
+                      <View
+                        style={[
+                          styles.calBadge,
+                          { backgroundColor: calColor + '18' },
+                        ]}
+                      >
                         <Text
-                          style={[styles.eventTitle, { color: theme.text }]}
+                          style={[
+                            styles.calBadgeText,
+                            { color: calColor },
+                          ]}
                           numberOfLines={1}
                         >
-                          {evt.title}
+                          {calName}
                         </Text>
-                        {calName && (
-                          <View
-                            style={[
-                              styles.calBadge,
-                              { backgroundColor: calColor + '18' },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.calBadgeText,
-                                { color: calColor },
-                              ]}
-                            >
-                              {calName}
-                            </Text>
-                          </View>
-                        )}
                       </View>
-                      {evt.location ? (
-                        <View style={styles.eventMeta}>
-                          <MaterialIcons
-                            name="schedule"
-                            size={11}
-                            color={theme.icon}
-                          />
-                          <Text
-                            style={[
-                              styles.eventMetaText,
-                              { color: theme.icon },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {evt.location}
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
+                    )}
+                    {evt.location ? (
+                      <View style={styles.eventMeta}>
+                        <MaterialIcons
+                          name="schedule"
+                          size={11}
+                          color={theme.icon}
+                        />
+                        <Text
+                          style={[
+                            styles.eventMetaText,
+                            {
+                              color: theme.icon,
+                              fontSize: 11 * fontScale,
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {evt.location}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
 
-                    <MaterialIcons
-                      name="chevron-right"
-                      size={20}
-                      color={theme.icon}
-                      style={{ opacity: 0.3 }}
-                    />
-                  </TouchableOpacity>
-                </Link>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={20}
+                    color={theme.icon}
+                    style={{ opacity: 0.3 }}
+                  />
+                </TouchableOpacity>
               );
             })
           ) : (
-            <Text style={[styles.emptyEvents, { color: theme.icon }]}>
+            /* No upcoming events */
+            <Text
+              style={[
+                styles.emptyEvents,
+                { color: theme.icon, fontSize: 13 * fontScale },
+              ]}
+            >
               Sin eventos próximos
             </Text>
           )}
 
-          <Link href="/calendario" asChild>
-            <TouchableOpacity
-              style={StyleSheet.flatten([
-                styles.calendarButton,
-                { borderColor: colors.primary + '30' },
-              ])}
-              accessibilityRole="button"
+          <TouchableOpacity
+            style={StyleSheet.flatten([
+              styles.calendarButton,
+              { borderColor: accentColor + '30' },
+            ])}
+            onPress={() => router.push('/calendario')}
+            accessibilityRole="button"
+          >
+            <Text
+              style={[
+                styles.calendarButtonText,
+                { color: accentColor, fontSize: 14 * fontScale },
+              ]}
             >
-              <Text
-                style={[styles.calendarButtonText, { color: colors.primary }]}
-              >
-                Ver calendario
-              </Text>
-            </TouchableOpacity>
-          </Link>
+              Ver calendario
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── Pie ── */}
@@ -551,6 +674,9 @@ export default function Home() {
               ¿Algún fallo? Cuéntanoslo
             </Text>
           </TouchableOpacity>
+          <Text style={[styles.tagline, { color: theme.icon }]}>
+            Movimiento Consolación para el Mundo
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -558,11 +684,9 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  } as ViewStyle,
+  safeArea: { flex: 1 } as ViewStyle,
 
-  // ── Custom Header ──
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -589,13 +713,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   } as ViewStyle,
-  headerIconBtn: {
-    padding: 8,
-    marginLeft: 4,
-  } as ViewStyle,
-  bellWrap: {
-    position: 'relative',
-  } as ViewStyle,
+  headerIconBtn: { padding: 8, marginLeft: 4 } as ViewStyle,
+  bellWrap: { position: 'relative' } as ViewStyle,
   dotWrap: {
     position: 'absolute',
     top: -1,
@@ -625,11 +744,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
     paddingBottom: spacing.xl,
   } as ViewStyle,
-  section: {
-    marginBottom: spacing.lg + 4,
-  } as ViewStyle,
+  section: { marginBottom: spacing.lg + 4 } as ViewStyle,
   sectionLabel: {
-    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
     marginBottom: spacing.sm,
@@ -639,63 +755,73 @@ const styles = StyleSheet.create({
   notifCard: {
     borderRadius: 18,
     borderWidth: 1,
-    padding: spacing.md + 4,
+    padding: spacing.md + 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 6,
     elevation: 3,
-    gap: spacing.sm,
   } as ViewStyle,
-  notifIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
+  notifRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm + 2,
   } as ViewStyle,
-  notifBody: {
-    gap: spacing.xs,
+  notifContent: {
+    flex: 1,
+    gap: 5,
   } as ViewStyle,
   newBadge: {
-    backgroundColor: colors.primary + '15',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     alignSelf: 'flex-start',
   } as ViewStyle,
   newBadgeText: {
-    color: colors.primary,
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.8,
   } as TextStyle,
   notifTitle: {
-    fontSize: 16,
     fontWeight: '700',
     lineHeight: 22,
   } as TextStyle,
   notifDescription: {
-    fontSize: 13,
     lineHeight: 19,
   } as TextStyle,
-  ctaRow: {
-    marginTop: spacing.xs,
+  notifIconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+    marginTop: 2,
   } as ViewStyle,
-  ctaPill: {
+  notifCtaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    marginTop: spacing.sm + 2,
+  } as ViewStyle,
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 20,
   } as ViewStyle,
-  ctaText: {
+  actionBtnText: {
     fontSize: 12,
     fontWeight: '700',
   } as TextStyle,
+  arrowPill: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  } as ViewStyle,
 
   // ── Quick grid ──
   quickGrid: {
@@ -715,7 +841,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   } as ViewStyle,
   quickLabel: {
-    fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
@@ -759,44 +884,51 @@ const styles = StyleSheet.create({
   eventInfo: {
     flex: 1,
     overflow: 'hidden',
-  } as ViewStyle,
-  eventTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 3,
+    gap: 3,
   } as ViewStyle,
   eventTitle: {
-    fontSize: 13,
     fontWeight: '700',
-    flex: 1,
   } as TextStyle,
   calBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    flexShrink: 0,
+    alignSelf: 'flex-start',
+    maxWidth: 110,
   } as ViewStyle,
   calBadgeText: {
     fontSize: 8,
-    fontWeight: '800',
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   } as TextStyle,
   eventMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
   } as ViewStyle,
-  eventMetaText: {
-    fontSize: 11,
-    flex: 1,
-  } as TextStyle,
+  eventMetaText: { flex: 1 } as TextStyle,
   emptyEvents: {
     textAlign: 'center',
-    fontSize: 14,
     opacity: 0.6,
     paddingVertical: spacing.md,
+  } as TextStyle,
+  emptyEventsCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: spacing.lg,
+    marginBottom: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.xs,
+  } as ViewStyle,
+  emptyEventsTitle: {
+    fontWeight: '700',
+    textAlign: 'center',
+  } as TextStyle,
+  emptyEventsBody: {
+    textAlign: 'center',
+    lineHeight: 18,
+    opacity: 0.7,
   } as TextStyle,
   calendarButton: {
     alignItems: 'center',
@@ -807,21 +939,18 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   } as ViewStyle,
   calendarButtonText: {
-    fontSize: 14,
     fontWeight: '700',
   } as TextStyle,
 
   // ── Footer ──
-  footer: {
-    alignItems: 'center',
-    paddingTop: spacing.xs,
-  } as ViewStyle,
-  feedbackLink: {
-    padding: spacing.sm,
-    marginTop: 4,
-  } as ViewStyle,
-  feedbackText: {
-    fontSize: 12,
-    opacity: 0.6,
+  footer: { alignItems: 'center', paddingTop: spacing.xs } as ViewStyle,
+  feedbackLink: { padding: spacing.sm, marginTop: 4 } as ViewStyle,
+  feedbackText: { fontSize: 12, opacity: 0.6 } as TextStyle,
+  tagline: {
+    fontSize: 11,
+    opacity: 0.3,
+    marginTop: spacing.sm,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
   } as TextStyle,
 });
