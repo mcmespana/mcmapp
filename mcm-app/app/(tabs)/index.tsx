@@ -240,13 +240,13 @@ export default function Home() {
           <View style={styles.section}>
             <Link href="/notifications" asChild>
               <TouchableOpacity
-                style={[
+                style={StyleSheet.flatten([
                   styles.notifCard,
                   {
                     backgroundColor: theme.background,
                     borderColor: theme.icon + '25',
                   },
-                ]}
+                ])}
                 accessibilityLabel={`Novedad: ${latestUnread.title}. Toca para ver todas las novedades`}
                 accessibilityRole="button"
               >
@@ -334,14 +334,14 @@ export default function Home() {
                   asChild
                 >
                   <TouchableOpacity
-                    style={[
+                    style={StyleSheet.flatten([
                       styles.eventCard,
                       {
                         backgroundColor: theme.background,
                         borderColor: theme.icon + '20',
                         borderLeftColor: calColor,
                       },
-                    ]}
+                    ])}
                     accessibilityRole="button"
                   >
                     <View
@@ -424,10 +424,10 @@ export default function Home() {
 
           <Link href="/calendario" asChild>
             <TouchableOpacity
-              style={[
+              style={StyleSheet.flatten([
                 styles.calendarButton,
                 { borderColor: colors.primary + '35' },
-              ]}
+              ])}
               accessibilityRole="button"
             >
               <MaterialIcons
