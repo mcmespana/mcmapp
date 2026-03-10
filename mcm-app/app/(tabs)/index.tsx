@@ -2,7 +2,6 @@ import React, {
   useLayoutEffect,
   ComponentProps,
   useState,
-  useEffect,
   useMemo,
 } from 'react';
 import {
@@ -15,7 +14,7 @@ import {
   TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
@@ -26,7 +25,6 @@ import AppFeedbackModal from '@/components/AppFeedbackModal';
 import Toast from '@/components/Toast';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import useWordleStats from '@/hooks/useWordleStats';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
@@ -74,8 +72,8 @@ interface QuickItem {
   icon: ComponentProps<typeof MaterialIcons>['name'];
   iconBg: string;
   iconColor: string;
-  href: string;
-  pending?: boolean;
+  href?: string;
+  dashed?: boolean;
 }
 
 export default function Home() {
@@ -83,18 +81,18 @@ export default function Home() {
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
   const featureFlags = useFeatureFlags();
-  const { stats } = useWordleStats();
-  const [pendingWordle, setPendingWordle] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
 
+  // Notifications
   const { firebaseNotifications, readIds, unreadCount } = useNotifications();
-  const latestUnread = useMemo(
-    () => firebaseNotifications.find((n) => !readIds.has(n.id)),
-    [firebaseNotifications, readIds],
-  );
+  const latestNotification = firebaseNotifications[0] ?? null;
+  const isUnread = latestNotification
+    ? !readIds.has(latestNotification.id)
+    : false;
 
+  // Calendar events
   const { calendarConfigs } = useCalendarConfigs();
   const { eventsByDate } = useCalendarEvents(calendarConfigs);
   const upcomingEvents = useMemo(
@@ -102,64 +100,66 @@ export default function Home() {
     [eventsByDate],
   );
 
+  // Quick grid items
   const quickItems = useMemo<QuickItem[]>(
     () =>
       [
+        {
+          key: 'comunica',
+          label: 'Comunica',
+          icon: 'forum' as const,
+          iconBg: scheme === 'dark' ? '#3A2200' : '#FFF0E0',
+          iconColor: '#E08A3C',
+        },
         featureFlags.tabs.cancionero && {
           key: 'cancionero',
           label: 'Cantoral',
-          icon: 'library-music' as const,
-          iconBg: scheme === 'dark' ? '#4A3A00' : '#FFF3CD',
-          iconColor: colors.warning,
+          icon: 'music-note' as const,
+          iconBg: scheme === 'dark' ? '#1A1A3A' : '#E8E0FF',
+          iconColor: '#6366F1',
           href: '/cancionero',
-        },
-        featureFlags.tabs.calendario && {
-          key: 'calendario',
-          label: 'Calendario',
-          icon: 'event' as const,
-          iconBg: scheme === 'dark' ? '#0A2A3A' : '#D1ECF8',
-          iconColor: colors.info,
-          href: '/calendario',
         },
         featureFlags.tabs.fotos && {
           key: 'fotos',
           label: 'Fotos',
-          icon: 'photo-library' as const,
-          iconBg: scheme === 'dark' ? '#3A0A0C' : '#FAD7D9',
-          iconColor: colors.accent,
+          icon: 'image' as const,
+          iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
+          iconColor: '#34D399',
           href: '/fotos',
         },
         {
-          key: 'wordle',
-          label: 'Wordle',
-          icon: 'sports-esports' as const,
-          iconBg: scheme === 'dark' ? '#1A2E00' : '#D7EBB8',
-          iconColor: colors.success,
-          href: '/wordle',
-          pending: pendingWordle,
+          key: 'mas',
+          label: 'Más',
+          icon: 'add' as const,
+          iconBg: 'transparent',
+          iconColor: theme.icon,
+          href: '/mas',
+          dashed: true,
         },
       ].filter(Boolean) as QuickItem[],
-    [featureFlags.tabs, pendingWordle, scheme],
+    [featureFlags.tabs, scheme, theme.icon],
   );
 
-  useEffect(() => {
-    const now = new Date();
-    let dateKey = now.toISOString().slice(0, 10);
-    let cycle: 'morning' | 'evening' = 'morning';
-    if (now.getHours() < 7) {
-      const y = new Date(now);
-      y.setDate(y.getDate() - 1);
-      dateKey = y.toISOString().slice(0, 10);
-      cycle = 'evening';
-    } else if (now.getHours() >= 19) {
-      cycle = 'evening';
-    }
-    const key = `${dateKey}_${cycle}`;
-    setPendingWordle(stats.lastPlayedKey !== key);
-  }, [stats]);
+  // Notification content (always show something)
+  const notifTitle = latestNotification
+    ? latestNotification.title
+    : 'Bienvenido a MCM App';
+  const notifBody = latestNotification
+    ? latestNotification.body
+    : 'Mantente al día con las novedades de la comunidad.';
 
+  // Header setup
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerLeft: () => (
+        <View style={[styles.headerLeft, { paddingLeft: spacing.md }]}>
+          <View style={styles.logoBox}>
+            <MaterialIcons name="device-hub" size={20} color="white" />
+          </View>
+          <Text style={[styles.logoText, { color: theme.text }]}>MCM App</Text>
+        </View>
+      ),
+      headerTitle: '',
       headerRight: () => (
         <View style={[styles.headerButtons, { paddingRight: spacing.md }]}>
           <TouchableOpacity
@@ -204,9 +204,8 @@ export default function Home() {
           )}
         </View>
       ),
-      title: 'Inicio',
     });
-  }, [navigation, theme.icon, featureFlags.showNotificationsIcon, unreadCount]);
+  }, [navigation, theme, featureFlags.showNotificationsIcon, unreadCount]);
 
   return (
     <SafeAreaView
@@ -235,90 +234,104 @@ export default function Home() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Novedades — solo cuando hay notificaciones sin leer */}
-        {latestUnread && (
-          <View style={styles.section}>
-            <Link href="/notifications" asChild>
-              <TouchableOpacity
-                style={StyleSheet.flatten([
-                  styles.notifCard,
-                  {
-                    backgroundColor: theme.background,
-                    borderColor: theme.icon + '25',
-                  },
-                ])}
-                accessibilityLabel={`Novedad: ${latestUnread.title}. Toca para ver todas las novedades`}
-                accessibilityRole="button"
-              >
-                <View style={styles.notifContent}>
-                  <View style={styles.notifHeaderRow}>
-                    <View style={styles.newBadge}>
-                      <Text style={styles.newBadgeText}>NUEVO</Text>
-                    </View>
-                    <Text
-                      style={[styles.notifTitle, { color: theme.text }]}
-                      numberOfLines={1}
-                    >
-                      {latestUnread.title}
-                    </Text>
+        {/* Novedades — siempre visible */}
+        <View style={styles.section}>
+          <Link href="/notifications" asChild>
+            <TouchableOpacity
+              style={StyleSheet.flatten([
+                styles.notifCard,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.icon + '20',
+                },
+              ])}
+              accessibilityLabel={`Novedad: ${notifTitle}. Toca para ver notificaciones`}
+              accessibilityRole="button"
+            >
+              <View style={styles.notifContent}>
+                {isUnread && (
+                  <View style={styles.newBadge}>
+                    <Text style={styles.newBadgeText}>NUEVO</Text>
                   </View>
-                  <Text
-                    style={[styles.notifBody, { color: theme.icon }]}
-                    numberOfLines={2}
-                  >
-                    {latestUnread.body}
-                  </Text>
-                </View>
+                )}
+                <Text
+                  style={[styles.notifTitle, { color: theme.text }]}
+                  numberOfLines={2}
+                >
+                  {notifTitle}
+                </Text>
+                <Text
+                  style={[styles.notifBody, { color: theme.icon }]}
+                  numberOfLines={2}
+                >
+                  {notifBody}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.notifIconCircle,
+                  {
+                    backgroundColor:
+                      scheme === 'dark' ? colors.primary + '25' : '#E8F4FD',
+                  },
+                ]}
+              >
                 <MaterialIcons
-                  name="chevron-right"
-                  size={22}
-                  color={theme.icon}
-                  style={{ opacity: 0.4 }}
+                  name="campaign"
+                  size={28}
+                  color={colors.primary}
                 />
-              </TouchableOpacity>
-            </Link>
-          </View>
-        )}
+              </View>
+            </TouchableOpacity>
+          </Link>
+        </View>
 
-        {/* Accesos rápidos */}
+        {/* Accesos rápidos — iconos circulares */}
         <View style={styles.section}>
           <View style={styles.quickGrid}>
             {quickItems.map((item) => (
-              <Link key={item.key} href={item.href as any} asChild>
-                <TouchableOpacity
-                  style={styles.quickItem}
-                  accessibilityLabel={item.label}
-                  accessibilityRole="button"
+              <TouchableOpacity
+                key={item.key}
+                style={styles.quickItem}
+                accessibilityLabel={item.label}
+                accessibilityRole="button"
+                onPress={() => {
+                  if (item.href) router.push(item.href as any);
+                }}
+                activeOpacity={item.href ? 0.6 : 1}
+              >
+                <View
+                  style={[
+                    styles.quickIconCircle,
+                    { backgroundColor: item.iconBg },
+                    item.dashed && {
+                      borderWidth: 1.5,
+                      borderStyle: 'dashed',
+                      borderColor: theme.icon + '40',
+                    },
+                  ]}
                 >
-                  <View
-                    style={[
-                      styles.quickIconBox,
-                      { backgroundColor: item.iconBg },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name={item.icon}
-                      size={24}
-                      color={item.iconColor}
-                    />
-                    {item.pending && <View style={styles.pendingDot} />}
-                  </View>
-                  <Text
-                    style={[styles.quickLabel, { color: theme.icon }]}
-                    numberOfLines={1}
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              </Link>
+                  <MaterialIcons
+                    name={item.icon}
+                    size={24}
+                    color={item.iconColor}
+                  />
+                </View>
+                <Text
+                  style={[styles.quickLabel, { color: theme.icon }]}
+                  numberOfLines={1}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* Próximos eventos */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Próximos eventos
+          <Text style={[styles.sectionLabel, { color: theme.icon }]}>
+            PRÓXIMOS EVENTOS
           </Text>
 
           {upcomingEvents.length > 0 ? (
@@ -338,7 +351,7 @@ export default function Home() {
                       styles.eventCard,
                       {
                         backgroundColor: theme.background,
-                        borderColor: theme.icon + '20',
+                        borderColor: theme.icon + '18',
                         borderLeftColor: calColor,
                       },
                     ])}
@@ -347,7 +360,7 @@ export default function Home() {
                     <View
                       style={[
                         styles.eventDateBox,
-                        { backgroundColor: calColor + '22' },
+                        { backgroundColor: calColor + '18' },
                       ]}
                     >
                       <Text
@@ -372,7 +385,7 @@ export default function Home() {
                           <View
                             style={[
                               styles.calBadge,
-                              { backgroundColor: calColor + '22' },
+                              { backgroundColor: calColor + '18' },
                             ]}
                           >
                             <Text
@@ -389,7 +402,7 @@ export default function Home() {
                       {evt.location ? (
                         <View style={styles.eventMeta}>
                           <MaterialIcons
-                            name="place"
+                            name="schedule"
                             size={11}
                             color={theme.icon}
                           />
@@ -410,7 +423,7 @@ export default function Home() {
                       name="chevron-right"
                       size={20}
                       color={theme.icon}
-                      style={{ opacity: 0.35 }}
+                      style={{ opacity: 0.3 }}
                     />
                   </TouchableOpacity>
                 </Link>
@@ -426,15 +439,10 @@ export default function Home() {
             <TouchableOpacity
               style={StyleSheet.flatten([
                 styles.calendarButton,
-                { borderColor: colors.primary + '35' },
+                { borderColor: colors.primary + '30' },
               ])}
               accessibilityRole="button"
             >
-              <MaterialIcons
-                name="calendar-today"
-                size={15}
-                color={colors.primary}
-              />
               <Text
                 style={[styles.calendarButtonText, { color: colors.primary }]}
               >
@@ -461,97 +469,72 @@ export default function Home() {
   );
 }
 
-interface Styles {
-  safeArea: ViewStyle;
-  scrollContent: ViewStyle;
-  section: ViewStyle;
-  sectionTitle: TextStyle;
-  headerButtons: ViewStyle;
-  headerIconBtn: ViewStyle;
-  badge: ViewStyle;
-  badgeText: TextStyle;
-  notifCard: ViewStyle;
-  notifContent: ViewStyle;
-  notifHeaderRow: ViewStyle;
-  newBadge: ViewStyle;
-  newBadgeText: TextStyle;
-  notifTitle: TextStyle;
-  notifBody: TextStyle;
-  quickGrid: ViewStyle;
-  quickItem: ViewStyle;
-  quickIconBox: ViewStyle;
-  pendingDot: ViewStyle;
-  quickLabel: TextStyle;
-  eventCard: ViewStyle;
-  eventDateBox: ViewStyle;
-  eventMonth: TextStyle;
-  eventDay: TextStyle;
-  eventInfo: ViewStyle;
-  eventTitleRow: ViewStyle;
-  eventTitle: TextStyle;
-  calBadge: ViewStyle;
-  calBadgeText: TextStyle;
-  eventMeta: ViewStyle;
-  eventMetaText: TextStyle;
-  emptyEvents: TextStyle;
-  calendarButton: ViewStyle;
-  calendarButtonText: TextStyle;
-  footer: ViewStyle;
-  feedbackLink: ViewStyle;
-  feedbackText: TextStyle;
-}
-
-const styles = StyleSheet.create<Styles>({
+const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-  },
+  } as ViewStyle,
   scrollContent: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xl,
-  },
+  } as ViewStyle,
   section: {
     marginBottom: spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+  } as ViewStyle,
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
     marginBottom: spacing.sm,
-    letterSpacing: 0.1,
-  },
+  } as TextStyle,
 
   // Header
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  } as ViewStyle,
+  logoBox: {
+    backgroundColor: colors.primary,
+    padding: 7,
+    borderRadius: 10,
+  } as ViewStyle,
+  logoText: {
+    marginLeft: 8,
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  } as TextStyle,
   headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   headerIconBtn: {
     padding: 8,
     marginLeft: 2,
-  },
+  } as ViewStyle,
   badge: {
     position: 'absolute',
     right: -4,
     top: -2,
-    backgroundColor: colors.danger,
+    backgroundColor: colors.primary,
     borderRadius: 10,
     minWidth: 16,
     height: 16,
     paddingHorizontal: 3,
     justifyContent: 'center',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   badgeText: {
     color: 'white',
     fontSize: 10,
     fontWeight: 'bold',
-  },
+  } as TextStyle,
 
-  // Notification preview card
+  // Notification card — always visible
   notifCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     padding: spacing.md,
     shadowColor: '#000',
@@ -559,176 +542,169 @@ const styles = StyleSheet.create<Styles>({
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
-  },
+  } as ViewStyle,
   notifContent: {
     flex: 1,
     marginRight: spacing.sm,
-  },
-  notifHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-    gap: 6,
-  },
+  } as ViewStyle,
   newBadge: {
-    backgroundColor: colors.primary + '18',
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
+    backgroundColor: colors.primary + '15',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 5,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+  } as ViewStyle,
   newBadgeText: {
     color: colors.primary,
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.5,
-  },
+  } as TextStyle,
   notifTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
-    flex: 1,
-  },
+    marginBottom: 4,
+    lineHeight: 20,
+  } as TextStyle,
   notifBody: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
-
-  // Quick grid
-  quickGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  quickItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    gap: 6,
-  },
-  quickIconBox: {
-    width: 54,
-    height: 54,
-    borderRadius: 15,
+    fontSize: 13,
+    lineHeight: 18,
+  } as TextStyle,
+  notifIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  pendingDot: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.danger,
-  },
+    flexShrink: 0,
+  } as ViewStyle,
+
+  // Quick grid — circular icons
+  quickGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  } as ViewStyle,
+  quickItem: {
+    alignItems: 'center',
+    gap: 6,
+    width: 70,
+  } as ViewStyle,
+  quickIconCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    justifyContent: 'center',
+    alignItems: 'center',
+  } as ViewStyle,
   quickLabel: {
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
     textAlign: 'center',
-  },
+  } as TextStyle,
 
   // Event cards
   eventCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderLeftWidth: 4,
     padding: spacing.sm + 2,
     marginBottom: spacing.sm,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 3,
     elevation: 1,
-  },
+  } as ViewStyle,
   eventDateBox: {
     width: 44,
     height: 44,
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.sm,
     flexShrink: 0,
-  },
+  } as ViewStyle,
   eventMonth: {
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.3,
-  },
+  } as TextStyle,
   eventDay: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
-    lineHeight: 19,
-  },
+    lineHeight: 18,
+  } as TextStyle,
   eventInfo: {
     flex: 1,
     overflow: 'hidden',
-  },
+  } as ViewStyle,
   eventTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginBottom: 3,
-  },
+  } as ViewStyle,
   eventTitle: {
     fontSize: 13,
     fontWeight: '700',
     flex: 1,
-  },
+  } as TextStyle,
   calBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
     flexShrink: 0,
-  },
+  } as ViewStyle,
   calBadgeText: {
     fontSize: 8,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
-  },
+  } as TextStyle,
   eventMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-  },
+  } as ViewStyle,
   eventMetaText: {
     fontSize: 11,
     flex: 1,
-  },
+  } as TextStyle,
   emptyEvents: {
     textAlign: 'center',
     fontSize: 14,
-    opacity: 0.7,
+    opacity: 0.6,
     paddingVertical: spacing.md,
-  },
+  } as TextStyle,
   calendarButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    marginTop: spacing.xs,
-    paddingVertical: 10,
-    borderRadius: 10,
+    marginTop: spacing.sm,
+    paddingVertical: 11,
+    borderRadius: 12,
     borderWidth: 1.5,
-  },
+  } as ViewStyle,
   calendarButtonText: {
     fontSize: 14,
     fontWeight: '700',
-  },
+  } as TextStyle,
 
   // Footer
   footer: {
     alignItems: 'center',
     paddingTop: spacing.xs,
-  },
+  } as ViewStyle,
   feedbackLink: {
     padding: spacing.sm,
     marginTop: 4,
-  },
+  } as ViewStyle,
   feedbackText: {
     fontSize: 12,
     opacity: 0.6,
-  },
+  } as TextStyle,
 });
