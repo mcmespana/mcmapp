@@ -3,534 +3,225 @@ import React, {
   ComponentProps,
   useState,
   useEffect,
-  useRef,
-  memo,
+  useMemo,
 } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   ViewStyle,
   TextStyle,
-  useWindowDimensions,
-  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link, LinkProps } from 'expo-router';
+import { Link } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
-import typography from '@/constants/typography';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import Toast from '@/components/Toast';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import featureFlags from '@/constants/featureFlags';
 import useWordleStats from '@/hooks/useWordleStats';
-import useUnreadNotificationsCount from '@/hooks/useUnreadNotificationsCount';
+import { useNotifications } from '@/contexts/NotificationsContext';
+import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
+import useCalendarEvents from '@/hooks/useCalendarEvents';
+import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
-interface NavigationItem {
-  href?: LinkProps['href'];
+const MONTHS_SHORT = [
+  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+];
+
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function getUpcomingEvents(
+  eventsByDate: Record<string, CalendarEvent[]>,
+  limit: number,
+): CalendarEvent[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
+  const seen = new Set<string>();
+  const events: CalendarEvent[] = [];
+
+  Object.entries(eventsByDate)
+    .filter(([date]) => date >= todayStr)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .forEach(([, evts]) => {
+      evts.forEach((evt) => {
+        const key = `${evt.title}|${evt.startDate}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          events.push(evt);
+        }
+      });
+    });
+
+  return events.slice(0, limit);
+}
+
+interface QuickItem {
+  key: string;
   label: string;
   icon: ComponentProps<typeof MaterialIcons>['name'];
-  backgroundColor: string;
-  color: string;
-  onPress?: string; // Para acciones especiales como 'feedback'
+  iconBg: string;
+  iconColor: string;
+  href: string;
+  pending?: boolean;
 }
-
-const navigationItems: NavigationItem[] = [
-  featureFlags.tabs.cancionero && {
-    href: '/cancionero',
-    label: 'Cantoral',
-    icon: 'library-music',
-    backgroundColor: colors.warning,
-    color: '#222',
-  },
-  featureFlags.tabs.calendario && {
-    href: '/calendario',
-    label: 'Calendario',
-    icon: 'event',
-    backgroundColor: colors.info, // Morado Jubileo
-    color: '#222',
-  },
-  featureFlags.tabs.fotos && {
-    href: '/fotos',
-    label: 'Fotos',
-    icon: 'photo-library',
-    backgroundColor: colors.accent,
-    color: '#222',
-  },
-  featureFlags.tabs.comunica && {
-    href: '/comunica',
-    label: 'Comunica',
-    icon: 'chat',
-    backgroundColor: '#9D1E74dd',
-    color: '#222',
-  },
-  {
-    href: '/wordle',
-    label: 'Wordle',
-    icon: 'sports-esports',
-    backgroundColor: '#A3BD31',
-    color: '#222',
-  },
-  {
-    label: '¿Nos ayudas?',
-    icon: 'bug-report',
-    backgroundColor: '#8E9AAFdd',
-    color: '#222',
-    onPress: 'feedback', // Indicador especial para abrir feedback
-  },
-].filter(Boolean) as NavigationItem[];
-
-interface IconButtonProps {
-  color: string;
-  onPress?: () => void;
-}
-
-function NotificationsButton({ color }: IconButtonProps) {
-  const { unreadCount } = useUnreadNotificationsCount();
-
-  // No mostrar badge si no hay notificaciones sin leer
-  if (unreadCount === 0) {
-    return (
-      <Link href="/notifications" asChild>
-        <TouchableOpacity
-          style={{ padding: 8, marginLeft: 4 }}
-          accessibilityLabel="Notificaciones"
-          accessibilityRole="button"
-        >
-          <MaterialIcons name="notifications" size={24} color={color} />
-        </TouchableOpacity>
-      </Link>
-    );
-  }
-
-  // Mostrar badge con el número de notificaciones sin leer
-  const badgeText = unreadCount > 99 ? '99+' : unreadCount.toString();
-  const badgeWidth = unreadCount > 9 ? 20 : 16;
-
-  return (
-    <Link href="/notifications" asChild>
-      <TouchableOpacity
-        style={{ padding: 8, marginLeft: 4 }}
-        accessibilityLabel={`Notificaciones, ${unreadCount} sin leer`}
-        accessibilityRole="button"
-      >
-        <View>
-          <MaterialIcons name="notifications" size={24} color={color} />
-          <View
-            style={{
-              position: 'absolute',
-              right: -4,
-              top: -2,
-              backgroundColor: colors.danger,
-              borderRadius: 10,
-              minWidth: badgeWidth,
-              height: 16,
-              paddingHorizontal: unreadCount > 9 ? 4 : 0,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
-              {badgeText}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    </Link>
-  );
-}
-
-function SettingsButton({
-  color,
-  onPress,
-}: IconButtonProps & { onPress: () => void }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{ padding: 8, marginLeft: 0 }}
-      accessibilityLabel="Ajustes"
-      accessibilityRole="button"
-    >
-      <MaterialIcons name="settings" size={24} color={color} />
-    </TouchableOpacity>
-  );
-}
-
-// Decoraciones contextuales para cada botón (memoized para evitar re-renders)
-const ContextualDecoration = memo(function ContextualDecoration({
-  type,
-}: {
-  type: string;
-}) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 20,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, scaleAnim]);
-
-  const animatedStyle = {
-    opacity: fadeAnim,
-    transform: [{ scale: scaleAnim }],
-  };
-
-  switch (type) {
-    case 'Cantoral':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Notas musicales y ondas */}
-          <View style={[styles.musicNote, styles.note1]} />
-          <View style={[styles.musicNote, styles.note2]} />
-          <View style={[styles.musicWave, styles.wave1]} />
-          <View style={[styles.musicWave, styles.wave2]} />
-        </Animated.View>
-      );
-
-    case 'Calendario':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Puntos de calendario y líneas temporales */}
-          <View style={[styles.calendarDot, styles.dot1]} />
-          <View style={[styles.calendarDot, styles.dot2]} />
-          <View style={[styles.calendarDot, styles.dot3]} />
-          <View style={[styles.timelineBar, styles.timeline1]} />
-          <View style={[styles.timelineBar, styles.timeline2]} />
-        </Animated.View>
-      );
-
-    case 'Fotos':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Marcos de fotos y flashes */}
-          <View style={[styles.photoFrame, styles.frame1]} />
-          <View style={[styles.photoFrame, styles.frame2]} />
-          <View style={[styles.flashRay, styles.ray1]} />
-          <View style={[styles.flashRay, styles.ray2]} />
-        </Animated.View>
-      );
-
-    case 'Comunica':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Burbujas de chat y conexiones */}
-          <View style={[styles.chatBubble, styles.bubble1]} />
-          <View style={[styles.chatBubble, styles.bubble2]} />
-          <View style={[styles.connectionLine, styles.connection1]} />
-          <View style={[styles.connectionLine, styles.connection2]} />
-        </Animated.View>
-      );
-
-    case 'Wordle':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Cuadrados y líneas de Wordle */}
-          <View style={[styles.wordleSquare, styles.wordleCorrect]} />
-          <View style={[styles.wordleSquare, styles.wordlePresent]} />
-          <View style={[styles.wordleSquare, styles.wordleAbsent]} />
-          <View style={[styles.wordleLine, styles.wordleRow1]} />
-          <View style={[styles.wordleLine, styles.wordleRow2]} />
-        </Animated.View>
-      );
-
-    case '¿Fallitos?':
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Decoración para fallitos/bugs */}
-          <View style={[styles.bugDot, styles.bug1]} />
-          <View style={[styles.bugDot, styles.bug2]} />
-          <View style={[styles.bugDot, styles.bug3]} />
-          <View style={[styles.debugLine, styles.debug1]} />
-          <View style={[styles.debugLine, styles.debug2]} />
-        </Animated.View>
-      );
-
-    default:
-      return (
-        <Animated.View style={[styles.decorationContainer, animatedStyle]}>
-          {/* Decoración minimalista para otros casos */}
-          <View style={[styles.hourglass, styles.sand1]} />
-          <View style={[styles.hourglass, styles.sand2]} />
-          <View style={[styles.dots, styles.loadingDot1]} />
-          <View style={[styles.dots, styles.loadingDot2]} />
-          <View style={[styles.dots, styles.loadingDot3]} />
-        </Animated.View>
-      );
-  }
-});
 
 export default function Home() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
+  const theme = Colors[scheme ?? 'light'];
   const featureFlags = useFeatureFlags();
   const { stats } = useWordleStats();
   const [pendingWordle, setPendingWordle] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
-  const { width, height } = useWindowDimensions();
-  const containerPadding = spacing.md;
-  const gap = spacing.md;
-  const itemWidth = (width - containerPadding * 2 - gap) / 2;
-  const itemHeight = Math.min(
-    160,
-    (height - containerPadding * 2 - gap * 3) / 3,
+
+  const { firebaseNotifications, readIds, unreadCount } = useNotifications();
+  const latestUnread = useMemo(
+    () => firebaseNotifications.find((n) => !readIds.has(n.id)),
+    [firebaseNotifications, readIds],
   );
 
-  // Animaciones para cada elemento (useRef evita recreación en re-renders)
-  const itemAnimations = useRef(
-    navigationItems.map(() => ({
-      translateX: new Animated.Value(0),
-      translateY: new Animated.Value(0),
-      opacity: new Animated.Value(0),
-      scale: new Animated.Value(0.8),
-    })),
-  ).current;
+  const { calendarConfigs } = useCalendarConfigs();
+  const { eventsByDate } = useCalendarEvents(calendarConfigs);
+  const upcomingEvents = useMemo(
+    () => getUpcomingEvents(eventsByDate, 2),
+    [eventsByDate],
+  );
 
-  // Función para manejar acciones especiales
-  const handleSpecialAction = (action: string) => {
-    if (action === 'feedback') {
-      setFeedbackVisible(true);
+  const quickItems = useMemo<QuickItem[]>(
+    () =>
+      [
+        featureFlags.tabs.cancionero && {
+          key: 'cancionero',
+          label: 'Cantoral',
+          icon: 'library-music' as const,
+          iconBg: scheme === 'dark' ? '#4A3A00' : '#FFF3CD',
+          iconColor: colors.warning,
+          href: '/cancionero',
+        },
+        featureFlags.tabs.calendario && {
+          key: 'calendario',
+          label: 'Calendario',
+          icon: 'event' as const,
+          iconBg: scheme === 'dark' ? '#0A2A3A' : '#D1ECF8',
+          iconColor: colors.info,
+          href: '/calendario',
+        },
+        featureFlags.tabs.fotos && {
+          key: 'fotos',
+          label: 'Fotos',
+          icon: 'photo-library' as const,
+          iconBg: scheme === 'dark' ? '#3A0A0C' : '#FAD7D9',
+          iconColor: colors.accent,
+          href: '/fotos',
+        },
+        {
+          key: 'wordle',
+          label: 'Wordle',
+          icon: 'sports-esports' as const,
+          iconBg: scheme === 'dark' ? '#1A2E00' : '#D7EBB8',
+          iconColor: colors.success,
+          href: '/wordle',
+          pending: pendingWordle,
+        },
+      ].filter(Boolean) as QuickItem[],
+    [featureFlags.tabs, pendingWordle, scheme],
+  );
+
+  useEffect(() => {
+    const now = new Date();
+    let dateKey = now.toISOString().slice(0, 10);
+    let cycle: 'morning' | 'evening' = 'morning';
+    if (now.getHours() < 7) {
+      const y = new Date(now);
+      y.setDate(y.getDate() - 1);
+      dateKey = y.toISOString().slice(0, 10);
+      cycle = 'evening';
+    } else if (now.getHours() >= 19) {
+      cycle = 'evening';
     }
-  };
-
-  // Función para mostrar toast de éxito
-  const handleFeedbackSuccess = () => {
-    setToastVisible(true);
-  };
-
-  useEffect(() => {
-    const check = () => {
-      const now = new Date();
-      let dateKey = now.toISOString().slice(0, 10);
-      let cycle: 'morning' | 'evening' = 'morning';
-      if (now.getHours() < 7) {
-        const y = new Date(now);
-        y.setDate(y.getDate() - 1);
-        dateKey = y.toISOString().slice(0, 10);
-        cycle = 'evening';
-      } else if (now.getHours() >= 19) {
-        cycle = 'evening';
-      }
-      const key = `${dateKey}_${cycle}`;
-      setPendingWordle(stats.lastPlayedKey !== key);
-    };
-    check();
+    const key = `${dateKey}_${cycle}`;
+    setPendingWordle(stats.lastPlayedKey !== key);
   }, [stats]);
-
-  useEffect(() => {
-    // Definir direcciones de entrada para cada elemento
-    const getInitialPosition = (index: number) => {
-      switch (index % 6) {
-        case 0:
-          return { x: -100, y: 0 }; // Desde la izquierda
-        case 1:
-          return { x: 100, y: 0 }; // Desde la derecha
-        case 2:
-          return { x: -80, y: -50 }; // Desde izquierda-arriba
-        case 3:
-          return { x: 80, y: -50 }; // Desde derecha-arriba
-        case 4:
-          return { x: -60, y: 50 }; // Desde izquierda-abajo
-        case 5:
-          return { x: 60, y: 50 }; // Desde derecha-abajo
-        default:
-          return { x: 0, y: -80 }; // Desde arriba
-      }
-    };
-
-    // Establecer posiciones iniciales
-    itemAnimations.forEach((anim, index) => {
-      const { x, y } = getInitialPosition(index);
-      anim.translateX.setValue(x);
-      anim.translateY.setValue(y);
-      anim.opacity.setValue(0);
-      anim.scale.setValue(0.8);
-    });
-
-    // Animar entrada con delay escalonado
-    const animations = itemAnimations.map((anim, index) =>
-      Animated.parallel([
-        Animated.timing(anim.translateX, {
-          toValue: 0,
-          duration: 400,
-          delay: index * 80, // Delay muy breve entre elementos
-          useNativeDriver: true,
-        }),
-        Animated.timing(anim.translateY, {
-          toValue: 0,
-          duration: 400,
-          delay: index * 80,
-          useNativeDriver: true,
-        }),
-        Animated.timing(anim.opacity, {
-          toValue: 1,
-          duration: 300,
-          delay: index * 80,
-          useNativeDriver: true,
-        }),
-        Animated.spring(anim.scale, {
-          toValue: 1,
-          tension: 100,
-          friction: 8,
-          delay: index * 80,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    Animated.stagger(0, animations).start();
-  }, [itemAnimations]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <View style={[styles.headerButtons, { paddingRight: spacing.md }]}>
-          <SettingsButton
-            color={Colors[scheme ?? 'light'].icon}
+          <TouchableOpacity
             onPress={() => setSettingsVisible(true)}
-          />
+            style={styles.headerIconBtn}
+            accessibilityLabel="Perfil y ajustes"
+            accessibilityRole="button"
+          >
+            <MaterialIcons
+              name="account-circle"
+              size={26}
+              color={theme.icon}
+            />
+          </TouchableOpacity>
           {featureFlags.showNotificationsIcon && (
-            <NotificationsButton color={Colors[scheme ?? 'light'].icon} />
+            <Link href="/notifications" asChild>
+              <TouchableOpacity
+                style={styles.headerIconBtn}
+                accessibilityLabel={
+                  unreadCount > 0
+                    ? `Notificaciones, ${unreadCount} sin leer`
+                    : 'Notificaciones'
+                }
+                accessibilityRole="button"
+              >
+                <View>
+                  <MaterialIcons
+                    name="notifications"
+                    size={24}
+                    color={theme.icon}
+                  />
+                  {unreadCount > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </Link>
           )}
         </View>
       ),
       title: 'Inicio',
     });
-  }, [navigation, scheme, featureFlags.showNotificationsIcon]);
+  }, [navigation, theme.icon, featureFlags.showNotificationsIcon, unreadCount]);
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
+      edges={['top']}
+    >
       <SettingsPanel
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
       />
-      <FlatList
-        style={{ backgroundColor: Colors[scheme ?? 'light'].background }}
-        data={navigationItems}
-        keyExtractor={(_, index) => index.toString()}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={[
-          styles.container,
-          { padding: containerPadding },
-        ]}
-        renderItem={({ item, index }) => {
-          const animStyle = itemAnimations[index]
-            ? {
-                opacity: itemAnimations[index].opacity,
-                transform: [
-                  { translateX: itemAnimations[index].translateX },
-                  { translateY: itemAnimations[index].translateY },
-                  { scale: itemAnimations[index].scale },
-                ],
-              }
-            : {};
-
-          const content = (
-            <Animated.View
-              style={[
-                styles.item,
-                {
-                  backgroundColor: item.backgroundColor, // Color principal
-                  width: itemWidth,
-                  height: itemHeight,
-                },
-                animStyle,
-              ]}
-            >
-              {/* Overlay sutil para dar profundidad */}
-              <View
-                style={[
-                  StyleSheet.absoluteFillObject,
-                  {
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    borderRadius: 16,
-                  },
-                ]}
-              />
-              <ContextualDecoration type={item.label} />
-              <View>
-                <MaterialIcons
-                  name={item.icon}
-                  size={48}
-                  color={item.color}
-                  style={styles.icon}
-                />
-                {item.label === 'Wordle' && pendingWordle && (
-                  <View
-                    style={{
-                      position: 'absolute',
-                      top: -4,
-                      right: -4,
-                      backgroundColor: colors.danger,
-                      width: 12,
-                      height: 12,
-                      borderRadius: 6,
-                    }}
-                  />
-                )}
-              </View>
-              <Text style={[styles.label, { color: item.color }]}>
-                {item.label}
-              </Text>
-            </Animated.View>
-          );
-          return item.href ? (
-            <Link href={item.href} asChild>
-              <TouchableOpacity
-                style={styles.itemWrapper}
-                accessibilityLabel={item.label}
-                accessibilityRole="button"
-              >
-                {content}
-              </TouchableOpacity>
-            </Link>
-          ) : item.onPress ? (
-            <TouchableOpacity
-              style={styles.itemWrapper}
-              onPress={() => handleSpecialAction(item.onPress!)}
-              accessibilityLabel={item.label}
-              accessibilityRole="button"
-            >
-              {content}
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.itemWrapper}>{content}</View>
-          );
-        }}
-      />
-
-      {/* Versión de la app */}
-      <VersionDisplay style={styles.versionContainer} />
-
-      {/* Modal de feedback */}
       <AppFeedbackModal
         visible={feedbackVisible}
         onClose={() => setFeedbackVisible(false)}
-        onSuccess={handleFeedbackSuccess}
+        onSuccess={() => setToastVisible(true)}
       />
-
-      {/* Toast de éxito para feedback */}
       <Toast
         visible={toastVisible}
         message="¡Gracias! Tu comentario ha sido enviado correctamente. Nos ayudas a mejorar la app 🙌"
@@ -538,434 +229,506 @@ export default function Home() {
         duration={4000}
         onDismiss={() => setToastVisible(false)}
       />
+
+      <ScrollView
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Novedades — solo cuando hay notificaciones sin leer */}
+        {latestUnread && (
+          <View style={styles.section}>
+            <Link href="/notifications" asChild>
+              <TouchableOpacity
+                style={[
+                  styles.notifCard,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.icon + '25',
+                  },
+                ]}
+                accessibilityLabel={`Novedad: ${latestUnread.title}. Toca para ver todas las novedades`}
+                accessibilityRole="button"
+              >
+                <View style={styles.notifContent}>
+                  <View style={styles.notifHeaderRow}>
+                    <View style={styles.newBadge}>
+                      <Text style={styles.newBadgeText}>NUEVO</Text>
+                    </View>
+                    <Text
+                      style={[styles.notifTitle, { color: theme.text }]}
+                      numberOfLines={1}
+                    >
+                      {latestUnread.title}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[styles.notifBody, { color: theme.icon }]}
+                    numberOfLines={2}
+                  >
+                    {latestUnread.body}
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={22}
+                  color={theme.icon}
+                  style={{ opacity: 0.4 }}
+                />
+              </TouchableOpacity>
+            </Link>
+          </View>
+        )}
+
+        {/* Accesos rápidos */}
+        <View style={styles.section}>
+          <View style={styles.quickGrid}>
+            {quickItems.map((item) => (
+              <Link key={item.key} href={item.href as any} asChild>
+                <TouchableOpacity
+                  style={styles.quickItem}
+                  accessibilityLabel={item.label}
+                  accessibilityRole="button"
+                >
+                  <View
+                    style={[
+                      styles.quickIconBox,
+                      { backgroundColor: item.iconBg },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={item.icon}
+                      size={24}
+                      color={item.iconColor}
+                    />
+                    {item.pending && <View style={styles.pendingDot} />}
+                  </View>
+                  <Text
+                    style={[styles.quickLabel, { color: theme.icon }]}
+                    numberOfLines={1}
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              </Link>
+            ))}
+          </View>
+        </View>
+
+        {/* Próximos eventos */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Próximos eventos
+          </Text>
+
+          {upcomingEvents.length > 0 ? (
+            upcomingEvents.map((evt, idx) => {
+              const evtDate = parseLocalDate(evt.startDate);
+              const calColor =
+                calendarConfigs[evt.calendarIndex]?.color ?? colors.info;
+              const calName = calendarConfigs[evt.calendarIndex]?.name;
+              return (
+                <Link
+                  key={`${evt.title}|${evt.startDate}|${idx}`}
+                  href="/calendario"
+                  asChild
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.eventCard,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.icon + '20',
+                        borderLeftColor: calColor,
+                      },
+                    ]}
+                    accessibilityRole="button"
+                  >
+                    <View
+                      style={[
+                        styles.eventDateBox,
+                        { backgroundColor: calColor + '22' },
+                      ]}
+                    >
+                      <Text
+                        style={[styles.eventMonth, { color: calColor }]}
+                      >
+                        {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
+                      </Text>
+                      <Text style={[styles.eventDay, { color: calColor }]}>
+                        {evtDate.getDate()}
+                      </Text>
+                    </View>
+
+                    <View style={styles.eventInfo}>
+                      <View style={styles.eventTitleRow}>
+                        <Text
+                          style={[styles.eventTitle, { color: theme.text }]}
+                          numberOfLines={1}
+                        >
+                          {evt.title}
+                        </Text>
+                        {calName && (
+                          <View
+                            style={[
+                              styles.calBadge,
+                              { backgroundColor: calColor + '22' },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.calBadgeText,
+                                { color: calColor },
+                              ]}
+                            >
+                              {calName}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      {evt.location ? (
+                        <View style={styles.eventMeta}>
+                          <MaterialIcons
+                            name="place"
+                            size={11}
+                            color={theme.icon}
+                          />
+                          <Text
+                            style={[
+                              styles.eventMetaText,
+                              { color: theme.icon },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {evt.location}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+
+                    <MaterialIcons
+                      name="chevron-right"
+                      size={20}
+                      color={theme.icon}
+                      style={{ opacity: 0.35 }}
+                    />
+                  </TouchableOpacity>
+                </Link>
+              );
+            })
+          ) : (
+            <Text style={[styles.emptyEvents, { color: theme.icon }]}>
+              Sin eventos próximos
+            </Text>
+          )}
+
+          <Link href="/calendario" asChild>
+            <TouchableOpacity
+              style={[
+                styles.calendarButton,
+                { borderColor: colors.primary + '35' },
+              ]}
+              accessibilityRole="button"
+            >
+              <MaterialIcons
+                name="calendar-today"
+                size={15}
+                color={colors.primary}
+              />
+              <Text
+                style={[styles.calendarButtonText, { color: colors.primary }]}
+              >
+                Ver calendario
+              </Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+
+        {/* Pie */}
+        <View style={styles.footer}>
+          <VersionDisplay />
+          <TouchableOpacity
+            onPress={() => setFeedbackVisible(true)}
+            style={styles.feedbackLink}
+          >
+            <Text style={[styles.feedbackText, { color: theme.icon }]}>
+              ¿Algún fallo? Cuéntanoslo
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 interface Styles {
-  container: ViewStyle;
-  row: ViewStyle;
-  itemWrapper: ViewStyle;
-  item: ViewStyle;
-  icon: TextStyle;
-  label: TextStyle;
+  safeArea: ViewStyle;
+  scrollContent: ViewStyle;
+  section: ViewStyle;
+  sectionTitle: TextStyle;
   headerButtons: ViewStyle;
-  circle: ViewStyle;
-  circleSmall: ViewStyle;
-  circleLarge: ViewStyle;
-  // Decoraciones contextuales
-  decorationContainer: ViewStyle;
-  // Cantoral - notas musicales
-  musicNote: ViewStyle;
-  note1: ViewStyle;
-  note2: ViewStyle;
-  musicWave: ViewStyle;
-  wave1: ViewStyle;
-  wave2: ViewStyle;
-  // Calendario - puntos y líneas
-  calendarDot: ViewStyle;
-  dot1: ViewStyle;
-  dot2: ViewStyle;
-  dot3: ViewStyle;
-  timelineBar: ViewStyle;
-  timeline1: ViewStyle;
-  timeline2: ViewStyle;
-  // Fotos - marcos y flashes
-  photoFrame: ViewStyle;
-  frame1: ViewStyle;
-  frame2: ViewStyle;
-  flashRay: ViewStyle;
-  ray1: ViewStyle;
-  ray2: ViewStyle;
-  // Comunica - burbujas y conexiones
-  chatBubble: ViewStyle;
-  bubble1: ViewStyle;
-  bubble2: ViewStyle;
-  connectionLine: ViewStyle;
-  connection1: ViewStyle;
-  connection2: ViewStyle;
-  // Wordle - cuadrados y líneas
-  wordleSquare: ViewStyle;
-  wordleCorrect: ViewStyle;
-  wordlePresent: ViewStyle;
-  wordleAbsent: ViewStyle;
-  wordleLine: ViewStyle;
-  wordleRow1: ViewStyle;
-  wordleRow2: ViewStyle;
-  // Fallitos - bugs y debug
-  bugDot: ViewStyle;
-  bug1: ViewStyle;
-  bug2: ViewStyle;
-  bug3: ViewStyle;
-  debugLine: ViewStyle;
-  debug1: ViewStyle;
-  debug2: ViewStyle;
-  // Próximamente - reloj de arena
-  hourglass: ViewStyle;
-  sand1: ViewStyle;
-  sand2: ViewStyle;
-  dots: ViewStyle;
-  loadingDot1: ViewStyle;
-  loadingDot2: ViewStyle;
-  loadingDot3: ViewStyle;
-  versionContainer: ViewStyle;
+  headerIconBtn: ViewStyle;
+  badge: ViewStyle;
+  badgeText: TextStyle;
+  notifCard: ViewStyle;
+  notifContent: ViewStyle;
+  notifHeaderRow: ViewStyle;
+  newBadge: ViewStyle;
+  newBadgeText: TextStyle;
+  notifTitle: TextStyle;
+  notifBody: TextStyle;
+  quickGrid: ViewStyle;
+  quickItem: ViewStyle;
+  quickIconBox: ViewStyle;
+  pendingDot: ViewStyle;
+  quickLabel: TextStyle;
+  eventCard: ViewStyle;
+  eventDateBox: ViewStyle;
+  eventMonth: TextStyle;
+  eventDay: TextStyle;
+  eventInfo: ViewStyle;
+  eventTitleRow: ViewStyle;
+  eventTitle: TextStyle;
+  calBadge: ViewStyle;
+  calBadgeText: TextStyle;
+  eventMeta: ViewStyle;
+  eventMetaText: TextStyle;
+  emptyEvents: TextStyle;
+  calendarButton: ViewStyle;
+  calendarButtonText: TextStyle;
+  footer: ViewStyle;
+  feedbackLink: ViewStyle;
+  feedbackText: TextStyle;
 }
 
 const styles = StyleSheet.create<Styles>({
-  container: {
-    padding: spacing.md,
-  },
-  row: {
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  itemWrapper: {
+  safeArea: {
     flex: 1,
-    marginHorizontal: spacing.sm / 2,
   },
-  item: {
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+  scrollContent: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
   },
-  icon: {
+  section: {
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
     marginBottom: spacing.sm,
-    zIndex: 2,
+    letterSpacing: 0.1,
   },
-  label: {
-    ...(typography.button as TextStyle),
-    fontWeight: 'bold',
-    textAlign: 'center',
-    zIndex: 2,
-  },
+
+  // Header
   headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  circle: {
+  headerIconBtn: {
+    padding: 8,
+    marginLeft: 2,
+  },
+  badge: {
     position: 'absolute',
-    opacity: 0.2,
-    backgroundColor: '#ffffff',
-  },
-  circleSmall: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    top: 8,
-    left: 8,
-  },
-  circleLarge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    bottom: 8,
-    right: 8,
-  },
-
-  // Decoraciones contextuales
-  decorationContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-
-  // Cantoral - notas musicales
-  musicNote: {
-    position: 'absolute',
-    opacity: 0.25,
-    backgroundColor: '#333',
-    borderRadius: 6,
-  },
-  note1: {
-    width: 6,
-    height: 6,
-    top: 14,
-    left: 14,
-  },
-  note2: {
-    width: 4,
-    height: 4,
-    bottom: 20,
-    right: 16,
-    backgroundColor: '#555',
-  },
-  musicWave: {
-    position: 'absolute',
-    opacity: 0.2,
-    backgroundColor: 'transparent',
-    borderTopWidth: 2,
-    borderTopColor: '#333',
-    borderStyle: 'solid',
-  },
-  wave1: {
-    width: 20,
-    height: 2,
-    top: 18,
-    right: 12,
-    borderRadius: 1,
-  },
-  wave2: {
-    width: 16,
-    height: 2,
-    bottom: 24,
-    left: 14,
-    borderRadius: 1,
-  },
-
-  // Calendario - puntos y líneas
-  calendarDot: {
-    position: 'absolute',
-    opacity: 0.3,
-    backgroundColor: '#673AB7',
-    borderRadius: 3,
-    width: 6,
-    height: 6,
-  },
-  dot1: {
-    top: 16,
-    left: 16,
-  },
-  dot2: {
-    top: 20,
-    right: 20,
-    backgroundColor: '#9C27B0',
-  },
-  dot3: {
-    bottom: 20,
-    left: 20,
-    backgroundColor: '#3F51B5',
-  },
-  timelineBar: {
-    position: 'absolute',
-    opacity: 0.2,
-    backgroundColor: '#673AB7',
-    borderRadius: 1,
-  },
-  timeline1: {
-    width: 2,
-    height: 20,
-    top: 12,
-    right: 14,
-  },
-  timeline2: {
-    width: 16,
-    height: 2,
-    bottom: 16,
-    right: 12,
-  },
-
-  // Fotos - marcos y flashes
-  photoFrame: {
-    position: 'absolute',
-    opacity: 0.25,
-    borderWidth: 2,
-    borderColor: '#FFF',
-    backgroundColor: 'transparent',
-  },
-  frame1: {
-    width: 16,
-    height: 12,
-    top: 12,
-    left: 12,
-    borderRadius: 2,
-  },
-  frame2: {
-    width: 12,
-    height: 10,
-    bottom: 16,
-    right: 14,
-    borderRadius: 1,
-  },
-  flashRay: {
-    position: 'absolute',
-    opacity: 0.3,
-    backgroundColor: '#FFEB3B',
-    transform: [{ rotate: '45deg' }],
-  },
-  ray1: {
-    width: 12,
-    height: 2,
-    top: 20,
-    right: 20,
-    borderRadius: 1,
-  },
-  ray2: {
-    width: 8,
-    height: 1,
-    bottom: 24,
-    left: 18,
-    borderRadius: 0.5,
-  },
-
-  // Comunica - burbujas y conexiones
-  chatBubble: {
-    position: 'absolute',
-    opacity: 0.25,
-    backgroundColor: '#FFF',
-    borderRadius: 6,
-  },
-  bubble1: {
-    width: 12,
-    height: 8,
-    top: 14,
-    left: 14,
-  },
-  bubble2: {
-    width: 8,
-    height: 6,
-    bottom: 18,
-    right: 16,
-  },
-  connectionLine: {
-    position: 'absolute',
-    opacity: 0.2,
-    backgroundColor: '#FFF',
-    borderRadius: 1,
-  },
-  connection1: {
-    width: 2,
+    right: -4,
+    top: -2,
+    backgroundColor: colors.danger,
+    borderRadius: 10,
+    minWidth: 16,
     height: 16,
-    top: 16,
-    right: 12,
+    paddingHorizontal: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  connection2: {
-    width: 14,
-    height: 2,
-    bottom: 20,
-    left: 12,
-  },
-
-  // Wordle - cuadrados y líneas
-  wordleSquare: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 2,
-    opacity: 0.3,
-  },
-  wordleCorrect: {
-    backgroundColor: '#6AAA64',
-    top: 14,
-    left: 14,
-  },
-  wordlePresent: {
-    backgroundColor: '#C9B458',
-    top: 16,
-    right: 18,
-  },
-  wordleAbsent: {
-    backgroundColor: '#787C7E',
-    bottom: 18,
-    left: 16,
-  },
-  wordleLine: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 1,
-    opacity: 0.4,
-  },
-  wordleRow1: {
-    width: 20,
-    height: 2,
-    top: 20,
-    right: 12,
-  },
-  wordleRow2: {
-    width: 16,
-    height: 2,
-    bottom: 22,
-    right: 14,
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 
-  // Fallitos - bugs y debug
-  bugDot: {
+  // Notification preview card
+  notifCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  notifContent: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  notifHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    gap: 6,
+  },
+  newBadge: {
+    backgroundColor: colors.primary + '18',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  newBadgeText: {
+    color: colors.primary,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  notifTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    flex: 1,
+  },
+  notifBody: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  // Quick grid
+  quickGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  quickItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    gap: 6,
+  },
+  quickIconBox: {
+    width: 54,
+    height: 54,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pendingDot: {
     position: 'absolute',
-    opacity: 0.3,
-    backgroundColor: '#666',
-    borderRadius: 2,
-    width: 4,
-    height: 4,
-  },
-  bug1: {
-    top: 14,
-    left: 14,
-  },
-  bug2: {
-    top: 20,
-    right: 20,
-    backgroundColor: '#888',
-  },
-  bug3: {
-    bottom: 18,
-    left: 18,
-    backgroundColor: '#999',
-  },
-  debugLine: {
-    position: 'absolute',
-    opacity: 0.2,
-    backgroundColor: '#666',
-    borderRadius: 1,
-  },
-  debug1: {
-    width: 2,
-    height: 12,
-    top: 16,
-    right: 16,
-  },
-  debug2: {
+    top: -2,
+    right: -2,
     width: 10,
-    height: 2,
-    bottom: 22,
-    right: 14,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.danger,
+  },
+  quickLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    textAlign: 'center',
   },
 
-  // Próximamente - reloj de arena
-  hourglass: {
-    position: 'absolute',
-    opacity: 0.25,
-    backgroundColor: '#FFF',
-    borderRadius: 1,
+  // Event cards
+  eventCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderLeftWidth: 4,
+    padding: spacing.sm + 2,
+    marginBottom: spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  sand1: {
-    width: 6,
-    height: 3,
-    top: 16,
-    left: 16,
+  eventDateBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+    flexShrink: 0,
   },
-  sand2: {
-    width: 4,
-    height: 2,
-    bottom: 20,
-    right: 18,
+  eventMonth: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
-  dots: {
-    position: 'absolute',
-    opacity: 0.3,
-    backgroundColor: '#FFF',
-    borderRadius: 2,
-    width: 4,
-    height: 4,
+  eventDay: {
+    fontSize: 17,
+    fontWeight: '800',
+    lineHeight: 19,
   },
-  loadingDot1: {
-    top: 20,
-    right: 24,
+  eventInfo: {
+    flex: 1,
+    overflow: 'hidden',
   },
-  loadingDot2: {
-    top: 20,
-    right: 16,
-    opacity: 0.2,
+  eventTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
   },
-  loadingDot3: {
-    top: 20,
-    right: 8,
-    opacity: 0.1,
+  eventTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    flex: 1,
   },
-  versionContainer: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
+  calBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+  calBadgeText: {
+    fontSize: 8,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  eventMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  eventMetaText: {
+    fontSize: 11,
+    flex: 1,
+  },
+  emptyEvents: {
+    textAlign: 'center',
+    fontSize: 14,
+    opacity: 0.7,
+    paddingVertical: spacing.md,
+  },
+  calendarButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: spacing.xs,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+  },
+  calendarButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  // Footer
+  footer: {
+    alignItems: 'center',
+    paddingTop: spacing.xs,
+  },
+  feedbackLink: {
+    padding: spacing.sm,
+    marginTop: 4,
+  },
+  feedbackText: {
+    fontSize: 12,
+    opacity: 0.6,
   },
 });
