@@ -32,6 +32,7 @@ export default function SongFontPanel({
   onSetFontFamily,
 }: Props) {
   const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const theme = Colors[scheme];
 
   const reset = () => {
@@ -43,91 +44,97 @@ export default function SongFontPanel({
 
   const increase = () => onSetFontSize(currentFontSize + 0.1);
   const decrease = () => onSetFontSize(Math.max(0.6, currentFontSize - 0.1));
+  const percentage = ((currentFontSize / DEFAULT_FONT_SIZE_EM) * 100).toFixed(
+    0,
+  );
 
   return (
     <BottomSheet visible={visible} onClose={onClose}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} accessibilityLabel="Cerrar">
-          <MaterialIcons name="close" size={24} color={theme.text} />
+      <View style={styles.handle} />
+      <Text style={[styles.title, { color: theme.text }]}>Tipo de letra</Text>
+
+      <View style={styles.sizeSection}>
+        <TouchableOpacity
+          onPress={decrease}
+          style={[styles.sizeButton, isDark && styles.sizeButtonDark]}
+        >
+          <MaterialIcons name="remove" size={22} color={theme.text} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={reset} style={styles.sizeDisplay}>
+          <Text style={[styles.sizeValue, { color: theme.text }]}>
+            {percentage}%
+          </Text>
+          <Text style={styles.sizeLabel}>Tamaño</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={increase}
+          style={[styles.sizeButton, isDark && styles.sizeButtonDark]}
+        >
+          <MaterialIcons name="add" size={22} color={theme.text} />
         </TouchableOpacity>
       </View>
-      <View style={styles.row}>
-        <TouchableOpacity onPress={decrease}>
-          <MaterialIcons
-            name="text-fields"
-            size={24}
-            color={theme.text}
-            style={{ transform: [{ scaleY: 0.8 }] }}
-          />
-        </TouchableOpacity>
-        <Text style={[styles.value, { color: theme.text }]} onPress={reset}>
-          {((currentFontSize / DEFAULT_FONT_SIZE_EM) * 100).toFixed(0)}%
-        </Text>
-        <TouchableOpacity onPress={increase}>
-          <MaterialIcons name="text-fields" size={32} color={theme.text} />
-        </TouchableOpacity>
-      </View>
+
       <View style={styles.fontList}>
-        {availableFonts.map((font) => (
-          <TouchableOpacity
-            key={font.cssValue}
-            style={[
-              styles.fontButton,
-              {
-                backgroundColor:
-                  font.cssValue === currentFontFamily ? '#e3f2fd' : '#f8f9fa',
-                borderWidth: 1,
-                borderColor:
-                  font.cssValue === currentFontFamily ? '#90caf9' : '#dee2e6',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 2,
-                elevation: font.cssValue === currentFontFamily ? 2 : 1,
-              },
-            ]}
-            onPress={() => onSetFontFamily(font.cssValue)}
-          >
-            <Text
+        {availableFonts.map((font) => {
+          const isActive = font.cssValue === currentFontFamily;
+          return (
+            <TouchableOpacity
+              key={font.cssValue}
               style={[
-                styles.fontText,
-                {
-                  ...(getNativeFontFamily(font.cssValue) && {
-                    fontFamily: getNativeFontFamily(font.cssValue),
-                  }),
-                  color:
-                    font.cssValue === currentFontFamily ? '#1565c0' : '#495057',
-                  fontWeight:
-                    font.cssValue === currentFontFamily ? '600' : 'normal',
-                },
+                styles.fontButton,
+                isDark && styles.fontButtonDark,
+                isActive &&
+                  (isDark
+                    ? styles.fontButtonActiveDark
+                    : styles.fontButtonActive),
               ]}
+              onPress={() => onSetFontFamily(font.cssValue)}
+              activeOpacity={0.7}
             >
-              {font.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.fontText,
+                  {
+                    ...(getNativeFontFamily(font.cssValue) && {
+                      fontFamily: getNativeFontFamily(font.cssValue),
+                    }),
+                    color: isActive
+                      ? isDark
+                        ? '#7AB3FF'
+                        : '#253883'
+                      : isDark
+                        ? '#EBEBF0'
+                        : '#1C1C1E',
+                    fontWeight: isActive ? '600' : '400',
+                  },
+                ]}
+              >
+                {font.name}
+              </Text>
+              {isActive && (
+                <MaterialIcons
+                  name="check"
+                  size={20}
+                  color={isDark ? '#7AB3FF' : '#253883'}
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
+
       <TouchableOpacity
-        style={[
-          styles.resetButton,
-          {
-            backgroundColor: '#e9ecef',
-            borderWidth: 1,
-            borderColor: '#ced4da',
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            borderRadius: 8,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 2,
-            elevation: 2,
-          },
-        ]}
+        style={[styles.resetButton, isDark && styles.resetButtonDark]}
         onPress={reset}
+        activeOpacity={0.7}
       >
+        <MaterialIcons
+          name="refresh"
+          size={18}
+          color={isDark ? '#AEAEB2' : '#636366'}
+        />
         <Text
-          style={[styles.resetText, { color: '#495057', fontWeight: '600' }]}
+          style={[styles.resetText, { color: isDark ? '#AEAEB2' : '#636366' }]}
         >
           Restablecer
         </Text>
@@ -137,29 +144,96 @@ export default function SongFontPanel({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 10,
+  handle: {
+    width: 36,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: 'rgba(128,128,128,0.3)',
+    alignSelf: 'center',
+    marginBottom: 16,
   },
-  row: {
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 20,
+    textAlign: 'center',
+    letterSpacing: -0.4,
+  },
+  sizeSection: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    gap: 16,
+  },
+  sizeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F2F2F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sizeButtonDark: {
+    backgroundColor: '#3A3A3C',
+  },
+  sizeDisplay: {
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  sizeValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  sizeLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  fontList: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  fontButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: '#F2F2F7',
   },
-  value: { fontWeight: 'bold', fontSize: 16 },
-  fontList: {},
-  fontButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    marginBottom: 12,
+  fontButtonDark: {
+    backgroundColor: '#3A3A3C',
+  },
+  fontButtonActive: {
+    backgroundColor: '#E8F0FE',
+    borderWidth: 1.5,
+    borderColor: '#BDD4F7',
+  },
+  fontButtonActiveDark: {
+    backgroundColor: '#1A2744',
+    borderWidth: 1.5,
+    borderColor: '#2A3D66',
   },
   fontText: {
     fontSize: 16,
-    textAlign: 'center',
   },
-  resetButton: { marginTop: 10, alignItems: 'center' },
-  resetText: { fontWeight: 'bold' },
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F2F2F7',
+    gap: 8,
+  },
+  resetButtonDark: {
+    backgroundColor: '#3A3A3C',
+  },
+  resetText: {
+    fontWeight: '600',
+    fontSize: 15,
+  },
 });

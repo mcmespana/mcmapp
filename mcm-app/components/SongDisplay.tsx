@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
-import theme from '../app/styles/theme'; // Using theme for colors
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface SongDisplayProps {
   songHtml: string;
@@ -9,28 +9,45 @@ interface SongDisplayProps {
 }
 
 const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+
   if (isLoading) {
     return (
-      <View style={[styles.webViewContainer, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color={theme.primary} />
+      <View
+        style={[
+          styles.webViewContainer,
+          styles.loadingContainer,
+          { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#f4c11e" />
       </View>
     );
   }
 
   if (Platform.OS === 'web') {
     return (
-      <View style={styles.webViewContainer}>
+      <View
+        style={[
+          styles.webViewContainer,
+          { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+        ]}
+      >
         <div
           style={{
             width: '100%',
             maxWidth: '100%',
             margin: 0,
-            padding: '4px 8px',
-            backgroundColor: 'white',
-            boxSizing: 'border-box',
+            padding: '12px 16px',
+            backgroundColor: isDark ? '#2C2C2E' : '#fff',
+            boxSizing: 'border-box' as const,
             minHeight: '100%',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            overflowY: 'auto',
+            borderRadius: 12,
+            boxShadow: isDark
+              ? '0 1px 3px rgba(0,0,0,0.3)'
+              : '0 1px 4px rgba(0,0,0,0.06)',
+            overflowY: 'auto' as const,
           }}
           dangerouslySetInnerHTML={{ __html: songHtml }}
         />
@@ -39,11 +56,19 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
   }
 
   return (
-    <View style={styles.webViewContainer}>
+    <View
+      style={[
+        styles.webViewContainer,
+        { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+      ]}
+    >
       <WebView
         originWhitelist={['*']}
         source={{ html: songHtml }}
-        style={styles.webView}
+        style={[
+          styles.webView,
+          { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+        ]}
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -53,8 +78,9 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
 const styles = StyleSheet.create({
   webViewContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    ...(Platform.OS === 'web' ? { paddingVertical: 8 } : {}),
+    ...(Platform.OS === 'web'
+      ? { paddingVertical: 8, paddingHorizontal: 12 }
+      : {}),
   },
   loadingContainer: {
     justifyContent: 'center',

@@ -16,6 +16,7 @@ export default function BottomSheet({
   children,
 }: BottomSheetProps) {
   const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const theme = Colors[scheme];
 
   return (
@@ -25,7 +26,7 @@ export default function BottomSheet({
       style={styles.modal}
       swipeDirection="down"
       onSwipeComplete={onClose}
-      backdropOpacity={0.3}
+      backdropOpacity={isDark ? 0.5 : 0.3}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       animationInTiming={300}
@@ -43,7 +44,14 @@ export default function BottomSheet({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View
+          style={[
+            styles.container,
+            {
+              backgroundColor: isDark ? '#2C2C2E' : '#fff',
+            },
+          ]}
+        >
           {children}
         </View>
       </KeyboardAvoidingView>
@@ -57,8 +65,8 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingBottom: 40,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: '80%',
   },
 });

@@ -1,5 +1,4 @@
 import { useEffect, useState, useLayoutEffect, useRef } from 'react';
-// Cleaned up unused imports
 import {
   StyleSheet,
   View,
@@ -11,12 +10,13 @@ import {
 import GestureRecognizer from 'react-native-swipe-gestures';
 import SongDisplay from '../../components/SongDisplay';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
-import SongControls from '../../components/SongControls'; // Added import
+import SongControls from '../../components/SongControls';
 import { RouteProp, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../(tabs)/cancionero';
-import { useSelectedSongs } from '../../contexts/SelectedSongsContext'; // Import context hook
-import { IconSymbol } from '../../components/ui/IconSymbol'; // Import IconSymbol
-import { useSettings } from '../../contexts/SettingsContext'; // <<<--- ADD THIS IMPORT
+import { useSelectedSongs } from '../../contexts/SelectedSongsContext';
+import { IconSymbol } from '../../components/ui/IconSymbol';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useColorScheme } from '../../hooks/useColorScheme';
 import * as Clipboard from 'expo-clipboard';
 
 const availableFonts = [
@@ -32,7 +32,6 @@ const availableFonts = [
 ];
 
 type SongDetailScreenRouteProp = RouteProp<RootStackParamList, 'SongDetail'>;
-// Define navigation prop type
 type SongDetailScreenNavigationProp = NavigationProp<
   RootStackParamList,
   'SongDetail'
@@ -42,14 +41,13 @@ type SongDetailScreenNavigationProp = NavigationProp<
 
 interface SongDetailScreenProps {
   route: SongDetailScreenRouteProp;
-  navigation: SongDetailScreenNavigationProp; // Add navigation to props
+  navigation: SongDetailScreenNavigationProp;
 }
 
 export default function SongDetailScreen({
   route,
   navigation,
 }: SongDetailScreenProps) {
-  // Destructure navigation
   const {
     filename,
     title: _navScreenTitle,
@@ -62,10 +60,11 @@ export default function SongDetailScreen({
     source,
     firebaseCategory,
   } = route.params;
-  const { addSong, removeSong, isSongSelected } = useSelectedSongs(); // Use context
+  const { addSong, removeSong, isSongSelected } = useSelectedSongs();
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
 
-  // Settings from context
-  const { settings, setSettings, isLoadingSettings } = useSettings(); // <<<--- USE SETTINGS HOOK
+  const { settings, setSettings, isLoadingSettings } = useSettings();
   const {
     chordsVisible,
     fontSize: currentFontSizeEm,
@@ -73,42 +72,37 @@ export default function SongDetailScreen({
     notation,
   } = settings;
 
-  // songHtml state is now managed by useSongProcessor
-  const [isFileLoading, setIsFileLoading] = useState(true); // Renamed from isLoading
-
-  // Ancho de pantalla no utilizado
-
-  // New states for controls
+  const [isFileLoading, setIsFileLoading] = useState(true);
   const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
-  // const [chordsVisible, setChordsVisible] = useState(true); // From context
-  const [currentTranspose, setCurrentTranspose] = useState(0); // Transpose remains local
-  // const [currentFontSizeEm, setCurrentFontSizeEm] = useState(1.0); // From context
-  // const [currentFontFamily, setCurrentFontFamily] = useState(availableFonts[0].cssValue); // From context
+  const [currentTranspose, setCurrentTranspose] = useState(0);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
 
-  // Call the hook to process the song
   const { songHtml, isLoadingSong: isSongProcessing } = useSongProcessor({
     originalChordPro,
     currentTranspose,
-    chordsVisible, // From context
-    currentFontSizeEm, // From context
-    currentFontFamily, // From context
+    chordsVisible,
+    currentFontSizeEm,
+    currentFontFamily,
     notation,
-    author, // Pass author from route.params
-    key, // Pass key from route.params
-    capo, // Pass capo from route.params
+    author,
+    key,
+    capo,
   });
 
-  // Effect for setting header button
   const isSelected = isSongSelected(filename);
   useLayoutEffect(() => {
-    if (!filename) return; // Don't set header if filename is not available
+    if (!filename) return;
 
     const currentlySelected = isSelected;
+    const iconColor =
+      Platform.OS === 'ios'
+        ? '#1a1a1a'
+        : Platform.OS === 'web'
+          ? '#1a1a1a'
+          : '#fff';
 
-    // Configuración del botón derecho
     const headerRight = () => (
       <View style={styles.headerButtonContainer}>
         <TouchableOpacity
@@ -127,20 +121,17 @@ export default function SongDetailScreen({
           <IconSymbol
             name={currentlySelected ? 'checkmark.circle.fill' : 'plus.circle'}
             size={26}
-            color={'#fff'}
+            color={iconColor}
           />
         </TouchableOpacity>
       </View>
     );
 
-    // Configurar opciones de navegación
     navigation.setOptions({
       headerRight,
-      // Asegurarse de que el header esté visible en web
       headerShown: true,
     });
 
-    // Forzar actualización adicional para web
     if (Platform.OS === 'web') {
       const timer = setTimeout(() => {
         navigation.setOptions({
@@ -153,21 +144,16 @@ export default function SongDetailScreen({
     }
   }, [navigation, filename, isSelected, addSong, removeSong]);
 
-  // Effect for loading the ChordPro file content
   useEffect(() => {
     setIsFileLoading(true);
     if (content) {
       setOriginalChordPro(content);
       setIsFileLoading(false);
     } else if (filename) {
-      // Fallback or error handling if content is not provided but filename is
-      // This block could attempt to load from filename if that's desired,
-      // but per instructions, we should rely on content.
-      // For now, let's assume content should always be there.
       console.error(
         'Error: Contenido de la canción no proporcionado, pero sí el nombre del archivo.',
       );
-      setOriginalChordPro(null); // Ensure originalChordPro is null on error so hook can show error state
+      setOriginalChordPro(null);
       setIsFileLoading(false);
     } else {
       console.error(
@@ -176,12 +162,8 @@ export default function SongDetailScreen({
       setOriginalChordPro(null);
       setIsFileLoading(false);
     }
-  }, [filename, content]); // Added content to dependencies
+  }, [filename, content]);
 
-  // displaySong function and its useEffect have been removed, logic is in useSongProcessor.
-
-  // Handlers for actual state changes (passed to SongControls)
-  // Handlers for actual state changes, now using setSettings from context
   const handleToggleChords = () =>
     setSettings({ chordsVisible: !chordsVisible });
 
@@ -190,7 +172,7 @@ export default function SongDetailScreen({
     if (newTranspose >= 12 || newTranspose <= -12) {
       newTranspose = newTranspose % 12;
     }
-    setCurrentTranspose(newTranspose); // Transpose is local
+    setCurrentTranspose(newTranspose);
   };
 
   const handleSetFontSize = (newSizeEm: number) => {
@@ -218,7 +200,6 @@ export default function SongDetailScreen({
 
   const handleCopyLyrics = async () => {
     if (!originalChordPro) return;
-    // 1) Normaliza etiquetas de estribillo y pone en MAYÚSCULAS el contenido del estribillo
     let textWithUppercaseChorus = originalChordPro
       .replace(/\{soc\}/gi, '{start_of_chorus}')
       .replace(/\{eoc\}/gi, '{end_of_chorus}')
@@ -228,7 +209,6 @@ export default function SongDetailScreen({
           `{start_of_chorus}` + String(inner).toUpperCase() + `{end_of_chorus}`,
       );
 
-    // 2) Quita acordes y directivas, limpia espacios y saltos de línea
     let lyrics = textWithUppercaseChorus
       .replace(/\[[^\]]+\]/g, '')
       .replace(/\{[^}]+\}\n?/g, '')
@@ -298,19 +278,17 @@ export default function SongDetailScreen({
     }
   };
 
-  // If settings are loading, you might want to show a loading indicator or return null
   if (isLoadingSettings) {
-    // Optionally, render a loading indicator specific to settings being loaded
-    // For now, SongDisplay already handles its own loading state for song content
-    // and this screen handles file loading. If settings load quickly, this might not be noticeable.
-    // Consider if a brief blank or loading state is preferred here.
+    // Settings loading briefly
   }
-
-  // Removed handleOpenTransposeModal, handleOpenFontSizeModal, handleOpenFontFamilyModal
 
   const contentView = (
     <Animated.View
-      style={[styles.container, { transform: [{ translateX: slideAnim }] }]}
+      style={[
+        styles.container,
+        { transform: [{ translateX: slideAnim }] },
+        { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+      ]}
     >
       <SongDisplay
         songHtml={songHtml}
@@ -318,13 +296,13 @@ export default function SongDetailScreen({
       />
       <SongControls
         chordsVisible={chordsVisible}
-        currentTranspose={currentTranspose} // Transpose is local
+        currentTranspose={currentTranspose}
         currentFontSizeEm={currentFontSizeEm}
         currentFontFamily={currentFontFamily}
         availableFonts={availableFonts}
         notation={notation}
         onToggleChords={handleToggleChords}
-        onSetTranspose={handleSetTranspose} // Local handler
+        onSetTranspose={handleSetTranspose}
         onSetFontSize={handleSetFontSize}
         onSetFontFamily={handleSetFontFamily}
         onToggleNotation={handleToggleNotation}
@@ -335,7 +313,7 @@ export default function SongDetailScreen({
         songAuthor={author}
         songKey={key}
         songCapo={capo}
-        songInfo="" // No tenemos info en route.params, se puede agregar después
+        songInfo=""
         songContent={content}
         firebaseCategory={firebaseCategory}
       />
@@ -360,28 +338,22 @@ export default function SongDetailScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
+    padding: 0,
   },
   headerButtonContainer: {
-    marginRight: 16,
-    // Asegurar que el botón sea visible en web
+    marginRight: 8,
     zIndex: 1000,
     position: 'relative',
   },
   headerButton: {
     padding: 8,
-    // Hacer el área de toque más grande en web
     minWidth: 40,
     minHeight: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    // Estilo adicional para web
     ...(Platform.OS === 'web'
       ? {
           cursor: 'pointer',
-          ':hover': {
-            opacity: 0.8,
-          },
         }
       : {}),
   },

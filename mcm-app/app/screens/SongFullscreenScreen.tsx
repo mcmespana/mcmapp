@@ -20,7 +20,6 @@ import { useColorScheme } from '../../hooks/useColorScheme';
 import { Colors } from '../../constants/colors';
 import CrossPlatformSlider from '../../components/CrossPlatformSlider';
 
-// Route type for this screen
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
 export default function SongFullscreenScreen({
@@ -31,6 +30,7 @@ export default function SongFullscreenScreen({
   const { author, key, capo, content } = route.params;
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const theme = Colors[scheme];
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;
@@ -51,10 +51,8 @@ export default function SongFullscreenScreen({
   const webViewRef = useRef<WebView>(null);
   const divRef = useRef<HTMLDivElement | null>(null);
   const [autoScroll, setAutoScroll] = useState(false);
-  // Slider value ranges from 0 to 1. We'll multiply by `maxSpeed` for the actual
-  // pixels scrolled on each interval. Start at 25% of the range.
   const [scrollSpeed, setScrollSpeed] = useState(0.25);
-  const maxSpeed = 3; // slightly slower than previous max
+  const maxSpeed = 3;
   const [sliderVisible, setSliderVisible] = useState(false);
   const sliderOpacity = useRef(new Animated.Value(0)).current;
   const sliderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -119,22 +117,31 @@ export default function SongFullscreenScreen({
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Scroll control button */}
       <TouchableOpacity
-        style={styles.scrollButton}
+        style={[styles.scrollButton, isDark && styles.scrollButtonDark]}
         onPress={() => {
           setAutoScroll((s) => !s);
           showSlider();
         }}
+        activeOpacity={0.8}
       >
         <MaterialIcons
           name={autoScroll ? 'pause' : 'play-arrow'}
-          color="#fff"
-          size={28}
+          color={isDark ? '#EBEBF0' : '#fff'}
+          size={26}
         />
       </TouchableOpacity>
+
+      {/* Speed slider */}
       {sliderVisible && (
         <Animated.View
-          style={[styles.sliderWrapper, { opacity: sliderOpacity }]}
+          style={[
+            styles.sliderWrapper,
+            isDark && styles.sliderWrapperDark,
+            { opacity: sliderOpacity },
+          ]}
         >
           <CrossPlatformSlider
             style={styles.slider}
@@ -166,21 +173,44 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 30,
-    backgroundColor: '#000',
-    padding: 12,
-    borderRadius: 30,
-    opacity: 0.7,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+      },
+    }),
+  },
+  scrollButtonDark: {
+    backgroundColor: 'rgba(60,60,60,0.85)',
   },
   sliderWrapper: {
     position: 'absolute',
     right: 20,
-    bottom: 80,
+    bottom: 90,
     width: 160,
-    height: 40,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+  },
+  sliderWrapperDark: {
+    backgroundColor: 'rgba(60,60,60,0.85)',
   },
   slider: {
     width: '100%',

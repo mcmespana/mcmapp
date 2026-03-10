@@ -1,13 +1,14 @@
-import React, { useRef, useEffect, useMemo } from 'react'; // Added useEffect
+import React, { useRef, useEffect, useMemo } from 'react';
 import {
   TouchableOpacity,
   Text,
   View,
   StyleSheet,
   Animated,
+  Platform,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { useSelectedSongs } from '../contexts/SelectedSongsContext'; // Corrected path
+import { useSelectedSongs } from '../contexts/SelectedSongsContext';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSettings } from '../contexts/SettingsContext';
@@ -21,14 +22,14 @@ interface Song {
   key?: string;
   capo?: number;
   info?: string;
-  originalCategoryKey?: string; // Added for 'Search All' mode
-  numericFilenamePart?: string; // Added for consistent number display
+  originalCategoryKey?: string;
+  numericFilenamePart?: string;
 }
 
 interface SongListItemProps {
   song: Song;
   onPress: (song: Song) => void;
-  isSearchAllMode?: boolean; // Optional, as it's specific to SongListScreen's usage
+  isSearchAllMode?: boolean;
 }
 
 const SongListItem: React.FC<SongListItemProps> = ({
@@ -41,6 +42,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
   const { notation } = settings;
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
+  const isDark = scheme === 'dark';
   const swipeableRow = useRef<Swipeable>(null);
   const isSelected = isSongSelected(song.filename);
   const backgroundColorAnim = useRef(
@@ -50,18 +52,17 @@ const SongListItem: React.FC<SongListItemProps> = ({
   useEffect(() => {
     Animated.timing(backgroundColorAnim, {
       toValue: isSelected ? 1 : 0,
-      duration: 200, // Smooth transition
-      useNativeDriver: false, // backgroundColor is not supported by native driver
+      duration: 250,
+      useNativeDriver: false,
     }).start();
   }, [isSelected, backgroundColorAnim]);
 
-  const isDark = scheme === 'dark';
   const animatedStyle = {
     backgroundColor: backgroundColorAnim.interpolate({
       inputRange: [0, 1],
       outputRange: [
-        isDark ? '#1C1C1E' : '#fff',
-        isDark ? '#324831' : '#e6ffed',
+        isDark ? '#2C2C2E' : '#fff',
+        isDark ? '#1A3320' : '#E8F5E9',
       ],
     }),
   };
@@ -72,7 +73,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
   ) => {
     const trans = dragX.interpolate({
       inputRange: [-100, 0],
-      outputRange: [0, 100], // Adjust this for how much the button should "follow" the swipe
+      outputRange: [0, 100],
       extrapolate: 'clamp',
     });
     return (
@@ -83,12 +84,13 @@ const SongListItem: React.FC<SongListItemProps> = ({
           swipeableRow.current?.close();
         }}
       >
-        <Animated.View style={{ transform: [{ translateX: trans }] }}>
+        <Animated.View
+          style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
+        >
           <IconSymbol
             name="plus.circle"
-            size={24}
+            size={22}
             color="#fff"
-            style={styles.actionIcon}
           />
           <Text style={styles.actionText}>Seleccionar</Text>
         </Animated.View>
@@ -102,7 +104,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
   ) => {
     const trans = dragX.interpolate({
       inputRange: [0, 100],
-      outputRange: [-100, 0], // Adjust this for how much the button should "follow" the swipe
+      outputRange: [-100, 0],
       extrapolate: 'clamp',
     });
     return (
@@ -113,18 +115,21 @@ const SongListItem: React.FC<SongListItemProps> = ({
           swipeableRow.current?.close();
         }}
       >
-        <Animated.View style={{ transform: [{ translateX: trans }] }}>
+        <Animated.View
+          style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
+        >
           <IconSymbol
             name="minus.circle"
-            size={24}
+            size={22}
             color="#fff"
-            style={styles.actionIcon}
           />
           <Text style={styles.actionText}>Quitar</Text>
         </Animated.View>
       </TouchableOpacity>
     );
   };
+
+  const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
 
   return (
     <Swipeable
@@ -145,66 +150,77 @@ const SongListItem: React.FC<SongListItemProps> = ({
         <TouchableOpacity
           onPress={() => onPress(song)}
           style={styles.songItemInner}
+          activeOpacity={0.6}
         >
-          {/* Contenedor principal de la información de la canción y la tonalidad/capo */}
-          <View style={styles.songInfoContainer}>
-            <Text
-              style={styles.songTitle}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {song.title.replace(/^\d+\.\s*/, '')}
-            </Text>
-            <View style={styles.metaLine}>
-              {isSearchAllMode &&
-              song.originalCategoryKey &&
-              song.numericFilenamePart ? (
-                <Text
-                  style={styles.subtitleText}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {`${song.originalCategoryKey}${song.numericFilenamePart}`}
-                  {song.author && (
-                    <Text style={styles.subtitleAuthor}>
-                      {`   ${song.author}`}
-                    </Text>
-                  )}
-                </Text>
-              ) : (
-                <>
-                  {song.numericFilenamePart && (
-                    <Text style={styles.subtitleText}>
-                      #{song.numericFilenamePart}
-                      {song.author ? ' · ' : ''}
-                    </Text>
-                  )}
-                  {song.author && (
-                    <Text
-                      style={[
-                        styles.subtitleText,
-                        styles.subtitleAuthor,
-                        song.numericFilenamePart ? { marginLeft: 0 } : {},
-                      ]}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {/* Spacing between number and author */}
-                      {song.numericFilenamePart ? song.author : song.author}
-                    </Text>
-                  )}
-                </>
-              )}
+          <View style={styles.leftSection}>
+            {isSelected && (
+              <View style={styles.selectedDot} />
+            )}
+            <View style={styles.songInfoContainer}>
+              <Text
+                style={styles.songTitle}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {cleanTitle}
+              </Text>
+              <View style={styles.metaLine}>
+                {isSearchAllMode &&
+                song.originalCategoryKey &&
+                song.numericFilenamePart ? (
+                  <View style={styles.metaPills}>
+                    <View style={styles.categoryPill}>
+                      <Text style={styles.categoryPillText}>
+                        {song.originalCategoryKey}
+                        {song.numericFilenamePart}
+                      </Text>
+                    </View>
+                    {song.author && (
+                      <Text
+                        style={styles.authorText}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {song.author}
+                      </Text>
+                    )}
+                  </View>
+                ) : (
+                  <View style={styles.metaPills}>
+                    {song.numericFilenamePart && (
+                      <Text style={styles.numberText}>
+                        #{song.numericFilenamePart}
+                      </Text>
+                    )}
+                    {song.numericFilenamePart && song.author && (
+                      <Text style={styles.metaSeparator}> · </Text>
+                    )}
+                    {song.author && (
+                      <Text
+                        style={styles.authorText}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {song.author}
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </View>
             </View>
           </View>
-          <View style={styles.keyCapoContainer}>
+          <View style={styles.rightSection}>
             {song.key ? (
-              <Text style={styles.songKey}>
-                {convertChord(song.key.toUpperCase(), notation)}
-              </Text>
+              <View style={styles.keyBadge}>
+                <Text style={styles.keyText}>
+                  {convertChord(song.key.toUpperCase(), notation)}
+                </Text>
+              </View>
             ) : null}
             {song.capo && song.capo > 0 ? (
-              <Text style={styles.songCapo}>{`C/${song.capo}`}</Text>
+              <View style={styles.capoBadge}>
+                <Text style={styles.capoText}>{`C${song.capo}`}</Text>
+              </View>
             ) : null}
           </View>
         </TouchableOpacity>
@@ -216,94 +232,124 @@ const SongListItem: React.FC<SongListItemProps> = ({
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';
   return StyleSheet.create({
-    songItemOuter: {
-      // Renamed from songItem to be the Animated.View container
-      // backgroundColor will be handled by animatedStyle
-    },
+    songItemOuter: {},
     songItemInner: {
-      // This will contain the flexDirection and padding previously in songItem
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 16,
+      paddingVertical: 14,
       paddingHorizontal: 20,
-      borderBottomWidth: 1,
-      borderColor: isDark ? '#444' : '#eee',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
     },
-    // selectedSongItem: { // This style is now handled by the animation
-    //   backgroundColor: '#e6ffed',
-    // },
-    // songInfoContainer: { // This definition of songInfoContainer seems to be a leftover/duplicate
-    //   flexDirection: 'row',
-    //   justifyContent: 'space-between',
-    //   alignItems: 'center',
-    //   paddingVertical: 16,
-    //   paddingHorizontal: 20, // Added horizontal padding
-    //   borderBottomWidth: 1,
-    //   borderColor: '#eee',
-    //   backgroundColor: '#fff', // Default background
-    // },
-    // selectedSongItem: { // This style is now handled by the animation
-    //   backgroundColor: '#e6ffed',
-    // },
+    leftSection: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    selectedDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: '#34C759',
+      marginRight: 10,
+    },
     songInfoContainer: {
       flex: 1,
-      marginRight: 8,
     },
     songTitle: {
       fontSize: 16,
-      color: isDark ? '#FFFFFF' : '#333',
+      color: isDark ? '#FFFFFF' : '#1C1C1E',
       fontWeight: '500',
+      letterSpacing: -0.2,
     },
     metaLine: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 3,
+      marginTop: 4,
     },
-    subtitleText: {
+    metaPills: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    categoryPill: {
+      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+      marginRight: 8,
+    },
+    categoryPillText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: isDark ? '#AEAEB2' : '#636366',
+      fontVariant: ['tabular-nums'],
+    },
+    numberText: {
       fontSize: 13,
-      color: isDark ? '#CCCCCC' : '#666',
+      color: isDark ? '#8E8E93' : '#8E8E93',
+      fontVariant: ['tabular-nums'],
     },
-    subtitleAuthor: {
+    metaSeparator: {
+      fontSize: 13,
+      color: isDark ? '#636366' : '#C7C7CC',
+    },
+    authorText: {
+      fontSize: 13,
+      color: isDark ? '#AEAEB2' : '#8E8E93',
       fontStyle: 'italic',
+      flex: 1,
     },
-    keyCapoContainer: {
-      flexDirection: 'column',
-      alignItems: 'flex-end',
+    rightSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
     },
-    songKey: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      color: isDark ? '#FFFFFF' : '#000000',
+    keyBadge: {
+      backgroundColor: isDark ? '#2A3D66' : '#E8F0FE',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 8,
     },
-    songCapo: {
-      fontSize: 13,
-      color: isDark ? '#CCCCCC' : '#888',
-      fontWeight: 'normal',
+    keyText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: isDark ? '#7AB3FF' : '#253883',
+    },
+    capoBadge: {
+      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    capoText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: isDark ? '#AEAEB2' : '#636366',
     },
     rightAction: {
-      backgroundColor: '#4CAF50', // Green for add
+      backgroundColor: '#34C759',
       justifyContent: 'center',
       alignItems: 'center',
-      width: 100, // Fixed width for the action button
-      flexDirection: 'row',
+      width: 100,
     },
     leftAction: {
-      backgroundColor: '#f44336', // Red for remove
+      backgroundColor: '#FF453A',
       justifyContent: 'center',
       alignItems: 'center',
-      width: 100, // Fixed width for the action button
-      flexDirection: 'row',
+      width: 100,
+    },
+    actionContent: {
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     actionText: {
       color: '#fff',
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: '600',
-      paddingLeft: 10, // Space between icon and text
-    },
-    actionIcon: {
-      // No specific styles needed here if already applied in IconSymbol,
-      // but can be used for margin/padding if necessary
+      marginTop: 4,
     },
   });
 };

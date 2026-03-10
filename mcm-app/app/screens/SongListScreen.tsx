@@ -1,25 +1,24 @@
 import { useState, useEffect, useMemo } from 'react';
-import { FlatList, Text, View, StyleSheet } from 'react-native'; // TouchableOpacity removed
-import { Searchbar } from 'react-native-paper'; // Added Searchbar
+import { FlatList, Text, View, StyleSheet, Platform } from 'react-native';
+import { Searchbar } from 'react-native-paper';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { filterSongsData } from '@/utils/filterSongsData';
-// import SongSearch from '../../components/SongSearch'; // Removed SongSearch import
-import SongListItem from '../../components/SongListItem'; // Added import
+import SongListItem from '../../components/SongListItem';
 
 // Type for song data
 interface Song {
   title: string;
   filename: string;
-  author?: string; // Optional
-  key?: string; // Optional
-  capo?: number; // Optional
-  info?: string; // Optional
-  content?: string; // Optional
-  originalCategoryKey?: string; // For 'Search All' mode
-  numericFilenamePart?: string; // For consistent number display
+  author?: string;
+  key?: string;
+  capo?: number;
+  info?: string;
+  content?: string;
+  originalCategoryKey?: string;
+  numericFilenamePart?: string;
 }
 
 interface SongCategory {
@@ -27,25 +26,15 @@ interface SongCategory {
   songs: Song[];
 }
 
-// Ensure the data is in the correct format
 const getSongsData = (data: any): Record<string, SongCategory> => {
   try {
-    // If the data is null (expected during initial loading), return empty object
-    if (data === null) {
-      return {};
-    }
-
-    // If the data is already in the correct format, return it
+    if (data === null) return {};
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       return data as Record<string, SongCategory>;
     }
-
-    // If the data is an array, try to convert it to the correct format
     if (Array.isArray(data)) {
       return { All: { categoryTitle: 'All', songs: data } };
     }
-
-    // If we can't determine the format, return an empty object
     console.error('Unexpected songs data format:', data);
     return {};
   } catch (error) {
@@ -63,15 +52,21 @@ export default function SongsListScreen({
 }) {
   const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<
     Record<string, SongCategory>
-  >('songs', 'songs', filterSongsData as (data: any) => Record<string, SongCategory>);
+  >(
+    'songs',
+    'songs',
+    filterSongsData as (data: any) => Record<string, SongCategory>,
+  );
   const songsData = useMemo(() => getSongsData(firebaseSongs), [firebaseSongs]);
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
+  const isDark = scheme === 'dark';
   const [search, setSearch] = useState('');
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isSearchAll = categoryId === '__ALL__';
 
   useEffect(() => {
     if (!songsData) return;
@@ -120,7 +115,6 @@ export default function SongsListScreen({
               allSongs = allSongs.concat(songsWithMetadata);
             }
           }
-          // Sort all songs alphabetically by title (removing leading numbers for sorting)
           allSongs.sort((a, b) => {
             const titleA = a.title.replace(/^\d+\.\s*/, '').toLowerCase();
             const titleB = b.title.replace(/^\d+\.\s*/, '').toLowerCase();
@@ -128,7 +122,6 @@ export default function SongsListScreen({
           });
           setSongs(allSongs);
         } else {
-          // Try to find the category (case insensitive)
           const categoryKey = Object.keys(songsData).find(
             (key) =>
               key.trim().toLowerCase() === categoryId.trim().toLowerCase(),
@@ -161,8 +154,8 @@ export default function SongsListScreen({
             setSongs([]);
           }
         }
-      } catch (error) {
-        console.error('Error loading songs:', error);
+      } catch (err) {
+        console.error('Error loading songs:', err);
         setError('Error al cargar las canciones, lo sentimos :(');
         setSongs([]);
       } finally {
@@ -173,7 +166,6 @@ export default function SongsListScreen({
     loadSongs();
   }, [categoryId, songsData]);
 
-  // Filter songs based on search
   const filteredSongs = songs.filter((song) => {
     if (!song) return false;
     const searchTerm = search.toLowerCase();
@@ -184,7 +176,6 @@ export default function SongsListScreen({
     return titleMatch || authorMatch;
   });
 
-  // Handle song press
   const handleSongPress = (song: Song) => {
     const index = songs.findIndex((s) => s.filename === song.filename);
 
@@ -203,12 +194,10 @@ export default function SongsListScreen({
     });
   };
 
-  // Render loading state
   if ((isLoading || loadingSongs) && songs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
 
-  // Render error state
   if (error) {
     return (
       <View style={styles.container}>
@@ -221,51 +210,32 @@ export default function SongsListScreen({
     );
   }
 
-  // Render empty state
-  if (filteredSongs.length === 0) {
-    return (
-      <View style={styles.container}>
-        <Searchbar
-          placeholder="Escribe el título de una canción o el autor"
-          placeholderTextColor="#8A8A8D"
-          iconColor="#8A8A8D"
-          onChangeText={setSearch}
-          value={search}
-          style={styles.searchbar} // Style will be updated below
-          inputStyle={styles.searchbarInput} // Style will be updated below
-        />
-        <Text style={styles.categoryTitle}>{categoryName}</Text>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            No hemos encontrado esa canción 🕵️‍♀️
-          </Text>
-          {search.length > 0 && (
-            <Text style={styles.hintText}>
-              Puedes buscar el título o el autor si está disponible
-            </Text>
-          )}
-        </View>
-      </View>
-    );
-  }
-
-  // Render song list
   return (
     <View style={styles.container}>
-      <Searchbar
-        placeholder="Escribe el título de una canción o el autor"
-        placeholderTextColor="#8A8A8D"
-        iconColor="#8A8A8D"
-        onChangeText={setSearch}
-        value={search}
-        style={styles.searchbar}
-        inputStyle={styles.searchbarInput}
-      />
-      {categoryName === '🔎 Buscar una canción...' ? (
-        <View style={styles.separator} />
-      ) : (
-        <Text style={styles.categoryTitle}>{categoryName}</Text>
+      <View style={styles.searchContainer}>
+        <Searchbar
+          placeholder="Buscar por título o autor..."
+          placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
+          iconColor={isDark ? '#636366' : '#8E8E93'}
+          onChangeText={setSearch}
+          value={search}
+          style={styles.searchbar}
+          inputStyle={styles.searchbarInput}
+        />
+      </View>
+      {!isSearchAll && (
+        <View style={styles.headerSection}>
+          <Text style={styles.categoryTitle}>
+            {categoryName.replace(/^🔎\s*/, '')}
+          </Text>
+          <Text style={styles.songCount}>
+            {filteredSongs.length}{' '}
+            {filteredSongs.length === 1 ? 'canción' : 'canciones'}
+            {search.length > 0 ? ' encontradas' : ''}
+          </Text>
+        </View>
       )}
+      {isSearchAll && <View style={styles.thinSeparator} />}
       <FlatList
         data={filteredSongs}
         keyExtractor={(item) => item.filename}
@@ -273,12 +243,22 @@ export default function SongsListScreen({
           <SongListItem
             song={item}
             onPress={handleSongPress}
-            isSearchAllMode={categoryId === '__ALL__'}
+            isSearchAllMode={isSearchAll}
           />
         )}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text>No hemos encontrado esa canción 🕵️‍♀️</Text>
+            <Text style={styles.emptyEmoji}>🔍</Text>
+            <Text style={styles.emptyText}>
+              No hemos encontrado esa canción
+            </Text>
+            {search.length > 0 && (
+              <Text style={styles.hintText}>
+                Prueba con otro título o nombre de autor
+              </Text>
+            )}
           </View>
         }
       />
@@ -291,29 +271,31 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark
-        ? Colors.dark.background
-        : Colors.light.background,
+      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
-    separator: {
-      height: 5,
-      backgroundColor: isDark ? '#444' : '#E0E0E0',
-      marginHorizontal: 15,
-      marginVertical: 10,
+    searchContainer: {
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      paddingBottom: 4,
+      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
     searchbar: {
-      marginHorizontal: 16,
-      marginVertical: 12,
-      borderRadius: 20,
+      borderRadius: 12,
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
+      elevation: 0,
       height: 44,
-      borderWidth: 1,
-      borderColor: isDark ? '#444' : '#E0E0E0',
+      ...(Platform.OS === 'web'
+        ? {
+            boxShadow: isDark
+              ? '0 1px 3px rgba(0,0,0,0.4)'
+              : '0 1px 3px rgba(0,0,0,0.08)',
+          }
+        : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: isDark ? 0.25 : 0.06,
+            shadowRadius: 3,
+          }),
     },
     searchbarInput: {
       fontSize: 16,
@@ -322,29 +304,38 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       textAlignVertical: 'center',
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
-    categoryTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      padding: 16,
-      backgroundColor: isDark ? '#2C2C2E' : '#f5f5f5',
-      color: isDark ? '#FFFFFF' : '#333',
+    headerSection: {
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      paddingBottom: 8,
     },
-    loadingText: {
-      fontSize: 16,
-      textAlign: 'center',
-      marginTop: 20,
-      color: isDark ? '#CCCCCC' : '#666',
+    categoryTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      letterSpacing: -0.4,
+    },
+    songCount: {
+      fontSize: 13,
+      color: isDark ? '#8E8E93' : '#8E8E93',
+      marginTop: 2,
+    },
+    thinSeparator: {
+      height: 8,
+    },
+    listContent: {
+      paddingBottom: 24,
     },
     errorText: {
       fontSize: 16,
-      color: '#d32f2f',
+      color: '#FF453A',
       textAlign: 'center',
       margin: 20,
-      fontWeight: 'bold',
+      fontWeight: '600',
     },
     debugText: {
       fontSize: 14,
-      color: isDark ? '#AAAAAA' : '#666',
+      color: isDark ? '#8E8E93' : '#8E8E93',
       textAlign: 'center',
       margin: 10,
       fontFamily: 'monospace',
@@ -353,18 +344,23 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      padding: 20,
+      paddingVertical: 60,
+      paddingHorizontal: 40,
+    },
+    emptyEmoji: {
+      fontSize: 48,
+      marginBottom: 16,
     },
     emptyText: {
-      fontSize: 16,
-      color: isDark ? '#CCCCCC' : '#666',
-      marginBottom: 10,
+      fontSize: 17,
+      fontWeight: '600',
+      color: isDark ? '#8E8E93' : '#636366',
+      marginBottom: 8,
       textAlign: 'center',
     },
     hintText: {
       fontSize: 14,
-      color: isDark ? '#AAAAAA' : '#888',
-      fontStyle: 'italic',
+      color: isDark ? '#636366' : '#AEAEB2',
       textAlign: 'center',
     },
   });

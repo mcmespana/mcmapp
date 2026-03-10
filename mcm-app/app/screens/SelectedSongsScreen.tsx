@@ -24,6 +24,7 @@ import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext';
 import SongListItem from '../../components/SongListItem';
@@ -34,7 +35,6 @@ import { RootStackParamList } from '../(tabs)/cancionero';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 
-// Define Song type based on songs.json structure
 interface Song {
   title: string;
   filename: string;
@@ -42,7 +42,7 @@ interface Song {
   key?: string;
   capo?: number;
   info?: string;
-  content?: string; // Added content field
+  content?: string;
 }
 
 interface CategorizedSongs {
@@ -50,7 +50,6 @@ interface CategorizedSongs {
   data: Song[];
 }
 
-// Navigation prop type
 type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'SongDetail'
@@ -59,7 +58,8 @@ type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<
 const SelectedSongsScreen: React.FC = () => {
   const { selectedSongs, clearSelection, addSong } = useSelectedSongs();
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
-  const scheme = useColorScheme() || 'light'; // Default to light theme if undefined
+  const scheme = useColorScheme() || 'light';
+  const isDark = scheme === 'dark';
   const styles = useMemo(() => createStyles(scheme), [scheme]);
   const { data: allSongsData, loading } = useFirebaseData<
     Record<string, { categoryTitle: string; songs: Song[] }>
@@ -69,16 +69,8 @@ const SelectedSongsScreen: React.FC = () => {
   >([]);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [randomEmoji, setRandomEmoji] = useState('');
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFileName, setExportFileName] = useState('');
-
-  // Generate random emoji when component mounts
-  useEffect(() => {
-    const musicalEmojis = ['🎵', '🎶', '🎤', '🎸', '🎹', '🎷', '🎺', '🎻'];
-    const randomIndex = Math.floor(Math.random() * musicalEmojis.length);
-    setRandomEmoji(musicalEmojis[randomIndex]);
-  }, []);
 
   useEffect(() => {
     const processSongs = () => {
@@ -124,7 +116,6 @@ const SelectedSongsScreen: React.FC = () => {
   }, [selectedSongs, allSongsData]);
 
   const handleExport = useCallback(() => {
-    // 1. Generate Header
     const date = new Date()
       .toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
       .toUpperCase()
@@ -144,14 +135,12 @@ const SelectedSongsScreen: React.FC = () => {
       musicalEmojis[Math.floor(Math.random() * musicalEmojis.length)];
     const header = `*CANCIONES ${date} ${randomEmoji}*`;
 
-    // 2. Process Selected Songs
     const formattedSongLines: string[] = [];
 
     categorizedSelectedSongs.forEach((category) => {
       const categoryLetter = category.categoryTitle.charAt(0).toUpperCase();
 
       category.data.forEach((song) => {
-        // Ensure this song is actually in the selectedSongs list (though categorizedSelectedSongs should already be filtered)
         if (selectedSongs.includes(song.filename)) {
           const songTitleClean = song.title.replace(/^\d+\.\s*/, '');
 
@@ -163,7 +152,7 @@ const SelectedSongsScreen: React.FC = () => {
             }
           }
 
-          const songIdMatch = song.title.match(/^\d+/); // Remove the dot from the regex to get just the number
+          const songIdMatch = song.title.match(/^\d+/);
           const songId = songIdMatch ? songIdMatch[0] : '??';
 
           let line = `*${categoryLetter}.* ${songTitleClean}`;
@@ -179,10 +168,8 @@ const SelectedSongsScreen: React.FC = () => {
       });
     });
 
-    // 3. Assemble Final String
     const finalText = [header, ...formattedSongLines].join('\n');
 
-    // 4. Platform-specific sharing/copying
     if (
       Platform.OS === 'web' ||
       Platform.OS === 'windows' ||
@@ -190,7 +177,7 @@ const SelectedSongsScreen: React.FC = () => {
     ) {
       try {
         Clipboard.setStringAsync(finalText);
-        setSnackbarMessage('Lista de canciones copiada al portapapeles');
+        setSnackbarMessage('Lista copiada al portapapeles');
         setSnackbarVisible(true);
       } catch (error) {
         console.error('Error copying to clipboard:', error);
@@ -198,22 +185,17 @@ const SelectedSongsScreen: React.FC = () => {
         setSnackbarVisible(true);
       }
     } else {
-      // For 'ios', 'android'
       try {
         Share.share({
           message: finalText,
         });
       } catch (error) {
         console.error('Error sharing:', error);
-        // Optionally set a snackbar message for sharing errors too
-        // setSnackbarMessage('Error al compartir la lista');
-        // setSnackbarVisible(true);
       }
     }
-  }, [categorizedSelectedSongs, selectedSongs]); // Dependencies for useCallback
+  }, [categorizedSelectedSongs, selectedSongs]);
 
   const handleShareFile = useCallback(async () => {
-    // Generar nombre por defecto
     const monthNames = [
       'ene',
       'feb',
@@ -268,12 +250,12 @@ const SelectedSongsScreen: React.FC = () => {
       }
 
       setShowExportModal(false);
-      setSnackbarMessage('Playlist exportada correctamente');
+      setSnackbarMessage('Playlist exportada');
       setSnackbarVisible(true);
     } catch (err) {
       console.error('Error sharing file', err);
       setShowExportModal(false);
-      setSnackbarMessage('Error al exportar la playlist');
+      setSnackbarMessage('Error al exportar');
       setSnackbarVisible(true);
     }
   }, [selectedSongs, exportFileName]);
@@ -360,14 +342,13 @@ const SelectedSongsScreen: React.FC = () => {
       }
     } catch (err) {
       console.error('Error importing playlist', err);
-      setSnackbarMessage('Error al importar la playlist');
+      setSnackbarMessage('Error al importar');
       setSnackbarVisible(true);
     }
   }, [addSong]);
 
   const handleSongPress = (song: Song) => {
     if (!allSongsData) return;
-    // Retrieve full song info from JSON to ensure we have the content
     const completeSong = Object.values(allSongsData)
       .flatMap((cat) => cat.songs)
       .find((s) => s.filename === song.filename);
@@ -394,7 +375,8 @@ const SelectedSongsScreen: React.FC = () => {
       navigationList: allSelected,
       currentIndex: index,
       source: 'selection',
-      firebaseCategory: (completeSong as any).originalCategoryKey || 'entrada', // Fallback por defecto
+      firebaseCategory:
+        (completeSong as any).originalCategoryKey || 'entrada',
     });
   };
 
@@ -410,7 +392,7 @@ const SelectedSongsScreen: React.FC = () => {
         )
         .map((song) => (
           <SongListItem
-            key={song.filename} // Now song.filename is guaranteed to be a valid string
+            key={song.filename}
             song={song}
             onPress={handleSongPress}
           />
@@ -428,35 +410,28 @@ const SelectedSongsScreen: React.FC = () => {
         headerRight: () => (
           <TouchableOpacity
             onPress={handleExport}
-            style={{
-              paddingHorizontal: 15,
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}
+            style={styles.headerExportButton}
           >
             <IconSymbol
               name={isDesktopLike ? 'doc.on.doc' : 'square.and.arrow.up'}
-              size={24}
-              color="#fff" // Usamos icono distinto solo para móviles
+              size={22}
+              color={
+                Platform.OS === 'ios'
+                  ? '#1a1a1a'
+                  : Platform.OS === 'web'
+                    ? '#1a1a1a'
+                    : '#fff'
+              }
             />
             {isDesktopLike && (
-              <Text
-                style={{
-                  color: '#fff',
-                  marginLeft: 8,
-                  fontSize: 16,
-                  fontWeight: '500',
-                }}
-              >
-                Copiar
-              </Text>
+              <Text style={styles.headerExportText}>Copiar</Text>
             )}
           </TouchableOpacity>
         ),
       });
     } else {
       navigation.setOptions({
-        headerRight: () => null, // No export button if no songs are selected
+        headerRight: () => null,
       });
     }
   }, [navigation, handleExport, selectedSongs.length]);
@@ -468,58 +443,75 @@ const SelectedSongsScreen: React.FC = () => {
   if (selectedSongs.length === 0) {
     return (
       <View style={styles.emptyContainer}>
+        <View style={styles.emptyContent}>
+          <View style={styles.emptyIconContainer}>
+            <MaterialIcons
+              name="queue-music"
+              size={56}
+              color={isDark ? '#636366' : '#C7C7CC'}
+            />
+          </View>
+          <Text style={styles.emptyTitle}>Sin canciones seleccionadas</Text>
+          <Text style={styles.emptyDescription}>
+            Desliza una canción hacia la izquierda para seleccionarla o usa el
+            botón + en la pantalla de detalle.
+          </Text>
+        </View>
         <TouchableOpacity
           onPress={handleImportFile}
           style={styles.importButton}
+          activeOpacity={0.7}
         >
-          <IconSymbol name="tray.and.arrow.down" size={20} color="#007AFF" />
-          <Text style={styles.shareButtonText}>Importar</Text>
+          <MaterialIcons
+            name="file-download"
+            size={20}
+            color={isDark ? '#7AB3FF' : '#253883'}
+          />
+          <Text style={styles.importButtonText}>Importar playlist</Text>
         </TouchableOpacity>
-        <View style={styles.emptyContent}>
-          <IconSymbol name="music.note.list" size={60} color="#cccccc" />
-          <Text style={styles.emptyText}>
-            Todavía no has seleccionado canciones
-          </Text>
-          <Text style={styles.swipeHint}>
-            Esta sección te permite seleccionar canciones para crear una
-            playlist. Podrás guardarlas para más tarde o compartirlas con otros.
-            {'\n\n'}
-            Desliza una canción hacia la izquierda para seleccionarla o presiona
-            el botón + en la pantalla de canción.
-          </Text>
-        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.screenTitle}>
-          Tu selección de temazos {randomEmoji}
+      <View style={styles.toolbar}>
+        <Text style={styles.selectionCount}>
+          {selectedSongs.length}{' '}
+          {selectedSongs.length === 1 ? 'canción' : 'canciones'}
         </Text>
-        <View style={styles.buttonsContainer}>
-          <TouchableOpacity onPress={clearSelection} style={styles.clearButton}>
-            <IconSymbol name="trash" size={20} color="#FF4444" />
-            <Text style={styles.clearButtonText}>Borrar selección</Text>
-          </TouchableOpacity>
+        <View style={styles.toolbarActions}>
           <TouchableOpacity
             onPress={handleShareFile}
-            style={styles.shareButton}
+            style={styles.toolbarButton}
+            activeOpacity={0.7}
           >
-            <IconSymbol
-              name="square.and.arrow.up.on.square"
-              size={20}
-              color="#007AFF"
+            <MaterialIcons
+              name="ios-share"
+              size={18}
+              color={isDark ? '#7AB3FF' : '#253883'}
             />
-            <Text style={styles.shareButtonText}>Compartir archivo</Text>
+            <Text style={styles.toolbarButtonText}>Exportar</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleImportFile}
-            style={styles.shareButton}
+            style={styles.toolbarButton}
+            activeOpacity={0.7}
           >
-            <IconSymbol name="tray.and.arrow.down" size={20} color="#007AFF" />
-            <Text style={styles.shareButtonText}>Importar</Text>
+            <MaterialIcons
+              name="file-download"
+              size={18}
+              color={isDark ? '#7AB3FF' : '#253883'}
+            />
+            <Text style={styles.toolbarButtonText}>Importar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={clearSelection}
+            style={styles.toolbarButtonDanger}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="delete-outline" size={18} color="#FF453A" />
+            <Text style={styles.toolbarButtonDangerText}>Borrar</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -529,9 +521,10 @@ const SelectedSongsScreen: React.FC = () => {
         renderItem={renderCategory}
         keyExtractor={(item) => item.categoryTitle}
         contentContainerStyle={styles.listContentContainer}
+        showsVerticalScrollIndicator={false}
       />
 
-      {/* Modal para personalizar nombre del archivo */}
+      {/* Export modal */}
       <Modal
         visible={showExportModal}
         transparent={true}
@@ -543,9 +536,9 @@ const SelectedSongsScreen: React.FC = () => {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Nombre del archivo</Text>
+            <Text style={styles.modalTitle}>Exportar playlist</Text>
             <Text style={styles.modalSubtitle}>
-              Elige un nombre para tu playlist
+              Elige un nombre para tu archivo
             </Text>
 
             <TextInput
@@ -553,27 +546,32 @@ const SelectedSongsScreen: React.FC = () => {
               value={exportFileName}
               onChangeText={setExportFileName}
               placeholder="Playlist 7-ago"
-              placeholderTextColor="#999"
+              placeholderTextColor={isDark ? '#636366' : '#AEAEB2'}
               autoFocus={true}
               selectTextOnFocus={true}
             />
 
             <Text style={styles.modalNote}>
-              Exportaremos la lista de canciones en formato JSON 🥸
+              Se exportará como archivo JSON
             </Text>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
                 onPress={() => setShowExportModal(false)}
+                activeOpacity={0.7}
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.modalConfirmButton}
+                style={[
+                  styles.modalConfirmButton,
+                  !exportFileName.trim() && styles.modalConfirmDisabled,
+                ]}
                 onPress={handleConfirmExport}
                 disabled={!exportFileName.trim()}
+                activeOpacity={0.7}
               >
                 <Text style={styles.modalConfirmText}>Exportar</Text>
               </TouchableOpacity>
@@ -586,12 +584,11 @@ const SelectedSongsScreen: React.FC = () => {
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
         action={{
-          label: 'Cerrar',
-          onPress: () => {
-            setSnackbarVisible(false);
-          },
+          label: 'OK',
+          onPress: () => setSnackbarVisible(false),
         }}
         duration={Snackbar.DURATION_MEDIUM}
+        style={styles.snackbar}
       >
         {snackbarMessage}
       </Snackbar>
@@ -612,216 +609,260 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? Colors.dark.background : '#f8f8f8',
+      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
-    headerContainer: {
+    toolbar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       paddingHorizontal: 20,
-      paddingTop: 20,
-      paddingBottom: 10,
+      paddingVertical: 12,
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderBottomWidth: 1,
-      borderBottomColor: isDark ? '#444' : '#e0e0e0',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: isDark
+        ? 'rgba(255,255,255,0.08)'
+        : 'rgba(0,0,0,0.06)',
     },
-    screenTitle: {
-      fontSize: 24,
+    selectionCount: {
+      fontSize: 15,
       fontWeight: '600',
-      marginBottom: 15,
-      color: isDark ? '#FFFFFF' : '#333',
-      textAlign: 'center',
+      color: isDark ? '#EBEBF0' : '#1C1C1E',
     },
-    buttonsContainer: {
+    toolbarActions: {
       flexDirection: 'row',
-      justifyContent: 'space-around',
-      marginBottom: 15,
-      alignItems: 'center',
+      gap: 4,
     },
-    clearButton: {
+    toolbarButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 10,
-      paddingHorizontal: 15,
-      backgroundColor: isDark ? '#663333' : '#ffebee',
+      paddingVertical: 6,
+      paddingHorizontal: 10,
       borderRadius: 8,
-      flex: 0.48,
-      marginHorizontal: 5,
+      backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
+      gap: 4,
     },
-    clearButtonText: {
-      marginLeft: 8,
-      fontSize: 16,
+    toolbarButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: isDark ? '#7AB3FF' : '#253883',
+    },
+    toolbarButtonDanger: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 8,
+      backgroundColor: isDark ? '#3A1B1B' : '#FFEBEE',
+      gap: 4,
+    },
+    toolbarButtonDangerText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#FF453A',
+    },
+    headerExportButton: {
+      paddingHorizontal: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    headerExportText: {
+      color: '#1a1a1a',
+      fontSize: 15,
       fontWeight: '500',
-      color: '#FF4444',
-    },
-    shareButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 10,
-      paddingHorizontal: 15,
-      backgroundColor: isDark ? '#333366' : '#eef2ff',
-      borderRadius: 8,
-      flex: 0.48,
-      marginHorizontal: 5,
-    },
-    importButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 10,
-      paddingHorizontal: 15,
-      backgroundColor: isDark ? '#333366' : '#eef2ff',
-      borderRadius: 8,
-      alignSelf: 'stretch',
-      marginHorizontal: 20,
-      marginTop: 10,
-    },
-    shareButtonText: {
-      marginLeft: 8,
-      fontSize: 16,
-      fontWeight: '500',
-      color: '#007AFF',
     },
     listContentContainer: {
-      paddingBottom: 20,
+      paddingBottom: 24,
     },
     categoryContainer: {
-      marginTop: 15,
-      marginHorizontal: 10,
+      marginTop: 12,
+      marginHorizontal: 16,
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 8,
+      borderRadius: 14,
       overflow: 'hidden',
-      elevation: 1,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
+      ...Platform.select({
+        web: {
+          boxShadow: isDark
+            ? '0 1px 3px rgba(0,0,0,0.4)'
+            : '0 1px 3px rgba(0,0,0,0.06)',
+        },
+        default: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isDark ? 0.25 : 0.04,
+          shadowRadius: 3,
+          elevation: 1,
+        },
+      }),
     },
     categoryTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      padding: 15,
-      backgroundColor: isDark ? '#3A3A3C' : '#f0f0f0',
-      color: isDark ? '#FFFFFF' : '#444',
-      borderBottomWidth: 1,
-      borderBottomColor: isDark ? '#444' : '#e0e0e0',
+      fontSize: 14,
+      fontWeight: '700',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      color: isDark ? '#AEAEB2' : '#636366',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
     },
     emptyContainer: {
       flex: 1,
       padding: 20,
-      backgroundColor: isDark ? Colors.dark.background : '#f8f8f8',
+      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      justifyContent: 'space-between',
     },
     emptyContent: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      paddingHorizontal: 40,
     },
-    emptyText: {
-      color: '#888',
-      fontSize: 16,
-      marginTop: 12,
+    emptyIconContainer: {
+      width: 100,
+      height: 100,
+      borderRadius: 28,
+      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 24,
+      ...Platform.select({
+        web: {
+          boxShadow: isDark
+            ? '0 2px 8px rgba(0,0,0,0.3)'
+            : '0 2px 8px rgba(0,0,0,0.06)',
+        },
+        default: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: isDark ? 0.25 : 0.06,
+          shadowRadius: 8,
+          elevation: 2,
+        },
+      }),
+    },
+    emptyTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: isDark ? '#EBEBF0' : '#1C1C1E',
+      marginBottom: 8,
       textAlign: 'center',
+      letterSpacing: -0.4,
     },
-    swipeHint: {
-      color: '#bbb',
-      fontSize: 13,
-      fontStyle: 'italic',
-      marginTop: 6,
+    emptyDescription: {
+      fontSize: 15,
+      color: isDark ? '#8E8E93' : '#636366',
       textAlign: 'center',
+      lineHeight: 22,
     },
-    songNumber: {
-      fontSize: 12,
-      color: '#666',
-      marginLeft: 4,
-    },
-    songAuthor: {
-      fontSize: 12,
-      color: '#666',
-      marginLeft: 4,
-    },
-    songSubtitle: {
+    importButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 4,
+      justifyContent: 'center',
+      paddingVertical: 14,
+      borderRadius: 14,
+      backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
+      gap: 8,
+      marginBottom: Platform.OS === 'ios' ? 40 : 20,
+    },
+    importButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: isDark ? '#7AB3FF' : '#253883',
     },
     modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: 'rgba(0, 0, 0, 0.4)',
       justifyContent: 'center',
       alignItems: 'center',
       padding: 20,
     },
     modalContainer: {
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 12,
+      borderRadius: 20,
       padding: 24,
       width: '100%',
-      maxWidth: 400,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 8,
+      maxWidth: 380,
+      ...Platform.select({
+        web: {
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+        },
+        default: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.25,
+          shadowRadius: 16,
+          elevation: 12,
+        },
+      }),
     },
     modalTitle: {
       fontSize: 20,
-      fontWeight: '600',
-      marginBottom: 8,
+      fontWeight: '700',
+      marginBottom: 4,
       textAlign: 'center',
-      color: isDark ? '#FFFFFF' : '#333',
+      color: isDark ? '#EBEBF0' : '#1C1C1E',
+      letterSpacing: -0.4,
     },
     modalSubtitle: {
       fontSize: 14,
-      color: isDark ? '#CCCCCC' : '#666',
+      color: isDark ? '#8E8E93' : '#8E8E93',
       textAlign: 'center',
       marginBottom: 20,
     },
     modalInput: {
       borderWidth: 1,
-      borderColor: isDark ? '#444' : '#ddd',
-      borderRadius: 8,
-      padding: 12,
+      borderColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderRadius: 12,
+      padding: 14,
       fontSize: 16,
       marginBottom: 8,
-      backgroundColor: isDark ? '#1C1C1E' : '#fff',
-      color: isDark ? '#FFFFFF' : '#333',
+      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      color: isDark ? '#EBEBF0' : '#1C1C1E',
     },
     modalNote: {
-      fontSize: 12,
-      color: isDark ? '#999' : '#666',
+      fontSize: 13,
+      color: isDark ? '#636366' : '#8E8E93',
       textAlign: 'center',
       marginBottom: 24,
-      fontStyle: 'italic',
     },
     modalButtons: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       gap: 12,
     },
     modalCancelButton: {
       flex: 1,
-      padding: 12,
-      borderRadius: 8,
-      backgroundColor: isDark ? '#444' : '#f0f0f0',
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
       alignItems: 'center',
     },
     modalCancelText: {
-      color: isDark ? '#CCCCCC' : '#666',
+      color: isDark ? '#AEAEB2' : '#636366',
       fontSize: 16,
-      fontWeight: '500',
+      fontWeight: '600',
     },
     modalConfirmButton: {
       flex: 1,
-      padding: 12,
-      borderRadius: 8,
-      backgroundColor: '#007AFF',
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: '#253883',
       alignItems: 'center',
+    },
+    modalConfirmDisabled: {
+      opacity: 0.5,
     },
     modalConfirmText: {
       color: '#fff',
       fontSize: 16,
       fontWeight: '600',
     },
+    snackbar: {
+      backgroundColor: isDark ? '#3A3A3C' : '#1C1C1E',
+      borderRadius: 12,
+      marginBottom: 8,
+      marginHorizontal: 16,
+    },
   });
 };
 
-export default SelectedSongsScreenWithProvider; // Export the wrapped component with PaperProvider
+export default SelectedSongsScreenWithProvider;

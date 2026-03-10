@@ -1,20 +1,15 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 
-// Importar pantallas
 import CategoriesScreen from '../screens/CategoriesScreen';
 import SongListScreen from '../screens/SongListScreen';
 import SongDetailScreen from '../screens/SongDetailScreen';
 import SongFullscreenScreen from '../screens/SongFullscreenScreen';
-import SelectedSongsScreen from '../screens/SelectedSongsScreen'; // Import the new screen
+import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 
-// Importar el contexto de canciones seleccionadas
 import { SelectedSongsProvider } from '../../contexts/SelectedSongsContext';
-// Importar el contexto de configuración
-import { SettingsProvider } from '../../contexts/SettingsContext'; // <<<--- ADD THIS IMPORT
-// Remove duplicate SongDetailScreen import if present, ensure others are fine.
-// Already imported SongDetailScreen above.
+import { SettingsProvider } from '../../contexts/SettingsContext';
 
 export interface SongNavItem {
   title: string;
@@ -48,16 +43,15 @@ export type RootStackParamList = {
     capo?: number;
     content: string;
   };
-  SelectedSongs: undefined; // Add SelectedSongs screen
+  SelectedSongs: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const HEADER_TINT = '#f4c11e';
+
 export default function CancioneroTab() {
   return (
-    // Wrap SelectedSongsProvider with SettingsProvider, or vice versa. Order might matter if one depends on the other.
-    // In this case, they are independent, so the order is not critical.
-    // Let's put SettingsProvider outside to make settings available to everything within.
     <SettingsProvider>
       <SelectedSongsProvider>
         <Stack.Navigator
@@ -67,34 +61,37 @@ export default function CancioneroTab() {
             headerStyle: (Platform.OS === 'ios'
               ? { backgroundColor: 'transparent' }
               : Platform.OS === 'web'
-              ? {
-                  backgroundColor: '#f4c11e',
-                  borderBottomWidth: 1,
-                  borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-                  elevation: 2,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                }
-              : {
-                  backgroundColor: '#f4c11e',
-                }) as any,
-            headerTintColor: Platform.OS === 'ios' ? '#1a1a1a' : Platform.OS === 'web' ? '#1a1a1a' : '#fff',
+                ? {
+                    backgroundColor: HEADER_TINT,
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+                  }
+                : {
+                    backgroundColor: HEADER_TINT,
+                  }) as any,
+            headerTintColor:
+              Platform.OS === 'android' ? '#fff' : '#1a1a1a',
             headerTitleStyle: {
               fontWeight: '700',
-              fontSize: 18,
-              color: Platform.OS === 'ios' ? '#1a1a1a' : Platform.OS === 'web' ? '#1a1a1a' : '#fff',
+              fontSize: 17,
+              color:
+                Platform.OS === 'android' ? '#fff' : '#1a1a1a',
+              letterSpacing: -0.3,
             },
-            ...(Platform.OS === 'web' && { headerStatusBarHeight: 0 } as any),
+            ...(Platform.OS === 'web' &&
+              ({ headerStatusBarHeight: 0 } as any)),
             headerTransparent: false,
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#f4c11e" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor={HEADER_TINT} />
+              ) : undefined,
+            headerShadowVisible: false,
           }}
         >
           <Stack.Screen
             name="Categories"
             component={CategoriesScreen}
-            options={{ title: 'Índice de canciones' }}
+            options={{ title: 'Cantoral' }}
           />
           <Stack.Screen
             name="SongsList"
@@ -115,6 +112,7 @@ export default function CancioneroTab() {
             component={SongFullscreenScreen}
             options={({ route }) => ({
               title: route.params?.title || 'Pantalla completa',
+              headerShown: false,
             })}
           />
           <Stack.Screen
@@ -124,6 +122,6 @@ export default function CancioneroTab() {
           />
         </Stack.Navigator>
       </SelectedSongsProvider>
-    </SettingsProvider> // <<<--- WRAP HERE
+    </SettingsProvider>
   );
 }
