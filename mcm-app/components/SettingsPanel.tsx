@@ -4,14 +4,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Switch,
   ViewStyle,
   TextStyle,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
-import { useAppSettings } from '@/contexts/AppSettingsContext';
+import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
@@ -23,6 +22,16 @@ interface Props {
   onClose: () => void;
 }
 
+const THEME_OPTIONS: {
+  key: ThemeScheme;
+  icon: string;
+  label: string;
+}[] = [
+  { key: 'light', icon: 'light-mode', label: 'Claro' },
+  { key: 'dark', icon: 'dark-mode', label: 'Oscuro' },
+  { key: 'system', icon: 'brightness-auto', label: 'Auto' },
+];
+
 export default function SettingsPanel({ visible, onClose }: Props) {
   const { settings, setSettings } = useAppSettings();
   const scheme = useColorScheme();
@@ -30,14 +39,6 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   const fontScale = useFontScale();
   const featureFlags = useFeatureFlags();
   const [editVisible, setEditVisible] = useState(false);
-
-  const isDark = scheme === 'dark';
-  const cardBg = isDark ? '#ffffff0D' : '#f5f7f8';
-  const iconCircleBg = isDark ? '#ffffff15' : '#ffffff';
-
-  const toggleDarkMode = () => {
-    setSettings({ theme: isDark ? 'light' : 'dark' });
-  };
 
   const increase = () => {
     setSettings({ fontScale: Math.min(settings.fontScale + 0.1, 2) });
@@ -47,10 +48,10 @@ export default function SettingsPanel({ visible, onClose }: Props) {
     setSettings({ fontScale: Math.max(1, settings.fontScale - 0.1) });
   };
 
-  const fontProgress = Math.min(
-    100,
-    Math.max(0, ((settings.fontScale - 1) / 1) * 100),
-  );
+  const surfaceBg =
+    scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)';
+  const segmentBg =
+    scheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.07)';
 
   return (
     <Modal
@@ -59,134 +60,170 @@ export default function SettingsPanel({ visible, onClose }: Props) {
       style={styles.modal}
       swipeDirection="down"
       onSwipeComplete={onClose}
-      backdropOpacity={0.4}
+      backdropOpacity={0.35}
     >
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Handle */}
         <View style={styles.handleRow}>
           <View
-            style={[styles.handle, { backgroundColor: theme.icon + '30' }]}
+            style={[styles.handle, { backgroundColor: theme.icon + '40' }]}
           />
         </View>
 
-        {/* Title row */}
+        {/* Header */}
         <View style={styles.titleRow}>
-          <Text style={[styles.title, { color: theme.text }]}>
-            Ajustes Rápidos
-          </Text>
+          <Text style={[styles.title, { color: theme.text }]}>Ajustes</Text>
           <TouchableOpacity
             onPress={onClose}
-            style={[styles.closeButton, { backgroundColor: cardBg }]}
+            style={[styles.closeBtn, { backgroundColor: surfaceBg }]}
+            accessibilityLabel="Cerrar"
+            accessibilityRole="button"
           >
-            <MaterialIcons name="close" size={20} color={theme.icon} />
+            <MaterialIcons name="close" size={18} color={theme.icon} />
           </TouchableOpacity>
         </View>
 
-        {/* Dark Mode Toggle */}
-        <View style={[styles.settingCard, { backgroundColor: cardBg }]}>
-          <View style={styles.settingCardLeft}>
-            <View
-              style={[styles.iconCircle, { backgroundColor: iconCircleBg }]}
-            >
-              <MaterialIcons name="dark-mode" size={22} color={theme.icon} />
-            </View>
-            <View>
-              <Text style={[styles.settingTitle, { color: theme.text }]}>
-                Modo Oscuro
-              </Text>
-              <Text style={[styles.settingSubtitle, { color: theme.icon }]}>
-                Alternar tema visual
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={isDark}
-            onValueChange={toggleDarkMode}
-            trackColor={{ false: theme.icon + '30', true: colors.primary }}
-            thumbColor="#ffffff"
-          />
-        </View>
+        {/* ── Sección: Apariencia ── */}
+        <Text style={[styles.sectionLabel, { color: theme.icon }]}>
+          APARIENCIA
+        </Text>
 
-        {/* Font Size */}
-        <View style={[styles.settingCard, { backgroundColor: cardBg }]}>
-          <View style={styles.fontHeader}>
-            <View
-              style={[styles.iconCircle, { backgroundColor: iconCircleBg }]}
-            >
-              <MaterialIcons
-                name="text-fields"
-                size={22}
-                color={theme.icon}
-              />
-            </View>
-            <Text style={[styles.settingTitle, { color: theme.text }]}>
-              Tamaño de Fuente
+        {/* Theme segmented control */}
+        <View style={[styles.surface, { backgroundColor: surfaceBg }]}>
+          <View style={styles.surfaceRow}>
+            <MaterialIcons name="palette" size={20} color={theme.icon} />
+            <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+              Tema
             </Text>
           </View>
-          <View style={styles.fontControls}>
+          <View
+            style={[styles.themeSegment, { backgroundColor: segmentBg }]}
+          >
+            {THEME_OPTIONS.map((opt) => {
+              const isSelected = settings.theme === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.themeOption,
+                    isSelected && {
+                      backgroundColor: colors.primary,
+                      shadowColor: colors.primary,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.35,
+                      shadowRadius: 4,
+                      elevation: 3,
+                    },
+                  ]}
+                  onPress={() => setSettings({ theme: opt.key })}
+                  accessibilityLabel={`Tema ${opt.label}`}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isSelected }}
+                >
+                  <MaterialIcons
+                    name={opt.icon as any}
+                    size={17}
+                    color={isSelected ? '#fff' : theme.icon}
+                  />
+                  <Text
+                    style={[
+                      styles.themeOptionText,
+                      { color: isSelected ? '#fff' : theme.icon },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Font size */}
+        <View style={[styles.surface, { backgroundColor: surfaceBg }]}>
+          <View style={styles.surfaceRow}>
+            <MaterialIcons name="text-fields" size={20} color={theme.icon} />
+            <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+              Tamaño de texto
+            </Text>
+          </View>
+          <View style={styles.fontRow}>
             <TouchableOpacity
               onPress={decrease}
               disabled={settings.fontScale <= 1}
-              style={{ opacity: settings.fontScale <= 1 ? 0.3 : 1 }}
+              style={[
+                styles.fontBtn,
+                { backgroundColor: segmentBg },
+                settings.fontScale <= 1 && { opacity: 0.35 },
+              ]}
+              accessibilityLabel="Reducir tamaño de texto"
+              accessibilityRole="button"
             >
-              <Text
-                style={[styles.fontLabel, { fontSize: 14, color: theme.icon }]}
-              >
-                A
-              </Text>
-            </TouchableOpacity>
-            <View
-              style={[styles.fontTrack, { backgroundColor: theme.icon + '18' }]}
-            >
-              <View
-                style={[
-                  styles.fontFill,
-                  {
-                    backgroundColor: colors.primary + '50',
-                    width: `${fontProgress}%`,
-                  },
-                ]}
+              <MaterialIcons
+                name="text-fields"
+                size={20}
+                color={theme.text}
+                style={{ transform: [{ scaleY: 0.75 }] }}
               />
-            </View>
+            </TouchableOpacity>
+
+            <Text
+              style={[
+                styles.fontValue,
+                { color: theme.text, fontSize: 16 * fontScale },
+              ]}
+            >
+              {(settings.fontScale * 100).toFixed(0)}%
+            </Text>
+
             <TouchableOpacity
               onPress={increase}
               disabled={settings.fontScale >= 2}
-              style={{ opacity: settings.fontScale >= 2 ? 0.3 : 1 }}
+              style={[
+                styles.fontBtn,
+                { backgroundColor: segmentBg },
+                settings.fontScale >= 2 && { opacity: 0.35 },
+              ]}
+              accessibilityLabel="Aumentar tamaño de texto"
+              accessibilityRole="button"
             >
-              <Text
-                style={[styles.fontLabel, { fontSize: 24, color: theme.text }]}
-              >
-                A
-              </Text>
+              <MaterialIcons
+                name="text-fields"
+                size={28}
+                color={theme.text}
+              />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Change Name */}
+        {/* ── Sección: Mi cuenta (futura) ── */}
         {featureFlags.showChangeNameButton && (
-          <TouchableOpacity
-            style={[styles.settingCard, { backgroundColor: cardBg }]}
-            onPress={() => setEditVisible(true)}
-          >
-            <View style={styles.settingCardLeft}>
-              <View
-                style={[styles.iconCircle, { backgroundColor: iconCircleBg }]}
-              >
-                <MaterialIcons name="person" size={22} color={theme.icon} />
+          <>
+            <Text style={[styles.sectionLabel, { color: theme.icon }]}>
+              MI CUENTA
+            </Text>
+            <TouchableOpacity
+              style={[styles.surface, { backgroundColor: surfaceBg }]}
+              onPress={() => setEditVisible(true)}
+              accessibilityRole="button"
+            >
+              <View style={[styles.surfaceRow, { flex: 1 }]}>
+                <MaterialIcons name="person" size={20} color={theme.icon} />
+                <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+                  ¿Cambiamos tu nombre?
+                </Text>
               </View>
-              <Text style={[styles.settingTitle, { color: theme.text }]}>
-                ¿Cambiamos tu nombre?
-              </Text>
-            </View>
-            <MaterialIcons
-              name="chevron-right"
-              size={22}
-              color={theme.icon}
-              style={{ opacity: 0.4 }}
-            />
-          </TouchableOpacity>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={theme.icon}
+                style={{ opacity: 0.4 }}
+              />
+            </TouchableOpacity>
+          </>
         )}
       </View>
+
       <UserProfileModal
         visible={editVisible}
         onClose={() => setEditVisible(false)}
@@ -196,94 +233,109 @@ export default function SettingsPanel({ visible, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  modal: { justifyContent: 'flex-end', margin: 0 },
+  modal: { justifyContent: 'flex-end', margin: 0 } as ViewStyle,
   container: {
     paddingHorizontal: spacing.lg,
     paddingBottom: 40,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-  },
+  } as ViewStyle,
+
   handleRow: {
     alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  } as ViewStyle,
   handle: {
-    width: 40,
-    height: 5,
-    borderRadius: 3,
-  },
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+  } as ViewStyle,
+
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.lg,
-    marginTop: spacing.xs,
-  },
+  } as ViewStyle,
   title: {
     fontSize: 22,
     fontWeight: '800',
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    letterSpacing: -0.3,
+  } as TextStyle,
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  settingCard: {
-    borderRadius: 16,
-    padding: spacing.md + 2,
+  } as ViewStyle,
+
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginBottom: spacing.sm,
+    marginLeft: 2,
+  } as TextStyle,
+
+  // Generic surface card
+  surface: {
+    borderRadius: 14,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
     marginBottom: spacing.md,
-  },
-  settingCardLeft: {
+    gap: spacing.sm + 2,
+  } as ViewStyle,
+  surfaceRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
+  } as ViewStyle,
+  surfaceLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+  } as TextStyle,
+
+  // Theme segmented control
+  themeSegment: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
+  } as ViewStyle,
+  themeOption: {
     flex: 1,
-    gap: spacing.sm + 4,
-  },
-  iconCircle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 8,
+    borderRadius: 8,
+  } as ViewStyle,
+  themeOptionText: {
+    fontSize: 12,
+    fontWeight: '700',
+  } as TextStyle,
+
+  // Font size
+  fontRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  } as ViewStyle,
+  fontBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  settingTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  settingSubtitle: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  fontHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm + 4,
-    marginBottom: spacing.md,
-  },
-  fontControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xs,
-    gap: spacing.md,
-  },
-  fontLabel: {
-    fontWeight: '600',
-  },
-  fontTrack: {
+  } as ViewStyle,
+  fontValue: {
     flex: 1,
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  fontFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
+    textAlign: 'center',
+    fontWeight: '700',
+    fontSize: 16,
+  } as TextStyle,
 });
