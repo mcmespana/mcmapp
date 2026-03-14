@@ -57,8 +57,8 @@ export const saveTokenToFirebase = async (token: string): Promise<void> => {
       lastActive: new Date().toISOString(),
       appVersion: Constants.expoConfig?.version || '1.0.0',
       deviceInfo: {
-        model: Constants.deviceName || undefined,
-        osVersion: Platform.Version?.toString() || undefined,
+        model: Constants.deviceName || "Desconocido",
+        osVersion: Platform.Version?.toString() || "Desconocida",
       },
     };
 
