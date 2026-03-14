@@ -27,13 +27,12 @@ export default function usePushNotifications() {
   const { refreshCount } = useNotifications();
 
   useEffect(() => {
-    // Registrar token y guardar en Firebase
-    registerAndSaveToken();
-
-    // Actualizar última actividad inmediatamente al arrancar
-    updateLastActive().catch((err) =>
-      console.error('Error en heartbeat inicial:', err),
-    );
+    // Registrar token y guardar en Firebase, luego heartbeat inicial
+    registerAndSaveToken().then(() => {
+      updateLastActive().catch((err) =>
+        console.error('Error en heartbeat inicial:', err),
+      );
+    });
 
     // Actualizar última actividad periódicamente (cada 5 minutos)
     const intervalId = setInterval(

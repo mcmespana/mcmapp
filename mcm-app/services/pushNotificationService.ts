@@ -142,6 +142,10 @@ export const updateLastActive = async (): Promise<void> => {
           '🔄 Token no encontrado en Firebase, guardando datos completos...',
         );
         const tokenData = buildTokenData(token);
+        // Preservar registeredAt original si existe
+        if (existingData?.registeredAt) {
+          tokenData.registeredAt = existingData.registeredAt;
+        }
         await set(deviceRef, tokenData);
         console.log('✅ Token guardado en Firebase via heartbeat');
         return;
