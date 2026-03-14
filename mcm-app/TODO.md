@@ -35,6 +35,8 @@
 
 ## Prioridad media (mejoras importantes)
 
+- [ ] **Sección "Contigo"** — nuevo tab con Evangelio del Día, Mi Rato de Oración, Examen del Día + habit tracker espiritual. **Ver `TODO_CONTIGO.md` para el diseño técnico completo.**
+
 - [ ] **Pantalla de inicio (Home)**: rediseñar la home screen (ver sección Ideas más abajo).
 - [ ] **Notificaciones — backend (panel admin)**: en desarrollo en `mcmespana/mcmpanel`. La app (cliente) ya está lista para recibir notificaciones. Ver `NOTIFICACIONES.md` para la especificación del backend y formato de mensajes Expo Push.
 - [ ] **Sistema de perfiles de usuario**: onboarding con selección de perfil (Familia / Monitor/a / Miembro MCM) + delegación local. Config remota en Firebase RTDB que controla tabs, home, calendarios, álbumes y notificaciones por perfil/delegación. Absorbe y reemplaza el sistema de feature flags actual. **Ver `TODO_SISTEMA_PERFILES.md` para el diseño técnico completo.**
@@ -77,6 +79,8 @@ La home actual es un grid de botones de colores con animaciones de entrada. Func
 - Sin animaciones pesadas
 
 **Recomendación:** La **Opción A** es la más equilibrada. El próximo evento del calendario y la canción destacada son los ganchos más fuertes para que el usuario abra la app.
+
+---
 
 ---
 
