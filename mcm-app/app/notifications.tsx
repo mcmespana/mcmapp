@@ -232,7 +232,7 @@ export default function NotificationsScreen() {
     })
     .filter(
       (notification, index, self) =>
-        index === self.findIndex((n) => n.id === notification.id),
+        index === self.findIndex((n) => (n.id && n.id === notification.id) || n === notification),
     );
 
   const hasUnread = allNotifications.some(
@@ -293,7 +293,7 @@ export default function NotificationsScreen() {
       ) : (
         <FlatList
           data={allNotifications}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => item.id ? item.id.toString() : `fallback-${index}`}
           renderItem={renderNotification}
           contentContainerStyle={styles.content}
           refreshControl={
