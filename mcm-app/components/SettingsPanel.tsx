@@ -13,6 +13,8 @@ import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import * as Notifications from 'expo-notifications';
+import * as Clipboard from 'expo-clipboard';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import UserProfileModal from './UserProfileModal';
 import spacing from '@/constants/spacing';
@@ -222,6 +224,37 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             </TouchableOpacity>
           </>
         )}
+
+        {/* ── Sección: Debug ── */}
+        <Text style={[styles.sectionLabel, { color: theme.icon, marginTop: spacing.md }]}>
+          DEPURACIÓN
+        </Text>
+        <TouchableOpacity
+          style={[styles.surface, { backgroundColor: surfaceBg }]}
+          onPress={async () => {
+            try {
+              const { data } = await Notifications.getExpoPushTokenAsync();
+              await Clipboard.setStringAsync(data);
+              alert("Expo Token copiado al portapapeles: " + data);
+            } catch (err) {
+              alert("Error obteniendo token: " + String(err));
+            }
+          }}
+          accessibilityRole="button"
+        >
+          <View style={[styles.surfaceRow, { flex: 1 }]}>
+            <MaterialIcons name="bug-report" size={20} color={theme.icon} />
+            <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+              Copiar Expo Push Token
+            </Text>
+          </View>
+          <MaterialIcons
+            name="content-copy"
+            size={20}
+            color={theme.icon}
+            style={{ opacity: 0.4 }}
+          />
+        </TouchableOpacity>
       </View>
 
       <UserProfileModal

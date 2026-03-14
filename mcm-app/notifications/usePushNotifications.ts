@@ -182,13 +182,20 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
   if (Constants.isDevice) {
     try {
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+        
+      if (!projectId) {
+         console.warn("No se encontró projectId, intentando obtener token sin projectId...");
+      }
+      
       const { data } = await Notifications.getExpoPushTokenAsync({
         projectId,
       });
       return data;
     } catch (error) {
       console.error('Error obteniendo token de notificaciones:', error);
+      alert('Error Push Token: ' + String(error));
       return null;
     }
   }
