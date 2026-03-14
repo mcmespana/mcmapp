@@ -1,5 +1,13 @@
 // services/pushNotificationService.ts
-import { getDatabase, ref, set, get, onValue, off } from 'firebase/database';
+import {
+  getDatabase,
+  ref,
+  set,
+  get,
+  update,
+  onValue,
+  off,
+} from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -11,8 +19,12 @@ import {
 } from '@/types/notifications';
 
 const DEVICE_ID_KEY = '@mcm_device_id';
+const PUSH_TOKEN_KEY = '@mcm_push_token';
 const NOTIFICATIONS_HISTORY_KEY = '@mcm_notifications_history';
 const READ_NOTIFICATIONS_KEY = '@mcm_read_notifications'; // IDs de notificaciones leídas (Firebase + locales)
+
+// Token cacheado en memoria para acceso rápido desde updateLastActive
+let cachedPushToken: string | null = null;
 
 /**
  * Genera o recupera el ID único del dispositivo
@@ -33,6 +45,47 @@ export const getDeviceId = async (): Promise<string> => {
 };
 
 /**
+ * Cachea el token en memoria y AsyncStorage para que updateLastActive pueda usarlo
+ */
+export const cachePushToken = async (token: string): Promise<void> => {
+  cachedPushToken = token;
+  try {
+    await AsyncStorage.setItem(PUSH_TOKEN_KEY, token);
+  } catch (error) {
+    console.error('Error cacheando token en AsyncStorage:', error);
+  }
+};
+
+/**
+ * Recupera el token cacheado (memoria > AsyncStorage)
+ */
+export const getCachedPushToken = async (): Promise<string | null> => {
+  if (cachedPushToken) return cachedPushToken;
+  try {
+    const token = await AsyncStorage.getItem(PUSH_TOKEN_KEY);
+    if (token) cachedPushToken = token;
+    return token;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Construye el objeto DeviceToken con los datos actuales del dispositivo
+ */
+const buildTokenData = (token: string): DeviceToken => ({
+  token,
+  platform: Platform.OS as 'ios' | 'android' | 'web',
+  registeredAt: new Date().toISOString(),
+  lastActive: new Date().toISOString(),
+  appVersion: Constants.expoConfig?.version || '1.0.0',
+  deviceInfo: {
+    model: Constants.deviceName || 'Desconocido',
+    osVersion: Platform.Version?.toString() || 'Desconocida',
+  },
+});
+
+/**
  * Guarda el token de push en Firebase Realtime Database
  *
  * Estructura en Firebase:
@@ -47,23 +100,20 @@ export const getDeviceId = async (): Promise<string> => {
  */
 export const saveTokenToFirebase = async (token: string): Promise<void> => {
   try {
+    // Cachear el token primero (así updateLastActive lo tiene de fallback)
+    await cachePushToken(token);
+
     const deviceId = await getDeviceId();
     const db = getDatabase(getFirebaseApp());
-
-    const tokenData: DeviceToken = {
-      token,
-      platform: Platform.OS as 'ios' | 'android' | 'web',
-      registeredAt: new Date().toISOString(),
-      lastActive: new Date().toISOString(),
-      appVersion: Constants.expoConfig?.version || '1.0.0',
-      deviceInfo: {
-        model: Constants.deviceName || "Desconocido",
-        osVersion: Platform.Version?.toString() || "Desconocida",
-      },
-    };
+    const tokenData = buildTokenData(token);
 
     await set(ref(db, `pushTokens/${deviceId}`), tokenData);
-    console.log('✅ Token guardado en Firebase para deviceId:', deviceId);
+    console.log(
+      '✅ Token guardado en Firebase para deviceId:',
+      deviceId,
+      'token:',
+      token.substring(0, 30) + '...',
+    );
   } catch (error) {
     console.error('❌ Error guardando token en Firebase:', error);
     throw error;
@@ -71,17 +121,41 @@ export const saveTokenToFirebase = async (token: string): Promise<void> => {
 };
 
 /**
- * Actualiza la última actividad del dispositivo
+ * Actualiza la última actividad del dispositivo.
+ * Si detecta que el token no está en Firebase, lo escribe también (fallback).
  */
 export const updateLastActive = async (): Promise<void> => {
   try {
     const deviceId = await getDeviceId();
     const db = getDatabase(getFirebaseApp());
+    const deviceRef = ref(db, `pushTokens/${deviceId}`);
 
-    await set(
-      ref(db, `pushTokens/${deviceId}/lastActive`),
-      new Date().toISOString(),
-    );
+    // Verificar si el nodo tiene token; si no, escribir datos completos
+    const token = await getCachedPushToken();
+    if (token) {
+      const snapshot = await get(deviceRef);
+      const existingData = snapshot.exists() ? snapshot.val() : null;
+
+      if (!existingData?.token) {
+        // El token no está en Firebase — escribir datos completos
+        console.log(
+          '🔄 Token no encontrado en Firebase, guardando datos completos...',
+        );
+        const tokenData = buildTokenData(token);
+        // Preservar registeredAt original si existe
+        if (existingData?.registeredAt) {
+          tokenData.registeredAt = existingData.registeredAt;
+        }
+        await set(deviceRef, tokenData);
+        console.log('✅ Token guardado en Firebase via heartbeat');
+        return;
+      }
+    }
+
+    // Caso normal: solo actualizar lastActive
+    await update(deviceRef, {
+      lastActive: new Date().toISOString(),
+    });
   } catch (error) {
     console.error('Error actualizando lastActive:', error);
   }
