@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import {
   saveTokenToFirebase,
+  cachePushToken,
   updateLastActive,
   saveReceivedNotificationLocally,
   markNotificationAsRead,
@@ -26,24 +27,13 @@ export default function usePushNotifications() {
   const { refreshCount } = useNotifications();
 
   useEffect(() => {
-    // Pedir permiso de notificaciones
-    askNotificationPermission()
-      .then((status) => {
-        if (
-          (status as unknown as Notifications.PermissionStatus) ===
-          Notifications.PermissionStatus.GRANTED
-        ) {
-          registerForPushNotificationsAsync().then((token) => {
-            if (token) {
-              console.log('🥳 Expo Push Token:', token);
-              saveTokenToFirebase(token).catch((err) =>
-                console.error('Error guardando token:', err),
-              );
-            }
-          });
-        }
-      })
-      .catch(console.error);
+    // Registrar token y guardar en Firebase
+    registerAndSaveToken();
+
+    // Actualizar última actividad inmediatamente al arrancar
+    updateLastActive().catch((err) =>
+      console.error('Error en heartbeat inicial:', err),
+    );
 
     // Actualizar última actividad periódicamente (cada 5 minutos)
     const intervalId = setInterval(
@@ -140,7 +130,9 @@ export default function usePushNotifications() {
         saveReceivedNotificationLocally(receivedNotification)
           .then(() => markNotificationAsRead(receivedNotification.id))
           .then(() => refreshCount())
-          .catch((err) => console.error('Error procesando notificación:', err));
+          .catch((err) =>
+            console.error('Error procesando notificación:', err),
+          );
       });
 
     // Cleanup
@@ -156,48 +148,69 @@ export default function usePushNotifications() {
   }, [refreshCount]);
 }
 
-/** Solicita permisos de notificaciones */
-async function askNotificationPermission(): Promise<Notifications.NotificationPermissionsStatus> {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+/**
+ * Flujo completo: permisos → token → guardar en Firebase
+ * Con logging detallado para diagnosticar problemas
+ */
+async function registerAndSaveToken() {
+  try {
+    // 1. Verificar/pedir permisos
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
 
-  if (existingStatus !== Notifications.PermissionStatus.GRANTED) {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  return finalStatus as unknown as Notifications.NotificationPermissionsStatus;
-}
-
-/** Registra el dispositivo para recibir notificaciones push */
-async function registerForPushNotificationsAsync(): Promise<string | null> {
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Notificaciones MCM',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#253883',
-    });
-  }
-
-  if (Constants.isDevice) {
-    try {
-      const projectId =
-        Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-        
-      if (!projectId) {
-         console.warn("No se encontró projectId, intentando obtener token sin projectId...");
-      }
-      
-      const { data } = await Notifications.getExpoPushTokenAsync({
-        projectId,
-      });
-      return data;
-    } catch (error) {
-      console.error('Error obteniendo token de notificaciones:', error);
-      alert('Error Push Token: ' + String(error));
-      return null;
+    if (existingStatus !== 'granted') {
+      console.log(
+        '🔔 Permisos no concedidos, solicitando...',
+        existingStatus,
+      );
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
     }
+
+    if (finalStatus !== 'granted') {
+      console.warn('⚠️ Permisos de notificaciones denegados:', finalStatus);
+      return;
+    }
+
+    console.log('✅ Permisos de notificaciones concedidos');
+
+    // 2. Configurar canal Android
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Notificaciones MCM',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#253883',
+      });
+    }
+
+    // 3. Obtener Expo Push Token
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ??
+      Constants?.easConfig?.projectId;
+
+    console.log('🔑 Obteniendo token con projectId:', projectId || '(auto)');
+
+    const tokenResponse = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined,
+    );
+    const token = tokenResponse.data;
+
+    if (!token) {
+      console.error('❌ getExpoPushTokenAsync devolvió token vacío');
+      return;
+    }
+
+    console.log('🥳 Expo Push Token:', token);
+
+    // 4. Cachear token (para que updateLastActive lo tenga como fallback)
+    await cachePushToken(token);
+
+    // 5. Guardar en Firebase
+    await saveTokenToFirebase(token);
+    console.log('✅ Token registrado exitosamente en Firebase');
+  } catch (error) {
+    console.error('❌ Error en registerAndSaveToken:', error);
   }
-  return null;
 }
