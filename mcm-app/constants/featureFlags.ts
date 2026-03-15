@@ -12,7 +12,6 @@ export interface FeatureFlags {
   defaultTab: keyof TabsFlags;
   showNotificationsIcon: boolean;
   showUserProfilePrompt: boolean;
-  showMonitores: boolean;
   showChangeNameButton: boolean;
   /** Muestra el acceso a Comunica (comunica.movimientoconsolacion.com) en Home y en Más */
   showComunica: boolean;
@@ -34,7 +33,6 @@ const featureFlags: FeatureFlags = {
   defaultTab: 'index',
   showNotificationsIcon: true,
   showUserProfilePrompt: false,
-  showMonitores: false,
   showChangeNameButton: false,
   showComunica: true,
   showComunicaGestion: true,

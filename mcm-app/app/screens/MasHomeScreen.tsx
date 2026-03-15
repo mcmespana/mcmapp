@@ -29,7 +29,6 @@ interface NavigationItem {
 }
 
 interface FeatureOptions {
-  showMonitores: boolean;
   showComunica: boolean;
   showComunicaGestion: boolean;
 }
@@ -59,17 +58,6 @@ const getAllNavigationItems = (opts: FeatureOptions): NavigationItem[] => {
     });
   }
 
-  if (opts.showMonitores) {
-    items.push({
-      label: 'Monitores',
-      subtitle: 'Panel de monitores MCM',
-      emoji: '💬',
-      materialIcon: 'monitor',
-      target: 'MonitoresWeb',
-      tintColor: '#5C6BC0',
-    });
-  }
-
   items.push({
     label: 'Jubileo',
     subtitle: 'Horarios, materiales, grupos...',
@@ -91,15 +79,10 @@ export default function MasHomeScreen() {
   const navigationItems = React.useMemo(
     () =>
       getAllNavigationItems({
-        showMonitores: featureFlags.showMonitores,
         showComunica: featureFlags.showComunica,
         showComunicaGestion: featureFlags.showComunicaGestion,
       }),
-    [
-      featureFlags.showMonitores,
-      featureFlags.showComunica,
-      featureFlags.showComunicaGestion,
-    ],
+    [featureFlags.showComunica, featureFlags.showComunicaGestion],
   );
 
   // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
@@ -128,12 +111,6 @@ export default function MasHomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text
-          style={[styles.pageTitle, { color: isDark ? '#fff' : '#1C1C1E' }]}
-        >
-          Más
-        </Text>
-
         {navigationItems.map((item, idx) => (
           <TouchableOpacity
             key={idx}
@@ -227,13 +204,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingHorizontal: 16,
     paddingBottom: 40,
-  },
-  pageTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    marginBottom: 20,
-    marginLeft: 4,
   },
   card: {
     borderRadius: 20,

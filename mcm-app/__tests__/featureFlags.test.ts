@@ -32,10 +32,6 @@ describe('featureFlags defaults', () => {
     expect(featureFlags.showUserProfilePrompt).toBe(false);
   });
 
-  it('NO muestra monitores por defecto', () => {
-    expect(featureFlags.showMonitores).toBe(false);
-  });
-
   it('NO muestra botón de cambiar nombre por defecto', () => {
     expect(featureFlags.showChangeNameButton).toBe(false);
   });
@@ -45,7 +41,6 @@ describe('featureFlags defaults', () => {
     expect(featureFlags).toHaveProperty('defaultTab');
     expect(featureFlags).toHaveProperty('showNotificationsIcon');
     expect(featureFlags).toHaveProperty('showUserProfilePrompt');
-    expect(featureFlags).toHaveProperty('showMonitores');
     expect(featureFlags).toHaveProperty('showChangeNameButton');
   });
 });

@@ -7,7 +7,6 @@ import { TouchableOpacity } from 'react-native';
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 
 import MasHomeScreen from '../screens/MasHomeScreen';
-import MonitoresWebScreen from '../screens/MonitoresWebScreen';
 import ComunicaScreen from '../screens/ComunicaScreen';
 import ComunicaGestionScreen from '../screens/ComunicaGestionScreen';
 import JubileoHomeScreen from '../screens/JubileoHomeScreen';
@@ -27,7 +26,6 @@ import SettingsPanel from '@/components/SettingsPanel';
 
 export type MasStackParamList = {
   MasHome: { directTo?: string } | undefined;
-  MonitoresWeb: undefined;
   Comunica: undefined;
   ComunicaGestion: undefined;
   JubileoHome: undefined;
@@ -214,13 +212,6 @@ export default function MasTab() {
             title: 'Más',
             headerShown: false,
             headerRight: undefined,
-          }}
-        />
-        <Stack.Screen
-          name="MonitoresWeb"
-          component={MonitoresWebScreen}
-          options={{
-            headerShown: false, // Sin header para ganar espacio - volver con tab "Más"
           }}
         />
         <Stack.Screen
