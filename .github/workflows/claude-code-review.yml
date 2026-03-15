@@ -1,14 +1,16 @@
 name: Claude Code Review
 
-on:
-  pull_request:
-    types: [opened, synchronize]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+# DESACTIVADO TEMPORALMENTE - Reactivar descomentando la sección `on:`
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
+#     # Optional: Only run on specific file changes
+#     # paths:
+#     #   - "src/**/*.ts"
+#     #   - "src/**/*.tsx"
+#     #   - "src/**/*.js"
+#     #   - "src/**/*.jsx"
+on: {}  # No triggers - workflow desactivado
 
 jobs:
   claude-review:

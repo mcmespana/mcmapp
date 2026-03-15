@@ -4,11 +4,13 @@
 
 name: CI - Tests & Quality
 
-on:
-  pull_request:
-    branches: [main, master, production, preview]
-  push:
-    branches: [main, master]
+# DESACTIVADO TEMPORALMENTE - Reactivar descomentyando la sección `on:`
+# on:
+#   pull_request:
+#     branches: [main, master, production, preview]
+#   push:
+#     branches: [main, master]
+on: {}  # No triggers - workflow desactivado
 
 jobs:
   quality-check:

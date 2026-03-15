@@ -1,9 +1,11 @@
 name: Deploy Web on Production
 
-on:
-  push:
-    branches:
-      - production
+# DESACTIVADO TEMPORALMENTE - Reactivar descomentando la sección `on:`
+# on:
+#   push:
+#     branches:
+#       - production
+on: {}  # No triggers - workflow desactivado
 
 jobs:
   build-and-deploy-web:

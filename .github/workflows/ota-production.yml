@@ -1,9 +1,11 @@
 # .github/workflows/ota-production.yml
 name: OTA Production
 
-on:
-  push:
-    branches: [ production ]
+# DESACTIVADO TEMPORALMENTE - Reactivar descomentando la sección `on:`
+# on:
+#   push:
+#     branches: [ production ]
+on: {}  # No triggers - workflow desactivado
 
 jobs:
   publish-prod:
