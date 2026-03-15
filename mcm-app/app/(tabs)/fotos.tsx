@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   ViewStyle,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, ActivityIndicator } from 'react-native-paper';
@@ -172,9 +173,10 @@ export default function FotosScreen() {
         contentContainerStyle={[
           styles.listContentContainer,
           {
-            maxWidth: width > 1200 ? 1600 : 1200, // Increase maxWidth on very wide screens
+            maxWidth: width > 1200 ? 1600 : 1200,
             alignSelf: 'center',
           },
+          Platform.OS === 'ios' && { paddingBottom: 100 },
         ]}
         onEndReached={loadMoreAlbums}
         onEndReachedThreshold={0.5}
@@ -193,18 +195,16 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
 
     listContentContainer: {
-      paddingTop: 15,
-      // paddingHorizontal will be managed by column containers or screen width directly
+      paddingTop: 12,
       paddingBottom: 20,
-      // alignItems: 'center', // Removed, will be handled by alignSelf on FlatList or column styles
     },
     albumCardContainerOneColumn: {
       width: '100%',
-      paddingHorizontal: 10, // Reduced side margins for mobile single column
+      paddingHorizontal: 16,
     },
     albumCardContainerTwoColumns: {
-      width: '50%', // Each item takes half the width
-      paddingHorizontal: 5, // Reduced horizontal spacing between cards for desktop
+      width: '50%',
+      paddingHorizontal: 6,
     },
     loadMoreButton: {
       marginVertical: 20,

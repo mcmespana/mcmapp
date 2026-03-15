@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Animated } from 'react-native';
+import { View, StyleSheet, ScrollView, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -332,7 +332,7 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
     eventsContainer: {
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.lg,
-      paddingBottom: spacing.xl * 2, // Extra padding at bottom
+      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl * 2,
     },
   });
 };

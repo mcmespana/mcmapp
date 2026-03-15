@@ -5,6 +5,7 @@ import {
   View,
   TouchableOpacity,
   Linking,
+  Platform,
 } from 'react-native';
 import { List, IconButton, Text, Searchbar } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
@@ -115,7 +116,7 @@ export default function GruposScreen() {
   // Si hay un grupo seleccionado, mostrar la vista del grupo (prioridad máxima)
   if (grupo) {
     return (
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
         <View style={styles.backWrapper}>
           <IconButton
             icon="arrow-left"
@@ -180,7 +181,7 @@ export default function GruposScreen() {
       grouped[r.categoria].push({ grupo: r.grupo, matches: r.matches });
     });
     return (
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
         <View style={styles.searchContainer}>
           <Searchbar
             placeholder="Buscar grupo o persona"
@@ -271,7 +272,7 @@ export default function GruposScreen() {
 
   if (categoria && !grupo) {
     return (
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
         <View style={styles.backWrapper}>
           <IconButton
             icon="arrow-left"
@@ -318,7 +319,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    catList: { padding: 16 },
+    catList: { padding: 16, paddingBottom: Platform.OS === 'ios' ? 100 : 16 },
     catCard: {
       height: 120,
       borderRadius: 16,

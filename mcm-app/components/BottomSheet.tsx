@@ -26,6 +26,7 @@ export default function BottomSheet({
       style={styles.modal}
       swipeDirection="down"
       onSwipeComplete={onClose}
+      swipeThreshold={60}
       backdropOpacity={isDark ? 0.5 : 0.3}
       animationIn="slideInUp"
       animationOut="slideOutDown"
@@ -36,9 +37,7 @@ export default function BottomSheet({
       useNativeDriverForBackdrop={true}
       hideModalContentWhileAnimating={false}
       avoidKeyboard={true}
-      scrollOffset={0}
-      scrollOffsetMax={0}
-      propagateSwipe={true}
+      propagateSwipe={false}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

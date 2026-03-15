@@ -163,7 +163,8 @@ export const useSongProcessor = ({
             body {
               font-family: ${currentFontFamily};
               margin: 0px;
-              padding: 4px 6px;
+              padding: 4px 14px;
+              ${isFullscreen ? '' : 'padding-bottom: 100px;'}
               background-color: #ffffff;
               color: ${AppColors.textDark || '#212529'};
               font-size: 100%;

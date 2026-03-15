@@ -6,6 +6,7 @@ import {
   StyleSheet,
   useWindowDimensions,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -93,7 +94,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
   const theme = Colors[scheme];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    scrollContent: { flexGrow: 1, padding: spacing.md },
+    scrollContent: { flexGrow: 1, padding: spacing.md, paddingBottom: Platform.OS === 'ios' ? 100 : spacing.md },
     gridContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',

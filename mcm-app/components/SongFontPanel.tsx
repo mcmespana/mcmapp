@@ -50,7 +50,9 @@ export default function SongFontPanel({
 
   return (
     <BottomSheet visible={visible} onClose={onClose}>
-      <View style={styles.handle} />
+      <View style={styles.handleArea}>
+        <View style={styles.handle} />
+      </View>
       <Text style={[styles.title, { color: theme.text }]}>Tipo de letra</Text>
 
       <View style={styles.sizeSection}>
@@ -144,13 +146,17 @@ export default function SongFontPanel({
 }
 
 const styles = StyleSheet.create({
+  handleArea: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
   handle: {
     width: 36,
     height: 5,
     borderRadius: 2.5,
     backgroundColor: 'rgba(128,128,128,0.3)',
-    alignSelf: 'center',
-    marginBottom: 16,
   },
   title: {
     fontSize: 20,
