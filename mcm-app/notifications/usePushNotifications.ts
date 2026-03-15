@@ -38,7 +38,7 @@ async function logToFirebase(data: Record<string, any>) {
 
 // Mapeo de actionIdentifier de iOS a rutas internas
 const ACTION_ROUTES: Record<string, string> = {
-  view: '/notifications',
+  view: '/(tabs)/notifications',
   view_event: '/(tabs)/calendario',
   view_photos: '/(tabs)/fotos',
 };
@@ -125,7 +125,7 @@ export default function usePushNotifications() {
 
         if (targetRoute) {
           try {
-            router.push(targetRoute as any);
+            router.navigate(targetRoute as any);
           } catch (error) {
             console.error('Error navegando a ruta:', error);
           }

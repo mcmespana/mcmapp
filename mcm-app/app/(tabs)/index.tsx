@@ -278,7 +278,7 @@ export default function Home() {
           {featureFlags.showNotificationsIcon && (
             <TouchableOpacity
               style={styles.headerIconBtn}
-              onPress={() => router.push('/notifications')}
+              onPress={() => router.navigate('/notifications')}
               accessibilityLabel={
                 unreadCount > 0
                   ? `Notificaciones, ${unreadCount} sin leer`
@@ -330,7 +330,7 @@ export default function Home() {
                     : 'rgba(0,0,0,0.07)',
               },
             ])}
-            onPress={() => router.push('/notifications')}
+            onPress={() => router.navigate('/notifications')}
             activeOpacity={0.78}
             accessibilityLabel={`${notifTitle}. Toca para leer`}
             accessibilityRole="button"
