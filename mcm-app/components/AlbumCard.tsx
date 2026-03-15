@@ -6,31 +6,32 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
-// textShadow from uiStyles is for dark text, we'll define a new one for white text
 
 interface AlbumCardProps {
   album: {
-    id: string; // Assuming id is part of the album object passed here, for completeness
+    id: string;
     title: string;
-    location?: string; // New field, optional
-    date?: string; // New field, optional
+    location?: string;
+    date?: string;
     imageUrl: string;
-    albumUrl?: string; // Assuming albumUrl is part of the album object, for completeness
+    albumUrl?: string;
   };
   onPress: () => void;
 }
 
 const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
   const { width } = useWindowDimensions();
-  const activeStyles = styles(width);
+  const activeStyles = createStyles(width);
   return (
     <TouchableOpacity
       style={activeStyles.card}
       onPress={onPress}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
     >
       <View style={activeStyles.cardContent}>
         <ImageBackground
@@ -43,35 +44,39 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
             )
           }
         >
-          <View style={activeStyles.overlay} />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.65)']}
+            locations={[0.3, 1]}
+            style={activeStyles.gradient}
+          />
           <View style={activeStyles.textContainer}>
-            <Text style={[activeStyles.title, whiteTextShadow]}>
+            <Text style={activeStyles.title} numberOfLines={2}>
               {album.title}
             </Text>
             {(album.location || album.date) && (
-              <View style={activeStyles.subtitleContainer}>
+              <View style={activeStyles.metaRow}>
                 {album.location && (
-                  <View style={activeStyles.subtitleItem}>
+                  <View style={activeStyles.metaItem}>
                     <MaterialIcons
-                      name="location-pin"
-                      size={14}
-                      color={Colors.dark.tint}
+                      name="location-on"
+                      size={13}
+                      color="rgba(255,255,255,0.85)"
                       style={activeStyles.icon}
                     />
-                    <Text style={[activeStyles.subtitleText, whiteTextShadow]}>
+                    <Text style={activeStyles.metaText}>
                       {album.location}
                     </Text>
                   </View>
                 )}
                 {album.date && (
-                  <View style={activeStyles.subtitleItem}>
+                  <View style={activeStyles.metaItem}>
                     <MaterialIcons
-                      name="calendar-today"
-                      size={14}
-                      color={Colors.dark.tint}
+                      name="event"
+                      size={13}
+                      color="rgba(255,255,255,0.85)"
                       style={activeStyles.icon}
                     />
-                    <Text style={[activeStyles.subtitleText, whiteTextShadow]}>
+                    <Text style={activeStyles.metaText}>
                       {album.date}
                     </Text>
                   </View>
@@ -85,70 +90,68 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
   );
 };
 
-const whiteTextShadow = {
-  textShadowColor: 'rgba(0, 0, 0, 0.7)',
-  textShadowOffset: { width: 0, height: 1.5 },
-  textShadowRadius: 3,
-};
-
-const styles = (screenWidth: number) =>
+const createStyles = (screenWidth: number) =>
   StyleSheet.create({
     card: {
-      width: '100%', // Take full width of its column container
-      aspectRatio: screenWidth > 600 ? 1.6 : 2, // Taller cards on desktop
-      borderRadius: 15,
-      marginBottom: 20, // Vertical spacing between cards
-      elevation: 5,
-      shadowColor: Colors.light.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      backgroundColor: Colors.light.background, // Fallback background
+      width: '100%',
+      aspectRatio: screenWidth > 600 ? 1.6 : 1.8,
+      borderRadius: 18,
+      marginBottom: 14,
+      backgroundColor: '#2C2C2E',
+      ...(Platform.OS === 'web'
+        ? {
+            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+          }
+        : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 5,
+          }),
     },
     cardContent: {
       flex: 1,
       overflow: 'hidden',
-      borderRadius: 15,
+      borderRadius: 18,
     },
     imageBackground: {
       flex: 1,
-      justifyContent: 'flex-end', // Align text to the bottom
+      justifyContent: 'flex-end',
     },
-    image: {
-      // borderRadius: 15, // Already handled by card's overflow: 'hidden'
-    },
-    overlay: {
+    image: {},
+    gradient: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.45)', // Darker overlay for better text contrast
-      // borderRadius is handled by parent card's overflow: 'hidden'
     },
     textContainer: {
-      padding: 10,
+      padding: 16,
+      paddingBottom: 14,
     },
     title: {
-      fontSize: 18, // Slightly reduced
-      fontWeight: 'bold',
-      color: Colors.dark.tint, // White text (assuming Colors.dark.tint is white)
-      marginBottom: 4,
+      fontSize: 19,
+      fontWeight: '700',
+      color: '#fff',
+      letterSpacing: -0.3,
+      lineHeight: 24,
     },
-    subtitleContainer: {
+    metaRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      flexWrap: 'wrap', // Allow wrapping if content is too long
-      marginTop: 2, // Small space below title
+      flexWrap: 'wrap',
+      marginTop: 6,
+      gap: 12,
     },
-    subtitleItem: {
+    metaItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginRight: 10, // Space between location and date if both present
-      marginBottom: 2, // Space for wrapped items
     },
-    subtitleText: {
-      fontSize: 14, // Slightly reduced
-      color: Colors.dark.tint, // White text
+    metaText: {
+      fontSize: 13,
+      color: 'rgba(255,255,255,0.85)',
+      fontWeight: '500',
     },
     icon: {
-      marginRight: 4,
+      marginRight: 3,
     },
   });
 
