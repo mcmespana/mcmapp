@@ -12,7 +12,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
@@ -40,7 +39,7 @@ const getAllNavigationItems = (opts: FeatureOptions): NavigationItem[] => {
       label: 'Comunica',
       icon: '📣',
       target: 'Comunica',
-      backgroundColor: '#E08A3C',
+      tintColor: '#E08A3C',
     });
   }
 
@@ -49,16 +48,17 @@ const getAllNavigationItems = (opts: FeatureOptions): NavigationItem[] => {
       label: 'Comunica Gestión',
       icon: '⚙️',
       target: 'ComunicaGestion',
-      backgroundColor: '#607D8B',
+      tintColor: '#607D8B',
     });
   }
 
   if (opts.showMonitores) {
     items.push({
       label: 'Comunica MCM · Monitores',
+      subtitle: 'Panel de monitores',
       icon: '💬',
       target: 'MonitoresWeb',
-      backgroundColor: '#607D8B',
+      tintColor: '#607D8B',
     });
   }
 
@@ -69,8 +69,6 @@ const getAllNavigationItems = (opts: FeatureOptions): NavigationItem[] => {
     target: 'JubileoHome',
     tintColor: '#A3BD31',
   });
-
-  // Aquí puedes agregar más secciones archivadas en el futuro
 
   return items;
 };
@@ -132,44 +130,37 @@ export default function MasHomeScreen() {
       ]}
       showsVerticalScrollIndicator={false}
     >
-      {sections.map((section, sIdx) => (
-        <View key={sIdx} style={styles.section}>
-          <Text style={styles.sectionTitle}>{section.title.toUpperCase()}</Text>
-          <View style={styles.sectionCards}>
-            {section.items.map((item, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={styles.card}
-                onPress={() => navigation.navigate(item.target as any)}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[
-                    styles.cardEmoji,
-                    { backgroundColor: item.tintColor + '20' },
-                  ]}
-                >
-                  <Text style={styles.emojiText}>{item.icon}</Text>
-                </View>
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>
-                    {item.label}
-                  </Text>
-                  {item.subtitle && (
-                    <Text style={styles.cardSubtitle} numberOfLines={1}>
-                      {item.subtitle}
-                    </Text>
-                  )}
-                </View>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={isDark ? '#555' : '#C7C7CC'}
-                />
-              </TouchableOpacity>
-            ))}
+      {navigationItems.map((item, idx) => (
+        <TouchableOpacity
+          key={idx}
+          style={styles.card}
+          onPress={() => navigation.navigate(item.target as any)}
+          activeOpacity={0.7}
+        >
+          <View
+            style={[
+              styles.cardEmoji,
+              { backgroundColor: item.tintColor + '20' },
+            ]}
+          >
+            <Text style={styles.emojiText}>{item.icon}</Text>
           </View>
-        </View>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {item.label}
+            </Text>
+            {item.subtitle && (
+              <Text style={styles.cardSubtitle} numberOfLines={1}>
+                {item.subtitle}
+              </Text>
+            )}
+          </View>
+          <MaterialIcons
+            name="chevron-right"
+            size={20}
+            color={isDark ? '#555' : '#C7C7CC'}
+          />
+        </TouchableOpacity>
       ))}
     </ScrollView>
   );
@@ -187,20 +178,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
       paddingHorizontal: 16,
       paddingBottom: 32,
     },
-    section: {
-      marginBottom: 24,
-    },
-    sectionTitle: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: isDark ? '#8E8E93' : '#6D6D72',
-      letterSpacing: 0.5,
-      marginBottom: 8,
-      marginLeft: 4,
-    },
-    sectionCards: {
-      gap: 8,
-    },
     card: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -208,6 +185,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       borderRadius: 14,
       paddingHorizontal: 14,
       paddingVertical: 14,
+      marginBottom: 8,
       ...(Platform.OS === 'web'
         ? {
             boxShadow: isDark

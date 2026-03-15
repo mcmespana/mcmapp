@@ -124,10 +124,6 @@ function InnerLayout() {
                   title: 'Wordle Jubileo',
                 }}
               />
-              <Stack.Screen
-                name="notifications"
-                options={{ headerShown: false }}
-              />
             </Stack>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             <AddToHomeBanner />

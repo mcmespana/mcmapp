@@ -209,6 +209,19 @@ export default function Home() {
     ? latestNotification.body
     : 'Mantente al día con las novedades de la comunidad.';
 
+  // Mapeo de rutas internas a etiquetas legibles (coherente con notifications.tsx)
+  const ROUTE_LABELS: Record<string, string> = {
+    '/(tabs)/calendario': 'Calendario',
+    '/(tabs)/fotos': 'Fotos',
+    '/(tabs)/cancionero': 'Cantoral',
+    '/(tabs)/mas': 'Más',
+    '/(tabs)/index': 'Inicio',
+    '/wordle': 'Wordle',
+  };
+  const internalRouteLabel = latestNotification?.internalRoute
+    ? ROUTE_LABELS[latestNotification.internalRoute] ?? null
+    : null;
+
   const handleActionButton = () => {
     const btn = latestNotification?.actionButton;
     if (!btn) return;
@@ -267,7 +280,7 @@ export default function Home() {
           {featureFlags.showNotificationsIcon && (
             <TouchableOpacity
               style={styles.headerIconBtn}
-              onPress={() => router.push('/notifications')}
+              onPress={() => router.navigate('/notifications')}
               accessibilityLabel={
                 unreadCount > 0
                   ? `Notificaciones, ${unreadCount} sin leer`
@@ -319,7 +332,7 @@ export default function Home() {
                     : 'rgba(0,0,0,0.07)',
               },
             ])}
-            onPress={() => router.push('/notifications')}
+            onPress={() => router.navigate('/notifications')}
             activeOpacity={0.78}
             accessibilityLabel={`${notifTitle}. Toca para leer`}
             accessibilityRole="button"
@@ -384,8 +397,24 @@ export default function Home() {
               </View>
             </View>
 
-            {/* CTA row */}
+            {/* CTA row: destino interno + botón de acción */}
             <View style={styles.notifCtaRow}>
+              {/* Chip de destino (internalRoute) — solo indicador, la tarjeta lleva a /notifications */}
+              {internalRouteLabel && (
+                <View
+                  style={[
+                    styles.destinationChip,
+                    { borderColor: accentColor + '50', backgroundColor: accentColor + '10' },
+                  ]}
+                >
+                  <MaterialIcons name="arrow-forward-ios" size={9} color={accentColor} />
+                  <Text style={[styles.destinationChipText, { color: accentColor }]}>
+                    {internalRouteLabel}
+                  </Text>
+                </View>
+              )}
+
+              {/* Botón de acción explícito */}
               {latestNotification?.actionButton ? (
                 <TouchableOpacity
                   style={[
@@ -410,7 +439,8 @@ export default function Home() {
                     color={accentColor}
                   />
                 </TouchableOpacity>
-              ) : (
+              ) : !internalRouteLabel ? (
+                /* Flecha genérica solo si no hay ningún indicador */
                 <View
                   style={[
                     styles.arrowPill,
@@ -419,7 +449,7 @@ export default function Home() {
                 >
                   <MaterialIcons name="east" size={14} color={accentColor} />
                 </View>
-              )}
+              ) : null}
             </View>
           </TouchableOpacity>
         </View>
@@ -806,8 +836,23 @@ const styles = StyleSheet.create({
   notifCtaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
     marginTop: spacing.sm + 2,
+    flexWrap: 'wrap',
   } as ViewStyle,
+  destinationChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  } as ViewStyle,
+  destinationChipText: {
+    fontSize: 10,
+    fontWeight: '700',
+  } as TextStyle,
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',

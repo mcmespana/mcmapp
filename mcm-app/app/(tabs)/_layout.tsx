@@ -171,6 +171,15 @@ function AndroidWebTabsLayout() {
             />
           );
         })}
+
+        {/* Pantalla oculta del tab bar — sigue dentro del grupo para mostrar la barra */}
+        <Tabs.Screen
+          name="notifications"
+          options={{
+            href: null,
+            headerShown: false,
+          }}
+        />
       </Tabs>
     </ThemeProvider>
   );
