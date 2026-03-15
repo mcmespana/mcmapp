@@ -14,6 +14,10 @@ export interface FeatureFlags {
   showUserProfilePrompt: boolean;
   showMonitores: boolean;
   showChangeNameButton: boolean;
+  /** Muestra el acceso a Comunica (comunica.movimientoconsolacion.com) en Home y en Más */
+  showComunica: boolean;
+  /** Muestra el acceso a Comunica Gestión (sinergiacrm.org) en Más */
+  showComunicaGestion: boolean;
 }
 
 // Default feature flags (hardcoded fallback)
@@ -32,6 +36,8 @@ const featureFlags: FeatureFlags = {
   showUserProfilePrompt: false,
   showMonitores: false,
   showChangeNameButton: false,
+  showComunica: true,
+  showComunicaGestion: true,
 };
 
 export default featureFlags;
