@@ -1,53 +1,75 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
   Text,
   TouchableOpacity,
-  ViewStyle,
-  TextStyle,
-  useWindowDimensions,
   ScrollView,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MaterialIcons } from '@expo/vector-icons';
 
-import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import spacing from '@/constants/spacing';
-import typography from '@/constants/typography';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { takePendingMasScreen } from '@/utils/masNavigation';
 
 interface NavigationItem {
   label: string;
+  subtitle?: string;
   icon: string;
   target: keyof MasStackParamList;
-  backgroundColor: string;
+  tintColor: string;
 }
 
-const getAllNavigationItems = (showMonitores: boolean): NavigationItem[] => {
+interface FeatureOptions {
+  showMonitores: boolean;
+  showComunica: boolean;
+  showComunicaGestion: boolean;
+}
+
+const getAllNavigationItems = (opts: FeatureOptions): NavigationItem[] => {
   const items: NavigationItem[] = [];
-  
-  if (showMonitores) {
+
+  if (opts.showComunica) {
     items.push({
-      label: 'Comunica MCM · Monitores',
-      icon: '💬',
-      target: 'MonitoresWeb',
-      backgroundColor: '#607D8B',
+      label: 'Comunica',
+      icon: '📣',
+      target: 'Comunica',
+      tintColor: '#E08A3C',
     });
   }
-  
+
+  if (opts.showComunicaGestion) {
+    items.push({
+      label: 'Comunica Gestión',
+      icon: '⚙️',
+      target: 'ComunicaGestion',
+      tintColor: '#607D8B',
+    });
+  }
+
+  if (opts.showMonitores) {
+    items.push({
+      label: 'Comunica MCM · Monitores',
+      subtitle: 'Panel de monitores',
+      icon: '💬',
+      target: 'MonitoresWeb',
+      tintColor: '#607D8B',
+    });
+  }
+
   items.push({
     label: 'Jubileo',
+    subtitle: 'Horarios, materiales, grupos...',
     icon: '🎉',
     target: 'JubileoHome',
-    backgroundColor: '#A3BD31',
+    tintColor: '#A3BD31',
   });
-  
-  // Aquí puedes agregar más secciones archivadas en el futuro
-  
+
   return items;
 };
 
@@ -55,123 +77,132 @@ export default function MasHomeScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { width } = useWindowDimensions();
-  const containerPadding = spacing.lg;
-  const iconSize = 48;
-  const labelFontSize = 18;
   const featureFlags = useFeatureFlags();
   const navigationItems = React.useMemo(
-    () => getAllNavigationItems(featureFlags.showMonitores),
-    [featureFlags.showMonitores],
+    () =>
+      getAllNavigationItems({
+        showMonitores: featureFlags.showMonitores,
+        showComunica: featureFlags.showComunica,
+        showComunicaGestion: featureFlags.showComunicaGestion,
+      }),
+    [featureFlags.showMonitores, featureFlags.showComunica, featureFlags.showComunicaGestion],
+  );
+
+  // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
+  useFocusEffect(
+    useCallback(() => {
+      const screen = takePendingMasScreen();
+      if (screen) {
+        navigation.navigate(screen as keyof MasStackParamList);
+      }
+    }, [navigation]),
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={[
-            styles.listContainer,
-            {
-              paddingHorizontal: containerPadding,
-              backgroundColor: Colors[scheme].background,
-            },
-          ]}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.scrollContent,
+        Platform.OS === 'ios' && { paddingBottom: 100 },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
+      {navigationItems.map((item, idx) => (
+        <TouchableOpacity
+          key={idx}
+          style={styles.card}
+          onPress={() => navigation.navigate(item.target as any)}
+          activeOpacity={0.7}
         >
-          {navigationItems.map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[
-                styles.item,
-                {
-                  backgroundColor: item.backgroundColor,
-                },
-              ]}
-              onPress={() => navigation.navigate(item.target as any)}
-              activeOpacity={0.85}
-            >
-              <Text
-                style={[
-                  styles.iconPlaceholder,
-                  { color: '#fff', fontSize: iconSize },
-                ]}
-              >
-                {item.icon}
+          <View
+            style={[
+              styles.cardEmoji,
+              { backgroundColor: item.tintColor + '20' },
+            ]}
+          >
+            <Text style={styles.emojiText}>{item.icon}</Text>
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {item.label}
+            </Text>
+            {item.subtitle && (
+              <Text style={styles.cardSubtitle} numberOfLines={1}>
+                {item.subtitle}
               </Text>
-              <Text
-                style={[
-                  styles.rectangleLabel,
-                  { color: '#fff', fontSize: labelFontSize },
-                ]}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            )}
+          </View>
+          <MaterialIcons
+            name="chevron-right"
+            size={20}
+            color={isDark ? '#555' : '#C7C7CC'}
+          />
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
   );
 }
 
-interface Styles {
-  container: ViewStyle;
-  scrollView: ViewStyle;
-  scrollContent: ViewStyle;
-  listContainer: ViewStyle;
-  item: ViewStyle;
-  iconPlaceholder: TextStyle;
-  rectangleLabel: TextStyle;
-}
-
 const createStyles = (scheme: 'light' | 'dark') => {
-  const theme = Colors[scheme];
-  return StyleSheet.create<Styles>({
+  const isDark = scheme === 'dark';
+  return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.background,
+      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
     scrollContent: {
-      flexGrow: 1,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.xl,
+      paddingTop: 16,
+      paddingHorizontal: 16,
+      paddingBottom: 32,
     },
-    scrollView: {
-      flex: 1,
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      marginBottom: 8,
+      ...(Platform.OS === 'web'
+        ? {
+            boxShadow: isDark
+              ? '0 1px 3px rgba(0,0,0,0.4)'
+              : '0 1px 3px rgba(0,0,0,0.06)',
+          }
+        : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: isDark ? 0.25 : 0.04,
+            shadowRadius: 3,
+            elevation: 1,
+          }),
     },
-    listContainer: {
-      gap: spacing.md,
-    },
-    item: {
+    cardEmoji: {
+      width: 42,
+      height: 42,
+      borderRadius: 12,
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 16,
-      paddingVertical: spacing.lg,
-      minHeight: 100,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 4,
+      marginRight: 14,
     },
-    iconPlaceholder: {
-      fontWeight: 'bold',
-      marginBottom: spacing.sm,
-      textAlign: 'center',
-      textShadowColor: 'rgba(0,0,0,0.15)',
-      textShadowOffset: { width: 1, height: 2 },
-      textShadowRadius: 3,
+    emojiText: {
+      fontSize: 22,
     },
-    rectangleLabel: {
-      ...(typography.button as TextStyle),
-      fontWeight: 'bold',
-      textAlign: 'center',
-      letterSpacing: 0.5,
-      fontSize: 20,
+    cardContent: {
+      flex: 1,
+    },
+    cardTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      letterSpacing: -0.2,
+    },
+    cardSubtitle: {
+      fontSize: 13,
+      color: isDark ? '#8E8E93' : '#8E8E93',
+      marginTop: 2,
     },
   });
 };
