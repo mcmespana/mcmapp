@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNavigation, StackActions } from '@react-navigation/native';
 import { Platform, StyleSheet } from 'react-native';
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 
@@ -51,41 +53,56 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const HEADER_TINT = '#f4c11e';
 
 export default function CancioneroTab() {
+  const tabNavigation = useNavigation();
+  const stackNavRef = useRef<any>(null);
+
+  // Pop the internal stack to top when the "Cantoral" tab is re-pressed
+  useEffect(() => {
+    const unsubscribe = (tabNavigation as any).addListener('tabPress', () => {
+      if (stackNavRef.current?.canGoBack()) {
+        stackNavRef.current.dispatch(StackActions.popToTop());
+      }
+    });
+    return unsubscribe;
+  }, [tabNavigation]);
+
   return (
     <SettingsProvider>
       <SelectedSongsProvider>
         <Stack.Navigator
           initialRouteName="Categories"
-          screenOptions={{
-            headerBackTitle: 'Volver',
-            headerStyle: (Platform.OS === 'ios'
-              ? { backgroundColor: 'transparent' }
-              : Platform.OS === 'web'
-                ? {
-                    backgroundColor: HEADER_TINT,
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
-                  }
-                : {
-                    backgroundColor: HEADER_TINT,
-                  }) as any,
-            headerTintColor:
-              Platform.OS === 'android' ? '#fff' : '#1a1a1a',
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 17,
-              color:
-                Platform.OS === 'android' ? '#fff' : '#1a1a1a',
-              letterSpacing: -0.3,
-            },
-            ...(Platform.OS === 'web' &&
-              ({ headerStatusBarHeight: 0 } as any)),
-            headerTransparent: false,
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor={HEADER_TINT} />
-              ) : undefined,
-            headerShadowVisible: false,
+          screenOptions={({ navigation }) => {
+            // Capture stack navigation ref for tab press handling
+            stackNavRef.current = navigation;
+            return {
+              headerBackTitle: 'Volver',
+              headerStyle: (Platform.OS === 'ios'
+                ? { backgroundColor: 'transparent' }
+                : Platform.OS === 'web'
+                  ? {
+                      backgroundColor: HEADER_TINT,
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+                    }
+                  : {
+                      backgroundColor: HEADER_TINT,
+                    }) as any,
+              headerTintColor: Platform.OS === 'android' ? '#fff' : '#1a1a1a',
+              headerTitleStyle: {
+                fontWeight: '700',
+                fontSize: 17,
+                color: Platform.OS === 'android' ? '#fff' : '#1a1a1a',
+                letterSpacing: -0.3,
+              },
+              ...(Platform.OS === 'web' &&
+                ({ headerStatusBarHeight: 0 } as any)),
+              headerTransparent: false,
+              headerBackground: () =>
+                Platform.OS === 'ios' ? (
+                  <GlassHeader tintColor={HEADER_TINT} />
+                ) : undefined,
+              headerShadowVisible: false,
+            };
           }}
         >
           <Stack.Screen
