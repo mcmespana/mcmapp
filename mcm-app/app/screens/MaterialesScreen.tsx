@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Text,
+  Platform,
 } from 'react-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -195,7 +196,7 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
     container: { flex: 1, backgroundColor: theme.background },
     list: {
       paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.lg,
+      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.lg,
     },
     card: {
       borderRadius: 12,

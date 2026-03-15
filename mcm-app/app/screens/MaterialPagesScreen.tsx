@@ -315,6 +315,7 @@ const createStyles = (
     },
     pageContent: {
       padding: spacing.lg,
+      paddingBottom: Platform.OS === 'ios' ? 120 : spacing.lg,
       flexGrow: 1,
       minHeight: '100%',
     },
@@ -326,6 +327,7 @@ const createStyles = (
       flexDirection: 'row',
       justifyContent: 'center',
       padding: spacing.md,
+      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.md,
       gap: 6,
     },
     dot: {

@@ -4,174 +4,201 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  ViewStyle,
-  TextStyle,
-  useWindowDimensions,
   ScrollView,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import spacing from '@/constants/spacing';
-import typography from '@/constants/typography';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 
 interface NavigationItem {
   label: string;
+  subtitle?: string;
   icon: string;
   target: keyof MasStackParamList;
-  backgroundColor: string;
+  tintColor: string;
 }
 
-const getAllNavigationItems = (showMonitores: boolean): NavigationItem[] => {
-  const items: NavigationItem[] = [];
-  
-  if (showMonitores) {
-    items.push({
-      label: 'Comunica MCM · Monitores',
-      icon: '💬',
-      target: 'MonitoresWeb',
-      backgroundColor: '#607D8B',
-    });
-  }
-  
-  items.push({
+interface Section {
+  title: string;
+  items: NavigationItem[];
+}
+
+function getSections(showMonitores: boolean): Section[] {
+  const sections: Section[] = [];
+
+  // Sección principal: Eventos
+  const eventosItems: NavigationItem[] = [];
+
+  eventosItems.push({
     label: 'Jubileo',
+    subtitle: 'Horarios, materiales, grupos...',
     icon: '🎉',
     target: 'JubileoHome',
-    backgroundColor: '#A3BD31',
+    tintColor: '#A3BD31',
   });
-  
-  // Aquí puedes agregar más secciones archivadas en el futuro
-  
-  return items;
-};
+
+  sections.push({ title: 'Eventos', items: eventosItems });
+
+  // Sección: Herramientas
+  if (showMonitores) {
+    sections.push({
+      title: 'Herramientas',
+      items: [
+        {
+          label: 'Comunica MCM · Monitores',
+          subtitle: 'Panel de monitores',
+          icon: '💬',
+          target: 'MonitoresWeb',
+          tintColor: '#607D8B',
+        },
+      ],
+    });
+  }
+
+  return sections;
+}
 
 export default function MasHomeScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
-  const { width } = useWindowDimensions();
-  const containerPadding = spacing.lg;
-  const iconSize = 48;
-  const labelFontSize = 18;
   const featureFlags = useFeatureFlags();
-  const navigationItems = React.useMemo(
-    () => getAllNavigationItems(featureFlags.showMonitores),
+  const sections = React.useMemo(
+    () => getSections(featureFlags.showMonitores),
     [featureFlags.showMonitores],
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={[
-            styles.listContainer,
-            {
-              paddingHorizontal: containerPadding,
-              backgroundColor: Colors[scheme].background,
-            },
-          ]}
-        >
-          {navigationItems.map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[
-                styles.item,
-                {
-                  backgroundColor: item.backgroundColor,
-                },
-              ]}
-              onPress={() => navigation.navigate(item.target as any)}
-              activeOpacity={0.85}
-            >
-              <Text
-                style={[
-                  styles.iconPlaceholder,
-                  { color: '#fff', fontSize: iconSize },
-                ]}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.scrollContent,
+        Platform.OS === 'ios' && { paddingBottom: 100 },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
+      {sections.map((section, sIdx) => (
+        <View key={sIdx} style={styles.section}>
+          <Text style={styles.sectionTitle}>{section.title.toUpperCase()}</Text>
+          <View style={styles.sectionCards}>
+            {section.items.map((item, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={styles.card}
+                onPress={() => navigation.navigate(item.target as any)}
+                activeOpacity={0.7}
               >
-                {item.icon}
-              </Text>
-              <Text
-                style={[
-                  styles.rectangleLabel,
-                  { color: '#fff', fontSize: labelFontSize },
-                ]}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <View
+                  style={[
+                    styles.cardEmoji,
+                    { backgroundColor: item.tintColor + '20' },
+                  ]}
+                >
+                  <Text style={styles.emojiText}>{item.icon}</Text>
+                </View>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>
+                    {item.label}
+                  </Text>
+                  {item.subtitle && (
+                    <Text style={styles.cardSubtitle} numberOfLines={1}>
+                      {item.subtitle}
+                    </Text>
+                  )}
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={isDark ? '#555' : '#C7C7CC'}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      ))}
+    </ScrollView>
   );
 }
 
-interface Styles {
-  container: ViewStyle;
-  scrollView: ViewStyle;
-  scrollContent: ViewStyle;
-  listContainer: ViewStyle;
-  item: ViewStyle;
-  iconPlaceholder: TextStyle;
-  rectangleLabel: TextStyle;
-}
-
 const createStyles = (scheme: 'light' | 'dark') => {
-  const theme = Colors[scheme];
-  return StyleSheet.create<Styles>({
+  const isDark = scheme === 'dark';
+  return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.background,
+      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
     scrollContent: {
-      flexGrow: 1,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.xl,
+      paddingTop: 16,
+      paddingHorizontal: 16,
+      paddingBottom: 32,
     },
-    scrollView: {
-      flex: 1,
+    section: {
+      marginBottom: 24,
     },
-    listContainer: {
-      gap: spacing.md,
+    sectionTitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: isDark ? '#8E8E93' : '#6D6D72',
+      letterSpacing: 0.5,
+      marginBottom: 8,
+      marginLeft: 4,
     },
-    item: {
+    sectionCards: {
+      gap: 8,
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      ...(Platform.OS === 'web'
+        ? {
+            boxShadow: isDark
+              ? '0 1px 3px rgba(0,0,0,0.4)'
+              : '0 1px 3px rgba(0,0,0,0.06)',
+          }
+        : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: isDark ? 0.25 : 0.04,
+            shadowRadius: 3,
+            elevation: 1,
+          }),
+    },
+    cardEmoji: {
+      width: 42,
+      height: 42,
+      borderRadius: 12,
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 16,
-      paddingVertical: spacing.lg,
-      minHeight: 100,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 4,
+      marginRight: 14,
     },
-    iconPlaceholder: {
-      fontWeight: 'bold',
-      marginBottom: spacing.sm,
-      textAlign: 'center',
-      textShadowColor: 'rgba(0,0,0,0.15)',
-      textShadowOffset: { width: 1, height: 2 },
-      textShadowRadius: 3,
+    emojiText: {
+      fontSize: 22,
     },
-    rectangleLabel: {
-      ...(typography.button as TextStyle),
-      fontWeight: 'bold',
-      textAlign: 'center',
-      letterSpacing: 0.5,
-      fontSize: 20,
+    cardContent: {
+      flex: 1,
+    },
+    cardTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      letterSpacing: -0.2,
+    },
+    cardSubtitle: {
+      fontSize: 13,
+      color: isDark ? '#8E8E93' : '#8E8E93',
+      marginTop: 2,
     },
   });
 };

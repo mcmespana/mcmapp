@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Linking, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, Linking, Image, Platform } from 'react-native';
 import { Card, IconButton, Modal, Portal, Text } from 'react-native-paper';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -135,7 +135,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    list: { padding: 16 },
+    list: { padding: 16, paddingBottom: Platform.OS === 'ios' ? 100 : 16 },
     card: { marginBottom: 16, backgroundColor: theme.background },
     image: {
       width: '100%',

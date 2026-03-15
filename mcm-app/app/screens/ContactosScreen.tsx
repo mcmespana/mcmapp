@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View, Linking } from 'react-native';
+import { ScrollView, StyleSheet, View, Linking, Platform } from 'react-native';
 import { List, IconButton, Avatar } from 'react-native-paper';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -71,7 +71,10 @@ export default function ContactosScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}
+    >
       {(data || []).map((c, idx) => (
         <List.Item
           key={idx}

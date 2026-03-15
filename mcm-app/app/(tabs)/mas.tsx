@@ -153,7 +153,8 @@ export default function MasTab() {
           component={MasHomeScreen}
           options={{
             title: 'Más',
-            headerRight: undefined, // No mostrar botones en la pantalla principal
+            headerShown: Platform.OS !== 'ios',
+            headerRight: undefined,
           }}
         />
         <Stack.Screen

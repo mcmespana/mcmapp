@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, Platform } from 'react-native';
 import { List, Text } from 'react-native-paper';
 import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';
@@ -77,7 +77,7 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    content: { padding: 16 },
+    content: { padding: 16, paddingBottom: Platform.OS === 'ios' ? 100 : 16 },
     mainTitle: {
       fontSize: 24 * scale,
       fontWeight: 'bold',

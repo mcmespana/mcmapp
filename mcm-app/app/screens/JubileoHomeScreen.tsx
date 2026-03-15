@@ -8,6 +8,7 @@ import {
   TextStyle,
   useWindowDimensions,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -193,7 +194,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     scrollContent: {
       flexGrow: 1,
-      paddingBottom: 20,
+      paddingBottom: Platform.OS === 'ios' ? 100 : 20,
     },
     scrollView: {
       flex: 1,
