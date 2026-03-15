@@ -1,14 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { Platform, View, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Platform, View, StyleSheet, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
-import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import iframeStyles from '../(tabsdesactivados)/comunica.module.css';
 
 const URL = 'https://movimientoconsolacion.sinergiacrm.org/';
+
+// Color por defecto para la zona del notch
+const DEFAULT_NOTCH_COLOR = '#253883';
 
 // CSS para inyectar y ocultar elementos
 const INJECTED_CSS = `
@@ -18,13 +20,13 @@ const INJECTED_CSS = `
   }
 `;
 
-// JavaScript para inyectar el CSS y ocultar elementos
+// JavaScript para inyectar el CSS, ocultar elementos, y detectar color del header
 const INJECTED_JAVASCRIPT = `
   (function() {
     // Función para ocultar los elementos
     function hideElements() {
-      const elementsToHide = document.querySelectorAll('.p_login_top, .p_login_bottom');
-      elementsToHide.forEach(el => {
+      var elementsToHide = document.querySelectorAll('.p_login_top, .p_login_bottom');
+      elementsToHide.forEach(function(el) {
         el.style.display = 'none';
         el.style.visibility = 'hidden';
         el.style.opacity = '0';
@@ -34,7 +36,7 @@ const INJECTED_JAVASCRIPT = `
     }
 
     // Inyectar CSS
-    const style = document.createElement('style');
+    var style = document.createElement('style');
     style.textContent = \`${INJECTED_CSS}\`;
     document.head.appendChild(style);
 
@@ -49,7 +51,7 @@ const INJECTED_JAVASCRIPT = `
     }
 
     // Observar cambios en el DOM por si los elementos se cargan dinámicamente
-    const observer = new MutationObserver(() => {
+    var observer = new MutationObserver(function() {
       hideElements();
     });
 
@@ -59,21 +61,64 @@ const INJECTED_JAVASCRIPT = `
     });
 
     // Ejecutar cada 100ms durante los primeros 2 segundos para asegurar
-    let attempts = 0;
-    const interval = setInterval(() => {
+    var attempts = 0;
+    var interval = setInterval(function() {
       hideElements();
       attempts++;
       if (attempts > 20) {
         clearInterval(interval);
       }
     }, 100);
+
+    // --- Detección de color del header ---
+    function rgbToHex(rgb) {
+      if (!rgb || rgb === 'transparent' || rgb === 'rgba(0, 0, 0, 0)') return null;
+      var match = rgb.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
+      if (!match) return null;
+      return '#' + ((1 << 24) + (parseInt(match[1]) << 16) + (parseInt(match[2]) << 8) + parseInt(match[3])).toString(16).slice(1);
+    }
+
+    function detectTopColor() {
+      var selectors = ['header', 'nav', '.header', '#header', '.navbar', '.nav', '[role="banner"]', '.top-bar', '.topbar', '.site-header', '#masthead', '.app-bar', '[class*="header"]', '[class*="toolbar"]'];
+      for (var i = 0; i < selectors.length; i++) {
+        var el = document.querySelector(selectors[i]);
+        if (el) {
+          var bg = window.getComputedStyle(el).backgroundColor;
+          var hex = rgbToHex(bg);
+          if (hex) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'notchColor', color: hex }));
+            return;
+          }
+        }
+      }
+      if (document.body && document.body.firstElementChild) {
+        var bg2 = window.getComputedStyle(document.body.firstElementChild).backgroundColor;
+        var hex2 = rgbToHex(bg2);
+        if (hex2) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'notchColor', color: hex2 }));
+          return;
+        }
+      }
+      if (document.body) {
+        var bodyBg = window.getComputedStyle(document.body).backgroundColor;
+        var bodyHex = rgbToHex(bodyBg);
+        if (bodyHex) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'notchColor', color: bodyHex }));
+        }
+      }
+    }
+
+    setTimeout(detectTopColor, 500);
+    window.addEventListener('load', function() { setTimeout(detectTopColor, 800); });
   })();
   true;
 `;
 
 export default function MonitoresWebScreen() {
   const scheme = useColorScheme();
+  const insets = useSafeAreaInsets();
   const dynamicStyles = useMemo(() => createDynamicStyles(scheme), [scheme]);
+  const [notchColor, setNotchColor] = useState(DEFAULT_NOTCH_COLOR);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
@@ -91,15 +136,24 @@ export default function MonitoresWebScreen() {
   };
 
   const onNavigationStateChange = (navState: WebViewNavigation) => {
-    // Aquí puedes manejar cambios en la navegación si es necesario
     console.log('Navigation changed:', navState);
+  };
+
+  const handleMessage = (event: { nativeEvent: { data: string } }) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'notchColor' && data.color) {
+        setNotchColor(data.color);
+      }
+    } catch {
+      // Ignorar mensajes no JSON
+    }
   };
 
   const onDismissSnackBar = () => setVisible(false);
 
   // Fallback en web: usamos un iframe con estilos inyectados
   if (Platform.OS === 'web') {
-    // Para web, inyectamos los estilos mediante un script cuando carga el iframe
     React.useEffect(() => {
       const iframe = document.querySelector(
         'iframe[title="Comunica MCM - Monitores"]',
@@ -110,12 +164,10 @@ export default function MonitoresWebScreen() {
             const iframeDoc =
               iframe.contentDocument || iframe.contentWindow?.document;
             if (iframeDoc) {
-              // Inyectar CSS
               const style = iframeDoc.createElement('style');
               style.textContent = INJECTED_CSS;
               iframeDoc.head.appendChild(style);
 
-              // También ocultar directamente con JavaScript
               const hideElements = () => {
                 const elementsToHide = iframeDoc.querySelectorAll(
                   '.p_login_top, .p_login_bottom',
@@ -130,17 +182,14 @@ export default function MonitoresWebScreen() {
                 });
               };
 
-              // Ejecutar inmediatamente
               hideElements();
 
-              // Observar cambios en el DOM
               const observer = new MutationObserver(hideElements);
               observer.observe(iframeDoc.body, {
                 childList: true,
                 subtree: true,
               });
 
-              // Ejecutar periódicamente durante los primeros 2 segundos
               let attempts = 0;
               const interval = setInterval(() => {
                 hideElements();
@@ -151,7 +200,6 @@ export default function MonitoresWebScreen() {
               }, 100);
             }
           } catch (e) {
-            // Si hay problemas de CORS, no podemos inyectar estilos en web
             console.log('No se pudieron inyectar estilos en iframe:', e);
           }
         };
@@ -178,15 +226,28 @@ export default function MonitoresWebScreen() {
     );
   }
 
-  // En iOS/Android usamos el WebView nativo con CSS inyectado
+  // En iOS/Android: barra de color en el notch + WebView edge-to-edge
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={notchColor}
+        translucent
+      />
+      {insets.top > 0 && (
+        <View
+          style={[
+            styles.notchBar,
+            { backgroundColor: notchColor, height: insets.top },
+          ]}
+        />
+      )}
       <WebView
         source={{ uri: URL }}
         style={styles.webview}
         startInLoadingState={true}
         injectedJavaScript={INJECTED_JAVASCRIPT}
-        onMessage={() => {}}
+        onMessage={handleMessage}
         renderLoading={() => (
           <View style={dynamicStyles.loadingContainer}>
             <ActivityIndicator size="large" color={ThemeColors[scheme].tint} />
@@ -210,7 +271,7 @@ export default function MonitoresWebScreen() {
           {error}
         </Snackbar>
       </Portal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -228,14 +289,13 @@ const createDynamicStyles = (scheme: 'light' | 'dark') =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    margin: spacing.sm,
-    position: 'relative',
+  },
+  notchBar: {
+    width: '100%',
   },
   webview: {
     flex: 1,
-    borderRadius: 8,
-    overflow: 'hidden',
-  } as any,
+  },
   containerWeb: {
     flex: 1,
     margin: 0,
