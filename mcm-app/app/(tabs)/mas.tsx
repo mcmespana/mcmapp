@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNavigation, StackActions } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 import GlassHeader from '@/components/ui/GlassHeader.ios';
@@ -70,11 +71,20 @@ const getHeaderStyle = (tintColor: string) => {
 const getTextColor = (tintColor: string) => {
   // Determinar si el color es claro u oscuro
   const hex = tintColor.replace('#', '');
-  const r = parseInt(hex.length === 6 ? hex.substring(0, 2) : hex[0] + hex[0], 16);
-  const g = parseInt(hex.length === 6 ? hex.substring(2, 4) : hex[1] + hex[1], 16);
-  const b = parseInt(hex.length === 6 ? hex.substring(4, 6) : hex[2] + hex[2], 16);
+  const r = parseInt(
+    hex.length === 6 ? hex.substring(0, 2) : hex[0] + hex[0],
+    16,
+  );
+  const g = parseInt(
+    hex.length === 6 ? hex.substring(2, 4) : hex[1] + hex[1],
+    16,
+  );
+  const b = parseInt(
+    hex.length === 6 ? hex.substring(4, 6) : hex[2] + hex[2],
+    16,
+  );
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  
+
   if (Platform.OS === 'ios') {
     return '#1a1a1a'; // iOS siempre usa texto oscuro con GlassHeader
   } else if (Platform.OS === 'web') {
@@ -86,6 +96,18 @@ const getTextColor = (tintColor: string) => {
 
 export default function MasTab() {
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const tabNavigation = useNavigation();
+  const stackNavRef = useRef<any>(null);
+
+  // Pop the internal stack to top when the "Más" tab is re-pressed
+  useEffect(() => {
+    const unsubscribe = (tabNavigation as any).addListener('tabPress', () => {
+      if (stackNavRef.current?.canGoBack()) {
+        stackNavRef.current.dispatch(StackActions.popToTop());
+      }
+    });
+    return unsubscribe;
+  }, [tabNavigation]);
 
   return (
     <>
@@ -95,62 +117,91 @@ export default function MasTab() {
       />
       <Stack.Navigator
         initialRouteName="MasHome"
-        screenOptions={({ navigation, route }) => ({
-          headerBackTitle: 'Atrás',
-          headerStyle: Platform.OS === 'ios' 
-            ? { backgroundColor: 'transparent' }
-            : Platform.OS === 'web'
-            ? {
-                backgroundColor: '#78909C',
-                borderBottomWidth: 1,
-                borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-                elevation: 2,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-              }
-            : { backgroundColor: '#78909C' },
-          headerTintColor: Platform.OS === 'ios' ? '#1a1a1a' : Platform.OS === 'web' ? '#fff' : '#fff',
-          headerTitleStyle: { 
-            fontWeight: '700', 
-            fontSize: 18,
-            color: Platform.OS === 'ios' ? '#1a1a1a' : Platform.OS === 'web' ? '#fff' : '#fff',
-          },
-          headerTitleAlign: 'center',
-          headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
-          headerTransparent: false,
-          headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#78909C" /> : undefined,
-          headerRight: () => {
-            // Solo mostrar los botones en las pantallas de Jubileo
-            const isJubileoScreen = route.name !== 'MasHome' && route.name !== 'JubileoHome';
-            if (!isJubileoScreen) return null;
+        screenOptions={({ navigation, route }) => {
+          // Capture stack navigation ref for tab press handling
+          stackNavRef.current = navigation;
+          return {
+            headerBackTitle: 'Atrás',
+            headerStyle:
+              Platform.OS === 'ios'
+                ? { backgroundColor: 'transparent' }
+                : Platform.OS === 'web'
+                  ? {
+                      backgroundColor: '#78909C',
+                      borderBottomWidth: 1,
+                      borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+                      elevation: 2,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                    }
+                  : { backgroundColor: '#78909C' },
+            headerTintColor:
+              Platform.OS === 'ios'
+                ? '#1a1a1a'
+                : Platform.OS === 'web'
+                  ? '#fff'
+                  : '#fff',
+            headerTitleStyle: {
+              fontWeight: '700',
+              fontSize: 18,
+              color:
+                Platform.OS === 'ios'
+                  ? '#1a1a1a'
+                  : Platform.OS === 'web'
+                    ? '#fff'
+                    : '#fff',
+            },
+            headerTitleAlign: 'center',
+            headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
+            headerTransparent: false,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#78909C" />
+              ) : undefined,
+            headerRight: () => {
+              // Solo mostrar los botones en las pantallas de Jubileo
+              const isJubileoScreen =
+                route.name !== 'MasHome' && route.name !== 'JubileoHome';
+              if (!isJubileoScreen) return null;
 
-            // Para las pantallas de Jubileo, usar el color del texto del Jubileo (#A3BD31)
-            const iconColor = getTextColor('#A3BD31');
+              // Para las pantallas de Jubileo, usar el color del texto del Jubileo (#A3BD31)
+              const iconColor = getTextColor('#A3BD31');
 
-            return (
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
-                <TouchableOpacity
-                  onPress={() => setSettingsVisible(true)}
-                  style={{ padding: 10 }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              return (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginRight: 8,
+                  }}
                 >
-                  <MaterialIcons name="settings" size={26} color={iconColor} />
-                </TouchableOpacity>
-                {route.name !== 'Reflexiones' && (
                   <TouchableOpacity
-                    onPress={() => navigation.navigate('Reflexiones')}
+                    onPress={() => setSettingsVisible(true)}
                     style={{ padding: 10 }}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <MaterialIcons name="forum" size={26} color={iconColor} />
+                    <MaterialIcons
+                      name="settings"
+                      size={26}
+                      color={iconColor}
+                    />
                   </TouchableOpacity>
-                )}
-              </View>
-            );
-          },
-        })}
+                  {route.name !== 'Reflexiones' && (
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('Reflexiones')}
+                      style={{ padding: 10 }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <MaterialIcons name="forum" size={26} color={iconColor} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            },
+          };
+        }}
       >
         <Stack.Screen
           name="MasHome"
@@ -194,7 +245,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
             headerRight: undefined, // No mostrar botones en la home del jubileo
           }}
         />
@@ -210,7 +264,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -225,7 +282,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -240,7 +300,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -255,7 +318,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -270,7 +336,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -285,7 +354,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -300,7 +372,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -315,7 +390,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -330,7 +408,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -345,7 +426,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -360,7 +444,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
         <Stack.Screen
@@ -375,7 +462,10 @@ export default function MasTab() {
               fontSize: 18,
               color: getTextColor('#A3BD31'),
             },
-            headerBackground: () => Platform.OS === 'ios' ? <GlassHeader tintColor="#A3BD31" /> : undefined,
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor="#A3BD31" />
+              ) : undefined,
           }}
         />
       </Stack.Navigator>

@@ -13,6 +13,12 @@
 
 ---
 
+## 2026-03-15 — Fix navegación en tabs Más y Cantoral
+
+- **Bug fix**: al pulsar el tab "Más" o "Cantoral" estando dentro de una sub-pantalla del stack, la pantalla se quedaba bloqueada sin responder
+- Añadido listener `tabPress` que hace `popToTop()` en el stack navigator interno cuando se re-pulsa el tab
+- Archivos: `app/(tabs)/mas.tsx`, `app/(tabs)/cancionero.tsx`
+
 ## 2026-03-10 — Rediseño visual completo del Cantoral
 
 - **Rediseño completo de la sección Cantoral** con estética moderna inspirada en Liquid Glass / iOS 18+
