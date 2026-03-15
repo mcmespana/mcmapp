@@ -152,6 +152,12 @@ export default function usePushNotifications() {
  * Con logging detallado para diagnosticar problemas
  */
 async function registerAndSaveToken() {
+  // Push notifications no están soportadas en web
+  if (Platform.OS === 'web') {
+    console.log('ℹ️ Push notifications no disponibles en web, saltando registro');
+    return;
+  }
+
   try {
     // 1. Verificar/pedir permisos
     const { status: existingStatus } =
