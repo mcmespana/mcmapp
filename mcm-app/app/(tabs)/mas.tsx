@@ -101,11 +101,15 @@ export default function MasTab() {
 
   // Pop the internal stack to top when the "Más" tab is re-pressed
   useEffect(() => {
-    const unsubscribe = (tabNavigation as any).addListener('tabPress', () => {
-      if (stackNavRef.current?.canGoBack()) {
-        stackNavRef.current.dispatch(StackActions.popToTop());
-      }
-    });
+    const unsubscribe = (tabNavigation as any).addListener(
+      'tabPress',
+      (e: any) => {
+        if (stackNavRef.current?.canGoBack()) {
+          e.preventDefault();
+          stackNavRef.current.dispatch(StackActions.popToTop());
+        }
+      },
+    );
     return unsubscribe;
   }, [tabNavigation]);
 
@@ -208,7 +212,7 @@ export default function MasTab() {
           component={MasHomeScreen}
           options={{
             title: 'Más',
-            headerShown: Platform.OS !== 'ios',
+            headerShown: false,
             headerRight: undefined,
           }}
         />

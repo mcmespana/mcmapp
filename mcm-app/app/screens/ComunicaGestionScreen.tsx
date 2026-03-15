@@ -4,7 +4,8 @@
 // Inyecta JS para ocultar elementos de login de la web.
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Platform, View, StyleSheet } from 'react-native';
+import { Platform, View, StyleSheet, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
 import { Colors as ThemeColors } from '@/constants/colors';
@@ -15,6 +16,9 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 const iframeStyles = Platform.OS === 'web' ? require('../(tabsdesactivados)/comunica.module.css') : null;
 
 const GESTION_URL = 'https://movimientoconsolacion.sinergiacrm.org/';
+
+// Color por defecto para la zona del notch
+const DEFAULT_NOTCH_COLOR = '#607D8B';
 
 // Oculta elementos decorativos de login en la web de SinergíaCRM
 const INJECTED_CSS = `
@@ -49,13 +53,56 @@ const INJECTED_JAVASCRIPT = `
       hideElements();
       if (++attempts > 20) clearInterval(interval);
     }, 100);
+
+    // --- Detección de color del header ---
+    function rgbToHex(rgb) {
+      if (!rgb || rgb === 'transparent' || rgb === 'rgba(0, 0, 0, 0)') return null;
+      var match = rgb.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
+      if (!match) return null;
+      return '#' + ((1 << 24) + (parseInt(match[1]) << 16) + (parseInt(match[2]) << 8) + parseInt(match[3])).toString(16).slice(1);
+    }
+
+    function detectTopColor() {
+      var selectors = ['header', 'nav', '.header', '#header', '.navbar', '.nav', '[role="banner"]', '.top-bar', '.topbar', '.site-header', '#masthead', '.app-bar', '[class*="header"]', '[class*="toolbar"]'];
+      for (var i = 0; i < selectors.length; i++) {
+        var el = document.querySelector(selectors[i]);
+        if (el) {
+          var bg = window.getComputedStyle(el).backgroundColor;
+          var hex = rgbToHex(bg);
+          if (hex) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'notchColor', color: hex }));
+            return;
+          }
+        }
+      }
+      if (document.body && document.body.firstElementChild) {
+        var bg2 = window.getComputedStyle(document.body.firstElementChild).backgroundColor;
+        var hex2 = rgbToHex(bg2);
+        if (hex2) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'notchColor', color: hex2 }));
+          return;
+        }
+      }
+      if (document.body) {
+        var bodyBg = window.getComputedStyle(document.body).backgroundColor;
+        var bodyHex = rgbToHex(bodyBg);
+        if (bodyHex) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'notchColor', color: bodyHex }));
+        }
+      }
+    }
+
+    setTimeout(detectTopColor, 500);
+    window.addEventListener('load', function() { setTimeout(detectTopColor, 800); });
   })();
   true;
 `;
 
 export default function ComunicaGestionScreen() {
   const scheme = useColorScheme() ?? 'light';
+  const insets = useSafeAreaInsets();
   const tintColor = ThemeColors[scheme].tint;
+  const [notchColor, setNotchColor] = useState(DEFAULT_NOTCH_COLOR);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [snackVisible, setSnackVisible] = useState(false);
@@ -82,6 +129,20 @@ export default function ComunicaGestionScreen() {
   }, []);
   const onDismissSnack = useCallback(() => setSnackVisible(false), []);
 
+  const handleMessage = useCallback(
+    (event: { nativeEvent: { data: string } }) => {
+      try {
+        const data = JSON.parse(event.nativeEvent.data);
+        if (data.type === 'notchColor' && data.color) {
+          setNotchColor(data.color);
+        }
+      } catch {
+        // Ignorar mensajes no JSON
+      }
+    },
+    [],
+  );
+
   // ── Web: iframe ──────────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
     return (
@@ -102,9 +163,22 @@ export default function ComunicaGestionScreen() {
     );
   }
 
-  // ── iOS / Android: WebView nativo ────────────────────────────────────────
+  // ── iOS / Android: WebView nativo con barra de color en el notch ────────
   return (
     <View style={styles.container}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={notchColor}
+        translucent
+      />
+      {insets.top > 0 && (
+        <View
+          style={[
+            styles.notchBar,
+            { backgroundColor: notchColor, height: insets.top },
+          ]}
+        />
+      )}
       <WebView
         source={{ uri: GESTION_URL }}
         style={styles.webview}
@@ -113,9 +187,9 @@ export default function ComunicaGestionScreen() {
         domStorageEnabled={true}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
-        // JS inyectado para ocultar elementos de login
+        // JS inyectado para ocultar elementos de login + detectar color
         injectedJavaScript={INJECTED_JAVASCRIPT}
-        onMessage={() => {}}
+        onMessage={handleMessage}
         // Pantalla completa en iOS (contenido detrás del tab bar translúcido)
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustContentInsets={false}
@@ -147,6 +221,9 @@ export default function ComunicaGestionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  notchBar: {
+    width: '100%',
   },
   webview: {
     flex: 1,

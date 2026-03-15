@@ -118,6 +118,10 @@ function InnerLayout() {
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen
+                name="notifications"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="wordle"
                 options={{
                   headerShown: true,
