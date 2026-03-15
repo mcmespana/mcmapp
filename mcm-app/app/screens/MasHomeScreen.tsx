@@ -73,27 +73,6 @@ const getAllNavigationItems = (opts: FeatureOptions): NavigationItem[] => {
   return items;
 };
 
-  sections.push({ title: 'Eventos', items: eventosItems });
-
-  // Sección: Herramientas
-  if (showMonitores) {
-    sections.push({
-      title: 'Herramientas',
-      items: [
-        {
-          label: 'Comunica MCM · Monitores',
-          subtitle: 'Panel de monitores',
-          icon: '💬',
-          target: 'MonitoresWeb',
-          tintColor: '#607D8B',
-        },
-      ],
-    });
-  }
-
-  return sections;
-}
-
 export default function MasHomeScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
