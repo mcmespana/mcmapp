@@ -7,6 +7,8 @@ import GlassHeader from '@/components/ui/GlassHeader.ios';
 
 import MasHomeScreen from '../screens/MasHomeScreen';
 import MonitoresWebScreen from '../screens/MonitoresWebScreen';
+import ComunicaScreen from '../screens/ComunicaScreen';
+import ComunicaGestionScreen from '../screens/ComunicaGestionScreen';
 import JubileoHomeScreen from '../screens/JubileoHomeScreen';
 import HorarioScreen from '../screens/HorarioScreen';
 import MaterialesScreen from '../screens/MaterialesScreen';
@@ -23,8 +25,10 @@ import ComidaWebScreen from '../screens/ComidaWebScreen';
 import SettingsPanel from '@/components/SettingsPanel';
 
 export type MasStackParamList = {
-  MasHome: undefined;
+  MasHome: { directTo?: string } | undefined;
   MonitoresWeb: undefined;
+  Comunica: undefined;
+  ComunicaGestion: undefined;
   JubileoHome: undefined;
   Horario: undefined;
   Materiales: { initialDayIndex?: number } | undefined;
@@ -161,6 +165,20 @@ export default function MasTab() {
           component={MonitoresWebScreen}
           options={{
             headerShown: false, // Sin header para ganar espacio - volver con tab "Más"
+          }}
+        />
+        <Stack.Screen
+          name="Comunica"
+          component={ComunicaScreen}
+          options={{
+            headerShown: false, // Pantalla completa — sin header
+          }}
+        />
+        <Stack.Screen
+          name="ComunicaGestion"
+          component={ComunicaGestionScreen}
+          options={{
+            headerShown: false, // Pantalla completa — sin header
           }}
         />
         <Stack.Screen

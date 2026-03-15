@@ -30,6 +30,7 @@ import AppFeedbackModal from '@/components/AppFeedbackModal';
 import Toast from '@/components/Toast';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { setPendingMasScreen } from '@/utils/masNavigation';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
@@ -158,12 +159,13 @@ export default function Home() {
   const quickItems = useMemo<QuickItem[]>(
     () =>
       [
-        {
+        featureFlags.showComunica && {
           key: 'comunica',
           label: 'Comunica',
           icon: 'forum' as const,
           iconBg: scheme === 'dark' ? '#3A2200' : '#FFF0E0',
           iconColor: '#E08A3C',
+          href: '/mas' as const,
         },
         featureFlags.tabs.cancionero && {
           key: 'cancionero',
@@ -191,7 +193,7 @@ export default function Home() {
           dashed: true,
         },
       ].filter(Boolean) as QuickItem[],
-    [featureFlags.tabs, scheme, theme.icon],
+    [featureFlags.tabs, featureFlags.showComunica, scheme, theme.icon],
   );
 
   // Hide the tab navigator header — we render our own
@@ -432,6 +434,9 @@ export default function Home() {
                 accessibilityLabel={item.label}
                 accessibilityRole="button"
                 onPress={() => {
+                  if (item.key === 'comunica') {
+                    setPendingMasScreen('Comunica');
+                  }
                   if (item.href) router.push(item.href as any);
                 }}
                 activeOpacity={item.href ? 0.65 : 1}

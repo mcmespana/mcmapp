@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { Colors } from '@/constants/colors';
@@ -19,6 +20,7 @@ import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { takePendingMasScreen } from '@/utils/masNavigation';
 
 interface NavigationItem {
   label: string;
@@ -27,10 +29,34 @@ interface NavigationItem {
   backgroundColor: string;
 }
 
-const getAllNavigationItems = (showMonitores: boolean): NavigationItem[] => {
+interface FeatureOptions {
+  showMonitores: boolean;
+  showComunica: boolean;
+  showComunicaGestion: boolean;
+}
+
+const getAllNavigationItems = (opts: FeatureOptions): NavigationItem[] => {
   const items: NavigationItem[] = [];
-  
-  if (showMonitores) {
+
+  if (opts.showComunica) {
+    items.push({
+      label: 'Comunica',
+      icon: '📣',
+      target: 'Comunica',
+      backgroundColor: '#E08A3C',
+    });
+  }
+
+  if (opts.showComunicaGestion) {
+    items.push({
+      label: 'Comunica Gestión',
+      icon: '⚙️',
+      target: 'ComunicaGestion',
+      backgroundColor: '#607D8B',
+    });
+  }
+
+  if (opts.showMonitores) {
     items.push({
       label: 'Comunica MCM · Monitores',
       icon: '💬',
@@ -38,16 +64,16 @@ const getAllNavigationItems = (showMonitores: boolean): NavigationItem[] => {
       backgroundColor: '#607D8B',
     });
   }
-  
+
   items.push({
     label: 'Jubileo',
     icon: '🎉',
     target: 'JubileoHome',
     backgroundColor: '#A3BD31',
   });
-  
+
   // Aquí puedes agregar más secciones archivadas en el futuro
-  
+
   return items;
 };
 
@@ -62,8 +88,23 @@ export default function MasHomeScreen() {
   const labelFontSize = 18;
   const featureFlags = useFeatureFlags();
   const navigationItems = React.useMemo(
-    () => getAllNavigationItems(featureFlags.showMonitores),
-    [featureFlags.showMonitores],
+    () =>
+      getAllNavigationItems({
+        showMonitores: featureFlags.showMonitores,
+        showComunica: featureFlags.showComunica,
+        showComunicaGestion: featureFlags.showComunicaGestion,
+      }),
+    [featureFlags.showMonitores, featureFlags.showComunica, featureFlags.showComunicaGestion],
+  );
+
+  // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
+  useFocusEffect(
+    useCallback(() => {
+      const screen = takePendingMasScreen();
+      if (screen) {
+        navigation.navigate(screen as keyof MasStackParamList);
+      }
+    }, [navigation]),
   );
 
   return (
