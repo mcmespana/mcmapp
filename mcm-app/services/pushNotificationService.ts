@@ -457,3 +457,59 @@ export const clearLocalNotifications = async (): Promise<void> => {
     console.error('Error limpiando historial local:', error);
   }
 };
+
+const NOTIFICATIONS_INITIALIZED_KEY = '@mcm_notifications_initialized';
+
+/**
+ * Inicialización de primer uso: marca como leídas las notificaciones históricas
+ * para que un usuario nuevo no vea todo el historial como no leído.
+ *
+ * Regla: las 3 más recientes (dentro de los últimos 4 meses) permanecen no leídas.
+ * El resto se marca como leídas automáticamente.
+ *
+ * Devuelve true si se ejecutó la inicialización (primera vez), false si ya se hizo.
+ */
+export const initializeNewUserReadStatus = async (
+  notifications: NotificationData[],
+): Promise<boolean> => {
+  try {
+    const initialized = await AsyncStorage.getItem(
+      NOTIFICATIONS_INITIALIZED_KEY,
+    );
+    if (initialized) return false;
+
+    // Marcar como inicializado antes de procesar (evita doble ejecución)
+    await AsyncStorage.setItem(NOTIFICATIONS_INITIALIZED_KEY, 'true');
+
+    const fourMonthsAgo = new Date();
+    fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
+
+    // Notificaciones recientes (últimos 4 meses), ordenadas de más nueva a más antigua
+    const recent = notifications
+      .filter((n) => new Date(n.createdAt) > fourMonthsAgo)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
+    // Las 3 más recientes permanecen no leídas
+    const keepUnreadIds = new Set(recent.slice(0, 3).map((n) => n.id));
+
+    // Marcar como leídas todas las demás
+    const toMarkRead = notifications
+      .filter((n) => !keepUnreadIds.has(n.id))
+      .map((n) => n.id);
+
+    if (toMarkRead.length > 0) {
+      await markAllNotificationsAsRead(toMarkRead);
+      console.log(
+        `📖 Primer uso: ${toMarkRead.length} notificaciones antiguas marcadas como leídas`,
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error en inicialización de primer uso:', error);
+    return false;
+  }
+};

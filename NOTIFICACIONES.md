@@ -14,13 +14,15 @@
 - Almacenamiento local de notificaciones recibidas (AsyncStorage, max 100)
 - Pantalla de notificaciones con lista, leído/no-leído, swipe, pull-to-refresh
 - Badge de no-leídas en icono de campana (Home) — **actualización en tiempo real via NotificationsContext**
-- Deep linking al tocar notificación (usa `internalRoute`)
+- Deep linking al tocar notificación desde bandeja del sistema (usa `internalRoute`)
 - Fix de IDs: `data?.id || notification.request.identifier` (aplicado)
 - **Suscripción en tiempo real a Firebase** via `NotificationsContext` (usa `subscribeToNotifications()`)
 - **Contador foreground**: badge se actualiza al instante cuando llega notificación con app abierta
-- **Vista detalle**: modal completo con body, imagen, botón de acción (pageSheet en iOS)
-- **Marcar todas como leídas**: botón en header de la pantalla de notificaciones
+- **Vista detalle**: modal completo con body, imagen, botones de acción (pageSheet en iOS)
+- **Marcar como leída individual**: botón checkmark en cada tarjeta (usa TouchableOpacity de gesture-handler para funcionar dentro de Swipeable)
+- **Marcar todas como leídas**: botón done-all en header de la pantalla de notificaciones
 - **Categorías iOS action buttons**: `actionIdentifier` mapeado a rutas (view→notifications, view_event→calendario, view_photos→fotos)
+- **Auto-inicialización de primer uso**: al registrarse, solo las 3 notificaciones más recientes (últimos 4 meses) quedan como no leídas; el resto se marca automáticamente como leídas
 
 ### Backend (panel admin)
 - **Repositorio**: `mcmespana/mcmpanel` — en desarrollo (marzo 2026)
@@ -64,10 +66,108 @@ app/_layout.tsx
 
 Todo implementado:
 - `contexts/NotificationsContext.tsx` — suscripción real-time a Firebase, badge en foreground
-- `app/notifications.tsx` — reescrita con modal de detalle, botón "Marcar todas como leídas"
+- `app/notifications.tsx` — reescrita con modal de detalle, botones marcar leída, rediseño de tarjetas
 - `notifications/usePushNotifications.ts` — routing de iOS action buttons (`actionIdentifier`)
-- `services/pushNotificationService.ts` — `markAllNotificationsAsRead()` batch
+- `services/pushNotificationService.ts` — `markAllNotificationsAsRead()` batch, `initializeNewUserReadStatus()`
 - `hooks/useUnreadNotificationsCount.ts` — simplificado, delega a NotificationsContext
+
+---
+
+## Arquitectura de botones y navegación
+
+### `internalRoute` — Destino de la notificación
+
+El campo `internalRoute` representa **la sección de la app a la que va asociada** la notificación.
+
+**Comportamiento:**
+- **Desde la bandeja del sistema** (tap en push notification): navega directamente a la ruta, sin modal.
+- **Desde la pantalla de notificaciones** (tap en tarjeta): abre el modal de detalle. El modal muestra un botón "Ir a [Sección]" que lleva a esa ruta.
+- En la tarjeta de la lista: se muestra un chip pequeño con el nombre de la sección (ej. "→ Calendario") como indicador visual (no es tappable).
+
+**Rutas disponibles:**
+```
+/(tabs)/calendario     → chip "Calendario"
+/(tabs)/fotos          → chip "Fotos"
+/(tabs)/cancionero     → chip "Cantoral"
+/(tabs)/mas            → chip "Más"
+/(tabs)/index          → chip "Inicio"
+/wordle                → chip "Wordle"
+```
+
+**Cuándo usarlo:** Cuando la notificación tiene relación directa con una sección. Ej: "Hay nuevas fotos del retiro" → `internalRoute: "/(tabs)/fotos"`.
+
+---
+
+### `actionButton` — Botón de acción explícito
+
+El campo `actionButton` es un **call-to-action explícito** con texto personalizado que puede llevar a:
+- Una URL externa (se abre en el navegador)
+- Una ruta interna de la app
+
+```json
+"actionButton": {
+  "text": "Ver artículo",
+  "url": "https://ejemplo.com/articulo",
+  "isInternal": false
+}
+```
+
+**Comportamiento:**
+- **En la tarjeta de la lista**: se muestra como un chip azul pequeño (tappable). Al pulsarlo navega directamente a la URL/ruta sin abrir el modal.
+- **En el modal de detalle**: se muestra como un botón CTA grande en la parte inferior.
+
+**Cuándo usarlo:** Cuando la notificación tiene una acción específica nombrada, distinta de simplemente "ir a una sección". Ej: "Ver más", "Leer artículo", "Ver evento".
+
+---
+
+### Combinación de ambos
+
+Una notificación puede tener los dos:
+- `internalRoute` indica la sección asociada (botón "Ir a X" en el modal)
+- `actionButton` tiene el CTA explícito (chip en tarjeta + botón CTA en modal)
+
+**Ejemplo:**
+```json
+{
+  "title": "¡Nuevas canciones en el cantoral!",
+  "body": "Hemos añadido 5 canciones nuevas de Adviento.",
+  "internalRoute": "/(tabs)/cancionero",
+  "actionButton": {
+    "text": "Ver novedades",
+    "url": "https://mcmespana.com/novedades",
+    "isInternal": false
+  }
+}
+```
+→ En la tarjeta: chip "Cantoral" + chip tappable "Ver novedades"
+→ En el modal: botón "Ir a Cantoral" + botón CTA "Ver novedades"
+
+---
+
+### Sin ninguno de los dos
+
+Si no hay `internalRoute` ni `actionButton`, la notificación solo muestra título, cuerpo y fecha. El modal sigue siendo accesible tocando la tarjeta.
+
+---
+
+### Flujo completo de interacción
+
+```
+Usuario recibe push notification
+└── Toca desde bandeja del sistema
+    ├── Tiene internalRoute → navega directamente a esa sección
+    └── Sin internalRoute → abre la app en la pantalla de notificaciones
+
+Usuario abre pantalla de notificaciones
+└── Ve lista de tarjetas
+    ├── Toca tarjeta → abre modal de detalle (siempre)
+    │   ├── Modal muestra body completo + imagen (si hay)
+    │   ├── Botón "Ir a [Sección]" (si hay internalRoute)
+    │   └── Botón CTA grande (si hay actionButton)
+    ├── Toca chip actionButton en tarjeta → navega directamente (sin modal)
+    ├── Toca ✓ en tarjeta → marca como leída sin abrir modal
+    └── Swipe derecha → marca como leída sin abrir modal
+```
 
 ### Fase 2: Backend (panel admin) — EN DESARROLLO en `mcmespana/mcmpanel`
 Panel de administración en `mcmespana/mcmpanel` para enviar notificaciones:
