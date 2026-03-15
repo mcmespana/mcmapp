@@ -24,29 +24,23 @@ const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
 const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
 const SELECTED_SONGS_CATEGORY_NAME = '🎵 Tu selección de canciones';
 
-// Category emoji mapping for visual interest
-const categoryEmojis: Record<string, string> = {
-  adoracion: '🙏',
-  entrada: '🚪',
-  ofertorio: '🎁',
-  comunion: '🍞',
-  paz: '🕊️',
-  salida: '👋',
-  maria: '💐',
-  cuaresma: '✝️',
-  adviento: '🕯️',
-  navidad: '⭐',
-  pascua: '🌅',
-  pentecostes: '🔥',
-  espiritu: '💨',
-  alabanza: '🎶',
-  meditacion: '🧘',
-  varios: '🎵',
-};
+// Emoji regex to detect emoji at end of string
+const EMOJI_REGEX =
+  /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\u{FE0F}\u{200D}\p{Emoji_Presentation}\p{Extended_Pictographic}]*$/u;
 
-function getCategoryEmoji(categoryId: string): string {
-  const key = categoryId.toLowerCase().replace(/[^a-záéíóúñü]/g, '');
-  return categoryEmojis[key] || '🎵';
+function extractTrailingEmoji(text: string): {
+  emoji: string;
+  cleanText: string;
+} {
+  const trimmed = text.trim();
+  const match = trimmed.match(EMOJI_REGEX);
+  if (match) {
+    return {
+      emoji: match[0],
+      cleanText: trimmed.slice(0, match.index).trim(),
+    };
+  }
+  return { emoji: '🎵', cleanText: trimmed };
 }
 
 export default function CategoriesScreen({
@@ -140,8 +134,12 @@ export default function CategoriesScreen({
     index: number;
   }) => {
     const isSpecial = item.id === SELECTED_SONGS_CATEGORY_ID;
-    const emoji = isSpecial ? '🎵' : getCategoryEmoji(item.id);
-    const categoryLetter = item.name.match(/^[A-Za-zÁ-Úá-ú]/)?.[0] || '';
+    const { emoji, cleanText } = isSpecial
+      ? { emoji: '🎵', cleanText: item.name }
+      : extractTrailingEmoji(item.name);
+    const displayName = isSpecial
+      ? cleanText
+      : cleanText.replace(/^\w\.?\s*/, '');
 
     return (
       <TouchableOpacity
@@ -170,23 +168,17 @@ export default function CategoriesScreen({
             style={[styles.cardTitle, isSpecial && styles.cardTitleSpecial]}
             numberOfLines={1}
           >
-            {isSpecial ? item.name : item.name.replace(/^\w\.?\s*/, '')}
-            {!isSpecial && categoryLetter ? (
-              <Text style={styles.cardTitlePrefix}>
-                {' '}
-              </Text>
-            ) : null}
-          </Text>
-          <Text style={styles.cardSubtitle}>
-            {item.songCount}{' '}
-            {item.songCount === 1 ? 'canción' : 'canciones'}
+            {displayName}
           </Text>
         </View>
-        <MaterialIcons
-          name="chevron-right"
-          size={22}
-          color={isDark ? '#555' : '#C7C7CC'}
-        />
+        <View style={styles.cardRight}>
+          <Text style={styles.countBadge}>{item.songCount}</Text>
+          <MaterialIcons
+            name="chevron-right"
+            size={20}
+            color={isDark ? '#555' : '#C7C7CC'}
+          />
+        </View>
       </TouchableOpacity>
     );
   };
@@ -323,7 +315,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
       borderRadius: 14,
       paddingHorizontal: 14,
-      paddingVertical: 14,
+      paddingVertical: 11,
       marginBottom: 8,
       ...(Platform.OS === 'web'
         ? {
@@ -345,13 +337,13 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderColor: isDark ? '#2A3D66' : '#D4E2FF',
     },
     cardEmoji: {
-      width: 42,
-      height: 42,
-      borderRadius: 12,
+      width: 38,
+      height: 38,
+      borderRadius: 10,
       backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: 14,
+      marginRight: 12,
     },
     cardEmojiSpecial: {
       backgroundColor: isDark ? '#253883' : '#D4E2FF',
@@ -363,22 +355,24 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
     },
     cardTitle: {
-      fontSize: 17,
+      fontSize: 16,
       fontWeight: '600',
       color: isDark ? '#FFFFFF' : '#1C1C1E',
       letterSpacing: -0.2,
     },
-    cardTitlePrefix: {
-      fontWeight: '400',
-      color: isDark ? '#8E8E93' : '#8E8E93',
-    },
     cardTitleSpecial: {
       color: isDark ? '#7AB3FF' : '#253883',
     },
-    cardSubtitle: {
-      fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
-      marginTop: 2,
+    cardRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    countBadge: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: isDark ? '#636366' : '#AEAEB2',
+      fontVariant: ['tabular-nums'],
     },
     fab: {
       position: 'absolute',

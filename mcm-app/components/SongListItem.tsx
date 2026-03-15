@@ -210,16 +210,16 @@ const SongListItem: React.FC<SongListItemProps> = ({
             </View>
           </View>
           <View style={styles.rightSection}>
+            {song.capo && song.capo > 0 ? (
+              <View style={styles.capoBadge}>
+                <Text style={styles.capoText}>{`C${song.capo}`}</Text>
+              </View>
+            ) : null}
             {song.key ? (
               <View style={styles.keyBadge}>
                 <Text style={styles.keyText}>
                   {convertChord(song.key.toUpperCase(), notation)}
                 </Text>
-              </View>
-            ) : null}
-            {song.capo && song.capo > 0 ? (
-              <View style={styles.capoBadge}>
-                <Text style={styles.capoText}>{`C${song.capo}`}</Text>
               </View>
             ) : null}
           </View>
