@@ -1,4 +1,17 @@
 // notifications/usePushNotifications.ts
+//
+// Hook principal de notificaciones push. Solo funciona en iOS/Android (web no soportado).
+//
+// Flujo al montar:
+//   1. registerAndSaveToken() — pide permisos → obtiene Expo Push Token → lo cachea en AsyncStorage → lo guarda en Firebase
+//   2. updateLastActive() — escribe heartbeat en Firebase (se ejecuta después de 1 para que el token ya esté cacheado)
+//   3. Se inicia un intervalo de heartbeat cada 5 min
+//   4. Se registran dos listeners:
+//      a. notificationReceived — app en foreground: guarda la notificación localmente y actualiza badge
+//      b. notificationResponse — usuario toca la notificación: navega a la ruta correspondiente y marca como leída
+//
+// TODO: Eliminar console.log/warn/error de debug una vez estabilizado el sistema de notificaciones
+//
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
