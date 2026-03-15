@@ -22,7 +22,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.mcmespana.mcmapp"
+      "package": "com.mcmespana.mcmapp",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",

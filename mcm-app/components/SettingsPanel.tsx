@@ -14,6 +14,7 @@ import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import UserProfileModal from './UserProfileModal';
@@ -233,7 +234,12 @@ export default function SettingsPanel({ visible, onClose }: Props) {
           style={[styles.surface, { backgroundColor: surfaceBg }]}
           onPress={async () => {
             try {
-              const { data } = await Notifications.getExpoPushTokenAsync();
+              const projectId =
+                Constants?.expoConfig?.extra?.eas?.projectId ??
+                Constants?.easConfig?.projectId;
+              const { data } = await Notifications.getExpoPushTokenAsync(
+                projectId ? { projectId } : undefined,
+              );
               await Clipboard.setStringAsync(data);
               alert("Expo Token copiado al portapapeles: " + data);
             } catch (err) {

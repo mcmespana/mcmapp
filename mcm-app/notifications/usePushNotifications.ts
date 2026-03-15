@@ -9,10 +9,32 @@ import {
   updateLastActive,
   saveReceivedNotificationLocally,
   markNotificationAsRead,
+  getDeviceId,
 } from '@/services/pushNotificationService';
 import { ReceivedNotification } from '@/types/notifications';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { router } from 'expo-router';
+import { getDatabase, ref, set } from 'firebase/database';
+import { getFirebaseApp } from '@/hooks/firebaseApp';
+
+/**
+ * Escribe logs de diagnóstico en Firebase /debug/{deviceId}
+ * Así puedes verlos en Firebase Console sin necesitar herramientas de desarrollo.
+ * BORRAR cuando el problema esté resuelto.
+ */
+async function logToFirebase(data: Record<string, any>) {
+  try {
+    const deviceId = await getDeviceId();
+    const db = getDatabase(getFirebaseApp());
+    await set(ref(db, `debug/${deviceId}`), {
+      ...data,
+      platform: Platform.OS,
+      timestamp: new Date().toISOString(),
+    });
+  } catch {
+    // Silencioso: si esto falla también, al menos tenemos console.error
+  }
+}
 
 // Mapeo de actionIdentifier de iOS a rutas internas
 const ACTION_ROUTES: Record<string, string> = {
@@ -152,35 +174,27 @@ export default function usePushNotifications() {
  * Con logging detallado para diagnosticar problemas
  */
 async function registerAndSaveToken() {
-  // Push notifications no están soportadas en web
-  if (Platform.OS === 'web') {
-    console.log('ℹ️ Push notifications no disponibles en web, saltando registro');
-    return;
-  }
+  if (Platform.OS === 'web') return;
 
   try {
-    // 1. Verificar/pedir permisos
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
+    // 1. Permisos
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
+    console.log('📋 [PASO 1] Estado de permisos:', existingStatus);
 
     if (existingStatus !== 'granted') {
-      console.log(
-        '🔔 Permisos no concedidos, solicitando...',
-        existingStatus,
-      );
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
 
     if (finalStatus !== 'granted') {
-      console.warn('⚠️ Permisos de notificaciones denegados:', finalStatus);
+      console.warn('⚠️ Permisos denegados:', finalStatus);
+      logToFirebase({ paso: 1, resultado: 'PERMISOS_DENEGADOS', finalStatus });
       return;
     }
+    console.log('✅ [PASO 1] Permisos concedidos');
 
-    console.log('✅ Permisos de notificaciones concedidos');
-
-    // 2. Configurar canal Android
+    // 2. Canal Android
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Notificaciones MCM',
@@ -190,32 +204,47 @@ async function registerAndSaveToken() {
       });
     }
 
-    // 3. Obtener Expo Push Token
+    // 3. Obtener token
     const projectId =
       Constants?.expoConfig?.extra?.eas?.projectId ??
       Constants?.easConfig?.projectId;
+    console.log('📋 [PASO 3] projectId:', projectId || '(auto)');
 
-    console.log('🔑 Obteniendo token con projectId:', projectId || '(auto)');
-
-    const tokenResponse = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined,
-    );
-    const token = tokenResponse.data;
-
-    if (!token) {
-      console.error('❌ getExpoPushTokenAsync devolvió token vacío');
-      return;
+    let tokenResponse;
+    try {
+      tokenResponse = await Notifications.getExpoPushTokenAsync(
+        projectId ? { projectId } : undefined,
+      );
+    } catch (tokenError: any) {
+      const msg = tokenError?.message || String(tokenError);
+      console.error('❌ [PASO 3] getExpoPushTokenAsync FALLÓ:', msg);
+      logToFirebase({ paso: 3, resultado: 'TOKEN_ERROR', error: msg, projectId: projectId || '(auto)' });
+      throw tokenError;
     }
 
-    console.log('🥳 Expo Push Token:', token);
+    const token = tokenResponse.data;
+    if (!token) {
+      console.error('❌ [PASO 3] token vacío');
+      logToFirebase({ paso: 3, resultado: 'TOKEN_VACIO' });
+      return;
+    }
+    console.log('✅ [PASO 3] Token:', token.substring(0, 40) + '...');
 
-    // 4. Cachear token (para que updateLastActive lo tenga como fallback)
+    // 4. Cachear
     await cachePushToken(token);
+    console.log('✅ [PASO 4] Token cacheado');
 
     // 5. Guardar en Firebase
+    console.log('📋 [PASO 5] Guardando en Firebase...');
     await saveTokenToFirebase(token);
-    console.log('✅ Token registrado exitosamente en Firebase');
-  } catch (error) {
-    console.error('❌ Error en registerAndSaveToken:', error);
+    console.log('✅ [PASO 5] Token guardado en Firebase');
+    logToFirebase({ paso: 5, resultado: 'EXITO', token: token.substring(0, 30) + '...' });
+
+  } catch (error: any) {
+    const msg = error?.message || String(error);
+    console.error('❌ Error en registerAndSaveToken:', msg);
+    logToFirebase({ resultado: 'ERROR_GENERAL', error: msg });
   }
 }
+
+

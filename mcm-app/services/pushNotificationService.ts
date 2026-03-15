@@ -71,19 +71,36 @@ export const getCachedPushToken = async (): Promise<string | null> => {
 };
 
 /**
- * Construye el objeto DeviceToken con los datos actuales del dispositivo
+ * Construye el objeto DeviceToken con los datos actuales del dispositivo.
+ * IMPORTANTE: sanea explícitamente todos los valores para evitar `undefined`,
+ * que Firebase RTDB rechaza silenciosamente con un error de serialización.
  */
-const buildTokenData = (token: string): DeviceToken => ({
-  token,
-  platform: Platform.OS as 'ios' | 'android' | 'web',
-  registeredAt: new Date().toISOString(),
-  lastActive: new Date().toISOString(),
-  appVersion: Constants.expoConfig?.version || '1.0.0',
-  deviceInfo: {
-    model: Constants.deviceName || 'Desconocido',
-    osVersion: Platform.Version?.toString() || 'Desconocida',
-  },
-});
+const buildTokenData = (token: string): DeviceToken => {
+  // Constants.deviceName está deprecado en SDK 50+, puede ser undefined
+  const deviceName =
+    (Constants.expoConfig as any)?.name ||
+    (Constants as any)?.deviceName ||
+    'Desconocido';
+
+  const osVersion =
+    (Platform.Version != null ? String(Platform.Version) : null) ||
+    'Desconocida';
+
+  const data: DeviceToken = {
+    token: String(token),
+    platform: Platform.OS as 'ios' | 'android' | 'web',
+    registeredAt: new Date().toISOString(),
+    lastActive: new Date().toISOString(),
+    appVersion: String(Constants.expoConfig?.version || '1.0.0'),
+    deviceInfo: {
+      model: String(deviceName),
+      osVersion: String(osVersion),
+    },
+  };
+
+  // Eliminar cualquier campo undefined que Firebase no acepte
+  return JSON.parse(JSON.stringify(data)) as DeviceToken;
+};
 
 /**
  * Guarda el token de push en Firebase Realtime Database
@@ -107,6 +124,12 @@ export const saveTokenToFirebase = async (token: string): Promise<void> => {
     const db = getDatabase(getFirebaseApp());
     const tokenData = buildTokenData(token);
 
+    // Log de diagnóstico: mostrar exactamente qué se va a escribir
+    console.log('📝 Intentando escribir en Firebase:', {
+      path: `pushTokens/${deviceId}`,
+      tokenData: JSON.stringify(tokenData),
+    });
+
     await set(ref(db, `pushTokens/${deviceId}`), tokenData);
     console.log(
       '✅ Token guardado en Firebase para deviceId:',
@@ -114,8 +137,12 @@ export const saveTokenToFirebase = async (token: string): Promise<void> => {
       'token:',
       token.substring(0, 30) + '...',
     );
-  } catch (error) {
-    console.error('❌ Error guardando token en Firebase:', error);
+  } catch (error: any) {
+    // Log detallado para diagnosticar errores de Firebase (reglas, serialización, etc.)
+    console.error('❌ Error guardando token en Firebase:');
+    console.error('  message:', error?.message);
+    console.error('  code:', error?.code);
+    console.error('  stack:', error?.stack);
     throw error;
   }
 };
@@ -130,9 +157,10 @@ export const updateLastActive = async (): Promise<void> => {
     const db = getDatabase(getFirebaseApp());
     const deviceRef = ref(db, `pushTokens/${deviceId}`);
 
-    // Verificar si el nodo tiene token; si no, escribir datos completos
     const token = await getCachedPushToken();
+
     if (token) {
+      // Tenemos token en caché: verificar si ya está en Firebase
       const snapshot = await get(deviceRef);
       const existingData = snapshot.exists() ? snapshot.val() : null;
 
@@ -150,12 +178,26 @@ export const updateLastActive = async (): Promise<void> => {
         console.log('✅ Token guardado en Firebase via heartbeat');
         return;
       }
-    }
 
-    // Caso normal: solo actualizar lastActive
-    await update(deviceRef, {
-      lastActive: new Date().toISOString(),
-    });
+      // El nodo existe con token: solo actualizar lastActive
+      await update(deviceRef, {
+        lastActive: new Date().toISOString(),
+      });
+    } else {
+      // Sin token en caché: verificar si el nodo existe en Firebase con token
+      // (puede pasar si se limpió la caché pero el registro existe)
+      const snapshot = await get(deviceRef);
+      const existingData = snapshot.exists() ? snapshot.val() : null;
+
+      if (existingData?.token) {
+        // El nodo existe y tiene token — solo actualizamos lastActive
+        await update(deviceRef, {
+          lastActive: new Date().toISOString(),
+        });
+      }
+      // Si no hay token en caché NI en Firebase: no hacer nada.
+      // Evitamos crear nodos "zombi" con solo lastActive.
+    }
   } catch (error) {
     console.error('Error actualizando lastActive:', error);
   }
