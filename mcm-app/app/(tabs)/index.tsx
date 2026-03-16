@@ -16,6 +16,7 @@ import {
   Linking,
   ViewStyle,
   TextStyle,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -90,6 +91,8 @@ export default function Home() {
   const theme = Colors[scheme ?? 'light'];
   const featureFlags = useFeatureFlags();
   const fontScale = useFontScale();
+  const { width: windowWidth } = useWindowDimensions();
+  const isWide = windowWidth >= 700;
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
@@ -255,7 +258,7 @@ export default function Home() {
       />
 
       {/* ── Custom Header ── */}
-      <View style={[styles.header, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.background }, isWide && styles.headerWide]}>
         <View style={styles.headerLeft}>
           <View style={styles.logoBox}>
             <MaterialIcons name="device-hub" size={20} color="white" />
@@ -316,9 +319,18 @@ export default function Home() {
 
       <ScrollView
         style={{ backgroundColor: theme.background }}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isWide && styles.scrollContentWide,
+        ]}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Two-column wrapper on wide screens ── */}
+        <View style={isWide ? styles.wideRow : undefined}>
+
+        {/* ── Left column (or full-width on mobile) ── */}
+        <View style={isWide ? styles.wideColLeft : undefined}>
+
         {/* ── Novedades ── */}
         <View style={styles.section}>
           <TouchableOpacity
@@ -506,6 +518,11 @@ export default function Home() {
             ))}
           </View>
         </View>
+
+        </View>{/* end left column */}
+
+        {/* ── Right column (or full-width on mobile) ── */}
+        <View style={isWide ? styles.wideColRight : undefined}>
 
         {/* ── Próximos eventos ── */}
         <View style={styles.section}>
@@ -698,6 +715,9 @@ export default function Home() {
           </TouchableOpacity>
         </View>
 
+        </View>{/* end right column */}
+        </View>{/* end wide row */}
+
         {/* ── Pie ── */}
         <View style={styles.footer}>
           <VersionDisplay />
@@ -728,6 +748,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
+  } as ViewStyle,
+  headerWide: {
+    maxWidth: 900,
+    alignSelf: 'center',
+    width: '100%',
+    paddingHorizontal: spacing.lg,
   } as ViewStyle,
   headerLeft: {
     flexDirection: 'row',
@@ -779,6 +805,25 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
     paddingBottom: spacing.xl,
   } as ViewStyle,
+  scrollContentWide: {
+    maxWidth: 900,
+    alignSelf: 'center',
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+  } as ViewStyle,
+
+  // ── Responsive columns ──
+  wideRow: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+  } as ViewStyle,
+  wideColLeft: {
+    flex: 1,
+  } as ViewStyle,
+  wideColRight: {
+    flex: 1,
+  } as ViewStyle,
+
   section: { marginBottom: spacing.lg + 4 } as ViewStyle,
   sectionLabel: {
     fontWeight: '800',
