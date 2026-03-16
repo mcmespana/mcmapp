@@ -97,24 +97,24 @@ export default function SongsListScreen({
       headerRight: isSearchAll
         ? undefined
         : () => (
-            <TouchableOpacity
-              onPress={() => setSearchVisible((v) => !v)}
-              style={styles.headerButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialIcons
-                name={searchVisible ? 'search-off' : 'search'}
-                size={24}
-                color={
-                  isIOS
-                    ? '#f4c11e'
-                    : Platform.OS === 'web'
-                      ? '#1a1a1a'
-                      : '#1a1a1a'
-                }
-              />
-            </TouchableOpacity>
-          ),
+          <TouchableOpacity
+            onPress={() => setSearchVisible((v) => !v)}
+            style={styles.headerButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <MaterialIcons
+              name={searchVisible ? 'search-off' : 'search'}
+              size={24}
+              color={
+                isIOS
+                  ? '#f4c11e'
+                  : Platform.OS === 'web'
+                    ? '#1a1a1a'
+                    : '#1a1a1a'
+              }
+            />
+          </TouchableOpacity>
+        ),
     });
   }, [navigation, categoryName, isSearchAll, searchVisible]);
 
@@ -193,6 +193,12 @@ export default function SongsListScreen({
                   }
                 }
                 return { ...song, numericFilenamePart: numericPart };
+              });
+              songsWithNumericPart.sort((a, b) => {
+                const numA = parseInt(a.numericFilenamePart, 10) || Infinity;
+                const numB = parseInt(b.numericFilenamePart, 10) || Infinity;
+                if (numA !== numB) return numA - numB;
+                return a.title.localeCompare(b.title);
               });
               setSongs(songsWithNumericPart);
             } else {
@@ -368,17 +374,17 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       gap: 8,
       ...(Platform.OS === 'web'
         ? {
-            boxShadow: isDark
-              ? '0 1px 3px rgba(0,0,0,0.4)'
-              : '0 1px 3px rgba(0,0,0,0.08)',
-          }
+          boxShadow: isDark
+            ? '0 1px 3px rgba(0,0,0,0.4)'
+            : '0 1px 3px rgba(0,0,0,0.08)',
+        }
         : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: isDark ? 0.25 : 0.06,
-            shadowRadius: 3,
-            elevation: 2,
-          }),
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isDark ? 0.25 : 0.06,
+          shadowRadius: 3,
+          elevation: 2,
+        }),
     },
     searchInput: {
       flex: 1,
