@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation, StackActions } from '@react-navigation/native';
+
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 import GlassHeader from '@/components/ui/GlassHeader.ios';
@@ -94,22 +94,6 @@ const getTextColor = (tintColor: string) => {
 
 export default function MasTab() {
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const tabNavigation = useNavigation();
-  const stackNavRef = useRef<any>(null);
-
-  // Pop the internal stack to top when the "Más" tab is re-pressed
-  useEffect(() => {
-    const unsubscribe = (tabNavigation as any).addListener(
-      'tabPress',
-      (e: any) => {
-        if (stackNavRef.current?.canGoBack()) {
-          e.preventDefault();
-          stackNavRef.current.dispatch(StackActions.popToTop());
-        }
-      },
-    );
-    return unsubscribe;
-  }, [tabNavigation]);
 
   return (
     <>
@@ -120,8 +104,6 @@ export default function MasTab() {
       <Stack.Navigator
         initialRouteName="MasHome"
         screenOptions={({ navigation, route }) => {
-          // Capture stack navigation ref for tab press handling
-          stackNavRef.current = navigation;
           return {
             headerBackTitle: 'Atrás',
             headerStyle:
