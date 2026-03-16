@@ -56,11 +56,19 @@ export default function CancioneroTab() {
   const tabNavigation = useNavigation();
   const stackNavRef = useRef<any>(null);
 
-  // Pop the internal stack to top when the "Cantoral" tab is re-pressed
+  // Pop the internal stack to top when the "Cantoral" tab is re-pressed.
+  // With NativeTabs (iOS), the event fires from onNativeFocusChange — the
+  // native tab animation has already started when our JS callback runs.
+  // Dispatching popToTop() synchronously collides with the native transition
+  // and leaves the screen frozen. A short setTimeout lets the native side
+  // finish before we touch the JS navigation stack.
   useEffect(() => {
-    const unsubscribe = (tabNavigation as any).addListener('tabPress', () => {
+    const unsubscribe = (tabNavigation as any).addListener('tabPress', (e: any) => {
       if (stackNavRef.current?.canGoBack()) {
-        stackNavRef.current.dispatch(StackActions.popToTop());
+        if (e?.preventDefault) e.preventDefault();
+        setTimeout(() => {
+          stackNavRef.current?.dispatch(StackActions.popToTop());
+        }, 50);
       }
     });
     return unsubscribe;

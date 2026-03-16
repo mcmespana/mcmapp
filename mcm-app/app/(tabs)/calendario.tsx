@@ -349,7 +349,10 @@ export default function Calendario() {
   }
 
   return (
-    <TabScreenWrapper style={styles.container} edges={['top']}>
+    <TabScreenWrapper
+      style={styles.container}
+      edges={Platform.OS === 'ios' ? ['top'] : []}
+    >
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
 
       {/* View mode switcher */}
@@ -660,15 +663,9 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     switcherTabActive: {
       backgroundColor: colors.info,
-      ...(Platform.OS === 'web'
-        ? { boxShadow: '0 1px 3px rgba(0,0,0,0.12)' }
-        : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.15,
-            shadowRadius: 3,
-            elevation: 3,
-          }),
+      // On Android, elevation on the active tab causes colour bleed onto siblings.
+      // The coloured background is contrast enough without any shadow.
+      elevation: 0,
     },
     switcherLabel: {
       fontSize: 14,
@@ -687,28 +684,22 @@ const createStyles = (scheme: 'light' | 'dark') => {
     // Filter chips
     chipsScroll: {
       paddingHorizontal: 16,
-      paddingVertical: 8,
+      paddingVertical: 10,
       gap: 8,
     },
     filterChip: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 20,
+      borderRadius: 100,
       paddingHorizontal: 12,
       paddingVertical: 7,
       gap: 6,
       borderWidth: 1,
       borderColor: isDark ? '#3A3A3C' : '#E5E5EA',
-      ...(Platform.OS === 'web'
-        ? { boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }
-        : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: isDark ? 0.2 : 0.04,
-            shadowRadius: 2,
-            elevation: 1,
-          }),
+      // No elevation/shadow — the border is enough. Elevation on Android
+      // adds a Material Design drop-shadow that makes chips look dark & raised.
+      elevation: 0,
     },
     chipDot: {
       width: 8,
