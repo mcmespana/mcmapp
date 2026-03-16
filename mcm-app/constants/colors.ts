@@ -45,6 +45,7 @@ export default {
 
 // Tab header colors
 export const TabHeaderColors = {
+  cancionero: '#f4c11e', // Amarillo Cantoral
   calendario: '#31AADF', // Celeste
   fotos: '#E15C62', // Rojo MIC
   comunica: '#9D1E74dd', // Morado LC con transparencia

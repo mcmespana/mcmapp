@@ -1,14 +1,27 @@
-import { useState, useEffect, useMemo } from 'react';
-import { FlatList, Text, View, StyleSheet, Platform } from 'react-native';
-import { Searchbar } from 'react-native-paper';
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useLayoutEffect,
+  useCallback,
+} from 'react';
+import {
+  FlatList,
+  Text,
+  View,
+  StyleSheet,
+  Platform,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { filterSongsData } from '@/utils/filterSongsData';
 import SongListItem from '../../components/SongListItem';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-// Type for song data
 interface Song {
   title: string;
   filename: string;
@@ -43,6 +56,8 @@ const getSongsData = (data: any): Record<string, SongCategory> => {
   }
 };
 
+const isIOS = Platform.OS === 'ios';
+
 export default function SongsListScreen({
   route,
   navigation,
@@ -63,10 +78,45 @@ export default function SongsListScreen({
   const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
   const isDark = scheme === 'dark';
   const [search, setSearch] = useState('');
+  const [searchVisible, setSearchVisible] = useState(false);
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isSearchAll = categoryId === '__ALL__';
+
+  // In __ALL__ mode, search is always visible
+  useEffect(() => {
+    if (isSearchAll) setSearchVisible(true);
+  }, [isSearchAll]);
+
+  // Header: title + optional search toggle button
+  useLayoutEffect(() => {
+    const cleanCategoryName = categoryName.replace(/^🔎\s*/, '');
+    navigation.setOptions({
+      title: isSearchAll ? 'Buscar' : cleanCategoryName,
+      headerRight: isSearchAll
+        ? undefined
+        : () => (
+            <TouchableOpacity
+              onPress={() => setSearchVisible((v) => !v)}
+              style={styles.headerButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MaterialIcons
+                name={searchVisible ? 'search-off' : 'search'}
+                size={24}
+                color={
+                  isIOS
+                    ? '#f4c11e'
+                    : Platform.OS === 'web'
+                      ? '#1a1a1a'
+                      : '#1a1a1a'
+                }
+              />
+            </TouchableOpacity>
+          ),
+    });
+  }, [navigation, categoryName, isSearchAll, searchVisible]);
 
   useEffect(() => {
     if (!songsData) return;
@@ -176,23 +226,26 @@ export default function SongsListScreen({
     return titleMatch || authorMatch;
   });
 
-  const handleSongPress = (song: Song) => {
-    const index = songs.findIndex((s) => s.filename === song.filename);
+  const handleSongPress = useCallback(
+    (song: Song) => {
+      const index = songs.findIndex((s) => s.filename === song.filename);
 
-    navigation.navigate('SongDetail', {
-      filename: song.filename,
-      title: song.title.replace(/^\d+\.\s*/, ''),
-      author: song.author,
-      key: song.key,
-      capo: song.capo,
-      content: song.content || '',
-      navigationList: categoryId === '__ALL__' ? undefined : songs,
-      currentIndex: categoryId === '__ALL__' ? undefined : index,
-      source: categoryId === '__ALL__' ? undefined : 'category',
-      firebaseCategory:
-        categoryId === '__ALL__' ? song.originalCategoryKey : categoryId,
-    });
-  };
+      navigation.navigate('SongDetail', {
+        filename: song.filename,
+        title: song.title.replace(/^\d+\.\s*/, ''),
+        author: song.author,
+        key: song.key,
+        capo: song.capo,
+        content: song.content || '',
+        navigationList: categoryId === '__ALL__' ? undefined : songs,
+        currentIndex: categoryId === '__ALL__' ? undefined : index,
+        source: categoryId === '__ALL__' ? undefined : 'category',
+        firebaseCategory:
+          categoryId === '__ALL__' ? song.originalCategoryKey : categoryId,
+      });
+    },
+    [songs, categoryId, navigation],
+  );
 
   if ((isLoading || loadingSongs) && songs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
@@ -210,32 +263,53 @@ export default function SongsListScreen({
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <Searchbar
-          placeholder="Buscar por título o autor..."
-          placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
-          iconColor={isDark ? '#636366' : '#8E8E93'}
-          onChangeText={setSearch}
-          value={search}
-          style={styles.searchbar}
-          inputStyle={styles.searchbarInput}
-        />
-      </View>
-      {!isSearchAll && (
-        <View style={styles.headerSection}>
-          <Text style={styles.categoryTitle}>
-            {categoryName.replace(/^🔎\s*/, '')}
-          </Text>
-          <Text style={styles.songCount}>
-            {filteredSongs.length}{' '}
-            {filteredSongs.length === 1 ? 'canción' : 'canciones'}
-            {search.length > 0 ? ' encontradas' : ''}
-          </Text>
+  // ListHeaderComponent: search bar + song count
+  // Goes inside the FlatList so it scrolls with content on iOS
+  // (avoids getting hidden behind transparent header)
+  const ListHeader = () => (
+    <View>
+      {searchVisible && (
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <MaterialIcons
+              name="search"
+              size={20}
+              color={isDark ? '#636366' : '#8E8E93'}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar por título o autor..."
+              placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
+              value={search}
+              onChangeText={setSearch}
+              autoFocus={!isSearchAll}
+              returnKeyType="search"
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')}>
+                <MaterialIcons
+                  name="close"
+                  size={20}
+                  color={isDark ? '#636366' : '#8E8E93'}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       )}
-      {isSearchAll && <View style={styles.thinSeparator} />}
+      {/* Conteo de canciones — siempre visible, muy sutil */}
+      <View style={styles.countRow}>
+        <Text style={styles.songCount}>
+          {filteredSongs.length}{' '}
+          {filteredSongs.length === 1 ? 'canción' : 'canciones'}
+          {search.length > 0 ? ' encontradas' : ''}
+        </Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
       <FlatList
         data={filteredSongs}
         keyExtractor={(item) => item.filename}
@@ -246,7 +320,9 @@ export default function SongsListScreen({
             isSearchAllMode={isSearchAll}
           />
         )}
+        ListHeaderComponent={<ListHeader />}
         contentContainerStyle={styles.listContent}
+        contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -273,17 +349,23 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
       backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
+    headerButton: {
+      padding: 8,
+      marginRight: Platform.OS === 'web' ? 8 : 0,
+    },
     searchContainer: {
       paddingHorizontal: 16,
-      paddingTop: 12,
+      paddingTop: 10,
       paddingBottom: 4,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
-    searchbar: {
-      borderRadius: 12,
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      elevation: 0,
-      height: 44,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      height: 42,
+      gap: 8,
       ...(Platform.OS === 'web'
         ? {
             boxShadow: isDark
@@ -295,36 +377,27 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
             shadowOffset: { width: 0, height: 1 },
             shadowOpacity: isDark ? 0.25 : 0.06,
             shadowRadius: 3,
+            elevation: 2,
           }),
     },
-    searchbarInput: {
+    searchInput: {
+      flex: 1,
       fontSize: 16,
-      paddingLeft: 0,
-      paddingTop: 0,
-      textAlignVertical: 'center',
       color: isDark ? Colors.dark.text : Colors.light.text,
+      padding: 0,
     },
-    headerSection: {
+    countRow: {
       paddingHorizontal: 20,
-      paddingTop: 16,
-      paddingBottom: 8,
-    },
-    categoryTitle: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
-      letterSpacing: -0.4,
+      paddingTop: 10,
+      paddingBottom: 2,
     },
     songCount: {
-      fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
-      marginTop: 2,
-    },
-    thinSeparator: {
-      height: 8,
+      fontSize: 12,
+      color: isDark ? '#636366' : '#AEAEB2',
+      letterSpacing: 0.2,
     },
     listContent: {
-      paddingBottom: 24,
+      paddingBottom: isIOS ? 100 : 24,
     },
     errorText: {
       fontSize: 16,

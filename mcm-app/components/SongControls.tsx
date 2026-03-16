@@ -132,9 +132,7 @@ const SongControls: React.FC<SongControlsProps> = ({
       style={[
         styles.actionButton,
         isActive &&
-          (isDark
-            ? styles.actionButtonActiveDark
-            : styles.actionButtonActive),
+          (isDark ? styles.actionButtonActiveDark : styles.actionButtonActive),
       ]}
       onPress={onPress}
       activeOpacity={0.7}
@@ -169,14 +167,20 @@ const SongControls: React.FC<SongControlsProps> = ({
 
   return (
     <>
+      {/* Scrim when menu is open */}
+      {showActionButtons && (
+        <TouchableOpacity
+          style={styles.scrim}
+          activeOpacity={1}
+          onPress={toggleMenu}
+        />
+      )}
+
       {/* FAB & Action Menu */}
       <View style={styles.fabContainer}>
         {showActionButtons && (
           <View
-            style={[
-              styles.menuContainer,
-              isDark && styles.menuContainerDark,
-            ]}
+            style={[styles.menuContainer, isDark && styles.menuContainerDark]}
           >
             <ActionButton
               icon={chordsVisible ? 'music-note' : 'music-off'}
@@ -212,10 +216,7 @@ const SongControls: React.FC<SongControlsProps> = ({
             />
 
             <View
-              style={[
-                styles.menuDivider,
-                isDark && styles.menuDividerDark,
-              ]}
+              style={[styles.menuDivider, isDark && styles.menuDividerDark]}
             />
 
             <ActionButton
@@ -239,11 +240,15 @@ const SongControls: React.FC<SongControlsProps> = ({
           </View>
         )}
         <View style={{ position: 'relative' }}>
-          {hasModifications && (
+          {hasModifications && !showActionButtons && (
             <View style={[styles.badge, isDark && styles.badgeDark]} />
           )}
           <TouchableOpacity
-            style={[styles.fabMain, isDark && styles.fabMainDark]}
+            style={[
+              styles.fabMain,
+              isDark && styles.fabMainDark,
+              showActionButtons && styles.fabMainOpen,
+            ]}
             onPress={toggleMenu}
             accessibilityLabel="Configuración"
             activeOpacity={0.8}
@@ -253,8 +258,8 @@ const SongControls: React.FC<SongControlsProps> = ({
             >
               <MaterialIcons
                 name={showActionButtons ? 'close' : 'tune'}
-                size={26}
-                color="#1C1C1E"
+                size={22}
+                color={isDark ? '#fff' : '#1C1C1E'}
               />
             </Animated.View>
           </TouchableOpacity>
@@ -337,11 +342,18 @@ const SongControls: React.FC<SongControlsProps> = ({
   );
 };
 
+const isIOS = Platform.OS === 'ios';
+
 const styles = StyleSheet.create({
+  scrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    zIndex: 999,
+  },
   fabContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 100 : 24,
-    right: 20,
+    bottom: isIOS ? 100 : 24,
+    right: 16,
     alignItems: 'flex-end',
     zIndex: 1000,
   },
@@ -354,8 +366,7 @@ const styles = StyleSheet.create({
     minWidth: 200,
     ...Platform.select({
       web: {
-        boxShadow:
-          '0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
       },
       default: {
         shadowColor: '#000',
@@ -419,36 +430,40 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fabMain: {
-    backgroundColor: '#f4c11e',
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    backgroundColor: '#fff',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
       web: {
-        boxShadow: '0 4px 12px rgba(244,193,30,0.4)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+        cursor: 'pointer',
       },
       default: {
-        shadowColor: '#f4c11e',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
         shadowRadius: 8,
-        elevation: 8,
+        elevation: 6,
       },
     }),
   },
   fabMainDark: {
-    backgroundColor: '#f4c11e',
+    backgroundColor: '#2C2C2E',
+  },
+  fabMainOpen: {
+    backgroundColor: '#FF453A',
   },
   badge: {
     position: 'absolute',
-    right: -2,
-    top: -2,
+    right: -1,
+    top: -1,
     backgroundColor: '#FF453A',
-    borderRadius: 8,
-    width: 16,
-    height: 16,
+    borderRadius: 6,
+    width: 12,
+    height: 12,
     zIndex: 10,
     borderWidth: 2,
     borderColor: '#F2F2F7',
