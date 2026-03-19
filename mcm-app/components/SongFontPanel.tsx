@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DEFAULT_FONT_SIZE_EM } from '@/contexts/SettingsContext';
 import { getNativeFontFamily } from '@/utils/fontUtils';
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
   sizeButton: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: '#F2F2F7',
     justifyContent: 'center',
     alignItems: 'center',
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 18,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: '#F2F2F7',
   },
   fontButtonDark: {
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: '#F2F2F7',
     gap: 8,
   },

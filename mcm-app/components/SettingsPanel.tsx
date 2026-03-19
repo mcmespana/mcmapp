@@ -19,6 +19,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import UserProfileModal from './UserProfileModal';
 import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 
 interface Props {
   visible: boolean;
@@ -276,8 +277,8 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: spacing.lg,
     paddingBottom: 40,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: radii.full,
+    borderTopRightRadius: radii.full,
   } as ViewStyle,
 
   handleRow: {
@@ -320,7 +321,7 @@ const styles = StyleSheet.create({
 
   // Generic surface card
   surface: {
-    borderRadius: 14,
+    borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 4,
     marginBottom: spacing.md,
@@ -350,7 +351,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   } as ViewStyle,
   themeOptionText: {
     fontSize: 12,

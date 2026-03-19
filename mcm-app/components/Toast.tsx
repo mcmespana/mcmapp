@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ToastColors } from '@/constants/colors';
+import { radii, shadows } from '@/constants/uiStyles';
 
 interface ToastProps {
   visible: boolean;
@@ -134,16 +135,9 @@ const styles = StyleSheet.create({
     elevation: 1000,
   },
   toast: {
-    borderRadius: 12,
+    borderRadius: radii.md,
     marginHorizontal: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    ...shadows.lg,
   },
   content: {
     flexDirection: 'row',

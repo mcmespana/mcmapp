@@ -26,6 +26,7 @@ import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
+import { radii, shadows } from '@/constants/uiStyles';
 import {
   getLocalNotificationsHistory,
   markNotificationAsRead,
@@ -597,7 +598,7 @@ const dStyles = StyleSheet.create({
   closeButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(128,128,128,0.12)',
@@ -610,7 +611,7 @@ const dStyles = StyleSheet.create({
   icon: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: 32,  // 64/2 — circle
     marginBottom: spacing.md,
     alignSelf: 'center',
   },
@@ -619,7 +620,7 @@ const dStyles = StyleSheet.create({
   image: {
     width: '100%',
     height: 200,
-    borderRadius: 12,
+    borderRadius: radii.md,
     marginBottom: spacing.lg,
   },
   body: { fontSize: 16, lineHeight: 26, marginBottom: spacing.lg },
@@ -633,7 +634,7 @@ const dStyles = StyleSheet.create({
     gap: 10,
     paddingVertical: 14,
     paddingHorizontal: 18,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1.5,
     marginBottom: spacing.md,
   },
@@ -649,13 +650,10 @@ const dStyles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingVertical: 16,
     paddingHorizontal: 32,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     gap: 10,
+    ...shadows.lg,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
   },
   actionButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
 });
@@ -729,16 +727,12 @@ const createStyles = (scheme: 'light' | 'dark') => {
     notificationCard: {
       flexDirection: 'row',
       backgroundColor: theme.background,
-      borderRadius: 12,
+      borderRadius: radii.md,
       padding: spacing.md,
       marginBottom: spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
-      elevation: 2,
+      ...shadows.sm,
     },
     unreadCard: {
       backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
@@ -779,7 +773,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     unreadBadge: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: radii.xs,
       backgroundColor: colors.primary,
     },
     markAsReadButton: { padding: 2 },
@@ -787,7 +781,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       backgroundColor: colors.success,
       justifyContent: 'center',
       alignItems: 'flex-end',
-      borderRadius: 12,
+      borderRadius: radii.md,
       marginBottom: spacing.md,
       paddingRight: spacing.md,
       minWidth: 90,
@@ -829,7 +823,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       gap: 3,
       paddingVertical: 3,
       paddingHorizontal: 7,
-      borderRadius: 20,
+      borderRadius: radii.pill,
       borderWidth: 1,
       borderColor: colors.primary + '60',
       backgroundColor: colors.primary + '12',
@@ -845,7 +839,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       gap: 3,
       paddingVertical: 3,
       paddingHorizontal: 8,
-      borderRadius: 20,
+      borderRadius: radii.pill,
       backgroundColor: colors.primary,
       maxWidth: 140,
     },

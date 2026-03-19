@@ -22,6 +22,7 @@ import { Text, IconButton } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
@@ -649,7 +650,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       marginTop: 12,
       marginBottom: 8,
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
-      borderRadius: 12,
+      borderRadius: radii.md,
       padding: 3,
     },
     switcherTab: {
@@ -704,7 +705,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     chipDot: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: radii.xs,
     },
     chipLabel: {
       fontSize: 13,
@@ -751,7 +752,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     eventCard: {
       flexDirection: 'row',
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 14,
+      borderRadius: radii.lg,
       marginBottom: 8,
       overflow: 'hidden',
       ...(Platform.OS === 'web'
@@ -773,8 +774,8 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     eventColorBar: {
       width: 4,
-      borderTopLeftRadius: 14,
-      borderBottomLeftRadius: 14,
+      borderTopLeftRadius: radii.lg,
+      borderBottomLeftRadius: radii.lg,
     },
     eventCardBody: {
       flex: 1,
@@ -798,7 +799,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     calendarBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: 8,
+      borderRadius: radii.sm,
       paddingHorizontal: 8,
       paddingVertical: 3,
       gap: 4,
@@ -856,7 +857,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     agendaNavBtn: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: radii.pill,
       alignItems: 'center',
       justifyContent: 'center',
     },

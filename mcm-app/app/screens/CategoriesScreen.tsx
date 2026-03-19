@@ -12,6 +12,7 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Snackbar } from 'react-native-paper';
 import SuggestSongModal from '@/components/SuggestSongModal';
@@ -254,7 +255,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 14,
+      borderRadius: radii.lg,
       paddingHorizontal: 14,
       paddingVertical: 11,
       marginBottom: 8,
@@ -326,7 +327,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     snackbar: {
       backgroundColor: isDark ? Colors.dark.card : '#1C1C1E',
-      borderRadius: 12,
+      borderRadius: radii.md,
       marginBottom: 8,
       marginHorizontal: 16,
     },
