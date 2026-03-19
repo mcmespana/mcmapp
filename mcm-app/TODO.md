@@ -52,6 +52,22 @@
 
 ---
 
+## Inconsistencias del Design System
+
+> Detectadas al documentar `DESIGN.md`. Revisar y unificar cuando se pueda.
+
+- [ ] **Dos sistemas de colores "primary" en conflicto**: `constants/colors.ts` define `primary: '#253883'` (azul MCM) y `app/styles/theme.ts` define `AppColors.primary: '#007bff'` (azul genérico Bootstrap). Varios componentes importan de uno u otro sin criterio claro.
+- [ ] **Border radius inconsistente**: no hay tokens centralizados. Los valores varían entre 6px, 8px, 10px, 12px, 14px, 18px, 20px según el componente. Solo `buttonBorderRadius: 8` está definido como constante en `uiStyles.ts`, el resto son valores inline.
+- [ ] **Sombras ad-hoc por componente**: `uiStyles.ts` define `commonShadow` (opacity 0.2, radius 3), pero casi ningún componente lo usa. Toast usa opacity 0.3/radius 8, Home cards usan 0.07/radius 6 o 0.04/radius 3, SettingsPanel usa shadowColor tintado con primary. Cada componente define su propia sombra inline.
+- [ ] **Color de fondo dark mode hardcodeado**: varias pantallas usan `#3A3A3C` como fondo de cards en dark mode, pero `Colors.dark.background` es `#2C2C2E`. No hay un token para "card background" en dark mode.
+- [ ] **Tipografía no conectada a componentes**: `constants/typography.ts` define h1/h2/body/caption/button, pero la mayoría de componentes definen fontSize y fontWeight inline en sus StyleSheets. El archivo typography apenas se importa.
+- [ ] **Colores de toast no centralizados**: los colores (#4CAF50, #F44336, etc.) están hardcodeados dentro de `Toast.tsx`. No usan los tokens de `colors.ts` (success, danger, etc.), que tienen valores distintos (#A3BD31 vs #4CAF50, #9D1E74 vs #F44336).
+- [ ] **spacing.js debería ser .ts**: es el único archivo de constants en JavaScript plano; el resto son TypeScript.
+- [ ] **Falta token para modal borderRadius**: modales usan 8px o 12px según el componente, sin un valor estándar exportado.
+- [ ] **Peso de fuente inconsistente en labels**: labels de sección usan `fontWeight: '800'`, badges usan `'800'`, títulos de cards usan `'700'`, botones usan `'500'`/`'700'` — no hay una guía clara de qué peso usar para qué nivel.
+
+---
+
 ## Ideas para la Home Screen
 
 La home actual es un grid de botones de colores con animaciones de entrada. Funciona, pero es muy estática y no aporta información útil al usuario.
