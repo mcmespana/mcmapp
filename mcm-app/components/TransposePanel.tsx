@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   resetButtonDark: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: Colors.dark.card,
   },
   resetText: {
     fontWeight: '600',

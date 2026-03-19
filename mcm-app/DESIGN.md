@@ -24,34 +24,35 @@ fotos:       #E15C62   (Rojo MIC)
 comunica:    #9D1E74dd (Morado LC, 87% opacidad)
 ```
 
-### Colores de UI (tema app)
+### Colores de UI (`UIColors` en `constants/colors.ts`)
 ```
-primary:         #007bff   (Azul — elementos activos, FABs)
-primaryDark:     #0056b3   (Azul oscuro — bordes FAB activos)
-accentYellow:    #f4c11e   (Amarillo — FAB principal)
-secondaryText:   #6c757d   (Gris — texto secundario)
-modalOverlay:    rgba(0,0,0,0.5)
-border:          #E0E0E0   (Gris claro — bordes generales)
+activePrimary:      #007bff   (Azul — elementos activos, FABs)
+activePrimaryDark:  #0056b3   (Azul oscuro — bordes FAB activos)
+accentYellow:       #f4c11e   (Amarillo — FAB principal)
+secondaryText:      #6c757d   (Gris — texto secundario)
+modalOverlay:       rgba(0,0,0,0.5)
+border:             #E0E0E0   (Gris claro — bordes generales)
 ```
 
-### Modo claro / oscuro
+### Modo claro / oscuro (`Colors` en `constants/colors.ts`)
 ```
              Claro          Oscuro
 text:        #11181C        #FFFFFF
 background:  #ffffff        #2C2C2E
+card:        #FFFFFF        #3A3A3C
 tint:        #0a7ea4        #ffffff
 icon:        #687076        #C5C5C7
 shadow:      #000000        #000000
 ```
 
-### Colores de toast
+### Colores de toast (`ToastColors` en `constants/colors.ts`)
 ```
 success:  #4CAF50   (Material Green)
 error:    #F44336   (Material Red)
 warning:  #FF9800   (Material Orange)
 info:     #2196F3   (Material Blue)
 ```
-Texto siempre blanco sobre fondo de color.
+Texto siempre blanco sobre fondo de color. Estos son distintos de los colores de marca (success/danger) a propósito — siguen Material Design para feedback visual estándar.
 
 ## Tipografía
 
@@ -87,18 +88,18 @@ Gaps entre elementos: generalmente `7px`–`8px` (sm), `3px`–`5px` para conten
 
 ## Formas y bordes
 
-### Border radius
+### Border radius (`radii` en `constants/uiStyles.ts`)
 El sistema usa radios redondeados suaves, no pill-shaped:
 
-| Elemento              | Radio   | Notas                         |
-|-----------------------|---------|-------------------------------|
-| Botones estándar      | 8px     | `buttonBorderRadius`          |
-| Toast, modales        | 12px    | Contenedores medianos         |
-| Cards de evento       | 14px    | Cards de contenido            |
-| Card de notificación  | 18px    | Card destacada (Home)         |
-| Chips, pills de acción| 20px    | Elementos pequeños tipo pill   |
-| FABs, icon circles    | 28px    | Círculos (56x56 → radio 28)  |
-| Logo box              | 10px    | Icono del header              |
+| Token        | Valor | Uso                                          |
+|--------------|-------|----------------------------------------------|
+| `radii.xs`   | 4px   | Badges pequeños                              |
+| `radii.sm`   | 8px   | Botones, inputs                              |
+| `radii.md`   | 12px  | Toasts, modales, date boxes                  |
+| `radii.lg`   | 14px  | Cards de contenido, eventos                  |
+| `radii.xl`   | 18px  | Cards destacadas (Home)                      |
+| `radii.pill` | 20px  | Chips, pills de acción                       |
+| `radii.full` | 28px  | FABs, icon circles (56x56)                   |
 
 ### Bordes
 ```
@@ -112,22 +113,15 @@ Dashed border:         1.5px dashed [iconColor + 40]
 
 ## Sombras y elevación
 
-### Sombra estándar (commonShadow)
-```
-iOS:     shadowColor: #000, offset: {0, 2}, opacity: 0.2, radius: 3
-Android: elevation: 4
-```
+### Presets de sombra (`shadows` en `constants/uiStyles.ts`)
 
-### Por componente
-| Componente           | Opacidad | Offset   | Radius | Elevation |
-|----------------------|----------|----------|--------|-----------|
-| Card de notificación | 0.07     | {0, 2}   | 6      | 3         |
-| Card de evento       | 0.04     | {0, 1}   | 3      | 1         |
-| Toast                | 0.3      | {0, 4}   | 8      | 8         |
-| GlassFAB             | 0.3      | {0, 4}   | 8      | 8         |
-| SettingsPanel        | 0.35*    | {0, 2}   | 4      | 3         |
+| Token        | iOS (opacity/radius)     | Android     | Uso                          |
+|--------------|--------------------------|-------------|------------------------------|
+| `shadows.sm` | 0.06 / radius 3          | elevation 1 | Cards de contenido, eventos  |
+| `shadows.md` | 0.12 / radius 6          | elevation 3 | Cards elevadas, paneles      |
+| `shadows.lg` | 0.3  / radius 8          | elevation 8 | Toasts, FABs, overlays       |
 
-*SettingsPanel usa `shadowColor: primary (#253883)` — sombra tintada.
+Nota: algunos componentes legacy aún usan sombras inline. SettingsPanel usa `shadowColor: primary (#253883)` — sombra tintada.
 
 ### Sombra de texto
 ```

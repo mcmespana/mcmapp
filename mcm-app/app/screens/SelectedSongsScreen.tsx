@@ -700,7 +700,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '700',
       paddingHorizontal: 16,
       paddingVertical: 10,
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
       color: isDark ? '#AEAEB2' : '#636366',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -811,7 +811,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     modalInput: {
       borderWidth: 1,
-      borderColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderColor: isDark ? Colors.dark.card : '#E5E5EA',
       borderRadius: 12,
       padding: 14,
       fontSize: 16,
@@ -833,7 +833,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
       padding: 14,
       borderRadius: 12,
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
       alignItems: 'center',
     },
     modalCancelText: {
@@ -857,7 +857,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '600',
     },
     snackbar: {
-      backgroundColor: isDark ? '#3A3A3C' : '#1C1C1E',
+      backgroundColor: isDark ? Colors.dark.card : '#1C1C1E',
       borderRadius: 12,
       marginBottom: 8,
       marginHorizontal: 16,

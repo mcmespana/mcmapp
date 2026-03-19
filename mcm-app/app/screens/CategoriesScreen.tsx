@@ -11,6 +11,7 @@ import { useLayoutEffect, useMemo, useState } from 'react';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Snackbar } from 'react-native-paper';
 import SuggestSongModal from '@/components/SuggestSongModal';
@@ -280,7 +281,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       width: 38,
       height: 38,
       borderRadius: 10,
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 12,
@@ -324,7 +325,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       zIndex: 1000,
     },
     snackbar: {
-      backgroundColor: isDark ? '#3A3A3C' : '#1C1C1E',
+      backgroundColor: isDark ? Colors.dark.card : '#1C1C1E',
       borderRadius: 12,
       marginBottom: 8,
       marginHorizontal: 16,

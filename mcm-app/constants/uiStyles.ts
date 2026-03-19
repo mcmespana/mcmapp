@@ -1,43 +1,65 @@
 import { Platform } from 'react-native';
-import colors from './colors'; // Assuming black is defined in your colors.ts or use a hardcoded '#000'
+import colors from './colors';
 
-export const commonShadow = {
-  // Common properties for both iOS and Android
-  ...Platform.select({
+// ── Border Radius ──
+export const radii = {
+  xs: 4, // badges pequeños
+  sm: 8, // botones, inputs
+  md: 12, // toasts, modales, date boxes
+  lg: 14, // cards de contenido
+  xl: 18, // cards destacadas
+  pill: 20, // chips, pills de acción
+  full: 28, // FABs, icon circles (56x56)
+} as const;
+
+// ── Sombras ──
+export const shadows = {
+  /** Cards de contenido — sutil */
+  sm: Platform.select({
     ios: {
-      shadowColor: colors.black, // Or '#000'
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2, // Slightly more subtle than 0.25
-      shadowRadius: 3.0, // Slightly smaller radius
+      shadowColor: colors.black,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 3,
     },
-    android: {
-      elevation: 4, // Slightly less pronounced elevation
-    },
+    default: { elevation: 1 },
   }),
-};
+  /** Cards elevadas, paneles — media */
+  md: Platform.select({
+    ios: {
+      shadowColor: colors.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 6,
+    },
+    default: { elevation: 3 },
+  }),
+  /** Toasts, FABs, overlays — prominente */
+  lg: Platform.select({
+    ios: {
+      shadowColor: colors.black,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+    },
+    default: { elevation: 8 },
+  }),
+} as const;
 
-// You can add other common UI styles here, for example, border styles
+// ── Texto con sombra ──
+export const textShadow = {
+  textShadowColor: 'rgba(0, 0, 0, 0.5)',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 2,
+} as const;
+
+// ── Padding de página ──
+export const pagePadding = {
+  paddingHorizontal: 16,
+} as const;
+
+// ── Bordes ──
 export const commonBorder = {
   borderWidth: 1,
-  borderColor: colors.border, // Assuming a border color is in colors.ts
-};
-
-export const textShadow = {
-  textShadowColor: 'rgba(0, 0, 0, 0.5)', // A semi-transparent black
-  textShadowOffset: { width: 0, height: 1 }, // Shadow slightly below the text
-  textShadowRadius: 2, // A little blur
-};
-
-export const pagePadding = {
-  paddingHorizontal: 16, // Default horizontal padding
-};
-
-export const buttonBorderRadius = {
-  borderRadius: 8, // Default border radius for buttons
-};
-
-export const commonStyles = {
-  textShadow: textShadow,
-  pagePadding: pagePadding,
-  buttonBorderRadius: buttonBorderRadius,
-};
+  borderColor: colors.border,
+} as const;

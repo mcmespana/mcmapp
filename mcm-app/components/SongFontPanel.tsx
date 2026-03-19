@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sizeButtonDark: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: Colors.dark.card,
   },
   sizeDisplay: {
     alignItems: 'center',
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F7',
   },
   fontButtonDark: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: Colors.dark.card,
   },
   fontButtonActive: {
     backgroundColor: '#E8F0FE',
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   resetButtonDark: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: Colors.dark.card,
   },
   resetText: {
     fontWeight: '600',

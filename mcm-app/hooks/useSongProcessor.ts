@@ -5,7 +5,7 @@ import {
   Song,
   ChordLyricsPair,
 } from 'chordsheetjs';
-import { AppColors } from '../app/styles/theme'; // Ensure this path is correct relative to the hooks folder
+import { UIColors } from '@/constants/colors';
 import {
   convertHtmlChords,
   convertChord,
@@ -174,7 +174,7 @@ export const useSongProcessor = ({
               box-sizing: border-box;
             }
             h1 {
-              color: ${AppColors.primary || '#007bff'};
+              color: ${UIColors.activePrimary || '#007bff'};
               margin-bottom: 0.1em;
               margin-top: 0.1em;
               font-size: 1.5em;
@@ -182,7 +182,7 @@ export const useSongProcessor = ({
               text-align: center;
               line-height: 1.2;
               padding-bottom: 4px;
-              border-bottom: 1px solid ${AppColors.accentYellow || '#ffc107'};
+              border-bottom: 1px solid ${UIColors.accentYellow || '#ffc107'};
               ${isFullscreen ? 'display: none;' : ''}
             }
             .song-meta-author {
@@ -202,11 +202,11 @@ export const useSongProcessor = ({
               background-color: #f0f1f2;
               padding: 6px 10px;
               border-radius: 4px;
-              border-left: 2px solid ${AppColors.primary || '#007bff'};
+              border-left: 2px solid ${UIColors.activePrimary || '#007bff'};
             }
             .song-meta-keycapo strong {
               font-weight: 600;
-              color: ${AppColors.primary || '#007bff'};
+              color: ${UIColors.activePrimary || '#007bff'};
             }
             .chord-sheet {
               margin-top: 0.8em;
@@ -227,7 +227,7 @@ export const useSongProcessor = ({
               word-wrap: break-word;
             }
             .chord-sheet .chord {
-              color: ${AppColors.primary};
+              color: ${UIColors.activePrimary};
               font-weight: bold;
               white-space: pre;
               display: block;

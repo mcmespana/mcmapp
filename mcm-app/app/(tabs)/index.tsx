@@ -337,7 +337,7 @@ export default function Home() {
             style={StyleSheet.flatten([
               styles.notifCard,
               {
-                backgroundColor: scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                backgroundColor: theme.card,
                 borderColor:
                   scheme === 'dark'
                     ? 'rgba(255,255,255,0.09)'
@@ -544,7 +544,7 @@ export default function Home() {
               style={[
                 styles.emptyEventsCard,
                 {
-                  backgroundColor: scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                  backgroundColor: theme.card,
                   borderColor:
                     scheme === 'dark'
                       ? 'rgba(255,255,255,0.08)'
@@ -590,7 +590,7 @@ export default function Home() {
                     styles.eventCard,
                     {
                       backgroundColor:
-                        scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                        theme.card,
                       borderColor:
                         scheme === 'dark'
                           ? 'rgba(255,255,255,0.09)'

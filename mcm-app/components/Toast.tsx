@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { ToastColors } from '@/constants/colors';
 
 interface ToastProps {
   visible: boolean;
@@ -28,43 +29,18 @@ export default function Toast({
   const opacity = useRef(new Animated.Value(0)).current;
 
   const getToastConfig = () => {
-    switch (type) {
-      case 'success':
-        return {
-          backgroundColor: '#4CAF50',
-          icon: 'check-circle' as const,
-          iconColor: '#fff',
-          textColor: '#fff',
-        };
-      case 'error':
-        return {
-          backgroundColor: '#F44336',
-          icon: 'error' as const,
-          iconColor: '#fff',
-          textColor: '#fff',
-        };
-      case 'warning':
-        return {
-          backgroundColor: '#FF9800',
-          icon: 'warning' as const,
-          iconColor: '#fff',
-          textColor: '#fff',
-        };
-      case 'info':
-        return {
-          backgroundColor: '#2196F3',
-          icon: 'info' as const,
-          iconColor: '#fff',
-          textColor: '#fff',
-        };
-      default:
-        return {
-          backgroundColor: '#4CAF50',
-          icon: 'check-circle' as const,
-          iconColor: '#fff',
-          textColor: '#fff',
-        };
-    }
+    const icons = {
+      success: 'check-circle' as const,
+      error: 'error' as const,
+      warning: 'warning' as const,
+      info: 'info' as const,
+    };
+    return {
+      backgroundColor: ToastColors[type],
+      icon: icons[type],
+      iconColor: '#fff',
+      textColor: '#fff',
+    };
   };
 
   const config = getToastConfig();

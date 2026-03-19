@@ -488,7 +488,7 @@ export default function Calendario() {
                 <MaterialIcons
                   name="event-available"
                   size={40}
-                  color={isDark ? '#3A3A3C' : '#D1D1D6'}
+                  color={isDark ? Colors.dark.card : '#D1D1D6'}
                 />
                 <Text style={styles.emptyText}>Sin eventos</Text>
                 <Text style={styles.emptySubtext}>
@@ -602,7 +602,7 @@ export default function Calendario() {
                 <MaterialIcons
                   name="event-available"
                   size={40}
-                  color={isDark ? '#3A3A3C' : '#D1D1D6'}
+                  color={isDark ? Colors.dark.card : '#D1D1D6'}
                 />
                 <Text style={styles.emptyText}>Sin eventos este mes</Text>
               </View>
@@ -696,7 +696,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       paddingVertical: 7,
       gap: 6,
       borderWidth: 1,
-      borderColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderColor: isDark ? Colors.dark.card : '#E5E5EA',
       // No elevation/shadow — the border is enough. Elevation on Android
       // adds a Material Design drop-shadow that makes chips look dark & raised.
       elevation: 0,
@@ -909,7 +909,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     sectionDivider: {
       flex: 1,
       height: 1,
-      backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      backgroundColor: isDark ? Colors.dark.card : '#E5E5EA',
     },
     sectionBadge: {
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
