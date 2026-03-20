@@ -220,11 +220,11 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleConfirmExport = useCallback(async () => {
     try {
-      const fileName = `${exportFileName}.json`;
+      const fileName = `${exportFileName}.mcm`;
 
       if (Platform.OS === 'web') {
         const blob = new Blob([JSON.stringify(selectedSongs)], {
-          type: 'application/json',
+          type: 'application/octet-stream',
         });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -244,8 +244,9 @@ const SelectedSongsScreen: React.FC = () => {
           },
         );
         await Sharing.shareAsync(path, {
-          mimeType: 'application/json',
+          mimeType: 'application/octet-stream',
           dialogTitle: 'Compartir playlist',
+          UTI: 'com.mcmespana.mcmapp.playlist',
         });
       }
 
@@ -261,20 +262,20 @@ const SelectedSongsScreen: React.FC = () => {
   }, [selectedSongs, exportFileName]);
 
   const handleImportFile = useCallback(async () => {
+    const validExtensions = ['.mcm', '.json', '.mcmsongs'];
+    const isValidFile = (name: string) =>
+      validExtensions.some((ext) => name.toLowerCase().endsWith(ext));
+
     try {
       if (Platform.OS === 'web') {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.json,.mcmsongs,application/json';
+        input.accept = '.mcm,.json,.mcmsongs';
         input.onchange = async () => {
           if (!input.files || input.files.length === 0) return;
           const file = input.files[0];
-          if (
-            file.name &&
-            !file.name.endsWith('.json') &&
-            !file.name.endsWith('.mcmsongs')
-          ) {
-            setSnackbarMessage('Selecciona un archivo .json o .mcmsongs');
+          if (file.name && !isValidFile(file.name)) {
+            setSnackbarMessage('Selecciona un archivo .mcm');
             setSnackbarVisible(true);
             return;
           }
@@ -303,16 +304,12 @@ const SelectedSongsScreen: React.FC = () => {
         input.click();
       } else {
         const res = await DocumentPicker.getDocumentAsync({
-          type: 'application/json',
+          type: ['application/json', 'application/octet-stream'],
         });
         if (res.canceled || !res.assets || res.assets.length === 0) return;
         const file = res.assets[0];
-        if (
-          file.name &&
-          !file.name.endsWith('.json') &&
-          !file.name.endsWith('.mcmsongs')
-        ) {
-          setSnackbarMessage('Selecciona un archivo .json o .mcmsongs');
+        if (file.name && !isValidFile(file.name)) {
+          setSnackbarMessage('Selecciona un archivo .mcm');
           setSnackbarVisible(true);
           return;
         }
@@ -552,7 +549,7 @@ const SelectedSongsScreen: React.FC = () => {
             />
 
             <Text style={styles.modalNote}>
-              Se exportará como archivo JSON
+              Se exportará como archivo .mcm
             </Text>
 
             <View style={styles.modalButtons}>
@@ -672,7 +669,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '500',
     },
     listContentContainer: {
-      paddingBottom: 24,
+      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
     },
     categoryContainer: {
       marginTop: 12,
@@ -762,7 +759,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderRadius: 14,
       backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
       gap: 8,
-      marginBottom: Platform.OS === 'ios' ? 40 : 20,
+      marginBottom: Platform.OS === 'ios' ? 100 : 20,
     },
     importButtonText: {
       fontSize: 16,
@@ -859,7 +856,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     snackbar: {
       backgroundColor: isDark ? '#3A3A3C' : '#1C1C1E',
       borderRadius: 12,
-      marginBottom: 8,
+      marginBottom: Platform.OS === 'ios' ? 90 : 8,
       marginHorizontal: 16,
     },
   });
