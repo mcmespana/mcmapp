@@ -11,10 +11,13 @@ import {
   Modal,
   ScrollView,
   Platform,
+  Pressable,
 } from 'react-native';
-// IMPORTANTE: usar TouchableOpacity de gesture-handler (no de RN core)
-// dentro de Swipeable para que los toques anidados funcionen correctamente.
-import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
+// En nativo, TouchableOpacity de gesture-handler es necesario dentro de Swipeable.
+// En web, genera doble <button> anidado, así que usamos Pressable.
+import { TouchableOpacity as GHTouchableOpacity, Swipeable } from 'react-native-gesture-handler';
+const TouchableOpacity =
+  Platform.OS === 'web' ? Pressable : GHTouchableOpacity;
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -244,22 +247,38 @@ export default function NotificationsScreen() {
               </Text>
               <View style={styles.notificationHeaderRight}>
                 {isUnread && <View style={styles.unreadBadge} />}
-                {/* Botón marcar como leída — TouchableOpacity de gesture-handler */}
-                {isUnread && (
-                  <TouchableOpacity
-                    style={styles.markAsReadButton}
-                    onPress={() => handleMarkAsRead(notification.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    accessibilityLabel="Marcar como leída"
-                    accessibilityRole="button"
-                  >
-                    <MaterialIcons
-                      name="check-circle-outline"
-                      size={20}
-                      color={colors.primary}
-                    />
-                  </TouchableOpacity>
-                )}
+                {/* Marcar como leída — View en web para evitar <button> anidados */}
+                {isUnread &&
+                  (Platform.OS === 'web' ? (
+                    <View
+                      style={styles.markAsReadButton}
+                      // @ts-expect-error onClick supported by react-native-web
+                      onClick={(e: any) => {
+                        e.stopPropagation();
+                        handleMarkAsRead(notification.id);
+                      }}
+                    >
+                      <MaterialIcons
+                        name="check-circle-outline"
+                        size={20}
+                        color={colors.primary}
+                      />
+                    </View>
+                  ) : (
+                    <Pressable
+                      style={styles.markAsReadButton}
+                      onPress={() => handleMarkAsRead(notification.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      accessibilityLabel="Marcar como leída"
+                      accessibilityRole="button"
+                    >
+                      <MaterialIcons
+                        name="check-circle-outline"
+                        size={20}
+                        color={colors.primary}
+                      />
+                    </Pressable>
+                  ))}
               </View>
             </View>
 
@@ -285,31 +304,54 @@ export default function NotificationsScreen() {
                     </Text>
                   </View>
                 )}
-                {/* Chip de botón de acción (tappable — navega directamente) */}
-                {notification.actionButton && (
-                  <TouchableOpacity
-                    style={styles.actionChip}
-                    onPress={() => {
-                      handleActionButtonPress(notification);
-                    }}
-                    accessibilityLabel={notification.actionButton.text}
-                    accessibilityRole="button"
-                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  >
-                    <Text style={styles.actionChipText} numberOfLines={1}>
-                      {notification.actionButton.text}
-                    </Text>
-                    <MaterialIcons
-                      name={
-                        notification.actionButton.isInternal
-                          ? 'arrow-forward'
-                          : 'open-in-new'
-                      }
-                      size={11}
-                      color="#fff"
-                    />
-                  </TouchableOpacity>
-                )}
+                {/* Chip de botón de acción — View en web para evitar <button> anidados */}
+                {notification.actionButton &&
+                  (Platform.OS === 'web' ? (
+                    <View
+                      style={styles.actionChip}
+                      // @ts-expect-error onClick supported by react-native-web
+                      onClick={(e: any) => {
+                        e.stopPropagation();
+                        handleActionButtonPress(notification);
+                      }}
+                    >
+                      <Text style={styles.actionChipText} numberOfLines={1}>
+                        {notification.actionButton.text}
+                      </Text>
+                      <MaterialIcons
+                        name={
+                          notification.actionButton.isInternal
+                            ? 'arrow-forward'
+                            : 'open-in-new'
+                        }
+                        size={11}
+                        color="#fff"
+                      />
+                    </View>
+                  ) : (
+                    <Pressable
+                      style={styles.actionChip}
+                      onPress={() => {
+                        handleActionButtonPress(notification);
+                      }}
+                      accessibilityLabel={notification.actionButton.text}
+                      accessibilityRole="button"
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.actionChipText} numberOfLines={1}>
+                        {notification.actionButton.text}
+                      </Text>
+                      <MaterialIcons
+                        name={
+                          notification.actionButton.isInternal
+                            ? 'arrow-forward'
+                            : 'open-in-new'
+                        }
+                        size={11}
+                        color="#fff"
+                      />
+                    </Pressable>
+                  ))}
               </View>
             </View>
           </View>
@@ -342,7 +384,7 @@ export default function NotificationsScreen() {
       ]}
     >
       <View style={styles.header}>
-        <TouchableOpacity
+        <Pressable
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           accessibilityLabel="Volver"
@@ -353,17 +395,17 @@ export default function NotificationsScreen() {
             size={24}
             color={Colors[scheme ?? 'light'].text}
           />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.title}>Notificaciones</Text>
         {hasUnread ? (
-          <TouchableOpacity
+          <Pressable
             onPress={handleMarkAllAsRead}
             style={styles.markAllButton}
             accessibilityLabel="Marcar todas como leídas"
             accessibilityRole="button"
           >
             <MaterialIcons name="done-all" size={22} color={colors.primary} />
-          </TouchableOpacity>
+          </Pressable>
         ) : (
           <View style={styles.headerRight} />
         )}

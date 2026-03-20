@@ -156,8 +156,8 @@ const SongListItem: React.FC<SongListItemProps> = ({
               </Text>
               <View style={styles.metaLine}>
                 {isSearchAllMode &&
-                song.originalCategoryKey &&
-                song.numericFilenamePart ? (
+                !!song.originalCategoryKey &&
+                !!song.numericFilenamePart ? (
                   <View style={styles.metaPills}>
                     <View style={styles.categoryPill}>
                       <Text style={styles.categoryPillText}>
@@ -165,7 +165,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
                         {song.numericFilenamePart}
                       </Text>
                     </View>
-                    {song.author && (
+                    {!!song.author && (
                       <Text
                         style={styles.authorText}
                         numberOfLines={1}
@@ -177,15 +177,15 @@ const SongListItem: React.FC<SongListItemProps> = ({
                   </View>
                 ) : (
                   <View style={styles.metaPills}>
-                    {song.numericFilenamePart && (
+                    {!!song.numericFilenamePart && (
                       <Text style={styles.numberText}>
                         #{song.numericFilenamePart}
                       </Text>
                     )}
-                    {song.numericFilenamePart && song.author && (
+                    {!!song.numericFilenamePart && !!song.author && (
                       <Text style={styles.metaSeparator}> · </Text>
                     )}
-                    {song.author && (
+                    {!!song.author && (
                       <Text
                         style={styles.authorText}
                         numberOfLines={1}
