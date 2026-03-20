@@ -9,7 +9,6 @@ import SongDetailScreen from '../screens/SongDetailScreen';
 import SongFullscreenScreen from '../screens/SongFullscreenScreen';
 import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 
-import { SelectedSongsProvider } from '../../contexts/SelectedSongsContext';
 import { SettingsProvider } from '../../contexts/SettingsContext';
 
 export interface SongNavItem {
@@ -73,81 +72,80 @@ export default function CancioneroTab() {
 
   return (
     <SettingsProvider>
-      <SelectedSongsProvider>
-        <Stack.Navigator
-          initialRouteName="Categories"
-          screenOptions={({ navigation }) => {
-            stackNavRef.current = navigation;
-            return {
-              // iOS: transparent header for liquid glass effect
-              // Android: themed solid header
-              // Web: clean minimal header
-              headerStyle: isIOS
-                ? { backgroundColor: 'transparent' }
-                : isWeb
-                  ? ({
+      <Stack.Navigator
+        initialRouteName="Categories"
+        screenOptions={({ navigation }) => {
+          stackNavRef.current = navigation;
+          return {
+            headerStyle: isIOS
+              ? { backgroundColor: 'transparent' }
+              : isWeb
+                ? ({
                     backgroundColor: '#fff',
                     borderBottomWidth: StyleSheet.hairlineWidth,
                     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
                   } as any)
-                  : ({ backgroundColor: '#253883' } as any),
-              headerTintColor: isIOS ? '#3d79b9ff' : isWeb ? '#253883' : '#fff',
-              headerTitleStyle: {
-                fontWeight: '700' as const,
-                fontSize: 17,
-                color: isIOS ? '#000' : isWeb ? '#1a1a1a' : '#fff',
-                letterSpacing: -0.3,
-              },
-              ...(isWeb && ({ headerStatusBarHeight: 0 } as any)),
-              headerTransparent: isIOS,
-              headerBlurEffect: isIOS ? 'systemChromeMaterial' : undefined,
-              headerShadowVisible: false,
-              headerBackTitle: 'Volver',
-              headerBackButtonDisplayMode: 'minimal' as const,
-            };
+                : ({ backgroundColor: '#253883' } as any),
+            headerTintColor: isIOS
+              ? '#3d79b9ff'
+              : isWeb
+                ? '#253883'
+                : '#fff',
+            headerTitleStyle: {
+              fontWeight: '700' as const,
+              fontSize: 17,
+              color: isIOS ? '#000' : isWeb ? '#1a1a1a' : '#fff',
+              letterSpacing: -0.3,
+            },
+            ...(isWeb && ({ headerStatusBarHeight: 0 } as any)),
+            headerTransparent: isIOS,
+            headerBlurEffect: isIOS ? 'systemChromeMaterial' : undefined,
+            headerShadowVisible: false,
+            headerBackTitle: 'Volver',
+            headerBackButtonDisplayMode: 'minimal' as const,
+          };
+        }}
+      >
+        <Stack.Screen
+          name="Categories"
+          component={CategoriesScreen}
+          options={{
+            title: 'Cantoral',
+            headerLargeTitle: isIOS,
+            headerLargeTitleShadowVisible: false,
+            headerLargeStyle: isIOS
+              ? { backgroundColor: 'transparent' }
+              : undefined,
           }}
-        >
-          <Stack.Screen
-            name="Categories"
-            component={CategoriesScreen}
-            options={{
-              title: 'Cantoral',
-              headerLargeTitle: isIOS,
-              headerLargeTitleShadowVisible: false,
-              headerLargeStyle: isIOS
-                ? { backgroundColor: 'transparent' }
-                : undefined,
-            }}
-          />
-          <Stack.Screen
-            name="SongsList"
-            component={SongListScreen}
-            options={({ route }) => ({
-              title: route.params?.categoryName || 'Canciones',
-              headerLargeTitle: false,
-            })}
-          />
-          <Stack.Screen
-            name="SongDetail"
-            component={SongDetailScreen}
-            options={({ route }) => ({
-              title: route.params?.title || 'Letra y Acordes',
-            })}
-          />
-          <Stack.Screen
-            name="SongFullscreen"
-            component={SongFullscreenScreen}
-            options={() => ({
-              headerShown: false,
-            })}
-          />
-          <Stack.Screen
-            name="SelectedSongs"
-            component={SelectedSongsScreen}
-            options={{ title: 'Seleccionadas' }}
-          />
-        </Stack.Navigator>
-      </SelectedSongsProvider>
+        />
+        <Stack.Screen
+          name="SongsList"
+          component={SongListScreen}
+          options={({ route }) => ({
+            title: route.params?.categoryName || 'Canciones',
+            headerLargeTitle: false,
+          })}
+        />
+        <Stack.Screen
+          name="SongDetail"
+          component={SongDetailScreen}
+          options={({ route }) => ({
+            title: route.params?.title || 'Letra y Acordes',
+          })}
+        />
+        <Stack.Screen
+          name="SongFullscreen"
+          component={SongFullscreenScreen}
+          options={() => ({
+            headerShown: false,
+          })}
+        />
+        <Stack.Screen
+          name="SelectedSongs"
+          component={SelectedSongsScreen}
+          options={{ title: 'Seleccionadas' }}
+        />
+      </Stack.Navigator>
     </SettingsProvider>
   );
 }

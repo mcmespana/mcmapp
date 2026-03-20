@@ -3,7 +3,7 @@
 import '../notifications/NotificationHandler'; // Inicializa el handler de notificaciones
 import usePushNotifications from '../notifications/usePushNotifications'; // Hook para notificaciones push
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -25,8 +25,13 @@ import {
   UserProfileProvider,
   useUserProfile,
 } from '@/contexts/UserProfileContext';
+import {
+  SelectedSongsProvider,
+  useSelectedSongs,
+} from '@/contexts/SelectedSongsContext';
+import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
 import UserProfileModal from '@/components/UserProfileModal';
-import { HelloWave } from '@/components/HelloWave'; // Import HelloWave
+import { HelloWave } from '@/components/HelloWave';
 import AddToHomeBanner from '@/components/AddToHomeBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
@@ -34,6 +39,7 @@ import {
   Provider as PaperProvider,
   MD3LightTheme,
   MD3DarkTheme,
+  Snackbar,
 } from 'react-native-paper';
 import colors from '@/constants/colors';
 
@@ -46,9 +52,11 @@ export default function RootLayout() {
       <FeatureFlagsProvider>
         <AppSettingsProvider>
           <UserProfileProvider>
-            <NotificationsProvider>
-              <InnerLayout />
-            </NotificationsProvider>
+            <SelectedSongsProvider>
+              <NotificationsProvider>
+                <InnerLayout />
+              </NotificationsProvider>
+            </SelectedSongsProvider>
           </UserProfileProvider>
         </AppSettingsProvider>
       </FeatureFlagsProvider>
@@ -58,11 +66,25 @@ export default function RootLayout() {
 
 function InnerLayout() {
   const [showAnimation, setShowAnimation] = useState(true);
-  const scheme = useColorScheme(); // Keep existing hooks
+  const scheme = useColorScheme();
   const pathname = usePathname();
   const { profile, loading: profileLoading } = useUserProfile();
   const [profileVisible, setProfileVisible] = useState(false);
   const featureFlags = useFeatureFlags();
+  const { addSong } = useSelectedSongs();
+  const [importSnackbar, setImportSnackbar] = useState('');
+
+  // Handle incoming .mcm files (opened from WhatsApp, Files, etc.)
+  const handleIncomingPlaylist = useCallback(
+    (songs: string[]) => {
+      songs.forEach((fn) => addSong(fn));
+      setImportSnackbar(
+        `Playlist importada (${songs.length} ${songs.length === 1 ? 'canción' : 'canciones'})`,
+      );
+    },
+    [addSong],
+  );
+  useIncomingPlaylist(handleIncomingPlaylist);
 
   // Hook para actualizar el tema de la barra de estado dinámicamente
   useStatusBarTheme(pathname);
@@ -135,6 +157,23 @@ function InnerLayout() {
               visible={profileVisible}
               onClose={() => setProfileVisible(false)}
             />
+            <Snackbar
+              visible={!!importSnackbar}
+              onDismiss={() => setImportSnackbar('')}
+              duration={3000}
+              action={{
+                label: 'OK',
+                onPress: () => setImportSnackbar(''),
+              }}
+              style={{
+                backgroundColor: scheme === 'dark' ? '#3A3A3C' : '#1C1C1E',
+                borderRadius: 12,
+                marginBottom: 90,
+                marginHorizontal: 16,
+              }}
+            >
+              {importSnackbar}
+            </Snackbar>
           </NavThemeProvider>
         </PaperProvider>
       </SafeAreaProvider>

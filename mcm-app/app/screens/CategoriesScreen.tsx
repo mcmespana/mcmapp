@@ -326,7 +326,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     snackbar: {
       backgroundColor: isDark ? '#3A3A3C' : '#1C1C1E',
       borderRadius: 12,
-      marginBottom: 8,
+      marginBottom: isIOS ? 90 : 8,
       marginHorizontal: 16,
     },
   });
