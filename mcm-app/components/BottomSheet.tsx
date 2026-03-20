@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import Modal from 'react-native-modal';
 import { Colors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface BottomSheetProps {
@@ -64,8 +65,8 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingBottom: 40,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: radii.pill,
+    borderTopRightRadius: radii.pill,
     maxHeight: '80%',
   },
 });

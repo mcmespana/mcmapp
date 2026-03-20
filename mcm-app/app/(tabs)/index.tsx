@@ -25,6 +25,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
+import { radii, shadows } from '@/constants/uiStyles';
 import useFontScale from '@/hooks/useFontScale';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
@@ -337,7 +338,7 @@ export default function Home() {
             style={StyleSheet.flatten([
               styles.notifCard,
               {
-                backgroundColor: scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                backgroundColor: theme.card,
                 borderColor:
                   scheme === 'dark'
                     ? 'rgba(255,255,255,0.09)'
@@ -544,7 +545,7 @@ export default function Home() {
               style={[
                 styles.emptyEventsCard,
                 {
-                  backgroundColor: scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                  backgroundColor: theme.card,
                   borderColor:
                     scheme === 'dark'
                       ? 'rgba(255,255,255,0.08)'
@@ -590,7 +591,7 @@ export default function Home() {
                     styles.eventCard,
                     {
                       backgroundColor:
-                        scheme === 'dark' ? '#3A3A3C' : '#FFFFFF',
+                        theme.card,
                       borderColor:
                         scheme === 'dark'
                           ? 'rgba(255,255,255,0.09)'
@@ -833,14 +834,10 @@ const styles = StyleSheet.create({
 
   // ── Notification card ──
   notifCard: {
-    borderRadius: 18,
+    borderRadius: radii.xl,
     borderWidth: 1,
     padding: spacing.md + 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    elevation: 3,
+    ...shadows.md,
   } as ViewStyle,
   notifRow: {
     flexDirection: 'row',
@@ -891,7 +888,7 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 20,
+    borderRadius: radii.pill,
     borderWidth: 1,
   } as ViewStyle,
   destinationChipText: {
@@ -904,7 +901,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 20,
+    borderRadius: radii.pill,
   } as ViewStyle,
   actionBtnText: {
     fontSize: 12,
@@ -931,7 +928,7 @@ const styles = StyleSheet.create({
   quickIconCircle: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radii.full,
     justifyContent: 'center',
     alignItems: 'center',
   } as ViewStyle,
@@ -946,21 +943,17 @@ const styles = StyleSheet.create({
   eventCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderLeftWidth: 4,
     padding: spacing.sm + 4,
     marginBottom: spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    ...shadows.sm,
   } as ViewStyle,
   eventDateBox: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radii.md,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.sm,
@@ -987,7 +980,7 @@ const styles = StyleSheet.create({
   calBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: radii.xs,
     alignSelf: 'flex-start',
     maxWidth: 110,
   } as ViewStyle,
@@ -1009,7 +1002,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   } as TextStyle,
   emptyEventsCard: {
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1,
     padding: spacing.lg,
     marginBottom: spacing.sm,
@@ -1030,7 +1023,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: spacing.sm,
     paddingVertical: 11,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1.5,
   } as ViewStyle,
   calendarButtonText: {

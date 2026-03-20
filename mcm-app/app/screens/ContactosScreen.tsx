@@ -4,7 +4,7 @@ import { List, IconButton, Avatar } from 'react-native-paper';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import colors, { Colors } from '@/constants/colors';
-import { AppColors } from '@/app/styles/theme';
+import { UIColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const PALETTE = [
@@ -21,8 +21,8 @@ const PALETTE = [
   colors.success,
   colors.warning,
   colors.danger,
-  AppColors.primary,
-  AppColors.accentYellow,
+  UIColors.activePrimary,
+  UIColors.accentYellow,
 ];
 
 interface Contacto {

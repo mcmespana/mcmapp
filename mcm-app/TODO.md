@@ -52,6 +52,23 @@
 
 ---
 
+## Inconsistencias del Design System
+
+> Detectadas al documentar `DESIGN.md`. Revisar y unificar cuando se pueda.
+
+- [x] ~~Dos sistemas de colores "primary" en conflicto~~ → `theme.ts` ahora re-exporta `UIColors` desde `colors.ts`. Los colores de UI (`#007bff`) están en `UIColors` con nombre explícito (`activePrimary`), separados de los de marca (`#253883` en `brand.primary`).
+- [x] ~~Border radius inconsistente~~ → tokens centralizados en `uiStyles.ts` (`radii.sm=8, radii.md=12, radii.lg=14, radii.xl=18, radii.pill=20, radii.full=28`). Los componentes existentes siguen con valores inline pero los nuevos deben usar `radii.*`.
+- [x] ~~Sombras ad-hoc por componente~~ → 3 presets en `uiStyles.ts` (`shadows.sm`, `shadows.md`, `shadows.lg`). Los componentes existentes siguen con valores inline pero los nuevos deben usar `shadows.*`.
+- [x] ~~Color de fondo dark mode hardcodeado~~ → añadido `Colors.dark.card: '#3A3A3C'` y `Colors.light.card: '#FFFFFF'`. Reemplazadas 20+ ocurrencias de `#3A3A3C` hardcodeado en 8 archivos.
+- [ ] **Tipografía no conectada a componentes**: `constants/typography.ts` define h1/h2/body/caption/button, pero la mayoría de componentes definen fontSize y fontWeight inline en sus StyleSheets. El archivo typography solo se importa en 5 archivos.
+- [x] ~~Colores de toast no centralizados~~ → exportados como `ToastColors` desde `colors.ts`. `Toast.tsx` actualizado para usarlos.
+- [x] ~~spacing.js debería ser .ts~~ → renombrado a `spacing.ts` con `as const`.
+- [ ] **Falta token para modal borderRadius**: modales usan 8px o 12px según el componente. `radii.sm=8` y `radii.md=12` están disponibles pero no se aplican aún a los modales existentes.
+- [ ] **Peso de fuente inconsistente en labels**: labels de sección usan `fontWeight: '800'`, badges usan `'800'`, títulos de cards usan `'700'`, botones usan `'500'`/`'700'` — no hay una guía clara de qué peso usar para qué nivel.
+- [ ] **Migrar componentes existentes a tokens**: los nuevos tokens (`radii.*`, `shadows.*`) están definidos pero los componentes existentes siguen usando valores inline. Ir migrando gradualmente en futuras iteraciones.
+
+---
+
 ## Ideas para la Home Screen
 
 La home actual es un grid de botones de colores con animaciones de entrada. Funciona, pero es muy estática y no aporta información útil al usuario.

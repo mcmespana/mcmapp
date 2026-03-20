@@ -14,6 +14,7 @@ import BottomSheet from './BottomSheet';
 import Modal from 'react-native-modal';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDatabase, ref, set, push, get } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
@@ -654,8 +655,8 @@ const styles = StyleSheet.create({
   fullModalContainer: {
     padding: 20,
     paddingBottom: 40,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     maxHeight: '95%',
     height: '95%',
   },
@@ -683,7 +684,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 5,
-    borderRadius: 20,
+    borderRadius: radii.pill,
     zIndex: 20,
     elevation: 20,
   },
@@ -717,7 +718,7 @@ const styles = StyleSheet.create({
   },
   passwordInput: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     padding: 12,
     fontSize: 16,
     marginBottom: 20,
@@ -729,7 +730,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   authButtonText: {
     color: '#fff',
@@ -753,7 +754,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     padding: 12,
     fontSize: 16,
     marginBottom: 8,
@@ -774,7 +775,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 15,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     marginTop: 20,
     marginBottom: 16,
   },

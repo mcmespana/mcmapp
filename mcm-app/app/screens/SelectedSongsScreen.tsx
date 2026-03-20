@@ -34,6 +34,7 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
+import { radii, shadows } from '@/constants/uiStyles';
 
 interface Song {
   title: string;
@@ -634,7 +635,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       paddingVertical: 6,
       paddingHorizontal: 10,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
       gap: 4,
     },
@@ -648,7 +649,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       paddingVertical: 6,
       paddingHorizontal: 10,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       backgroundColor: isDark ? '#3A1B1B' : '#FFEBEE',
       gap: 4,
     },
@@ -675,7 +676,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginTop: 12,
       marginHorizontal: 16,
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 14,
+      borderRadius: radii.lg,
       overflow: 'hidden',
       ...Platform.select({
         web: {
@@ -697,7 +698,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '700',
       paddingHorizontal: 16,
       paddingVertical: 10,
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
       color: isDark ? '#AEAEB2' : '#636366',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -717,7 +718,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     emptyIconContainer: {
       width: 100,
       height: 100,
-      borderRadius: 28,
+      borderRadius: radii.full,
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
       justifyContent: 'center',
       alignItems: 'center',
@@ -756,7 +757,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 14,
-      borderRadius: 14,
+      borderRadius: radii.lg,
       backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
       gap: 8,
       marginBottom: Platform.OS === 'ios' ? 100 : 20,
@@ -775,7 +776,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     modalContainer: {
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 20,
+      borderRadius: radii.pill,
       padding: 24,
       width: '100%',
       maxWidth: 380,
@@ -808,8 +809,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     modalInput: {
       borderWidth: 1,
-      borderColor: isDark ? '#3A3A3C' : '#E5E5EA',
-      borderRadius: 12,
+      borderColor: isDark ? Colors.dark.card : '#E5E5EA',
+      borderRadius: radii.md,
       padding: 14,
       fontSize: 16,
       marginBottom: 8,
@@ -829,8 +830,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     modalCancelButton: {
       flex: 1,
       padding: 14,
-      borderRadius: 12,
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      borderRadius: radii.md,
+      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
       alignItems: 'center',
     },
     modalCancelText: {
@@ -841,7 +842,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     modalConfirmButton: {
       flex: 1,
       padding: 14,
-      borderRadius: 12,
+      borderRadius: radii.md,
       backgroundColor: '#253883',
       alignItems: 'center',
     },
@@ -854,8 +855,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '600',
     },
     snackbar: {
-      backgroundColor: isDark ? '#3A3A3C' : '#1C1C1E',
-      borderRadius: 12,
+      backgroundColor: isDark ? Colors.dark.card : '#1C1C1E',
+      borderRadius: radii.md,
       marginBottom: Platform.OS === 'ios' ? 90 : 8,
       marginHorizontal: 16,
     },

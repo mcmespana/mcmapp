@@ -11,6 +11,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/colors';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
 
@@ -275,7 +276,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
     },
     categoryPill: {
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
       paddingHorizontal: 8,
       paddingVertical: 2,
       borderRadius: 6,
@@ -319,7 +320,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: isDark ? '#7AB3FF' : '#253883',
     },
     capoBadge: {
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 8,

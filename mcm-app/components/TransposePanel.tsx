@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface Props {
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radii.md,
     gap: 8,
   },
   transposeButtonDark: {},
@@ -229,12 +230,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: '#F2F2F7',
     gap: 8,
   },
   resetButtonDark: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: Colors.dark.card,
   },
   resetText: {
     fontWeight: '600',
