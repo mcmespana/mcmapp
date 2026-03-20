@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -39,13 +39,13 @@ export default function ComidaWebScreen() {
     return blockedDomains.some((domain) => url.includes(domain));
   };
 
-  const openExternal = () => {
+  const openExternal = useCallback(() => {
     if (Platform.OS === 'web') {
       window.open(url, '_blank');
     } else {
       Linking.openURL(url);
     }
-  };
+  }, [url]);
 
   useLayoutEffect(() => {
     navigation.setOptions({

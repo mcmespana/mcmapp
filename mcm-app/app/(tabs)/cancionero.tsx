@@ -86,11 +86,7 @@ export default function CancioneroTab() {
                     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
                   } as any)
                 : ({ backgroundColor: '#253883' } as any),
-            headerTintColor: isIOS
-              ? '#3d79b9ff'
-              : isWeb
-                ? '#253883'
-                : '#fff',
+            headerTintColor: isIOS ? '#3d79b9ff' : isWeb ? '#253883' : '#fff',
             headerTitleStyle: {
               fontWeight: '700' as const,
               fontSize: 17,

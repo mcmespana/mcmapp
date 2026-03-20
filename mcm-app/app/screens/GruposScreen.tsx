@@ -116,7 +116,12 @@ export default function GruposScreen() {
   // Si hay un grupo seleccionado, mostrar la vista del grupo (prioridad máxima)
   if (grupo) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={
+          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+        }
+      >
         <View style={styles.backWrapper}>
           <IconButton
             icon="arrow-left"
@@ -181,7 +186,12 @@ export default function GruposScreen() {
       grouped[r.categoria].push({ grupo: r.grupo, matches: r.matches });
     });
     return (
-      <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={
+          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+        }
+      >
         <View style={styles.searchContainer}>
           <Searchbar
             placeholder="Buscar grupo o persona"
@@ -272,7 +282,12 @@ export default function GruposScreen() {
 
   if (categoria && !grupo) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={
+          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+        }
+      >
         <View style={styles.backWrapper}>
           <IconButton
             icon="arrow-left"
@@ -302,15 +317,17 @@ export default function GruposScreen() {
           onPress={() => setCategoria(null)}
         />
       </View>
-      {(categoria && data?.[categoria] ? data[categoria] : []).map((g: any, idx: number) => (
-        <List.Item
-          key={idx}
-          title={g.nombre}
-          description={g.subtitulo}
-          onPress={() => setGrupo(g)}
-          titleStyle={styles.groupListTitle}
-        />
-      ))}
+      {(categoria && data?.[categoria] ? data[categoria] : []).map(
+        (g: any, idx: number) => (
+          <List.Item
+            key={idx}
+            title={g.nombre}
+            description={g.subtitulo}
+            onPress={() => setGrupo(g)}
+            titleStyle={styles.groupListTitle}
+          />
+        ),
+      )}
     </ScrollView>
   );
 }

@@ -69,7 +69,10 @@ export default function Comunica() {
       />
       {insets.top > 0 && (
         <View
-          style={[styles.notchBar, { backgroundColor: NOTCH_COLOR, height: insets.top }]}
+          style={[
+            styles.notchBar,
+            { backgroundColor: NOTCH_COLOR, height: insets.top },
+          ]}
         />
       )}
       <WebView

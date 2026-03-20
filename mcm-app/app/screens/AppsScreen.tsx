@@ -85,7 +85,11 @@ export default function AppsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
+      <ScrollView
+        contentContainerStyle={
+          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+        }
+      >
         {/* Texto de introducción */}
         <View style={styles.introContainer}>
           <Text style={styles.introText}>

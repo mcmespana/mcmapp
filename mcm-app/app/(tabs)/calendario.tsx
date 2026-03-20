@@ -4,24 +4,19 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  ViewStyle,
-  TextStyle,
   SectionList,
   TouchableOpacity,
   Platform,
-  Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import {
   CalendarList,
   CalendarProps,
   LocaleConfig,
 } from 'react-native-calendars';
-import { Text, IconButton } from 'react-native-paper';
+import { Text, FAB } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -29,7 +24,6 @@ import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import GlassFAB from '@/components/ui/GlassFAB.ios';
-import { FAB } from 'react-native-paper';
 import { useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -165,11 +159,7 @@ export default function Calendario() {
     lastDay.setMonth(firstDay.getMonth() + 1);
     lastDay.setDate(0);
     const sections: { title: string; data: CalendarEvent[] }[] = [];
-    for (
-      let d = new Date(firstDay);
-      d <= lastDay;
-      d.setDate(d.getDate() + 1)
-    ) {
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       sections.push({ title: dateStr, data: filteredByDate[dateStr] || [] });
     }
@@ -233,9 +223,7 @@ export default function Calendario() {
         activeOpacity={0.7}
         style={[styles.eventCard, isPast && styles.pastEventCard]}
       >
-        <View
-          style={[styles.eventColorBar, { backgroundColor: calColor }]}
-        />
+        <View style={[styles.eventColorBar, { backgroundColor: calColor }]} />
         <View style={styles.eventCardBody}>
           <View style={styles.eventCardTop}>
             <Text
@@ -283,9 +271,7 @@ export default function Calendario() {
                 size={14}
                 color={isDark ? '#8E8E93' : '#8E8E93'}
               />
-              <Text
-                style={[styles.eventDuration, isPast && styles.pastText]}
-              >
+              <Text style={[styles.eventDuration, isPast && styles.pastText]}>
                 Hasta {formatDate(ev.endDate)}
               </Text>
             </View>
@@ -573,11 +559,7 @@ export default function Calendario() {
                         isPast && styles.pastText,
                       ]}
                     >
-                      {isToday
-                        ? 'HOY'
-                        : isTomorrow
-                          ? 'MAÑANA'
-                          : weekday}
+                      {isToday ? 'HOY' : isTomorrow ? 'MAÑANA' : weekday}
                     </Text>
                   </View>
                   <View style={styles.sectionDivider} />

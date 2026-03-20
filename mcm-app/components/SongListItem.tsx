@@ -5,7 +5,6 @@ import {
   View,
   StyleSheet,
   Animated,
-  Platform,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext';
@@ -88,11 +87,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
         <Animated.View
           style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
         >
-          <IconSymbol
-            name="plus.circle"
-            size={22}
-            color="#fff"
-          />
+          <IconSymbol name="plus.circle" size={22} color="#fff" />
           <Text style={styles.actionText}>Seleccionar</Text>
         </Animated.View>
       </TouchableOpacity>
@@ -119,11 +114,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
         <Animated.View
           style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
         >
-          <IconSymbol
-            name="minus.circle"
-            size={22}
-            color="#fff"
-          />
+          <IconSymbol name="minus.circle" size={22} color="#fff" />
           <Text style={styles.actionText}>Quitar</Text>
         </Animated.View>
       </TouchableOpacity>
@@ -154,9 +145,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
           activeOpacity={0.6}
         >
           <View style={styles.leftSection}>
-            {isSelected && (
-              <View style={styles.selectedDot} />
-            )}
+            {isSelected && <View style={styles.selectedDot} />}
             <View style={styles.songInfoContainer}>
               <Text
                 style={styles.songTitle}

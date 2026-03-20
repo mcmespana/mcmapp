@@ -141,6 +141,7 @@ export default function MaterialesScreen() {
     ) {
       setIndex(getClosestDateIndex(materialesData));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [materialesData, route.params?.initialDayIndex]);
   const fechas = materialesData
     ? materialesData.map((d) => ({ fecha: d.fecha }))

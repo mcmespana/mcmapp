@@ -8,8 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
@@ -90,7 +89,7 @@ export default function MasHomeScreen() {
     useCallback(() => {
       const screen = takePendingMasScreen();
       if (screen) {
-        navigation.navigate(screen as keyof MasStackParamList);
+        navigation.navigate(screen as any);
       }
     }, [navigation]),
   );

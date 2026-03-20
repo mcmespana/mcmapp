@@ -5,6 +5,9 @@ const prettierConfig = require('eslint-config-prettier');
 const prettierPlugin = require('eslint-plugin-prettier');
 
 module.exports = defineConfig([
+  {
+    ignores: ['dist/*', '__tests__/*'],
+  },
   expoConfig,
   {
     plugins: {
@@ -13,7 +16,6 @@ module.exports = defineConfig([
     rules: {
       'prettier/prettier': 'warn',
     },
-    ignores: ['dist/*'],
   },
   prettierConfig,
 ]);

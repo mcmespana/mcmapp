@@ -18,7 +18,8 @@ export function useFirebaseData<T>(
     async function fetchData() {
       try {
         const state = await Network.getNetworkStateAsync();
-        const connected = state.isConnected && state.isInternetReachable !== false;
+        const connected =
+          state.isConnected && state.isInternetReachable !== false;
         setOffline(!connected);
 
         const [localDataStr, localUpdatedAt] = await Promise.all([
@@ -40,7 +41,9 @@ export function useFirebaseData<T>(
           const remoteUpdatedAt = String(val.updatedAt ?? '0');
           if (!localUpdatedAt || localUpdatedAt !== remoteUpdatedAt) {
             if (localDataStr) setLoading(true); // show loader for update
-            const remoteData = transform ? transform(val.data) : (val.data as T);
+            const remoteData = transform
+              ? transform(val.data)
+              : (val.data as T);
             await AsyncStorage.setItem(
               `${storageKey}_data`,
               JSON.stringify(remoteData),

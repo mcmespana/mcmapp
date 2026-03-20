@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Linking, Image, Platform } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Linking,
+  Image,
+  Platform,
+} from 'react-native';
 import { Card, IconButton, Modal, Portal, Text } from 'react-native-paper';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';

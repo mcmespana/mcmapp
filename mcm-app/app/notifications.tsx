@@ -14,10 +14,7 @@ import {
 } from 'react-native';
 // IMPORTANTE: usar TouchableOpacity de gesture-handler (no de RN core)
 // dentro de Swipeable para que los toques anidados funcionen correctamente.
-import {
-  TouchableOpacity,
-  Swipeable,
-} from 'react-native-gesture-handler';
+import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -48,9 +45,7 @@ const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
   '/notifications': { label: 'Notificaciones', icon: 'notifications' },
 };
 
-function getRouteLabel(
-  route: string,
-): { label: string; icon: string } | null {
+function getRouteLabel(route: string): { label: string; icon: string } | null {
   return ROUTE_LABELS[route] ?? null;
 }
 
@@ -140,10 +135,7 @@ export default function NotificationsScreen() {
   );
 
   const handleActionButtonPress = useCallback(
-    async (
-      notification: NotificationData | ReceivedNotification,
-      e: any,
-    ) => {
+    async (notification: NotificationData | ReceivedNotification, e?: any) => {
       // Prevenir que el tap llegue al card padre
       if (e?.stopPropagation) e.stopPropagation();
       const isRead =
@@ -297,7 +289,9 @@ export default function NotificationsScreen() {
                 {notification.actionButton && (
                   <TouchableOpacity
                     style={styles.actionChip}
-                    onPress={(e) => handleActionButtonPress(notification, e)}
+                    onPress={() => {
+                      handleActionButtonPress(notification);
+                    }}
                     accessibilityLabel={notification.actionButton.text}
                     accessibilityRole="button"
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -547,7 +541,9 @@ function NotificationDetailModal({
                 size={20}
                 color={colors.primary}
               />
-              <Text style={[dStyles.routeButtonText, { color: colors.primary }]}>
+              <Text
+                style={[dStyles.routeButtonText, { color: colors.primary }]}
+              >
                 Ir a {routeInfo.label}
               </Text>
               <MaterialIcons
@@ -611,7 +607,7 @@ const dStyles = StyleSheet.create({
   icon: {
     width: 64,
     height: 64,
-    borderRadius: 32,  // 64/2 — circle
+    borderRadius: 32, // 64/2 — circle
     marginBottom: spacing.md,
     alignSelf: 'center',
   },

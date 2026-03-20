@@ -3,8 +3,7 @@ import { ScrollView, StyleSheet, View, Linking, Platform } from 'react-native';
 import { List, IconButton, Avatar } from 'react-native-paper';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import colors, { Colors } from '@/constants/colors';
-import { UIColors } from '@/constants/colors';
+import colors, { Colors, UIColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const PALETTE = [
@@ -73,7 +72,9 @@ export default function ContactosScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}
+      contentContainerStyle={
+        Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+      }
     >
       {(data || []).map((c, idx) => (
         <List.Item

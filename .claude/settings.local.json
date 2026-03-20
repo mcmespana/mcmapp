@@ -15,7 +15,18 @@
       "Bash(awk:*)",
       "Bash(xargs kill:*)",
       "Bash(eas credentials:*)",
-      "Bash(npx eas-cli credentials:*)"
+      "Bash(npx eas-cli credentials:*)",
+      "Bash(npx prettier:*)",
+      "Bash(npm run:*)",
+      "Bash(grep -v \"Delete \\\\`\")",
+      "Bash(grep -v \"Replace \\\\`\")",
+      "Bash(grep -v \"Insert \\\\`\")",
+      "Bash(npx eslint:*)",
+      "Bash(taskkill /F /IM node.exe)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /F /PID 2220)",
+      "Bash(taskkill /F /PID 9844)"
     ],
     "deny": [],
     "ask": []

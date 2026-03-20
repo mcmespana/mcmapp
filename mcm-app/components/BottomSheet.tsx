@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import Modal from 'react-native-modal';
-import { Colors } from '@/constants/colors';
+
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -18,7 +18,6 @@ export default function BottomSheet({
 }: BottomSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme];
 
   return (
     <Modal

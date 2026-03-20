@@ -100,9 +100,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
               Tema
             </Text>
           </View>
-          <View
-            style={[styles.themeSegment, { backgroundColor: segmentBg }]}
-          >
+          <View style={[styles.themeSegment, { backgroundColor: segmentBg }]}>
             {THEME_OPTIONS.map((opt) => {
               const isSelected = settings.theme === opt.key;
               return (
@@ -191,11 +189,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
               accessibilityLabel="Aumentar tamaño de texto"
               accessibilityRole="button"
             >
-              <MaterialIcons
-                name="text-fields"
-                size={28}
-                color={theme.text}
-              />
+              <MaterialIcons name="text-fields" size={28} color={theme.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -228,7 +222,12 @@ export default function SettingsPanel({ visible, onClose }: Props) {
         )}
 
         {/* ── Sección: Debug ── */}
-        <Text style={[styles.sectionLabel, { color: theme.icon, marginTop: spacing.md }]}>
+        <Text
+          style={[
+            styles.sectionLabel,
+            { color: theme.icon, marginTop: spacing.md },
+          ]}
+        >
           DEPURACIÓN
         </Text>
         <TouchableOpacity
@@ -242,9 +241,9 @@ export default function SettingsPanel({ visible, onClose }: Props) {
                 projectId ? { projectId } : undefined,
               );
               await Clipboard.setStringAsync(data);
-              alert("Expo Token copiado al portapapeles: " + data);
+              alert('Expo Token copiado al portapapeles: ' + data);
             } catch (err) {
-              alert("Error obteniendo token: " + String(err));
+              alert('Error obteniendo token: ' + String(err));
             }
           }}
           accessibilityRole="button"

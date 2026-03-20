@@ -34,7 +34,7 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
-import { radii, shadows } from '@/constants/uiStyles';
+import { radii } from '@/constants/uiStyles';
 
 interface Song {
   title: string;
@@ -373,8 +373,7 @@ const SelectedSongsScreen: React.FC = () => {
       navigationList: allSelected,
       currentIndex: index,
       source: 'selection',
-      firebaseCategory:
-        (completeSong as any).originalCategoryKey || 'entrada',
+      firebaseCategory: (completeSong as any).originalCategoryKey || 'entrada',
     });
   };
 
@@ -432,6 +431,7 @@ const SelectedSongsScreen: React.FC = () => {
         headerRight: () => null,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigation, handleExport, selectedSongs.length]);
 
   if (loading && selectedSongs.length === 0) {
@@ -549,9 +549,7 @@ const SelectedSongsScreen: React.FC = () => {
               selectTextOnFocus={true}
             />
 
-            <Text style={styles.modalNote}>
-              Se exportará como archivo .mcm
-            </Text>
+            <Text style={styles.modalNote}>Se exportará como archivo .mcm</Text>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -617,9 +615,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingVertical: 12,
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: isDark
-        ? 'rgba(255,255,255,0.08)'
-        : 'rgba(0,0,0,0.06)',
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
     },
     selectionCount: {
       fontSize: 15,
