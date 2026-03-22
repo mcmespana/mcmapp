@@ -86,7 +86,7 @@ class BaseScraper(ABC):
             "activo": k,
         }
         if data.cita:
-            payload[f"{k}Evangelio"] = data.cita   # duplicate of Cita, renamed for info context
+            payload[f"{k}Cita"] = data.cita
         if data.titulo:
             payload[f"{k}Titulo"] = data.titulo
         if data.dia_liturgico:

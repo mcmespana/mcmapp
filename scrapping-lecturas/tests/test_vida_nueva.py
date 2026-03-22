@@ -130,7 +130,7 @@ def test_info_payload_keys(scraper, html_content):
     payload = scraper.to_info_payload(data)
 
     assert payload["activo"] == "vidaNueva"
-    assert "vidaNuevaEvangelio" in payload       # duplicate of Cita, renamed
+    assert "vidaNuevaCita" in payload            # same field name as evangelio/ node
     assert "vidaNuevaTitulo" in payload
     assert "vidaNuevaDiaLiturgico" in payload
     assert "vidaNuevaPrimeraLectura" in payload
@@ -144,13 +144,13 @@ def test_info_payload_keys(scraper, html_content):
 
 
 @responses_lib.activate
-def test_info_evangelio_equals_cita(scraper, html_content):
-    """vidaNuevaEvangelio in info/ must match vidaNuevaCita in evangelio/."""
+def test_info_cita_equals_evangelio_cita(scraper, html_content):
+    """vidaNuevaCita in info/ must match vidaNuevaCita in evangelio/."""
     responses_lib.add(responses_lib.GET, URL, body=html_content, status=200)
     data = scraper.fetch()
     evangelio_payload = scraper.to_evangelio_payload(data)
     info_payload = scraper.to_info_payload(data)
-    assert info_payload["vidaNuevaEvangelio"] == evangelio_payload["vidaNuevaCita"]
+    assert info_payload["vidaNuevaCita"] == evangelio_payload["vidaNuevaCita"]
 
 
 @responses_lib.activate

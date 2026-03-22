@@ -19,7 +19,7 @@ def html_to_plain(element: Tag) -> str:
     for br in element.find_all("br"):
         br.replace_with("\n")
 
-    text = element.get_text(separator="\n")
+    text = element.get_text()
 
     # Collapse more than 2 consecutive newlines
     text = re.sub(r"\n{3,}", "\n\n", text)

@@ -83,6 +83,11 @@ def run(target_date: str | None = None, dry_run: bool = False) -> int:
                 errors += 1
                 continue
 
+            if data.fecha == "unknown":
+                log.error(f"[{name}] Fecha no extraída — no se puede escribir en Firebase sin fecha válida")
+                errors += 1
+                continue
+
             evangelio_payload = scraper.to_evangelio_payload(data)
             info_payload = scraper.to_info_payload(data)
 
