@@ -52,6 +52,13 @@ const TABS_CONFIG: TabConfig[] = [
     headerShown: false, // Cantoral uses its own StackNavigator header
   },
   {
+    name: 'contigo',
+    label: 'Contigo',
+    iosIcon: { default: 'heart', selected: 'heart.fill' },
+    androidIcon: 'favorite',
+    headerShown: false, // Custom header inside the screen
+  },
+  {
     name: 'calendario',
     label: 'Calendario',
     iosIcon: { default: 'calendar', selected: 'calendar' },
@@ -93,7 +100,8 @@ function IOSNativeTabsLayout() {
   return (
     <NativeTabs>
       {TABS_CONFIG.map((tab) => {
-        const isEnabled = featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
+        const isEnabled =
+          featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
 
         if (!isEnabled) return null;
 
@@ -149,7 +157,8 @@ function AndroidWebTabsLayout() {
         }}
       >
         {TABS_CONFIG.map((tab) => {
-          const isEnabled = featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
+          const isEnabled =
+            featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
 
           if (!isEnabled) return null;
 
@@ -160,7 +169,11 @@ function AndroidWebTabsLayout() {
               options={{
                 title: tab.label,
                 tabBarIcon: ({ color, size }) => (
-                  <MaterialIcons name={tab.androidIcon as any} color={color} size={size} />
+                  <MaterialIcons
+                    name={tab.androidIcon as any}
+                    color={color}
+                    size={size}
+                  />
                 ),
                 headerShown: tab.headerShown ?? true,
                 ...(tab.headerColor && {
@@ -171,7 +184,6 @@ function AndroidWebTabsLayout() {
             />
           );
         })}
-
       </Tabs>
     </ThemeProvider>
   );
