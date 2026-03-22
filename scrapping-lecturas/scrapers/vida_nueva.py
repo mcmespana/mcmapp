@@ -60,7 +60,7 @@ BASE_HEADERS = {
     "Referer": "https://www.google.es/",
 }
 
-RETRY_DELAYS = [5, 15]  # seconds between retry attempts (2 retries after initial)
+RETRY_DELAYS = [5, 15, 30]  # seconds between attempts
 
 
 class VidaNuevaScraper(BaseScraper):
@@ -84,14 +84,13 @@ class VidaNuevaScraper(BaseScraper):
 
     def _fetch_html(self) -> str | None:
         session = requests.Session()
-        max_attempts = len(RETRY_DELAYS) + 1  # 1 initial + N retries
 
-        for attempt in range(1, max_attempts + 1):
+        for attempt, delay in enumerate(RETRY_DELAYS, start=1):
             ua = USER_AGENTS[(attempt - 1) % len(USER_AGENTS)]
             headers = {**BASE_HEADERS, "User-Agent": ua}
 
             try:
-                log.info(f"[VidaNueva] Intento {attempt}/{max_attempts} → {URL}")
+                log.info(f"[VidaNueva] Intento {attempt}/3 → {URL}")
                 resp = session.get(URL, headers=headers, timeout=15)
 
                 if resp.status_code == 200:
@@ -111,8 +110,7 @@ class VidaNuevaScraper(BaseScraper):
             except requests.RequestException as e:
                 log.warning(f"[VidaNueva] Error de red en intento {attempt}: {e}")
 
-            if attempt <= len(RETRY_DELAYS):
-                delay = RETRY_DELAYS[attempt - 1]
+            if attempt < len(RETRY_DELAYS):
                 log.info(f"[VidaNueva] Reintentando en {delay}s...")
                 time.sleep(delay)
 
