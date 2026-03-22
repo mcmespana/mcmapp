@@ -13,6 +13,22 @@
 
 ---
 
+## 2026-03-22 — Nueva sección "Contigo" (acompañamiento espiritual)
+
+- **Nuevo tab "Contigo"**: sección principal de oración con presencia en el menú inferior (entre Cantoral y Calendario). Incluye cabecera con gradiente litúrgico y badge del tiempo litúrgico actual
+- **Evangelio del Día** (`EvangelioScreen`): lecturas diarias desde Firebase (`seccion_oracion/lecturas/`), navegador de días ±30, toggle Lectura/Comentario, acordeón de lecturas secundarias, tracker de lectura con animación y haptics
+- **Mi Rato de Oración** (`OracionScreen`): registro de oración con selector de duración (5 niveles) + emoción (5 emociones con emoji y color), resumen del día, calendario mensual con dots de color por emoción, estadísticas del mes
+- **Revisión del Día**: placeholder deshabilitado ("Próximamente") reservado para futuro desarrollo
+- **Habit Tracker semanal**: vista de 7 días con dots para Evangelio (verde) y Oración (color de emoción), navegación entre semanas, racha de días
+- **Feature flag `contigo: true`** añadido a `TabsFlags` y `featureFlags.ts`
+- **Acceso rápido en Home**: botón "Evangelio" añadido al grid de quickItems
+- **Calendario litúrgico**: hook `useLiturgicalCalendar` que lee `assets/calendario-liturgico.json` para determinar tiempo, color y fechas especiales
+- **Hook `useContigoHabits`**: persistencia en AsyncStorage con rachas, estadísticas mensuales y resumen semanal
+- **Hook `useDailyReadings`**: consume lecturas de Firebase con patrón de prefijo dinámico (`activo` → `vidaNueva*`)
+- **6 componentes nuevos**: `LiturgicalBadge`, `ContigoToolCard`, `HabitWeekView`, `PrayerLogger`, `ReadingCard`, `DateNavigator`
+- **Tipos**: `types/contigo.ts` con interfaces para DayRecord, liturgia, emociones, duraciones, lecturas
+- Archivos: `app/(tabs)/contigo.tsx`, `app/screens/EvangelioScreen.tsx`, `app/screens/OracionScreen.tsx`, `hooks/useContigoHabits.ts`, `hooks/useDailyReadings.ts`, `hooks/useLiturgicalCalendar.ts`, `types/contigo.ts`, `components/contigo/*`, `constants/featureFlags.ts`, `constants/colors.ts`, `app/(tabs)/_layout.tsx`, `app/(tabs)/index.tsx`
+
 ## 2026-03-20 — Fix z-index cantoral + sistema de archivos .mcm para playlists
 
 - **Bug fix**: botón "Importar playlist" y otros elementos en la pantalla de selección quedaban ocultos detrás del menú liquid glass en iOS. Aumentado `paddingBottom` y `marginBottom` en `SelectedSongsScreen` y snackbars
@@ -44,14 +60,14 @@
 - **BottomSheet**: esquinas más redondeadas (20px), backdrop adaptado a dark mode
 - **cancionero.tsx**: título simplificado a "Cantoral", header shadow deshabilitado, tipografía con letter-spacing negativo
 - Soporte completo de dark mode en todas las pantallas con paleta consistente
-- Cross-platform: sombras adaptadas a web (boxShadow) y nativas (shadow*/elevation)
+- Cross-platform: sombras adaptadas a web (boxShadow) y nativas (shadow\*/elevation)
 - Archivos afectados: `app/(tabs)/cancionero.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SongListScreen.tsx`, `app/screens/SongDetailScreen.tsx`, `app/screens/SongFullscreenScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `components/SongControls.tsx`, `components/SongDisplay.tsx`, `components/SongListItem.tsx`, `components/SongFontPanel.tsx`, `components/TransposePanel.tsx`, `components/BottomSheet.tsx`
 
 ---
 
 ## 2026-03-06 — Actualización a Expo SDK 55
 
-- **Expo SDK 54 → 55**: actualizado expo, react (19.1→19.2), react-native (0.81→0.83), y todos los paquetes expo-*
+- **Expo SDK 54 → 55**: actualizado expo, react (19.1→19.2), react-native (0.81→0.83), y todos los paquetes expo-\*
 - **New Architecture obligatoria**: eliminado flag `newArchEnabled` de `app.json` (ya es el comportamiento por defecto en SDK 55)
 - **Eliminado `edgeToEdgeEnabled`**: ya no es una opción válida en SDK 55 (edge-to-edge es el comportamiento por defecto)
 - **expo-file-system**: migrado a `expo-file-system/legacy` donde se usa la API clásica (`cacheDirectory`, `EncodingType`), ya que la API principal ahora usa `File`/`Directory`/`Paths`
