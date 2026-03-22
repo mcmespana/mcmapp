@@ -44,15 +44,23 @@ def write_evangelio(fecha: str, payload: dict, retries: int = 2) -> None:
 
     Uses update() instead of set() so multiple scrapers writing to the same
     date node don't overwrite each other's fields.
-
-    Args:
-        fecha:   YYYY-MM-DD string, used as the date node key.
-        payload: Dict of fields to write (e.g. vidaNuevaComentario, vidaNuevaCita, …)
-        retries: Number of extra attempts on transient Firebase errors.
     """
-    _get_app()
-    path = f"seccion_oracion/lecturas/{fecha}/evangelio"
+    _write(f"seccion_oracion/lecturas/{fecha}/evangelio", payload, retries)
 
+
+def write_info(fecha: str, payload: dict, retries: int = 2) -> None:
+    """
+    Write (merge) data into seccion_oracion/lecturas/{fecha}/info.
+
+    Contains liturgical metadata (título, día litúrgico, lecturas, salmo)
+    at the same level as the evangelio/ node.
+    """
+    _write(f"seccion_oracion/lecturas/{fecha}/info", payload, retries)
+
+
+def _write(path: str, payload: dict, retries: int) -> None:
+    """Shared retry logic for all Firebase writes."""
+    _get_app()
     for attempt in range(1, retries + 2):
         try:
             ref = db.reference(path)

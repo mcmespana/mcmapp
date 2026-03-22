@@ -35,7 +35,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 from scrapers.vida_nueva import VidaNuevaScraper
-from firebase.client import write_evangelio
+from firebase.client import write_evangelio, write_info
 from utils.date_utils import today_iso
 
 # Register scrapers here. Adding a new source = add one line.
@@ -74,8 +74,7 @@ def run(target_date: str | None = None, dry_run: bool = False) -> int:
                 log.error(f"[{name}] Fallo en extracción: {data.error}")
                 if not dry_run and data.fecha != "unknown":
                     # Write error state so the app knows this source is unavailable today
-                    payload = scraper.to_firebase_payload(data)
-                    write_evangelio(data.fecha, payload)
+                    write_evangelio(data.fecha, scraper.to_evangelio_payload(data))
                 errors += 1
                 continue
 
@@ -84,22 +83,29 @@ def run(target_date: str | None = None, dry_run: bool = False) -> int:
                 errors += 1
                 continue
 
-            payload = scraper.to_firebase_payload(data)
+            evangelio_payload = scraper.to_evangelio_payload(data)
+            info_payload = scraper.to_info_payload(data)
 
             log.info(f"[{name}] Extracción OK:")
-            log.info(f"  fecha:        {data.fecha}")
-            log.info(f"  cita:         {data.cita}")
-            log.info(f"  comentarista: {data.comentarista}")
-            log.info(f"  comentario:   {len(data.comentario or '')} chars")
+            log.info(f"  fecha:           {data.fecha}")
+            log.info(f"  cita:            {data.cita}")
+            log.info(f"  comentarista:    {data.comentarista}")
+            log.info(f"  comentario:      {len(data.comentario or '')} chars")
+            log.info(f"  segunda lectura: {data.segunda_lectura or '(no disponible hoy)'}")
 
             if dry_run:
-                log.info(f"[{name}] Dry-run: payload que se escribiría:")
-                for k, v in payload.items():
+                log.info(f"[{name}] Dry-run — evangelio/ payload:")
+                for k, v in evangelio_payload.items():
+                    preview = str(v)[:80] + ("…" if len(str(v)) > 80 else "")
+                    log.info(f"  {k}: {preview}")
+                log.info(f"[{name}] Dry-run — info/ payload:")
+                for k, v in info_payload.items():
                     preview = str(v)[:80] + ("…" if len(str(v)) > 80 else "")
                     log.info(f"  {k}: {preview}")
             else:
-                write_evangelio(data.fecha, payload)
-                log.info(f"[{name}] Guardado en Firebase ✓")
+                write_evangelio(data.fecha, evangelio_payload)
+                write_info(data.fecha, info_payload)
+                log.info(f"[{name}] Guardado en Firebase (evangelio/ + info/) ✓")
 
         except Exception as e:
             log.error(f"[{name}] Error inesperado: {e}", exc_info=True)

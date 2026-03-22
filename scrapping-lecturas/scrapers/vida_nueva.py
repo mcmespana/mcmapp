@@ -5,18 +5,19 @@ HTML structure (verified with real page, 2026-03-21):
 
   div.type-evangeliodeldia-single
   ├── div.evangeliodeldia-author
-  │   └── div.data-name.author → a  ← commentator name
-  ├── div.entry-date                 ← date "21 / 03 / 2026"
-  ├── h2.entry-title                 ← commentary title
-  ├── h3.entry-excerpt               ← saints of the day
+  │   └── div.data-name.author → a        ← comentarista
+  ├── div.entry-date                       ← "21 / 03 / 2026"
+  ├── h2.entry-title                       ← título del comentario
+  ├── h3.entry-excerpt                     ← día litúrgico (santos)
   ├── div.entry-meta
-  │   ├── p  → "Primera lectura: ..."
-  │   └── p  → "Salmo: ..."
+  │   ├── p  strong "Primera lectura:"  em ← primera lectura (siempre)
+  │   ├── p  strong "Salmo:"  em           ← salmo (siempre)
+  │   └── p  strong "Segunda lectura:" em  ← segunda lectura (no siempre)
   └── div.entry-content.mb40
-      ├── h3 "Evangelio: Juan 7,40-53..."   ← citation
-      ├── p...                               ← gospel text
-      ├── h3 "Comentario"                   ← separator
-      └── p...                              ← commentary text
+      ├── h3  strong "Evangelio:"          ← cita (ej. "Juan 7,40-53")
+      ├── p...                             ← texto del evangelio (\n\n entre párrafos)
+      ├── h3  strong "Comentario"          ← separador
+      └── p...                            ← texto del comentario (\n\n entre párrafos)
 """
 
 import logging
@@ -154,20 +155,30 @@ class VidaNuevaScraper(BaseScraper):
         if title_el:
             data.titulo = title_el.get_text(strip=True)
 
-        # -- Saints ----------------------------------------------------
-        saints_el = container.select_one("h3.entry-excerpt")
-        if saints_el:
-            data.santos = saints_el.get_text(strip=True)
+        # -- Día litúrgico (santos) ------------------------------------
+        liturgico_el = container.select_one("h3.entry-excerpt")
+        if liturgico_el:
+            data.dia_liturgico = liturgico_el.get_text(strip=True)
 
-        # -- Primera lectura + Salmo -----------------------------------
+        # -- Lecturas y Salmo (entry-meta) -----------------------------
+        # Matches: Primera lectura, Salmo, Segunda lectura (optional)
         for p in container.select(".entry-meta p"):
-            text = p.get_text(strip=True)
             strong = p.find("strong")
+            if not strong:
+                continue
+            label = strong.get_text(strip=True)
             em = p.find("em")
-            if strong and "Primera lectura" in strong.get_text():
-                data.primera_lectura = em.get_text(strip=True) if em else text
-            elif strong and "Salmo" in strong.get_text():
-                data.salmo = em.get_text(strip=True) if em else text
+            value = em.get_text(strip=True) if em else p.get_text(strip=True)
+
+            if "Primera lectura" in label:
+                data.primera_lectura = value
+                log.info(f"[VidaNueva] Primera lectura: {value}")
+            elif "Segunda lectura" in label:
+                data.segunda_lectura = value
+                log.info(f"[VidaNueva] Segunda lectura: {value}")
+            elif "Salmo" in label:
+                data.salmo = value
+                log.info(f"[VidaNueva] Salmo: {value}")
 
         # -- entry-content: cita, gospel text, commentary --------------
         content_div = container.select_one(".entry-content")
@@ -182,12 +193,16 @@ class VidaNuevaScraper(BaseScraper):
 
     def _parse_content(self, content_div, data: EvangelioData) -> None:
         """
-        Walk the direct children of .entry-content in document order:
+        Walk the direct children of .entry-content in document order.
 
-          h3 "Evangelio: ..."  → extract citation
-          <p> ...              → gospel text (between citation h3 and commentary h3)
-          h3 "Comentario"     → state change
-          <p> ...              → commentary text
+        Paragraph text is stored as plain text with:
+          - \\n between lines (from <br> tags within a paragraph)
+          - \\n\\n between paragraphs (<p> elements)
+
+        State machine:
+          BEFORE    → scanning for "Evangelio:" h3
+          GOSPEL    → collecting <p> as gospel text
+          COMMENTARY → collecting <p> as commentary
         """
         state = "BEFORE"
         evangelio_paras: list[str] = []
@@ -195,18 +210,15 @@ class VidaNuevaScraper(BaseScraper):
 
         for child in content_div.children:
             if not hasattr(child, "name") or child.name is None:
-                continue  # skip NavigableString (whitespace)
+                continue  # skip NavigableString (whitespace nodes)
 
             if child.name == "h3":
                 text = child.get_text()
                 if "Evangelio" in text:
-                    # Extract citation: strip "Evangelio:" prefix
                     raw_cita = text.replace("Evangelio:", "").strip()
-                    # Remove any bold/extra whitespace artifacts
                     data.cita = " ".join(raw_cita.split())
                     state = "GOSPEL"
                     log.info(f"[VidaNueva] Cita: {data.cita}")
-
                 elif "Comentario" in text:
                     state = "COMMENTARY"
 
