@@ -13,6 +13,17 @@
 
 ---
 
+## 2026-03-22 — Nueva sección "Contigo" (acompañamiento espiritual diario)
+
+- **Nuevo tab "Contigo"** con stack navigator propio (entre Cantoral y Calendario)
+- **ContigoHomeScreen**: cabecera con info litúrgica del día, 3 tarjetas de herramientas (Evangelio, Oración, Revisión/placeholder), tracker semanal visual con navegación por semanas
+- **EvangelioScreen**: lecturas del día desde Firebase, selector Lectura/Comentario, navegador de fechas ±30 días, badge litúrgico, toggle "Leído" con animación
+- **OracionScreen**: registro de oración con duración + emoción, resumen mensual con estadísticas, vista de racha
+- **3 hooks nuevos**: `useContigoHabits` (AsyncStorage, rachas, estadísticas), `useDailyReadings` (Firebase con caché), `useLiturgicalSeason` (calendario litúrgico desde JSON local)
+- **5 componentes nuevos** en `components/contigo/`: ContigoToolCard, HabitWeekView, LiturgicalBadge, ReadingCard, PrayerLogger
+- Feature flag `contigo: true` añadido, color de tab en `TabHeaderColors`
+- Archivos principales: `app/(tabs)/contigo.tsx`, `app/screens/ContigoHomeScreen.tsx`, `app/screens/EvangelioScreen.tsx`, `app/screens/OracionScreen.tsx`, `hooks/useContigoHabits.ts`, `hooks/useDailyReadings.ts`, `hooks/useLiturgicalSeason.ts`
+
 ## 2026-03-20 — Fix z-index cantoral + sistema de archivos .mcm para playlists
 
 - **Bug fix**: botón "Importar playlist" y otros elementos en la pantalla de selección quedaban ocultos detrás del menú liquid glass en iOS. Aumentado `paddingBottom` y `marginBottom` en `SelectedSongsScreen` y snackbars

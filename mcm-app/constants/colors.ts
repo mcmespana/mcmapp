@@ -62,6 +62,7 @@ export const UIColors = {
 // Colores de tabs (cabecera)
 export const TabHeaderColors = {
   cancionero: '#f4c11e', // Amarillo Cantoral
+  contigo: '#E15C62', // Rojo cálido Contigo
   calendario: '#31AADF', // Celeste
   fotos: '#E15C62', // Rojo MIC
   comunica: '#9D1E74dd', // Morado LC con transparencia
