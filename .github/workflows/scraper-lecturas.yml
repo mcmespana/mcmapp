@@ -1,0 +1,60 @@
+name: Scraper Lecturas Diario
+
+on:
+  schedule:
+    - cron: "5 0 * * *"  # 00:05 UTC cada día
+
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Fecha a scrapear (YYYY-MM-DD). Vacío = hoy en UTC."
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry-run: hacer scraping sin escribir en Firebase"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  scrape:
+    name: Scrape y guardar en Firebase
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: scrapping-lecturas/requirements.txt
+
+      - name: Instalar dependencias
+        working-directory: scrapping-lecturas
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar scraper
+        working-directory: scrapping-lecturas
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_DATABASE_URL: ${{ secrets.EXPO_PUBLIC_FIREBASE_DATABASE_URL }}
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            ARGS="$ARGS --date ${{ github.event.inputs.date }}"
+          fi
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          python main.py $ARGS
+
+      - name: Resumen en caso de fallo
+        if: failure()
+        run: |
+          echo "::error::El scraper de lecturas falló."
+          echo "::error::Revisar los logs. Si hay HTTP 403, puede ser IP blocking del site."
+          echo "::error::Ver README.md en scrapping-lecturas/ para opciones de solución."
