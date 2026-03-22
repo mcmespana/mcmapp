@@ -65,6 +65,7 @@ export const TabHeaderColors = {
   calendario: '#31AADF', // Celeste
   fotos: '#E15C62', // Rojo MIC
   comunica: '#9D1E74dd', // Morado LC con transparencia
+  contigo: '#253883', // Azul MCM — Contigo
 };
 
 // Colores de toast — Material Design estándar

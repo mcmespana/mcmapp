@@ -150,6 +150,14 @@ function InnerLayout() {
                   title: 'Wordle Jubileo',
                 }}
               />
+              <Stack.Screen
+                name="screens/EvangelioScreen"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="screens/OracionScreen"
+                options={{ headerShown: false }}
+              />
             </Stack>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             <AddToHomeBanner />

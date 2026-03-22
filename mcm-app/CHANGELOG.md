@@ -13,6 +13,19 @@
 
 ---
 
+## 2026-03-22 — Nueva sección "Contigo" (Evangelio del Día + Mi Rato de Oración)
+
+- **Nueva sección principal**: tab "Contigo" entre Cantoral y Calendario con el subtítulo "Propuestas para la oración de cada día"
+- **Evangelio del Día**: pantalla `EvangelioScreen` que consume los datos del scraper desde Firebase (`seccion_oracion/lecturas/{date}/evangelio` e `info`). Navegación por días (±30 días), vista Lectura/Comentario, tracker de lectura (AsyncStorage)
+- **Mi Rato de Oración**: pantalla `OracionScreen` con registro de duración y emoción predominante. Historial mensual con mini-calendario de puntos coloreados por emoción
+- **Calendario litúrgico local**: hook `useLiturgicalCalendar` que determina tiempo litúrgico y color para cualquier fecha usando `assets/calendario-liturgico.json` (determinista, sin red)
+- **Habit tracker semanal**: vista de la semana actual con dots para Evangelio y Oración; navegación entre semanas; racha de días consecutivos
+- **Examen del Día**: placeholder reservado, deshabilitado (Fase 2)
+- **Feature flag**: `contigo: true` en `constants/featureFlags.ts`
+- **Firebase**: el hook `useDailyReadings` lee de `seccion_oracion/lecturas/{date}` usando el campo `activo` como prefijo de fuente (preparado para múltiples fuentes)
+- Archivos nuevos: `app/(tabs)/contigo.tsx`, `app/screens/EvangelioScreen.tsx`, `app/screens/OracionScreen.tsx`, `hooks/useContigoHabits.ts`, `hooks/useDailyReadings.ts`, `hooks/useLiturgicalCalendar.ts`, `components/contigo/` (5 componentes)
+- Archivos modificados: `app/(tabs)/_layout.tsx`, `app/_layout.tsx`, `constants/featureFlags.ts`, `constants/colors.ts`
+
 ## 2026-03-20 — Fix z-index cantoral + sistema de archivos .mcm para playlists
 
 - **Bug fix**: botón "Importar playlist" y otros elementos en la pantalla de selección quedaban ocultos detrás del menú liquid glass en iOS. Aumentado `paddingBottom` y `marginBottom` en `SelectedSongsScreen` y snackbars
