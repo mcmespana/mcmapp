@@ -13,6 +13,26 @@
 
 ---
 
+## 2026-03-22 — Revisión del Día (Examen) en nueva sección Contigo
+
+- **Nuevo tab "Contigo"**: nueva sección principal en el menú inferior con icono de corazón, insertada entre Cantoral y Calendario
+- **Revisión del Día**: flujo guiado de 5 pasos basados en la espiritualidad de la Consolación (María Rosa Molas):
+  1. Presencia de Dios — texto libre
+  2. Dar gracias — tags seleccionables + texto libre
+  3. Pedir perdón — tags seleccionables + texto libre
+  4. Conocimiento propio — texto libre
+  5. Mañana — texto libre
+  6. Cierre con oración final
+- **Pantalla de pausa**: animación de respiración con cuenta atrás de 10 segundos antes de comenzar la revisión (secreto: 6 taps rápidos para saltar)
+- **Historial de revisiones**: acceso a todas las revisiones pasadas, agrupadas por mes, con resumen visual
+- **Detalle de revisión**: vista completa de una revisión pasada con todos los pasos
+- **Estadísticas**: racha de días seguidos y total de revisiones en la pantalla principal
+- **Placeholder de música**: botón preparado para futura integración con Spotify o música de fondo
+- **Feature flag**: `tabs.contigo` añadido para controlar visibilidad del tab
+- **Dark mode**: soporte completo en todas las pantallas nuevas
+- Archivos nuevos: `app/(tabs)/contigo.tsx`, `app/screens/DailyReviewScreen.tsx`, `app/screens/ReviewHistoryScreen.tsx`, `app/screens/ReviewDetailScreen.tsx`, `hooks/useDailyReview.ts`, `constants/reviewSteps.ts`
+- Archivos modificados: `app/(tabs)/_layout.tsx`, `constants/featureFlags.ts`
+
 ## 2026-03-20 — Fix z-index cantoral + sistema de archivos .mcm para playlists
 
 - **Bug fix**: botón "Importar playlist" y otros elementos en la pantalla de selección quedaban ocultos detrás del menú liquid glass en iOS. Aumentado `paddingBottom` y `marginBottom` en `SelectedSongsScreen` y snackbars
