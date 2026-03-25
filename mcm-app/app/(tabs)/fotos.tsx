@@ -9,9 +9,11 @@ import {
   ViewStyle,
   Alert,
   Platform,
+  ActivityIndicator,
+  Text,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
