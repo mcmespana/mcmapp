@@ -7,7 +7,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { Snackbar } from 'react-native-paper';
+import { useToast } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import SongFontPanel from './SongFontPanel';
@@ -73,9 +73,8 @@ const SongControls: React.FC<SongControlsProps> = ({
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showReportBugsModal, setShowReportBugsModal] = useState(false);
   const [showSecretPanel, setShowSecretPanel] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [showCopyToast, setShowCopyToast] = useState(false);
   const scheme = useColorScheme();
+  const { toast } = useToast();
   const isDark = scheme === 'dark';
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -106,11 +105,11 @@ const SongControls: React.FC<SongControlsProps> = ({
   const handleOpenFontPanel = () => setShowFontPanel(true);
 
   const handleReportSuccess = () => {
-    setShowSuccessToast(true);
+    toast.show({ variant: 'success', label: '¡Gracias por tu reporte!', actionLabel: 'OK', onActionPress: ({ hide }) => hide() });
   };
 
   const handleSecretPanelSuccess = () => {
-    setShowSuccessToast(true);
+    toast.show({ variant: 'success', label: '¡Gracias por tu reporte!', actionLabel: 'OK', onActionPress: ({ hide }) => hide() });
   };
 
   const handleSetTranspose = (semitones: number) => {
@@ -224,7 +223,7 @@ const SongControls: React.FC<SongControlsProps> = ({
               label="Copiar letra"
               onPress={() => {
                 onCopyLyrics();
-                setShowCopyToast(true);
+                toast.show({ label: 'Letra copiada al portapapeles' });
               }}
             />
             <ActionButton
@@ -312,32 +311,6 @@ const SongControls: React.FC<SongControlsProps> = ({
         onSuccess={handleSecretPanelSuccess}
       />
 
-      <Snackbar
-        visible={showCopyToast}
-        onDismiss={() => setShowCopyToast(false)}
-        duration={2000}
-        style={styles.snackbar}
-      >
-        <Text style={{ color: '#fff', fontWeight: '600' }}>
-          Letra copiada al portapapeles
-        </Text>
-      </Snackbar>
-
-      <Snackbar
-        visible={showSuccessToast}
-        onDismiss={() => setShowSuccessToast(false)}
-        duration={3000}
-        style={[styles.snackbar, styles.snackbarSuccess]}
-        action={{
-          label: 'OK',
-          textColor: '#fff',
-          onPress: () => setShowSuccessToast(false),
-        }}
-      >
-        <Text style={{ color: '#fff', fontWeight: '600' }}>
-          ¡Gracias por tu reporte!
-        </Text>
-      </Snackbar>
     </>
   );
 };
@@ -470,15 +443,6 @@ const styles = StyleSheet.create({
   },
   badgeDark: {
     borderColor: '#1C1C1E',
-  },
-  snackbar: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    marginBottom: 8,
-    marginHorizontal: 16,
-  },
-  snackbarSuccess: {
-    backgroundColor: '#34C759',
   },
 });
 

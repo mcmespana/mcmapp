@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Platform,
   Animated,
+  Text,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
@@ -18,7 +19,6 @@ import {
   CalendarProps,
   LocaleConfig,
 } from 'react-native-calendars';
-import { Text, IconButton } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
@@ -29,7 +29,6 @@ import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import GlassFAB from '@/components/ui/GlassFAB.ios';
-import { FAB } from 'react-native-paper';
 import { useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -622,12 +621,13 @@ export default function Calendario() {
             iconColor="#fff"
           />
         ) : (
-          <FAB
-            icon="calendar-today"
+          <TouchableOpacity
             style={styles.fab}
-            color="#fff"
             onPress={goToToday}
-          />
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="today" size={24} color="#fff" />
+          </TouchableOpacity>
         ))}
     </TabScreenWrapper>
   );

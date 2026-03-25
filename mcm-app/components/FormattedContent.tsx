@@ -1,6 +1,5 @@
 import React from 'react';
-import { useWindowDimensions, TouchableOpacity } from 'react-native';
-import { Text } from 'react-native-paper';
+import { useWindowDimensions, TouchableOpacity, Text } from 'react-native';
 import RenderHTML from 'react-native-render-html';
 import colors, { Colors } from '@/constants/colors';
 import { formatBBCodeToHtml } from '@/utils/formatText';

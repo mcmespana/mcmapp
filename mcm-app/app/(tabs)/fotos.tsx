@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, ActivityIndicator } from 'react-native-paper';
+import { ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
@@ -132,15 +132,14 @@ export default function FotosScreen() {
       return null;
     }
     return (
-      <Button
-        mode="contained"
+      <TouchableOpacity
         onPress={loadMoreAlbums}
-        loading={isLoadingMore}
         style={styles.loadMoreButton}
-        contentStyle={{ paddingVertical: 8 }}
+        disabled={isLoadingMore}
+        activeOpacity={0.8}
       >
-        Cargar Más
-      </Button>
+        <Text style={styles.loadMoreButtonText}>Cargar Más</Text>
+      </TouchableOpacity>
     );
   };
 
@@ -210,6 +209,14 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginVertical: 20,
       alignSelf: 'center',
       backgroundColor: theme.tint,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+    },
+    loadMoreButtonText: {
+      color: '#fff',
+      fontWeight: '600',
+      fontSize: 16,
     },
   });
 };

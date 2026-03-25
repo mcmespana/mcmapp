@@ -6,7 +6,8 @@ import React, { useState } from 'react';
 import { Platform, View, StyleSheet, StatusBar } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
+import { ActivityIndicator } from 'react-native';
+import { useToast } from 'heroui-native';
 import { Colors as ThemeColors } from '@/constants/colors';
 import iframeStyles from './comunica.module.css';
 
@@ -18,26 +19,25 @@ const NOTCH_COLOR = '#253883';
 export default function Comunica() {
   const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [visible, setVisible] = useState(false);
+  const { toast } = useToast();
 
   const onLoadEnd = () => {
     setIsLoading(false);
   };
 
   const onError = () => {
-    setError(
-      'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
-    );
-    setVisible(true);
+    toast.show({
+      variant: 'danger',
+      label: 'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      actionLabel: 'Cerrar',
+      onActionPress: ({ hide }) => hide(),
+    });
     setIsLoading(false);
   };
 
   const onNavigationStateChange = (navState: WebViewNavigation) => {
     console.log('Navigation changed:', navState);
   };
-
-  const onDismissSnackBar = () => setVisible(false);
 
   // Fallback en web: usamos un iframe (no hay notch en web)
   if (Platform.OS === 'web') {
@@ -85,20 +85,6 @@ export default function Comunica() {
         onError={onError}
         onNavigationStateChange={onNavigationStateChange}
       />
-      <Portal>
-        <Snackbar
-          visible={visible}
-          onDismiss={onDismissSnackBar}
-          action={{
-            label: 'Cerrar',
-            onPress: onDismissSnackBar,
-          }}
-          duration={Snackbar.DURATION_MEDIUM}
-          style={{ backgroundColor: '#f44336' }}
-        >
-          {error}
-        </Snackbar>
-      </Portal>
     </View>
   );
 }

@@ -1,6 +1,13 @@
-import React from 'react';
-import { ScrollView, StyleSheet, View, Platform } from 'react-native';
-import { List, Text } from 'react-native-paper';
+import React, { useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  Platform,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -32,6 +39,8 @@ export default function ProfundizaScreen() {
     paginas: Pagina[];
   };
 
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
   if (!data) {
     return <ProgressWithMessage message="Cargando profundiza..." />;
   }
@@ -45,18 +54,24 @@ export default function ProfundizaScreen() {
       <Text style={styles.mainTitle}>{data.titulo}</Text>
       <FormattedContent text={data.introduccion} scale={fontScale} />
       <View style={{ marginTop: 16 }}>
-        <List.AccordionGroup>
-          {data.paginas.map((p, idx) => (
-            <List.Accordion
-              key={idx}
-              id={String(idx)}
-              title={p.titulo}
-              titleStyle={styles.accordionTitle}
+        {data.paginas.map((p, idx) => (
+          <View key={idx} style={styles.accordionWrapper}>
+            <TouchableOpacity
+              onPress={() => setOpenIdx(openIdx === idx ? null : idx)}
               style={[
                 styles.accordion,
                 { backgroundColor: p.color || colors.primary },
               ]}
+              activeOpacity={0.8}
             >
+              <Text style={styles.accordionTitle}>{p.titulo}</Text>
+              <MaterialIcons
+                name={openIdx === idx ? 'expand-less' : 'expand-more'}
+                size={24}
+                color={colors.white}
+              />
+            </TouchableOpacity>
+            {openIdx === idx && (
               <View style={styles.accordionContent}>
                 {p.subtitulo && (
                   <Text style={styles.subtitulo}>{p.subtitulo}</Text>
@@ -65,9 +80,9 @@ export default function ProfundizaScreen() {
                   <FormattedContent text={p.texto} scale={fontScale} />
                 )}
               </View>
-            </List.Accordion>
-          ))}
-        </List.AccordionGroup>
+            )}
+          </View>
+        ))}
       </View>
     </ScrollView>
   );
@@ -84,14 +99,24 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
       marginBottom: 8,
       color: theme.text,
     },
-    accordion: { marginBottom: 12, borderRadius: 16 },
-    accordionTitle: { color: colors.white, fontWeight: 'bold' },
+    accordionWrapper: { marginBottom: 12 },
+    accordion: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+    },
+    accordionTitle: { color: colors.white, fontWeight: 'bold', flex: 1 },
     accordionContent: {
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 12,
+      borderBottomLeftRadius: 12,
+      borderBottomRightRadius: 12,
       padding: 12,
-      margin: 8,
+      marginTop: -8,
+      paddingTop: 16,
     },
     subtitulo: {
       fontWeight: 'bold',

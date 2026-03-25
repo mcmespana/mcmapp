@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Linking, Image, Platform } from 'react-native';
-import { Card, IconButton, Modal, Portal, Text } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Linking, Image, Platform, Text, Modal, TouchableOpacity } from 'react-native';
+import { Card } from 'heroui-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
@@ -71,62 +72,75 @@ export default function VisitasScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.list}>
         {(visitas || []).map((v, idx) => (
-          <Card key={idx} style={styles.card} onPress={() => setSelected(v)}>
-            {v.imagen && (
-              <Image
-                source={{ uri: v.imagen }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-            )}
-            <Card.Content style={styles.cardContent}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title}>{v.titulo}</Text>
-                {v.subtitulo && (
-                  <Text style={styles.subtitle}>{v.subtitulo}</Text>
+          <TouchableOpacity key={idx} activeOpacity={0.7} onPress={() => setSelected(v)}>
+            <Card style={styles.card}>
+              {v.imagen && (
+                <Image
+                  source={{ uri: v.imagen }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
+              )}
+              <Card.Body style={styles.cardContent}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.title}>{v.titulo}</Text>
+                  {v.subtitulo && (
+                    <Text style={styles.subtitle}>{v.subtitulo}</Text>
+                  )}
+                  {v.fecha && (
+                    <View style={styles.dateRow}>
+                      <MaterialIcons name="calendar-today" size={18} color="#888" />
+                      <Text style={{ marginLeft: 4 }}>{formatDate(v.fecha)}</Text>
+                    </View>
+                  )}
+                </View>
+                {v.mapa && (
+                  <TouchableOpacity
+                    onPress={() => openMap(v.mapa)}
+                    accessibilityLabel="Abrir mapa"
+                    style={styles.iconButton}
+                  >
+                    <MaterialIcons name="map" size={24} color="#888" />
+                  </TouchableOpacity>
                 )}
-                {v.fecha && (
-                  <View style={styles.dateRow}>
-                    <IconButton icon="calendar-today" size={18} />
-                    <Text>{formatDate(v.fecha)}</Text>
+              </Card.Body>
+            </Card>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      <Modal
+        visible={!!selected}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelected(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelected(null)}
+        >
+          <View style={styles.modal}>
+            {selected && (
+              <View>
+                <Text style={styles.modalTitle}>{selected.titulo}</Text>
+                {selected.texto && (
+                  <Text style={styles.modalText}>{selected.texto}</Text>
+                )}
+                {selected.mapa && (
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <TouchableOpacity
+                      onPress={() => openMap(selected.mapa)}
+                      style={styles.iconButton}
+                    >
+                      <MaterialIcons name="map" size={24} color="#888" />
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
-              {v.mapa && (
-                <IconButton
-                  icon="map"
-                  onPress={() => openMap(v.mapa)}
-                  accessibilityLabel="Abrir mapa"
-                />
-              )}
-            </Card.Content>
-          </Card>
-        ))}
-      </ScrollView>
-      <Portal>
-        <Modal
-          visible={!!selected}
-          onDismiss={() => setSelected(null)}
-          contentContainerStyle={styles.modal}
-        >
-          {selected && (
-            <View>
-              <Text style={styles.modalTitle}>{selected.titulo}</Text>
-              {selected.texto && (
-                <Text style={styles.modalText}>{selected.texto}</Text>
-              )}
-              {selected.mapa && (
-                <View style={{ alignItems: 'flex-end' }}>
-                  <IconButton
-                    icon="map"
-                    onPress={() => openMap(selected.mapa)}
-                  />
-                </View>
-              )}
-            </View>
-          )}
-        </Modal>
-      </Portal>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -155,11 +169,21 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     subtitle: { fontSize: 14, marginBottom: 4, color: theme.text },
     dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     modal: {
       backgroundColor: theme.background,
       margin: 20,
       padding: 20,
       borderRadius: 8,
+      width: '90%',
+    },
+    iconButton: {
+      padding: 8,
     },
     modalTitle: {
       fontSize: 18,

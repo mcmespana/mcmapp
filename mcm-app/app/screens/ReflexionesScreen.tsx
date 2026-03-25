@@ -5,18 +5,13 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
-} from 'react-native';
-import {
-  Card,
   Text,
-  FAB,
-  Portal,
-  Modal,
   TextInput,
   Switch,
-  Button,
-  Chip,
-} from 'react-native-paper';
+  Modal,
+  TouchableOpacity,
+} from 'react-native';
+import { Card } from 'heroui-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -28,6 +23,7 @@ import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import GlassFAB from '@/components/ui/GlassFAB.ios';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 interface Grupo {
   nombre: string;
@@ -35,7 +31,7 @@ interface Grupo {
 }
 interface Reflexion {
   id: string;
-  titulo?: string; // El título es opcional, pero en Firebase será string | ''
+  titulo?: string;
   contenido: string;
   fecha: string;
   grupal: boolean;
@@ -64,7 +60,6 @@ export default function ReflexionesScreen() {
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { profile } = useUserProfile();
 
-  // Generate default author string from user profile
   const getDefaultAuthor = useCallback(() => {
     const parts = [];
     if (profile.name.trim()) {
@@ -98,13 +93,12 @@ export default function ReflexionesScreen() {
     }
   }, [dataRef]);
 
-  // Update author field when user profile changes
   useEffect(() => {
     setAutor(getDefaultAuthor());
   }, [getDefaultAuthor]);
 
   const [showForm, setShowForm] = useState(false);
-  const [titulo, setTitulo] = useState(''); // Inicializar con cadena vacía
+  const [titulo, setTitulo] = useState('');
   const [contenido, setContenido] = useState('');
   const [fecha, setFecha] = useState(new Date());
   const [grupal, setGrupal] = useState(false);
@@ -134,11 +128,11 @@ export default function ReflexionesScreen() {
   };
 
   async function addReflexion() {
-    if (!fecha) return; // Solo validamos que haya fecha
+    if (!fecha) return;
     setSaving(true);
     const nuevo: Reflexion = {
       id: Date.now().toString(),
-      titulo: titulo.trim(), // Si está vacío, será cadena vacía
+      titulo: titulo.trim(),
       contenido,
       fecha: fecha.toISOString().slice(0, 10),
       grupal,
@@ -193,17 +187,11 @@ export default function ReflexionesScreen() {
               key={r.id}
               style={[styles.card, r.grupal && styles.cardGroup]}
             >
-              {r.titulo && (
-                <View
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingTop: 16,
-                    paddingBottom: 0,
-                  }}
-                >
+              <Card.Body style={{ paddingTop: 8 }}>
+                {r.titulo ? (
                   <Text
                     style={[
-                      { fontWeight: '600', fontSize: 16 },
+                      { fontWeight: '600', fontSize: 16, marginBottom: 4 },
                       r.grupal
                         ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
                         : { color: scheme === 'dark' ? '#fff' : '#222' },
@@ -211,14 +199,12 @@ export default function ReflexionesScreen() {
                   >
                     {r.titulo}
                   </Text>
-                </View>
-              )}
-              <Card.Content style={{ paddingTop: 8 }}>
+                ) : null}
                 <Text
                   style={
                     r.grupal
                       ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
-                      : {}
+                      : { color: scheme === 'dark' ? '#fff' : '#222' }
                   }
                 >
                   {r.contenido}
@@ -238,10 +224,11 @@ export default function ReflexionesScreen() {
                       ? ` - ${r.autor}`
                       : ''}
                 </Text>
-              </Card.Content>
+              </Card.Body>
             </Card>
           ))}
       </ScrollView>
+
       {Platform.OS === 'ios' ? (
         <GlassFAB
           icon="add"
@@ -250,116 +237,162 @@ export default function ReflexionesScreen() {
           iconColor="#fff"
         />
       ) : (
-        <FAB icon="plus" style={styles.fab} onPress={() => setShowForm(true)} />
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setShowForm(true)}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="add" size={24} color="#fff" />
+        </TouchableOpacity>
       )}
-      <Portal>
-        <Modal
-          visible={showForm}
-          onDismiss={() => setShowForm(false)}
-          contentContainerStyle={styles.modal}
-          style={styles.modalWrapper}
+
+      {/* Form modal */}
+      <Modal
+        visible={showForm}
+        onRequestClose={() => setShowForm(false)}
+        transparent
+        animationType="slide"
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowForm(false)}
         >
-          <ScrollView>
-            <Button
-              mode="contained"
-              onPress={addReflexion}
-              style={styles.saveBtn}
-            >
-              Guardar
-            </Button>
-            <TextInput
-              label="Título (opcional)"
-              value={titulo}
-              onChangeText={setTitulo}
-              style={styles.input}
-              theme={{ colors: { primary: colors.success } }}
-            />
-            <TextInput
-              label="Compartiendo..."
-              value={contenido}
-              onChangeText={setContenido}
-              multiline
-              numberOfLines={4}
-              style={[styles.input, { minHeight: 100 }]}
-              theme={{ colors: { primary: colors.success } }}
-            />
-            <TextInput
-              label="Fecha"
-              value={formatFecha(fecha)}
-              onPressIn={showDatePicker}
-              editable={false}
-              style={styles.input}
-              theme={{ colors: { primary: colors.success } }}
-            />
-            <View style={styles.row}>
-              <Switch
-                value={grupal}
-                onValueChange={(v) => {
-                  setGrupal(v);
-                  setTimeout(() => setGrupal(v), 300);
-                }}
-                color={colors.success}
-              />
-              <Text style={styles.switchLabel}>Compartiendo en grupo</Text>
-            </View>
-            {grupal ? (
-              <ScrollView horizontal>
-                {grupos.map((g) => (
-                  <Chip
-                    key={g.nombre}
-                    selected={grupo === g.nombre}
-                    onPress={() => setGrupo(g.nombre)}
-                    style={[
-                      styles.chip,
-                      grupo === g.nombre && { backgroundColor: colors.success },
-                    ]}
-                    selectedColor={grupo === g.nombre ? colors.white : '#444'}
-                    theme={{ colors: { secondaryContainer: colors.success } }}
-                  >
-                    {getGrupoLabel(g.nombre)}
-                  </Chip>
-                ))}
-              </ScrollView>
-            ) : (
-              <TextInput
-                label="Tu nombre (opcional)"
-                value={autor}
-                onChangeText={setAutor}
-                style={styles.input}
-                theme={{ colors: { primary: colors.success } }}
-              />
-            )}
-          </ScrollView>
-        </Modal>
-      </Portal>
-      <Portal>
-        <Modal
-          visible={showDateSelector}
-          onDismiss={() => setShowDateSelector(false)}
-          contentContainerStyle={styles.dateModal}
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.modal}
+            onPress={() => {}}
+          >
+            <ScrollView>
+              <TouchableOpacity
+                style={styles.saveBtn}
+                onPress={addReflexion}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.saveBtnText}>Guardar</Text>
+              </TouchableOpacity>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>Título (opcional)</Text>
+                <TextInput
+                  value={titulo}
+                  onChangeText={setTitulo}
+                  style={styles.input}
+                  placeholderTextColor={
+                    scheme === 'dark' ? '#888' : '#AAAAAA'
+                  }
+                />
+              </View>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>Compartiendo...</Text>
+                <TextInput
+                  value={contenido}
+                  onChangeText={setContenido}
+                  multiline
+                  numberOfLines={4}
+                  style={[styles.input, { minHeight: 100, textAlignVertical: 'top' }]}
+                  placeholderTextColor={
+                    scheme === 'dark' ? '#888' : '#AAAAAA'
+                  }
+                />
+              </View>
+              <TouchableOpacity
+                onPress={showDatePicker}
+                style={styles.dateField}
+              >
+                <Text style={styles.inputLabel}>Fecha</Text>
+                <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
+              </TouchableOpacity>
+              <View style={styles.row}>
+                <Switch
+                  value={grupal}
+                  onValueChange={(v) => {
+                    setGrupal(v);
+                    setTimeout(() => setGrupal(v), 300);
+                  }}
+                  trackColor={{ true: colors.success }}
+                  thumbColor={grupal ? colors.white : undefined}
+                />
+                <Text style={styles.switchLabel}>Compartiendo en grupo</Text>
+              </View>
+              {grupal ? (
+                <ScrollView horizontal>
+                  {grupos.map((g) => (
+                    <TouchableOpacity
+                      key={g.nombre}
+                      onPress={() => setGrupo(g.nombre)}
+                      style={[
+                        styles.chip,
+                        grupo === g.nombre && {
+                          backgroundColor: colors.success,
+                        },
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          grupo === g.nombre && { color: colors.white },
+                        ]}
+                      >
+                        {getGrupoLabel(g.nombre)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Tu nombre (opcional)</Text>
+                  <TextInput
+                    value={autor}
+                    onChangeText={setAutor}
+                    style={styles.input}
+                    placeholderTextColor={
+                      scheme === 'dark' ? '#888' : '#AAAAAA'
+                    }
+                  />
+                </View>
+              )}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Date selector modal */}
+      <Modal
+        visible={showDateSelector}
+        onRequestClose={() => setShowDateSelector(false)}
+        transparent
+        animationType="fade"
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowDateSelector(false)}
         >
-          <DateTimePicker
-            value={fecha}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            locale="es-ES"
-            onChange={(_, selected) => {
-              setShowDateSelector(false);
-              if (selected) setFecha(selected);
-            }}
-          />
-        </Modal>
-      </Portal>
-      <Portal>
-        <Modal
-          visible={saving}
-          dismissable={false}
-          contentContainerStyle={styles.savingModal}
-        >
-          <ActivityIndicator size="large" color={colors.success} />
-          <Text style={styles.savingText}>Enviando...</Text>
-        </Modal>
-      </Portal>
+          <View style={styles.dateModal}>
+            <DateTimePicker
+              value={fecha}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              locale="es-ES"
+              onChange={(_, selected) => {
+                setShowDateSelector(false);
+                if (selected) setFecha(selected);
+              }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Saving modal */}
+      <Modal visible={saving} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.savingModal}>
+            <ActivityIndicator size="large" color={colors.success} />
+            <Text style={styles.savingText}>Enviando...</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -377,26 +410,82 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       position: 'absolute',
       right: 16,
       bottom: 16,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       backgroundColor: colors.success,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'flex-start',
+      paddingTop: 60,
     },
     modal: {
       backgroundColor: theme.background,
       margin: 20,
       padding: 20,
       borderRadius: 8,
+      maxHeight: '80%',
     },
-    modalWrapper: {
-      justifyContent: 'flex-start',
+    inputWrapper: { marginBottom: spacing.md },
+    inputLabel: {
+      fontSize: 12,
+      color: colors.success,
+      fontWeight: '600',
+      marginBottom: 4,
     },
-    input: { marginBottom: spacing.md },
+    input: {
+      borderWidth: 1,
+      borderColor: scheme === 'dark' ? '#555' : '#ccc',
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 16,
+      color: theme.text,
+      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
+    },
+    dateField: {
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: scheme === 'dark' ? '#555' : '#ccc',
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    dateValue: { fontSize: 16, color: theme.text },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: spacing.md,
     },
     switchLabel: { marginLeft: spacing.sm, color: theme.text },
-    chip: { marginRight: spacing.sm },
-    saveBtn: { marginTop: spacing.md, marginBottom: spacing.md },
+    chip: {
+      marginRight: spacing.sm,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.success,
+      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#f5f5f5',
+    },
+    chipText: { color: scheme === 'dark' ? '#ccc' : '#444', fontSize: 13 },
+    saveBtn: {
+      backgroundColor: colors.success,
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+      marginTop: spacing.md,
+      marginBottom: spacing.md,
+    },
+    saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
     dateModal: {
       backgroundColor: theme.background,
       padding: spacing.md,

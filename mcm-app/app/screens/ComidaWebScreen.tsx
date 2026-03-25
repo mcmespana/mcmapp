@@ -8,7 +8,8 @@ import {
   Text,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
+import { ActivityIndicator } from 'react-native';
+import { useToast } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { MasStackParamList } from '../(tabs)/mas';
@@ -26,8 +27,7 @@ export default function ComidaWebScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [visible, setVisible] = useState(false);
+  const { toast } = useToast();
 
   // URLs que sabemos que no funcionan en iframe por políticas de seguridad
   const isBlockedUrl = (url: string) => {
@@ -63,10 +63,12 @@ export default function ComidaWebScreen() {
 
   const onLoadEnd = () => setIsLoading(false);
   const onError = () => {
-    setError(
-      'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
-    );
-    setVisible(true);
+    toast.show({
+      variant: 'danger',
+      label: 'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      actionLabel: 'Cerrar',
+      onActionPress: ({ hide }) => hide(),
+    });
     setIsLoading(false);
   };
 
@@ -135,17 +137,6 @@ export default function ComidaWebScreen() {
         onLoadEnd={onLoadEnd}
         onError={onError}
       />
-      <Portal>
-        <Snackbar
-          visible={visible}
-          onDismiss={() => setVisible(false)}
-          action={{ label: 'Cerrar', onPress: () => setVisible(false) }}
-          duration={Snackbar.DURATION_MEDIUM}
-          style={{ backgroundColor: '#f44336' }}
-        >
-          {error}
-        </Snackbar>
-      </Portal>
     </View>
   );
 }

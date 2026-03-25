@@ -8,7 +8,8 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Platform, View, StyleSheet, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
+import { ActivityIndicator } from 'react-native';
+import { useToast } from 'heroui-native';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -67,8 +68,7 @@ export default function ComunicaGestionScreen() {
   const insets = useSafeAreaInsets();
   const tintColor = ThemeColors[scheme].tint;
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [snackVisible, setSnackVisible] = useState(false);
+  const { toast } = useToast();
 
   const dynamicStyles = useMemo(
     () =>
@@ -86,11 +86,14 @@ export default function ComunicaGestionScreen() {
 
   const onLoadEnd = useCallback(() => setIsLoading(false), []);
   const onError = useCallback(() => {
-    setError('Error al cargar el contenido. Verifica tu conexión a internet.');
-    setSnackVisible(true);
+    toast.show({
+      variant: 'danger',
+      label: 'Error al cargar el contenido. Verifica tu conexión a internet.',
+      actionLabel: 'Cerrar',
+      onActionPress: ({ hide }) => hide(),
+    });
     setIsLoading(false);
-  }, []);
-  const onDismissSnack = useCallback(() => setSnackVisible(false), []);
+  }, [toast]);
 
   // ── Web: iframe ──────────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
@@ -151,17 +154,6 @@ export default function ComunicaGestionScreen() {
         onError={onError}
         onHttpError={onError}
       />
-      <Portal>
-        <Snackbar
-          visible={snackVisible}
-          onDismiss={onDismissSnack}
-          action={{ label: 'Cerrar', onPress: onDismissSnack }}
-          duration={Snackbar.DURATION_MEDIUM}
-          style={{ backgroundColor: '#f44336' }}
-        >
-          {error}
-        </Snackbar>
-      </Portal>
     </View>
   );
 }

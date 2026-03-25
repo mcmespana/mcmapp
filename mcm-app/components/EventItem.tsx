@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Linking,
 } from 'react-native';
-import { Card } from 'react-native-paper';
+import { Card } from 'heroui-native';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
@@ -61,8 +61,8 @@ export default function EventItem({
   };
 
   return (
-    <Card style={styles.card} elevation={3}>
-      <Card.Content style={styles.cardContent}>
+    <Card style={styles.card}>
+      <Card.Body style={styles.cardContent}>
         <View style={styles.row}>
           <View style={styles.iconContainer}>
             <Text style={styles.emoji} selectable>
@@ -137,7 +137,7 @@ export default function EventItem({
             </View>
           </View>
         </View>
-      </Card.Content>
+      </Card.Body>
     </Card>
   );
 }

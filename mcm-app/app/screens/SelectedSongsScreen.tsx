@@ -17,7 +17,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
 } from 'react-native';
-import { Provider as PaperProvider, Snackbar } from 'react-native-paper';
+import { useToast } from 'heroui-native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -68,8 +68,7 @@ const SelectedSongsScreen: React.FC = () => {
   const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<
     CategorizedSongs[]
   >([]);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const { toast } = useToast();
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFileName, setExportFileName] = useState('');
 
@@ -178,12 +177,10 @@ const SelectedSongsScreen: React.FC = () => {
     ) {
       try {
         Clipboard.setStringAsync(finalText);
-        setSnackbarMessage('Lista copiada al portapapeles');
-        setSnackbarVisible(true);
+        toast.show({ label: 'Lista copiada al portapapeles' });
       } catch (error) {
         console.error('Error copying to clipboard:', error);
-        setSnackbarMessage('Error al copiar la lista');
-        setSnackbarVisible(true);
+        toast.show({ label: 'Error al copiar la lista' });
       }
     } else {
       try {
@@ -252,13 +249,11 @@ const SelectedSongsScreen: React.FC = () => {
       }
 
       setShowExportModal(false);
-      setSnackbarMessage('Playlist exportada');
-      setSnackbarVisible(true);
+      toast.show({ label: 'Playlist exportada' });
     } catch (err) {
       console.error('Error sharing file', err);
       setShowExportModal(false);
-      setSnackbarMessage('Error al exportar');
-      setSnackbarVisible(true);
+      toast.show({ label: 'Error al exportar' });
     }
   }, [selectedSongs, exportFileName]);
 
@@ -276,8 +271,7 @@ const SelectedSongsScreen: React.FC = () => {
           if (!input.files || input.files.length === 0) return;
           const file = input.files[0];
           if (file.name && !isValidFile(file.name)) {
-            setSnackbarMessage('Selecciona un archivo .mcm');
-            setSnackbarVisible(true);
+            toast.show({ label: 'Selecciona un archivo .mcm' });
             return;
           }
           const text = await file.text();
@@ -285,21 +279,17 @@ const SelectedSongsScreen: React.FC = () => {
             const parsed = JSON.parse(text);
             if (Array.isArray(parsed)) {
               if (parsed.length === 0) {
-                setSnackbarMessage('El archivo está vacío');
-                setSnackbarVisible(true);
+                toast.show({ label: 'El archivo está vacío' });
                 return;
               }
               parsed.forEach((fn: string) => addSong(fn));
-              setSnackbarMessage('Playlist importada');
-              setSnackbarVisible(true);
+              toast.show({ label: 'Playlist importada' });
             } else {
-              setSnackbarMessage('Formato de archivo inválido');
-              setSnackbarVisible(true);
+              toast.show({ label: 'Formato de archivo inválido' });
             }
           } catch (parseError) {
             console.error('Error parsing JSON:', parseError);
-            setSnackbarMessage('El archivo no es un JSON válido');
-            setSnackbarVisible(true);
+            toast.show({ label: 'El archivo no es un JSON válido' });
           }
         };
         input.click();
@@ -310,8 +300,7 @@ const SelectedSongsScreen: React.FC = () => {
         if (res.canceled || !res.assets || res.assets.length === 0) return;
         const file = res.assets[0];
         if (file.name && !isValidFile(file.name)) {
-          setSnackbarMessage('Selecciona un archivo .mcm');
-          setSnackbarVisible(true);
+          toast.show({ label: 'Selecciona un archivo .mcm' });
           return;
         }
         const content = await FileSystem.readAsStringAsync(file.uri, {
@@ -321,27 +310,22 @@ const SelectedSongsScreen: React.FC = () => {
           const parsed = JSON.parse(content);
           if (Array.isArray(parsed)) {
             if (parsed.length === 0) {
-              setSnackbarMessage('El archivo está vacío');
-              setSnackbarVisible(true);
+              toast.show({ label: 'El archivo está vacío' });
               return;
             }
             parsed.forEach((fn: string) => addSong(fn));
-            setSnackbarMessage('Playlist importada');
-            setSnackbarVisible(true);
+            toast.show({ label: 'Playlist importada' });
           } else {
-            setSnackbarMessage('Formato de archivo inválido');
-            setSnackbarVisible(true);
+            toast.show({ label: 'Formato de archivo inválido' });
           }
         } catch (parseError) {
           console.error('Error parsing JSON:', parseError);
-          setSnackbarMessage('El archivo no es un JSON válido');
-          setSnackbarVisible(true);
+          toast.show({ label: 'El archivo no es un JSON válido' });
         }
       }
     } catch (err) {
       console.error('Error importing playlist', err);
-      setSnackbarMessage('Error al importar');
-      setSnackbarVisible(true);
+      toast.show({ label: 'Error al importar' });
     }
   }, [addSong]);
 
@@ -577,30 +561,9 @@ const SelectedSongsScreen: React.FC = () => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        action={{
-          label: 'OK',
-          onPress: () => setSnackbarVisible(false),
-        }}
-        duration={Snackbar.DURATION_MEDIUM}
-        style={styles.snackbar}
-      >
-        {snackbarMessage}
-      </Snackbar>
     </View>
   );
 };
-
-function SelectedSongsScreenWithProvider() {
-  return (
-    <PaperProvider>
-      <SelectedSongsScreen />
-    </PaperProvider>
-  );
-}
 
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';
@@ -854,13 +817,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontSize: 16,
       fontWeight: '600',
     },
-    snackbar: {
-      backgroundColor: isDark ? Colors.dark.card : '#1C1C1E',
-      borderRadius: radii.md,
-      marginBottom: Platform.OS === 'ios' ? 90 : 8,
-      marginHorizontal: 16,
-    },
   });
 };
 
-export default SelectedSongsScreenWithProvider;
+export default SelectedSongsScreen;

@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+@import 'uniwind';
+@import 'heroui-native/styles';
+
+/* Point Tailwind at heroui-native's compiled output so it picks up all class names */
+@source './node_modules/heroui-native/lib';

@@ -14,7 +14,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Snackbar } from 'react-native-paper';
+import { useToast } from 'heroui-native';
 import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
@@ -84,10 +84,10 @@ export default function CategoriesScreen({
   ];
 
   const [showForm, setShowForm] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const { toast } = useToast();
 
   const handleSuccessSubmit = () => {
-    setShowSuccessToast(true);
+    toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
 
   // Header: search + add buttons together (integrado en el header)
@@ -212,21 +212,6 @@ export default function CategoriesScreen({
         onSuccess={handleSuccessSubmit}
       />
 
-      <Snackbar
-        visible={showSuccessToast}
-        onDismiss={() => setShowSuccessToast(false)}
-        duration={3000}
-        style={styles.snackbar}
-        action={{
-          label: 'OK',
-          textColor: isDark ? '#fff' : '#000',
-          onPress: () => setShowSuccessToast(false),
-        }}
-      >
-        <Text style={{ color: isDark ? '#fff' : '#000', fontWeight: '600' }}>
-          ¡Sugerencia enviada!
-        </Text>
-      </Snackbar>
     </View>
   );
 }
@@ -324,12 +309,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       height: 4,
       backgroundColor: '#f4c11e',
       zIndex: 1000,
-    },
-    snackbar: {
-      borderRadius: radii.md,
-      marginBottom: isIOS ? 90 : 8,
-      backgroundColor: isDark ? Colors.dark.card : '#1C1C1E',
-      marginHorizontal: 16,
     },
   });
 };
