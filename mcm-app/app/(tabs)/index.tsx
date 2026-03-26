@@ -27,7 +27,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import useFontScale from '@/hooks/useFontScale';
-import { useToast } from 'heroui-native';
+import { useToast, Chip, Button } from 'heroui-native';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { VersionDisplay } from '@/components/VersionDisplay';
@@ -414,34 +414,28 @@ export default function Home() {
             <View style={styles.notifCtaRow}>
               {/* Chip de destino (internalRoute) — solo indicador, la tarjeta lleva a /notifications */}
               {internalRouteLabel && (
-                <View
-                  style={[
-                    styles.destinationChip,
-                    { borderColor: accentColor + '50', backgroundColor: accentColor + '10' },
-                  ]}
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color="default"
+                  style={{ backgroundColor: accentColor + '10', borderColor: accentColor + '50' }}
                 >
                   <MaterialIcons name="arrow-forward-ios" size={9} color={accentColor} />
-                  <Text style={[styles.destinationChipText, { color: accentColor }]}>
-                    {internalRouteLabel}
-                  </Text>
-                </View>
+                  <Chip.Label style={{ color: accentColor }}>{internalRouteLabel}</Chip.Label>
+                </Chip>
               )}
 
               {/* Botón de acción explícito */}
               {latestNotification?.actionButton ? (
-                <TouchableOpacity
-                  style={[
-                    styles.actionBtn,
-                    { backgroundColor: accentColor + '12' },
-                  ]}
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onPress={handleActionButton}
-                  accessibilityRole="button"
+                  style={{ backgroundColor: accentColor + '12' }}
                 >
-                  <Text
-                    style={[styles.actionBtnText, { color: accentColor }]}
-                  >
+                  <Button.Label style={{ color: accentColor }}>
                     {latestNotification.actionButton.text ?? 'Voy a verlo'}
-                  </Text>
+                  </Button.Label>
                   <MaterialIcons
                     name={
                       latestNotification.actionButton.isInternal
@@ -451,7 +445,7 @@ export default function Home() {
                     size={14}
                     color={accentColor}
                   />
-                </TouchableOpacity>
+                </Button>
               ) : !internalRouteLabel ? (
                 /* Flecha genérica solo si no hay ningún indicador */
                 <View

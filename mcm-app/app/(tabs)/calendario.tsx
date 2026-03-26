@@ -12,6 +12,7 @@ import {
   Animated,
   Text,
 } from 'react-native';
+import { Tabs, Chip } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import {
@@ -303,16 +304,12 @@ export default function Calendario() {
       {calendarConfigs.map((cal, idx) => {
         const isActive = visibleCalendars[idx];
         return (
-          <TouchableOpacity
+          <Chip
             key={idx}
-            activeOpacity={0.7}
+            variant={isActive ? 'primary' : 'soft'}
+            color="default"
             onPress={() => toggleCalendarVisibility(idx)}
-            style={[
-              styles.filterChip,
-              isActive
-                ? { backgroundColor: cal.color + '20', borderColor: cal.color }
-                : {},
-            ]}
+            style={isActive ? { backgroundColor: cal.color + '22', borderColor: cal.color } : undefined}
           >
             <View
               style={[
@@ -326,19 +323,16 @@ export default function Calendario() {
                 },
               ]}
             />
-            <Text
-              style={[
-                styles.chipLabel,
-                isActive && { color: cal.color, fontWeight: '600' },
-              ]}
+            <Chip.Label
+              style={isActive ? { color: cal.color, fontWeight: '600' } : undefined}
               numberOfLines={1}
             >
               {cal.name}
-            </Text>
+            </Chip.Label>
             {isActive && (
-              <MaterialIcons name="check" size={14} color={cal.color} />
+              <MaterialIcons name="check" size={13} color={cal.color} />
             )}
-          </TouchableOpacity>
+          </Chip>
         );
       })}
     </ScrollView>
@@ -356,67 +350,32 @@ export default function Calendario() {
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
 
       {/* View mode switcher */}
-      <View style={styles.switcher}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setViewMode('calendar')}
-          style={[
-            styles.switcherTab,
-            viewMode === 'calendar' && styles.switcherTabActive,
-          ]}
+      <View style={styles.switcherWrapper}>
+        <Tabs
+          value={viewMode}
+          onValueChange={(v) => setViewMode(v as 'calendar' | 'agenda')}
+          variant="primary"
         >
-          <MaterialIcons
-            name="calendar-month"
-            size={18}
-            color={
-              viewMode === 'calendar'
-                ? isDark
-                  ? '#fff'
-                  : '#fff'
-                : isDark
-                  ? '#8E8E93'
-                  : '#8E8E93'
-            }
-          />
-          <Text
-            style={[
-              styles.switcherLabel,
-              viewMode === 'calendar' && styles.switcherLabelActive,
-            ]}
-          >
-            Mes
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setViewMode('agenda')}
-          style={[
-            styles.switcherTab,
-            viewMode === 'agenda' && styles.switcherTabActive,
-          ]}
-        >
-          <MaterialIcons
-            name="view-agenda"
-            size={18}
-            color={
-              viewMode === 'agenda'
-                ? isDark
-                  ? '#fff'
-                  : '#fff'
-                : isDark
-                  ? '#8E8E93'
-                  : '#8E8E93'
-            }
-          />
-          <Text
-            style={[
-              styles.switcherLabel,
-              viewMode === 'agenda' && styles.switcherLabelActive,
-            ]}
-          >
-            Agenda
-          </Text>
-        </TouchableOpacity>
+          <Tabs.List>
+            <Tabs.Indicator />
+            <Tabs.Trigger value="calendar">
+              <MaterialIcons
+                name="calendar-month"
+                size={16}
+                color={viewMode === 'calendar' ? '#fff' : '#8E8E93'}
+              />
+              <Tabs.Label>Mes</Tabs.Label>
+            </Tabs.Trigger>
+            <Tabs.Trigger value="agenda">
+              <MaterialIcons
+                name="view-agenda"
+                size={16}
+                color={viewMode === 'agenda' ? '#fff' : '#8E8E93'}
+              />
+              <Tabs.Label>Agenda</Tabs.Label>
+            </Tabs.Trigger>
+          </Tabs.List>
+        </Tabs>
       </View>
 
       {viewMode === 'calendar' ? (
@@ -644,37 +603,10 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
 
     // View mode switcher
-    switcher: {
-      flexDirection: 'row',
+    switcherWrapper: {
       marginHorizontal: 16,
       marginTop: 12,
       marginBottom: 8,
-      backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
-      borderRadius: radii.md,
-      padding: 3,
-    },
-    switcherTab: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 8,
-      borderRadius: 10,
-      gap: 6,
-    },
-    switcherTabActive: {
-      backgroundColor: colors.info,
-      // On Android, elevation on the active tab causes colour bleed onto siblings.
-      // The coloured background is contrast enough without any shadow.
-      elevation: 0,
-    },
-    switcherLabel: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: isDark ? '#8E8E93' : '#8E8E93',
-    },
-    switcherLabelActive: {
-      color: '#fff',
     },
 
     // Calendar

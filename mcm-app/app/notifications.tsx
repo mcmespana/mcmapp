@@ -8,10 +8,9 @@ import {
   Linking,
   RefreshControl,
   Animated,
-  Modal,
   ScrollView,
-  Platform,
 } from 'react-native';
+import { BottomSheet, Button, Chip } from 'heroui-native';
 // IMPORTANTE: usar TouchableOpacity de gesture-handler (no de RN core)
 // dentro de Swipeable para que los toques anidados funcionen correctamente.
 import {
@@ -428,19 +427,18 @@ function NotificationDetailModal({
   onClose: () => void;
   scheme: 'light' | 'dark';
 }) {
-  if (!notification) return null;
-
   const theme = Colors[scheme ?? 'light'];
-  const date = new Date(
+  const date = notification ? new Date(
     'receivedAt' in notification
       ? notification.receivedAt
       : notification.createdAt,
-  );
-  const routeInfo = notification.internalRoute
+  ) : new Date();
+  const routeInfo = notification?.internalRoute
     ? getRouteLabel(notification.internalRoute)
     : null;
 
   const handleInternalRoute = () => {
+    if (!notification) return;
     onClose();
     try {
       router.push(notification.internalRoute as any);
@@ -450,7 +448,7 @@ function NotificationDetailModal({
   };
 
   const handleActionButton = () => {
-    if (!notification.actionButton) return;
+    if (!notification?.actionButton) return;
     if (notification.actionButton.isInternal) {
       onClose();
       try {
@@ -466,143 +464,116 @@ function NotificationDetailModal({
   };
 
   return (
-    <Modal
-      visible={!!notification}
-      animationType="slide"
-      presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}
-      onRequestClose={onClose}
+    <BottomSheet
+      isOpen={!!notification}
+      onOpenChange={(open) => { if (!open) onClose(); }}
     >
-      <SafeAreaView
-        style={[dStyles.container, { backgroundColor: theme.background }]}
-      >
-        {/* Header del modal */}
-        <View style={dStyles.header}>
-          <TouchableOpacity
-            onPress={onClose}
-            style={dStyles.closeButton}
-            accessibilityLabel="Cerrar"
-            accessibilityRole="button"
+      <BottomSheet.Portal>
+        <BottomSheet.Overlay />
+        <BottomSheet.Content>
+          <ScrollView
+            contentContainerStyle={dStyles.content}
+            showsVerticalScrollIndicator={false}
           >
-            <Ionicons name="close" size={24} color={theme.text} />
-          </TouchableOpacity>
-        </View>
+            {notification && (
+            <>
+            {/* Icono */}
+            {notification.icon && (
+              <Image source={{ uri: notification.icon }} style={dStyles.icon} />
+            )}
 
-        <ScrollView
-          contentContainerStyle={dStyles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Icono */}
-          {notification.icon && (
-            <Image source={{ uri: notification.icon }} style={dStyles.icon} />
-          )}
+            {/* Título */}
+            <BottomSheet.Title style={[dStyles.title, { color: theme.text }]}>
+              {notification.title}
+            </BottomSheet.Title>
 
-          {/* Título */}
-          <Text style={[dStyles.title, { color: theme.text }]}>
-            {notification.title}
-          </Text>
+            {/* Fecha */}
+            <Text style={[dStyles.date, { color: theme.icon }]}>
+              {date.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
 
-          {/* Fecha */}
-          <Text style={[dStyles.date, { color: theme.icon }]}>
-            {date.toLocaleDateString('es-ES', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
-
-          {/* Imagen grande */}
-          {notification.imageUrl && (
-            <Image
-              source={{ uri: notification.imageUrl }}
-              style={dStyles.image}
-              resizeMode="cover"
-            />
-          )}
-
-          {/* Cuerpo */}
-          <Text style={[dStyles.body, { color: theme.text }]}>
-            {notification.body}
-          </Text>
-
-          {/* Separador si hay acciones */}
-          {(routeInfo || notification.actionButton) && (
-            <View
-              style={[dStyles.divider, { backgroundColor: theme.icon + '30' }]}
-            />
-          )}
-
-          {/* Botón de destino interno (internalRoute) */}
-          {routeInfo && (
-            <TouchableOpacity
-              style={[dStyles.routeButton, { borderColor: colors.primary }]}
-              onPress={handleInternalRoute}
-              accessibilityLabel={`Ir a ${routeInfo.label}`}
-              accessibilityRole="button"
-            >
-              <MaterialIcons
-                name={routeInfo.icon as any}
-                size={20}
-                color={colors.primary}
+            {/* Imagen grande */}
+            {notification.imageUrl && (
+              <Image
+                source={{ uri: notification.imageUrl }}
+                style={dStyles.image}
+                resizeMode="cover"
               />
-              <Text style={[dStyles.routeButtonText, { color: colors.primary }]}>
-                Ir a {routeInfo.label}
-              </Text>
-              <MaterialIcons
-                name="arrow-forward-ios"
-                size={14}
-                color={colors.primary}
-              />
-            </TouchableOpacity>
-          )}
+            )}
 
-          {/* Botón de acción CTA */}
-          {notification.actionButton && (
-            <TouchableOpacity
-              style={dStyles.actionButton}
-              onPress={handleActionButton}
-              accessibilityLabel={notification.actionButton.text}
-              accessibilityRole="button"
-            >
-              <Text style={dStyles.actionButtonText}>
-                {notification.actionButton.text}
-              </Text>
-              <MaterialIcons
-                name={
-                  notification.actionButton.isInternal
-                    ? 'arrow-forward'
-                    : 'open-in-new'
-                }
-                size={18}
-                color="#fff"
+            {/* Cuerpo */}
+            <Text style={[dStyles.body, { color: theme.text }]}>
+              {notification.body}
+            </Text>
+
+            {/* Separador si hay acciones */}
+            {(routeInfo || notification.actionButton) && (
+              <View
+                style={[dStyles.divider, { backgroundColor: theme.icon + '30' }]}
               />
-            </TouchableOpacity>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
+            )}
+
+            {/* Botón de destino interno (internalRoute) */}
+            {routeInfo && (
+              <Button
+                variant="outline"
+                onPress={handleInternalRoute}
+                style={[dStyles.routeButton, { borderColor: colors.primary }]}
+              >
+                <MaterialIcons
+                  name={routeInfo.icon as any}
+                  size={20}
+                  color={colors.primary}
+                />
+                <Button.Label style={{ color: colors.primary, flex: 1 }}>
+                  Ir a {routeInfo.label}
+                </Button.Label>
+                <MaterialIcons
+                  name="arrow-forward-ios"
+                  size={14}
+                  color={colors.primary}
+                />
+              </Button>
+            )}
+
+            {/* Botón de acción CTA */}
+            {notification.actionButton && (
+              <Button
+                variant="primary"
+                onPress={handleActionButton}
+                style={dStyles.actionButton}
+              >
+                <Button.Label style={dStyles.actionButtonText}>
+                  {notification.actionButton.text}
+                </Button.Label>
+                <MaterialIcons
+                  name={
+                    notification.actionButton.isInternal
+                      ? 'arrow-forward'
+                      : 'open-in-new'
+                  }
+                  size={18}
+                  color="#fff"
+                />
+              </Button>
+            )}
+            </>
+            )}
+          </ScrollView>
+        </BottomSheet.Content>
+      </BottomSheet.Portal>
+    </BottomSheet>
   );
 }
 
 const dStyles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(128,128,128,0.12)',
-  },
   content: {
     padding: spacing.lg,
     paddingTop: spacing.sm,
