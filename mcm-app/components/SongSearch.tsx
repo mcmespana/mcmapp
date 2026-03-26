@@ -1,4 +1,4 @@
-import { TextInput } from 'react-native';
+import { SearchField } from 'heroui-native';
 
 interface SongSearchProps {
   searchText: string;
@@ -10,17 +10,12 @@ export default function SongSearch({
   setSearchText,
 }: SongSearchProps) {
   return (
-    <TextInput
-      placeholder="Escribe aquí para buscar...."
-      value={searchText}
-      onChangeText={setSearchText}
-      style={{
-        padding: 10,
-        margin: 10,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 5,
-      }}
-    />
+    <SearchField value={searchText} onChange={setSearchText}>
+      <SearchField.Group>
+        <SearchField.SearchIcon />
+        <SearchField.Input placeholder="Escribe aquí para buscar...." />
+        <SearchField.ClearButton />
+      </SearchField.Group>
+    </SearchField>
   );
 }

@@ -5,11 +5,10 @@ import {
   ScrollView,
   Platform,
   Text,
-  TextInput,
   Modal,
   TouchableOpacity,
 } from 'react-native';
-import { Card, Switch, Chip, Button, Spinner, BottomSheet } from 'heroui-native';
+import { Card, Switch, Chip, Button, Spinner, BottomSheet, PressableFeedback, TextField, Input, TextArea } from 'heroui-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -235,13 +234,13 @@ export default function ReflexionesScreen() {
           iconColor="#fff"
         />
       ) : (
-        <TouchableOpacity
+        <PressableFeedback
           style={styles.fab}
           onPress={() => setShowForm(true)}
-          activeOpacity={0.8}
         >
+          <PressableFeedback.Scale />
           <MaterialIcons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
+        </PressableFeedback>
       )}
 
       {/* Form bottom sheet */}
@@ -256,28 +255,26 @@ export default function ReflexionesScreen() {
             <ScrollView>
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Título (opcional)</Text>
-                <TextInput
-                  value={titulo}
-                  onChangeText={setTitulo}
-                  style={styles.input}
-                  placeholderTextColor={scheme === 'dark' ? '#888' : '#AAAAAA'}
-                />
+                <TextField>
+                  <Input value={titulo} onChangeText={setTitulo} style={styles.input} />
+                </TextField>
               </View>
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Compartiendo...</Text>
-                <TextInput
-                  value={contenido}
-                  onChangeText={setContenido}
-                  multiline
-                  numberOfLines={4}
-                  style={[styles.input, { minHeight: 100, textAlignVertical: 'top' }]}
-                  placeholderTextColor={scheme === 'dark' ? '#888' : '#AAAAAA'}
-                />
+                <TextField>
+                  <TextArea
+                    value={contenido}
+                    onChangeText={setContenido}
+                    numberOfLines={4}
+                    style={[styles.input, { minHeight: 100 }]}
+                  />
+                </TextField>
               </View>
-              <TouchableOpacity onPress={showDatePicker} style={styles.dateField}>
+              <PressableFeedback onPress={showDatePicker} style={styles.dateField}>
+                <PressableFeedback.Highlight />
                 <Text style={styles.inputLabel}>Fecha</Text>
                 <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
-              </TouchableOpacity>
+              </PressableFeedback>
               <View style={styles.row}>
                 <Switch
                   isSelected={grupal}
@@ -303,12 +300,9 @@ export default function ReflexionesScreen() {
               ) : (
                 <View style={styles.inputWrapper}>
                   <Text style={styles.inputLabel}>Tu nombre (opcional)</Text>
-                  <TextInput
-                    value={autor}
-                    onChangeText={setAutor}
-                    style={styles.input}
-                    placeholderTextColor={scheme === 'dark' ? '#888' : '#AAAAAA'}
-                  />
+                  <TextField>
+                    <Input value={autor} onChangeText={setAutor} style={styles.input} />
+                  </TextField>
                 </View>
               )}
               <Button

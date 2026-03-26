@@ -3,12 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
   Platform,
   ScrollView,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
-import { Button, CloseButton, TextField, TextArea } from 'heroui-native';
+import { Button, CloseButton, TextField, TextArea, useToast } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -71,6 +70,7 @@ export default function AppFeedbackModal({
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const { profile } = useUserProfile();
+  const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] =
     useState<FeedbackCategory | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
@@ -78,12 +78,12 @@ export default function AppFeedbackModal({
 
   const handleSubmit = async () => {
     if (!selectedCategory) {
-      Alert.alert('Error', 'Por favor selecciona una categoría');
+      toast.show({ variant: 'danger', label: 'Por favor selecciona una categoría' });
       return;
     }
 
     if (!feedbackText.trim()) {
-      Alert.alert('Error', 'Por favor escribe tu comentario');
+      toast.show({ variant: 'danger', label: 'Por favor escribe tu comentario' });
       return;
     }
 
@@ -120,10 +120,7 @@ export default function AppFeedbackModal({
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      Alert.alert(
-        'Error',
-        'No se pudo enviar tu comentario. ¿Lo intentamos de nuevo?',
-      );
+      toast.show({ variant: 'danger', label: 'No se pudo enviar tu comentario. Inténtalo de nuevo.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -131,22 +128,17 @@ export default function AppFeedbackModal({
 
   const handleClose = () => {
     if (feedbackText.trim() || selectedCategory) {
-      Alert.alert(
-        'Cancelar',
-        '¿Estás seguro de que quieres cancelar? Se perderá lo que has escrito.',
-        [
-          { text: 'Seguir escribiendo', style: 'cancel' },
-          {
-            text: 'Cancelar',
-            style: 'destructive',
-            onPress: () => {
-              setFeedbackText('');
-              setSelectedCategory(null);
-              onClose();
-            },
-          },
-        ],
-      );
+      toast.show({
+        variant: 'warning',
+        label: '¿Cancelar el comentario? Se perderá lo escrito.',
+        actionLabel: 'Sí, cancelar',
+        onActionPress: ({ hide }) => {
+          hide();
+          setFeedbackText('');
+          setSelectedCategory(null);
+          onClose();
+        },
+      });
     } else {
       onClose();
     }

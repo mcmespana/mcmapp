@@ -3,12 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
   Platform,
   ScrollView,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
-import { Button, CloseButton, TextField, TextArea } from 'heroui-native';
+import { Button, CloseButton, TextField, TextArea, useToast } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -52,12 +51,13 @@ export default function ReportBugsModal({
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const { profile } = useUserProfile();
+  const { toast } = useToast();
   const [bugDescription, setBugDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!bugDescription.trim()) {
-      Alert.alert('Error', 'Por favor describe los fallos encontrados');
+      toast.show({ variant: 'danger', label: 'Por favor describe los fallos encontrados' });
       return;
     }
 
@@ -102,10 +102,7 @@ export default function ReportBugsModal({
       }
     } catch (error) {
       console.error('Error submitting bug report:', error);
-      Alert.alert(
-        'Error',
-        'No se pudo enviar el aviso. ¿Lo intentamos de nuevo?',
-      );
+      toast.show({ variant: 'danger', label: 'No se pudo enviar el aviso. Inténtalo de nuevo.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -113,21 +110,16 @@ export default function ReportBugsModal({
 
   const handleClose = () => {
     if (bugDescription.trim()) {
-      Alert.alert(
-        'Cancelar aviso',
-        '¿Estás seguro de que quieres cancelar? Se perderá lo que has escrito.',
-        [
-          { text: 'Seguir escribiendo', style: 'cancel' },
-          {
-            text: 'Sí, ciérralo',
-            style: 'destructive',
-            onPress: () => {
-              setBugDescription('');
-              onClose();
-            },
-          },
-        ],
-      );
+      toast.show({
+        variant: 'warning',
+        label: '¿Cancelar el aviso? Se perderá lo escrito.',
+        actionLabel: 'Sí, cerrar',
+        onActionPress: ({ hide }) => {
+          hide();
+          setBugDescription('');
+          onClose();
+        },
+      });
     } else {
       onClose();
     }

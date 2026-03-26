@@ -1,6 +1,7 @@
 import { PropsWithChildren, useState } from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
-import spacing from '@/constants/spacing'; // Import spacing
+import { StyleSheet } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
+import spacing from '@/constants/spacing';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -17,11 +18,11 @@ export function Collapsible({
 
   return (
     <ThemedView>
-      <TouchableOpacity
+      <PressableFeedback
         style={styles.heading}
         onPress={() => setIsOpen((value) => !value)}
-        activeOpacity={0.8}
       >
+        <PressableFeedback.Highlight />
         <IconSymbol
           name="chevron.right"
           size={18}
@@ -31,7 +32,7 @@ export function Collapsible({
         />
 
         <ThemedText type="defaultSemiBold">{title}</ThemedText>
-      </TouchableOpacity>
+      </PressableFeedback>
       {isOpen && <ThemedView style={styles.content}>{children}</ThemedView>}
     </ThemedView>
   );
@@ -41,10 +42,10 @@ const styles = StyleSheet.create({
   heading: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm, // Use spacing.sm for gap
+    gap: spacing.sm,
   },
   content: {
-    marginTop: spacing.sm, // Use spacing.sm for marginTop
-    marginLeft: spacing.lg, // Use spacing.lg for marginLeft
+    marginTop: spacing.sm,
+    marginLeft: spacing.lg,
   },
 });

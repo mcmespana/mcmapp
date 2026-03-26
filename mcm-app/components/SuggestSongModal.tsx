@@ -3,12 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
   Platform,
   ScrollView,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
-import { Button, CloseButton, TextField, Input, TextArea, Chip } from 'heroui-native';
+import { Button, CloseButton, TextField, Input, TextArea, Chip, useToast } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -34,6 +33,7 @@ export default function SuggestSongModal({
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const { profile } = useUserProfile();
+  const { toast } = useToast();
 
   const [titulo, setTitulo] = useState('');
   const [artista, setArtista] = useState('');
@@ -50,7 +50,7 @@ export default function SuggestSongModal({
 
   const handleSubmit = async () => {
     if (!titulo.trim() || !artista.trim()) {
-      Alert.alert('Error', 'Título y artista son obligatorios');
+      toast.show({ variant: 'danger', label: 'Título y artista son obligatorios' });
       return;
     }
 
@@ -86,10 +86,7 @@ export default function SuggestSongModal({
       onSuccess();
     } catch (error) {
       console.error('Error enviando sugerencia:', error);
-      Alert.alert(
-        'Error',
-        'No se pudo enviar la sugerencia. Inténtalo de nuevo.',
-      );
+      toast.show({ variant: 'danger', label: 'No se pudo enviar la sugerencia. Inténtalo de nuevo.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -97,23 +94,18 @@ export default function SuggestSongModal({
 
   const handleClose = () => {
     if (titulo.trim() || artista.trim() || letra.trim()) {
-      Alert.alert(
-        'Cancelar sugerencia',
-        '¿Estás seguro de que quieres cancelar? Se perderá lo que has escrito.',
-        [
-          { text: 'Seguir escribiendo', style: 'cancel' },
-          {
-            text: 'Cancelar',
-            style: 'destructive',
-            onPress: () => {
-              setTitulo('');
-              setArtista('');
-              setLetra('');
-              onClose();
-            },
-          },
-        ],
-      );
+      toast.show({
+        variant: 'warning',
+        label: '¿Cancelar la sugerencia? Se perderá lo escrito.',
+        actionLabel: 'Sí, cancelar',
+        onActionPress: ({ hide }) => {
+          hide();
+          setTitulo('');
+          setArtista('');
+          setLetra('');
+          onClose();
+        },
+      });
     } else {
       onClose();
     }

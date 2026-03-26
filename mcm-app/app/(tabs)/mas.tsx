@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation, StackActions } from '@react-navigation/native';
 
 import { MaterialIcons } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 
 import MasHomeScreen from '../screens/MasHomeScreen';
@@ -184,25 +184,25 @@ export default function MasTab() {
                     marginRight: 8,
                   }}
                 >
-                  <TouchableOpacity
+                  <PressableFeedback
                     onPress={() => setSettingsVisible(true)}
                     style={{ padding: 10 }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
+                    <PressableFeedback.Highlight />
                     <MaterialIcons
                       name="settings"
                       size={26}
                       color={iconColor}
                     />
-                  </TouchableOpacity>
+                  </PressableFeedback>
                   {route.name !== 'Reflexiones' && (
-                    <TouchableOpacity
+                    <PressableFeedback
                       onPress={() => navigation.navigate('Reflexiones')}
                       style={{ padding: 10 }}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
+                      <PressableFeedback.Highlight />
                       <MaterialIcons name="forum" size={26} color={iconColor} />
-                    </TouchableOpacity>
+                    </PressableFeedback>
                   )}
                 </View>
               );

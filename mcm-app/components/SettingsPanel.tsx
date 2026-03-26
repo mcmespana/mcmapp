@@ -6,7 +6,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { CloseButton, PressableFeedback } from 'heroui-native';
+import { CloseButton, PressableFeedback, useToast } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
@@ -42,6 +42,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   const theme = Colors[scheme];
   const fontScale = useFontScale();
   const featureFlags = useFeatureFlags();
+  const { toast } = useToast();
   const [editVisible, setEditVisible] = useState(false);
 
   const increase = () => {
@@ -224,9 +225,9 @@ export default function SettingsPanel({ visible, onClose }: Props) {
                   projectId ? { projectId } : undefined,
                 );
                 await Clipboard.setStringAsync(data);
-                alert("Expo Token copiado al portapapeles: " + data);
+                toast.show({ variant: 'success', label: 'Expo Token copiado al portapapeles' });
               } catch (err) {
-                alert("Error obteniendo token: " + String(err));
+                toast.show({ variant: 'danger', label: 'Error obteniendo token: ' + String(err) });
               }
             }}
             accessibilityRole="button"

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Linking, Image, Platform, Text, TouchableOpacity } from 'react-native';
-import { Card, Button, Chip, Dialog } from 'heroui-native';
+import { View, StyleSheet, ScrollView, Linking, Image, Platform, Text } from 'react-native';
+import { Card, Button, Chip, Dialog, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -72,7 +72,8 @@ export default function VisitasScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.list}>
         {(visitas || []).map((v, idx) => (
-          <TouchableOpacity key={idx} activeOpacity={0.7} onPress={() => setSelected(v)}>
+          <PressableFeedback key={idx} onPress={() => setSelected(v)}>
+            <PressableFeedback.Highlight />
             <Card style={styles.card}>
               {v.imagen && (
                 <Image
@@ -108,7 +109,7 @@ export default function VisitasScreen() {
                 )}
               </Card.Body>
             </Card>
-          </TouchableOpacity>
+          </PressableFeedback>
         ))}
       </ScrollView>
       <Dialog
