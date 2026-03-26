@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Linking, Image, Platform, Text, Modal, TouchableOpacity } from 'react-native';
-import { Card, Button, Chip } from 'heroui-native';
+import { View, StyleSheet, ScrollView, Linking, Image, Platform, Text, TouchableOpacity } from 'react-native';
+import { Card, Button, Chip, Dialog } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -111,41 +111,34 @@ export default function VisitasScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
-      <Modal
-        visible={!!selected}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelected(null)}
+      <Dialog
+        isOpen={!!selected}
+        onOpenChange={(open) => { if (!open) setSelected(null); }}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setSelected(null)}
-        >
-          <View style={styles.modal}>
+        <Dialog.Portal>
+          <Dialog.Overlay />
+          <Dialog.Content>
+            <Dialog.Close />
             {selected && (
-              <View>
-                <Text style={styles.modalTitle}>{selected.titulo}</Text>
+              <View style={{ gap: 8 }}>
+                <Dialog.Title>{selected.titulo}</Dialog.Title>
                 {selected.texto && (
-                  <Text style={styles.modalText}>{selected.texto}</Text>
+                  <Dialog.Description>{selected.texto}</Dialog.Description>
                 )}
                 {selected.mapa && (
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onPress={() => openMap(selected.mapa)}
-                    >
-                      <MaterialIcons name="map" size={20} color="#888" />
-                      <Button.Label>Ver en mapa</Button.Label>
-                    </Button>
-                  </View>
+                  <Button
+                    variant="secondary"
+                    onPress={() => { openMap(selected.mapa); setSelected(null); }}
+                  >
+                    <MaterialIcons name="map" size={18} color="#fff" />
+                    <Button.Label>Ver en mapa</Button.Label>
+                  </Button>
                 )}
               </View>
             )}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
     </View>
   );
 }
@@ -174,25 +167,5 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     subtitle: { fontSize: 14, marginBottom: 4, color: theme.text },
     dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    modal: {
-      backgroundColor: theme.background,
-      margin: 20,
-      padding: 20,
-      borderRadius: 8,
-      width: '90%',
-    },
-    modalTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      marginBottom: 8,
-      color: theme.text,
-    },
-    modalText: { fontSize: 14, marginBottom: 12, color: theme.text },
   });
 };

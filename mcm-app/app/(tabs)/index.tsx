@@ -27,9 +27,9 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import useFontScale from '@/hooks/useFontScale';
+import { useToast } from 'heroui-native';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
-import Toast from '@/components/Toast';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
@@ -94,9 +94,9 @@ export default function Home() {
   const fontScale = useFontScale();
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 700;
+  const { toast } = useToast();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
-  const [toastVisible, setToastVisible] = useState(false);
 
   // Primary color readable on both light and dark backgrounds
   const accentColor = scheme === 'dark' ? colors.info : colors.primary;
@@ -248,14 +248,14 @@ export default function Home() {
       <AppFeedbackModal
         visible={feedbackVisible}
         onClose={() => setFeedbackVisible(false)}
-        onSuccess={() => setToastVisible(true)}
-      />
-      <Toast
-        visible={toastVisible}
-        message="¡Gracias! Tu comentario ha sido enviado correctamente. Nos ayudas a mejorar la app 🙌"
-        type="success"
-        duration={4000}
-        onDismiss={() => setToastVisible(false)}
+        onSuccess={() =>
+          toast.show({
+            variant: 'success',
+            label: '¡Gracias! Tu comentario ha sido enviado correctamente 🙌',
+            actionLabel: 'Cerrar',
+            onActionPress: ({ hide }) => hide(),
+          })
+        }
       />
 
       {/* ── Custom Header ── */}

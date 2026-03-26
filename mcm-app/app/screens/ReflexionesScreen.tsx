@@ -9,7 +9,7 @@ import {
   Modal,
   TouchableOpacity,
 } from 'react-native';
-import { Card, Switch, Chip, Button, Spinner } from 'heroui-native';
+import { Card, Switch, Chip, Button, Spinner, BottomSheet } from 'heroui-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -244,40 +244,23 @@ export default function ReflexionesScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Form modal */}
-      <Modal
-        visible={showForm}
-        onRequestClose={() => setShowForm(false)}
-        transparent
-        animationType="slide"
+      {/* Form bottom sheet */}
+      <BottomSheet
+        isOpen={showForm}
+        onOpenChange={(open) => { if (!open) setShowForm(false); }}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowForm(false)}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={styles.modal}
-            onPress={() => {}}
-          >
+        <BottomSheet.Portal>
+          <BottomSheet.Overlay />
+          <BottomSheet.Content>
+            <BottomSheet.Title className="mb-2">Compartir reflexión</BottomSheet.Title>
             <ScrollView>
-              <Button
-                variant="primary"
-                onPress={addReflexion}
-                className="mb-4 mt-4"
-              >
-                <Button.Label>Guardar</Button.Label>
-              </Button>
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Título (opcional)</Text>
                 <TextInput
                   value={titulo}
                   onChangeText={setTitulo}
                   style={styles.input}
-                  placeholderTextColor={
-                    scheme === 'dark' ? '#888' : '#AAAAAA'
-                  }
+                  placeholderTextColor={scheme === 'dark' ? '#888' : '#AAAAAA'}
                 />
               </View>
               <View style={styles.inputWrapper}>
@@ -288,15 +271,10 @@ export default function ReflexionesScreen() {
                   multiline
                   numberOfLines={4}
                   style={[styles.input, { minHeight: 100, textAlignVertical: 'top' }]}
-                  placeholderTextColor={
-                    scheme === 'dark' ? '#888' : '#AAAAAA'
-                  }
+                  placeholderTextColor={scheme === 'dark' ? '#888' : '#AAAAAA'}
                 />
               </View>
-              <TouchableOpacity
-                onPress={showDatePicker}
-                style={styles.dateField}
-              >
+              <TouchableOpacity onPress={showDatePicker} style={styles.dateField}>
                 <Text style={styles.inputLabel}>Fecha</Text>
                 <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
               </TouchableOpacity>
@@ -329,16 +307,21 @@ export default function ReflexionesScreen() {
                     value={autor}
                     onChangeText={setAutor}
                     style={styles.input}
-                    placeholderTextColor={
-                      scheme === 'dark' ? '#888' : '#AAAAAA'
-                    }
+                    placeholderTextColor={scheme === 'dark' ? '#888' : '#AAAAAA'}
                   />
                 </View>
               )}
+              <Button
+                variant="primary"
+                onPress={addReflexion}
+                className="mt-4 mb-6"
+              >
+                <Button.Label>Guardar reflexión</Button.Label>
+              </Button>
             </ScrollView>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+          </BottomSheet.Content>
+        </BottomSheet.Portal>
+      </BottomSheet>
 
       {/* Date selector modal */}
       <Modal
@@ -367,7 +350,7 @@ export default function ReflexionesScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Saving modal */}
+      {/* Saving overlay */}
       <Modal visible={saving} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.savingModal}>
@@ -408,15 +391,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'flex-start',
-      paddingTop: 60,
-    },
-    modal: {
-      backgroundColor: theme.background,
-      margin: 20,
-      padding: 20,
-      borderRadius: 8,
-      maxHeight: '80%',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     inputWrapper: { marginBottom: spacing.md },
     inputLabel: {

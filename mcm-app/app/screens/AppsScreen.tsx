@@ -8,9 +8,8 @@ import {
   Linking,
   Platform,
   Text,
-  Modal,
 } from 'react-native';
-import { Chip, Button } from 'heroui-native';
+import { Chip, Button, Dialog } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
@@ -131,22 +130,18 @@ export default function AppsScreen() {
         ))}
       </ScrollView>
 
-      <Modal
-        visible={!!selected}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelected(null)}
+      <Dialog
+        isOpen={!!selected}
+        onOpenChange={(open) => { if (!open) setSelected(null); }}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setSelected(null)}
-        >
-          <TouchableOpacity activeOpacity={1} style={styles.modal}>
+        <Dialog.Portal>
+          <Dialog.Overlay />
+          <Dialog.Content>
+            <Dialog.Close />
             {selected && (
-              <View>
-                <Text style={styles.modalTitle}>{selected.nombre}</Text>
-                <Text style={styles.modalDesc}>{selected.descripcion}</Text>
+              <View style={{ gap: 12 }}>
+                <Dialog.Title>{selected.nombre}</Dialog.Title>
+                <Dialog.Description>{selected.descripcion}</Dialog.Description>
                 <View style={styles.chipRow}>
                   <Chip
                     variant="primary"
@@ -185,7 +180,7 @@ export default function AppsScreen() {
                   ) : (
                     <Button
                       variant="primary"
-                      onPress={() => openApp(selected)}
+                      onPress={() => { openApp(selected); setSelected(null); }}
                     >
                       <MaterialIcons
                         name={Platform.OS === 'ios' ? 'phone-iphone' : 'android'}
@@ -200,9 +195,9 @@ export default function AppsScreen() {
                 </View>
               </View>
             )}
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
     </View>
   );
 }
@@ -269,32 +264,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     rightContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    modal: {
-      backgroundColor: theme.background,
-      padding: 20,
-      margin: 20,
-      borderRadius: 8,
-      width: '85%',
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      textAlign: 'center',
-      marginBottom: 8,
-      color: theme.text,
-    },
-    modalDesc: {
-      fontSize: 16,
-      textAlign: 'center',
-      marginBottom: 12,
-      color: theme.text,
     },
     chipRow: { alignItems: 'center', marginBottom: 12 },
     downloadRow: {

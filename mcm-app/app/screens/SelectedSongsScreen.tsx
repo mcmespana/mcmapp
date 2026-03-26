@@ -13,11 +13,9 @@ import {
   StyleSheet,
   Platform,
   Share,
-  Modal,
   TextInput,
-  KeyboardAvoidingView,
 } from 'react-native';
-import { useToast } from 'heroui-native';
+import { useToast, Dialog, Button } from 'heroui-native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -506,23 +504,19 @@ const SelectedSongsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Export modal */}
-      <Modal
-        visible={showExportModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowExportModal(false)}
+      {/* Export dialog */}
+      <Dialog
+        isOpen={showExportModal}
+        onOpenChange={(open) => { if (!open) setShowExportModal(false); }}
       >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Exportar playlist</Text>
-            <Text style={styles.modalSubtitle}>
+        <Dialog.Portal>
+          <Dialog.Overlay />
+          <Dialog.Content>
+            <Dialog.Close />
+            <Dialog.Title>Exportar playlist</Dialog.Title>
+            <Dialog.Description className="mb-3">
               Elige un nombre para tu archivo
-            </Text>
-
+            </Dialog.Description>
             <TextInput
               style={styles.modalInput}
               value={exportFileName}
@@ -532,35 +526,27 @@ const SelectedSongsScreen: React.FC = () => {
               autoFocus={true}
               selectTextOnFocus={true}
             />
-
             <Text style={styles.modalNote}>
               Se exportará como archivo .mcm
             </Text>
-
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
+              <Button
+                variant="tertiary"
                 onPress={() => setShowExportModal(false)}
-                activeOpacity={0.7}
               >
-                <Text style={styles.modalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.modalConfirmButton,
-                  !exportFileName.trim() && styles.modalConfirmDisabled,
-                ]}
+                <Button.Label>Cancelar</Button.Label>
+              </Button>
+              <Button
+                variant="primary"
                 onPress={handleConfirmExport}
-                disabled={!exportFileName.trim()}
-                activeOpacity={0.7}
+                isDisabled={!exportFileName.trim()}
               >
-                <Text style={styles.modalConfirmText}>Exportar</Text>
-              </TouchableOpacity>
+                <Button.Label>Exportar</Button.Label>
+              </Button>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
     </View>
   );
 };
@@ -730,46 +716,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '600',
       color: isDark ? '#7AB3FF' : '#253883',
     },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.4)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-    },
-    modalContainer: {
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: radii.pill,
-      padding: 24,
-      width: '100%',
-      maxWidth: 380,
-      ...Platform.select({
-        web: {
-          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-        },
-        default: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.25,
-          shadowRadius: 16,
-          elevation: 12,
-        },
-      }),
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      marginBottom: 4,
-      textAlign: 'center',
-      color: isDark ? '#EBEBF0' : '#1C1C1E',
-      letterSpacing: -0.4,
-    },
-    modalSubtitle: {
-      fontSize: 14,
-      color: isDark ? '#8E8E93' : '#8E8E93',
-      textAlign: 'center',
-      marginBottom: 20,
-    },
     modalInput: {
       borderWidth: 1,
       borderColor: isDark ? Colors.dark.card : '#E5E5EA',
@@ -784,38 +730,11 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontSize: 13,
       color: isDark ? '#636366' : '#8E8E93',
       textAlign: 'center',
-      marginBottom: 24,
+      marginBottom: 16,
     },
     modalButtons: {
       flexDirection: 'row',
       gap: 12,
-    },
-    modalCancelButton: {
-      flex: 1,
-      padding: 14,
-      borderRadius: radii.md,
-      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
-      alignItems: 'center',
-    },
-    modalCancelText: {
-      color: isDark ? '#AEAEB2' : '#636366',
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    modalConfirmButton: {
-      flex: 1,
-      padding: 14,
-      borderRadius: radii.md,
-      backgroundColor: '#253883',
-      alignItems: 'center',
-    },
-    modalConfirmDisabled: {
-      opacity: 0.5,
-    },
-    modalConfirmText: {
-      color: '#fff',
-      fontSize: 16,
-      fontWeight: '600',
     },
   });
 };
