@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
-  TextInput,
   Alert,
   Platform,
   ScrollView,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
+import { Button, CloseButton, TextField, TextArea } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -143,13 +142,11 @@ export default function ReportBugsModal({
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose} accessibilityLabel="Cerrar">
-            <MaterialIcons name="close" size={24} color={theme.text} />
-          </TouchableOpacity>
+          <CloseButton onPress={handleClose} />
           <Text style={[styles.title, { color: theme.text }]}>
             ¿Fallitos? 🐛
           </Text>
-          <View style={{ width: 24 }} />
+          <View style={{ width: 36 }} />
         </View>
 
         {songTitle && (
@@ -162,54 +159,39 @@ export default function ReportBugsModal({
           He encontrado estos fallitos...
         </Text>
 
-        <TextInput
-          style={[
-            styles.textInput,
-            {
-              backgroundColor: theme.background,
-              color: theme.text,
-              borderColor: theme.icon,
-            },
-          ]}
-          placeholder="Describe aquí los fallos que has encontrado en esta canción"
-          placeholderTextColor={theme.icon}
-          value={bugDescription}
-          onChangeText={setBugDescription}
-          multiline
-          numberOfLines={6}
-          textAlignVertical="top"
-          maxLength={500}
-          autoFocus={false}
-          blurOnSubmit={false}
-          returnKeyType="default"
-          scrollEnabled={true}
-          editable={!isSubmitting}
-        />
+        <TextField style={{ marginBottom: 8 }}>
+          <TextArea
+            placeholder="Describe aquí los fallos que has encontrado en esta canción"
+            value={bugDescription}
+            onChangeText={setBugDescription}
+            maxLength={500}
+            autoFocus={false}
+            blurOnSubmit={false}
+            returnKeyType="default"
+            scrollEnabled={true}
+            editable={!isSubmitting}
+          />
+        </TextField>
 
         <Text style={[styles.charCount, { color: theme.icon }]}>
           {bugDescription.length}/500 caracteres
         </Text>
 
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            {
-              backgroundColor: bugDescription.trim() ? '#FF6B6B' : theme.icon,
-              opacity: isSubmitting ? 0.7 : 1,
-            },
-          ]}
+        <Button
+          variant="danger"
+          isDisabled={!bugDescription.trim() || isSubmitting}
           onPress={handleSubmit}
-          disabled={!bugDescription.trim() || isSubmitting}
+          style={styles.submitButton}
         >
           <MaterialIcons
             name={isSubmitting ? 'hourglass-empty' : 'bug-report'}
             size={20}
             color="#fff"
           />
-          <Text style={styles.submitButtonText}>
+          <Button.Label>
             {isSubmitting ? 'Enviando...' : 'Notificar fallitos'}
-          </Text>
-        </TouchableOpacity>
+          </Button.Label>
+        </Button>
 
         {/* Divisor */}
         <View style={styles.divider}>
@@ -219,18 +201,14 @@ export default function ReportBugsModal({
         </View>
 
         {/* Botón Panel Secreto */}
-        <TouchableOpacity
-          style={[styles.secretButton, { backgroundColor: '#4CAF50' }]}
-          onPress={() => {
-            onClose();
-            if (onOpenSecretPanel) {
-              onOpenSecretPanel();
-            }
-          }}
+        <Button
+          variant="secondary"
+          onPress={() => { onClose(); if (onOpenSecretPanel) onOpenSecretPanel(); }}
+          style={styles.secretButton}
         >
           <MaterialIcons name="admin-panel-settings" size={20} color="#fff" />
-          <Text style={styles.secretButtonText}>Panel Secreto</Text>
-        </TouchableOpacity>
+          <Button.Label>Panel Secreto</Button.Label>
+        </Button>
 
         <Text style={[styles.disclaimer, { color: theme.icon }]}>
           Con tus avisos nos ayudas a mejorar la calidad del cantoral. Puedes
@@ -271,33 +249,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
-  textInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 240, // Aumentar altura del textarea
-    marginBottom: 8,
-  },
   charCount: {
     fontSize: 12,
     textAlign: 'right',
     marginBottom: 20,
   },
   submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
     marginBottom: 16,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
   },
   disclaimer: {
     fontSize: 12,
@@ -319,18 +277,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   secretButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
     marginBottom: 16,
-  },
-  secretButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
   },
 });

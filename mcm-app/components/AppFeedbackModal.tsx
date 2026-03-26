@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
-  TextInput,
   Alert,
   Platform,
   ScrollView,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
+import { Button, CloseButton, TextField, TextArea } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -166,13 +165,11 @@ export default function AppFeedbackModal({
         overScrollMode="never"
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose} accessibilityLabel="Cerrar">
-            <MaterialIcons name="close" size={24} color={theme.text} />
-          </TouchableOpacity>
+          <CloseButton onPress={handleClose} />
           <Text style={[styles.title, { color: theme.text }]}>
             ¿Fallitos? 🐛
           </Text>
-          <View style={{ width: 24 }} />
+          <View style={{ width: 36 }} />
         </View>
 
         <Text style={[styles.subtitle, { color: theme.icon }]}>
@@ -186,8 +183,10 @@ export default function AppFeedbackModal({
             </Text>
 
             {FEEDBACK_CATEGORIES.map((category) => (
-              <TouchableOpacity
+              <Button
                 key={category.id}
+                variant="outline"
+                onPress={() => setSelectedCategory(category.id)}
                 style={[
                   styles.categoryButton,
                   {
@@ -196,10 +195,8 @@ export default function AppFeedbackModal({
                         ? `${category.color}15`
                         : `${category.color}10`,
                     borderColor: category.color + '40',
-                    borderWidth: 1.5,
                   },
                 ]}
-                onPress={() => setSelectedCategory(category.id)}
               >
                 <View style={styles.categoryContent}>
                   <View style={styles.categoryInfo}>
@@ -208,9 +205,9 @@ export default function AppFeedbackModal({
                       size={28}
                       color={category.color}
                     />
-                    <Text style={[styles.categoryLabel, { color: theme.text }]}>
+                    <Button.Label style={{ color: theme.text }}>
                       {category.label}
-                    </Text>
+                    </Button.Label>
                   </View>
                   <MaterialIcons
                     name="chevron-right"
@@ -218,20 +215,21 @@ export default function AppFeedbackModal({
                     color={theme.icon}
                   />
                 </View>
-              </TouchableOpacity>
+              </Button>
             ))}
           </>
         ) : (
           <>
-            <TouchableOpacity
-              style={styles.backButton}
+            <Button
+              variant="ghost"
               onPress={() => setSelectedCategory(null)}
+              style={styles.backButton}
             >
               <MaterialIcons name="arrow-back" size={20} color={theme.icon} />
-              <Text style={[styles.backText, { color: theme.icon }]}>
+              <Button.Label style={{ color: theme.icon }}>
                 Cambiar categoría
-              </Text>
-            </TouchableOpacity>
+              </Button.Label>
+            </Button>
 
             <View style={styles.selectedCategory}>
               <MaterialIcons
@@ -246,41 +244,24 @@ export default function AppFeedbackModal({
               </Text>
             </View>
 
-            <TextInput
-              style={[
-                styles.textInput,
-                {
-                  backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#F2F2F7',
-                  color: theme.text,
-                  borderColor: theme.icon + '30',
-                },
-              ]}
-              placeholder={selectedCategoryData!.placeholder}
-              placeholderTextColor={theme.icon}
-              value={feedbackText}
-              onChangeText={setFeedbackText}
-              multiline
-              numberOfLines={8}
-              textAlignVertical="top"
-              maxLength={1000}
-            />
+            <TextField style={{ marginBottom: 4 }}>
+              <TextArea
+                placeholder={selectedCategoryData!.placeholder}
+                value={feedbackText}
+                onChangeText={setFeedbackText}
+                maxLength={1000}
+              />
+            </TextField>
 
             <Text style={[styles.charCount, { color: theme.icon }]}>
               {feedbackText.length}/1000 caracteres
             </Text>
 
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                {
-                  backgroundColor: feedbackText.trim()
-                    ? selectedCategoryData!.color
-                    : theme.icon,
-                  opacity: isSubmitting ? 0.7 : 1,
-                },
-              ]}
+            <Button
+              variant="primary"
+              isDisabled={!feedbackText.trim() || isSubmitting}
               onPress={handleSubmit}
-              disabled={!feedbackText.trim() || isSubmitting}
+              style={styles.submitButton}
             >
               <MaterialIcons
                 name={
@@ -291,12 +272,10 @@ export default function AppFeedbackModal({
                 size={20}
                 color="#fff"
               />
-              <Text style={styles.submitButtonText}>
-                {isSubmitting
-                  ? 'Enviando...'
-                  : selectedCategoryData!.submitText}
-              </Text>
-            </TouchableOpacity>
+              <Button.Label>
+                {isSubmitting ? 'Enviando...' : selectedCategoryData!.submitText}
+              </Button.Label>
+            </Button>
           </>
         )}
       </ScrollView>
@@ -332,8 +311,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderWidth: 1.5,
+    height: 'auto',
   },
   categoryContent: {
     flexDirection: 'row',
@@ -355,13 +334,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 16,
-  },
-  backText: {
-    marginLeft: 8,
-    fontSize: 16,
   },
   selectedCategory: {
     flexDirection: 'row',
@@ -375,16 +348,6 @@ const styles = StyleSheet.create({
   },
   categoryForm: {
     marginBottom: 20,
-  },
-  textInput: {
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    fontSize: 16,
-    minHeight: 150,
-    maxHeight: 250,
-    textAlignVertical: 'top',
   },
   charCount: {
     fontSize: 12,
@@ -405,14 +368,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
     marginBottom: 8,
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

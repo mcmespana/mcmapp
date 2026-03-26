@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
-  TextInput,
   Alert,
   Platform,
   ScrollView,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
+import { Button, CloseButton, TextField, Input, TextArea, Chip } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -135,72 +134,39 @@ export default function SuggestSongModal({
         overScrollMode="never"
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose} accessibilityLabel="Cerrar">
-            <MaterialIcons name="close" size={24} color={theme.text} />
-          </TouchableOpacity>
+          <CloseButton onPress={handleClose} />
           <Text style={[styles.title, { color: theme.text }]}>
             Sugerir canción 🎵
           </Text>
-          <View style={{ width: 24 }} />
+          <View style={{ width: 36 }} />
         </View>
 
-        <Text style={[styles.label, { color: theme.text }]}>
-          Título de la canción *
-        </Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            {
-              backgroundColor: theme.background,
-              color: theme.text,
-              borderColor: theme.icon,
-            },
-          ]}
-          placeholder="Nombre de la canción"
-          placeholderTextColor={theme.icon}
-          value={titulo}
-          onChangeText={setTitulo}
-          maxLength={100}
-        />
+        <TextField isRequired style={styles.field}>
+          <Input
+            placeholder="Nombre de la canción"
+            value={titulo}
+            onChangeText={setTitulo}
+            maxLength={100}
+          />
+        </TextField>
 
-        <Text style={[styles.label, { color: theme.text }]}>Artista *</Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            {
-              backgroundColor: theme.background,
-              color: theme.text,
-              borderColor: theme.icon,
-            },
-          ]}
-          placeholder="Nombre del artista o banda"
-          placeholderTextColor={theme.icon}
-          value={artista}
-          onChangeText={setArtista}
-          maxLength={100}
-        />
+        <TextField isRequired style={styles.field}>
+          <Input
+            placeholder="Nombre del artista o banda"
+            value={artista}
+            onChangeText={setArtista}
+            maxLength={100}
+          />
+        </TextField>
 
-        <Text style={[styles.label, { color: theme.text }]}>
-          Letra o acordes (opcional)
-        </Text>
-        <TextInput
-          style={[
-            styles.textAreaInput,
-            {
-              backgroundColor: theme.background,
-              color: theme.text,
-              borderColor: theme.icon,
-            },
-          ]}
-          placeholder="Puedes incluir la letra, acordes o cualquier información adicional"
-          placeholderTextColor={theme.icon}
-          value={letra}
-          onChangeText={setLetra}
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-          maxLength={10000}
-        />
+        <TextField style={styles.field}>
+          <TextArea
+            placeholder="Puedes incluir la letra, acordes o cualquier información adicional"
+            value={letra}
+            onChangeText={setLetra}
+            maxLength={10000}
+          />
+        </TextField>
 
         <Text style={[styles.charCount, { color: theme.icon }]}>
           {letra.length}/1000 caracteres
@@ -214,54 +180,36 @@ export default function SuggestSongModal({
             style={styles.categoryScroll}
           >
             {sortedCategories.map((cat) => (
-              <TouchableOpacity
+              <Chip
                 key={cat}
-                style={[
-                  styles.categoryOption,
-                  {
-                    backgroundColor:
-                      categoria === cat ? theme.tint : 'transparent',
-                    borderColor: theme.icon,
-                  },
-                ]}
+                variant={categoria === cat ? 'primary' : 'soft'}
+                color="default"
                 onPress={() => setCategoria(cat)}
+                style={{ marginRight: 8 }}
               >
-                <Text
-                  style={[
-                    styles.categoryOptionText,
-                    {
-                      color: categoria === cat ? '#fff' : theme.text,
-                    },
-                  ]}
-                >
+                <Chip.Label>
                   {songsData?.[cat]?.categoryTitle ?? cat}
-                </Text>
-              </TouchableOpacity>
+                </Chip.Label>
+              </Chip>
             ))}
           </ScrollView>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            {
-              backgroundColor:
-                titulo.trim() && artista.trim() ? '#4CAF50' : theme.icon,
-              opacity: isSubmitting ? 0.7 : 1,
-            },
-          ]}
+        <Button
+          variant="primary"
+          isDisabled={!titulo.trim() || !artista.trim() || isSubmitting}
           onPress={handleSubmit}
-          disabled={!titulo.trim() || !artista.trim() || isSubmitting}
+          style={styles.submitButton}
         >
           <MaterialIcons
             name={isSubmitting ? 'hourglass-empty' : 'send'}
             size={20}
             color="#fff"
           />
-          <Text style={styles.submitButtonText}>
+          <Button.Label>
             {isSubmitting ? 'Enviando...' : 'Enviar sugerencia'}
-          </Text>
-        </TouchableOpacity>
+          </Button.Label>
+        </Button>
 
         <Text style={[styles.disclaimer, { color: theme.icon }]}>
           Recibiremos tu sugerencia de canción y, con algo de tiempo y suerte,
@@ -289,19 +237,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 16,
   },
-  textInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  textAreaInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 100,
+  field: {
     marginBottom: 8,
   },
   charCount: {
@@ -315,34 +251,9 @@ const styles = StyleSheet.create({
   categoryScroll: {
     flexGrow: 0,
   },
-  categoryOption: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderRadius: 20,
-    marginRight: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  categoryOptionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
   submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
     marginBottom: 16,
     marginTop: 8,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
   },
   disclaimer: {
     fontSize: 12,
