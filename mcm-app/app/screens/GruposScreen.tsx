@@ -7,9 +7,9 @@ import {
   Linking,
   Platform,
   Text,
-  TextInput,
   Pressable,
 } from 'react-native';
+import { SearchField, ListGroup, Separator, Button } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -149,13 +149,13 @@ export default function GruposScreen() {
           )}
 
           {grupo.mapa && (
-            <TouchableOpacity
-              style={styles.locationButton}
+            <Button
+              variant="secondary"
               onPress={() => openMap(grupo.mapa)}
-              activeOpacity={0.7}
+              className="my-3"
             >
-              <Text style={styles.locationButtonText}>📍 Ubicación</Text>
-            </TouchableOpacity>
+              <Button.Label>📍 Ubicación</Button.Label>
+            </Button>
           )}
 
           {grupo.responsable && (
@@ -190,22 +190,16 @@ export default function GruposScreen() {
     return (
       <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
         <View style={styles.searchContainer}>
-          <View style={styles.searchbar}>
-            <MaterialIcons name="search" size={20} color="#8A8A8D" style={{ marginRight: 8 }} />
-            <TextInput
-              placeholder="Buscar grupo o persona"
-              placeholderTextColor="#8A8A8D"
-              onChangeText={setSearch}
-              value={search}
-              style={styles.searchbarInput}
-              autoFocus={showSearch}
-            />
-            {search.length > 0 && (
-              <Pressable onPress={() => setSearch('')}>
-                <MaterialIcons name="close" size={20} color="#8A8A8D" />
-              </Pressable>
-            )}
-          </View>
+          <SearchField value={search} onChange={setSearch}>
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input
+                placeholder="Buscar grupo o persona"
+                autoFocus={showSearch}
+              />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
         </View>
         {search.trim().length < 3 ? (
           <View style={styles.emptyContainer}>
@@ -221,29 +215,34 @@ export default function GruposScreen() {
           Object.entries(grouped).map(([cat, grupos]) => (
             <View key={cat}>
               <Text style={styles.sectionHeader}>{cat}</Text>
-              {grupos.map(({ grupo: g, matches }, idx) => (
-                <View key={idx}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setCategoria(cat);
-                      setGrupo(g);
-                      setShowSearch(false);
-                    }}
-                    style={styles.listItem}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.groupListTitle}>{g.nombre}</Text>
-                    {g.subtitulo ? <Text style={styles.listItemDesc}>{g.subtitulo}</Text> : null}
-                  </TouchableOpacity>
-                  {matches
-                    .filter((m) => m !== '__match_name__')
-                    .map((m, j) => (
-                      <View key={j} style={[styles.listItem, styles.matchItem]}>
-                        <Text style={styles.listItemTitle}>{m}</Text>
-                      </View>
-                    ))}
-                </View>
-              ))}
+              <ListGroup variant="transparent">
+                {grupos.map(({ grupo: g, matches }, idx) => (
+                  <React.Fragment key={idx}>
+                    <ListGroup.Item
+                      onPress={() => {
+                        setCategoria(cat);
+                        setGrupo(g);
+                        setShowSearch(false);
+                      }}
+                    >
+                      <ListGroup.ItemContent>
+                        <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
+                        {g.subtitulo ? (
+                          <ListGroup.ItemDescription>{g.subtitulo}</ListGroup.ItemDescription>
+                        ) : null}
+                      </ListGroup.ItemContent>
+                    </ListGroup.Item>
+                    {matches
+                      .filter((m) => m !== '__match_name__')
+                      .map((m, j) => (
+                        <View key={j} style={[styles.listItem, styles.matchItem]}>
+                          <Text style={styles.listItemTitle}>{m}</Text>
+                        </View>
+                      ))}
+                    {idx < grupos.length - 1 && <Separator />}
+                  </React.Fragment>
+                ))}
+              </ListGroup>
             </View>
           ))
         )}
@@ -285,17 +284,21 @@ export default function GruposScreen() {
             <MaterialIcons name="arrow-back" size={24} color="#888" />
           </Pressable>
         </View>
-        {(data?.[categoria] || []).map((g, idx) => (
-          <TouchableOpacity
-            key={idx}
-            style={styles.listItem}
-            onPress={() => setGrupo(g)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.groupListTitle}>{g.nombre}</Text>
-            {g.subtitulo ? <Text style={styles.listItemDesc}>{g.subtitulo}</Text> : null}
-          </TouchableOpacity>
-        ))}
+        <ListGroup variant="transparent">
+          {(data?.[categoria] || []).map((g, idx) => (
+            <React.Fragment key={idx}>
+              <ListGroup.Item onPress={() => setGrupo(g)}>
+                <ListGroup.ItemContent>
+                  <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
+                  {g.subtitulo ? (
+                    <ListGroup.ItemDescription>{g.subtitulo}</ListGroup.ItemDescription>
+                  ) : null}
+                </ListGroup.ItemContent>
+              </ListGroup.Item>
+              {idx < (data?.[categoria]?.length ?? 0) - 1 && <Separator />}
+            </React.Fragment>
+          ))}
+        </ListGroup>
       </ScrollView>
     );
   }
@@ -307,17 +310,24 @@ export default function GruposScreen() {
           <MaterialIcons name="arrow-back" size={24} color="#888" />
         </Pressable>
       </View>
-      {(categoria && data?.[categoria] ? data[categoria] : []).map((g: Grupo, idx: number) => (
-        <TouchableOpacity
-          key={idx}
-          style={styles.listItem}
-          onPress={() => setGrupo(g)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.groupListTitle}>{g.nombre}</Text>
-          {g.subtitulo ? <Text style={styles.listItemDesc}>{g.subtitulo}</Text> : null}
-        </TouchableOpacity>
-      ))}
+      <ListGroup variant="transparent">
+        {(categoria && data?.[categoria] ? data[categoria] : []).map((g: Grupo, idx: number) => {
+          const list = categoria && data?.[categoria] ? data[categoria] : [];
+          return (
+            <React.Fragment key={idx}>
+              <ListGroup.Item onPress={() => setGrupo(g)}>
+                <ListGroup.ItemContent>
+                  <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
+                  {g.subtitulo ? (
+                    <ListGroup.ItemDescription>{g.subtitulo}</ListGroup.ItemDescription>
+                  ) : null}
+                </ListGroup.ItemContent>
+              </ListGroup.Item>
+              {idx < list.length - 1 && <Separator />}
+            </React.Fragment>
+          );
+        })}
+      </ListGroup>
     </ScrollView>
   );
 }

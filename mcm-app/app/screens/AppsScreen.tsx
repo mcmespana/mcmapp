@@ -10,6 +10,7 @@ import {
   Text,
   Modal,
 } from 'react-native';
+import { Chip, Button } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
@@ -108,26 +109,22 @@ export default function AppsScreen() {
               </View>
               <View style={styles.rightContainer}>
                 {app.tipo.toLowerCase() === 'necesaria' && (
-                  <View style={styles.starBadge}>
-                    <View style={styles.starBadgeContainer}>
-                      <MaterialIcons name="star" size={14} color="#FFF" />
-                    </View>
-                  </View>
+                  <Chip size="sm" variant="primary" color="warning">
+                    <MaterialIcons name="star" size={12} color="#fff" />
+                  </Chip>
                 )}
-                <TouchableOpacity
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    setSelected(app);
-                  }}
-                  style={styles.plusButton}
-                  activeOpacity={0.7}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  isIconOnly
+                  onPress={() => setSelected(app)}
                 >
                   <MaterialIcons
                     name="add-circle-outline"
-                    size={28}
+                    size={24}
                     color={scheme === 'dark' ? '#ccc' : '#555'}
                   />
-                </TouchableOpacity>
+                </Button>
               </View>
             </View>
           </TouchableOpacity>
@@ -151,78 +148,54 @@ export default function AppsScreen() {
                 <Text style={styles.modalTitle}>{selected.nombre}</Text>
                 <Text style={styles.modalDesc}>{selected.descripcion}</Text>
                 <View style={styles.chipRow}>
-                  <View
-                    style={[
-                      styles.chip,
-                      selected.tipo.toLowerCase() === 'necesaria'
-                        ? styles.chipNecesaria
-                        : styles.chipOpcional,
-                    ]}
+                  <Chip
+                    variant="primary"
+                    color={selected.tipo.toLowerCase() === 'necesaria' ? 'warning' : 'accent'}
                   >
                     <MaterialIcons
-                      name={
-                        selected.tipo.toLowerCase() === 'necesaria'
-                          ? 'star'
-                          : 'info'
-                      }
+                      name={selected.tipo.toLowerCase() === 'necesaria' ? 'star' : 'info'}
                       size={14}
                       color="#fff"
-                      style={{ marginRight: 4 }}
                     />
-                    <Text style={styles.chipText}>{selected.tipo}</Text>
-                  </View>
+                    <Chip.Label>{selected.tipo}</Chip.Label>
+                  </Chip>
                 </View>
                 <View style={styles.downloadRow}>
                   {Platform.OS === 'web' ? (
                     <>
-                      <TouchableOpacity
-                        style={styles.downloadBtn}
+                      <Button
+                        variant="outline"
                         onPress={() => Linking.openURL(selected.iosLink)}
-                        activeOpacity={0.7}
                       >
                         <MaterialIcons
                           name="phone-iphone"
-                          size={28}
+                          size={20}
                           color={scheme === 'dark' ? '#fff' : '#333'}
                         />
-                        <Text style={styles.downloadBtnLabel}>iOS</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.downloadBtn}
+                        <Button.Label>iOS</Button.Label>
+                      </Button>
+                      <Button
+                        variant="outline"
                         onPress={() => Linking.openURL(selected.androidLink)}
-                        activeOpacity={0.7}
                       >
-                        <MaterialIcons
-                          name="android"
-                          size={28}
-                          color="#3DDC84"
-                        />
-                        <Text style={styles.downloadBtnLabel}>Android</Text>
-                      </TouchableOpacity>
+                        <MaterialIcons name="android" size={20} color="#3DDC84" />
+                        <Button.Label>Android</Button.Label>
+                      </Button>
                     </>
                   ) : (
-                    <TouchableOpacity
-                      style={styles.downloadBtn}
+                    <Button
+                      variant="primary"
                       onPress={() => openApp(selected)}
-                      activeOpacity={0.7}
                     >
                       <MaterialIcons
-                        name={
-                          Platform.OS === 'ios' ? 'phone-iphone' : 'android'
-                        }
-                        size={28}
-                        color={
-                          Platform.OS === 'ios'
-                            ? scheme === 'dark'
-                              ? '#fff'
-                              : '#333'
-                            : '#3DDC84'
-                        }
+                        name={Platform.OS === 'ios' ? 'phone-iphone' : 'android'}
+                        size={20}
+                        color="#fff"
                       />
-                      <Text style={styles.downloadBtnLabel}>
+                      <Button.Label>
                         {Platform.OS === 'ios' ? 'App Store' : 'Play Store'}
-                      </Text>
-                    </TouchableOpacity>
+                      </Button.Label>
+                    </Button>
                   )}
                 </View>
               </View>
@@ -297,25 +270,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexDirection: 'row',
       alignItems: 'center',
     },
-    starBadge: {
-      marginRight: 8,
-    },
-    starBadgeContainer: {
-      backgroundColor: '#F5A623',
-      borderRadius: 12,
-      width: 24,
-      height: 24,
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    plusButton: {
-      padding: 4,
-    },
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.5)',
@@ -343,38 +297,11 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: theme.text,
     },
     chipRow: { alignItems: 'center', marginBottom: 12 },
-    chip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      alignSelf: 'center',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-    },
-    chipNecesaria: {
-      backgroundColor: '#F5A623',
-    },
-    chipOpcional: {
-      backgroundColor: '#4A90E2',
-    },
-    chipText: {
-      color: '#FFFFFF',
-      fontWeight: 'bold',
-      fontSize: 14,
-    },
     downloadRow: {
       flexDirection: 'row',
       justifyContent: 'space-around',
       marginTop: 8,
-    },
-    downloadBtn: {
-      alignItems: 'center',
-      padding: 12,
-    },
-    downloadBtnLabel: {
-      marginTop: 4,
-      fontSize: 12,
-      color: theme.text,
+      gap: 8,
     },
   });
 };

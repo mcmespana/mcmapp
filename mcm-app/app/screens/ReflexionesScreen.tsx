@@ -4,14 +4,12 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
-  ActivityIndicator,
   Text,
   TextInput,
-  Switch,
   Modal,
   TouchableOpacity,
 } from 'react-native';
-import { Card } from 'heroui-native';
+import { Card, Switch, Chip, Button, Spinner } from 'heroui-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -264,13 +262,13 @@ export default function ReflexionesScreen() {
             onPress={() => {}}
           >
             <ScrollView>
-              <TouchableOpacity
-                style={styles.saveBtn}
+              <Button
+                variant="primary"
                 onPress={addReflexion}
-                activeOpacity={0.8}
+                className="mb-4 mt-4"
               >
-                <Text style={styles.saveBtnText}>Guardar</Text>
-              </TouchableOpacity>
+                <Button.Label>Guardar</Button.Label>
+              </Button>
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Título (opcional)</Text>
                 <TextInput
@@ -304,40 +302,25 @@ export default function ReflexionesScreen() {
               </TouchableOpacity>
               <View style={styles.row}>
                 <Switch
-                  value={grupal}
-                  onValueChange={(v) => {
-                    setGrupal(v);
-                    setTimeout(() => setGrupal(v), 300);
-                  }}
-                  trackColor={{ true: colors.success }}
-                  thumbColor={grupal ? colors.white : undefined}
+                  isSelected={grupal}
+                  onSelectedChange={(v) => setGrupal(v)}
                 />
                 <Text style={styles.switchLabel}>Compartiendo en grupo</Text>
               </View>
               {grupal ? (
-                <ScrollView horizontal>
-                  {grupos.map((g) => (
-                    <TouchableOpacity
-                      key={g.nombre}
-                      onPress={() => setGrupo(g.nombre)}
-                      style={[
-                        styles.chip,
-                        grupo === g.nombre && {
-                          backgroundColor: colors.success,
-                        },
-                      ]}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          grupo === g.nombre && { color: colors.white },
-                        ]}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}>
+                    {grupos.map((g) => (
+                      <Chip
+                        key={g.nombre}
+                        variant={grupo === g.nombre ? 'primary' : 'soft'}
+                        color="success"
+                        onPress={() => setGrupo(g.nombre)}
                       >
-                        {getGrupoLabel(g.nombre)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Chip.Label>{getGrupoLabel(g.nombre)}</Chip.Label>
+                      </Chip>
+                    ))}
+                  </View>
                 </ScrollView>
               ) : (
                 <View style={styles.inputWrapper}>
@@ -388,7 +371,7 @@ export default function ReflexionesScreen() {
       <Modal visible={saving} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.savingModal}>
-            <ActivityIndicator size="large" color={colors.success} />
+            <Spinner size="lg" color={colors.success} />
             <Text style={styles.savingText}>Enviando...</Text>
           </View>
         </View>
@@ -467,25 +450,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: spacing.md,
     },
     switchLabel: { marginLeft: spacing.sm, color: theme.text },
-    chip: {
-      marginRight: spacing.sm,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: colors.success,
-      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#f5f5f5',
-    },
-    chipText: { color: scheme === 'dark' ? '#ccc' : '#444', fontSize: 13 },
-    saveBtn: {
-      backgroundColor: colors.success,
-      borderRadius: 8,
-      paddingVertical: 12,
-      alignItems: 'center',
-      marginTop: spacing.md,
-      marginBottom: spacing.md,
-    },
-    saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
     dateModal: {
       backgroundColor: theme.background,
       padding: spacing.md,

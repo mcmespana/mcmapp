@@ -3,10 +3,9 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Linking,
 } from 'react-native';
-import { Card } from 'heroui-native';
+import { Card, Chip, Button } from 'heroui-native';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
@@ -76,27 +75,24 @@ export default function EventItem({
               </Text>
               <View style={styles.rightSection}>
                 {event.materiales && (
-                  <TouchableOpacity
-                    style={styles.materialsBadge}
+                  <Chip
+                    size="sm"
+                    variant="primary"
+                    color="warning"
                     onPress={handleMaterialsPress}
-                    activeOpacity={0.7}
                   >
                     <MaterialIcons
                       name="library-books"
                       size={12 * fontScale}
                       color="#fff"
                     />
-                    <Text style={styles.materialsText} selectable>
-                      Materiales
-                    </Text>
-                  </TouchableOpacity>
+                    <Chip.Label>Materiales</Chip.Label>
+                  </Chip>
                 )}
                 {shouldShowHour(event.hora) && (
-                  <View style={styles.timeContainer}>
-                    <Text style={styles.timeText} selectable>
-                      {event.hora}
-                    </Text>
-                  </View>
+                  <Chip size="sm" variant="primary" color="accent">
+                    <Chip.Label>{event.hora}</Chip.Label>
+                  </Chip>
                 )}
               </View>
             </View>
@@ -119,20 +115,18 @@ export default function EventItem({
                 </View>
               )}
               {event.maps && (
-                <TouchableOpacity
-                  style={styles.mapsButton}
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onPress={handleMapsPress}
-                  activeOpacity={0.7}
                 >
                   <MaterialIcons
                     name="map"
                     size={16 * fontScale}
                     color="#4285F4"
                   />
-                  <Text style={styles.mapsText} selectable>
-                    Ver en Maps
-                  </Text>
-                </TouchableOpacity>
+                  <Button.Label>Ver en Maps</Button.Label>
+                </Button>
               )}
             </View>
           </View>
@@ -191,33 +185,6 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
       marginRight: spacing.sm,
       lineHeight: 24 * scale,
     },
-    materialsBadge: {
-      backgroundColor: '#FF6B35',
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: spacing.xs,
-      paddingVertical: spacing.xs / 3,
-      borderRadius: 12,
-      gap: spacing.xs / 2,
-    },
-    materialsText: {
-      fontSize: 10 * scale,
-      fontWeight: '600',
-      color: '#fff',
-    },
-    timeContainer: {
-      backgroundColor: theme.tint,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xs / 2,
-      borderRadius: 12,
-      minWidth: 60,
-      alignItems: 'center',
-    },
-    timeText: {
-      fontSize: 13 * scale,
-      fontWeight: '600',
-      color: scheme === 'dark' ? '#000' : '#fff',
-    },
     subtitle: {
       fontSize: 15 * scale,
       color: theme.text + 'CC', // 80% opacity
@@ -241,20 +208,6 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
       fontWeight: '500',
       lineHeight: 18 * scale,
       marginLeft: spacing.xs / 2,
-    },
-    mapsButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#E3F2FD',
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xs / 2,
-      borderRadius: 12,
-      gap: spacing.xs / 2,
-    },
-    mapsText: {
-      fontSize: 12 * scale,
-      color: '#4285F4',
-      fontWeight: '500',
     },
     emoji: {
       fontSize: 24 * scale,

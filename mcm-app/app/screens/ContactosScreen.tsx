@@ -1,37 +1,28 @@
 import React from 'react';
+import { ScrollView, Platform, Linking } from 'react-native';
 import {
-  ScrollView,
-  StyleSheet,
-  View,
-  Linking,
-  Platform,
-  Text,
-  TouchableOpacity,
-} from 'react-native';
+  Avatar,
+  ListGroup,
+  Separator,
+  Button,
+  Surface,
+} from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import colors, { Colors } from '@/constants/colors';
+import colors from '@/constants/colors';
 import { UIColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-const PALETTE = [
-  '#FF8A65',
-  '#4FC3F7',
-  '#81C784',
-  '#BA68C8',
-  '#FFD54F',
-  '#9FA8DA',
-  colors.primary,
-  colors.secondary,
-  colors.accent,
-  colors.info,
-  colors.success,
-  colors.warning,
-  colors.danger,
-  UIColors.activePrimary,
-  UIColors.accentYellow,
-];
+const AVATAR_COLORS = [
+  'accent',
+  'success',
+  'warning',
+  'danger',
+  'default',
+] as const;
+
+type AvatarColor = (typeof AVATAR_COLORS)[number];
 
 interface Contacto {
   nombre: string;
@@ -39,30 +30,26 @@ interface Contacto {
   telefono: string;
 }
 
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function getAvatarColor(index: number): AvatarColor {
+  return AVATAR_COLORS[index % AVATAR_COLORS.length];
+}
+
 export default function ContactosScreen() {
   const scheme = useColorScheme();
-  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { data: contacts, loading } = useFirebaseData<Contacto[]>(
     'jubileo/contactos',
     'jubileo_contactos',
   );
   const data = contacts as Contacto[] | undefined;
-
-  const colorsForContacts = React.useMemo(
-    () =>
-      (data || []).map(
-        () => PALETTE[Math.floor(Math.random() * PALETTE.length)],
-      ),
-    [data],
-  );
-
-  const getInitials = (name: string) =>
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
 
   const call = (tel: string) => Linking.openURL(`tel:${tel}`);
   const whatsapp = (tel: string) => {
@@ -80,82 +67,61 @@ export default function ContactosScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={
-        Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
-      }
+      contentContainerStyle={[
+        { padding: 16 },
+        Platform.OS === 'ios' && { paddingBottom: 100 },
+      ]}
     >
-      {(data || []).map((c, idx) => (
-        <View key={idx} style={styles.listItem}>
-          <View style={styles.avatarWrapper}>
-            <View
-              style={[
-                styles.avatar,
-                { backgroundColor: colorsForContacts[idx] },
-              ]}
-            >
-              <Text style={styles.avatarText}>{getInitials(c.nombre)}</Text>
-            </View>
-          </View>
-          <View style={styles.itemContent}>
-            <Text style={styles.name}>{c.nombre}</Text>
-            <Text style={styles.responsabilidad}>{c.responsabilidad}</Text>
-          </View>
-          <View style={styles.actions}>
-            <TouchableOpacity
-              onPress={() => call(c.telefono)}
-              style={styles.actionBtn}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="phone" size={24} color={colors.info} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => whatsapp(c.telefono)}
-              style={styles.actionBtn}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="chat" size={24} color={colors.success} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      ))}
+      <Surface variant="default" className="overflow-hidden rounded-2xl">
+        <ListGroup variant="transparent">
+          {(data || []).map((c, idx) => (
+            <React.Fragment key={idx}>
+              <ListGroup.Item onPress={() => {}}>
+                <ListGroup.ItemPrefix>
+                  <Avatar size="md" color={getAvatarColor(idx)} alt={c.nombre}>
+                    <Avatar.Fallback>{getInitials(c.nombre)}</Avatar.Fallback>
+                  </Avatar>
+                </ListGroup.ItemPrefix>
+                <ListGroup.ItemContent>
+                  <ListGroup.ItemTitle>{c.nombre}</ListGroup.ItemTitle>
+                  <ListGroup.ItemDescription>
+                    {c.responsabilidad}
+                  </ListGroup.ItemDescription>
+                </ListGroup.ItemContent>
+                <ListGroup.ItemSuffix>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    onPress={() => call(c.telefono)}
+                  >
+                    <MaterialIcons
+                      name="phone"
+                      size={20}
+                      color={colors.info}
+                    />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    onPress={() => whatsapp(c.telefono)}
+                  >
+                    <MaterialIcons
+                      name="chat"
+                      size={20}
+                      color={colors.success}
+                    />
+                  </Button>
+                </ListGroup.ItemSuffix>
+              </ListGroup.Item>
+              {idx < (data?.length ?? 0) - 1 && (
+                <Separator className="ml-20" />
+              )}
+            </React.Fragment>
+          ))}
+        </ListGroup>
+      </Surface>
     </ScrollView>
   );
 }
-
-const createStyles = (scheme: 'light' | 'dark' | null) => {
-  const theme = Colors[scheme ?? 'light'];
-  return StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
-    listItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: scheme === 'dark' ? '#333' : '#E0E0E0',
-    },
-    actions: { flexDirection: 'row' },
-    actionBtn: { padding: 8 },
-    name: { fontSize: 18, fontWeight: 'bold', color: theme.text },
-    responsabilidad: {
-      fontSize: 13,
-      color: scheme === 'dark' ? '#AAAAAA' : '#888',
-      marginTop: 2,
-    },
-    avatarWrapper: { justifyContent: 'center', marginRight: 12 },
-    avatar: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    avatarText: {
-      color: '#fff',
-      fontWeight: 'bold',
-      fontSize: 16,
-    },
-    itemContent: { flex: 1 },
-  });
-};

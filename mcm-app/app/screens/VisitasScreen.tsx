@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Linking, Image, Platform, Text, Modal, TouchableOpacity } from 'react-native';
-import { Card } from 'heroui-native';
+import { Card, Button, Chip } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -90,18 +90,21 @@ export default function VisitasScreen() {
                   {v.fecha && (
                     <View style={styles.dateRow}>
                       <MaterialIcons name="calendar-today" size={18} color="#888" />
-                      <Text style={{ marginLeft: 4 }}>{formatDate(v.fecha)}</Text>
+                      <Chip size="sm" variant="soft" color="default" style={{ marginLeft: 4 }}>
+                        <Chip.Label>{formatDate(v.fecha)}</Chip.Label>
+                      </Chip>
                     </View>
                   )}
                 </View>
                 {v.mapa && (
-                  <TouchableOpacity
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
                     onPress={() => openMap(v.mapa)}
-                    accessibilityLabel="Abrir mapa"
-                    style={styles.iconButton}
                   >
                     <MaterialIcons name="map" size={24} color="#888" />
-                  </TouchableOpacity>
+                  </Button>
                 )}
               </Card.Body>
             </Card>
@@ -128,12 +131,14 @@ export default function VisitasScreen() {
                 )}
                 {selected.mapa && (
                   <View style={{ alignItems: 'flex-end' }}>
-                    <TouchableOpacity
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onPress={() => openMap(selected.mapa)}
-                      style={styles.iconButton}
                     >
-                      <MaterialIcons name="map" size={24} color="#888" />
-                    </TouchableOpacity>
+                      <MaterialIcons name="map" size={20} color="#888" />
+                      <Button.Label>Ver en mapa</Button.Label>
+                    </Button>
                   </View>
                 )}
               </View>
@@ -181,9 +186,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
       padding: 20,
       borderRadius: 8,
       width: '90%',
-    },
-    iconButton: {
-      padding: 8,
     },
     modalTitle: {
       fontSize: 18,
