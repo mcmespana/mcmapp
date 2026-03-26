@@ -2,11 +2,11 @@ import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
-  TouchableOpacity,
   Platform,
   Dimensions,
   Animated,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GestureRecognizer from 'react-native-swipe-gestures';
 import SongDisplay from '../../components/SongDisplay';
@@ -104,7 +104,7 @@ export default function SongDetailScreen({
 
     const currentlySelected = isSelected;
     const headerRight = () => (
-      <TouchableOpacity
+      <PressableFeedback
         onPress={() => {
           if (currentlySelected) {
             removeSong(filename);
@@ -117,6 +117,7 @@ export default function SongDetailScreen({
           currentlySelected ? 'Quitar de selección' : 'Añadir a selección'
         }
       >
+        <PressableFeedback.Highlight />
         <IconSymbol
           name={currentlySelected ? 'checkmark.circle.fill' : 'plus.circle'}
           size={24}
@@ -128,7 +129,7 @@ export default function SongDetailScreen({
               : '#fff'
           }
         />
-      </TouchableOpacity>
+      </PressableFeedback>
     );
 
     navigation.setOptions({ headerRight, headerShown: true });
@@ -297,19 +298,20 @@ export default function SongDetailScreen({
           style={[styles.iosFloatingBar, { top: insets.top + 8 }]}
           pointerEvents="box-none"
         >
-          <TouchableOpacity
+          <PressableFeedback
             style={[styles.iosFloatBtn, isDark && styles.iosFloatBtnDark]}
             onPress={() => navigation.goBack()}
             accessibilityLabel="Volver"
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons
               name="chevron-left"
               size={26}
               color={isDark ? '#f4c11e' : '#253883'}
             />
-          </TouchableOpacity>
+          </PressableFeedback>
 
-          <TouchableOpacity
+          <PressableFeedback
             style={[
               styles.iosFloatBtn,
               isDark && styles.iosFloatBtnDark,
@@ -322,12 +324,13 @@ export default function SongDetailScreen({
               isSelected ? 'Quitar de selección' : 'Añadir a selección'
             }
           >
+            <PressableFeedback.Highlight />
             <IconSymbol
               name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
               size={22}
               color={isSelected ? '#34C759' : isDark ? '#f4c11e' : '#253883'}
             />
-          </TouchableOpacity>
+          </PressableFeedback>
         </View>
       )}
     </Animated.View>

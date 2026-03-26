@@ -3,13 +3,11 @@ import {
   View,
   StyleSheet,
   Platform,
-  TouchableOpacity,
   Linking,
   Text,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { ActivityIndicator } from 'react-native';
-import { useToast } from 'heroui-native';
+import { useToast, Spinner, Button, PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { MasStackParamList } from '../(tabs)/mas';
@@ -51,12 +49,13 @@ export default function ComidaWebScreen() {
     navigation.setOptions({
       title,
       headerRight: () => (
-        <TouchableOpacity
+        <PressableFeedback
           onPress={openExternal}
           style={{ padding: 8, marginRight: 4 }}
         >
+          <PressableFeedback.Highlight />
           <MaterialIcons name="open-in-new" size={24} color="#fff" />
-        </TouchableOpacity>
+        </PressableFeedback>
       ),
     });
   }, [navigation, url, title, openExternal]);
@@ -82,19 +81,21 @@ export default function ComidaWebScreen() {
           <Text style={styles.redirectSubtitle}>
             Esta página se verá más linda en una pestaña
           </Text>
-          <TouchableOpacity
-            style={styles.redirectButton}
+          <Button
+            variant="primary"
             onPress={openExternal}
+            style={styles.redirectButton}
           >
             <MaterialIcons name="open-in-new" size={20} color="#fff" />
-            <Text style={styles.redirectButtonText}>Abrir sitio web</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.backButton}
+            <Button.Label style={styles.redirectButtonText}>Abrir sitio web</Button.Label>
+          </Button>
+          <Button
+            variant="ghost"
             onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            <Text style={styles.backButtonText}>Volver</Text>
-          </TouchableOpacity>
+            <Button.Label style={styles.backButtonText}>Volver</Button.Label>
+          </Button>
         </View>
       </View>
     );
@@ -116,7 +117,7 @@ export default function ComidaWebScreen() {
         />
         {isLoading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ThemeColors[scheme].tint} />
+            <Spinner size="lg" color={ThemeColors[scheme].tint} />
           </View>
         )}
       </View>
@@ -131,7 +132,7 @@ export default function ComidaWebScreen() {
         startInLoadingState={true}
         renderLoading={() => (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ThemeColors[scheme].tint} />
+            <Spinner size="lg" color={ThemeColors[scheme].tint} />
           </View>
         )}
         onLoadEnd={onLoadEnd}

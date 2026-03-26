@@ -7,7 +7,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { useToast } from 'heroui-native';
+import { useToast, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import SongFontPanel from './SongFontPanel';
@@ -127,15 +127,15 @@ const SongControls: React.FC<SongControlsProps> = ({
     onPress: () => void;
     isActive?: boolean;
   }) => (
-    <TouchableOpacity
+    <PressableFeedback
       style={[
         styles.actionButton,
         isActive &&
           (isDark ? styles.actionButtonActiveDark : styles.actionButtonActive),
       ]}
       onPress={onPress}
-      activeOpacity={0.7}
     >
+      <PressableFeedback.Highlight />
       <MaterialIcons
         name={icon}
         size={18}
@@ -161,7 +161,7 @@ const SongControls: React.FC<SongControlsProps> = ({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </PressableFeedback>
   );
 
   return (

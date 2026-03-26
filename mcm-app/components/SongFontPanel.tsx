@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
@@ -51,37 +52,37 @@ export default function SongFontPanel({
 
   return (
     <BottomSheet visible={visible} onClose={onClose}>
-      <View style={styles.handleArea}>
-        <View style={styles.handle} />
-      </View>
       <Text style={[styles.title, { color: theme.text }]}>Tipo de letra</Text>
 
       <View style={styles.sizeSection}>
-        <TouchableOpacity
+        <PressableFeedback
           onPress={decrease}
           style={[styles.sizeButton, isDark && styles.sizeButtonDark]}
         >
+          <PressableFeedback.Highlight />
           <MaterialIcons name="remove" size={22} color={theme.text} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={reset} style={styles.sizeDisplay}>
+        </PressableFeedback>
+        <PressableFeedback onPress={reset} style={styles.sizeDisplay}>
+          <PressableFeedback.Highlight />
           <Text style={[styles.sizeValue, { color: theme.text }]}>
             {percentage}%
           </Text>
           <Text style={styles.sizeLabel}>Tamaño</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </PressableFeedback>
+        <PressableFeedback
           onPress={increase}
           style={[styles.sizeButton, isDark && styles.sizeButtonDark]}
         >
+          <PressableFeedback.Highlight />
           <MaterialIcons name="add" size={22} color={theme.text} />
-        </TouchableOpacity>
+        </PressableFeedback>
       </View>
 
       <View style={styles.fontList}>
         {availableFonts.map((font) => {
           const isActive = font.cssValue === currentFontFamily;
           return (
-            <TouchableOpacity
+            <PressableFeedback
               key={font.cssValue}
               style={[
                 styles.fontButton,
@@ -92,8 +93,8 @@ export default function SongFontPanel({
                     : styles.fontButtonActive),
               ]}
               onPress={() => onSetFontFamily(font.cssValue)}
-              activeOpacity={0.7}
             >
+              <PressableFeedback.Highlight />
               <Text
                 style={[
                   styles.fontText,
@@ -121,16 +122,16 @@ export default function SongFontPanel({
                   color={isDark ? '#7AB3FF' : '#253883'}
                 />
               )}
-            </TouchableOpacity>
+            </PressableFeedback>
           );
         })}
       </View>
 
-      <TouchableOpacity
+      <PressableFeedback
         style={[styles.resetButton, isDark && styles.resetButtonDark]}
         onPress={reset}
-        activeOpacity={0.7}
       >
+        <PressableFeedback.Highlight />
         <MaterialIcons
           name="refresh"
           size={18}
@@ -141,24 +142,12 @@ export default function SongFontPanel({
         >
           Restablecer
         </Text>
-      </TouchableOpacity>
+      </PressableFeedback>
     </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  handleArea: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    paddingVertical: 8,
-    marginBottom: 8,
-  },
-  handle: {
-    width: 36,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: 'rgba(128,128,128,0.3)',
-  },
   title: {
     fontSize: 20,
     fontWeight: '700',

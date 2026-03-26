@@ -9,13 +9,11 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   StyleSheet,
   Platform,
   Share,
-  TextInput,
 } from 'react-native';
-import { useToast, Dialog, Button } from 'heroui-native';
+import { useToast, Dialog, Button, PressableFeedback, TextField, Input } from 'heroui-native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -388,10 +386,11 @@ const SelectedSongsScreen: React.FC = () => {
         Platform.OS === 'macos';
       navigation.setOptions({
         headerRight: () => (
-          <TouchableOpacity
+          <PressableFeedback
             onPress={handleExport}
             style={styles.headerExportButton}
           >
+            <PressableFeedback.Highlight />
             <IconSymbol
               name={isDesktopLike ? 'doc.on.doc' : 'square.and.arrow.up'}
               size={22}
@@ -406,7 +405,7 @@ const SelectedSongsScreen: React.FC = () => {
             {isDesktopLike && (
               <Text style={styles.headerExportText}>Copiar</Text>
             )}
-          </TouchableOpacity>
+          </PressableFeedback>
         ),
       });
     } else {
@@ -437,18 +436,18 @@ const SelectedSongsScreen: React.FC = () => {
             botón + en la pantalla de detalle.
           </Text>
         </View>
-        <TouchableOpacity
+        <PressableFeedback
           onPress={handleImportFile}
           style={styles.importButton}
-          activeOpacity={0.7}
         >
+          <PressableFeedback.Highlight />
           <MaterialIcons
             name="file-download"
             size={20}
             color={isDark ? '#7AB3FF' : '#253883'}
           />
           <Text style={styles.importButtonText}>Importar playlist</Text>
-        </TouchableOpacity>
+        </PressableFeedback>
       </View>
     );
   }
@@ -461,38 +460,38 @@ const SelectedSongsScreen: React.FC = () => {
           {selectedSongs.length === 1 ? 'canción' : 'canciones'}
         </Text>
         <View style={styles.toolbarActions}>
-          <TouchableOpacity
+          <PressableFeedback
             onPress={handleShareFile}
             style={styles.toolbarButton}
-            activeOpacity={0.7}
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons
               name="ios-share"
               size={18}
               color={isDark ? '#7AB3FF' : '#253883'}
             />
             <Text style={styles.toolbarButtonText}>Exportar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableFeedback>
+          <PressableFeedback
             onPress={handleImportFile}
             style={styles.toolbarButton}
-            activeOpacity={0.7}
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons
               name="file-download"
               size={18}
               color={isDark ? '#7AB3FF' : '#253883'}
             />
             <Text style={styles.toolbarButtonText}>Importar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableFeedback>
+          <PressableFeedback
             onPress={clearSelection}
             style={styles.toolbarButtonDanger}
-            activeOpacity={0.7}
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons name="delete-outline" size={18} color="#FF453A" />
             <Text style={styles.toolbarButtonDangerText}>Borrar</Text>
-          </TouchableOpacity>
+          </PressableFeedback>
         </View>
       </View>
 
@@ -517,15 +516,15 @@ const SelectedSongsScreen: React.FC = () => {
             <Dialog.Description className="mb-3">
               Elige un nombre para tu archivo
             </Dialog.Description>
-            <TextInput
-              style={styles.modalInput}
-              value={exportFileName}
-              onChangeText={setExportFileName}
-              placeholder="Playlist 7-ago"
-              placeholderTextColor={isDark ? '#636366' : '#AEAEB2'}
-              autoFocus={true}
-              selectTextOnFocus={true}
-            />
+            <TextField style={styles.modalInput}>
+              <Input
+                value={exportFileName}
+                onChangeText={setExportFileName}
+                placeholder="Playlist 7-ago"
+                autoFocus={true}
+                selectTextOnFocus={true}
+              />
+            </TextField>
             <Text style={styles.modalNote}>
               Se exportará como archivo .mcm
             </Text>
