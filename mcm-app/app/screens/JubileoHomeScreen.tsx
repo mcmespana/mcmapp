@@ -3,13 +3,13 @@ import {
   View,
   StyleSheet,
   Text,
-  TouchableOpacity,
   ViewStyle,
   TextStyle,
   useWindowDimensions,
   ScrollView,
   Platform,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -135,7 +135,7 @@ export default function JubileoHomeScreen() {
         >
           {navigationItems.map((item, idx) => (
             <View key={idx} style={styles.itemWrapper}>
-              <TouchableOpacity
+              <PressableFeedback
                 style={[
                   styles.item,
                   {
@@ -145,8 +145,8 @@ export default function JubileoHomeScreen() {
                   },
                 ]}
                 onPress={() => navigation.navigate(item.target as any)}
-                activeOpacity={0.85}
               >
+                <PressableFeedback.Highlight />
                 <Text
                   style={[
                     styles.iconPlaceholder,
@@ -163,7 +163,7 @@ export default function JubileoHomeScreen() {
                 >
                   {item.label}
                 </Text>
-              </TouchableOpacity>
+              </PressableFeedback>
             </View>
           ))}
         </View>

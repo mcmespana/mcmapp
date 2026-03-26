@@ -3,10 +3,10 @@ import {
   View,
   StyleSheet,
   Text,
-  TouchableOpacity,
   ScrollView,
   Platform,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -112,7 +112,7 @@ export default function MasHomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {navigationItems.map((item, idx) => (
-          <TouchableOpacity
+          <PressableFeedback
             key={idx}
             style={[
               styles.card,
@@ -132,8 +132,8 @@ export default function MasHomeScreen() {
                   },
             ]}
             onPress={() => navigation.navigate(item.target as any)}
-            activeOpacity={0.8}
           >
+            <PressableFeedback.Highlight />
             {/* Accent bar izquierda */}
             <View
               style={[styles.accentBar, { backgroundColor: item.tintColor }]}
@@ -186,7 +186,7 @@ export default function MasHomeScreen() {
                 />
               </View>
             </View>
-          </TouchableOpacity>
+          </PressableFeedback>
         ))}
       </ScrollView>
     </SafeAreaView>
