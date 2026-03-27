@@ -5,10 +5,8 @@ import {
   ScrollView,
   Platform,
   Text,
-  Modal,
-  TouchableOpacity,
 } from 'react-native';
-import { Card, Switch, Chip, Button, Spinner, BottomSheet, PressableFeedback, TextField, Input, TextArea } from 'heroui-native';
+import { Card, Switch, Chip, Button, Spinner, BottomSheet, PressableFeedback, TextField, Input, TextArea, Dialog } from 'heroui-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -318,18 +316,14 @@ export default function ReflexionesScreen() {
       </BottomSheet>
 
       {/* Date selector modal */}
-      <Modal
-        visible={showDateSelector}
-        onRequestClose={() => setShowDateSelector(false)}
-        transparent
-        animationType="fade"
+      <Dialog
+        isOpen={showDateSelector}
+        onOpenChange={(open) => { if (!open) setShowDateSelector(false); }}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowDateSelector(false)}
-        >
-          <View style={styles.dateModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay />
+          <Dialog.Content>
+            <Dialog.Close />
             <DateTimePicker
               value={fecha}
               mode="date"
@@ -340,19 +334,19 @@ export default function ReflexionesScreen() {
                 if (selected) setFecha(selected);
               }}
             />
-          </View>
-        </TouchableOpacity>
-      </Modal>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
 
       {/* Saving overlay */}
-      <Modal visible={saving} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
+      {saving && (
+        <View style={[StyleSheet.absoluteFill, styles.modalOverlay]}>
           <View style={styles.savingModal}>
             <Spinner size="lg" color={colors.success} />
             <Text style={styles.savingText}>Enviando...</Text>
           </View>
         </View>
-      </Modal>
+      )}
     </View>
   );
 }
@@ -420,13 +414,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: spacing.md,
     },
     switchLabel: { marginLeft: spacing.sm, color: theme.text },
-    dateModal: {
-      backgroundColor: theme.background,
-      padding: spacing.md,
-      margin: spacing.md,
-      borderRadius: 8,
-      alignItems: 'center',
-    },
     savingModal: {
       backgroundColor: theme.background,
       padding: spacing.lg,

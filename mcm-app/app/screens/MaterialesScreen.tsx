@@ -3,10 +3,10 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Text,
   Platform,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
@@ -164,7 +164,7 @@ export default function MaterialesScreen() {
       />
       <ScrollView contentContainerStyle={styles.list}>
         {dia.actividades.map((act: Actividad, idx: number) => (
-          <TouchableOpacity
+          <PressableFeedback
             key={idx}
             style={[
               styles.card,
@@ -177,13 +177,14 @@ export default function MaterialesScreen() {
               })
             }
           >
+            <PressableFeedback.Highlight />
             <Text style={styles.emoji} selectable>
               {act.emoji}
             </Text>
             <Text style={styles.cardText} selectable>
               {act.nombre.toUpperCase()}
             </Text>
-          </TouchableOpacity>
+          </PressableFeedback>
         ))}
       </ScrollView>
     </View>

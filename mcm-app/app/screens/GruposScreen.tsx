@@ -3,13 +3,12 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  TouchableOpacity,
   Linking,
   Platform,
   Text,
   Pressable,
 } from 'react-native';
-import { SearchField, ListGroup, Separator, Button } from 'heroui-native';
+import { SearchField, ListGroup, Separator, Button, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -262,15 +261,15 @@ export default function GruposScreen() {
           </Pressable>
         </View>
         {categorias.map((c) => (
-          <TouchableOpacity
+          <PressableFeedback
             key={c.name}
             style={[styles.catCard, { backgroundColor: c.color }]}
             onPress={() => setCategoria(c.name)}
-            activeOpacity={0.8}
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons name={c.icon} size={40} color={colors.white} style={styles.catIcon} />
             <Text style={styles.catLabel}>{c.name}</Text>
-          </TouchableOpacity>
+          </PressableFeedback>
         ))}
       </ScrollView>
     );

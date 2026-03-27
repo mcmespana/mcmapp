@@ -2,11 +2,11 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   Appearance,
 } from 'react-native';
+import { Button } from 'heroui-native';
 
 interface Props {
   children: ReactNode;
@@ -46,9 +46,9 @@ export default class ErrorBoundary extends Component<Props, State> {
           <Text style={dynamicStyles.subtitle}>
             La app ha encontrado un error inesperado.
           </Text>
-          <TouchableOpacity style={styles.button} onPress={this.handleReset}>
-            <Text style={styles.buttonText}>Reintentar</Text>
-          </TouchableOpacity>
+          <Button variant="primary" onPress={this.handleReset}>
+            <Button.Label>Reintentar</Button.Label>
+          </Button>
           {__DEV__ && this.state.error && (
             <ScrollView style={dynamicStyles.errorBox}>
               <Text style={styles.errorText}>
@@ -99,17 +99,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#253883',
     marginBottom: 8,
-  },
-  button: {
-    backgroundColor: '#253883',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   errorText: {
     fontSize: 12,
