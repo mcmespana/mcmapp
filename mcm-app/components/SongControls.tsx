@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   Platform,
   Animated,
@@ -168,11 +167,7 @@ const SongControls: React.FC<SongControlsProps> = ({
     <>
       {/* Scrim when menu is open */}
       {showActionButtons && (
-        <TouchableOpacity
-          style={styles.scrim}
-          activeOpacity={1}
-          onPress={toggleMenu}
-        />
+        <PressableFeedback style={styles.scrim} onPress={toggleMenu} />
       )}
 
       {/* FAB & Action Menu */}
@@ -242,7 +237,7 @@ const SongControls: React.FC<SongControlsProps> = ({
           {hasModifications && !showActionButtons && (
             <View style={[styles.badge, isDark && styles.badgeDark]} />
           )}
-          <TouchableOpacity
+          <PressableFeedback
             style={[
               styles.fabMain,
               isDark && styles.fabMainDark,
@@ -250,8 +245,8 @@ const SongControls: React.FC<SongControlsProps> = ({
             ]}
             onPress={toggleMenu}
             accessibilityLabel="Configuración"
-            activeOpacity={0.8}
           >
+            <PressableFeedback.Scale />
             <Animated.View
               style={{ transform: [{ rotate: rotateInterpolation }] }}
             >
@@ -261,7 +256,7 @@ const SongControls: React.FC<SongControlsProps> = ({
                 color={isDark ? '#fff' : '#1C1C1E'}
               />
             </Animated.View>
-          </TouchableOpacity>
+          </PressableFeedback>
         </View>
       </View>
 
