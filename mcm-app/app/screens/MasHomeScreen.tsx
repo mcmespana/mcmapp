@@ -90,7 +90,9 @@ export default function MasHomeScreen() {
     useCallback(() => {
       const screen = takePendingMasScreen();
       if (screen) {
-        navigation.navigate(screen as any);
+        // navigate() overloads don't accept union types — as never is the
+        // idiomatic TypeScript escape hatch for this overload resolution issue
+        navigation.navigate(screen as never);
       }
     }, [navigation]),
   );

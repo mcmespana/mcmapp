@@ -139,7 +139,7 @@ export default function NotificationsScreen() {
   );
 
   const handleActionButtonPress = useCallback(
-    async (
+    (
       notification: NotificationData | ReceivedNotification,
       e: any,
     ) => {
@@ -149,7 +149,9 @@ export default function NotificationsScreen() {
         readIds.has(notification.id) ||
         ('isRead' in notification && notification.isRead);
       if (!isRead) {
-        await handleMarkAsRead(notification.id);
+        handleMarkAsRead(notification.id).catch((err) =>
+          console.error('Error marcando como leída:', err),
+        );
       }
       if (!notification.actionButton) return;
       if (notification.actionButton.isInternal) {
@@ -296,7 +298,7 @@ export default function NotificationsScreen() {
                 {notification.actionButton && (
                   <TouchableOpacity
                     style={styles.actionChip}
-                    onPress={() => handleActionButtonPress(notification, null)}
+                    onPress={(e?) => handleActionButtonPress(notification, e)}
                     accessibilityLabel={notification.actionButton.text}
                     accessibilityRole="button"
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
