@@ -90,7 +90,7 @@ export default function MasHomeScreen() {
     useCallback(() => {
       const screen = takePendingMasScreen();
       if (screen) {
-        navigation.navigate(screen as keyof MasStackParamList);
+        navigation.navigate(screen as any);
       }
     }, [navigation]),
   );

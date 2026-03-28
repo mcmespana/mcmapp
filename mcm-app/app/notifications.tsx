@@ -296,7 +296,7 @@ export default function NotificationsScreen() {
                 {notification.actionButton && (
                   <TouchableOpacity
                     style={styles.actionChip}
-                    onPress={(e) => handleActionButtonPress(notification, e)}
+                    onPress={() => handleActionButtonPress(notification, null)}
                     accessibilityLabel={notification.actionButton.text}
                     accessibilityRole="button"
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
