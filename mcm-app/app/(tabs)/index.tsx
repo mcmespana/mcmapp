@@ -33,6 +33,7 @@ import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
+import { hexAlpha } from '@/utils/colorUtils';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
@@ -358,7 +359,7 @@ export default function Home() {
                   <View
                     style={[
                       styles.newBadge,
-                      { backgroundColor: accentColor + '15' },
+                      { backgroundColor: hexAlpha(accentColor, '15') },
                     ]}
                   >
                     <Text
@@ -401,8 +402,8 @@ export default function Home() {
                   {
                     backgroundColor:
                       scheme === 'dark'
-                        ? accentColor + '20'
-                        : accentColor + '12',
+                        ? hexAlpha(accentColor, '20')
+                        : hexAlpha(accentColor, '12'),
                   },
                 ]}
               >
@@ -418,9 +419,8 @@ export default function Home() {
                   size="sm"
                   variant="soft"
                   color="default"
-                  style={{ backgroundColor: accentColor + '10', borderColor: accentColor + '50' }}
+                  style={{ backgroundColor: hexAlpha(accentColor, '10'), borderColor: hexAlpha(accentColor, '50') }}
                 >
-                  <MaterialIcons name="arrow-forward-ios" size={9} color={accentColor} />
                   <Chip.Label style={{ color: accentColor }}>{internalRouteLabel}</Chip.Label>
                 </Chip>
               )}
@@ -431,7 +431,7 @@ export default function Home() {
                   variant="ghost"
                   size="sm"
                   onPress={handleActionButton}
-                  style={{ backgroundColor: accentColor + '12' }}
+                  style={{ backgroundColor: hexAlpha(accentColor, '12') }}
                 >
                   <Button.Label style={{ color: accentColor }}>
                     {latestNotification.actionButton.text ?? 'Voy a verlo'}
@@ -451,7 +451,7 @@ export default function Home() {
                 <View
                   style={[
                     styles.arrowPill,
-                    { backgroundColor: accentColor + '10' },
+                    { backgroundColor: hexAlpha(accentColor, '10') },
                   ]}
                 >
                   <MaterialIcons name="east" size={14} color={accentColor} />
@@ -486,7 +486,7 @@ export default function Home() {
                       ? {
                           borderWidth: 1.5,
                           borderStyle: 'dashed',
-                          borderColor: theme.icon + '40',
+                          borderColor: hexAlpha(theme.icon, '40'),
                         }
                       : undefined,
                   ])}
@@ -605,7 +605,7 @@ export default function Home() {
                   <View
                     style={[
                       styles.eventDateBox,
-                      { backgroundColor: calColor + '18' },
+                      { backgroundColor: hexAlpha(calColor, '18') },
                     ]}
                   >
                     <Text style={[styles.eventMonth, { color: calColor }]}>
@@ -633,7 +633,7 @@ export default function Home() {
                       <View
                         style={[
                           styles.calBadge,
-                          { backgroundColor: calColor + '18' },
+                          { backgroundColor: hexAlpha(calColor, '18') },
                         ]}
                       >
                         <Text
@@ -694,7 +694,7 @@ export default function Home() {
           <TouchableOpacity
             style={StyleSheet.flatten([
               styles.calendarButton,
-              { borderColor: accentColor + '30' },
+              { borderColor: hexAlpha(accentColor, '30') },
             ])}
             onPress={() => router.push('/calendario')}
             accessibilityRole="button"

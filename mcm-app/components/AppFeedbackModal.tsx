@@ -14,6 +14,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { hexAlpha } from '@/utils/colorUtils';
 
 interface AppFeedbackModalProps {
   visible: boolean;
@@ -22,15 +23,6 @@ interface AppFeedbackModalProps {
 }
 
 type FeedbackCategory = 'bug' | 'suggestion' | 'congratulations';
-
-/** Convierte hex + alpha-byte-hex a rgba() — heroui-native no entiende hex de 8 dígitos */
-const hexAlpha = (hex: string, alphaHex: string): string => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const a = (parseInt(alphaHex, 16) / 255).toFixed(2);
-  return `rgba(${r}, ${g}, ${b}, ${a})`;
-};
 
 interface CategoryOption {
   id: FeedbackCategory;

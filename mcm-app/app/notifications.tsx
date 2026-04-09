@@ -22,6 +22,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import colors, { Colors } from '@/constants/colors';
+import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
@@ -513,7 +514,7 @@ function NotificationDetailModal({
             {/* Separador si hay acciones */}
             {(routeInfo || notification.actionButton) && (
               <View
-                style={[dStyles.divider, { backgroundColor: theme.icon + '30' }]}
+                style={[dStyles.divider, { backgroundColor: hexAlpha(theme.icon, '30') }]}
               />
             )}
 
@@ -793,8 +794,8 @@ const createStyles = (scheme: 'light' | 'dark') => {
       paddingHorizontal: 7,
       borderRadius: radii.pill,
       borderWidth: 1,
-      borderColor: colors.primary + '60',
-      backgroundColor: colors.primary + '12',
+      borderColor: hexAlpha(colors.primary, '60'),
+      backgroundColor: hexAlpha(colors.primary, '12'),
     },
     destinationChipText: {
       fontSize: 10,

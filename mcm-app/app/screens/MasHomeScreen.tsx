@@ -15,6 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { hexAlpha } from '@/utils/colorUtils';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { takePendingMasScreen } from '@/utils/masNavigation';
@@ -146,7 +147,7 @@ export default function MasHomeScreen() {
               <View
                 style={[
                   styles.iconCircle,
-                  { backgroundColor: item.tintColor + '18' },
+                  { backgroundColor: hexAlpha(item.tintColor, '18') },
                 ]}
               >
                 <Text style={styles.emoji}>{item.emoji}</Text>
@@ -178,7 +179,7 @@ export default function MasHomeScreen() {
               <View
                 style={[
                   styles.arrowCircle,
-                  { backgroundColor: item.tintColor + '15' },
+                  { backgroundColor: hexAlpha(item.tintColor, '15') },
                 ]}
               >
                 <MaterialIcons

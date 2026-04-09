@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { Card, Chip, Button } from 'heroui-native';
 import { Colors } from '@/constants/colors';
+import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
@@ -157,7 +158,7 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
       width: 50,
       height: 50,
       borderRadius: 25,
-      backgroundColor: theme.tint + '20', // 20% opacity
+      backgroundColor: hexAlpha(theme.tint, '20'), // 20% opacity
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: spacing.xs,
@@ -187,7 +188,7 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
     },
     subtitle: {
       fontSize: 15 * scale,
-      color: theme.text + 'CC', // 80% opacity
+      color: hexAlpha(theme.text, 'CC'), // 80% opacity
       lineHeight: 20 * scale,
       marginBottom: spacing.xs / 2,
     },

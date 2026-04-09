@@ -32,6 +32,7 @@ import OfflineBanner from '@/components/OfflineBanner';
 import GlassFAB from '@/components/ui/GlassFAB.ios';
 import { useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { hexAlpha } from '@/utils/colorUtils';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -247,7 +248,7 @@ export default function Calendario() {
             <View
               style={[
                 styles.calendarBadge,
-                { backgroundColor: calColor + '18' },
+                { backgroundColor: hexAlpha(calColor, '18') },
               ]}
             >
               <View
@@ -309,7 +310,7 @@ export default function Calendario() {
             variant={isActive ? 'primary' : 'soft'}
             color="default"
             onPress={() => toggleCalendarVisibility(idx)}
-            style={isActive ? { backgroundColor: cal.color + '22', borderColor: cal.color } : undefined}
+            style={isActive ? { backgroundColor: hexAlpha(cal.color, '22'), borderColor: cal.color } : undefined}
           >
             <View
               style={[
