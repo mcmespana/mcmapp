@@ -284,11 +284,6 @@ export default function NotificationsScreen() {
                 {/* Chip de destino interno */}
                 {routeInfo && (
                   <View style={styles.destinationChip}>
-                    <MaterialIcons
-                      name={routeInfo.icon as any}
-                      size={11}
-                      color={colors.primary}
-                    />
                     <Text style={styles.destinationChipText}>
                       {routeInfo.label}
                     </Text>

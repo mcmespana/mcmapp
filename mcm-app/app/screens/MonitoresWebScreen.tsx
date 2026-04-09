@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
-import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
+import { Spinner, useToast } from 'heroui-native';
 import spacing from '@/constants/spacing';
-import { Colors as ThemeColors } from '@/constants/colors';
 import iframeStyles from '../(tabsdesactivados)/comunica.module.css';
 
 const URL = 'https://movimientoconsolacion.sinergiacrm.org/';
@@ -71,18 +70,19 @@ const INJECTED_JAVASCRIPT = `
 
 export default function MonitoresWebScreen() {
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [visible, setVisible] = useState(false);
+  const { toast } = useToast();
 
   const onLoadEnd = () => {
     setIsLoading(false);
   };
 
   const onError = () => {
-    setError(
-      'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
-    );
-    setVisible(true);
+    toast.show({
+      variant: 'danger',
+      label: 'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      actionLabel: 'Cerrar',
+      onActionPress: ({ hide }) => hide(),
+    });
     setIsLoading(false);
   };
 
@@ -90,8 +90,6 @@ export default function MonitoresWebScreen() {
     // Aquí puedes manejar cambios en la navegación si es necesario
     console.log('Navigation changed:', navState);
   };
-
-  const onDismissSnackBar = () => setVisible(false);
 
   // Fallback en web: usamos un iframe con estilos inyectados
   if (Platform.OS === 'web') {
@@ -162,7 +160,7 @@ export default function MonitoresWebScreen() {
         />
         {isLoading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ThemeColors.light.tint} />
+            <Spinner />
           </View>
         )}
       </View>
@@ -180,27 +178,13 @@ export default function MonitoresWebScreen() {
         onMessage={() => {}}
         renderLoading={() => (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ThemeColors.light.tint} />
+            <Spinner />
           </View>
         )}
         onLoadEnd={onLoadEnd}
         onError={onError}
         onNavigationStateChange={onNavigationStateChange}
       />
-      <Portal>
-        <Snackbar
-          visible={visible}
-          onDismiss={onDismissSnackBar}
-          action={{
-            label: 'Cerrar',
-            onPress: onDismissSnackBar,
-          }}
-          duration={Snackbar.DURATION_MEDIUM}
-          style={{ backgroundColor: '#f44336' }}
-        >
-          {error}
-        </Snackbar>
-      </Portal>
     </View>
   );
 }
