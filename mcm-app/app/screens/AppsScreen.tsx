@@ -7,15 +7,10 @@ import {
   TouchableOpacity,
   Linking,
   Platform,
-} from 'react-native';
-import {
-  List,
-  IconButton,
-  Portal,
-  Modal,
   Text,
-  Chip,
-} from 'react-native-paper';
+} from 'react-native';
+import { Chip, Button, Dialog } from 'heroui-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -44,7 +39,6 @@ export default function AppsScreen() {
 
   const openApp = async (app: AppInfo) => {
     try {
-      // En plataformas móviles nativas, intentar abrir la app directamente
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
         const schemeUrl =
           Platform.OS === 'ios' ? app.iosScheme : app.androidScheme;
@@ -56,15 +50,11 @@ export default function AppsScreen() {
           }
         }
       }
-
-      // Si no puede abrir la app o no está instalada, o si estamos en web,
-      // abre la store correspondiente a la plataforma
       const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
       if (storeUrl) {
         await Linking.openURL(storeUrl);
       }
     } catch (error) {
-      // Si hay cualquier error, intenta abrir la store como fallback
       console.log('Error opening app:', error);
       const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
       if (storeUrl) {
@@ -85,8 +75,11 @@ export default function AppsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
-        {/* Texto de introducción */}
+      <ScrollView
+        contentContainerStyle={
+          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+        }
+      >
         <View style={styles.introContainer}>
           <Text style={styles.introText}>
             Lista de aplicaciones móviles (algunas necesarias 🌟, otras
@@ -99,111 +92,112 @@ export default function AppsScreen() {
           </Text>
         </View>
 
-        <List.Section>
-          {apps.map((app, idx) => (
-            <TouchableOpacity
-              key={idx}
-              onPress={() => openApp(app)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.listItemContainer}>
-                <View style={styles.iconContainer}>
-                  <Image source={{ uri: app.icono }} style={styles.icon} />
-                </View>
-                <View style={styles.contentContainer}>
-                  <Text style={styles.title}>{app.nombre}</Text>
-                  <Text style={styles.description}>{app.descripcion}</Text>
-                </View>
-                <View style={styles.rightContainer}>
-                  {app.tipo.toLowerCase() === 'necesaria' && (
-                    <View style={styles.starBadge}>
-                      <View style={styles.starBadgeContainer}>
-                        <IconButton
-                          icon="star"
-                          size={16}
-                          iconColor="#FFF"
-                          style={styles.starBadgeIcon}
-                        />
-                      </View>
-                    </View>
-                  )}
-                  <TouchableOpacity
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setSelected(app);
-                    }}
-                    style={styles.plusButton}
-                  >
-                    <IconButton icon="plus" size={24} />
-                  </TouchableOpacity>
-                </View>
+        {apps.map((app, idx) => (
+          <TouchableOpacity
+            key={idx}
+            onPress={() => openApp(app)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.listItemContainer}>
+              <View style={styles.iconContainer}>
+                <Image source={{ uri: app.icono }} style={styles.icon} />
               </View>
-            </TouchableOpacity>
-          ))}
-        </List.Section>
-      </ScrollView>
-      <Portal>
-        <Modal
-          visible={!!selected}
-          onDismiss={() => setSelected(null)}
-          contentContainerStyle={styles.modal}
-        >
-          {selected && (
-            <View>
-              <Text style={styles.modalTitle}>{selected.nombre}</Text>
-              <Text style={styles.modalDesc}>{selected.descripcion}</Text>
-              <View style={styles.chipRow}>
-                <Chip
-                  icon={
-                    selected.tipo.toLowerCase() === 'necesaria'
-                      ? 'star'
-                      : 'information'
-                  }
-                  style={[
-                    styles.chip,
-                    selected.tipo.toLowerCase() === 'necesaria'
-                      ? styles.chipNecesaria
-                      : styles.chipOpcional,
-                  ]}
-                  textStyle={styles.chipText}
-                  theme={{
-                    colors: {
-                      primary: '#FFFFFF', // Color del ícono
-                      onSurface: '#FFFFFF', // Color del texto
-                    },
-                  }}
-                >
-                  {selected.tipo}
-                </Chip>
+              <View style={styles.contentContainer}>
+                <Text style={styles.title}>{app.nombre}</Text>
+                <Text style={styles.description}>{app.descripcion}</Text>
               </View>
-              <View style={styles.downloadRow}>
-                {Platform.OS === 'web' ? (
-                  // En web, mostrar ambos botones como antes
-                  <>
-                    <IconButton
-                      icon="apple"
-                      size={28}
-                      onPress={() => Linking.openURL(selected.iosLink)}
-                    />
-                    <IconButton
-                      icon="android"
-                      size={28}
-                      onPress={() => Linking.openURL(selected.androidLink)}
-                    />
-                  </>
-                ) : (
-                  // En móvil, mostrar solo el botón de la plataforma actual
-                  <IconButton
-                    icon={Platform.OS === 'ios' ? 'apple' : 'android'}
-                    size={28}
-                    onPress={() => openApp(selected)}
-                  />
+              <View style={styles.rightContainer}>
+                {app.tipo.toLowerCase() === 'necesaria' && (
+                  <Chip size="sm" variant="primary" color="warning">
+                    <MaterialIcons name="star" size={12} color="#fff" />
+                  </Chip>
                 )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  isIconOnly
+                  onPress={() => setSelected(app)}
+                >
+                  <MaterialIcons
+                    name="add-circle-outline"
+                    size={24}
+                    color={scheme === 'dark' ? '#ccc' : '#555'}
+                  />
+                </Button>
               </View>
             </View>
-          )}
-        </Modal>
-      </Portal>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <Dialog
+        isOpen={!!selected}
+        onOpenChange={(open) => { if (!open) setSelected(null); }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay />
+          <Dialog.Content>
+            <Dialog.Close />
+            {selected && (
+              <View style={{ gap: 12 }}>
+                <Dialog.Title>{selected.nombre}</Dialog.Title>
+                <Dialog.Description>{selected.descripcion}</Dialog.Description>
+                <View style={styles.chipRow}>
+                  <Chip
+                    variant="primary"
+                    color={selected.tipo.toLowerCase() === 'necesaria' ? 'warning' : 'accent'}
+                  >
+                    <MaterialIcons
+                      name={selected.tipo.toLowerCase() === 'necesaria' ? 'star' : 'info'}
+                      size={14}
+                      color="#fff"
+                    />
+                    <Chip.Label>{selected.tipo}</Chip.Label>
+                  </Chip>
+                </View>
+                <View style={styles.downloadRow}>
+                  {Platform.OS === 'web' ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        onPress={() => Linking.openURL(selected.iosLink)}
+                      >
+                        <MaterialIcons
+                          name="phone-iphone"
+                          size={20}
+                          color={scheme === 'dark' ? '#fff' : '#333'}
+                        />
+                        <Button.Label>iOS</Button.Label>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onPress={() => Linking.openURL(selected.androidLink)}
+                      >
+                        <MaterialIcons name="android" size={20} color="#3DDC84" />
+                        <Button.Label>Android</Button.Label>
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      onPress={() => { openApp(selected); setSelected(null); }}
+                    >
+                      <MaterialIcons
+                        name={Platform.OS === 'ios' ? 'phone-iphone' : 'android'}
+                        size={20}
+                        color="#fff"
+                      />
+                      <Button.Label>
+                        {Platform.OS === 'ios' ? 'App Store' : 'Play Store'}
+                      </Button.Label>
+                    </Button>
+                  )}
+                </View>
+              </View>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
     </View>
   );
 }
@@ -271,68 +265,12 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexDirection: 'row',
       alignItems: 'center',
     },
-    starBadge: {
-      marginRight: 8,
-    },
-    starBadgeContainer: {
-      backgroundColor: '#F5A623',
-      borderRadius: 12,
-      width: 24,
-      height: 24,
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    starBadgeIcon: {
-      margin: 0,
-      width: 24,
-      height: 24,
-    },
-    starIcon: {
-      fontSize: 18,
-    },
-    plusButton: {
-      // El IconButton ya tiene su propio estilo
-    },
-    modal: {
-      backgroundColor: theme.background,
-      padding: 20,
-      margin: 20,
-      borderRadius: 8,
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      textAlign: 'center',
-      marginBottom: 8,
-      color: theme.text,
-    },
-    modalDesc: {
-      fontSize: 16,
-      textAlign: 'center',
-      marginBottom: 12,
-      color: theme.text,
-    },
     chipRow: { alignItems: 'center', marginBottom: 12 },
-    chip: { alignSelf: 'center' },
-    chipNecesaria: {
-      backgroundColor: '#F5A623',
-    },
-    chipOpcional: {
-      backgroundColor: '#4A90E2',
-    },
-    chipText: {
-      color: '#FFFFFF',
-      fontWeight: 'bold',
-    },
     downloadRow: {
       flexDirection: 'row',
       justifyContent: 'space-around',
       marginTop: 8,
+      gap: 8,
     },
   });
 };

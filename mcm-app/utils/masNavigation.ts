@@ -7,10 +7,14 @@
 //   2. MasHomeScreen reads and clears the pending screen on focus,
 //      then programmatically navigates to it within the native stack.
 
-let pendingScreen: string | null = null;
+import type { MasStackParamList } from '@/app/(tabs)/mas';
+
+type PendingScreen = keyof MasStackParamList;
+
+let pendingScreen: PendingScreen | null = null;
 
 /** Store the screen to navigate to inside the Más stack. */
-export const setPendingMasScreen = (screen: string): void => {
+export const setPendingMasScreen = (screen: PendingScreen): void => {
   pendingScreen = screen;
 };
 
@@ -18,7 +22,7 @@ export const setPendingMasScreen = (screen: string): void => {
  * Read and clear the pending screen (one-shot).
  * Returns null if nothing is pending.
  */
-export const takePendingMasScreen = (): string | null => {
+export const takePendingMasScreen = (): PendingScreen | null => {
   const screen = pendingScreen;
   pendingScreen = null;
   return screen;

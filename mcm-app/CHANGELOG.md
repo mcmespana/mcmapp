@@ -13,6 +13,36 @@
 
 ---
 
+## 2026-03-25 — Migración completa de react-native-paper → heroui-native
+
+- **Eliminación de dependencia**: `react-native-paper` eliminado completamente del proyecto
+- **Nueva UI library**: `heroui-native` (v1.0.0) añadida junto con sus dependencias: `tailwindcss`, `uniwind`, `react-native-svg`, `tailwind-merge`, `tailwind-variants`
+- **Proveedor raíz**: `PaperProvider` reemplazado por `HeroUINativeProvider` en `app/_layout.tsx`
+- **Toast/Snackbar**: todos los usos de `Snackbar` + `Portal` reemplazados por el hook `useToast()` de heroui-native (patrón imperativo: `toast.show({...})`)
+- **Card**: `Card.Content` → `Card.Body` (HeroUI). Afecta: `EventItem.tsx`, `VisitasScreen.tsx`, `ReflexionesScreen.tsx`
+- **Accordion**: `List.Accordion` + `List.AccordionGroup` reemplazados con acordeón custom (estado local + TouchableOpacity) en `ProfundizaScreen.tsx`
+- **Modal**: todos los `Portal > Modal` de Paper → `Modal` nativo de React Native
+- **Formularios**: `TextInput` de Paper (floating label) → RN `TextInput` + etiqueta manual; `Switch` de Paper → RN `Switch`
+- **Botones**: `Button` de Paper → `TouchableOpacity` con estilos propios; `FAB` → TouchableOpacity absoluto en Android / `GlassFAB` sin cambios en iOS
+- **Listas**: `List.Item`, `List.Section`, `List.Accordion` → Views/TouchableOpacity con estilos custom en `GruposScreen.tsx`, `ContactosScreen.tsx`, `AppsScreen.tsx`
+- **Avatar**: `Avatar.Text` → View circular con iniciales en `ContactosScreen.tsx`
+- **Chip**: `Chip` de Paper → View + Text con estilos inline en `ReflexionesScreen.tsx`, `AppsScreen.tsx`
+- **IconButton**: todos los `IconButton` de Paper → `TouchableOpacity` + `MaterialIcons` de @expo/vector-icons
+- **Icons**: iconos de MDI (react-native-paper) → MaterialIcons en todos los componentes migrados
+- **Metro config**: extendido con `withUniwindConfig` para soporte Tailwind v4
+- **global.css**: nuevo entry point de Tailwind v4 con imports de tailwindcss, uniwind y heroui-native
+- Archivos afectados: `app/_layout.tsx`, `app/(tabs)/fotos.tsx`, `app/(tabs)/calendario.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `app/screens/GruposScreen.tsx`, `app/screens/ContactosScreen.tsx`, `app/screens/ProfundizaScreen.tsx`, `app/screens/ReflexionesScreen.tsx`, `app/screens/AppsScreen.tsx`, `app/screens/VisitasScreen.tsx`, `app/screens/ComunicaScreen.tsx`, `app/screens/ComunicaGestionScreen.tsx`, `app/screens/ComidaWebScreen.tsx`, `app/(tabsdesactivados)/comunica.tsx`, `components/EventItem.tsx`, `components/FormattedContent.tsx`, `components/SongControls.tsx`, `metro.config.js`, `global.css`, `package.json`
+
+## 2026-03-20 — Fix z-index cantoral + sistema de archivos .mcm para playlists
+
+- **Bug fix**: botón "Importar playlist" y otros elementos en la pantalla de selección quedaban ocultos detrás del menú liquid glass en iOS. Aumentado `paddingBottom` y `marginBottom` en `SelectedSongsScreen` y snackbars
+- **Nueva extensión .mcm**: las playlists ahora se exportan como archivos `.mcm` (JSON internamente) en vez de `.json`. Esto permite que solo MCM App abra estos archivos
+- **Asociación de archivos en iOS y Android**: configurado `CFBundleDocumentTypes` + `UTExportedTypeDeclarations` (iOS) e `intentFilters` (Android) en `app.json` para que el sistema operativo reconozca archivos `.mcm` y los abra con la app
+- **Importación desde archivos externos**: nuevo hook `useIncomingPlaylist` que escucha URLs entrantes cuando la app se abre desde un archivo `.mcm` (WhatsApp, Files, etc.) e importa la playlist automáticamente
+- **SelectedSongsProvider movido al root layout** para que el handler de archivos entrantes funcione desde cualquier pantalla
+- Compatibilidad retroactiva: la importación sigue aceptando `.json` y `.mcmsongs` además de `.mcm`
+- Archivos: `app/screens/SelectedSongsScreen.tsx`, `app/_layout.tsx`, `app/(tabs)/cancionero.tsx`, `app.json`, `hooks/useIncomingPlaylist.ts`, `app/screens/CategoriesScreen.tsx`
+
 ## 2026-03-15 — Fix navegación en tabs Más y Cantoral
 
 - **Bug fix**: al pulsar el tab "Más" o "Cantoral" estando dentro de una sub-pantalla del stack, la pantalla se quedaba bloqueada sin responder

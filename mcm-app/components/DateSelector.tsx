@@ -1,11 +1,11 @@
 import React from 'react';
 import {
   FlatList,
-  TouchableOpacity,
   View,
   Text,
   StyleSheet,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
@@ -59,7 +59,8 @@ export default function DateSelector({
     const weekday = WEEKDAYS[date.getDay()];
     const selected = item.fecha === selectedDate;
     return (
-      <TouchableOpacity onPress={() => onSelectDate(item.fecha, index)}>
+      <PressableFeedback onPress={() => onSelectDate(item.fecha, index)}>
+        <PressableFeedback.Highlight />
         <View style={[styles.item, selected && styles.itemSelected]}>
           <Text
             style={[styles.dateText, selected && styles.textSelected]}
@@ -74,7 +75,7 @@ export default function DateSelector({
             {weekday}
           </Text>
         </View>
-      </TouchableOpacity>
+      </PressableFeedback>
     );
   };
   return (

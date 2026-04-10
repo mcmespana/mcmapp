@@ -1,6 +1,5 @@
 import {
   FlatList,
-  TouchableOpacity,
   Text,
   StyleSheet,
   View,
@@ -12,19 +11,18 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { FAB, Snackbar } from 'react-native-paper';
+import { useToast, PressableFeedback } from 'heroui-native';
 import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
-import GlassFAB from '@/components/ui/GlassFAB.ios';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
 const SELECTED_SONGS_CATEGORY_ID = '__SELECTED_SONGS__';
-const SELECTED_SONGS_CATEGORY_NAME = '🎵 Tu selección de canciones';
 
-// Emoji regex to detect emoji at end of string
 const EMOJI_REGEX =
   /[\p{Emoji_Presentation}\p{Extended_Pictographic}][\u{FE0F}\u{200D}\p{Emoji_Presentation}\p{Extended_Pictographic}]*$/u;
 
@@ -43,6 +41,8 @@ function extractTrailingEmoji(text: string): {
   return { emoji: '🎵', cleanText: trimmed };
 }
 
+const isIOS = Platform.OS === 'ios';
+
 export default function CategoriesScreen({
   navigation,
 }: {
@@ -56,6 +56,7 @@ export default function CategoriesScreen({
   const scheme = useColorScheme();
   const styles = useMemo(() => createStyles(scheme), [scheme]);
   const isDark = scheme === 'dark';
+  const insets = useSafeAreaInsets();
   const { data: songsData, loading } = useFirebaseData<Record<
     string,
     { categoryTitle: string; songs: any[] }
@@ -67,13 +68,6 @@ export default function CategoriesScreen({
     const titleB = songsData?.[b]?.categoryTitle ?? b;
     return titleA.localeCompare(titleB);
   });
-
-  const totalSongs = songsData
-    ? Object.values(songsData).reduce(
-        (sum, cat) => sum + (cat.songs?.length || 0),
-        0,
-      )
-    : 0;
 
   const displayCategories = [
     {
@@ -89,36 +83,45 @@ export default function CategoriesScreen({
   ];
 
   const [showForm, setShowForm] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const { toast } = useToast();
 
   const handleSuccessSubmit = () => {
-    setShowSuccessToast(true);
+    toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
 
+  // Header: search + add buttons together (integrado en el header)
   useLayoutEffect(() => {
+    const iconColor = isIOS
+      ? '#f4c11e'
+      : Platform.OS === 'web'
+        ? '#1a1a1a'
+        : '#1a1a1a';
     navigation.setOptions({
-      headerRight: () => {
-        const iconColor =
-          Platform.OS === 'ios'
-            ? '#1a1a1a'
-            : Platform.OS === 'web'
-              ? '#1a1a1a'
-              : '#fff';
-        return (
-          <TouchableOpacity
+      headerRight: () => (
+        <View style={styles.headerButtons}>
+          <PressableFeedback
+            onPress={() => setShowForm(true)}
+            style={styles.headerButton}
+            accessibilityLabel="Sugerir canción"
+          >
+            <PressableFeedback.Highlight />
+            <MaterialIcons name="add" size={26} color={iconColor} />
+          </PressableFeedback>
+          <PressableFeedback
             onPress={() =>
               navigation.navigate('SongsList', {
                 categoryId: ALL_SONGS_CATEGORY_ID,
                 categoryName: ALL_SONGS_CATEGORY_NAME,
               })
             }
-            style={{ padding: 10, marginRight: 8 }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.headerButton}
+            accessibilityLabel="Buscar canción"
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons name="search" size={26} color={iconColor} />
-          </TouchableOpacity>
-        );
-      },
+          </PressableFeedback>
+        </View>
+      ),
     });
   }, [navigation]);
 
@@ -142,8 +145,7 @@ export default function CategoriesScreen({
       : cleanText.replace(/^\w\.?\s*/, '');
 
     return (
-      <TouchableOpacity
-        activeOpacity={0.7}
+      <PressableFeedback
         onPress={() => {
           if (item.id === SELECTED_SONGS_CATEGORY_ID) {
             navigation.navigate('SelectedSongs');
@@ -157,9 +159,10 @@ export default function CategoriesScreen({
         style={[
           styles.card,
           isSpecial && styles.cardSpecial,
-          index === 0 && { marginTop: 16 },
+          index === 0 && { marginTop: 12 },
         ]}
       >
+        <PressableFeedback.Highlight />
         <View style={[styles.cardEmoji, isSpecial && styles.cardEmojiSpecial]}>
           <Text style={styles.emojiText}>{emoji}</Text>
         </View>
@@ -179,60 +182,26 @@ export default function CategoriesScreen({
             color={isDark ? '#555' : '#C7C7CC'}
           />
         </View>
-      </TouchableOpacity>
+      </PressableFeedback>
     );
   };
 
   return (
     <View style={styles.container}>
+      {/* Línea de color amarillo en la parte superior — visible sobre el header glass en iOS */}
+      {isIOS && (
+        <View
+          style={[styles.topColorBar, { height: insets.top > 0 ? 4 : 4 }]}
+        />
+      )}
       <FlatList
         data={displayCategories}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContent,
-          Platform.OS === 'ios' && { paddingBottom: 100 },
-        ]}
-        ListHeaderComponent={
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={styles.searchCard}
-            onPress={() =>
-              navigation.navigate('SongsList', {
-                categoryId: ALL_SONGS_CATEGORY_ID,
-                categoryName: ALL_SONGS_CATEGORY_NAME,
-              })
-            }
-          >
-            <View style={styles.searchIconContainer}>
-              <MaterialIcons
-                name="search"
-                size={22}
-                color={isDark ? '#AAAAAA' : '#8E8E93'}
-              />
-            </View>
-            <Text style={styles.searchPlaceholder}>
-              Buscar entre {totalSongs} canciones...
-            </Text>
-          </TouchableOpacity>
-        }
+        contentContainerStyle={styles.listContent}
+        contentInsetAdjustmentBehavior="automatic"
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
       />
-      {Platform.OS === 'ios' ? (
-        <GlassFAB
-          icon="add"
-          onPress={() => setShowForm(true)}
-          tintColor="#f4c11e"
-          iconColor="#222"
-        />
-      ) : (
-        <FAB
-          icon="plus"
-          style={styles.fab}
-          color="#222"
-          onPress={() => setShowForm(true)}
-        />
-      )}
 
       <SuggestSongModal
         visible={showForm}
@@ -242,21 +211,6 @@ export default function CategoriesScreen({
         onSuccess={handleSuccessSubmit}
       />
 
-      <Snackbar
-        visible={showSuccessToast}
-        onDismiss={() => setShowSuccessToast(false)}
-        duration={3000}
-        style={styles.snackbar}
-        action={{
-          label: 'OK',
-          textColor: isDark ? '#fff' : '#000',
-          onPress: () => setShowSuccessToast(false),
-        }}
-      >
-        <Text style={{ color: isDark ? '#fff' : '#000', fontWeight: '600' }}>
-          ¡Sugerencia enviada!
-        </Text>
-      </Snackbar>
     </View>
   );
 }
@@ -268,68 +222,40 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
       backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
-    listContent: {
-      paddingHorizontal: 16,
-      paddingBottom: 24,
-    },
-    searchCard: {
+    headerButtons: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      marginTop: 16,
-      marginBottom: 8,
-      ...(Platform.OS === 'web'
-        ? {
-            boxShadow: isDark
-              ? '0 1px 3px rgba(0,0,0,0.4)'
-              : '0 1px 3px rgba(0,0,0,0.08)',
-          }
-        : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: isDark ? 0.3 : 0.06,
-            shadowRadius: 3,
-            elevation: 2,
-          }),
+      gap: 4,
+      marginRight: Platform.OS === 'web' ? 8 : 0,
     },
-    searchIconContainer: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 12,
+    headerButton: {
+      padding: 8,
     },
-    searchPlaceholder: {
-      fontSize: 16,
-      color: isDark ? '#8E8E93' : '#8E8E93',
-      flex: 1,
+    listContent: {
+      paddingHorizontal: 16,
+      paddingBottom: isIOS ? 100 : 80,
     },
     card: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 14,
+      borderRadius: radii.lg,
       paddingHorizontal: 14,
       paddingVertical: 11,
       marginBottom: 8,
       ...(Platform.OS === 'web'
         ? {
-            boxShadow: isDark
-              ? '0 1px 3px rgba(0,0,0,0.4)'
-              : '0 1px 3px rgba(0,0,0,0.06)',
-          }
+          boxShadow: isDark
+            ? '0 1px 3px rgba(0,0,0,0.4)'
+            : '0 1px 3px rgba(0,0,0,0.06)',
+        }
         : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: isDark ? 0.25 : 0.04,
-            shadowRadius: 3,
-            elevation: 1,
-          }),
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isDark ? 0.25 : 0.04,
+          shadowRadius: 3,
+          elevation: 1,
+        }),
     },
     cardSpecial: {
       backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
@@ -340,7 +266,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       width: 38,
       height: 38,
       borderRadius: 10,
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 12,
@@ -374,18 +300,14 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: isDark ? '#636366' : '#AEAEB2',
       fontVariant: ['tabular-nums'],
     },
-    fab: {
+    topColorBar: {
       position: 'absolute',
-      right: 16,
-      bottom: 16,
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 4,
       backgroundColor: '#f4c11e',
-      borderRadius: 16,
-    },
-    snackbar: {
-      backgroundColor: isDark ? '#3A3A3C' : '#f4c11e',
-      borderRadius: 12,
-      marginBottom: 8,
-      marginHorizontal: 16,
+      zIndex: 1000,
     },
   });
 };

@@ -46,6 +46,21 @@
       "sourceType": "github",
       "computedHash": "a8be2664e90d697740c013f13b95d1857f56d8670818fa8c18ba99b93bccace3"
     },
+    "heroui-migration": {
+      "source": "heroui-inc/heroui",
+      "sourceType": "github",
+      "computedHash": "67d089e35519b4cdcbd910d64158bfe063b26ee5717f303889ba93962b15295e"
+    },
+    "heroui-native": {
+      "source": "heroui-inc/heroui",
+      "sourceType": "github",
+      "computedHash": "183b321e308ba32b2e015c68ac50a9ce0bf65e8d31610614d7f80ea565714432"
+    },
+    "heroui-react": {
+      "source": "heroui-inc/heroui",
+      "sourceType": "github",
+      "computedHash": "6116a849a6039e8b4d9dda3f6251c462e4ce8f583c53fda77838d0b2c124fe41"
+    },
     "performance": {
       "source": "addyosmani/web-quality-skills",
       "sourceType": "github",

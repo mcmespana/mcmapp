@@ -4,8 +4,8 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { IconSymbol } from './ui/IconSymbol';
@@ -74,14 +74,15 @@ export default function AddToHomeScreenPrompt() {
             <Text style={[styles.text, { color: theme.text }]}>
               Añade esta app para un acceso directo.
             </Text>
-            <TouchableOpacity
+            <PressableFeedback
               onPress={handleInstall}
               style={styles.installButton}
             >
+              <PressableFeedback.Highlight />
               <Text style={{ color: theme.text, fontWeight: 'bold' }}>
                 Instalar
               </Text>
-            </TouchableOpacity>
+            </PressableFeedback>
           </>
         ) : (
           <>
@@ -97,9 +98,10 @@ export default function AddToHomeScreenPrompt() {
             />
           </>
         )}
-        <TouchableOpacity onPress={handleClose} style={styles.close}>
+        <PressableFeedback onPress={handleClose} style={styles.close}>
+          <PressableFeedback.Highlight />
           <IconSymbol name="close" color={theme.text} size={20} />
-        </TouchableOpacity>
+        </PressableFeedback>
       </View>
     </View>
   );

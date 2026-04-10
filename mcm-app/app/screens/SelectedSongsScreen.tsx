@@ -9,15 +9,11 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   StyleSheet,
   Platform,
   Share,
-  Modal,
-  TextInput,
-  KeyboardAvoidingView,
 } from 'react-native';
-import { Provider as PaperProvider, Snackbar } from 'react-native-paper';
+import { useToast, Dialog, Button, PressableFeedback, TextField, Input } from 'heroui-native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -34,6 +30,7 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
+import { radii, shadows } from '@/constants/uiStyles';
 
 interface Song {
   title: string;
@@ -67,8 +64,7 @@ const SelectedSongsScreen: React.FC = () => {
   const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<
     CategorizedSongs[]
   >([]);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const { toast } = useToast();
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFileName, setExportFileName] = useState('');
 
@@ -177,12 +173,10 @@ const SelectedSongsScreen: React.FC = () => {
     ) {
       try {
         Clipboard.setStringAsync(finalText);
-        setSnackbarMessage('Lista copiada al portapapeles');
-        setSnackbarVisible(true);
+        toast.show({ label: 'Lista copiada al portapapeles' });
       } catch (error) {
         console.error('Error copying to clipboard:', error);
-        setSnackbarMessage('Error al copiar la lista');
-        setSnackbarVisible(true);
+        toast.show({ label: 'Error al copiar la lista' });
       }
     } else {
       try {
@@ -220,11 +214,11 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleConfirmExport = useCallback(async () => {
     try {
-      const fileName = `${exportFileName}.json`;
+      const fileName = `${exportFileName}.mcm`;
 
       if (Platform.OS === 'web') {
         const blob = new Blob([JSON.stringify(selectedSongs)], {
-          type: 'application/json',
+          type: 'application/octet-stream',
         });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -244,38 +238,36 @@ const SelectedSongsScreen: React.FC = () => {
           },
         );
         await Sharing.shareAsync(path, {
-          mimeType: 'application/json',
+          mimeType: 'application/octet-stream',
           dialogTitle: 'Compartir playlist',
+          UTI: 'com.mcmespana.mcmapp.playlist',
         });
       }
 
       setShowExportModal(false);
-      setSnackbarMessage('Playlist exportada');
-      setSnackbarVisible(true);
+      toast.show({ label: 'Playlist exportada' });
     } catch (err) {
       console.error('Error sharing file', err);
       setShowExportModal(false);
-      setSnackbarMessage('Error al exportar');
-      setSnackbarVisible(true);
+      toast.show({ label: 'Error al exportar' });
     }
   }, [selectedSongs, exportFileName]);
 
   const handleImportFile = useCallback(async () => {
+    const validExtensions = ['.mcm', '.json', '.mcmsongs'];
+    const isValidFile = (name: string) =>
+      validExtensions.some((ext) => name.toLowerCase().endsWith(ext));
+
     try {
       if (Platform.OS === 'web') {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.json,.mcmsongs,application/json';
+        input.accept = '.mcm,.json,.mcmsongs';
         input.onchange = async () => {
           if (!input.files || input.files.length === 0) return;
           const file = input.files[0];
-          if (
-            file.name &&
-            !file.name.endsWith('.json') &&
-            !file.name.endsWith('.mcmsongs')
-          ) {
-            setSnackbarMessage('Selecciona un archivo .json o .mcmsongs');
-            setSnackbarVisible(true);
+          if (file.name && !isValidFile(file.name)) {
+            toast.show({ label: 'Selecciona un archivo .mcm' });
             return;
           }
           const text = await file.text();
@@ -283,37 +275,28 @@ const SelectedSongsScreen: React.FC = () => {
             const parsed = JSON.parse(text);
             if (Array.isArray(parsed)) {
               if (parsed.length === 0) {
-                setSnackbarMessage('El archivo está vacío');
-                setSnackbarVisible(true);
+                toast.show({ label: 'El archivo está vacío' });
                 return;
               }
               parsed.forEach((fn: string) => addSong(fn));
-              setSnackbarMessage('Playlist importada');
-              setSnackbarVisible(true);
+              toast.show({ label: 'Playlist importada' });
             } else {
-              setSnackbarMessage('Formato de archivo inválido');
-              setSnackbarVisible(true);
+              toast.show({ label: 'Formato de archivo inválido' });
             }
           } catch (parseError) {
             console.error('Error parsing JSON:', parseError);
-            setSnackbarMessage('El archivo no es un JSON válido');
-            setSnackbarVisible(true);
+            toast.show({ label: 'El archivo no es un JSON válido' });
           }
         };
         input.click();
       } else {
         const res = await DocumentPicker.getDocumentAsync({
-          type: 'application/json',
+          type: ['application/json', 'application/octet-stream'],
         });
         if (res.canceled || !res.assets || res.assets.length === 0) return;
         const file = res.assets[0];
-        if (
-          file.name &&
-          !file.name.endsWith('.json') &&
-          !file.name.endsWith('.mcmsongs')
-        ) {
-          setSnackbarMessage('Selecciona un archivo .json o .mcmsongs');
-          setSnackbarVisible(true);
+        if (file.name && !isValidFile(file.name)) {
+          toast.show({ label: 'Selecciona un archivo .mcm' });
           return;
         }
         const content = await FileSystem.readAsStringAsync(file.uri, {
@@ -323,27 +306,22 @@ const SelectedSongsScreen: React.FC = () => {
           const parsed = JSON.parse(content);
           if (Array.isArray(parsed)) {
             if (parsed.length === 0) {
-              setSnackbarMessage('El archivo está vacío');
-              setSnackbarVisible(true);
+              toast.show({ label: 'El archivo está vacío' });
               return;
             }
             parsed.forEach((fn: string) => addSong(fn));
-            setSnackbarMessage('Playlist importada');
-            setSnackbarVisible(true);
+            toast.show({ label: 'Playlist importada' });
           } else {
-            setSnackbarMessage('Formato de archivo inválido');
-            setSnackbarVisible(true);
+            toast.show({ label: 'Formato de archivo inválido' });
           }
         } catch (parseError) {
           console.error('Error parsing JSON:', parseError);
-          setSnackbarMessage('El archivo no es un JSON válido');
-          setSnackbarVisible(true);
+          toast.show({ label: 'El archivo no es un JSON válido' });
         }
       }
     } catch (err) {
       console.error('Error importing playlist', err);
-      setSnackbarMessage('Error al importar');
-      setSnackbarVisible(true);
+      toast.show({ label: 'Error al importar' });
     }
   }, [addSong]);
 
@@ -408,10 +386,11 @@ const SelectedSongsScreen: React.FC = () => {
         Platform.OS === 'macos';
       navigation.setOptions({
         headerRight: () => (
-          <TouchableOpacity
+          <PressableFeedback
             onPress={handleExport}
             style={styles.headerExportButton}
           >
+            <PressableFeedback.Highlight />
             <IconSymbol
               name={isDesktopLike ? 'doc.on.doc' : 'square.and.arrow.up'}
               size={22}
@@ -426,7 +405,7 @@ const SelectedSongsScreen: React.FC = () => {
             {isDesktopLike && (
               <Text style={styles.headerExportText}>Copiar</Text>
             )}
-          </TouchableOpacity>
+          </PressableFeedback>
         ),
       });
     } else {
@@ -457,18 +436,18 @@ const SelectedSongsScreen: React.FC = () => {
             botón + en la pantalla de detalle.
           </Text>
         </View>
-        <TouchableOpacity
+        <PressableFeedback
           onPress={handleImportFile}
           style={styles.importButton}
-          activeOpacity={0.7}
         >
+          <PressableFeedback.Highlight />
           <MaterialIcons
             name="file-download"
             size={20}
             color={isDark ? '#7AB3FF' : '#253883'}
           />
           <Text style={styles.importButtonText}>Importar playlist</Text>
-        </TouchableOpacity>
+        </PressableFeedback>
       </View>
     );
   }
@@ -481,38 +460,38 @@ const SelectedSongsScreen: React.FC = () => {
           {selectedSongs.length === 1 ? 'canción' : 'canciones'}
         </Text>
         <View style={styles.toolbarActions}>
-          <TouchableOpacity
+          <PressableFeedback
             onPress={handleShareFile}
             style={styles.toolbarButton}
-            activeOpacity={0.7}
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons
               name="ios-share"
               size={18}
               color={isDark ? '#7AB3FF' : '#253883'}
             />
             <Text style={styles.toolbarButtonText}>Exportar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableFeedback>
+          <PressableFeedback
             onPress={handleImportFile}
             style={styles.toolbarButton}
-            activeOpacity={0.7}
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons
               name="file-download"
               size={18}
               color={isDark ? '#7AB3FF' : '#253883'}
             />
             <Text style={styles.toolbarButtonText}>Importar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableFeedback>
+          <PressableFeedback
             onPress={clearSelection}
             style={styles.toolbarButtonDanger}
-            activeOpacity={0.7}
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons name="delete-outline" size={18} color="#FF453A" />
             <Text style={styles.toolbarButtonDangerText}>Borrar</Text>
-          </TouchableOpacity>
+          </PressableFeedback>
         </View>
       </View>
 
@@ -524,85 +503,52 @@ const SelectedSongsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Export modal */}
-      <Modal
-        visible={showExportModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowExportModal(false)}
+      {/* Export dialog */}
+      <Dialog
+        isOpen={showExportModal}
+        onOpenChange={(open) => { if (!open) setShowExportModal(false); }}
       >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Exportar playlist</Text>
-            <Text style={styles.modalSubtitle}>
+        <Dialog.Portal>
+          <Dialog.Overlay />
+          <Dialog.Content>
+            <Dialog.Close />
+            <Dialog.Title>Exportar playlist</Dialog.Title>
+            <Dialog.Description className="mb-3">
               Elige un nombre para tu archivo
-            </Text>
-
-            <TextInput
-              style={styles.modalInput}
-              value={exportFileName}
-              onChangeText={setExportFileName}
-              placeholder="Playlist 7-ago"
-              placeholderTextColor={isDark ? '#636366' : '#AEAEB2'}
-              autoFocus={true}
-              selectTextOnFocus={true}
-            />
-
+            </Dialog.Description>
+            <TextField style={styles.modalInput}>
+              <Input
+                value={exportFileName}
+                onChangeText={setExportFileName}
+                placeholder="Playlist 7-ago"
+                autoFocus={true}
+                selectTextOnFocus={true}
+              />
+            </TextField>
             <Text style={styles.modalNote}>
-              Se exportará como archivo JSON
+              Se exportará como archivo .mcm
             </Text>
-
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
+              <Button
+                variant="tertiary"
                 onPress={() => setShowExportModal(false)}
-                activeOpacity={0.7}
               >
-                <Text style={styles.modalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.modalConfirmButton,
-                  !exportFileName.trim() && styles.modalConfirmDisabled,
-                ]}
+                <Button.Label>Cancelar</Button.Label>
+              </Button>
+              <Button
+                variant="primary"
                 onPress={handleConfirmExport}
-                disabled={!exportFileName.trim()}
-                activeOpacity={0.7}
+                isDisabled={!exportFileName.trim()}
               >
-                <Text style={styles.modalConfirmText}>Exportar</Text>
-              </TouchableOpacity>
+                <Button.Label>Exportar</Button.Label>
+              </Button>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        action={{
-          label: 'OK',
-          onPress: () => setSnackbarVisible(false),
-        }}
-        duration={Snackbar.DURATION_MEDIUM}
-        style={styles.snackbar}
-      >
-        {snackbarMessage}
-      </Snackbar>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
     </View>
   );
 };
-
-function SelectedSongsScreenWithProvider() {
-  return (
-    <PaperProvider>
-      <SelectedSongsScreen />
-    </PaperProvider>
-  );
-}
 
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';
@@ -637,7 +583,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       paddingVertical: 6,
       paddingHorizontal: 10,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
       gap: 4,
     },
@@ -651,7 +597,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       paddingVertical: 6,
       paddingHorizontal: 10,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       backgroundColor: isDark ? '#3A1B1B' : '#FFEBEE',
       gap: 4,
     },
@@ -672,13 +618,13 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '500',
     },
     listContentContainer: {
-      paddingBottom: 24,
+      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
     },
     categoryContainer: {
       marginTop: 12,
       marginHorizontal: 16,
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 14,
+      borderRadius: radii.lg,
       overflow: 'hidden',
       ...Platform.select({
         web: {
@@ -700,7 +646,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '700',
       paddingHorizontal: 16,
       paddingVertical: 10,
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
       color: isDark ? '#AEAEB2' : '#636366',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -720,7 +666,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     emptyIconContainer: {
       width: 100,
       height: 100,
-      borderRadius: 28,
+      borderRadius: radii.full,
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
       justifyContent: 'center',
       alignItems: 'center',
@@ -759,60 +705,20 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 14,
-      borderRadius: 14,
+      borderRadius: radii.lg,
       backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
       gap: 8,
-      marginBottom: Platform.OS === 'ios' ? 40 : 20,
+      marginBottom: Platform.OS === 'ios' ? 100 : 20,
     },
     importButtonText: {
       fontSize: 16,
       fontWeight: '600',
       color: isDark ? '#7AB3FF' : '#253883',
     },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.4)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-    },
-    modalContainer: {
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 20,
-      padding: 24,
-      width: '100%',
-      maxWidth: 380,
-      ...Platform.select({
-        web: {
-          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-        },
-        default: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.25,
-          shadowRadius: 16,
-          elevation: 12,
-        },
-      }),
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      marginBottom: 4,
-      textAlign: 'center',
-      color: isDark ? '#EBEBF0' : '#1C1C1E',
-      letterSpacing: -0.4,
-    },
-    modalSubtitle: {
-      fontSize: 14,
-      color: isDark ? '#8E8E93' : '#8E8E93',
-      textAlign: 'center',
-      marginBottom: 20,
-    },
     modalInput: {
       borderWidth: 1,
-      borderColor: isDark ? '#3A3A3C' : '#E5E5EA',
-      borderRadius: 12,
+      borderColor: isDark ? Colors.dark.card : '#E5E5EA',
+      borderRadius: radii.md,
       padding: 14,
       fontSize: 16,
       marginBottom: 8,
@@ -823,46 +729,13 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontSize: 13,
       color: isDark ? '#636366' : '#8E8E93',
       textAlign: 'center',
-      marginBottom: 24,
+      marginBottom: 16,
     },
     modalButtons: {
       flexDirection: 'row',
       gap: 12,
     },
-    modalCancelButton: {
-      flex: 1,
-      padding: 14,
-      borderRadius: 12,
-      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
-      alignItems: 'center',
-    },
-    modalCancelText: {
-      color: isDark ? '#AEAEB2' : '#636366',
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    modalConfirmButton: {
-      flex: 1,
-      padding: 14,
-      borderRadius: 12,
-      backgroundColor: '#253883',
-      alignItems: 'center',
-    },
-    modalConfirmDisabled: {
-      opacity: 0.5,
-    },
-    modalConfirmText: {
-      color: '#fff',
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    snackbar: {
-      backgroundColor: isDark ? '#3A3A3C' : '#1C1C1E',
-      borderRadius: 12,
-      marginBottom: 8,
-      marginHorizontal: 16,
-    },
   });
 };
 
-export default SelectedSongsScreenWithProvider;
+export default SelectedSongsScreen;

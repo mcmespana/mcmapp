@@ -15,7 +15,7 @@
 
 ```
 Tab "Contigo"
-├── Cabecera: titulo "Contigo" + subtitulo "Propuestas para la oracion de cada dia"
+├── Cabecera: titulo "Contigo" + subtitulo "Propuestas para la oracion de cada dia" (buscar un diseño chulo)
 ├── 3 herramientas (cards de acceso):
 │   ├── 1. Evangelio del Dia        ← lecturas + comentario + tracker lectura
 │   ├── 2. Mi Rato de Oracion       ← tracker de oracion (duracion + emocion)
@@ -74,7 +74,7 @@ tabs: {
 
 - **Titulo:** "Contigo" (texto grande, bold)
 - **Subtitulo:** "Propuestas para la oracion de cada dia" (texto secundario, mas pequeno)
-- Fondo sutil con gradiente o color suave (puede usar el color liturgico del dia como accent)
+- Fondo sutil con gradiente o color suave (puede usar el color liturgico del dia como accent, se creativo haciendolo)
 
 ### 3.2 Cards de herramientas (3 tarjetas)
 
@@ -105,10 +105,11 @@ Al tocar cada card → navega a la pantalla correspondiente.
 
 Debajo de las 3 cards, un **resumen visual del tracker** que muestra los 3 habitos en conjunto:
 
-#### Vista "Mi Semana"
+#### Vista "Mi Semana" - SE MUESTRAN SUGERENCIAS, SE DEBEN IDEAR Y MEJORAR
 
 Vista semanal por defecto (lunes a domingo actual):
 
+Primera propuesta, a estudiar y mejorar
 ```
 Mi Semana                    🔥 Racha: 5 dias
 ┌─────┬─────┬─────┬─────┬─────┬─────┬─────┐
@@ -149,12 +150,14 @@ Pantalla dedicada accesible desde la card en "Contigo" y desde el acceso directo
     - Rosa `#D4A0A7` → Gaudete (3er domingo Adviento), Laetare (4o domingo Cuaresma)
   - Si hay celebracion especial (solemnidad, fiesta, memoria), mostrar su nombre bajo el badge
 
+  La información del tiempo litúrgico está almacenada en un JSON local, luego se explica
+
 ### 4.2 Seccion del Evangelio (destacada)
 
 - **Card principal** con fondo sutil diferenciado (ligeramente elevada)
 - Titulo: "Evangelio" + cita biblica (ej. "Mt 5, 1-12")
 - Texto completo del evangelio
-- **Comentario** debajo, visualmente separado (tipografia en cursiva o bloque citado)
+- **Comentario** Separado por un selector en la parte de arriba que muestra LECTURA - COMENTARIO
 - **Fuente del comentario** claramente indicada: "Comentario de [fuente] — [autor si aplica]"
 - Enlace/link a la fuente original
 
@@ -163,16 +166,16 @@ Pantalla dedicada accesible desde la card en "Contigo" y desde el acceso directo
 Mostradas en cards mas compactas, colapsables o en acordeon:
 
 1. **Primera Lectura** — titulo + cita + texto completo
-2. **Salmo Responsorial** — antifona destacada + versos
+2. **Salmo** — antifona destacada + versos
 3. **Segunda Lectura** (solo domingos y solemnidades) — titulo + cita + texto
 
-> Sin comentario en estas lecturas. Solo el evangelio lleva comentario.
+> El comentario es general al día, va a otro nivel
 
 ### 4.4 Tracker de lectura (integrado en esta pantalla)
 
 Al final de la pantalla del Evangelio, un toggle sencillo:
 
-- **"He leido el Evangelio de hoy"** — toggle/checkbox
+- **"Leido check check"** — toggle/checkbox, algo chulo con animación y alegría
 - Al marcar, se registra en el tracker con la fecha del dia seleccionado
 - Feedback visual inmediato (checkmark, animacion sutil)
 - Si ya esta marcado para ese dia, mostrar checkmark verde
@@ -198,6 +201,7 @@ Pantalla con dos pasos:
 
 **Paso 1 — Duracion:**
 Pregunta: "¿Cuanto tiempo has dedicado hoy a la oracion?"
+Texto: "Lo importante no es la duración, pero te puede ayudar registrarlo"
 
 Opciones como botones/chips seleccionables:
 - < 1 min
@@ -205,11 +209,11 @@ Opciones como botones/chips seleccionables:
 - 5–10 min
 - 10–15 min
 - \> 15 min
-
+(posibilidad de omitirlo y pasar a lo siguiente o solo registrar que hubo un rato)
 **Paso 2 — Emocion predominante:**
 Pregunta: "¿Como te has sentido en la oracion?"
 
-5 emociones basicas como botones con icono + color:
+5 emociones basicas como botones con icono + color (posibilidad de añadir nuevas)
 - Alegria → `#FCD200` (amarillo)
 - Tristeza → `#31AADF` (azul)
 - Enfado → `#E15C62` (rojo)
@@ -222,8 +226,8 @@ Pregunta: "¿Como te has sentido en la oracion?"
 
 Muestra resumen:
 ```
-Hoy has orado 5-10 min
-Te has sentido: 😊 Alegria
+Hoy has registrado 5-10 min
+Emoción predominante 😊 Alegria
 [Editar]
 ```
 
@@ -239,7 +243,7 @@ Debajo del registro de hoy, un mini-calendario del mes actual:
 
 ---
 
-## 6. Herramienta 3: Examen del Dia (futuro)
+## 6. Herramienta 3: Revisión del Dia (futuro)
 
 > **Estado:** Placeholder — no implementar aun, solo reservar el espacio.
 
@@ -247,14 +251,14 @@ Concepto: registrar si se ha hecho el examen de conciencia diario. Similar al tr
 
 En la card de "Contigo", mostrar:
 - Icono de buscar/lupa
-- Texto "Examen del Dia"
+- Texto "Revisión del Dia"
 - Subtexto "Proximamente" en gris
 - Card con opacidad reducida o badge "Pronto"
 - No navegable (onPress deshabilitado)
 
 ---
 
-## 7. Integracion en la Home Screen
+## 7. Integracion en la Home Screen (explorar opciones y editarlas)
 
 ### 7.1 Acceso directo al Evangelio del Dia
 
@@ -392,39 +396,43 @@ interface MonthStats {
 
 ## 10. Modelo de datos (lecturas — consumidas desde Firebase)
 
-```typescript
-interface DailyReadings {
-  date: string;                    // '2026-03-11'
-  liturgicalSeason: string;        // 'Tiempo Ordinario', 'Cuaresma', etc.
-  liturgicalColor: string;         // '#3A7D44' (verde), '#6B3FA0' (morado), etc.
-  celebration?: string;            // 'San Jose', 'Domingo de Ramos', etc.
-  gospel: {
-    reference: string;             // 'Mt 5, 1-12'
-    text: string;                  // Texto completo
-    commentary: string;            // Comentario al evangelio
-    commentarySource: string;      // 'Ciudad Redonda', 'Dominicos.org', etc.
-    commentaryAuthor?: string;     // Autor del comentario si aplica
-    commentaryUrl: string;         // URL de la fuente original
-  };
-  firstReading: {
-    reference: string;
-    text: string;
-  };
-  psalm: {
-    reference: string;
-    antiphon: string;              // Antifona/respuesta
-    text: string;
-  };
-  secondReading?: {                // Solo domingos y solemnidades
-    reference: string;
-    text: string;
-  };
-}
+Las lecturas están en firebase (solo disponible +- 30 días)
+La idea es que las de Vida Nueva solo están disponibles el día y se ofrecerá otra alternativa para los +- 30 dias. Hay que revisar el "activo" como prefijo de los otros campos a mirar, de esa forma sin tocar codigo puedo meter infinitas fuents
+
 ```
+seccion_oracion
+├── lecturas
+│   ├── YYYY-MM-DD
+│   │   ├── evangelio
+│   │   ├────── activo: "vidaNueva"
+│   │   ├────── vidaNuevaCita: <--- cita del evangelio Jn 11, 1-45
+│   │   ├────── vidaNuevaComentario: <--- el comentario a poner
+│   │   ├────── vidaNuevaComentarista: <--- nombre del comentarista
+│   │   ├────── vidaNuevaEvangelioTexto: <--- el texto del evangelio
+│   │   ├────── vidaNuevaLastUpdated: <--- fecha actualizacion
+│   │   ├────── vidaNuevaURL: <--- URL para citar la fuente
+│   │   ├── lectura1
+│   │   ├────── <--- similar a evangelio
+│   │   ├── lectura2
+│   │   ├────── <--- similar a evangelio
+│   │   └── info
+│   │   ├────── activo: "vidaNueva"
+│   │   ├────── vidaNuevaDiaLiturgico: <--- nombre del dia y santo
+│   │   ├────── vidaNuevaCita: <--- cita del evangelio Jn 11, 1-45
+│   │   ├────── vidaNuevaPrimeraLectura: <--- cita de la lecutra
+│   │   ├────── vidaNuevaSegundaLectura: <--- cita de la lecutra
+│   │   ├────── vidaNuevaSalmo: <--- numero salmo
+│   │   ├────── vidaNuevaTitulo: <--- titulo del día par motivar y animar
+```
+
+Los tiempos litúrgicos están en assets/calendario-liturgico.json 
+De ahí se pueden sacar los tiempos, los titulos para los dias y calculas los colores.
+Ese json vive como un asset de la app porque el calendario es determinista y nunca cambiará jamás, pesa poco y puede ser un asset sin problema asi se carga bien. 
+Un agente debe revisar la estructura
 
 ---
 
-## 11. Archivos a crear/modificar
+## 11. Archivos a crear/modificar (en principio, pueden ser mas pueden ser menos)
 
 ### Nuevos archivos
 
@@ -456,7 +464,7 @@ interface DailyReadings {
 
 ---
 
-## 12. Librerias recomendadas (nuevas dependencias)
+## 12. Librerias recomendadas (nuevas dependencias, reflexionar sobre ellas)
 
 | Libreria | Para que | Ya instalada |
 |----------|----------|-------------|
@@ -464,45 +472,23 @@ interface DailyReadings {
 | `react-native-svg` | Dots personalizados, graficos de emociones | Verificar |
 | `react-native-reanimated` | Animaciones suaves del tracker | Si (Expo) |
 
-> Minimizar dependencias nuevas. El calendario y la vista semanal del tracker podrian hacerse custom con Views si se prefiere evitar `react-native-calendars`.
+> Valorar dependencias que vlagan la pena podernas y actuales Y BIEN MANTENIDAS
 
 ---
 
 ## 13. Fases de implementacion
 
-### Fase 1 — Estructura + Evangelio MVP (sin scraper)
+### Fase 1 — Todo menos el examen revisión
 
-- Tab `contigo` con las 3 cards (Examen deshabilitada)
-- Pantalla `EvangelioScreen` con navegador de dias
-- Datos mock/estaticos para probar el diseno
-- Badge liturgico con colores
-- Cards de lecturas (evangelio destacado + otras colapsables)
-- Toggle "He leido el Evangelio" con persistencia en AsyncStorage
-- Hook `useContigoHabits` basico (solo lectura)
+- Ya está hecho el backend de lecturas
 
-### Fase 2 — Mi Rato de Oracion + Tracker
-
-- Pantalla `OracionScreen` con selector duracion + emocion
-- Hook `useContigoHabits` completo (lectura + oracion + rachas)
-- Vista semanal "Mi Semana" en la pantalla Contigo
-- Card resumen en Home
-- Boton Evangelio en el grid de Home
-
-### Fase 3 — Scraper + datos reales
-
-- Script de scraping con cheerio (ver seccion Backend)
-- GitHub Actions cron job
-- Estructura en Firebase RTDB
-- Hook `useDailyReadings` conectado a Firebase
-- Cache offline con `useFirebaseData`
-
-### Fase 4 — Examen del Dia
+### Fase 2 — Examen del Dia
 
 - Pantalla `ExamenScreen` (diseno por definir)
 - Integrar habito 3 en el tracker y las estadisticas
 - Habilitar card en Contigo
 
-### Fase 5 — Polish
+### Fase 3 — Polish
 
 - Animaciones de entrada y transiciones
 - Estadisticas ampliadas (graficos semanales, emociones)
@@ -521,28 +507,25 @@ interface DailyReadings {
 
 ---
 
-## B1. Arquitectura recomendada
+## B1. Arquitectura implementada
 
 ```
 GitHub Actions (cron 00:02 hora Espana)
   → Script Node.js (cheerio + firebase-admin)
-  → Scraping de fuente principal + LitCal API
+  → Scraping de fuente principal
   → Escribe en Firebase Realtime Database
   → La app consume con useFirebaseData (patron existente)
 ```
 
-**Por que este stack:**
-- La app ya usa Firebase RTDB → cero infraestructura nueva
-- GitHub Actions es gratis para repos del org
-- `useFirebaseData` ya maneja cache offline → las lecturas funcionan sin conexion
-- Sin necesidad de API REST separada: la app lee directamente de Firebase
+Valorar incluir litcal si aporta algo nuevo
+litcal.johnromanodorazio.com/api/v4/calendar
 
-## B2. Fuentes de datos
+## B2. Fuentes de datos a valorar en el futuro
 
 | Dato | Fuente | Metodo |
 |------|--------|--------|
-| Lecturas + comentario evangelio | **Ciudad Redonda** (`ciudadredonda.org/evangelio-lecturas-hoy/`) | Scraping con `cheerio` (HTML server-rendered, estructura limpia) |
-| Fuente alternativa de lecturas | **Dominicos.org** (`dominicos.org/predicacion/evangelio-del-dia/hoy/`) | Scraping con `cheerio` (fallback si Ciudad Redonda falla) |
+| Lecturas + comentario evangelio | **Ciudad Redonda** (`ciudadredonda.org/evangelio-lecturas-hoy/`) | Scraping |
+| Fuente alternativa de lecturas | **Dominicos.org** (`dominicos.org/predicacion/evangelio-del-dia/hoy/`) | Scraping |
 | Tiempo liturgico, color, celebracion | **LitCal API** (`litcal.johnromanodorazio.com/api/v4/calendar`) | API REST (JSON, soporta espanol, gratuita) |
 | Comentario alternativo | **Evangeli.net** (`evangeli.net/evangelio/api`) | API publica (tiene endpoint y widget embeddable) |
 
@@ -566,64 +549,17 @@ GitHub Actions (cron 00:02 hora Espana)
 | Catholic Readings API | `github.com/cpbjr/catholic-readings-api` | No (ingles, espanol planeado) | Lecturas en JSON via GitHub Pages |
 | Evangeli.net API | `evangeli.net/evangelio/api` | Si | Evangelio + comentario |
 
-## B3. Estructura en Firebase RTDB
 
-```
-Firebase Realtime Database
-└── lecturas_diarias/
-    ├── updatedAt: timestamp
-    └── data/
-        ├── '2026-03-11': { ...DailyReadings }
-        ├── '2026-03-12': { ...DailyReadings }
-        └── ...  (rolling window de ~60 dias: 30 pasados + 30 futuros)
-```
-
-> Se usa el patron existente `useFirebaseData('lecturas_diarias', 'lecturas-cache')` para cache offline automatica.
 
 ## B4. Cron Job — GitHub Actions
 
-```yaml
-# .github/workflows/scrape-lecturas.yml
-name: Scrape Lecturas Diarias
-on:
-  schedule:
-    - cron: '2 23 * * *'    # 23:02 UTC = 00:02 hora Espana (CET)
-  workflow_dispatch:          # Trigger manual para testing/backfill
+Ya implementado, revisar en el documento
 
-jobs:
-  scrape:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - run: npm ci
-        working-directory: scripts/scraper
-      - run: node scrape-lecturas.js
-        working-directory: scripts/scraper
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-```
-
-**Script `scrape-lecturas.js`** (pseudocodigo):
-1. Fetch HTML de Ciudad Redonda (hoy + manana)
-2. Parsear con `cheerio`: extraer 1a lectura, salmo, 2a lectura, evangelio, comentario
-3. Fetch LitCal API: obtener tiempo liturgico, color, celebracion
-4. Componer objeto `DailyReadings`
-5. Escribir en Firebase RTDB con `firebase-admin`
-6. Limpiar lecturas con mas de 45 dias de antiguedad
+Falta incluir para lLimpiar lecturas con mas de 45 dias de antiguedad
 
 **Dependencias del scraper:** `cheerio`, `firebase-admin`, `node-fetch` (o fetch nativo en Node 20+)
 
-**Archivos del scraper:**
-
-| Archivo | Descripcion |
-|---------|-------------|
-| `scripts/scraper/scrape-lecturas.js` | Script principal de scraping |
-| `scripts/scraper/package.json` | Dependencias del scraper |
-| `.github/workflows/scrape-lecturas.yml` | Workflow de GitHub Actions |
-
-## B5. Colores liturgicos (referencia)
+## Propuesta de colores litúrgicos
 
 | Color | Espanol | Hex | Cuando se usa |
 |-------|---------|-----|---------------|

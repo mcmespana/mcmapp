@@ -4,10 +4,10 @@ import {
   Text,
   ImageBackground,
   StyleSheet,
-  TouchableOpacity,
   useWindowDimensions,
   Platform,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
@@ -28,11 +28,8 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
   const { width } = useWindowDimensions();
   const activeStyles = createStyles(width);
   return (
-    <TouchableOpacity
-      style={activeStyles.card}
-      onPress={onPress}
-      activeOpacity={0.85}
-    >
+    <PressableFeedback style={activeStyles.card} onPress={onPress}>
+      <PressableFeedback.Highlight />
       <View style={activeStyles.cardContent}>
         <ImageBackground
           source={{ uri: album.imageUrl }}
@@ -86,7 +83,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
           </View>
         </ImageBackground>
       </View>
-    </TouchableOpacity>
+    </PressableFeedback>
   );
 };
 

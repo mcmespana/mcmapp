@@ -22,7 +22,7 @@ interface SettingsContextType {
   isLoadingSettings: boolean;
 }
 
-export const DEFAULT_FONT_SIZE_EM = 1.1; // baseline font size
+export const DEFAULT_FONT_SIZE_EM = 1.25; // baseline font size (ligeramente mayor para mejor legibilidad)
 
 // Default settings
 const defaultSettings: SongSettings = {

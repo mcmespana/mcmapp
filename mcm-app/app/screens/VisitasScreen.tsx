@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Linking, Image, Platform } from 'react-native';
-import { Card, IconButton, Modal, Portal, Text } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Linking, Image, Platform, Text } from 'react-native';
+import { Card, Button, Chip, Dialog, PressableFeedback } from 'heroui-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
@@ -71,62 +72,74 @@ export default function VisitasScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.list}>
         {(visitas || []).map((v, idx) => (
-          <Card key={idx} style={styles.card} onPress={() => setSelected(v)}>
-            {v.imagen && (
-              <Image
-                source={{ uri: v.imagen }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-            )}
-            <Card.Content style={styles.cardContent}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title}>{v.titulo}</Text>
-                {v.subtitulo && (
-                  <Text style={styles.subtitle}>{v.subtitulo}</Text>
-                )}
-                {v.fecha && (
-                  <View style={styles.dateRow}>
-                    <IconButton icon="calendar-today" size={18} />
-                    <Text>{formatDate(v.fecha)}</Text>
-                  </View>
-                )}
-              </View>
-              {v.mapa && (
-                <IconButton
-                  icon="map"
-                  onPress={() => openMap(v.mapa)}
-                  accessibilityLabel="Abrir mapa"
+          <PressableFeedback key={idx} onPress={() => setSelected(v)}>
+            <PressableFeedback.Highlight />
+            <Card style={styles.card}>
+              {v.imagen && (
+                <Image
+                  source={{ uri: v.imagen }}
+                  style={styles.image}
+                  resizeMode="cover"
                 />
               )}
-            </Card.Content>
-          </Card>
+              <Card.Body style={styles.cardContent}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.title}>{v.titulo}</Text>
+                  {v.subtitulo && (
+                    <Text style={styles.subtitle}>{v.subtitulo}</Text>
+                  )}
+                  {v.fecha && (
+                    <View style={styles.dateRow}>
+                      <MaterialIcons name="calendar-today" size={18} color="#888" />
+                      <Chip size="sm" variant="soft" color="default" style={{ marginLeft: 4 }}>
+                        <Chip.Label>{formatDate(v.fecha)}</Chip.Label>
+                      </Chip>
+                    </View>
+                  )}
+                </View>
+                {v.mapa && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    onPress={() => openMap(v.mapa)}
+                  >
+                    <MaterialIcons name="map" size={24} color="#888" />
+                  </Button>
+                )}
+              </Card.Body>
+            </Card>
+          </PressableFeedback>
         ))}
       </ScrollView>
-      <Portal>
-        <Modal
-          visible={!!selected}
-          onDismiss={() => setSelected(null)}
-          contentContainerStyle={styles.modal}
-        >
-          {selected && (
-            <View>
-              <Text style={styles.modalTitle}>{selected.titulo}</Text>
-              {selected.texto && (
-                <Text style={styles.modalText}>{selected.texto}</Text>
-              )}
-              {selected.mapa && (
-                <View style={{ alignItems: 'flex-end' }}>
-                  <IconButton
-                    icon="map"
-                    onPress={() => openMap(selected.mapa)}
-                  />
-                </View>
-              )}
-            </View>
-          )}
-        </Modal>
-      </Portal>
+      <Dialog
+        isOpen={!!selected}
+        onOpenChange={(open) => { if (!open) setSelected(null); }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay />
+          <Dialog.Content>
+            <Dialog.Close />
+            {selected && (
+              <View style={{ gap: 8 }}>
+                <Dialog.Title>{selected.titulo}</Dialog.Title>
+                {selected.texto && (
+                  <Dialog.Description>{selected.texto}</Dialog.Description>
+                )}
+                {selected.mapa && (
+                  <Button
+                    variant="secondary"
+                    onPress={() => { openMap(selected.mapa); setSelected(null); }}
+                  >
+                    <MaterialIcons name="map" size={18} color="#fff" />
+                    <Button.Label>Ver en mapa</Button.Label>
+                  </Button>
+                )}
+              </View>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
     </View>
   );
 }
@@ -155,18 +168,5 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     subtitle: { fontSize: 14, marginBottom: 4, color: theme.text },
     dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    modal: {
-      backgroundColor: theme.background,
-      margin: 20,
-      padding: 20,
-      borderRadius: 8,
-    },
-    modalTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      marginBottom: 8,
-      color: theme.text,
-    },
-    modalText: { fontSize: 14, marginBottom: 12, color: theme.text },
   });
 };

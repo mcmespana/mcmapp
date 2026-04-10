@@ -1,13 +1,6 @@
-import React, { useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Animated,
-} from 'react-native';
-import { Snackbar } from 'react-native-paper';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
+import { useToast, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import SongFontPanel from './SongFontPanel';
@@ -73,9 +66,8 @@ const SongControls: React.FC<SongControlsProps> = ({
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showReportBugsModal, setShowReportBugsModal] = useState(false);
   const [showSecretPanel, setShowSecretPanel] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [showCopyToast, setShowCopyToast] = useState(false);
   const scheme = useColorScheme();
+  const { toast } = useToast();
   const isDark = scheme === 'dark';
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -102,15 +94,35 @@ const SongControls: React.FC<SongControlsProps> = ({
     outputRange: ['0deg', '45deg'],
   });
 
+  useEffect(() => {
+    return () => {
+      setShowActionButtons(false);
+      setShowTransposePanel(false);
+      setShowFontPanel(false);
+      setShowReportBugsModal(false);
+      setShowSecretPanel(false);
+    };
+  }, []);
+
   const handleOpenTransposePanel = () => setShowTransposePanel(true);
   const handleOpenFontPanel = () => setShowFontPanel(true);
 
   const handleReportSuccess = () => {
-    setShowSuccessToast(true);
+    toast.show({
+      variant: 'success',
+      label: '¡Gracias por tu reporte!',
+      actionLabel: 'OK',
+      onActionPress: ({ hide }) => hide(),
+    });
   };
 
   const handleSecretPanelSuccess = () => {
-    setShowSuccessToast(true);
+    toast.show({
+      variant: 'success',
+      label: '¡Gracias por tu reporte!',
+      actionLabel: 'OK',
+      onActionPress: ({ hide }) => hide(),
+    });
   };
 
   const handleSetTranspose = (semitones: number) => {
@@ -128,17 +140,15 @@ const SongControls: React.FC<SongControlsProps> = ({
     onPress: () => void;
     isActive?: boolean;
   }) => (
-    <TouchableOpacity
+    <PressableFeedback
       style={[
         styles.actionButton,
         isActive &&
-          (isDark
-            ? styles.actionButtonActiveDark
-            : styles.actionButtonActive),
+          (isDark ? styles.actionButtonActiveDark : styles.actionButtonActive),
       ]}
       onPress={onPress}
-      activeOpacity={0.7}
     >
+      <PressableFeedback.Highlight />
       <MaterialIcons
         name={icon}
         size={18}
@@ -164,19 +174,21 @@ const SongControls: React.FC<SongControlsProps> = ({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </PressableFeedback>
   );
 
   return (
     <>
+      {/* Scrim when menu is open */}
+      {showActionButtons && (
+        <PressableFeedback style={styles.scrim} onPress={toggleMenu} />
+      )}
+
       {/* FAB & Action Menu */}
       <View style={styles.fabContainer}>
         {showActionButtons && (
           <View
-            style={[
-              styles.menuContainer,
-              isDark && styles.menuContainerDark,
-            ]}
+            style={[styles.menuContainer, isDark && styles.menuContainerDark]}
           >
             <ActionButton
               icon={chordsVisible ? 'music-note' : 'music-off'}
@@ -212,10 +224,7 @@ const SongControls: React.FC<SongControlsProps> = ({
             />
 
             <View
-              style={[
-                styles.menuDivider,
-                isDark && styles.menuDividerDark,
-              ]}
+              style={[styles.menuDivider, isDark && styles.menuDividerDark]}
             />
 
             <ActionButton
@@ -223,7 +232,7 @@ const SongControls: React.FC<SongControlsProps> = ({
               label="Copiar letra"
               onPress={() => {
                 onCopyLyrics();
-                setShowCopyToast(true);
+                toast.show({ label: 'Letra copiada al portapapeles' });
               }}
             />
             <ActionButton
@@ -239,25 +248,29 @@ const SongControls: React.FC<SongControlsProps> = ({
           </View>
         )}
         <View style={{ position: 'relative' }}>
-          {hasModifications && (
+          {hasModifications && !showActionButtons && (
             <View style={[styles.badge, isDark && styles.badgeDark]} />
           )}
-          <TouchableOpacity
-            style={[styles.fabMain, isDark && styles.fabMainDark]}
+          <PressableFeedback
+            style={[
+              styles.fabMain,
+              isDark && styles.fabMainDark,
+              showActionButtons && styles.fabMainOpen,
+            ]}
             onPress={toggleMenu}
             accessibilityLabel="Configuración"
-            activeOpacity={0.8}
           >
+            <PressableFeedback.Scale />
             <Animated.View
               style={{ transform: [{ rotate: rotateInterpolation }] }}
             >
               <MaterialIcons
                 name={showActionButtons ? 'close' : 'tune'}
-                size={26}
-                color="#1C1C1E"
+                size={22}
+                color={isDark ? '#fff' : '#1C1C1E'}
               />
             </Animated.View>
-          </TouchableOpacity>
+          </PressableFeedback>
         </View>
       </View>
 
@@ -306,42 +319,22 @@ const SongControls: React.FC<SongControlsProps> = ({
         firebaseCategory={firebaseCategory}
         onSuccess={handleSecretPanelSuccess}
       />
-
-      <Snackbar
-        visible={showCopyToast}
-        onDismiss={() => setShowCopyToast(false)}
-        duration={2000}
-        style={styles.snackbar}
-      >
-        <Text style={{ color: '#fff', fontWeight: '600' }}>
-          Letra copiada al portapapeles
-        </Text>
-      </Snackbar>
-
-      <Snackbar
-        visible={showSuccessToast}
-        onDismiss={() => setShowSuccessToast(false)}
-        duration={3000}
-        style={[styles.snackbar, styles.snackbarSuccess]}
-        action={{
-          label: 'OK',
-          textColor: '#fff',
-          onPress: () => setShowSuccessToast(false),
-        }}
-      >
-        <Text style={{ color: '#fff', fontWeight: '600' }}>
-          ¡Gracias por tu reporte!
-        </Text>
-      </Snackbar>
     </>
   );
 };
 
+const isIOS = Platform.OS === 'ios';
+
 const styles = StyleSheet.create({
+  scrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    zIndex: 999,
+  },
   fabContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 100 : 24,
-    right: 20,
+    bottom: isIOS ? 100 : 24,
+    right: 16,
     alignItems: 'flex-end',
     zIndex: 1000,
   },
@@ -354,8 +347,7 @@ const styles = StyleSheet.create({
     minWidth: 200,
     ...Platform.select({
       web: {
-        boxShadow:
-          '0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
       },
       default: {
         shadowColor: '#000',
@@ -419,51 +411,46 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fabMain: {
-    backgroundColor: '#f4c11e',
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    backgroundColor: '#fff',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
       web: {
-        boxShadow: '0 4px 12px rgba(244,193,30,0.4)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+        cursor: 'pointer',
       },
       default: {
-        shadowColor: '#f4c11e',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
         shadowRadius: 8,
-        elevation: 8,
+        elevation: 6,
       },
     }),
   },
   fabMainDark: {
-    backgroundColor: '#f4c11e',
+    backgroundColor: '#2C2C2E',
+  },
+  fabMainOpen: {
+    backgroundColor: '#FF453A',
   },
   badge: {
     position: 'absolute',
-    right: -2,
-    top: -2,
+    right: -1,
+    top: -1,
     backgroundColor: '#FF453A',
-    borderRadius: 8,
-    width: 16,
-    height: 16,
+    borderRadius: 6,
+    width: 12,
+    height: 12,
     zIndex: 10,
     borderWidth: 2,
     borderColor: '#F2F2F7',
   },
   badgeDark: {
     borderColor: '#1C1C1E',
-  },
-  snackbar: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    marginBottom: 8,
-    marginHorizontal: 16,
-  },
-  snackbarSuccess: {
-    backgroundColor: '#34C759',
   },
 });
 

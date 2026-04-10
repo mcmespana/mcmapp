@@ -1,29 +1,28 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View, Linking, Platform } from 'react-native';
-import { List, IconButton, Avatar } from 'react-native-paper';
+import { ScrollView, Platform, Linking } from 'react-native';
+import {
+  Avatar,
+  ListGroup,
+  Separator,
+  Button,
+  Surface,
+} from 'heroui-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import colors, { Colors } from '@/constants/colors';
-import { AppColors } from '@/app/styles/theme';
+import colors from '@/constants/colors';
+import { UIColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-const PALETTE = [
-  '#FF8A65',
-  '#4FC3F7',
-  '#81C784',
-  '#BA68C8',
-  '#FFD54F',
-  '#9FA8DA',
-  colors.primary,
-  colors.secondary,
-  colors.accent,
-  colors.info,
-  colors.success,
-  colors.warning,
-  colors.danger,
-  AppColors.primary,
-  AppColors.accentYellow,
-];
+const AVATAR_COLORS = [
+  'accent',
+  'success',
+  'warning',
+  'danger',
+  'default',
+] as const;
+
+type AvatarColor = (typeof AVATAR_COLORS)[number];
 
 interface Contacto {
   nombre: string;
@@ -31,30 +30,26 @@ interface Contacto {
   telefono: string;
 }
 
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function getAvatarColor(index: number): AvatarColor {
+  return AVATAR_COLORS[index % AVATAR_COLORS.length];
+}
+
 export default function ContactosScreen() {
   const scheme = useColorScheme();
-  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { data: contacts, loading } = useFirebaseData<Contacto[]>(
     'jubileo/contactos',
     'jubileo_contactos',
   );
   const data = contacts as Contacto[] | undefined;
-
-  const colorsForContacts = React.useMemo(
-    () =>
-      (data || []).map(
-        () => PALETTE[Math.floor(Math.random() * PALETTE.length)],
-      ),
-    [data],
-  );
-
-  const getInitials = (name: string) =>
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
 
   const call = (tel: string) => Linking.openURL(`tel:${tel}`);
   const whatsapp = (tel: string) => {
@@ -72,56 +67,61 @@ export default function ContactosScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}
+      contentContainerStyle={[
+        { padding: 16 },
+        Platform.OS === 'ios' && { paddingBottom: 100 },
+      ]}
     >
-      {(data || []).map((c, idx) => (
-        <List.Item
-          key={idx}
-          title={c.nombre}
-          titleStyle={styles.name}
-          description={c.responsabilidad}
-          left={() => (
-            <View style={styles.avatarWrapper}>
-              <Avatar.Text
-                size={40}
-                label={getInitials(c.nombre)}
-                style={[
-                  styles.avatar,
-                  { backgroundColor: colorsForContacts[idx] },
-                ]}
-              />
-            </View>
-          )}
-          right={() => (
-            <View style={styles.actions}>
-              <IconButton
-                icon="phone"
-                size={24}
-                onPress={() => call(c.telefono)}
-              />
-              <IconButton
-                icon="whatsapp"
-                size={24}
-                onPress={() => whatsapp(c.telefono)}
-              />
-            </View>
-          )}
-          contentStyle={styles.itemContent}
-        />
-      ))}
+      <Surface variant="default" className="overflow-hidden rounded-2xl">
+        <ListGroup variant="transparent">
+          {(data || []).map((c, idx) => (
+            <React.Fragment key={idx}>
+              <ListGroup.Item onPress={() => {}}>
+                <ListGroup.ItemPrefix>
+                  <Avatar size="md" color={getAvatarColor(idx)} alt={c.nombre}>
+                    <Avatar.Fallback>{getInitials(c.nombre)}</Avatar.Fallback>
+                  </Avatar>
+                </ListGroup.ItemPrefix>
+                <ListGroup.ItemContent>
+                  <ListGroup.ItemTitle>{c.nombre}</ListGroup.ItemTitle>
+                  <ListGroup.ItemDescription>
+                    {c.responsabilidad}
+                  </ListGroup.ItemDescription>
+                </ListGroup.ItemContent>
+                <ListGroup.ItemSuffix>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    onPress={() => call(c.telefono)}
+                  >
+                    <MaterialIcons
+                      name="phone"
+                      size={20}
+                      color={colors.info}
+                    />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    onPress={() => whatsapp(c.telefono)}
+                  >
+                    <MaterialIcons
+                      name="chat"
+                      size={20}
+                      color={colors.success}
+                    />
+                  </Button>
+                </ListGroup.ItemSuffix>
+              </ListGroup.Item>
+              {idx < (data?.length ?? 0) - 1 && (
+                <Separator className="ml-20" />
+              )}
+            </React.Fragment>
+          ))}
+        </ListGroup>
+      </Surface>
     </ScrollView>
   );
 }
-
-const createStyles = (scheme: 'light' | 'dark' | null) => {
-  const theme = Colors[scheme ?? 'light'];
-  return StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
-    actions: { flexDirection: 'row' },
-    name: { fontSize: 18, fontWeight: 'bold', color: theme.text },
-    avatarWrapper: { justifyContent: 'center' },
-    avatar: { marginLeft: 8, marginRight: 12 },
-    itemContent: { paddingVertical: 8, alignItems: 'center' },
-  });
-};

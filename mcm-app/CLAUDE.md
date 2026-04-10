@@ -6,7 +6,7 @@
 
 MCM App es la aplicación de MCM España (Misioneros y Misioneras Claretianos). Proporciona cantoral/cancionero con acordes, calendario de eventos, fotos, grupos, reflexiones, materiales, juego Wordle y notificaciones push.
 
-**Stack:** Expo 55 · React Native 0.83 · React 19.2 · TypeScript · Firebase Realtime Database · React Native Paper · ChordSheetJS
+**Stack:** Expo 55 · React Native 0.83 · React 19.2 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
 
 ## Comandos de desarrollo
 
@@ -310,6 +310,148 @@ Documentar NO:
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
 - **App version**: 1.0.1
 - **Runtime version**: 1.0.1
+
+## HeroUI Native — UI Library
+
+La app usa **heroui-native v1.0.0** (reemplaza react-native-paper desde marzo 2026). Es una biblioteca de componentes React Native construida sobre **Uniwind** (Tailwind CSS v4 para RN).
+
+> **Para cualquier tarea de UI con HeroUI Native, usa siempre el skill `heroui-native`** — tiene acceso a la documentación completa de todos los componentes.
+>
+> Docs locales en `.heroui-docs/native/` (generadas con `npx heroui-cli@latest agents-md --native`)
+
+### Configuración básica
+
+```tsx
+// app/_layout.tsx — jerarquía de providers OBLIGATORIA
+<GestureHandlerRootView style={{ flex: 1 }}>
+  <SafeAreaProvider>
+    <HeroUINativeProvider>
+      {/* tu app */}
+    </HeroUINativeProvider>
+  </SafeAreaProvider>
+</GestureHandlerRootView>
+```
+
+**global.css** (Tailwind v4 entry point):
+```css
+@import 'tailwindcss';
+@import 'uniwind';
+@import 'heroui-native/styles';
+@source './node_modules/heroui-native/lib';
+```
+
+**metro.config.js** extendido con `withUniwindConfig`.
+
+### 37 componentes disponibles
+
+| Categoría | Componentes |
+|-----------|-------------|
+| **Botones** | `Button`, `CloseButton`, `LinkButton` |
+| **Formularios** | `TextField`, `TextArea`, `Input`, `InputGroup`, `InputOTP`, `SearchField`, `Select`, `Checkbox`, `RadioGroup`, `ControlField`, `Label`, `Description`, `FieldError` |
+| **Layout** | `Card`, `Separator`, `Surface` |
+| **Feedback** | `Alert`, `Spinner`, `Skeleton`, `SkeletonGroup` |
+| **Navegación** | `Accordion`, `ListGroup`, `Tabs` |
+| **Overlays** | `Toast` (vía `useToast`), `Dialog`, `BottomSheet`, `Popover` |
+| **Media** | `Avatar` |
+| **Controles** | `Switch`, `Slider` |
+| **Colecciones** | `Menu`, `TagGroup` |
+| **Utilidades** | `PressableFeedback`, `ScrollShadow` |
+| **Data** | `Chip` |
+
+### Patrones clave
+
+**Compound components** (todos usan esta estructura):
+```tsx
+<Card>
+  <Card.Header>…</Card.Header>   {/* opcional */}
+  <Card.Body>…</Card.Body>        {/* contenido principal */}
+  <Card.Footer>…</Card.Footer>   {/* opcional */}
+</Card>
+```
+
+**Toast** (imperativo, NO estado):
+```tsx
+const { toast } = useToast();  // requiere estar dentro de HeroUINativeProvider
+toast.show({ variant: 'success', label: 'Mensaje' });
+toast.show({ variant: 'danger', label: 'Error', actionLabel: 'Cerrar', onActionPress: ({ hide }) => hide() });
+```
+
+**Button** (variantes semánticas):
+```tsx
+<Button variant="primary" onPress={...}>
+  <Button.Label>Texto</Button.Label>
+</Button>
+// Variantes: primary | secondary | tertiary | danger | danger-soft | ghost | outline
+```
+
+**TextField** (reemplaza TextInput de Paper con floating label):
+```tsx
+<TextField>
+  <TextField.Label>Título</TextField.Label>
+  <TextField.Input value={val} onChangeText={setVal} />
+  <TextField.Description>Ayuda</TextField.Description>
+</TextField>
+```
+
+**Accordion** (custom en esta app — ver ProfundizaScreen.tsx):
+```tsx
+// Usamos accordion custom con TouchableOpacity + useState en vez de HeroUI Accordion
+// para mayor control sobre el estilo de los items con color dinámico
+```
+
+**Avatar** (reemplaza Avatar.Text de Paper):
+```tsx
+<Avatar>
+  <Avatar.Fallback name="Juan García" />  {/* genera iniciales */}
+</Avatar>
+```
+
+**Switch** (de heroui-native, no RN nativo):
+```tsx
+<Switch isSelected={val} onChange={setVal} />
+```
+
+**Chip**:
+```tsx
+<Chip variant="solid" color="success">Texto</Chip>
+```
+
+### Theming con Taiwind/Uniwind
+
+Los colores de tema se definen en `global.css` con variables CSS:
+```css
+@theme {
+  --color-primary: hsl(228, 58%, 33%);   /* #253883 */
+  --color-success: hsl(73, 56%, 46%);    /* #A3BD31 */
+  /* etc. */
+}
+```
+
+Acceder a colores en componentes:
+```tsx
+import { useThemeColor } from 'heroui-native';
+const accent = useThemeColor('accent');
+```
+
+### MCP Server
+
+Configurado en `.mcp.json`:
+```json
+{
+  "mcpServers": {
+    "heroui-native": { "command": "npx", "args": ["-y", "@heroui/native-mcp@latest"] }
+  }
+}
+```
+
+Para activar en Claude Code: `claude mcp add heroui-native -- npx -y @heroui/native-mcp@latest`
+
+### Actualizar documentación local
+
+```bash
+# Desde mcm-app/
+npx heroui-cli@latest agents-md --native --output AGENTS.md
+```
 
 ## Notas importantes
 

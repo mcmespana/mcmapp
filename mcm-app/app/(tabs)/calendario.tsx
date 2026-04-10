@@ -10,7 +10,9 @@ import {
   TouchableOpacity,
   Platform,
   Animated,
+  Text,
 } from 'react-native';
+import { Tabs, Chip } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import {
@@ -18,19 +20,19 @@ import {
   CalendarProps,
   LocaleConfig,
 } from 'react-native-calendars';
-import { Text, IconButton } from 'react-native-paper';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import GlassFAB from '@/components/ui/GlassFAB.ios';
-import { FAB } from 'react-native-paper';
 import { useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { hexAlpha } from '@/utils/colorUtils';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -246,7 +248,7 @@ export default function Calendario() {
             <View
               style={[
                 styles.calendarBadge,
-                { backgroundColor: calColor + '18' },
+                { backgroundColor: hexAlpha(calColor, '18') },
               ]}
             >
               <View
@@ -303,16 +305,12 @@ export default function Calendario() {
       {calendarConfigs.map((cal, idx) => {
         const isActive = visibleCalendars[idx];
         return (
-          <TouchableOpacity
+          <Chip
             key={idx}
-            activeOpacity={0.7}
+            variant={isActive ? 'primary' : 'soft'}
+            color="default"
             onPress={() => toggleCalendarVisibility(idx)}
-            style={[
-              styles.filterChip,
-              isActive
-                ? { backgroundColor: cal.color + '20', borderColor: cal.color }
-                : {},
-            ]}
+            style={isActive ? { backgroundColor: hexAlpha(cal.color, '22'), borderColor: cal.color } : undefined}
           >
             <View
               style={[
@@ -326,19 +324,16 @@ export default function Calendario() {
                 },
               ]}
             />
-            <Text
-              style={[
-                styles.chipLabel,
-                isActive && { color: cal.color, fontWeight: '600' },
-              ]}
+            <Chip.Label
+              style={isActive ? { color: cal.color, fontWeight: '600' } : undefined}
               numberOfLines={1}
             >
               {cal.name}
-            </Text>
+            </Chip.Label>
             {isActive && (
-              <MaterialIcons name="check" size={14} color={cal.color} />
+              <MaterialIcons name="check" size={13} color={cal.color} />
             )}
-          </TouchableOpacity>
+          </Chip>
         );
       })}
     </ScrollView>
@@ -356,67 +351,32 @@ export default function Calendario() {
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
 
       {/* View mode switcher */}
-      <View style={styles.switcher}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setViewMode('calendar')}
-          style={[
-            styles.switcherTab,
-            viewMode === 'calendar' && styles.switcherTabActive,
-          ]}
+      <View style={styles.switcherWrapper}>
+        <Tabs
+          value={viewMode}
+          onValueChange={(v) => setViewMode(v as 'calendar' | 'agenda')}
+          variant="primary"
         >
-          <MaterialIcons
-            name="calendar-month"
-            size={18}
-            color={
-              viewMode === 'calendar'
-                ? isDark
-                  ? '#fff'
-                  : '#fff'
-                : isDark
-                  ? '#8E8E93'
-                  : '#8E8E93'
-            }
-          />
-          <Text
-            style={[
-              styles.switcherLabel,
-              viewMode === 'calendar' && styles.switcherLabelActive,
-            ]}
-          >
-            Mes
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setViewMode('agenda')}
-          style={[
-            styles.switcherTab,
-            viewMode === 'agenda' && styles.switcherTabActive,
-          ]}
-        >
-          <MaterialIcons
-            name="view-agenda"
-            size={18}
-            color={
-              viewMode === 'agenda'
-                ? isDark
-                  ? '#fff'
-                  : '#fff'
-                : isDark
-                  ? '#8E8E93'
-                  : '#8E8E93'
-            }
-          />
-          <Text
-            style={[
-              styles.switcherLabel,
-              viewMode === 'agenda' && styles.switcherLabelActive,
-            ]}
-          >
-            Agenda
-          </Text>
-        </TouchableOpacity>
+          <Tabs.List>
+            <Tabs.Indicator />
+            <Tabs.Trigger value="calendar">
+              <MaterialIcons
+                name="calendar-month"
+                size={16}
+                color={viewMode === 'calendar' ? '#fff' : '#8E8E93'}
+              />
+              <Tabs.Label>Mes</Tabs.Label>
+            </Tabs.Trigger>
+            <Tabs.Trigger value="agenda">
+              <MaterialIcons
+                name="view-agenda"
+                size={16}
+                color={viewMode === 'agenda' ? '#fff' : '#8E8E93'}
+              />
+              <Tabs.Label>Agenda</Tabs.Label>
+            </Tabs.Trigger>
+          </Tabs.List>
+        </Tabs>
       </View>
 
       {viewMode === 'calendar' ? (
@@ -488,7 +448,7 @@ export default function Calendario() {
                 <MaterialIcons
                   name="event-available"
                   size={40}
-                  color={isDark ? '#3A3A3C' : '#D1D1D6'}
+                  color={isDark ? Colors.dark.card : '#D1D1D6'}
                 />
                 <Text style={styles.emptyText}>Sin eventos</Text>
                 <Text style={styles.emptySubtext}>
@@ -602,7 +562,7 @@ export default function Calendario() {
                 <MaterialIcons
                   name="event-available"
                   size={40}
-                  color={isDark ? '#3A3A3C' : '#D1D1D6'}
+                  color={isDark ? Colors.dark.card : '#D1D1D6'}
                 />
                 <Text style={styles.emptyText}>Sin eventos este mes</Text>
               </View>
@@ -621,12 +581,13 @@ export default function Calendario() {
             iconColor="#fff"
           />
         ) : (
-          <FAB
-            icon="calendar-today"
+          <TouchableOpacity
             style={styles.fab}
-            color="#fff"
             onPress={goToToday}
-          />
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="today" size={24} color="#fff" />
+          </TouchableOpacity>
         ))}
     </TabScreenWrapper>
   );
@@ -643,37 +604,10 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
 
     // View mode switcher
-    switcher: {
-      flexDirection: 'row',
+    switcherWrapper: {
       marginHorizontal: 16,
       marginTop: 12,
       marginBottom: 8,
-      backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
-      borderRadius: 12,
-      padding: 3,
-    },
-    switcherTab: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 8,
-      borderRadius: 10,
-      gap: 6,
-    },
-    switcherTabActive: {
-      backgroundColor: colors.info,
-      // On Android, elevation on the active tab causes colour bleed onto siblings.
-      // The coloured background is contrast enough without any shadow.
-      elevation: 0,
-    },
-    switcherLabel: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: isDark ? '#8E8E93' : '#8E8E93',
-    },
-    switcherLabelActive: {
-      color: '#fff',
     },
 
     // Calendar
@@ -696,7 +630,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       paddingVertical: 7,
       gap: 6,
       borderWidth: 1,
-      borderColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderColor: isDark ? Colors.dark.card : '#E5E5EA',
       // No elevation/shadow — the border is enough. Elevation on Android
       // adds a Material Design drop-shadow that makes chips look dark & raised.
       elevation: 0,
@@ -704,7 +638,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     chipDot: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: radii.xs,
     },
     chipLabel: {
       fontSize: 13,
@@ -751,7 +685,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     eventCard: {
       flexDirection: 'row',
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 14,
+      borderRadius: radii.lg,
       marginBottom: 8,
       overflow: 'hidden',
       ...(Platform.OS === 'web'
@@ -773,8 +707,8 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     eventColorBar: {
       width: 4,
-      borderTopLeftRadius: 14,
-      borderBottomLeftRadius: 14,
+      borderTopLeftRadius: radii.lg,
+      borderBottomLeftRadius: radii.lg,
     },
     eventCardBody: {
       flex: 1,
@@ -798,7 +732,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     calendarBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: 8,
+      borderRadius: radii.sm,
       paddingHorizontal: 8,
       paddingVertical: 3,
       gap: 4,
@@ -856,7 +790,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     agendaNavBtn: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: radii.pill,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -909,7 +843,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     sectionDivider: {
       flex: 1,
       height: 1,
-      backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      backgroundColor: isDark ? Colors.dark.card : '#E5E5EA',
     },
     sectionBadge: {
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',

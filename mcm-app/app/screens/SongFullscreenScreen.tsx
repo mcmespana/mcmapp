@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
-  TouchableOpacity,
   Platform,
   Animated,
 } from 'react-native';
@@ -12,13 +11,14 @@ import {
   NavigationProp,
 } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
+import { BlurView } from 'expo-blur';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Slider, PressableFeedback } from 'heroui-native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { Colors } from '../../constants/colors';
-import CrossPlatformSlider from '../../components/CrossPlatformSlider';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
@@ -100,120 +100,181 @@ export default function SongFullscreenScreen({
     return () => clearInterval(id);
   }, [autoScroll, scrollSpeed]);
 
+  const isIOS = Platform.OS === 'ios';
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {Platform.OS === 'web' ? (
-        <div
-          ref={divRef}
-          style={styles.webContainer as any}
-          dangerouslySetInnerHTML={{ __html: songHtml }}
-        />
-      ) : (
-        <WebView
-          ref={webViewRef}
-          originWhitelist={['*']}
-          source={{ html: songHtml }}
-          style={{ flex: 1 }}
-          showsVerticalScrollIndicator={false}
-        />
+      {/* Song content with horizontal breathing room */}
+      <View style={styles.contentWrapper}>
+        {Platform.OS === 'web' ? (
+          <div
+            ref={divRef}
+            style={webContainerStyle as any}
+            dangerouslySetInnerHTML={{ __html: songHtml }}
+          />
+        ) : (
+          <WebView
+            ref={webViewRef}
+            originWhitelist={['*']}
+            source={{ html: songHtml }}
+            style={{ flex: 1 }}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
+
+      {/* Vertical speed slider — liquid glass */}
+      {sliderVisible && (
+        <Animated.View
+          style={[
+            styles.sliderWrapper,
+            !isIOS && styles.sliderWrapperFallback,
+            { opacity: sliderOpacity },
+          ]}
+        >
+          {isIOS && (
+            <BlurView
+              tint={isDark ? 'dark' : 'light'}
+              intensity={72}
+              style={[StyleSheet.absoluteFill, styles.blurFill]}
+            />
+          )}
+          <Slider
+            value={Math.round(scrollSpeed * 100)}
+            onChange={(v) => {
+              setScrollSpeed((v as number) / 100);
+              showSlider();
+            }}
+            minValue={0}
+            maxValue={100}
+            step={1}
+            orientation="vertical"
+            style={styles.sliderControl}
+          >
+            <Slider.Track>
+              <Slider.Fill />
+              <Slider.Thumb />
+            </Slider.Track>
+          </Slider>
+        </Animated.View>
       )}
 
-      {/* Scroll control button */}
-      <TouchableOpacity
-        style={[styles.scrollButton, isDark && styles.scrollButtonDark]}
+      {/* Play / pause button — liquid glass */}
+      <PressableFeedback
+        style={[
+          styles.scrollButton,
+          !isIOS && (isDark ? styles.scrollButtonDarkFallback : styles.scrollButtonFallback),
+        ]}
         onPress={() => {
           setAutoScroll((s) => !s);
           showSlider();
         }}
-        activeOpacity={0.8}
       >
+        <PressableFeedback.Scale />
+        {isIOS && (
+          <BlurView
+            tint={isDark ? 'dark' : 'light'}
+            intensity={72}
+            style={[StyleSheet.absoluteFill, styles.blurFill]}
+          />
+        )}
         <MaterialIcons
           name={autoScroll ? 'pause' : 'play-arrow'}
           color={isDark ? '#EBEBF0' : '#fff'}
           size={26}
         />
-      </TouchableOpacity>
-
-      {/* Speed slider */}
-      {sliderVisible && (
-        <Animated.View
-          style={[
-            styles.sliderWrapper,
-            isDark && styles.sliderWrapperDark,
-            { opacity: sliderOpacity },
-          ]}
-        >
-          <CrossPlatformSlider
-            style={styles.slider}
-            minimumValue={0}
-            maximumValue={1}
-            step={0.01}
-            value={scrollSpeed}
-            onValueChange={(value: number) => {
-              setScrollSpeed(value);
-              showSlider();
-            }}
-          />
-        </Animated.View>
-      )}
+      </PressableFeedback>
     </View>
   );
 }
 
+const webContainerStyle = {
+  width: '100%',
+  height: '100%',
+  overflowY: 'auto',
+  paddingHorizontal: 12,
+  boxSizing: 'border-box',
+} as unknown as React.CSSProperties;
+
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  webContainer: {
-    width: '100%',
-    height: '100%',
-    overflowY: 'auto',
-    padding: 4,
-    boxSizing: 'border-box',
+  container: {
+    flex: 1,
   },
+  contentWrapper: {
+    flex: 1,
+    marginHorizontal: 12,
+    marginTop: 8,
+  },
+  blurFill: {
+    borderRadius: 20,
+  },
+  /* Scroll button */
   scrollButton: {
     position: 'absolute',
     right: 20,
-    bottom: 30,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    bottom: 36,
     width: 52,
     height: 52,
-    borderRadius: 16,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
     zIndex: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.2)',
     ...Platform.select({
-      web: {
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-      },
+      web: { boxShadow: '0 4px 16px rgba(0,0,0,0.25)' },
       default: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
         elevation: 6,
       },
     }),
   },
-  scrollButtonDark: {
-    backgroundColor: 'rgba(60,60,60,0.85)',
+  scrollButtonFallback: {
+    backgroundColor: 'rgba(0,0,0,0.72)',
   },
+  scrollButtonDarkFallback: {
+    backgroundColor: 'rgba(60,60,60,0.82)',
+  },
+  /* Vertical slider */
   sliderWrapper: {
     position: 'absolute',
     right: 20,
-    bottom: 90,
-    width: 160,
-    height: 44,
+    bottom: 104, // 36 (button bottom) + 52 (button height) + 16 (gap)
+    width: 44,
+    height: 180,
+    borderRadius: 22,
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.18)',
     zIndex: 2,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    borderRadius: 14,
-    paddingHorizontal: 12,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        backgroundColor: 'rgba(0,0,0,0.45)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        elevation: 5,
+      },
+    }),
   },
-  sliderWrapperDark: {
-    backgroundColor: 'rgba(60,60,60,0.85)',
+  sliderWrapperFallback: {
+    backgroundColor: 'rgba(0,0,0,0.65)',
   },
-  slider: {
+  sliderControl: {
+    flex: 1,
     width: '100%',
-    height: 40,
+    paddingVertical: 14,
   },
 });

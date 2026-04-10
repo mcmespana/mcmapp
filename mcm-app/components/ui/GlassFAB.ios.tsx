@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { BlurView } from 'expo-blur';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -22,11 +23,11 @@ export default function GlassFAB({
   style,
 }: GlassFABProps) {
   return (
-    <TouchableOpacity
+    <PressableFeedback
       onPress={onPress}
       style={[styles.fab, style]}
-      activeOpacity={0.8}
     >
+      <PressableFeedback.Scale />
       <BlurView
         tint="light"
         intensity={80}
@@ -36,7 +37,7 @@ export default function GlassFAB({
         ]}
       />
       <MaterialIcons name={icon} size={size} color={iconColor} />
-    </TouchableOpacity>
+    </PressableFeedback>
   );
 }
 
