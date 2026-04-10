@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
+  TouchableOpacity,
   StyleSheet,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
-import { Button, CloseButton, TextField, TextArea, useToast } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { radii } from '@/constants/uiStyles';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import {
@@ -30,8 +33,8 @@ interface ReportBugsModalProps {
   songInfo?: string;
   songContent?: string;
   firebaseCategory?: string;
-  onSuccess?: () => void; // Para mostrar toast desde el componente padre
-  onOpenSecretPanel?: () => void; // Para abrir el panel secreto
+  onSuccess?: () => void;
+  onOpenSecretPanel?: () => void;
 }
 
 export default function ReportBugsModal({
@@ -39,173 +42,165 @@ export default function ReportBugsModal({
   onClose,
   songTitle,
   songFilename,
-  songAuthor,
-  songKey,
-  songCapo,
-  songInfo,
-  songContent,
   firebaseCategory,
   onSuccess,
   onOpenSecretPanel,
 }: ReportBugsModalProps) {
   const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const theme = Colors[scheme];
   const { profile } = useUserProfile();
-  const { toast } = useToast();
   const [bugDescription, setBugDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!bugDescription.trim()) {
-      toast.show({ variant: 'danger', label: 'Por favor describe los fallos encontrados' });
-      return;
-    }
-
+    if (!bugDescription.trim()) return;
     setIsSubmitting(true);
-
     try {
       const db = getDatabase(getFirebaseApp());
-
-      // Determinar la categoría basándose en la categoría de Firebase
       const category = firebaseCategory
         ? getCategoryFromFirebaseCategory(firebaseCategory)
         : 'catZotros';
-
-      // Limpiar el título de la canción
       const cleanTitle = songTitle ? cleanSongTitle(songTitle) : 'Sin título';
-
-      // Crear el path en Firebase: songs/fallitos/{categoria}/{titulo-de-cancion}
       const fallitosRef = ref(db, `songs/fallitos/${category}/${cleanTitle}`);
-
-      // Crear un nuevo fallito en el array
       const newFallitoRef = push(fallitosRef);
-
       await set(newFallitoRef, {
         description: bugDescription.trim(),
         timestamp: Date.now(),
         songTitle: songTitle || 'Sin título',
         songFilename: songFilename || 'Sin archivo',
         platform: Platform.OS,
-        status: 'pending', // pending, reviewed, fixed
+        status: 'pending',
         reportedAt: new Date().toISOString(),
         userName: profile.name || 'Anónimo',
         userLocation: profile.location || 'Sin ubicación',
       });
-
-      // Limpiar y cerrar
       setBugDescription('');
       onClose();
-
-      // Notificar al componente padre para mostrar toast
-      if (onSuccess) {
-        onSuccess();
-      }
+      if (onSuccess) onSuccess();
     } catch (error) {
       console.error('Error submitting bug report:', error);
-      toast.show({ variant: 'danger', label: 'No se pudo enviar el aviso. Inténtalo de nuevo.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    if (bugDescription.trim()) {
-      toast.show({
-        variant: 'warning',
-        label: '¿Cancelar el aviso? Se perderá lo escrito.',
-        actionLabel: 'Sí, cerrar',
-        onActionPress: ({ hide }) => {
-          hide();
-          setBugDescription('');
-          onClose();
-        },
-      });
-    } else {
-      onClose();
-    }
+    setBugDescription('');
+    onClose();
   };
+
+  const canSubmit = bugDescription.trim().length > 0 && !isSubmitting;
 
   return (
     <BottomSheet visible={visible} onClose={handleClose}>
       <ScrollView
-        style={styles.container}
-        showsVerticalScrollIndicator={true}
+        showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.content}
       >
+        {/* Header */}
         <View style={styles.header}>
-          <CloseButton onPress={handleClose} />
-          <Text style={[styles.title, { color: theme.text }]}>
-            ¿Fallitos? 🐛
-          </Text>
-          <View style={{ width: 36 }} />
+          <TouchableOpacity
+            onPress={handleClose}
+            style={styles.closeBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="close" size={22} color={theme.icon} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: theme.text }]}>Reportar fallitos 🐛</Text>
+          <View style={styles.headerSpacer} />
         </View>
 
         {songTitle && (
-          <Text style={[styles.songInfo, { color: theme.icon }]}>
-            Avisando de fallitos en la canción: &ldquo;{songTitle}&rdquo;
-          </Text>
+          <View style={[styles.songBadge, { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' }]}>
+            <MaterialIcons name="music-note" size={14} color={theme.icon} />
+            <Text style={[styles.songBadgeText, { color: theme.icon }]} numberOfLines={1}>
+              {songTitle}
+            </Text>
+          </View>
         )}
 
-        <Text style={[styles.label, { color: theme.text }]}>
-          He encontrado estos fallitos...
+        <Text style={[styles.label, { color: theme.text }]}>¿Qué falla?</Text>
+        <Text style={[styles.sublabel, { color: theme.icon }]}>
+          Acordes incorrectos, letra con errores, formato roto...
         </Text>
 
-        <TextField style={{ marginBottom: 8 }}>
-          <TextArea
-            placeholder="Describe aquí los fallos que has encontrado en esta canción"
-            value={bugDescription}
-            onChangeText={setBugDescription}
-            maxLength={500}
-            autoFocus={false}
-            blurOnSubmit={false}
-            returnKeyType="default"
-            scrollEnabled={true}
-            editable={!isSubmitting}
-          />
-        </TextField>
-
+        <TextInput
+          style={[
+            styles.textArea,
+            {
+              backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+              color: theme.text,
+              borderColor: bugDescription.trim()
+                ? '#34C759'
+                : isDark ? '#3A3A3C' : '#E5E5EA',
+            },
+          ]}
+          placeholder="Describe los fallos que has encontrado..."
+          placeholderTextColor={theme.icon}
+          value={bugDescription}
+          onChangeText={setBugDescription}
+          maxLength={500}
+          multiline
+          numberOfLines={5}
+          textAlignVertical="top"
+          returnKeyType="default"
+          editable={!isSubmitting}
+        />
         <Text style={[styles.charCount, { color: theme.icon }]}>
-          {bugDescription.length}/500 caracteres
+          {bugDescription.length}/500
         </Text>
 
-        <Button
-          variant="danger"
-          isDisabled={!bugDescription.trim() || isSubmitting}
+        {/* Botón principal */}
+        <TouchableOpacity
+          style={[
+            styles.submitBtn,
+            { backgroundColor: canSubmit ? '#FF3B30' : isDark ? '#3A3A3C' : '#E5E5EA' },
+          ]}
           onPress={handleSubmit}
-          style={styles.submitButton}
+          disabled={!canSubmit}
+          activeOpacity={0.8}
         >
-          <MaterialIcons
-            name={isSubmitting ? 'hourglass-empty' : 'bug-report'}
-            size={20}
-            color="#fff"
-          />
-          <Button.Label>
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <MaterialIcons
+              name="bug-report"
+              size={18}
+              color={canSubmit ? '#fff' : theme.icon}
+            />
+          )}
+          <Text
+            style={[
+              styles.submitBtnText,
+              { color: canSubmit ? '#fff' : theme.icon },
+            ]}
+          >
             {isSubmitting ? 'Enviando...' : 'Notificar fallitos'}
-          </Button.Label>
-        </Button>
+          </Text>
+        </TouchableOpacity>
 
         {/* Divisor */}
         <View style={styles.divider}>
-          <View style={[styles.line, { backgroundColor: theme.icon }]} />
-          <Text style={[styles.dividerText, { color: theme.icon }]}>o</Text>
-          <View style={[styles.line, { backgroundColor: theme.icon }]} />
+          <View style={[styles.dividerLine, { backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA' }]} />
+          <Text style={[styles.dividerLabel, { color: theme.icon }]}>o</Text>
+          <View style={[styles.dividerLine, { backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA' }]} />
         </View>
 
-        {/* Botón Panel Secreto */}
-        <Button
-          variant="secondary"
-          onPress={() => { onClose(); if (onOpenSecretPanel) onOpenSecretPanel(); }}
-          style={styles.secretButton}
+        {/* Panel secreto */}
+        <TouchableOpacity
+          style={[styles.secretBtn, { borderColor: isDark ? '#3A3A3C' : '#E5E5EA' }]}
+          onPress={() => { handleClose(); if (onOpenSecretPanel) onOpenSecretPanel(); }}
+          activeOpacity={0.7}
         >
-          <MaterialIcons name="admin-panel-settings" size={20} color="#fff" />
-          <Button.Label>Panel Secreto</Button.Label>
-        </Button>
+          <MaterialIcons name="admin-panel-settings" size={18} color={theme.icon} />
+          <Text style={[styles.secretBtnText, { color: theme.icon }]}>Panel Secreto</Text>
+        </TouchableOpacity>
 
         <Text style={[styles.disclaimer, { color: theme.icon }]}>
-          Con tus avisos nos ayudas a mejorar la calidad del cantoral. Puedes
-          incluir detalles como acordes incorrectos o mal colocados, letras con
-          errores o problemas de formato.
+          Con tus avisos nos ayudas a mejorar la calidad del cantoral.
         </Text>
       </ScrollView>
     </BottomSheet>
@@ -213,62 +208,115 @@ export default function ReportBugsModal({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 60,
-    flexGrow: 1,
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 48,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  songInfo: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    marginBottom: 20,
+  headerSpacer: {
+    width: 32,
+  },
+  title: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '700',
     textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  songBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radii.md,
+    marginBottom: 20,
+  },
+  songBadgeText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    flex: 1,
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  sublabel: {
+    fontSize: 13,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  textArea: {
+    borderWidth: 1.5,
+    borderRadius: radii.md,
+    padding: 14,
+    fontSize: 15,
+    minHeight: 120,
+    lineHeight: 22,
   },
   charCount: {
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'right',
+    marginTop: 6,
     marginBottom: 20,
   },
-  submitButton: {
-    marginBottom: 16,
+  submitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 15,
+    borderRadius: radii.md,
+    marginBottom: 4,
   },
-  disclaimer: {
-    fontSize: 12,
-    lineHeight: 16,
-    textAlign: 'center',
+  submitBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 20,
+    gap: 12,
   },
-  line: {
+  dividerLine: {
     flex: 1,
     height: 1,
   },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
+  dividerLabel: {
+    fontSize: 13,
     fontWeight: '500',
   },
-  secretButton: {
-    marginBottom: 16,
+  secretBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    marginBottom: 20,
+  },
+  secretBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  disclaimer: {
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
   },
 });

@@ -355,26 +355,8 @@ export default function SecretPanelModal({
   };
 
   const handleClose = () => {
-    console.log('handleClose called, isAuthenticated:', isAuthenticated);
-    if (isAuthenticated) {
-      Alert.alert(
-        'Salir del Panel Secreto',
-        '¿Estás seguro? Los cambios no guardados se perderán.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Salir',
-            style: 'destructive',
-            onPress: () => {
-              setIsAuthenticated(false);
-              onClose();
-            },
-          },
-        ],
-      );
-    } else {
-      onClose();
-    }
+    setIsAuthenticated(false);
+    onClose();
   };
 
   // Pantalla de autenticación
@@ -423,7 +405,6 @@ export default function SecretPanelModal({
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              autoFocus
               onSubmitEditing={handlePasswordSubmit}
               returnKeyType="done"
             />
@@ -454,10 +435,7 @@ export default function SecretPanelModal({
       <View style={styles.fullContainer}>
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => {
-              console.log('Close button pressed');
-              handleClose();
-            }}
+            onPress={handleClose}
             accessibilityLabel="Cerrar"
             style={styles.closeButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -672,6 +650,8 @@ const styles = StyleSheet.create({
   },
   authContainer: {
     minHeight: '60%',
+    paddingHorizontal: 20,
+    paddingTop: 8,
     paddingBottom: 40,
   },
   header: {

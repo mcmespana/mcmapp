@@ -80,16 +80,16 @@ export default function CancioneroTab() {
               ? { backgroundColor: 'transparent' }
               : isWeb
                 ? ({
-                    backgroundColor: '#fff',
+                    backgroundColor: '#f4c11e',
                     borderBottomWidth: StyleSheet.hairlineWidth,
                     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
                   } as any)
-                : ({ backgroundColor: '#253883' } as any),
-            headerTintColor: isIOS ? '#3d79b9ff' : isWeb ? '#253883' : '#fff',
+                : ({ backgroundColor: '#f4c11e' } as any),
+            headerTintColor: isIOS ? '#3d79b9ff' : '#1a1a1a',
             headerTitleStyle: {
               fontWeight: '700' as const,
               fontSize: 17,
-              color: isIOS ? '#000' : isWeb ? '#1a1a1a' : '#fff',
+              color: isIOS ? '#000' : '#1a1a1a',
               letterSpacing: -0.3,
             },
             ...(isWeb && ({ headerStatusBarHeight: 0 } as any)),

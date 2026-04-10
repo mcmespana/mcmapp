@@ -12,11 +12,10 @@ import {
   Animated,
   Text,
 } from 'react-native';
-import { Tabs, Chip } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import {
-  CalendarList,
+  Calendar,
   CalendarProps,
   LocaleConfig,
 } from 'react-native-calendars';
@@ -305,12 +304,17 @@ export default function Calendario() {
       {calendarConfigs.map((cal, idx) => {
         const isActive = visibleCalendars[idx];
         return (
-          <Chip
+          <TouchableOpacity
             key={idx}
-            variant={isActive ? 'primary' : 'soft'}
-            color="default"
+            style={[
+              styles.filterChip,
+              isActive && {
+                backgroundColor: hexAlpha(cal.color, '15'),
+                borderColor: cal.color,
+              },
+            ]}
             onPress={() => toggleCalendarVisibility(idx)}
-            style={isActive ? { backgroundColor: hexAlpha(cal.color, '22'), borderColor: cal.color } : undefined}
+            activeOpacity={0.7}
           >
             <View
               style={[
@@ -324,16 +328,19 @@ export default function Calendario() {
                 },
               ]}
             />
-            <Chip.Label
-              style={isActive ? { color: cal.color, fontWeight: '600' } : undefined}
+            <Text
+              style={[
+                styles.chipLabel,
+                isActive && { color: cal.color, fontWeight: '600' },
+              ]}
               numberOfLines={1}
             >
               {cal.name}
-            </Chip.Label>
+            </Text>
             {isActive && (
-              <MaterialIcons name="check" size={13} color={cal.color} />
+              <MaterialIcons name="check" size={12} color={cal.color} />
             )}
-          </Chip>
+          </TouchableOpacity>
         );
       })}
     </ScrollView>
@@ -352,47 +359,52 @@ export default function Calendario() {
 
       {/* View mode switcher */}
       <View style={styles.switcherWrapper}>
-        <Tabs
-          value={viewMode}
-          onValueChange={(v) => setViewMode(v as 'calendar' | 'agenda')}
-          variant="primary"
-        >
-          <Tabs.List>
-            <Tabs.Indicator />
-            <Tabs.Trigger value="calendar">
-              <MaterialIcons
-                name="calendar-month"
-                size={16}
-                color={viewMode === 'calendar' ? '#fff' : '#8E8E93'}
-              />
-              <Tabs.Label>Mes</Tabs.Label>
-            </Tabs.Trigger>
-            <Tabs.Trigger value="agenda">
-              <MaterialIcons
-                name="view-agenda"
-                size={16}
-                color={viewMode === 'agenda' ? '#fff' : '#8E8E93'}
-              />
-              <Tabs.Label>Agenda</Tabs.Label>
-            </Tabs.Trigger>
-          </Tabs.List>
-        </Tabs>
+        <View style={styles.segmentedControl}>
+          <TouchableOpacity
+            style={[styles.segmentBtn, viewMode === 'calendar' && styles.segmentBtnActive]}
+            onPress={() => setViewMode('calendar')}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons
+              name="calendar-month"
+              size={16}
+              color={viewMode === 'calendar' ? '#fff' : '#8E8E93'}
+            />
+            <Text style={[styles.segmentLabel, viewMode === 'calendar' && styles.segmentLabelActive]}>
+              Mes
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.segmentBtn, viewMode === 'agenda' && styles.segmentBtnActive]}
+            onPress={() => setViewMode('agenda')}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons
+              name="view-agenda"
+              size={16}
+              color={viewMode === 'agenda' ? '#fff' : '#8E8E93'}
+            />
+            <Text style={[styles.segmentLabel, viewMode === 'agenda' && styles.segmentLabelActive]}>
+              Agenda
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {viewMode === 'calendar' ? (
         <ScrollView showsVerticalScrollIndicator={false}>
-          <CalendarList
+          <Calendar
+            current={selectedDate}
             onDayPress={(day) => {
               if (day.dateString !== selectedDate) {
                 setSelectedDate(day.dateString);
               }
             }}
+            onMonthChange={(month) => {
+              setSelectedDate(month.dateString);
+            }}
             markedDates={markedDates}
             markingType="multi-period"
-            horizontal
-            pagingEnabled
-            pastScrollRange={12}
-            futureScrollRange={12}
             firstDay={1}
             style={styles.calendar}
             theme={{
@@ -608,6 +620,32 @@ const createStyles = (scheme: 'light' | 'dark') => {
       marginHorizontal: 16,
       marginTop: 12,
       marginBottom: 8,
+    },
+    segmentedControl: {
+      flexDirection: 'row',
+      backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
+      borderRadius: 10,
+      padding: 2,
+    },
+    segmentBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 8,
+      borderRadius: 8,
+    },
+    segmentBtnActive: {
+      backgroundColor: colors.info,
+    },
+    segmentLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#8E8E93',
+    },
+    segmentLabelActive: {
+      color: '#fff',
     },
 
     // Calendar

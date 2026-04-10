@@ -12,6 +12,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   Animated,
   Linking,
   ViewStyle,
@@ -27,7 +28,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import useFontScale from '@/hooks/useFontScale';
-import { useToast, Chip, Button } from 'heroui-native';
+import { useToast } from 'heroui-native';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { VersionDisplay } from '@/components/VersionDisplay';
@@ -214,18 +215,19 @@ export default function Home() {
     ? latestNotification.body
     : 'Mantente al día con las novedades de la comunidad.';
 
-  // Mapeo de rutas internas a etiquetas legibles (coherente con notifications.tsx)
-  const ROUTE_LABELS: Record<string, string> = {
-    '/(tabs)/calendario': 'Calendario',
-    '/(tabs)/fotos': 'Fotos',
-    '/(tabs)/cancionero': 'Cantoral',
-    '/(tabs)/mas': 'Más',
-    '/(tabs)/index': 'Inicio',
-    '/wordle': 'Wordle',
+  // Mapeo de rutas internas a etiquetas + iconos (coherente con notifications.tsx)
+  const ROUTE_LABELS: Record<string, { label: string; icon: ComponentProps<typeof MaterialIcons>['name'] }> = {
+    '/(tabs)/calendario': { label: 'Calendario', icon: 'calendar-today' },
+    '/(tabs)/fotos': { label: 'Fotos', icon: 'photo-library' },
+    '/(tabs)/cancionero': { label: 'Cantoral', icon: 'music-note' },
+    '/(tabs)/mas': { label: 'Más', icon: 'more-horiz' },
+    '/(tabs)/index': { label: 'Inicio', icon: 'home' },
+    '/wordle': { label: 'Wordle', icon: 'games' },
   };
-  const internalRouteLabel = latestNotification?.internalRoute
+  const internalRouteInfo = latestNotification?.internalRoute
     ? ROUTE_LABELS[latestNotification.internalRoute] ?? null
     : null;
+  const internalRouteLabel = internalRouteInfo?.label ?? null;
 
   const handleActionButton = () => {
     const btn = latestNotification?.actionButton;
@@ -414,38 +416,40 @@ export default function Home() {
             {/* CTA row: destino interno + botón de acción */}
             <View style={styles.notifCtaRow}>
               {/* Chip de destino (internalRoute) — solo indicador, la tarjeta lleva a /notifications */}
-              {internalRouteLabel && (
-                <Chip
-                  size="sm"
-                  variant="soft"
-                  color="default"
-                  style={{ backgroundColor: hexAlpha(accentColor, '10'), borderColor: hexAlpha(accentColor, '50') }}
+              {internalRouteInfo && (
+                <View
+                  style={[
+                    styles.destinationChip,
+                    { borderColor: hexAlpha(accentColor, '60'), backgroundColor: hexAlpha(accentColor, '10') },
+                  ]}
                 >
-                  <Chip.Label style={{ color: accentColor }}>{internalRouteLabel}</Chip.Label>
-                </Chip>
+                  <MaterialIcons name={internalRouteInfo.icon} size={12} color={accentColor} />
+                  <Text style={[styles.destinationChipText, { color: accentColor }]}>
+                    {internalRouteInfo.label}
+                  </Text>
+                </View>
               )}
 
-              {/* Botón de acción explícito */}
+              {/* Botón de acción explícito — Pressable evita <button> anidado en web */}
               {latestNotification?.actionButton ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <Pressable
                   onPress={handleActionButton}
-                  style={{ backgroundColor: hexAlpha(accentColor, '12') }}
+                  style={[styles.actionBtn, { backgroundColor: hexAlpha(accentColor, '12') }]}
+                  accessibilityRole="button"
                 >
-                  <Button.Label style={{ color: accentColor }}>
+                  <Text style={[styles.actionBtnText, { color: accentColor }]}>
                     {latestNotification.actionButton.text ?? 'Voy a verlo'}
-                  </Button.Label>
+                  </Text>
                   <MaterialIcons
                     name={
                       latestNotification.actionButton.isInternal
                         ? 'arrow-forward'
                         : 'open-in-new'
                     }
-                    size={14}
+                    size={13}
                     color={accentColor}
                   />
-                </Button>
+                </Pressable>
               ) : !internalRouteLabel ? (
                 /* Flecha genérica solo si no hay ningún indicador */
                 <View

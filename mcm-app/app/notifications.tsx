@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Animated,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { BottomSheet, Button, Chip } from 'heroui-native';
 // IMPORTANTE: usar TouchableOpacity de gesture-handler (no de RN core)
@@ -254,9 +255,9 @@ export default function NotificationsScreen() {
               </Text>
               <View style={styles.notificationHeaderRight}>
                 {isUnread && <View style={styles.unreadBadge} />}
-                {/* Botón marcar como leída — TouchableOpacity de gesture-handler */}
+                {/* Botón marcar como leída — Pressable para evitar <button> anidado en web */}
                 {isUnread && (
-                  <TouchableOpacity
+                  <Pressable
                     style={styles.markAsReadButton}
                     onPress={() => handleMarkAsRead(notification.id)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -268,7 +269,7 @@ export default function NotificationsScreen() {
                       size={20}
                       color={colors.primary}
                     />
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
             </View>
@@ -290,9 +291,9 @@ export default function NotificationsScreen() {
                     </Text>
                   </View>
                 )}
-                {/* Chip de botón de acción (tappable — navega directamente) */}
+                {/* Chip de botón de acción — Pressable para evitar <button> anidado en web */}
                 {notification.actionButton && (
-                  <TouchableOpacity
+                  <Pressable
                     style={styles.actionChip}
                     onPress={(e?) => handleActionButtonPress(notification, e)}
                     accessibilityLabel={notification.actionButton.text}
@@ -311,7 +312,7 @@ export default function NotificationsScreen() {
                       size={11}
                       color="#fff"
                     />
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
             </View>

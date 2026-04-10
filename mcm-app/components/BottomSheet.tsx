@@ -16,10 +16,6 @@ export default function BottomSheet({
   onClose,
   children,
 }: BottomSheetProps) {
-  if (!visible) {
-    return null;
-  }
-
   return (
     <HeroBottomSheet
       isOpen={visible}

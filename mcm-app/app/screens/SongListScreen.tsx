@@ -276,11 +276,16 @@ export default function SongsListScreen({
     <View>
       {searchVisible && (
         <View style={styles.searchContainer}>
-          <SearchField value={search} onChange={setSearch}>
+          <SearchField
+            value={search}
+            onChange={setSearch}
+            label="Buscar canción"
+            description="Busca por título o nombre del autor"
+          >
             <SearchField.Group>
               <SearchField.SearchIcon />
               <SearchField.Input
-                placeholder="Buscar por título o autor..."
+                placeholder="Título, autor..."
                 autoFocus={!isSearchAll}
                 returnKeyType="search"
               />

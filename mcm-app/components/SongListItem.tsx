@@ -7,7 +7,6 @@ import {
   Animated,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Chip } from 'heroui-native';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -159,17 +158,11 @@ const SongListItem: React.FC<SongListItemProps> = ({
                 song.originalCategoryKey &&
                 song.numericFilenamePart ? (
                   <View style={styles.metaPills}>
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      style={{ marginRight: 8 }}
-                    >
-                      <Chip.Label style={styles.categoryPillText}>
-                        {song.originalCategoryKey}
-                        {song.numericFilenamePart}
-                      </Chip.Label>
-                    </Chip>
+                    <View style={[styles.categoryPill, { marginRight: 8 }]}>
+                      <Text style={styles.categoryPillText}>
+                        {`${song.originalCategoryKey}${song.numericFilenamePart}`}
+                      </Text>
+                    </View>
                     {song.author && (
                       <Text
                         style={styles.authorText}
@@ -206,18 +199,16 @@ const SongListItem: React.FC<SongListItemProps> = ({
           </View>
           <View style={styles.rightSection}>
             {song.capo && song.capo > 0 ? (
-              <Chip size="sm" variant="soft" color="default">
-                <Chip.Label
-                  style={styles.capoText}
-                >{`C${song.capo}`}</Chip.Label>
-              </Chip>
+              <View style={styles.capoPill}>
+                <Text style={styles.capoText}>{`C${song.capo}`}</Text>
+              </View>
             ) : null}
             {song.key ? (
-              <Chip size="sm" variant="soft" color="accent">
-                <Chip.Label style={styles.keyText}>
+              <View style={styles.keyPill}>
+                <Text style={styles.keyText}>
                   {convertChord(song.key.toUpperCase(), notation)}
-                </Chip.Label>
-              </Chip>
+                </Text>
+              </View>
             ) : null}
           </View>
         </TouchableOpacity>
@@ -271,9 +262,17 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       flex: 1,
     },
+    categoryPill: {
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 100,
+      backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderWidth: 1,
+      borderColor: isDark ? '#48484A' : '#D1D1D6',
+    },
     categoryPillText: {
-      fontSize: 12,
-      fontWeight: '600',
+      fontSize: 11,
+      fontWeight: '700',
       color: isDark ? '#AEAEB2' : '#636366',
       fontVariant: ['tabular-nums'],
     },
@@ -295,17 +294,30 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     rightSection: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: 5,
     },
-    keyText: {
-      fontSize: 14,
-      fontWeight: '700',
-      color: isDark ? '#7AB3FF' : '#253883',
+    capoPill: {
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+      borderRadius: 5,
+      backgroundColor: isDark ? '#3A3A3C' : '#EBEBEB',
     },
     capoText: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '600',
       color: isDark ? '#AEAEB2' : '#636366',
+      fontVariant: ['tabular-nums'],
+    },
+    keyPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+    },
+    keyText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: isDark ? '#7AB3FF' : '#253883',
     },
     rightAction: {
       backgroundColor: '#34C759',

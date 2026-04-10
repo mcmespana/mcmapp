@@ -295,9 +295,14 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       gap: 4,
     },
     countBadge: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: isDark ? '#636366' : '#AEAEB2',
+      fontSize: 12,
+      fontWeight: '600',
+      color: isDark ? '#8E8E93' : '#6E6E73',
+      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 10,
+      overflow: 'hidden',
       fontVariant: ['tabular-nums'],
     },
     topColorBar: {
