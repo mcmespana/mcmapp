@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Platform } from 'react-native';
+import { useNavigation } from 'expo-router';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { MaterialIcons } from '@expo/vector-icons';
@@ -95,6 +96,21 @@ const getTextColor = (tintColor: string) => {
 export default function MasTab() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const stackNavRef = useRef<any>(null);
+
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const unsubscribe = navigation
+      .getParent()
+      ?.addListener('tabPress' as any, (e: any) => {
+        if (stackNavRef.current?.canGoBack()) {
+          e.preventDefault?.();
+          stackNavRef.current.popToTop();
+        }
+      });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <>

@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+import { useNavigation } from 'expo-router';
+import { useRef, useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Platform, StyleSheet } from 'react-native';
 
@@ -52,6 +53,21 @@ const isWeb = Platform.OS === 'web';
 
 export default function CancioneroTab() {
   const stackNavRef = useRef<any>(null);
+
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const unsubscribe = navigation
+      .getParent()
+      ?.addListener('tabPress' as any, (e: any) => {
+        if (stackNavRef.current?.canGoBack()) {
+          e.preventDefault?.();
+          stackNavRef.current.popToTop();
+        }
+      });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <SettingsProvider>

@@ -13,6 +13,12 @@
 
 ---
 
+## ${today} — Arreglo de navegación en tabs Más y Cantoral (Restauración)
+
+- **Bug fix**: Se restauró la lógica de navegación para volver a la pantalla inicial (`popToTop`) al pulsar la pestaña "Más" o "Cantoral" si ya se está en ella, usando el listener `tabPress` sobre el navigator padre (`useNavigation().getParent()`).
+- Archivos: `app/(tabs)/mas.tsx`, `app/(tabs)/cancionero.tsx`
+
+
 ## 2026-03-25 — Migración completa de react-native-paper → heroui-native
 
 - **Eliminación de dependencia**: `react-native-paper` eliminado completamente del proyecto
