@@ -15,8 +15,8 @@ describe('featureFlags defaults', () => {
     expect(featureFlags.tabs.fotos).toBe(true);
   });
 
-  it('tiene cancionero y comunica deshabilitadas por defecto', () => {
-    expect(featureFlags.tabs.cancionero).toBe(false);
+  it('tiene cancionero y comunica habilitadas por defecto', () => {
+    expect(featureFlags.tabs.cancionero).toBe(true);
     expect(featureFlags.tabs.comunica).toBe(false);
   });
 
