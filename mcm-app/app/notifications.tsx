@@ -322,16 +322,23 @@ export default function NotificationsScreen() {
   };
 
   // Combinar Firebase (real-time) + locales, deduplicar, ordenar
-  const allNotifications = [...localNotifications, ...firebaseNotifications]
-    .sort((a, b) => {
-      const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
-      const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
-      return dateB.getTime() - dateA.getTime();
-    })
-    .filter((notification, index, self) => {
+  const allNotifications = React.useMemo(() => {
+    const combined = [...localNotifications, ...firebaseNotifications].sort(
+      (a, b) => {
+        const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
+        const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      },
+    );
+
+    const seenIds = new Set<string>();
+    return combined.filter((notification) => {
       if (!notification.id) return true; // sin ID: siempre incluir
-      return index === self.findIndex((n) => n.id === notification.id);
+      if (seenIds.has(notification.id)) return false;
+      seenIds.add(notification.id);
+      return true;
     });
+  }, [localNotifications, firebaseNotifications]);
 
   const hasUnread = allNotifications.some(
     (n) => !readIds.has(n.id) && !('isRead' in n && n.isRead),
