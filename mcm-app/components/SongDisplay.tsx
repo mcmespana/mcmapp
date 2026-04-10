@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { Spinner } from 'heroui-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface SongDisplayProps {
@@ -21,7 +22,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
           { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
         ]}
       >
-        <ActivityIndicator size="large" color="#f4c11e" />
+        <Spinner size="lg" color="#f4c11e" />
       </View>
     );
   }

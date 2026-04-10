@@ -166,7 +166,7 @@ export const useSongProcessor = ({
               padding: 4px 14px;
               ${isFullscreen ? '' : 'padding-bottom: 100px;'}
               background-color: #ffffff;
-              color: ${AppColors.textDark || '#212529'};
+              color: ${UIColors.textDark};
               font-size: 100%;
               max-width: 100%;
               overflow-wrap: break-word;
@@ -242,7 +242,7 @@ export const useSongProcessor = ({
               max-width: 100%;
             }
             .comment, .c {
-              color: ${AppColors.secondaryText};
+              color: ${UIColors.secondaryText};
               font-style: italic;
               white-space: pre-wrap;
               word-wrap: break-word;

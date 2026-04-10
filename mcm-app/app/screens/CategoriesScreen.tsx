@@ -1,6 +1,5 @@
 import {
   FlatList,
-  TouchableOpacity,
   Text,
   StyleSheet,
   View,
@@ -14,7 +13,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Snackbar } from 'react-native-paper';
+import { useToast, PressableFeedback } from 'heroui-native';
 import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
@@ -84,10 +83,10 @@ export default function CategoriesScreen({
   ];
 
   const [showForm, setShowForm] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const { toast } = useToast();
 
   const handleSuccessSubmit = () => {
-    setShowSuccessToast(true);
+    toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
 
   // Header: search + add buttons together (integrado en el header)
@@ -100,15 +99,15 @@ export default function CategoriesScreen({
     navigation.setOptions({
       headerRight: () => (
         <View style={styles.headerButtons}>
-          <TouchableOpacity
+          <PressableFeedback
             onPress={() => setShowForm(true)}
             style={styles.headerButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityLabel="Sugerir canción"
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons name="add" size={26} color={iconColor} />
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableFeedback>
+          <PressableFeedback
             onPress={() =>
               navigation.navigate('SongsList', {
                 categoryId: ALL_SONGS_CATEGORY_ID,
@@ -116,11 +115,11 @@ export default function CategoriesScreen({
               })
             }
             style={styles.headerButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityLabel="Buscar canción"
           >
+            <PressableFeedback.Highlight />
             <MaterialIcons name="search" size={26} color={iconColor} />
-          </TouchableOpacity>
+          </PressableFeedback>
         </View>
       ),
     });
@@ -146,8 +145,7 @@ export default function CategoriesScreen({
       : cleanText.replace(/^\w\.?\s*/, '');
 
     return (
-      <TouchableOpacity
-        activeOpacity={0.7}
+      <PressableFeedback
         onPress={() => {
           if (item.id === SELECTED_SONGS_CATEGORY_ID) {
             navigation.navigate('SelectedSongs');
@@ -164,6 +162,7 @@ export default function CategoriesScreen({
           index === 0 && { marginTop: 12 },
         ]}
       >
+        <PressableFeedback.Highlight />
         <View style={[styles.cardEmoji, isSpecial && styles.cardEmojiSpecial]}>
           <Text style={styles.emojiText}>{emoji}</Text>
         </View>
@@ -183,7 +182,7 @@ export default function CategoriesScreen({
             color={isDark ? '#555' : '#C7C7CC'}
           />
         </View>
-      </TouchableOpacity>
+      </PressableFeedback>
     );
   };
 
@@ -212,21 +211,6 @@ export default function CategoriesScreen({
         onSuccess={handleSuccessSubmit}
       />
 
-      <Snackbar
-        visible={showSuccessToast}
-        onDismiss={() => setShowSuccessToast(false)}
-        duration={3000}
-        style={styles.snackbar}
-        action={{
-          label: 'OK',
-          textColor: isDark ? '#fff' : '#000',
-          onPress: () => setShowSuccessToast(false),
-        }}
-      >
-        <Text style={{ color: isDark ? '#fff' : '#000', fontWeight: '600' }}>
-          ¡Sugerencia enviada!
-        </Text>
-      </Snackbar>
     </View>
   );
 }
@@ -324,12 +308,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       height: 4,
       backgroundColor: '#f4c11e',
       zIndex: 1000,
-    },
-    snackbar: {
-      borderRadius: radii.md,
-      marginBottom: isIOS ? 90 : 8,
-      backgroundColor: isDark ? Colors.dark.card : '#1C1C1E',
-      marginHorizontal: 16,
     },
   });
 };

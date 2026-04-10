@@ -19,6 +19,7 @@ import {
   DefaultTheme,
 } from '@react-navigation/native';
 import { Colors, TabHeaderColors } from '@/constants/colors';
+import { hexAlpha } from '@/utils/colorUtils';
 import { HapticTab } from '@/components/HapticTab';
 
 // ============================================================================
@@ -134,7 +135,7 @@ function AndroidWebTabsLayout() {
           tabBarStyle: {
             backgroundColor: Colors[scheme ?? 'light'].background,
             borderTopWidth: 1,
-            borderTopColor: Colors[scheme ?? 'light'].icon + '20',
+            borderTopColor: hexAlpha(Colors[scheme ?? 'light'].icon, '20'),
             paddingBottom: Platform.OS === 'web' ? 12 : 8,
             paddingTop: 12,
             height: Platform.OS === 'web' ? 60 : 80,

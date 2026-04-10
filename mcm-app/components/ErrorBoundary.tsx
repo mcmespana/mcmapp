@@ -2,10 +2,10 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   Appearance,
+  TouchableOpacity,
 } from 'react-native';
 
 interface Props {
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#253883',
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },

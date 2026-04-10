@@ -3,12 +3,11 @@ import {
   View,
   StyleSheet,
   Platform,
-  TouchableOpacity,
   Linking,
   Text,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
+import { useToast, Spinner, Button, PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { MasStackParamList } from '../(tabs)/mas';
@@ -26,8 +25,7 @@ export default function ComidaWebScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [visible, setVisible] = useState(false);
+  const { toast } = useToast();
 
   // URLs que sabemos que no funcionan en iframe por políticas de seguridad
   const isBlockedUrl = (url: string) => {
@@ -51,22 +49,25 @@ export default function ComidaWebScreen() {
     navigation.setOptions({
       title,
       headerRight: () => (
-        <TouchableOpacity
+        <PressableFeedback
           onPress={openExternal}
           style={{ padding: 8, marginRight: 4 }}
         >
+          <PressableFeedback.Highlight />
           <MaterialIcons name="open-in-new" size={24} color="#fff" />
-        </TouchableOpacity>
+        </PressableFeedback>
       ),
     });
   }, [navigation, url, title, openExternal]);
 
   const onLoadEnd = () => setIsLoading(false);
   const onError = () => {
-    setError(
-      'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
-    );
-    setVisible(true);
+    toast.show({
+      variant: 'danger',
+      label: 'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      actionLabel: 'Cerrar',
+      onActionPress: ({ hide }) => hide(),
+    });
     setIsLoading(false);
   };
 
@@ -80,19 +81,21 @@ export default function ComidaWebScreen() {
           <Text style={styles.redirectSubtitle}>
             Esta página se verá más linda en una pestaña
           </Text>
-          <TouchableOpacity
-            style={styles.redirectButton}
+          <Button
+            variant="primary"
             onPress={openExternal}
+            style={styles.redirectButton}
           >
             <MaterialIcons name="open-in-new" size={20} color="#fff" />
-            <Text style={styles.redirectButtonText}>Abrir sitio web</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.backButton}
+            <Button.Label style={styles.redirectButtonText}>Abrir sitio web</Button.Label>
+          </Button>
+          <Button
+            variant="ghost"
             onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            <Text style={styles.backButtonText}>Volver</Text>
-          </TouchableOpacity>
+            <Button.Label style={styles.backButtonText}>Volver</Button.Label>
+          </Button>
         </View>
       </View>
     );
@@ -114,7 +117,7 @@ export default function ComidaWebScreen() {
         />
         {isLoading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ThemeColors[scheme].tint} />
+            <Spinner size="lg" color={ThemeColors[scheme].tint} />
           </View>
         )}
       </View>
@@ -129,23 +132,12 @@ export default function ComidaWebScreen() {
         startInLoadingState={true}
         renderLoading={() => (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={ThemeColors[scheme].tint} />
+            <Spinner size="lg" color={ThemeColors[scheme].tint} />
           </View>
         )}
         onLoadEnd={onLoadEnd}
         onError={onError}
       />
-      <Portal>
-        <Snackbar
-          visible={visible}
-          onDismiss={() => setVisible(false)}
-          action={{ label: 'Cerrar', onPress: () => setVisible(false) }}
-          duration={Snackbar.DURATION_MEDIUM}
-          style={{ backgroundColor: '#f44336' }}
-        >
-          {error}
-        </Snackbar>
-      </Portal>
     </View>
   );
 }

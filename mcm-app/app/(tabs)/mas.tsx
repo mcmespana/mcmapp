@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation, StackActions } from '@react-navigation/native';
 
 import { MaterialIcons } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 
 import MasHomeScreen from '../screens/MasHomeScreen';
@@ -95,26 +94,7 @@ const getTextColor = (tintColor: string) => {
 
 export default function MasTab() {
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const tabNavigation = useNavigation();
   const stackNavRef = useRef<any>(null);
-
-  // Pop the internal stack to top when the "Más" tab is re-pressed.
-  // With NativeTabs (iOS), the event fires from onNativeFocusChange — the
-  // native tab animation has already started when our JS callback runs.
-  // Dispatching popToTop() synchronously collides with the native transition
-  // and leaves the screen frozen. A short setTimeout lets the native side
-  // finish before we touch the JS navigation stack.
-  useEffect(() => {
-    const unsubscribe = (tabNavigation as any).addListener('tabPress', (e: any) => {
-      if (stackNavRef.current?.canGoBack()) {
-        if (e?.preventDefault) e.preventDefault();
-        setTimeout(() => {
-          stackNavRef.current?.dispatch(StackActions.popToTop());
-        }, 50);
-      }
-    });
-    return unsubscribe;
-  }, [tabNavigation]);
 
   return (
     <>
@@ -184,25 +164,25 @@ export default function MasTab() {
                     marginRight: 8,
                   }}
                 >
-                  <TouchableOpacity
+                  <PressableFeedback
                     onPress={() => setSettingsVisible(true)}
                     style={{ padding: 10 }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
+                    <PressableFeedback.Highlight />
                     <MaterialIcons
                       name="settings"
                       size={26}
                       color={iconColor}
                     />
-                  </TouchableOpacity>
+                  </PressableFeedback>
                   {route.name !== 'Reflexiones' && (
-                    <TouchableOpacity
+                    <PressableFeedback
                       onPress={() => navigation.navigate('Reflexiones')}
                       style={{ padding: 10 }}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
+                      <PressableFeedback.Highlight />
                       <MaterialIcons name="forum" size={26} color={iconColor} />
-                    </TouchableOpacity>
+                    </PressableFeedback>
                   )}
                 </View>
               );

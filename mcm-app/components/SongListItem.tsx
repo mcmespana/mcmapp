@@ -5,13 +5,12 @@ import {
   View,
   StyleSheet,
   Animated,
-  Platform,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { Chip } from 'heroui-native';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
 
@@ -88,11 +87,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
         <Animated.View
           style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
         >
-          <IconSymbol
-            name="plus.circle"
-            size={22}
-            color="#fff"
-          />
+          <IconSymbol name="plus.circle" size={22} color="#fff" />
           <Text style={styles.actionText}>Seleccionar</Text>
         </Animated.View>
       </TouchableOpacity>
@@ -119,11 +114,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
         <Animated.View
           style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
         >
-          <IconSymbol
-            name="minus.circle"
-            size={22}
-            color="#fff"
-          />
+          <IconSymbol name="minus.circle" size={22} color="#fff" />
           <Text style={styles.actionText}>Quitar</Text>
         </Animated.View>
       </TouchableOpacity>
@@ -154,9 +145,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
           activeOpacity={0.6}
         >
           <View style={styles.leftSection}>
-            {isSelected && (
-              <View style={styles.selectedDot} />
-            )}
+            {isSelected && <View style={styles.selectedDot} />}
             <View style={styles.songInfoContainer}>
               <Text
                 style={styles.songTitle}
@@ -170,12 +159,17 @@ const SongListItem: React.FC<SongListItemProps> = ({
                 song.originalCategoryKey &&
                 song.numericFilenamePart ? (
                   <View style={styles.metaPills}>
-                    <View style={styles.categoryPill}>
-                      <Text style={styles.categoryPillText}>
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="default"
+                      style={{ marginRight: 8 }}
+                    >
+                      <Chip.Label style={styles.categoryPillText}>
                         {song.originalCategoryKey}
                         {song.numericFilenamePart}
-                      </Text>
-                    </View>
+                      </Chip.Label>
+                    </Chip>
                     {song.author && (
                       <Text
                         style={styles.authorText}
@@ -193,9 +187,9 @@ const SongListItem: React.FC<SongListItemProps> = ({
                         #{song.numericFilenamePart}
                       </Text>
                     )}
-                    {song.numericFilenamePart && song.author && (
-                      <Text style={styles.metaSeparator}> · </Text>
-                    )}
+                    {song.numericFilenamePart && song.author ? (
+                      <Text style={styles.metaSeparator}>{' - '}</Text>
+                    ) : null}
                     {song.author && (
                       <Text
                         style={styles.authorText}
@@ -212,16 +206,18 @@ const SongListItem: React.FC<SongListItemProps> = ({
           </View>
           <View style={styles.rightSection}>
             {song.capo && song.capo > 0 ? (
-              <View style={styles.capoBadge}>
-                <Text style={styles.capoText}>{`C${song.capo}`}</Text>
-              </View>
+              <Chip size="sm" variant="soft" color="default">
+                <Chip.Label
+                  style={styles.capoText}
+                >{`C${song.capo}`}</Chip.Label>
+              </Chip>
             ) : null}
             {song.key ? (
-              <View style={styles.keyBadge}>
-                <Text style={styles.keyText}>
+              <Chip size="sm" variant="soft" color="accent">
+                <Chip.Label style={styles.keyText}>
                   {convertChord(song.key.toUpperCase(), notation)}
-                </Text>
-              </View>
+                </Chip.Label>
+              </Chip>
             ) : null}
           </View>
         </TouchableOpacity>
@@ -275,13 +271,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       flex: 1,
     },
-    categoryPill: {
-      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 6,
-      marginRight: 8,
-    },
     categoryPillText: {
       fontSize: 12,
       fontWeight: '600',
@@ -308,22 +297,10 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       gap: 6,
     },
-    keyBadge: {
-      backgroundColor: isDark ? '#2A3D66' : '#E8F0FE',
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 8,
-    },
     keyText: {
       fontSize: 14,
       fontWeight: '700',
       color: isDark ? '#7AB3FF' : '#253883',
-    },
-    capoBadge: {
-      backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 8,
     },
     capoText: {
       fontSize: 12,

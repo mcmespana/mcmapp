@@ -12,8 +12,8 @@ import {
   StyleSheet,
   Platform,
   TouchableOpacity,
-  TextInput,
 } from 'react-native';
+import { SearchField } from 'heroui-native';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
@@ -276,31 +276,17 @@ export default function SongsListScreen({
     <View>
       {searchVisible && (
         <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <MaterialIcons
-              name="search"
-              size={20}
-              color={isDark ? '#636366' : '#8E8E93'}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar por título o autor..."
-              placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
-              value={search}
-              onChangeText={setSearch}
-              autoFocus={!isSearchAll}
-              returnKeyType="search"
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')}>
-                <MaterialIcons
-                  name="close"
-                  size={20}
-                  color={isDark ? '#636366' : '#8E8E93'}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
+          <SearchField value={search} onChange={setSearch}>
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input
+                placeholder="Buscar por título o autor..."
+                autoFocus={!isSearchAll}
+                returnKeyType="search"
+              />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
         </View>
       )}
       {/* Conteo de canciones — siempre visible, muy sutil */}
@@ -363,34 +349,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingHorizontal: 16,
       paddingTop: 10,
       paddingBottom: 4,
-    },
-    searchBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      height: 42,
-      gap: 8,
-      ...(Platform.OS === 'web'
-        ? {
-          boxShadow: isDark
-            ? '0 1px 3px rgba(0,0,0,0.4)'
-            : '0 1px 3px rgba(0,0,0,0.08)',
-        }
-        : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.25 : 0.06,
-          shadowRadius: 3,
-          elevation: 2,
-        }),
-    },
-    searchInput: {
-      flex: 1,
-      fontSize: 16,
-      color: isDark ? Colors.dark.text : Colors.light.text,
-      padding: 0,
     },
     countRow: {
       paddingHorizontal: 20,

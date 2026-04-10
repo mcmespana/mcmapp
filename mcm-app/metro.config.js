@@ -1,5 +1,6 @@
 // metro.config.js
 const { getDefaultConfig } = require('@expo/metro-config');
+const { withUniwindConfig } = require('uniwind/metro');
 
 // metro.config.js
 module.exports = (() => {
@@ -20,5 +21,7 @@ module.exports = (() => {
     return context.resolveRequest(context, moduleName, platform);
   };
 
-  return config;
+  return withUniwindConfig(config, {
+    cssEntryFile: './global.css',
+  });
 })();

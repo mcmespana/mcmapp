@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
@@ -32,7 +33,7 @@ export default function TransposePanel({
     value: number;
     variant: 'up' | 'down';
   }) => (
-    <TouchableOpacity
+    <PressableFeedback
       style={[
         styles.transposeButton,
         isDark && styles.transposeButtonDark,
@@ -42,8 +43,8 @@ export default function TransposePanel({
           (isDark ? styles.transposeDownDark : styles.transposeDown),
       ]}
       onPress={() => onSetTranspose(value)}
-      activeOpacity={0.7}
     >
+      <PressableFeedback.Highlight />
       <MaterialIcons
         name={variant === 'up' ? 'arrow-upward' : 'arrow-downward'}
         size={18}
@@ -74,14 +75,11 @@ export default function TransposePanel({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </PressableFeedback>
   );
 
   return (
     <BottomSheet visible={visible} onClose={onClose}>
-      <View style={styles.handleArea}>
-        <View style={styles.handle} />
-      </View>
       <Text style={[styles.title, { color: theme.text }]}>Cambiar tono</Text>
 
       <View style={styles.currentDisplay}>
@@ -138,11 +136,11 @@ export default function TransposePanel({
         </View>
       </View>
 
-      <TouchableOpacity
+      <PressableFeedback
         style={[styles.resetButton, isDark && styles.resetButtonDark]}
         onPress={() => onSetTranspose(0)}
-        activeOpacity={0.7}
       >
+        <PressableFeedback.Highlight />
         <MaterialIcons
           name="refresh"
           size={18}
@@ -153,24 +151,12 @@ export default function TransposePanel({
         >
           Tono original
         </Text>
-      </TouchableOpacity>
+      </PressableFeedback>
     </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  handleArea: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    paddingVertical: 8,
-    marginBottom: 8,
-  },
-  handle: {
-    width: 36,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: 'rgba(128,128,128,0.3)',
-  },
   title: {
     fontSize: 20,
     fontWeight: '700',

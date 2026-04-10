@@ -10,8 +10,8 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import { Button, Spinner } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, ActivityIndicator } from 'react-native-paper';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
@@ -121,8 +121,8 @@ export default function FotosScreen() {
   const renderFooter = () => {
     if (isLoadingMore) {
       return (
-        <ActivityIndicator
-          size="large"
+        <Spinner
+          size="lg"
           color={ThemeColors.light.tint}
           style={{ marginVertical: 20 }}
         />
@@ -133,13 +133,12 @@ export default function FotosScreen() {
     }
     return (
       <Button
-        mode="contained"
+        variant="outline"
         onPress={loadMoreAlbums}
-        loading={isLoadingMore}
+        isDisabled={isLoadingMore}
         style={styles.loadMoreButton}
-        contentStyle={{ paddingVertical: 8 }}
       >
-        Cargar Más
+        <Button.Label>Cargar Más</Button.Label>
       </Button>
     );
   };
@@ -210,6 +209,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginVertical: 20,
       alignSelf: 'center',
       backgroundColor: theme.tint,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
     },
   });
 };

@@ -62,3 +62,5 @@ android/
 *.aab
 /builds/
 /android/app/build/
+# heroui-agents-md
+.heroui-docs/

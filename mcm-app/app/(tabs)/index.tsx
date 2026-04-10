@@ -27,12 +27,13 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import useFontScale from '@/hooks/useFontScale';
+import { useToast, Chip, Button } from 'heroui-native';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
-import Toast from '@/components/Toast';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
+import { hexAlpha } from '@/utils/colorUtils';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
@@ -94,9 +95,9 @@ export default function Home() {
   const fontScale = useFontScale();
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 700;
+  const { toast } = useToast();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
-  const [toastVisible, setToastVisible] = useState(false);
 
   // Primary color readable on both light and dark backgrounds
   const accentColor = scheme === 'dark' ? colors.info : colors.primary;
@@ -248,14 +249,14 @@ export default function Home() {
       <AppFeedbackModal
         visible={feedbackVisible}
         onClose={() => setFeedbackVisible(false)}
-        onSuccess={() => setToastVisible(true)}
-      />
-      <Toast
-        visible={toastVisible}
-        message="¡Gracias! Tu comentario ha sido enviado correctamente. Nos ayudas a mejorar la app 🙌"
-        type="success"
-        duration={4000}
-        onDismiss={() => setToastVisible(false)}
+        onSuccess={() =>
+          toast.show({
+            variant: 'success',
+            label: '¡Gracias! Tu comentario ha sido enviado correctamente 🙌',
+            actionLabel: 'Cerrar',
+            onActionPress: ({ hide }) => hide(),
+          })
+        }
       />
 
       {/* ── Custom Header ── */}
@@ -358,7 +359,7 @@ export default function Home() {
                   <View
                     style={[
                       styles.newBadge,
-                      { backgroundColor: accentColor + '15' },
+                      { backgroundColor: hexAlpha(accentColor, '15') },
                     ]}
                   >
                     <Text
@@ -401,8 +402,8 @@ export default function Home() {
                   {
                     backgroundColor:
                       scheme === 'dark'
-                        ? accentColor + '20'
-                        : accentColor + '12',
+                        ? hexAlpha(accentColor, '20')
+                        : hexAlpha(accentColor, '12'),
                   },
                 ]}
               >
@@ -414,34 +415,27 @@ export default function Home() {
             <View style={styles.notifCtaRow}>
               {/* Chip de destino (internalRoute) — solo indicador, la tarjeta lleva a /notifications */}
               {internalRouteLabel && (
-                <View
-                  style={[
-                    styles.destinationChip,
-                    { borderColor: accentColor + '50', backgroundColor: accentColor + '10' },
-                  ]}
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color="default"
+                  style={{ backgroundColor: hexAlpha(accentColor, '10'), borderColor: hexAlpha(accentColor, '50') }}
                 >
-                  <MaterialIcons name="arrow-forward-ios" size={9} color={accentColor} />
-                  <Text style={[styles.destinationChipText, { color: accentColor }]}>
-                    {internalRouteLabel}
-                  </Text>
-                </View>
+                  <Chip.Label style={{ color: accentColor }}>{internalRouteLabel}</Chip.Label>
+                </Chip>
               )}
 
               {/* Botón de acción explícito */}
               {latestNotification?.actionButton ? (
-                <TouchableOpacity
-                  style={[
-                    styles.actionBtn,
-                    { backgroundColor: accentColor + '12' },
-                  ]}
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onPress={handleActionButton}
-                  accessibilityRole="button"
+                  style={{ backgroundColor: hexAlpha(accentColor, '12') }}
                 >
-                  <Text
-                    style={[styles.actionBtnText, { color: accentColor }]}
-                  >
+                  <Button.Label style={{ color: accentColor }}>
                     {latestNotification.actionButton.text ?? 'Voy a verlo'}
-                  </Text>
+                  </Button.Label>
                   <MaterialIcons
                     name={
                       latestNotification.actionButton.isInternal
@@ -451,13 +445,13 @@ export default function Home() {
                     size={14}
                     color={accentColor}
                   />
-                </TouchableOpacity>
+                </Button>
               ) : !internalRouteLabel ? (
                 /* Flecha genérica solo si no hay ningún indicador */
                 <View
                   style={[
                     styles.arrowPill,
-                    { backgroundColor: accentColor + '10' },
+                    { backgroundColor: hexAlpha(accentColor, '10') },
                   ]}
                 >
                   <MaterialIcons name="east" size={14} color={accentColor} />
@@ -492,7 +486,7 @@ export default function Home() {
                       ? {
                           borderWidth: 1.5,
                           borderStyle: 'dashed',
-                          borderColor: theme.icon + '40',
+                          borderColor: hexAlpha(theme.icon, '40'),
                         }
                       : undefined,
                   ])}
@@ -611,7 +605,7 @@ export default function Home() {
                   <View
                     style={[
                       styles.eventDateBox,
-                      { backgroundColor: calColor + '18' },
+                      { backgroundColor: hexAlpha(calColor, '18') },
                     ]}
                   >
                     <Text style={[styles.eventMonth, { color: calColor }]}>
@@ -639,7 +633,7 @@ export default function Home() {
                       <View
                         style={[
                           styles.calBadge,
-                          { backgroundColor: calColor + '18' },
+                          { backgroundColor: hexAlpha(calColor, '18') },
                         ]}
                       >
                         <Text
@@ -700,7 +694,7 @@ export default function Home() {
           <TouchableOpacity
             style={StyleSheet.flatten([
               styles.calendarButton,
-              { borderColor: accentColor + '30' },
+              { borderColor: hexAlpha(accentColor, '30') },
             ])}
             onPress={() => router.push('/calendario')}
             accessibilityRole="button"

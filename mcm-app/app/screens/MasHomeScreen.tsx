@@ -3,10 +3,10 @@ import {
   View,
   StyleSheet,
   Text,
-  TouchableOpacity,
   ScrollView,
   Platform,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,6 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { hexAlpha } from '@/utils/colorUtils';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { takePendingMasScreen } from '@/utils/masNavigation';
@@ -90,7 +91,9 @@ export default function MasHomeScreen() {
     useCallback(() => {
       const screen = takePendingMasScreen();
       if (screen) {
-        navigation.navigate(screen as keyof MasStackParamList);
+        // navigate() overloads don't accept union types — as never is the
+        // idiomatic TypeScript escape hatch for this overload resolution issue
+        navigation.navigate(screen as never);
       }
     }, [navigation]),
   );
@@ -112,7 +115,7 @@ export default function MasHomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {navigationItems.map((item, idx) => (
-          <TouchableOpacity
+          <PressableFeedback
             key={idx}
             style={[
               styles.card,
@@ -132,8 +135,8 @@ export default function MasHomeScreen() {
                   },
             ]}
             onPress={() => navigation.navigate(item.target as any)}
-            activeOpacity={0.8}
           >
+            <PressableFeedback.Highlight />
             {/* Accent bar izquierda */}
             <View
               style={[styles.accentBar, { backgroundColor: item.tintColor }]}
@@ -144,7 +147,7 @@ export default function MasHomeScreen() {
               <View
                 style={[
                   styles.iconCircle,
-                  { backgroundColor: item.tintColor + '18' },
+                  { backgroundColor: hexAlpha(item.tintColor, '18') },
                 ]}
               >
                 <Text style={styles.emoji}>{item.emoji}</Text>
@@ -176,7 +179,7 @@ export default function MasHomeScreen() {
               <View
                 style={[
                   styles.arrowCircle,
-                  { backgroundColor: item.tintColor + '15' },
+                  { backgroundColor: hexAlpha(item.tintColor, '15') },
                 ]}
               >
                 <MaterialIcons
@@ -186,7 +189,7 @@ export default function MasHomeScreen() {
                 />
               </View>
             </View>
-          </TouchableOpacity>
+          </PressableFeedback>
         ))}
       </ScrollView>
     </SafeAreaView>
