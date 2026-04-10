@@ -16,6 +16,10 @@ export default function BottomSheet({
   onClose,
   children,
 }: BottomSheetProps) {
+  if (!visible) {
+    return null;
+  }
+
   return (
     <HeroBottomSheet
       isOpen={visible}
@@ -25,9 +29,7 @@ export default function BottomSheet({
     >
       <HeroBottomSheet.Portal>
         <HeroBottomSheet.Overlay />
-        <HeroBottomSheet.Content>
-          {children}
-        </HeroBottomSheet.Content>
+        <HeroBottomSheet.Content>{children}</HeroBottomSheet.Content>
       </HeroBottomSheet.Portal>
     </HeroBottomSheet>
   );

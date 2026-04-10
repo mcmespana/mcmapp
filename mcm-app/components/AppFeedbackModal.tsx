@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  ScrollView,
-} from 'react-native';
-import BottomSheet from './BottomSheet';
-import { Button, CloseButton, TextField, TextArea, useToast } from 'heroui-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import {
+  Button,
+  CloseButton,
+  TextArea,
+  TextField,
+  useToast,
+} from 'heroui-native';
+import { getDatabase, push, ref, set } from 'firebase/database';
+
+import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { getDatabase, ref, push, set } from 'firebase/database';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 
 interface AppFeedbackModalProps {
@@ -36,11 +37,11 @@ interface CategoryOption {
 const FEEDBACK_CATEGORIES: CategoryOption[] = [
   {
     id: 'bug',
-    label: 'Fallito en la App',
+    label: 'Fallito en la app',
     icon: 'bug-report',
     color: '#FF6B6B',
     placeholder:
-      'Describe el problema que has encontrado en la aplicación (pantalla, función que no funciona, error, etc.)',
+      'Describe el problema que has encontrado en la aplicacion (pantalla, funcion que no funciona, error, etc.)',
     submitText: 'Reportar fallito',
   },
   {
@@ -49,7 +50,7 @@ const FEEDBACK_CATEGORIES: CategoryOption[] = [
     icon: 'lightbulb',
     color: '#4ECDC4',
     placeholder:
-      'Cuéntanos tu idea para mejorar la aplicación (nueva función, cambio de diseño, etc.)',
+      'Cuentanos tu idea para mejorar la aplicacion (nueva funcion, cambio de diseno, etc.)',
     submitText: 'Enviar sugerencia',
   },
   {
@@ -58,8 +59,8 @@ const FEEDBACK_CATEGORIES: CategoryOption[] = [
     icon: 'favorite',
     color: '#FFD93D',
     placeholder:
-      '¡Comparte tu experiencia positiva! Nos alegra saber qué te gusta de la app',
-    submitText: 'Enviar felicitación',
+      'Comparte tu experiencia positiva. Nos alegra saber que te gusta de la app.',
+    submitText: 'Enviar felicitacion',
   },
 ];
 
@@ -79,12 +80,18 @@ export default function AppFeedbackModal({
 
   const handleSubmit = async () => {
     if (!selectedCategory) {
-      toast.show({ variant: 'danger', label: 'Por favor selecciona una categoría' });
+      toast.show({
+        variant: 'danger',
+        label: 'Por favor selecciona una categoria',
+      });
       return;
     }
 
     if (!feedbackText.trim()) {
-      toast.show({ variant: 'danger', label: 'Por favor escribe tu comentario' });
+      toast.show({
+        variant: 'danger',
+        label: 'Por favor escribe tu comentario',
+      });
       return;
     }
 
@@ -92,36 +99,30 @@ export default function AppFeedbackModal({
 
     try {
       const db = getDatabase(getFirebaseApp());
-
-      // Crear el path en Firebase: app/feedback/{categoria}
       const feedbackRef = ref(db, `app/feedback/${selectedCategory}`);
-
-      // Crear un nuevo feedback en el array
       const newFeedbackRef = push(feedbackRef);
 
       await set(newFeedbackRef, {
         text: feedbackText.trim(),
         timestamp: Date.now(),
         platform: Platform.OS,
-        status: 'pending', // pending, reviewed, resolved
+        status: 'pending',
         reportedAt: new Date().toISOString(),
         category: selectedCategory,
-        userName: profile.name || 'Anónimo',
-        userLocation: profile.location || 'Sin ubicación',
+        userName: profile.name || 'Anonimo',
+        userLocation: profile.location || 'Sin ubicacion',
       });
 
-      // Limpiar y cerrar
       setFeedbackText('');
       setSelectedCategory(null);
       onClose();
-
-      // Notificar al componente padre para mostrar toast
-      if (onSuccess) {
-        onSuccess();
-      }
+      onSuccess?.();
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      toast.show({ variant: 'danger', label: 'No se pudo enviar tu comentario. Inténtalo de nuevo.' });
+      toast.show({
+        variant: 'danger',
+        label: 'No se pudo enviar tu comentario. Intentalo de nuevo.',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -131,8 +132,8 @@ export default function AppFeedbackModal({
     if (feedbackText.trim() || selectedCategory) {
       toast.show({
         variant: 'warning',
-        label: '¿Cancelar el comentario? Se perderá lo escrito.',
-        actionLabel: 'Sí, cancelar',
+        label: 'Cancelar el comentario? Se perdera lo escrito.',
+        actionLabel: 'Si, cancelar',
         onActionPress: ({ hide }) => {
           hide();
           setFeedbackText('');
@@ -140,13 +141,14 @@ export default function AppFeedbackModal({
           onClose();
         },
       });
-    } else {
-      onClose();
+      return;
     }
+
+    onClose();
   };
 
   const selectedCategoryData = selectedCategory
-    ? FEEDBACK_CATEGORIES.find((cat) => cat.id === selectedCategory)
+    ? FEEDBACK_CATEGORIES.find((category) => category.id === selectedCategory)
     : null;
 
   return (
@@ -159,20 +161,18 @@ export default function AppFeedbackModal({
       >
         <View style={styles.header}>
           <CloseButton onPress={handleClose} />
-          <Text style={[styles.title, { color: theme.text }]}>
-            ¿Fallitos? 🐛
-          </Text>
-          <View style={{ width: 36 }} />
+          <Text style={[styles.title, { color: theme.text }]}>Fallitos?</Text>
+          <View style={styles.headerSpacer} />
         </View>
 
         <Text style={[styles.subtitle, { color: theme.icon }]}>
-          Tu opinión nos ayuda a mejorar la app
+          Tu opinion nos ayuda a mejorar la app
         </Text>
 
         {!selectedCategory ? (
           <>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              ¿Qué quieres contarnos?
+              Que quieres contarnos?
             </Text>
 
             {FEEDBACK_CATEGORIES.map((category) => (
@@ -194,7 +194,9 @@ export default function AppFeedbackModal({
                 <View style={styles.categoryContent}>
                   <View style={styles.categoryInfo}>
                     <MaterialIcons
-                      name={category.icon as any}
+                      name={
+                        category.icon as keyof typeof MaterialIcons.glyphMap
+                      }
                       size={28}
                       color={category.color}
                     />
@@ -220,13 +222,16 @@ export default function AppFeedbackModal({
             >
               <MaterialIcons name="arrow-back" size={20} color={theme.icon} />
               <Button.Label style={{ color: theme.icon }}>
-                Cambiar categoría
+                Cambiar categoria
               </Button.Label>
             </Button>
 
             <View style={styles.selectedCategory}>
               <MaterialIcons
-                name={selectedCategoryData!.icon as any}
+                name={
+                  selectedCategoryData!
+                    .icon as keyof typeof MaterialIcons.glyphMap
+                }
                 size={32}
                 color={selectedCategoryData!.color}
               />
@@ -237,7 +242,7 @@ export default function AppFeedbackModal({
               </Text>
             </View>
 
-            <TextField style={{ marginBottom: 4 }}>
+            <TextField style={styles.fieldWrapper}>
               <TextArea
                 placeholder={selectedCategoryData!.placeholder}
                 value={feedbackText}
@@ -260,13 +265,16 @@ export default function AppFeedbackModal({
                 name={
                   isSubmitting
                     ? 'hourglass-empty'
-                    : (selectedCategoryData!.icon as any)
+                    : (selectedCategoryData!
+                        .icon as keyof typeof MaterialIcons.glyphMap)
                 }
                 size={20}
                 color="#fff"
               />
               <Button.Label>
-                {isSubmitting ? 'Enviando...' : selectedCategoryData!.submitText}
+                {isSubmitting
+                  ? 'Enviando...'
+                  : selectedCategoryData!.submitText}
               </Button.Label>
             </Button>
           </>
@@ -283,6 +291,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  headerSpacer: {
+    width: 36,
+  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -296,9 +307,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 16,
-  },
-  categoriesContainer: {
-    marginBottom: 24,
   },
   categoryButton: {
     padding: 16,
@@ -317,15 +325,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  categoryTextContainer: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  categoryLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginLeft: 12,
-  },
   backButton: {
     marginBottom: 16,
   },
@@ -339,26 +338,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
-  categoryForm: {
-    marginBottom: 20,
+  fieldWrapper: {
+    marginBottom: 4,
   },
   charCount: {
     fontSize: 12,
     textAlign: 'right',
     marginTop: 4,
     marginBottom: 16,
-  },
-  input: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    fontSize: 16,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
   },
   submitButton: {
     marginBottom: 8,

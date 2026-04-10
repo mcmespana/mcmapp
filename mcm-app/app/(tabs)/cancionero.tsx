@@ -1,6 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation, StackActions } from '@react-navigation/native';
 import { Platform, StyleSheet } from 'react-native';
 
 import CategoriesScreen from '../screens/CategoriesScreen';
@@ -52,23 +51,7 @@ const isIOS = Platform.OS === 'ios';
 const isWeb = Platform.OS === 'web';
 
 export default function CancioneroTab() {
-  const tabNavigation = useNavigation();
   const stackNavRef = useRef<any>(null);
-
-  useEffect(() => {
-    const unsubscribe = (tabNavigation as any).addListener(
-      'tabPress',
-      (e: any) => {
-        if (stackNavRef.current?.canGoBack()) {
-          if (e?.preventDefault) e.preventDefault();
-          setTimeout(() => {
-            stackNavRef.current?.dispatch(StackActions.popToTop());
-          }, 50);
-        }
-      },
-    );
-    return unsubscribe;
-  }, [tabNavigation]);
 
   return (
     <SettingsProvider>
@@ -86,11 +69,7 @@ export default function CancioneroTab() {
                     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
                   } as any)
                 : ({ backgroundColor: '#253883' } as any),
-            headerTintColor: isIOS
-              ? '#3d79b9ff'
-              : isWeb
-                ? '#253883'
-                : '#fff',
+            headerTintColor: isIOS ? '#3d79b9ff' : isWeb ? '#253883' : '#fff',
             headerTitleStyle: {
               fontWeight: '700' as const,
               fontSize: 17,

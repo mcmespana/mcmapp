@@ -35,6 +35,7 @@ import { HelloWave } from '@/components/HelloWave';
 import AddToHomeBanner from '@/components/AddToHomeBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
+import UniwindThemeBridge from '@/components/UniwindThemeBridge';
 import { HeroUINativeProvider, useToast } from 'heroui-native';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
@@ -47,6 +48,7 @@ export default function RootLayout() {
           <HeroUINativeProvider>
             <FeatureFlagsProvider>
               <AppSettingsProvider>
+                <UniwindThemeBridge />
                 <UserProfileProvider>
                   <SelectedSongsProvider>
                     <NotificationsProvider>
@@ -131,10 +133,7 @@ function InnerLayout() {
     <NavThemeProvider value={navigationTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="notifications"
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
         <Stack.Screen
           name="wordle"
           options={{

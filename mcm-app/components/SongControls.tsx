@@ -1,11 +1,5 @@
-import React, { useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  Animated,
-} from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
 import { useToast, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
@@ -100,15 +94,35 @@ const SongControls: React.FC<SongControlsProps> = ({
     outputRange: ['0deg', '45deg'],
   });
 
+  useEffect(() => {
+    return () => {
+      setShowActionButtons(false);
+      setShowTransposePanel(false);
+      setShowFontPanel(false);
+      setShowReportBugsModal(false);
+      setShowSecretPanel(false);
+    };
+  }, []);
+
   const handleOpenTransposePanel = () => setShowTransposePanel(true);
   const handleOpenFontPanel = () => setShowFontPanel(true);
 
   const handleReportSuccess = () => {
-    toast.show({ variant: 'success', label: '¡Gracias por tu reporte!', actionLabel: 'OK', onActionPress: ({ hide }) => hide() });
+    toast.show({
+      variant: 'success',
+      label: '¡Gracias por tu reporte!',
+      actionLabel: 'OK',
+      onActionPress: ({ hide }) => hide(),
+    });
   };
 
   const handleSecretPanelSuccess = () => {
-    toast.show({ variant: 'success', label: '¡Gracias por tu reporte!', actionLabel: 'OK', onActionPress: ({ hide }) => hide() });
+    toast.show({
+      variant: 'success',
+      label: '¡Gracias por tu reporte!',
+      actionLabel: 'OK',
+      onActionPress: ({ hide }) => hide(),
+    });
   };
 
   const handleSetTranspose = (semitones: number) => {
@@ -305,7 +319,6 @@ const SongControls: React.FC<SongControlsProps> = ({
         firebaseCategory={firebaseCategory}
         onSuccess={handleSecretPanelSuccess}
       />
-
     </>
   );
 };

@@ -4,3 +4,138 @@
 
 /* Point Tailwind at heroui-native's compiled output so it picks up all class names */
 @source './node_modules/heroui-native/lib';
+
+/*
+ * HeroUI Native currently exposes several web theme tokens as `oklch()` /
+ * `color-mix()`. Some runtime color helpers still expect RGB-compatible input,
+ * which breaks outline/ghost buttons on web. We override the relevant tokens
+ * with stable RGB/hex values and also expose an explicit app-controlled theme.
+ */
+:root,
+:root[data-theme='light'],
+[data-theme='light'] {
+  --background: #ffffff;
+  --foreground: #11181c;
+  --surface: #ffffff;
+  --surface-foreground: #11181c;
+  --surface-secondary: #f5f5f7;
+  --surface-secondary-foreground: #11181c;
+  --surface-tertiary: #ececf0;
+  --surface-tertiary-foreground: #11181c;
+  --overlay: #ffffff;
+  --overlay-foreground: #11181c;
+  --muted: #687076;
+  --default: #f2f2f7;
+  --default-foreground: #11181c;
+  --accent: #253883;
+  --accent-foreground: #ffffff;
+  --success: #a3bd31;
+  --success-foreground: #11181c;
+  --warning: #fcd200;
+  --warning-foreground: #11181c;
+  --danger: #e15c62;
+  --danger-foreground: #ffffff;
+  --segment: #ffffff;
+  --segment-foreground: #11181c;
+  --border: #e0e0e0;
+  --separator: #d6d6da;
+  --focus: #253883;
+  --link: #253883;
+  --field-background: #ffffff;
+  --field-foreground: #11181c;
+  --field-placeholder: #687076;
+  --field-border: #e0e0e0;
+  --surface-shadow:
+    0 2px 4px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.06),
+    0 0 1px 0 rgba(0, 0, 0, 0.06);
+  --overlay-shadow:
+    0 2px 8px 0 rgba(0, 0, 0, 0.02), 0 -6px 12px 0 rgba(0, 0, 0, 0.01),
+    0 14px 28px 0 rgba(0, 0, 0, 0.03);
+  --field-shadow:
+    0 2px 4px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.06),
+    0 0 1px 0 rgba(0, 0, 0, 0.06);
+
+  --color-surface-hover: rgba(17, 24, 28, 0.04);
+  --color-default-hover: rgba(17, 24, 28, 0.08);
+  --color-accent-hover: #31489f;
+  --color-success-hover: #92ab28;
+  --color-warning-hover: #e4bd00;
+  --color-danger-hover: #cf5056;
+  --color-field-hover: rgba(17, 24, 28, 0.03);
+  --color-field-focus: #ffffff;
+  --color-field-border-hover: #cfcfd4;
+  --color-field-border-focus: #9aa4c9;
+  --color-accent-soft: rgba(37, 56, 131, 0.15);
+  --color-accent-soft-foreground: #253883;
+  --color-accent-soft-hover: rgba(37, 56, 131, 0.2);
+  --color-danger-soft: rgba(225, 92, 98, 0.15);
+  --color-danger-soft-foreground: #e15c62;
+  --color-danger-soft-hover: rgba(225, 92, 98, 0.2);
+  --color-warning-soft: rgba(252, 210, 0, 0.18);
+  --color-warning-soft-foreground: #7b5c00;
+  --color-warning-soft-hover: rgba(252, 210, 0, 0.24);
+  --color-success-soft: rgba(163, 189, 49, 0.18);
+  --color-success-soft-foreground: #4e6110;
+  --color-success-soft-hover: rgba(163, 189, 49, 0.24);
+}
+
+:root[data-theme='dark'],
+[data-theme='dark'] {
+  --background: #2c2c2e;
+  --foreground: #ffffff;
+  --surface: #2c2c2e;
+  --surface-foreground: #ffffff;
+  --surface-secondary: #343437;
+  --surface-secondary-foreground: #ffffff;
+  --surface-tertiary: #3a3a3c;
+  --surface-tertiary-foreground: #ffffff;
+  --overlay: #2c2c2e;
+  --overlay-foreground: #ffffff;
+  --muted: #c5c5c7;
+  --default: #3a3a3c;
+  --default-foreground: #ffffff;
+  --accent: #4b67d1;
+  --accent-foreground: #ffffff;
+  --success: #a3bd31;
+  --success-foreground: #11181c;
+  --warning: #fcd200;
+  --warning-foreground: #11181c;
+  --danger: #ff6b6b;
+  --danger-foreground: #ffffff;
+  --segment: #3a3a3c;
+  --segment-foreground: #ffffff;
+  --border: #4a4a4d;
+  --separator: #5a5a5f;
+  --focus: #95d2f2;
+  --link: #95d2f2;
+  --field-background: #3a3a3c;
+  --field-foreground: #ffffff;
+  --field-placeholder: #c5c5c7;
+  --field-border: #4a4a4d;
+  --surface-shadow: 0 0 0 0 transparent;
+  --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+  --field-shadow: 0 0 0 0 transparent;
+
+  --color-surface-hover: rgba(255, 255, 255, 0.05);
+  --color-default-hover: rgba(255, 255, 255, 0.1);
+  --color-accent-hover: #5f7bf0;
+  --color-success-hover: #b1ca40;
+  --color-warning-hover: #ffe14d;
+  --color-danger-hover: #ff7f7f;
+  --color-field-hover: rgba(255, 255, 255, 0.04);
+  --color-field-focus: #3a3a3c;
+  --color-field-border-hover: #66666b;
+  --color-field-border-focus: #95d2f2;
+  --color-accent-soft: rgba(149, 210, 242, 0.18);
+  --color-accent-soft-foreground: #95d2f2;
+  --color-accent-soft-hover: rgba(149, 210, 242, 0.24);
+  --color-danger-soft: rgba(255, 107, 107, 0.18);
+  --color-danger-soft-foreground: #ff9d9d;
+  --color-danger-soft-hover: rgba(255, 107, 107, 0.24);
+  --color-warning-soft: rgba(252, 210, 0, 0.2);
+  --color-warning-soft-foreground: #ffe14d;
+  --color-warning-soft-hover: rgba(252, 210, 0, 0.26);
+  --color-success-soft: rgba(163, 189, 49, 0.2);
+  --color-success-soft-foreground: #c7dd68;
+  --color-success-soft-hover: rgba(163, 189, 49, 0.26);
+}
