@@ -2,6 +2,7 @@ export interface TabsFlags {
   index: boolean;
   mas: boolean;
   cancionero: boolean;
+  contigo: boolean;
   calendario: boolean;
   fotos: boolean;
   comunica: boolean;
@@ -26,6 +27,7 @@ const featureFlags: FeatureFlags = {
     index: true,
     mas: true,
     cancionero: true,
+    contigo: true,
     calendario: true,
     fotos: true,
     comunica: false,

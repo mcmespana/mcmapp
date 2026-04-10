@@ -189,6 +189,14 @@ export default function Home() {
           iconColor: '#34D399',
           href: '/fotos',
         },
+        featureFlags.tabs.contigo && {
+          key: 'evangelio',
+          label: 'Evangelio',
+          icon: 'menu-book' as const,
+          iconBg: scheme === 'dark' ? '#3A2A1A' : '#FFF8E1',
+          iconColor: '#F59E0B',
+          href: '/screens/EvangelioScreen',
+        },
         {
           key: 'mas',
           label: 'Más',

@@ -480,7 +480,12 @@ Un agente debe revisar la estructura
 
 ### Fase 1 — Todo menos el examen revisión
 
-- Ya está hecho el backend de lecturas
+- [x] Ya está hecho el backend de lecturas
+- [x] Pantalla `EvangelioScreen` con fecha, badge y tabs de lectura/comentario
+- [x] Tab "Contigo" con accesos directos
+- [x] Storage local para hábitos (`useContigoHabits`)
+- [x] Hook `useDailyReadings`
+- [x] Acceso directo al Evangelio en Home (`index.tsx`)
 
 ### Fase 2 — Examen del Dia
 
