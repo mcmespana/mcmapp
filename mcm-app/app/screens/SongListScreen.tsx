@@ -222,15 +222,17 @@ export default function SongsListScreen({
     loadSongs();
   }, [categoryId, songsData]);
 
-  const filteredSongs = songs.filter((song) => {
-    if (!song) return false;
+  const filteredSongs = useMemo(() => {
     const searchTerm = search.toLowerCase();
-    const titleMatch =
-      song.title && song.title.toLowerCase().includes(searchTerm);
-    const authorMatch =
-      song.author && song.author.toLowerCase().includes(searchTerm);
-    return titleMatch || authorMatch;
-  });
+    return songs.filter((song) => {
+      if (!song) return false;
+      const titleMatch =
+        song.title && song.title.toLowerCase().includes(searchTerm);
+      const authorMatch =
+        song.author && song.author.toLowerCase().includes(searchTerm);
+      return titleMatch || authorMatch;
+    });
+  }, [songs, search]);
 
   const handleSongPress = useCallback(
     (song: Song) => {
