@@ -129,7 +129,11 @@ class VaticanNewsScraper(BaseScraper):
             lower_text = text.lower()
 
             # Detect section changes based on common keywords
-            if "lectura" in lower_text and "santo evangelio" not in lower_text:
+            if "santo evangelio" in lower_text or "pasión de nuestro señor" in lower_text or "evangelio según" in lower_text:
+                state = "EV_TITLE"
+                continue
+
+            if "lectura" in lower_text:
                 if state in ["UNKNOWN", "L1_CITA", "L1_TEXTO"]:
                     if not data.primera_lectura:
                         state = "L1_TITLE"
@@ -137,10 +141,6 @@ class VaticanNewsScraper(BaseScraper):
                     if not data.segunda_lectura:
                         state = "L2_TITLE"
                 continue # Skip the "Lectura del libro de..." paragraph
-
-            if "santo evangelio" in lower_text or "pasión de nuestro señor" in lower_text:
-                state = "EV_TITLE"
-                continue
 
             # If we just saw a title, the next paragraph is likely the citation
             if state == "L1_TITLE":
@@ -193,11 +193,35 @@ class VaticanNewsScraper(BaseScraper):
         # Or if Cita is missing, maybe the text didn't say "Lectura del santo evangelio"
         # It happens on Sundays where gospel might be long or differently formatted
         if not data.cita and evangelio_paras:
-             # Just set a placeholder or try to infer from the text
-             data.cita = "Evangelio del día"
+            # Maybe the cita is the first line of the evangelio
+            if len(evangelio_paras[0]) < 50 and any(str.isdigit(c) for c in evangelio_paras[0]):
+                data.cita = evangelio_paras.pop(0)
+            else:
+                data.cita = "Evangelio del día"
+
         if not data.cita and not evangelio_paras and not comentario_paras:
             # Could not parse this day at all, skip
             log.warning(f"[VaticanNews] Parseo fallido para {data.fecha}. No se encontró cita ni evangelio.")
+
+        # Fallback to check if commentary is actually inside evangelio_paras
+        # (This happens when we misidentify the entire text as gospel because of formatting differences)
+        if not comentario_paras and evangelio_paras:
+            # Check for author names or "Audiencia general"
+            for i, p in enumerate(evangelio_paras):
+                if "(Francisco" in p or "(Juan Pablo" in p or "(Benedicto" in p or "(León" in p or "(Audiencia general" in p:
+                    comentario_paras = evangelio_paras[i:]
+                    evangelio_paras = evangelio_paras[:i]
+                    break
+
+            # If still not found, check if the last paragraph of evangelio_paras contains
+            # standard commentary markers at the end.
+            if not comentario_paras and evangelio_paras:
+                last_para = evangelio_paras[-1]
+                # Look for a closing parenthesis and a dash, which is common in citations
+                if re.search(r'\(([^)]+ - [^)]+)\)$', last_para) or re.search(r'\(([^)]+?)[,\-]', last_para):
+                    # We only extract the last paragraph as commentary if it looks like it has an author citation
+                    # Often the commentary is just one paragraph anyway
+                    comentario_paras.append(evangelio_paras.pop())
 
         # Extract author from commentary
         if comentario_paras:
@@ -211,8 +235,14 @@ class VaticanNewsScraper(BaseScraper):
                 author_text = author_match.group(1).strip()
                 data.comentarista = author_text
             else:
-                # Fallback if no specific author format
-                data.comentarista = "Vatican News"
+                # Some comments end without parenthesis or have different formats.
+                # Just find the last sentence if we couldn't parse the author
+                last_line = comentario_paras[-1] if isinstance(comentario_paras, list) and len(comentario_paras)>0 else full_comentario
+                fallback_match = re.search(r'\(([^)]+)\)$', last_line)
+                if fallback_match:
+                     data.comentarista = fallback_match.group(1).split(",")[0].strip()
+                else:
+                     data.comentarista = "Vatican News"
 
         # Fallback for missing elements to pass validation
         if not data.comentario:
