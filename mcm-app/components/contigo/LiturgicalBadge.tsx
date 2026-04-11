@@ -7,23 +7,24 @@ interface LiturgicalBadgeProps {
   dateStr: string; // YYYY-MM-DD
 }
 
-type HeroUIColor = "default" | "primary" | "secondary" | "success" | "warning" | "danger";
+// Map liturgical info to HeroUI Chip colors
+type ChipColor = 'accent' | 'default' | 'success' | 'warning' | 'danger';
 
 export function getLiturgicalInfo(dateStr: string) {
   const [year, month, day] = dateStr.split('-');
   const calYear = liturgicalCalendar[year as keyof typeof liturgicalCalendar];
-  if (!calYear) return { color: 'success' as HeroUIColor, name: 'Tiempo Ordinario', hex: '#3A7D44' };
+  if (!calYear) return { color: 'success' as ChipColor, name: 'Tiempo Ordinario', hex: '#3A7D44' };
 
   // Check special dates first
   const specialDate = calYear.fechas_especiales?.find((d: any) => d.fecha === dateStr);
   if (specialDate) {
-    let color: HeroUIColor = 'default';
+    let color: ChipColor = 'default';
     let hex = '#F5F5F5';
     if (specialDate.id === 'pentecostes' || specialDate.id.includes('ramos') || specialDate.id.includes('viernes_santo') || specialDate.id.includes('apostol')) {
       color = 'danger';
       hex = '#C41E3A';
     } else if (specialDate.id === 'miercoles_ceniza') {
-      color = 'secondary';
+      color = 'accent';
       hex = '#6B3FA0';
     }
     return { color, name: specialDate.nombre, hex };
@@ -31,16 +32,16 @@ export function getLiturgicalInfo(dateStr: string) {
 
   // Check Gaudete / Laetare
   if (calYear.domingos_adviento?.[2] === dateStr || calYear.domingos_cuaresma?.[3] === dateStr) {
-    return { color: 'warning' as HeroUIColor, name: calYear.domingos_adviento?.[2] === dateStr ? 'Adviento (Gaudete)' : 'Cuaresma (Laetare)', hex: '#D4A0A7' };
+    return { color: 'warning' as ChipColor, name: calYear.domingos_adviento?.[2] === dateStr ? 'Adviento (Gaudete)' : 'Cuaresma (Laetare)', hex: '#D4A0A7' };
   }
 
   // Find the season
   for (const tiempo of calYear.tiempos) {
     if (dateStr >= tiempo.inicio && dateStr <= tiempo.fin) {
-      let color: HeroUIColor = 'success';
+      let color: ChipColor = 'success';
       let hex = '#3A7D44';
       if (tiempo.id === 'adviento' || tiempo.id === 'cuaresma') {
-        color = 'secondary';
+        color = 'accent';
         hex = '#6B3FA0';
       } else if (tiempo.id === 'navidad' || tiempo.id === 'pascua') {
         color = 'default';
@@ -53,7 +54,7 @@ export function getLiturgicalInfo(dateStr: string) {
     }
   }
 
-  return { color: 'success' as HeroUIColor, name: 'Tiempo Ordinario', hex: '#3A7D44' };
+  return { color: 'success' as ChipColor, name: 'Tiempo Ordinario', hex: '#3A7D44' };
 }
 
 export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
@@ -66,9 +67,9 @@ export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
   return (
     <Chip
       size="sm"
-      variant="solid"
+      variant="primary"
       color={info.color}
-      style={{ marginTop: 4, elevation: 1 }}
+      style={{ elevation: 0 }}
     >
       <Chip.Label style={{ fontWeight: '700' }}>
         {info.name}

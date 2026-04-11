@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Card, Button, PressableFeedback } from 'heroui-native';
+import { Card, PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { radii } from '@/constants/uiStyles';
+import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 
 interface ContigoToolCardProps {
@@ -31,7 +31,7 @@ export function ContigoToolCard({
   statusColor,
   disabled,
   onPress,
-  accentColor = '#FF4D4D', // Warm passionate default
+  accentColor = '#B8860B',
 }: ContigoToolCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -40,6 +40,11 @@ export function ContigoToolCard({
   const defaultStatusColor = isDark ? '#A3BD31' : '#3A7D44';
   const finalStatusColor = statusColor || defaultStatusColor;
 
+  // Warm amber-gold icon bg
+  const iconBg = isDark
+    ? hexAlpha(accentColor, '20')
+    : hexAlpha(accentColor, '12');
+
   return (
     <View style={[styles.wrapper, disabled && styles.disabled]}>
       <Card
@@ -47,88 +52,105 @@ export function ContigoToolCard({
         style={[
           styles.card,
           {
-            borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.5)',
-            borderWidth: 1.5,
+            borderColor: isDark
+              ? 'rgba(255,255,255,0.10)'
+              : 'rgba(0,0,0,0.06)',
+            borderWidth: 1,
           },
         ]}
       >
+        {/* Translucent background — liquid glass style */}
         {Platform.OS === 'ios' ? (
           <BlurView
             tint={isDark ? 'systemMaterialDark' : 'systemMaterialLight'}
-            intensity={80}
+            intensity={60}
             style={StyleSheet.absoluteFill}
           />
         ) : (
           <View
             style={[
               StyleSheet.absoluteFill,
-              { backgroundColor: isDark ? 'rgba(30,30,30,0.85)' : 'rgba(255,255,255,0.85)' },
+              {
+                backgroundColor: isDark
+                  ? 'rgba(28,26,23,0.92)'
+                  : 'rgba(255,252,245,0.92)',
+              },
             ]}
           />
         )}
-        
-        <PressableFeedback 
-          onPress={disabled ? undefined : onPress} 
+
+        <PressableFeedback
+          onPress={disabled ? undefined : onPress}
           style={styles.pressable}
-          feedbackVariant="scale-highlight"
         >
           <PressableFeedback.Highlight />
-          
+
           <View style={styles.content}>
-            {/* Left Icon Area */}
-            <View 
-              style={[
-                styles.iconContainer, 
-                { backgroundColor: hexAlpha(accentColor, isDark ? '20' : '15') }
-              ]}
-            >
-              <MaterialIcons name={icon} size={32} color={accentColor} />
+            {/* Icon Circle */}
+            <View style={[styles.iconContainer, { backgroundColor: iconBg }]}>
+              <MaterialIcons name={icon} size={28} color={accentColor} />
             </View>
-            
-            {/* Main Content Area */}
+
+            {/* Text Area */}
             <View style={styles.textContainer}>
               <View style={styles.titleRow}>
-                <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
+                <Text
+                  style={[styles.title, { color: theme.text }]}
+                  numberOfLines={1}
+                >
                   {title}
                 </Text>
-                {badge && <View style={styles.badgeContainer}>{badge}</View>}
               </View>
-              
+
               {subtitle && (
-                <Text style={[styles.subtitle, { color: theme.icon }]} numberOfLines={2}>
+                <Text
+                  style={[
+                    styles.subtitle,
+                    { color: isDark ? 'rgba(255,255,255,0.55)' : '#6B6560' },
+                  ]}
+                  numberOfLines={2}
+                >
                   {subtitle}
                 </Text>
               )}
-              
-              {/* Footer / Status Area */}
-              {(statusText || statusIcon) && (
-                <View style={styles.statusRow}>
-                  {statusIcon && (
-                    <MaterialIcons 
-                      name={statusIcon} 
-                      size={16} 
-                      color={finalStatusColor} 
-                      style={styles.statusIcon} 
-                    />
-                  )}
-                  {statusText && (
-                    <Text style={[styles.statusText, { color: finalStatusColor }]}>
-                      {statusText}
-                    </Text>
-                  )}
-                </View>
-              )}
+
+              {/* Status + Badge Row */}
+              <View style={styles.footerRow}>
+                {(statusText || statusIcon) && (
+                  <View style={styles.statusRow}>
+                    {statusIcon && (
+                      <MaterialIcons
+                        name={statusIcon}
+                        size={15}
+                        color={finalStatusColor}
+                        style={styles.statusIconStyle}
+                      />
+                    )}
+                    {statusText && (
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: finalStatusColor },
+                        ]}
+                      >
+                        {statusText}
+                      </Text>
+                    )}
+                  </View>
+                )}
+                {badge && <View style={styles.badgeContainer}>{badge}</View>}
+              </View>
             </View>
-            
-            {/* Right Chevron Button via HeroUI */}
+
+            {/* Chevron */}
             {!disabled && (
-              <Button size="sm" isIconOnly variant="tertiary" className="ml-2">
-                <MaterialIcons 
-                  name="chevron-right" 
-                  size={24} 
-                  color={theme.icon} 
+              <View style={styles.chevronContainer}>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={22}
+                  color={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)'}
                 />
-              </Button>
+              </View>
             )}
           </View>
         </PressableFeedback>
@@ -139,18 +161,14 @@ export function ContigoToolCard({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+    marginBottom: 12,
+    ...shadows.sm,
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
   card: {
-    borderRadius: radii.2xl,
+    borderRadius: radii.xl,
     overflow: 'hidden',
   },
   pressable: {
@@ -159,15 +177,16 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: radii.2xl,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   textContainer: {
     flex: 1,
@@ -176,38 +195,43 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 3,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '700',
     flex: 1,
-    marginRight: 8,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   badgeContainer: {
-    alignSelf: 'flex-start',
+    marginLeft: 8,
   },
   subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 12,
-    fontWeight: '500',
-    opacity: 0.8,
+    fontSize: 14,
+    lineHeight: 19,
+    marginBottom: 8,
+    fontWeight: '400',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
   },
-  statusIcon: {
-    marginRight: 6,
+  statusIconStyle: {
+    marginRight: 5,
   },
   statusText: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+  },
+  chevronContainer: {
+    marginLeft: 8,
+    justifyContent: 'center',
   },
 });

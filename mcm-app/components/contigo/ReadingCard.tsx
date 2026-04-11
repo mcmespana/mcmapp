@@ -14,28 +14,33 @@ interface ReadingCardProps {
   defaultExpanded?: boolean;
 }
 
+// Warm amber accent for Contigo section
+const WARM_ACCENT_LIGHT = '#B8860B';
+const WARM_ACCENT_DARK = '#DAA520';
+
 export function ReadingCard({ title, cita, texto, defaultExpanded = false }: ReadingCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
-  
+  const accent = isDark ? WARM_ACCENT_DARK : WARM_ACCENT_LIGHT;
+
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   if (!texto) return null;
 
   return (
     <View style={styles.wrapper}>
-      <Card 
+      <Card
         style={[
           styles.card,
-          { 
+          {
             backgroundColor: theme.card,
-            borderColor: isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.07)'
-          }
+            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+          },
         ]}
       >
         <View style={styles.content}>
-          <PressableFeedback 
+          <PressableFeedback
             onPress={() => setExpanded(!expanded)}
             style={styles.headerPressable}
           >
@@ -45,23 +50,23 @@ export function ReadingCard({ title, cita, texto, defaultExpanded = false }: Rea
                 <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
                   {title}
                 </Text>
-                <View style={[styles.citaBadge, { backgroundColor: hexAlpha(Colors.light.tint, '15') }]}>
-                  <Text style={[styles.citaText, { color: isDark ? '#95d2f2' : Colors.light.tint }]}>
+                <View style={[styles.citaBadge, { backgroundColor: hexAlpha(accent, '12') }]}>
+                  <Text style={[styles.citaText, { color: accent }]}>
                     {cita}
                   </Text>
                 </View>
               </View>
-              <MaterialIcons 
-                name={expanded ? 'expand-less' : 'expand-more'} 
-                size={24} 
-                color={theme.icon} 
+              <MaterialIcons
+                name={expanded ? 'expand-less' : 'expand-more'}
+                size={22}
+                color={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)'}
               />
             </View>
           </PressableFeedback>
-          
+
           {expanded && (
-            <View style={[styles.body, { borderTopColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}>
-              <Text style={[styles.bodyText, { color: theme.text }]}>
+            <View style={[styles.body, { borderTopColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }]}>
+              <Text style={[styles.bodyText, { color: theme.text }]} selectable>
                 {texto}
               </Text>
             </View>
@@ -74,7 +79,7 @@ export function ReadingCard({ title, cita, texto, defaultExpanded = false }: Rea
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 12,
+    marginBottom: 10,
     ...shadows.sm,
   },
   card: {
@@ -92,7 +97,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: 14,
   },
   headerTextContainer: {
     flex: 1,
@@ -102,22 +107,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '700',
     letterSpacing: -0.2,
   },
   citaBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radii.sm,
+    paddingVertical: 3,
+    borderRadius: 100,
   },
   citaText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   body: {
-    padding: 16,
-    paddingTop: 12,
+    padding: 14,
+    paddingTop: 10,
     borderTopWidth: 1,
   },
   bodyText: {

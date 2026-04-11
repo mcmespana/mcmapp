@@ -1,9 +1,9 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors, { Colors } from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { ContigoToolCard } from '@/components/contigo/ContigoToolCard';
 import { LiturgicalBadge } from '@/components/contigo/LiturgicalBadge';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
@@ -11,6 +11,29 @@ import { useDailyReadings } from '@/hooks/useDailyReadings';
 import spacing from '@/constants/spacing';
 import { hexAlpha } from '@/utils/colorUtils';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
+
+// ── Contigo Theme Colors ──
+const CONTIGO = {
+  light: {
+    accent: '#B8860B',       // Dorado oscuro
+    accentSoft: '#FFF8E7',   // Crema dorado
+    surface: '#FEFBF5',      // Fondo cálido
+    surfaceEnd: '#F5EFE3',   // Gradiente final
+    warmGray: '#6B6560',     // Texto secundario
+    titleColor: '#3D3225',   // Marrón cálido para título
+    subtitleColor: '#8B7E6E',// Marrón suave para subtítulo
+  },
+  dark: {
+    accent: '#DAA520',       // Goldenrod
+    accentSoft: '#2A2112',   // Fondo oscuro cálido
+    surface: '#1C1A17',      // Fondo oscuro
+    surfaceEnd: '#0F0E0C',   // Gradiente final oscuro
+    warmGray: '#A09A94',     // Texto secundario dark
+    titleColor: '#F5EFE3',   // Crema para título
+    subtitleColor: '#A09A94',// Gris cálido para subtítulo
+  },
+};
 
 export default function ContigoScreen() {
   const insets = useSafeAreaInsets();
@@ -18,75 +41,128 @@ export default function ContigoScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
-  
+  const contigo = isDark ? CONTIGO.dark : CONTIGO.light;
+
   const { todayStr, todayRecord, getStreak } = useContigoHabits();
   const { readings, isLoading } = useDailyReadings(todayStr);
 
   const readingDone = todayRecord?.readingDone;
   const prayerDone = todayRecord?.prayerDone;
-  
   const prayerStreak = getStreak('prayer');
+  const readingStreak = getStreak('reading');
 
-  // Warm, passionate gradient
-  const bgGradient = isDark 
-    ? ['#2D1115', '#1A0B0E', '#000000'] as const
-    : ['#FFF0F0', '#FFE4E6', '#FDF2F8'] as const;
+  // Warm, serene gradient — no reds!
+  const bgGradient = isDark
+    ? [contigo.surface, contigo.surfaceEnd, '#000000'] as const
+    : [contigo.surface, contigo.surfaceEnd, '#F0EBE0'] as const;
+
+  // Format today's date nicely
+  const today = new Date();
+  const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const MONTHS = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ];
+  const dateStr = `${DAYS[today.getDay()]}, ${today.getDate()} de ${MONTHS[today.getMonth()]}`;
 
   return (
     <View style={styles.container}>
       <LinearGradient
         colors={bgGradient}
         style={StyleSheet.absoluteFill}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
       />
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ 
+        contentContainerStyle={{
           paddingTop: insets.top + spacing.lg,
           paddingBottom: insets.bottom + spacing.xl * 2,
           paddingHorizontal: spacing.md,
         }}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: isDark ? '#FFF' : '#881337' }]}>
+          <Text style={[styles.title, { color: contigo.titleColor }]}>
             Contigo
           </Text>
-          <Text style={[styles.subtitle, { color: isDark ? 'rgba(255,255,255,0.7)' : '#BE123C' }]}>
+          <Text style={[styles.subtitle, { color: contigo.subtitleColor }]}>
             Propuestas para la oración de cada día
+          </Text>
+          <Text style={[styles.dateText, { color: contigo.warmGray }]}>
+            {dateStr}
           </Text>
         </View>
 
+        {/* ── Tool Cards ── */}
         <View style={styles.content}>
+          {/* Evangelio del Día */}
           <ContigoToolCard
             title="Evangelio del Día"
             icon="menu-book"
-            subtitle={isLoading ? 'Cargando lecturas...' : (readings?.evangelio?.cita || 'Ver las lecturas de hoy')}
+            subtitle={
+              isLoading
+                ? 'Cargando lecturas...'
+                : readings?.evangelio?.cita || 'Ver las lecturas de hoy'
+            }
             badge={<LiturgicalBadge dateStr={todayStr} />}
             statusText={readingDone ? 'Leído hoy' : 'Pendiente hoy'}
-            statusIcon={readingDone ? 'check-circle' : 'radio-button-unchecked'}
-            statusColor={readingDone ? (isDark ? '#A3BD31' : '#3A7D44') : (isDark ? 'rgba(255,255,255,0.5)' : theme.icon)}
-            accentColor={isDark ? '#FCA5A5' : '#E11D48'}
+            statusIcon={
+              readingDone ? 'check-circle' : 'radio-button-unchecked'
+            }
+            statusColor={
+              readingDone
+                ? isDark
+                  ? '#A3BD31'
+                  : '#3A7D44'
+                : contigo.warmGray
+            }
+            accentColor={contigo.accent}
             onPress={() => router.push('/screens/EvangelioScreen')}
           />
 
+          {/* Mi Rato de Oración */}
           <ContigoToolCard
             title="Mi Rato de Oración"
             icon="self-improvement"
             subtitle="Registra tu momento de oración personal"
             statusText={prayerDone ? 'Registrado hoy' : 'Pendiente hoy'}
-            statusIcon={prayerDone ? 'check-circle' : 'radio-button-unchecked'}
-            statusColor={prayerDone ? (isDark ? '#A3BD31' : '#3A7D44') : (isDark ? 'rgba(255,255,255,0.5)' : theme.icon)}
-            accentColor={isDark ? '#FDBA74' : '#EA580C'}
+            statusIcon={
+              prayerDone ? 'check-circle' : 'radio-button-unchecked'
+            }
+            statusColor={
+              prayerDone
+                ? isDark
+                  ? '#A3BD31'
+                  : '#3A7D44'
+                : contigo.warmGray
+            }
+            accentColor={isDark ? '#E8A838' : '#C4922A'}
             onPress={() => {
-              // Future implementation
+              // Future: router.push('/screens/OracionScreen')
             }}
             badge={
               prayerStreak > 0 ? (
-                <View style={[styles.streakBadge, { backgroundColor: isDark ? 'rgba(252, 165, 165, 0.2)' : 'rgba(225, 29, 72, 0.15)' }]}>
+                <View
+                  style={[
+                    styles.streakBadge,
+                    {
+                      backgroundColor: isDark
+                        ? hexAlpha('#DAA520', '20')
+                        : hexAlpha('#B8860B', '12'),
+                    },
+                  ]}
+                >
                   <Text style={styles.streakEmoji}>🔥</Text>
-                  <Text style={[styles.streakText, { color: isDark ? '#FECDD3' : '#9F1239' }]}>
+                  <Text
+                    style={[
+                      styles.streakText,
+                      {
+                        color: isDark ? '#DAA520' : '#8B6914',
+                      },
+                    ]}
+                  >
                     {prayerStreak} días
                   </Text>
                 </View>
@@ -94,17 +170,83 @@ export default function ContigoScreen() {
             }
           />
 
+          {/* Revisión del Día — placeholder */}
           <ContigoToolCard
             title="Revisión del Día"
             icon="search"
             subtitle="Examen de conciencia diario"
             statusText="Próximamente"
             statusIcon="schedule"
-            statusColor={isDark ? 'rgba(255,255,255,0.5)' : theme.icon}
-            accentColor={isDark ? '#FDA4AF' : '#E11D48'}
+            statusColor={contigo.warmGray}
+            accentColor={isDark ? '#A09A94' : '#8B7E6E'}
             disabled={true}
           />
         </View>
+
+        {/* ── Weekly Streak Summary ── */}
+        {(readingStreak > 0 || prayerStreak > 0) && (
+          <View
+            style={[
+              styles.streakSummary,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(218,165,32,0.08)'
+                  : 'rgba(184,134,11,0.06)',
+                borderColor: isDark
+                  ? 'rgba(218,165,32,0.15)'
+                  : 'rgba(184,134,11,0.10)',
+              },
+            ]}
+          >
+            <View style={styles.streakSummaryHeader}>
+              <MaterialIcons
+                name="local-fire-department"
+                size={20}
+                color={contigo.accent}
+              />
+              <Text
+                style={[
+                  styles.streakSummaryTitle,
+                  { color: contigo.accent },
+                ]}
+              >
+                Tu constancia
+              </Text>
+            </View>
+            <View style={styles.streakSummaryRow}>
+              {readingStreak > 0 && (
+                <View style={styles.streakItem}>
+                  <Text style={[styles.streakNumber, { color: theme.text }]}>
+                    {readingStreak}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.streakLabel,
+                      { color: contigo.warmGray },
+                    ]}
+                  >
+                    {readingStreak === 1 ? 'día' : 'días'} leyendo
+                  </Text>
+                </View>
+              )}
+              {prayerStreak > 0 && (
+                <View style={styles.streakItem}>
+                  <Text style={[styles.streakNumber, { color: theme.text }]}>
+                    {prayerStreak}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.streakLabel,
+                      { color: contigo.warmGray },
+                    ]}
+                  >
+                    {prayerStreak === 1 ? 'día' : 'días'} orando
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -118,39 +260,82 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    marginBottom: spacing.xl + 8,
-    paddingHorizontal: 8,
+    marginBottom: spacing.xl,
+    paddingHorizontal: 4,
   },
   title: {
-    fontSize: 40,
-    fontWeight: '900',
-    letterSpacing: -1.2,
-    marginBottom: 8,
+    fontSize: 36,
+    fontWeight: '800',
+    letterSpacing: -1,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 22,
+    letterSpacing: -0.1,
+    marginBottom: 4,
+  },
+  dateText: {
+    fontSize: 13,
     fontWeight: '600',
-    lineHeight: 24,
-    letterSpacing: -0.2,
+    textTransform: 'capitalize',
+    marginTop: 4,
   },
   content: {
-    gap: spacing.sm,
+    gap: 0, // Cards themselves have marginBottom
   },
+  // Streak badge (inline on prayer card)
   streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: 100,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
   streakEmoji: {
-    fontSize: 14,
+    fontSize: 12,
   },
   streakText: {
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  // Bottom streak summary
+  streakSummary: {
+    marginTop: spacing.lg,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  streakSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  streakSummaryTitle: {
+    fontSize: 14,
+    fontWeight: '700',
     marginLeft: 6,
-    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  streakSummaryRow: {
+    flexDirection: 'row',
+    gap: 32,
+  },
+  streakItem: {
+    alignItems: 'center',
+  },
+  streakNumber: {
+    fontSize: 28,
     fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  streakLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
   },
 });

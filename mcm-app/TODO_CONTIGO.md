@@ -412,17 +412,17 @@ seccion_oracion
 │   │   ├────── vidaNuevaLastUpdated: <--- fecha actualizacion
 │   │   ├────── vidaNuevaURL: <--- URL para citar la fuente
 │   │   ├── lectura1
-│   │   ├────── <--- similar a evangelio
+│   │   ├────── <--- (En desarrollo) similar a evangelio
 │   │   ├── lectura2
-│   │   ├────── <--- similar a evangelio
+│   │   ├────── <--- (En desarrollo) similar a evangelio
 │   │   └── info
 │   │   ├────── activo: "vidaNueva"
 │   │   ├────── vidaNuevaDiaLiturgico: <--- nombre del dia y santo
-│   │   ├────── vidaNuevaCita: <--- cita del evangelio Jn 11, 1-45
-│   │   ├────── vidaNuevaPrimeraLectura: <--- cita de la lecutra
-│   │   ├────── vidaNuevaSegundaLectura: <--- cita de la lecutra
-│   │   ├────── vidaNuevaSalmo: <--- numero salmo
-│   │   ├────── vidaNuevaTitulo: <--- titulo del día par motivar y animar
+│   │   ├────── vidaNuevaEvangelio: <--- cita del evangelio Jn 11, 1-45
+│   │   ├────── vidaNuevaPrimeraLectura: <--- cita de la lectura
+│   │   ├────── vidaNuevaSegundaLectura: <--- cita de la segunda lectura (si aplica)
+│   │   ├────── vidaNuevaSalmo: <--- cita/numero del salmo
+│   │   ├────── vidaNuevaTitulo: <--- titulo del día para motivar y animar
 ```
 
 Los tiempos litúrgicos están en assets/calendario-liturgico.json 
@@ -515,11 +515,11 @@ Un agente debe revisar la estructura
 ## B1. Arquitectura implementada
 
 ```
-GitHub Actions (cron 00:02 hora Espana)
-  → Script Node.js (cheerio + firebase-admin)
-  → Scraping de fuente principal
+GitHub Actions (cron 00:50 UTC)
+  → Script de Python
+  → Scraping de fuente principal (Vida Nueva)
   → Escribe en Firebase Realtime Database
-  → La app consume con useFirebaseData (patron existente)
+  → La app consume con useFirebaseData (patrón existente)
 ```
 
 Valorar incluir litcal si aporta algo nuevo
@@ -561,8 +561,7 @@ litcal.johnromanodorazio.com/api/v4/calendar
 Ya implementado, revisar en el documento
 
 Falta incluir para lLimpiar lecturas con mas de 45 dias de antiguedad
-
-**Dependencias del scraper:** `cheerio`, `firebase-admin`, `node-fetch` (o fetch nativo en Node 20+)
+**Dependencias del scraper:** Script en Python (usando entorno virtual `venv`, ver `requirements-dev.txt` y `README.md`).
 
 ## Propuesta de colores litúrgicos
 
