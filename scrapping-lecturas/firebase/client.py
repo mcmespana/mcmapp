@@ -48,6 +48,20 @@ def write_evangelio(fecha: str, payload: dict, retries: int = 2) -> None:
     _write(f"seccion_oracion/lecturas/{fecha}/evangelio", payload, retries)
 
 
+def write_lectura1(fecha: str, payload: dict, retries: int = 2) -> None:
+    """
+    Write (merge) data into seccion_oracion/lecturas/{fecha}/lectura1.
+    """
+    _write(f"seccion_oracion/lecturas/{fecha}/lectura1", payload, retries)
+
+
+def write_lectura2(fecha: str, payload: dict, retries: int = 2) -> None:
+    """
+    Write (merge) data into seccion_oracion/lecturas/{fecha}/lectura2.
+    """
+    _write(f"seccion_oracion/lecturas/{fecha}/lectura2", payload, retries)
+
+
 def write_info(fecha: str, payload: dict, retries: int = 2) -> None:
     """
     Write (merge) data into seccion_oracion/lecturas/{fecha}/info.
