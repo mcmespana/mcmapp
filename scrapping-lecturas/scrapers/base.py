@@ -28,6 +28,11 @@ class EvangelioData:
     segunda_lectura: Optional[str] = None  # Not present every day
     salmo: Optional[str] = None
 
+    # Extra text (used by Vatican News)
+    primera_lectura_texto: Optional[str] = None
+    segunda_lectura_texto: Optional[str] = None
+    salmo_texto: Optional[str] = None
+
     # Error tracking
     error: Optional[str] = None            # Set if extraction failed
 
@@ -39,8 +44,8 @@ class BaseScraper(ABC):
     SOURCE_URL: str = ""   # canonical URL to scrape
 
     @abstractmethod
-    def fetch(self) -> EvangelioData:
-        """Fetch and parse the page. Returns EvangelioData (with error set if failed)."""
+    def fetch(self) -> list[EvangelioData]:
+        """Fetch and parse the data. Returns a list of EvangelioData (with error set if failed)."""
         ...
 
     def validate(self, data: EvangelioData) -> bool:
@@ -71,6 +76,40 @@ class BaseScraper(ABC):
             payload[f"{k}EvangelioTexto"] = data.evangelio_texto
         if data.error:
             payload[f"{k}Error"] = data.error
+        return payload
+
+    def to_lectura1_payload(self, data: EvangelioData) -> dict | None:
+        """
+        Fields for the lectura1/ node. Returns None if there's no data.
+        """
+        if not data.primera_lectura and not data.primera_lectura_texto:
+            return None
+
+        k = self.SOURCE_KEY
+        payload: dict = {
+            "activo": k,
+        }
+        if data.primera_lectura:
+            payload[f"{k}Cita"] = data.primera_lectura
+        if data.primera_lectura_texto:
+            payload[f"{k}Texto"] = data.primera_lectura_texto
+        return payload
+
+    def to_lectura2_payload(self, data: EvangelioData) -> dict | None:
+        """
+        Fields for the lectura2/ node. Returns None if there's no data.
+        """
+        if not data.segunda_lectura and not data.segunda_lectura_texto:
+            return None
+
+        k = self.SOURCE_KEY
+        payload: dict = {
+            "activo": k,
+        }
+        if data.segunda_lectura:
+            payload[f"{k}Cita"] = data.segunda_lectura
+        if data.segunda_lectura_texto:
+            payload[f"{k}Texto"] = data.segunda_lectura_texto
         return payload
 
     def to_info_payload(self, data: EvangelioData) -> dict:
