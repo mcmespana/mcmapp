@@ -3,7 +3,7 @@ import { Platform, View, StyleSheet } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import { Spinner, useToast } from 'heroui-native';
 import spacing from '@/constants/spacing';
-import iframeStyles from '../(tabsdesactivados)/comunica.module.css';
+import iframeStyles from '../../styles/comunica.module.css';
 
 const URL = 'https://movimientoconsolacion.sinergiacrm.org/';
 

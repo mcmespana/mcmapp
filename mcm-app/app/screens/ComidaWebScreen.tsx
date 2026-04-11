@@ -15,7 +15,7 @@ import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 // Usando el mismo CSS que funcionó en comunica.tsx
-import iframeStyles from '../(tabsdesactivados)/comunica.module.css';
+import iframeStyles from '../../styles/comunica.module.css';
 type Route = RouteProp<MasStackParamList, 'ComidaWeb'>;
 
 export default function ComidaWebScreen() {

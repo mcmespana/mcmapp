@@ -14,7 +14,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 
 // CSS module reutilizado del iframe (solo aplica en web)
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const iframeStyles = Platform.OS === 'web' ? require('../(tabsdesactivados)/comunica.module.css') : null;
+const iframeStyles = Platform.OS === 'web' ? require('../../styles/comunica.module.css') : null;
 
 const COMUNICA_URL = 'https://comunica.movimientoconsolacion.com';
 
