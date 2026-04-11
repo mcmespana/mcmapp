@@ -90,9 +90,12 @@ export default function ContigoScreen() {
           <Text style={[styles.subtitle, { color: contigo.subtitleColor }]}>
             Propuestas para la oración de cada día
           </Text>
-          <Text style={[styles.dateText, { color: contigo.warmGray }]}>
-            {dateStr}
-          </Text>
+          <View style={styles.dateRow}>
+            <Text style={[styles.dateText, { color: contigo.warmGray }]}>
+              {dateStr}
+            </Text>
+            <LiturgicalBadge dateStr={todayStr} />
+          </View>
         </View>
 
         {/* ── Tool Cards ── */}
@@ -106,7 +109,6 @@ export default function ContigoScreen() {
                 ? 'Cargando lecturas...'
                 : readings?.evangelio?.cita || 'Ver las lecturas de hoy'
             }
-            badge={<LiturgicalBadge dateStr={todayStr} />}
             statusText={readingDone ? 'Leído hoy' : 'Pendiente hoy'}
             statusIcon={
               readingDone ? 'check-circle' : 'radio-button-unchecked'
@@ -183,8 +185,8 @@ export default function ContigoScreen() {
           />
         </View>
 
-        {/* ── Weekly Streak Summary ── */}
-        {(readingStreak > 0 || prayerStreak > 0) && (
+        {/* ── Weekly Streak Summary — always visible ── */}
+        {
           <View
             style={[
               styles.streakSummary,
@@ -214,39 +216,35 @@ export default function ContigoScreen() {
               </Text>
             </View>
             <View style={styles.streakSummaryRow}>
-              {readingStreak > 0 && (
-                <View style={styles.streakItem}>
-                  <Text style={[styles.streakNumber, { color: theme.text }]}>
-                    {readingStreak}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.streakLabel,
-                      { color: contigo.warmGray },
-                    ]}
-                  >
-                    {readingStreak === 1 ? 'día' : 'días'} leyendo
-                  </Text>
-                </View>
-              )}
-              {prayerStreak > 0 && (
-                <View style={styles.streakItem}>
-                  <Text style={[styles.streakNumber, { color: theme.text }]}>
-                    {prayerStreak}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.streakLabel,
-                      { color: contigo.warmGray },
-                    ]}
-                  >
-                    {prayerStreak === 1 ? 'día' : 'días'} orando
-                  </Text>
-                </View>
-              )}
+              <View style={styles.streakItem}>
+                <Text style={[styles.streakNumber, { color: theme.text }]}>
+                  {readingStreak}
+                </Text>
+                <Text
+                  style={[
+                    styles.streakLabel,
+                    { color: contigo.warmGray },
+                  ]}
+                >
+                  {readingStreak === 1 ? 'día' : 'días'} leyendo
+                </Text>
+              </View>
+              <View style={styles.streakItem}>
+                <Text style={[styles.streakNumber, { color: theme.text }]}>
+                  {prayerStreak}
+                </Text>
+                <Text
+                  style={[
+                    styles.streakLabel,
+                    { color: contigo.warmGray },
+                  ]}
+                >
+                  {prayerStreak === 1 ? 'día' : 'días'} orando
+                </Text>
+              </View>
             </View>
           </View>
-        )}
+        }
       </ScrollView>
     </View>
   );
@@ -275,6 +273,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     letterSpacing: -0.1,
     marginBottom: 4,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 6,
+    flexWrap: 'wrap',
   },
   dateText: {
     fontSize: 13,

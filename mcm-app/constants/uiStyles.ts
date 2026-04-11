@@ -22,6 +22,10 @@ export const shadows = {
       shadowOpacity: 0.06,
       shadowRadius: 3,
     },
+    web: {
+      // @ts-ignore - boxShadow is valid on web but typed differently in older RN types
+      boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.06)',
+    },
     default: { elevation: 1 },
   }),
   /** Cards elevadas, paneles — media */
@@ -32,6 +36,10 @@ export const shadows = {
       shadowOpacity: 0.12,
       shadowRadius: 6,
     },
+    web: {
+      // @ts-ignore
+      boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.12)',
+    },
     default: { elevation: 3 },
   }),
   /** Toasts, FABs, overlays — prominente */
@@ -41,6 +49,10 @@ export const shadows = {
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 8,
+    },
+    web: {
+      // @ts-ignore
+      boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.3)',
     },
     default: { elevation: 8 },
   }),
