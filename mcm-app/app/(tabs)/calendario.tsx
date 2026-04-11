@@ -4,16 +4,11 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  ViewStyle,
-  TextStyle,
   SectionList,
   TouchableOpacity,
   Platform,
-  Animated,
-  PanResponder,
   Text,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import {
   Calendar,
@@ -134,37 +129,34 @@ export default function Calendario() {
     return label.charAt(0).toUpperCase() + label.slice(1);
   }, [selectedDate]);
 
-  // Usamos 'T12:00:00' al parsear y getFullYear/Month local al formatear
-  // para evitar que el offset UTC+2 (España) convierta el día 1 del mes al
-  // último día del mes anterior (bug al navegar hacia meses futuros).
+  // Estado extra para forzar que Calendar navegue al mes correcto
+  // (react-native-calendars trata `current` como valor inicial, no reactivo)
+  const [calendarKey, setCalendarKey] = useState(0);
+
+  // 'T12:00:00' evita que el offset UTC+2 (España) desplace el día 1
+  // al último día del mes anterior cuando hacemos new Date(...).toISOString()
+  const dateToStr = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   const changeMonth = useCallback((delta: number) => {
     const d = new Date(selectedDate + 'T12:00:00');
     const newDate = new Date(d.getFullYear(), d.getMonth() + delta, 1);
-    const y = newDate.getFullYear();
-    const m = String(newDate.getMonth() + 1).padStart(2, '0');
-    setSelectedDate(`${y}-${m}-01`);
+    setSelectedDate(dateToStr(newDate));
   }, [selectedDate]);
 
   const goToToday = useCallback(() => {
     setSelectedDate(todayStr);
+    // Incrementar la key fuerza al componente Calendar a remontarse y
+    // posicionarse en el mes de hoy aunque el usuario estuviera en otro mes
+    setCalendarKey(k => k + 1);
   }, [todayStr]);
 
-  // Ref para que el PanResponder siempre llame a la versión actualizada
-  const changeMonthRef = useRef(changeMonth);
-  useEffect(() => { changeMonthRef.current = changeMonth; }, [changeMonth]);
-
-  // PanResponder para deslizar mes a mes en la vista de calendario
-  const calendarPanResponder = useRef(
-    PanResponder.create({
-      // Solo reclama el gesto si el movimiento horizontal supera claramente al vertical
-      onMoveShouldSetPanResponder: (_, gs) =>
-        Math.abs(gs.dx) > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5,
-      onPanResponderRelease: (_, gs) => {
-        if (gs.dx < -60) changeMonthRef.current(1);   // swipe ← → mes siguiente
-        else if (gs.dx > 60) changeMonthRef.current(-1); // swipe → → mes anterior
-      },
-    })
-  ).current;
+  // Ref del X inicial para detectar swipes cross-platform (funciona en web y nativo)
+  const swipeTouchX = useRef(0);
 
   const filteredByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
@@ -187,26 +179,20 @@ export default function Calendario() {
       d <= lastDay;
       d.setDate(d.getDate() + 1)
     ) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      const dateStr = `${y}-${m}-${day}`;
+      const dateStr = dateToStr(d);
       sections.push({ title: dateStr, data: filteredByDate[dateStr] || [] });
     }
     return sections;
   }, [filteredByDate, selectedDate]);
 
-  // Solo secciones con eventos — permite que ListEmptyComponent se active
-  // cuando no hay nada que mostrar (mes vacío o todos los chips desactivados)
+  // Solo secciones CON eventos — así ListEmptyComponent se activa cuando no hay nada
   const agendaSectionsFiltered = useMemo(
     () => agendaSections.filter((s) => s.data.length > 0),
     [agendaSections],
   );
 
-  const allCalendarsHidden = useMemo(
-    () => calendarConfigs.length > 0 && calendarConfigs.every((_, i) => !visibleCalendars[i]),
-    [calendarConfigs, visibleCalendars],
-  );
+  // true solo si todos los calendarios están explícitamente desactivados
+  const allCalendarsHidden = visibleCalendars.length > 0 && !visibleCalendars.some(Boolean);
 
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
     const marks: { [date: string]: any } = {};
@@ -426,9 +412,16 @@ export default function Calendario() {
 
       {viewMode === 'calendar' ? (
         <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Wrapper con PanResponder para deslizar mes a mes */}
-          <View {...calendarPanResponder.panHandlers}>
+          {/* Wrapper para detectar swipes horizontales (cross-platform) */}
+          <View
+            onTouchStart={(e) => { swipeTouchX.current = e.nativeEvent.pageX; }}
+            onTouchEnd={(e) => {
+              const dx = e.nativeEvent.pageX - swipeTouchX.current;
+              if (Math.abs(dx) > 60) changeMonth(dx < 0 ? 1 : -1);
+            }}
+          >
             <Calendar
+              key={calendarKey}
               current={selectedDate}
               onDayPress={(day) => {
                 if (day.dateString !== selectedDate) {
@@ -507,7 +500,7 @@ export default function Calendario() {
           </View>
         </ScrollView>
       ) : (
-        <>
+        <View style={styles.agendaContainer}>
           {/* Agenda view header */}
           <View style={styles.agendaHeader}>
             <TouchableOpacity
@@ -624,14 +617,14 @@ export default function Calendario() {
               </View>
             }
           />
-        </>
+        </View>
       )}
 
       {/* FAB to go to today */}
       {selectedDate !== todayStr &&
         (Platform.OS === 'ios' ? (
           <GlassFAB
-            icon="today"
+            icon="arrow-back"
             onPress={goToToday}
             tintColor={colors.info}
             iconColor="#fff"
@@ -642,7 +635,8 @@ export default function Calendario() {
             onPress={goToToday}
             activeOpacity={0.8}
           >
-            <MaterialIcons name="today" size={24} color="#fff" />
+            <MaterialIcons name="today" size={18} color="#fff" />
+            <Text style={styles.fabLabel}>Hoy</Text>
           </TouchableOpacity>
         ))}
     </TabScreenWrapper>
@@ -700,8 +694,11 @@ const createStyles = (scheme: 'light' | 'dark') => {
     // Filter chips
     chipsScrollView: {
       flexShrink: 0,
+      flexGrow: 0,
     },
     chipsScroll: {
+      flexDirection: 'row',   // Necesario en web — RN Web no lo aplica auto con horizontal={true}
+      alignItems: 'center',
       paddingHorizontal: 16,
       paddingVertical: 10,
       gap: 8,
@@ -864,13 +861,14 @@ const createStyles = (scheme: 'light' | 'dark') => {
       color: isDark ? '#48484A' : '#C7C7CC',
     },
 
-    // Agenda list — flex: 1 para que ocupe el espacio sobrante y los chips
-    // no crezcan cuando no hay eventos
+    // Agenda container — flex: 1 para que el SectionList crezca y los chips no
+    agendaContainer: {
+      flex: 1,
+    },
     agendaList: {
       flex: 1,
     },
     agendaEmptyState: {
-      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 60,
@@ -972,9 +970,28 @@ const createStyles = (scheme: 'light' | 'dark') => {
     fab: {
       position: 'absolute',
       right: 16,
-      bottom: Platform.OS === 'ios' ? 90 : 16,
+      bottom: Platform.OS === 'ios' ? 90 : 24,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
       backgroundColor: colors.info,
-      borderRadius: 16,
+      borderRadius: 20,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      ...(Platform.OS === 'web'
+        ? { boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }
+        : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 6,
+            elevation: 5,
+          }),
+    },
+    fabLabel: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '700',
     },
   });
 };
