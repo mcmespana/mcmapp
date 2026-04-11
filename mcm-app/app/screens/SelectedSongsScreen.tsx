@@ -327,19 +327,28 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleSongPress = (song: Song) => {
     if (!allSongsData) return;
-    const completeSong = Object.values(allSongsData)
-      .flatMap((cat) => cat.songs)
-      .find((s) => s.filename === song.filename);
+
+    let completeSong: Song | undefined;
+    for (const cat of Object.values(allSongsData)) {
+      completeSong = cat.songs.find((s) => s.filename === song.filename);
+      if (completeSong) break;
+    }
 
     if (!completeSong) {
       console.error('Song not found in allSongsData:', song.filename);
       return;
     }
 
-    const allSelected = categorizedSelectedSongs.flatMap((cat) => cat.data);
-    const index = allSelected.findIndex(
-      (s) => s.filename === completeSong.filename,
-    );
+    const allSelected: Song[] = [];
+    let index = -1;
+    for (const cat of categorizedSelectedSongs) {
+      for (const s of cat.data) {
+        if (s.filename === completeSong.filename) {
+          index = allSelected.length;
+        }
+        allSelected.push(s);
+      }
+    }
 
     navigation.navigate('SongDetail', {
       filename: completeSong.filename,
