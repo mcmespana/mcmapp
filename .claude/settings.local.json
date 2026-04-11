@@ -19,5 +19,15 @@
     ],
     "deny": [],
     "ask": []
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "enableAllProjectMcpServers": true,
+  "mcpServers": {
+    "heroui-native": {
+      "command": "npx",
+      "args": ["-y", "@heroui/native-mcp@latest"]
+    }
   }
 }

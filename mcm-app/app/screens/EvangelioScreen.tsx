@@ -216,7 +216,8 @@ export default function EvangelioScreen() {
               {/* ── Tracker Joyful Button ── */}
               <View style={styles.trackerContainer}>
                 {isDone ? (
-                  <Button 
+                  <TouchableOpacity 
+                    activeOpacity={0.8}
                     onPress={handleToggleDone}
                     style={[styles.doneButton, { backgroundColor: isDark ? '#1D3B16' : '#E6F4D7', borderColor: isDark ? '#2d4a22' : '#c3e6a1', borderWidth: 1 }]}
                   >
@@ -226,13 +227,12 @@ export default function EvangelioScreen() {
                         ¡He rezado hoy con el Evangelio!
                       </Text>
                     </View>
-                  </Button>
+                  </TouchableOpacity>
                 ) : (
-                  <Button 
-                    variant="solid"
-                    color="primary"
+                  <TouchableOpacity 
+                    activeOpacity={0.8}
                     onPress={handleToggleDone}
-                    style={styles.notDoneButton}
+                    style={[styles.notDoneButton, { backgroundColor: theme.tint }]}
                   >
                     <View style={styles.doneContent}>
                       <MaterialIcons name="favorite" size={24} color="#FFF" />
@@ -240,7 +240,7 @@ export default function EvangelioScreen() {
                         Completar momento de oración
                       </Text>
                     </View>
-                  </Button>
+                  </TouchableOpacity>
                 )}
                 <Text style={[styles.trackerNote, { color: theme.icon }]}>
                   Marcando este día sumas a tu constancia en la pestaña "Contigo".
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   evangelioCard: {
-    borderRadius: radii.2xl,
+    borderRadius: radii.xl,
     borderWidth: 1,
     overflow: 'hidden',
     marginBottom: 24,

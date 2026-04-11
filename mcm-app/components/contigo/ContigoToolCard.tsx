@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Card, PressableFeedback } from 'heroui-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import { Card, Button, PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { radii, shadows } from '@/constants/uiStyles';
+import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 
 interface ContigoToolCardProps {
@@ -30,7 +31,7 @@ export function ContigoToolCard({
   statusColor,
   disabled,
   onPress,
-  accentColor = '#253883', // primary default
+  accentColor = '#FF4D4D', // Warm passionate default
 }: ContigoToolCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -42,15 +43,35 @@ export function ContigoToolCard({
   return (
     <View style={[styles.wrapper, disabled && styles.disabled]}>
       <Card
+        variant="transparent"
         style={[
           styles.card,
           {
-            backgroundColor: theme.card,
-            borderColor: isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.07)',
+            borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.5)',
+            borderWidth: 1.5,
           },
         ]}
       >
-        <PressableFeedback onPress={disabled ? undefined : onPress} style={styles.pressable}>
+        {Platform.OS === 'ios' ? (
+          <BlurView
+            tint={isDark ? 'systemMaterialDark' : 'systemMaterialLight'}
+            intensity={80}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: isDark ? 'rgba(30,30,30,0.85)' : 'rgba(255,255,255,0.85)' },
+            ]}
+          />
+        )}
+        
+        <PressableFeedback 
+          onPress={disabled ? undefined : onPress} 
+          style={styles.pressable}
+          feedbackVariant="scale-highlight"
+        >
           <PressableFeedback.Highlight />
           
           <View style={styles.content}>
@@ -99,14 +120,15 @@ export function ContigoToolCard({
               )}
             </View>
             
-            {/* Right Chevron */}
+            {/* Right Chevron Button via HeroUI */}
             {!disabled && (
-              <MaterialIcons 
-                name="chevron-right" 
-                size={24} 
-                color={theme.icon} 
-                style={styles.chevron}
-              />
+              <Button size="sm" isIconOnly variant="tertiary" className="ml-2">
+                <MaterialIcons 
+                  name="chevron-right" 
+                  size={24} 
+                  color={theme.icon} 
+                />
+              </Button>
             )}
           </View>
         </PressableFeedback>
@@ -118,14 +140,17 @@ export function ContigoToolCard({
 const styles = StyleSheet.create({
   wrapper: {
     marginBottom: 16,
-    ...shadows.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
   },
   disabled: {
     opacity: 0.5,
   },
   card: {
-    borderRadius: radii.xl,
-    borderWidth: 1,
+    borderRadius: radii.2xl,
     overflow: 'hidden',
   },
   pressable: {
@@ -134,12 +159,12 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 20,
   },
   iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.xl,
+    width: 64,
+    height: 64,
+    borderRadius: radii.2xl,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -152,39 +177,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     flex: 1,
     marginRight: 8,
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
   badgeContainer: {
     alignSelf: 'flex-start',
   },
   subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 12,
     fontWeight: '500',
+    opacity: 0.8,
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 2,
   },
   statusIcon: {
     marginRight: 6,
   },
   statusText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  chevron: {
-    marginLeft: 8,
-    opacity: 0.4,
   },
 });
