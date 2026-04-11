@@ -53,6 +53,13 @@ const TABS_CONFIG: TabConfig[] = [
     headerShown: false, // Cantoral uses its own StackNavigator header
   },
   {
+    name: 'contigo',
+    label: 'Contigo',
+    iosIcon: { default: 'heart', selected: 'heart.fill' },
+    androidIcon: 'favorite',
+    headerShown: false,
+  },
+  {
     name: 'calendario',
     label: 'Calendario',
     iosIcon: { default: 'calendar', selected: 'calendar' },
