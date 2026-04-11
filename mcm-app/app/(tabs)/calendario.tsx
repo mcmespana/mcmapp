@@ -1,5 +1,5 @@
 // app/(tabs)/calendario.tsx
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Platform,
   Animated,
+  PanResponder,
   Text,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -133,19 +134,37 @@ export default function Calendario() {
     return label.charAt(0).toUpperCase() + label.slice(1);
   }, [selectedDate]);
 
-  const changeMonth = (delta: number) => {
-    const currentDate = new Date(selectedDate + 'T00:00:00');
-    const newDate = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + delta,
-      1,
-    );
-    setSelectedDate(newDate.toISOString().split('T')[0]);
-  };
+  // Usamos 'T12:00:00' al parsear y getFullYear/Month local al formatear
+  // para evitar que el offset UTC+2 (España) convierta el día 1 del mes al
+  // último día del mes anterior (bug al navegar hacia meses futuros).
+  const changeMonth = useCallback((delta: number) => {
+    const d = new Date(selectedDate + 'T12:00:00');
+    const newDate = new Date(d.getFullYear(), d.getMonth() + delta, 1);
+    const y = newDate.getFullYear();
+    const m = String(newDate.getMonth() + 1).padStart(2, '0');
+    setSelectedDate(`${y}-${m}-01`);
+  }, [selectedDate]);
 
   const goToToday = useCallback(() => {
     setSelectedDate(todayStr);
   }, [todayStr]);
+
+  // Ref para que el PanResponder siempre llame a la versión actualizada
+  const changeMonthRef = useRef(changeMonth);
+  useEffect(() => { changeMonthRef.current = changeMonth; }, [changeMonth]);
+
+  // PanResponder para deslizar mes a mes en la vista de calendario
+  const calendarPanResponder = useRef(
+    PanResponder.create({
+      // Solo reclama el gesto si el movimiento horizontal supera claramente al vertical
+      onMoveShouldSetPanResponder: (_, gs) =>
+        Math.abs(gs.dx) > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5,
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dx < -60) changeMonthRef.current(1);   // swipe ← → mes siguiente
+        else if (gs.dx > 60) changeMonthRef.current(-1); // swipe → → mes anterior
+      },
+    })
+  ).current;
 
   const filteredByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
@@ -159,22 +178,35 @@ export default function Calendario() {
   }, [eventsByDate, visibleCalendars]);
 
   const agendaSections = useMemo(() => {
-    const firstDay = new Date(selectedDate + 'T00:00:00');
-    firstDay.setDate(1);
-    const lastDay = new Date(firstDay);
-    lastDay.setMonth(firstDay.getMonth() + 1);
-    lastDay.setDate(0);
+    const d0 = new Date(selectedDate + 'T12:00:00');
+    const firstDay = new Date(d0.getFullYear(), d0.getMonth(), 1);
+    const lastDay  = new Date(d0.getFullYear(), d0.getMonth() + 1, 0);
     const sections: { title: string; data: CalendarEvent[] }[] = [];
     for (
       let d = new Date(firstDay);
       d <= lastDay;
       d.setDate(d.getDate() + 1)
     ) {
-      const dateStr = d.toISOString().split('T')[0];
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${day}`;
       sections.push({ title: dateStr, data: filteredByDate[dateStr] || [] });
     }
     return sections;
   }, [filteredByDate, selectedDate]);
+
+  // Solo secciones con eventos — permite que ListEmptyComponent se active
+  // cuando no hay nada que mostrar (mes vacío o todos los chips desactivados)
+  const agendaSectionsFiltered = useMemo(
+    () => agendaSections.filter((s) => s.data.length > 0),
+    [agendaSections],
+  );
+
+  const allCalendarsHidden = useMemo(
+    () => calendarConfigs.length > 0 && calendarConfigs.every((_, i) => !visibleCalendars[i]),
+    [calendarConfigs, visibleCalendars],
+  );
 
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
     const marks: { [date: string]: any } = {};
@@ -299,6 +331,7 @@ export default function Calendario() {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.chipsScrollView}
       contentContainerStyle={styles.chipsScroll}
     >
       {calendarConfigs.map((cal, idx) => {
@@ -393,35 +426,38 @@ export default function Calendario() {
 
       {viewMode === 'calendar' ? (
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Calendar
-            current={selectedDate}
-            onDayPress={(day) => {
-              if (day.dateString !== selectedDate) {
-                setSelectedDate(day.dateString);
-              }
-            }}
-            onMonthChange={(month) => {
-              setSelectedDate(month.dateString);
-            }}
-            markedDates={markedDates}
-            markingType="multi-period"
-            firstDay={1}
-            style={styles.calendar}
-            theme={{
-              calendarBackground: isDark ? '#1C1C1E' : '#F2F2F7',
-              dayTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
-              monthTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
-              textSectionTitleColor: isDark ? '#8E8E93' : '#8E8E93',
-              selectedDayBackgroundColor: colors.info,
-              selectedDayTextColor: colors.white,
-              arrowColor: colors.info,
-              todayTextColor: colors.info,
-              textDayFontWeight: '500',
-              textMonthFontWeight: '700',
-              textDayHeaderFontWeight: '600',
-              textMonthFontSize: 18,
-            }}
-          />
+          {/* Wrapper con PanResponder para deslizar mes a mes */}
+          <View {...calendarPanResponder.panHandlers}>
+            <Calendar
+              current={selectedDate}
+              onDayPress={(day) => {
+                if (day.dateString !== selectedDate) {
+                  setSelectedDate(day.dateString);
+                }
+              }}
+              onMonthChange={(month) => {
+                setSelectedDate(month.dateString);
+              }}
+              markedDates={markedDates}
+              markingType="multi-period"
+              firstDay={1}
+              style={styles.calendar}
+              theme={{
+                calendarBackground: isDark ? '#1C1C1E' : '#F2F2F7',
+                dayTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
+                monthTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
+                textSectionTitleColor: isDark ? '#8E8E93' : '#8E8E93',
+                selectedDayBackgroundColor: colors.info,
+                selectedDayTextColor: colors.white,
+                arrowColor: colors.info,
+                todayTextColor: colors.info,
+                textDayFontWeight: '500',
+                textMonthFontWeight: '700',
+                textDayHeaderFontWeight: '600',
+                textMonthFontSize: 18,
+              }}
+            />
+          </View>
 
           {/* Filter chips */}
           {renderFilterChips()}
@@ -503,13 +539,12 @@ export default function Calendario() {
           {renderFilterChips()}
 
           <SectionList
-            sections={agendaSections}
+            sections={agendaSectionsFiltered}
             keyExtractor={(item, index) => `${item.title}-${index}`}
+            style={styles.agendaList}
             contentContainerStyle={styles.agendaContent}
             stickySectionHeadersEnabled={false}
             renderSectionHeader={({ section: { title, data } }) => {
-              if (!data || data.length === 0) return null;
-
               const isPast = title < todayStr;
               const isToday = title === todayStr;
               const isTomorrow =
@@ -570,13 +605,22 @@ export default function Calendario() {
               return renderEventCard(item, 0, isPast);
             }}
             ListEmptyComponent={
-              <View style={styles.emptyState}>
+              <View style={styles.agendaEmptyState}>
                 <MaterialIcons
-                  name="event-available"
-                  size={40}
-                  color={isDark ? Colors.dark.card : '#D1D1D6'}
+                  name={allCalendarsHidden ? 'visibility-off' : 'event-busy'}
+                  size={44}
+                  color={isDark ? '#48484A' : '#C7C7CC'}
                 />
-                <Text style={styles.emptyText}>Sin eventos este mes</Text>
+                <Text style={[styles.emptyText, { marginTop: 12 }]}>
+                  {allCalendarsHidden
+                    ? 'Todos los calendarios ocultos'
+                    : 'Sin eventos este mes'}
+                </Text>
+                <Text style={[styles.emptySubtext, { textAlign: 'center', marginTop: 4 }]}>
+                  {allCalendarsHidden
+                    ? 'Activa algún calendario desde los filtros de arriba'
+                    : 'No hay eventos programados para ' + monthLabel}
+                </Text>
               </View>
             }
           />
@@ -654,6 +698,9 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
 
     // Filter chips
+    chipsScrollView: {
+      flexShrink: 0,
+    },
     chipsScroll: {
       paddingHorizontal: 16,
       paddingVertical: 10,
@@ -815,6 +862,20 @@ const createStyles = (scheme: 'light' | 'dark') => {
     emptySubtext: {
       fontSize: 14,
       color: isDark ? '#48484A' : '#C7C7CC',
+    },
+
+    // Agenda list — flex: 1 para que ocupe el espacio sobrante y los chips
+    // no crezcan cuando no hay eventos
+    agendaList: {
+      flex: 1,
+    },
+    agendaEmptyState: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 60,
+      paddingHorizontal: 32,
+      gap: 4,
     },
 
     // Agenda view

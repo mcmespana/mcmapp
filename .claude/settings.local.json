@@ -1,4 +1,7 @@
 {
+  "env": {
+    "ENABLE_CLAUDEAI_MCP_SERVERS": "false"
+  },
   "permissions": {
     "allow": [
       "Bash(ls:*)",
@@ -19,5 +22,20 @@
     ],
     "deny": [],
     "ask": []
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "enableAllProjectMcpServers": true,
+  "enabledPlugins": {
+    "supabase@claude-plugins-official": false,
+    "firebase@firebase": true,
+    "vercel@claude-plugins-official": false
+  },
+  "mcpServers": {
+    "heroui-native": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@heroui/native-mcp@latest"]
+    }
   }
 }

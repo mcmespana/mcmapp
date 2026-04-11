@@ -31,6 +31,7 @@ import useFontScale from '@/hooks/useFontScale';
 import { useToast } from 'heroui-native';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
+import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
@@ -99,6 +100,7 @@ export default function Home() {
   const { toast } = useToast();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [notifSheetOpen, setNotifSheetOpen] = useState(false);
 
   // Primary color readable on both light and dark backgrounds
   const accentColor = scheme === 'dark' ? colors.info : colors.primary;
@@ -260,6 +262,10 @@ export default function Home() {
           })
         }
       />
+      <NotificationsBottomSheet
+        visible={notifSheetOpen}
+        onClose={() => setNotifSheetOpen(false)}
+      />
 
       {/* ── Custom Header ── */}
       <View style={[styles.header, { backgroundColor: theme.background }, isWide && styles.headerWide]}>
@@ -287,7 +293,7 @@ export default function Home() {
           {featureFlags.showNotificationsIcon && (
             <TouchableOpacity
               style={styles.headerIconBtn}
-              onPress={() => router.navigate('/notifications')}
+              onPress={() => setNotifSheetOpen(true)}
               accessibilityLabel={
                 unreadCount > 0
                   ? `Notificaciones, ${unreadCount} sin leer`
@@ -348,7 +354,7 @@ export default function Home() {
                     : 'rgba(0,0,0,0.07)',
               },
             ])}
-            onPress={() => router.navigate('/notifications')}
+            onPress={() => setNotifSheetOpen(true)}
             activeOpacity={0.78}
             accessibilityLabel={`${notifTitle}. Toca para leer`}
             accessibilityRole="button"
