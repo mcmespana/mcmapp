@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
 import BottomSheet from './BottomSheet';
-import { Button, CloseButton, TextField, TextArea, useToast } from 'heroui-native';
+import {
+  Button,
+  CloseButton,
+  TextField,
+  TextArea,
+  useToast,
+} from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -57,7 +57,10 @@ export default function ReportBugsModal({
 
   const handleSubmit = async () => {
     if (!bugDescription.trim()) {
-      toast.show({ variant: 'danger', label: 'Por favor describe los fallos encontrados' });
+      toast.show({
+        variant: 'danger',
+        label: 'Por favor describe los fallos encontrados',
+      });
       return;
     }
 
@@ -102,7 +105,10 @@ export default function ReportBugsModal({
       }
     } catch (error) {
       console.error('Error submitting bug report:', error);
-      toast.show({ variant: 'danger', label: 'No se pudo enviar el aviso. Inténtalo de nuevo.' });
+      toast.show({
+        variant: 'danger',
+        label: 'No se pudo enviar el aviso. Inténtalo de nuevo.',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -195,7 +201,10 @@ export default function ReportBugsModal({
         {/* Botón Panel Secreto */}
         <Button
           variant="secondary"
-          onPress={() => { onClose(); if (onOpenSecretPanel) onOpenSecretPanel(); }}
+          onPress={() => {
+            onClose();
+            if (onOpenSecretPanel) onOpenSecretPanel();
+          }}
           style={styles.secretButton}
         >
           <MaterialIcons name="admin-panel-settings" size={20} color="#fff" />

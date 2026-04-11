@@ -94,7 +94,8 @@ function IOSNativeTabsLayout() {
   return (
     <NativeTabs>
       {TABS_CONFIG.map((tab) => {
-        const isEnabled = featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
+        const isEnabled =
+          featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
 
         if (!isEnabled) return null;
 
@@ -150,7 +151,8 @@ function AndroidWebTabsLayout() {
         }}
       >
         {TABS_CONFIG.map((tab) => {
-          const isEnabled = featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
+          const isEnabled =
+            featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
 
           if (!isEnabled) return null;
 
@@ -161,7 +163,11 @@ function AndroidWebTabsLayout() {
               options={{
                 title: tab.label,
                 tabBarIcon: ({ color, size }) => (
-                  <MaterialIcons name={tab.androidIcon as any} color={color} size={size} />
+                  <MaterialIcons
+                    name={tab.androidIcon as any}
+                    color={color}
+                    size={size}
+                  />
                 ),
                 headerShown: tab.headerShown ?? true,
                 ...(tab.headerColor && {
@@ -172,7 +178,6 @@ function AndroidWebTabsLayout() {
             />
           );
         })}
-
       </Tabs>
     </ThemeProvider>
   );

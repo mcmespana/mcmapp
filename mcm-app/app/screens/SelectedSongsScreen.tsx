@@ -13,7 +13,14 @@ import {
   Platform,
   Share,
 } from 'react-native';
-import { useToast, Dialog, Button, PressableFeedback, TextField, Input } from 'heroui-native';
+import {
+  useToast,
+  Dialog,
+  Button,
+  PressableFeedback,
+  TextField,
+  Input,
+} from 'heroui-native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -327,9 +334,15 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleSongPress = (song: Song) => {
     if (!allSongsData) return;
-    const completeSong = Object.values(allSongsData)
-      .flatMap((cat) => cat.songs)
-      .find((s) => s.filename === song.filename);
+
+    let completeSong: Song | undefined;
+    for (const cat of Object.values(allSongsData)) {
+      const found = cat.songs.find((s) => s.filename === song.filename);
+      if (found) {
+        completeSong = found;
+        break;
+      }
+    }
 
     if (!completeSong) {
       console.error('Song not found in allSongsData:', song.filename);
@@ -353,8 +366,7 @@ const SelectedSongsScreen: React.FC = () => {
       navigationList: allSelected,
       currentIndex: index,
       source: 'selection',
-      firebaseCategory:
-        (completeSong as any).originalCategoryKey || 'entrada',
+      firebaseCategory: (completeSong as any).originalCategoryKey || 'entrada',
     });
   };
 
@@ -506,7 +518,9 @@ const SelectedSongsScreen: React.FC = () => {
       {/* Export dialog */}
       <Dialog
         isOpen={showExportModal}
-        onOpenChange={(open) => { if (!open) setShowExportModal(false); }}
+        onOpenChange={(open) => {
+          if (!open) setShowExportModal(false);
+        }}
       >
         <Dialog.Portal>
           <Dialog.Overlay />
@@ -525,9 +539,7 @@ const SelectedSongsScreen: React.FC = () => {
                 selectTextOnFocus={true}
               />
             </TextField>
-            <Text style={styles.modalNote}>
-              Se exportará como archivo .mcm
-            </Text>
+            <Text style={styles.modalNote}>Se exportará como archivo .mcm</Text>
             <View style={styles.modalButtons}>
               <Button
                 variant="tertiary"
@@ -565,9 +577,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingVertical: 12,
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: isDark
-        ? 'rgba(255,255,255,0.08)'
-        : 'rgba(0,0,0,0.06)',
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
     },
     selectionCount: {
       fontSize: 15,

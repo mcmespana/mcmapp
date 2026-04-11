@@ -4,17 +4,25 @@
 // Usa color fijo para el notch — la detección automática no es fiable.
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Platform, View, StyleSheet, StatusBar } from 'react-native';
+import {
+  Platform,
+  View,
+  StyleSheet,
+  StatusBar,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { ActivityIndicator } from 'react-native';
 import { useToast } from 'heroui-native';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 // CSS module reutilizado del iframe (solo aplica en web)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const iframeStyles = Platform.OS === 'web' ? require('../(tabsdesactivados)/comunica.module.css') : null;
+
+const iframeStyles =
+  Platform.OS === 'web'
+    ? require('../(tabsdesactivados)/comunica.module.css')
+    : null;
 
 const COMUNICA_URL = 'https://comunica.movimientoconsolacion.com';
 

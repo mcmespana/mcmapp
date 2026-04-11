@@ -7,20 +7,20 @@ function testNewLogic() {
       title: 'Evento día entero (hoy)',
       startDate: '2025-07-22',
       endDate: '2025-07-23', // Original ICS
-      isAllDay: true
+      isAllDay: true,
     },
     {
       title: 'Evento múltiples días',
       startDate: '2025-07-22',
       endDate: '2025-07-25', // Original ICS
-      isAllDay: true
+      isAllDay: true,
     },
     {
       title: 'Evento con hora',
       startDate: '2025-07-22',
       endDate: '2025-07-22',
-      isAllDay: false
-    }
+      isAllDay: false,
+    },
   ];
 
   testEvents.forEach((event, index) => {
@@ -34,7 +34,7 @@ function testNewLogic() {
       const endDate = new Date(processed.endDate + 'T12:00:00');
       endDate.setDate(endDate.getDate() - 1);
       const adjustedEndDate = endDate.toISOString().split('T')[0];
-      
+
       if (adjustedEndDate === processed.startDate) {
         processed.isSingleDay = true;
       } else {
@@ -46,10 +46,19 @@ function testNewLogic() {
     console.log('Después:', processed);
 
     // Test de clasificación
-    const isSingleDay = processed.isSingleDay === true || !processed.endDate || processed.startDate === processed.endDate;
-    const isMultiDay = processed.isSingleDay === false || (processed.endDate && processed.startDate !== processed.endDate && !processed.isSingleDay);
+    const isSingleDay =
+      processed.isSingleDay === true ||
+      !processed.endDate ||
+      processed.startDate === processed.endDate;
+    const isMultiDay =
+      processed.isSingleDay === false ||
+      (processed.endDate &&
+        processed.startDate !== processed.endDate &&
+        !processed.isSingleDay);
 
-    console.log(`Clasificación: ${isSingleDay ? 'SINGLE DAY' : ''} ${isMultiDay ? 'MULTI DAY' : ''}`);
+    console.log(
+      `Clasificación: ${isSingleDay ? 'SINGLE DAY' : ''} ${isMultiDay ? 'MULTI DAY' : ''}`,
+    );
   });
 
   console.log('\n=== Fin test ===');

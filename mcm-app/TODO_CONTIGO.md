@@ -25,11 +25,11 @@ Tab "Contigo"
 
 ### Las 3 herramientas
 
-| # | Herramienta | Que es | Estado |
-|---|-------------|--------|--------|
-| 1 | **Evangelio del Dia** | Lecturas liturgicas + comentario al evangelio + tracker de lectura integrado | A desarrollar |
-| 2 | **Mi Rato de Oracion** | Registro del momento de oracion: duracion + emocion predominante | A desarrollar |
-| 3 | **Examen del Dia** | Examen de conciencia diario (habito adicional) | Futuro — solo placeholder |
+| #   | Herramienta            | Que es                                                                       | Estado                    |
+| --- | ---------------------- | ---------------------------------------------------------------------------- | ------------------------- |
+| 1   | **Evangelio del Dia**  | Lecturas liturgicas + comentario al evangelio + tracker de lectura integrado | A desarrollar             |
+| 2   | **Mi Rato de Oracion** | Registro del momento de oracion: duracion + emocion predominante             | A desarrollar             |
+| 3   | **Examen del Dia**     | Examen de conciencia diario (habito adicional)                               | Futuro — solo placeholder |
 
 ---
 
@@ -110,6 +110,7 @@ Debajo de las 3 cards, un **resumen visual del tracker** que muestra los 3 habit
 Vista semanal por defecto (lunes a domingo actual):
 
 Primera propuesta, a estudiar y mejorar
+
 ```
 Mi Semana                    🔥 Racha: 5 dias
 ┌─────┬─────┬─────┬─────┬─────┬─────┬─────┐
@@ -204,16 +205,18 @@ Pregunta: "¿Cuanto tiempo has dedicado hoy a la oracion?"
 Texto: "Lo importante no es la duración, pero te puede ayudar registrarlo"
 
 Opciones como botones/chips seleccionables:
+
 - < 1 min
 - 2–4 min
 - 5–10 min
 - 10–15 min
 - \> 15 min
-(posibilidad de omitirlo y pasar a lo siguiente o solo registrar que hubo un rato)
-**Paso 2 — Emocion predominante:**
-Pregunta: "¿Como te has sentido en la oracion?"
+  (posibilidad de omitirlo y pasar a lo siguiente o solo registrar que hubo un rato)
+  **Paso 2 — Emocion predominante:**
+  Pregunta: "¿Como te has sentido en la oracion?"
 
 5 emociones basicas como botones con icono + color (posibilidad de añadir nuevas)
+
 - Alegria → `#FCD200` (amarillo)
 - Tristeza → `#31AADF` (azul)
 - Enfado → `#E15C62` (rojo)
@@ -225,6 +228,7 @@ Pregunta: "¿Como te has sentido en la oracion?"
 **Si ya ha registrado oracion hoy:**
 
 Muestra resumen:
+
 ```
 Hoy has registrado 5-10 min
 Emoción predominante 😊 Alegria
@@ -234,6 +238,7 @@ Emoción predominante 😊 Alegria
 ### 5.3 Historial visual
 
 Debajo del registro de hoy, un mini-calendario del mes actual:
+
 - Cada dia con dot cuyo **tamano** refleja la duracion y **color** la emocion
 - Estadisticas del mes:
   - Dias con oracion: 18/28
@@ -250,6 +255,7 @@ Debajo del registro de hoy, un mini-calendario del mes actual:
 Concepto: registrar si se ha hecho el examen de conciencia diario. Similar al tracker de oracion pero mas simple (quiza solo toggle hecho/no hecho + nota breve opcional).
 
 En la card de "Contigo", mostrar:
+
 - Icono de buscar/lupa
 - Texto "Revisión del Dia"
 - Subtexto "Proximamente" en gris
@@ -332,7 +338,7 @@ Almacenamiento en **AsyncStorage** (local por dispositivo, sin backend por ahora
 // Valor: Record<string, DayRecord>
 
 interface DayRecord {
-  date: string;                    // '2026-03-11'
+  date: string; // '2026-03-11'
 
   // Habito 1: Lectura del Evangelio
   readingDone: boolean;
@@ -345,22 +351,22 @@ interface DayRecord {
   // Habito 3: Examen del Dia (futuro)
   examenDone?: boolean;
 
-  timestamp: number;               // Cuando se registro/actualizo
+  timestamp: number; // Cuando se registro/actualizo
 }
 
 type PrayerDuration =
-  | 'less_than_1'    // < 1 min
-  | '2_to_4'         // 2-4 min
-  | '5_to_10'        // 5-10 min
-  | '10_to_15'       // 10-15 min
-  | 'more_than_15';  // > 15 min
+  | 'less_than_1' // < 1 min
+  | '2_to_4' // 2-4 min
+  | '5_to_10' // 5-10 min
+  | '10_to_15' // 10-15 min
+  | 'more_than_15'; // > 15 min
 
 type Emotion =
-  | 'joy'       // Alegria  → #FCD200
-  | 'sadness'   // Tristeza → #31AADF
-  | 'anger'     // Enfado   → #E15C62
-  | 'fear'      // Miedo    → #6B3FA0
-  | 'disgust';  // Asco     → #3A7D44
+  | 'joy' // Alegria  → #FCD200
+  | 'sadness' // Tristeza → #31AADF
+  | 'anger' // Enfado   → #E15C62
+  | 'fear' // Miedo    → #6B3FA0
+  | 'disgust'; // Asco     → #3A7D44
 ```
 
 ### Hook dedicado: `useContigoHabits.ts`
@@ -371,7 +377,7 @@ interface UseContigoHabits {
   getRecord(date: string): DayRecord | null;
   setReadingDone(date: string, done: boolean): void;
   setPrayerDone(date: string, duration: PrayerDuration, emotion: Emotion): void;
-  setExamenDone(date: string, done: boolean): void;  // futuro
+  setExamenDone(date: string, done: boolean): void; // futuro
 
   // Estadisticas
   getStreak(habit: 'reading' | 'prayer' | 'examen'): number;
@@ -385,10 +391,10 @@ interface UseContigoHabits {
 interface MonthStats {
   readingDays: number;
   prayerDays: number;
-  examenDays: number;         // futuro
+  examenDays: number; // futuro
   totalPrayerMinutes: number; // estimado desde PrayerDuration
   mostFrequentEmotion: Emotion | null;
-  currentStreak: number;      // racha mas larga de cualquier habito
+  currentStreak: number; // racha mas larga de cualquier habito
 }
 ```
 
@@ -425,9 +431,9 @@ seccion_oracion
 │   │   ├────── vidaNuevaTitulo: <--- titulo del día par motivar y animar
 ```
 
-Los tiempos litúrgicos están en assets/calendario-liturgico.json 
+Los tiempos litúrgicos están en assets/calendario-liturgico.json
 De ahí se pueden sacar los tiempos, los titulos para los dias y calculas los colores.
-Ese json vive como un asset de la app porque el calendario es determinista y nunca cambiará jamás, pesa poco y puede ser un asset sin problema asi se carga bien. 
+Ese json vive como un asset de la app porque el calendario es determinista y nunca cambiará jamás, pesa poco y puede ser un asset sin problema asi se carga bien.
 Un agente debe revisar la estructura
 
 ---
@@ -436,41 +442,41 @@ Un agente debe revisar la estructura
 
 ### Nuevos archivos
 
-| Archivo | Descripcion |
-|---------|-------------|
-| `app/(tabs)/contigo.tsx` | Tab principal "Contigo" (cards + tracker semanal) |
-| `app/screens/EvangelioScreen.tsx` | Pantalla de lecturas + tracker lectura |
-| `app/screens/OracionScreen.tsx` | Pantalla de registro de oracion |
-| `hooks/useContigoHabits.ts` | Hook de habitos (AsyncStorage, rachas, stats) |
-| `hooks/useDailyReadings.ts` | Hook para consumir lecturas desde Firebase |
-| `components/contigo/LiturgicalBadge.tsx` | Badge de tiempo liturgico con color |
-| `components/contigo/HabitWeekView.tsx` | Vista semanal del tracker (dots) |
-| `components/contigo/HabitCalendar.tsx` | Calendario mensual del tracker |
-| `components/contigo/HabitDayDots.tsx` | Dots de habitos por dia (tamano + color) |
-| `components/contigo/ReadingCard.tsx` | Card reutilizable para cada lectura |
-| `components/contigo/PrayerLogger.tsx` | Selector de duracion + emocion |
-| `components/contigo/ContigoToolCard.tsx` | Card de herramienta en la pantalla principal |
-| `components/contigo/GospelHomeCard.tsx` | Card resumen para la Home |
+| Archivo                                  | Descripcion                                       |
+| ---------------------------------------- | ------------------------------------------------- |
+| `app/(tabs)/contigo.tsx`                 | Tab principal "Contigo" (cards + tracker semanal) |
+| `app/screens/EvangelioScreen.tsx`        | Pantalla de lecturas + tracker lectura            |
+| `app/screens/OracionScreen.tsx`          | Pantalla de registro de oracion                   |
+| `hooks/useContigoHabits.ts`              | Hook de habitos (AsyncStorage, rachas, stats)     |
+| `hooks/useDailyReadings.ts`              | Hook para consumir lecturas desde Firebase        |
+| `components/contigo/LiturgicalBadge.tsx` | Badge de tiempo liturgico con color               |
+| `components/contigo/HabitWeekView.tsx`   | Vista semanal del tracker (dots)                  |
+| `components/contigo/HabitCalendar.tsx`   | Calendario mensual del tracker                    |
+| `components/contigo/HabitDayDots.tsx`    | Dots de habitos por dia (tamano + color)          |
+| `components/contigo/ReadingCard.tsx`     | Card reutilizable para cada lectura               |
+| `components/contigo/PrayerLogger.tsx`    | Selector de duracion + emocion                    |
+| `components/contigo/ContigoToolCard.tsx` | Card de herramienta en la pantalla principal      |
+| `components/contigo/GospelHomeCard.tsx`  | Card resumen para la Home                         |
 
 ### Archivos a modificar
 
-| Archivo | Cambio |
-|---------|--------|
-| `app/(tabs)/_layout.tsx` | Anadir `contigo` a `TABS_CONFIG` |
-| `app/(tabs)/index.tsx` | Anadir card resumen + boton "Evangelio" al grid |
-| `app/_layout.tsx` | Registrar nuevas pantallas en el Stack (EvangelioScreen, OracionScreen) |
-| `constants/featureFlags.ts` | Anadir flag `contigo: boolean` en tabs |
-| `constants/colors.ts` | Anadir color para TabHeaderColors.contigo si aplica |
+| Archivo                     | Cambio                                                                  |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `app/(tabs)/_layout.tsx`    | Anadir `contigo` a `TABS_CONFIG`                                        |
+| `app/(tabs)/index.tsx`      | Anadir card resumen + boton "Evangelio" al grid                         |
+| `app/_layout.tsx`           | Registrar nuevas pantallas en el Stack (EvangelioScreen, OracionScreen) |
+| `constants/featureFlags.ts` | Anadir flag `contigo: boolean` en tabs                                  |
+| `constants/colors.ts`       | Anadir color para TabHeaderColors.contigo si aplica                     |
 
 ---
 
 ## 12. Librerias recomendadas (nuevas dependencias, reflexionar sobre ellas)
 
-| Libreria | Para que | Ya instalada |
-|----------|----------|-------------|
-| `react-native-calendars` | Base del calendario mensual del habit tracker | No |
-| `react-native-svg` | Dots personalizados, graficos de emociones | Verificar |
-| `react-native-reanimated` | Animaciones suaves del tracker | Si (Expo) |
+| Libreria                  | Para que                                      | Ya instalada |
+| ------------------------- | --------------------------------------------- | ------------ |
+| `react-native-calendars`  | Base del calendario mensual del habit tracker | No           |
+| `react-native-svg`        | Dots personalizados, graficos de emociones    | Verificar    |
+| `react-native-reanimated` | Animaciones suaves del tracker                | Si (Expo)    |
 
 > Valorar dependencias que vlagan la pena podernas y actuales Y BIEN MANTENIDAS
 
@@ -522,34 +528,32 @@ litcal.johnromanodorazio.com/api/v4/calendar
 
 ## B2. Fuentes de datos a valorar en el futuro
 
-| Dato | Fuente | Metodo |
-|------|--------|--------|
-| Lecturas + comentario evangelio | **Ciudad Redonda** (`ciudadredonda.org/evangelio-lecturas-hoy/`) | Scraping |
-| Fuente alternativa de lecturas | **Dominicos.org** (`dominicos.org/predicacion/evangelio-del-dia/hoy/`) | Scraping |
-| Tiempo liturgico, color, celebracion | **LitCal API** (`litcal.johnromanodorazio.com/api/v4/calendar`) | API REST (JSON, soporta espanol, gratuita) |
-| Comentario alternativo | **Evangeli.net** (`evangeli.net/evangelio/api`) | API publica (tiene endpoint y widget embeddable) |
+| Dato                                 | Fuente                                                                 | Metodo                                           |
+| ------------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------ |
+| Lecturas + comentario evangelio      | **Ciudad Redonda** (`ciudadredonda.org/evangelio-lecturas-hoy/`)       | Scraping                                         |
+| Fuente alternativa de lecturas       | **Dominicos.org** (`dominicos.org/predicacion/evangelio-del-dia/hoy/`) | Scraping                                         |
+| Tiempo liturgico, color, celebracion | **LitCal API** (`litcal.johnromanodorazio.com/api/v4/calendar`)        | API REST (JSON, soporta espanol, gratuita)       |
+| Comentario alternativo               | **Evangeli.net** (`evangeli.net/evangelio/api`)                        | API publica (tiene endpoint y widget embeddable) |
 
 ### Otras fuentes investigadas (referencia)
 
-| Sitio | URL | Notas |
-|-------|-----|-------|
-| USCCB en Espanol | `bible.usccb.org/es` | URL predecible (`/bible/readings/MMDDYY.cfm`), copyright restricto |
-| Vatican News | `vaticannews.va/es/evangelio-de-hoy.html` | Evangelio + reflexion papal |
-| ACI Prensa | `aciprensa.com/calendario` | Calendario liturgico con RSS |
-| EWTN en Espanol | `ewtn.com/es/catolicismo/lecturas` | Lecturas + misa en directo |
-| Pildoras de Fe | `pildorasdefe.net/evangelio-de-hoy` | Evangelio + audio reflexion |
-| Evangelio del Dia | `evangeliodeldia.org/ES/` | Tiene RSS pero es SPA (requiere Puppeteer) |
+| Sitio             | URL                                       | Notas                                                              |
+| ----------------- | ----------------------------------------- | ------------------------------------------------------------------ |
+| USCCB en Espanol  | `bible.usccb.org/es`                      | URL predecible (`/bible/readings/MMDDYY.cfm`), copyright restricto |
+| Vatican News      | `vaticannews.va/es/evangelio-de-hoy.html` | Evangelio + reflexion papal                                        |
+| ACI Prensa        | `aciprensa.com/calendario`                | Calendario liturgico con RSS                                       |
+| EWTN en Espanol   | `ewtn.com/es/catolicismo/lecturas`        | Lecturas + misa en directo                                         |
+| Pildoras de Fe    | `pildorasdefe.net/evangelio-de-hoy`       | Evangelio + audio reflexion                                        |
+| Evangelio del Dia | `evangeliodeldia.org/ES/`                 | Tiene RSS pero es SPA (requiere Puppeteer)                         |
 
 ### APIs liturgicas investigadas
 
-| API | URL | Espanol | Datos |
-|-----|-----|---------|-------|
-| **LitCal API** (recomendada) | `litcal.johnromanodorazio.com/api/v4/calendar` | Si (36 idiomas) | Calendario completo, colores, celebraciones, JSON/YAML/XML |
-| Church Calendar API | `calapi.inadiutorium.cz` | No (cs, en, fr, it, la) | Celebraciones, ciclo lectoral |
-| Catholic Readings API | `github.com/cpbjr/catholic-readings-api` | No (ingles, espanol planeado) | Lecturas en JSON via GitHub Pages |
-| Evangeli.net API | `evangeli.net/evangelio/api` | Si | Evangelio + comentario |
-
-
+| API                          | URL                                            | Espanol                       | Datos                                                      |
+| ---------------------------- | ---------------------------------------------- | ----------------------------- | ---------------------------------------------------------- |
+| **LitCal API** (recomendada) | `litcal.johnromanodorazio.com/api/v4/calendar` | Si (36 idiomas)               | Calendario completo, colores, celebraciones, JSON/YAML/XML |
+| Church Calendar API          | `calapi.inadiutorium.cz`                       | No (cs, en, fr, it, la)       | Celebraciones, ciclo lectoral                              |
+| Catholic Readings API        | `github.com/cpbjr/catholic-readings-api`       | No (ingles, espanol planeado) | Lecturas en JSON via GitHub Pages                          |
+| Evangeli.net API             | `evangeli.net/evangelio/api`                   | Si                            | Evangelio + comentario                                     |
 
 ## B4. Cron Job — GitHub Actions
 
@@ -561,15 +565,15 @@ Falta incluir para lLimpiar lecturas con mas de 45 dias de antiguedad
 
 ## Propuesta de colores litúrgicos
 
-| Color | Espanol | Hex | Cuando se usa |
-|-------|---------|-----|---------------|
-| Verde | Verde | `#3A7D44` | Tiempo Ordinario |
-| Morado | Morado | `#6B3FA0` | Adviento, Cuaresma, difuntos |
-| Blanco | Blanco | `#F5F5F5` | Pascua, Navidad, fiestas del Senor, Virgen Maria |
-| Rojo | Rojo | `#C41E3A` | Pentecostes, martires, apostoles |
-| Rosa | Rosa | `#D4A0A7` | Gaudete (3er dom. Adviento), Laetare (4o dom. Cuaresma) |
-| Azul | Azul | `#2B4C7E` | Inmaculada Concepcion (privilegio hispanico) |
-| Dorado | Dorado | `#D4AF37` | Sustituye blanco en solemnidades especiales |
+| Color  | Espanol | Hex       | Cuando se usa                                           |
+| ------ | ------- | --------- | ------------------------------------------------------- |
+| Verde  | Verde   | `#3A7D44` | Tiempo Ordinario                                        |
+| Morado | Morado  | `#6B3FA0` | Adviento, Cuaresma, difuntos                            |
+| Blanco | Blanco  | `#F5F5F5` | Pascua, Navidad, fiestas del Senor, Virgen Maria        |
+| Rojo   | Rojo    | `#C41E3A` | Pentecostes, martires, apostoles                        |
+| Rosa   | Rosa    | `#D4A0A7` | Gaudete (3er dom. Adviento), Laetare (4o dom. Cuaresma) |
+| Azul   | Azul    | `#2B4C7E` | Inmaculada Concepcion (privilegio hispanico)            |
+| Dorado | Dorado  | `#D4AF37` | Sustituye blanco en solemnidades especiales             |
 
 ## B6. Tiempos liturgicos (orden anual)
 

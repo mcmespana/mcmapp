@@ -164,9 +164,7 @@ export default function usePushNotifications() {
         saveReceivedNotificationLocally(receivedNotification)
           .then(() => markNotificationAsRead(receivedNotification.id))
           .then(() => refreshCount())
-          .catch((err) =>
-            console.error('Error procesando notificación:', err),
-          );
+          .catch((err) => console.error('Error procesando notificación:', err));
       });
 
     // Cleanup
@@ -191,7 +189,8 @@ async function registerAndSaveToken() {
 
   try {
     // 1. Permisos
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     console.log('📋 [PASO 1] Estado de permisos:', existingStatus);
 
@@ -231,7 +230,12 @@ async function registerAndSaveToken() {
     } catch (tokenError: any) {
       const msg = tokenError?.message || String(tokenError);
       console.error('❌ [PASO 3] getExpoPushTokenAsync FALLÓ:', msg);
-      logToFirebase({ paso: 3, resultado: 'TOKEN_ERROR', error: msg, projectId: projectId || '(auto)' });
+      logToFirebase({
+        paso: 3,
+        resultado: 'TOKEN_ERROR',
+        error: msg,
+        projectId: projectId || '(auto)',
+      });
       throw tokenError;
     }
 
@@ -251,13 +255,14 @@ async function registerAndSaveToken() {
     console.log('📋 [PASO 5] Guardando en Firebase...');
     await saveTokenToFirebase(token);
     console.log('✅ [PASO 5] Token guardado en Firebase');
-    logToFirebase({ paso: 5, resultado: 'EXITO', token: token.substring(0, 30) + '...' });
-
+    logToFirebase({
+      paso: 5,
+      resultado: 'EXITO',
+      token: token.substring(0, 30) + '...',
+    });
   } catch (error: any) {
     const msg = error?.message || String(error);
     console.error('❌ Error en registerAndSaveToken:', msg);
     logToFirebase({ resultado: 'ERROR_GENERAL', error: msg });
   }
 }
-
-

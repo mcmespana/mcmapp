@@ -166,11 +166,7 @@ export default function Calendario() {
     lastDay.setMonth(firstDay.getMonth() + 1);
     lastDay.setDate(0);
     const sections: { title: string; data: CalendarEvent[] }[] = [];
-    for (
-      let d = new Date(firstDay);
-      d <= lastDay;
-      d.setDate(d.getDate() + 1)
-    ) {
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       sections.push({ title: dateStr, data: filteredByDate[dateStr] || [] });
     }
@@ -234,9 +230,7 @@ export default function Calendario() {
         activeOpacity={0.7}
         style={[styles.eventCard, isPast && styles.pastEventCard]}
       >
-        <View
-          style={[styles.eventColorBar, { backgroundColor: calColor }]}
-        />
+        <View style={[styles.eventColorBar, { backgroundColor: calColor }]} />
         <View style={styles.eventCardBody}>
           <View style={styles.eventCardTop}>
             <Text
@@ -284,9 +278,7 @@ export default function Calendario() {
                 size={14}
                 color={isDark ? '#8E8E93' : '#8E8E93'}
               />
-              <Text
-                style={[styles.eventDuration, isPast && styles.pastText]}
-              >
+              <Text style={[styles.eventDuration, isPast && styles.pastText]}>
                 Hasta {formatDate(ev.endDate)}
               </Text>
             </View>
@@ -310,7 +302,14 @@ export default function Calendario() {
             variant={isActive ? 'primary' : 'soft'}
             color="default"
             onPress={() => toggleCalendarVisibility(idx)}
-            style={isActive ? { backgroundColor: hexAlpha(cal.color, '22'), borderColor: cal.color } : undefined}
+            style={
+              isActive
+                ? {
+                    backgroundColor: hexAlpha(cal.color, '22'),
+                    borderColor: cal.color,
+                  }
+                : undefined
+            }
           >
             <View
               style={[
@@ -325,7 +324,9 @@ export default function Calendario() {
               ]}
             />
             <Chip.Label
-              style={isActive ? { color: cal.color, fontWeight: '600' } : undefined}
+              style={
+                isActive ? { color: cal.color, fontWeight: '600' } : undefined
+              }
               numberOfLines={1}
             >
               {cal.name}
@@ -532,11 +533,7 @@ export default function Calendario() {
                         isPast && styles.pastText,
                       ]}
                     >
-                      {isToday
-                        ? 'HOY'
-                        : isTomorrow
-                          ? 'MAÑANA'
-                          : weekday}
+                      {isToday ? 'HOY' : isTomorrow ? 'MAÑANA' : weekday}
                     </Text>
                   </View>
                   <View style={styles.sectionDivider} />

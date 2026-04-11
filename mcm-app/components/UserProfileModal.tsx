@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import BottomSheet from './BottomSheet';
 import { Button, TextField, Input } from 'heroui-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -35,11 +31,7 @@ export default function UserProfileModal({ visible, onClose }: Props) {
   return (
     <BottomSheet visible={visible} onClose={onClose}>
       <TextField style={styles.field}>
-        <Input
-          placeholder="Tu nombre"
-          value={name}
-          onChangeText={setName}
-        />
+        <Input placeholder="Tu nombre" value={name} onChangeText={setName} />
       </TextField>
       <TextField style={styles.field}>
         <Input

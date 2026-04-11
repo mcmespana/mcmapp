@@ -79,7 +79,8 @@ export default function MonitoresWebScreen() {
   const onError = () => {
     toast.show({
       variant: 'danger',
-      label: 'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      label:
+        'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
       actionLabel: 'Cerrar',
       onActionPress: ({ hide }) => hide(),
     });
@@ -95,11 +96,14 @@ export default function MonitoresWebScreen() {
   if (Platform.OS === 'web') {
     // Para web, inyectamos los estilos mediante un script cuando carga el iframe
     React.useEffect(() => {
-      const iframe = document.querySelector('iframe[title="Comunica MCM - Monitores"]') as HTMLIFrameElement;
+      const iframe = document.querySelector(
+        'iframe[title="Comunica MCM - Monitores"]',
+      ) as HTMLIFrameElement;
       if (iframe) {
         const injectStyles = () => {
           try {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            const iframeDoc =
+              iframe.contentDocument || iframe.contentWindow?.document;
             if (iframeDoc) {
               // Inyectar CSS
               const style = iframeDoc.createElement('style');
@@ -108,7 +112,9 @@ export default function MonitoresWebScreen() {
 
               // También ocultar directamente con JavaScript
               const hideElements = () => {
-                const elementsToHide = iframeDoc.querySelectorAll('.p_login_top, .p_login_bottom');
+                const elementsToHide = iframeDoc.querySelectorAll(
+                  '.p_login_top, .p_login_bottom',
+                );
                 elementsToHide.forEach((el: Element) => {
                   const htmlEl = el as HTMLElement;
                   htmlEl.style.display = 'none';
@@ -126,7 +132,7 @@ export default function MonitoresWebScreen() {
               const observer = new MutationObserver(hideElements);
               observer.observe(iframeDoc.body, {
                 childList: true,
-                subtree: true
+                subtree: true,
               });
 
               // Ejecutar periódicamente durante los primeros 2 segundos

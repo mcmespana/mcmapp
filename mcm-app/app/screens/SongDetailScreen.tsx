@@ -1,11 +1,5 @@
 import { useEffect, useState, useLayoutEffect, useRef } from 'react';
-import {
-  StyleSheet,
-  View,
-  Platform,
-  Dimensions,
-  Animated,
-} from 'react-native';
+import { StyleSheet, View, Platform, Dimensions, Animated } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GestureRecognizer from 'react-native-swipe-gestures';

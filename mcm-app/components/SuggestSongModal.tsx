@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
 import BottomSheet from './BottomSheet';
-import { Button, CloseButton, TextField, Input, TextArea, Chip, useToast } from 'heroui-native';
+import {
+  Button,
+  CloseButton,
+  TextField,
+  Input,
+  TextArea,
+  Chip,
+  useToast,
+} from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -50,7 +52,10 @@ export default function SuggestSongModal({
 
   const handleSubmit = async () => {
     if (!titulo.trim() || !artista.trim()) {
-      toast.show({ variant: 'danger', label: 'Título y artista son obligatorios' });
+      toast.show({
+        variant: 'danger',
+        label: 'Título y artista son obligatorios',
+      });
       return;
     }
 
@@ -86,7 +91,10 @@ export default function SuggestSongModal({
       onSuccess();
     } catch (error) {
       console.error('Error enviando sugerencia:', error);
-      toast.show({ variant: 'danger', label: 'No se pudo enviar la sugerencia. Inténtalo de nuevo.' });
+      toast.show({
+        variant: 'danger',
+        label: 'No se pudo enviar la sugerencia. Inténtalo de nuevo.',
+      });
     } finally {
       setIsSubmitting(false);
     }

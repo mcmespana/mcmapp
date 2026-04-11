@@ -97,24 +97,24 @@ export default function SongsListScreen({
       headerRight: isSearchAll
         ? undefined
         : () => (
-          <TouchableOpacity
-            onPress={() => setSearchVisible((v) => !v)}
-            style={styles.headerButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <MaterialIcons
-              name={searchVisible ? 'search-off' : 'search'}
-              size={24}
-              color={
-                isIOS
-                  ? '#f4c11e'
-                  : Platform.OS === 'web'
-                    ? '#1a1a1a'
-                    : '#1a1a1a'
-              }
-            />
-          </TouchableOpacity>
-        ),
+            <TouchableOpacity
+              onPress={() => setSearchVisible((v) => !v)}
+              style={styles.headerButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MaterialIcons
+                name={searchVisible ? 'search-off' : 'search'}
+                size={24}
+                color={
+                  isIOS
+                    ? '#f4c11e'
+                    : Platform.OS === 'web'
+                      ? '#1a1a1a'
+                      : '#1a1a1a'
+                }
+              />
+            </TouchableOpacity>
+          ),
     });
   }, [navigation, categoryName, isSearchAll, searchVisible]);
 
