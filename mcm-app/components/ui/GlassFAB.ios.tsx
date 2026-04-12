@@ -23,10 +23,7 @@ export default function GlassFAB({
   style,
 }: GlassFABProps) {
   return (
-    <PressableFeedback
-      onPress={onPress}
-      style={[styles.fab, style]}
-    >
+    <PressableFeedback onPress={onPress} style={[styles.fab, style]}>
       <PressableFeedback.Scale />
       <BlurView
         tint="light"

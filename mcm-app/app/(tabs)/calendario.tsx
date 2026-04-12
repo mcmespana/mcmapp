@@ -1,5 +1,11 @@
 // app/(tabs)/calendario.tsx
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from 'react';
 import {
   View,
   StyleSheet,
@@ -10,11 +16,7 @@ import {
   Text,
 } from 'react-native';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
-import {
-  Calendar,
-  CalendarProps,
-  LocaleConfig,
-} from 'react-native-calendars';
+import { Calendar, CalendarProps, LocaleConfig } from 'react-native-calendars';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
@@ -142,17 +144,20 @@ export default function Calendario() {
     return `${y}-${m}-${day}`;
   };
 
-  const changeMonth = useCallback((delta: number) => {
-    const d = new Date(selectedDate + 'T12:00:00');
-    const newDate = new Date(d.getFullYear(), d.getMonth() + delta, 1);
-    setSelectedDate(dateToStr(newDate));
-  }, [selectedDate]);
+  const changeMonth = useCallback(
+    (delta: number) => {
+      const d = new Date(selectedDate + 'T12:00:00');
+      const newDate = new Date(d.getFullYear(), d.getMonth() + delta, 1);
+      setSelectedDate(dateToStr(newDate));
+    },
+    [selectedDate],
+  );
 
   const goToToday = useCallback(() => {
     setSelectedDate(todayStr);
     // Incrementar la key fuerza al componente Calendar a remontarse y
     // posicionarse en el mes de hoy aunque el usuario estuviera en otro mes
-    setCalendarKey(k => k + 1);
+    setCalendarKey((k) => k + 1);
   }, [todayStr]);
 
   // Ref del X inicial para detectar swipes cross-platform (funciona en web y nativo)
@@ -172,13 +177,9 @@ export default function Calendario() {
   const agendaSections = useMemo(() => {
     const d0 = new Date(selectedDate + 'T12:00:00');
     const firstDay = new Date(d0.getFullYear(), d0.getMonth(), 1);
-    const lastDay  = new Date(d0.getFullYear(), d0.getMonth() + 1, 0);
+    const lastDay = new Date(d0.getFullYear(), d0.getMonth() + 1, 0);
     const sections: { title: string; data: CalendarEvent[] }[] = [];
-    for (
-      let d = new Date(firstDay);
-      d <= lastDay;
-      d.setDate(d.getDate() + 1)
-    ) {
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
       const dateStr = dateToStr(d);
       sections.push({ title: dateStr, data: filteredByDate[dateStr] || [] });
     }
@@ -192,7 +193,8 @@ export default function Calendario() {
   );
 
   // true solo si todos los calendarios están explícitamente desactivados
-  const allCalendarsHidden = visibleCalendars.length > 0 && !visibleCalendars.some(Boolean);
+  const allCalendarsHidden =
+    visibleCalendars.length > 0 && !visibleCalendars.some(Boolean);
 
   const markedDates = useMemo<CalendarProps['markedDates']>(() => {
     const marks: { [date: string]: any } = {};
@@ -251,9 +253,7 @@ export default function Calendario() {
         activeOpacity={0.7}
         style={[styles.eventCard, isPast && styles.pastEventCard]}
       >
-        <View
-          style={[styles.eventColorBar, { backgroundColor: calColor }]}
-        />
+        <View style={[styles.eventColorBar, { backgroundColor: calColor }]} />
         <View style={styles.eventCardBody}>
           <View style={styles.eventCardTop}>
             <Text
@@ -301,9 +301,7 @@ export default function Calendario() {
                 size={14}
                 color={isDark ? '#8E8E93' : '#8E8E93'}
               />
-              <Text
-                style={[styles.eventDuration, isPast && styles.pastText]}
-              >
+              <Text style={[styles.eventDuration, isPast && styles.pastText]}>
                 Hasta {formatDate(ev.endDate)}
               </Text>
             </View>
@@ -380,7 +378,10 @@ export default function Calendario() {
       <View style={styles.switcherWrapper}>
         <View style={styles.segmentedControl}>
           <TouchableOpacity
-            style={[styles.segmentBtn, viewMode === 'calendar' && styles.segmentBtnActive]}
+            style={[
+              styles.segmentBtn,
+              viewMode === 'calendar' && styles.segmentBtnActive,
+            ]}
             onPress={() => setViewMode('calendar')}
             activeOpacity={0.8}
           >
@@ -389,12 +390,20 @@ export default function Calendario() {
               size={16}
               color={viewMode === 'calendar' ? '#fff' : '#8E8E93'}
             />
-            <Text style={[styles.segmentLabel, viewMode === 'calendar' && styles.segmentLabelActive]}>
+            <Text
+              style={[
+                styles.segmentLabel,
+                viewMode === 'calendar' && styles.segmentLabelActive,
+              ]}
+            >
               Mes
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segmentBtn, viewMode === 'agenda' && styles.segmentBtnActive]}
+            style={[
+              styles.segmentBtn,
+              viewMode === 'agenda' && styles.segmentBtnActive,
+            ]}
             onPress={() => setViewMode('agenda')}
             activeOpacity={0.8}
           >
@@ -403,7 +412,12 @@ export default function Calendario() {
               size={16}
               color={viewMode === 'agenda' ? '#fff' : '#8E8E93'}
             />
-            <Text style={[styles.segmentLabel, viewMode === 'agenda' && styles.segmentLabelActive]}>
+            <Text
+              style={[
+                styles.segmentLabel,
+                viewMode === 'agenda' && styles.segmentLabelActive,
+              ]}
+            >
               Agenda
             </Text>
           </TouchableOpacity>
@@ -414,7 +428,9 @@ export default function Calendario() {
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Wrapper para detectar swipes horizontales (cross-platform) */}
           <View
-            onTouchStart={(e) => { swipeTouchX.current = e.nativeEvent.pageX; }}
+            onTouchStart={(e) => {
+              swipeTouchX.current = e.nativeEvent.pageX;
+            }}
             onTouchEnd={(e) => {
               const dx = e.nativeEvent.pageX - swipeTouchX.current;
               if (Math.abs(dx) > 60) changeMonth(dx < 0 ? 1 : -1);
@@ -572,11 +588,7 @@ export default function Calendario() {
                         isPast && styles.pastText,
                       ]}
                     >
-                      {isToday
-                        ? 'HOY'
-                        : isTomorrow
-                          ? 'MAÑANA'
-                          : weekday}
+                      {isToday ? 'HOY' : isTomorrow ? 'MAÑANA' : weekday}
                     </Text>
                   </View>
                   <View style={styles.sectionDivider} />
@@ -609,7 +621,12 @@ export default function Calendario() {
                     ? 'Todos los calendarios ocultos'
                     : 'Sin eventos este mes'}
                 </Text>
-                <Text style={[styles.emptySubtext, { textAlign: 'center', marginTop: 4 }]}>
+                <Text
+                  style={[
+                    styles.emptySubtext,
+                    { textAlign: 'center', marginTop: 4 },
+                  ]}
+                >
                   {allCalendarsHidden
                     ? 'Activa algún calendario desde los filtros de arriba'
                     : 'No hay eventos programados para ' + monthLabel}
@@ -697,7 +714,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       flexGrow: 0,
     },
     chipsScroll: {
-      flexDirection: 'row',   // Necesario en web — RN Web no lo aplica auto con horizontal={true}
+      flexDirection: 'row', // Necesario en web — RN Web no lo aplica auto con horizontal={true}
       alignItems: 'center',
       paddingHorizontal: 16,
       paddingVertical: 10,

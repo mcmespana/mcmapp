@@ -1,17 +1,10 @@
 import React from 'react';
 import { ScrollView, Platform, Linking } from 'react-native';
-import {
-  Avatar,
-  ListGroup,
-  Separator,
-  Button,
-  Surface,
-} from 'heroui-native';
+import { Avatar, ListGroup, Separator, Button, Surface } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import colors from '@/constants/colors';
-import { UIColors } from '@/constants/colors';
+import colors, { UIColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const AVATAR_COLORS = [
@@ -95,11 +88,7 @@ export default function ContactosScreen() {
                     isIconOnly
                     onPress={() => call(c.telefono)}
                   >
-                    <MaterialIcons
-                      name="phone"
-                      size={20}
-                      color={colors.info}
-                    />
+                    <MaterialIcons name="phone" size={20} color={colors.info} />
                   </Button>
                   <Button
                     variant="ghost"
@@ -115,9 +104,7 @@ export default function ContactosScreen() {
                   </Button>
                 </ListGroup.ItemSuffix>
               </ListGroup.Item>
-              {idx < (data?.length ?? 0) - 1 && (
-                <Separator className="ml-20" />
-              )}
+              {idx < (data?.length ?? 0) - 1 && <Separator className="ml-20" />}
             </React.Fragment>
           ))}
         </ListGroup>

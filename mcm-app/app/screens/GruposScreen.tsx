@@ -8,7 +8,13 @@ import {
   Text,
   Pressable,
 } from 'react-native';
-import { SearchField, ListGroup, Separator, Button, PressableFeedback } from 'heroui-native';
+import {
+  SearchField,
+  ListGroup,
+  Separator,
+  Button,
+  PressableFeedback,
+} from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -17,7 +23,10 @@ import { useFirebaseData } from '@/hooks/useFirebaseData';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
-const CATEGORY_CONFIG: Record<string, { icon: MaterialIconName; color: string }> = {
+const CATEGORY_CONFIG: Record<
+  string,
+  { icon: MaterialIconName; color: string }
+> = {
   Movilidad: { icon: 'directions-walk', color: colors.info },
   'Conso+': { icon: 'shopping-cart', color: colors.success },
   Autobuses: { icon: 'directions-bus', color: colors.warning },
@@ -120,7 +129,12 @@ export default function GruposScreen() {
   // Si hay un grupo seleccionado, mostrar la vista del grupo (prioridad máxima)
   if (grupo) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={
+          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+        }
+      >
         <View style={styles.backWrapper}>
           <Pressable
             onPress={() => {
@@ -187,7 +201,12 @@ export default function GruposScreen() {
       grouped[r.categoria].push({ grupo: r.grupo, matches: r.matches });
     });
     return (
-      <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={
+          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+        }
+      >
         <View style={styles.searchContainer}>
           <SearchField value={search} onChange={setSearch}>
             <SearchField.Group>
@@ -227,14 +246,19 @@ export default function GruposScreen() {
                       <ListGroup.ItemContent>
                         <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
                         {g.subtitulo ? (
-                          <ListGroup.ItemDescription>{g.subtitulo}</ListGroup.ItemDescription>
+                          <ListGroup.ItemDescription>
+                            {g.subtitulo}
+                          </ListGroup.ItemDescription>
                         ) : null}
                       </ListGroup.ItemContent>
                     </ListGroup.Item>
                     {matches
                       .filter((m) => m !== '__match_name__')
                       .map((m, j) => (
-                        <View key={j} style={[styles.listItem, styles.matchItem]}>
+                        <View
+                          key={j}
+                          style={[styles.listItem, styles.matchItem]}
+                        >
                           <Text style={styles.listItemTitle}>{m}</Text>
                         </View>
                       ))}
@@ -267,7 +291,12 @@ export default function GruposScreen() {
             onPress={() => setCategoria(c.name)}
           >
             <PressableFeedback.Highlight />
-            <MaterialIcons name={c.icon} size={40} color={colors.white} style={styles.catIcon} />
+            <MaterialIcons
+              name={c.icon}
+              size={40}
+              color={colors.white}
+              style={styles.catIcon}
+            />
             <Text style={styles.catLabel}>{c.name}</Text>
           </PressableFeedback>
         ))}
@@ -277,7 +306,12 @@ export default function GruposScreen() {
 
   if (categoria && !grupo) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={
+          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+        }
+      >
         <View style={styles.backWrapper}>
           <Pressable onPress={() => setCategoria(null)} style={styles.iconBtn}>
             <MaterialIcons name="arrow-back" size={24} color="#888" />
@@ -290,7 +324,9 @@ export default function GruposScreen() {
                 <ListGroup.ItemContent>
                   <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
                   {g.subtitulo ? (
-                    <ListGroup.ItemDescription>{g.subtitulo}</ListGroup.ItemDescription>
+                    <ListGroup.ItemDescription>
+                      {g.subtitulo}
+                    </ListGroup.ItemDescription>
                   ) : null}
                 </ListGroup.ItemContent>
               </ListGroup.Item>
@@ -303,29 +339,38 @@ export default function GruposScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={
+        Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+      }
+    >
       <View style={styles.backWrapper}>
         <Pressable onPress={() => setCategoria(null)} style={styles.iconBtn}>
           <MaterialIcons name="arrow-back" size={24} color="#888" />
         </Pressable>
       </View>
       <ListGroup variant="transparent">
-        {(categoria && data?.[categoria] ? data[categoria] : []).map((g: Grupo, idx: number) => {
-          const list = categoria && data?.[categoria] ? data[categoria] : [];
-          return (
-            <React.Fragment key={idx}>
-              <ListGroup.Item onPress={() => setGrupo(g)}>
-                <ListGroup.ItemContent>
-                  <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
-                  {g.subtitulo ? (
-                    <ListGroup.ItemDescription>{g.subtitulo}</ListGroup.ItemDescription>
-                  ) : null}
-                </ListGroup.ItemContent>
-              </ListGroup.Item>
-              {idx < list.length - 1 && <Separator />}
-            </React.Fragment>
-          );
-        })}
+        {(categoria && data?.[categoria] ? data[categoria] : []).map(
+          (g: Grupo, idx: number) => {
+            const list = categoria && data?.[categoria] ? data[categoria] : [];
+            return (
+              <React.Fragment key={idx}>
+                <ListGroup.Item onPress={() => setGrupo(g)}>
+                  <ListGroup.ItemContent>
+                    <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
+                    {g.subtitulo ? (
+                      <ListGroup.ItemDescription>
+                        {g.subtitulo}
+                      </ListGroup.ItemDescription>
+                    ) : null}
+                  </ListGroup.ItemContent>
+                </ListGroup.Item>
+                {idx < list.length - 1 && <Separator />}
+              </React.Fragment>
+            );
+          },
+        )}
       </ListGroup>
     </ScrollView>
   );

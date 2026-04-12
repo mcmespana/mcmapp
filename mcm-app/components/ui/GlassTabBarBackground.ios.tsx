@@ -9,10 +9,7 @@ export default function GlassTabBarBackground() {
 
   if (glassAvailable) {
     return (
-      <GlassView
-        glassEffectStyle="clear"
-        style={StyleSheet.absoluteFill}
-      />
+      <GlassView glassEffectStyle="clear" style={StyleSheet.absoluteFill} />
     );
   }
 
