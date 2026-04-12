@@ -1,11 +1,5 @@
 import React, { useLayoutEffect, useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  Platform,
-  Linking,
-  Text,
-} from 'react-native';
+import { View, StyleSheet, Platform, Linking, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useToast, Spinner, Button, PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -64,7 +58,8 @@ export default function ComidaWebScreen() {
   const onError = () => {
     toast.show({
       variant: 'danger',
-      label: 'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      label:
+        'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
       actionLabel: 'Cerrar',
       onActionPress: ({ hide }) => hide(),
     });
@@ -87,7 +82,9 @@ export default function ComidaWebScreen() {
             style={styles.redirectButton}
           >
             <MaterialIcons name="open-in-new" size={20} color="#fff" />
-            <Button.Label style={styles.redirectButtonText}>Abrir sitio web</Button.Label>
+            <Button.Label style={styles.redirectButtonText}>
+              Abrir sitio web
+            </Button.Label>
           </Button>
           <Button
             variant="ghost"

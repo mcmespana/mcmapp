@@ -11,7 +11,10 @@ import {
   Easing,
   Platform,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,7 +25,10 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
-import { LiturgicalBadge, getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
+import {
+  LiturgicalBadge,
+  getLiturgicalInfo,
+} from '@/components/contigo/LiturgicalBadge';
 import { ReadingCard } from '@/components/contigo/ReadingCard';
 import SettingsPanel from '@/components/SettingsPanel';
 import BottomSheet from '@/components/BottomSheet';
@@ -46,8 +52,18 @@ const WARM = {
 };
 
 const MONTHS = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
 ];
 
 function formatDateDisplay(dateStr: string) {
@@ -55,7 +71,15 @@ function formatDateDisplay(dateStr: string) {
   // Parse as local date — avoid timezone offset
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const days = [
+    'Domingo',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+  ];
   return `${days[date.getDay()]}, ${d} de ${MONTHS[m - 1]}`;
 }
 
@@ -73,7 +97,13 @@ function addDays(dateStr: string, offset: number): string {
 // ── Joyful "Amen" Animation Component ──
 const PARTICLES = Array.from({ length: 24 });
 
-function CelebrationAnimation({ visible, isDark }: { visible: boolean; isDark: boolean }) {
+function CelebrationAnimation({
+  visible,
+  isDark,
+}: {
+  visible: boolean;
+  isDark: boolean;
+}) {
   const scale = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const particles = useRef(PARTICLES.map(() => new Animated.Value(0))).current;
@@ -87,8 +117,15 @@ function CelebrationAnimation({ visible, isDark }: { visible: boolean; isDark: b
       delay: Math.random() * 40,
       duration: 300 + Math.random() * 300,
       iconName: i % 2 === 0 ? 'star' : 'auto-awesome',
-      color: i % 3 === 0 ? '#FFD700' : (i % 2 === 0 ? '#4ECDC4' : (isDark ? '#DAA520' : '#FF6B6B'))
-    }))
+      color:
+        i % 3 === 0
+          ? '#FFD700'
+          : i % 2 === 0
+            ? '#4ECDC4'
+            : isDark
+              ? '#DAA520'
+              : '#FF6B6B',
+    })),
   ).current;
 
   useEffect(() => {
@@ -113,9 +150,9 @@ function CelebrationAnimation({ visible, isDark }: { visible: boolean; isDark: b
               duration: particleConfigs[i].duration,
               easing: Easing.out(Easing.cubic),
               useNativeDriver: true,
-            })
-          ])
-        )
+            }),
+          ]),
+        ),
       ]).start();
 
       const timer = setTimeout(() => {
@@ -131,7 +168,7 @@ function CelebrationAnimation({ visible, isDark }: { visible: boolean; isDark: b
     } else {
       scale.setValue(0);
       opacity.setValue(0);
-      particles.forEach(p => p.setValue(0));
+      particles.forEach((p) => p.setValue(0));
     }
   }, [visible]);
 
@@ -149,23 +186,23 @@ function CelebrationAnimation({ visible, isDark }: { visible: boolean; isDark: b
       {particles.map((p, i) => {
         const config = particleConfigs[i];
         const baseAngle = (i * 360) / PARTICLES.length;
-        const rad = (baseAngle + config.angleOffset) * Math.PI / 180;
-        
+        const rad = ((baseAngle + config.angleOffset) * Math.PI) / 180;
+
         const moveX = p.interpolate({
           inputRange: [0, 1],
-          outputRange: [0, Math.cos(rad) * config.distance]
+          outputRange: [0, Math.cos(rad) * config.distance],
         });
         const moveY = p.interpolate({
           inputRange: [0, 1],
-          outputRange: [0, Math.sin(rad) * config.distance]
+          outputRange: [0, Math.sin(rad) * config.distance],
         });
         const pScale = p.interpolate({
           inputRange: [0, 0.4, 0.8, 1],
-          outputRange: [0, 1.2, 0.8, 0]
+          outputRange: [0, 1.2, 0.8, 0],
         });
         const rotate = p.interpolate({
           inputRange: [0, 1],
-          outputRange: ['0deg', `${i % 2 === 0 ? 270 : -270}deg`]
+          outputRange: ['0deg', `${i % 2 === 0 ? 270 : -270}deg`],
         });
 
         return (
@@ -180,12 +217,16 @@ function CelebrationAnimation({ visible, isDark }: { visible: boolean; isDark: b
                   { translateX: moveX },
                   { translateY: moveY },
                   { scale: pScale },
-                  { rotate }
-                ]
-              }
+                  { rotate },
+                ],
+              },
             ]}
           >
-             <MaterialIcons name={config.iconName as any} size={config.size} color={config.color} />
+            <MaterialIcons
+              name={config.iconName as any}
+              size={config.size}
+              color={config.color}
+            />
           </Animated.View>
         );
       })}
@@ -229,7 +270,7 @@ export default function EvangelioScreen() {
   const { todayStr, getRecord, setReadingDone } = useContigoHabits();
 
   const [selectedDate, setSelectedDate] = useState(
-    todayStr || new Date().toISOString().split('T')[0]
+    todayStr || new Date().toISOString().split('T')[0],
   );
   const { readings, isLoading, error } = useDailyReadings(selectedDate);
   const [viewMode, setViewMode] = useState<'lectura' | 'comentario'>('lectura');
@@ -239,39 +280,43 @@ export default function EvangelioScreen() {
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem('@contigo_bookmarks').then(str => {
+    AsyncStorage.getItem('@contigo_bookmarks').then((str) => {
       if (str) {
         const bookmarks: any[] = JSON.parse(str);
         if (bookmarks.length > 0 && typeof bookmarks[0] === 'string') {
           setIsBookmarked(bookmarks.includes(selectedDate));
         } else {
-          setIsBookmarked(bookmarks.some(b => b.date === selectedDate));
+          setIsBookmarked(bookmarks.some((b) => b.date === selectedDate));
         }
       }
     });
   }, [selectedDate]);
 
   const toggleBookmark = async () => {
-    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== 'web')
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const str = await AsyncStorage.getItem('@contigo_bookmarks');
       let bookmarks: any[] = str ? JSON.parse(str) : [];
       if (isBookmarked) {
         if (bookmarks.length > 0 && typeof bookmarks[0] === 'string') {
-            bookmarks = bookmarks.filter(d => d !== selectedDate);
+          bookmarks = bookmarks.filter((d) => d !== selectedDate);
         } else {
-            bookmarks = bookmarks.filter(b => b.date !== selectedDate);
+          bookmarks = bookmarks.filter((b) => b.date !== selectedDate);
         }
       } else {
         // Handle migration if mixing arrays, filter strings out
-        bookmarks = bookmarks.filter(b => typeof b !== 'string');
+        bookmarks = bookmarks.filter((b) => typeof b !== 'string');
         bookmarks.push({
           date: selectedDate,
           readings: readings,
-          bookmarkedAt: Date.now()
+          bookmarkedAt: Date.now(),
         });
       }
-      await AsyncStorage.setItem('@contigo_bookmarks', JSON.stringify(bookmarks));
+      await AsyncStorage.setItem(
+        '@contigo_bookmarks',
+        JSON.stringify(bookmarks),
+      );
       setIsBookmarked(!isBookmarked);
     } catch (e) {
       console.error('Failed to save bookmark', e);
@@ -293,15 +338,22 @@ export default function EvangelioScreen() {
   const handleToggleDone = async () => {
     const newValue = !isDone;
     await setReadingDone(selectedDate, newValue);
-    
+
     if (newValue) {
       // Create a playful, escalating vibration sequence
       if (Platform.OS !== 'web') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 100);
-        setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 250);
+        setTimeout(
+          () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
+          100,
+        );
+        setTimeout(
+          () =>
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+          250,
+        );
       }
-      
+
       setShowCheck(true);
       setTimeout(() => setShowCheck(false), 2500);
     }
@@ -310,7 +362,7 @@ export default function EvangelioScreen() {
   const openSource = () => {
     if (readings?.evangelio?.url) {
       Linking.openURL(readings.evangelio.url).catch((err) =>
-        console.error("Couldn't open URL", err)
+        console.error("Couldn't open URL", err),
       );
     }
   };
@@ -318,7 +370,9 @@ export default function EvangelioScreen() {
   // Liturgical color for subtle tinting
   const liturgicalAccent =
     liturgicalInfo.hex === '#F5F5F5'
-      ? isDark ? '#888888' : '#999999'
+      ? isDark
+        ? '#888888'
+        : '#999999'
       : liturgicalInfo.hex;
 
   return (
@@ -334,35 +388,60 @@ export default function EvangelioScreen() {
       <View
         style={[
           styles.floatingHeader,
-          { 
+          {
             paddingTop: Math.max(insets.top, 16),
-            backgroundColor: isDark 
-              ? 'rgba(28, 26, 23, 0.85)' 
+            backgroundColor: isDark
+              ? 'rgba(28, 26, 23, 0.85)'
               : 'rgba(254, 251, 245, 0.85)',
-          }
+          },
         ]}
       >
         <TouchableOpacity
           onPress={goBack}
-          style={[styles.frostedBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
+          style={[
+            styles.frostedBtn,
+            {
+              backgroundColor: isDark
+                ? 'rgba(255,255,255,0.08)'
+                : 'rgba(0,0,0,0.05)',
+            },
+          ]}
         >
-          <MaterialIcons name="arrow-back-ios-new" size={20} color={theme.text} />
+          <MaterialIcons
+            name="arrow-back-ios-new"
+            size={20}
+            color={theme.text}
+          />
         </TouchableOpacity>
 
         <View style={styles.floatingActions}>
           <TouchableOpacity
             onPress={toggleBookmark}
-            style={[styles.frostedBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
+            style={[
+              styles.frostedBtn,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255,255,255,0.08)'
+                  : 'rgba(0,0,0,0.05)',
+              },
+            ]}
           >
-            <MaterialIcons 
-              name={isBookmarked ? "bookmark" : "bookmark-border"} 
-              size={24} 
-              color={isBookmarked ? warm.accent : theme.text} 
+            <MaterialIcons
+              name={isBookmarked ? 'bookmark' : 'bookmark-border'}
+              size={24}
+              color={isBookmarked ? warm.accent : theme.text}
             />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setSettingsVisible(true)}
-            style={[styles.frostedBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
+            style={[
+              styles.frostedBtn,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255,255,255,0.08)'
+                  : 'rgba(0,0,0,0.05)',
+              },
+            ]}
           >
             <MaterialIcons name="text-fields" size={22} color={theme.text} />
           </TouchableOpacity>
@@ -370,7 +449,10 @@ export default function EvangelioScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 80 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 80 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Date Navigator with liturgical color backdrop ── */}
@@ -468,7 +550,10 @@ export default function EvangelioScreen() {
             </Text>
             <TouchableOpacity
               onPress={() => setSelectedDate(todayStr)}
-              style={[styles.todayBtn, { backgroundColor: hexAlpha(warm.accent, '15') }]}
+              style={[
+                styles.todayBtn,
+                { backgroundColor: hexAlpha(warm.accent, '15') },
+              ]}
             >
               <Text style={[styles.todayBtnText, { color: warm.accent }]}>
                 Volver a hoy
@@ -527,8 +612,8 @@ export default function EvangelioScreen() {
                               ? '#DAA520'
                               : '#B8860B'
                             : isDark
-                            ? '#A09A94'
-                            : '#888888'
+                              ? '#A09A94'
+                              : '#888888'
                         }
                       />
                       <Text
@@ -541,8 +626,8 @@ export default function EvangelioScreen() {
                                   ? '#DAA520'
                                   : '#B8860B'
                                 : isDark
-                                ? '#A09A94'
-                                : '#888888',
+                                  ? '#A09A94'
+                                  : '#888888',
                             fontWeight: viewMode === 'lectura' ? '700' : '500',
                           },
                         ]}
@@ -576,8 +661,8 @@ export default function EvangelioScreen() {
                               ? '#DAA520'
                               : '#B8860B'
                             : isDark
-                            ? '#A09A94'
-                            : '#888888'
+                              ? '#A09A94'
+                              : '#888888'
                         }
                       />
                       <Text
@@ -590,9 +675,10 @@ export default function EvangelioScreen() {
                                   ? '#DAA520'
                                   : '#B8860B'
                                 : isDark
-                                ? '#A09A94'
-                                : '#888888',
-                            fontWeight: viewMode === 'comentario' ? '700' : '500',
+                                  ? '#A09A94'
+                                  : '#888888',
+                            fontWeight:
+                              viewMode === 'comentario' ? '700' : '500',
                           },
                         ]}
                       >
@@ -616,7 +702,9 @@ export default function EvangelioScreen() {
                             color={warm.accent}
                             style={{ marginRight: 4 }}
                           />
-                          <Text style={[styles.citaText, { color: warm.accent }]}>
+                          <Text
+                            style={[styles.citaText, { color: warm.accent }]}
+                          >
                             {readings.evangelio.cita}
                           </Text>
                         </View>
@@ -627,8 +715,9 @@ export default function EvangelioScreen() {
                               color: theme.text,
                               fontSize: 18 * fontScale,
                               lineHeight: 28 * fontScale,
-                              fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif'
-                            }
+                              fontFamily:
+                                Platform.OS === 'ios' ? 'Palatino' : 'serif',
+                            },
                           ]}
                           selectable
                         >
@@ -644,7 +733,7 @@ export default function EvangelioScreen() {
                               color: theme.text,
                               fontSize: 18 * fontScale,
                               lineHeight: 28 * fontScale,
-                            }
+                            },
                           ]}
                           selectable
                         >
@@ -652,7 +741,12 @@ export default function EvangelioScreen() {
                         </Text>
 
                         {readings.evangelio.comentarista ? (
-                          <Text style={[styles.authorText, { color: warm.warmGray }]}>
+                          <Text
+                            style={[
+                              styles.authorText,
+                              { color: warm.warmGray },
+                            ]}
+                          >
                             — {readings.evangelio.comentarista}
                           </Text>
                         ) : null}
@@ -669,7 +763,12 @@ export default function EvangelioScreen() {
                               },
                             ]}
                           >
-                            <Text style={[styles.sourceText, { color: warm.accent }]}>
+                            <Text
+                              style={[
+                                styles.sourceText,
+                                { color: warm.accent },
+                              ]}
+                            >
                               Leer original completo
                             </Text>
                             <MaterialIcons
@@ -686,7 +785,10 @@ export default function EvangelioScreen() {
               ) : (
                 <View style={styles.cardContent}>
                   <View
-                    style={[styles.citaBadge, { backgroundColor: hexAlpha(warm.accent, '12') }]}
+                    style={[
+                      styles.citaBadge,
+                      { backgroundColor: hexAlpha(warm.accent, '12') },
+                    ]}
                   >
                     <MaterialIcons
                       name="format-quote"
@@ -705,8 +807,9 @@ export default function EvangelioScreen() {
                         color: theme.text,
                         fontSize: 18 * fontScale,
                         lineHeight: 28 * fontScale,
-                        fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif'
-                      }
+                        fontFamily:
+                          Platform.OS === 'ios' ? 'Palatino' : 'serif',
+                      },
                     ]}
                     selectable
                   >
@@ -743,9 +846,7 @@ export default function EvangelioScreen() {
                     name={isDone ? 'check-circle' : 'favorite'}
                     size={22}
                     color={
-                      isDone
-                        ? isDark ? '#A3BD31' : '#3A7D44'
-                        : '#FFFFFF'
+                      isDone ? (isDark ? '#A3BD31' : '#3A7D44') : '#FFFFFF'
                     }
                   />
                   <Text
@@ -780,7 +881,9 @@ export default function EvangelioScreen() {
                     },
                   ]}
                 />
-                <Text style={[styles.otherReadingsTitle, { color: theme.text }]}>
+                <Text
+                  style={[styles.otherReadingsTitle, { color: theme.text }]}
+                >
                   Otras lecturas de la misa
                 </Text>
 
@@ -812,9 +915,20 @@ export default function EvangelioScreen() {
 
             <TouchableOpacity
               onPress={() => setCreditsVisible(true)}
-              style={{ alignItems: 'center', paddingVertical: 24, marginTop: 10, paddingBottom: 40 }}
+              style={{
+                alignItems: 'center',
+                paddingVertical: 24,
+                marginTop: 10,
+                paddingBottom: 40,
+              }}
             >
-              <Text style={{ fontSize: 13, color: warm.warmGray, textDecorationLine: 'underline' }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: warm.warmGray,
+                  textDecorationLine: 'underline',
+                }}
+              >
                 ¿De dónde sacamos los textos?
               </Text>
             </TouchableOpacity>
@@ -825,43 +939,164 @@ export default function EvangelioScreen() {
       {/* Celebration burst animation */}
       <CelebrationAnimation visible={showCheck} isDark={isDark} />
 
-      <SettingsPanel visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
+      <SettingsPanel
+        visible={settingsVisible}
+        onClose={() => setSettingsVisible(false)}
+      />
 
       {/* Credits Sheet */}
-      <BottomSheet visible={creditsVisible} onClose={() => setCreditsVisible(false)}>
+      <BottomSheet
+        visible={creditsVisible}
+        onClose={() => setCreditsVisible(false)}
+      >
         <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <Text style={{ fontSize: 22, fontWeight: '800', color: theme.text, letterSpacing: -0.3 }}>Fuentes de los textos</Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 20,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: '800',
+                color: theme.text,
+                letterSpacing: -0.3,
+              }}
+            >
+              Fuentes de los textos
+            </Text>
             <CloseButton onPress={() => setCreditsVisible(false)} />
           </View>
-          
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 20, paddingBottom: 20 }}>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ gap: 20, paddingBottom: 20 }}
+          >
             <Text style={{ fontSize: 15, lineHeight: 22, color: theme.text }}>
-              Los textos bíblicos y los comentarios que te mostramos en la aplicación están extraídos de webs que los comparten de forma gratuita en abierto. Junto a los comentarios se indica su autor de la misma forma que se muestra en la web original.
+              Los textos bíblicos y los comentarios que te mostramos en la
+              aplicación están extraídos de webs que los comparten de forma
+              gratuita en abierto. Junto a los comentarios se indica su autor de
+              la misma forma que se muestra en la web original.
             </Text>
 
-            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', padding: 16, borderRadius: radii.lg, gap: 4 }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>Vatican News</Text>
-              <Text style={{ fontSize: 13, color: theme.icon }}>© 2017-{new Date().getFullYear()} Dicasterium pro Communicatione</Text>
-              <TouchableOpacity onPress={() => Linking.openURL('https://www.vaticannews.va/es/evangelio-de-hoy')}>
-                <Text style={{ fontSize: 13, color: warm.accent, textDecorationLine: 'underline', marginTop: 4 }}>vaticannews.va/es/evangelio-de-hoy</Text>
+            <View
+              style={{
+                backgroundColor: isDark
+                  ? 'rgba(255,255,255,0.06)'
+                  : 'rgba(0,0,0,0.04)',
+                padding: 16,
+                borderRadius: radii.lg,
+                gap: 4,
+              }}
+            >
+              <Text
+                style={{ fontSize: 14, fontWeight: '700', color: theme.text }}
+              >
+                Vatican News
+              </Text>
+              <Text style={{ fontSize: 13, color: theme.icon }}>
+                © 2017-{new Date().getFullYear()} Dicasterium pro Communicatione
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  Linking.openURL(
+                    'https://www.vaticannews.va/es/evangelio-de-hoy',
+                  )
+                }
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: warm.accent,
+                    textDecorationLine: 'underline',
+                    marginTop: 4,
+                  }}
+                >
+                  vaticannews.va/es/evangelio-de-hoy
+                </Text>
               </TouchableOpacity>
-              <Text style={{ fontSize: 13, color: theme.icon, marginTop: 4 }}>webmaster@vaticannews.va</Text>
+              <Text style={{ fontSize: 13, color: theme.icon, marginTop: 4 }}>
+                webmaster@vaticannews.va
+              </Text>
             </View>
 
-            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', padding: 16, borderRadius: radii.lg, gap: 4 }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>Vida Nueva</Text>
-              <Text style={{ fontSize: 13, color: theme.icon }}>© {new Date().getFullYear()} Copyright Vida Nueva</Text>
-              <TouchableOpacity onPress={() => Linking.openURL('https://www.vidanuevadigital.com/evangeliodeldia/')}>
-                <Text style={{ fontSize: 13, color: warm.accent, textDecorationLine: 'underline', marginTop: 4 }}>vidanuevadigital.com/evangeliodeldia</Text>
+            <View
+              style={{
+                backgroundColor: isDark
+                  ? 'rgba(255,255,255,0.06)'
+                  : 'rgba(0,0,0,0.04)',
+                padding: 16,
+                borderRadius: radii.lg,
+                gap: 4,
+              }}
+            >
+              <Text
+                style={{ fontSize: 14, fontWeight: '700', color: theme.text }}
+              >
+                Vida Nueva
+              </Text>
+              <Text style={{ fontSize: 13, color: theme.icon }}>
+                © {new Date().getFullYear()} Copyright Vida Nueva
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  Linking.openURL(
+                    'https://www.vidanuevadigital.com/evangeliodeldia/',
+                  )
+                }
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: warm.accent,
+                    textDecorationLine: 'underline',
+                    marginTop: 4,
+                  }}
+                >
+                  vidanuevadigital.com/evangeliodeldia
+                </Text>
               </TouchableOpacity>
             </View>
 
-            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', padding: 16, borderRadius: radii.lg, gap: 4 }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>Dominicos · Orden de Predicadores</Text>
-              <Text style={{ fontSize: 13, color: theme.icon, lineHeight: 18 }}>Textos bíblicos de la Versión oficial de la Conferencia Episcopal Española. Editorial BAC</Text>
-              <TouchableOpacity onPress={() => Linking.openURL('https://www.dominicos.org/predicacion/evangelio-del-dia/hoy/')}>
-                <Text style={{ fontSize: 13, color: warm.accent, textDecorationLine: 'underline', marginTop: 4 }}>dominicos.org/predicacion/evangelio-del-dia/hoy</Text>
+            <View
+              style={{
+                backgroundColor: isDark
+                  ? 'rgba(255,255,255,0.06)'
+                  : 'rgba(0,0,0,0.04)',
+                padding: 16,
+                borderRadius: radii.lg,
+                gap: 4,
+              }}
+            >
+              <Text
+                style={{ fontSize: 14, fontWeight: '700', color: theme.text }}
+              >
+                Dominicos · Orden de Predicadores
+              </Text>
+              <Text style={{ fontSize: 13, color: theme.icon, lineHeight: 18 }}>
+                Textos bíblicos de la Versión oficial de la Conferencia
+                Episcopal Española. Editorial BAC
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  Linking.openURL(
+                    'https://www.dominicos.org/predicacion/evangelio-del-dia/hoy/',
+                  )
+                }
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: warm.accent,
+                    textDecorationLine: 'underline',
+                    marginTop: 4,
+                  }}
+                >
+                  dominicos.org/predicacion/evangelio-del-dia/hoy
+                </Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

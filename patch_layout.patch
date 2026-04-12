@@ -1,0 +1,13 @@
+--- mcm-app/app/_layout.tsx
++++ mcm-app/app/_layout.tsx
+@@ -107,6 +107,11 @@
+             title: 'Wordle Jubileo',
+           }}
+         />
++        <Stack.Screen
++          name="screens/OracionScreen"
++          options={{ headerShown: false }}
++        />
+       </Stack>
+       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+       <AddToHomeBanner />

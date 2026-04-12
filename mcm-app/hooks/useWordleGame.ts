@@ -33,7 +33,9 @@ export default function useWordleGame(
 
     // Determine current status
     let newStatus: GameStatus = 'playing';
-    if (initialGuesses.some((g) => g.letters.every((l) => l.state === 'correct')))
+    if (
+      initialGuesses.some((g) => g.letters.every((l) => l.state === 'correct'))
+    )
       newStatus = 'won';
     else if (initialGuesses.length >= MAX_TRIES) newStatus = 'lost';
     setStatus(newStatus);

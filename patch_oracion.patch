@@ -1,0 +1,48 @@
+--- mcm-app/app/screens/OracionScreen.tsx
++++ mcm-app/app/screens/OracionScreen.tsx
+@@ -15,15 +15,12 @@
+ import { MaterialIcons } from '@expo/vector-icons';
+ import { BlurView } from 'expo-blur';
+ import { useSafeAreaInsets } from 'react-native-safe-area-context';
+-import { Button, useToast } from 'heroui-native';
++import { useToast } from 'heroui-native';
+ import Animated, {
+   useSharedValue,
+   useAnimatedStyle,
+   withSpring,
+   withTiming,
+-  interpolateColor,
+ } from 'react-native-reanimated';
+-import { LinearGradient } from 'expo-linear-gradient';
+
+ import { Colors } from '@/constants/colors';
+ import { useColorScheme } from '@/hooks/useColorScheme';
+@@ -34,8 +31,6 @@
+-const { width } = Dimensions.get('window');
+
+ // Emotion configurations based on design
+@@ -49,7 +44,6 @@
+ export default function OracionScreen() {
+   const router = useRouter();
+   const scheme = useColorScheme();
+   const isDark = scheme === 'dark';
+-  const theme = Colors[scheme ?? 'light'];
+   const insets = useSafeAreaInsets();
+   const { toast } = useToast();
+
+@@ -74,7 +68,7 @@
+         activeColor.value = withTiming(isDark ? '#2A2112' : '#F0EBE0', { duration: 500 });
+     }
+-  }, [selectedEmotion, isDark]);
++  }, [selectedEmotion, isDark, activeColor]);
+
+   const animatedBackground = useAnimatedStyle(() => {
+     return {
+@@ -278,7 +272,7 @@
+   useEffect(() => {
+     scale.value = withSpring(isSelected ? 1.2 : 1);
+     opacity.value = withTiming(isSelected ? 1 : 0.5, { duration: 200 });
+-  }, [isSelected]);
++  }, [isSelected, scale, opacity]);
+
+   const animatedStyle = useAnimatedStyle(() => {

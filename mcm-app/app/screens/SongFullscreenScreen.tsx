@@ -1,10 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  StyleSheet,
-  Platform,
-  Animated,
-} from 'react-native';
+import { View, StyleSheet, Platform, Animated } from 'react-native';
 import {
   RouteProp,
   useNavigation,
@@ -163,7 +158,10 @@ export default function SongFullscreenScreen({
       <PressableFeedback
         style={[
           styles.scrollButton,
-          !isIOS && (isDark ? styles.scrollButtonDarkFallback : styles.scrollButtonFallback),
+          !isIOS &&
+            (isDark
+              ? styles.scrollButtonDarkFallback
+              : styles.scrollButtonFallback),
         ]}
         onPress={() => {
           setAutoScroll((s) => !s);

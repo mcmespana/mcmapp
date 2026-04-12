@@ -5,9 +5,11 @@ Este documento explica cómo usar feature flags con OTA (Over-The-Air) updates d
 ## 📋 Cómo Funciona
 
 ### 1. Build Inicial
+
 Cuando haces un build de producción, el código JavaScript incluye los feature flags actuales de `constants/featureFlags.ts`.
 
 **Estado actual:**
+
 ```typescript
 const featureFlags: FeatureFlags = {
   tabs: {
@@ -27,7 +29,9 @@ const featureFlags: FeatureFlags = {
 Para activar el cantoral (u otra feature) después del build:
 
 #### Paso 1: Cambiar el feature flag
+
 Edita `constants/featureFlags.ts`:
+
 ```typescript
 const featureFlags: FeatureFlags = {
   tabs: {
@@ -39,6 +43,7 @@ const featureFlags: FeatureFlags = {
 ```
 
 #### Paso 2: Hacer commit y push a la rama de producción
+
 ```bash
 git add constants/featureFlags.ts
 git commit -m "Enable cancionero tab via OTA update"
@@ -46,12 +51,14 @@ git push origin production
 ```
 
 #### Paso 3: Publicar OTA Update
+
 ```bash
 # Publicar update al canal de producción
 eas update --branch production --message "Enable cancionero feature"
 ```
 
 #### Paso 4: Los usuarios reciben el update automáticamente
+
 - **Cuando abren la app**: Expo Updates chequea si hay una nueva versión
 - **Si hay update**: Lo descarga en background
 - **Próxima vez que abren**: Ya ven el cantoral activado
@@ -110,6 +117,7 @@ eas update --branch production --message "Enable cancionero feature"
 ## 📊 Configuración Actual
 
 ### Expo Updates Config (app.json)
+
 ```json
 "updates": {
   "url": "https://u.expo.dev/aa9f2d3a-b74a-4169-bad4-e851015e30c6",
@@ -122,6 +130,7 @@ eas update --branch production --message "Enable cancionero feature"
 - `fallbackToCacheTimeout: 0`: Usa inmediatamente la versión en caché mientras descarga
 
 ### EAS Build Channels (eas.json)
+
 - **development**: Para desarrollo local
 - **preview**: Para testing interno
 - **production**: Para la app en las stores
@@ -131,28 +140,30 @@ eas update --branch production --message "Enable cancionero feature"
 ```typescript
 interface FeatureFlags {
   tabs: {
-    index: boolean;        // Tab de inicio
-    mas: boolean;          // Tab de más opciones
-    cancionero: boolean;   // ⭐ Tab de cantoral (OTA)
-    calendario: boolean;   // Tab de calendario
-    fotos: boolean;        // Tab de fotos
-    comunica: boolean;     // Tab de comunica
+    index: boolean; // Tab de inicio
+    mas: boolean; // Tab de más opciones
+    cancionero: boolean; // ⭐ Tab de cantoral (OTA)
+    calendario: boolean; // Tab de calendario
+    fotos: boolean; // Tab de fotos
+    comunica: boolean; // Tab de comunica
   };
-  defaultTab: string;                // Tab inicial al abrir la app
-  showNotificationsIcon: boolean;    // Icono de notificaciones
-  showUserProfilePrompt: boolean;    // Prompt de perfil de usuario
+  defaultTab: string; // Tab inicial al abrir la app
+  showNotificationsIcon: boolean; // Icono de notificaciones
+  showUserProfilePrompt: boolean; // Prompt de perfil de usuario
 }
 ```
 
 ## 💡 Mejores Prácticas
 
 ### ✅ DO:
+
 - Usa OTA updates para cambios de código JavaScript
 - Usa feature flags para activar/desactivar funcionalidades
 - Prueba el OTA update en canal `preview` antes de `production`
 - Documenta cada cambio de feature flag en el commit message
 
 ### ❌ DON'T:
+
 - No uses OTA updates para cambios nativos (configuración de Info.plist, permisos, etc.)
 - No cambies múltiples features a la vez (dificulta debugging)
 - No olvides probar que la feature funciona antes de activarla
@@ -160,12 +171,15 @@ interface FeatureFlags {
 ## 🔍 Verificar OTA Updates
 
 ### Ver updates publicados
+
 ```bash
 eas update:list --branch production
 ```
 
 ### Ver qué versión tiene un usuario
+
 Los usuarios pueden ver en la app:
+
 ```bash
 # En desarrollo
 npx expo start

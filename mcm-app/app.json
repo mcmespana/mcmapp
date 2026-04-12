@@ -133,9 +133,7 @@
         }
       ],
       "expo-asset",
-      [
-        "expo-build-properties"
-      ],
+      ["expo-build-properties"],
       "@react-native-community/datetimepicker",
       "expo-font",
       "expo-image",

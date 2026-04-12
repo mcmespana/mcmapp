@@ -1,0 +1,18 @@
+--- mcm-app/app/screens/OracionScreen.tsx
++++ mcm-app/app/screens/OracionScreen.tsx
+@@ -9,7 +9,6 @@
+   KeyboardAvoidingView,
+   TouchableWithoutFeedback,
+   Keyboard,
+-  Dimensions,
+ } from 'react-native';
+ import { useRouter } from 'expo-router';
+ import { MaterialIcons } from '@expo/vector-icons';
+@@ -23,7 +22,6 @@
+   withTiming,
+ } from 'react-native-reanimated';
+
+-import { Colors } from '@/constants/colors';
+ import { useColorScheme } from '@/hooks/useColorScheme';
+ import { spacing, radii } from '@/constants/uiStyles';
+ import {
