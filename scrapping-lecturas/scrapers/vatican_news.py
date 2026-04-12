@@ -1,52 +1,81 @@
 """
-Scraper for Vatican News RSS Feed.
+Scraper for Vatican News RSS Feed — commentary only.
 https://www.vaticannews.va/es/evangelio-de-hoy.rss.xml
 
-Fetches the daily gospel, readings and commentary for the next ~15 days.
+This scraper extracts ONLY the "Las palabras de los Papas" section from each
+RSS item.  It does NOT extract gospel texts, readings, or salmo — those come
+from dominicos.py.
+
+For each item:
+  • comentario    ← body of the "Palabras de los Papas" section
+  • comentarista  ← author extracted from the trailing parenthetical
+  • fecha         ← derived from pubDate
+
+Items without a recognisable "Palabras" section are silently skipped
+(logged as WARNING so we can monitor match rates).
 """
+
 import logging
+import re
 import time
 from email.utils import parsedate_to_datetime
-import re
 
 import requests
 from bs4 import BeautifulSoup
 
 from scrapers.base import BaseScraper, EvangelioData
-from utils.text_utils import html_to_plain, join_paragraphs
+from utils.text_utils import join_paragraphs
 
 log = logging.getLogger(__name__)
 
-URL = "https://www.vaticannews.va/es/evangelio-de-hoy.rss.xml"
+RSS_URL = "https://www.vaticannews.va/es/evangelio-de-hoy.rss.xml"
 
-BASE_HEADERS = {
+HEADERS = {
     "Accept": "application/rss+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-    "User-Agent": "Mozilla/5.0 (compatible; LecturasScraper/1.0)",
+    "User-Agent": "Mozilla/5.0 (compatible; LecturasScraper/2.0)",
 }
 
 RETRY_DELAYS = [5, 15]
 
+# Case-insensitive patterns that identify the "palabras de los Papas" heading.
+_PAPAS_PATTERNS = (
+    "las palabras de los papas",
+    "las palabras del papa",
+    "palabras del papa",
+    "reflexión del papa",
+    "reflexion del papa",
+)
+
+
 class VaticanNewsScraper(BaseScraper):
+
     SOURCE_KEY = "vaticanNews"
-    SOURCE_URL = URL
+    SOURCE_URL = RSS_URL
+    REQUIRED_FIELDS = ("comentario", "comentarista")
+    WRITES_NODES = frozenset({"evangelio"})
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
     def fetch(self) -> list[EvangelioData]:
         xml_content = self._fetch_xml()
         if xml_content is None:
-            return [EvangelioData(
-                url=URL,
-                fecha="unknown",
-                error="HTTP_FETCH_FAILED",
-            )]
+            log.error("[VaticanNews] No se pudo obtener el feed RSS.")
+            return []
         return self._parse(xml_content)
+
+    # ------------------------------------------------------------------
+    # HTTP
+    # ------------------------------------------------------------------
 
     def _fetch_xml(self) -> str | None:
         session = requests.Session()
         for attempt, delay in enumerate(RETRY_DELAYS, start=1):
             try:
-                log.info(f"[VaticanNews] Intento {attempt}/2 → {URL}")
-                resp = session.get(URL, headers=BASE_HEADERS, timeout=15)
+                log.info(f"[VaticanNews] Intento {attempt}/{len(RETRY_DELAYS)} → {RSS_URL}")
+                resp = session.get(RSS_URL, headers=HEADERS, timeout=15)
                 if resp.status_code == 200:
                     log.info(f"[VaticanNews] OK ({len(resp.content)} bytes)")
                     return resp.text
@@ -58,21 +87,32 @@ class VaticanNewsScraper(BaseScraper):
         log.error("[VaticanNews] Todos los intentos fallaron.")
         return None
 
+    # ------------------------------------------------------------------
+    # Parsing
+    # ------------------------------------------------------------------
+
     def _parse(self, xml_content: str) -> list[EvangelioData]:
         soup = BeautifulSoup(xml_content, "xml")
         items = soup.find_all("item")
-        results = []
 
         if not items:
             log.warning("[VaticanNews] No se encontraron items en el RSS.")
-            return results
+            return []
+
+        results: list[EvangelioData] = []
+        skipped = 0
 
         for item in items:
             data = self._parse_item(item)
-            if data:
+            if data is not None:
                 results.append(data)
+            else:
+                skipped += 1
 
-        log.info(f"[VaticanNews] Se parsearon {len(results)} días del feed RSS.")
+        log.info(
+            f"[VaticanNews] {len(results)} items con comentario, "
+            f"{skipped} sin sección 'Palabras de los Papas' (saltados)."
+        )
         return results
 
     def _parse_item(self, item) -> EvangelioData | None:
@@ -81,182 +121,106 @@ class VaticanNewsScraper(BaseScraper):
         desc_el = item.find("description")
         guid_el = item.find("guid")
 
-        if not title_el or not pubdate_el or not desc_el:
+        if not pubdate_el or not desc_el:
             return None
 
-        # Parse date from pubDate
+        # Date from pubDate
         try:
             dt = parsedate_to_datetime(pubdate_el.text)
             fecha = dt.strftime("%Y-%m-%d")
         except Exception as e:
-            log.warning(f"[VaticanNews] No se pudo parsear fecha: {pubdate_el.text} - {e}")
+            log.warning(f"[VaticanNews] No se pudo parsear fecha: {pubdate_el.text!r} — {e}")
             return None
 
-        item_url = guid_el.text if guid_el else URL
+        item_url = guid_el.text if guid_el else RSS_URL
+
+        result = self._extract_palabras_papas(desc_el.text)
+        if result is None:
+            title = title_el.text.strip() if title_el else "?"
+            log.warning(
+                f"[VaticanNews] {fecha}: no se encontró sección 'Palabras de los Papas' "
+                f"(título: {title!r})"
+            )
+            return None
+
+        comentario, comentarista = result
 
         data = EvangelioData(url=item_url, fecha=fecha)
-        data.titulo = title_el.text.strip()
-
-        # Parse description HTML
-        desc_html = desc_el.text
-        self._parse_description_html(desc_html, data)
-
+        data.comentario = comentario
+        data.comentarista = comentarista
         return data
 
-    def _parse_description_html(self, html_content: str, data: EvangelioData):
-        soup = BeautifulSoup(html_content, "html.parser")
+    # ------------------------------------------------------------------
+    # Commentary extraction
+    # ------------------------------------------------------------------
 
-        # We need to extract readings and gospel.
-        # Structure often is:
-        # <p>Lectura del libro...</p> <p>Hechos 4, 1-12</p> <p>En aquellos días...</p>
-        # <p>Lectura del santo evangelio...</p> <p>Juan 21, 1-14</p> <p>En aquel tiempo...</p>
-        # <p>«Id por todo...» (Mc 16,15)... (Francisco - Homilia...)</p>
+    def _extract_palabras_papas(self, desc_html: str) -> tuple[str, str] | None:
+        """
+        Find the "Las palabras de los Papas" section in the description HTML
+        and extract (comentario_text, comentarista).
 
-        paragraphs = soup.find_all("p")
+        Returns None if no matching section is found.
+        """
+        soup = BeautifulSoup(desc_html, "html.parser")
 
-        state = "UNKNOWN"
+        # Walk only top-level elements to avoid double-processing nested tags.
+        elements = [
+            el for el in soup.children
+            if hasattr(el, "name") and el.name is not None
+        ]
 
-        lectura1_paras = []
-        lectura2_paras = []
-        evangelio_paras = []
-        comentario_paras = []
+        # Find the section header index
+        header_idx: int | None = None
+        for i, el in enumerate(elements):
+            text_lower = el.get_text(" ", strip=True).lower()
+            if any(pat in text_lower for pat in _PAPAS_PATTERNS):
+                header_idx = i
+                break
 
-        for p in paragraphs:
-            text = p.get_text(strip=True)
-            if not text:
-                continue
+        if header_idx is None:
+            return None
 
-            lower_text = text.lower()
+        # Collect paragraphs after the header until the next heading or end
+        commentary_paras: list[str] = []
+        for el in elements[header_idx + 1:]:
+            if el.name in ("h1", "h2", "h3", "h4", "h5"):
+                break  # Next section starts
+            if el.name == "p":
+                text = el.get_text(" ", strip=True)
+                if text:
+                    commentary_paras.append(text)
 
-            # Detect section changes based on common keywords
-            if "santo evangelio" in lower_text or "pasión de nuestro señor" in lower_text or "evangelio según" in lower_text:
-                state = "EV_TITLE"
-                continue
+        if not commentary_paras:
+            return None
 
-            if "lectura" in lower_text:
-                if state in ["UNKNOWN", "L1_CITA", "L1_TEXTO"]:
-                    if not data.primera_lectura:
-                        state = "L1_TITLE"
-                elif state in ["L1_TEXTO"]:
-                    if not data.segunda_lectura:
-                        state = "L2_TITLE"
-                continue # Skip the "Lectura del libro de..." paragraph
+        comentario = join_paragraphs(commentary_paras)
+        comentarista = _extract_author(commentary_paras[-1])
+        return comentario, comentarista
 
-            # If we just saw a title, the next paragraph is likely the citation
-            if state == "L1_TITLE":
-                data.primera_lectura = text
-                state = "L1_TEXTO"
-                continue
-            elif state == "L2_TITLE":
-                data.segunda_lectura = text
-                state = "L2_TEXTO"
-                continue
-            elif state == "EV_TITLE":
-                data.cita = text
-                state = "EV_TEXTO"
-                continue
 
-            # Accumulate text based on state
-            if state == "L1_TEXTO":
-                lectura1_paras.append(text)
-            elif state == "L2_TEXTO":
-                lectura2_paras.append(text)
-            elif state == "EV_TEXTO":
-                # Check if this paragraph looks like the start of the commentary instead
-                # Commentary usually starts with a quote like «...» or just after the gospel text
-                # We can detect commentary if the previous paragraphs already formed the gospel
-                # and this one is the last or second to last.
-                # A better heuristic: if it contains an author at the end, it's definitely commentary.
-                if re.search(r'\(([^)]+ - [^)]+)\)$', text) or "(Francisco " in text or "(Juan Pablo II" in text or "(Benedicto XVI" in text:
-                    comentario_paras.append(text)
-                    state = "COMENTARIO"
-                else:
-                    # Some commentary doesn't have the author explicitly formatted.
-                    # We will assume everything after EV_TEXTO is Evangelio unless it looks like Commentary.
-                    # As a simple heuristic, if it starts with « or ", it might be the commentary.
-                    # But gospel also has quotes.
-                    evangelio_paras.append(text)
-            elif state == "COMENTARIO":
-                comentario_paras.append(text)
-            else:
-                # If we are in UNKNOWN, might be the commentary if it's the very last thing and no headers were found
-                pass
+# ---------------------------------------------------------------------------
+# Author extraction helper
+# ---------------------------------------------------------------------------
 
-        # Post-process: in Vatican News, the last paragraph of the description is usually the commentary.
-        # If we didn't explicitly find the commentary state, let's extract the last paragraph from EV_TEXTO
-        if not comentario_paras and evangelio_paras:
-            last_para = evangelio_paras[-1]
-            if re.search(r'\((.+? - .+?)\)$', last_para) or last_para.startswith("«"):
-                comentario_paras.append(evangelio_paras.pop())
+_AUTHOR_RE = re.compile(r"\(([^)]+)\)\s*$")
 
-        # If no Evangelio text but we have commentary, let's fix it
-        # Or if Cita is missing, maybe the text didn't say "Lectura del santo evangelio"
-        # It happens on Sundays where gospel might be long or differently formatted
-        if not data.cita and evangelio_paras:
-            # Maybe the cita is the first line of the evangelio
-            if len(evangelio_paras[0]) < 50 and any(str.isdigit(c) for c in evangelio_paras[0]):
-                data.cita = evangelio_paras.pop(0)
-            else:
-                data.cita = "Evangelio del día"
 
-        if not data.cita and not evangelio_paras and not comentario_paras:
-            # Could not parse this day at all, skip
-            log.warning(f"[VaticanNews] Parseo fallido para {data.fecha}. No se encontró cita ni evangelio.")
+def _extract_author(last_paragraph: str) -> str:
+    """
+    Extract the author name from the trailing parenthetical of a commentary.
 
-        # Fallback to check if commentary is actually inside evangelio_paras
-        # (This happens when we misidentify the entire text as gospel because of formatting differences)
-        if not comentario_paras and evangelio_paras:
-            # Check for author names or "Audiencia general"
-            for i, p in enumerate(evangelio_paras):
-                if "(Francisco" in p or "(Juan Pablo" in p or "(Benedicto" in p or "(León" in p or "(Audiencia general" in p:
-                    comentario_paras = evangelio_paras[i:]
-                    evangelio_paras = evangelio_paras[:i]
-                    break
+    "(Benedicto XVI - Audiencia general, 14 de abril de 2010)"  → "Benedicto XVI"
+    "(Francisco, Homilía Vigilia Pascual, 19 de abril de 2014)" → "Francisco"
+    No match → "Vatican News"
+    """
+    match = _AUTHOR_RE.search(last_paragraph)
+    if not match:
+        return "Vatican News"
 
-            # If still not found, check if the last paragraph of evangelio_paras contains
-            # standard commentary markers at the end.
-            if not comentario_paras and evangelio_paras:
-                last_para = evangelio_paras[-1]
-                # Look for a closing parenthesis and a dash, which is common in citations
-                if re.search(r'\(([^)]+ - [^)]+)\)$', last_para) or re.search(r'\(([^)]+?)[,\-]', last_para):
-                    # We only extract the last paragraph as commentary if it looks like it has an author citation
-                    # Often the commentary is just one paragraph anyway
-                    comentario_paras.append(evangelio_paras.pop())
+    inner = match.group(1).strip()
 
-        # Extract author from commentary
-        if comentario_paras:
-            full_comentario = join_paragraphs(comentario_paras)
-            data.comentario = full_comentario
-
-            # Try to extract the author, e.g. "(Francisco - Homilia Santa Marta, 25 de abril de 2020)"
-            # Or "(Juan Pablo II, Audiencia General...)"
-            author_match = re.search(r'\(([^)]+?)[,\-]', full_comentario)
-            if author_match:
-                author_text = author_match.group(1).strip()
-                data.comentarista = author_text
-            else:
-                # Some comments end without parenthesis or have different formats.
-                # Just find the last sentence if we couldn't parse the author
-                last_line = comentario_paras[-1] if isinstance(comentario_paras, list) and len(comentario_paras)>0 else full_comentario
-                fallback_match = re.search(r'\(([^)]+)\)$', last_line)
-                if fallback_match:
-                     data.comentarista = fallback_match.group(1).split(",")[0].strip()
-                else:
-                     data.comentarista = "Vatican News"
-
-        # Fallback for missing elements to pass validation
-        if not data.comentario:
-            data.comentario = "Comentario no disponible."
-        if not data.comentarista:
-            data.comentarista = "Vatican News"
-        if not data.cita:
-            data.cita = "Evangelio"
-
-        if evangelio_paras:
-            data.evangelio_texto = join_paragraphs(evangelio_paras)
-
-        if lectura1_paras:
-            data.primera_lectura_texto = join_paragraphs(lectura1_paras)
-
-        if lectura2_paras:
-            data.segunda_lectura_texto = join_paragraphs(lectura2_paras)
+    if " - " in inner:
+        return inner.split(" - ")[0].strip()
+    if "," in inner:
+        return inner.split(",")[0].strip()
+    return inner

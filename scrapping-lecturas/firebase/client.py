@@ -1,4 +1,4 @@
-"""Firebase Admin SDK client for writing lecturas data."""
+"""Firebase Admin SDK client for writing and reading lecturas data."""
 
 import json
 import logging
@@ -6,6 +6,7 @@ import os
 import time
 
 import firebase_admin
+import requests as http_requests
 from firebase_admin import credentials, db
 
 log = logging.getLogger(__name__)
@@ -27,9 +28,7 @@ def _get_app() -> firebase_admin.App:
             "Copia .env.example a .env y rellena las credenciales."
         )
     if not database_url:
-        raise EnvironmentError(
-            "FIREBASE_DATABASE_URL no está configurado."
-        )
+        raise EnvironmentError("FIREBASE_DATABASE_URL no está configurado.")
 
     cred_dict = json.loads(service_account_json)
     cred = credentials.Certificate(cred_dict)
@@ -38,37 +37,28 @@ def _get_app() -> firebase_admin.App:
     return _app
 
 
-def write_evangelio(fecha: str, payload: dict, retries: int = 2) -> None:
-    """
-    Write (merge) data into seccion_oracion/lecturas/{fecha}/evangelio.
+# ---------------------------------------------------------------------------
+# Write helpers
+# ---------------------------------------------------------------------------
 
-    Uses update() instead of set() so multiple scrapers writing to the same
-    date node don't overwrite each other's fields.
-    """
+def write_evangelio(fecha: str, payload: dict, retries: int = 2) -> None:
     _write(f"seccion_oracion/lecturas/{fecha}/evangelio", payload, retries)
 
 
 def write_lectura1(fecha: str, payload: dict, retries: int = 2) -> None:
-    """
-    Write (merge) data into seccion_oracion/lecturas/{fecha}/lectura1.
-    """
     _write(f"seccion_oracion/lecturas/{fecha}/lectura1", payload, retries)
 
 
 def write_lectura2(fecha: str, payload: dict, retries: int = 2) -> None:
-    """
-    Write (merge) data into seccion_oracion/lecturas/{fecha}/lectura2.
-    """
     _write(f"seccion_oracion/lecturas/{fecha}/lectura2", payload, retries)
 
 
-def write_info(fecha: str, payload: dict, retries: int = 2) -> None:
-    """
-    Write (merge) data into seccion_oracion/lecturas/{fecha}/info.
+def write_salmo(fecha: str, payload: dict, retries: int = 2) -> None:
+    """Write (merge) data into seccion_oracion/lecturas/{fecha}/salmo."""
+    _write(f"seccion_oracion/lecturas/{fecha}/salmo", payload, retries)
 
-    Contains liturgical metadata (título, día litúrgico, lecturas, salmo)
-    at the same level as the evangelio/ node.
-    """
+
+def write_info(fecha: str, payload: dict, retries: int = 2) -> None:
     _write(f"seccion_oracion/lecturas/{fecha}/info", payload, retries)
 
 
@@ -89,3 +79,72 @@ def _write(path: str, payload: dict, retries: int) -> None:
             else:
                 log.error(f"[Firebase] Falló tras {attempt} intentos: {e}")
                 raise
+
+
+# ---------------------------------------------------------------------------
+# Read / query helpers (used by cleanup and dominicos skip-existing)
+# ---------------------------------------------------------------------------
+
+def get_existing_dominicos_dates(fechas: list[str]) -> set[str]:
+    """
+    Return the subset of *fechas* where dominicosLastUpdated already exists
+    in Firebase. Used by DominicosScraper to skip dates already scraped.
+    """
+    _get_app()
+    existing: set[str] = set()
+    for fecha in fechas:
+        try:
+            val = db.reference(
+                f"seccion_oracion/lecturas/{fecha}/evangelio/dominicosLastUpdated"
+            ).get()
+            if val is not None:
+                existing.add(fecha)
+        except Exception as e:
+            log.warning(f"[Firebase] Error comprobando {fecha}: {e}")
+    return existing
+
+
+def list_lectura_dates() -> list[str]:
+    """
+    Return all YYYY-MM-DD keys under seccion_oracion/lecturas/.
+
+    Uses the REST API with ?shallow=true for efficiency (avoids downloading
+    all reading content just to list dates). Falls back to a full read if
+    the REST call fails.
+    """
+    _get_app()
+    database_url = os.environ.get("FIREBASE_DATABASE_URL", "").rstrip("/")
+
+    # --- Try REST shallow query first ---
+    try:
+        token = firebase_admin.get_app().credential.get_access_token().access_token
+        url = f"{database_url}/seccion_oracion/lecturas.json?shallow=true"
+        resp = http_requests.get(
+            url,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return sorted(data.keys()) if data else []
+    except Exception as e:
+        log.warning(f"[Firebase] Shallow REST query fallida ({e}), usando lectura completa…")
+
+    # --- Fallback: full read (only ~60 nodes in steady state, acceptable) ---
+    try:
+        data = db.reference("seccion_oracion/lecturas").get() or {}
+        return sorted(data.keys())
+    except Exception as e:
+        log.error(f"[Firebase] No se pudieron listar fechas: {e}")
+        return []
+
+
+def delete_lectura_date(fecha: str) -> None:
+    """Delete seccion_oracion/lecturas/{fecha} and all its children."""
+    _get_app()
+    try:
+        db.reference(f"seccion_oracion/lecturas/{fecha}").delete()
+        log.info(f"[Firebase] Eliminada lectura {fecha}")
+    except Exception as e:
+        log.error(f"[Firebase] Error eliminando {fecha}: {e}")
+        raise

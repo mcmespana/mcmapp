@@ -83,14 +83,17 @@ export function useDailyReadings(dateStr: string) {
           const parsedReadings: DailyReadings = {};
           
           // Evangelio
+          // activoTexto  → fuente del texto/cita (dominicos para futuros, vidaNueva hoy)
+          // activoComentario → fuente del comentario (vaticanNews +1..+14, vidaNueva hoy)
           if (data.evangelio) {
-            const active = data.evangelio.activo || 'vidaNueva';
+            const activoTexto = data.evangelio.activoTexto || 'vidaNueva';
+            const activoComentario = data.evangelio.activoComentario || 'vidaNueva';
             parsedReadings.evangelio = {
-              texto: data.evangelio[`${active}EvangelioTexto`] || '',
-              cita: data.evangelio[`${active}Cita`] || '',
-              comentario: data.evangelio[`${active}Comentario`] || '',
-              comentarista: data.evangelio[`${active}Comentarista`] || '',
-              url: data.evangelio[`${active}URL`] || '',
+              texto: data.evangelio[`${activoTexto}EvangelioTexto`] || '',
+              cita: data.evangelio[`${activoTexto}Cita`] || '',
+              comentario: data.evangelio[`${activoComentario}Comentario`] || '',
+              comentarista: data.evangelio[`${activoComentario}Comentarista`] || '',
+              url: data.evangelio[`${activoTexto}URL`] || '',
             };
           }
           
