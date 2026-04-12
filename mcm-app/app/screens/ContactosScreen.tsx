@@ -4,8 +4,7 @@ import { Avatar, ListGroup, Separator, Button, Surface } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import colors from '@/constants/colors';
-import { UIColors } from '@/constants/colors';
+import colors, { UIColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const AVATAR_COLORS = [

@@ -25,6 +25,13 @@ export default function ContigoLayout() {
           title: 'Evangelio',
         }}
       />
+      <Stack.Screen
+        name="oracion"
+        options={{
+          headerShown: false,
+          title: 'Oración',
+        }}
+      />
     </Stack>
   );
 }

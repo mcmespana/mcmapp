@@ -15,6 +15,7 @@ export interface DayRecord {
   readingDone: boolean;
   prayerDone: boolean;
   prayerDuration?: PrayerDuration;
+  prayerDurationMinutes?: number;
   prayerEmotion?: Emotion;
   examenDone?: boolean;
   timestamp: number;
@@ -84,6 +85,7 @@ export function useContigoHabits() {
     date: string,
     duration: PrayerDuration,
     emotion: Emotion,
+    durationMinutes?: number
   ) => {
     const record = ensureRecord(date);
     const newRecords = {
@@ -92,6 +94,7 @@ export function useContigoHabits() {
         ...record,
         prayerDone: true,
         prayerDuration: duration,
+        prayerDurationMinutes: durationMinutes,
         prayerEmotion: emotion,
         timestamp: Date.now(),
       },

@@ -189,7 +189,7 @@ export default function ContigoScreen() {
             }
             accentColor={isDark ? '#E8A838' : '#C4922A'}
             onPress={() => {
-              // Future: router.push('/screens/OracionScreen')
+              router.push('/(tabs)/contigo/oracion');
             }}
             badge={
               prayerStreak > 0 ? (
