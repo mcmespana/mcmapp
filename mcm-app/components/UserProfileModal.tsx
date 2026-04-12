@@ -64,7 +64,9 @@ export default function UserProfileModal({ visible, onClose }: Props) {
               color: theme.text,
               borderColor: name.trim()
                 ? '#34C759'
-                : isDark ? '#3A3A3C' : '#E5E5EA',
+                : isDark
+                  ? '#3A3A3C'
+                  : '#E5E5EA',
             },
           ]}
           placeholder="Tu nombre"
@@ -75,7 +77,9 @@ export default function UserProfileModal({ visible, onClose }: Props) {
           maxLength={80}
         />
 
-        <Text style={[styles.fieldLabel, { color: theme.text }]}>Comunidad o ciudad</Text>
+        <Text style={[styles.fieldLabel, { color: theme.text }]}>
+          Comunidad o ciudad
+        </Text>
         <TextInput
           style={[
             styles.textInput,
@@ -84,7 +88,9 @@ export default function UserProfileModal({ visible, onClose }: Props) {
               color: theme.text,
               borderColor: location.trim()
                 ? '#34C759'
-                : isDark ? '#3A3A3C' : '#E5E5EA',
+                : isDark
+                  ? '#3A3A3C'
+                  : '#E5E5EA',
             },
           ]}
           placeholder="Tu ciudad o comunidad"
@@ -99,14 +105,29 @@ export default function UserProfileModal({ visible, onClose }: Props) {
         <TouchableOpacity
           style={[
             styles.saveBtn,
-            { backgroundColor: canSave ? '#007AFF' : isDark ? '#3A3A3C' : '#E5E5EA' },
+            {
+              backgroundColor: canSave
+                ? '#007AFF'
+                : isDark
+                  ? '#3A3A3C'
+                  : '#E5E5EA',
+            },
           ]}
           onPress={save}
           disabled={!canSave}
           activeOpacity={0.8}
         >
-          <MaterialIcons name="check" size={18} color={canSave ? '#fff' : theme.icon} />
-          <Text style={[styles.saveBtnText, { color: canSave ? '#fff' : theme.icon }]}>
+          <MaterialIcons
+            name="check"
+            size={18}
+            color={canSave ? '#fff' : theme.icon}
+          />
+          <Text
+            style={[
+              styles.saveBtnText,
+              { color: canSave ? '#fff' : theme.icon },
+            ]}
+          >
             Guardar
           </Text>
         </TouchableOpacity>

@@ -42,8 +42,18 @@ import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 const MONTHS_SHORT = [
-  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+  'Ene',
+  'Feb',
+  'Mar',
+  'Abr',
+  'May',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dic',
 ];
 
 function parseLocalDate(dateStr: string): Date {
@@ -226,7 +236,10 @@ export default function Home() {
     : 'Mantente al día con las novedades de la comunidad.';
 
   // Mapeo de rutas internas a etiquetas + iconos (coherente con notifications.tsx)
-  const ROUTE_LABELS: Record<string, { label: string; icon: ComponentProps<typeof MaterialIcons>['name'] }> = {
+  const ROUTE_LABELS: Record<
+    string,
+    { label: string; icon: ComponentProps<typeof MaterialIcons>['name'] }
+  > = {
     '/(tabs)/calendario': { label: 'Calendario', icon: 'calendar-today' },
     '/(tabs)/fotos': { label: 'Fotos', icon: 'photo-library' },
     '/(tabs)/cancionero': { label: 'Cantoral', icon: 'music-note' },
@@ -235,7 +248,7 @@ export default function Home() {
     '/wordle': { label: 'Wordle', icon: 'games' },
   };
   const internalRouteInfo = latestNotification?.internalRoute
-    ? ROUTE_LABELS[latestNotification.internalRoute] ?? null
+    ? (ROUTE_LABELS[latestNotification.internalRoute] ?? null)
     : null;
   const internalRouteLabel = internalRouteInfo?.label ?? null;
 
@@ -276,7 +289,13 @@ export default function Home() {
       />
 
       {/* ── Custom Header ── */}
-      <View style={[styles.header, { backgroundColor: theme.background }, isWide && styles.headerWide]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.background },
+          isWide && styles.headerWide,
+        ]}
+      >
         <View style={styles.headerLeft}>
           <View style={styles.logoBox}>
             <MaterialIcons name="device-hub" size={20} color="white" />
@@ -291,11 +310,7 @@ export default function Home() {
             accessibilityLabel="Perfil y ajustes"
             accessibilityRole="button"
           >
-            <MaterialIcons
-              name="account-circle"
-              size={26}
-              color={theme.icon}
-            />
+            <MaterialIcons name="account-circle" size={26} color={theme.icon} />
           </TouchableOpacity>
 
           {featureFlags.showNotificationsIcon && (
@@ -345,391 +360,410 @@ export default function Home() {
       >
         {/* ── Two-column wrapper on wide screens ── */}
         <View style={isWide ? styles.wideRow : undefined}>
-
-        {/* ── Left column (or full-width on mobile) ── */}
-        <View style={isWide ? styles.wideColLeft : undefined}>
-
-        {/* ── Novedades ── */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={StyleSheet.flatten([
-              styles.notifCard,
-              {
-                backgroundColor: theme.card,
-                borderColor:
-                  scheme === 'dark'
-                    ? 'rgba(255,255,255,0.09)'
-                    : 'rgba(0,0,0,0.07)',
-              },
-            ])}
-            onPress={() => setNotifSheetOpen(true)}
-            activeOpacity={0.78}
-            accessibilityLabel={`${notifTitle}. Toca para leer`}
-            accessibilityRole="button"
-          >
-            {/* Top row: content + icon */}
-            <View style={styles.notifRow}>
-              {/* Content */}
-              <View style={styles.notifContent}>
-                {isUnread && (
-                  <View
-                    style={[
-                      styles.newBadge,
-                      { backgroundColor: hexAlpha(accentColor, '15') },
-                    ]}
-                  >
-                    <Text
-                      style={[styles.newBadgeText, { color: accentColor }]}
-                    >
-                      NUEVO
-                    </Text>
-                  </View>
-                )}
-                <Text
-                  style={[
-                    styles.notifTitle,
-                    {
-                      color: theme.text,
-                      fontSize: 16 * fontScale,
-                    },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {notifTitle}
-                </Text>
-                <Text
-                  style={[
-                    styles.notifDescription,
-                    {
-                      color: theme.icon,
-                      fontSize: 13 * fontScale,
-                    },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {notifBody}
-                </Text>
-              </View>
-
-              {/* Megaphone icon — right */}
-              <View
-                style={[
-                  styles.notifIconCircle,
-                  {
-                    backgroundColor:
-                      scheme === 'dark'
-                        ? hexAlpha(accentColor, '20')
-                        : hexAlpha(accentColor, '12'),
-                  },
-                ]}
-              >
-                <MaterialIcons name="campaign" size={26} color={accentColor} />
-              </View>
-            </View>
-
-            {/* CTA row: destino interno + botón de acción */}
-            <View style={styles.notifCtaRow}>
-              {/* Chip de destino (internalRoute) — solo indicador, la tarjeta lleva a /notifications */}
-              {internalRouteInfo && (
-                <View
-                  style={[
-                    styles.destinationChip,
-                    { borderColor: hexAlpha(accentColor, '60'), backgroundColor: hexAlpha(accentColor, '10') },
-                  ]}
-                >
-                  <MaterialIcons name={internalRouteInfo.icon} size={12} color={accentColor} />
-                  <Text style={[styles.destinationChipText, { color: accentColor }]}>
-                    {internalRouteInfo.label}
-                  </Text>
-                </View>
-              )}
-
-              {/* Botón de acción explícito — Pressable evita <button> anidado en web */}
-              {latestNotification?.actionButton ? (
-                <Pressable
-                  onPress={handleActionButton}
-                  style={[styles.actionBtn, { backgroundColor: hexAlpha(accentColor, '12') }]}
-                  accessibilityRole="button"
-                >
-                  <Text style={[styles.actionBtnText, { color: accentColor }]}>
-                    {latestNotification.actionButton.text ?? 'Voy a verlo'}
-                  </Text>
-                  <MaterialIcons
-                    name={
-                      latestNotification.actionButton.isInternal
-                        ? 'arrow-forward'
-                        : 'open-in-new'
-                    }
-                    size={13}
-                    color={accentColor}
-                  />
-                </Pressable>
-              ) : !internalRouteLabel ? (
-                /* Flecha genérica solo si no hay ningún indicador */
-                <View
-                  style={[
-                    styles.arrowPill,
-                    { backgroundColor: hexAlpha(accentColor, '10') },
-                  ]}
-                >
-                  <MaterialIcons name="east" size={14} color={accentColor} />
-                </View>
-              ) : null}
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Accesos rápidos ── */}
-        <View style={styles.section}>
-          <View style={styles.quickGrid}>
-            {quickItems.map((item) => (
+          {/* ── Left column (or full-width on mobile) ── */}
+          <View style={isWide ? styles.wideColLeft : undefined}>
+            {/* ── Novedades ── */}
+            <View style={styles.section}>
               <TouchableOpacity
-                key={item.key}
-                style={styles.quickItem}
-                accessibilityLabel={item.label}
+                style={StyleSheet.flatten([
+                  styles.notifCard,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor:
+                      scheme === 'dark'
+                        ? 'rgba(255,255,255,0.09)'
+                        : 'rgba(0,0,0,0.07)',
+                  },
+                ])}
+                onPress={() => setNotifSheetOpen(true)}
+                activeOpacity={0.78}
+                accessibilityLabel={`${notifTitle}. Toca para leer`}
                 accessibilityRole="button"
-                onPress={() => {
-                  if (item.key === 'comunica') {
-                    setPendingMasScreen('Comunica');
-                  }
-                  if (item.href) router.push(item.href as any);
-                }}
-                activeOpacity={item.href ? 0.65 : 1}
               >
-                <View
-                  style={StyleSheet.flatten([
-                    styles.quickIconCircle,
-                    { backgroundColor: item.iconBg },
-                    item.dashed
-                      ? {
-                          borderWidth: 1.5,
-                          borderStyle: 'dashed',
-                          borderColor: hexAlpha(theme.icon, '40'),
-                        }
-                      : undefined,
-                  ])}
-                >
-                  <MaterialIcons
-                    name={item.icon}
-                    size={24}
-                    color={item.iconColor}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.quickLabel,
-                    {
-                      color: theme.icon,
-                      fontSize: 10 * fontScale,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        </View>{/* end left column */}
-
-        {/* ── Right column (or full-width on mobile) ── */}
-        <View style={isWide ? styles.wideColRight : undefined}>
-
-        {/* ── Próximos eventos ── */}
-        <View style={styles.section}>
-          <Text
-            style={[
-              styles.sectionLabel,
-              {
-                color: theme.icon,
-                fontSize: 11 * fontScale,
-              },
-            ]}
-          >
-            PRÓXIMOS EVENTOS
-          </Text>
-
-          {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
-            /* User has calendars but all hidden */
-            <TouchableOpacity
-              style={[
-                styles.emptyEventsCard,
-                {
-                  backgroundColor: theme.card,
-                  borderColor:
-                    scheme === 'dark'
-                      ? 'rgba(255,255,255,0.08)'
-                      : 'rgba(0,0,0,0.06)',
-                },
-              ]}
-              onPress={() => router.push('/calendario')}
-              accessibilityRole="button"
-            >
-              <MaterialIcons
-                name="event-note"
-                size={28}
-                color={theme.icon}
-                style={{ opacity: 0.5 }}
-              />
-              <Text
-                style={[
-                  styles.emptyEventsTitle,
-                  { color: theme.text, fontSize: 14 * fontScale },
-                ]}
-              >
-                Activa algún calendario
-              </Text>
-              <Text
-                style={[
-                  styles.emptyEventsBody,
-                  { color: theme.icon, fontSize: 12 * fontScale },
-                ]}
-              >
-                Selecciona un calendario para ver los próximos eventos aquí.
-              </Text>
-            </TouchableOpacity>
-          ) : upcomingEvents.length > 0 ? (
-            upcomingEvents.map((evt, idx) => {
-              const evtDate = parseLocalDate(evt.startDate);
-              const calColor =
-                calendarConfigs[evt.calendarIndex]?.color ?? accentColor;
-              const calName = calendarConfigs[evt.calendarIndex]?.name;
-              return (
-                <TouchableOpacity
-                  key={`${evt.title}|${evt.startDate}|${idx}`}
-                  style={StyleSheet.flatten([
-                    styles.eventCard,
-                    {
-                      backgroundColor:
-                        theme.card,
-                      borderColor:
-                        scheme === 'dark'
-                          ? 'rgba(255,255,255,0.09)'
-                          : 'rgba(0,0,0,0.06)',
-                      borderLeftColor: calColor,
-                    },
-                  ])}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/calendario',
-                      params: { date: evt.startDate },
-                    } as any)
-                  }
-                  accessibilityRole="button"
-                  accessibilityLabel={`Evento: ${evt.title}`}
-                >
-                  <View
-                    style={[
-                      styles.eventDateBox,
-                      { backgroundColor: hexAlpha(calColor, '18') },
-                    ]}
-                  >
-                    <Text style={[styles.eventMonth, { color: calColor }]}>
-                      {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
-                    </Text>
-                    <Text style={[styles.eventDay, { color: calColor }]}>
-                      {evtDate.getDate()}
-                    </Text>
-                  </View>
-
-                  <View style={styles.eventInfo}>
+                {/* Top row: content + icon */}
+                <View style={styles.notifRow}>
+                  {/* Content */}
+                  <View style={styles.notifContent}>
+                    {isUnread && (
+                      <View
+                        style={[
+                          styles.newBadge,
+                          { backgroundColor: hexAlpha(accentColor, '15') },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.newBadgeText, { color: accentColor }]}
+                        >
+                          NUEVO
+                        </Text>
+                      </View>
+                    )}
                     <Text
                       style={[
-                        styles.eventTitle,
+                        styles.notifTitle,
                         {
                           color: theme.text,
+                          fontSize: 16 * fontScale,
+                        },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {notifTitle}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.notifDescription,
+                        {
+                          color: theme.icon,
                           fontSize: 13 * fontScale,
+                        },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {notifBody}
+                    </Text>
+                  </View>
+
+                  {/* Megaphone icon — right */}
+                  <View
+                    style={[
+                      styles.notifIconCircle,
+                      {
+                        backgroundColor:
+                          scheme === 'dark'
+                            ? hexAlpha(accentColor, '20')
+                            : hexAlpha(accentColor, '12'),
+                      },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name="campaign"
+                      size={26}
+                      color={accentColor}
+                    />
+                  </View>
+                </View>
+
+                {/* CTA row: destino interno + botón de acción */}
+                <View style={styles.notifCtaRow}>
+                  {/* Chip de destino (internalRoute) — solo indicador, la tarjeta lleva a /notifications */}
+                  {internalRouteInfo && (
+                    <View
+                      style={[
+                        styles.destinationChip,
+                        {
+                          borderColor: hexAlpha(accentColor, '60'),
+                          backgroundColor: hexAlpha(accentColor, '10'),
+                        },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={internalRouteInfo.icon}
+                        size={12}
+                        color={accentColor}
+                      />
+                      <Text
+                        style={[
+                          styles.destinationChipText,
+                          { color: accentColor },
+                        ]}
+                      >
+                        {internalRouteInfo.label}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Botón de acción explícito — Pressable evita <button> anidado en web */}
+                  {latestNotification?.actionButton ? (
+                    <Pressable
+                      onPress={handleActionButton}
+                      style={[
+                        styles.actionBtn,
+                        { backgroundColor: hexAlpha(accentColor, '12') },
+                      ]}
+                      accessibilityRole="button"
+                    >
+                      <Text
+                        style={[styles.actionBtnText, { color: accentColor }]}
+                      >
+                        {latestNotification.actionButton.text ?? 'Voy a verlo'}
+                      </Text>
+                      <MaterialIcons
+                        name={
+                          latestNotification.actionButton.isInternal
+                            ? 'arrow-forward'
+                            : 'open-in-new'
+                        }
+                        size={13}
+                        color={accentColor}
+                      />
+                    </Pressable>
+                  ) : !internalRouteLabel ? (
+                    /* Flecha genérica solo si no hay ningún indicador */
+                    <View
+                      style={[
+                        styles.arrowPill,
+                        { backgroundColor: hexAlpha(accentColor, '10') },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="east"
+                        size={14}
+                        color={accentColor}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* ── Accesos rápidos ── */}
+            <View style={styles.section}>
+              <View style={styles.quickGrid}>
+                {quickItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={styles.quickItem}
+                    accessibilityLabel={item.label}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      if (item.key === 'comunica') {
+                        setPendingMasScreen('Comunica');
+                      }
+                      if (item.href) router.push(item.href as any);
+                    }}
+                    activeOpacity={item.href ? 0.65 : 1}
+                  >
+                    <View
+                      style={StyleSheet.flatten([
+                        styles.quickIconCircle,
+                        { backgroundColor: item.iconBg },
+                        item.dashed
+                          ? {
+                              borderWidth: 1.5,
+                              borderStyle: 'dashed',
+                              borderColor: hexAlpha(theme.icon, '40'),
+                            }
+                          : undefined,
+                      ])}
+                    >
+                      <MaterialIcons
+                        name={item.icon}
+                        size={24}
+                        color={item.iconColor}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.quickLabel,
+                        {
+                          color: theme.icon,
+                          fontSize: 10 * fontScale,
                         },
                       ]}
                       numberOfLines={1}
                     >
-                      {evt.title}
+                      {item.label}
                     </Text>
-                    {calName && (
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+          {/* end left column */}
+
+          {/* ── Right column (or full-width on mobile) ── */}
+          <View style={isWide ? styles.wideColRight : undefined}>
+            {/* ── Próximos eventos ── */}
+            <View style={styles.section}>
+              <Text
+                style={[
+                  styles.sectionLabel,
+                  {
+                    color: theme.icon,
+                    fontSize: 11 * fontScale,
+                  },
+                ]}
+              >
+                PRÓXIMOS EVENTOS
+              </Text>
+
+              {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
+                /* User has calendars but all hidden */
+                <TouchableOpacity
+                  style={[
+                    styles.emptyEventsCard,
+                    {
+                      backgroundColor: theme.card,
+                      borderColor:
+                        scheme === 'dark'
+                          ? 'rgba(255,255,255,0.08)'
+                          : 'rgba(0,0,0,0.06)',
+                    },
+                  ]}
+                  onPress={() => router.push('/calendario')}
+                  accessibilityRole="button"
+                >
+                  <MaterialIcons
+                    name="event-note"
+                    size={28}
+                    color={theme.icon}
+                    style={{ opacity: 0.5 }}
+                  />
+                  <Text
+                    style={[
+                      styles.emptyEventsTitle,
+                      { color: theme.text, fontSize: 14 * fontScale },
+                    ]}
+                  >
+                    Activa algún calendario
+                  </Text>
+                  <Text
+                    style={[
+                      styles.emptyEventsBody,
+                      { color: theme.icon, fontSize: 12 * fontScale },
+                    ]}
+                  >
+                    Selecciona un calendario para ver los próximos eventos aquí.
+                  </Text>
+                </TouchableOpacity>
+              ) : upcomingEvents.length > 0 ? (
+                upcomingEvents.map((evt, idx) => {
+                  const evtDate = parseLocalDate(evt.startDate);
+                  const calColor =
+                    calendarConfigs[evt.calendarIndex]?.color ?? accentColor;
+                  const calName = calendarConfigs[evt.calendarIndex]?.name;
+                  return (
+                    <TouchableOpacity
+                      key={`${evt.title}|${evt.startDate}|${idx}`}
+                      style={StyleSheet.flatten([
+                        styles.eventCard,
+                        {
+                          backgroundColor: theme.card,
+                          borderColor:
+                            scheme === 'dark'
+                              ? 'rgba(255,255,255,0.09)'
+                              : 'rgba(0,0,0,0.06)',
+                          borderLeftColor: calColor,
+                        },
+                      ])}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/calendario',
+                          params: { date: evt.startDate },
+                        } as any)
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel={`Evento: ${evt.title}`}
+                    >
                       <View
                         style={[
-                          styles.calBadge,
+                          styles.eventDateBox,
                           { backgroundColor: hexAlpha(calColor, '18') },
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.calBadgeText,
-                            { color: calColor },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {calName}
+                        <Text style={[styles.eventMonth, { color: calColor }]}>
+                          {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
+                        </Text>
+                        <Text style={[styles.eventDay, { color: calColor }]}>
+                          {evtDate.getDate()}
                         </Text>
                       </View>
-                    )}
-                    {evt.location ? (
-                      <View style={styles.eventMeta}>
-                        <MaterialIcons
-                          name="schedule"
-                          size={11}
-                          color={theme.icon}
-                        />
+
+                      <View style={styles.eventInfo}>
                         <Text
                           style={[
-                            styles.eventMetaText,
+                            styles.eventTitle,
                             {
-                              color: theme.icon,
-                              fontSize: 11 * fontScale,
+                              color: theme.text,
+                              fontSize: 13 * fontScale,
                             },
                           ]}
                           numberOfLines={1}
                         >
-                          {evt.location}
+                          {evt.title}
                         </Text>
+                        {calName && (
+                          <View
+                            style={[
+                              styles.calBadge,
+                              { backgroundColor: hexAlpha(calColor, '18') },
+                            ]}
+                          >
+                            <Text
+                              style={[styles.calBadgeText, { color: calColor }]}
+                              numberOfLines={1}
+                            >
+                              {calName}
+                            </Text>
+                          </View>
+                        )}
+                        {evt.location ? (
+                          <View style={styles.eventMeta}>
+                            <MaterialIcons
+                              name="schedule"
+                              size={11}
+                              color={theme.icon}
+                            />
+                            <Text
+                              style={[
+                                styles.eventMetaText,
+                                {
+                                  color: theme.icon,
+                                  fontSize: 11 * fontScale,
+                                },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {evt.location}
+                            </Text>
+                          </View>
+                        ) : null}
                       </View>
-                    ) : null}
-                  </View>
 
-                  <MaterialIcons
-                    name="chevron-right"
-                    size={20}
-                    color={theme.icon}
-                    style={{ opacity: 0.3 }}
-                  />
-                </TouchableOpacity>
-              );
-            })
-          ) : (
-            /* No upcoming events */
-            <Text
-              style={[
-                styles.emptyEvents,
-                { color: theme.icon, fontSize: 13 * fontScale },
-              ]}
-            >
-              Sin eventos próximos
-            </Text>
-          )}
+                      <MaterialIcons
+                        name="chevron-right"
+                        size={20}
+                        color={theme.icon}
+                        style={{ opacity: 0.3 }}
+                      />
+                    </TouchableOpacity>
+                  );
+                })
+              ) : (
+                /* No upcoming events */
+                <Text
+                  style={[
+                    styles.emptyEvents,
+                    { color: theme.icon, fontSize: 13 * fontScale },
+                  ]}
+                >
+                  Sin eventos próximos
+                </Text>
+              )}
 
-          <TouchableOpacity
-            style={StyleSheet.flatten([
-              styles.calendarButton,
-              { borderColor: hexAlpha(accentColor, '30') },
-            ])}
-            onPress={() => router.push('/calendario')}
-            accessibilityRole="button"
-          >
-            <Text
-              style={[
-                styles.calendarButtonText,
-                { color: accentColor, fontSize: 14 * fontScale },
-              ]}
-            >
-              Ver calendario
-            </Text>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={StyleSheet.flatten([
+                  styles.calendarButton,
+                  { borderColor: hexAlpha(accentColor, '30') },
+                ])}
+                onPress={() => router.push('/calendario')}
+                accessibilityRole="button"
+              >
+                <Text
+                  style={[
+                    styles.calendarButtonText,
+                    { color: accentColor, fontSize: 14 * fontScale },
+                  ]}
+                >
+                  Ver calendario
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* end right column */}
         </View>
-
-        </View>{/* end right column */}
-        </View>{/* end wide row */}
+        {/* end wide row */}
 
         {/* ── Pie ── */}
         <View style={styles.footer}>

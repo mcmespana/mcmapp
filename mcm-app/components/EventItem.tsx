@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Linking,
-} from 'react-native';
+import { View, Text, StyleSheet, Linking } from 'react-native';
 import { Card, Chip, Button } from 'heroui-native';
 import { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -116,11 +111,7 @@ export default function EventItem({
                 </View>
               )}
               {event.maps && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onPress={handleMapsPress}
-                >
+                <Button variant="ghost" size="sm" onPress={handleMapsPress}>
                   <MaterialIcons
                     name="map"
                     size={16 * fontScale}

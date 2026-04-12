@@ -8,12 +8,7 @@ export type PrayerDuration =
   | '10_to_15'
   | 'more_than_15';
 
-export type Emotion =
-  | 'joy'
-  | 'sadness'
-  | 'anger'
-  | 'fear'
-  | 'disgust';
+export type Emotion = 'joy' | 'sadness' | 'anger' | 'fear' | 'disgust';
 
 export interface DayRecord {
   date: string;
@@ -85,7 +80,7 @@ export function useContigoHabits() {
   const setPrayerDone = async (
     date: string,
     duration: PrayerDuration,
-    emotion: Emotion
+    emotion: Emotion,
   ) => {
     const record = ensureRecord(date);
     const newRecords = {

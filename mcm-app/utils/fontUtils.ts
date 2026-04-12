@@ -6,46 +6,54 @@ export const getFontMapping = () => {
     return {
       monospace: {
         css: "'Roboto Mono', 'Courier New', monospace",
-        native: 'Courier'
+        native: 'Courier',
       },
       serif: {
         css: "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
-        native: 'Times New Roman'
+        native: 'Times New Roman',
       },
       sansSerif: {
         css: "'Helvetica Neue', 'Arial', sans-serif",
-        native: 'Helvetica Neue'
-      }
+        native: 'Helvetica Neue',
+      },
     };
   } else {
     // Android
     return {
       monospace: {
         css: "'Roboto Mono', 'Courier New', monospace",
-        native: 'monospace'
+        native: 'monospace',
       },
       serif: {
         css: "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
-        native: 'serif'
+        native: 'serif',
       },
       sansSerif: {
         css: "'Helvetica Neue', 'Arial', sans-serif",
-        native: 'normal' // Usar 'normal' en Android para asegurar diferencia con serif
-      }
+        native: 'normal', // Usar 'normal' en Android para asegurar diferencia con serif
+      },
     };
   }
 };
 
 // Función para convertir CSS font family a nombres nativos de React Native
 export const getNativeFontFamily = (cssValue: string): string | undefined => {
-  if (cssValue.includes('monospace') || cssValue.includes('Courier') || cssValue.includes('Roboto Mono')) {
+  if (
+    cssValue.includes('monospace') ||
+    cssValue.includes('Courier') ||
+    cssValue.includes('Roboto Mono')
+  ) {
     return Platform.OS === 'ios' ? 'Courier' : 'monospace';
   }
-  
-  if (cssValue.includes('serif') || cssValue.includes('Palatino') || cssValue.includes('Book Antiqua')) {
+
+  if (
+    cssValue.includes('serif') ||
+    cssValue.includes('Palatino') ||
+    cssValue.includes('Book Antiqua')
+  ) {
     return Platform.OS === 'ios' ? 'Times New Roman' : 'serif';
   }
-  
+
   // Sans-serif - usar undefined para que use la fuente por defecto del sistema
   return undefined;
 };
@@ -53,15 +61,15 @@ export const getNativeFontFamily = (cssValue: string): string | undefined => {
 // Función para obtener el valor CSS desde el valor nativo
 export const getCSSFromNative = (nativeValue: string): string => {
   const mapping = getFontMapping();
-  
+
   if (nativeValue === mapping.monospace.native) {
     return mapping.monospace.css;
   }
-  
+
   if (nativeValue === mapping.serif.native) {
     return mapping.serif.css;
   }
-  
+
   // Sans-serif (default)
   return mapping.sansSerif.css;
 };

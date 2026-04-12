@@ -109,14 +109,24 @@ export default function ReportBugsModal({
           >
             <MaterialIcons name="close" size={22} color={theme.icon} />
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>Reportar fallitos 🐛</Text>
+          <Text style={[styles.title, { color: theme.text }]}>
+            Reportar fallitos 🐛
+          </Text>
           <View style={styles.headerSpacer} />
         </View>
 
         {songTitle && (
-          <View style={[styles.songBadge, { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' }]}>
+          <View
+            style={[
+              styles.songBadge,
+              { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' },
+            ]}
+          >
             <MaterialIcons name="music-note" size={14} color={theme.icon} />
-            <Text style={[styles.songBadgeText, { color: theme.icon }]} numberOfLines={1}>
+            <Text
+              style={[styles.songBadgeText, { color: theme.icon }]}
+              numberOfLines={1}
+            >
               {songTitle}
             </Text>
           </View>
@@ -135,7 +145,9 @@ export default function ReportBugsModal({
               color: theme.text,
               borderColor: bugDescription.trim()
                 ? '#34C759'
-                : isDark ? '#3A3A3C' : '#E5E5EA',
+                : isDark
+                  ? '#3A3A3C'
+                  : '#E5E5EA',
             },
           ]}
           placeholder="Describe los fallos que has encontrado..."
@@ -157,7 +169,13 @@ export default function ReportBugsModal({
         <TouchableOpacity
           style={[
             styles.submitBtn,
-            { backgroundColor: canSubmit ? '#FF3B30' : isDark ? '#3A3A3C' : '#E5E5EA' },
+            {
+              backgroundColor: canSubmit
+                ? '#FF3B30'
+                : isDark
+                  ? '#3A3A3C'
+                  : '#E5E5EA',
+            },
           ]}
           onPress={handleSubmit}
           disabled={!canSubmit}
@@ -184,19 +202,41 @@ export default function ReportBugsModal({
 
         {/* Divisor */}
         <View style={styles.divider}>
-          <View style={[styles.dividerLine, { backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA' }]} />
+          <View
+            style={[
+              styles.dividerLine,
+              { backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA' },
+            ]}
+          />
           <Text style={[styles.dividerLabel, { color: theme.icon }]}>o</Text>
-          <View style={[styles.dividerLine, { backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA' }]} />
+          <View
+            style={[
+              styles.dividerLine,
+              { backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA' },
+            ]}
+          />
         </View>
 
         {/* Panel secreto */}
         <TouchableOpacity
-          style={[styles.secretBtn, { borderColor: isDark ? '#3A3A3C' : '#E5E5EA' }]}
-          onPress={() => { handleClose(); if (onOpenSecretPanel) onOpenSecretPanel(); }}
+          style={[
+            styles.secretBtn,
+            { borderColor: isDark ? '#3A3A3C' : '#E5E5EA' },
+          ]}
+          onPress={() => {
+            handleClose();
+            if (onOpenSecretPanel) onOpenSecretPanel();
+          }}
           activeOpacity={0.7}
         >
-          <MaterialIcons name="admin-panel-settings" size={18} color={theme.icon} />
-          <Text style={[styles.secretBtnText, { color: theme.icon }]}>Panel Secreto</Text>
+          <MaterialIcons
+            name="admin-panel-settings"
+            size={18}
+            color={theme.icon}
+          />
+          <Text style={[styles.secretBtnText, { color: theme.icon }]}>
+            Panel Secreto
+          </Text>
         </TouchableOpacity>
 
         <Text style={[styles.disclaimer, { color: theme.icon }]}>

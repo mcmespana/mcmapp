@@ -55,8 +55,7 @@ describe('convertHtmlChords', () => {
   });
 
   it('convierte múltiples acordes en el mismo HTML', () => {
-    const html =
-      '<div class="chord">C</div> texto <div class="chord">G</div>';
+    const html = '<div class="chord">C</div> texto <div class="chord">G</div>';
     const expected =
       '<div class="chord">DO</div> texto <div class="chord">SOL</div>';
     expect(convertHtmlChords(html, 'ES')).toBe(expected);

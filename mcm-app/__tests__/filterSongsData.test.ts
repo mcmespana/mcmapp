@@ -7,10 +7,7 @@
  * - Que devuelva null si recibe null
  * - Que las categorías se mantengan aunque queden sin canciones
  */
-import {
-  filterSongsData,
-  SongsData,
-} from '@/utils/filterSongsData';
+import { filterSongsData, SongsData } from '@/utils/filterSongsData';
 
 describe('filterSongsData', () => {
   it('devuelve null si recibe null', () => {
@@ -87,10 +84,7 @@ describe('filterSongsData', () => {
     const input: SongsData = {
       cat1: {
         categoryTitle: 'Cat 1',
-        songs: [
-          { title: 'A' },
-          { title: 'B', status: 'pendiente' },
-        ],
+        songs: [{ title: 'A' }, { title: 'B', status: 'pendiente' }],
       },
       cat2: {
         categoryTitle: 'Cat 2',

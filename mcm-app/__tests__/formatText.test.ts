@@ -11,9 +11,7 @@ import { formatBBCodeToHtml } from '@/utils/formatText';
 
 describe('formatBBCodeToHtml', () => {
   it('convierte [br] a <br/>', () => {
-    expect(formatBBCodeToHtml('linea1[br]linea2')).toBe(
-      'linea1<br/>linea2',
-    );
+    expect(formatBBCodeToHtml('linea1[br]linea2')).toBe('linea1<br/>linea2');
   });
 
   it('convierte [b] a <strong>', () => {
@@ -27,9 +25,7 @@ describe('formatBBCodeToHtml', () => {
   });
 
   it('convierte [u] a <u>', () => {
-    expect(formatBBCodeToHtml('[u]subrayado[/u]')).toBe(
-      '<u>subrayado</u>',
-    );
+    expect(formatBBCodeToHtml('[u]subrayado[/u]')).toBe('<u>subrayado</u>');
   });
 
   it('convierte [h1] a <h2>', () => {
@@ -37,14 +33,16 @@ describe('formatBBCodeToHtml', () => {
   });
 
   it('convierte [url] a <a>', () => {
-    expect(
-      formatBBCodeToHtml('[url=https://ejemplo.com]Link[/url]'),
-    ).toBe('<a href="https://ejemplo.com">Link</a>');
+    expect(formatBBCodeToHtml('[url=https://ejemplo.com]Link[/url]')).toBe(
+      '<a href="https://ejemplo.com">Link</a>',
+    );
   });
 
   it('convierte [btn-primary] a enlace con clase', () => {
     expect(
-      formatBBCodeToHtml('[btn-primary=https://ejemplo.com]Botón[/btn-primary]'),
+      formatBBCodeToHtml(
+        '[btn-primary=https://ejemplo.com]Botón[/btn-primary]',
+      ),
     ).toBe('<a href="https://ejemplo.com" class="btn-primary">Botón</a>');
   });
 
@@ -53,9 +51,7 @@ describe('formatBBCodeToHtml', () => {
       formatBBCodeToHtml(
         '[btn-secondary=https://ejemplo.com]Otro[/btn-secondary]',
       ),
-    ).toBe(
-      '<a href="https://ejemplo.com" class="btn-secondary">Otro</a>',
-    );
+    ).toBe('<a href="https://ejemplo.com" class="btn-secondary">Otro</a>');
   });
 
   it('convierte [color] a span con clase', () => {

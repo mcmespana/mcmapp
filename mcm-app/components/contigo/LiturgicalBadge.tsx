@@ -13,14 +13,26 @@ type ChipColor = 'accent' | 'default' | 'success' | 'warning' | 'danger';
 export function getLiturgicalInfo(dateStr: string) {
   const [year, month, day] = dateStr.split('-');
   const calYear = liturgicalCalendar[year as keyof typeof liturgicalCalendar];
-  if (!calYear) return { color: 'success' as ChipColor, name: 'Tiempo Ordinario', hex: '#3A7D44' };
+  if (!calYear)
+    return {
+      color: 'success' as ChipColor,
+      name: 'Tiempo Ordinario',
+      hex: '#3A7D44',
+    };
 
   // Check special dates first
-  const specialDate = calYear.fechas_especiales?.find((d: any) => d.fecha === dateStr);
+  const specialDate = calYear.fechas_especiales?.find(
+    (d: any) => d.fecha === dateStr,
+  );
   if (specialDate) {
     let color: ChipColor = 'default';
     let hex = '#F5F5F5';
-    if (specialDate.id === 'pentecostes' || specialDate.id.includes('ramos') || specialDate.id.includes('viernes_santo') || specialDate.id.includes('apostol')) {
+    if (
+      specialDate.id === 'pentecostes' ||
+      specialDate.id.includes('ramos') ||
+      specialDate.id.includes('viernes_santo') ||
+      specialDate.id.includes('apostol')
+    ) {
       color = 'danger';
       hex = '#C41E3A';
     } else if (specialDate.id === 'miercoles_ceniza') {
@@ -31,8 +43,18 @@ export function getLiturgicalInfo(dateStr: string) {
   }
 
   // Check Gaudete / Laetare
-  if (calYear.domingos_adviento?.[2] === dateStr || calYear.domingos_cuaresma?.[3] === dateStr) {
-    return { color: 'warning' as ChipColor, name: calYear.domingos_adviento?.[2] === dateStr ? 'Adviento (Gaudete)' : 'Cuaresma (Laetare)', hex: '#D4A0A7' };
+  if (
+    calYear.domingos_adviento?.[2] === dateStr ||
+    calYear.domingos_cuaresma?.[3] === dateStr
+  ) {
+    return {
+      color: 'warning' as ChipColor,
+      name:
+        calYear.domingos_adviento?.[2] === dateStr
+          ? 'Adviento (Gaudete)'
+          : 'Cuaresma (Laetare)',
+      hex: '#D4A0A7',
+    };
   }
 
   // Find the season
@@ -54,7 +76,11 @@ export function getLiturgicalInfo(dateStr: string) {
     }
   }
 
-  return { color: 'success' as ChipColor, name: 'Tiempo Ordinario', hex: '#3A7D44' };
+  return {
+    color: 'success' as ChipColor,
+    name: 'Tiempo Ordinario',
+    hex: '#3A7D44',
+  };
 }
 
 export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
@@ -71,9 +97,7 @@ export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
       color={info.color}
       style={{ elevation: 0 }}
     >
-      <Chip.Label style={{ fontWeight: '700' }}>
-        {info.name}
-      </Chip.Label>
+      <Chip.Label style={{ fontWeight: '700' }}>{info.name}</Chip.Label>
     </Chip>
   );
 }

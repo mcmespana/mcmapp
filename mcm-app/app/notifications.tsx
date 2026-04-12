@@ -14,10 +14,7 @@ import {
 import { BottomSheet, Button, Chip } from 'heroui-native';
 // IMPORTANTE: usar TouchableOpacity de gesture-handler (no de RN core)
 // dentro de Swipeable para que los toques anidados funcionen correctamente.
-import {
-  TouchableOpacity,
-  Swipeable,
-} from 'react-native-gesture-handler';
+import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -49,9 +46,7 @@ const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
   '/notifications': { label: 'Notificaciones', icon: 'notifications' },
 };
 
-function getRouteLabel(
-  route: string,
-): { label: string; icon: string } | null {
+function getRouteLabel(route: string): { label: string; icon: string } | null {
   return ROUTE_LABELS[route] ?? null;
 }
 
@@ -141,10 +136,7 @@ export default function NotificationsScreen() {
   );
 
   const handleActionButtonPress = useCallback(
-    (
-      notification: NotificationData | ReceivedNotification,
-      e: any,
-    ) => {
+    (notification: NotificationData | ReceivedNotification, e: any) => {
       // Prevenir que el tap llegue al card padre
       if (e?.stopPropagation) e.stopPropagation();
       const isRead =
@@ -332,11 +324,24 @@ export default function NotificationsScreen() {
       },
     );
 
-    const seenIds = new Set<string>();
+    const seenKeys = new Set<string>();
     return combined.filter((notification) => {
       if (!notification.id) return true; // sin ID: siempre incluir
-      if (seenIds.has(notification.id)) return false;
-      seenIds.add(notification.id);
+
+      // Crear una clave de deduplicación compuesta (id, o título+cuerpo) para evitar duplicados visuales
+      const dedupeKey =
+        notification.id + '|' + notification.title + '|' + notification.body;
+      const contentKey = notification.title + '|' + notification.body;
+
+      // Si ya vimos el mismo ID exacto, es duplicado
+      if (seenKeys.has(notification.id)) return false;
+
+      // Si ya vimos el mismo contenido exacto, es un duplicado proveniente de múltiples entregas
+      if (seenKeys.has(contentKey)) return false;
+
+      seenKeys.add(notification.id);
+      seenKeys.add(contentKey);
+
       return true;
     });
   }, [localNotifications, firebaseNotifications]);
@@ -434,11 +439,13 @@ function NotificationDetailModal({
   scheme: 'light' | 'dark';
 }) {
   const theme = Colors[scheme ?? 'light'];
-  const date = notification ? new Date(
-    'receivedAt' in notification
-      ? notification.receivedAt
-      : notification.createdAt,
-  ) : new Date();
+  const date = notification
+    ? new Date(
+        'receivedAt' in notification
+          ? notification.receivedAt
+          : notification.createdAt,
+      )
+    : new Date();
   const routeInfo = notification?.internalRoute
     ? getRouteLabel(notification.internalRoute)
     : null;
@@ -472,7 +479,9 @@ function NotificationDetailModal({
   return (
     <BottomSheet
       isOpen={!!notification}
-      onOpenChange={(open) => { if (!open) onClose(); }}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
       <BottomSheet.Portal>
         <BottomSheet.Overlay />
@@ -482,95 +491,106 @@ function NotificationDetailModal({
             showsVerticalScrollIndicator={false}
           >
             {notification && (
-            <>
-            {/* Icono */}
-            {notification.icon && (
-              <Image source={{ uri: notification.icon }} style={dStyles.icon} />
-            )}
+              <>
+                {/* Icono */}
+                {notification.icon && (
+                  <Image
+                    source={{ uri: notification.icon }}
+                    style={dStyles.icon}
+                  />
+                )}
 
-            {/* Título */}
-            <BottomSheet.Title style={[dStyles.title, { color: theme.text }]}>
-              {notification.title}
-            </BottomSheet.Title>
+                {/* Título */}
+                <BottomSheet.Title
+                  style={[dStyles.title, { color: theme.text }]}
+                >
+                  {notification.title}
+                </BottomSheet.Title>
 
-            {/* Fecha */}
-            <Text style={[dStyles.date, { color: theme.icon }]}>
-              {date.toLocaleDateString('es-ES', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
+                {/* Fecha */}
+                <Text style={[dStyles.date, { color: theme.icon }]}>
+                  {date.toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
 
-            {/* Imagen grande */}
-            {notification.imageUrl && (
-              <Image
-                source={{ uri: notification.imageUrl }}
-                style={dStyles.image}
-                resizeMode="cover"
-              />
-            )}
+                {/* Imagen grande */}
+                {notification.imageUrl && (
+                  <Image
+                    source={{ uri: notification.imageUrl }}
+                    style={dStyles.image}
+                    resizeMode="cover"
+                  />
+                )}
 
-            {/* Cuerpo */}
-            <Text style={[dStyles.body, { color: theme.text }]}>
-              {notification.body}
-            </Text>
+                {/* Cuerpo */}
+                <Text style={[dStyles.body, { color: theme.text }]}>
+                  {notification.body}
+                </Text>
 
-            {/* Separador si hay acciones */}
-            {(routeInfo || notification.actionButton) && (
-              <View
-                style={[dStyles.divider, { backgroundColor: hexAlpha(theme.icon, '30') }]}
-              />
-            )}
+                {/* Separador si hay acciones */}
+                {(routeInfo || notification.actionButton) && (
+                  <View
+                    style={[
+                      dStyles.divider,
+                      { backgroundColor: hexAlpha(theme.icon, '30') },
+                    ]}
+                  />
+                )}
 
-            {/* Botón de destino interno (internalRoute) */}
-            {routeInfo && (
-              <Button
-                variant="outline"
-                onPress={handleInternalRoute}
-                style={[dStyles.routeButton, { borderColor: colors.primary }]}
-              >
-                <MaterialIcons
-                  name={routeInfo.icon as any}
-                  size={20}
-                  color={colors.primary}
-                />
-                <Button.Label style={{ color: colors.primary, flex: 1 }}>
-                  Ir a {routeInfo.label}
-                </Button.Label>
-                <MaterialIcons
-                  name="arrow-forward-ios"
-                  size={14}
-                  color={colors.primary}
-                />
-              </Button>
-            )}
+                {/* Botón de destino interno (internalRoute) */}
+                {routeInfo && (
+                  <Button
+                    variant="outline"
+                    onPress={handleInternalRoute}
+                    style={[
+                      dStyles.routeButton,
+                      { borderColor: colors.primary },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={routeInfo.icon as any}
+                      size={20}
+                      color={colors.primary}
+                    />
+                    <Button.Label style={{ color: colors.primary, flex: 1 }}>
+                      Ir a {routeInfo.label}
+                    </Button.Label>
+                    <MaterialIcons
+                      name="arrow-forward-ios"
+                      size={14}
+                      color={colors.primary}
+                    />
+                  </Button>
+                )}
 
-            {/* Botón de acción CTA */}
-            {notification.actionButton && (
-              <Button
-                variant="primary"
-                onPress={handleActionButton}
-                style={dStyles.actionButton}
-              >
-                <Button.Label style={dStyles.actionButtonText}>
-                  {notification.actionButton.text}
-                </Button.Label>
-                <MaterialIcons
-                  name={
-                    notification.actionButton.isInternal
-                      ? 'arrow-forward'
-                      : 'open-in-new'
-                  }
-                  size={18}
-                  color="#fff"
-                />
-              </Button>
-            )}
-            </>
+                {/* Botón de acción CTA */}
+                {notification.actionButton && (
+                  <Button
+                    variant="primary"
+                    onPress={handleActionButton}
+                    style={dStyles.actionButton}
+                  >
+                    <Button.Label style={dStyles.actionButtonText}>
+                      {notification.actionButton.text}
+                    </Button.Label>
+                    <MaterialIcons
+                      name={
+                        notification.actionButton.isInternal
+                          ? 'arrow-forward'
+                          : 'open-in-new'
+                      }
+                      size={18}
+                      color="#fff"
+                    />
+                  </Button>
+                )}
+              </>
             )}
           </ScrollView>
         </BottomSheet.Content>
@@ -588,7 +608,7 @@ const dStyles = StyleSheet.create({
   icon: {
     width: 64,
     height: 64,
-    borderRadius: 32,  // 64/2 — circle
+    borderRadius: 32, // 64/2 — circle
     marginBottom: spacing.md,
     alignSelf: 'center',
   },

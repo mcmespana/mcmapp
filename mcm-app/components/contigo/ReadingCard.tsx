@@ -18,7 +18,12 @@ interface ReadingCardProps {
 const WARM_ACCENT_LIGHT = '#B8860B';
 const WARM_ACCENT_DARK = '#DAA520';
 
-export function ReadingCard({ title, cita, texto, defaultExpanded = false }: ReadingCardProps) {
+export function ReadingCard({
+  title,
+  cita,
+  texto,
+  defaultExpanded = false,
+}: ReadingCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
@@ -47,10 +52,18 @@ export function ReadingCard({ title, cita, texto, defaultExpanded = false }: Rea
             <PressableFeedback.Highlight />
             <View style={styles.header}>
               <View style={styles.headerTextContainer}>
-                <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
+                <Text
+                  style={[styles.title, { color: theme.text }]}
+                  numberOfLines={1}
+                >
                   {title}
                 </Text>
-                <View style={[styles.citaBadge, { backgroundColor: hexAlpha(accent, '12') }]}>
+                <View
+                  style={[
+                    styles.citaBadge,
+                    { backgroundColor: hexAlpha(accent, '12') },
+                  ]}
+                >
                   <Text style={[styles.citaText, { color: accent }]}>
                     {cita}
                   </Text>
@@ -65,7 +78,16 @@ export function ReadingCard({ title, cita, texto, defaultExpanded = false }: Rea
           </PressableFeedback>
 
           {expanded && (
-            <View style={[styles.body, { borderTopColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }]}>
+            <View
+              style={[
+                styles.body,
+                {
+                  borderTopColor: isDark
+                    ? 'rgba(255,255,255,0.04)'
+                    : 'rgba(0,0,0,0.04)',
+                },
+              ]}
+            >
               <Text style={[styles.bodyText, { color: theme.text }]} selectable>
                 {texto}
               </Text>
