@@ -54,7 +54,7 @@
     "expo-updates": "~55.0.12",
     "expo-web-browser": "~55.0.9",
     "firebase": "^12.10.0",
-    "heroui-native": "^1.0.0",
+    "heroui-native": "^1.0.1",
     "jest": "~29.7.0",
     "lodash": "^4.17.21",
     "react": "19.2.0",

@@ -94,7 +94,11 @@ const createStyles = (scheme: 'light' | 'dark') => {
   const theme = Colors[scheme];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    scrollContent: { flexGrow: 1, padding: spacing.md, paddingBottom: Platform.OS === 'ios' ? 100 : spacing.md },
+    scrollContent: {
+      flexGrow: 1,
+      padding: spacing.md,
+      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.md,
+    },
     gridContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',

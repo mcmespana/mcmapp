@@ -22,9 +22,18 @@ export default function GlassHeader({ tintColor }: GlassHeaderProps) {
     // Convertir hex a RGB para determinar si es claro u oscuro
     const hex = tintColor.replace('#', '');
     // Manejar tanto formato de 6 caracteres como formato corto de 3
-    const r = parseInt(hex.length === 6 ? hex.substring(0, 2) : hex[0] + hex[0], 16);
-    const g = parseInt(hex.length === 6 ? hex.substring(2, 4) : hex[1] + hex[1], 16);
-    const b = parseInt(hex.length === 6 ? hex.substring(4, 6) : hex[2] + hex[2], 16);
+    const r = parseInt(
+      hex.length === 6 ? hex.substring(0, 2) : hex[0] + hex[0],
+      16,
+    );
+    const g = parseInt(
+      hex.length === 6 ? hex.substring(2, 4) : hex[1] + hex[1],
+      16,
+    );
+    const b = parseInt(
+      hex.length === 6 ? hex.substring(4, 6) : hex[2] + hex[2],
+      16,
+    );
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
     if (brightness > 180) {
@@ -71,10 +80,7 @@ export default function GlassHeader({ tintColor }: GlassHeaderProps) {
       <BlurView
         tint={isDark ? 'dark' : 'light'}
         intensity={isDark ? 80 : 100}
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor },
-        ]}
+        style={[StyleSheet.absoluteFill, { backgroundColor }]}
       />
       {/* Borde sutil en la parte inferior para separar del contenido */}
       <View

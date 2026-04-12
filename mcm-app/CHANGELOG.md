@@ -18,7 +18,6 @@
 - **Bug fix**: Se restauró la lógica de navegación para volver a la pantalla inicial (`popToTop`) al pulsar la pestaña "Más" o "Cantoral" si ya se está en ella, usando el listener `tabPress` sobre el navigator padre (`useNavigation().getParent()`).
 - Archivos: `app/(tabs)/mas.tsx`, `app/(tabs)/cancionero.tsx`
 
-
 ## 2026-03-25 — Migración completa de react-native-paper → heroui-native
 
 - **Eliminación de dependencia**: `react-native-paper` eliminado completamente del proyecto
@@ -70,14 +69,14 @@
 - **BottomSheet**: esquinas más redondeadas (20px), backdrop adaptado a dark mode
 - **cancionero.tsx**: título simplificado a "Cantoral", header shadow deshabilitado, tipografía con letter-spacing negativo
 - Soporte completo de dark mode en todas las pantallas con paleta consistente
-- Cross-platform: sombras adaptadas a web (boxShadow) y nativas (shadow*/elevation)
+- Cross-platform: sombras adaptadas a web (boxShadow) y nativas (shadow\*/elevation)
 - Archivos afectados: `app/(tabs)/cancionero.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SongListScreen.tsx`, `app/screens/SongDetailScreen.tsx`, `app/screens/SongFullscreenScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `components/SongControls.tsx`, `components/SongDisplay.tsx`, `components/SongListItem.tsx`, `components/SongFontPanel.tsx`, `components/TransposePanel.tsx`, `components/BottomSheet.tsx`
 
 ---
 
 ## 2026-03-06 — Actualización a Expo SDK 55
 
-- **Expo SDK 54 → 55**: actualizado expo, react (19.1→19.2), react-native (0.81→0.83), y todos los paquetes expo-*
+- **Expo SDK 54 → 55**: actualizado expo, react (19.1→19.2), react-native (0.81→0.83), y todos los paquetes expo-\*
 - **New Architecture obligatoria**: eliminado flag `newArchEnabled` de `app.json` (ya es el comportamiento por defecto en SDK 55)
 - **Eliminado `edgeToEdgeEnabled`**: ya no es una opción válida en SDK 55 (edge-to-edge es el comportamiento por defecto)
 - **expo-file-system**: migrado a `expo-file-system/legacy` donde se usa la API clásica (`cacheDirectory`, `EncodingType`), ya que la API principal ahora usa `File`/`Directory`/`Paths`

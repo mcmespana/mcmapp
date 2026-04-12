@@ -28,7 +28,8 @@ export default function Comunica() {
   const onError = () => {
     toast.show({
       variant: 'danger',
-      label: 'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      label:
+        'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
       actionLabel: 'Cerrar',
       onActionPress: ({ hide }) => hide(),
     });
@@ -69,7 +70,10 @@ export default function Comunica() {
       />
       {insets.top > 0 && (
         <View
-          style={[styles.notchBar, { backgroundColor: NOTCH_COLOR, height: insets.top }]}
+          style={[
+            styles.notchBar,
+            { backgroundColor: NOTCH_COLOR, height: insets.top },
+          ]}
         />
       )}
       <WebView
