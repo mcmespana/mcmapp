@@ -84,7 +84,7 @@ export function useContigoHabits() {
   const setPrayerDone = async (
     date: string,
     duration: PrayerDuration,
-    emotion: Emotion,
+    emotion: Emotion | null,
     durationMinutes?: number
   ) => {
     const record = ensureRecord(date);
@@ -95,7 +95,7 @@ export function useContigoHabits() {
         prayerDone: true,
         prayerDuration: duration,
         prayerDurationMinutes: durationMinutes,
-        prayerEmotion: emotion,
+        prayerEmotion: emotion || undefined,
         timestamp: Date.now(),
       },
     };
