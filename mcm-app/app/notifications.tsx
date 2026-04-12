@@ -31,6 +31,7 @@ import {
   getReadNotificationIds,
   markAllNotificationsAsRead,
   initializeNewUserReadStatus,
+  isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { useNotifications } from '@/contexts/NotificationsContext';
@@ -114,7 +115,13 @@ export default function NotificationsScreen() {
 
   const handleMarkAllAsRead = async () => {
     const unreadIds = allNotifications
-      .filter((n) => !readIds.has(n.id) && !('isRead' in n && n.isRead))
+      .filter((n) => {
+        if (readIds.has(n.id)) return false;
+        if ('isRead' in n && n.isRead) return false;
+        const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
+        if (isNotificationOlderThan60Days(dateStr)) return false;
+        return true;
+      })
       .map((n) => n.id);
     if (unreadIds.length === 0) return;
     await markAllNotificationsAsRead(unreadIds);
@@ -124,9 +131,11 @@ export default function NotificationsScreen() {
 
   const handleNotificationPress = useCallback(
     async (notification: NotificationData | ReceivedNotification) => {
+      const dateStr = 'receivedAt' in notification ? notification.receivedAt : notification.createdAt;
       const isRead =
         readIds.has(notification.id) ||
-        ('isRead' in notification && notification.isRead);
+        ('isRead' in notification && notification.isRead) ||
+        isNotificationOlderThan60Days(dateStr);
       if (!isRead) {
         await handleMarkAsRead(notification.id);
       }
@@ -139,9 +148,11 @@ export default function NotificationsScreen() {
     (notification: NotificationData | ReceivedNotification, e: any) => {
       // Prevenir que el tap llegue al card padre
       if (e?.stopPropagation) e.stopPropagation();
+      const dateStr = 'receivedAt' in notification ? notification.receivedAt : notification.createdAt;
       const isRead =
         readIds.has(notification.id) ||
-        ('isRead' in notification && notification.isRead);
+        ('isRead' in notification && notification.isRead) ||
+        isNotificationOlderThan60Days(dateStr);
       if (!isRead) {
         handleMarkAsRead(notification.id).catch((err) =>
           console.error('Error marcando como leída:', err),
@@ -196,9 +207,11 @@ export default function NotificationsScreen() {
   }: {
     item: NotificationData | ReceivedNotification;
   }) => {
+    const dateStr = 'receivedAt' in notification ? notification.receivedAt : notification.createdAt;
     const isRead =
       readIds.has(notification.id) ||
-      ('isRead' in notification && notification.isRead);
+      ('isRead' in notification && notification.isRead) ||
+      isNotificationOlderThan60Days(dateStr);
     const isUnread = !isRead;
     const date = new Date(
       'receivedAt' in notification
@@ -346,9 +359,13 @@ export default function NotificationsScreen() {
     });
   }, [localNotifications, firebaseNotifications]);
 
-  const hasUnread = allNotifications.some(
-    (n) => !readIds.has(n.id) && !('isRead' in n && n.isRead),
-  );
+  const hasUnread = allNotifications.some((n) => {
+    if (readIds.has(n.id)) return false;
+    if ('isRead' in n && n.isRead) return false;
+    const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
+    if (isNotificationOlderThan60Days(dateStr)) return false;
+    return true;
+  });
 
   return (
     <SafeAreaView

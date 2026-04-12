@@ -431,6 +431,19 @@ export const markAllNotificationsAsRead = async (
  * Cuenta las notificaciones sin leer
  * Combina notificaciones locales y de Firebase
  */
+
+/**
+ * Verifica si una notificación tiene más de 60 días
+ */
+export const isNotificationOlderThan60Days = (dateStr?: string): boolean => {
+  if (!dateStr) return false;
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffTime = now.getTime() - date.getTime();
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  return diffDays > 60;
+};
+
 export const getUnreadNotificationsCount = async (): Promise<number> => {
   try {
     const readIds = await getReadNotificationIds();
@@ -438,13 +451,13 @@ export const getUnreadNotificationsCount = async (): Promise<number> => {
     // Contar notificaciones locales sin leer
     const localNotifications = await getLocalNotificationsHistory();
     const unreadLocal = localNotifications.filter(
-      (n) => !readIds.has(n.id) && !n.isRead,
+      (n) => !readIds.has(n.id) && !n.isRead && !isNotificationOlderThan60Days(n.receivedAt),
     );
 
     // Contar notificaciones de Firebase sin leer
     const firebaseNotifications = await getNotificationsHistory();
     const unreadFirebase = firebaseNotifications.filter(
-      (n) => !readIds.has(n.id),
+      (n) => !readIds.has(n.id) && !isNotificationOlderThan60Days(n.createdAt),
     );
 
     // Eliminar duplicados por ID y contar

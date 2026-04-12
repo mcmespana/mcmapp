@@ -30,6 +30,7 @@ import {
   getReadNotificationIds,
   markAllNotificationsAsRead,
   initializeNewUserReadStatus,
+  isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { useNotifications } from '@/contexts/NotificationsContext';
@@ -228,9 +229,13 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
       return i === self.findIndex((x) => x.id === n.id);
     });
 
-  const hasUnread = allNotifications.some(
-    (n) => !readIds.has(n.id) && !('isRead' in n && n.isRead),
-  );
+  const hasUnread = allNotifications.some((n) => {
+    if (readIds.has(n.id)) return false;
+    if ('isRead' in n && n.isRead) return false;
+    const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
+    if (isNotificationOlderThan60Days(dateStr)) return false;
+    return true;
+  });
 
   const handleMarkAsRead = useCallback(
     async (id: string) => {
@@ -243,7 +248,13 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
 
   const handleMarkAllAsRead = async () => {
     const unreadIds = allNotifications
-      .filter((n) => !readIds.has(n.id) && !('isRead' in n && n.isRead))
+      .filter((n) => {
+        if (readIds.has(n.id)) return false;
+        if ('isRead' in n && n.isRead) return false;
+        const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
+        if (isNotificationOlderThan60Days(dateStr)) return false;
+        return true;
+      })
       .map((n) => n.id);
     if (!unreadIds.length) return;
     await markAllNotificationsAsRead(unreadIds);
@@ -310,9 +321,11 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
   }: {
     item: NotificationData | ReceivedNotification;
   }) => {
+    const dateStr = 'receivedAt' in notification ? notification.receivedAt : notification.createdAt;
     const isRead =
       readIds.has(notification.id) ||
-      ('isRead' in notification && notification.isRead);
+      ('isRead' in notification && notification.isRead) ||
+      isNotificationOlderThan60Days(dateStr);
     const isUnread = !isRead;
     const date = new Date(
       'receivedAt' in notification
