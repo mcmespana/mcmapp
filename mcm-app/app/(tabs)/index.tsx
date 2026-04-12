@@ -197,7 +197,7 @@ export default function Home() {
           icon: 'menu-book' as const,
           iconBg: scheme === 'dark' ? '#3A2A1A' : '#FFF8E1',
           iconColor: '#F59E0B',
-          href: '/screens/EvangelioScreen',
+          href: '/(tabs)/contigo/evangelio',
         },
         {
           key: 'mas',

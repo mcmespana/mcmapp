@@ -9,17 +9,23 @@ import {
   Linking,
   Animated,
   Easing,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, Stack } from 'expo-router';
-import { Card, Tabs } from 'heroui-native';
+import { Card, Tabs, PressableFeedback, CloseButton } from 'heroui-native';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import useFontScale from '@/hooks/useFontScale';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
 import { LiturgicalBadge, getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
 import { ReadingCard } from '@/components/contigo/ReadingCard';
+import SettingsPanel from '@/components/SettingsPanel';
+import BottomSheet from '@/components/BottomSheet';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 
@@ -64,41 +70,68 @@ function addDays(dateStr: string, offset: number): string {
   return `${ny}-${nm}-${nd}`;
 }
 
-// ── Checkmark animation component (replaces confetti) ──
-function CheckmarkAnimation({ visible, isDark }: { visible: boolean; isDark: boolean }) {
+// ── Joyful "Amen" Animation Component ──
+const PARTICLES = Array.from({ length: 24 });
+
+function CelebrationAnimation({ visible, isDark }: { visible: boolean; isDark: boolean }) {
   const scale = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const particles = useRef(PARTICLES.map(() => new Animated.Value(0))).current;
+
+  // Generate random data ONCE per render cycle so it's consistent during animation
+  const particleConfigs = useRef(
+    PARTICLES.map((_, i) => ({
+      angleOffset: Math.random() * 20 - 10,
+      distance: 70 + Math.random() * 100,
+      size: 16 + Math.random() * 16,
+      delay: Math.random() * 40,
+      duration: 300 + Math.random() * 300,
+      iconName: i % 2 === 0 ? 'star' : 'auto-awesome',
+      color: i % 3 === 0 ? '#FFD700' : (i % 2 === 0 ? '#4ECDC4' : (isDark ? '#DAA520' : '#FF6B6B'))
+    }))
+  ).current;
 
   useEffect(() => {
     if (visible) {
       Animated.parallel([
         Animated.spring(scale, {
           toValue: 1,
-          friction: 4,
-          tension: 100,
+          friction: 6,
+          tension: 110,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 200,
+          duration: 100,
           useNativeDriver: true,
         }),
+        ...particles.map((p, i) =>
+          Animated.sequence([
+            Animated.delay(particleConfigs[i].delay),
+            Animated.timing(p, {
+              toValue: 1,
+              duration: particleConfigs[i].duration,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            })
+          ])
+        )
       ]).start();
 
-      // Fade out after a moment
       const timer = setTimeout(() => {
         Animated.timing(opacity, {
           toValue: 0,
-          duration: 500,
+          duration: 400,
           easing: Easing.ease,
           useNativeDriver: true,
         }).start();
-      }, 1500);
+      }, 2000);
 
       return () => clearTimeout(timer);
     } else {
       scale.setValue(0);
       opacity.setValue(0);
+      particles.forEach(p => p.setValue(0));
     }
   }, [visible]);
 
@@ -108,29 +141,78 @@ function CheckmarkAnimation({ visible, isDark }: { visible: boolean; isDark: boo
     <Animated.View
       style={[
         styles.checkOverlay,
-        {
-          opacity,
-          transform: [{ scale }],
-        },
+        { opacity, zIndex: 99999, elevation: 99999 },
       ]}
       pointerEvents="none"
     >
-      <View
+      {/* The particles */}
+      {particles.map((p, i) => {
+        const config = particleConfigs[i];
+        const baseAngle = (i * 360) / PARTICLES.length;
+        const rad = (baseAngle + config.angleOffset) * Math.PI / 180;
+        
+        const moveX = p.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, Math.cos(rad) * config.distance]
+        });
+        const moveY = p.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, Math.sin(rad) * config.distance]
+        });
+        const pScale = p.interpolate({
+          inputRange: [0, 0.4, 0.8, 1],
+          outputRange: [0, 1.2, 0.8, 0]
+        });
+        const rotate = p.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', `${i % 2 === 0 ? 270 : -270}deg`]
+        });
+
+        return (
+          <Animated.View
+            key={`particle-${i}`}
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                alignItems: 'center',
+                justifyContent: 'center',
+                transform: [
+                  { translateX: moveX },
+                  { translateY: moveY },
+                  { scale: pScale },
+                  { rotate }
+                ]
+              }
+            ]}
+          >
+             <MaterialIcons name={config.iconName as any} size={config.size} color={config.color} />
+          </Animated.View>
+        );
+      })}
+
+      {/* The main bubble */}
+      <Animated.View
         style={[
           styles.checkCircle,
           {
             backgroundColor: isDark
-              ? 'rgba(163,189,49,0.15)'
-              : 'rgba(58,125,68,0.10)',
+              ? 'rgba(218, 165, 32, 0.25)'
+              : 'rgba(218, 165, 32, 0.15)',
+            transform: [{ scale }],
+            shadowColor: '#DAA520',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 12,
+            elevation: 20, // ensure circle pops against text
           },
         ]}
       >
         <MaterialIcons
-          name="check"
-          size={48}
-          color={isDark ? '#A3BD31' : '#3A7D44'}
+          name="auto-awesome"
+          size={56}
+          color={isDark ? '#DAA520' : '#B8860B'}
         />
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -141,6 +223,8 @@ export default function EvangelioScreen() {
   const theme = Colors[scheme ?? 'light'];
   const warm = isDark ? WARM.dark : WARM.light;
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const fontScale = useFontScale();
 
   const { todayStr, getRecord, setReadingDone } = useContigoHabits();
 
@@ -150,6 +234,49 @@ export default function EvangelioScreen() {
   const { readings, isLoading, error } = useDailyReadings(selectedDate);
   const [viewMode, setViewMode] = useState<'lectura' | 'comentario'>('lectura');
   const [showCheck, setShowCheck] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [creditsVisible, setCreditsVisible] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('@contigo_bookmarks').then(str => {
+      if (str) {
+        const bookmarks: any[] = JSON.parse(str);
+        if (bookmarks.length > 0 && typeof bookmarks[0] === 'string') {
+          setIsBookmarked(bookmarks.includes(selectedDate));
+        } else {
+          setIsBookmarked(bookmarks.some(b => b.date === selectedDate));
+        }
+      }
+    });
+  }, [selectedDate]);
+
+  const toggleBookmark = async () => {
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const str = await AsyncStorage.getItem('@contigo_bookmarks');
+      let bookmarks: any[] = str ? JSON.parse(str) : [];
+      if (isBookmarked) {
+        if (bookmarks.length > 0 && typeof bookmarks[0] === 'string') {
+            bookmarks = bookmarks.filter(d => d !== selectedDate);
+        } else {
+            bookmarks = bookmarks.filter(b => b.date !== selectedDate);
+        }
+      } else {
+        // Handle migration if mixing arrays, filter strings out
+        bookmarks = bookmarks.filter(b => typeof b !== 'string');
+        bookmarks.push({
+          date: selectedDate,
+          readings: readings,
+          bookmarkedAt: Date.now()
+        });
+      }
+      await AsyncStorage.setItem('@contigo_bookmarks', JSON.stringify(bookmarks));
+      setIsBookmarked(!isBookmarked);
+    } catch (e) {
+      console.error('Failed to save bookmark', e);
+    }
+  };
 
   const record = getRecord(selectedDate);
   const isDone = record?.readingDone || false;
@@ -166,7 +293,15 @@ export default function EvangelioScreen() {
   const handleToggleDone = async () => {
     const newValue = !isDone;
     await setReadingDone(selectedDate, newValue);
+    
     if (newValue) {
+      // Create a playful, escalating vibration sequence
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 100);
+        setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 250);
+      }
+      
       setShowCheck(true);
       setTimeout(() => setShowCheck(false), 2500);
     }
@@ -188,26 +323,54 @@ export default function EvangelioScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: warm.surface }]}>
-      {/* Register as a screen inside the Stack — keeps tab bar visible */}
+      {/* Remove standard header in favor of Liquid Glass floating header */}
       <Stack.Screen
         options={{
-          headerShown: true,
-          headerTitle: isToday ? 'Evangelio de Hoy' : 'Evangelio del Día',
-          headerBackTitle: 'Contigo',
-          headerStyle: {
-            backgroundColor: isDark ? warm.surface : warm.surface,
-          },
-          headerTintColor: theme.text,
-          headerTitleStyle: {
-            fontWeight: '700',
-            fontSize: 17,
-          },
-          headerShadowVisible: false,
+          headerShown: false,
         }}
       />
 
+      {/* ── Custom Floating Liquid Glass Header ── */}
+      <View
+        style={[
+          styles.floatingHeader,
+          { 
+            paddingTop: Math.max(insets.top, 16),
+            backgroundColor: isDark 
+              ? 'rgba(28, 26, 23, 0.85)' 
+              : 'rgba(254, 251, 245, 0.85)',
+          }
+        ]}
+      >
+        <TouchableOpacity
+          onPress={goBack}
+          style={[styles.frostedBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
+        >
+          <MaterialIcons name="arrow-back-ios-new" size={20} color={theme.text} />
+        </TouchableOpacity>
+
+        <View style={styles.floatingActions}>
+          <TouchableOpacity
+            onPress={toggleBookmark}
+            style={[styles.frostedBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
+          >
+            <MaterialIcons 
+              name={isBookmarked ? "bookmark" : "bookmark-border"} 
+              size={24} 
+              color={isBookmarked ? warm.accent : theme.text} 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setSettingsVisible(true)}
+            style={[styles.frostedBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
+          >
+            <MaterialIcons name="text-fields" size={22} color={theme.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 80 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Date Navigator with liturgical color backdrop ── */}
@@ -458,7 +621,15 @@ export default function EvangelioScreen() {
                           </Text>
                         </View>
                         <Text
-                          style={[styles.bodyText, { color: theme.text }]}
+                          style={[
+                            styles.bodyText,
+                            {
+                              color: theme.text,
+                              fontSize: 18 * fontScale,
+                              lineHeight: 28 * fontScale,
+                              fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif'
+                            }
+                          ]}
                           selectable
                         >
                           {readings.evangelio.texto}
@@ -467,7 +638,14 @@ export default function EvangelioScreen() {
                     ) : (
                       <>
                         <Text
-                          style={[styles.bodyText, { color: theme.text }]}
+                          style={[
+                            styles.bodyText,
+                            {
+                              color: theme.text,
+                              fontSize: 18 * fontScale,
+                              lineHeight: 28 * fontScale,
+                            }
+                          ]}
                           selectable
                         >
                           {readings.evangelio.comentario}
@@ -520,7 +698,18 @@ export default function EvangelioScreen() {
                       {readings.evangelio.cita}
                     </Text>
                   </View>
-                  <Text style={[styles.bodyText, { color: theme.text }]} selectable>
+                  <Text
+                    style={[
+                      styles.bodyText,
+                      {
+                        color: theme.text,
+                        fontSize: 18 * fontScale,
+                        lineHeight: 28 * fontScale,
+                        fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif'
+                      }
+                    ]}
+                    selectable
+                  >
                     {readings.evangelio.texto}
                   </Text>
                 </View>
@@ -620,12 +809,64 @@ export default function EvangelioScreen() {
                 )}
               </View>
             )}
+
+            <TouchableOpacity
+              onPress={() => setCreditsVisible(true)}
+              style={{ alignItems: 'center', paddingVertical: 24, marginTop: 10, paddingBottom: 40 }}
+            >
+              <Text style={{ fontSize: 13, color: warm.warmGray, textDecorationLine: 'underline' }}>
+                ¿De dónde sacamos los textos?
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
 
-      {/* Checkmark animation — replaces ugly confetti */}
-      <CheckmarkAnimation visible={showCheck} isDark={isDark} />
+      {/* Celebration burst animation */}
+      <CelebrationAnimation visible={showCheck} isDark={isDark} />
+
+      <SettingsPanel visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
+
+      {/* Credits Sheet */}
+      <BottomSheet visible={creditsVisible} onClose={() => setCreditsVisible(false)}>
+        <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <Text style={{ fontSize: 22, fontWeight: '800', color: theme.text, letterSpacing: -0.3 }}>Fuentes de los textos</Text>
+            <CloseButton onPress={() => setCreditsVisible(false)} />
+          </View>
+          
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 20, paddingBottom: 20 }}>
+            <Text style={{ fontSize: 15, lineHeight: 22, color: theme.text }}>
+              Los textos bíblicos y los comentarios que te mostramos en la aplicación están extraídos de webs que los comparten de forma gratuita en abierto. Junto a los comentarios se indica su autor de la misma forma que se muestra en la web original.
+            </Text>
+
+            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', padding: 16, borderRadius: radii.lg, gap: 4 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>Vatican News</Text>
+              <Text style={{ fontSize: 13, color: theme.icon }}>© 2017-{new Date().getFullYear()} Dicasterium pro Communicatione</Text>
+              <TouchableOpacity onPress={() => Linking.openURL('https://www.vaticannews.va/es/evangelio-de-hoy')}>
+                <Text style={{ fontSize: 13, color: warm.accent, textDecorationLine: 'underline', marginTop: 4 }}>vaticannews.va/es/evangelio-de-hoy</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 13, color: theme.icon, marginTop: 4 }}>webmaster@vaticannews.va</Text>
+            </View>
+
+            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', padding: 16, borderRadius: radii.lg, gap: 4 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>Vida Nueva</Text>
+              <Text style={{ fontSize: 13, color: theme.icon }}>© {new Date().getFullYear()} Copyright Vida Nueva</Text>
+              <TouchableOpacity onPress={() => Linking.openURL('https://www.vidanuevadigital.com/evangeliodeldia/')}>
+                <Text style={{ fontSize: 13, color: warm.accent, textDecorationLine: 'underline', marginTop: 4 }}>vidanuevadigital.com/evangeliodeldia</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', padding: 16, borderRadius: radii.lg, gap: 4 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>Dominicos · Orden de Predicadores</Text>
+              <Text style={{ fontSize: 13, color: theme.icon, lineHeight: 18 }}>Textos bíblicos de la Versión oficial de la Conferencia Episcopal Española. Editorial BAC</Text>
+              <TouchableOpacity onPress={() => Linking.openURL('https://www.dominicos.org/predicacion/evangelio-del-dia/hoy/')}>
+                <Text style={{ fontSize: 13, color: warm.accent, textDecorationLine: 'underline', marginTop: 4 }}>dominicos.org/predicacion/evangelio-del-dia/hoy</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -633,6 +874,29 @@ export default function EvangelioScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  floatingHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    zIndex: 50,
+  },
+  floatingActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  frostedBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollContent: {
     paddingBottom: 80,

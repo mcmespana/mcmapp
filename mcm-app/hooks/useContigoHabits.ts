@@ -31,22 +31,25 @@ export function useContigoHabits() {
   const [records, setRecords] = useState<Record<string, DayRecord>>({});
   const [isLoading, setIsLoading] = useState(true);
 
+  const load = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setRecords(JSON.parse(stored));
+      }
+    } catch (err) {
+      console.error('Failed to load contigo habits:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Load records on mount
   useEffect(() => {
-    async function load() {
-      try {
-        const stored = await AsyncStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          setRecords(JSON.parse(stored));
-        }
-      } catch (err) {
-        console.error('Failed to load contigo habits:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
     load();
   }, []);
+
+  const reloadRecords = () => load();
 
   // Save changes
   const saveRecords = async (newRecords: Record<string, DayRecord>) => {
@@ -152,5 +155,6 @@ export function useContigoHabits() {
     getStreak,
     todayRecord,
     todayStr,
+    reloadRecords,
   };
 }

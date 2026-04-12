@@ -18,11 +18,15 @@ interface ReadingCardProps {
 const WARM_ACCENT_LIGHT = '#B8860B';
 const WARM_ACCENT_DARK = '#DAA520';
 
+import useFontScale from '@/hooks/useFontScale';
+import { Platform } from 'react-native';
+
 export function ReadingCard({ title, cita, texto, defaultExpanded = false }: ReadingCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   const accent = isDark ? WARM_ACCENT_DARK : WARM_ACCENT_LIGHT;
+  const fontScale = useFontScale();
 
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -66,7 +70,18 @@ export function ReadingCard({ title, cita, texto, defaultExpanded = false }: Rea
 
           {expanded && (
             <View style={[styles.body, { borderTopColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }]}>
-              <Text style={[styles.bodyText, { color: theme.text }]} selectable>
+              <Text 
+                style={[
+                  styles.bodyText, 
+                  { 
+                    color: theme.text,
+                    fontSize: 16 * fontScale,
+                    lineHeight: 24 * fontScale,
+                    fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif'
+                  }
+                ]} 
+                selectable
+              >
                 {texto}
               </Text>
             </View>

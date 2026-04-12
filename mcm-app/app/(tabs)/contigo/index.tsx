@@ -1,7 +1,7 @@
-import React from 'react';
-import { ScrollView, View, Text, StyleSheet, Platform } from 'react-native';
+import React, { useCallback } from 'react';
+import { ScrollView, View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { ContigoToolCard } from '@/components/contigo/ContigoToolCard';
@@ -43,8 +43,14 @@ export default function ContigoScreen() {
   const theme = Colors[scheme ?? 'light'];
   const contigo = isDark ? CONTIGO.dark : CONTIGO.light;
 
-  const { todayStr, todayRecord, getStreak } = useContigoHabits();
+  const { todayStr, todayRecord, getStreak, reloadRecords } = useContigoHabits();
   const { readings, isLoading } = useDailyReadings(todayStr);
+
+  useFocusEffect(
+    useCallback(() => {
+      reloadRecords();
+    }, [])
+  );
 
   const readingDone = todayRecord?.readingDone;
   const prayerDone = todayRecord?.prayerDone;
@@ -84,12 +90,25 @@ export default function ContigoScreen() {
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: contigo.titleColor }]}>
-            Contigo
-          </Text>
-          <Text style={[styles.subtitle, { color: contigo.subtitleColor }]}>
-            Propuestas para la oración de cada día
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View>
+              <Text style={[styles.title, { color: contigo.titleColor }]}>
+                Contigo
+              </Text>
+              <Text style={[styles.subtitle, { color: contigo.subtitleColor }]}>
+                Propuestas para la oración de cada día
+              </Text>
+            </View>
+            <TouchableOpacity
+               onPress={() => router.push('/contigo/bookmarks')}
+               style={[
+                 styles.bookmarkBtn,
+                 { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }
+               ]}
+            >
+               <MaterialIcons name="bookmarks" size={22} color={contigo.accent} />
+            </TouchableOpacity>
+          </View>
           <View style={styles.dateRow}>
             <Text style={[styles.dateText, { color: contigo.warmGray }]}>
               {dateStr}
@@ -121,7 +140,7 @@ export default function ContigoScreen() {
                 : contigo.warmGray
             }
             accentColor={contigo.accent}
-            onPress={() => router.push('/screens/EvangelioScreen')}
+            onPress={() => router.push('/(tabs)/contigo/evangelio')}
           />
 
           {/* Mi Rato de Oración */}
@@ -183,6 +202,7 @@ export default function ContigoScreen() {
             accentColor={isDark ? '#A09A94' : '#8B7E6E'}
             disabled={true}
           />
+
         </View>
 
         {/* ── Weekly Streak Summary — always visible ── */}
@@ -342,5 +362,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginTop: 2,
+  },
+  bookmarkBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
