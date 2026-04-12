@@ -79,7 +79,8 @@ export default function MonitoresWebScreen() {
   const onError = () => {
     toast.show({
       variant: 'danger',
-      label: 'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      label:
+        'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
       actionLabel: 'Cerrar',
       onActionPress: ({ hide }) => hide(),
     });
@@ -92,62 +93,69 @@ export default function MonitoresWebScreen() {
   };
 
   // Fallback en web: usamos un iframe con estilos inyectados
+
+  React.useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const iframe = document.querySelector(
+      'iframe[title="Comunica MCM - Monitores"]',
+    ) as HTMLIFrameElement;
+    if (iframe) {
+      const injectStyles = () => {
+        try {
+          const iframeDoc =
+            iframe.contentDocument || iframe.contentWindow?.document;
+          if (iframeDoc) {
+            // Inyectar CSS
+            const style = iframeDoc.createElement('style');
+            style.textContent = INJECTED_CSS;
+            iframeDoc.head.appendChild(style);
+
+            // También ocultar directamente con JavaScript
+            const hideElements = () => {
+              const elementsToHide = iframeDoc.querySelectorAll(
+                '.p_login_top, .p_login_bottom',
+              );
+              elementsToHide.forEach((el: Element) => {
+                const htmlEl = el as HTMLElement;
+                htmlEl.style.display = 'none';
+                htmlEl.style.visibility = 'hidden';
+                htmlEl.style.opacity = '0';
+                htmlEl.style.height = '0';
+                htmlEl.style.overflow = 'hidden';
+              });
+            };
+
+            // Ejecutar inmediatamente
+            hideElements();
+
+            // Observar cambios en el DOM
+            const observer = new MutationObserver(hideElements);
+            observer.observe(iframeDoc.body, {
+              childList: true,
+              subtree: true,
+            });
+
+            // Ejecutar periódicamente durante los primeros 2 segundos
+            let attempts = 0;
+            const interval = setInterval(() => {
+              hideElements();
+              attempts++;
+              if (attempts > 20) {
+                clearInterval(interval);
+              }
+            }, 100);
+          }
+        } catch (e) {
+          // Si hay problemas de CORS, no podemos inyectar estilos en web
+          console.log('No se pudieron inyectar estilos en iframe:', e);
+        }
+      };
+
+      iframe.addEventListener('load', injectStyles);
+    }
+  }, []);
   if (Platform.OS === 'web') {
     // Para web, inyectamos los estilos mediante un script cuando carga el iframe
-    React.useEffect(() => {
-      const iframe = document.querySelector('iframe[title="Comunica MCM - Monitores"]') as HTMLIFrameElement;
-      if (iframe) {
-        const injectStyles = () => {
-          try {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-            if (iframeDoc) {
-              // Inyectar CSS
-              const style = iframeDoc.createElement('style');
-              style.textContent = INJECTED_CSS;
-              iframeDoc.head.appendChild(style);
-
-              // También ocultar directamente con JavaScript
-              const hideElements = () => {
-                const elementsToHide = iframeDoc.querySelectorAll('.p_login_top, .p_login_bottom');
-                elementsToHide.forEach((el: Element) => {
-                  const htmlEl = el as HTMLElement;
-                  htmlEl.style.display = 'none';
-                  htmlEl.style.visibility = 'hidden';
-                  htmlEl.style.opacity = '0';
-                  htmlEl.style.height = '0';
-                  htmlEl.style.overflow = 'hidden';
-                });
-              };
-
-              // Ejecutar inmediatamente
-              hideElements();
-
-              // Observar cambios en el DOM
-              const observer = new MutationObserver(hideElements);
-              observer.observe(iframeDoc.body, {
-                childList: true,
-                subtree: true
-              });
-
-              // Ejecutar periódicamente durante los primeros 2 segundos
-              let attempts = 0;
-              const interval = setInterval(() => {
-                hideElements();
-                attempts++;
-                if (attempts > 20) {
-                  clearInterval(interval);
-                }
-              }, 100);
-            }
-          } catch (e) {
-            // Si hay problemas de CORS, no podemos inyectar estilos en web
-            console.log('No se pudieron inyectar estilos en iframe:', e);
-          }
-        };
-
-        iframe.addEventListener('load', injectStyles);
-      }
-    }, []);
 
     return (
       <View style={styles.containerWeb}>

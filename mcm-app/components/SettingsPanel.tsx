@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ViewStyle,
-  TextStyle,
-} from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { CloseButton, PressableFeedback, useToast } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
@@ -81,9 +75,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
                 Tema
               </Text>
             </View>
-            <View
-              style={[styles.themeSegment, { backgroundColor: segmentBg }]}
-            >
+            <View style={[styles.themeSegment, { backgroundColor: segmentBg }]}>
               {THEME_OPTIONS.map((opt) => {
                 const isSelected = settings.theme === opt.key;
                 return (
@@ -189,7 +181,11 @@ export default function SettingsPanel({ visible, onClose }: Props) {
                 MI CUENTA
               </Text>
               <PressableFeedback
-                style={[styles.surface, styles.surfaceClickable, { backgroundColor: surfaceBg }]}
+                style={[
+                  styles.surface,
+                  styles.surfaceClickable,
+                  { backgroundColor: surfaceBg },
+                ]}
                 onPress={() => setEditVisible(true)}
                 accessibilityRole="button"
               >
@@ -211,11 +207,20 @@ export default function SettingsPanel({ visible, onClose }: Props) {
           )}
 
           {/* ── Sección: Debug ── */}
-          <Text style={[styles.sectionLabel, { color: theme.icon, marginTop: spacing.md }]}>
+          <Text
+            style={[
+              styles.sectionLabel,
+              { color: theme.icon, marginTop: spacing.md },
+            ]}
+          >
             DEPURACIÓN
           </Text>
           <PressableFeedback
-            style={[styles.surface, styles.surfaceClickable, { backgroundColor: surfaceBg }]}
+            style={[
+              styles.surface,
+              styles.surfaceClickable,
+              { backgroundColor: surfaceBg },
+            ]}
             onPress={async () => {
               try {
                 const projectId =
@@ -225,9 +230,15 @@ export default function SettingsPanel({ visible, onClose }: Props) {
                   projectId ? { projectId } : undefined,
                 );
                 await Clipboard.setStringAsync(data);
-                toast.show({ variant: 'success', label: 'Expo Token copiado al portapapeles' });
+                toast.show({
+                  variant: 'success',
+                  label: 'Expo Token copiado al portapapeles',
+                });
               } catch (err) {
-                toast.show({ variant: 'danger', label: 'Error obteniendo token: ' + String(err) });
+                toast.show({
+                  variant: 'danger',
+                  label: 'Error obteniendo token: ' + String(err),
+                });
               }
             }}
             accessibilityRole="button"

@@ -335,7 +335,9 @@ export default function SecretPanelModal({
             info: 'Info',
             content: 'Contenido',
           };
-          return (fieldLabels as Record<string, string>)[fieldName] || fieldName;
+          return (
+            (fieldLabels as Record<string, string>)[fieldName] || fieldName
+          );
         });
 
       Alert.alert(

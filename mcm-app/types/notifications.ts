@@ -35,11 +35,11 @@ export interface NotificationData {
  * Categorías de notificaciones para organización
  */
 export type NotificationCategory =
-  | 'general'      // Anuncios generales
-  | 'eventos'      // Eventos y calendario
-  | 'cancionero'   // Nuevas canciones o actualizaciones
-  | 'fotos'        // Nuevos álbumes de fotos
-  | 'urgente'      // Notificaciones urgentes/importantes
+  | 'general' // Anuncios generales
+  | 'eventos' // Eventos y calendario
+  | 'cancionero' // Nuevas canciones o actualizaciones
+  | 'fotos' // Nuevos álbumes de fotos
+  | 'urgente' // Notificaciones urgentes/importantes
   | 'mantenimiento' // Avisos de mantenimiento de la app
   | 'celebraciones'; // Celebraciones, cumpleaños, etc.
 

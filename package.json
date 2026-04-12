@@ -17,5 +17,8 @@
     "mcm-app/**/*.{json,md}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "expo-av": "^16.0.8"
   }
 }

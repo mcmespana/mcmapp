@@ -1,10 +1,4 @@
-import {
-  FlatList,
-  Text,
-  StyleSheet,
-  View,
-  Platform,
-} from 'react-native';
+import { FlatList, Text, StyleSheet, View, Platform } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useLayoutEffect, useMemo, useState } from 'react';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
@@ -210,7 +204,6 @@ export default function CategoriesScreen({
         songsData={songsData}
         onSuccess={handleSuccessSubmit}
       />
-
     </View>
   );
 }
@@ -245,17 +238,17 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: 8,
       ...(Platform.OS === 'web'
         ? {
-          boxShadow: isDark
-            ? '0 1px 3px rgba(0,0,0,0.4)'
-            : '0 1px 3px rgba(0,0,0,0.06)',
-        }
+            boxShadow: isDark
+              ? '0 1px 3px rgba(0,0,0,0.4)'
+              : '0 1px 3px rgba(0,0,0,0.06)',
+          }
         : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.25 : 0.04,
-          shadowRadius: 3,
-          elevation: 1,
-        }),
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: isDark ? 0.25 : 0.04,
+            shadowRadius: 3,
+            elevation: 1,
+          }),
     },
     cardSpecial: {
       backgroundColor: isDark ? '#1A2744' : '#EEF4FF',

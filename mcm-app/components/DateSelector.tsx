@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  FlatList,
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import { FlatList, View, Text, StyleSheet } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
