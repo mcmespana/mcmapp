@@ -1,44 +1,66 @@
 """
-Scraper for Vatican News RSS Feed — commentary only.
-https://www.vaticannews.va/es/evangelio-de-hoy.rss.xml
+Scraper for Vatican News daily gospel pages — commentary only.
+https://www.vaticannews.va/es/evangelio-de-hoy/{YYYY}/{MM}/{DD}.html
 
-This scraper extracts ONLY the "Las palabras de los Papas" section from each
-RSS item.  It does NOT extract gospel texts, readings, or salmo — those come
-from dominicos.py.
+This scraper fetches per-date HTML pages and extracts ONLY the
+"Las palabras de los Papas" section.  It does NOT extract gospel texts,
+readings, or salmo — those come from dominicos.py.
 
-For each item:
-  • comentario    ← body of the "Palabras de los Papas" section
+For each date:
+  • comentario    ← body of the "Las palabras de los Papas" section
   • comentarista  ← author extracted from the trailing parenthetical
-  • fecha         ← derived from pubDate
 
-Items without a recognisable "Palabras" section are silently skipped
-(logged as WARNING so we can monitor match rates).
+Pages without a recognisable "Palabras" section are skipped (WARNING logged).
+
+HTML structure (verified 2026-04-12):
+  <section class="section section--evidence section--isStatic">
+    <div class="section__head">
+      <h2>Las palabras de los Papas</h2>
+    </div>
+    <div class="section__wrapper">
+      <div class="section__content">
+        <p>Commentary paragraph…</p>
+        <p>(Francisco - Regina caeli, 16 de abril de 2023)</p>
+      </div>
+    </div>
+  </section>
+
+Default date range: today+1 … today+14 (future dates only).
+Past dates' commentary is already in Firebase and VidaNueva overwrites
+today anyway, so past scraping is unnecessary.
 """
 
 import logging
 import re
 import time
-from email.utils import parsedate_to_datetime
+from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
 
 from scrapers.base import BaseScraper, EvangelioData
+from utils.date_utils import date_range_iso
 from utils.text_utils import join_paragraphs
 
 log = logging.getLogger(__name__)
 
-RSS_URL = "https://www.vaticannews.va/es/evangelio-de-hoy.rss.xml"
+BASE_URL = "https://www.vaticannews.va/es/evangelio-de-hoy"
 
 HEADERS = {
-    "Accept": "application/rss+xml,application/xml;q=0.9,*/*;q=0.8",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-    "User-Agent": "Mozilla/5.0 (compatible; LecturasScraper/2.0)",
+    "Referer": "https://www.vaticannews.va/",
 }
 
-RETRY_DELAYS = [5, 15]
+RETRY_DELAYS = [5, 15]   # seconds between HTTP retries
+REQUEST_SLEEP = 0.5       # polite delay between date requests
 
-# Case-insensitive patterns that identify the "palabras de los Papas" heading.
+# Case-insensitive patterns that identify the "palabras de los Papas" section.
 _PAPAS_PATTERNS = (
     "las palabras de los papas",
     "las palabras del papa",
@@ -51,151 +73,133 @@ _PAPAS_PATTERNS = (
 class VaticanNewsScraper(BaseScraper):
 
     SOURCE_KEY = "vaticanNews"
-    SOURCE_URL = RSS_URL
+    SOURCE_URL = BASE_URL
     REQUIRED_FIELDS = ("comentario", "comentarista")
     WRITES_NODES = frozenset({"evangelio"})
+
+    def __init__(self, fechas: list[str] | None = None) -> None:
+        """
+        Parameters
+        ----------
+        fechas:
+            Explicit list of YYYY-MM-DD to scrape.
+            Default: today(Madrid)+1 … today+14 (next 14 days).
+        """
+        self._fechas: list[str] = fechas if fechas is not None else date_range_iso(1, 14)
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
     def fetch(self) -> list[EvangelioData]:
-        xml_content = self._fetch_xml()
-        if xml_content is None:
-            log.error("[VaticanNews] No se pudo obtener el feed RSS.")
-            return []
-        return self._parse(xml_content)
+        results: list[EvangelioData] = []
+        for i, fecha in enumerate(self._fechas):
+            data = self._fetch_one(fecha)
+            if data is not None:
+                results.append(data)
+            if i < len(self._fechas) - 1:
+                time.sleep(REQUEST_SLEEP)
+
+        log.info(
+            f"[VaticanNews] {len(results)}/{len(self._fechas)} fechas "
+            "con sección 'Palabras de los Papas'"
+        )
+        return results
 
     # ------------------------------------------------------------------
-    # HTTP
+    # Per-date fetch
     # ------------------------------------------------------------------
 
-    def _fetch_xml(self) -> str | None:
+    def _fetch_one(self, fecha_iso: str) -> EvangelioData | None:
+        d = datetime.strptime(fecha_iso, "%Y-%m-%d")
+        url = f"{BASE_URL}/{d.year}/{d.month:02d}/{d.day:02d}.html"
+
+        html = self._get_html(url, fecha_iso)
+        if html is None:
+            return None
+
+        return self._parse_page(html, url, fecha_iso)
+
+    def _get_html(self, url: str, fecha_iso: str) -> str | None:
         session = requests.Session()
         for attempt, delay in enumerate(RETRY_DELAYS, start=1):
             try:
-                log.info(f"[VaticanNews] Intento {attempt}/{len(RETRY_DELAYS)} → {RSS_URL}")
-                resp = session.get(RSS_URL, headers=HEADERS, timeout=15)
+                log.info(
+                    f"[VaticanNews] {fecha_iso} intento {attempt}/{len(RETRY_DELAYS) + 1}"
+                    f" → {url}"
+                )
+                resp = session.get(url, headers=HEADERS, timeout=15)
                 if resp.status_code == 200:
-                    log.info(f"[VaticanNews] OK ({len(resp.content)} bytes)")
+                    log.info(f"[VaticanNews] {fecha_iso} OK ({len(resp.content)} bytes)")
                     return resp.text
-                log.warning(f"[VaticanNews] HTTP {resp.status_code} en intento {attempt}")
+                if resp.status_code == 404:
+                    log.warning(f"[VaticanNews] {fecha_iso}: 404 — página no publicada aún")
+                    return None
+                log.warning(
+                    f"[VaticanNews] {fecha_iso}: HTTP {resp.status_code} en intento {attempt}"
+                )
             except requests.RequestException as e:
-                log.warning(f"[VaticanNews] Error de red en intento {attempt}: {e}")
-            if attempt < len(RETRY_DELAYS):
+                log.warning(f"[VaticanNews] {fecha_iso}: error de red en intento {attempt}: {e}")
+            if attempt <= len(RETRY_DELAYS):
                 time.sleep(delay)
-        log.error("[VaticanNews] Todos los intentos fallaron.")
+
+        log.error(f"[VaticanNews] {fecha_iso}: todos los intentos fallaron")
         return None
 
     # ------------------------------------------------------------------
     # Parsing
     # ------------------------------------------------------------------
 
-    def _parse(self, xml_content: str) -> list[EvangelioData]:
-        soup = BeautifulSoup(xml_content, "xml")
-        items = soup.find_all("item")
-
-        if not items:
-            log.warning("[VaticanNews] No se encontraron items en el RSS.")
-            return []
-
-        results: list[EvangelioData] = []
-        skipped = 0
-
-        for item in items:
-            data = self._parse_item(item)
-            if data is not None:
-                results.append(data)
-            else:
-                skipped += 1
-
-        log.info(
-            f"[VaticanNews] {len(results)} items con comentario, "
-            f"{skipped} sin sección 'Palabras de los Papas' (saltados)."
-        )
-        return results
-
-    def _parse_item(self, item) -> EvangelioData | None:
-        title_el = item.find("title")
-        pubdate_el = item.find("pubDate")
-        desc_el = item.find("description")
-        guid_el = item.find("guid")
-
-        if not pubdate_el or not desc_el:
-            return None
-
-        # Date from pubDate
-        try:
-            dt = parsedate_to_datetime(pubdate_el.text)
-            fecha = dt.strftime("%Y-%m-%d")
-        except Exception as e:
-            log.warning(f"[VaticanNews] No se pudo parsear fecha: {pubdate_el.text!r} — {e}")
-            return None
-
-        item_url = guid_el.text if guid_el else RSS_URL
-
-        result = self._extract_palabras_papas(desc_el.text)
+    def _parse_page(self, html: str, url: str, fecha_iso: str) -> EvangelioData | None:
+        soup = BeautifulSoup(html, "lxml")
+        result = self._extract_palabras_papas(soup)
         if result is None:
-            title = title_el.text.strip() if title_el else "?"
             log.warning(
-                f"[VaticanNews] {fecha}: no se encontró sección 'Palabras de los Papas' "
-                f"(título: {title!r})"
+                f"[VaticanNews] {fecha_iso}: no se encontró sección "
+                "'Las palabras de los Papas' en la página"
             )
             return None
 
-        comentario, comentarista = result
-
-        data = EvangelioData(url=item_url, fecha=fecha)
-        data.comentario = comentario
-        data.comentarista = comentarista
+        data = EvangelioData(url=url, fecha=fecha_iso)
+        data.comentario, data.comentarista = result
         return data
 
-    # ------------------------------------------------------------------
-    # Commentary extraction
-    # ------------------------------------------------------------------
-
-    def _extract_palabras_papas(self, desc_html: str) -> tuple[str, str] | None:
+    def _extract_palabras_papas(self, soup: BeautifulSoup) -> tuple[str, str] | None:
         """
-        Find the "Las palabras de los Papas" section in the description HTML
-        and extract (comentario_text, comentarista).
+        Find the evidence section whose <h2> matches a papas pattern and
+        extract (comentario_text, comentarista).
 
-        Returns None if no matching section is found.
+        Walks <section class="section--evidence"> elements; the heading is
+        inside <div class="section__head"> and content in
+        <div class="section__content">.
+
+        Returns None if no matching section is found or content is empty.
         """
-        soup = BeautifulSoup(desc_html, "html.parser")
+        for section in soup.select("section.section--evidence"):
+            h2 = section.select_one(".section__head h2")
+            if h2 is None:
+                continue
+            h2_text = h2.get_text(" ", strip=True).lower()
+            if not any(pat in h2_text for pat in _PAPAS_PATTERNS):
+                continue
 
-        # Walk only top-level elements to avoid double-processing nested tags.
-        elements = [
-            el for el in soup.children
-            if hasattr(el, "name") and el.name is not None
-        ]
+            content_div = section.select_one(".section__content")
+            if content_div is None:
+                continue
 
-        # Find the section header index
-        header_idx: int | None = None
-        for i, el in enumerate(elements):
-            text_lower = el.get_text(" ", strip=True).lower()
-            if any(pat in text_lower for pat in _PAPAS_PATTERNS):
-                header_idx = i
-                break
+            paras = [
+                p.get_text(" ", strip=True)
+                for p in content_div.find_all("p")
+                if p.get_text(strip=True)
+            ]
+            if not paras:
+                return None
 
-        if header_idx is None:
-            return None
+            comentario = join_paragraphs(paras)
+            comentarista = _extract_author(paras[-1])
+            return comentario, comentarista
 
-        # Collect paragraphs after the header until the next heading or end
-        commentary_paras: list[str] = []
-        for el in elements[header_idx + 1:]:
-            if el.name in ("h1", "h2", "h3", "h4", "h5"):
-                break  # Next section starts
-            if el.name == "p":
-                text = el.get_text(" ", strip=True)
-                if text:
-                    commentary_paras.append(text)
-
-        if not commentary_paras:
-            return None
-
-        comentario = join_paragraphs(commentary_paras)
-        comentarista = _extract_author(commentary_paras[-1])
-        return comentario, comentarista
+        return None
 
 
 # ---------------------------------------------------------------------------

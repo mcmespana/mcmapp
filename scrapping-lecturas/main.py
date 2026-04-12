@@ -81,7 +81,12 @@ def build_scrapers(*, backfill_dominicos: bool, target_date: str) -> list[BaseSc
         fechas = date_range_iso(0, 30, base=target_date)
         dominicos = DominicosScraper(fechas=fechas, skip_existing=True)
 
-    return [dominicos, VaticanNewsScraper(), VidaNuevaScraper()]
+    # VaticanNews: +1..+14 days from target_date (future commentary only).
+    # Past dates are already in Firebase; VidaNueva overwrites today anyway.
+    fechas_vn = date_range_iso(1, 14, base=target_date)
+    vatican = VaticanNewsScraper(fechas=fechas_vn)
+
+    return [dominicos, vatican, VidaNuevaScraper()]
 
 
 # ---------------------------------------------------------------------------

@@ -310,8 +310,16 @@ class DominicosScraper(BaseScraper):
         """
         Locate the main article content element.
         Tries multiple selectors in order of specificity.
+
+        Real Dominicos.org structure (2026):
+            section.contenido > article > div.container >
+            div.contenido-pred > div.contenido-homilia
+
+        The h2/h3/p reading blocks are direct children of .contenido-homilia.
         """
         for selector in [
+            "div.contenido-homilia",   # dominicos.org (current)
+            "div.contenido-pred",       # fallback outer wrapper
             "div.field--name-body",
             "div.field-body",
             "div.node__content",
@@ -338,15 +346,26 @@ def _classify_section(tag: str, text: str, el) -> str | None:
     if *el* looks like a section header, else None.
 
     Headings are detected by:
-    - HTML heading tags (h1–h5)
-    - Short <p> elements whose primary content is a <strong>/<b> label
+    - HTML heading tags (h1–h5) whose text is SHORT and contains NO DIGITS.
+      This distinguishes section headers ("Salmo", "Primera lectura")
+      from citation headings ("Salmo 41, 2-3; 42, 3. 4 R/. …" or
+      "Lectura del santo evangelio según san Juan 3, 7-15").
+    - Short <p> elements whose primary content is a <strong>/<b> label.
     """
-    is_heading = tag in ("h1", "h2", "h3", "h4", "h5")
     strong = el.find("strong") or el.find("b")
     is_bold_para = (
         tag == "p"
         and strong is not None
         and len(text) < 80  # headings are short
+    )
+    # Heading tags qualify only when they are label-only (no digits, short).
+    # Dominicos uses <h2> for section names and <h3> for citations;
+    # citations always contain chapter/verse numbers, so the digit check
+    # cleanly separates the two cases.
+    is_heading = (
+        tag in ("h1", "h2", "h3", "h4", "h5")
+        and len(text) < 60
+        and not any(c.isdigit() for c in text)
     )
 
     if not (is_heading or is_bold_para):

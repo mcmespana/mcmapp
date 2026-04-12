@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from bs4 import BeautifulSoup
 
 from scrapers.vatican_news import VaticanNewsScraper, _extract_author
 
@@ -12,57 +13,59 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 @pytest.fixture
 def scraper():
-    return VaticanNewsScraper()
+    # Single test date, no HTTP calls in tests
+    return VaticanNewsScraper(fechas=["2026-04-13"])
 
 
 @pytest.fixture
-def rss_content():
-    return (FIXTURES / "vatican_news.rss").read_text(encoding="utf-8")
+def html_with_papas() -> str:
+    return (FIXTURES / "vatican_news.html").read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def html_no_papas() -> str:
+    return (FIXTURES / "vatican_news_no_papas.html").read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
-# RSS parsing
+# HTML parsing — per-date fetch
 # ---------------------------------------------------------------------------
 
-class TestRSSParsing:
-    def test_parses_two_valid_items(self, scraper, rss_content):
-        """Items 1 and 2 have palabras section; item 3 does not."""
-        with patch.object(scraper, "_fetch_xml", return_value=rss_content):
+class TestHTMLParsing:
+    def test_returns_one_result(self, scraper, html_with_papas):
+        with patch.object(scraper, "_get_html", return_value=html_with_papas):
             results = scraper.fetch()
-        assert len(results) == 2
+        assert len(results) == 1
 
-    def test_item1_fecha(self, scraper, rss_content):
-        with patch.object(scraper, "_fetch_xml", return_value=rss_content):
+    def test_fecha_correct(self, scraper, html_with_papas):
+        with patch.object(scraper, "_get_html", return_value=html_with_papas):
             results = scraper.fetch()
         assert results[0].fecha == "2026-04-13"
 
-    def test_item1_comentario_present(self, scraper, rss_content):
-        with patch.object(scraper, "_fetch_xml", return_value=rss_content):
+    def test_comentario_present(self, scraper, html_with_papas):
+        with patch.object(scraper, "_get_html", return_value=html_with_papas):
             results = scraper.fetch()
         assert "Espíritu Santo" in results[0].comentario
 
-    def test_item1_comentarista_dash_format(self, scraper, rss_content):
+    def test_comentarista_dash_format(self, scraper, html_with_papas):
         """Author extracted from "(Benedicto XVI - …)" using " - " split."""
-        with patch.object(scraper, "_fetch_xml", return_value=rss_content):
+        with patch.object(scraper, "_get_html", return_value=html_with_papas):
             results = scraper.fetch()
         assert results[0].comentarista == "Benedicto XVI"
 
-    def test_item2_comentarista_comma_format(self, scraper, rss_content):
-        """Author extracted from "(Francisco, …)" using "," split."""
-        with patch.object(scraper, "_fetch_xml", return_value=rss_content):
+    def test_no_papas_returns_empty(self, scraper, html_no_papas):
+        with patch.object(scraper, "_get_html", return_value=html_no_papas):
             results = scraper.fetch()
-        assert results[1].comentarista == "Francisco"
+        assert results == []
 
-    def test_item3_skipped(self, scraper, rss_content):
-        """Item 3 has no 'Palabras' section → excluded from results."""
-        with patch.object(scraper, "_fetch_xml", return_value=rss_content):
+    def test_http_none_returns_empty(self, scraper):
+        with patch.object(scraper, "_get_html", return_value=None):
             results = scraper.fetch()
-        dates = {r.fecha for r in results}
-        assert "2026-04-15" not in dates
+        assert results == []
 
-    def test_no_evangelio_fields(self, scraper, rss_content):
+    def test_no_evangelio_fields(self, scraper, html_with_papas):
         """VaticanNews must NOT write cita, evangelio_texto, primera_lectura…"""
-        with patch.object(scraper, "_fetch_xml", return_value=rss_content):
+        with patch.object(scraper, "_get_html", return_value=html_with_papas):
             results = scraper.fetch()
         for r in results:
             assert r.cita is None
@@ -74,41 +77,79 @@ class TestRSSParsing:
 
 
 # ---------------------------------------------------------------------------
-# Commentary extraction
+# _extract_palabras_papas — section detection
 # ---------------------------------------------------------------------------
 
 class TestPalabrasPapas:
-    def test_found_h3_header(self, scraper):
+    def _soup(self, html: str) -> BeautifulSoup:
+        return BeautifulSoup(html, "html.parser")
+
+    def test_found_h2_in_section_head(self, scraper):
         html = """
-        <p>Texto del evangelio</p>
-        <h3>Las palabras de los Papas</h3>
-        <p>«El Espíritu nos guía.»</p>
-        <p>(Juan Pablo II - Carta Apostólica, 2001)</p>
+        <section class="section section--evidence section--isStatic">
+          <div class="section__head"><h2>Las palabras de los Papas</h2></div>
+          <div class="section__wrapper">
+            <div class="section__content">
+              <p>«El Espíritu nos guía.»</p>
+              <p>(Juan Pablo II - Carta Apostólica, 2001)</p>
+            </div>
+          </div>
+        </section>
         """
-        result = scraper._extract_palabras_papas(html)
+        result = scraper._extract_palabras_papas(self._soup(html))
         assert result is not None
         comentario, autor = result
         assert "Espíritu" in comentario
         assert autor == "Juan Pablo II"
 
-    def test_found_strong_para_header(self, scraper):
+    def test_found_palabras_del_papa_variant(self, scraper):
         html = """
-        <p><strong>Las palabras de los Papas</strong></p>
-        <p>«La fe mueve montañas.»</p>
-        <p>(Francisco, Audiencia General, 2020)</p>
+        <section class="section section--evidence">
+          <div class="section__head"><h2>Las palabras del Papa</h2></div>
+          <div class="section__wrapper">
+            <div class="section__content">
+              <p>«La fe mueve montañas.»</p>
+              <p>(Francisco, Audiencia General, 2020)</p>
+            </div>
+          </div>
+        </section>
         """
-        result = scraper._extract_palabras_papas(html)
+        result = scraper._extract_palabras_papas(self._soup(html))
         assert result is not None
         _, autor = result
         assert autor == "Francisco"
 
-    def test_not_found_returns_none(self, scraper):
-        html = "<p>Solo evangelio sin comentario papal.</p>"
-        assert scraper._extract_palabras_papas(html) is None
+    def test_non_papas_section_ignored(self, scraper):
+        html = """
+        <section class="section section--evidence">
+          <div class="section__head"><h2>Lectura del Día</h2></div>
+          <div class="section__wrapper">
+            <div class="section__content"><p>Solo lectura.</p></div>
+          </div>
+        </section>
+        """
+        assert scraper._extract_palabras_papas(self._soup(html)) is None
 
-    def test_empty_section_returns_none(self, scraper):
-        html = "<h3>Las palabras de los Papas</h3>"
-        assert scraper._extract_palabras_papas(html) is None
+    def test_empty_content_returns_none(self, scraper):
+        html = """
+        <section class="section section--evidence">
+          <div class="section__head"><h2>Las palabras de los Papas</h2></div>
+          <div class="section__wrapper">
+            <div class="section__content"></div>
+          </div>
+        </section>
+        """
+        assert scraper._extract_palabras_papas(self._soup(html)) is None
+
+    def test_picks_papas_section_among_multiple(self, scraper, html_with_papas):
+        """Fixture has 3 sections; only the Papas one should be picked."""
+        soup = BeautifulSoup(html_with_papas, "html.parser")
+        result = scraper._extract_palabras_papas(soup)
+        assert result is not None
+        comentario, _ = result
+        # Papas section text, not lecturas
+        assert "Espíritu Santo" in comentario
+        assert "Juan 20" not in comentario
 
 
 # ---------------------------------------------------------------------------
@@ -137,19 +178,19 @@ class TestExtractAuthor:
 # ---------------------------------------------------------------------------
 
 class TestPayloadSelectors:
-    def test_evangelio_payload_sets_activoComentario(self, scraper, rss_content):
-        with patch.object(scraper, "_fetch_xml", return_value=rss_content):
+    def test_evangelio_payload_sets_activoComentario(self, scraper, html_with_papas):
+        with patch.object(scraper, "_get_html", return_value=html_with_papas):
             results = scraper.fetch()
         payload = scraper.to_evangelio_payload(results[0])
         assert payload.get("activoComentario") == "vaticanNews"
 
-    def test_evangelio_payload_no_activoTexto(self, scraper, rss_content):
-        with patch.object(scraper, "_fetch_xml", return_value=rss_content):
+    def test_evangelio_payload_no_activoTexto(self, scraper, html_with_papas):
+        with patch.object(scraper, "_get_html", return_value=html_with_papas):
             results = scraper.fetch()
         payload = scraper.to_evangelio_payload(results[0])
         assert "activoTexto" not in payload
 
-    def test_validate_passes(self, scraper, rss_content):
-        with patch.object(scraper, "_fetch_xml", return_value=rss_content):
+    def test_validate_passes(self, scraper, html_with_papas):
+        with patch.object(scraper, "_get_html", return_value=html_with_papas):
             results = scraper.fetch()
         assert all(scraper.validate(r) for r in results)
