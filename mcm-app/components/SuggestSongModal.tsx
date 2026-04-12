@@ -107,7 +107,8 @@ export default function SuggestSongModal({
     return titleA.localeCompare(titleB);
   });
 
-  const canSubmit = titulo.trim().length > 0 && artista.trim().length > 0 && !isSubmitting;
+  const canSubmit =
+    titulo.trim().length > 0 && artista.trim().length > 0 && !isSubmitting;
 
   return (
     <BottomSheet visible={visible} onClose={handleClose}>
@@ -128,7 +129,9 @@ export default function SuggestSongModal({
           >
             <MaterialIcons name="close" size={22} color={theme.icon} />
           </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>Sugerir canción 🎵</Text>
+          <Text style={[styles.title, { color: theme.text }]}>
+            Sugerir canción 🎵
+          </Text>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -142,20 +145,27 @@ export default function SuggestSongModal({
               color: theme.text,
               borderColor: titulo.trim()
                 ? '#34C759'
-                : isDark ? '#3A3A3C' : '#E5E5EA',
+                : isDark
+                  ? '#3A3A3C'
+                  : '#E5E5EA',
             },
           ]}
           placeholder="Nombre de la canción"
           placeholderTextColor={theme.icon}
           value={titulo}
-          onChangeText={(t) => { setTitulo(t); setErrorMsg(''); }}
+          onChangeText={(t) => {
+            setTitulo(t);
+            setErrorMsg('');
+          }}
           maxLength={100}
           returnKeyType="next"
           editable={!isSubmitting}
         />
 
         {/* Artista */}
-        <Text style={[styles.fieldLabel, { color: theme.text }]}>Artista *</Text>
+        <Text style={[styles.fieldLabel, { color: theme.text }]}>
+          Artista *
+        </Text>
         <TextInput
           style={[
             styles.textInput,
@@ -164,20 +174,27 @@ export default function SuggestSongModal({
               color: theme.text,
               borderColor: artista.trim()
                 ? '#34C759'
-                : isDark ? '#3A3A3C' : '#E5E5EA',
+                : isDark
+                  ? '#3A3A3C'
+                  : '#E5E5EA',
             },
           ]}
           placeholder="Nombre del artista o banda"
           placeholderTextColor={theme.icon}
           value={artista}
-          onChangeText={(t) => { setArtista(t); setErrorMsg(''); }}
+          onChangeText={(t) => {
+            setArtista(t);
+            setErrorMsg('');
+          }}
           maxLength={100}
           returnKeyType="next"
           editable={!isSubmitting}
         />
 
         {/* Letra / información adicional */}
-        <Text style={[styles.fieldLabel, { color: theme.text }]}>Información adicional</Text>
+        <Text style={[styles.fieldLabel, { color: theme.text }]}>
+          Información adicional
+        </Text>
         <Text style={[styles.fieldSublabel, { color: theme.icon }]}>
           Letra, acordes o cualquier detalle útil
         </Text>
@@ -189,7 +206,9 @@ export default function SuggestSongModal({
               color: theme.text,
               borderColor: letra.trim()
                 ? '#34C759'
-                : isDark ? '#3A3A3C' : '#E5E5EA',
+                : isDark
+                  ? '#3A3A3C'
+                  : '#E5E5EA',
             },
           ]}
           placeholder="Opcional — cualquier información que nos ayude a añadirla bien"
@@ -207,7 +226,9 @@ export default function SuggestSongModal({
         </Text>
 
         {/* Categoría */}
-        <Text style={[styles.fieldLabel, { color: theme.text }]}>Categoría</Text>
+        <Text style={[styles.fieldLabel, { color: theme.text }]}>
+          Categoría
+        </Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -223,11 +244,17 @@ export default function SuggestSongModal({
                   styles.categoryPill,
                   {
                     backgroundColor: isSelected
-                      ? isDark ? '#1A3A6E' : '#E8F0FE'
-                      : isDark ? '#2C2C2E' : '#F2F2F7',
+                      ? isDark
+                        ? '#1A3A6E'
+                        : '#E8F0FE'
+                      : isDark
+                        ? '#2C2C2E'
+                        : '#F2F2F7',
                     borderColor: isSelected
                       ? '#4A90D9'
-                      : isDark ? '#3A3A3C' : '#E5E5EA',
+                      : isDark
+                        ? '#3A3A3C'
+                        : '#E5E5EA',
                   },
                 ]}
                 onPress={() => setCategoria(cat)}
@@ -262,7 +289,13 @@ export default function SuggestSongModal({
         <TouchableOpacity
           style={[
             styles.submitBtn,
-            { backgroundColor: canSubmit ? '#007AFF' : isDark ? '#3A3A3C' : '#E5E5EA' },
+            {
+              backgroundColor: canSubmit
+                ? '#007AFF'
+                : isDark
+                  ? '#3A3A3C'
+                  : '#E5E5EA',
+            },
           ]}
           onPress={handleSubmit}
           disabled={!canSubmit}
@@ -288,7 +321,8 @@ export default function SuggestSongModal({
         </TouchableOpacity>
 
         <Text style={[styles.disclaimer, { color: theme.icon }]}>
-          Recibiremos tu sugerencia y, con algo de tiempo y suerte, la añadiremos al cantoral. ¡Gracias!
+          Recibiremos tu sugerencia y, con algo de tiempo y suerte, la
+          añadiremos al cantoral. ¡Gracias!
         </Text>
       </ScrollView>
     </BottomSheet>

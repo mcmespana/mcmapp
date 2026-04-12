@@ -32,17 +32,17 @@
     "orden": 3,
     "tipo": "Opcional"
   },
-      {
-        "androidLink": "https://play.google.com/store/apps/details?id=com.google.android.apps.maps",
-        "androidScheme": "geo:0,0?q=",
-        "descripcion": "Ahorra MBs con los mapas sin conexión y suscríbete a los mapas del Jubileo",
-        "icono": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8coh4kDdQQy_-m4PiC7ek_eTPJZhxntw_kw&s",
-        "iosLink": "https://apps.apple.com/app/google-maps/id585027354",
-        "iosScheme": "comgooglemaps://",
-        "nombre": "Google Maps",
-        "orden": 4,
-        "tipo": "Necesaria"
-      },
+  {
+    "androidLink": "https://play.google.com/store/apps/details?id=com.google.android.apps.maps",
+    "androidScheme": "geo:0,0?q=",
+    "descripcion": "Ahorra MBs con los mapas sin conexión y suscríbete a los mapas del Jubileo",
+    "icono": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8coh4kDdQQy_-m4PiC7ek_eTPJZhxntw_kw&s",
+    "iosLink": "https://apps.apple.com/app/google-maps/id585027354",
+    "iosScheme": "comgooglemaps://",
+    "nombre": "Google Maps",
+    "orden": 4,
+    "tipo": "Necesaria"
+  },
 
   {
     "androidLink": "https://play.google.com/store/apps/details?id=va.spc.vaticanaudio&hl=ca",

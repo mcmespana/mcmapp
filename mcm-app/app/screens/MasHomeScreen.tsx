@@ -1,11 +1,5 @@
 import React, { useCallback } from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  ScrollView,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, Text, ScrollView, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';

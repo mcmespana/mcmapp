@@ -52,9 +52,7 @@ export function ContigoToolCard({
         style={[
           styles.card,
           {
-            borderColor: isDark
-              ? 'rgba(255,255,255,0.10)'
-              : 'rgba(0,0,0,0.06)',
+            borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
             borderWidth: 1,
           },
         ]}
@@ -128,10 +126,7 @@ export function ContigoToolCard({
                     )}
                     {statusText && (
                       <Text
-                        style={[
-                          styles.statusText,
-                          { color: finalStatusColor },
-                        ]}
+                        style={[styles.statusText, { color: finalStatusColor }]}
                       >
                         {statusText}
                       </Text>

@@ -76,7 +76,8 @@ export default function AppFeedbackModal({
   const isDark = scheme === 'dark';
   const theme = Colors[scheme];
   const { profile } = useUserProfile();
-  const [selectedCategory, setSelectedCategory] = useState<FeedbackCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState<FeedbackCategory | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -132,7 +133,8 @@ export default function AppFeedbackModal({
     ? FEEDBACK_CATEGORIES.find((c) => c.id === selectedCategory)
     : null;
 
-  const canSubmit = !!selectedCategory && feedbackText.trim().length > 0 && !isSubmitting;
+  const canSubmit =
+    !!selectedCategory && feedbackText.trim().length > 0 && !isSubmitting;
 
   return (
     <BottomSheet visible={visible} onClose={handleClose}>
@@ -179,14 +181,26 @@ export default function AppFeedbackModal({
                     borderColor: hexAlpha(category.color, '40'),
                   },
                 ]}
-                onPress={() => { setSelectedCategory(category.id); setErrorMsg(''); }}
+                onPress={() => {
+                  setSelectedCategory(category.id);
+                  setErrorMsg('');
+                }}
                 activeOpacity={0.7}
               >
-                <MaterialIcons name={category.icon} size={28} color={category.color} />
+                <MaterialIcons
+                  name={category.icon}
+                  size={28}
+                  color={category.color}
+                />
                 <Text style={[styles.categoryBtnText, { color: theme.text }]}>
                   {category.label}
                 </Text>
-                <MaterialIcons name="chevron-right" size={20} color={theme.icon} style={styles.categoryArrow} />
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={theme.icon}
+                  style={styles.categoryArrow}
+                />
               </TouchableOpacity>
             ))}
           </>
@@ -194,7 +208,10 @@ export default function AppFeedbackModal({
           <>
             <TouchableOpacity
               style={styles.backBtn}
-              onPress={() => { setSelectedCategory(null); setErrorMsg(''); }}
+              onPress={() => {
+                setSelectedCategory(null);
+                setErrorMsg('');
+              }}
               activeOpacity={0.7}
             >
               <MaterialIcons name="arrow-back" size={18} color={theme.icon} />
@@ -203,13 +220,20 @@ export default function AppFeedbackModal({
               </Text>
             </TouchableOpacity>
 
-            <View style={[styles.selectedCategoryRow, { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' }]}>
+            <View
+              style={[
+                styles.selectedCategoryRow,
+                { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' },
+              ]}
+            >
               <MaterialIcons
                 name={selectedCategoryData!.icon}
                 size={26}
                 color={selectedCategoryData!.color}
               />
-              <Text style={[styles.selectedCategoryText, { color: theme.text }]}>
+              <Text
+                style={[styles.selectedCategoryText, { color: theme.text }]}
+              >
                 {selectedCategoryData!.label}
               </Text>
             </View>
@@ -222,13 +246,18 @@ export default function AppFeedbackModal({
                   color: theme.text,
                   borderColor: feedbackText.trim()
                     ? '#34C759'
-                    : isDark ? '#3A3A3C' : '#E5E5EA',
+                    : isDark
+                      ? '#3A3A3C'
+                      : '#E5E5EA',
                 },
               ]}
               placeholder={selectedCategoryData!.placeholder}
               placeholderTextColor={theme.icon}
               value={feedbackText}
-              onChangeText={(t) => { setFeedbackText(t); setErrorMsg(''); }}
+              onChangeText={(t) => {
+                setFeedbackText(t);
+                setErrorMsg('');
+              }}
               maxLength={1000}
               multiline
               numberOfLines={5}
@@ -252,7 +281,9 @@ export default function AppFeedbackModal({
                 {
                   backgroundColor: canSubmit
                     ? selectedCategoryData!.color
-                    : isDark ? '#3A3A3C' : '#E5E5EA',
+                    : isDark
+                      ? '#3A3A3C'
+                      : '#E5E5EA',
                 },
               ]}
               onPress={handleSubmit}
@@ -274,7 +305,9 @@ export default function AppFeedbackModal({
                   { color: canSubmit ? '#fff' : theme.icon },
                 ]}
               >
-                {isSubmitting ? 'Enviando...' : selectedCategoryData!.submitText}
+                {isSubmitting
+                  ? 'Enviando...'
+                  : selectedCategoryData!.submitText}
               </Text>
             </TouchableOpacity>
           </>

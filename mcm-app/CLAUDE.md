@@ -36,6 +36,7 @@ npm run eas:build -- --profile production          # Build ambas plataformas
 ```
 
 **Perfiles disponibles en `eas.json`:**
+
 - `development` — Dev client, distribución interna (instalar en dispositivo físico)
 - `preview` — Build de preview, APK en Android
 - `production` — Build de producción (App Store / Play Store)
@@ -164,6 +165,7 @@ RootLayout (Stack)
 ```
 
 **Tabs implementación dual:**
+
 - **iOS**: `NativeTabs` (expo-router/unstable-native-tabs) para liquid glass
 - **Android/Web**: `Tabs` tradicionales (expo-router)
 - Config centralizada en `TABS_CONFIG` array en `app/(tabs)/_layout.tsx`
@@ -189,11 +191,13 @@ Los flags controlan tanto la visibilidad de los tabs como los botones en la Home
 ## Firebase
 
 ### Configuración
+
 - Credenciales en `.env.local` (no commiteado), template en `.env.example`
 - Todas las variables con prefijo `EXPO_PUBLIC_`
 - Config en `constants/firebase.ts`, app inicializada en `hooks/firebaseApp.ts`
 
 ### Estructura de la base de datos
+
 ```
 Firebase Realtime Database
 ├── songs
@@ -214,7 +218,9 @@ Firebase Realtime Database
 ```
 
 ### Patrón de datos
+
 Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`:
+
 1. Carga desde AsyncStorage (caché local)
 2. Muestra datos cacheados inmediatamente
 3. Consulta Firebase por `updatedAt`
@@ -224,13 +230,13 @@ Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`:
 ## Colores de marca
 
 ```typescript
-primary:   '#253883'  // Azul oscuro (fondo principal)
-secondary: '#95d2f2'  // Azul claro
-accent:    '#E15C62'  // Rojo MIC
-info:      '#31AADF'  // Celeste
-success:   '#A3BD31'  // Verde COM
-warning:   '#FCD200'  // Amarillo COM
-danger:    '#9D1E74'  // Morado LC
+primary: '#253883'; // Azul oscuro (fondo principal)
+secondary: '#95d2f2'; // Azul claro
+accent: '#E15C62'; // Rojo MIC
+info: '#31AADF'; // Celeste
+success: '#A3BD31'; // Verde COM
+warning: '#FCD200'; // Amarillo COM
+danger: '#9D1E74'; // Morado LC
 ```
 
 ## Convenciones de código
@@ -246,6 +252,7 @@ danger:    '#9D1E74'  // Morado LC
 ## Patrones comunes
 
 ### Añadir nuevo tab
+
 1. Crear archivo en `app/(tabs)/nuevoTab.tsx`
 2. Añadir objeto a `TABS_CONFIG` en `app/(tabs)/_layout.tsx`
 3. Añadir flag en `constants/featureFlags.ts` (interface + default)
@@ -254,16 +261,18 @@ danger:    '#9D1E74'  // Morado LC
 6. Documentar en CHANGELOG.md
 
 ### Añadir pantalla nueva
+
 1. Crear en `app/screens/NombreScreen.tsx`
 2. Añadir a la navegación correspondiente (tabs layout o root layout)
 3. Usar `@/` para importaciones
 
 ### Fetch de datos Firebase
+
 ```typescript
 const { data, loading, offline } = useFirebaseData<TipoData>(
   'ruta/firebase',
   'clave-cache',
-  funcionTransformOptional
+  funcionTransformOptional,
 );
 ```
 
@@ -272,6 +281,7 @@ const { data, loading, offline } = useFirebaseData<TipoData>(
 **Agentes: documentad cambios importantes en `CHANGELOG.md`**
 
 Documentar SÍ:
+
 - Nuevas pantallas o funcionalidades
 - Cambios en navegación o feature flags
 - Nuevas dependencias o actualizaciones mayores
@@ -280,27 +290,28 @@ Documentar SÍ:
 - Cambios de arquitectura
 
 Documentar NO:
+
 - Ajustes de estilo menores (colores, padding, márgenes)
 - Correcciones de typos
 - Refactors internos sin cambio funcional
 
 ## Archivos clave (referencia rápida)
 
-| Qué necesitas | Archivo |
-|---------------|---------|
-| Entry point | `app/_layout.tsx` |
-| Configuración de tabs | `app/(tabs)/_layout.tsx` |
-| Home screen | `app/(tabs)/index.tsx` |
-| Feature flags | `constants/featureFlags.ts` |
-| Colores | `constants/colors.ts` |
-| Firebase config | `constants/firebase.ts` |
-| Firebase app singleton | `hooks/firebaseApp.ts` |
-| Fetch de datos | `hooks/useFirebaseData.ts` |
-| Procesador de canciones | `hooks/useSongProcessor.ts` |
-| Parser de calendario | `hooks/useCalendarEvents.ts` |
-| BBCode → HTML | `utils/formatText.ts` |
-| Notificaciones | `notifications/` + `services/pushNotificationService.ts` |
-| Env vars template | `.env.example` |
+| Qué necesitas           | Archivo                                                  |
+| ----------------------- | -------------------------------------------------------- |
+| Entry point             | `app/_layout.tsx`                                        |
+| Configuración de tabs   | `app/(tabs)/_layout.tsx`                                 |
+| Home screen             | `app/(tabs)/index.tsx`                                   |
+| Feature flags           | `constants/featureFlags.ts`                              |
+| Colores                 | `constants/colors.ts`                                    |
+| Firebase config         | `constants/firebase.ts`                                  |
+| Firebase app singleton  | `hooks/firebaseApp.ts`                                   |
+| Fetch de datos          | `hooks/useFirebaseData.ts`                               |
+| Procesador de canciones | `hooks/useSongProcessor.ts`                              |
+| Parser de calendario    | `hooks/useCalendarEvents.ts`                             |
+| BBCode → HTML           | `utils/formatText.ts`                                    |
+| Notificaciones          | `notifications/` + `services/pushNotificationService.ts` |
+| Env vars template       | `.env.example`                                           |
 
 ## Identificadores de la app
 
@@ -325,14 +336,13 @@ La app usa **heroui-native v1.0.0** (reemplaza react-native-paper desde marzo 20
 // app/_layout.tsx — jerarquía de providers OBLIGATORIA
 <GestureHandlerRootView style={{ flex: 1 }}>
   <SafeAreaProvider>
-    <HeroUINativeProvider>
-      {/* tu app */}
-    </HeroUINativeProvider>
+    <HeroUINativeProvider>{/* tu app */}</HeroUINativeProvider>
   </SafeAreaProvider>
 </GestureHandlerRootView>
 ```
 
 **global.css** (Tailwind v4 entry point):
+
 ```css
 @import 'tailwindcss';
 @import 'uniwind';
@@ -344,39 +354,47 @@ La app usa **heroui-native v1.0.0** (reemplaza react-native-paper desde marzo 20
 
 ### 37 componentes disponibles
 
-| Categoría | Componentes |
-|-----------|-------------|
-| **Botones** | `Button`, `CloseButton`, `LinkButton` |
+| Categoría       | Componentes                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Botones**     | `Button`, `CloseButton`, `LinkButton`                                                                                                                               |
 | **Formularios** | `TextField`, `TextArea`, `Input`, `InputGroup`, `InputOTP`, `SearchField`, `Select`, `Checkbox`, `RadioGroup`, `ControlField`, `Label`, `Description`, `FieldError` |
-| **Layout** | `Card`, `Separator`, `Surface` |
-| **Feedback** | `Alert`, `Spinner`, `Skeleton`, `SkeletonGroup` |
-| **Navegación** | `Accordion`, `ListGroup`, `Tabs` |
-| **Overlays** | `Toast` (vía `useToast`), `Dialog`, `BottomSheet`, `Popover` |
-| **Media** | `Avatar` |
-| **Controles** | `Switch`, `Slider` |
-| **Colecciones** | `Menu`, `TagGroup` |
-| **Utilidades** | `PressableFeedback`, `ScrollShadow` |
-| **Data** | `Chip` |
+| **Layout**      | `Card`, `Separator`, `Surface`                                                                                                                                      |
+| **Feedback**    | `Alert`, `Spinner`, `Skeleton`, `SkeletonGroup`                                                                                                                     |
+| **Navegación**  | `Accordion`, `ListGroup`, `Tabs`                                                                                                                                    |
+| **Overlays**    | `Toast` (vía `useToast`), `Dialog`, `BottomSheet`, `Popover`                                                                                                        |
+| **Media**       | `Avatar`                                                                                                                                                            |
+| **Controles**   | `Switch`, `Slider`                                                                                                                                                  |
+| **Colecciones** | `Menu`, `TagGroup`                                                                                                                                                  |
+| **Utilidades**  | `PressableFeedback`, `ScrollShadow`                                                                                                                                 |
+| **Data**        | `Chip`                                                                                                                                                              |
 
 ### Patrones clave
 
 **Compound components** (todos usan esta estructura):
+
 ```tsx
 <Card>
-  <Card.Header>…</Card.Header>   {/* opcional */}
-  <Card.Body>…</Card.Body>        {/* contenido principal */}
-  <Card.Footer>…</Card.Footer>   {/* opcional */}
+  <Card.Header>…</Card.Header> {/* opcional */}
+  <Card.Body>…</Card.Body> {/* contenido principal */}
+  <Card.Footer>…</Card.Footer> {/* opcional */}
 </Card>
 ```
 
 **Toast** (imperativo, NO estado):
+
 ```tsx
-const { toast } = useToast();  // requiere estar dentro de HeroUINativeProvider
+const { toast } = useToast(); // requiere estar dentro de HeroUINativeProvider
 toast.show({ variant: 'success', label: 'Mensaje' });
-toast.show({ variant: 'danger', label: 'Error', actionLabel: 'Cerrar', onActionPress: ({ hide }) => hide() });
+toast.show({
+  variant: 'danger',
+  label: 'Error',
+  actionLabel: 'Cerrar',
+  onActionPress: ({ hide }) => hide(),
+});
 ```
 
 **Button** (variantes semánticas):
+
 ```tsx
 <Button variant="primary" onPress={...}>
   <Button.Label>Texto</Button.Label>
@@ -385,6 +403,7 @@ toast.show({ variant: 'danger', label: 'Error', actionLabel: 'Cerrar', onActionP
 ```
 
 **TextField** (reemplaza TextInput de Paper con floating label):
+
 ```tsx
 <TextField>
   <TextField.Label>Título</TextField.Label>
@@ -394,40 +413,48 @@ toast.show({ variant: 'danger', label: 'Error', actionLabel: 'Cerrar', onActionP
 ```
 
 **Accordion** (custom en esta app — ver ProfundizaScreen.tsx):
+
 ```tsx
 // Usamos accordion custom con TouchableOpacity + useState en vez de HeroUI Accordion
 // para mayor control sobre el estilo de los items con color dinámico
 ```
 
 **Avatar** (reemplaza Avatar.Text de Paper):
+
 ```tsx
 <Avatar>
-  <Avatar.Fallback name="Juan García" />  {/* genera iniciales */}
+  <Avatar.Fallback name="Juan García" /> {/* genera iniciales */}
 </Avatar>
 ```
 
 **Switch** (de heroui-native, no RN nativo):
+
 ```tsx
 <Switch isSelected={val} onChange={setVal} />
 ```
 
 **Chip**:
+
 ```tsx
-<Chip variant="solid" color="success">Texto</Chip>
+<Chip variant="solid" color="success">
+  Texto
+</Chip>
 ```
 
 ### Theming con Taiwind/Uniwind
 
 Los colores de tema se definen en `global.css` con variables CSS:
+
 ```css
 @theme {
-  --color-primary: hsl(228, 58%, 33%);   /* #253883 */
-  --color-success: hsl(73, 56%, 46%);    /* #A3BD31 */
+  --color-primary: hsl(228, 58%, 33%); /* #253883 */
+  --color-success: hsl(73, 56%, 46%); /* #A3BD31 */
   /* etc. */
 }
 ```
 
 Acceder a colores en componentes:
+
 ```tsx
 import { useThemeColor } from 'heroui-native';
 const accent = useThemeColor('accent');
@@ -436,10 +463,14 @@ const accent = useThemeColor('accent');
 ### MCP Server
 
 Configurado en `.mcp.json`:
+
 ```json
 {
   "mcpServers": {
-    "heroui-native": { "command": "npx", "args": ["-y", "@heroui/native-mcp@latest"] }
+    "heroui-native": {
+      "command": "npx",
+      "args": ["-y", "@heroui/native-mcp@latest"]
+    }
   }
 }
 ```
@@ -455,7 +486,7 @@ npx heroui-cli@latest agents-md --native --output AGENTS.md
 
 ## Notas importantes
 
-- `ReportBugsModal.tsx` es usado por `SongControls.tsx` — NO eliminar (las variantes *Fixed, *New, *Simple ya fueron eliminadas)
+- `ReportBugsModal.tsx` es usado por `SongControls.tsx` — NO eliminar (las variantes *Fixed, *New, \*Simple ya fueron eliminadas)
 - `ErrorBoundary.tsx` envuelve toda la app en `_layout.tsx`
 - Splash screen: HelloWave con 3 repeticiones (900ms total)
 - Feature flag `cancionero: true` — cantoral activo

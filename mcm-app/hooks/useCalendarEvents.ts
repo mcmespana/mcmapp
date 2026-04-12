@@ -43,7 +43,7 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
           const endDate = new Date(current.endDate + 'T12:00:00'); // Use noon to avoid timezone issues
           endDate.setDate(endDate.getDate() - 1);
           const adjustedEndDate = endDate.toISOString().split('T')[0];
-          
+
           // If after adjustment the end date equals start date,
           // it's a single-day event, remove endDate completely
           if (adjustedEndDate === current.startDate) {
@@ -57,7 +57,7 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
           // Events without endDate are single-day by default
           current.isSingleDay = true;
         }
-        
+
         events.push(current as Omit<CalendarEvent, 'calendarIndex'>);
       }
       current = {};
@@ -69,14 +69,15 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
         .replace(/\\n/g, ' ')
         .trim();
     } else if (line.startsWith('LOCATION:')) {
-      current.location = line
-        .slice('LOCATION:'.length)
-        .replace(/\\n/g, '\n')
-        .trim()
-        .split('\n')
-        .filter(part => part.trim().toLowerCase() !== 'españa')
-        .join('\n')
-        .trim() || undefined;
+      current.location =
+        line
+          .slice('LOCATION:'.length)
+          .replace(/\\n/g, '\n')
+          .trim()
+          .split('\n')
+          .filter((part) => part.trim().toLowerCase() !== 'españa')
+          .join('\n')
+          .trim() || undefined;
     } else if (line.startsWith('URL:')) {
       current.url = line.slice('URL:'.length).trim();
     } else if (line.startsWith('DTSTART')) {
@@ -89,7 +90,7 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
         if (isDateOnly) {
           current.isAllDay = true;
         }
-        
+
         // Solo nos quedamos con la parte de fecha (sin hora)
         const datePart = value.replace(/T.*$/, '');
         if (/^\d{8}$/.test(datePart)) {
@@ -160,7 +161,7 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
 
           events.forEach((ev) => {
             const withCal: CalendarEvent = { ...ev, calendarIndex: i };
-            
+
             // If no endDate or it's a single-day event, only add to the start date
             if (!ev.endDate || ev.isSingleDay) {
               const dateStr = ev.startDate;

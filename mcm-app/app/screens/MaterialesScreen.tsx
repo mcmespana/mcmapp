@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Text,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, Text, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';

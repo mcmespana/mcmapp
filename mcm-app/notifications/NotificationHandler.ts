@@ -14,8 +14,12 @@ import { Platform } from 'react-native';
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     // Puedes personalizar el comportamiento basado en la categoría
-    const category = notification.request.content.data?.category as string | undefined;
-    const priority = notification.request.content.data?.priority as string | undefined;
+    const category = notification.request.content.data?.category as
+      | string
+      | undefined;
+    const priority = notification.request.content.data?.priority as
+      | string
+      | undefined;
 
     // Notificaciones urgentes siempre suenan y se muestran
     if (category === 'urgente' || priority === 'high') {
@@ -52,7 +56,7 @@ if (Platform.OS === 'ios') {
         opensAppToForeground: true,
       },
     },
-  ]).catch(err => console.error('Error configurando categorías:', err));
+  ]).catch((err) => console.error('Error configurando categorías:', err));
 
   Notifications.setNotificationCategoryAsync('eventos', [
     {
@@ -62,7 +66,7 @@ if (Platform.OS === 'ios') {
         opensAppToForeground: true,
       },
     },
-  ]).catch(err => console.error('Error configurando categorías:', err));
+  ]).catch((err) => console.error('Error configurando categorías:', err));
 
   Notifications.setNotificationCategoryAsync('fotos', [
     {
@@ -72,5 +76,5 @@ if (Platform.OS === 'ios') {
         opensAppToForeground: true,
       },
     },
-  ]).catch(err => console.error('Error configurando categorías:', err));
+  ]).catch((err) => console.error('Error configurando categorías:', err));
 }

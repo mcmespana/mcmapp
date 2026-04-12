@@ -120,20 +120,23 @@ export const saveTokenToFirebase = async (token: string): Promise<void> => {
     // Cachear el token primero (así updateLastActive lo tiene de fallback)
     await cachePushToken(token);
 
-    const deviceId = await getDeviceId();
+    // Usar el propio token sanitizado como ID en Firebase en lugar de un deviceId aleatorio.
+    // Esto evita que reinstalaciones dejen tokens "huerfanos" en la base de datos a los que
+    // el backend seguiría enviando notificaciones (generando pushes duplicados en el mismo dispositivo).
+    const safeTokenId = 'token_' + token.replace(/[^a-zA-Z0-9]/g, '_');
     const db = getDatabase(getFirebaseApp());
     const tokenData = buildTokenData(token);
 
     // Log de diagnóstico: mostrar exactamente qué se va a escribir
     console.log('📝 Intentando escribir en Firebase:', {
-      path: `pushTokens/${deviceId}`,
+      path: `pushTokens/${safeTokenId}`,
       tokenData: JSON.stringify(tokenData),
     });
 
-    await set(ref(db, `pushTokens/${deviceId}`), tokenData);
+    await set(ref(db, `pushTokens/${safeTokenId}`), tokenData);
     console.log(
-      '✅ Token guardado en Firebase para deviceId:',
-      deviceId,
+      '✅ Token guardado en Firebase para safeTokenId:',
+      safeTokenId,
       'token:',
       token.substring(0, 30) + '...',
     );
@@ -153,13 +156,12 @@ export const saveTokenToFirebase = async (token: string): Promise<void> => {
  */
 export const updateLastActive = async (): Promise<void> => {
   try {
-    const deviceId = await getDeviceId();
     const db = getDatabase(getFirebaseApp());
-    const deviceRef = ref(db, `pushTokens/${deviceId}`);
-
     const token = await getCachedPushToken();
 
     if (token) {
+      const safeTokenId = 'token_' + token.replace(/[^a-zA-Z0-9]/g, '_');
+      const deviceRef = ref(db, `pushTokens/${safeTokenId}`);
       // Tenemos token en caché: verificar si ya está en Firebase
       const snapshot = await get(deviceRef);
       const existingData = snapshot.exists() ? snapshot.val() : null;
@@ -298,8 +300,20 @@ export const saveReceivedNotificationLocally = async (
       ? JSON.parse(existingData)
       : [];
 
-    // Evitar duplicados
-    const isDuplicate = notifications.some((n) => n.id === notification.id);
+    // Evitar duplicados por ID o por contenido (título + cuerpo) si llegaron casi al mismo tiempo
+    const isDuplicate = notifications.some((n) => {
+      if (n.id === notification.id) return true;
+      if (n.title === notification.title && n.body === notification.body) {
+        // Si el contenido es idéntico, verificar si se recibió recientemente (ej. últimas 24h)
+        const timeA = new Date(n.receivedAt).getTime();
+        const timeB = new Date(notification.receivedAt).getTime();
+        if (Math.abs(timeA - timeB) < 24 * 60 * 60 * 1000) {
+          return true;
+        }
+      }
+      return false;
+    });
+
     if (!isDuplicate) {
       notifications.unshift(notification); // Añadir al principio
 

@@ -16,22 +16,22 @@ import { MaterialIcons } from '@expo/vector-icons';
 // ── Contigo Theme Colors ──
 const CONTIGO = {
   light: {
-    accent: '#B8860B',       // Dorado oscuro
-    accentSoft: '#FFF8E7',   // Crema dorado
-    surface: '#FEFBF5',      // Fondo cálido
-    surfaceEnd: '#F5EFE3',   // Gradiente final
-    warmGray: '#6B6560',     // Texto secundario
-    titleColor: '#3D3225',   // Marrón cálido para título
-    subtitleColor: '#8B7E6E',// Marrón suave para subtítulo
+    accent: '#B8860B', // Dorado oscuro
+    accentSoft: '#FFF8E7', // Crema dorado
+    surface: '#FEFBF5', // Fondo cálido
+    surfaceEnd: '#F5EFE3', // Gradiente final
+    warmGray: '#6B6560', // Texto secundario
+    titleColor: '#3D3225', // Marrón cálido para título
+    subtitleColor: '#8B7E6E', // Marrón suave para subtítulo
   },
   dark: {
-    accent: '#DAA520',       // Goldenrod
-    accentSoft: '#2A2112',   // Fondo oscuro cálido
-    surface: '#1C1A17',      // Fondo oscuro
-    surfaceEnd: '#0F0E0C',   // Gradiente final oscuro
-    warmGray: '#A09A94',     // Texto secundario dark
-    titleColor: '#F5EFE3',   // Crema para título
-    subtitleColor: '#A09A94',// Gris cálido para subtítulo
+    accent: '#DAA520', // Goldenrod
+    accentSoft: '#2A2112', // Fondo oscuro cálido
+    surface: '#1C1A17', // Fondo oscuro
+    surfaceEnd: '#0F0E0C', // Gradiente final oscuro
+    warmGray: '#A09A94', // Texto secundario dark
+    titleColor: '#F5EFE3', // Crema para título
+    subtitleColor: '#A09A94', // Gris cálido para subtítulo
   },
 };
 
@@ -59,15 +59,33 @@ export default function ContigoScreen() {
 
   // Warm, serene gradient — no reds!
   const bgGradient = isDark
-    ? [contigo.surface, contigo.surfaceEnd, '#000000'] as const
-    : [contigo.surface, contigo.surfaceEnd, '#F0EBE0'] as const;
+    ? ([contigo.surface, contigo.surfaceEnd, '#000000'] as const)
+    : ([contigo.surface, contigo.surfaceEnd, '#F0EBE0'] as const);
 
   // Format today's date nicely
   const today = new Date();
-  const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const DAYS = [
+    'Domingo',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+  ];
   const MONTHS = [
-    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
   ];
   const dateStr = `${DAYS[today.getDay()]}, ${today.getDate()} de ${MONTHS[today.getMonth()]}`;
 
@@ -129,15 +147,9 @@ export default function ContigoScreen() {
                 : readings?.evangelio?.cita || 'Ver las lecturas de hoy'
             }
             statusText={readingDone ? 'Leído hoy' : 'Pendiente hoy'}
-            statusIcon={
-              readingDone ? 'check-circle' : 'radio-button-unchecked'
-            }
+            statusIcon={readingDone ? 'check-circle' : 'radio-button-unchecked'}
             statusColor={
-              readingDone
-                ? isDark
-                  ? '#A3BD31'
-                  : '#3A7D44'
-                : contigo.warmGray
+              readingDone ? (isDark ? '#A3BD31' : '#3A7D44') : contigo.warmGray
             }
             accentColor={contigo.accent}
             onPress={() => router.push('/(tabs)/contigo/evangelio')}
@@ -149,15 +161,9 @@ export default function ContigoScreen() {
             icon="self-improvement"
             subtitle="Registra tu momento de oración personal"
             statusText={prayerDone ? 'Registrado hoy' : 'Pendiente hoy'}
-            statusIcon={
-              prayerDone ? 'check-circle' : 'radio-button-unchecked'
-            }
+            statusIcon={prayerDone ? 'check-circle' : 'radio-button-unchecked'}
             statusColor={
-              prayerDone
-                ? isDark
-                  ? '#A3BD31'
-                  : '#3A7D44'
-                : contigo.warmGray
+              prayerDone ? (isDark ? '#A3BD31' : '#3A7D44') : contigo.warmGray
             }
             accentColor={isDark ? '#E8A838' : '#C4922A'}
             onPress={() => {
@@ -227,10 +233,7 @@ export default function ContigoScreen() {
                 color={contigo.accent}
               />
               <Text
-                style={[
-                  styles.streakSummaryTitle,
-                  { color: contigo.accent },
-                ]}
+                style={[styles.streakSummaryTitle, { color: contigo.accent }]}
               >
                 Tu constancia
               </Text>
@@ -240,12 +243,7 @@ export default function ContigoScreen() {
                 <Text style={[styles.streakNumber, { color: theme.text }]}>
                   {readingStreak}
                 </Text>
-                <Text
-                  style={[
-                    styles.streakLabel,
-                    { color: contigo.warmGray },
-                  ]}
-                >
+                <Text style={[styles.streakLabel, { color: contigo.warmGray }]}>
                   {readingStreak === 1 ? 'día' : 'días'} leyendo
                 </Text>
               </View>
@@ -253,12 +251,7 @@ export default function ContigoScreen() {
                 <Text style={[styles.streakNumber, { color: theme.text }]}>
                   {prayerStreak}
                 </Text>
-                <Text
-                  style={[
-                    styles.streakLabel,
-                    { color: contigo.warmGray },
-                  ]}
-                >
+                <Text style={[styles.streakLabel, { color: contigo.warmGray }]}>
                   {prayerStreak === 1 ? 'día' : 'días'} orando
                 </Text>
               </View>

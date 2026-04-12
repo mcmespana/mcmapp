@@ -51,10 +51,18 @@ export function ReadingCard({ title, cita, texto, defaultExpanded = false }: Rea
             <PressableFeedback.Highlight />
             <View style={styles.header}>
               <View style={styles.headerTextContainer}>
-                <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
+                <Text
+                  style={[styles.title, { color: theme.text }]}
+                  numberOfLines={1}
+                >
                   {title}
                 </Text>
-                <View style={[styles.citaBadge, { backgroundColor: hexAlpha(accent, '12') }]}>
+                <View
+                  style={[
+                    styles.citaBadge,
+                    { backgroundColor: hexAlpha(accent, '12') },
+                  ]}
+                >
                   <Text style={[styles.citaText, { color: accent }]}>
                     {cita}
                   </Text>

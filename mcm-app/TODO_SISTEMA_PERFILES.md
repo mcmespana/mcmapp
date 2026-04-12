@@ -25,10 +25,10 @@
 
 La app necesita personalizar la experiencia según dos ejes:
 
-| Eje | Opciones | Ejemplo |
-|-----|----------|---------|
-| **Perfil** | Familia · Monitor/a · Miembro MCM | Un monitor ve secciones de grupos y materiales extra |
-| **Delegación** | ~15 delegaciones locales | Alguien de Castellón recibe notificaciones locales y ve calendarios específicos |
+| Eje            | Opciones                          | Ejemplo                                                                         |
+| -------------- | --------------------------------- | ------------------------------------------------------------------------------- |
+| **Perfil**     | Familia · Monitor/a · Miembro MCM | Un monitor ve secciones de grupos y materiales extra                            |
+| **Delegación** | ~15 delegaciones locales          | Alguien de Castellón recibe notificaciones locales y ve calendarios específicos |
 
 Esto afecta a: **tabs visibles**, **botones del home**, **calendarios pre-seleccionados**, **álbumes de fotos**, **secciones del menú "Más"** y **notificaciones push**.
 
@@ -43,6 +43,7 @@ Además, se pueden dar **combinaciones específicas** — por ejemplo, "las fami
 **Decisión**: Toda la configuración de perfiles vive en un nodo de Firebase Realtime Database (`/profileConfig`). La app la descarga, la cachea en local, y la usa para decidir qué mostrar.
 
 **Por qué**:
+
 - Puedes cambiar qué ve cada perfil/delegación **sin hacer deploy** de la app
 - Funciona con el patrón `useFirebaseData` que ya tenéis (descarga + caché en AsyncStorage)
 - El panel admin (`mcmpanel`) puede editarlo
@@ -66,15 +67,15 @@ Además, se pueden dar **combinaciones específicas** — por ejemplo, "las fami
 
 ## 3. Almacenamiento: qué va dónde
 
-| Dato | Dónde | Clave | Notas |
-|------|-------|-------|-------|
-| Tipo de perfil | AsyncStorage | `@user_profile` | Parte del UserProfile ampliado |
-| ID de delegación | AsyncStorage | `@user_profile` | Reemplaza el campo `location` actual |
-| Nombre del usuario | AsyncStorage | `@user_profile` | Opcional, se mantiene |
-| Onboarding completado | AsyncStorage | `@user_profile` | Flag booleano |
-| Config de perfiles | Firebase RTDB + caché AsyncStorage | `/profileConfig` | Se descarga con `useFirebaseData` |
-| Push token + metadata | Firebase RTDB | `/pushTokens/{deviceId}` | Se amplía con profileType y delegationId |
-| Qué tabs/secciones mostrar | **No se almacena** | — | Se computa en tiempo real a partir de la config |
+| Dato                       | Dónde                              | Clave                    | Notas                                           |
+| -------------------------- | ---------------------------------- | ------------------------ | ----------------------------------------------- |
+| Tipo de perfil             | AsyncStorage                       | `@user_profile`          | Parte del UserProfile ampliado                  |
+| ID de delegación           | AsyncStorage                       | `@user_profile`          | Reemplaza el campo `location` actual            |
+| Nombre del usuario         | AsyncStorage                       | `@user_profile`          | Opcional, se mantiene                           |
+| Onboarding completado      | AsyncStorage                       | `@user_profile`          | Flag booleano                                   |
+| Config de perfiles         | Firebase RTDB + caché AsyncStorage | `/profileConfig`         | Se descarga con `useFirebaseData`               |
+| Push token + metadata      | Firebase RTDB                      | `/pushTokens/{deviceId}` | Se amplía con profileType y delegationId        |
+| Qué tabs/secciones mostrar | **No se almacena**                 | —                        | Se computa en tiempo real a partir de la config |
 
 **Principio clave**: En una reinstalación, el usuario reconfigura desde cero. No pasa nada. Lo único persistente en la nube es la metadata del push token (para segmentar notificaciones).
 
@@ -183,13 +184,14 @@ El hook `useProfileConfig()` resuelve la config final en este orden:
 
 ```typescript
 function resolveProfileConfig(
-  config: ProfileConfigData,   // todo el nodo /profileConfig/data
+  config: ProfileConfigData, // todo el nodo /profileConfig/data
   profileType: ProfileType,
   delegationId: string,
 ): ResolvedConfig {
   const global = config.global;
   const profile = config.profiles[profileType];
-  const delegation = config.delegations[delegationId] || config.delegations._default;
+  const delegation =
+    config.delegations[delegationId] || config.delegations._default;
   const override = config.overrides?.[`${profileType}:${delegationId}`];
 
   // Base del perfil
@@ -199,7 +201,7 @@ function resolveProfileConfig(
     masItems: profile.masItems,
     defaultCalendars: [
       ...profile.defaultCalendars,
-      ...(delegation.extraCalendars || []),    // Delegación AÑADE calendarios
+      ...(delegation.extraCalendars || []), // Delegación AÑADE calendarios
     ],
     albumTags: profile.albumTags,
     notificationTopics: [
@@ -244,10 +246,10 @@ export const DEFAULT_PROFILE_CONFIG: ResolvedConfig = {
 
 La config del perfil define un array `tabs` con los IDs de tabs visibles.
 
-| Perfil | Tabs |
-|--------|------|
-| Familia | index, cancionero, calendario, fotos, mas |
-| Monitor | index, cancionero, calendario, fotos, mas |
+| Perfil  | Tabs                                                    |
+| ------- | ------------------------------------------------------- |
+| Familia | index, cancionero, calendario, fotos, mas               |
+| Monitor | index, cancionero, calendario, fotos, mas               |
 | Miembro | index, cancionero, calendario, fotos, **comunica**, mas |
 
 **Implementación**: En `app/(tabs)/_layout.tsx`, filtrar `TABS_CONFIG` con los tabs del perfil resuelto. Si un tab no está en la lista, se renderiza con `href: null` (patrón actual de expo-router para ocultar tabs).
@@ -288,12 +290,12 @@ Los calendarios ya existen en Firebase en el nodo `/calendars` con sus IDs, nomb
 
 **Reglas de visibilidad**:
 
-| albumTags del perfil | tags del álbum | ¿Se muestra? |
-|----------------------|----------------|------------|
-| `["all"]` | cualquiera (o sin tags) | ✅ Sí |
-| `["general", "encuentros"]` | `["general"]` | ✅ Sí (intersección) |
-| `["general"]` | `["interno"]` | ❌ No |
-| cualquiera | sin tags / no definido | ✅ Sí (= "general") |
+| albumTags del perfil        | tags del álbum          | ¿Se muestra?         |
+| --------------------------- | ----------------------- | -------------------- |
+| `["all"]`                   | cualquiera (o sin tags) | ✅ Sí                |
+| `["general", "encuentros"]` | `["general"]`           | ✅ Sí (intersección) |
+| `["general"]`               | `["interno"]`           | ❌ No                |
+| cualquiera                  | sin tags / no definido  | ✅ Sí (= "general")  |
 
 **Beneficio**: Álbumes sin tags siguen siendo visibles para todos (retrocompatible). Solo necesitas etiquetar los álbumes que quieras restringir.
 
@@ -308,6 +310,7 @@ Los calendarios ya existen en Firebase en el nodo `/calendars` con sus IDs, nomb
 **Decisión: seguir con metadata en RTDB** (lo que ya tenéis, ampliado).
 
 **Razones**:
+
 - Ya usáis Expo Push (no FCM directo). FCM Topics requeriría cambiar la infraestructura de envío
 - La escala es pequeña (~15 delegaciones × 3 perfiles). No necesitáis la escalabilidad de FCM Topics
 - El panel admin (`mcmpanel`) ya va a consultar RTDB para enviar notificaciones
@@ -409,31 +412,31 @@ Si el usuario cierra/salta el onboarding, se usa la config fallback (equivalente
 
 ### 9.1. Archivos a crear
 
-| Archivo | Descripción |
-|---------|-------------|
-| `constants/defaultProfileConfig.ts` | Config fallback hardcoded (reemplaza conceptualmente a `featureFlags.ts`) |
+| Archivo                             | Descripción                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------ |
+| `constants/defaultProfileConfig.ts` | Config fallback hardcoded (reemplaza conceptualmente a `featureFlags.ts`)            |
 | `contexts/ProfileConfigContext.tsx` | Nuevo contexto que descarga y resuelve la config (reemplaza a `FeatureFlagsContext`) |
-| `hooks/useProfileConfig.ts` | Hook que expone la config resuelta + helpers |
-| `app/onboarding.tsx` | Pantalla de onboarding (Stack screen, no tab) |
+| `hooks/useProfileConfig.ts`         | Hook que expone la config resuelta + helpers                                         |
+| `app/onboarding.tsx`                | Pantalla de onboarding (Stack screen, no tab)                                        |
 
 ### 9.2. Archivos a modificar
 
-| Archivo | Cambio |
-|---------|--------|
-| `contexts/UserProfileContext.tsx` | Eliminar `location`, añadir `profileType: string \| null`, `delegationId: string \| null`, `onboardingCompleted: boolean`. Nombre pasa a ser opcional |
-| `contexts/FeatureFlagsContext.tsx` | **Eliminar** — absorbido por ProfileConfigContext |
-| `constants/featureFlags.ts` | **Eliminar o mantener solo como referencia** — reemplazado por `defaultProfileConfig.ts` |
-| `app/_layout.tsx` | Reemplazar `FeatureFlagsProvider` por `ProfileConfigProvider`. Añadir lógica de onboarding (redirigir si no completado) |
-| `app/(tabs)/_layout.tsx` | Cambiar `useFeatureFlags()` por `useProfileConfig()` para filtrar tabs visibles |
-| `app/(tabs)/index.tsx` | Filtrar `navigationItems` según `homeButtons` del perfil resuelto |
-| `app/screens/MasHomeScreen.tsx` | Filtrar items según `masItems` del perfil resuelto |
-| `hooks/useCalendarConfigs.ts` | Integrar `defaultCalendars` del perfil al inicializar selección |
-| `app/(tabs)/fotos.tsx` | Filtrar álbumes según `albumTags` del perfil vs `tags` del álbum |
-| `services/pushNotificationService.ts` | Ampliar `saveTokenToFirebase` con `profileType`, `delegationId`, `topics` |
-| `notifications/usePushNotifications.ts` | Llamar a `saveTokenToFirebase` cuando cambie el perfil/delegación |
-| `components/SettingsPanel.tsx` | Añadir opciones de cambiar perfil y delegación |
+| Archivo                                 | Cambio                                                                                                                                                |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contexts/UserProfileContext.tsx`       | Eliminar `location`, añadir `profileType: string \| null`, `delegationId: string \| null`, `onboardingCompleted: boolean`. Nombre pasa a ser opcional |
+| `contexts/FeatureFlagsContext.tsx`      | **Eliminar** — absorbido por ProfileConfigContext                                                                                                     |
+| `constants/featureFlags.ts`             | **Eliminar o mantener solo como referencia** — reemplazado por `defaultProfileConfig.ts`                                                              |
+| `app/_layout.tsx`                       | Reemplazar `FeatureFlagsProvider` por `ProfileConfigProvider`. Añadir lógica de onboarding (redirigir si no completado)                               |
+| `app/(tabs)/_layout.tsx`                | Cambiar `useFeatureFlags()` por `useProfileConfig()` para filtrar tabs visibles                                                                       |
+| `app/(tabs)/index.tsx`                  | Filtrar `navigationItems` según `homeButtons` del perfil resuelto                                                                                     |
+| `app/screens/MasHomeScreen.tsx`         | Filtrar items según `masItems` del perfil resuelto                                                                                                    |
+| `hooks/useCalendarConfigs.ts`           | Integrar `defaultCalendars` del perfil al inicializar selección                                                                                       |
+| `app/(tabs)/fotos.tsx`                  | Filtrar álbumes según `albumTags` del perfil vs `tags` del álbum                                                                                      |
+| `services/pushNotificationService.ts`   | Ampliar `saveTokenToFirebase` con `profileType`, `delegationId`, `topics`                                                                             |
+| `notifications/usePushNotifications.ts` | Llamar a `saveTokenToFirebase` cuando cambie el perfil/delegación                                                                                     |
+| `components/SettingsPanel.tsx`          | Añadir opciones de cambiar perfil y delegación                                                                                                        |
 
-### 9.3. Orden de providers en _layout.tsx
+### 9.3. Orden de providers en \_layout.tsx
 
 ```
 ErrorBoundary
@@ -463,6 +466,7 @@ Push token → Firebase RTDB            Push token → misma Firebase RTDB
 ```
 
 **El login sería una capa adicional, no un reemplazo**:
+
 - Usuario sin login: perfil local, push con metadata. Funciona perfectamente.
 - Usuario con login: su perfil se sincroniza a la nube. Si cambia de dispositivo, recupera su configuración.
 - La app siempre lee del contexto local (que puede estar alimentado por AsyncStorage O por Firebase Auth).

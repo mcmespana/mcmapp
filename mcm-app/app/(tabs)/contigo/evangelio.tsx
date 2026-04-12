@@ -22,7 +22,10 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
-import { LiturgicalBadge, getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
+import {
+  LiturgicalBadge,
+  getLiturgicalInfo,
+} from '@/components/contigo/LiturgicalBadge';
 import { ReadingCard } from '@/components/contigo/ReadingCard';
 import SettingsPanel from '@/components/SettingsPanel';
 import BottomSheet from '@/components/BottomSheet';
@@ -46,8 +49,18 @@ const WARM = {
 };
 
 const MONTHS = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
 ];
 
 function formatDateDisplay(dateStr: string) {
@@ -55,7 +68,15 @@ function formatDateDisplay(dateStr: string) {
   // Parse as local date — avoid timezone offset
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const days = [
+    'Domingo',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+  ];
   return `${days[date.getDay()]}, ${d} de ${MONTHS[m - 1]}`;
 }
 
@@ -229,7 +250,7 @@ export default function EvangelioScreen() {
   const { todayStr, getRecord, setReadingDone } = useContigoHabits();
 
   const [selectedDate, setSelectedDate] = useState(
-    todayStr || new Date().toISOString().split('T')[0]
+    todayStr || new Date().toISOString().split('T')[0],
   );
   const { readings, isLoading, error } = useDailyReadings(selectedDate);
   const [viewMode, setViewMode] = useState<'lectura' | 'comentario'>('lectura');
@@ -310,7 +331,7 @@ export default function EvangelioScreen() {
   const openSource = () => {
     if (readings?.evangelio?.url) {
       Linking.openURL(readings.evangelio.url).catch((err) =>
-        console.error("Couldn't open URL", err)
+        console.error("Couldn't open URL", err),
       );
     }
   };
@@ -318,7 +339,9 @@ export default function EvangelioScreen() {
   // Liturgical color for subtle tinting
   const liturgicalAccent =
     liturgicalInfo.hex === '#F5F5F5'
-      ? isDark ? '#888888' : '#999999'
+      ? isDark
+        ? '#888888'
+        : '#999999'
       : liturgicalInfo.hex;
 
   return (
@@ -468,7 +491,10 @@ export default function EvangelioScreen() {
             </Text>
             <TouchableOpacity
               onPress={() => setSelectedDate(todayStr)}
-              style={[styles.todayBtn, { backgroundColor: hexAlpha(warm.accent, '15') }]}
+              style={[
+                styles.todayBtn,
+                { backgroundColor: hexAlpha(warm.accent, '15') },
+              ]}
             >
               <Text style={[styles.todayBtnText, { color: warm.accent }]}>
                 Volver a hoy
@@ -527,8 +553,8 @@ export default function EvangelioScreen() {
                               ? '#DAA520'
                               : '#B8860B'
                             : isDark
-                            ? '#A09A94'
-                            : '#888888'
+                              ? '#A09A94'
+                              : '#888888'
                         }
                       />
                       <Text
@@ -541,8 +567,8 @@ export default function EvangelioScreen() {
                                   ? '#DAA520'
                                   : '#B8860B'
                                 : isDark
-                                ? '#A09A94'
-                                : '#888888',
+                                  ? '#A09A94'
+                                  : '#888888',
                             fontWeight: viewMode === 'lectura' ? '700' : '500',
                           },
                         ]}
@@ -576,8 +602,8 @@ export default function EvangelioScreen() {
                               ? '#DAA520'
                               : '#B8860B'
                             : isDark
-                            ? '#A09A94'
-                            : '#888888'
+                              ? '#A09A94'
+                              : '#888888'
                         }
                       />
                       <Text
@@ -590,9 +616,10 @@ export default function EvangelioScreen() {
                                   ? '#DAA520'
                                   : '#B8860B'
                                 : isDark
-                                ? '#A09A94'
-                                : '#888888',
-                            fontWeight: viewMode === 'comentario' ? '700' : '500',
+                                  ? '#A09A94'
+                                  : '#888888',
+                            fontWeight:
+                              viewMode === 'comentario' ? '700' : '500',
                           },
                         ]}
                       >
@@ -616,7 +643,9 @@ export default function EvangelioScreen() {
                             color={warm.accent}
                             style={{ marginRight: 4 }}
                           />
-                          <Text style={[styles.citaText, { color: warm.accent }]}>
+                          <Text
+                            style={[styles.citaText, { color: warm.accent }]}
+                          >
                             {readings.evangelio.cita}
                           </Text>
                         </View>
@@ -652,7 +681,12 @@ export default function EvangelioScreen() {
                         </Text>
 
                         {readings.evangelio.comentarista ? (
-                          <Text style={[styles.authorText, { color: warm.warmGray }]}>
+                          <Text
+                            style={[
+                              styles.authorText,
+                              { color: warm.warmGray },
+                            ]}
+                          >
                             — {readings.evangelio.comentarista}
                           </Text>
                         ) : null}
@@ -669,7 +703,12 @@ export default function EvangelioScreen() {
                               },
                             ]}
                           >
-                            <Text style={[styles.sourceText, { color: warm.accent }]}>
+                            <Text
+                              style={[
+                                styles.sourceText,
+                                { color: warm.accent },
+                              ]}
+                            >
                               Leer original completo
                             </Text>
                             <MaterialIcons
@@ -686,7 +725,10 @@ export default function EvangelioScreen() {
               ) : (
                 <View style={styles.cardContent}>
                   <View
-                    style={[styles.citaBadge, { backgroundColor: hexAlpha(warm.accent, '12') }]}
+                    style={[
+                      styles.citaBadge,
+                      { backgroundColor: hexAlpha(warm.accent, '12') },
+                    ]}
                   >
                     <MaterialIcons
                       name="format-quote"
@@ -743,9 +785,7 @@ export default function EvangelioScreen() {
                     name={isDone ? 'check-circle' : 'favorite'}
                     size={22}
                     color={
-                      isDone
-                        ? isDark ? '#A3BD31' : '#3A7D44'
-                        : '#FFFFFF'
+                      isDone ? (isDark ? '#A3BD31' : '#3A7D44') : '#FFFFFF'
                     }
                   />
                   <Text
@@ -780,7 +820,9 @@ export default function EvangelioScreen() {
                     },
                   ]}
                 />
-                <Text style={[styles.otherReadingsTitle, { color: theme.text }]}>
+                <Text
+                  style={[styles.otherReadingsTitle, { color: theme.text }]}
+                >
                   Otras lecturas de la misa
                 </Text>
 
