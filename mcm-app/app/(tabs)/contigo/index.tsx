@@ -1,5 +1,12 @@
 import React, { useCallback } from 'react';
-import { ScrollView, View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+import {
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -43,13 +50,14 @@ export default function ContigoScreen() {
   const theme = Colors[scheme ?? 'light'];
   const contigo = isDark ? CONTIGO.dark : CONTIGO.light;
 
-  const { todayStr, todayRecord, getStreak, reloadRecords } = useContigoHabits();
+  const { todayStr, todayRecord, getStreak, reloadRecords } =
+    useContigoHabits();
   const { readings, isLoading } = useDailyReadings(todayStr);
 
   useFocusEffect(
     useCallback(() => {
       reloadRecords();
-    }, [])
+    }, []),
   );
 
   const readingDone = todayRecord?.readingDone;
@@ -108,7 +116,13 @@ export default function ContigoScreen() {
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+            }}
+          >
             <View>
               <Text style={[styles.title, { color: contigo.titleColor }]}>
                 Contigo
@@ -118,13 +132,21 @@ export default function ContigoScreen() {
               </Text>
             </View>
             <TouchableOpacity
-               onPress={() => router.push('/contigo/bookmarks')}
-               style={[
-                 styles.bookmarkBtn,
-                 { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }
-               ]}
+              onPress={() => router.push('/contigo/bookmarks')}
+              style={[
+                styles.bookmarkBtn,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(255,255,255,0.08)'
+                    : 'rgba(0,0,0,0.05)',
+                },
+              ]}
             >
-               <MaterialIcons name="bookmarks" size={22} color={contigo.accent} />
+              <MaterialIcons
+                name="bookmarks"
+                size={22}
+                color={contigo.accent}
+              />
             </TouchableOpacity>
           </View>
           <View style={styles.dateRow}>
@@ -208,7 +230,6 @@ export default function ContigoScreen() {
             accentColor={isDark ? '#A09A94' : '#8B7E6E'}
             disabled={true}
           />
-
         </View>
 
         {/* ── Weekly Streak Summary — always visible ── */}

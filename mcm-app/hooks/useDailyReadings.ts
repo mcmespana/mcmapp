@@ -49,7 +49,7 @@ export function useDailyReadings(dateStr: string) {
         // 1. Check local cache first
         const cacheKey = `${CACHE_PREFIX}${dateStr}`;
         let cached = await AsyncStorage.getItem(cacheKey);
-        
+
         let foundInBookmarks: any = null;
 
         if (!cached) {
