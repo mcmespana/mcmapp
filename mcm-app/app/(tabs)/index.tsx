@@ -37,6 +37,10 @@ import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import {
+  getLocalNotificationsHistory,
+  isNotificationOlderThan60Days,
+} from '@/services/pushNotificationService';
 import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -118,9 +122,38 @@ export default function Home() {
   // Notifications
   const { firebaseNotifications, readIds, unreadCount } = useNotifications();
   const latestNotification = firebaseNotifications[0] ?? null;
-  const isUnread = latestNotification
-    ? !readIds.has(latestNotification.id)
-    : false;
+  
+  const [isUnread, setIsUnread] = useState(false);
+
+  useEffect(() => {
+    if (!latestNotification) {
+      setIsUnread(false);
+      return;
+    }
+    if (readIds.has(latestNotification.id)) {
+      setIsUnread(false);
+      return;
+    }
+    const dateStr = 'receivedAt' in latestNotification ? latestNotification.receivedAt : latestNotification.createdAt;
+    if (isNotificationOlderThan60Days(dateStr)) {
+      setIsUnread(false);
+      return;
+    }
+
+    // Comprobación cruzada asíncrona: ver si ya se leyó la versión local
+    getLocalNotificationsHistory().then((localData) => {
+      const match = localData.find(
+        (n) =>
+          n.title === latestNotification.title &&
+          n.body === latestNotification.body,
+      );
+      if (match && (match.isRead || readIds.has(match.id))) {
+        setIsUnread(false);
+      } else {
+        setIsUnread(true);
+      }
+    });
+  }, [latestNotification, readIds]);
 
   // Animated ping for notification badge
   const pingAnim = useRef(new Animated.Value(1)).current;

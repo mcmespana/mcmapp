@@ -115,13 +115,7 @@ export default function NotificationsScreen() {
 
   const handleMarkAllAsRead = async () => {
     const unreadIds = allNotifications
-      .filter((n) => {
-        if (readIds.has(n.id)) return false;
-        if ('isRead' in n && n.isRead) return false;
-        const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
-        if (isNotificationOlderThan60Days(dateStr)) return false;
-        return true;
-      })
+      .filter((n) => !isNotificationRead(n))
       .map((n) => n.id);
     if (unreadIds.length === 0) return;
     await markAllNotificationsAsRead(unreadIds);
@@ -131,29 +125,19 @@ export default function NotificationsScreen() {
 
   const handleNotificationPress = useCallback(
     async (notification: NotificationData | ReceivedNotification) => {
-      const dateStr = 'receivedAt' in notification ? notification.receivedAt : notification.createdAt;
-      const isRead =
-        readIds.has(notification.id) ||
-        ('isRead' in notification && notification.isRead) ||
-        isNotificationOlderThan60Days(dateStr);
-      if (!isRead) {
+      if (!isNotificationRead(notification)) {
         await handleMarkAsRead(notification.id);
       }
       setSelectedNotification(notification);
     },
-    [readIds, handleMarkAsRead],
+    [isNotificationRead, handleMarkAsRead],
   );
 
   const handleActionButtonPress = useCallback(
     (notification: NotificationData | ReceivedNotification, e: any) => {
       // Prevenir que el tap llegue al card padre
       if (e?.stopPropagation) e.stopPropagation();
-      const dateStr = 'receivedAt' in notification ? notification.receivedAt : notification.createdAt;
-      const isRead =
-        readIds.has(notification.id) ||
-        ('isRead' in notification && notification.isRead) ||
-        isNotificationOlderThan60Days(dateStr);
-      if (!isRead) {
+      if (!isNotificationRead(notification)) {
         handleMarkAsRead(notification.id).catch((err) =>
           console.error('Error marcando como leída:', err),
         );
@@ -171,7 +155,7 @@ export default function NotificationsScreen() {
         );
       }
     },
-    [readIds, handleMarkAsRead],
+    [isNotificationRead, handleMarkAsRead],
   );
 
   const renderRightActions = (
@@ -207,11 +191,7 @@ export default function NotificationsScreen() {
   }: {
     item: NotificationData | ReceivedNotification;
   }) => {
-    const dateStr = 'receivedAt' in notification ? notification.receivedAt : notification.createdAt;
-    const isRead =
-      readIds.has(notification.id) ||
-      ('isRead' in notification && notification.isRead) ||
-      isNotificationOlderThan60Days(dateStr);
+    const isRead = isNotificationRead(notification);
     const isUnread = !isRead;
     const date = new Date(
       'receivedAt' in notification
@@ -327,7 +307,8 @@ export default function NotificationsScreen() {
     );
   };
 
-  // Combinar Firebase (real-time) + locales, deduplicar, ordenar
+  // Combinar Firebase (real-time) + locales, deduplicar, ordenar.
+  // Locales van primero porque tienen estado `isRead` más fiable.
   const allNotifications = React.useMemo(() => {
     const combined = [...localNotifications, ...firebaseNotifications].sort(
       (a, b) => {
@@ -337,35 +318,38 @@ export default function NotificationsScreen() {
       },
     );
 
-    const seenKeys = new Set<string>();
+    // Deduplicar por contenido (título + cuerpo) — la primera aparición gana
+    const seenContentKeys = new Set<string>();
+    const seenIds = new Set<string>();
     return combined.filter((notification) => {
-      if (!notification.id) return true; // sin ID: siempre incluir
+      const contentKey = `${notification.title}|${notification.body}`;
 
-      // Crear una clave de deduplicación compuesta (id, o título+cuerpo) para evitar duplicados visuales
-      const dedupeKey =
-        notification.id + '|' + notification.title + '|' + notification.body;
-      const contentKey = notification.title + '|' + notification.body;
+      // Si ya vimos este contenido exacto, es duplicado
+      if (seenContentKeys.has(contentKey)) return false;
 
-      // Si ya vimos el mismo ID exacto, es duplicado
-      if (seenKeys.has(notification.id)) return false;
+      // Si ya vimos este ID exacto, es duplicado
+      if (notification.id && seenIds.has(notification.id)) return false;
 
-      // Si ya vimos el mismo contenido exacto, es un duplicado proveniente de múltiples entregas
-      if (seenKeys.has(contentKey)) return false;
-
-      seenKeys.add(notification.id);
-      seenKeys.add(contentKey);
+      seenContentKeys.add(contentKey);
+      if (notification.id) seenIds.add(notification.id);
 
       return true;
     });
   }, [localNotifications, firebaseNotifications]);
 
-  const hasUnread = allNotifications.some((n) => {
-    if (readIds.has(n.id)) return false;
-    if ('isRead' in n && n.isRead) return false;
-    const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
-    if (isNotificationOlderThan60Days(dateStr)) return false;
-    return true;
-  });
+  // Helper reutilizable para saber si una notificación está leída
+  const isNotificationRead = React.useCallback(
+    (n: NotificationData | ReceivedNotification) => {
+      if (readIds.has(n.id)) return true;
+      if ('isRead' in n && n.isRead) return true;
+      const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
+      if (isNotificationOlderThan60Days(dateStr)) return true;
+      return false;
+    },
+    [readIds],
+  );
+
+  const hasUnread = allNotifications.some((n) => !isNotificationRead(n));
 
   return (
     <SafeAreaView

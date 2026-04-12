@@ -186,19 +186,8 @@ export const updateLastActive = async (): Promise<void> => {
         lastActive: new Date().toISOString(),
       });
     } else {
-      // Sin token en caché: verificar si el nodo existe en Firebase con token
-      // (puede pasar si se limpió la caché pero el registro existe)
-      const snapshot = await get(deviceRef);
-      const existingData = snapshot.exists() ? snapshot.val() : null;
-
-      if (existingData?.token) {
-        // El nodo existe y tiene token — solo actualizamos lastActive
-        await update(deviceRef, {
-          lastActive: new Date().toISOString(),
-        });
-      }
-      // Si no hay token en caché NI en Firebase: no hacer nada.
-      // Evitamos crear nodos "zombi" con solo lastActive.
+      // Sin token en caché: no podemos determinar el nodo en Firebase.
+      // No hacer nada — evita crear nodos "zombi" con solo lastActive.
     }
   } catch (error) {
     console.error('Error actualizando lastActive:', error);
@@ -302,12 +291,13 @@ export const saveReceivedNotificationLocally = async (
 
     // Evitar duplicados por ID o por contenido (título + cuerpo) si llegaron casi al mismo tiempo
     const isDuplicate = notifications.some((n) => {
+      // Dedup por ID explícito del backend (no IDs locales generados)
       if (n.id === notification.id) return true;
+      // Dedup por contenido — ventana de 5 minutos (captura entregas duplicadas casi simultáneas)
       if (n.title === notification.title && n.body === notification.body) {
-        // Si el contenido es idéntico, verificar si se recibió recientemente (ej. últimas 24h)
         const timeA = new Date(n.receivedAt).getTime();
         const timeB = new Date(notification.receivedAt).getTime();
-        if (Math.abs(timeA - timeB) < 24 * 60 * 60 * 1000) {
+        if (Math.abs(timeA - timeB) < 5 * 60 * 1000) {
           return true;
         }
       }
@@ -370,9 +360,19 @@ export const markNotificationAsRead = async (
     const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
     if (data) {
       const notifications: ReceivedNotification[] = JSON.parse(data);
-      const updated = notifications.map((n) =>
-        n.id === notificationId ? { ...n, isRead: true } : n,
-      );
+
+      // Encontrar la notificación para obtener su contenido
+      const target = notifications.find((n) => n.id === notificationId);
+
+      const updated = notifications.map((n) => {
+        // Marcar por ID exacto
+        if (n.id === notificationId) return { ...n, isRead: true };
+        // También marcar por contenido idéntico (cubre IDs inconsistentes entre fuentes)
+        if (target && n.title === target.title && n.body === target.body) {
+          return { ...n, isRead: true };
+        }
+        return n;
+      });
       await AsyncStorage.setItem(
         NOTIFICATIONS_HISTORY_KEY,
         JSON.stringify(updated),
@@ -403,9 +403,22 @@ export const markAllNotificationsAsRead = async (
     if (data) {
       const notifications: ReceivedNotification[] = JSON.parse(data);
       const idsSet = new Set(notificationIds);
-      const updated = notifications.map((n) =>
-        idsSet.has(n.id) ? { ...n, isRead: true } : n,
-      );
+
+      // Buscar el contenido de las notificaciones a marcar para poder
+      // también marcar sus equivalentes con ID diferente.
+      const contentKeys = new Set<string>();
+      for (const notif of notifications) {
+        if (idsSet.has(notif.id)) {
+          contentKeys.add(`${notif.title}|${notif.body}`);
+        }
+      }
+
+      const updated = notifications.map((n) => {
+        if (idsSet.has(n.id)) return { ...n, isRead: true };
+        // También marcar por contenido idéntico
+        if (contentKeys.has(`${n.title}|${n.body}`)) return { ...n, isRead: true };
+        return n;
+      });
       await AsyncStorage.setItem(
         NOTIFICATIONS_HISTORY_KEY,
         JSON.stringify(updated),
@@ -447,26 +460,37 @@ export const isNotificationOlderThan60Days = (dateStr?: string): boolean => {
 export const getUnreadNotificationsCount = async (): Promise<number> => {
   try {
     const readIds = await getReadNotificationIds();
-
-    // Contar notificaciones locales sin leer
     const localNotifications = await getLocalNotificationsHistory();
-    const unreadLocal = localNotifications.filter(
-      (n) => !readIds.has(n.id) && !n.isRead && !isNotificationOlderThan60Days(n.receivedAt),
-    );
-
-    // Contar notificaciones de Firebase sin leer
     const firebaseNotifications = await getNotificationsHistory();
-    const unreadFirebase = firebaseNotifications.filter(
-      (n) => !readIds.has(n.id) && !isNotificationOlderThan60Days(n.createdAt),
-    );
 
-    // Eliminar duplicados por ID y contar
-    const allUnreadIds = new Set([
-      ...unreadLocal.map((n) => n.id),
-      ...unreadFirebase.map((n) => n.id),
-    ]);
+    // Combinar, priorizando locales
+    const combined = [...localNotifications, ...firebaseNotifications].sort((a, b) => {
+      const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
+      const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
+      return dateB.getTime() - dateA.getTime();
+    });
 
-    return allUnreadIds.size;
+    // Deduplicar
+    const seenContentKeys = new Set<string>();
+    const seenIds = new Set<string>();
+    const deduplicated = combined.filter((n) => {
+      const contentKey = `${n.title}|${n.body}`;
+      if (seenContentKeys.has(contentKey)) return false;
+      if (n.id && seenIds.has(n.id)) return false;
+      seenContentKeys.add(contentKey);
+      if (n.id) seenIds.add(n.id);
+      return true;
+    });
+
+    const isNotificationRead = (n: any) => {
+      if (readIds.has(n.id)) return true;
+      if ('isRead' in n && n.isRead) return true;
+      const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
+      if (isNotificationOlderThan60Days(dateStr)) return true;
+      return false;
+    };
+
+    return deduplicated.filter(n => !isNotificationRead(n)).length;
   } catch (error) {
     console.error('Error contando notificaciones sin leer:', error);
     return 0;

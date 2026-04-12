@@ -218,24 +218,42 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
     });
   }, [firebaseNotifications, loadLocalData, refreshCount]);
 
-  const allNotifications = [...localNotifications, ...firebaseNotifications]
-    .sort((a, b) => {
-      const dA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
-      const dB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
-      return dB.getTime() - dA.getTime();
-    })
-    .filter((n, i, self) => {
-      if (!n.id) return true;
-      return i === self.findIndex((x) => x.id === n.id);
-    });
+  // Combinar local + Firebase, deduplicar por contenido, ordenar
+  const allNotifications = React.useMemo(() => {
+    const combined = [...localNotifications, ...firebaseNotifications].sort(
+      (a, b) => {
+        const dA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
+        const dB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
+        return dB.getTime() - dA.getTime();
+      },
+    );
 
-  const hasUnread = allNotifications.some((n) => {
-    if (readIds.has(n.id)) return false;
-    if ('isRead' in n && n.isRead) return false;
-    const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
-    if (isNotificationOlderThan60Days(dateStr)) return false;
-    return true;
-  });
+    // Deduplicar por contenido (título + cuerpo) — la primera aparición gana
+    const seenContentKeys = new Set<string>();
+    const seenIds = new Set<string>();
+    return combined.filter((n) => {
+      const contentKey = `${n.title}|${n.body}`;
+      if (seenContentKeys.has(contentKey)) return false;
+      if (n.id && seenIds.has(n.id)) return false;
+      seenContentKeys.add(contentKey);
+      if (n.id) seenIds.add(n.id);
+      return true;
+    });
+  }, [localNotifications, firebaseNotifications]);
+
+  // Helper reutilizable para saber si una notificación está leída
+  const isNotificationRead = React.useCallback(
+    (n: NotificationData | ReceivedNotification) => {
+      if (readIds.has(n.id)) return true;
+      if ('isRead' in n && n.isRead) return true;
+      const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
+      if (isNotificationOlderThan60Days(dateStr)) return true;
+      return false;
+    },
+    [readIds],
+  );
+
+  const hasUnread = allNotifications.some((n) => !isNotificationRead(n));
 
   const handleMarkAsRead = useCallback(
     async (id: string) => {
@@ -248,13 +266,7 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
 
   const handleMarkAllAsRead = async () => {
     const unreadIds = allNotifications
-      .filter((n) => {
-        if (readIds.has(n.id)) return false;
-        if ('isRead' in n && n.isRead) return false;
-        const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
-        if (isNotificationOlderThan60Days(dateStr)) return false;
-        return true;
-      })
+      .filter((n) => !isNotificationRead(n))
       .map((n) => n.id);
     if (!unreadIds.length) return;
     await markAllNotificationsAsRead(unreadIds);
@@ -264,13 +276,10 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
 
   const handleNotificationPress = useCallback(
     async (notification: NotificationData | ReceivedNotification) => {
-      const isRead =
-        readIds.has(notification.id) ||
-        ('isRead' in notification && notification.isRead);
-      if (!isRead) await handleMarkAsRead(notification.id);
+      if (!isNotificationRead(notification)) await handleMarkAsRead(notification.id);
       setSelectedNotification(notification);
     },
-    [readIds, handleMarkAsRead],
+    [isNotificationRead, handleMarkAsRead],
   );
 
   // Chip de destino → navega directamente sin abrir el detalle
@@ -321,11 +330,7 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
   }: {
     item: NotificationData | ReceivedNotification;
   }) => {
-    const dateStr = 'receivedAt' in notification ? notification.receivedAt : notification.createdAt;
-    const isRead =
-      readIds.has(notification.id) ||
-      ('isRead' in notification && notification.isRead) ||
-      isNotificationOlderThan60Days(dateStr);
+    const isRead = isNotificationRead(notification);
     const isUnread = !isRead;
     const date = new Date(
       'receivedAt' in notification

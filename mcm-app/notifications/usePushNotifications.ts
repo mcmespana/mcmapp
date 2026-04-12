@@ -25,6 +25,34 @@ import { ReceivedNotification } from '@/types/notifications';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { router } from 'expo-router';
 
+/**
+ * Genera un ID estable y determinístico para una notificación.
+ * Si el backend envía `data.id`, lo usa. Si no, genera un hash
+ * basado en título+cuerpo para que la misma notificación siempre
+ * tenga el mismo ID independientemente de cuántas veces se entregue.
+ *
+ * Esto soluciona el problema de que `notification.request.identifier`
+ * es un UUID aleatorio por cada entrega, lo que causaba que la
+ * deduplicación fallara y aparecieran duplicados.
+ */
+function getStableNotificationId(content: Notifications.NotificationContent): string {
+  // 1. ID explícito del backend — siempre preferido
+  if (content.data?.id && typeof content.data.id === 'string') {
+    return content.data.id;
+  }
+
+  // 2. ID determinístico basado en contenido (título + cuerpo)
+  // Simple hash numérico convertido a string — suficiente para deduplicación
+  const raw = `${content.title || ''}|${content.body || ''}`;
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0; // Convert to 32-bit integer
+  }
+  return `local_${Math.abs(hash).toString(36)}`;
+}
+
 // Mapeo de actionIdentifier de iOS a rutas internas
 const ACTION_ROUTES: Record<string, string> = {
   view: '/(tabs)/notifications',
@@ -54,9 +82,7 @@ export default function usePushNotifications() {
     // Listener para notificaciones recibidas (app en foreground)
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
-        const notificationId =
-          (notification.request.content.data?.id as string) ||
-          notification.request.identifier;
+        const notificationId = getStableNotificationId(notification.request.content);
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: notification.request.content.title || 'Notificación',
@@ -111,8 +137,7 @@ export default function usePushNotifications() {
         }
 
         // Guardar y marcar como leída
-        const notificationId =
-          (data?.id as string) || response.notification.request.identifier;
+        const notificationId = getStableNotificationId(response.notification.request.content);
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: response.notification.request.content.title || 'Notificación',
