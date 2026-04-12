@@ -22,9 +22,6 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 const iframeStyles =
   Platform.OS === 'web' ? require('../../styles/comunica.module.css') : null;
 
-const iframeStyles =
-  Platform.OS === 'web' ? require('../../styles/comunica.module.css') : null;
-
 const COMUNICA_URL = 'https://comunica.movimientoconsolacion.com';
 
 // Color fijo para la zona del notch (azul oscuro del header de Comunica MCM)

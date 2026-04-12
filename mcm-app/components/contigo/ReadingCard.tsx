@@ -9,6 +9,8 @@ import { hexAlpha } from '@/utils/colorUtils';
 
 import useFontScale from '@/hooks/useFontScale';
 
+
+
 interface ReadingCardProps {
   title: string;
   cita: string;
@@ -19,9 +21,6 @@ interface ReadingCardProps {
 // Warm amber accent for Contigo section
 const WARM_ACCENT_LIGHT = '#B8860B';
 const WARM_ACCENT_DARK = '#DAA520';
-
-import useFontScale from '@/hooks/useFontScale';
-import { Platform } from 'react-native';
 
 export function ReadingCard({
   title,

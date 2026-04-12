@@ -23,9 +23,6 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 const iframeStyles =
   Platform.OS === 'web' ? require('../../styles/comunica.module.css') : null;
 
-const iframeStyles =
-  Platform.OS === 'web' ? require('../../styles/comunica.module.css') : null;
-
 const GESTION_URL = 'https://movimientoconsolacion.sinergiacrm.org/';
 
 // Color fijo para la zona del notch (gris azulado de Gestión)
