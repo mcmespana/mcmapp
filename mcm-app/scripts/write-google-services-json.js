@@ -32,7 +32,10 @@ fs.writeFileSync(androidTargetPath, content);
 console.log('✅ google-services.json written to android/app/');
 
 // También escribir en assets como backup
-const assetsTargetPath = path.resolve(workingDir, 'assets/google-services.json');
+const assetsTargetPath = path.resolve(
+  workingDir,
+  'assets/google-services.json',
+);
 fs.mkdirSync(path.dirname(assetsTargetPath), { recursive: true });
 fs.writeFileSync(assetsTargetPath, content);
 console.log('✅ google-services.json written to assets/');

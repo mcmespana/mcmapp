@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Linking, Image, Platform, Text } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Linking,
+  Image,
+  Platform,
+  Text,
+} from 'react-native';
 import { Card, Button, Chip, Dialog, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
@@ -90,8 +98,17 @@ export default function VisitasScreen() {
                   )}
                   {v.fecha && (
                     <View style={styles.dateRow}>
-                      <MaterialIcons name="calendar-today" size={18} color="#888" />
-                      <Chip size="sm" variant="soft" color="default" style={{ marginLeft: 4 }}>
+                      <MaterialIcons
+                        name="calendar-today"
+                        size={18}
+                        color="#888"
+                      />
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="default"
+                        style={{ marginLeft: 4 }}
+                      >
                         <Chip.Label>{formatDate(v.fecha)}</Chip.Label>
                       </Chip>
                     </View>
@@ -114,7 +131,9 @@ export default function VisitasScreen() {
       </ScrollView>
       <Dialog
         isOpen={!!selected}
-        onOpenChange={(open) => { if (!open) setSelected(null); }}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
       >
         <Dialog.Portal>
           <Dialog.Overlay />
@@ -129,7 +148,10 @@ export default function VisitasScreen() {
                 {selected.mapa && (
                   <Button
                     variant="secondary"
-                    onPress={() => { openMap(selected.mapa); setSelected(null); }}
+                    onPress={() => {
+                      openMap(selected.mapa);
+                      setSelected(null);
+                    }}
                   >
                     <MaterialIcons name="map" size={18} color="#fff" />
                     <Button.Label>Ver en mapa</Button.Label>

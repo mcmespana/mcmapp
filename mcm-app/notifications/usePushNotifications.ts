@@ -155,7 +155,8 @@ async function registerAndSaveToken() {
 
   try {
     // 1. Permisos
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
@@ -196,8 +197,5 @@ async function registerAndSaveToken() {
 
     // 5. Guardar en Firebase
     await saveTokenToFirebase(token);
-
   } catch {}
 }
-
-

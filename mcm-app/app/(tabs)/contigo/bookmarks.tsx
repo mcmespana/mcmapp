@@ -1,5 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,16 +18,16 @@ import { getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
 
 const CONTIGO = {
   light: {
-    accent: '#B8860B',       
-    accentSoft: '#FFF8E7',   
-    surface: '#FEFBF5',      
-    warmGray: '#6B6560',     
+    accent: '#B8860B',
+    accentSoft: '#FFF8E7',
+    surface: '#FEFBF5',
+    warmGray: '#6B6560',
   },
   dark: {
-    accent: '#DAA520',       
-    accentSoft: '#2A2112',   
-    surface: '#1C1A17',      
-    warmGray: '#A09A94',     
+    accent: '#DAA520',
+    accentSoft: '#2A2112',
+    surface: '#1C1A17',
+    warmGray: '#A09A94',
   },
 };
 
@@ -36,7 +43,7 @@ export default function BookmarksScreen() {
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   const warm = isDark ? CONTIGO.dark : CONTIGO.light;
-  
+
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -50,19 +57,23 @@ export default function BookmarksScreen() {
             const parsed = JSON.parse(str);
             // filter out old string format, sort by newest
             const valid = parsed
-                .filter((b: any) => typeof b !== 'string')
-                .sort((a: Bookmark, b: Bookmark) => b.bookmarkedAt - a.bookmarkedAt);
+              .filter((b: any) => typeof b !== 'string')
+              .sort(
+                (a: Bookmark, b: Bookmark) => b.bookmarkedAt - a.bookmarkedAt,
+              );
             setBookmarks(valid);
           }
-        } catch(e) {
+        } catch (e) {
           console.error(e);
         } finally {
           if (isActive) setIsLoading(false);
         }
       };
       load();
-      return () => { isActive = false; };
-    }, [])
+      return () => {
+        isActive = false;
+      };
+    }, []),
   );
 
   return (
@@ -83,24 +94,33 @@ export default function BookmarksScreen() {
           headerShadowVisible: false,
         }}
       />
-      
+
       {isLoading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={warm.accent} />
         </View>
       ) : bookmarks.length === 0 ? (
         <View style={styles.center}>
-          <MaterialIcons name="bookmark-border" size={64} color={warm.warmGray} style={{ marginBottom: 16 }} />
-          <Text style={[styles.emptyText, { color: theme.text }]}>No tienes lecturas guardadas</Text>
+          <MaterialIcons
+            name="bookmark-border"
+            size={64}
+            color={warm.warmGray}
+            style={{ marginBottom: 16 }}
+          />
+          <Text style={[styles.emptyText, { color: theme.text }]}>
+            No tienes lecturas guardadas
+          </Text>
           <Text style={[styles.emptySubtext, { color: warm.warmGray }]}>
-            Pulsa el icono de guardado mientras lees el Evangelio para conservarlo aquí, incluso sin conexión.
+            Pulsa el icono de guardado mientras lees el Evangelio para
+            conservarlo aquí, incluso sin conexión.
           </Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           {bookmarks.map((b) => {
             const info = getLiturgicalInfo(b.date);
-            const displayTitle = b.readings?.info?.titulo || info.title || 'Evangelio';
+            const displayTitle =
+              b.readings?.info?.titulo || info.title || 'Evangelio';
             const evangelio = b.readings?.evangelio;
 
             return (
@@ -111,20 +131,27 @@ export default function BookmarksScreen() {
                   styles.card,
                   {
                     backgroundColor: theme.card,
-                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                  }
+                    borderColor: isDark
+                      ? 'rgba(255,255,255,0.06)'
+                      : 'rgba(0,0,0,0.05)',
+                  },
                 ]}
-                onPress={() => router.push({
-                   pathname: '/contigo/evangelio',
-                   params: { date: b.date }
-                })}
+                onPress={() =>
+                  router.push({
+                    pathname: '/contigo/evangelio',
+                    params: { date: b.date },
+                  })
+                }
               >
                 <View style={styles.cardHeader}>
                   <Text style={[styles.dateText, { color: warm.accent }]}>
                     {b.date}
                   </Text>
                 </View>
-                <Text style={[styles.title, { color: theme.text }]} numberOfLines={2}>
+                <Text
+                  style={[styles.title, { color: theme.text }]}
+                  numberOfLines={2}
+                >
                   {displayTitle}
                 </Text>
                 {evangelio?.cita && (
@@ -133,17 +160,26 @@ export default function BookmarksScreen() {
                   </Text>
                 )}
                 {evangelio?.texto && (
-                  <Text style={[styles.preview, { color: theme.text }]} numberOfLines={3}>
+                  <Text
+                    style={[styles.preview, { color: theme.text }]}
+                    numberOfLines={3}
+                  >
                     {evangelio.texto.replace(/\n/g, ' ')}
                   </Text>
                 )}
-                
+
                 <View style={styles.cardFooter}>
-                  <Text style={[styles.readMore, { color: warm.accent }]}>Leer de nuevo</Text>
-                  <MaterialIcons name="arrow-forward" size={14} color={warm.accent} />
+                  <Text style={[styles.readMore, { color: warm.accent }]}>
+                    Leer de nuevo
+                  </Text>
+                  <MaterialIcons
+                    name="arrow-forward"
+                    size={14}
+                    color={warm.accent}
+                  />
                 </View>
               </TouchableOpacity>
-            )
+            );
           })}
         </ScrollView>
       )}
@@ -214,5 +250,5 @@ const styles = StyleSheet.create({
   readMore: {
     fontSize: 14,
     fontWeight: '700',
-  }
+  },
 });

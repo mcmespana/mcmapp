@@ -21,7 +21,12 @@ const WARM_ACCENT_DARK = '#DAA520';
 import useFontScale from '@/hooks/useFontScale';
 import { Platform } from 'react-native';
 
-export function ReadingCard({ title, cita, texto, defaultExpanded = false }: ReadingCardProps) {
+export function ReadingCard({
+  title,
+  cita,
+  texto,
+  defaultExpanded = false,
+}: ReadingCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
@@ -51,10 +56,18 @@ export function ReadingCard({ title, cita, texto, defaultExpanded = false }: Rea
             <PressableFeedback.Highlight />
             <View style={styles.header}>
               <View style={styles.headerTextContainer}>
-                <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
+                <Text
+                  style={[styles.title, { color: theme.text }]}
+                  numberOfLines={1}
+                >
                   {title}
                 </Text>
-                <View style={[styles.citaBadge, { backgroundColor: hexAlpha(accent, '12') }]}>
+                <View
+                  style={[
+                    styles.citaBadge,
+                    { backgroundColor: hexAlpha(accent, '12') },
+                  ]}
+                >
                   <Text style={[styles.citaText, { color: accent }]}>
                     {cita}
                   </Text>
@@ -69,17 +82,26 @@ export function ReadingCard({ title, cita, texto, defaultExpanded = false }: Rea
           </PressableFeedback>
 
           {expanded && (
-            <View style={[styles.body, { borderTopColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }]}>
-              <Text 
+            <View
+              style={[
+                styles.body,
+                {
+                  borderTopColor: isDark
+                    ? 'rgba(255,255,255,0.04)'
+                    : 'rgba(0,0,0,0.04)',
+                },
+              ]}
+            >
+              <Text
                 style={[
-                  styles.bodyText, 
-                  { 
+                  styles.bodyText,
+                  {
                     color: theme.text,
                     fontSize: 16 * fontScale,
                     lineHeight: 24 * fontScale,
-                    fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif'
-                  }
-                ]} 
+                    fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
+                  },
+                ]}
                 selectable
               >
                 {texto}
