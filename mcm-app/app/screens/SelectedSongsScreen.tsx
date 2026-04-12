@@ -68,54 +68,35 @@ const SelectedSongsScreen: React.FC = () => {
   const { data: allSongsData, loading } = useFirebaseData<
     Record<string, { categoryTitle: string; songs: Song[] }>
   >('songs', 'songs');
-  const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<
-    CategorizedSongs[]
-  >([]);
   const { toast } = useToast();
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFileName, setExportFileName] = useState('');
 
-  useEffect(() => {
-    const processSongs = () => {
-      if (!selectedSongs || selectedSongs.length === 0) {
-        setCategorizedSelectedSongs([]);
-        return;
+  const categorizedSelectedSongs = useMemo(() => {
+    if (!selectedSongs || selectedSongs.length === 0 || !allSongsData) {
+      return [];
+    }
+
+    // ⚡ Bolt: Use a Set for O(1) lookups inside the filter loop instead of O(N) array includes
+    const selectedSet = new Set(selectedSongs);
+    const categories: CategorizedSongs[] = [];
+
+    for (const categoryName in allSongsData) {
+      const category = allSongsData[categoryName];
+      const songsInCategory = category.songs;
+      const selectedInCategory = songsInCategory.filter((song) =>
+        selectedSet.has(song.filename),
+      );
+
+      if (selectedInCategory.length > 0) {
+        categories.push({
+          categoryTitle: category.categoryTitle,
+          data: selectedInCategory,
+        });
       }
-
-      if (!allSongsData) {
-        setCategorizedSelectedSongs([]);
-        return;
-      }
-
-      const categories: CategorizedSongs[] = [];
-      for (const categoryName in allSongsData) {
-        const songsInCategory = (
-          allSongsData as Record<
-            string,
-            { categoryTitle: string; songs: Song[] }
-          >
-        )[categoryName].songs;
-        const selectedInCategory = songsInCategory.filter((song) =>
-          selectedSongs.includes(song.filename),
-        );
-
-        if (selectedInCategory.length > 0) {
-          categories.push({
-            categoryTitle: (
-              allSongsData as Record<
-                string,
-                { categoryTitle: string; songs: Song[] }
-              >
-            )[categoryName].categoryTitle,
-            data: selectedInCategory,
-          });
-        }
-      }
-      categories.sort((a, b) => a.categoryTitle.localeCompare(b.categoryTitle));
-      setCategorizedSelectedSongs(categories);
-    };
-
-    processSongs();
+    }
+    categories.sort((a, b) => a.categoryTitle.localeCompare(b.categoryTitle));
+    return categories;
   }, [selectedSongs, allSongsData]);
 
   const handleExport = useCallback(() => {
@@ -144,30 +125,30 @@ const SelectedSongsScreen: React.FC = () => {
       const categoryLetter = category.categoryTitle.charAt(0).toUpperCase();
 
       category.data.forEach((song) => {
-        if (selectedSongs.includes(song.filename)) {
-          const songTitleClean = song.title.replace(/^\d+\.\s*/, '');
+        // ⚡ Bolt: Removed redundant `selectedSongs.includes` check
+        // because `categorizedSelectedSongs` is already fully filtered
+        const songTitleClean = song.title.replace(/^\d+\.\s*/, '');
 
-          let chordCapoString = '';
-          if (song.key) {
-            chordCapoString = `\`${song.key}\``;
-            if (song.capo && song.capo > 0) {
-              chordCapoString += ` \`C/${song.capo}\``;
-            }
+        let chordCapoString = '';
+        if (song.key) {
+          chordCapoString = `\`${song.key}\``;
+          if (song.capo && song.capo > 0) {
+            chordCapoString += ` \`C/${song.capo}\``;
           }
-
-          const songIdMatch = song.title.match(/^\d+/);
-          const songId = songIdMatch ? songIdMatch[0] : '??';
-
-          let line = `*${categoryLetter}.* ${songTitleClean}`;
-          if (chordCapoString) {
-            line += ` · ${chordCapoString}`;
-          }
-          line += ` · *[#${songId}]*`;
-          if (song.author) {
-            line += ` · ${song.author}`;
-          }
-          formattedSongLines.push(line);
         }
+
+        const songIdMatch = song.title.match(/^\d+/);
+        const songId = songIdMatch ? songIdMatch[0] : '??';
+
+        let line = `*${categoryLetter}.* ${songTitleClean}`;
+        if (chordCapoString) {
+          line += ` · ${chordCapoString}`;
+        }
+        line += ` · *[#${songId}]*`;
+        if (song.author) {
+          line += ` · ${song.author}`;
+        }
+        formattedSongLines.push(line);
       });
     });
 
@@ -336,8 +317,17 @@ const SelectedSongsScreen: React.FC = () => {
     if (!allSongsData) return;
 
     let completeSong: Song | undefined;
-    for (const cat of Object.values(allSongsData)) {
-      completeSong = cat.songs.find((s) => s.filename === song.filename);
+
+    // ⚡ Bolt: Replaced Object.values(...).find() with a fast nested loop
+    // to avoid allocating intermediate arrays and closure functions
+    for (const categoryName in allSongsData) {
+      const categorySongs = allSongsData[categoryName].songs;
+      for (let i = 0; i < categorySongs.length; i++) {
+        if (categorySongs[i].filename === song.filename) {
+          completeSong = categorySongs[i];
+          break;
+        }
+      }
       if (completeSong) break;
     }
 

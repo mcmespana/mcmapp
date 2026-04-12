@@ -85,7 +85,7 @@ export function useContigoHabits() {
     date: string,
     duration: PrayerDuration,
     emotion: Emotion,
-    durationMinutes?: number
+    durationMinutes?: number,
   ) => {
     const record = ensureRecord(date);
     const newRecords = {

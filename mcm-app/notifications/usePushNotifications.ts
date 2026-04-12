@@ -35,7 +35,9 @@ import { router } from 'expo-router';
  * es un UUID aleatorio por cada entrega, lo que causaba que la
  * deduplicación fallara y aparecieran duplicados.
  */
-function getStableNotificationId(content: Notifications.NotificationContent): string {
+function getStableNotificationId(
+  content: Notifications.NotificationContent,
+): string {
   // 1. ID explícito del backend — siempre preferido
   if (content.data?.id && typeof content.data.id === 'string') {
     return content.data.id;
@@ -47,7 +49,7 @@ function getStableNotificationId(content: Notifications.NotificationContent): st
   let hash = 0;
   for (let i = 0; i < raw.length; i++) {
     const char = raw.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash |= 0; // Convert to 32-bit integer
   }
   return `local_${Math.abs(hash).toString(36)}`;
@@ -82,7 +84,9 @@ export default function usePushNotifications() {
     // Listener para notificaciones recibidas (app en foreground)
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
-        const notificationId = getStableNotificationId(notification.request.content);
+        const notificationId = getStableNotificationId(
+          notification.request.content,
+        );
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: notification.request.content.title || 'Notificación',
@@ -137,7 +141,9 @@ export default function usePushNotifications() {
         }
 
         // Guardar y marcar como leída
-        const notificationId = getStableNotificationId(response.notification.request.content);
+        const notificationId = getStableNotificationId(
+          response.notification.request.content,
+        );
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: response.notification.request.content.title || 'Notificación',
