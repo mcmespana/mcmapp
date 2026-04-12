@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-} from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -43,7 +38,10 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DRAG_THRESHOLD = 60;
 const SHEET_GAP = 80; // espacio por debajo del safe-area (notch/Dynamic Island)
 
-const ROUTE_LABELS: Record<string, { label: string; icon: keyof typeof MaterialIcons.glyphMap }> = {
+const ROUTE_LABELS: Record<
+  string,
+  { label: string; icon: keyof typeof MaterialIcons.glyphMap }
+> = {
   '/(tabs)/calendario': { label: 'Calendario', icon: 'calendar-today' },
   '/(tabs)/fotos': { label: 'Fotos', icon: 'photo-library' },
   '/(tabs)/cancionero': { label: 'Cantoral', icon: 'music-note' },
@@ -84,7 +82,9 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const { firebaseNotifications, refreshCount } = useNotifications();
 
-  const [localNotifications, setLocalNotifications] = useState<ReceivedNotification[]>([]);
+  const [localNotifications, setLocalNotifications] = useState<
+    ReceivedNotification[]
+  >([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -98,7 +98,9 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
 
   // Ref estable para onClose — evita stale closure en PanResponder
   const onCloseRef = useRef(onClose);
-  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   // PanResponder usa refs directamente, sin capturar callbacks que puedan quedar obsoletos
   const panResponder = useRef(
@@ -292,7 +294,9 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
         style={listStyles.rightAction}
         onPress={() => handleMarkAsRead(notificationId)}
       >
-        <Animated.View style={[listStyles.actionContent, { transform: [{ scale }] }]}>
+        <Animated.View
+          style={[listStyles.actionContent, { transform: [{ scale }] }]}
+        >
           <MaterialIcons name="check" size={24} color="#fff" />
           <Text style={listStyles.actionText}>Leída</Text>
         </Animated.View>
@@ -311,7 +315,9 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
       ('isRead' in notification && notification.isRead);
     const isUnread = !isRead;
     const date = new Date(
-      'receivedAt' in notification ? notification.receivedAt : notification.createdAt,
+      'receivedAt' in notification
+        ? notification.receivedAt
+        : notification.createdAt,
     );
     const routeInfo = notification.internalRoute
       ? getRouteLabel(notification.internalRoute)
@@ -338,7 +344,10 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
           activeOpacity={0.7}
         >
           {notification.icon && (
-            <Image source={{ uri: notification.icon }} style={listStyles.icon} />
+            <Image
+              source={{ uri: notification.icon }}
+              style={listStyles.icon}
+            />
           )}
 
           <View style={listStyles.content}>
@@ -394,7 +403,9 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
                     }
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Text style={listStyles.destChipText}>{routeInfo.label}</Text>
+                    <Text style={listStyles.destChipText}>
+                      {routeInfo.label}
+                    </Text>
                     <MaterialIcons
                       name="chevron-right"
                       size={13}
@@ -411,7 +422,9 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
                       animateClose();
                       setTimeout(() => {
                         if (btn.isInternal) {
-                          try { router.push(btn.url as any); } catch (e) {}
+                          try {
+                            router.push(btn.url as any);
+                          } catch (e) {}
                         } else {
                           Linking.openURL(btn.url).catch(console.error);
                         }
@@ -423,7 +436,11 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
                       {notification.actionButton.text}
                     </Text>
                     <MaterialIcons
-                      name={notification.actionButton.isInternal ? 'chevron-right' : 'open-in-new'}
+                      name={
+                        notification.actionButton.isInternal
+                          ? 'chevron-right'
+                          : 'open-in-new'
+                      }
                       size={11}
                       color="#fff"
                     />
@@ -454,7 +471,11 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
       {/* Overlay oscuro — Pressable para cerrar al tocar fuera del sheet */}
       <Pressable style={StyleSheet.absoluteFill} onPress={animateClose}>
         <Animated.View
-          style={[StyleSheet.absoluteFill, sheetStyles.overlay, { opacity: overlayOpacity }]}
+          style={[
+            StyleSheet.absoluteFill,
+            sheetStyles.overlay,
+            { opacity: overlayOpacity },
+          ]}
           pointerEvents="none"
         />
       </Pressable>
@@ -503,7 +524,11 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
                   onPress={handleMarkAllAsRead}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <MaterialIcons name="done-all" size={22} color={colors.primary} />
+                  <MaterialIcons
+                    name="done-all"
+                    size={22}
+                    color={colors.primary}
+                  />
                 </TouchableOpacity>
               ) : (
                 <View style={{ width: 32 }} />
@@ -529,7 +554,11 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
               </View>
             ) : allNotifications.length === 0 ? (
               <View style={sheetStyles.empty}>
-                <MaterialIcons name="notifications-none" size={64} color={theme.icon} />
+                <MaterialIcons
+                  name="notifications-none"
+                  size={64}
+                  color={theme.icon}
+                />
                 <Text style={[sheetStyles.emptyTitle, { color: theme.text }]}>
                   No hay notificaciones
                 </Text>
@@ -585,7 +614,9 @@ function NotificationDetail({
 }) {
   const theme = Colors[scheme];
   const date = new Date(
-    'receivedAt' in notification ? notification.receivedAt : notification.createdAt,
+    'receivedAt' in notification
+      ? notification.receivedAt
+      : notification.createdAt,
   );
   const routeInfo = notification.internalRoute
     ? getRouteLabel(notification.internalRoute)
@@ -594,7 +625,9 @@ function NotificationDetail({
   const navigateTo = (route: string) => {
     onClose();
     setTimeout(() => {
-      try { router.push(route as any); } catch (e) {}
+      try {
+        router.push(route as any);
+      } catch (e) {}
     }, 320);
   };
 
@@ -687,10 +720,16 @@ function NotificationDetail({
               size={20}
               color={colors.primary}
             />
-            <Text style={[detailStyles.routeBtnText, { color: colors.primary }]}>
+            <Text
+              style={[detailStyles.routeBtnText, { color: colors.primary }]}
+            >
               Ir a {routeInfo.label}
             </Text>
-            <MaterialIcons name="chevron-right" size={20} color={colors.primary} />
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={colors.primary}
+            />
           </Pressable>
         )}
 
@@ -712,7 +751,9 @@ function NotificationDetail({
             </Text>
             <MaterialIcons
               name={
-                notification.actionButton.isInternal ? 'chevron-right' : 'open-in-new'
+                notification.actionButton.isInternal
+                  ? 'chevron-right'
+                  : 'open-in-new'
               }
               size={18}
               color="#fff"

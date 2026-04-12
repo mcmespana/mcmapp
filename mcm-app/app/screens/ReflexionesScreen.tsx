@@ -1,12 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, Platform, Text } from 'react-native';
 import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Platform,
-  Text,
-} from 'react-native';
-import { Card, Switch, Chip, Button, Spinner, BottomSheet, PressableFeedback, TextField, Input, TextArea, Dialog } from 'heroui-native';
+  Card,
+  Switch,
+  Chip,
+  Button,
+  Spinner,
+  BottomSheet,
+  PressableFeedback,
+  TextField,
+  Input,
+  TextArea,
+  Dialog,
+} from 'heroui-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -232,10 +238,7 @@ export default function ReflexionesScreen() {
           iconColor="#fff"
         />
       ) : (
-        <PressableFeedback
-          style={styles.fab}
-          onPress={() => setShowForm(true)}
-        >
+        <PressableFeedback style={styles.fab} onPress={() => setShowForm(true)}>
           <PressableFeedback.Scale />
           <MaterialIcons name="add" size={24} color="#fff" />
         </PressableFeedback>
@@ -244,17 +247,25 @@ export default function ReflexionesScreen() {
       {/* Form bottom sheet */}
       <BottomSheet
         isOpen={showForm}
-        onOpenChange={(open) => { if (!open) setShowForm(false); }}
+        onOpenChange={(open) => {
+          if (!open) setShowForm(false);
+        }}
       >
         <BottomSheet.Portal>
           <BottomSheet.Overlay />
           <BottomSheet.Content>
-            <BottomSheet.Title className="mb-2">Compartir reflexión</BottomSheet.Title>
+            <BottomSheet.Title className="mb-2">
+              Compartir reflexión
+            </BottomSheet.Title>
             <ScrollView>
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Título (opcional)</Text>
                 <TextField>
-                  <Input value={titulo} onChangeText={setTitulo} style={styles.input} />
+                  <Input
+                    value={titulo}
+                    onChangeText={setTitulo}
+                    style={styles.input}
+                  />
                 </TextField>
               </View>
               <View style={styles.inputWrapper}>
@@ -268,7 +279,10 @@ export default function ReflexionesScreen() {
                   />
                 </TextField>
               </View>
-              <PressableFeedback onPress={showDatePicker} style={styles.dateField}>
+              <PressableFeedback
+                onPress={showDatePicker}
+                style={styles.dateField}
+              >
                 <PressableFeedback.Highlight />
                 <Text style={styles.inputLabel}>Fecha</Text>
                 <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
@@ -281,8 +295,14 @@ export default function ReflexionesScreen() {
                 <Text style={styles.switchLabel}>Compartiendo en grupo</Text>
               </View>
               {grupal ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                  <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginBottom: 12 }}
+                >
+                  <View
+                    style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}
+                  >
                     {grupos.map((g) => (
                       <Chip
                         key={g.nombre}
@@ -299,7 +319,11 @@ export default function ReflexionesScreen() {
                 <View style={styles.inputWrapper}>
                   <Text style={styles.inputLabel}>Tu nombre (opcional)</Text>
                   <TextField>
-                    <Input value={autor} onChangeText={setAutor} style={styles.input} />
+                    <Input
+                      value={autor}
+                      onChangeText={setAutor}
+                      style={styles.input}
+                    />
                   </TextField>
                 </View>
               )}
@@ -318,7 +342,9 @@ export default function ReflexionesScreen() {
       {/* Date selector modal */}
       <Dialog
         isOpen={showDateSelector}
-        onOpenChange={(open) => { if (!open) setShowDateSelector(false); }}
+        onOpenChange={(open) => {
+          if (!open) setShowDateSelector(false);
+        }}
       >
         <Dialog.Portal>
           <Dialog.Overlay />

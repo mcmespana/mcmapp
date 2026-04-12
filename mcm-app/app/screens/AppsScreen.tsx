@@ -132,7 +132,9 @@ export default function AppsScreen() {
 
       <Dialog
         isOpen={!!selected}
-        onOpenChange={(open) => { if (!open) setSelected(null); }}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
       >
         <Dialog.Portal>
           <Dialog.Overlay />
@@ -145,10 +147,18 @@ export default function AppsScreen() {
                 <View style={styles.chipRow}>
                   <Chip
                     variant="primary"
-                    color={selected.tipo.toLowerCase() === 'necesaria' ? 'warning' : 'accent'}
+                    color={
+                      selected.tipo.toLowerCase() === 'necesaria'
+                        ? 'warning'
+                        : 'accent'
+                    }
                   >
                     <MaterialIcons
-                      name={selected.tipo.toLowerCase() === 'necesaria' ? 'star' : 'info'}
+                      name={
+                        selected.tipo.toLowerCase() === 'necesaria'
+                          ? 'star'
+                          : 'info'
+                      }
                       size={14}
                       color="#fff"
                     />
@@ -173,17 +183,26 @@ export default function AppsScreen() {
                         variant="outline"
                         onPress={() => Linking.openURL(selected.androidLink)}
                       >
-                        <MaterialIcons name="android" size={20} color="#3DDC84" />
+                        <MaterialIcons
+                          name="android"
+                          size={20}
+                          color="#3DDC84"
+                        />
                         <Button.Label>Android</Button.Label>
                       </Button>
                     </>
                   ) : (
                     <Button
                       variant="primary"
-                      onPress={() => { openApp(selected); setSelected(null); }}
+                      onPress={() => {
+                        openApp(selected);
+                        setSelected(null);
+                      }}
                     >
                       <MaterialIcons
-                        name={Platform.OS === 'ios' ? 'phone-iphone' : 'android'}
+                        name={
+                          Platform.OS === 'ios' ? 'phone-iphone' : 'android'
+                        }
                         size={20}
                         color="#fff"
                       />

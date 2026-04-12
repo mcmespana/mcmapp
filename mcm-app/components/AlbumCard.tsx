@@ -60,9 +60,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
                       color="rgba(255,255,255,0.85)"
                       style={activeStyles.icon}
                     />
-                    <Text style={activeStyles.metaText}>
-                      {album.location}
-                    </Text>
+                    <Text style={activeStyles.metaText}>{album.location}</Text>
                   </View>
                 )}
                 {album.date && (
@@ -73,9 +71,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
                       color="rgba(255,255,255,0.85)"
                       style={activeStyles.icon}
                     />
-                    <Text style={activeStyles.metaText}>
-                      {album.date}
-                    </Text>
+                    <Text style={activeStyles.metaText}>{album.date}</Text>
                   </View>
                 )}
               </View>
