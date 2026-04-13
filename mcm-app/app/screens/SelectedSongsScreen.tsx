@@ -87,6 +87,10 @@ const SelectedSongsScreen: React.FC = () => {
         return;
       }
 
+      // Convert selectedSongs array to a Set for O(1) lookup performance during filtering
+      // This prevents an O(N*M) time complexity trap when filtering the large allSongsData object
+      const selectedSongsSet = new Set(selectedSongs);
+
       const categories: CategorizedSongs[] = [];
       for (const categoryName in allSongsData) {
         const songsInCategory = (
@@ -96,7 +100,7 @@ const SelectedSongsScreen: React.FC = () => {
           >
         )[categoryName].songs;
         const selectedInCategory = songsInCategory.filter((song) =>
-          selectedSongs.includes(song.filename),
+          selectedSongsSet.has(song.filename),
         );
 
         if (selectedInCategory.length > 0) {
@@ -140,11 +144,14 @@ const SelectedSongsScreen: React.FC = () => {
 
     const formattedSongLines: string[] = [];
 
+    // Convert selectedSongs array to a Set for O(1) lookup performance
+    const selectedSongsSet = new Set(selectedSongs);
+
     categorizedSelectedSongs.forEach((category) => {
       const categoryLetter = category.categoryTitle.charAt(0).toUpperCase();
 
       category.data.forEach((song) => {
-        if (selectedSongs.includes(song.filename)) {
+        if (selectedSongsSet.has(song.filename)) {
           const songTitleClean = song.title.replace(/^\d+\.\s*/, '');
 
           let chordCapoString = '';
