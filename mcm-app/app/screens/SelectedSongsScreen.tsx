@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useLayoutEffect,
-  useCallback,
-  useMemo,
-} from 'react';
+import React, { useState, useLayoutEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -68,54 +62,43 @@ const SelectedSongsScreen: React.FC = () => {
   const { data: allSongsData, loading } = useFirebaseData<
     Record<string, { categoryTitle: string; songs: Song[] }>
   >('songs', 'songs');
-  const [categorizedSelectedSongs, setCategorizedSelectedSongs] = useState<
-    CategorizedSongs[]
-  >([]);
   const { toast } = useToast();
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFileName, setExportFileName] = useState('');
 
-  useEffect(() => {
-    const processSongs = () => {
-      if (!selectedSongs || selectedSongs.length === 0) {
-        setCategorizedSelectedSongs([]);
-        return;
+  const categorizedSelectedSongs = useMemo(() => {
+    if (!selectedSongs || selectedSongs.length === 0) {
+      return [];
+    }
+
+    if (!allSongsData) {
+      return [];
+    }
+
+    const selectedSet = new Set(selectedSongs);
+    const categories: CategorizedSongs[] = [];
+    for (const categoryName in allSongsData) {
+      const songsInCategory = (
+        allSongsData as Record<string, { categoryTitle: string; songs: Song[] }>
+      )[categoryName].songs;
+      const selectedInCategory = songsInCategory.filter((song) =>
+        selectedSet.has(song.filename),
+      );
+
+      if (selectedInCategory.length > 0) {
+        categories.push({
+          categoryTitle: (
+            allSongsData as Record<
+              string,
+              { categoryTitle: string; songs: Song[] }
+            >
+          )[categoryName].categoryTitle,
+          data: selectedInCategory,
+        });
       }
-
-      if (!allSongsData) {
-        setCategorizedSelectedSongs([]);
-        return;
-      }
-
-      const categories: CategorizedSongs[] = [];
-      for (const categoryName in allSongsData) {
-        const songsInCategory = (
-          allSongsData as Record<
-            string,
-            { categoryTitle: string; songs: Song[] }
-          >
-        )[categoryName].songs;
-        const selectedInCategory = songsInCategory.filter((song) =>
-          selectedSongs.includes(song.filename),
-        );
-
-        if (selectedInCategory.length > 0) {
-          categories.push({
-            categoryTitle: (
-              allSongsData as Record<
-                string,
-                { categoryTitle: string; songs: Song[] }
-              >
-            )[categoryName].categoryTitle,
-            data: selectedInCategory,
-          });
-        }
-      }
-      categories.sort((a, b) => a.categoryTitle.localeCompare(b.categoryTitle));
-      setCategorizedSelectedSongs(categories);
-    };
-
-    processSongs();
+    }
+    categories.sort((a, b) => a.categoryTitle.localeCompare(b.categoryTitle));
+    return categories;
   }, [selectedSongs, allSongsData]);
 
   const handleExport = useCallback(() => {
