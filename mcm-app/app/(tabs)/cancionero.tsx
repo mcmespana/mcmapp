@@ -126,6 +126,7 @@ export default function CancioneroTab() {
           component={SongDetailScreen}
           options={({ route }) => ({
             title: route.params?.title || 'Letra y Acordes',
+            headerShown: !isIOS,
           })}
         />
         <Stack.Screen

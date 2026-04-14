@@ -88,6 +88,7 @@ export default function SongDetailScreen({
     author,
     key,
     capo,
+    isDark,
   });
 
   const isSelected = isSongSelected(filename);
@@ -258,6 +259,7 @@ export default function SongDetailScreen({
         { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
       ]}
     >
+      {isIOS && <View style={{ height: insets.top + 52 }} />}
       <SongDisplay
         songHtml={songHtml}
         isLoading={isFileLoading || isSongProcessing || isLoadingSettings}
