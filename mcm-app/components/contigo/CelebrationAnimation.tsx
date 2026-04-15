@@ -195,23 +195,25 @@ export function CelebrationAnimation({
       ]),
     ]).start();
 
-    // Fade everything out
+    // Gentle fade-out
     const timer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(mainOpacity, {
           toValue: 0,
-          duration: 480,
-          easing: Easing.ease,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(overlayOpacity, {
           toValue: 0,
-          duration: 480,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(textOpacity, {
           toValue: 0,
-          duration: 350,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
       ]).start();

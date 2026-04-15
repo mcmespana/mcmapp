@@ -27,8 +27,11 @@ import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation'
 
 // ── Screen geometry ──
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const MAX_CONTENT_W = 500;
+// Cap at MAX_CONTENT_W so calendar cells stay compact on web / wide screens
+const effectiveW = Math.min(SCREEN_WIDTH, MAX_CONTENT_W);
 // 7 cells + 6 gaps of 5px, inside card (20px padding each side) inside screen (16px padding each side)
-const CELL_SIZE = Math.floor((SCREEN_WIDTH - 72 - 30) / 7);
+const CELL_SIZE = Math.floor((effectiveW - 72 - 30) / 7);
 
 // ── Warm palette ──
 const WARM = {
@@ -180,7 +183,9 @@ export default function OracionScreen() {
   const [isCustom, setIsCustom] = useState(false);
   const [showCheck, setShowCheck] = useState(false);
 
-  // Sync form state when date changes
+  // Sync form state ONLY when the user navigates to a different date.
+  // getRecord is intentionally excluded — it's an unstable reference that
+  // would re-run the effect on every render and reset the user's selections.
   useEffect(() => {
     const curr = getRecord(selectedDate);
     setEmotion(curr?.prayerEmotion || null);
@@ -191,7 +196,8 @@ export default function OracionScreen() {
       setDuration(null);
       setIsCustom(false);
     }
-  }, [selectedDate, getRecord]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
 
   const handleDecrease = () =>
     setDuration((p) => Math.max(1, (p || 15) - 1));
@@ -269,6 +275,7 @@ export default function OracionScreen() {
         style={StyleSheet.absoluteFill}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
+        pointerEvents="none"
       />
 
       {/* ── Floating Header ── */}
@@ -282,6 +289,9 @@ export default function OracionScreen() {
               ? 'rgba(28,26,23,0.90)'
               : 'rgba(254,251,245,0.90)',
             borderBottomColor: warm.borderSubtle,
+            maxWidth: MAX_CONTENT_W,
+            alignSelf: 'center',
+            width: '100%',
           },
         ]}
       >
@@ -312,7 +322,12 @@ export default function OracionScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 76 },
+          {
+            paddingTop: insets.top + 76,
+            maxWidth: MAX_CONTENT_W,
+            width: '100%',
+            alignSelf: 'center',
+          },
         ]}
         showsVerticalScrollIndicator={false}
       >
