@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, Animated, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  TouchableOpacity,
+  Animated,
+  Alert,
+} from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +19,10 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
-import { LiturgicalBadge, getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
+import {
+  LiturgicalBadge,
+  getLiturgicalInfo,
+} from '@/components/contigo/LiturgicalBadge';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 
 // ── Contigo warm palette ──
@@ -68,8 +80,18 @@ const EMOTIONS = [
 ] as const;
 
 const MONTHS = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
 ];
 
 const DURATION_BUCKETS = [
@@ -85,7 +107,15 @@ function formatDateDisplay(dateStr: string) {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const days = [
+    'Domingo',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+  ];
   return `${days[date.getDay()]}, ${d} de ${MONTHS[m - 1]}`;
 }
 
@@ -124,10 +154,12 @@ export default function OracionScreen() {
   useEffect(() => {
     const currRecord = getRecord(selectedDate);
     setEmotion(currRecord?.prayerEmotion || null);
-    
+
     if (currRecord?.prayerDone && currRecord?.prayerDurationMinutes) {
       setDuration(currRecord.prayerDurationMinutes);
-      setIsCustom(![1, 3, 8, 13, 16].includes(currRecord.prayerDurationMinutes));
+      setIsCustom(
+        ![1, 3, 8, 13, 16].includes(currRecord.prayerDurationMinutes),
+      );
     } else {
       setDuration(null);
       setIsCustom(false);
@@ -154,7 +186,10 @@ export default function OracionScreen() {
 
   const handleSave = async () => {
     if (!duration) {
-      Alert.alert('Tiempo requerido', 'Por favor, selecciona o anota el tiempo dedicado a tu rato de oración.');
+      Alert.alert(
+        'Tiempo requerido',
+        'Por favor, selecciona o anota el tiempo dedicado a tu rato de oración.',
+      );
       return;
     }
 
@@ -168,8 +203,15 @@ export default function OracionScreen() {
 
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 100);
-      setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 250);
+      setTimeout(
+        () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
+        100,
+      );
+      setTimeout(
+        () =>
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+        250,
+      );
     }
 
     setShowCheck(true);
@@ -250,7 +292,11 @@ export default function OracionScreen() {
             },
           ]}
         >
-          <MaterialIcons name="arrow-back-ios-new" size={20} color={theme.text} />
+          <MaterialIcons
+            name="arrow-back-ios-new"
+            size={20}
+            color={theme.text}
+          />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
           Mi Rato de Oración
@@ -258,7 +304,12 @@ export default function OracionScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 80 }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 80 },
+        ]}
+      >
         {/* Navigation */}
         <View
           style={[
@@ -277,7 +328,11 @@ export default function OracionScreen() {
             onPress={() => changeDate(-1)}
             style={[
               styles.dateNavBtn,
-              { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' },
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255,255,255,0.08)'
+                  : 'rgba(0,0,0,0.05)',
+              },
             ]}
           >
             <MaterialIcons name="chevron-left" size={26} color={theme.text} />
@@ -296,7 +351,11 @@ export default function OracionScreen() {
             onPress={() => changeDate(1)}
             style={[
               styles.dateNavBtn,
-              { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' },
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255,255,255,0.08)'
+                  : 'rgba(0,0,0,0.05)',
+              },
             ]}
           >
             <MaterialIcons name="chevron-right" size={26} color={theme.text} />
@@ -306,8 +365,23 @@ export default function OracionScreen() {
         <View style={styles.mainContent}>
           {record?.prayerDone && (
             <View style={{ alignItems: 'center', marginBottom: 20 }}>
-              <View style={{ backgroundColor: isDark ? 'rgba(163,189,49,0.15)' : 'rgba(58,125,68,0.1)', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100 }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: isDark ? '#A3BD31' : '#3A7D44' }}>
+              <View
+                style={{
+                  backgroundColor: isDark
+                    ? 'rgba(163,189,49,0.15)'
+                    : 'rgba(58,125,68,0.1)',
+                  paddingHorizontal: 16,
+                  paddingVertical: 6,
+                  borderRadius: 100,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '600',
+                    color: isDark ? '#A3BD31' : '#3A7D44',
+                  }}
+                >
                   Día completado. Puedes modificar tu registro.
                 </Text>
               </View>
@@ -323,10 +397,14 @@ export default function OracionScreen() {
               {EMOTIONS.map((emo) => {
                 const isSelected = emotion === emo.id;
                 return (
-                  <TouchableOpacity activeOpacity={0.7}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
                     key={emo.id}
                     onPress={() => setEmotion(emo.id)}
-                    style={[styles.emotionItem, !isSelected && styles.emotionItemInactive]}
+                    style={[
+                      styles.emotionItem,
+                      !isSelected && styles.emotionItemInactive,
+                    ]}
                   >
                     <View
                       style={[
@@ -339,9 +417,18 @@ export default function OracionScreen() {
                         },
                       ]}
                     >
-                      <MaterialIcons name={emo.icon as any} size={28} color={emo.iconColor} />
+                      <MaterialIcons
+                        name={emo.icon as any}
+                        size={28}
+                        color={emo.iconColor}
+                      />
                     </View>
-                    <Text style={[styles.emotionLabel, { color: isDark ? '#ccc' : warm.warmGray }]}>
+                    <Text
+                      style={[
+                        styles.emotionLabel,
+                        { color: isDark ? '#ccc' : warm.warmGray },
+                      ]}
+                    >
                       {emo.label}
                     </Text>
                   </TouchableOpacity>
@@ -352,12 +439,19 @@ export default function OracionScreen() {
 
           {/* Time */}
           <View style={styles.durationWrapper}>
-            <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 16 }]}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: theme.text, marginBottom: 16 },
+              ]}
+            >
               Tiempo dedicado
             </Text>
             <View style={styles.bucketRow}>
               {DURATION_BUCKETS.map((b) => {
-                const isActive = isCustom ? b.id === 'custom' : duration === b.val;
+                const isActive = isCustom
+                  ? b.id === 'custom'
+                  : duration === b.val;
                 return (
                   <TouchableOpacity
                     key={b.id}
@@ -373,8 +467,15 @@ export default function OracionScreen() {
                     }}
                     style={[
                       styles.bucketItem,
-                      { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' },
-                      isActive && { backgroundColor: warm.accent, borderColor: warm.accent },
+                      {
+                        borderColor: isDark
+                          ? 'rgba(255,255,255,0.08)'
+                          : 'rgba(0,0,0,0.06)',
+                      },
+                      isActive && {
+                        backgroundColor: warm.accent,
+                        borderColor: warm.accent,
+                      },
                     ]}
                   >
                     <Text
@@ -398,24 +499,48 @@ export default function OracionScreen() {
                   {
                     marginTop: 16,
                     backgroundColor: emotion
-                      ? hexAlpha(EMOTIONS.find((e) => e.id === emotion)?.color || warm.accent, '15')
+                      ? hexAlpha(
+                          EMOTIONS.find((e) => e.id === emotion)?.color ||
+                            warm.accent,
+                          '15',
+                        )
                       : isDark
                         ? 'rgba(255,255,255,0.03)'
                         : 'rgba(0,0,0,0.02)',
-                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                    borderColor: isDark
+                      ? 'rgba(255,255,255,0.06)'
+                      : 'rgba(0,0,0,0.04)',
                   },
                 ]}
               >
                 <Text style={styles.durationLabel}>Minutos exactos</Text>
                 <View style={styles.durationControls}>
-                  <TouchableOpacity activeOpacity={0.7} onPress={handleDecrease} style={styles.durationBtn}>
-                    <MaterialIcons name="remove" size={28} color={warm.accent} />
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={handleDecrease}
+                    style={styles.durationBtn}
+                  >
+                    <MaterialIcons
+                      name="remove"
+                      size={28}
+                      color={warm.accent}
+                    />
                   </TouchableOpacity>
                   <View style={styles.durationValueRow}>
-                    <Text style={[styles.durationValue, { color: theme.text }]}>{duration}</Text>
-                    <Text style={[styles.durationUnit, { color: warm.warmGray }]}>min</Text>
+                    <Text style={[styles.durationValue, { color: theme.text }]}>
+                      {duration}
+                    </Text>
+                    <Text
+                      style={[styles.durationUnit, { color: warm.warmGray }]}
+                    >
+                      min
+                    </Text>
                   </View>
-                  <TouchableOpacity activeOpacity={0.7} onPress={handleIncrease} style={styles.durationBtn}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={handleIncrease}
+                    style={styles.durationBtn}
+                  >
                     <MaterialIcons name="add" size={28} color={warm.accent} />
                   </TouchableOpacity>
                 </View>
@@ -432,8 +557,12 @@ export default function OracionScreen() {
                 styles.trackerBtn,
                 record?.prayerDone
                   ? {
-                      backgroundColor: isDark ? 'rgba(163,189,49,0.12)' : 'rgba(58,125,68,0.08)',
-                      borderColor: isDark ? 'rgba(163,189,49,0.25)' : 'rgba(58,125,68,0.18)',
+                      backgroundColor: isDark
+                        ? 'rgba(163,189,49,0.12)'
+                        : 'rgba(58,125,68,0.08)',
+                      borderColor: isDark
+                        ? 'rgba(163,189,49,0.25)'
+                        : 'rgba(58,125,68,0.18)',
                       borderWidth: 1,
                     }
                   : { backgroundColor: warm.accent },
@@ -443,7 +572,13 @@ export default function OracionScreen() {
                 <MaterialIcons
                   name={record?.prayerDone ? 'check-circle' : 'favorite'}
                   size={22}
-                  color={record?.prayerDone ? (isDark ? '#A3BD31' : '#3A7D44') : '#FFFFFF'}
+                  color={
+                    record?.prayerDone
+                      ? isDark
+                        ? '#A3BD31'
+                        : '#3A7D44'
+                      : '#FFFFFF'
+                  }
                 />
                 <Text
                   style={[
@@ -453,7 +588,9 @@ export default function OracionScreen() {
                       : { color: '#FFFFFF' },
                   ]}
                 >
-                  {record?.prayerDone ? '¡Actualizar mi Rato de oración!' : 'Guardar Rato de Oración'}
+                  {record?.prayerDone
+                    ? '¡Actualizar mi Rato de oración!'
+                    : 'Guardar Rato de Oración'}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -461,13 +598,19 @@ export default function OracionScreen() {
 
           {/* Grid */}
           <View style={styles.consistencySection}>
-            <Text style={[styles.consistencyTitle, { color: theme.text }]}>Resumen del mes</Text>
+            <Text style={[styles.consistencyTitle, { color: theme.text }]}>
+              Resumen del mes
+            </Text>
             <View
               style={[
                 styles.consistencyCard,
                 {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                  borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                  backgroundColor: isDark
+                    ? 'rgba(255,255,255,0.03)'
+                    : 'rgba(0,0,0,0.02)',
+                  borderColor: isDark
+                    ? 'rgba(255,255,255,0.06)'
+                    : 'rgba(0,0,0,0.04)',
                 },
               ]}
             >
@@ -477,19 +620,28 @@ export default function OracionScreen() {
                     key={idx}
                     style={[
                       styles.gridDot,
-                      { backgroundColor: item.bg, opacity: item.isGhost ? 0 : 1 },
-                      item.isSelectedDay && [styles.gridDotToday, { borderColor: warm.accent }],
+                      {
+                        backgroundColor: item.bg,
+                        opacity: item.isGhost ? 0 : 1,
+                      },
+                      item.isSelectedDay && [
+                        styles.gridDotToday,
+                        { borderColor: warm.accent },
+                      ],
                     ]}
                   />
                 ))}
               </View>
               <View style={styles.gridLabels}>
-                <Text style={styles.gridLabelText}>1 de {MONTHS[monthGridData.monthIdx]}</Text>
-                <Text style={styles.gridLabelText}>Fin de {MONTHS[monthGridData.monthIdx]}</Text>
+                <Text style={styles.gridLabelText}>
+                  1 de {MONTHS[monthGridData.monthIdx]}
+                </Text>
+                <Text style={styles.gridLabelText}>
+                  Fin de {MONTHS[monthGridData.monthIdx]}
+                </Text>
               </View>
             </View>
           </View>
-
         </View>
       </ScrollView>
 
@@ -633,19 +785,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...shadows.sm,
   },
-  trackerContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  trackerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   trackerText: { fontSize: 16, fontWeight: '700', marginLeft: 10 },
   consistencySection: { marginBottom: 16 },
-  consistencyTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16, paddingHorizontal: 8 },
+  consistencyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
   consistencyCard: {
     borderRadius: radii.xl,
     padding: 24,
     borderWidth: 1,
     ...shadows.sm,
   },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+  },
   gridDot: { width: 18, height: 18, borderRadius: 9 },
   gridDotToday: { borderWidth: 2, transform: [{ scale: 1.3 }] },
-  gridLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24, paddingHorizontal: 8 },
+  gridLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+    paddingHorizontal: 8,
+  },
   gridLabelText: { fontSize: 12, fontWeight: '500', color: '#94a3b8' },
 });

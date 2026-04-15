@@ -416,7 +416,8 @@ export const markAllNotificationsAsRead = async (
       const updated = notifications.map((n) => {
         if (idsSet.has(n.id)) return { ...n, isRead: true };
         // También marcar por contenido idéntico
-        if (contentKeys.has(`${n.title}|${n.body}`)) return { ...n, isRead: true };
+        if (contentKeys.has(`${n.title}|${n.body}`))
+          return { ...n, isRead: true };
         return n;
       });
       await AsyncStorage.setItem(
@@ -464,11 +465,13 @@ export const getUnreadNotificationsCount = async (): Promise<number> => {
     const firebaseNotifications = await getNotificationsHistory();
 
     // Combinar, priorizando locales
-    const combined = [...localNotifications, ...firebaseNotifications].sort((a, b) => {
-      const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
-      const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
-      return dateB.getTime() - dateA.getTime();
-    });
+    const combined = [...localNotifications, ...firebaseNotifications].sort(
+      (a, b) => {
+        const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
+        const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      },
+    );
 
     // Deduplicar
     const seenContentKeys = new Set<string>();
@@ -490,7 +493,7 @@ export const getUnreadNotificationsCount = async (): Promise<number> => {
       return false;
     };
 
-    return deduplicated.filter(n => !isNotificationRead(n)).length;
+    return deduplicated.filter((n) => !isNotificationRead(n)).length;
   } catch (error) {
     console.error('Error contando notificaciones sin leer:', error);
     return 0;
