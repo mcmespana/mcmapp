@@ -6,7 +6,6 @@ import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
@@ -226,6 +225,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
                 const projectId =
                   Constants?.expoConfig?.extra?.eas?.projectId ??
                   Constants?.easConfig?.projectId;
+                const Notifications = await import('expo-notifications');
                 const { data } = await Notifications.getExpoPushTokenAsync(
                   projectId ? { projectId } : undefined,
                 );

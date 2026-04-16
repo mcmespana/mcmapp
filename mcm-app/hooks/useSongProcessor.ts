@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import {
   ChordProParser,
   HtmlDivFormatter,
@@ -23,6 +24,7 @@ interface UseSongProcessorParams {
   key?: string; // Added to pass key
   capo?: number; // Added to pass capo
   isFullscreen?: boolean; // Added for fullscreen mode
+  isDark?: boolean; // Dark mode support
 }
 
 export const useSongProcessor = ({
@@ -36,14 +38,14 @@ export const useSongProcessor = ({
   key,
   capo,
   isFullscreen = false,
+  isDark = false,
 }: UseSongProcessorParams) => {
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
 
   useEffect(() => {
     if (!originalChordPro) {
-      // setSongHtml('Esperando contenido de la canción...'); // Or some other placeholder
-      setIsLoadingSong(false); // Not necessarily loading if there's no content to process
+      setIsLoadingSong(false);
       return;
     }
 
@@ -89,12 +91,9 @@ export const useSongProcessor = ({
       if (author && !isFullscreen) {
         metaInsert += `<div class="song-meta-author">${author}</div>`;
       }
-      let finalKeyCapoString = '';
+
       let displayKey = key ? key.toUpperCase() : '';
 
-      // If there's a transpose value, we need to find the new key for display purposes.
-      // This is a simplified way; chordsheetjs's internal transposition is more robust.
-      // We parse a minimal song with the original key and transpose it.
       if (key && currentTranspose !== 0) {
         try {
           const tempSongForKey = new ChordProParser().parse(
@@ -112,28 +111,23 @@ export const useSongProcessor = ({
           }
         } catch (e) {
           console.warn('Could not calculate transposed key for display:', e);
-          // displayKey remains original key if transposition calculation fails
         }
       }
 
+      let badges = '';
       if (displayKey) {
-        finalKeyCapoString += `<strong>${convertChord(displayKey, notation)}</strong>`;
+        badges += `<span class="meta-badge">${convertChord(displayKey, notation)}</span>`;
       }
-
       if (capo !== undefined && capo > 0) {
-        if (finalKeyCapoString) finalKeyCapoString += ' - ';
-        finalKeyCapoString += `<strong>Cejilla ${capo}</strong>`;
+        badges += `<span class="meta-badge">Cejilla ${capo}</span>`;
       }
-
       if (currentTranspose !== 0) {
-        if (finalKeyCapoString) finalKeyCapoString += ' | ';
         const transposeDisplay =
           currentTranspose > 0 ? `+${currentTranspose}` : `${currentTranspose}`;
-        finalKeyCapoString += `<strong>Semitonos: ${transposeDisplay}</strong>`;
+        badges += `<span class="meta-badge meta-badge-accent">${transposeDisplay} semitonos</span>`;
       }
-
-      if (finalKeyCapoString) {
-        metaInsert += `<div class="song-meta-keycapo">${finalKeyCapoString}</div>`;
+      if (badges) {
+        metaInsert += `<div class="song-meta-keycapo">${badges}</div>`;
       }
 
       let finalSongContentWithMeta = formattedSong;
@@ -155,61 +149,108 @@ export const useSongProcessor = ({
         ? ''
         : '<style>.chord { display: none !important; }</style>';
 
+      // Platform-aware bottom padding
+      const bottomPadding = isFullscreen
+        ? 0
+        : Platform.OS === 'ios'
+          ? 120
+          : Platform.OS === 'web'
+            ? 40
+            : 80;
+
+      // Dark mode aware colors
+      const c = {
+        bodyBg: isDark ? '#2C2C2E' : '#ffffff',
+        bodyText: isDark ? '#E5E5EA' : '#212529',
+        titleText: isDark ? '#F5F5F7' : '#1C1C1E',
+        authorText: isDark ? '#98989D' : '#8E8E93',
+        chordColor: isDark ? '#64B5F6' : UIColors.activePrimary,
+        commentText: isDark ? '#98989D' : UIColors.secondaryText,
+        badgeBg: isDark
+          ? 'rgba(244, 193, 30, 0.12)'
+          : 'rgba(37, 56, 131, 0.06)',
+        badgeText: isDark ? '#F4C11E' : '#253883',
+        badgeAccentBg: isDark
+          ? 'rgba(225, 92, 98, 0.15)'
+          : 'rgba(225, 92, 98, 0.08)',
+        badgeAccentText: isDark ? '#FF8A80' : '#C62828',
+      };
+
       let finalHtml = `
         <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
           <style>
+            * { box-sizing: border-box; }
             body {
               font-family: ${currentFontFamily};
-              margin: 0px;
-              padding: 4px 14px;
-              ${isFullscreen ? '' : 'padding-bottom: 100px;'}
-              background-color: #ffffff;
-              color: ${UIColors.textDark};
+              margin: 0;
+              padding: 16px 16px;
+              ${bottomPadding > 0 ? `padding-bottom: ${bottomPadding}px;` : ''}
+              background-color: ${c.bodyBg};
+              color: ${c.bodyText};
               font-size: 100%;
               max-width: 100%;
               overflow-wrap: break-word;
               word-wrap: break-word;
-              box-sizing: border-box;
+              -webkit-text-size-adjust: 100%;
+              -webkit-font-smoothing: antialiased;
+              scrollbar-width: none;
+              -ms-overflow-style: none;
             }
+            body::-webkit-scrollbar { width: 0; height: 0; }
             h1 {
-              color: ${UIColors.activePrimary || '#007bff'};
-              margin-bottom: 0.1em;
-              margin-top: 0.1em;
-              font-size: 1.5em;
-              font-weight: 600;
-              text-align: center;
-              line-height: 1.2;
-              padding-bottom: 4px;
-              border-bottom: 1px solid ${UIColors.accentYellow || '#ffc107'};
+              color: ${c.titleText};
+              margin: 4px 0 8px;
+              font-size: 1.35em;
+              font-weight: 700;
+              text-align: left;
+              line-height: 1.25;
+              letter-spacing: -0.01em;
+              padding-bottom: 12px;
+              position: relative;
               ${isFullscreen ? 'display: none;' : ''}
             }
+            h1::after {
+              content: '';
+              position: absolute;
+              bottom: 0;
+              left: 0;
+              width: 40px;
+              height: 3px;
+              background: linear-gradient(90deg, #f4c11e, #E15C62);
+              border-radius: 2px;
+            }
             .song-meta-author {
-              color: #666;
-              font-size: 0.85em;
-              margin-bottom: 4px;
+              color: ${c.authorText};
+              font-size: 0.88em;
+              margin: 0 0 10px;
               font-style: italic;
               font-weight: 400;
-              text-align: center;
+              text-align: left;
             }
             .song-meta-keycapo {
-              color: #555;
-              font-size: 0.85em;
-              font-weight: 500;
-              margin-bottom: 8px;
-              text-align: center;
-              background-color: #f0f1f2;
-              padding: 6px 10px;
-              border-radius: 4px;
-              border-left: 2px solid ${UIColors.activePrimary || '#007bff'};
+              display: flex;
+              flex-wrap: wrap;
+              gap: 6px;
+              margin-bottom: 16px;
             }
-            .song-meta-keycapo strong {
+            .meta-badge {
+              display: inline-block;
+              background: ${c.badgeBg};
+              color: ${c.badgeText};
+              padding: 4px 12px;
+              border-radius: 16px;
+              font-size: 0.78em;
               font-weight: 600;
-              color: ${UIColors.activePrimary || '#007bff'};
+              letter-spacing: 0.02em;
+            }
+            .meta-badge-accent {
+              background: ${c.badgeAccentBg};
+              color: ${c.badgeAccentText};
             }
             .chord-sheet {
-              margin-top: 0.8em;
+              margin-top: 0.5em;
               text-align: left;
               max-width: 100%;
               overflow: hidden;
@@ -227,7 +268,7 @@ export const useSongProcessor = ({
               word-wrap: break-word;
             }
             .chord-sheet .chord {
-              color: ${UIColors.activePrimary};
+              color: ${c.chordColor};
               font-weight: bold;
               white-space: pre;
               display: block;
@@ -242,7 +283,7 @@ export const useSongProcessor = ({
               max-width: 100%;
             }
             .comment, .c {
-              color: ${UIColors.secondaryText};
+              color: ${c.commentText};
               font-style: italic;
               white-space: pre-wrap;
               word-wrap: break-word;
@@ -299,6 +340,7 @@ export const useSongProcessor = ({
     author,
     key,
     capo,
+    isDark,
   ]);
 
   return { songHtml, isLoadingSong };

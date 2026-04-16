@@ -8,6 +8,7 @@ import TransposePanel from './TransposePanel';
 import ReportBugsModal from './ReportBugsModal';
 import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface FontOption {
   name: string;
@@ -69,6 +70,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   const scheme = useColorScheme();
   const { toast } = useToast();
   const isDark = scheme === 'dark';
+  const insets = useSafeAreaInsets();
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const hasModifications =
@@ -185,7 +187,12 @@ const SongControls: React.FC<SongControlsProps> = ({
       )}
 
       {/* FAB & Action Menu */}
-      <View style={styles.fabContainer}>
+      <View
+        style={[
+          styles.fabContainer,
+          { bottom: isIOS ? insets.bottom + 60 : 24 },
+        ]}
+      >
         {showActionButtons && (
           <View
             style={[styles.menuContainer, isDark && styles.menuContainerDark]}
@@ -333,7 +340,6 @@ const styles = StyleSheet.create({
   },
   fabContainer: {
     position: 'absolute',
-    bottom: isIOS ? 100 : 24,
     right: 16,
     alignItems: 'flex-end',
     zIndex: 1000,
@@ -412,17 +418,21 @@ const styles = StyleSheet.create({
   },
   fabMain: {
     backgroundColor: '#fff',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
       web: {
-        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+        width: 54,
+        height: 54,
+        borderRadius: 27,
+        boxShadow:
+          '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
         cursor: 'pointer',
       },
       default: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,

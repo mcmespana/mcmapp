@@ -17,9 +17,9 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
     return (
       <View
         style={[
-          styles.webViewContainer,
+          styles.cardContainer,
+          isDark && styles.cardContainerDark,
           styles.loadingContainer,
-          { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
         ]}
       >
         <Spinner size="lg" color="#f4c11e" />
@@ -29,47 +29,28 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
 
   if (Platform.OS === 'web') {
     return (
-      <View
-        style={[
-          styles.webViewContainer,
-          { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
-        ]}
-      >
-        <div
+      <View style={[styles.cardContainer, isDark && styles.cardContainerDark]}>
+        <iframe
+          srcDoc={songHtml}
           style={{
             width: '100%',
-            maxWidth: '100%',
-            margin: 0,
-            padding: '12px 16px',
+            height: '100%',
+            border: 'none',
+            display: 'block',
             backgroundColor: isDark ? '#2C2C2E' : '#fff',
-            boxSizing: 'border-box' as const,
-            minHeight: '100%',
-            borderRadius: 12,
-            boxShadow: isDark
-              ? '0 1px 3px rgba(0,0,0,0.3)'
-              : '0 1px 4px rgba(0,0,0,0.06)',
-            overflowY: 'auto' as const,
           }}
-          dangerouslySetInnerHTML={{ __html: songHtml }}
+          title="Song content"
         />
       </View>
     );
   }
 
   return (
-    <View
-      style={[
-        styles.webViewContainer,
-        { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
-      ]}
-    >
+    <View style={[styles.cardContainer, isDark && styles.cardContainerDark]}>
       <WebView
         originWhitelist={['*']}
         source={{ html: songHtml }}
-        style={[
-          styles.webView,
-          { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
-        ]}
+        style={styles.webView}
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -77,11 +58,47 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
 };
 
 const styles = StyleSheet.create({
-  webViewContainer: {
+  cardContainer: {
     flex: 1,
-    ...(Platform.OS === 'web'
-      ? { paddingVertical: 8, paddingHorizontal: 12 }
-      : {}),
+    marginHorizontal: 12,
+    marginTop: 8,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    ...Platform.select({
+      ios: {
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+      },
+      web: {
+        borderRadius: 16,
+        marginBottom: 8,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+      },
+      default: {
+        borderRadius: 16,
+        marginBottom: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+        elevation: 2,
+      },
+    }),
+  },
+  cardContainerDark: {
+    backgroundColor: '#2C2C2E',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+      },
+      default: {
+        shadowOpacity: 0.15,
+      },
+    }),
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -89,6 +106,7 @@ const styles = StyleSheet.create({
   },
   webView: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
 });
 
