@@ -276,7 +276,8 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
 
   const handleNotificationPress = useCallback(
     async (notification: NotificationData | ReceivedNotification) => {
-      if (!isNotificationRead(notification)) await handleMarkAsRead(notification.id);
+      if (!isNotificationRead(notification))
+        await handleMarkAsRead(notification.id);
       setSelectedNotification(notification);
     },
     [isNotificationRead, handleMarkAsRead],

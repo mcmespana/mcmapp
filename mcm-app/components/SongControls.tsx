@@ -425,8 +425,7 @@ const styles = StyleSheet.create({
         width: 54,
         height: 54,
         borderRadius: 27,
-        boxShadow:
-          '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
+        boxShadow: '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
         cursor: 'pointer',
       },
       default: {

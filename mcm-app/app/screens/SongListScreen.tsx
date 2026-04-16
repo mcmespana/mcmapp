@@ -278,10 +278,7 @@ export default function SongsListScreen({
     <View>
       {searchVisible && (
         <View style={styles.searchContainer}>
-          <SearchField
-            value={search}
-            onChange={setSearch}
-          >
+          <SearchField value={search} onChange={setSearch}>
             <SearchField.Group>
               <SearchField.SearchIcon />
               <SearchField.Input

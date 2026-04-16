@@ -111,12 +111,32 @@ const DURATION_BUCKETS = [
 ] as const;
 
 const MONTHS = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
 ];
 const MONTHS_CAP = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
 ];
 const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
@@ -126,7 +146,13 @@ function formatDateDisplay(dateStr: string) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
   const days = [
-    'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado',
+    'Domingo',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
   ];
   return `${days[date.getDay()]}, ${d} de ${MONTHS[m - 1]}`;
 }
@@ -199,10 +225,8 @@ export default function OracionScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
-  const handleDecrease = () =>
-    setDuration((p) => Math.max(1, (p || 15) - 1));
-  const handleIncrease = () =>
-    setDuration((p) => Math.min(120, (p || 15) + 1));
+  const handleDecrease = () => setDuration((p) => Math.max(1, (p || 15) - 1));
+  const handleIncrease = () => setDuration((p) => Math.min(120, (p || 15) + 1));
 
   const changeDate = (offset: number) =>
     setSelectedDate(addDays(selectedDate, offset));
@@ -243,14 +267,13 @@ export default function OracionScreen() {
 
   const liturgicalAccent =
     liturgicalInfo.hex === '#F5F5F5'
-      ? isDark ? '#888888' : '#999999'
+      ? isDark
+        ? '#888888'
+        : '#999999'
       : liturgicalInfo.hex;
 
   // Calendar data
-  const calData = useMemo(
-    () => buildCalendar(selectedDate),
-    [selectedDate],
-  );
+  const calData = useMemo(() => buildCalendar(selectedDate), [selectedDate]);
   const { cells, year, month, daysInMonth } = calData;
 
   // Count days prayed this month (fast, no memo needed)
@@ -306,7 +329,11 @@ export default function OracionScreen() {
             },
           ]}
         >
-          <MaterialIcons name="arrow-back-ios-new" size={20} color={theme.text} />
+          <MaterialIcons
+            name="arrow-back-ios-new"
+            size={20}
+            color={theme.text}
+          />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
@@ -559,9 +586,7 @@ export default function OracionScreen() {
                   },
                 ]}
               >
-                <Text
-                  style={[styles.customLabel, { color: warm.warmGray }]}
-                >
+                <Text style={[styles.customLabel, { color: warm.warmGray }]}>
                   MINUTOS EXACTOS
                 </Text>
                 <View style={styles.stepperRow}>
@@ -578,13 +603,15 @@ export default function OracionScreen() {
                       },
                     ]}
                   >
-                    <MaterialIcons name="remove" size={26} color={warm.accent} />
+                    <MaterialIcons
+                      name="remove"
+                      size={26}
+                      color={warm.accent}
+                    />
                   </TouchableOpacity>
 
                   <View style={styles.stepperValueRow}>
-                    <Text
-                      style={[styles.stepperNumber, { color: theme.text }]}
-                    >
+                    <Text style={[styles.stepperNumber, { color: theme.text }]}>
                       {duration}
                     </Text>
                     <Text
@@ -679,9 +706,7 @@ export default function OracionScreen() {
             {/* Calendar header */}
             <View style={styles.calHeader}>
               <View>
-                <Text
-                  style={[styles.sectionLabel, { color: warm.warmGray }]}
-                >
+                <Text style={[styles.sectionLabel, { color: warm.warmGray }]}>
                   TU MES
                 </Text>
                 <Text style={[styles.calMonthTitle, { color: warm.title }]}>
@@ -698,11 +723,7 @@ export default function OracionScreen() {
                   },
                 ]}
               >
-                <MaterialIcons
-                  name="favorite"
-                  size={12}
-                  color={warm.accent}
-                />
+                <MaterialIcons name="favorite" size={12} color={warm.accent} />
                 <Text style={[styles.statText, { color: warm.accent }]}>
                   {prayedThisMonth}{' '}
                   {prayedThisMonth === 1 ? 'día rezado' : 'días rezados'}
@@ -717,9 +738,7 @@ export default function OracionScreen() {
                   key={d}
                   style={[styles.weekdayCell, { width: CELL_SIZE }]}
                 >
-                  <Text
-                    style={[styles.weekdayText, { color: warm.warmGray }]}
-                  >
+                  <Text style={[styles.weekdayText, { color: warm.warmGray }]}>
                     {d}
                   </Text>
                 </View>
@@ -785,9 +804,7 @@ export default function OracionScreen() {
                   >
                     <Text
                       style={[
-                        rec?.prayerDone
-                          ? styles.calDayDone
-                          : styles.calDay,
+                        rec?.prayerDone ? styles.calDayDone : styles.calDay,
                         {
                           color: rec?.prayerDone
                             ? isDark
@@ -802,7 +819,8 @@ export default function OracionScreen() {
                                 : isDark
                                   ? 'rgba(255,255,255,0.55)'
                                   : 'rgba(0,0,0,0.45)',
-                          fontWeight: isToday || rec?.prayerDone ? '700' : '400',
+                          fontWeight:
+                            isToday || rec?.prayerDone ? '700' : '400',
                         },
                       ]}
                     >
@@ -827,14 +845,9 @@ export default function OracionScreen() {
               {EMOTIONS.map((emo) => (
                 <View key={emo.id} style={styles.legendItem}>
                   <View
-                    style={[
-                      styles.legendDot,
-                      { backgroundColor: emo.color },
-                    ]}
+                    style={[styles.legendDot, { backgroundColor: emo.color }]}
                   />
-                  <Text
-                    style={[styles.legendText, { color: warm.warmGray }]}
-                  >
+                  <Text style={[styles.legendText, { color: warm.warmGray }]}>
                     {emo.label}
                   </Text>
                 </View>
