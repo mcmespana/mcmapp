@@ -281,8 +281,6 @@ export default function SongsListScreen({
           <SearchField
             value={search}
             onChange={setSearch}
-            label="Buscar canción"
-            description="Busca por título o nombre del autor"
           >
             <SearchField.Group>
               <SearchField.SearchIcon />
@@ -368,6 +366,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       letterSpacing: 0.2,
     },
     listContent: {
+      paddingHorizontal: 12,
       paddingBottom: isIOS ? 100 : 24,
     },
     errorText: {

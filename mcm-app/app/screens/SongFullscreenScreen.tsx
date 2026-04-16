@@ -53,6 +53,16 @@ export default function SongFullscreenScreen({
   const sliderOpacity = useRef(new Animated.Value(0)).current;
   const sliderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Fade-in entry animation
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   const showSlider = useCallback(() => {
     setSliderVisible(true);
     Animated.timing(sliderOpacity, {
@@ -68,7 +78,7 @@ export default function SongFullscreenScreen({
         duration: 300,
         useNativeDriver: true,
       }).start(() => setSliderVisible(false));
-    }, 3000);
+    }, 2000);
   }, [sliderOpacity]);
 
   useEffect(() => {
@@ -99,7 +109,39 @@ export default function SongFullscreenScreen({
   const isIOS = Platform.OS === 'ios';
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <Animated.View
+      style={[
+        styles.container,
+        { backgroundColor: theme.background, opacity: fadeAnim },
+      ]}
+    >
+      {/* Close button — glass effect */}
+      <PressableFeedback
+        style={[
+          styles.closeButton,
+          !isIOS &&
+            (isDark
+              ? styles.closeButtonDarkFallback
+              : styles.closeButtonFallback),
+        ]}
+        onPress={() => navigation.goBack()}
+        accessibilityLabel="Cerrar pantalla completa"
+      >
+        <PressableFeedback.Scale />
+        {isIOS && (
+          <BlurView
+            tint={isDark ? 'dark' : 'light'}
+            intensity={72}
+            style={[StyleSheet.absoluteFill, styles.blurFill]}
+          />
+        )}
+        <MaterialIcons
+          name="close"
+          color={isDark ? '#EBEBF0' : '#fff'}
+          size={20}
+        />
+      </PressableFeedback>
+
       {/* Song content with horizontal breathing room */}
       <View style={styles.contentWrapper}>
         {Platform.OS === 'web' ? (
@@ -155,7 +197,7 @@ export default function SongFullscreenScreen({
         </Animated.View>
       )}
 
-      {/* Play / pause button — liquid glass */}
+      {/* Play / pause button — liquid glass, semi-transparent when active */}
       <PressableFeedback
         style={[
           styles.scrollButton,
@@ -163,6 +205,7 @@ export default function SongFullscreenScreen({
             (isDark
               ? styles.scrollButtonDarkFallback
               : styles.scrollButtonFallback),
+          autoScroll && styles.scrollButtonActive,
         ]}
         onPress={() => {
           setAutoScroll((s) => !s);
@@ -183,7 +226,7 @@ export default function SongFullscreenScreen({
           size={26}
         />
       </PressableFeedback>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -206,6 +249,37 @@ const styles = StyleSheet.create({
   },
   blurFill: {
     borderRadius: 20,
+  },
+  /* Close button — top left */
+  closeButton: {
+    position: 'absolute',
+    left: 16,
+    top: Platform.OS === 'ios' ? 54 : 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    zIndex: 3,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.2)',
+    ...Platform.select({
+      web: { boxShadow: '0 2px 10px rgba(0,0,0,0.2)' },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 4,
+      },
+    }),
+  },
+  closeButtonFallback: {
+    backgroundColor: 'rgba(0,0,0,0.72)',
+  },
+  closeButtonDarkFallback: {
+    backgroundColor: 'rgba(60,60,60,0.82)',
   },
   /* Scroll button */
   scrollButton: {
@@ -237,6 +311,9 @@ const styles = StyleSheet.create({
   },
   scrollButtonDarkFallback: {
     backgroundColor: 'rgba(60,60,60,0.82)',
+  },
+  scrollButtonActive: {
+    opacity: 0.6,
   },
   /* Vertical slider */
   sliderWrapper: {

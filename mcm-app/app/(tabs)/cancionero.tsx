@@ -118,7 +118,11 @@ export default function CancioneroTab() {
           component={SongListScreen}
           options={({ route }) => ({
             title: route.params?.categoryName || 'Canciones',
-            headerLargeTitle: false,
+            headerLargeTitle: isIOS,
+            headerLargeTitleShadowVisible: false,
+            headerLargeStyle: isIOS
+              ? { backgroundColor: 'transparent' }
+              : undefined,
           })}
         />
         <Stack.Screen
@@ -139,7 +143,14 @@ export default function CancioneroTab() {
         <Stack.Screen
           name="SelectedSongs"
           component={SelectedSongsScreen}
-          options={{ title: 'Seleccionadas' }}
+          options={{
+            title: 'Seleccionadas',
+            headerLargeTitle: isIOS,
+            headerLargeTitleShadowVisible: false,
+            headerLargeStyle: isIOS
+              ? { backgroundColor: 'transparent' }
+              : undefined,
+          }}
         />
       </Stack.Navigator>
     </SettingsProvider>

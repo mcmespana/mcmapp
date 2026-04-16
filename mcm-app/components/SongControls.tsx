@@ -418,17 +418,21 @@ const styles = StyleSheet.create({
   },
   fabMain: {
     backgroundColor: '#fff',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
       web: {
-        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+        width: 54,
+        height: 54,
+        borderRadius: 27,
+        boxShadow:
+          '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
         cursor: 'pointer',
       },
       default: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,

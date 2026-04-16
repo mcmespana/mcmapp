@@ -467,54 +467,58 @@ const SelectedSongsScreen: React.FC = () => {
     );
   }
 
+  const ToolbarHeader = () => (
+    <View style={styles.toolbar}>
+      <Text style={styles.selectionCount}>
+        {selectedSongs.length}{' '}
+        {selectedSongs.length === 1 ? 'canción' : 'canciones'}
+      </Text>
+      <View style={styles.toolbarActions}>
+        <PressableFeedback
+          onPress={handleShareFile}
+          style={styles.toolbarButton}
+        >
+          <PressableFeedback.Highlight />
+          <MaterialIcons
+            name="ios-share"
+            size={18}
+            color={isDark ? '#7AB3FF' : '#253883'}
+          />
+          <Text style={styles.toolbarButtonText}>Exportar</Text>
+        </PressableFeedback>
+        <PressableFeedback
+          onPress={handleImportFile}
+          style={styles.toolbarButton}
+        >
+          <PressableFeedback.Highlight />
+          <MaterialIcons
+            name="file-download"
+            size={18}
+            color={isDark ? '#7AB3FF' : '#253883'}
+          />
+          <Text style={styles.toolbarButtonText}>Importar</Text>
+        </PressableFeedback>
+        <PressableFeedback
+          onPress={clearSelection}
+          style={styles.toolbarButtonDanger}
+        >
+          <PressableFeedback.Highlight />
+          <MaterialIcons name="delete-outline" size={18} color="#FF453A" />
+          <Text style={styles.toolbarButtonDangerText}>Borrar</Text>
+        </PressableFeedback>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <View style={styles.toolbar}>
-        <Text style={styles.selectionCount}>
-          {selectedSongs.length}{' '}
-          {selectedSongs.length === 1 ? 'canción' : 'canciones'}
-        </Text>
-        <View style={styles.toolbarActions}>
-          <PressableFeedback
-            onPress={handleShareFile}
-            style={styles.toolbarButton}
-          >
-            <PressableFeedback.Highlight />
-            <MaterialIcons
-              name="ios-share"
-              size={18}
-              color={isDark ? '#7AB3FF' : '#253883'}
-            />
-            <Text style={styles.toolbarButtonText}>Exportar</Text>
-          </PressableFeedback>
-          <PressableFeedback
-            onPress={handleImportFile}
-            style={styles.toolbarButton}
-          >
-            <PressableFeedback.Highlight />
-            <MaterialIcons
-              name="file-download"
-              size={18}
-              color={isDark ? '#7AB3FF' : '#253883'}
-            />
-            <Text style={styles.toolbarButtonText}>Importar</Text>
-          </PressableFeedback>
-          <PressableFeedback
-            onPress={clearSelection}
-            style={styles.toolbarButtonDanger}
-          >
-            <PressableFeedback.Highlight />
-            <MaterialIcons name="delete-outline" size={18} color="#FF453A" />
-            <Text style={styles.toolbarButtonDangerText}>Borrar</Text>
-          </PressableFeedback>
-        </View>
-      </View>
-
       <FlatList
         data={categorizedSelectedSongs}
         renderItem={renderCategory}
         keyExtractor={(item) => item.categoryTitle}
+        ListHeaderComponent={<ToolbarHeader />}
         contentContainerStyle={styles.listContentContainer}
+        contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       />
 
@@ -576,11 +580,27 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 20,
+      paddingHorizontal: 16,
       paddingVertical: 12,
+      marginHorizontal: 16,
+      marginTop: 8,
+      marginBottom: 4,
       backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      borderRadius: 12,
+      ...Platform.select({
+        web: {
+          boxShadow: isDark
+            ? '0 1px 4px rgba(0,0,0,0.4)'
+            : '0 1px 4px rgba(0,0,0,0.08)',
+        },
+        default: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isDark ? 0.25 : 0.06,
+          shadowRadius: 4,
+          elevation: 2,
+        },
+      }),
     },
     selectionCount: {
       fontSize: 15,
