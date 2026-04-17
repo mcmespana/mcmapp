@@ -77,17 +77,10 @@ export function CelebrationAnimation({
     buildRingConfigs(12, 90, 145, 420, 680, 12, 22, WARM, ICONS),
   ).current;
   const cfg3 = useRef(
-    buildRingConfigs(
-      8,
-      140,
-      200,
-      520,
-      800,
-      8,
-      16,
-      SOFT,
-      ['star', 'auto-awesome'] as (keyof typeof MaterialIcons.glyphMap)[],
-    ),
+    buildRingConfigs(8, 140, 200, 520, 800, 8, 16, SOFT, [
+      'star',
+      'auto-awesome',
+    ] as (keyof typeof MaterialIcons.glyphMap)[]),
   ).current;
 
   useEffect(() => {
@@ -268,11 +261,7 @@ export function CelebrationAnimation({
             },
           ]}
         >
-          <MaterialIcons
-            name={c.icon as any}
-            size={c.size}
-            color={c.color}
-          />
+          <MaterialIcons name={c.icon as any} size={c.size} color={c.color} />
         </Animated.View>
       );
     });

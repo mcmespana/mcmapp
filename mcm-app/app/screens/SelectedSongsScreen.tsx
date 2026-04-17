@@ -88,6 +88,9 @@ const SelectedSongsScreen: React.FC = () => {
       }
 
       const categories: CategorizedSongs[] = [];
+      // Optimization: Convert selectedSongs array to a Set for O(1) lookups
+      // This reduces complexity from O(N*M) to O(N+M)
+      const selectedSongsSet = new Set(selectedSongs);
       for (const categoryName in allSongsData) {
         const songsInCategory = (
           allSongsData as Record<
@@ -96,7 +99,7 @@ const SelectedSongsScreen: React.FC = () => {
           >
         )[categoryName].songs;
         const selectedInCategory = songsInCategory.filter((song) =>
-          selectedSongs.includes(song.filename),
+          selectedSongsSet.has(song.filename),
         );
 
         if (selectedInCategory.length > 0) {
@@ -144,30 +147,29 @@ const SelectedSongsScreen: React.FC = () => {
       const categoryLetter = category.categoryTitle.charAt(0).toUpperCase();
 
       category.data.forEach((song) => {
-        if (selectedSongs.includes(song.filename)) {
-          const songTitleClean = song.title.replace(/^\d+\.\s*/, '');
+        // category.data is already filtered to only contain selected songs
+        const songTitleClean = song.title.replace(/^\d+\.\s*/, '');
 
-          let chordCapoString = '';
-          if (song.key) {
-            chordCapoString = `\`${song.key}\``;
-            if (song.capo && song.capo > 0) {
-              chordCapoString += ` \`C/${song.capo}\``;
-            }
+        let chordCapoString = '';
+        if (song.key) {
+          chordCapoString = `\`${song.key}\``;
+          if (song.capo && song.capo > 0) {
+            chordCapoString += ` \`C/${song.capo}\``;
           }
-
-          const songIdMatch = song.title.match(/^\d+/);
-          const songId = songIdMatch ? songIdMatch[0] : '??';
-
-          let line = `*${categoryLetter}.* ${songTitleClean}`;
-          if (chordCapoString) {
-            line += ` · ${chordCapoString}`;
-          }
-          line += ` · *[#${songId}]*`;
-          if (song.author) {
-            line += ` · ${song.author}`;
-          }
-          formattedSongLines.push(line);
         }
+
+        const songIdMatch = song.title.match(/^\d+/);
+        const songId = songIdMatch ? songIdMatch[0] : '??';
+
+        let line = `*${categoryLetter}.* ${songTitleClean}`;
+        if (chordCapoString) {
+          line += ` · ${chordCapoString}`;
+        }
+        line += ` · *[#${songId}]*`;
+        if (song.author) {
+          line += ` · ${song.author}`;
+        }
+        formattedSongLines.push(line);
       });
     });
 
