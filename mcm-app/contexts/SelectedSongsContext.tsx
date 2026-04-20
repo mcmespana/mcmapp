@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useMemo, useCallback } from 'react';
 
 // Define the shape of the context value
 interface SelectedSongsContextType {
@@ -25,39 +25,50 @@ export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({
 }) => {
   const [selectedSongs, setSelectedSongs] = useState<string[]>([]);
 
-  const addSong = (filename: string) => {
+  // ⚡ Bolt: Convert array to Set for O(1) lookups
+  const selectedSongsSet = useMemo(() => new Set(selectedSongs), [selectedSongs]);
+
+  const addSong = useCallback((filename: string) => {
     setSelectedSongs((prevSelectedSongs) => {
       if (!prevSelectedSongs.includes(filename)) {
         return [...prevSelectedSongs, filename];
       }
       return prevSelectedSongs;
     });
-  };
+  }, []);
 
-  const removeSong = (filename: string) => {
+  const removeSong = useCallback((filename: string) => {
     setSelectedSongs((prevSelectedSongs) =>
       prevSelectedSongs.filter((song) => song !== filename),
     );
-  };
+  }, []);
 
-  const isSongSelected = (filename: string): boolean => {
-    return selectedSongs.includes(filename);
-  };
+  // ⚡ Bolt: O(1) lookup instead of O(N) array .includes()
+  const isSongSelected = useCallback(
+    (filename: string): boolean => {
+      return selectedSongsSet.has(filename);
+    },
+    [selectedSongsSet],
+  );
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setSelectedSongs([]);
-  };
+  }, []);
+
+  // ⚡ Bolt: Memoize context value to prevent unnecessary re-renders in consumers
+  const value = useMemo(
+    () => ({
+      selectedSongs,
+      addSong,
+      removeSong,
+      isSongSelected,
+      clearSelection,
+    }),
+    [selectedSongs, addSong, removeSong, isSongSelected, clearSelection],
+  );
 
   return (
-    <SelectedSongsContext.Provider
-      value={{
-        selectedSongs,
-        addSong,
-        removeSong,
-        isSongSelected,
-        clearSelection,
-      }}
-    >
+    <SelectedSongsContext.Provider value={value}>
       {children}
     </SelectedSongsContext.Provider>
   );
