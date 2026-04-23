@@ -17,6 +17,7 @@ import { radii } from '@/constants/uiStyles';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 
 interface SuggestSongModalProps {
   visible: boolean;
@@ -37,6 +38,7 @@ export default function SuggestSongModal({
   const isDark = scheme === 'dark';
   const theme = Colors[scheme];
   const { profile } = useUserProfile();
+  const resolved = useResolvedProfileConfig();
 
   const [titulo, setTitulo] = useState('');
   const [artista, setArtista] = useState('');
@@ -74,7 +76,8 @@ export default function SuggestSongModal({
         platform: Platform.OS,
         requestedAt: new Date().toISOString(),
         userName: profile.name || 'Anónimo',
-        userLocation: profile.location || 'Sin ubicación',
+        userProfileType: profile.profileType ?? 'sin-perfil',
+        userDelegation: resolved.delegationLabel || 'Sin delegación',
       });
 
       await set(ref(db, 'songs/updatedAt'), Date.now().toString());

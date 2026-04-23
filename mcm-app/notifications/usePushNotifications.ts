@@ -10,7 +10,7 @@
 //      a. notificationReceived — app en foreground: guarda la notificación localmente y actualiza badge
 //      b. notificationResponse — usuario toca la notificación: navega a la ruta correspondiente y marca como leída
 //
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
@@ -20,9 +20,12 @@ import {
   updateLastActive,
   saveReceivedNotificationLocally,
   markNotificationAsRead,
+  type TokenProfileMetadata,
 } from '@/services/pushNotificationService';
 import { ReceivedNotification } from '@/types/notifications';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { router } from 'expo-router';
 
 /**
@@ -35,7 +38,9 @@ import { router } from 'expo-router';
  * es un UUID aleatorio por cada entrega, lo que causaba que la
  * deduplicación fallara y aparecieran duplicados.
  */
-function getStableNotificationId(content: Notifications.NotificationContent): string {
+function getStableNotificationId(
+  content: Notifications.NotificationContent,
+): string {
   // 1. ID explícito del backend — siempre preferido
   if (content.data?.id && typeof content.data.id === 'string') {
     return content.data.id;
@@ -47,7 +52,7 @@ function getStableNotificationId(content: Notifications.NotificationContent): st
   let hash = 0;
   for (let i = 0; i < raw.length; i++) {
     const char = raw.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash |= 0; // Convert to 32-bit integer
   }
   return `local_${Math.abs(hash).toString(36)}`;
@@ -65,16 +70,38 @@ export default function usePushNotifications() {
   const responseListener = useRef<any>(null);
   const { refreshCount } = useNotifications();
 
+  const resolved = useResolvedProfileConfig();
+  const { profile } = useUserProfile();
+
+  // Metadata para segmentación en Firebase. Solo la construimos cuando el
+  // usuario ya tiene perfil/delegación definidos (post onboarding). Antes,
+  // pasamos `null` para marcar "todavía sin clasificar".
+  const profileMetadata = useMemo<TokenProfileMetadata>(
+    () => ({
+      profileType: profile.profileType,
+      delegationId: profile.delegationId,
+      topics: resolved.notificationTopics,
+    }),
+    [profile.profileType, profile.delegationId, resolved.notificationTopics],
+  );
+
+  // Mantener una referencia mutable para que los efectos puedan leer el valor
+  // más reciente sin recrearse (evita duplicar listeners y reescribir el token).
+  const metadataRef = useRef(profileMetadata);
+  useEffect(() => {
+    metadataRef.current = profileMetadata;
+  }, [profileMetadata]);
+
   useEffect(() => {
     // Registrar token y guardar en Firebase, luego heartbeat inicial
-    registerAndSaveToken().then(() => {
-      updateLastActive().catch(() => {});
+    registerAndSaveToken(metadataRef.current).then(() => {
+      updateLastActive(metadataRef.current).catch(() => {});
     });
 
     // Actualizar última actividad periódicamente (cada 5 minutos)
     const intervalId = setInterval(
       () => {
-        updateLastActive().catch(() => {});
+        updateLastActive(metadataRef.current).catch(() => {});
       },
       5 * 60 * 1000,
     );
@@ -82,7 +109,9 @@ export default function usePushNotifications() {
     // Listener para notificaciones recibidas (app en foreground)
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
-        const notificationId = getStableNotificationId(notification.request.content);
+        const notificationId = getStableNotificationId(
+          notification.request.content,
+        );
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: notification.request.content.title || 'Notificación',
@@ -137,7 +166,9 @@ export default function usePushNotifications() {
         }
 
         // Guardar y marcar como leída
-        const notificationId = getStableNotificationId(response.notification.request.content);
+        const notificationId = getStableNotificationId(
+          response.notification.request.content,
+        );
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: response.notification.request.content.title || 'Notificación',
@@ -169,13 +200,20 @@ export default function usePushNotifications() {
       clearInterval(intervalId);
     };
   }, [refreshCount]);
+
+  // Cuando cambie el perfil/delegación después del onboarding, re-publica la
+  // metadata en Firebase (updateLastActive con metadata hace merge). Esto es
+  // barato y mantiene segmentación actualizada.
+  useEffect(() => {
+    updateLastActive(profileMetadata).catch(() => {});
+  }, [profileMetadata]);
 }
 
 /**
  * Flujo completo: permisos → token → guardar en Firebase
  * Con logging detallado para diagnosticar problemas
  */
-async function registerAndSaveToken() {
+async function registerAndSaveToken(profileMetadata: TokenProfileMetadata) {
   if (Platform.OS === 'web') return;
 
   try {
@@ -221,6 +259,6 @@ async function registerAndSaveToken() {
     await cachePushToken(token);
 
     // 5. Guardar en Firebase
-    await saveTokenToFirebase(token);
+    await saveTokenToFirebase(token, profileMetadata);
   } catch {}
 }

@@ -70,12 +70,21 @@ export const getCachedPushToken = async (): Promise<string | null> => {
   }
 };
 
+export interface TokenProfileMetadata {
+  profileType: 'familia' | 'monitor' | 'miembro' | null;
+  delegationId: string | null;
+  topics: string[];
+}
+
 /**
  * Construye el objeto DeviceToken con los datos actuales del dispositivo.
  * IMPORTANTE: sanea explícitamente todos los valores para evitar `undefined`,
  * que Firebase RTDB rechaza silenciosamente con un error de serialización.
  */
-const buildTokenData = (token: string): DeviceToken => {
+const buildTokenData = (
+  token: string,
+  profileMetadata?: TokenProfileMetadata,
+): DeviceToken => {
   // Constants.deviceName está deprecado en SDK 50+, puede ser undefined
   const deviceName =
     (Constants.expoConfig as any)?.name ||
@@ -96,6 +105,9 @@ const buildTokenData = (token: string): DeviceToken => {
       model: String(deviceName),
       osVersion: String(osVersion),
     },
+    profileType: profileMetadata?.profileType ?? null,
+    delegationId: profileMetadata?.delegationId ?? null,
+    topics: profileMetadata?.topics ?? [],
   };
 
   // Eliminar cualquier campo undefined que Firebase no acepte
@@ -115,7 +127,10 @@ const buildTokenData = (token: string): DeviceToken => {
  *     appVersion: "1.0.1"
  *     deviceInfo: { ... }
  */
-export const saveTokenToFirebase = async (token: string): Promise<void> => {
+export const saveTokenToFirebase = async (
+  token: string,
+  profileMetadata?: TokenProfileMetadata,
+): Promise<void> => {
   try {
     // Cachear el token primero (así updateLastActive lo tiene de fallback)
     await cachePushToken(token);
@@ -125,7 +140,7 @@ export const saveTokenToFirebase = async (token: string): Promise<void> => {
     // el backend seguiría enviando notificaciones (generando pushes duplicados en el mismo dispositivo).
     const safeTokenId = 'token_' + token.replace(/[^a-zA-Z0-9]/g, '_');
     const db = getDatabase(getFirebaseApp());
-    const tokenData = buildTokenData(token);
+    const tokenData = buildTokenData(token, profileMetadata);
 
     // Log de diagnóstico: mostrar exactamente qué se va a escribir
     console.log('📝 Intentando escribir en Firebase:', {
@@ -154,7 +169,9 @@ export const saveTokenToFirebase = async (token: string): Promise<void> => {
  * Actualiza la última actividad del dispositivo.
  * Si detecta que el token no está en Firebase, lo escribe también (fallback).
  */
-export const updateLastActive = async (): Promise<void> => {
+export const updateLastActive = async (
+  profileMetadata?: TokenProfileMetadata,
+): Promise<void> => {
   try {
     const db = getDatabase(getFirebaseApp());
     const token = await getCachedPushToken();
@@ -171,7 +188,7 @@ export const updateLastActive = async (): Promise<void> => {
         console.log(
           '🔄 Token no encontrado en Firebase, guardando datos completos...',
         );
-        const tokenData = buildTokenData(token);
+        const tokenData = buildTokenData(token, profileMetadata);
         // Preservar registeredAt original si existe
         if (existingData?.registeredAt) {
           tokenData.registeredAt = existingData.registeredAt;
@@ -181,10 +198,17 @@ export const updateLastActive = async (): Promise<void> => {
         return;
       }
 
-      // El nodo existe con token: solo actualizar lastActive
-      await update(deviceRef, {
+      // El nodo existe con token: actualizar lastActive y la metadata del perfil
+      // si se proporcionó (cambios de perfil/delegación se propagan aquí).
+      const updates: Record<string, unknown> = {
         lastActive: new Date().toISOString(),
-      });
+      };
+      if (profileMetadata) {
+        updates.profileType = profileMetadata.profileType ?? null;
+        updates.delegationId = profileMetadata.delegationId ?? null;
+        updates.topics = profileMetadata.topics ?? [];
+      }
+      await update(deviceRef, updates);
     } else {
       // Sin token en caché: no podemos determinar el nodo en Firebase.
       // No hacer nada — evita crear nodos "zombi" con solo lastActive.
@@ -416,7 +440,8 @@ export const markAllNotificationsAsRead = async (
       const updated = notifications.map((n) => {
         if (idsSet.has(n.id)) return { ...n, isRead: true };
         // También marcar por contenido idéntico
-        if (contentKeys.has(`${n.title}|${n.body}`)) return { ...n, isRead: true };
+        if (contentKeys.has(`${n.title}|${n.body}`))
+          return { ...n, isRead: true };
         return n;
       });
       await AsyncStorage.setItem(
@@ -464,11 +489,13 @@ export const getUnreadNotificationsCount = async (): Promise<number> => {
     const firebaseNotifications = await getNotificationsHistory();
 
     // Combinar, priorizando locales
-    const combined = [...localNotifications, ...firebaseNotifications].sort((a, b) => {
-      const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
-      const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
-      return dateB.getTime() - dateA.getTime();
-    });
+    const combined = [...localNotifications, ...firebaseNotifications].sort(
+      (a, b) => {
+        const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
+        const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      },
+    );
 
     // Deduplicar
     const seenContentKeys = new Set<string>();
@@ -490,7 +517,7 @@ export const getUnreadNotificationsCount = async (): Promise<number> => {
       return false;
     };
 
-    return deduplicated.filter(n => !isNotificationRead(n)).length;
+    return deduplicated.filter((n) => !isNotificationRead(n)).length;
   } catch (error) {
     console.error('Error contando notificaciones sin leer:', error);
     return 0;

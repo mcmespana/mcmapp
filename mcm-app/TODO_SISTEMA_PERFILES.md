@@ -1,7 +1,7 @@
 # Sistema de Perfiles de Usuario — Diseño técnico
 
 > Documento de diseño para personalizar la experiencia de la app MCM según perfil de usuario y delegación local.
-> **Estado**: Fase 0 en curso · **Fecha última revisión**: abril 2026
+> **Estado**: ✅ Fases 0–8 completadas · **Fecha última revisión**: abril 2026
 >
 > **Cambios de la revisión abril 2026**
 >
@@ -580,55 +580,49 @@ Cada fase es un commit/PR independiente y **no rompe la app** si se queda ahí: 
 - [ ] Rellenar la lista real de delegaciones en `delegationList`.
 - [ ] Rellenar los IDs reales de `defaultCalendars` por perfil (del nodo `/jubileo/calendarios`).
 
-### Fase 1 — Ampliar `UserProfileContext`
+### ✅ Fase 1 — `UserProfileContext` ampliado (hecho)
 
-- [ ] Añadir `profileType: ProfileType | null`, `delegationId: string | null`, `onboardingCompleted: boolean`.
-- [ ] Mantener `name` y `location` legacy temporalmente (fase 8 los limpia).
-- [ ] Persistir en `@user_profile` (AsyncStorage).
+`profileType`, `delegationId`, `onboardingCompleted` añadidos. Campo `location` eliminado.
 
-### Fase 2 — Contexto y hook
+### ✅ Fase 2 — Contexto y hook (hecho)
 
-- [ ] `contexts/ProfileConfigContext.tsx`: usa `useFirebaseData('profileConfig', '@profileConfig_cache')` + refetch al volver a foreground (AppState).
-- [ ] `hooks/useResolvedProfileConfig.ts`: combina ambos contextos, memoiza el `ResolvedProfileConfig`.
-- [ ] **Shim de compat**: reescribir `contexts/FeatureFlagsContext.tsx` para que internamente llame a `useResolvedProfileConfig()` y devuelva un objeto con la forma legacy. Así los 10+ consumidores actuales siguen funcionando sin tocar nada.
+- `contexts/ProfileConfigContext.tsx` descarga `/profileConfig` con `useFirebaseData`.
+- `hooks/useResolvedProfileConfig.ts` combina config + UserProfile en un `ResolvedProfileConfig` memoizado.
 
-### Fase 3 — Onboarding
+### ✅ Fase 3 — Onboarding (hecho)
 
-- [ ] `app/onboarding.tsx`: Stack screen (no tab). Paso 1 perfil, paso 2 delegación.
-- [ ] Botón "Saltar" → `profileType='miembro'`, `delegationId='_default'`, `onboardingCompleted=false`.
-- [ ] Banner sutil en Home si `!onboardingCompleted` invitando a completarlo.
-- [ ] Redirect desde `_layout.tsx`: si `!onboardingCompleted` y `global.showOnboarding === true` → `router.replace('/onboarding')` (solo primer arranque).
+- `app/onboarding.tsx` con 2 pasos (perfil + delegación). "Saltar" asume `miembro` + `_default`.
+- Redirect desde `app/_layout.tsx` cuando `profileType === null` y `showOnboarding === true`.
+- Banner sutil en Home si se saltó el onboarding.
 
-### Fase 4 — Consumir en tabs/home/más
+### ✅ Fase 4 — Tabs / Home / Más adaptados (hecho)
 
-- [ ] Adaptar `app/(tabs)/_layout.tsx` → usar `resolved.tabs` en vez de `featureFlags.tabs`.
-- [ ] Adaptar `app/(tabs)/index.tsx` → filtrar `quickItems` por `resolved.homeButtons`.
-- [ ] Adaptar `app/screens/MasHomeScreen.tsx` → filtrar por `resolved.masItems`.
-- [ ] Tras esto, el shim de compat se puede retirar.
+`useResolvedProfileConfig()` se usa en `app/(tabs)/_layout.tsx`, `app/(tabs)/index.tsx` y `app/screens/MasHomeScreen.tsx` para filtrar tabs, botones del home e items del menú.
 
-### Fase 5 — Calendarios y fotos
+### ✅ Fase 5 — Calendarios y fotos (hecho)
 
-- [ ] `hooks/useCalendarConfigs.ts`: si no hay settings guardados, seed desde `resolved.defaultCalendars ∪ delegation.extraCalendars` (mero default, el usuario puede cambiar).
-- [ ] `app/(tabs)/fotos.tsx`: filtrar álbumes por `resolved.albumTags` vs `album.tags`. Regla: álbum sin tags = visible para todos.
-- [ ] Añadir campo `tags` a álbumes en Firebase (opcional, retrocompatible).
+- `hooks/useCalendarConfigs.ts`: semilla inicial desde `resolved.defaultCalendars` (fallback a `defaultSelected`).
+- `app/(tabs)/fotos.tsx`: intersección `album.tags ∩ resolved.albumTags`. Álbum sin tags = visible (retrocompatible).
 
-### Fase 6 — Push tokens ampliados
+### ✅ Fase 6 — Push tokens (hecho)
 
-- [ ] `services/pushNotificationService.ts`: ampliar `saveTokenToFirebase` con `profileType`, `delegationId`, `topics` (pre-computados).
-- [ ] `notifications/usePushNotifications.ts`: re-guardar token cuando cambien `profileType`/`delegationId`.
-- [ ] Backward compat: tokens existentes sin estos campos → tratados como "general".
+- `services/pushNotificationService.ts`: `saveTokenToFirebase` y `updateLastActive` aceptan `TokenProfileMetadata`.
+- `notifications/usePushNotifications.ts`: re-publica la metadata al cambiar perfil/delegación.
 
-### Fase 7 — Settings UI
+### ✅ Fase 7 — Settings UI + bloqueos remotos (hecho)
 
-- [ ] `components/SettingsPanel.tsx`: sección "Tu perfil en MCM" con chips que abren selectores para perfil y delegación.
-- [ ] Reutilizar componentes del onboarding.
-- [ ] Botón "Restablecer calendarios del perfil" (usa `defaultCalendars`).
-- [ ] Banner de mantenimiento si `global.maintenanceMode === true`.
-- [ ] Pantalla "Actualiza la app" si `!isAppVersionSupported(appVersion, minAppVersion)`.
+- `components/SettingsPanel.tsx`: sección "Tu perfil en MCM" con chips y selectores para perfil + delegación.
+- `components/MaintenanceScreen.tsx`: pantalla de bloqueo para `maintenanceMode` y `minAppVersion`.
 
-### Fase 8 — Limpieza
+### ✅ Fase 8 — Limpieza (hecho)
 
-- [ ] Eliminar `contexts/FeatureFlagsContext.tsx` y `constants/featureFlags.ts`.
-- [ ] Eliminar `location` y todo el uso legacy del campo en el `UserProfileContext`.
-- [ ] Documentar en `CHANGELOG.md` y actualizar `mcm-app/CLAUDE.md` (la sección de Feature Flags queda obsoleta).
-- [ ] Testing matrix: iOS (NativeTabs), Android, web, offline (primera instalación sin red), cambios en caliente desde Firebase.
+Eliminados: `contexts/FeatureFlagsContext.tsx`, `constants/featureFlags.ts`, `__tests__/featureFlags.test.ts`, `FEATURE_FLAGS_OTA.md`, `components/UserProfileModal.tsx`. `CLAUDE.md` y este documento actualizados.
+
+### Testing pendiente
+
+- [ ] iOS nativo (NativeTabs)
+- [ ] Android
+- [ ] Web
+- [ ] Offline en primera instalación (sin red → fallback seed)
+- [ ] Cambio en caliente desde Firebase → aplicar al siguiente arranque
+- [ ] Cambio de perfil/delegación en Ajustes → token actualizado con topics nuevos

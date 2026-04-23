@@ -10,7 +10,7 @@ import type { ComponentProps } from 'react';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 import { MasStackParamList } from '../(tabs)/mas';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { takePendingMasScreen } from '@/utils/masNavigation';
 
 interface NavigationItem {
@@ -22,46 +22,31 @@ interface NavigationItem {
   tintColor: string;
 }
 
-interface FeatureOptions {
-  showComunica: boolean;
-  showComunicaGestion: boolean;
-}
-
-const getAllNavigationItems = (opts: FeatureOptions): NavigationItem[] => {
-  const items: NavigationItem[] = [];
-
-  if (opts.showComunica) {
-    items.push({
-      label: 'Comunica',
-      subtitle: 'Portal de comunicación MCM',
-      emoji: '📣',
-      materialIcon: 'forum',
-      target: 'Comunica',
-      tintColor: '#E08A3C',
-    });
-  }
-
-  if (opts.showComunicaGestion) {
-    items.push({
-      label: 'Gestión',
-      subtitle: 'Administración y CRM',
-      emoji: '⚙️',
-      materialIcon: 'admin-panel-settings',
-      target: 'ComunicaGestion',
-      tintColor: '#607D8B',
-    });
-  }
-
-  items.push({
+const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
+  comunica: {
+    label: 'Comunica',
+    subtitle: 'Portal de comunicación MCM',
+    emoji: '📣',
+    materialIcon: 'forum',
+    target: 'Comunica',
+    tintColor: '#E08A3C',
+  },
+  'comunica-gestion': {
+    label: 'Gestión',
+    subtitle: 'Administración y CRM',
+    emoji: '⚙️',
+    materialIcon: 'admin-panel-settings',
+    target: 'ComunicaGestion',
+    tintColor: '#607D8B',
+  },
+  jubileo: {
     label: 'Jubileo',
     subtitle: 'Horarios, materiales, grupos...',
     emoji: '🎉',
     materialIcon: 'celebration',
     target: 'JubileoHome',
     tintColor: '#A3BD31',
-  });
-
-  return items;
+  },
 };
 
 export default function MasHomeScreen() {
@@ -69,14 +54,13 @@ export default function MasHomeScreen() {
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const featureFlags = useFeatureFlags();
+  const resolved = useResolvedProfileConfig();
   const navigationItems = React.useMemo(
     () =>
-      getAllNavigationItems({
-        showComunica: featureFlags.showComunica,
-        showComunicaGestion: featureFlags.showComunicaGestion,
-      }),
-    [featureFlags.showComunica, featureFlags.showComunicaGestion],
+      resolved.masItems
+        .map((id) => MAS_ITEM_CATALOG[id])
+        .filter((item): item is NavigationItem => Boolean(item)),
+    [resolved.masItems],
   );
 
   // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella

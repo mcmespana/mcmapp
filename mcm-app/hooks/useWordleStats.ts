@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDatabase, push, ref, set } from 'firebase/database';
 import { getFirebaseApp } from './firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useResolvedProfileConfig } from './useResolvedProfileConfig';
 
 // Función simple para generar IDs únicos
 const generateId = () => {
@@ -28,6 +29,7 @@ export default function useWordleStats() {
   const [stats, setStats] = useState<WordleStats>(defaultStats);
   const [loading, setLoading] = useState(true);
   const { profile } = useUserProfile();
+  const resolved = useResolvedProfileConfig();
 
   useEffect(() => {
     const load = async () => {
@@ -71,7 +73,7 @@ export default function useWordleStats() {
       await set(entryRef, {
         userId: stats.userId,
         userName: profile.name,
-        userLocation: profile.location,
+        userDelegation: resolved.delegationLabel,
         attempts,
         timestamp: Date.now(),
       });
@@ -85,12 +87,12 @@ export default function useWordleStats() {
             stats.distribution[attempts as 1 | 2 | 3 | 4 | 5 | 6] + 1,
         },
         userName: profile.name,
-        userLocation: profile.location,
+        userDelegation: resolved.delegationLabel,
       };
       await set(ref(db, `wordle/stats/${stats.userId}`), newStats);
       await set(ref(db, `wordle/users/${stats.userId}`), {
         name: profile.name,
-        place: profile.location,
+        place: resolved.delegationLabel,
       });
     } catch (e) {
       console.error('Error saving wordle result', e);

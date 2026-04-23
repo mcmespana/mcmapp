@@ -6,21 +6,19 @@ import usePushNotifications from '../notifications/usePushNotifications'; // Hoo
 import React, { useState, useEffect, useCallback } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet } from 'react-native';
+import Constants from 'expo-constants';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   ThemeProvider as NavThemeProvider,
   DarkTheme,
   DefaultTheme,
 } from '@react-navigation/native';
-import { usePathname, Stack } from 'expo-router';
+import { usePathname, useSegments, router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useStatusBarTheme } from '@/hooks/useStatusBarTheme';
 import { AppSettingsProvider } from '@/contexts/AppSettingsContext';
-import {
-  FeatureFlagsProvider,
-  useFeatureFlags,
-} from '@/contexts/FeatureFlagsContext';
+import { ProfileConfigProvider } from '@/contexts/ProfileConfigContext';
 import {
   UserProfileProvider,
   useUserProfile,
@@ -30,10 +28,12 @@ import {
   useSelectedSongs,
 } from '@/contexts/SelectedSongsContext';
 import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
-import UserProfileModal from '@/components/UserProfileModal';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { isAppVersionSupported } from '@/utils/resolveProfileConfig';
 import { HelloWave } from '@/components/HelloWave';
 import AddToHomeBanner from '@/components/AddToHomeBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import MaintenanceScreen from '@/components/MaintenanceScreen';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import UniwindThemeBridge from '@/components/UniwindThemeBridge';
 import { HeroUINativeProvider, useToast } from 'heroui-native';
@@ -46,7 +46,7 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <HeroUINativeProvider>
-            <FeatureFlagsProvider>
+            <ProfileConfigProvider>
               <AppSettingsProvider>
                 <UniwindThemeBridge />
                 <UserProfileProvider>
@@ -57,7 +57,7 @@ export default function RootLayout() {
                   </SelectedSongsProvider>
                 </UserProfileProvider>
               </AppSettingsProvider>
-            </FeatureFlagsProvider>
+            </ProfileConfigProvider>
           </HeroUINativeProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
@@ -69,9 +69,9 @@ function InnerLayout() {
   const [showAnimation, setShowAnimation] = useState(true);
   const scheme = useColorScheme();
   const pathname = usePathname();
+  const segments = useSegments();
   const { profile, loading: profileLoading } = useUserProfile();
-  const [profileVisible, setProfileVisible] = useState(false);
-  const featureFlags = useFeatureFlags();
+  const resolved = useResolvedProfileConfig();
   const { addSong } = useSelectedSongs();
   const { toast } = useToast();
 
@@ -89,10 +89,8 @@ function InnerLayout() {
   );
   useIncomingPlaylist(handleIncomingPlaylist);
 
-  // Hook para actualizar el tema de la barra de estado dinámicamente
   useStatusBarTheme(pathname);
 
-  // Configuración del tema de navegación
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
   useEffect(() => {
@@ -102,23 +100,26 @@ function InnerLayout() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Redirigir al onboarding si:
+  //   - la config global pide onboarding (`showOnboarding`)
+  //   - el usuario no lo ha completado ni lo ha saltado (`profileType === null`)
+  // El banner de la Home se ocupará del caso "saltado" (profileType definido pero `onboardingCompleted === false`).
   useEffect(() => {
     if (showAnimation) return;
-    if (
-      featureFlags.showUserProfilePrompt &&
-      !profileLoading &&
-      (!profile.name || !profile.location)
-    ) {
-      setProfileVisible(true);
-    }
+    if (profileLoading) return;
+    if (!resolved.showOnboarding) return;
+    if (profile.profileType !== null) return;
+    // Evitar redirigir si ya estamos en la pantalla de onboarding
+    if (segments[0] === 'onboarding') return;
+    router.replace('/onboarding');
   }, [
     showAnimation,
     profileLoading,
-    profile,
-    featureFlags.showUserProfilePrompt,
+    resolved.showOnboarding,
+    profile.profileType,
+    segments,
   ]);
 
-  // Inicializa el sistema de notificaciones push
   usePushNotifications();
 
   if (showAnimation) {
@@ -129,11 +130,35 @@ function InnerLayout() {
     );
   }
 
+  // Kill switches remotos: mantenimiento + versión mínima
+  if (resolved.maintenanceMode) {
+    return (
+      <MaintenanceScreen
+        mode="maintenance"
+        message={resolved.maintenanceMessage}
+      />
+    );
+  }
+  const currentVersion = String(Constants.expoConfig?.version ?? '0.0.0');
+  if (!isAppVersionSupported(currentVersion, resolved.minAppVersion)) {
+    return (
+      <MaintenanceScreen
+        mode="update"
+        minVersion={resolved.minAppVersion}
+        currentVersion={currentVersion}
+      />
+    );
+  }
+
   return (
     <NavThemeProvider value={navigationTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="notifications" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="onboarding"
+          options={{ headerShown: false, presentation: 'modal' }}
+        />
         <Stack.Screen
           name="wordle"
           options={{
@@ -144,20 +169,15 @@ function InnerLayout() {
       </Stack>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AddToHomeBanner />
-      <UserProfileModal
-        visible={profileVisible}
-        onClose={() => setProfileVisible(false)}
-      />
     </NavThemeProvider>
   );
 }
 
-// Add a StyleSheet for the animation container
 const styles = StyleSheet.create({
   animationContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff', // Or use a theme color
+    backgroundColor: '#fff',
   },
 });

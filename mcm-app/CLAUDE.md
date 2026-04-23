@@ -101,9 +101,9 @@ components/                     # ~40 componentes
 └── [otros]
 
 contexts/                       # Estado global (React Context, NO Redux)
-├── FeatureFlagsContext.tsx     # Feature flags (tabs, UI toggles)
+├── ProfileConfigContext.tsx    # Config remota /profileConfig (cache offline)
 ├── AppSettingsContext.tsx      # Font scale, tema (→ AsyncStorage)
-├── UserProfileContext.tsx     # Nombre, ubicación (→ AsyncStorage)
+├── UserProfileContext.tsx     # profileType, delegationId, onboardingCompleted, name (→ AsyncStorage)
 ├── SettingsContext.tsx         # Ajustes del cantoral (→ AsyncStorage)
 └── SelectedSongsContext.tsx   # Playlist temporal (in-memory)
 
@@ -125,7 +125,8 @@ hooks/                          # Custom hooks
 └── useUnreadNotificationsCount.ts
 
 constants/
-├── featureFlags.ts            # IMPORTANTE: controla qué tabs/features se muestran
+├── defaultProfileConfig.ts    # Fallback hardcoded del sistema de perfiles (importa firebase-seed/profileConfig.json)
+├── profileCatalog.ts          # KNOWN_TABS / HOME_BUTTONS / MAS_ITEMS / ALBUM_TAGS / NOTIFICATION_TOPICS
 ├── colors.ts                  # Colores de marca + TabHeaderColors
 ├── firebase.ts                # Config Firebase (lee de env vars)
 ├── spacing.ts                 # Espaciado
@@ -137,6 +138,7 @@ utils/
 ├── filterSongsData.ts         # Filtra canciones borrador/pendiente
 ├── songUtils.ts               # Limpieza de títulos, mapeo de categorías
 ├── formatText.ts              # BBCode → HTML
+├── resolveProfileConfig.ts    # Resolver puro del sistema de perfiles + isAppVersionSupported
 └── fontUtils.ts               # Utilidades de fuentes
 
 services/
@@ -170,23 +172,43 @@ RootLayout (Stack)
 - **Android/Web**: `Tabs` tradicionales (expo-router)
 - Config centralizada en `TABS_CONFIG` array en `app/(tabs)/_layout.tsx`
 
-## Feature flags
+## Sistema de Perfiles (reemplaza a los feature flags)
 
-Archivo: `constants/featureFlags.ts`
+> Antiguo `constants/featureFlags.ts` + `FeatureFlagsContext` eliminado. Toda la visibilidad se configura ahora desde Firebase RTDB (`/profileConfig`). Ver **`TODO_SISTEMA_PERFILES.md`** para el diseño completo.
 
-```typescript
-// Estado actual:
-tabs: {
-  index: true,
-  mas: true,
-  cancionero: true,     // ← ACTIVO
-  calendario: true,
-  fotos: true,
-  comunica: false,      // ← DESACTIVADO — tab movida a (tabsdesactivados)/
-}
+### Piezas clave
+
+```
+firebase-seed/profileConfig.json     ← seed importable a Firebase + fuente del fallback
+types/profileConfig.ts               ← ProfileType, ProfileBase, ResolvedProfileConfig, ...
+constants/defaultProfileConfig.ts    ← fallback hardcoded (importa el JSON seed)
+constants/profileCatalog.ts          ← KNOWN_TABS / HOME_BUTTONS / MAS_ITEMS / ALBUM_TAGS / NOTIFICATION_TOPICS
+utils/resolveProfileConfig.ts        ← resolver puro + isAppVersionSupported
+contexts/ProfileConfigContext.tsx    ← descarga /profileConfig con caché offline
+hooks/useResolvedProfileConfig.ts    ← combina config + UserProfile → ResolvedProfileConfig
+app/onboarding.tsx                   ← pantalla inicial (perfil + delegación)
+components/MaintenanceScreen.tsx     ← bloqueo por mantenimiento o versión mínima
 ```
 
-Los flags controlan tanto la visibilidad de los tabs como los botones en la Home. Se pueden cambiar via OTA update (ver `FEATURE_FLAGS_OTA.md`).
+### Uso en componentes
+
+```tsx
+const resolved = useResolvedProfileConfig();
+// resolved.tabs, resolved.homeButtons, resolved.masItems,
+// resolved.defaultCalendars, resolved.albumTags, resolved.notificationTopics,
+// resolved.showNotificationsIcon, resolved.defaultTab, resolved.maintenanceMode, ...
+```
+
+### Cambios sin deploy
+
+Edita `/profileConfig/data/*` en Firebase RTDB (desde `mcmpanel` o consola). Los cambios se aplican la próxima vez que se abre la app (patrón `useFirebaseData` con `updatedAt`).
+
+### Añadir una nueva sección/tab
+
+1. Implementar la pantalla/tab como siempre.
+2. Añadir su ID a `constants/profileCatalog.ts` (KNOWN_TABS, KNOWN_HOME_BUTTONS, KNOWN_MAS_ITEMS según aplique).
+3. Añadir el ID al perfil o perfiles que deban verlo en `firebase-seed/profileConfig.json` **y** en `/profileConfig/data/profiles/*` de Firebase.
+4. Si es un tab/home button/más item nuevo, también añadirlo al catálogo visual correspondiente (`TABS_CONFIG`, `quickItems` en Home, `MAS_ITEM_CATALOG` en MasHomeScreen).
 
 ## Firebase
 
@@ -255,10 +277,11 @@ danger: '#9D1E74'; // Morado LC
 
 1. Crear archivo en `app/(tabs)/nuevoTab.tsx`
 2. Añadir objeto a `TABS_CONFIG` en `app/(tabs)/_layout.tsx`
-3. Añadir flag en `constants/featureFlags.ts` (interface + default)
-4. Definir color en `TabHeaderColors` si aplica (en `constants/colors.ts`)
-5. Usar `TabScreenWrapper` en el componente del tab
-6. Documentar en CHANGELOG.md
+3. Añadir el ID a `KNOWN_TABS` en `constants/profileCatalog.ts`
+4. Añadir el ID a `profiles.*.tabs` en `firebase-seed/profileConfig.json` y en `/profileConfig` en Firebase
+5. Definir color en `TabHeaderColors` si aplica (en `constants/colors.ts`)
+6. Usar `TabScreenWrapper` en el componente del tab
+7. Documentar en CHANGELOG.md
 
 ### Añadir pantalla nueva
 
@@ -297,21 +320,25 @@ Documentar NO:
 
 ## Archivos clave (referencia rápida)
 
-| Qué necesitas           | Archivo                                                  |
-| ----------------------- | -------------------------------------------------------- |
-| Entry point             | `app/_layout.tsx`                                        |
-| Configuración de tabs   | `app/(tabs)/_layout.tsx`                                 |
-| Home screen             | `app/(tabs)/index.tsx`                                   |
-| Feature flags           | `constants/featureFlags.ts`                              |
-| Colores                 | `constants/colors.ts`                                    |
-| Firebase config         | `constants/firebase.ts`                                  |
-| Firebase app singleton  | `hooks/firebaseApp.ts`                                   |
-| Fetch de datos          | `hooks/useFirebaseData.ts`                               |
-| Procesador de canciones | `hooks/useSongProcessor.ts`                              |
-| Parser de calendario    | `hooks/useCalendarEvents.ts`                             |
-| BBCode → HTML           | `utils/formatText.ts`                                    |
-| Notificaciones          | `notifications/` + `services/pushNotificationService.ts` |
-| Env vars template       | `.env.example`                                           |
+| Qué necesitas                | Archivo                                                  |
+| ---------------------------- | -------------------------------------------------------- |
+| Entry point                  | `app/_layout.tsx`                                        |
+| Configuración de tabs        | `app/(tabs)/_layout.tsx`                                 |
+| Home screen                  | `app/(tabs)/index.tsx`                                   |
+| Sistema de perfiles (diseño) | `TODO_SISTEMA_PERFILES.md`                               |
+| Fallback de perfiles         | `constants/defaultProfileConfig.ts`                      |
+| Catálogo de IDs conocidos    | `constants/profileCatalog.ts`                            |
+| Resolver de perfil           | `utils/resolveProfileConfig.ts`                          |
+| Seed JSON de Firebase        | `firebase-seed/profileConfig.json`                       |
+| Colores                      | `constants/colors.ts`                                    |
+| Firebase config              | `constants/firebase.ts`                                  |
+| Firebase app singleton       | `hooks/firebaseApp.ts`                                   |
+| Fetch de datos               | `hooks/useFirebaseData.ts`                               |
+| Procesador de canciones      | `hooks/useSongProcessor.ts`                              |
+| Parser de calendario         | `hooks/useCalendarEvents.ts`                             |
+| BBCode → HTML                | `utils/formatText.ts`                                    |
+| Notificaciones               | `notifications/` + `services/pushNotificationService.ts` |
+| Env vars template            | `.env.example`                                           |
 
 ## Identificadores de la app
 
@@ -489,5 +516,5 @@ npx heroui-cli@latest agents-md --native --output AGENTS.md
 - `ReportBugsModal.tsx` es usado por `SongControls.tsx` — NO eliminar (las variantes *Fixed, *New, \*Simple ya fueron eliminadas)
 - `ErrorBoundary.tsx` envuelve toda la app en `_layout.tsx`
 - Splash screen: HelloWave con 3 repeticiones (900ms total)
-- Feature flag `cancionero: true` — cantoral activo
+- Sistema de Perfiles: ver `TODO_SISTEMA_PERFILES.md`. Reemplaza al viejo `featureFlags.ts`
 - Sistema de notificaciones push: ver `NOTIFICACIONES.md` en la raíz del monorepo

@@ -66,10 +66,41 @@
     "delegations": {
       "_default": {
         "label": "General"
-      }
+      },
+      "mcm-espana": { "label": "MCM España" },
+      "mcm-benicarlo-vinaros": { "label": "MCM Benicarló-Vinaròs" },
+      "mcm-burriana": { "label": "MCM Burriana" },
+      "mcm-caravaca": { "label": "MCM Caravaca" },
+      "mcm-castellon": { "label": "MCM Castellón" },
+      "mcm-espinardo": { "label": "MCM Espinardo" },
+      "mcm-granada": { "label": "MCM Granada" },
+      "mcm-lalcora": { "label": "MCM l'Alcora" },
+      "mcm-madrid": { "label": "MCM Madrid" },
+      "mcm-nules": { "label": "MCM Nules" },
+      "mcm-onda": { "label": "MCM Onda" },
+      "mcm-quintanar": { "label": "MCM Quintanar" },
+      "mcm-vila-real": { "label": "MCM Vila-real" },
+      "mcm-villacanas": { "label": "MCM Villacañas" },
+      "mcm-zaragoza": { "label": "MCM Zaragoza" },
+      "internacional": { "label": "Internacional" }
     },
     "delegationList": [
-      { "id": "__TODO_delegacion_1", "label": "TODO - editar en Firebase" }
+      { "id": "mcm-espana", "label": "MCM España" },
+      { "id": "mcm-benicarlo-vinaros", "label": "MCM Benicarló-Vinaròs" },
+      { "id": "mcm-burriana", "label": "MCM Burriana" },
+      { "id": "mcm-caravaca", "label": "MCM Caravaca" },
+      { "id": "mcm-castellon", "label": "MCM Castellón" },
+      { "id": "mcm-espinardo", "label": "MCM Espinardo" },
+      { "id": "mcm-granada", "label": "MCM Granada" },
+      { "id": "mcm-lalcora", "label": "MCM l'Alcora" },
+      { "id": "mcm-madrid", "label": "MCM Madrid" },
+      { "id": "mcm-nules", "label": "MCM Nules" },
+      { "id": "mcm-onda", "label": "MCM Onda" },
+      { "id": "mcm-quintanar", "label": "MCM Quintanar" },
+      { "id": "mcm-vila-real", "label": "MCM Vila-real" },
+      { "id": "mcm-villacanas", "label": "MCM Villacañas" },
+      { "id": "mcm-zaragoza", "label": "MCM Zaragoza" },
+      { "id": "internacional", "label": "Internacional" }
     ],
     "overrides": {}
   }

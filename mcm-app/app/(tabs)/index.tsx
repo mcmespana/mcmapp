@@ -33,7 +33,8 @@ import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
 import { VersionDisplay } from '@/components/VersionDisplay';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useNotifications } from '@/contexts/NotificationsContext';
@@ -107,7 +108,8 @@ export default function Home() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
-  const featureFlags = useFeatureFlags();
+  const resolved = useResolvedProfileConfig();
+  const { profile } = useUserProfile();
   const fontScale = useFontScale();
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 700;
@@ -122,7 +124,7 @@ export default function Home() {
   // Notifications
   const { firebaseNotifications, readIds, unreadCount } = useNotifications();
   const latestNotification = firebaseNotifications[0] ?? null;
-  
+
   const [isUnread, setIsUnread] = useState(false);
 
   useEffect(() => {
@@ -134,7 +136,10 @@ export default function Home() {
       setIsUnread(false);
       return;
     }
-    const dateStr = 'receivedAt' in latestNotification ? latestNotification.receivedAt : latestNotification.createdAt;
+    const dateStr =
+      'receivedAt' in latestNotification
+        ? latestNotification.receivedAt
+        : latestNotification.createdAt;
     if (isNotificationOlderThan60Days(dateStr)) {
       setIsUnread(false);
       return;
@@ -206,54 +211,56 @@ export default function Home() {
   const hasAnyVisibleCalendar =
     calendarConfigs.length > 0 && visibleCalendars.some(Boolean);
 
-  // Quick grid items
-  const quickItems = useMemo<QuickItem[]>(
-    () =>
-      [
-        featureFlags.showComunica && {
-          key: 'comunica',
-          label: 'Comunica',
-          icon: 'forum' as const,
-          iconBg: scheme === 'dark' ? '#3A2200' : '#FFF0E0',
-          iconColor: '#E08A3C',
-          href: '/mas' as const,
-        },
-        featureFlags.tabs.cancionero && {
-          key: 'cancionero',
-          label: 'Cantoral',
-          icon: 'music-note' as const,
-          iconBg: scheme === 'dark' ? '#1A1A3A' : '#E8E0FF',
-          iconColor: '#6366F1',
-          href: '/cancionero',
-        },
-        featureFlags.tabs.fotos && {
-          key: 'fotos',
-          label: 'Fotos',
-          icon: 'image' as const,
-          iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
-          iconColor: '#34D399',
-          href: '/fotos',
-        },
-        featureFlags.tabs.contigo && {
-          key: 'evangelio',
-          label: 'Evangelio',
-          icon: 'menu-book' as const,
-          iconBg: scheme === 'dark' ? '#3A2A1A' : '#FFF8E1',
-          iconColor: '#F59E0B',
-          href: '/(tabs)/contigo/evangelio',
-        },
-        {
-          key: 'mas',
-          label: 'Más',
-          icon: 'add' as const,
-          iconBg: 'transparent',
-          iconColor: theme.icon,
-          href: '/mas',
-          dashed: true,
-        },
-      ].filter(Boolean) as QuickItem[],
-    [featureFlags.tabs, featureFlags.showComunica, scheme, theme.icon],
-  );
+  // Quick grid items — filtrados por la config del perfil resuelto
+  const quickItems = useMemo<QuickItem[]>(() => {
+    const visible = new Set(resolved.homeButtons);
+    const catalog: Record<string, QuickItem> = {
+      comunica: {
+        key: 'comunica',
+        label: 'Comunica',
+        icon: 'forum',
+        iconBg: scheme === 'dark' ? '#3A2200' : '#FFF0E0',
+        iconColor: '#E08A3C',
+        href: '/mas',
+      },
+      cancionero: {
+        key: 'cancionero',
+        label: 'Cantoral',
+        icon: 'music-note',
+        iconBg: scheme === 'dark' ? '#1A1A3A' : '#E8E0FF',
+        iconColor: '#6366F1',
+        href: '/cancionero',
+      },
+      fotos: {
+        key: 'fotos',
+        label: 'Fotos',
+        icon: 'image',
+        iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
+        iconColor: '#34D399',
+        href: '/fotos',
+      },
+      evangelio: {
+        key: 'evangelio',
+        label: 'Evangelio',
+        icon: 'menu-book',
+        iconBg: scheme === 'dark' ? '#3A2A1A' : '#FFF8E1',
+        iconColor: '#F59E0B',
+        href: '/(tabs)/contigo/evangelio',
+      },
+      mas: {
+        key: 'mas',
+        label: 'Más',
+        icon: 'add',
+        iconBg: 'transparent',
+        iconColor: theme.icon,
+        href: '/mas',
+        dashed: true,
+      },
+    };
+    return resolved.homeButtons
+      .filter((id) => visible.has(id) && catalog[id])
+      .map((id) => catalog[id]);
+  }, [resolved.homeButtons, scheme, theme.icon]);
 
   // Hide the tab navigator header — we render our own
   useLayoutEffect(() => {
@@ -346,7 +353,7 @@ export default function Home() {
             <MaterialIcons name="account-circle" size={26} color={theme.icon} />
           </TouchableOpacity>
 
-          {featureFlags.showNotificationsIcon && (
+          {resolved.showNotificationsIcon && (
             <TouchableOpacity
               style={styles.headerIconBtn}
               onPress={() => setNotifSheetOpen(true)}
@@ -395,6 +402,46 @@ export default function Home() {
         <View style={isWide ? styles.wideRow : undefined}>
           {/* ── Left column (or full-width on mobile) ── */}
           <View style={isWide ? styles.wideColLeft : undefined}>
+            {/* ── Banner de personalización (solo si saltó el onboarding) ── */}
+            {profile.profileType && !profile.onboardingCompleted && (
+              <TouchableOpacity
+                style={[
+                  styles.onboardingBanner,
+                  {
+                    backgroundColor: hexAlpha(accentColor, '12'),
+                    borderColor: hexAlpha(accentColor, '30'),
+                  },
+                ]}
+                onPress={() => router.push('/onboarding')}
+                accessibilityRole="button"
+                accessibilityLabel="Completa tu perfil"
+              >
+                <MaterialIcons name="tune" size={20} color={accentColor} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.onboardingBannerTitle,
+                      { color: theme.text },
+                    ]}
+                  >
+                    Personaliza tu experiencia
+                  </Text>
+                  <Text
+                    style={[styles.onboardingBannerBody, { color: theme.icon }]}
+                    numberOfLines={2}
+                  >
+                    Dinos quién eres y de qué delegación para ver lo que más te
+                    interesa.
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={accentColor}
+                />
+              </TouchableOpacity>
+            )}
+
             {/* ── Novedades ── */}
             <View style={styles.section}>
               <TouchableOpacity
@@ -1107,6 +1154,27 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   calendarButtonText: {
     fontWeight: '700',
+  } as TextStyle,
+
+  // ── Onboarding banner ──
+  onboardingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm + 4,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+  } as ViewStyle,
+  onboardingBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  } as TextStyle,
+  onboardingBannerBody: {
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+    opacity: 0.8,
   } as TextStyle,
 
   // ── Footer ──

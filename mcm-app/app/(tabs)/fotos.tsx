@@ -17,6 +17,7 @@ import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -29,6 +30,23 @@ interface Album {
   date?: string;
   imageUrl: string;
   albumUrl: string;
+  tags?: string[];
+}
+
+/**
+ * Reglas de visibilidad:
+ *  - Perfil con `['all']` → ve todos los álbumes.
+ *  - Álbum sin tags (o vacío) → visible para todos (equivalente a `['general']`).
+ *  - Si no, hay intersección entre `album.tags` y `albumTags` del perfil.
+ */
+function isAlbumVisibleForProfile(
+  album: Album,
+  profileTags: readonly string[],
+): boolean {
+  if (profileTags.includes('all')) return true;
+  const albumTags = album.tags;
+  if (!albumTags || albumTags.length === 0) return true;
+  return albumTags.some((tag) => profileTags.includes(tag));
 }
 
 interface FotosScreenStyles {
@@ -49,36 +67,41 @@ export default function FotosScreen() {
     loading,
     offline,
   } = useFirebaseData<Album[]>('albums', 'albums');
+  const resolved = useResolvedProfileConfig();
+  const visibleAlbums = React.useMemo(
+    () =>
+      (allAlbumsData ?? []).filter((album) =>
+        isAlbumVisibleForProfile(album, resolved.albumTags),
+      ),
+    [allAlbumsData, resolved.albumTags],
+  );
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   useEffect(() => {
-    if (!allAlbumsData) return;
-
     // Ordenar álbumes por ID en orden inverso (más nuevos primero)
-    const sortedAlbums = [...allAlbumsData].sort((a, b) =>
+    const sortedAlbums = [...visibleAlbums].sort((a, b) =>
       b.id.localeCompare(a.id),
     );
 
     const initialAlbums = sortedAlbums.slice(0, ALBUMS_PER_PAGE);
     setDisplayedAlbums(initialAlbums);
-    if (
+    setCurrentPage(0);
+    setAllAlbumsLoaded(
       initialAlbums.length < ALBUMS_PER_PAGE ||
-      sortedAlbums.length <= ALBUMS_PER_PAGE
-    ) {
-      setAllAlbumsLoaded(true);
-    }
-  }, [allAlbumsData]);
+        sortedAlbums.length <= ALBUMS_PER_PAGE,
+    );
+  }, [visibleAlbums]);
 
   const loadMoreAlbums = () => {
-    if (!allAlbumsData || allAlbumsLoaded || isLoadingMore) return;
+    if (allAlbumsLoaded || isLoadingMore) return;
 
     setIsLoadingMore(true);
     // Using a short timeout to ensure UI updates before heavy lifting, and to show spinner
     setTimeout(() => {
       // Ordenar álbumes por ID en orden inverso (más nuevos primero)
-      const sortedAlbums = [...allAlbumsData].sort((a, b) =>
+      const sortedAlbums = [...visibleAlbums].sort((a, b) =>
         b.id.localeCompare(a.id),
       );
 

@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ViewStyle,
+  TextStyle,
+  FlatList,
+  TouchableOpacity,
+} from 'react-native';
 import { CloseButton, PressableFeedback, useToast } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
@@ -8,11 +16,14 @@ import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import UserProfileModal from './UserProfileModal';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+import type { ProfileType } from '@/types/profileConfig';
 import BottomSheet from './BottomSheet';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
+import { hexAlpha } from '@/utils/colorUtils';
 
 interface Props {
   visible: boolean;
@@ -34,9 +45,12 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   const scheme = useColorScheme();
   const theme = Colors[scheme];
   const fontScale = useFontScale();
-  const featureFlags = useFeatureFlags();
+  const resolved = useResolvedProfileConfig();
+  const { rawConfig } = useProfileConfigContext();
+  const { profile, setProfile } = useUserProfile();
   const { toast } = useToast();
-  const [editVisible, setEditVisible] = useState(false);
+  const [profileSelectorOpen, setProfileSelectorOpen] = useState(false);
+  const [delegationSelectorOpen, setDelegationSelectorOpen] = useState(false);
 
   const increase = () => {
     setSettings({ fontScale: Math.min(settings.fontScale + 0.1, 2) });
@@ -50,6 +64,36 @@ export default function SettingsPanel({ visible, onClose }: Props) {
     scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)';
   const segmentBg =
     scheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.07)';
+  const accentColor = scheme === 'dark' ? colors.info : colors.primary;
+
+  const delegationLabel = useMemo(() => {
+    if (!profile.delegationId) return 'Sin delegación';
+    const found = rawConfig.delegationList.find(
+      (d) => d.id === profile.delegationId,
+    );
+    return found?.label ?? resolved.delegationLabel ?? 'Sin delegación';
+  }, [
+    profile.delegationId,
+    rawConfig.delegationList,
+    resolved.delegationLabel,
+  ]);
+
+  const profileLabel = profile.profileType
+    ? (rawConfig.profiles[profile.profileType]?.label ?? resolved.profileLabel)
+    : 'Sin elegir';
+
+  const handleSelectProfile = (profileType: ProfileType) => {
+    setProfile({ profileType, onboardingCompleted: true });
+    setProfileSelectorOpen(false);
+  };
+
+  const handleSelectDelegation = (delegationId: string | null) => {
+    setProfile({
+      delegationId,
+      onboardingCompleted: true,
+    });
+    setDelegationSelectorOpen(false);
+  };
 
   return (
     <>
@@ -61,8 +105,78 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             <CloseButton onPress={onClose} />
           </View>
 
-          {/* ── Sección: Apariencia ── */}
+          {/* ── Sección: Tu perfil MCM ── */}
           <Text style={[styles.sectionLabel, { color: theme.icon }]}>
+            TU PERFIL EN MCM
+          </Text>
+
+          <PressableFeedback
+            style={[
+              styles.surface,
+              styles.surfaceClickable,
+              { backgroundColor: surfaceBg },
+            ]}
+            onPress={() => setProfileSelectorOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar perfil"
+          >
+            <PressableFeedback.Highlight />
+            <View style={[styles.surfaceRow, { flex: 1 }]}>
+              <MaterialIcons name="person" size={20} color={theme.icon} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+                  Perfil
+                </Text>
+                <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                  {profileLabel}
+                </Text>
+              </View>
+            </View>
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={theme.icon}
+              style={{ opacity: 0.4 }}
+            />
+          </PressableFeedback>
+
+          <PressableFeedback
+            style={[
+              styles.surface,
+              styles.surfaceClickable,
+              { backgroundColor: surfaceBg },
+            ]}
+            onPress={() => setDelegationSelectorOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar delegación"
+          >
+            <PressableFeedback.Highlight />
+            <View style={[styles.surfaceRow, { flex: 1 }]}>
+              <MaterialIcons name="place" size={20} color={theme.icon} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+                  Delegación
+                </Text>
+                <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                  {delegationLabel}
+                </Text>
+              </View>
+            </View>
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={theme.icon}
+              style={{ opacity: 0.4 }}
+            />
+          </PressableFeedback>
+
+          {/* ── Sección: Apariencia ── */}
+          <Text
+            style={[
+              styles.sectionLabel,
+              { color: theme.icon, marginTop: spacing.md },
+            ]}
+          >
             APARIENCIA
           </Text>
 
@@ -173,38 +287,6 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             </View>
           </View>
 
-          {/* ── Sección: Mi cuenta ── */}
-          {featureFlags.showChangeNameButton && (
-            <>
-              <Text style={[styles.sectionLabel, { color: theme.icon }]}>
-                MI CUENTA
-              </Text>
-              <PressableFeedback
-                style={[
-                  styles.surface,
-                  styles.surfaceClickable,
-                  { backgroundColor: surfaceBg },
-                ]}
-                onPress={() => setEditVisible(true)}
-                accessibilityRole="button"
-              >
-                <PressableFeedback.Highlight />
-                <View style={[styles.surfaceRow, { flex: 1 }]}>
-                  <MaterialIcons name="person" size={20} color={theme.icon} />
-                  <Text style={[styles.surfaceLabel, { color: theme.text }]}>
-                    ¿Cambiamos tu nombre?
-                  </Text>
-                </View>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={theme.icon}
-                  style={{ opacity: 0.4 }}
-                />
-              </PressableFeedback>
-            </>
-          )}
-
           {/* ── Sección: Debug ── */}
           <Text
             style={[
@@ -260,10 +342,112 @@ export default function SettingsPanel({ visible, onClose }: Props) {
         </View>
       </BottomSheet>
 
-      <UserProfileModal
-        visible={editVisible}
-        onClose={() => setEditVisible(false)}
-      />
+      <BottomSheet
+        visible={profileSelectorOpen}
+        onClose={() => setProfileSelectorOpen(false)}
+      >
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.title, { color: theme.text }]}>Perfil</Text>
+            <CloseButton onPress={() => setProfileSelectorOpen(false)} />
+          </View>
+          {(Object.keys(rawConfig.profiles) as ProfileType[]).map((key) => {
+            const p = rawConfig.profiles[key];
+            const selected = profile.profileType === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[
+                  styles.optionRow,
+                  { backgroundColor: surfaceBg },
+                  selected && {
+                    borderColor: accentColor,
+                    backgroundColor: hexAlpha(accentColor, '15'),
+                  },
+                ]}
+                onPress={() => handleSelectProfile(key)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.optionLabel, { color: theme.text }]}>
+                    {p.label}
+                  </Text>
+                  <Text
+                    style={[styles.optionDesc, { color: theme.icon }]}
+                    numberOfLines={2}
+                  >
+                    {p.description}
+                  </Text>
+                </View>
+                {selected && (
+                  <MaterialIcons
+                    name="check-circle"
+                    size={20}
+                    color={accentColor}
+                  />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
+        visible={delegationSelectorOpen}
+        onClose={() => setDelegationSelectorOpen(false)}
+      >
+        <View
+          style={[
+            styles.container,
+            styles.delegationContainer,
+            { backgroundColor: theme.background },
+          ]}
+        >
+          <View style={styles.titleRow}>
+            <Text style={[styles.title, { color: theme.text }]}>
+              Delegación
+            </Text>
+            <CloseButton onPress={() => setDelegationSelectorOpen(false)} />
+          </View>
+          <FlatList
+            data={rawConfig.delegationList}
+            keyExtractor={(d) => d.id}
+            renderItem={({ item }) => {
+              const selected = profile.delegationId === item.id;
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.optionRowCompact,
+                    { backgroundColor: surfaceBg },
+                    selected && {
+                      borderColor: accentColor,
+                      backgroundColor: hexAlpha(accentColor, '15'),
+                    },
+                  ]}
+                  onPress={() => handleSelectDelegation(item.id)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                >
+                  <Text
+                    style={[styles.optionLabel, { color: theme.text, flex: 1 }]}
+                  >
+                    {item.label}
+                  </Text>
+                  {selected && (
+                    <MaterialIcons
+                      name="check-circle"
+                      size={20}
+                      color={accentColor}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            }}
+            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+          />
+        </View>
+      </BottomSheet>
     </>
   );
 }
@@ -272,6 +456,9 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: spacing.lg,
     paddingBottom: 40,
+  } as ViewStyle,
+  delegationContainer: {
+    maxHeight: '90%',
   } as ViewStyle,
 
   titleRow: {
@@ -294,7 +481,6 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   } as TextStyle,
 
-  // Generic surface card
   surface: {
     borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
@@ -315,8 +501,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   } as TextStyle,
+  surfaceHint: {
+    fontSize: 12,
+    marginTop: 2,
+    opacity: 0.75,
+  } as TextStyle,
 
-  // Theme segmented control
   themeSegment: {
     flexDirection: 'row',
     borderRadius: 10,
@@ -337,7 +527,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   } as TextStyle,
 
-  // Font size
   fontRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -356,5 +545,36 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '700',
     fontSize: 16,
+  } as TextStyle,
+
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    marginBottom: spacing.sm,
+  } as ViewStyle,
+  optionRowCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  } as ViewStyle,
+  optionLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+  } as TextStyle,
+  optionDesc: {
+    fontSize: 12,
+    marginTop: 2,
+    opacity: 0.8,
+    lineHeight: 16,
   } as TextStyle,
 });
