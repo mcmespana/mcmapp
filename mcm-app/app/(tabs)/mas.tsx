@@ -10,7 +10,7 @@ import GlassHeader from '@/components/ui/GlassHeader.ios';
 import MasHomeScreen from '../screens/MasHomeScreen';
 import ComunicaScreen from '../screens/ComunicaScreen';
 import ComunicaGestionScreen from '../screens/ComunicaGestionScreen';
-import JubileoHomeScreen from '../screens/JubileoHomeScreen';
+import EventHomeScreen from '../screens/EventHomeScreen';
 import HorarioScreen from '../screens/HorarioScreen';
 import MaterialesScreen from '../screens/MaterialesScreen';
 import MaterialPagesScreen from '../screens/MaterialPagesScreen';
@@ -24,24 +24,35 @@ import WordleScreen from '../screens/WordleScreen';
 import ComidaScreen from '../screens/ComidaScreen';
 import ComidaWebScreen from '../screens/ComidaWebScreen';
 import SettingsPanel from '@/components/SettingsPanel';
+import { getEvent } from '@/constants/events';
+
+/**
+ * Route params comunes a todas las pantallas de un evento (Jubileo u otros
+ * eventos futuros). El `eventId` se resuelve en `constants/events.ts` para
+ * saber de qué path de Firebase leer y qué colores usar en el header.
+ * Si no se pasa, se usa el evento por defecto.
+ */
+type EventRouteParams = { eventId?: string };
 
 export type MasStackParamList = {
   MasHome: { directTo?: string } | undefined;
   Comunica: undefined;
   ComunicaGestion: undefined;
-  JubileoHome: undefined;
-  Horario: undefined;
-  Materiales: { initialDayIndex?: number } | undefined;
-  MaterialPages: { actividad: any; fecha: string };
-  Visitas: undefined;
-  Comida: undefined;
-  ComidaWeb: { url: string; title: string };
-  Profundiza: undefined;
-  Grupos: undefined;
-  Contactos: undefined;
-  Apps: undefined;
-  Wordle: undefined;
-  Reflexiones: undefined;
+  JubileoHome: EventRouteParams | undefined;
+  Horario: EventRouteParams | undefined;
+  Materiales:
+    | (EventRouteParams & { initialDayIndex?: number })
+    | undefined;
+  MaterialPages: EventRouteParams & { actividad: any; fecha: string };
+  Visitas: EventRouteParams | undefined;
+  Comida: EventRouteParams | undefined;
+  ComidaWeb: EventRouteParams & { url: string; title: string };
+  Profundiza: EventRouteParams | undefined;
+  Grupos: EventRouteParams | undefined;
+  Contactos: EventRouteParams | undefined;
+  Apps: EventRouteParams | undefined;
+  Wordle: EventRouteParams | undefined;
+  Reflexiones: EventRouteParams | undefined;
 };
 
 const Stack = createNativeStackNavigator<MasStackParamList>();
@@ -91,6 +102,42 @@ const getTextColor = (tintColor: string) => {
   } else {
     return '#fff'; // Android usa texto blanco por defecto
   }
+};
+
+/**
+ * Opciones de header para una pantalla de evento. El color se deriva del
+ * `eventId` del route param — cae a Jubileo si falta. Esto permite reusar
+ * todas las sub-pantallas para eventos nuevos sin duplicar registros.
+ */
+type EventScreenRoute = { params?: { eventId?: string } };
+
+const eventScreenOptions =
+  (title: string) =>
+  ({ route }: { route: EventScreenRoute }) => {
+    const event = getEvent(route.params?.eventId);
+    const tint = event.tintColor;
+    const textColor = getTextColor(tint);
+    return {
+      title,
+      headerStyle: getHeaderStyle(tint),
+      headerTintColor: textColor,
+      headerTitleStyle: {
+        fontWeight: '700' as const,
+        fontSize: 18,
+        color: textColor,
+      },
+      headerBackground: () =>
+        Platform.OS === 'ios' ? <GlassHeader tintColor={tint} /> : undefined,
+    };
+  };
+
+/** Igual que eventScreenOptions pero usa `event.title` y oculta headerRight. */
+const eventHubScreenOptions = ({ route }: { route: EventScreenRoute }) => {
+  const event = getEvent(route.params?.eventId);
+  return {
+    ...eventScreenOptions(event.title)({ route }),
+    headerRight: undefined,
+  };
 };
 
 export default function MasTab() {
@@ -164,13 +211,15 @@ export default function MasTab() {
                 <GlassHeader tintColor="#78909C" />
               ) : undefined,
             headerRight: () => {
-              // Solo mostrar los botones en las pantallas de Jubileo
-              const isJubileoScreen =
+              // Solo mostrar los botones en las pantallas de un evento
+              const isEventScreen =
                 route.name !== 'MasHome' && route.name !== 'JubileoHome';
-              if (!isJubileoScreen) return null;
+              if (!isEventScreen) return null;
 
-              // Para las pantallas de Jubileo, usar el color del texto del Jubileo (#A3BD31)
-              const iconColor = getTextColor('#A3BD31');
+              // Color del icono según el evento activo (cae a Jubileo)
+              const eventId = (route.params as { eventId?: string } | undefined)
+                ?.eventId;
+              const iconColor = getTextColor(getEvent(eventId).tintColor);
 
               return (
                 <View
@@ -193,7 +242,9 @@ export default function MasTab() {
                   </PressableFeedback>
                   {route.name !== 'Reflexiones' && (
                     <PressableFeedback
-                      onPress={() => navigation.navigate('Reflexiones')}
+                      onPress={() =>
+                        navigation.navigate('Reflexiones', { eventId })
+                      }
                       style={{ padding: 10 }}
                     >
                       <PressableFeedback.Highlight />
@@ -231,238 +282,68 @@ export default function MasTab() {
         />
         <Stack.Screen
           name="JubileoHome"
-          component={JubileoHomeScreen}
-          options={{
-            title: 'Jubileo',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-            headerRight: undefined, // No mostrar botones en la home del jubileo
-          }}
+          component={EventHomeScreen}
+          options={eventHubScreenOptions}
         />
         <Stack.Screen
           name="Horario"
           component={HorarioScreen}
-          options={{
-            title: 'Horario',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Horario')}
         />
         <Stack.Screen
           name="Materiales"
           component={MaterialesScreen}
-          options={{
-            title: 'Materiales',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Materiales')}
         />
         <Stack.Screen
           name="MaterialPages"
           component={MaterialPagesScreen}
-          options={{
-            title: 'Material',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Material')}
         />
         <Stack.Screen
           name="Comida"
           component={ComidaScreen}
-          options={{
-            title: 'Comida',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Comida')}
         />
         <Stack.Screen
           name="ComidaWeb"
           component={ComidaWebScreen}
-          options={{
-            title: 'Comida',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Comida')}
         />
         <Stack.Screen
           name="Visitas"
           component={VisitasScreen}
-          options={{
-            title: 'Visitas',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Visitas')}
         />
         <Stack.Screen
           name="Profundiza"
           component={ProfundizaScreen}
-          options={{
-            title: 'Profundiza',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Profundiza')}
         />
         <Stack.Screen
           name="Grupos"
           component={GruposScreen}
-          options={{
-            title: 'Grupos',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Grupos')}
         />
         <Stack.Screen
           name="Contactos"
           component={ContactosScreen}
-          options={{
-            title: 'Contactos',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Contactos')}
         />
         <Stack.Screen
           name="Apps"
           component={AppsScreen}
-          options={{
-            title: 'Apps',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Apps')}
         />
         <Stack.Screen
           name="Wordle"
           component={WordleScreen}
-          options={{
-            title: 'Wordle Jubileo',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Wordle Jubileo')}
         />
         <Stack.Screen
           name="Reflexiones"
           component={ReflexionesScreen}
-          options={{
-            title: 'Compartiendo',
-            headerStyle: getHeaderStyle('#A3BD31'),
-            headerTintColor: getTextColor('#A3BD31'),
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 18,
-              color: getTextColor('#A3BD31'),
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor="#A3BD31" />
-              ) : undefined,
-          }}
+          options={eventScreenOptions('Compartiendo')}
         />
       </Stack.Navigator>
     </>

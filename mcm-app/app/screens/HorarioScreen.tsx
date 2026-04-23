@@ -7,6 +7,11 @@ import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import {
+  getEventCacheKey,
+  getEventFirebasePath,
+} from '@/constants/events';
 import DateSelector from '@/components/DateSelector';
 import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
@@ -24,9 +29,10 @@ export default function HorarioScreen() {
     () => createStyles(scheme, fontScale),
     [scheme, fontScale],
   );
+  const event = useCurrentEvent();
   const { data: horarioData, loading } = useFirebaseData<any[]>(
-    'jubileo/horario',
-    'jubileo_horario',
+    getEventFirebasePath(event, 'horario'),
+    getEventCacheKey(event, 'horario'),
   );
 
   // Function to find the closest date index
@@ -227,7 +233,10 @@ export default function HorarioScreen() {
 
   // Handle navigation to materials with specific day
   const handleNavigateToMateriales = (dayIndex: number) => {
-    navigation.navigate('Materiales', { initialDayIndex: dayIndex });
+    navigation.navigate('Materiales', {
+      initialDayIndex: dayIndex,
+      eventId: event.id,
+    });
   };
 
   const dynamicStyles = React.useMemo(

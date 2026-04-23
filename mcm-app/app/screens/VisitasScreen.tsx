@@ -14,6 +14,11 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import {
+  getEventCacheKey,
+  getEventFirebasePath,
+} from '@/constants/events';
 
 interface Visita {
   titulo: string;
@@ -58,9 +63,10 @@ function formatDate(fecha?: string) {
 export default function VisitasScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const event = useCurrentEvent();
   const { data: visitas, loading } = useFirebaseData<Visita[]>(
-    'jubileo/visitas',
-    'jubileo_visitas',
+    getEventFirebasePath(event, 'visitas'),
+    getEventCacheKey(event, 'visitas'),
   );
   const [selected, setSelected] = useState<Visita | null>(null);
 

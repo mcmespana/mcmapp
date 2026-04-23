@@ -14,6 +14,11 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import {
+  getEventCacheKey,
+  getEventFirebasePath,
+} from '@/constants/events';
 
 interface Pagina {
   titulo: string;
@@ -29,9 +34,10 @@ export default function ProfundizaScreen() {
     () => createStyles(scheme, fontScale),
     [scheme, fontScale],
   );
+  const event = useCurrentEvent();
   const { data: profundizaData, loading } = useFirebaseData<any>(
-    'jubileo/profundiza',
-    'jubileo_profundiza',
+    getEventFirebasePath(event, 'profundiza'),
+    getEventCacheKey(event, 'profundiza'),
   );
   const data = profundizaData as {
     titulo: string;

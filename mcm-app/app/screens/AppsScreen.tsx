@@ -14,6 +14,11 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import {
+  getEventCacheKey,
+  getEventFirebasePath,
+} from '@/constants/events';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 
 interface AppInfo {
@@ -31,9 +36,10 @@ interface AppInfo {
 export default function AppsScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const event = useCurrentEvent();
   const { data: appsData, loading } = useFirebaseData<AppInfo[]>(
-    'jubileo/apps',
-    'jubileo_apps',
+    getEventFirebasePath(event, 'apps'),
+    getEventCacheKey(event, 'apps'),
   );
   const [selected, setSelected] = useState<AppInfo | null>(null);
 

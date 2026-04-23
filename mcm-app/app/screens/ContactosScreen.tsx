@@ -4,6 +4,11 @@ import { Avatar, ListGroup, Separator, Button, Surface } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import {
+  getEventCacheKey,
+  getEventFirebasePath,
+} from '@/constants/events';
 import colors, { UIColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -38,9 +43,10 @@ function getAvatarColor(index: number): AvatarColor {
 
 export default function ContactosScreen() {
   const scheme = useColorScheme();
+  const event = useCurrentEvent();
   const { data: contacts, loading } = useFirebaseData<Contacto[]>(
-    'jubileo/contactos',
-    'jubileo_contactos',
+    getEventFirebasePath(event, 'contactos'),
+    getEventCacheKey(event, 'contactos'),
   );
   const data = contacts as Contacto[] | undefined;
 

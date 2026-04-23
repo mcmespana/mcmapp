@@ -20,6 +20,11 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import {
+  getEventCacheKey,
+  getEventFirebasePath,
+} from '@/constants/events';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -72,13 +77,15 @@ export default function ReflexionesScreen() {
     return parts.join(' · ');
   }, [profile.name, profile.location]);
 
+  const event = useCurrentEvent();
+  const compartiendoPath = getEventFirebasePath(event, 'compartiendo');
   const { data: dataRef } = useFirebaseData<Reflexion[]>(
-    'jubileo/compartiendo',
-    'jubileo_compartiendo',
+    compartiendoPath,
+    getEventCacheKey(event, 'compartiendo'),
   );
   const { data: gruposData } = useFirebaseData<Record<string, Grupo[]>>(
-    'jubileo/grupos',
-    'jubileo_grupos',
+    getEventFirebasePath(event, 'grupos'),
+    getEventCacheKey(event, 'grupos'),
   );
 
   const grupos = gruposData?.['Conso+'] ?? [];
@@ -141,10 +148,10 @@ export default function ReflexionesScreen() {
     };
     try {
       const db = getDatabase(getFirebaseApp());
-      const newRef = push(ref(db, 'jubileo/compartiendo/data'));
+      const newRef = push(ref(db, `${compartiendoPath}/data`));
       await set(newRef, nuevo);
       await set(
-        ref(db, 'jubileo/compartiendo/updatedAt'),
+        ref(db, `${compartiendoPath}/updatedAt`),
         Date.now().toString(),
       );
       setList([nuevo, ...list]);

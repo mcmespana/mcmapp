@@ -20,6 +20,8 @@ interface NavigationItem {
   materialIcon: ComponentProps<typeof MaterialIcons>['name'];
   target: keyof MasStackParamList;
   tintColor: string;
+  /** Id del evento a pasar como route param cuando target === 'JubileoHome'. */
+  eventId?: string;
 }
 
 interface FeatureOptions {
@@ -59,7 +61,20 @@ const getAllNavigationItems = (opts: FeatureOptions): NavigationItem[] => {
     materialIcon: 'celebration',
     target: 'JubileoHome',
     tintColor: '#A3BD31',
+    eventId: 'jubileo',
   });
+
+  // ── Añadir eventos futuros aquí ──
+  // Ejemplo:
+  //   items.push({
+  //     label: 'Encuentro 2027',
+  //     subtitle: 'Programa y materiales',
+  //     emoji: '✨',
+  //     materialIcon: 'auto-awesome',
+  //     target: 'JubileoHome',      // ← mismo hub genérico
+  //     tintColor: '#E15C62',
+  //     eventId: 'encuentro2027',   // ← id declarado en constants/events.ts
+  //   });
 
   return items;
 };
@@ -127,7 +142,12 @@ export default function MasHomeScreen() {
                     boxShadow: `0 4px 12px ${item.tintColor}30`,
                   },
             ]}
-            onPress={() => navigation.navigate(item.target as any)}
+            onPress={() =>
+              navigation.navigate(
+                item.target as any,
+                item.eventId ? ({ eventId: item.eventId } as any) : undefined,
+              )
+            }
           >
             <PressableFeedback.Highlight />
             {/* Accent bar izquierda */}
