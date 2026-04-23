@@ -1,17 +1,25 @@
 /**
  * Registry de eventos (Jubileo, encuentros, retiros, etc.).
  *
- * ── Cómo añadir un evento nuevo ──
- * 1. Duplica JUBILEO más abajo y cámbiale `id`, `title`, `tintColor`,
- *    `firebasePrefix` y las `sections` que ofrezca el evento.
- * 2. Regístralo en `EVENTS` con su `id` como clave.
- * 3. Sube los datos a Firebase bajo `<firebasePrefix>/<section.firebaseKey>`.
- * 4. Navega a JubileoHome (el hub de eventos) pasando
- *    `{ eventId: '<id>' }` como route param desde donde quieras
- *    (por ejemplo, desde MasHome).
+ * Documentación completa: /EVENTOS.md en la raíz del monorepo.
  *
- * No hace falta tocar ninguna sub-pantalla: todas leen el `eventId`
- * del route y calculan su path de Firebase desde este registry.
+ * ── Resumen para añadir un evento nuevo ──
+ * 1. Duplica JUBILEO más abajo y cámbiale `id`, `title`, `tintColor`,
+ *    `firebasePrefix` y las `sections`.
+ *    · Jubileo vive en `jubileo/` (raíz de Firebase).
+ *    · Eventos creados desde el panel MCM viven en
+ *      `activities/<nombreDelEvento>/`.
+ * 2. Regístralo en `EVENTS` con su `id` como clave.
+ * 3. Sube los datos a Firebase bajo `<firebasePrefix>/<section.firebaseKey>`
+ *    (el panel MCM ya lo hace).
+ * 4. Añade un ítem en `getAllNavigationItems` de `MasHomeScreen` con
+ *    `target: 'JubileoHome'` y `eventId: '<id>'`.
+ *
+ * No hace falta tocar ninguna sub-pantalla: todas leen `eventId` del
+ * route y resuelven su path de Firebase desde este registry.
+ *
+ * Secciones ocultas: cualquier sección con `hidden: true` en la config
+ * local o con `hidden: true` en el nodo Firebase queda oculta en el hub.
  */
 import type { ComponentProps } from 'react';
 import type { MaterialIcons } from '@expo/vector-icons';
@@ -26,10 +34,16 @@ export interface EventSection {
   tintColor: string;
   /**
    * Slug de Firebase relativo al `firebasePrefix` del evento.
-   * Ej.: 'horario' → path final `jubileo/horario`.
-   * Si se omite, la sub-pantalla no intenta leer Firebase con el prefijo del evento.
+   * Ej.: 'horario' → path final `jubileo/horario` o
+   * `activities/evento2027/horario`. Si se omite, la sub-pantalla no
+   * intenta leer Firebase con el prefijo del evento.
    */
   firebaseKey?: string;
+  /**
+   * Oculta la sección en el hub del evento. Equivale al flag `hidden`
+   * que el panel MCM puede poner en el nodo Firebase. Si falta, false.
+   */
+  hidden?: boolean;
 }
 
 export interface EventConfig {
@@ -39,7 +53,12 @@ export interface EventConfig {
   title: string;
   /** Color de acento del evento (header, accent bars del hub). */
   tintColor: string;
-  /** Prefijo de Firebase Realtime Database para todas las secciones. */
+  /**
+   * Prefijo de Firebase Realtime Database para todas las secciones.
+   * · Jubileo: `jubileo` (raíz).
+   * · Eventos del panel MCM: `activities/<nombre>` (ej.
+   *   `activities/evento2027`).
+   */
   firebasePrefix: string;
   sections: EventSection[];
 }

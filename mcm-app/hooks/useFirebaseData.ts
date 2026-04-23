@@ -12,6 +12,10 @@ export function useFirebaseData<T>(
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
+  // `hidden` se lee del mismo nodo Firebase (hermano de `data` y `updatedAt`).
+  // Lo usa el hub de eventos para esconder secciones desde el panel sin
+  // borrar sus datos. Si el nodo no lo trae, se asume false.
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -22,15 +26,17 @@ export function useFirebaseData<T>(
           state.isConnected && state.isInternetReachable !== false;
         setOffline(!connected);
 
-        const [localDataStr, localUpdatedAt] = await Promise.all([
+        const [localDataStr, localUpdatedAt, localHiddenStr] = await Promise.all([
           AsyncStorage.getItem(`${storageKey}_data`),
           AsyncStorage.getItem(`${storageKey}_updatedAt`),
+          AsyncStorage.getItem(`${storageKey}_hidden`),
         ]);
 
         if (localDataStr) {
           const parsed = JSON.parse(localDataStr);
           const transformed = transform ? transform(parsed) : (parsed as T);
           if (isMounted) setData(transformed);
+          if (isMounted) setHidden(localHiddenStr === 'true');
           setLoading(false); // show existing data while fetching remote
         }
 
@@ -39,6 +45,12 @@ export function useFirebaseData<T>(
         if (snapshot.exists()) {
           const val = snapshot.val();
           const remoteUpdatedAt = String(val.updatedAt ?? '0');
+          const remoteHidden = val.hidden === true;
+          if (isMounted) setHidden(remoteHidden);
+          await AsyncStorage.setItem(
+            `${storageKey}_hidden`,
+            remoteHidden ? 'true' : 'false',
+          );
           if (!localUpdatedAt || localUpdatedAt !== remoteUpdatedAt) {
             if (localDataStr) setLoading(true); // show loader for update
             const remoteData = transform
@@ -67,5 +79,5 @@ export function useFirebaseData<T>(
     };
   }, [path, storageKey, transform]);
 
-  return { data, loading, offline } as const;
+  return { data, loading, offline, hidden } as const;
 }

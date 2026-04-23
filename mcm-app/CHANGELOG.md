@@ -16,11 +16,14 @@
 ## 2026-04-23 — Sistema de eventos genérico (Jubileo + futuros)
 
 - **Arquitectura**: nuevo registry `constants/events.ts` con `EventConfig` (id, title, tintColor, firebasePrefix, sections). Jubileo migrado a config; para añadir un evento nuevo basta con duplicar la entrada, subir datos a Firebase bajo `<firebasePrefix>/<section.firebaseKey>` y (opcional) añadir un ítem en MasHome que navegue al mismo `JubileoHome` pasando `{ eventId }`.
+- **Convenciones Firebase**: Jubileo vive en `jubileo/` (raíz, legacy). Eventos creados desde el panel MCM viven en `activities/<nombre>/` (el panel mantiene además `activities/updatedAt`).
+- **Flag `hidden` por sección**: cada nodo de sección admite un campo opcional `hidden: boolean` en Firebase (hermano de `data` y `updatedAt`); si es `true`, el hub oculta esa tarjeta. `useFirebaseData` lo expone en el return y lo persiste en AsyncStorage para disponibilidad offline. También se puede poner `hidden: true` en el `EventSection` del código local.
 - **Route params**: `MasStackParamList` ahora lleva `eventId?: string` en todas las pantallas de evento. `useCurrentEvent()` (nuevo hook) las resuelve con fallback al default.
 - **Sub-pantallas desacopladas**: `HorarioScreen`, `MaterialesScreen`, `VisitasScreen`, `GruposScreen`, `ContactosScreen`, `ProfundizaScreen`, `AppsScreen`, `ReflexionesScreen`, `ComidaScreen` ya no hardcodean `jubileo/xxx`; piden el path vía `getEventFirebasePath(event, key)` + `getEventCacheKey(event, key)`.
 - **Stack options dinámicas**: helpers `eventScreenOptions` + `eventHubScreenOptions` en `app/(tabs)/mas.tsx` derivan título, tintColor y color de texto del evento activo. Eliminada la repetición de 12 bloques idénticos.
-- **EventHomeScreen**: nuevo `app/screens/EventHomeScreen.tsx` (sustituye a `JubileoHomeScreen.tsx`, borrado). Grid responsive (2 cols < 700px, 3 cols ≥ 700px), tarjetas con sombra tintada + accent bar + icon circle, soporte dark mode completo. Prefetcher por sección calienta la caché sin bloquear el render.
-- **Archivos principales**: `constants/events.ts` (nuevo), `hooks/useCurrentEvent.ts` (nuevo), `app/screens/EventHomeScreen.tsx` (nuevo), `app/screens/JubileoHomeScreen.tsx` (eliminado), `app/(tabs)/mas.tsx`, `app/screens/MasHomeScreen.tsx` + las 9 sub-pantallas indicadas.
+- **EventHomeScreen**: nuevo `app/screens/EventHomeScreen.tsx` (sustituye a `JubileoHomeScreen.tsx`, borrado). Grid responsive (2 cols < 700px, 3 cols ≥ 700px), tarjetas con sombra tintada + accent bar + icon circle, soporte dark mode completo. Cada card prefetcha su nodo Firebase, detecta `hidden` y se esconde si procede. Offline banner dirigido por `useNetworkStatus()`.
+- **Documentación**: guía completa en la raíz del monorepo (`/EVENTOS.md`) con estructura Firebase, los 3 pasos para crear un evento nuevo, uso del flag `hidden` y flujo de navegación. `CLAUDE.md` del monorepo lo referencia.
+- **Archivos principales**: `constants/events.ts` (nuevo), `hooks/useCurrentEvent.ts` (nuevo), `app/screens/EventHomeScreen.tsx` (nuevo), `app/screens/JubileoHomeScreen.tsx` (eliminado), `hooks/useFirebaseData.ts` (extendido con `hidden`), `app/(tabs)/mas.tsx`, `app/screens/MasHomeScreen.tsx` + las 9 sub-pantallas indicadas, `EVENTOS.md` (nuevo, raíz del monorepo).
 
 ## ${today} — Arreglo de navegación en tabs Más y Cantoral (Restauración)
 

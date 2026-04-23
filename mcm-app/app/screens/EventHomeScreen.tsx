@@ -21,6 +21,7 @@ import { radii } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import useNetworkStatus from '@/hooks/useNetworkStatus';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import {
@@ -59,6 +60,17 @@ export default function EventHomeScreen() {
 
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
 
+  // Pre-filtro: secciones ocultas en el config local nunca se montan.
+  // Las ocultas desde Firebase se filtran dentro de SectionCard (que
+  // retorna null), manteniendo el orden de hooks estable.
+  const visibleSections = React.useMemo(
+    () => event.sections.filter((s) => !s.hidden),
+    [event.sections],
+  );
+
+  const isConnected = useNetworkStatus();
+  const offline = isConnected === false;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -69,13 +81,14 @@ export default function EventHomeScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <OfflinePrefetch event={event} />
+        {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
 
         <View style={[styles.gridContainer, { gap }]}>
-          {event.sections.map((section) => (
+          {visibleSections.map((section) => (
             <SectionCard
               key={section.target + section.label}
               section={section}
+              event={event}
               width={itemWidth}
               isDark={isDark}
               onPress={() =>
@@ -92,62 +105,36 @@ export default function EventHomeScreen() {
   );
 }
 
-// ─── Prefetch + offline banner ───────────────────────────────────────
-// Calienta la caché de cada sección con firebaseKey definido.
-// Cada sección monta un prefetcher individual; no bloquea el render.
-function OfflinePrefetch({ event }: { event: EventConfig }) {
-  const keys = event.sections
-    .map((s) => s.firebaseKey)
-    .filter((k): k is string => !!k);
-  // Render one prefetcher per key. keys derive from a static config, so
-  // hook ordering is stable between renders.
-  return (
-    <>
-      {keys.map((key, idx) => (
-        <SectionPrefetcher
-          key={key}
-          event={event}
-          firebaseKey={key}
-          showOfflineBanner={idx === 0}
-        />
-      ))}
-    </>
-  );
-}
-
-function SectionPrefetcher({
-  event,
-  firebaseKey,
-  showOfflineBanner,
-}: {
-  event: EventConfig;
-  firebaseKey: string;
-  showOfflineBanner: boolean;
-}) {
-  const { offline } = useFirebaseData(
-    getEventFirebasePath(event, firebaseKey),
-    getEventCacheKey(event, firebaseKey),
-  );
-  if (showOfflineBanner && offline) {
-    return <OfflineBanner text="Mostrando datos sin conexión" />;
-  }
-  return null;
-}
-
 // ─── Card de sección ─────────────────────────────────────────────────
+// Cada card lee el nodo Firebase de su sección (si tiene firebaseKey)
+// para: (a) calentar la caché para la sub-pantalla y (b) respetar el
+// flag `hidden` que el panel MCM puede poner en Firebase.
 
 function SectionCard({
   section,
+  event,
   width,
   isDark,
   onPress,
 }: {
   section: EventSection;
+  event: EventConfig;
   width: number;
   isDark: boolean;
   onPress: () => void;
 }) {
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
+  const { hidden: firebaseHidden } = useFirebaseData(
+    section.firebaseKey
+      ? getEventFirebasePath(event, section.firebaseKey)
+      : `__noop__/${section.target}`,
+    section.firebaseKey
+      ? getEventCacheKey(event, section.firebaseKey)
+      : `__noop__${event.id}_${section.target}`,
+  );
+
+  if (firebaseHidden) return null;
+
   return (
     <PressableFeedback
       style={[
