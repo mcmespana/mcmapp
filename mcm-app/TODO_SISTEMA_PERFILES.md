@@ -1,7 +1,17 @@
 # Sistema de Perfiles de Usuario — Diseño técnico
 
 > Documento de diseño para personalizar la experiencia de la app MCM según perfil de usuario y delegación local.
-> **Estado**: diseño · **Fecha**: marzo 2026
+> **Estado**: Fase 0 en curso · **Fecha última revisión**: abril 2026
+>
+> **Cambios de la revisión abril 2026**
+>
+> - Pseudocódigo de resolución corregido (orden de merge, ver §5).
+> - Bloque `global` ampliado a los 6 flags actuales + `minAppVersion` + `maintenanceMode`.
+> - Se añaden overrides a nivel delegación (`delegations.*.override` y `extraX` aditivos).
+> - Dependencia circular entre providers resuelta con hook `useResolvedProfileConfig()`.
+> - Sin migración de usuarios: onboarding en primer arranque, fallback = `miembro` + `_default` si se salta.
+> - Eliminada la pretensión de "tiempo real con listener"; basta con re-fetch al abrir la app (patrón `useFirebaseData` existente).
+> - Fase 0 ejecutada: JSON seed, tipos, resolver, catálogo y fallback hardcoded creados.
 
 ---
 
@@ -49,6 +59,8 @@ Además, se pueden dar **combinaciones específicas** — por ejemplo, "las fami
 - El panel admin (`mcmpanel`) puede editarlo
 - Si Firebase no está disponible → se usa un fallback hardcoded en la app
 
+**Latencia de propagación**: los cambios se aplican **la siguiente vez que se abra la app** (patrón `useFirebaseData` con comparación de `updatedAt`). No se usa un listener `onValue` permanente — no es necesario para este caso de uso.
+
 ### 2.2. Feature flags fusionados (un solo sistema)
 
 **Decisión**: El actual `constants/featureFlags.ts` + `FeatureFlagsContext.tsx` se absorben dentro del nuevo sistema de perfiles. No hay dos sistemas controlando visibilidad.
@@ -85,158 +97,147 @@ Además, se pueden dar **combinaciones específicas** — por ejemplo, "las fami
 
 ```
 /profileConfig
-├── updatedAt: "2026-03-10T12:00:00.000Z"
+├── updatedAt: "2026-04-23T00:00:00.000Z"
 └── data
-    ├── global                          ← Reemplaza featureFlags.ts
+    ├── global                          ← Reemplaza featureFlags.ts por completo
     │   ├── defaultTab: "index"
     │   ├── showNotificationsIcon: true
-    │   └── maintenanceMode: false
+    │   ├── showOnboarding: true        ← antes showUserProfilePrompt
+    │   ├── showChangeNameButton: false
+    │   ├── maintenanceMode: false
+    │   ├── maintenanceMessage: ""      ← opcional
+    │   └── minAppVersion: "0.0.0"      ← kill switch; 0.0.0 = sin bloqueo
     │
     ├── profiles
     │   ├── familia
-    │   │   ├── label: "Familia"
-    │   │   ├── description: "Padres y familiares"
-    │   │   ├── tabs: ["index", "cancionero", "calendario", "fotos", "mas"]
-    │   │   ├── homeButtons: ["cantoral", "calendario", "fotos", "wordle", "ayuda"]
-    │   │   ├── masItems: ["jubileo", "materiales"]
-    │   │   ├── defaultCalendars: ["mcm-europa"]
-    │   │   ├── albumTags: ["general", "encuentros"]
-    │   │   └── notificationTopics: ["general", "eventos"]
-    │   │
-    │   ├── monitor
-    │   │   ├── label: "Monitor/a"
-    │   │   ├── description: "Monitores y catequistas"
-    │   │   ├── tabs: ["index", "cancionero", "calendario", "fotos", "mas"]
-    │   │   ├── homeButtons: ["cantoral", "calendario", "fotos", "grupos", "wordle", "ayuda"]
-    │   │   ├── masItems: ["jubileo", "materiales", "grupos", "contactos"]
-    │   │   ├── defaultCalendars: ["mcm-europa", "monitores"]
-    │   │   ├── albumTags: ["all"]
-    │   │   └── notificationTopics: ["general", "eventos", "monitores"]
-    │   │
-    │   └── miembro
-    │       ├── label: "Miembro MCM"
-    │       ├── description: "Miembros del movimiento"
-    │       ├── tabs: ["index", "cancionero", "calendario", "fotos", "comunica", "mas"]
-    │       ├── homeButtons: ["cantoral", "calendario", "fotos", "comunica", "compartiendo", "wordle"]
-    │       ├── masItems: ["jubileo", "materiales", "grupos", "contactos", "profundiza"]
-    │       ├── defaultCalendars: ["mcm-europa", "miembros"]
-    │       ├── albumTags: ["all"]
-    │       └── notificationTopics: ["general", "eventos", "miembros"]
+    │   │   ├── label, description
+    │   │   ├── tabs, homeButtons, masItems
+    │   │   ├── defaultCalendars, albumTags
+    │   │   └── notificationTopics
+    │   ├── monitor      (misma estructura)
+    │   └── miembro      (misma estructura)
     │
     ├── delegations
-    │   ├── _default                    ← Se usa para toda delegación sin override
+    │   ├── _default                    ← Usado para toda delegación no listada
     │   │   └── label: "General"
     │   │
-    │   ├── castellon
-    │   │   ├── label: "Castellón"
-    │   │   ├── notificationTopic: "castellon"
-    │   │   └── extraCalendars: ["castellon-local"]
-    │   │
-    │   └── madrid
-    │       ├── label: "Madrid"
-    │       ├── notificationTopic: "madrid"
-    │       └── extraCalendars: ["madrid-local"]
+    │   └── castellon                   ← Ejemplo con todas las opciones
+    │       ├── label: "Castellón"
+    │       ├── notificationTopic: "castellon"
+    │       ├── extraCalendars: ["castellon-local"]
+    │       ├── extraHomeButtons: []    ← aditivos opcionales
+    │       ├── extraMasItems: []
+    │       ├── extraAlbumTags: []
+    │       ├── extraTabs: []
+    │       └── override:               ← reemplaza campos completos para TODOS los
+    │           tabs: [...]              perfiles de esta delegación (opcional)
     │
     ├── delegationList                  ← Lista ordenada para el selector del onboarding
-    │   ├── 0: { id: "castellon", label: "Castellón" }
-    │   ├── 1: { id: "madrid", label: "Madrid" }
-    │   ├── 2: { id: "barcelona", label: "Barcelona" }
-    │   ├── 3: { id: "valencia", label: "Valencia" }
-    │   └── ... (hasta ~15)
+    │   └── [{ id, label }, ...]        (hasta ~15)
     │
     └── overrides                       ← Combinaciones perfil:delegación específicas
-        └── "familia:castellon"
-            └── tabs: ["index", "cancionero", "calendario", "fotos", "comunica", "mas"]
-            (↑ las familias de Castellón también ven la tab Comunica)
+        └── "familia:castellon":
+            tabs: [...]                 ← reemplaza solo para familias de Castellón
 ```
 
 ### Notas sobre la estructura
 
-- **`profiles`**: Config base para cada perfil. Contiene arrays de IDs que referencian tabs, botones, calendarios, etc. ya existentes en la app.
-- **`delegations._default`**: Se aplica automáticamente a cualquier delegación no listada explícitamente. Solo necesitas definir las especiales.
-- **`delegations.{id}.extraCalendars`**: Se **añaden** a los `defaultCalendars` del perfil (no los reemplazan).
-- **`delegationList`**: Lista separada para el UI del onboarding/settings. Así puedes reordenarla, añadir o quitar delegaciones sin tocar la lógica.
-- **`overrides`**: Clave con formato `"perfil:delegacion"`. Los campos definidos aquí **sobreescriben** la config base del perfil para esa combinación específica. Solo defines los campos que cambian.
-- **`global`**: Flags que aplican a todos los perfiles por igual (el equivalente al actual `featureFlags.ts`).
+- **`global`**: Contiene **todos los antiguos feature flags** + `showOnboarding`, `maintenanceMode`, `maintenanceMessage` y `minAppVersion`. El fichero `constants/featureFlags.ts` se puede eliminar tras la fase 8.
+- **`profiles`**: Config base por perfil. Arrays de IDs que referencian tabs, botones, calendarios, etc. existentes en la app. Los IDs se validan contra `constants/profileCatalog.ts` (ver §12).
+- **`delegations._default`**: Fallback para cualquier delegación no listada. Solo hace falta crear entrada si la delegación tiene algo especial.
+- **`delegations.{id}`**: Dos niveles de personalización por delegación:
+  - `extraX` (aditivos) → se concatenan a los arrays del perfil. Ideal para añadir 1-2 items.
+  - `override` (reemplazos) → reemplaza campos enteros. Útil cuando una delegación cambia radicalmente algo para todos sus perfiles.
+- **`overrides["perfil:delegacion"]`**: máxima granularidad. Reemplaza campos solo para esa combinación concreta (ej. "las familias de Castellón ven una tab extra").
+- **`delegationList`**: Lista separada para el UI del onboarding/settings — permite reordenar y añadir delegaciones sin tocar `delegations`.
+- **`minAppVersion`**: si `appVersion < minAppVersion` la app bloquea con pantalla "Actualiza". Comparación semver (`utils/resolveProfileConfig.ts → isAppVersionSupported`). Por defecto `0.0.0` = desactivado.
 
 ---
 
 ## 5. Sistema de resolución de config
 
-El hook `useProfileConfig()` resuelve la config final en este orden:
+El hook `useResolvedProfileConfig()` resuelve la config final en este orden (ver implementación real en `utils/resolveProfileConfig.ts`):
 
 ```
-1. Cargar config global
+1. Arrancar desde el perfil base (profiles[profileType])
          ↓
-2. Cargar config base del perfil (ej: "monitor")
+2. Aplicar delegación:
+   a. extraTabs, extraHomeButtons, extraMasItems,
+      extraCalendars, extraAlbumTags, notificationTopic
+      → se CONCATENAN a los arrays del perfil (deduplicado)
+   b. delegations[id].override (Partial<ProfileBase>)
+      → REEMPLAZA campos enteros (afecta a todos los perfiles en esa delegación)
          ↓
-3. Aplicar extras de la delegación (ej: "castellon")
-   - extraCalendars → se AÑADEN a defaultCalendars
-   - notificationTopic → se AÑADE a notificationTopics
+3. Aplicar override específico overrides["<perfil>:<delegacion>"]
+   → REEMPLAZA campos enteros (máxima granularidad)
          ↓
-4. Aplicar override si existe para "monitor:castellon"
-   - Los campos del override REEMPLAZAN los del perfil base
+4. Sanitizar contra catálogo (constants/profileCatalog.ts):
+   IDs desconocidos se descartan con warning; si el array queda vacío
+   se usa el del perfil base como red de seguridad.
          ↓
-5. Resultado: objeto plano listo para consumir
+5. Añadir los campos `global` al objeto resultado.
+         ↓
+6. Resultado: ResolvedProfileConfig plano, listo para consumir.
 ```
 
-### Pseudocódigo
+### Pseudocódigo (versión real)
 
 ```typescript
-function resolveProfileConfig(
-  config: ProfileConfigData, // todo el nodo /profileConfig/data
+export function resolveProfileConfig(
+  config: ProfileConfigData,
   profileType: ProfileType,
-  delegationId: string,
-): ResolvedConfig {
-  const global = config.global;
+  delegationId: string | null,
+): ResolvedProfileConfig {
   const profile = config.profiles[profileType];
-  const delegation =
-    config.delegations[delegationId] || config.delegations._default;
-  const override = config.overrides?.[`${profileType}:${delegationId}`];
+  const id = delegationId ?? '_default';
+  const delegation = config.delegations[id] ?? config.delegations._default;
 
-  // Base del perfil
-  let resolved: ResolvedConfig = {
-    tabs: profile.tabs,
-    homeButtons: profile.homeButtons,
-    masItems: profile.masItems,
-    defaultCalendars: [
-      ...profile.defaultCalendars,
-      ...(delegation.extraCalendars || []), // Delegación AÑADE calendarios
-    ],
-    albumTags: profile.albumTags,
-    notificationTopics: [
-      ...profile.notificationTopics,
-      ...(delegation.notificationTopic ? [delegation.notificationTopic] : []),
-    ],
-    ...global,
+  // 1. Clon del perfil base
+  let merged: ProfileBase = { ...profile, /* arrays clonados */ };
+
+  // 2a. Aditivos de la delegación
+  if (delegation.extraTabs)         merged.tabs          = uniq([...merged.tabs, ...delegation.extraTabs]);
+  if (delegation.extraHomeButtons)  merged.homeButtons   = uniq([...merged.homeButtons, ...delegation.extraHomeButtons]);
+  if (delegation.extraMasItems)     merged.masItems      = uniq([...merged.masItems, ...delegation.extraMasItems]);
+  if (delegation.extraCalendars)    merged.defaultCalendars = uniq([...merged.defaultCalendars, ...delegation.extraCalendars]);
+  if (delegation.extraAlbumTags)    merged.albumTags     = uniq([...merged.albumTags, ...delegation.extraAlbumTags]);
+  if (delegation.notificationTopic) merged.notificationTopics = uniq([...merged.notificationTopics, delegation.notificationTopic]);
+
+  // 2b. Override a nivel delegación (todos los perfiles)
+  merged = { ...merged, ...(delegation.override ?? {}) };
+
+  // 3. Override específico profile:delegation
+  const specific = config.overrides?.[`${profileType}:${id}`];
+  merged = { ...merged, ...(specific ?? {}) };
+
+  // 4. Sanitización (filtra IDs desconocidos + fallback si queda vacío)
+  //    → usa KNOWN_TABS, KNOWN_HOME_BUTTONS, KNOWN_MAS_ITEMS,
+  //      KNOWN_ALBUM_TAGS, KNOWN_NOTIFICATION_TOPICS
+
+  // 5. Añadir campos globales al resultado plano
+  return {
+    ...config.global,        // defaultTab, showNotificationsIcon, showOnboarding, …
+    profileType, delegationId: id,
+    profileLabel: profile.label,
+    delegationLabel: delegation.label,
+    tabs: merged.tabs,
+    homeButtons: merged.homeButtons,
+    masItems: merged.masItems,
+    defaultCalendars: merged.defaultCalendars,
+    albumTags: merged.albumTags,
+    notificationTopics: merged.notificationTopics,
   };
-
-  // Override sobreescribe campos específicos
-  if (override) {
-    resolved = { ...resolved, ...override };
-  }
-
-  return resolved;
 }
 ```
 
 ### Fallback hardcoded
 
-Si Firebase no está disponible en la primera carga (sin caché), la app usa un fallback hardcoded equivalente a la config del perfil "familia" sin delegación. Esto reemplaza al actual `constants/featureFlags.ts`.
+El fichero `firebase-seed/profileConfig.json` es la **fuente única** de verdad para el seed de Firebase **y** para el fallback en código. `constants/defaultProfileConfig.ts` lo importa y expone:
 
-```typescript
-// constants/defaultProfileConfig.ts
-export const DEFAULT_PROFILE_CONFIG: ResolvedConfig = {
-  tabs: ['index', 'cancionero', 'calendario', 'fotos', 'mas'],
-  homeButtons: ['cantoral', 'calendario', 'fotos', 'wordle', 'ayuda'],
-  masItems: ['jubileo', 'materiales'],
-  defaultCalendars: ['mcm-europa'],
-  albumTags: ['all'],
-  notificationTopics: ['general', 'eventos'],
-  defaultTab: 'index',
-  showNotificationsIcon: true,
-};
-```
+- `DEFAULT_PROFILE_CONFIG_DATA` — el nodo `data` completo.
+- `DEFAULT_RESOLVED_PROFILE_CONFIG` — ya resuelto para `miembro` + `_default` (listo para render inmediato sin red).
+
+Si un usuario salta el onboarding, la app asume `profileType = 'miembro'` y `delegationId = _default`, y muestra un banner sutil en Home invitando a personalizar desde Ajustes.
 
 ---
 
@@ -404,7 +405,13 @@ React Context se actualiza → toda la app se re-renderiza con la nueva config
 
 ### 8.3. Skip del onboarding
 
-Si el usuario cierra/salta el onboarding, se usa la config fallback (equivalente a "Familia" sin delegación). Puede configurar desde Settings en cualquier momento.
+Si el usuario cierra/salta el onboarding:
+
+- `profileType = 'miembro'` (asumimos perfil más "completo" por defecto).
+- `delegationId = '_default'`.
+- `onboardingCompleted = false` (para poder mostrar un banner de invitación).
+
+La Home muestra un banner sutil ("Personaliza tu experiencia — Ajustes") hasta que el usuario complete el onboarding desde Ajustes. No hay pantalla bloqueante.
 
 ---
 
@@ -412,12 +419,17 @@ Si el usuario cierra/salta el onboarding, se usa la config fallback (equivalente
 
 ### 9.1. Archivos a crear
 
-| Archivo                             | Descripción                                                                          |
-| ----------------------------------- | ------------------------------------------------------------------------------------ |
-| `constants/defaultProfileConfig.ts` | Config fallback hardcoded (reemplaza conceptualmente a `featureFlags.ts`)            |
-| `contexts/ProfileConfigContext.tsx` | Nuevo contexto que descarga y resuelve la config (reemplaza a `FeatureFlagsContext`) |
-| `hooks/useProfileConfig.ts`         | Hook que expone la config resuelta + helpers                                         |
-| `app/onboarding.tsx`                | Pantalla de onboarding (Stack screen, no tab)                                        |
+| Archivo                                | Descripción                                                                                                   | Estado         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------- |
+| `types/profileConfig.ts`               | Tipos TS del sistema (`ProfileType`, `ProfileBase`, `ProfileConfigData`, `ResolvedProfileConfig`, etc.)        | ✅ Fase 0 hecho |
+| `constants/profileCatalog.ts`          | Catálogo de IDs conocidos (`KNOWN_TABS`, `KNOWN_HOME_BUTTONS`, `KNOWN_MAS_ITEMS`, `KNOWN_ALBUM_TAGS`, …)       | ✅ Fase 0 hecho |
+| `utils/resolveProfileConfig.ts`        | Resolver puro + `isAppVersionSupported` semver                                                                 | ✅ Fase 0 hecho |
+| `firebase-seed/profileConfig.json`     | Seed inicial listo para importar a Firebase. Misma estructura que el fallback                                   | ✅ Fase 0 hecho |
+| `firebase-seed/README.md`              | Instrucciones para subirlo a Firebase                                                                          | ✅ Fase 0 hecho |
+| `constants/defaultProfileConfig.ts`    | Fallback hardcoded (importa el JSON seed). Exporta también `DEFAULT_RESOLVED_PROFILE_CONFIG`                   | ✅ Fase 0 hecho |
+| `contexts/ProfileConfigContext.tsx`    | Contexto que descarga `/profileConfig` con `useFirebaseData` + refetch al foreground                            | Fase 2         |
+| `hooks/useResolvedProfileConfig.ts`    | Hook puro que combina `ProfileConfigContext` + `UserProfileContext` (rompe el ciclo de providers)              | Fase 2         |
+| `app/onboarding.tsx`                   | Pantalla de onboarding (Stack, no tab). Selector de perfil + delegación                                        | Fase 3         |
 
 ### 9.2. Archivos a modificar
 
@@ -440,14 +452,20 @@ Si el usuario cierra/salta el onboarding, se usa la config fallback (equivalente
 
 ```
 ErrorBoundary
-└── ProfileConfigProvider         ← NUEVO (reemplaza FeatureFlagsProvider)
+└── ProfileConfigProvider         ← NUEVO: descarga /profileConfig (raw)
     └── AppSettingsProvider
-        └── UserProfileProvider
+        └── UserProfileProvider   ← contiene profileType + delegationId
             └── NotificationsProvider
-                └── InnerLayout
+                └── InnerLayout   ← usa useResolvedProfileConfig() para combinar
 ```
 
-> **Nota**: `ProfileConfigProvider` necesita envolver a `UserProfileProvider` porque la resolución de config depende del `profileType` y `delegationId`. Alternativamente, `ProfileConfigProvider` puede estar dentro de `UserProfileProvider` y consumir el contexto de usuario. Evaluar cuál es más limpio.
+**Romper el ciclo de providers** — El resolver es una **función pura**; no hace falta que un provider consuma a otro:
+
+- `ProfileConfigProvider` expone `{ rawConfig, loading, offline }`.
+- `UserProfileProvider` expone `{ profileType, delegationId, onboardingCompleted }`.
+- El hook `useResolvedProfileConfig()` lee ambos contextos y devuelve un `ResolvedProfileConfig` memoizado. No es un provider.
+
+Mientras `rawConfig` está cargando, el hook devuelve `DEFAULT_RESOLVED_PROFILE_CONFIG` (fallback) — ningún componente ve `null`.
 
 ---
 
@@ -529,22 +547,88 @@ Push token → Firebase RTDB            Push token → misma Firebase RTDB
 
 ---
 
-## Checklist de implementación (orden sugerido)
+## 12. Catálogo de IDs "ground truth"
 
-- [ ] Definir tipos TypeScript para toda la estructura de config
-- [ ] Crear `constants/defaultProfileConfig.ts` con el fallback
-- [ ] Ampliar `UserProfileContext` con `profileType`, `delegationId`, `onboardingCompleted`
-- [ ] Crear `ProfileConfigContext` que descargue `/profileConfig` y resuelva config
-- [ ] Crear hook `useProfileConfig()` para consumo fácil
-- [ ] Crear pantalla de onboarding (selección de perfil + delegación)
-- [ ] Integrar en `_layout.tsx` (provider + redirección a onboarding)
-- [ ] Subir estructura inicial de `/profileConfig` a Firebase
-- [ ] Adaptar `_layout.tsx` de tabs para filtrar según perfil
-- [ ] Adaptar Home para filtrar botones según perfil
-- [ ] Adaptar MasHome para filtrar items según perfil
-- [ ] Integrar calendarios del perfil en `useCalendarConfigs`
-- [ ] Añadir campo `tags` a álbumes en Firebase + filtrar en fotos
-- [ ] Ampliar push token con `profileType` + `delegationId` + `topics`
-- [ ] Añadir cambio de perfil/delegación en Settings
-- [ ] Eliminar `FeatureFlagsContext` y `featureFlags.ts` (o marcar como deprecated)
-- [ ] Testing completo en iOS + Android + Web
+Para robustez, la app mantiene una lista de IDs válidos en `constants/profileCatalog.ts`. El resolver descarta IDs desconocidos con warning en dev — así un error en el panel admin no rompe la UI:
+
+- `KNOWN_TABS`: `index`, `cancionero`, `contigo`, `calendario`, `fotos`, `comunica`, `mas`.
+- `KNOWN_HOME_BUTTONS`: `comunica`, `cancionero`, `fotos`, `evangelio`, `mas`.
+- `KNOWN_MAS_ITEMS`: `comunica`, `comunica-gestion`, `jubileo`.
+- `KNOWN_ALBUM_TAGS`: `all`, `general`, `encuentros`, `interno`, `monitores`, `miembros`.
+- `KNOWN_NOTIFICATION_TOPICS`: `general`, `eventos`, `familias`, `monitores`, `miembros`.
+
+Al añadir un tab/botón/sección nueva a la app, **actualiza también este catálogo**.
+
+---
+
+## Plan de implementación — 8 fases
+
+Cada fase es un commit/PR independiente y **no rompe la app** si se queda ahí: se mantiene compatibilidad hasta la fase 8.
+
+### ✅ Fase 0 — Preparación (hecho)
+
+- [x] Tipos (`types/profileConfig.ts`)
+- [x] Catálogo de IDs (`constants/profileCatalog.ts`)
+- [x] Resolver puro + semver (`utils/resolveProfileConfig.ts`)
+- [x] Seed JSON para Firebase (`firebase-seed/profileConfig.json`)
+- [x] Instrucciones de subida (`firebase-seed/README.md`)
+- [x] Fallback hardcoded (`constants/defaultProfileConfig.ts`)
+
+**Pendientes de usuario**:
+
+- [ ] Subir `firebase-seed/profileConfig.json` al nodo `/profileConfig` en Firebase.
+- [ ] Rellenar la lista real de delegaciones en `delegationList`.
+- [ ] Rellenar los IDs reales de `defaultCalendars` por perfil (del nodo `/jubileo/calendarios`).
+
+### Fase 1 — Ampliar `UserProfileContext`
+
+- [ ] Añadir `profileType: ProfileType | null`, `delegationId: string | null`, `onboardingCompleted: boolean`.
+- [ ] Mantener `name` y `location` legacy temporalmente (fase 8 los limpia).
+- [ ] Persistir en `@user_profile` (AsyncStorage).
+
+### Fase 2 — Contexto y hook
+
+- [ ] `contexts/ProfileConfigContext.tsx`: usa `useFirebaseData('profileConfig', '@profileConfig_cache')` + refetch al volver a foreground (AppState).
+- [ ] `hooks/useResolvedProfileConfig.ts`: combina ambos contextos, memoiza el `ResolvedProfileConfig`.
+- [ ] **Shim de compat**: reescribir `contexts/FeatureFlagsContext.tsx` para que internamente llame a `useResolvedProfileConfig()` y devuelva un objeto con la forma legacy. Así los 10+ consumidores actuales siguen funcionando sin tocar nada.
+
+### Fase 3 — Onboarding
+
+- [ ] `app/onboarding.tsx`: Stack screen (no tab). Paso 1 perfil, paso 2 delegación.
+- [ ] Botón "Saltar" → `profileType='miembro'`, `delegationId='_default'`, `onboardingCompleted=false`.
+- [ ] Banner sutil en Home si `!onboardingCompleted` invitando a completarlo.
+- [ ] Redirect desde `_layout.tsx`: si `!onboardingCompleted` y `global.showOnboarding === true` → `router.replace('/onboarding')` (solo primer arranque).
+
+### Fase 4 — Consumir en tabs/home/más
+
+- [ ] Adaptar `app/(tabs)/_layout.tsx` → usar `resolved.tabs` en vez de `featureFlags.tabs`.
+- [ ] Adaptar `app/(tabs)/index.tsx` → filtrar `quickItems` por `resolved.homeButtons`.
+- [ ] Adaptar `app/screens/MasHomeScreen.tsx` → filtrar por `resolved.masItems`.
+- [ ] Tras esto, el shim de compat se puede retirar.
+
+### Fase 5 — Calendarios y fotos
+
+- [ ] `hooks/useCalendarConfigs.ts`: si no hay settings guardados, seed desde `resolved.defaultCalendars ∪ delegation.extraCalendars` (mero default, el usuario puede cambiar).
+- [ ] `app/(tabs)/fotos.tsx`: filtrar álbumes por `resolved.albumTags` vs `album.tags`. Regla: álbum sin tags = visible para todos.
+- [ ] Añadir campo `tags` a álbumes en Firebase (opcional, retrocompatible).
+
+### Fase 6 — Push tokens ampliados
+
+- [ ] `services/pushNotificationService.ts`: ampliar `saveTokenToFirebase` con `profileType`, `delegationId`, `topics` (pre-computados).
+- [ ] `notifications/usePushNotifications.ts`: re-guardar token cuando cambien `profileType`/`delegationId`.
+- [ ] Backward compat: tokens existentes sin estos campos → tratados como "general".
+
+### Fase 7 — Settings UI
+
+- [ ] `components/SettingsPanel.tsx`: sección "Tu perfil en MCM" con chips que abren selectores para perfil y delegación.
+- [ ] Reutilizar componentes del onboarding.
+- [ ] Botón "Restablecer calendarios del perfil" (usa `defaultCalendars`).
+- [ ] Banner de mantenimiento si `global.maintenanceMode === true`.
+- [ ] Pantalla "Actualiza la app" si `!isAppVersionSupported(appVersion, minAppVersion)`.
+
+### Fase 8 — Limpieza
+
+- [ ] Eliminar `contexts/FeatureFlagsContext.tsx` y `constants/featureFlags.ts`.
+- [ ] Eliminar `location` y todo el uso legacy del campo en el `UserProfileContext`.
+- [ ] Documentar en `CHANGELOG.md` y actualizar `mcm-app/CLAUDE.md` (la sección de Feature Flags queda obsoleta).
+- [ ] Testing matrix: iOS (NativeTabs), Android, web, offline (primera instalación sin red), cambios en caliente desde Firebase.
