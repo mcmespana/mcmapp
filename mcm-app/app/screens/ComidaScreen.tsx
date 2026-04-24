@@ -14,6 +14,7 @@ import { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { MasStackParamList } from '../(tabs)/mas';
 
 interface Option {
@@ -50,6 +51,7 @@ type Nav = NativeStackNavigationProp<MasStackParamList, 'ComidaWeb'>;
 export default function ComidaScreen() {
   const navigation = useNavigation<Nav>();
   const scheme = useColorScheme();
+  const event = useCurrentEvent();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { width, height } = useWindowDimensions();
   const containerPadding = spacing.md;
@@ -75,6 +77,7 @@ export default function ComidaScreen() {
                   navigation.navigate('ComidaWeb', {
                     url: opt.url,
                     title: opt.label,
+                    eventId: event.id,
                   })
                 }
                 activeOpacity={0.85}

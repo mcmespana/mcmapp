@@ -20,6 +20,11 @@ import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import {
+  getEventCacheKey,
+  getEventFirebasePath,
+} from '@/constants/events';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -46,9 +51,10 @@ type Data = Record<string, Grupo[]>;
 export default function GruposScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const event = useCurrentEvent();
   const { data: gruposData, loading } = useFirebaseData<Data>(
-    'jubileo/grupos',
-    'jubileo_grupos',
+    getEventFirebasePath(event, 'grupos'),
+    getEventCacheKey(event, 'grupos'),
   );
   const data = gruposData as Data | undefined;
 

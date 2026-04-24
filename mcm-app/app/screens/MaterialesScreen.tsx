@@ -7,6 +7,11 @@ import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import {
+  getEventCacheKey,
+  getEventFirebasePath,
+} from '@/constants/events';
 import DateSelector from '@/components/DateSelector';
 import { MasStackParamList } from '../(tabs)/mas';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -31,9 +36,10 @@ export default function MaterialesScreen() {
     () => createStyles(scheme, fontScale),
     [scheme, fontScale],
   );
+  const event = useCurrentEvent();
   const { data: materialesData, loading } = useFirebaseData<any[]>(
-    'jubileo/materiales',
-    'jubileo_materiales',
+    getEventFirebasePath(event, 'materiales'),
+    getEventCacheKey(event, 'materiales'),
   );
 
   // Function to find the closest date index
@@ -168,6 +174,7 @@ export default function MaterialesScreen() {
               navigation.navigate('MaterialPages', {
                 actividad: act,
                 fecha: dia.fecha,
+                eventId: event.id,
               })
             }
           >

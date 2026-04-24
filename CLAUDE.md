@@ -10,7 +10,8 @@
 ├── portadas-albumes/      ← Assets de portadas de álbumes (imágenes)
 ├── README.md              ← Guía rápida para humanos
 ├── AGENTS.md              ← Definición de agentes especializados
-└── NOTIFICACIONES.md      ← Documentación completa del sistema de notificaciones push
+├── NOTIFICACIONES.md      ← Documentación completa del sistema de notificaciones push
+└── EVENTOS.md             ← Cómo crear eventos (Jubileo, encuentros, retiros…) y estructura Firebase
 ```
 
 ## Reglas para agentes
@@ -45,3 +46,7 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 ## Notas sobre notificaciones push
 
 `NOTIFICACIONES.md` documenta el sistema completo de notificaciones push (cliente implementado, backend pendiente). Consultar ese archivo para el estado actual, plan de implementación y guía de pruebas.
+
+## Notas sobre eventos (Jubileo y futuros)
+
+`EVENTOS.md` documenta cómo está organizado el sistema de eventos: convención de paths en Firebase (`jubileo/` legacy vs `activities/<nombre>/`), estructura de cada sección (`{ updatedAt, data, hidden? }`), y los tres pasos para añadir un evento nuevo tocando sólo `constants/events.ts` + `MasHomeScreen.tsx`.
