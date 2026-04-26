@@ -60,7 +60,7 @@ type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const SelectedSongsScreen: React.FC = () => {
-  const { selectedSongs, clearSelection, addSong } = useSelectedSongs();
+  const { selectedSongs, clearSelection, addSong, isSongSelected } = useSelectedSongs();
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
   const scheme = useColorScheme() || 'light';
   const isDark = scheme === 'dark';
@@ -95,8 +95,11 @@ const SelectedSongsScreen: React.FC = () => {
             { categoryTitle: string; songs: Song[] }
           >
         )[categoryName].songs;
+        // ⚡ Bolt: Replace O(N*M) nested loop search (`selectedSongs.includes()`)
+        // with O(1) Set lookup (`isSongSelected()`) to significantly improve filtering
+        // performance when checking thousands of songs.
         const selectedInCategory = songsInCategory.filter((song) =>
-          selectedSongs.includes(song.filename),
+          isSongSelected(song.filename),
         );
 
         if (selectedInCategory.length > 0) {
@@ -116,7 +119,7 @@ const SelectedSongsScreen: React.FC = () => {
     };
 
     processSongs();
-  }, [selectedSongs, allSongsData]);
+  }, [selectedSongs, allSongsData, isSongSelected]);
 
   const handleExport = useCallback(() => {
     const date = new Date()
@@ -144,7 +147,8 @@ const SelectedSongsScreen: React.FC = () => {
       const categoryLetter = category.categoryTitle.charAt(0).toUpperCase();
 
       category.data.forEach((song) => {
-        if (selectedSongs.includes(song.filename)) {
+        // ⚡ Bolt: Use O(1) Set lookup instead of O(N) array search for export check
+        if (isSongSelected(song.filename)) {
           const songTitleClean = song.title.replace(/^\d+\.\s*/, '');
 
           let chordCapoString = '';
