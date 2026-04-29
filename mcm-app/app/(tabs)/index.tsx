@@ -73,24 +73,37 @@ function getUpcomingEvents(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
+
+  // Collect and sort only future dates
+  const upcomingDates: string[] = [];
+  for (const date in eventsByDate) {
+    if (date >= todayStr) {
+      upcomingDates.push(date);
+    }
+  }
+  upcomingDates.sort();
+
   const seen = new Set<string>();
   const events: CalendarEvent[] = [];
 
-  Object.entries(eventsByDate)
-    .filter(([date]) => date >= todayStr)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .forEach(([, evts]) => {
-      evts.forEach((evt) => {
-        if (visibleCalendars[evt.calendarIndex] === false) return;
-        const key = `${evt.title}|${evt.startDate}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          events.push(evt);
+  // Iterate chronologically, stop early when we have enough events
+  for (let d = 0; d < upcomingDates.length; d++) {
+    const evts = eventsByDate[upcomingDates[d]];
+    for (let i = 0; i < evts.length; i++) {
+      const evt = evts[i];
+      if (visibleCalendars[evt.calendarIndex] === false) continue;
+      const key = `${evt.title}|${evt.startDate}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        events.push(evt);
+        if (events.length >= limit) {
+          return events;
         }
-      });
-    });
+      }
+    }
+  }
 
-  return events.slice(0, limit);
+  return events;
 }
 
 interface QuickItem {
