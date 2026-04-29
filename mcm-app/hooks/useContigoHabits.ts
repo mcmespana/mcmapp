@@ -17,7 +17,8 @@ export interface DayRecord {
   prayerDuration?: PrayerDuration;
   prayerDurationMinutes?: number;
   prayerEmotion?: Emotion;
-  examenDone?: boolean;
+  /** Daily review completed (paso "Agradecer y revisar"). */
+  revisionDone?: boolean;
   timestamp: number;
 }
 
@@ -85,7 +86,7 @@ export function useContigoHabits() {
     date: string,
     duration: PrayerDuration,
     emotion: Emotion | null,
-    durationMinutes?: number
+    durationMinutes?: number,
   ) => {
     const record = ensureRecord(date);
     const newRecords = {
@@ -102,16 +103,42 @@ export function useContigoHabits() {
     await saveRecords(newRecords);
   };
 
-  const setExamenDone = async (date: string, done: boolean) => {
+  const setRevisionDone = async (date: string, done: boolean) => {
     const record = ensureRecord(date);
     const newRecords = {
       ...records,
-      [date]: { ...record, examenDone: done, timestamp: Date.now() },
+      [date]: { ...record, revisionDone: done, timestamp: Date.now() },
     };
     await saveRecords(newRecords);
   };
 
-  const getStreak = (habit: 'reading' | 'prayer' | 'examen'): number => {
+  const isRevisionDone = (date: string): boolean =>
+    !!records[date]?.revisionDone;
+
+  // Total prayer minutes during the current ISO week (Mon–Sun) up to `todayStr`
+  const getTotalMinutesWeek = (todayStr: string): number => {
+    let total = 0;
+    for (let i = 0; i < 7; i++) {
+      const ds = offsetISODate(todayStr, -i);
+      total += records[ds]?.prayerDurationMinutes || 0;
+    }
+    return total;
+  };
+
+  // Number of days the gospel has been read this month up to today
+  const getReadingsMonth = (todayStr: string): number => {
+    const [y, m] = todayStr.split('-').map(Number);
+    const today = parseInt(todayStr.split('-')[2], 10);
+    const dim = new Date(y, m, 0).getDate();
+    let c = 0;
+    for (let d = 1; d <= Math.min(today, dim); d++) {
+      const ds = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      if (records[ds]?.readingDone) c++;
+    }
+    return c;
+  };
+
+  const getStreak = (habit: 'reading' | 'prayer' | 'revision'): number => {
     const todayStr = new Date().toISOString().split('T')[0];
     let currentStreak = 0;
     const date = new Date(todayStr);
@@ -124,7 +151,7 @@ export function useContigoHabits() {
           ? record?.readingDone
           : habit === 'prayer'
             ? record?.prayerDone
-            : record?.examenDone;
+            : record?.revisionDone;
 
       // If checking today and it's not done, it doesn't break the streak (yet)
       // unless yesterday was also not done
@@ -146,13 +173,28 @@ export function useContigoHabits() {
 
   return {
     isLoading,
+    records,
     getRecord,
     setReadingDone,
     setPrayerDone,
-    setExamenDone,
+    setRevisionDone,
+    isRevisionDone,
     getStreak,
+    getTotalMinutesWeek,
+    getReadingsMonth,
     todayRecord,
     todayStr,
     reloadRecords,
   };
+}
+
+function offsetISODate(base: string, delta: number): string {
+  const [y, m, d] = base.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + delta);
+  return [
+    dt.getFullYear(),
+    String(dt.getMonth() + 1).padStart(2, '0'),
+    String(dt.getDate()).padStart(2, '0'),
+  ].join('-');
 }

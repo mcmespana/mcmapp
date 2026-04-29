@@ -18,7 +18,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { Card, Tabs, PressableFeedback, CloseButton } from 'heroui-native';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -35,19 +35,19 @@ import BottomSheet from '@/components/BottomSheet';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 
-// ── Contigo warm palette ──
+// ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
   light: {
-    accent: '#B8860B',
+    accent: '#C4922A',
     accentSoft: '#FFF8E7',
-    surface: '#FEFBF5',
-    warmGray: '#6B6560',
+    surface: '#FAF6F0',
+    warmGray: '#7A6550',
   },
   dark: {
     accent: '#DAA520',
     accentSoft: '#2A2112',
-    surface: '#1C1A17',
-    warmGray: '#A09A94',
+    surface: '#1A1712',
+    warmGray: '#A09A8A',
   },
 };
 
@@ -106,10 +106,13 @@ export default function EvangelioScreen() {
   const fontScale = useFontScale();
 
   const { todayStr, getRecord, setReadingDone } = useContigoHabits();
+  const params = useLocalSearchParams<{ date?: string }>();
+  const initialDate =
+    typeof params.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(params.date)
+      ? params.date
+      : todayStr || new Date().toISOString().split('T')[0];
 
-  const [selectedDate, setSelectedDate] = useState(
-    todayStr || new Date().toISOString().split('T')[0],
-  );
+  const [selectedDate, setSelectedDate] = useState(initialDate);
   const { readings, isLoading, error } = useDailyReadings(selectedDate);
   const [viewMode, setViewMode] = useState<'lectura' | 'comentario'>('lectura');
   const [showCheck, setShowCheck] = useState(false);

@@ -18,15 +18,31 @@
       "Bash(awk:*)",
       "Bash(xargs kill:*)",
       "Bash(eas credentials:*)",
-      "Bash(npx eas-cli credentials:*)"
+      "Bash(npx eas-cli credentials:*)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(mkdir -p /tmp/design)",
+      "Read(//tmp/**)",
+      "Bash(cp \"C:\\\\Users\\\\david\\\\.claude\\\\projects\\\\C--Users-david-code-mcmapp\\\\97623e0e-437b-41ea-bfb3-a47524c7c796\\\\tool-results\\\\webfetch-1777474387287-z6kbie.bin\" pkg.gz)",
+      "Bash(gunzip -c pkg.gz)",
+      "Bash(tar -tf pkg.tar)",
+      "Bash(tar -xf pkg.tar)",
+      "Bash(cp /tmp/design/seccion-contigo-app/README.md /tmp/design/README.md)",
+      "Bash(cp \"/tmp/design/seccion-contigo-app/project/Contigo Redesign.html\" /tmp/design/contigo.html)",
+      "Bash(cp /tmp/design/seccion-contigo-app/project/contigo-components.jsx /tmp/design/components.jsx)",
+      "Bash(cp /tmp/design/seccion-contigo-app/project/revision-screen.jsx /tmp/design/revision.jsx)",
+      "Bash(cp /tmp/design/seccion-contigo-app/project/ios-frame.jsx /tmp/design/ios.jsx)",
+      "Bash(cp /tmp/design/seccion-contigo-app/chats/chat1.md /tmp/design/chat1.md)",
+      "Bash(cp /tmp/design/seccion-contigo-app/chats/chat2.md /tmp/design/chat2.md)",
+      "Read(//c/c/Users/david/code/mcmapp/mcm-app/app/\\(tabs\\)/**)",
+      "Bash(npx eslint *)"
     ],
     "deny": [],
     "ask": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
   ],
-  "enableAllProjectMcpServers": true,
   "enabledPlugins": {
     "supabase@claude-plugins-official": false,
     "firebase@firebase": true,
@@ -35,7 +51,12 @@
   "mcpServers": {
     "heroui-native": {
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "@heroui/native-mcp@latest"]
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@heroui/native-mcp@latest"
+      ]
     }
   }
 }
