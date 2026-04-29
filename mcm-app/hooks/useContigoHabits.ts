@@ -115,11 +115,13 @@ export function useContigoHabits() {
   const isRevisionDone = (date: string): boolean =>
     !!records[date]?.revisionDone;
 
-  // Total prayer minutes during the current ISO week (Mon–Sun) up to `todayStr`
+  // Total prayer minutes during the current ISO week (Mon–Sun) up to `todayStr`.
+  // Iterates Mon..todayStr so the value matches the WeekStrip on the home.
   const getTotalMinutesWeek = (todayStr: string): number => {
+    const week = getMondayWeek(todayStr);
     let total = 0;
-    for (let i = 0; i < 7; i++) {
-      const ds = offsetISODate(todayStr, -i);
+    for (const ds of week) {
+      if (ds > todayStr) break;
       total += records[ds]?.prayerDurationMinutes || 0;
     }
     return total;
@@ -134,6 +136,20 @@ export function useContigoHabits() {
     for (let d = 1; d <= Math.min(today, dim); d++) {
       const ds = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       if (records[ds]?.readingDone) c++;
+    }
+    return c;
+  };
+
+  // Days this month with at least one of the three habits completed
+  const getActiveDaysMonth = (todayStr: string): number => {
+    const [y, m] = todayStr.split('-').map(Number);
+    const today = parseInt(todayStr.split('-')[2], 10);
+    const dim = new Date(y, m, 0).getDate();
+    let c = 0;
+    for (let d = 1; d <= Math.min(today, dim); d++) {
+      const ds = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const r = records[ds];
+      if (r && (r.readingDone || r.prayerDone || r.revisionDone)) c++;
     }
     return c;
   };
