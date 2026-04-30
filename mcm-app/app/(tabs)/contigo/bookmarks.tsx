@@ -8,28 +8,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
-import { radii, shadows } from '@/constants/uiStyles';
-import { getLiturgicalInfo } from '@/components/contigo/LiturgicalBadge';
-
-const CONTIGO = {
-  light: {
-    accent: '#B8860B',
-    accentSoft: '#FFF8E7',
-    surface: '#FEFBF5',
-    warmGray: '#6B6560',
-  },
-  dark: {
-    accent: '#DAA520',
-    accentSoft: '#2A2112',
-    surface: '#1C1A17',
-    warmGray: '#A09A94',
-  },
-};
+import { warm, formatDateLong } from '@/components/contigo/theme';
 
 interface Bookmark {
   date: string;
@@ -37,148 +21,223 @@ interface Bookmark {
   bookmarkedAt: number;
 }
 
+const STORAGE = '@contigo_bookmarks';
+
 export default function BookmarksScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme ?? 'light'];
-  const warm = isDark ? CONTIGO.dark : CONTIGO.light;
+  const W = warm(isDark);
 
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const load = useCallback(async () => {
+    try {
+      const str = await AsyncStorage.getItem(STORAGE);
+      if (str) {
+        const parsed = JSON.parse(str);
+        const valid: Bookmark[] = parsed
+          .filter((b: any) => typeof b !== 'string')
+          .sort((a: Bookmark, b: Bookmark) => b.bookmarkedAt - a.bookmarkedAt);
+        setBookmarks(valid);
+      } else {
+        setBookmarks([]);
+      }
+    } catch (e) {
+      console.error('bookmarks load', e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      let isActive = true;
-      const load = async () => {
-        try {
-          const str = await AsyncStorage.getItem('@contigo_bookmarks');
-          if (str && isActive) {
-            const parsed = JSON.parse(str);
-            // filter out old string format, sort by newest
-            const valid = parsed
-              .filter((b: any) => typeof b !== 'string')
-              .sort(
-                (a: Bookmark, b: Bookmark) => b.bookmarkedAt - a.bookmarkedAt,
-              );
-            setBookmarks(valid);
-          }
-        } catch (e) {
-          console.error(e);
-        } finally {
-          if (isActive) setIsLoading(false);
-        }
-      };
       load();
-      return () => {
-        isActive = false;
-      };
-    }, []),
+    }, [load]),
   );
 
+  const removeBookmark = async (date: string) => {
+    const next = bookmarks.filter((b) => b.date !== date);
+    setBookmarks(next);
+    try {
+      await AsyncStorage.setItem(STORAGE, JSON.stringify(next));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: warm.surface }]}>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerTitle: 'Días Favoritos',
-          headerBackTitle: 'Contigo',
-          headerStyle: {
-            backgroundColor: warm.surface,
-          },
-          headerTintColor: theme.text,
-          headerTitleStyle: {
-            fontWeight: '700',
-            fontSize: 17,
-          },
-          headerShadowVisible: false,
-        }}
+    <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <LinearGradient
+        colors={
+          isDark
+            ? (['#1A1712', '#100F0C'] as const)
+            : (['#FAF6F0', '#F0E8D8'] as const)
+        }
+        style={StyleSheet.absoluteFill}
       />
+
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top + 12,
+            backgroundColor: isDark
+              ? 'rgba(26,23,18,0.92)'
+              : 'rgba(250,246,240,0.92)',
+            borderBottomColor: W.border,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={[
+            styles.iconBtn,
+            {
+              backgroundColor: isDark
+                ? 'rgba(255,255,255,0.08)'
+                : 'rgba(0,0,0,0.06)',
+            },
+          ]}
+          accessibilityLabel="Volver"
+        >
+          <MaterialIcons name="arrow-back-ios-new" size={18} color={W.text} />
+        </TouchableOpacity>
+        <View>
+          <Text style={[styles.title, { color: W.text }]}>Guardados</Text>
+          <Text style={[styles.subtitle, { color: W.textSec }]}>
+            {bookmarks.length} evangelio
+            {bookmarks.length !== 1 ? 's' : ''} guardado
+            {bookmarks.length !== 1 ? 's' : ''}
+          </Text>
+        </View>
+        <View style={{ width: 36 }} />
+      </View>
 
       {isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={warm.accent} />
+          <ActivityIndicator size="large" color={W.accent} />
         </View>
       ) : bookmarks.length === 0 ? (
         <View style={styles.center}>
-          <MaterialIcons
-            name="bookmark-border"
-            size={64}
-            color={warm.warmGray}
-            style={{ marginBottom: 16 }}
-          />
-          <Text style={[styles.emptyText, { color: theme.text }]}>
-            No tienes lecturas guardadas
+          <Text style={{ fontSize: 48 }}>🔖</Text>
+          <Text style={[styles.emptyTitle, { color: W.text }]}>
+            Sin guardados aún
           </Text>
-          <Text style={[styles.emptySubtext, { color: warm.warmGray }]}>
-            Pulsa el icono de guardado mientras lees el Evangelio para
-            conservarlo aquí, incluso sin conexión.
+          <Text style={[styles.emptyText, { color: W.textSec }]}>
+            Guarda evangelios para releerlos cuando quieras
           </Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView
+          contentContainerStyle={styles.listWrap}
+          showsVerticalScrollIndicator={false}
+        >
           {bookmarks.map((b) => {
-            const info = getLiturgicalInfo(b.date);
-            const displayTitle =
-              b.readings?.info?.titulo || info.title || 'Evangelio';
-            const evangelio = b.readings?.evangelio;
-
+            const ev = b.readings?.evangelio;
+            const titulo =
+              b.readings?.info?.titulo || ev?.cita || 'Evangelio guardado';
+            const firstLine = ev?.texto
+              ? ev.texto
+                  .split('\n')
+                  .map((l: string) => l.trim())
+                  .filter(Boolean)[0]
+              : '';
             return (
-              <TouchableOpacity
+              <View
                 key={b.date}
-                activeOpacity={0.7}
                 style={[
                   styles.card,
                   {
-                    backgroundColor: theme.card,
-                    borderColor: isDark
-                      ? 'rgba(255,255,255,0.06)'
-                      : 'rgba(0,0,0,0.05)',
+                    backgroundColor: W.bgCard,
+                    borderColor: W.border,
+                    shadowColor: W.shadow,
                   },
                 ]}
-                onPress={() =>
-                  router.push({
-                    pathname: '/contigo/evangelio',
-                    params: { date: b.date },
-                  })
-                }
               >
-                <View style={styles.cardHeader}>
-                  <Text style={[styles.dateText, { color: warm.accent }]}>
-                    {b.date}
-                  </Text>
-                </View>
-                <Text
-                  style={[styles.title, { color: theme.text }]}
-                  numberOfLines={2}
-                >
-                  {displayTitle}
-                </Text>
-                {evangelio?.cita && (
-                  <Text style={[styles.citaText, { color: warm.warmGray }]}>
-                    {evangelio.cita}
-                  </Text>
-                )}
-                {evangelio?.texto && (
+                <LinearGradient
+                  colors={['#E8A838', '#C4922A']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.cardBar}
+                />
+                <View style={styles.cardBody}>
+                  <View style={styles.cardHdrRow}>
+                    <View style={{ flex: 1 }}>
+                      {ev?.cita ? (
+                        <Text
+                          style={[styles.cita, { color: W.accent }]}
+                          numberOfLines={1}
+                        >
+                          {ev.cita}
+                        </Text>
+                      ) : null}
+                      <Text
+                        style={[styles.dateText, { color: W.textMuted }]}
+                        numberOfLines={1}
+                      >
+                        {formatDateLong(b.date)}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => removeBookmark(b.date)}
+                      style={[
+                        styles.removeBtn,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(255,255,255,0.08)'
+                            : 'rgba(0,0,0,0.05)',
+                        },
+                      ]}
+                      accessibilityLabel="Quitar de guardados"
+                    >
+                      <MaterialIcons
+                        name="close"
+                        size={14}
+                        color={W.textMuted}
+                      />
+                    </TouchableOpacity>
+                  </View>
                   <Text
-                    style={[styles.preview, { color: theme.text }]}
-                    numberOfLines={3}
+                    style={[styles.cardTitle, { color: W.text }]}
+                    numberOfLines={2}
                   >
-                    {evangelio.texto.replace(/\n/g, ' ')}
+                    {titulo}
                   </Text>
-                )}
-
-                <View style={styles.cardFooter}>
-                  <Text style={[styles.readMore, { color: warm.accent }]}>
-                    Leer de nuevo
-                  </Text>
-                  <MaterialIcons
-                    name="arrow-forward"
-                    size={14}
-                    color={warm.accent}
-                  />
+                  {firstLine ? (
+                    <Text
+                      style={[styles.preview, { color: W.textSec }]}
+                      numberOfLines={2}
+                    >
+                      «{firstLine.replace(/^«|»$/g, '').trim()}»
+                    </Text>
+                  ) : null}
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: '/(tabs)/contigo/evangelio',
+                        params: { date: b.date },
+                      } as never)
+                    }
+                    style={[
+                      styles.openBtn,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(218,165,32,0.10)'
+                          : 'rgba(196,146,42,0.09)',
+                        borderColor: W.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.openText, { color: W.accent }]}>
+                      Leer evangelio →
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </View>
             );
           })}
         </ScrollView>
@@ -189,66 +248,80 @@ export default function BookmarksScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
+  subtitle: { fontSize: 12, marginTop: 2 },
+
   center: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 32,
-  },
-  scroll: {
-    padding: 16,
-    paddingBottom: 40,
     gap: 12,
   },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptySubtext: {
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
+  emptyTitle: { fontSize: 17, fontWeight: '700' },
+  emptyText: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+
+  listWrap: {
+    padding: 16,
+    paddingBottom: 60,
+    gap: 12,
   },
   card: {
-    padding: 16,
-    borderRadius: radii.xl,
+    borderRadius: 18,
+    overflow: 'hidden',
     borderWidth: 1,
-    ...shadows.sm,
   },
-  cardHeader: {
+  cardBar: { height: 3 },
+  cardBody: { padding: 14 },
+  cardHdrRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 8,
   },
-  dateText: {
-    fontSize: 13,
-    fontWeight: '700',
+  cita: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  dateText: { fontSize: 11 },
+  removeBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  citaText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 10,
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    marginBottom: 8,
   },
   preview: {
-    fontSize: 15,
-    lineHeight: 22,
-    opacity: 0.8,
-    marginBottom: 16,
+    fontSize: 13,
+    lineHeight: 20,
+    fontStyle: 'italic',
+    marginBottom: 12,
   },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  openBtn: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
   },
-  readMore: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  openText: { fontSize: 11, fontWeight: '700' },
 });

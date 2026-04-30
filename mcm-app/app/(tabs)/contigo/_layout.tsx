@@ -32,6 +32,13 @@ export default function ContigoLayout() {
           title: 'Oración',
         }}
       />
+      <Stack.Screen
+        name="revision"
+        options={{
+          headerShown: false,
+          title: 'Revisión del día',
+        }}
+      />
     </Stack>
   );
 }
