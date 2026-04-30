@@ -13,6 +13,18 @@
 
 ---
 
+## 2026-04-30 — Sistema de Perfiles · auditoría y endurecimiento
+
+Revisión completa del sistema. Cambios:
+
+- **Bug fix (segmentación de notificaciones)**: el resolver descartaba los `notificationTopic` de delegación (ej. `"castellon"`) al sanitizarlos contra `KNOWN_NOTIFICATION_TOPICS`. Resultado: el array `topics` que se subía a `/pushTokens/{id}` nunca incluía la delegación → backend no podía segmentar por delegación local. Ahora `notificationTopics` no se sanea contra catálogo (los IDs base del catálogo siguen presentes en cada perfil).
+- **`utils/resolveProfileConfig.ts`** ahora tolera config remota corrupta sin crashear: perfil ausente → cae al primer perfil válido (o `FALLBACK_PROFILE`); `delegations`, `global` o arrays del perfil ausentes → defaults sensatos.
+- **`isAppVersionSupported`** NaN-safe: strings inválidos (`"foo"`, `""`, undefined coercido) ya no producen `NaN > NaN` (que devolvía `false` y podía bloquear usuarios incorrectamente con la pantalla de actualización). Atajo explícito para `minVersion === '0.0.0'`.
+- **`contexts/ProfileConfigContext.tsx`** valida la forma del documento remoto (`global`, `profiles`, `delegations`, `delegationList`) antes de usarlo. Si está malformado, cae al fallback hardcoded con warning en dev.
+- **Nuevo test** `__tests__/resolveProfileConfig.test.ts` (15 casos): merge perfil+delegación, overrides, sanitización, retención de topics de delegación, tolerancia a config corrupta, semver. Pasan con `npx jest --preset=ts-jest`.
+- **Limpieza**: eliminados `app/(tabs)/_layout.tsx.backup` y `app/(tabs)/jubileo.tsx.old` (orphans de migraciones anteriores).
+- **Docs sincronizados**: `TODO.md`, `TABS_MAINTENANCE.md` y `firebase-seed/README.md` ya no referencian `featureFlags.ts`. La sección "qué editar tras importar el seed" refleja que las 16 delegaciones ya están sembradas y solo hace falta rellenar `defaultCalendars`.
+
 ## 2026-04-23 — Sistema de Perfiles de Usuario · Fases 1-8 (reemplaza FeatureFlags)
 
 **Cambio de arquitectura**: toda la visibilidad de tabs/home/más/álbumes/notificaciones se configura ahora desde Firebase RTDB (`/profileConfig`) por perfil (familia/monitor/miembro) y delegación (MCM España y 15 delegaciones locales + Internacional). El antiguo sistema de feature flags está eliminado.

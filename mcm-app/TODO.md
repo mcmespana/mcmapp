@@ -7,7 +7,8 @@
 
 ## Completado recientemente
 
-- [x] ~~Activar pestaña Cantoral~~ → `cancionero: true` en `constants/featureFlags.ts`
+- [x] ~~Activar pestaña Cantoral~~ → cancionero presente en `tabs` de todos los perfiles del Sistema de Perfiles (antes era `cancionero: true` en `constants/featureFlags.ts`)
+- [x] ~~Sistema de perfiles de usuario~~ → Fases 0–8 completadas. Ver `TODO_SISTEMA_PERFILES.md`. El antiguo `constants/featureFlags.ts` y `FeatureFlagsContext` han sido eliminados.
 - [x] ~~Limpiar ReportBugsModal\* muertos~~ → eliminados New, Fixed, Simple, .bak, .broken, .complex (el principal sigue en uso por SongControls.tsx)
 - [x] ~~Eliminar scripts de debug y configs de test~~ → eliminados test-\*.js, jest.config.js
 - [x] ~~Mover eslint-config-expo a devDependencies~~ → hecho en package.json
@@ -31,7 +32,7 @@
 - [ ] **Upgrade a Expo SDK 55**: actualizar expo y todos los paquetes expo-\* a la versión 55. Requiere `npx expo install --fix` y testing completo. React Native 0.81→0.84, React 19.1→19.2. Ver `npm outdated` para la lista completa.
 - [ ] **Firebase 11 → 12**: major version upgrade. Revisar [guía de migración](https://firebase.google.com/support/release-notes/js) antes de actualizar. Puede haber breaking changes en la API.
 - [ ] **Seguridad — contraseña hardcodeada**: en `components/SecretPanelModal.tsx` la contraseña "coco" está en el código. Mover a variable de entorno o Firebase Remote Config.
-- [ ] **Verificar orden de tabs con cantoral activo**: ahora que `cancionero: true`, probar en dispositivo que TABS_CONFIG muestra los tabs en el orden correcto (Inicio → Cantoral → Calendario → Fotos → Más).
+- [ ] **Verificar orden de tabs por perfil**: probar en dispositivo iOS/Android que `TABS_CONFIG` filtrado por `resolved.tabs` muestra los tabs en el orden correcto para cada perfil (Inicio → Cantoral → Contigo → Calendario → Fotos → Más).
 
 ## Prioridad media (mejoras importantes)
 
@@ -39,8 +40,7 @@
 
 - [ ] **Pantalla de inicio (Home)**: rediseñar la home screen (ver sección Ideas más abajo).
 - [ ] **Notificaciones — backend (panel admin)**: en desarrollo en `mcmespana/mcmpanel`. La app (cliente) ya está lista para recibir notificaciones. Ver `NOTIFICACIONES.md` para la especificación del backend y formato de mensajes Expo Push.
-- [ ] **Sistema de perfiles de usuario**: onboarding con selección de perfil (Familia / Monitor/a / Miembro MCM) + delegación local. Config remota en Firebase RTDB que controla tabs, home, calendarios, álbumes y notificaciones por perfil/delegación. Absorbe y reemplaza el sistema de feature flags actual. **Ver `TODO_SISTEMA_PERFILES.md` para el diseño técnico completo.**
-- [ ] **Firebase Remote Config para feature flags**: ~~actualmente los flags están hardcodeados en `constants/featureFlags.ts`~~. **NOTA**: este punto queda absorbido por el sistema de perfiles (ver arriba). La config remota se haría via Firebase RTDB con el patrón `useFirebaseData` existente, no con Remote Config SDK.
+- [ ] **Pendiente del admin para Sistema de Perfiles**: subir `firebase-seed/profileConfig.json` al nodo `/profileConfig`, rellenar `defaultCalendars` por perfil con los IDs reales de `/calendars`, y añadir entradas en `delegations.{id}` para delegaciones con calendario/topic propio. Ver `TODO_SISTEMA_PERFILES.md`.
 - [ ] **Configurar tests**: cuando se retome testing, instalar jest-expo, @testing-library/react-native, crear jest.config.js. Priorizar tests para utils/ y hooks/.
 
 ## Prioridad baja (nice to have)

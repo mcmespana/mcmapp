@@ -11,7 +11,6 @@ import {
   KNOWN_ALBUM_TAGS,
   KNOWN_HOME_BUTTONS,
   KNOWN_MAS_ITEMS,
-  KNOWN_NOTIFICATION_TOPICS,
   KNOWN_TABS,
 } from '@/constants/profileCatalog';
 
@@ -31,7 +30,10 @@ const CATALOGS: Partial<Record<keyof ProfileBase, readonly string[]>> = {
   homeButtons: KNOWN_HOME_BUTTONS,
   masItems: KNOWN_MAS_ITEMS,
   albumTags: KNOWN_ALBUM_TAGS,
-  notificationTopics: KNOWN_NOTIFICATION_TOPICS,
+  // notificationTopics NO se valida contra catálogo: las delegaciones añaden
+  //   topics propios (ej. "castellon") que no aparecen en KNOWN_NOTIFICATION_TOPICS
+  //   pero deben llegar a /pushTokens.topics para que el backend pueda segmentar.
+  //   Se mantienen únicos sin filtrar.
   // defaultCalendars no se valida — los IDs vienen del nodo /jubileo/calendarios.
 };
 
@@ -91,31 +93,56 @@ function applyOverride(
  *   3. Override específico de la combinación `"profileType:delegationId"`
  *   4. Sanitización contra catálogo conocido
  */
+const FALLBACK_PROFILE: ProfileBase = {
+  label: '',
+  description: '',
+  tabs: [...KNOWN_TABS],
+  homeButtons: [...KNOWN_HOME_BUTTONS],
+  masItems: [...KNOWN_MAS_ITEMS],
+  defaultCalendars: [],
+  albumTags: ['all'],
+  notificationTopics: ['general'],
+};
+
+const FALLBACK_DELEGATION: Delegation = { label: 'General' };
+
 export function resolveProfileConfig(
   config: ProfileConfigData,
   profileType: ProfileType,
   delegationId: string | null,
 ): ResolvedProfileConfig {
-  const profile = config.profiles[profileType];
+  // Tolerancia a config remota corrupta: si el perfil pedido no existe,
+  // intentamos otro perfil válido del documento; si tampoco hay, usamos
+  // FALLBACK_PROFILE para no dejar la app vacía.
+  const profilesMap =
+    config.profiles ?? ({} as Record<ProfileType, ProfileBase>);
+  let profile = profilesMap[profileType];
   if (!profile) {
-    throw new Error(`[profileConfig] Perfil desconocido: '${profileType}'`);
+    warn(
+      `Perfil '${profileType}' no presente en config remota. Usando primer perfil disponible.`,
+    );
+    const firstKey = Object.keys(profilesMap)[0] as ProfileType | undefined;
+    profile = (firstKey && profilesMap[firstKey]) || FALLBACK_PROFILE;
   }
 
+  const delegationsMap =
+    config.delegations ?? ({} as Record<string, Delegation>);
   const resolvedDelegationId = delegationId ?? DEFAULT_DELEGATION_ID;
   const delegation: Delegation =
-    config.delegations[resolvedDelegationId] ??
-    config.delegations[DEFAULT_DELEGATION_ID];
+    delegationsMap[resolvedDelegationId] ??
+    delegationsMap[DEFAULT_DELEGATION_ID] ??
+    FALLBACK_DELEGATION;
 
-  // 1. Perfil base (clonado)
+  // 1. Perfil base (clonado, defendiendo contra arrays ausentes)
   let merged: ProfileBase = {
-    label: profile.label,
-    description: profile.description,
-    tabs: [...profile.tabs],
-    homeButtons: [...profile.homeButtons],
-    masItems: [...profile.masItems],
-    defaultCalendars: [...profile.defaultCalendars],
-    albumTags: [...profile.albumTags],
-    notificationTopics: [...profile.notificationTopics],
+    label: profile.label ?? '',
+    description: profile.description ?? '',
+    tabs: [...(profile.tabs ?? [])],
+    homeButtons: [...(profile.homeButtons ?? [])],
+    masItems: [...(profile.masItems ?? [])],
+    defaultCalendars: [...(profile.defaultCalendars ?? [])],
+    albumTags: [...(profile.albumTags ?? [])],
+    notificationTopics: [...(profile.notificationTopics ?? [])],
   };
 
   // 2a. Delegación: extras aditivos
@@ -163,21 +190,22 @@ export function resolveProfileConfig(
   for (const field of ARRAY_FIELDS) {
     const sanitized = sanitizeArray(
       field,
-      merged[field] as string[],
-      profile[field] as string[],
+      (merged[field] as string[]) ?? [],
+      (profile[field] as string[]) ?? [],
     );
     (merged[field] as string[]) = sanitized;
   }
 
+  const global = config.global ?? ({} as ProfileConfigData['global']);
   return {
     // global
-    defaultTab: config.global.defaultTab,
-    showNotificationsIcon: config.global.showNotificationsIcon,
-    showOnboarding: config.global.showOnboarding,
-    showChangeNameButton: config.global.showChangeNameButton,
-    maintenanceMode: config.global.maintenanceMode,
-    maintenanceMessage: config.global.maintenanceMessage,
-    minAppVersion: config.global.minAppVersion,
+    defaultTab: global.defaultTab ?? 'index',
+    showNotificationsIcon: global.showNotificationsIcon ?? true,
+    showOnboarding: global.showOnboarding ?? true,
+    showChangeNameButton: global.showChangeNameButton ?? false,
+    maintenanceMode: global.maintenanceMode ?? false,
+    maintenanceMessage: global.maintenanceMessage,
+    minAppVersion: global.minAppVersion ?? '0.0.0',
     // identidad
     profileType,
     delegationId: resolvedDelegationId,
@@ -201,11 +229,19 @@ export function isAppVersionSupported(
   appVersion: string,
   minVersion: string,
 ): boolean {
-  const parse = (v: string) => {
-    const clean = v.split('-')[0].split('+')[0];
-    const parts = clean.split('.').map((n) => parseInt(n, 10));
+  // Sin minVersion (o "0.0.0") = sin bloqueo. Caso defensivo extra contra
+  //   strings vacíos / undefined coercidos.
+  if (!minVersion || minVersion === '0.0.0') return true;
+
+  const parse = (v: string): [number, number, number] => {
+    const safe = typeof v === 'string' && v.length > 0 ? v : '0.0.0';
+    const clean = safe.split('-')[0].split('+')[0];
+    const parts = clean.split('.').map((n) => {
+      const parsed = parseInt(n, 10);
+      return Number.isFinite(parsed) ? parsed : 0;
+    });
     while (parts.length < 3) parts.push(0);
-    return parts;
+    return [parts[0], parts[1], parts[2]];
   };
   const [a1, a2, a3] = parse(appVersion);
   const [m1, m2, m3] = parse(minVersion);

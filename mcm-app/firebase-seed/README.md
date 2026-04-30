@@ -18,13 +18,28 @@ Ver `mcm-app/TODO_SISTEMA_PERFILES.md` para el diseño completo.
 
 ### Qué hay que editar a mano tras importar
 
-- **`data.delegationList`**: reemplaza el único item placeholder por la lista real de
-  delegaciones (~15). Formato: `{ "id": "castellon", "label": "Castellón" }`.
-- **`data.delegations`**: añade entradas solo para las delegaciones que tengan algo
-  especial (calendario propio, topic de notificación propio, override de tabs, etc.).
-  Las delegaciones "normales" no necesitan entrada aquí — heredan de `_default`.
-- **`data.profiles.*.defaultCalendars`**: rellena con los IDs reales de calendarios
-  del nodo `/jubileo/calendarios`.
+- **`data.profiles.*.defaultCalendars`**: actualmente vacío en el seed. Rellena
+  con los IDs reales de calendarios del nodo `/calendars` (los que se deban
+  pre-seleccionar para cada perfil). Si lo dejas vacío, la app cae en el flag
+  `defaultSelected` de cada calendario (retrocompatible).
+- **`data.delegations.{id}`**: el seed ya incluye las 16 delegaciones con su
+  `label`. Añade `notificationTopic`, `extraCalendars` o `override` solo a las
+  que tengan algo especial. Las que solo tengan `label` heredan todo de
+  `_default`.
+- **`data.delegationList`**: ya viene con las 16 delegaciones. Reordena, añade
+  o quita según necesidad — solo afecta al selector del onboarding/ajustes.
+- **`data.global.minAppVersion`** y **`maintenanceMode`**: kill switches
+  remotos. `0.0.0` = sin bloqueo. `maintenanceMode: true` muestra
+  `MaintenanceScreen` en toda la app.
+
+### Topics de notificación
+
+Los `notificationTopics` del perfil se sanitizan contra
+`KNOWN_NOTIFICATION_TOPICS` (`constants/profileCatalog.ts`) → solo se aceptan
+los IDs definidos ahí. En cambio, `delegations[id].notificationTopic` (string
+suelto, ej. `"castellon"`) **no** se sanitiza: pasa tal cual al array
+`/pushTokens/{id}/topics` para que el backend (`mcmpanel`) pueda segmentar
+notificaciones por delegación local sin tocar código de la app.
 
 ### Este JSON es la fuente de verdad del fallback
 

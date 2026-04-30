@@ -18,15 +18,18 @@
       "Bash(awk:*)",
       "Bash(xargs kill:*)",
       "Bash(eas credentials:*)",
-      "Bash(npx eas-cli credentials:*)"
+      "Bash(npx eas-cli credentials:*)",
+      "Bash(npx jest *)",
+      "Bash(npx expo *)",
+      "Bash(npx prettier *)"
     ],
     "deny": [],
     "ask": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
   ],
-  "enableAllProjectMcpServers": true,
   "enabledPlugins": {
     "supabase@claude-plugins-official": false,
     "firebase@firebase": true,
@@ -35,7 +38,12 @@
   "mcpServers": {
     "heroui-native": {
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "@heroui/native-mcp@latest"]
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@heroui/native-mcp@latest"
+      ]
     }
   }
 }

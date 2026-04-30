@@ -109,9 +109,12 @@ function InnerLayout() {
     if (profileLoading) return;
     if (!resolved.showOnboarding) return;
     if (profile.profileType !== null) return;
-    // Evitar redirigir si ya estamos en la pantalla de onboarding
-    if (segments[0] === 'onboarding') return;
-    router.replace('/onboarding');
+    // Evitar redirigir si ya estamos en la pantalla de onboarding.
+    // (segments[0] está tipado por expo-router con las rutas conocidas; la
+    //  ruta `onboarding` es un Stack.Screen registrado más abajo, no se
+    //  detecta automáticamente — comparación con cast.)
+    if ((segments[0] as string) === 'onboarding') return;
+    router.replace('/onboarding' as any);
   }, [
     showAnimation,
     profileLoading,

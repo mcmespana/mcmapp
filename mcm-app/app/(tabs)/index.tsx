@@ -412,7 +412,7 @@ export default function Home() {
                     borderColor: hexAlpha(accentColor, '30'),
                   },
                 ]}
-                onPress={() => router.push('/onboarding')}
+                onPress={() => router.push('/onboarding' as any)}
                 accessibilityRole="button"
                 accessibilityLabel="Completa tu perfil"
               >
