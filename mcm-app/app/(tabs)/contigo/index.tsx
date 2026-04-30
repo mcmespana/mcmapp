@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useContigoHabits } from '@/hooks/useContigoHabits';
+import { useContigoHabits, type DayRecord } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
 import { warm, formatDateLong, MONTHS_CAP } from '@/components/contigo/theme';
 import {
@@ -67,6 +67,31 @@ export default function ContigoScreen() {
   const [, mNum] = todayStr.split('-').map(Number);
   const year = todayStr.split('-')[0];
   const monthLabel = `${MONTHS_CAP[mNum - 1]} ${year}`;
+
+  // Tapping a calendar day opens the matching record screen.
+  // Priority: revision → oración → evangelio (most reflective first).
+  const handleDayPress = useCallback(
+    (date: string, rec: DayRecord | null) => {
+      if (!rec) return;
+      if (rec.revisionDone) {
+        router.push({
+          pathname: '/(tabs)/contigo/revision' as never,
+          params: { date },
+        });
+      } else if (rec.prayerDone) {
+        router.push({
+          pathname: '/(tabs)/contigo/oracion' as never,
+          params: { date },
+        });
+      } else if (rec.readingDone) {
+        router.push({
+          pathname: '/(tabs)/contigo/evangelio' as never,
+          params: { date },
+        });
+      }
+    },
+    [router],
+  );
 
   const bgGradient = isDark
     ? (['#1A1712', '#100F0C'] as const)
@@ -245,6 +270,7 @@ export default function ContigoScreen() {
               records={records}
               todayStr={todayStr}
               isDark={isDark}
+              onDayPress={handleDayPress}
             />
           </View>
         </View>

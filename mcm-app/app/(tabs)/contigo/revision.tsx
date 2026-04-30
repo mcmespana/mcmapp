@@ -9,7 +9,7 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -39,10 +39,25 @@ export default function RevisionScreen() {
   const W = warm(isDark);
   const purple = isDark ? WARM_DARK.purple : WARM_LIGHT.purple;
 
+  const params = useLocalSearchParams<{ date?: string }>();
   const { todayStr, setRevisionDone } = useContigoHabits();
 
-  const [phase, setPhase] = useState<'breathing' | 'review'>('breathing');
-  const [selDate, setSelDate] = useState(todayStr);
+  // If we arrive with a `date` param (from the calendar tap), skip the
+  // breathing intro and open that day's review directly.
+  const initialDate = useMemo(
+    () =>
+      params.date && /^\d{4}-\d{2}-\d{2}$/.test(params.date)
+        ? params.date
+        : todayStr,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  const cameFromCalendar = !!params.date;
+
+  const [phase, setPhase] = useState<'breathing' | 'review'>(
+    cameFromCalendar ? 'review' : 'breathing',
+  );
+  const [selDate, setSelDate] = useState(initialDate);
   const [step, setStep] = useState(0);
   const [saved, setSaved] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -191,6 +206,7 @@ export default function RevisionScreen() {
             onPress={() => router.back()}
             style={[
               styles.headerBtn,
+              styles.headerBtnAbs,
               {
                 backgroundColor: isDark
                   ? 'rgba(255,255,255,0.08)'
@@ -199,52 +215,42 @@ export default function RevisionScreen() {
             ]}
             accessibilityLabel="Cerrar"
           >
-            <MaterialIcons name="arrow-back-ios-new" size={18} color={W.text} />
+            <MaterialIcons name="close" size={20} color={W.text} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => navigateDate(-1)}
-            style={[
-              styles.dateBtn,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.07)'
-                  : 'rgba(0,0,0,0.05)',
-              },
-            ]}
-            accessibilityLabel="Día anterior"
-          >
-            <MaterialIcons name="chevron-left" size={18} color={W.textSec} />
-          </TouchableOpacity>
-
-          <View style={styles.dateCenter}>
-            <Text
-              style={[styles.dateTitle, { color: W.text }]}
-              numberOfLines={1}
+          <View style={styles.dateStepper}>
+            <TouchableOpacity
+              onPress={() => navigateDate(-1)}
+              style={styles.dateStepperBtn}
+              hitSlop={10}
+              accessibilityLabel="Día anterior"
             >
-              {isToday ? 'Hoy' : formatDateLong(selDate)}
-            </Text>
-            <Text style={[styles.dateSub, { color: W.textMuted }]}>
-              Revisión del día
-            </Text>
+              <MaterialIcons name="chevron-left" size={20} color={W.textSec} />
+            </TouchableOpacity>
+            <View style={styles.dateCenter}>
+              <Text
+                style={[styles.dateTitle, { color: W.text }]}
+                numberOfLines={1}
+              >
+                {isToday ? 'Hoy' : formatDateLong(selDate)}
+              </Text>
+              <Text style={[styles.dateSub, { color: W.textMuted }]}>
+                Revisión del día
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => navigateDate(1)}
+              disabled={isFutureDisabled}
+              style={[
+                styles.dateStepperBtn,
+                { opacity: isFutureDisabled ? 0.25 : 1 },
+              ]}
+              hitSlop={10}
+              accessibilityLabel="Día siguiente"
+            >
+              <MaterialIcons name="chevron-right" size={20} color={W.textSec} />
+            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity
-            onPress={() => navigateDate(1)}
-            disabled={isFutureDisabled}
-            style={[
-              styles.dateBtn,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.07)'
-                  : 'rgba(0,0,0,0.05)',
-                opacity: isFutureDisabled ? 0.25 : 1,
-              },
-            ]}
-            accessibilityLabel="Día siguiente"
-          >
-            <MaterialIcons name="chevron-right" size={18} color={W.textSec} />
-          </TouchableOpacity>
         </View>
 
         {/* Pill */}
@@ -561,7 +567,9 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    minHeight: 40,
+    position: 'relative',
   },
   headerBtn: {
     width: 36,
@@ -570,20 +578,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dateBtn: {
+  // Close X is pulled out of the flow and pinned to the left edge so the
+  // date-stepper can sit centered as a single, breathable unit.
+  headerBtnAbs: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+  },
+  dateStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: '70%',
+  },
+  dateStepperBtn: {
     width: 28,
-    height: 28,
-    borderRadius: 10,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dateCenter: {
-    flex: 1,
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
+    minWidth: 160,
   },
   dateTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: -0.3,
   },

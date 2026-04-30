@@ -35,8 +35,8 @@ export default function EventItem({
   );
 
   // Helper function to check if hour should be displayed
-  const shouldShowHour = (hora: string | undefined) => {
-    return hora && hora.trim() !== '' && hora !== 'undefined';
+  const shouldShowHour = (hora: string | undefined): boolean => {
+    return !!hora && hora.trim() !== '' && hora !== 'undefined';
   };
 
   // Handle Google Maps link
@@ -70,7 +70,7 @@ export default function EventItem({
                 {event.nombre}
               </Text>
               <View style={styles.rightSection}>
-                {event.materiales && (
+                {event.materiales ? (
                   <Chip
                     size="sm"
                     variant="primary"
@@ -84,43 +84,45 @@ export default function EventItem({
                     />
                     <Chip.Label>Materiales</Chip.Label>
                   </Chip>
-                )}
-                {shouldShowHour(event.hora) && (
+                ) : null}
+                {shouldShowHour(event.hora) ? (
                   <Chip size="sm" variant="primary" color="accent">
                     <Chip.Label>{event.hora}</Chip.Label>
                   </Chip>
-                )}
+                ) : null}
               </View>
             </View>
-            {event.subtitulo && (
+            {event.subtitulo ? (
               <Text style={styles.subtitle} selectable>
                 {event.subtitulo}
               </Text>
-            )}
-            <View style={styles.bottomRow}>
-              {event.lugar && (
-                <View style={styles.locationRow}>
-                  <Ionicons
-                    name="location"
-                    size={14 * fontScale}
-                    color="#999"
-                  />
-                  <Text style={styles.location} selectable>
-                    {event.lugar}
-                  </Text>
-                </View>
-              )}
-              {event.maps && (
-                <Button variant="ghost" size="sm" onPress={handleMapsPress}>
-                  <MaterialIcons
-                    name="map"
-                    size={16 * fontScale}
-                    color="#4285F4"
-                  />
-                  <Button.Label>Ver en Maps</Button.Label>
-                </Button>
-              )}
-            </View>
+            ) : null}
+            {event.lugar || event.maps ? (
+              <View style={styles.bottomRow}>
+                {event.lugar ? (
+                  <View style={styles.locationRow}>
+                    <Ionicons
+                      name="location"
+                      size={14 * fontScale}
+                      color="#999"
+                    />
+                    <Text style={styles.location} selectable>
+                      {event.lugar}
+                    </Text>
+                  </View>
+                ) : null}
+                {event.maps ? (
+                  <Button variant="ghost" size="sm" onPress={handleMapsPress}>
+                    <MaterialIcons
+                      name="map"
+                      size={16 * fontScale}
+                      color="#4285F4"
+                    />
+                    <Button.Label>Ver en Maps</Button.Label>
+                  </Button>
+                ) : null}
+              </View>
+            ) : null}
           </View>
         </View>
       </Card.Body>

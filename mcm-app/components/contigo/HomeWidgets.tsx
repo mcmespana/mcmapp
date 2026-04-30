@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
@@ -21,7 +20,7 @@ import {
 import type { DayRecord } from '@/hooks/useContigoHabits';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ProgressRing — colour-coded by completion
+// ProgressRing — pure-View dotted ring (no SVG dependency, works everywhere)
 // ─────────────────────────────────────────────────────────────────────────────
 export function ProgressRing({
   done,
@@ -34,43 +33,47 @@ export function ProgressRing({
   size?: number;
   stroke?: number;
 }) {
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
+  // 48 dots packed densely around the circle look like a smooth ring at this size,
+  // and avoid the native-svg dependency that crashes on iOS dev clients without pods.
+  const N = 48;
   const pct = total === 0 ? 0 : done / total;
-  const offset = circ * (1 - pct);
+  const filled = Math.round(pct * N);
+  const dotSize = Math.max(3, Math.round(stroke * 0.65));
+  const radius = (size - dotSize) / 2 - 1;
+  const cx = size / 2;
+  const cy = size / 2;
   const color =
     done === total && total > 0
       ? '#6DBF7E'
       : done >= 2
         ? '#F97316'
         : done === 1
-          ? '#60A5FA'
-          : 'rgba(255,255,255,0.18)';
+          ? '#FB923C'
+          : 'rgba(255,255,255,0.22)';
+  const trackColor = 'rgba(255,255,255,0.10)';
+
   return (
-    <Svg width={size} height={size}>
-      <Circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke="rgba(255,255,255,0.10)"
-        strokeWidth={stroke}
-        fill="none"
-      />
-      <Circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke={color}
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={`${circ}, ${circ}`}
-        strokeDashoffset={offset}
-        fill="none"
-        rotation={-90}
-        originX={size / 2}
-        originY={size / 2}
-      />
-    </Svg>
+    <View style={{ width: size, height: size }}>
+      {Array.from({ length: N }).map((_, i) => {
+        const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+        const x = cx + radius * Math.cos(a) - dotSize / 2;
+        const y = cy + radius * Math.sin(a) - dotSize / 2;
+        return (
+          <View
+            key={i}
+            style={{
+              position: 'absolute',
+              left: x,
+              top: y,
+              width: dotSize,
+              height: dotSize,
+              borderRadius: dotSize / 2,
+              backgroundColor: i < filled ? color : trackColor,
+            }}
+          />
+        );
+      })}
+    </View>
   );
 }
 
@@ -165,11 +168,6 @@ export function HabitTile({
 
   const inner = (
     <View style={styles.tileContent}>
-      {done && (
-        <View style={styles.tileCheck}>
-          <MaterialIcons name="check" size={12} color="#fff" />
-        </View>
-      )}
       <MaterialIcons
         name={h.icon as any}
         size={26}
@@ -186,6 +184,12 @@ export function HabitTile({
       </Text>
     </View>
   );
+
+  const checkBadge = done ? (
+    <View style={styles.tileCheck}>
+      <MaterialIcons name="check" size={11} color="#fff" />
+    </View>
+  ) : null;
 
   if (done) {
     return (
@@ -204,6 +208,7 @@ export function HabitTile({
             {inner}
           </LinearGradient>
         </TouchableOpacity>
+        {checkBadge}
       </View>
     );
   }
@@ -305,10 +310,19 @@ export function EvangelioTeaserCard({
               >
                 {preview}
               </Text>
+              {/* Fade uses same-tone transparent→opaque so it interpolates as
+                  a gentle softening, not a gray band. */}
               <LinearGradient
                 colors={
-                  ['rgba(0,0,0,0)', isDark ? '#26221C' : '#FFFDF7'] as const
+                  isDark
+                    ? (['rgba(38,34,28,0)', 'rgba(38,34,28,0.95)'] as const)
+                    : ([
+                        'rgba(255,253,247,0)',
+                        'rgba(255,253,247,0.95)',
+                      ] as const)
                 }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
                 style={styles.teaserFade}
                 pointerEvents="none"
               />
@@ -565,10 +579,12 @@ export function MonthHeatmap({
   records,
   todayStr,
   isDark,
+  onDayPress,
 }: {
   records: Record<string, DayRecord>;
   todayStr: string;
   isDark: boolean;
+  onDayPress?: (date: string, rec: DayRecord | null) => void;
 }) {
   const W = warm(isDark);
   const { cells, year, month } = buildCalendar(todayStr);
@@ -584,7 +600,7 @@ export function MonthHeatmap({
       <View style={styles.heatmapGrid}>
         {cells.map((day, idx) => {
           if (day === null) {
-            return <View key={`e${idx}`} style={styles.heatmapCell} />;
+            return <View key={`e${idx}`} style={styles.heatmapCellWrap} />;
           }
           const ds = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const rec = records[ds];
@@ -597,9 +613,11 @@ export function MonthHeatmap({
           const emoColor = rec?.prayerEmotion
             ? EMOTION_HEAT[rec.prayerEmotion]
             : null;
-          let bg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+          let bg: string = isDark
+            ? 'rgba(255,255,255,0.03)'
+            : 'rgba(0,0,0,0.025)';
           if (doneCount === 3)
-            bg = isDark ? 'rgba(109,191,126,0.28)' : 'rgba(58,125,68,0.22)';
+            bg = isDark ? 'rgba(109,191,126,0.32)' : 'rgba(58,125,68,0.22)';
           else if (doneCount === 2)
             bg =
               emoColor && pd
@@ -607,24 +625,24 @@ export function MonthHeatmap({
                   ? emoColor + '40'
                   : emoColor + '80'
                 : isDark
-                  ? 'rgba(218,165,32,0.28)'
+                  ? 'rgba(218,165,32,0.30)'
                   : 'rgba(196,146,42,0.22)';
           else if (rd)
-            bg = isDark ? 'rgba(96,165,250,0.18)' : 'rgba(37,99,235,0.12)';
+            bg = isDark ? 'rgba(96,165,250,0.20)' : 'rgba(37,99,235,0.14)';
           else if (pd)
-            bg = isDark ? 'rgba(218,165,32,0.16)' : 'rgba(196,146,42,0.12)';
+            bg = isDark ? 'rgba(218,165,32,0.18)' : 'rgba(196,146,42,0.14)';
           else if (rv)
-            bg = isDark ? 'rgba(167,139,250,0.18)' : 'rgba(124,58,237,0.12)';
+            bg = isDark ? 'rgba(167,139,250,0.20)' : 'rgba(124,58,237,0.14)';
           if (isFuture) bg = 'transparent';
-          return (
+          const tappable = !!onDayPress && !isFuture && doneCount > 0;
+          const inner = (
             <View
-              key={ds}
               style={[
                 styles.heatmapCell,
                 {
                   backgroundColor: bg,
                   borderColor: isToday ? W.accent : 'transparent',
-                  opacity: isFuture ? 0.22 : 1,
+                  opacity: isFuture ? 0.3 : 1,
                 },
               ]}
             >
@@ -637,12 +655,28 @@ export function MonthHeatmap({
                       : rd || pd || rv
                         ? W.text
                         : W.textMuted,
-                    fontWeight: isToday || rd || pd || rv ? '700' : '400',
+                    fontWeight: isToday || rd || pd || rv ? '700' : '500',
                   },
                 ]}
               >
                 {day}
               </Text>
+            </View>
+          );
+          return (
+            <View key={ds} style={styles.heatmapCellWrap}>
+              {tappable ? (
+                <TouchableOpacity
+                  activeOpacity={0.6}
+                  onPress={() => onDayPress!(ds, rec || null)}
+                  style={{ flex: 1 }}
+                  accessibilityLabel={`Ver registro del ${day}`}
+                >
+                  {inner}
+                </TouchableOpacity>
+              ) : (
+                inner
+              )}
             </View>
           );
         })}
@@ -837,12 +871,14 @@ const styles = StyleSheet.create({
   },
   tileCheck: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    top: 6,
+    right: 6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.45)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -908,7 +944,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 28,
+    height: 36,
   },
   teaserActions: {
     flexDirection: 'row',
@@ -1001,12 +1037,13 @@ const styles = StyleSheet.create({
   // Heatmap
   heatmapHdr: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: 6,
+    paddingHorizontal: 3,
   },
   heatmapHdrText: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -1015,21 +1052,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  heatmapCell: {
+  heatmapCellWrap: {
     width: `${100 / 7}%`,
-    aspectRatio: 1,
+    padding: 3,
+  },
+  heatmapCell: {
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderRadius: 7,
-    padding: 1,
   },
-  heatmapDay: { fontSize: 11 },
+  heatmapDay: { fontSize: 12, letterSpacing: -0.2 },
   heatmapLegend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 10,
-    marginTop: 12,
+    marginTop: 10,
   },
 });

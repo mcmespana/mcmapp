@@ -8,10 +8,7 @@ import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import {
-  getEventCacheKey,
-  getEventFirebasePath,
-} from '@/constants/events';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import DateSelector from '@/components/DateSelector';
 import { MasStackParamList } from '../(tabs)/mas';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -198,14 +195,28 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
     container: { flex: 1, backgroundColor: theme.background },
     list: {
       paddingHorizontal: spacing.lg,
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl,
     },
     card: {
-      borderRadius: 12,
+      borderRadius: 16,
       paddingVertical: spacing.xl,
+      paddingHorizontal: spacing.md,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: spacing.md,
+      ...Platform.select({
+        web: {
+          boxShadow: '0 2px 10px rgba(0,0,0,0.10)',
+        },
+        default: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.12,
+          shadowRadius: 8,
+          elevation: 3,
+        },
+      }),
     },
     emoji: {
       fontSize: 40 * scale,

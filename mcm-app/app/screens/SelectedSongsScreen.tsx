@@ -12,15 +12,12 @@ import {
   StyleSheet,
   Platform,
   Share,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
 } from 'react-native';
-import {
-  useToast,
-  Dialog,
-  Button,
-  PressableFeedback,
-  TextField,
-  Input,
-} from 'heroui-native';
+import { useToast, PressableFeedback } from 'heroui-native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -393,6 +390,13 @@ const SelectedSongsScreen: React.FC = () => {
     </View>
   );
 
+  const headerIconColor =
+    Platform.OS === 'ios'
+      ? '#1a1a1a'
+      : Platform.OS === 'web'
+        ? '#1a1a1a'
+        : '#fff';
+
   useLayoutEffect(() => {
     if (selectedSongs.length > 0) {
       const isDesktopLike =
@@ -401,26 +405,56 @@ const SelectedSongsScreen: React.FC = () => {
         Platform.OS === 'macos';
       navigation.setOptions({
         headerRight: () => (
-          <PressableFeedback
-            onPress={handleExport}
-            style={styles.headerExportButton}
-          >
-            <PressableFeedback.Highlight />
-            <IconSymbol
-              name={isDesktopLike ? 'doc.on.doc' : 'square.and.arrow.up'}
-              size={22}
-              color={
-                Platform.OS === 'ios'
-                  ? '#1a1a1a'
-                  : Platform.OS === 'web'
-                    ? '#1a1a1a'
-                    : '#fff'
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={handleExport}
+              style={styles.headerIconBtn}
+              hitSlop={6}
+              accessibilityLabel={
+                isDesktopLike
+                  ? 'Copiar lista al portapapeles'
+                  : 'Compartir lista'
               }
-            />
-            {isDesktopLike && (
-              <Text style={styles.headerExportText}>Copiar</Text>
-            )}
-          </PressableFeedback>
+            >
+              <IconSymbol
+                name={isDesktopLike ? 'doc.on.doc' : 'square.and.arrow.up'}
+                size={20}
+                color={headerIconColor}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleShareFile}
+              style={styles.headerIconBtn}
+              hitSlop={6}
+              accessibilityLabel="Exportar como archivo"
+            >
+              <MaterialIcons
+                name="file-upload"
+                size={22}
+                color={headerIconColor}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleImportFile}
+              style={styles.headerIconBtn}
+              hitSlop={6}
+              accessibilityLabel="Importar archivo"
+            >
+              <MaterialIcons
+                name="file-download"
+                size={22}
+                color={headerIconColor}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={clearSelection}
+              style={styles.headerIconBtn}
+              hitSlop={6}
+              accessibilityLabel="Borrar playlist"
+            >
+              <MaterialIcons name="delete-outline" size={22} color="#FF453A" />
+            </TouchableOpacity>
+          </View>
         ),
       });
     } else {
@@ -428,7 +462,15 @@ const SelectedSongsScreen: React.FC = () => {
         headerRight: () => null,
       });
     }
-  }, [navigation, handleExport, selectedSongs.length]);
+  }, [
+    navigation,
+    handleExport,
+    handleShareFile,
+    handleImportFile,
+    clearSelection,
+    selectedSongs.length,
+    headerIconColor,
+  ]);
 
   if (loading && selectedSongs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
@@ -467,46 +509,12 @@ const SelectedSongsScreen: React.FC = () => {
     );
   }
 
-  const ToolbarHeader = () => (
-    <View style={styles.toolbar}>
+  const ListCountHeader = () => (
+    <View style={styles.countHeader}>
       <Text style={styles.selectionCount}>
         {selectedSongs.length}{' '}
         {selectedSongs.length === 1 ? 'canción' : 'canciones'}
       </Text>
-      <View style={styles.toolbarActions}>
-        <PressableFeedback
-          onPress={handleShareFile}
-          style={styles.toolbarButton}
-        >
-          <PressableFeedback.Highlight />
-          <MaterialIcons
-            name="ios-share"
-            size={18}
-            color={isDark ? '#7AB3FF' : '#253883'}
-          />
-          <Text style={styles.toolbarButtonText}>Exportar</Text>
-        </PressableFeedback>
-        <PressableFeedback
-          onPress={handleImportFile}
-          style={styles.toolbarButton}
-        >
-          <PressableFeedback.Highlight />
-          <MaterialIcons
-            name="file-download"
-            size={18}
-            color={isDark ? '#7AB3FF' : '#253883'}
-          />
-          <Text style={styles.toolbarButtonText}>Importar</Text>
-        </PressableFeedback>
-        <PressableFeedback
-          onPress={clearSelection}
-          style={styles.toolbarButtonDanger}
-        >
-          <PressableFeedback.Highlight />
-          <MaterialIcons name="delete-outline" size={18} color="#FF453A" />
-          <Text style={styles.toolbarButtonDangerText}>Borrar</Text>
-        </PressableFeedback>
-      </View>
     </View>
   );
 
@@ -516,55 +524,69 @@ const SelectedSongsScreen: React.FC = () => {
         data={categorizedSelectedSongs}
         renderItem={renderCategory}
         keyExtractor={(item) => item.categoryTitle}
-        ListHeaderComponent={<ToolbarHeader />}
+        ListHeaderComponent={<ListCountHeader />}
         contentContainerStyle={styles.listContentContainer}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Export dialog */}
-      <Dialog
-        isOpen={showExportModal}
-        onOpenChange={(open) => {
-          if (!open) setShowExportModal(false);
-        }}
+      {/* Export modal — native RN Modal works reliably on web, iOS and Android.
+          The previous heroui Dialog had inconsistent input focus and overlay
+          behaviour on web that prevented downloads from firing. */}
+      <Modal
+        visible={showExportModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowExportModal(false)}
       >
-        <Dialog.Portal>
-          <Dialog.Overlay />
-          <Dialog.Content>
-            <Dialog.Close />
-            <Dialog.Title>Exportar playlist</Dialog.Title>
-            <Dialog.Description className="mb-3">
-              Elige un nombre para tu archivo
-            </Dialog.Description>
-            <TextField style={styles.modalInput}>
-              <Input
-                value={exportFileName}
-                onChangeText={setExportFileName}
-                placeholder="Playlist 7-ago"
-                autoFocus={true}
-                selectTextOnFocus={true}
-              />
-            </TextField>
-            <Text style={styles.modalNote}>Se exportará como archivo .mcm</Text>
-            <View style={styles.modalButtons}>
-              <Button
-                variant="tertiary"
-                onPress={() => setShowExportModal(false)}
-              >
-                <Button.Label>Cancelar</Button.Label>
-              </Button>
-              <Button
-                variant="primary"
-                onPress={handleConfirmExport}
-                isDisabled={!exportFileName.trim()}
-              >
-                <Button.Label>Exportar</Button.Label>
-              </Button>
-            </View>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog>
+        <TouchableWithoutFeedback onPress={() => setShowExportModal(false)}>
+          <View style={styles.modalBackdrop}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalCard}>
+                <Text style={styles.modalTitle}>Exportar playlist</Text>
+                <Text style={styles.modalDescription}>
+                  Elige un nombre para tu archivo
+                </Text>
+                <TextInput
+                  value={exportFileName}
+                  onChangeText={setExportFileName}
+                  placeholder="Playlist 7-ago"
+                  placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
+                  autoFocus
+                  selectTextOnFocus
+                  style={styles.modalInput}
+                  onSubmitEditing={() => {
+                    if (exportFileName.trim()) handleConfirmExport();
+                  }}
+                  returnKeyType="done"
+                />
+                <Text style={styles.modalNote}>
+                  Se exportará como archivo .mcm
+                </Text>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    onPress={() => setShowExportModal(false)}
+                    style={[styles.modalBtn, styles.modalBtnSecondary]}
+                  >
+                    <Text style={styles.modalBtnSecondaryText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleConfirmExport}
+                    disabled={!exportFileName.trim()}
+                    style={[
+                      styles.modalBtn,
+                      styles.modalBtnPrimary,
+                      !exportFileName.trim() && styles.modalBtnDisabled,
+                    ]}
+                  >
+                    <Text style={styles.modalBtnPrimaryText}>Exportar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 };
@@ -576,79 +598,30 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
       backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
-    toolbar: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      marginHorizontal: 16,
-      marginTop: 8,
-      marginBottom: 4,
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
-      borderRadius: 12,
-      ...Platform.select({
-        web: {
-          boxShadow: isDark
-            ? '0 1px 4px rgba(0,0,0,0.4)'
-            : '0 1px 4px rgba(0,0,0,0.08)',
-        },
-        default: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.25 : 0.06,
-          shadowRadius: 4,
-          elevation: 2,
-        },
-      }),
+    countHeader: {
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 4,
     },
     selectionCount: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: isDark ? '#EBEBF0' : '#1C1C1E',
-    },
-    toolbarActions: {
-      flexDirection: 'row',
-      gap: 4,
-    },
-    toolbarButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-      borderRadius: radii.sm,
-      backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
-      gap: 4,
-    },
-    toolbarButtonText: {
       fontSize: 13,
-      fontWeight: '600',
-      color: isDark ? '#7AB3FF' : '#253883',
+      fontWeight: '700',
+      color: isDark ? '#8E8E93' : '#6B6B70',
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
     },
-    toolbarButtonDanger: {
+    headerActions: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-      borderRadius: radii.sm,
-      backgroundColor: isDark ? '#3A1B1B' : '#FFEBEE',
-      gap: 4,
+      gap: 2,
+      marginRight: 4,
     },
-    toolbarButtonDangerText: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: '#FF453A',
-    },
-    headerExportButton: {
-      paddingHorizontal: 12,
-      flexDirection: 'row',
+    headerIconBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       alignItems: 'center',
-      gap: 6,
-    },
-    headerExportText: {
-      color: '#1a1a1a',
-      fontSize: 15,
-      fontWeight: '500',
+      justifyContent: 'center',
     },
     listContentContainer: {
       paddingBottom: Platform.OS === 'ios' ? 100 : 24,
@@ -748,25 +721,91 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '600',
       color: isDark ? '#7AB3FF' : '#253883',
     },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+    },
+    modalCard: {
+      width: '100%',
+      maxWidth: 420,
+      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      borderRadius: 18,
+      padding: 22,
+      ...Platform.select({
+        web: {
+          boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
+        },
+        default: {
+          shadowColor: '#000',
+          shadowOpacity: 0.25,
+          shadowRadius: 20,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 12,
+        },
+      }),
+    },
+    modalTitle: {
+      fontSize: 19,
+      fontWeight: '700',
+      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      letterSpacing: -0.3,
+      marginBottom: 6,
+    },
+    modalDescription: {
+      fontSize: 14,
+      color: isDark ? '#A0A0A8' : '#6B6B70',
+      marginBottom: 14,
+    },
     modalInput: {
       borderWidth: 1,
-      borderColor: isDark ? Colors.dark.card : '#E5E5EA',
+      borderColor: isDark ? '#3A3A3C' : '#D1D1D6',
       borderRadius: radii.md,
-      padding: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
       fontSize: 16,
       marginBottom: 8,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
-      color: isDark ? '#EBEBF0' : '#1C1C1E',
+      backgroundColor: isDark ? '#1C1C1E' : '#F8F8FA',
+      color: isDark ? '#F5F5F7' : '#1C1C1E',
     },
     modalNote: {
-      fontSize: 13,
+      fontSize: 12,
       color: isDark ? '#636366' : '#8E8E93',
-      textAlign: 'center',
-      marginBottom: 16,
+      marginBottom: 18,
     },
     modalButtons: {
       flexDirection: 'row',
-      gap: 12,
+      gap: 10,
+      justifyContent: 'flex-end',
+    },
+    modalBtn: {
+      paddingVertical: 11,
+      paddingHorizontal: 18,
+      borderRadius: 10,
+      minWidth: 100,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalBtnSecondary: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F2F2F7',
+    },
+    modalBtnSecondaryText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: isDark ? '#F5F5F7' : '#1C1C1E',
+    },
+    modalBtnPrimary: {
+      backgroundColor: '#253883',
+    },
+    modalBtnPrimaryText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: '#FFFFFF',
+    },
+    modalBtnDisabled: {
+      opacity: 0.45,
     },
   });
 };

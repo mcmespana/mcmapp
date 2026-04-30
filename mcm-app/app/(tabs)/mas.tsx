@@ -40,9 +40,7 @@ export type MasStackParamList = {
   ComunicaGestion: undefined;
   JubileoHome: EventRouteParams | undefined;
   Horario: EventRouteParams | undefined;
-  Materiales:
-    | (EventRouteParams & { initialDayIndex?: number })
-    | undefined;
+  Materiales: (EventRouteParams & { initialDayIndex?: number }) | undefined;
   MaterialPages: EventRouteParams & { actividad: any; fecha: string };
   Visitas: EventRouteParams | undefined;
   Comida: EventRouteParams | undefined;
@@ -57,7 +55,9 @@ export type MasStackParamList = {
 
 const Stack = createNativeStackNavigator<MasStackParamList>();
 
-// Helper para obtener estilos del header según la plataforma
+// Helper para obtener estilos del header según la plataforma.
+// Web sigue el mismo patrón ligero que el cantoral: fondo tintado + hairline,
+// sin sombra pesada — así los headers se sienten coherentes en toda la app.
 const getHeaderStyle = (tintColor: string) => {
   if (Platform.OS === 'ios') {
     return { backgroundColor: 'transparent' };
@@ -65,12 +65,9 @@ const getHeaderStyle = (tintColor: string) => {
     return {
       backgroundColor: tintColor,
       borderBottomWidth: 1,
-      borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+      elevation: 0,
+      shadowOpacity: 0,
     };
   } else {
     return { backgroundColor: tintColor };
@@ -179,12 +176,9 @@ export default function MasTab() {
                   ? {
                       backgroundColor: '#78909C',
                       borderBottomWidth: 1,
-                      borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-                      elevation: 2,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 4,
+                      borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+                      elevation: 0,
+                      shadowOpacity: 0,
                     }
                   : { backgroundColor: '#78909C' },
             headerTintColor:

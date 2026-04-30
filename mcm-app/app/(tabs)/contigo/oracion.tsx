@@ -9,7 +9,7 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -198,9 +198,15 @@ export default function OracionScreen() {
 
   const { setPrayerDone, todayStr, getRecord } = useContigoHabits();
 
-  const [selectedDate, setSelectedDate] = useState(
-    todayStr || new Date().toISOString().split('T')[0],
-  );
+  const params = useLocalSearchParams<{ date?: string }>();
+  const initialDate = useMemo(() => {
+    if (params.date && /^\d{4}-\d{2}-\d{2}$/.test(params.date)) {
+      return params.date;
+    }
+    return todayStr || new Date().toISOString().split('T')[0];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [selectedDate, setSelectedDate] = useState(initialDate);
   const record = getRecord(selectedDate);
   const liturgicalInfo = getLiturgicalInfo(selectedDate);
 

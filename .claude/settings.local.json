@@ -34,7 +34,8 @@
       "Bash(cp /tmp/design/seccion-contigo-app/chats/chat1.md /tmp/design/chat1.md)",
       "Bash(cp /tmp/design/seccion-contigo-app/chats/chat2.md /tmp/design/chat2.md)",
       "Read(//c/c/Users/david/code/mcmapp/mcm-app/app/\\(tabs\\)/**)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(gh pr *)"
     ],
     "deny": [],
     "ask": []
