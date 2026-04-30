@@ -24,7 +24,7 @@
         ],
         "homeButtons": ["comunica", "cancionero", "fotos", "evangelio", "mas"],
         "masItems": ["comunica", "jubileo"],
-        "defaultCalendars": [],
+        "defaultCalendars": ["mcm-europa"],
         "albumTags": ["all"],
         "notificationTopics": ["general", "eventos", "familias"]
       },
@@ -71,11 +71,24 @@
       "mcm-benicarlo-vinaros": { "label": "MCM Benicarló-Vinaròs" },
       "mcm-burriana": { "label": "MCM Burriana" },
       "mcm-caravaca": { "label": "MCM Caravaca" },
-      "mcm-castellon": { "label": "MCM Castellón" },
+      "mcm-castellon": {
+        "label": "MCM Castellón",
+        "notificationTopics": [
+          "general",
+          "eventos",
+          "miembros",
+          "mcm-castellon"
+        ],
+        "extraCalendars": "mcm-castellon"
+      },
       "mcm-espinardo": { "label": "MCM Espinardo" },
       "mcm-granada": { "label": "MCM Granada" },
       "mcm-lalcora": { "label": "MCM l'Alcora" },
-      "mcm-madrid": { "label": "MCM Madrid" },
+      "mcm-madrid": {
+        "label": "MCM Madrid",
+        "notificationTopics": ["general", "eventos", "miembros", "mcm-madrid"],
+        "extraCalendars": "mcm-madrid"
+      },
       "mcm-nules": { "label": "MCM Nules" },
       "mcm-onda": { "label": "MCM Onda" },
       "mcm-quintanar": { "label": "MCM Quintanar" },

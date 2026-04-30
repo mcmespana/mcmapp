@@ -54,6 +54,8 @@ export const KNOWN_NOTIFICATION_TOPICS = [
   'familias',
   'monitores',
   'miembros',
+  'mcm-castellon',
+  'mcm-madrid',
 ] as const;
 
 export type KnownTabId = (typeof KNOWN_TABS)[number];
