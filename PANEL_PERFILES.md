@@ -521,3 +521,233 @@ Si el agente del panel quiere ver cómo lo consume la app cliente:
 - [ ] Validaciones del §5 antes de guardar.
 - [ ] Botón "Inicializar profileConfig desde seed" si el nodo está vacío.
 - [ ] Reglas de seguridad RTDB actualizadas.
+
+---
+
+## Apéndice A — Tipos TypeScript listos para copiar al panel
+
+Tal cual los usa la app cliente (`mcm-app/types/profileConfig.ts`). El panel
+puede pegarlos en su propio proyecto Next.js para tipar formularios,
+loaders y validadores sin reinventar la rueda.
+
+```ts
+export type ProfileType = 'familia' | 'monitor' | 'miembro';
+
+export interface ProfileBase {
+  label: string;
+  description: string;
+  tabs: string[];
+  homeButtons: string[];
+  masItems: string[];
+  defaultCalendars: string[];
+  albumTags: string[];
+  notificationTopics: string[];
+}
+
+export interface Delegation {
+  label: string;
+  notificationTopic?: string;
+  extraCalendars?: string[];
+  extraHomeButtons?: string[];
+  extraMasItems?: string[];
+  extraAlbumTags?: string[];
+  extraTabs?: string[];
+  override?: Partial<ProfileBase>;
+}
+
+export interface DelegationListItem {
+  id: string;
+  label: string;
+}
+
+export interface GlobalConfig {
+  defaultTab: string;
+  showNotificationsIcon: boolean;
+  showOnboarding: boolean;
+  showChangeNameButton: boolean;
+  maintenanceMode: boolean;
+  maintenanceMessage?: string;
+  minAppVersion: string;
+}
+
+export type OverrideKey = `${ProfileType}:${string}`;
+
+export interface ProfileConfigData {
+  global: GlobalConfig;
+  profiles: Record<ProfileType, ProfileBase>;
+  delegations: Record<string, Delegation> & { _default: Delegation };
+  delegationList: DelegationListItem[];
+  overrides?: Partial<Record<OverrideKey, Partial<ProfileBase>>>;
+}
+
+export interface ProfileConfigDocument {
+  updatedAt: string;
+  data: ProfileConfigData;
+}
+
+// Catálogos de IDs aceptados (deben coincidir con el cliente)
+export const KNOWN_TABS = [
+  'index', 'cancionero', 'contigo', 'calendario', 'fotos', 'comunica', 'mas',
+] as const;
+export const KNOWN_HOME_BUTTONS = [
+  'comunica', 'cancionero', 'fotos', 'evangelio', 'mas',
+] as const;
+export const KNOWN_MAS_ITEMS = [
+  'comunica', 'comunica-gestion', 'jubileo',
+] as const;
+export const KNOWN_ALBUM_TAGS = [
+  'all', 'general', 'encuentros', 'interno', 'monitores', 'miembros',
+] as const;
+export const KNOWN_NOTIFICATION_TOPICS = [
+  'general', 'eventos', 'familias', 'monitores', 'miembros',
+] as const;
+```
+
+---
+
+## Apéndice B — Ejemplo completo: añadir delegación con calendario y topic
+
+**Contexto**: el admin quiere dar de alta MCM Sevilla. Tiene calendario
+propio (`sevilla-local`) y debe recibir notificaciones segmentadas. Las
+familias de Sevilla, además, deben ver una tab extra "Comunica" que el resto
+de familias no ve.
+
+### Estado en `/profileConfig/data` antes
+
+```json
+{
+  "delegations": {
+    "_default": { "label": "General" },
+    "mcm-castellon": { "label": "MCM Castellón" }
+  },
+  "delegationList": [
+    { "id": "mcm-castellon", "label": "MCM Castellón" }
+  ],
+  "overrides": {}
+}
+```
+
+### Estado tras guardar desde el panel
+
+```jsonc
+{
+  "delegations": {
+    "_default": { "label": "General" },
+    "mcm-castellon": { "label": "MCM Castellón" },
+    "mcm-sevilla": {
+      "label": "MCM Sevilla",
+      "notificationTopic": "sevilla",
+      "extraCalendars": ["sevilla-local"]
+    }
+  },
+  "delegationList": [
+    { "id": "mcm-castellon", "label": "MCM Castellón" },
+    { "id": "mcm-sevilla", "label": "MCM Sevilla" }
+  ],
+  "overrides": {
+    "familia:mcm-sevilla": {
+      "tabs": ["index", "cancionero", "contigo", "calendario", "fotos", "comunica", "mas"]
+    }
+  }
+}
+```
+
+**Pre-requisitos**: el calendario `sevilla-local` debe existir ya en
+`/calendars`. El panel debería avisar si no es así.
+
+**Resultado en el cliente** para una `familia` de Sevilla:
+
+- Tabs visibles: `index, cancionero, contigo, calendario, fotos, comunica, mas`.
+- Calendarios pre-seleccionados: los del perfil familia + `sevilla-local`.
+- Push token registra `topics: ['general', 'eventos', 'familias', 'sevilla']`.
+- Backend del panel puede enviar a "monitores de Sevilla" con
+  `where('profileType', '==', 'monitor').where('delegationId', '==', 'mcm-sevilla')`.
+
+**Importante**: tras escribir el cambio, actualizar también
+`/profileConfig/updatedAt` con `new Date().toISOString()`. Si el panel usa
+`update()` con varias paths a la vez, puede hacerlo en una sola
+transacción:
+
+```ts
+await update(ref(db), {
+  'profileConfig/data/delegations/mcm-sevilla': { /* ... */ },
+  'profileConfig/data/delegationList': [/* ... */],
+  'profileConfig/data/overrides/familia:mcm-sevilla': { /* ... */ },
+  'profileConfig/updatedAt': new Date().toISOString(),
+});
+```
+
+---
+
+## Apéndice C — Trampas comunes
+
+1. **Olvidar `updatedAt`**: si el panel modifica `data.*` pero no toca
+   `updatedAt`, las apps con caché no verán los cambios hasta que algo más
+   altere el timestamp. Solución: forzar el update siempre, idealmente desde
+   un wrapper `saveProfileConfig()` único.
+
+2. **Editar `delegations` sin tocar `delegationList`**: la delegación
+   existirá técnicamente pero el usuario no podrá seleccionarla en el
+   onboarding. Solución: cuando el admin crea una delegación nueva, añadirla
+   automáticamente a `delegationList` (con un toggle "ocultar del selector"
+   para casos especiales).
+
+3. **IDs con typos en arrays del perfil**: la app descarta IDs desconocidos
+   en silencio (warning solo en dev). El admin pensará que "no funciona" sin
+   pista. Solución: usar multiselect cerrado contra el catálogo, no input
+   libre.
+
+4. **`notificationTopic` con espacios o mayúsculas**: backend que filtra por
+   `topics` no encontrará coincidencia (el array contiene el string tal cual).
+   Solución: auto-slugify al guardar.
+
+5. **Borrar un calendario referenciado en `defaultCalendars`**: la app
+   simplemente lo ignora (no crashea), pero el admin pensará que el cambio
+   "no aplica". Solución: avisar antes de borrar un calendario y ofrecer
+   limpiar las referencias.
+
+6. **`maintenanceMode = true` sin avisar**: bloquea TODA la app. Solución:
+   confirmación explícita al activarlo + mostrar timestamp del último
+   `updatedAt` y quién lo activó.
+
+7. **`minAppVersion` mal formado**: la función del cliente
+   (`isAppVersionSupported`) es tolerante a NaN y trata strings inválidos
+   como `0.0.0` (sin bloqueo). Pero el admin no se enterará de que el bloqueo
+   no se está aplicando. Solución: validar semver con regex en el panel
+   antes de guardar (`/^\d+\.\d+\.\d+(-[\w.]+)?(\+[\w.]+)?$/`).
+
+8. **Overrides huérfanos**: dejar entradas en `overrides` que apuntan a
+   delegaciones eliminadas. No rompe nada (el cliente los ignora) pero
+   ensucia. Solución: limpiar `overrides[k]` cuando se borra una delegación.
+
+9. **Asumir que un usuario tiene `profileType` definido**: la app permite
+   _saltar_ el onboarding (queda como `miembro` + `_default` con
+   `onboardingCompleted: false`). Esos tokens entran a `/pushTokens` con
+   `profileType` válido pero `onboardingCompleted` no se guarda en el token.
+   El panel solo ve `profileType` y `delegationId`, lo cual es suficiente
+   para segmentar — pero conviene saber que esos usuarios "saltadores" están
+   contados como `miembro` por defecto.
+
+10. **No pre-computar `topics` desde el panel**: el array `topics` lo escribe
+    siempre la app cliente al cambiar perfil/delegación. **El panel no debe
+    sobreescribirlo** desde la edición de `/pushTokens` — solo leerlo para
+    queries.
+
+---
+
+## Apéndice D — Glosario rápido
+
+| Término               | Significado                                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Perfil** (profile)  | Tipo de usuario: `familia`, `monitor`, `miembro`. Fijo. Define la experiencia base.                                        |
+| **Delegación**        | Localización dentro de MCM (Castellón, Madrid, ...). Variable. Aporta extras o sobreescribe la experiencia.                 |
+| **Resolver**          | Función pura del cliente que combina perfil + delegación + overrides → config final que la UI consume.                      |
+| **Aditivo** (`extraX`)| Campo que se concatena al array del perfil base.                                                                            |
+| **Override**          | Campo que reemplaza por completo el del perfil base.                                                                        |
+| **Override específico**| Entrada en `overrides["perfil:delegacion"]` — máxima granularidad, gana sobre el override de la delegación.                |
+| **Topic**             | Etiqueta arbitraria que se publica en `/pushTokens.topics` para que el backend pueda filtrar destinatarios.                 |
+| **Catálogo**          | Lista cerrada de IDs aceptados por el cliente (`KNOWN_TABS`, etc.). IDs fuera del catálogo se descartan en sanitización.    |
+| **Seed**              | JSON inicial (`firebase-seed/profileConfig.json`) que se importa a Firebase la primera vez. Sirve también de fallback.      |
+| **`updatedAt`**       | Timestamp ISO en la raíz del documento. La app refresca caché solo cuando cambia. Hay que tocarlo en cada escritura.        |
+| **`maintenanceMode`** | Kill switch global que muestra `MaintenanceScreen` en toda la app.                                                          |
+| **`minAppVersion`**   | Kill switch que fuerza actualización si la versión instalada es inferior. `0.0.0` = desactivado.                            |
