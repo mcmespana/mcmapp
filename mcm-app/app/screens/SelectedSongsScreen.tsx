@@ -76,6 +76,37 @@ const SelectedSongsScreen: React.FC = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFileName, setExportFileName] = useState('');
 
+  // O(1) lookup map for all songs, preserving original category context
+  const allSongsMap = useMemo(() => {
+    const map = new Map<string, Song & { originalCategoryKey: string }>();
+    if (!allSongsData) return map;
+
+    for (const [categoryKey, categoryData] of Object.entries(allSongsData)) {
+      categoryData.songs.forEach((song) => {
+        map.set(song.filename, {
+          ...song,
+          originalCategoryKey: categoryKey,
+        });
+      });
+    }
+    return map;
+  }, [allSongsData]);
+
+  // O(1) lookup maps for flattened selected songs
+  const { flatSelectedSongs, songIndexMap } = useMemo(() => {
+    const flat: Song[] = [];
+    const indexMap = new Map<string, number>();
+
+    categorizedSelectedSongs.forEach((category) => {
+      category.data.forEach((song) => {
+        indexMap.set(song.filename, flat.length);
+        flat.push(song);
+      });
+    });
+
+    return { flatSelectedSongs: flat, songIndexMap: indexMap };
+  }, [categorizedSelectedSongs]);
+
   useEffect(() => {
     const processSongs = () => {
       if (!selectedSongs || selectedSongs.length === 0) {
@@ -335,46 +366,36 @@ const SelectedSongsScreen: React.FC = () => {
     }
   }, [addSong]);
 
-  const handleSongPress = (song: Song) => {
-    if (!allSongsData) return;
+  const handleSongPress = useCallback(
+    (song: Song) => {
+      if (!allSongsData) return;
 
-    let completeSong: Song | undefined;
-    for (const cat of Object.values(allSongsData)) {
-      completeSong = cat.songs.find((s) => s.filename === song.filename);
-      if (completeSong) break;
-    }
+      const completeSong = allSongsMap.get(song.filename);
 
-    if (!completeSong) {
-      console.error('Song not found in allSongsData:', song.filename);
-      return;
-    }
-
-    const allSelected: Song[] = [];
-    let index = -1;
-    for (const cat of categorizedSelectedSongs) {
-      for (const s of cat.data) {
-        if (s.filename === completeSong.filename) {
-          index = allSelected.length;
-        }
-        allSelected.push(s);
+      if (!completeSong) {
+        console.error('Song not found in allSongsData:', song.filename);
+        return;
       }
-    }
 
-    navigation.navigate('SongDetail', {
-      filename: completeSong.filename,
-      title: completeSong.title,
-      ...(completeSong.author && { author: completeSong.author }),
-      ...(completeSong.key && { key: completeSong.key }),
-      ...(typeof completeSong.capo !== 'undefined' && {
-        capo: completeSong.capo,
-      }),
-      content: completeSong.content || '',
-      navigationList: allSelected,
-      currentIndex: index,
-      source: 'selection',
-      firebaseCategory: (completeSong as any).originalCategoryKey || 'entrada',
-    });
-  };
+      const index = songIndexMap.get(completeSong.filename) ?? -1;
+
+      navigation.navigate('SongDetail', {
+        filename: completeSong.filename,
+        title: completeSong.title,
+        ...(completeSong.author && { author: completeSong.author }),
+        ...(completeSong.key && { key: completeSong.key }),
+        ...(typeof completeSong.capo !== 'undefined' && {
+          capo: completeSong.capo,
+        }),
+        content: completeSong.content || '',
+        navigationList: flatSelectedSongs,
+        currentIndex: index,
+        source: 'selection',
+        firebaseCategory: completeSong.originalCategoryKey || 'entrada',
+      });
+    },
+    [allSongsData, allSongsMap, songIndexMap, flatSelectedSongs, navigation],
+  );
 
   const renderCategory = ({ item }: { item: CategorizedSongs }) => (
     <View style={styles.categoryContainer}>
