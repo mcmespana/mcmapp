@@ -155,13 +155,12 @@ export function useContigoHabits() {
   };
 
   const getStreak = (habit: 'reading' | 'prayer' | 'revision'): number => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = localISO();
     let currentStreak = 0;
-    const date = new Date(todayStr);
+    let cursor = todayStr;
 
     while (true) {
-      const dateStr = date.toISOString().split('T')[0];
-      const record = records[dateStr];
+      const record = records[cursor];
       const isDone =
         habit === 'reading'
           ? record?.readingDone
@@ -171,20 +170,20 @@ export function useContigoHabits() {
 
       // If checking today and it's not done, it doesn't break the streak (yet)
       // unless yesterday was also not done
-      if (dateStr === todayStr && !isDone) {
+      if (cursor === todayStr && !isDone) {
         // Skip today if not done yet
       } else if (isDone) {
         currentStreak++;
       } else {
         break;
       }
-      date.setDate(date.getDate() - 1);
+      cursor = offsetISODate(cursor, -1);
     }
 
     return currentStreak;
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localISO();
   const todayRecord = getRecord(todayStr);
 
   return {
@@ -198,19 +197,39 @@ export function useContigoHabits() {
     getStreak,
     getTotalMinutesWeek,
     getReadingsMonth,
+    getActiveDaysMonth,
     todayRecord,
     todayStr,
     reloadRecords,
   };
 }
 
+// ── Pure helpers (local-time, no UTC drift) ────────────────────────────────
+function localISO(d: Date = new Date()): string {
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
 function offsetISODate(base: string, delta: number): string {
   const [y, m, d] = base.split('-').map(Number);
   const dt = new Date(y, m - 1, d);
   dt.setDate(dt.getDate() + delta);
-  return [
-    dt.getFullYear(),
-    String(dt.getMonth() + 1).padStart(2, '0'),
-    String(dt.getDate()).padStart(2, '0'),
-  ].join('-');
+  return localISO(dt);
+}
+
+/** Mon→Sun ISO-week dates that contain `dateStr` (local time). */
+function getMondayWeek(dateStr: string): string[] {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const dow = (dt.getDay() + 6) % 7; // Mon = 0
+  const monday = new Date(dt);
+  monday.setDate(dt.getDate() - dow);
+  return Array.from({ length: 7 }, (_, i) => {
+    const dd = new Date(monday);
+    dd.setDate(monday.getDate() + i);
+    return localISO(dd);
+  });
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -55,7 +55,8 @@ export default function RevisionScreen() {
 
   const totalSteps = 2;
 
-  // Load any persisted entry for the selected date
+  // Load any persisted entry for the selected date.
+  // Mode is read from the saved record (no inference from array shape).
   useEffect(() => {
     if (!selDate) return;
     AsyncStorage.getItem(REVISION_STORAGE + selDate)
@@ -69,25 +70,38 @@ export default function RevisionScreen() {
         }
         try {
           const data = JSON.parse(raw);
-          if (data?.grateful?.items) {
-            const g = data.grateful.items as string[];
-            if (g.length === 1 && g[0]?.length > 0) {
-              setMode('free');
-              setSingleGrat(g[0]);
-              setItems(['', '', '']);
-            } else {
-              setMode('list');
-              setItems(
-                g.length >= 3 ? g : [...g, ...Array(3 - g.length).fill('')],
-              );
-              setSingleGrat('');
-            }
+          const savedMode: Mode =
+            data?.grateful?.mode === 'free' ? 'free' : 'list';
+          setMode(savedMode);
+          const g: string[] = Array.isArray(data?.grateful?.items)
+            ? data.grateful.items
+            : [];
+          if (savedMode === 'free') {
+            setSingleGrat(g[0] || '');
+            setItems(['', '', '']);
+          } else {
+            setItems(
+              g.length >= 3 ? g : [...g, ...Array(3 - g.length).fill('')],
+            );
+            setSingleGrat('');
           }
           setRevText(data?.grateful?.revision || '');
         } catch {}
       })
       .catch(() => {});
   }, [selDate]);
+
+  // Cleanup any pending "go back after celebration" timer on unmount or
+  // when the user navigates away manually before it fires.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (closeTimer.current) {
+        clearTimeout(closeTimer.current);
+        closeTimer.current = null;
+      }
+    };
+  }, []);
 
   const navigateDate = (delta: number) => {
     const next = offsetDate(selDate, delta);
@@ -106,6 +120,7 @@ export default function RevisionScreen() {
           date: selDate,
           type: 'grateful',
           grateful: {
+            mode,
             items:
               mode === 'list' ? items.filter((g) => g.trim()) : [singleGrat],
             revision: revText,
@@ -114,8 +129,10 @@ export default function RevisionScreen() {
         }),
       );
     } catch {}
+    // Always mark the habit done — the streak / heatmap / week strip should
+    // reflect any saved reflection, even retroactive ones.
+    await setRevisionDone(selDate, true);
     if (selDate === todayStr) {
-      await setRevisionDone(selDate, true);
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 2200);
       if (Platform.OS !== 'web') {
@@ -123,7 +140,11 @@ export default function RevisionScreen() {
       }
     }
     setSaved(true);
-    setTimeout(() => router.back(), 1400);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      router.back();
+    }, 1400);
   };
 
   const handleNext = () => {
@@ -565,7 +586,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.3,
-    textTransform: 'capitalize',
   },
   dateSub: { fontSize: 10, marginTop: 1 },
   pillRow: { alignItems: 'center', paddingTop: 10 },

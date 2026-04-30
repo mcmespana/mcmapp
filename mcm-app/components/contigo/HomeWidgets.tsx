@@ -98,47 +98,49 @@ export function HeroCard({
 
   return (
     <View style={styles.heroOuter}>
-      <LinearGradient
-        colors={
-          isDark
-            ? (['#2D2316', '#3D2E18', '#4A3820'] as const)
-            : (['#2A1E0A', '#3D2E1A', '#5C4430'] as const)
-        }
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.heroGrad}
-      >
-        <View style={styles.heroRow}>
-          <View style={styles.heroRing}>
-            <ProgressRing done={doneCount} total={3} size={96} stroke={8} />
-            <View style={styles.heroRingCenter} pointerEvents="none">
-              <Text style={styles.heroRingNum}>
-                {doneCount}
-                <Text style={styles.heroRingNumSm}>/3</Text>
+      <View style={styles.heroClip}>
+        <LinearGradient
+          colors={
+            isDark
+              ? (['#2D2316', '#3D2E18', '#4A3820'] as const)
+              : (['#2A1E0A', '#3D2E1A', '#5C4430'] as const)
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroGrad}
+        >
+          <View style={styles.heroRow}>
+            <View style={styles.heroRing}>
+              <ProgressRing done={doneCount} total={3} size={96} stroke={8} />
+              <View style={styles.heroRingCenter} pointerEvents="none">
+                <Text style={styles.heroRingNum}>
+                  {doneCount}
+                  <Text style={styles.heroRingNumSm}>/3</Text>
+                </Text>
+                <Text style={styles.heroRingLabel}>HOY</Text>
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroTitle}>{motiv}</Text>
+              <Text style={styles.heroSubtitle}>
+                {doneCount < 3
+                  ? `${3 - doneCount} práctica${3 - doneCount > 1 ? 's' : ''} por completar`
+                  : '¡Todo completado por hoy!'}
               </Text>
-              <Text style={styles.heroRingLabel}>HOY</Text>
-            </View>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>{motiv}</Text>
-            <Text style={styles.heroSubtitle}>
-              {doneCount < 3
-                ? `${3 - doneCount} práctica${3 - doneCount > 1 ? 's' : ''} por completar`
-                : '¡Todo completado por hoy!'}
-            </Text>
-            <View style={styles.heroChips}>
-              <View style={styles.heroChip}>
-                <Text style={styles.heroChipEmoji}>🔥</Text>
-                <Text style={styles.heroChipText}>{prayStreak} días</Text>
-              </View>
-              <View style={styles.heroChip}>
-                <Text style={styles.heroChipEmoji}>⏱</Text>
-                <Text style={styles.heroChipText}>{totalMins} min</Text>
+              <View style={styles.heroChips}>
+                <View style={styles.heroChip}>
+                  <Text style={styles.heroChipEmoji}>🔥</Text>
+                  <Text style={styles.heroChipText}>{prayStreak} días</Text>
+                </View>
+                <View style={styles.heroChip}>
+                  <Text style={styles.heroChipEmoji}>⏱</Text>
+                  <Text style={styles.heroChipText}>{totalMins} min</Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      </View>
     </View>
   );
 }
@@ -187,37 +189,41 @@ export function HabitTile({
 
   if (done) {
     return (
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={onPress}
-        style={[styles.tileWrap, { shadowColor: accent }]}
-      >
-        <LinearGradient
-          colors={h.grad}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.tileGrad}
+      <View style={[styles.tileWrap, { shadowColor: accent }]}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={onPress}
+          style={styles.tileClip}
         >
-          {inner}
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={h.grad}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.tileGrad}
+          >
+            {inner}
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     );
   }
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={onPress}
-      style={[
-        styles.tileWrap,
-        styles.tileWrapEmpty,
-        {
-          backgroundColor: isDark ? '#26221C' : '#FFFFFF',
-          borderColor: accent + '40',
-        },
-      ]}
-    >
-      {inner}
-    </TouchableOpacity>
+    <View style={styles.tileWrap}>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onPress}
+        style={[
+          styles.tileClip,
+          styles.tileWrapEmpty,
+          {
+            backgroundColor: isDark ? '#26221C' : '#FFFFFF',
+            borderColor: accent + '40',
+          },
+        ]}
+      >
+        {inner}
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -242,100 +248,101 @@ export function EvangelioTeaserCard({
   const W = warm(isDark);
   const preview = (texto || '').replace(/\n+/g, ' ').trim();
   return (
-    <View
-      style={[
-        styles.teaser,
-        {
-          borderColor: isDark
-            ? 'rgba(218,165,32,0.15)'
-            : 'rgba(196,146,42,0.18)',
-          backgroundColor: isDark ? '#26221C' : '#FFFDF7',
-          shadowColor: W.shadow,
-        },
-      ]}
-    >
-      <LinearGradient
-        colors={['#E8A838', '#C4922A', '#9A6A1A']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.teaserBar}
-      />
-      <View style={styles.teaserBody}>
-        <View style={styles.teaserHeaderRow}>
-          <View style={{ flex: 1, marginRight: 10 }}>
-            <Text style={[styles.teaserKicker, { color: W.accent }]}>
-              EVANGELIO DEL DÍA
-            </Text>
-            <Text
-              style={[styles.teaserTitle, { color: W.text }]}
-              numberOfLines={2}
-            >
-              {titulo || 'Palabra de hoy'}
-            </Text>
+    <View style={[styles.teaser, { shadowColor: W.shadow }]}>
+      <View
+        style={[
+          styles.teaserClip,
+          {
+            borderColor: isDark
+              ? 'rgba(218,165,32,0.15)'
+              : 'rgba(196,146,42,0.18)',
+            backgroundColor: isDark ? '#26221C' : '#FFFDF7',
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={['#E8A838', '#C4922A', '#9A6A1A']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.teaserBar}
+        />
+        <View style={styles.teaserBody}>
+          <View style={styles.teaserHeaderRow}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <Text style={[styles.teaserKicker, { color: W.accent }]}>
+                EVANGELIO DEL DÍA
+              </Text>
+              <Text
+                style={[styles.teaserTitle, { color: W.text }]}
+                numberOfLines={2}
+              >
+                {titulo || 'Palabra de hoy'}
+              </Text>
+            </View>
+            {cita ? (
+              <View
+                style={[
+                  styles.teaserCita,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(218,165,32,0.12)'
+                      : 'rgba(196,146,42,0.10)',
+                  },
+                ]}
+              >
+                <Text style={[styles.teaserCitaText, { color: W.accent }]}>
+                  {cita}
+                </Text>
+              </View>
+            ) : null}
           </View>
-          {cita ? (
-            <View
+
+          {preview ? (
+            <View style={styles.teaserPreviewWrap}>
+              <Text
+                style={[styles.teaserPreview, { color: W.text }]}
+                numberOfLines={3}
+              >
+                {preview}
+              </Text>
+              <LinearGradient
+                colors={
+                  ['rgba(0,0,0,0)', isDark ? '#26221C' : '#FFFDF7'] as const
+                }
+                style={styles.teaserFade}
+                pointerEvents="none"
+              />
+            </View>
+          ) : null}
+
+          <View style={styles.teaserActions}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={onOpen}
               style={[
-                styles.teaserCita,
+                styles.teaserCta,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(218,165,32,0.12)'
-                    : 'rgba(196,146,42,0.10)',
+                    ? 'rgba(218,165,32,0.10)'
+                    : 'rgba(196,146,42,0.09)',
                 },
               ]}
             >
-              <Text style={[styles.teaserCitaText, { color: W.accent }]}>
-                {cita}
+              <Text style={[styles.teaserCtaText, { color: W.accent }]}>
+                Leer evangelio →
               </Text>
-            </View>
-          ) : null}
-        </View>
-
-        {preview ? (
-          <View style={styles.teaserPreviewWrap}>
-            <Text
-              style={[styles.teaserPreview, { color: W.text }]}
-              numberOfLines={3}
-            >
-              {preview}
-            </Text>
-            <LinearGradient
-              colors={
-                ['rgba(0,0,0,0)', isDark ? '#26221C' : '#FFFDF7'] as const
-              }
-              style={styles.teaserFade}
-              pointerEvents="none"
-            />
+            </TouchableOpacity>
+            {readingDone ? (
+              <View
+                style={[styles.teaserDone, { backgroundColor: W.greenLight }]}
+              >
+                <MaterialIcons name="check" size={12} color={W.green} />
+                <Text style={[styles.teaserDoneText, { color: W.green }]}>
+                  Leído hoy
+                </Text>
+              </View>
+            ) : null}
           </View>
-        ) : null}
-
-        <View style={styles.teaserActions}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onOpen}
-            style={[
-              styles.teaserCta,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(218,165,32,0.10)'
-                  : 'rgba(196,146,42,0.09)',
-              },
-            ]}
-          >
-            <Text style={[styles.teaserCtaText, { color: W.accent }]}>
-              Leer evangelio →
-            </Text>
-          </TouchableOpacity>
-          {readingDone ? (
-            <View
-              style={[styles.teaserDone, { backgroundColor: W.greenLight }]}
-            >
-              <MaterialIcons name="check" size={12} color={W.green} />
-              <Text style={[styles.teaserDoneText, { color: W.green }]}>
-                Leído hoy
-              </Text>
-            </View>
-          ) : null}
         </View>
       </View>
     </View>
@@ -585,22 +592,29 @@ export function MonthHeatmap({
           const isFuture = ds > todayStr;
           const rd = !!rec?.readingDone;
           const pd = !!rec?.prayerDone;
+          const rv = !!rec?.revisionDone;
+          const doneCount = (rd ? 1 : 0) + (pd ? 1 : 0) + (rv ? 1 : 0);
           const emoColor = rec?.prayerEmotion
             ? EMOTION_HEAT[rec.prayerEmotion]
             : null;
           let bg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
-          if (rd && pd)
-            bg = emoColor
-              ? isDark
-                ? emoColor + '40'
-                : emoColor + '80'
-              : isDark
-                ? 'rgba(218,165,32,0.28)'
-                : 'rgba(196,146,42,0.22)';
+          if (doneCount === 3)
+            bg = isDark ? 'rgba(109,191,126,0.28)' : 'rgba(58,125,68,0.22)';
+          else if (doneCount === 2)
+            bg =
+              emoColor && pd
+                ? isDark
+                  ? emoColor + '40'
+                  : emoColor + '80'
+                : isDark
+                  ? 'rgba(218,165,32,0.28)'
+                  : 'rgba(196,146,42,0.22)';
           else if (rd)
             bg = isDark ? 'rgba(96,165,250,0.18)' : 'rgba(37,99,235,0.12)';
           else if (pd)
             bg = isDark ? 'rgba(218,165,32,0.16)' : 'rgba(196,146,42,0.12)';
+          else if (rv)
+            bg = isDark ? 'rgba(167,139,250,0.18)' : 'rgba(124,58,237,0.12)';
           if (isFuture) bg = 'transparent';
           return (
             <View
@@ -618,8 +632,12 @@ export function MonthHeatmap({
                 style={[
                   styles.heatmapDay,
                   {
-                    color: isToday ? W.accent : rd || pd ? W.text : W.textMuted,
-                    fontWeight: isToday || rd || pd ? '700' : '400',
+                    color: isToday
+                      ? W.accent
+                      : rd || pd || rv
+                        ? W.text
+                        : W.textMuted,
+                    fontWeight: isToday || rd || pd || rv ? '700' : '400',
                   },
                 ]}
               >
@@ -666,13 +684,28 @@ export function MonthHeatmap({
               styles.weekLegendDot,
               {
                 backgroundColor: isDark
-                  ? 'rgba(218,165,32,0.45)'
-                  : 'rgba(196,146,42,0.38)',
+                  ? 'rgba(167,139,250,0.25)'
+                  : 'rgba(124,58,237,0.15)',
               },
             ]}
           />
           <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
-            Ambos
+            Revisión
+          </Text>
+        </View>
+        <View style={styles.weekLegendItem}>
+          <View
+            style={[
+              styles.weekLegendDot,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(109,191,126,0.32)'
+                  : 'rgba(58,125,68,0.28)',
+              },
+            ]}
+          />
+          <Text style={[styles.weekLegendText, { color: W.textMuted }]}>
+            Los 3
           </Text>
         </View>
       </View>
@@ -682,10 +715,10 @@ export function MonthHeatmap({
 
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // Hero
+  // Hero — outer carries the shadow, inner clips the gradient corners.
   heroOuter: {
     borderRadius: 28,
-    overflow: 'hidden',
+    backgroundColor: 'transparent',
     ...Platform.select({
       ios: {
         shadowColor: '#3D2E1A',
@@ -696,6 +729,10 @@ const styles = StyleSheet.create({
       android: { elevation: 6 },
       web: { boxShadow: '0 10px 40px rgba(61,46,26,0.35)' as any },
     }),
+  },
+  heroClip: {
+    borderRadius: 28,
+    overflow: 'hidden',
   },
   heroGrad: { padding: 22, minHeight: 138 },
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: 18 },
@@ -763,12 +800,12 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.9)',
   },
 
-  // Tile
+  // Tile — shadow on outer wrapper, overflow clip on inner.
   tileWrap: {
     flex: 1,
     minHeight: 92,
     borderRadius: 22,
-    overflow: 'hidden',
+    backgroundColor: 'transparent',
     ...Platform.select({
       ios: {
         shadowOpacity: 0.25,
@@ -779,9 +816,17 @@ const styles = StyleSheet.create({
       web: { boxShadow: '0 6px 20px rgba(0,0,0,0.18)' as any },
     }),
   },
+  tileClip: {
+    flex: 1,
+    minHeight: 92,
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
   tileWrapEmpty: {
     borderWidth: 1.5,
     borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tileGrad: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   tileContent: {
@@ -808,11 +853,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Teaser
+  // Teaser — outer holds shadow, inner clips border + bar.
   teaser: {
-    borderWidth: 1,
     borderRadius: 22,
-    overflow: 'hidden',
+    backgroundColor: 'transparent',
     ...Platform.select({
       ios: {
         shadowOpacity: 0.18,
@@ -821,6 +865,11 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 2 },
     }),
+  },
+  teaserClip: {
+    borderRadius: 22,
+    overflow: 'hidden',
+    borderWidth: 1,
   },
   teaserBar: { height: 3 },
   teaserBody: { padding: 16 },

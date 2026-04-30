@@ -38,6 +38,7 @@ export default function ContigoScreen() {
     getStreak,
     getTotalMinutesWeek,
     getReadingsMonth,
+    getActiveDaysMonth,
     reloadRecords,
     isRevisionDone,
   } = useContigoHabits();
@@ -61,6 +62,7 @@ export default function ContigoScreen() {
   const prayStreak = getStreak('prayer');
   const totalMins = getTotalMinutesWeek(todayStr);
   const totalReads = getReadingsMonth(todayStr);
+  const activeDays = getActiveDaysMonth(todayStr);
 
   const [, mNum] = todayStr.split('-').map(Number);
   const year = todayStr.split('-')[0];
@@ -225,7 +227,7 @@ export default function ContigoScreen() {
               ]}
             >
               <Text style={[styles.monthBadgeText, { color: W.accent }]}>
-                {totalReads} días activos
+                {activeDays} {activeDays === 1 ? 'día activo' : 'días activos'}
               </Text>
             </View>
           </View>
@@ -270,7 +272,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     marginTop: 4,
-    textTransform: 'capitalize',
   },
   headerRight: {
     flexDirection: 'row',
