@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-23T00:00:00.000Z",
+  "updatedAt": "2026-04-30T00:00:00.000Z",
   "data": {
     "global": {
       "defaultTab": "index",
@@ -73,21 +73,16 @@
       "mcm-caravaca": { "label": "MCM Caravaca" },
       "mcm-castellon": {
         "label": "MCM Castellón",
-        "notificationTopics": [
-          "general",
-          "eventos",
-          "miembros",
-          "mcm-castellon"
-        ],
-        "extraCalendars": "mcm-castellon"
+        "notificationTopic": "mcm-castellon",
+        "extraCalendars": ["mcm-castellon"]
       },
       "mcm-espinardo": { "label": "MCM Espinardo" },
       "mcm-granada": { "label": "MCM Granada" },
       "mcm-lalcora": { "label": "MCM l'Alcora" },
       "mcm-madrid": {
         "label": "MCM Madrid",
-        "notificationTopics": ["general", "eventos", "miembros", "mcm-madrid"],
-        "extraCalendars": "mcm-madrid"
+        "notificationTopic": "mcm-madrid",
+        "extraCalendars": ["mcm-madrid"]
       },
       "mcm-nules": { "label": "MCM Nules" },
       "mcm-onda": { "label": "MCM Onda" },
