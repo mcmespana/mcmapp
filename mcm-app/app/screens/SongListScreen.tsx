@@ -32,6 +32,7 @@ interface Song {
   content?: string;
   originalCategoryKey?: string;
   numericFilenamePart?: string;
+  sortTitle?: string;
 }
 
 interface SongCategory {
@@ -156,18 +157,22 @@ export default function SongsListScreen({
                     numericPart = String(parseInt(filenameMatch[1], 10));
                   }
                 }
+                // ⚡ Bolt: Pre-calculate the clean title for sorting (Schwartzian transform)
+                // This prevents running the regex multiple times per item during the O(N log N) sort phase.
+                const sortTitle = song.title.replace(/^\d+\.\s*/, '').toLowerCase();
                 return {
                   ...song,
                   originalCategoryKey: categoryLetter,
                   numericFilenamePart: numericPart,
+                  sortTitle,
                 };
               });
               allSongs = allSongs.concat(songsWithMetadata);
             }
           }
           allSongs.sort((a, b) => {
-            const titleA = a.title.replace(/^\d+\.\s*/, '').toLowerCase();
-            const titleB = b.title.replace(/^\d+\.\s*/, '').toLowerCase();
+            const titleA = a.sortTitle || a.title;
+            const titleB = b.sortTitle || b.title;
             return titleA.localeCompare(titleB);
           });
           setSongs(allSongs);
