@@ -13,6 +13,14 @@
 
 ---
 
+## 2026-05-03 — Onboarding · rediseño visual
+
+- Rediseño completo de `app/onboarding.tsx` siguiendo el prototipo de Claude Design (4 pantallas: bienvenida, perfil, delegación, confirmación).
+- Pantalla de bienvenida nueva con logo MCM, ripples animados, shimmer en CTA y fondo `primary`.
+- Animaciones con `react-native-reanimated`: slide-in/out entre pasos, fade-up con stagger en cards, ripple infinito, shimmer en botón "Comenzar".
+- Pantalla de éxito nueva con check animado y resumen del perfil/delegación elegidos.
+- Lógica de datos sin cambios: sigue leyendo `rawConfig.profiles`/`rawConfig.delegationList` desde `ProfileConfigContext` y persiste con `useUserProfile().setProfile`.
+
 ## 2026-04-30 — Sistema de Perfiles · auditoría y endurecimiento
 
 Revisión completa del sistema. Cambios:

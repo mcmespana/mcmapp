@@ -21,7 +21,13 @@
       "Bash(npx eas-cli credentials:*)",
       "Bash(npx jest *)",
       "Bash(npx expo *)",
-      "Bash(npx prettier *)"
+      "Bash(npx prettier *)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(mkdir -p /c/Users/david/code/mcmapp/.design-onboarding)",
+      "Bash(tar -xzf \"C:\\\\Users\\\\david\\\\.claude\\\\projects\\\\C--Users-david-code-mcmapp\\\\29982680-772d-43c7-8052-3f2e3be20122\\\\tool-results\\\\webfetch-1777799077623-k87glx.bin\")",
+      "Bash(cp \"/c/Users/david/.claude/projects/C--Users-david-code-mcmapp/29982680-772d-43c7-8052-3f2e3be20122/tool-results/webfetch-1777799077623-k87glx.bin\" /c/Users/david/code/mcmapp/.design-onboarding/design.tar.gz)",
+      "Bash(tar -xzf design.tar.gz)",
+      "Bash(npx eslint *)"
     ],
     "deny": [],
     "ask": []
