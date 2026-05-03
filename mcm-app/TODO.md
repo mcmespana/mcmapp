@@ -122,3 +122,38 @@ curl https://[PROJECT_ID].firebaseio.com/songs.json
 
 - Crear `.env.local` siguiendo `.env.example`
 - Limitación: solo permite lo que las Security Rules permitan
+
+---
+
+## 🚀 Visión a Futuro: Innovación y Arquitectura
+
+> Propuestas técnicas y funcionales de alto impacto para llevar la app al nivel "Enterprise", mejorando radicalmente el rendimiento, la experiencia de desarrollo (DX) y aportando un valor único a la comunidad.
+
+### 🏗️ Mejoras Técnicas y de Rendimiento
+
+- [ ] **⚡ Sustitución de Context API por Zustand + Jotai (Gestión de Estado)**
+  - **El problema:** La gran cantidad de Providers anidados en `_layout.tsx` (UserProfile, Notifications, SelectedSongs, etc.) obliga a re-renderizados masivos en el árbol de componentes.
+  - **La solución:** Migrar el estado global dinámico a **Zustand** (para lógica de negocio general) y **Jotai** (para estado atómico ultra-preciso).
+  - **Impacto:** Código mucho más limpio (adiós al anidamiento de Contextos) y un rendimiento superior al evitar actualizaciones de componentes que no necesitan repintarse.
+
+- [ ] **⚡ Migración Masiva a `@shopify/flash-list`**
+  - **El problema:** Las listas muy largas (Cantoral, eventos, directorios) usando `FlatList` o `ScrollView` consumen mucha memoria porque crean y destruyen vistas constantemente.
+  - **La solución:** Sustituir los componentes estándar de lista por **FlashList** de Shopify, que recicla los componentes usando C++ en bajo nivel.
+  - **Impacto:** Listas bloqueadas a 60/120 FPS sin importar lo rápido que se haga scroll, eliminando pantallas en blanco y reduciendo drásticamente el consumo de RAM.
+
+- [ ] **🎨 Renderizado de Gráficos con React Native Skia**
+  - **El problema:** Dibujar elementos complejos (como un calendario de hábitos o un heatmap en la futura sección "Contigo") generando decenas de `View` de React Native ahoga el JS Thread.
+  - **La solución:** Implementar **React Native Skia** (el motor gráfico 2D de Chrome) para dibujar directamente en un Canvas mediante aceleración por hardware (GPU).
+  - **Impacto:** Posibilidad de crear trackers, gráficos y animaciones ultra-fluidas e interactivas sin ningún tipo de lag.
+
+### ✨ Nuevas Funcionalidades "Killer"
+
+- [ ] **🎵 "Modo Director" en el Cantoral (Sincronización en Tiempo Real)**
+  - **El concepto:** Un músico o director crea una "Sala" a la que se unen los demás miembros del coro.
+  - **La magia:** Al cambiar de canción, transponer acordes o hacer scroll en el dispositivo del Director, la pantalla de todos los músicos conectados se actualiza instantáneamente usando Firebase Realtime Database.
+  - **Impacto:** Convierte el Cantoral de la app en una herramienta profesional para coros; todos sincronizados automáticamente, sin hojas ni despistes.
+
+- [ ] **📻 Mini-Reproductor de Audio (Podcast/Música en Background) en "Contigo"**
+  - **El concepto:** Integrar un reproductor de audio sutil y flotante utilizando `expo-av` o `react-native-track-player`.
+  - **La magia:** Los usuarios podrán escuchar oraciones guiadas, cantos relajantes o podcasts formativos mientras navegan libremente por el "Evangelio del Día" o el calendario, incluso con la pantalla bloqueada.
+  - **Impacto:** Fomenta la retención de la app y proporciona una experiencia espiritual inmersiva que acompaña al usuario durante su rato de oración o su día a día.
