@@ -33,6 +33,7 @@ interface Song {
   originalCategoryKey?: string;
   numericFilenamePart?: string;
   sortTitle?: string;
+  searchableText?: string;
 }
 
 interface SongCategory {
@@ -160,11 +161,13 @@ export default function SongsListScreen({
                 // ⚡ Bolt: Pre-calculate the clean title for sorting (Schwartzian transform)
                 // This prevents running the regex multiple times per item during the O(N log N) sort phase.
                 const sortTitle = song.title.replace(/^\d+\.\s*/, '').toLowerCase();
+                const searchableText = `${song.title || ''} ${song.author || ''}`.toLowerCase();
                 return {
                   ...song,
                   originalCategoryKey: categoryLetter,
                   numericFilenamePart: numericPart,
                   sortTitle,
+                  searchableText,
                 };
               });
               allSongs = allSongs.concat(songsWithMetadata);
@@ -197,7 +200,8 @@ export default function SongsListScreen({
                     numericPart = filenameMatch[1].padStart(2, '0');
                   }
                 }
-                return { ...song, numericFilenamePart: numericPart };
+                const searchableText = `${song.title || ''} ${song.author || ''}`.toLowerCase();
+                return { ...song, numericFilenamePart: numericPart, searchableText };
               });
               songsWithNumericPart.sort((a, b) => {
                 const numA = parseInt(a.numericFilenamePart, 10) || Infinity;
@@ -228,14 +232,12 @@ export default function SongsListScreen({
   }, [categoryId, songsData]);
 
   const filteredSongs = useMemo(() => {
-    const searchTerm = search.toLowerCase();
+    const searchTerm = search.trim().toLowerCase();
+    if (!searchTerm) return songs;
+
     return songs.filter((song) => {
       if (!song) return false;
-      const titleMatch =
-        song.title && song.title.toLowerCase().includes(searchTerm);
-      const authorMatch =
-        song.author && song.author.toLowerCase().includes(searchTerm);
-      return titleMatch || authorMatch;
+      return song.searchableText?.includes(searchTerm);
     });
   }, [songs, search]);
 
@@ -315,6 +317,9 @@ export default function SongsListScreen({
       <FlatList
         data={filteredSongs}
         keyExtractor={(item) => item.filename}
+        initialNumToRender={15}
+        maxToRenderPerBatch={20}
+        windowSize={5}
         renderItem={({ item }) => (
           <SongListItem
             song={item}
