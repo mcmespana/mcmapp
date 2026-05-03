@@ -649,10 +649,10 @@ export default function OracionScreen() {
 
           {/* ── Save button ── */}
           <TouchableOpacity
-            activeOpacity={0.82}
+            activeOpacity={0.85}
             onPress={handleSave}
             style={[
-              styles.saveBtn,
+              styles.saveBtnWrap,
               record?.prayerDone
                 ? {
                     backgroundColor: isDark
@@ -664,42 +664,43 @@ export default function OracionScreen() {
                       : 'rgba(58,125,68,0.20)',
                   }
                 : {
-                    backgroundColor: warm.accent,
                     shadowColor: warm.accent,
-                    shadowOffset: { width: 0, height: 5 },
+                    shadowOffset: { width: 0, height: 6 },
                     shadowOpacity: 0.38,
                     shadowRadius: 14,
                     elevation: 6,
                   },
             ]}
           >
-            <MaterialIcons
-              name={record?.prayerDone ? 'check-circle' : 'favorite'}
-              size={22}
-              color={
-                record?.prayerDone
-                  ? isDark
-                    ? '#A3BD31'
-                    : '#3A7D44'
-                  : '#FFFFFF'
-              }
-            />
-            <Text
-              style={[
-                styles.saveBtnText,
-                {
-                  color: record?.prayerDone
-                    ? isDark
-                      ? '#A3BD31'
-                      : '#3A7D44'
-                    : '#FFFFFF',
-                },
-              ]}
-            >
-              {record?.prayerDone
-                ? 'Actualizar mi rato de oración'
-                : 'Guardar rato de oración'}
-            </Text>
+            {record?.prayerDone ? (
+              <View style={styles.saveBtnInner}>
+                <MaterialIcons
+                  name="check-circle"
+                  size={22}
+                  color={isDark ? '#A3BD31' : '#3A7D44'}
+                />
+                <Text
+                  style={[
+                    styles.saveBtnText,
+                    { color: isDark ? '#A3BD31' : '#3A7D44' },
+                  ]}
+                >
+                  Actualizar mi rato de oración
+                </Text>
+              </View>
+            ) : (
+              <LinearGradient
+                colors={['#E8A838', '#C4922A']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.saveBtnGradient}
+              >
+                <MaterialIcons name="favorite" size={22} color="#FFFFFF" />
+                <Text style={[styles.saveBtnText, { color: '#FFFFFF' }]}>
+                  Guardar rato de oración
+                </Text>
+              </LinearGradient>
+            )}
           </TouchableOpacity>
 
           {/* ── Monthly calendar ── */}
@@ -1060,13 +1061,27 @@ const styles = StyleSheet.create({
   },
 
   // Save button
-  saveBtn: {
+  saveBtnWrap: {
+    borderRadius: 100,
+    minHeight: 56,
+  },
+  saveBtnInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 17,
-    borderRadius: 100,
     gap: 10,
+    width: '100%',
+    borderRadius: 100,
+  },
+  saveBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 17,
+    gap: 10,
+    width: '100%',
+    borderRadius: 100,
   },
   saveBtnText: {
     fontSize: 16,

@@ -67,6 +67,19 @@ export default function NotificationsScreen() {
     (NotificationData | ReceivedNotification) | null
   >(null);
 
+  // Helper reutilizable para saber si una notificación está leída.
+  // Declarado arriba porque otros callbacks lo consumen como dependencia.
+  const isNotificationRead = React.useCallback(
+    (n: NotificationData | ReceivedNotification) => {
+      if (readIds.has(n.id)) return true;
+      if ('isRead' in n && n.isRead) return true;
+      const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
+      if (isNotificationOlderThan60Days(dateStr)) return true;
+      return false;
+    },
+    [readIds],
+  );
+
   const loadLocalData = useCallback(async () => {
     try {
       const localNotifs = await getLocalNotificationsHistory();
@@ -336,18 +349,6 @@ export default function NotificationsScreen() {
       return true;
     });
   }, [localNotifications, firebaseNotifications]);
-
-  // Helper reutilizable para saber si una notificación está leída
-  const isNotificationRead = React.useCallback(
-    (n: NotificationData | ReceivedNotification) => {
-      if (readIds.has(n.id)) return true;
-      if ('isRead' in n && n.isRead) return true;
-      const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
-      if (isNotificationOlderThan60Days(dateStr)) return true;
-      return false;
-    },
-    [readIds],
-  );
 
   const hasUnread = allNotifications.some((n) => !isNotificationRead(n));
 

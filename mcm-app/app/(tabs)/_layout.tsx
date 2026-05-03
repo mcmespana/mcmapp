@@ -18,6 +18,7 @@ import {
   DarkTheme,
   DefaultTheme,
 } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, TabHeaderColors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import { HapticTab } from '@/components/HapticTab';
@@ -124,6 +125,11 @@ function AndroidWebTabsLayout() {
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const featureFlags = useFeatureFlags();
+  // En web (sobre todo en PWA standalone iOS) reservamos espacio para la status bar
+  // del sistema usando el safe-area-inset top. En navegador normal este valor es 0.
+  const insets = useSafeAreaInsets();
+  const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
+  const webBottomPad = Platform.OS === 'web' ? Math.max(insets.bottom, 12) : 8;
 
   return (
     <ThemeProvider value={theme}>
@@ -137,16 +143,19 @@ function AndroidWebTabsLayout() {
             fontSize: 18,
           },
           headerTitleAlign: 'center',
-          headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
+          headerStatusBarHeight: webStatusBarHeight,
           tabBarActiveTintColor: Colors[scheme ?? 'light'].tint,
           tabBarInactiveTintColor: Colors[scheme ?? 'light'].icon,
           tabBarStyle: {
             backgroundColor: Colors[scheme ?? 'light'].background,
             borderTopWidth: 1,
             borderTopColor: hexAlpha(Colors[scheme ?? 'light'].icon, '20'),
-            paddingBottom: Platform.OS === 'web' ? 12 : 8,
+            paddingBottom: webBottomPad,
             paddingTop: 12,
-            height: Platform.OS === 'web' ? 60 : 80,
+            height:
+              Platform.OS === 'web'
+                ? 60 + (insets.bottom > 0 ? insets.bottom : 0)
+                : 80,
             elevation: 8,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: -2 },

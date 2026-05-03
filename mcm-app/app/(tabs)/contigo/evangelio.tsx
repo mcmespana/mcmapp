@@ -20,6 +20,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { Card, Tabs, PressableFeedback, CloseButton } from 'heroui-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
@@ -335,6 +336,49 @@ export default function EvangelioScreen() {
               <LiturgicalBadge dateStr={selectedDate} />
             </View>
 
+            {/* Done / Pendiente chip */}
+            <View
+              style={[
+                styles.statusChip,
+                isDone
+                  ? {
+                      backgroundColor: isDark
+                        ? 'rgba(163,189,49,0.14)'
+                        : 'rgba(58,125,68,0.10)',
+                    }
+                  : {
+                      backgroundColor: isDark
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(0,0,0,0.05)',
+                    },
+              ]}
+            >
+              {isDone ? (
+                <>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      color: isDark ? '#A3BD31' : '#3A7D44',
+                    }}
+                  >
+                    ✓
+                  </Text>
+                  <Text
+                    style={[
+                      styles.statusChipText,
+                      { color: isDark ? '#A3BD31' : '#3A7D44' },
+                    ]}
+                  >
+                    Leído
+                  </Text>
+                </>
+              ) : (
+                <Text style={[styles.statusChipText, { color: warm.warmGray }]}>
+                  Pendiente
+                </Text>
+              )}
+            </View>
+
             {/* Liturgical day name / celebration */}
             {readings?.info?.diaLiturgico ? (
               <Text
@@ -537,12 +581,16 @@ export default function EvangelioScreen() {
                             { backgroundColor: hexAlpha(warm.accent, '12') },
                           ]}
                         >
-                          <MaterialIcons
-                            name="format-quote"
-                            size={14}
-                            color={warm.accent}
-                            style={{ marginRight: 4 }}
-                          />
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              color: warm.accent,
+                              marginRight: 6,
+                              lineHeight: 16,
+                            }}
+                          >
+                            ✦
+                          </Text>
                           <Text
                             style={[styles.citaText, { color: warm.accent }]}
                           >
@@ -631,12 +679,16 @@ export default function EvangelioScreen() {
                       { backgroundColor: hexAlpha(warm.accent, '12') },
                     ]}
                   >
-                    <MaterialIcons
-                      name="format-quote"
-                      size={14}
-                      color={warm.accent}
-                      style={{ marginRight: 4 }}
-                    />
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        color: warm.accent,
+                        marginRight: 6,
+                        lineHeight: 16,
+                      }}
+                    >
+                      ✦
+                    </Text>
                     <Text style={[styles.citaText, { color: warm.accent }]}>
                       {readings.evangelio.cita}
                     </Text>
@@ -663,46 +715,69 @@ export default function EvangelioScreen() {
             {/* ── Tracker button ── */}
             <View style={styles.trackerContainer}>
               <TouchableOpacity
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 onPress={handleToggleDone}
                 style={[
-                  styles.trackerBtn,
-                  isDone
-                    ? {
+                  styles.trackerBtnWrap,
+                  !isDone && {
+                    shadowColor: '#1D4ED8',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: isDark ? 0.45 : 0.35,
+                    shadowRadius: 16,
+                    elevation: 6,
+                  },
+                ]}
+              >
+                {isDone ? (
+                  <View
+                    style={[
+                      styles.trackerGradient,
+                      {
                         backgroundColor: isDark
                           ? 'rgba(163,189,49,0.12)'
                           : 'rgba(58,125,68,0.08)',
                         borderColor: isDark
-                          ? 'rgba(163,189,49,0.25)'
-                          : 'rgba(58,125,68,0.18)',
-                        borderWidth: 1,
-                      }
-                    : {
-                        backgroundColor: warm.accent,
+                          ? 'rgba(163,189,49,0.28)'
+                          : 'rgba(58,125,68,0.22)',
+                        borderWidth: 1.5,
                       },
-                ]}
-              >
-                <View style={styles.trackerContent}>
-                  <MaterialIcons
-                    name={isDone ? 'check-circle' : 'favorite'}
-                    size={22}
-                    color={
-                      isDone ? (isDark ? '#A3BD31' : '#3A7D44') : '#FFFFFF'
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.trackerText,
-                      isDone
-                        ? { color: isDark ? '#A3BD31' : '#3A7D44' }
-                        : { color: '#FFFFFF' },
                     ]}
                   >
-                    {isDone
-                      ? '¡He rezado hoy con el Evangelio!'
-                      : 'Completar momento de oración'}
-                  </Text>
-                </View>
+                    <View style={styles.trackerContent}>
+                      <MaterialIcons
+                        name="check-circle"
+                        size={22}
+                        color={isDark ? '#A3BD31' : '#3A7D44'}
+                      />
+                      <Text
+                        style={[
+                          styles.trackerText,
+                          { color: isDark ? '#A3BD31' : '#3A7D44' },
+                        ]}
+                      >
+                        ¡He rezado hoy con el Evangelio!
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
+                  <LinearGradient
+                    colors={['#3B82F6', '#1D4ED8']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.trackerGradient}
+                  >
+                    <View style={styles.trackerContent}>
+                      <MaterialIcons
+                        name="auto-stories"
+                        size={22}
+                        color="#FFFFFF"
+                      />
+                      <Text style={[styles.trackerText, { color: '#FFFFFF' }]}>
+                        Marcar como leído
+                      </Text>
+                    </View>
+                  </LinearGradient>
+                )}
               </TouchableOpacity>
               <Text style={[styles.trackerNote, { color: warm.warmGray }]}>
                 Marcando este día sumas a tu constancia en «Contigo».
@@ -1130,11 +1205,32 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     alignItems: 'center',
   },
-  trackerBtn: {
+  trackerBtnWrap: {
     width: '100%',
-    paddingVertical: 15,
     borderRadius: 16,
+    minHeight: 54,
+  },
+  trackerGradient: {
+    width: '100%',
+    paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
+  statusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'center',
+    paddingHorizontal: 11,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginTop: 8,
+  },
+  statusChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   trackerContent: {
     flexDirection: 'row',

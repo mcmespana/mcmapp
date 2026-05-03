@@ -35,7 +35,22 @@
       "Bash(cp /tmp/design/seccion-contigo-app/chats/chat2.md /tmp/design/chat2.md)",
       "Read(//c/c/Users/david/code/mcmapp/mcm-app/app/\\(tabs\\)/**)",
       "Bash(npx eslint *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(cp \"C:\\\\Users\\\\david\\\\.claude\\\\projects\\\\C--Users-david-code-mcmapp\\\\52394abc-5cbd-47b8-a919-a436a87325fe\\\\tool-results\\\\webfetch-1777802061615-f62x2p.bin\" /tmp/design/d.gz)",
+      "Bash(gunzip -k d.gz)",
+      "Bash(cp \"/tmp/design/seccion-contigo-app/project/Contigo Redesign.html\" /tmp/design/contigo-redesign.html)",
+      "Bash(cp /tmp/design/seccion-contigo-app/project/contigo-components.jsx /tmp/design/contigo-components.jsx)",
+      "Bash(cp /tmp/design/seccion-contigo-app/project/revision-screen.jsx /tmp/design/revision-screen.jsx)",
+      "Bash(xargs grep *)",
+      "Bash(npx eas-cli@latest whoami)",
+      "Bash(rm -rf .agent .agents dist)",
+      "Bash(npx expo *)",
+      "Bash(npx eas-cli@latest deploy --prod --non-interactive)",
+      "Bash(curl -s -o /dev/null -w \"manifest %{http_code} | \" https://mcm.expo.app/manifest.json)",
+      "Bash(curl -s -o /dev/null -w \"sw %{http_code} | \" https://mcm.expo.app/sw.js)",
+      "Bash(curl -s -o /dev/null -w \"icon-180 %{http_code} | \" https://mcm.expo.app/assets/images/icon-180.png)",
+      "Bash(curl -s -o /dev/null -w \"icon-192 %{http_code} | \" https://mcm.expo.app/assets/images/icon-192.png)",
+      "Bash(curl -s -o /dev/null -w \"favicon %{http_code}\\\\n\" https://mcm.expo.app/assets/images/favicon.png)"
     ],
     "deny": [],
     "ask": []

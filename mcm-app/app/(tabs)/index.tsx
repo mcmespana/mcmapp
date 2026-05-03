@@ -122,7 +122,7 @@ export default function Home() {
   // Notifications
   const { firebaseNotifications, readIds, unreadCount } = useNotifications();
   const latestNotification = firebaseNotifications[0] ?? null;
-  
+
   const [isUnread, setIsUnread] = useState(false);
 
   useEffect(() => {
@@ -134,7 +134,11 @@ export default function Home() {
       setIsUnread(false);
       return;
     }
-    const dateStr = 'receivedAt' in latestNotification ? latestNotification.receivedAt : latestNotification.createdAt;
+    const dateStr = (
+      'receivedAt' in latestNotification
+        ? latestNotification.receivedAt
+        : latestNotification.createdAt
+    ) as string | undefined;
     if (isNotificationOlderThan60Days(dateStr)) {
       setIsUnread(false);
       return;

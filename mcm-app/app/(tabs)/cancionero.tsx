@@ -2,6 +2,7 @@ import { useNavigation } from 'expo-router';
 import { useRef, useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Platform, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import CategoriesScreen from '../screens/CategoriesScreen';
 import SongListScreen from '../screens/SongListScreen';
@@ -53,6 +54,8 @@ const isWeb = Platform.OS === 'web';
 
 export default function CancioneroTab() {
   const stackNavRef = useRef<any>(null);
+  const insets = useSafeAreaInsets();
+  const webStatusBarHeight = isWeb ? insets.top : undefined;
 
   const navigation = useNavigation();
 
@@ -92,7 +95,8 @@ export default function CancioneroTab() {
               color: isIOS ? '#000' : '#1a1a1a',
               letterSpacing: -0.3,
             },
-            ...(isWeb && ({ headerStatusBarHeight: 0 } as any)),
+            ...(isWeb &&
+              ({ headerStatusBarHeight: webStatusBarHeight } as any)),
             headerTransparent: isIOS,
             headerBlurEffect: isIOS ? 'systemChromeMaterial' : undefined,
             headerShadowVisible: false,

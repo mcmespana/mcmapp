@@ -30,6 +30,7 @@ import {
   useSelectedSongs,
 } from '@/contexts/SelectedSongsContext';
 import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
+import { useRegisterServiceWorker } from '@/hooks/useRegisterServiceWorker';
 import UserProfileModal from '@/components/UserProfileModal';
 import { HelloWave } from '@/components/HelloWave';
 import AddToHomeBanner from '@/components/AddToHomeBanner';
@@ -120,6 +121,9 @@ function InnerLayout() {
 
   // Inicializa el sistema de notificaciones push
   usePushNotifications();
+
+  // Registra el service worker en web (PWA)
+  useRegisterServiceWorker();
 
   if (showAnimation) {
     return (

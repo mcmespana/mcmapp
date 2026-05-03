@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Platform } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { PressableFeedback } from 'heroui-native';
@@ -140,6 +141,8 @@ const eventHubScreenOptions = ({ route }: { route: EventScreenRoute }) => {
 export default function MasTab() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const stackNavRef = useRef<any>(null);
+  const insets = useSafeAreaInsets();
+  const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
 
   const navigation = useNavigation();
 
@@ -198,7 +201,7 @@ export default function MasTab() {
                     : '#fff',
             },
             headerTitleAlign: 'center',
-            headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
+            headerStatusBarHeight: webStatusBarHeight,
             headerTransparent: false,
             headerBackground: () =>
               Platform.OS === 'ios' ? (

@@ -92,10 +92,9 @@ export default function EventHomeScreen() {
               width={itemWidth}
               isDark={isDark}
               onPress={() =>
-                navigation.navigate(
-                  section.target as never,
-                  { eventId: event.id } as never,
-                )
+                (navigation as any).navigate(section.target, {
+                  eventId: event.id,
+                })
               }
             />
           ))}
@@ -158,7 +157,9 @@ function SectionCard({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={
-        section.subtitle ? `${section.label}. ${section.subtitle}` : section.label
+        section.subtitle
+          ? `${section.label}. ${section.subtitle}`
+          : section.label
       }
     >
       <PressableFeedback.Highlight />
