@@ -31,7 +31,7 @@ interface SongListItemProps {
   isSearchAllMode?: boolean;
 }
 
-const SongListItem: React.FC<SongListItemProps> = ({
+const SongListItem: React.FC<SongListItemProps> = React.memo(({
   song,
   onPress,
   isSearchAllMode = false,
@@ -215,7 +215,7 @@ const SongListItem: React.FC<SongListItemProps> = ({
       </Animated.View>
     </Swipeable>
   );
-};
+});
 
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';

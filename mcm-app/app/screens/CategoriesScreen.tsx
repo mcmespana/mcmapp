@@ -1,6 +1,6 @@
 import { FlatList, Text, StyleSheet, View, Platform } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState, useCallback } from 'react';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -56,25 +56,29 @@ export default function CategoriesScreen({
     { categoryTitle: string; songs: any[] }
   > | null>('songs', 'songs', filterSongsData);
   const { selectedSongs } = useSelectedSongs();
-  const actualCategories = songsData ? Object.keys(songsData) : [];
-  const sortedCategories = actualCategories.sort((a, b) => {
-    const titleA = songsData?.[a]?.categoryTitle ?? a;
-    const titleB = songsData?.[b]?.categoryTitle ?? b;
-    return titleA.localeCompare(titleB);
-  });
+  const { sortedCategories, displayCategories } = useMemo(() => {
+    const actualCategories = songsData ? Object.keys(songsData) : [];
+    const sortedCats = actualCategories.sort((a, b) => {
+      const titleA = songsData?.[a]?.categoryTitle ?? a;
+      const titleB = songsData?.[b]?.categoryTitle ?? b;
+      return titleA.localeCompare(titleB);
+    });
 
-  const displayCategories = [
-    {
-      id: SELECTED_SONGS_CATEGORY_ID,
-      name: 'Tu selección',
-      songCount: selectedSongs.length,
-    },
-    ...sortedCategories.map((cat) => ({
-      id: cat,
-      name: songsData?.[cat]?.categoryTitle ?? cat,
-      songCount: songsData?.[cat]?.songs?.length || 0,
-    })),
-  ];
+    const displayCats = [
+      {
+        id: SELECTED_SONGS_CATEGORY_ID,
+        name: 'Tu selección',
+        songCount: selectedSongs.length,
+      },
+      ...sortedCats.map((cat) => ({
+        id: cat,
+        name: songsData?.[cat]?.categoryTitle ?? cat,
+        songCount: songsData?.[cat]?.songs?.length || 0,
+      })),
+    ];
+
+    return { sortedCategories: sortedCats, displayCategories: displayCats };
+  }, [songsData, selectedSongs.length]);
 
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
@@ -119,17 +123,11 @@ export default function CategoriesScreen({
     });
   }, [navigation]);
 
-  if (loading && actualCategories.length === 0) {
+  if (loading && sortedCategories.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
 
-  const renderItem = ({
-    item,
-    index,
-  }: {
-    item: (typeof displayCategories)[0];
-    index: number;
-  }) => {
+  const renderItem = useCallback(({ item, index }: { item: (typeof displayCategories)[0]; index: number; }) => {
     const isSpecial = item.id === SELECTED_SONGS_CATEGORY_ID;
     const { emoji, cleanText } = isSpecial
       ? { emoji: '🎵', cleanText: item.name }
@@ -178,7 +176,7 @@ export default function CategoriesScreen({
         </View>
       </PressableFeedback>
     );
-  };
+  }, [isDark, navigation]);
 
   return (
     <View style={styles.container}>
@@ -193,6 +191,9 @@ export default function CategoriesScreen({
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         contentInsetAdjustmentBehavior="automatic"
+        initialNumToRender={10}
+        maxToRenderPerBatch={15}
+        windowSize={5}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
       />
