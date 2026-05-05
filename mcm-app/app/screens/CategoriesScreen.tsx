@@ -56,25 +56,32 @@ export default function CategoriesScreen({
     { categoryTitle: string; songs: any[] }
   > | null>('songs', 'songs', filterSongsData);
   const { selectedSongs } = useSelectedSongs();
-  const actualCategories = songsData ? Object.keys(songsData) : [];
-  const sortedCategories = actualCategories.sort((a, b) => {
-    const titleA = songsData?.[a]?.categoryTitle ?? a;
-    const titleB = songsData?.[b]?.categoryTitle ?? b;
-    return titleA.localeCompare(titleB);
-  });
 
-  const displayCategories = [
-    {
-      id: SELECTED_SONGS_CATEGORY_ID,
-      name: 'Tu selección',
-      songCount: selectedSongs.length,
-    },
-    ...sortedCategories.map((cat) => ({
-      id: cat,
-      name: songsData?.[cat]?.categoryTitle ?? cat,
-      songCount: songsData?.[cat]?.songs?.length || 0,
-    })),
-  ];
+  // ⚡ Bolt Performance: Memoize the O(N log N) sort operation and the resulting array
+  // This prevents unnecessary re-calculations on every render cycle when unrelated state changes
+  const sortedCategories = useMemo(() => {
+    const actualCategories = songsData ? Object.keys(songsData) : [];
+    return actualCategories.sort((a, b) => {
+      const titleA = songsData?.[a]?.categoryTitle ?? a;
+      const titleB = songsData?.[b]?.categoryTitle ?? b;
+      return titleA.localeCompare(titleB);
+    });
+  }, [songsData]);
+
+  const displayCategories = useMemo(() => {
+    return [
+      {
+        id: SELECTED_SONGS_CATEGORY_ID,
+        name: 'Tu selección',
+        songCount: selectedSongs.length,
+      },
+      ...sortedCategories.map((cat) => ({
+        id: cat,
+        name: songsData?.[cat]?.categoryTitle ?? cat,
+        songCount: songsData?.[cat]?.songs?.length || 0,
+      })),
+    ];
+  }, [songsData, sortedCategories, selectedSongs.length]);
 
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
