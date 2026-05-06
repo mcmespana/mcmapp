@@ -31,191 +31,195 @@ interface SongListItemProps {
   isSearchAllMode?: boolean;
 }
 
-const SongListItem: React.FC<SongListItemProps> = React.memo(({
-  song,
-  onPress,
-  isSearchAllMode = false,
-}) => {
-  const { addSong, removeSong, isSongSelected } = useSelectedSongs();
-  const { settings } = useSettings();
-  const { notation } = settings;
-  const scheme = useColorScheme();
-  const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
-  const isDark = scheme === 'dark';
-  const swipeableRow = useRef<Swipeable>(null);
-  const isSelected = isSongSelected(song.filename);
-  const backgroundColorAnim = useRef(
-    new Animated.Value(isSelected ? 1 : 0),
-  ).current;
+const SongListItem: React.FC<SongListItemProps> = React.memo(
+  function SongListItem({ song, onPress, isSearchAllMode = false }) {
+    const { addSong, removeSong, isSongSelected } = useSelectedSongs();
+    const { settings } = useSettings();
+    const { notation } = settings;
+    const scheme = useColorScheme();
+    const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
+    const isDark = scheme === 'dark';
+    const swipeableRow = useRef<Swipeable>(null);
+    const isSelected = isSongSelected(song.filename);
+    const backgroundColorAnim = useRef(
+      new Animated.Value(isSelected ? 1 : 0),
+    ).current;
 
-  useEffect(() => {
-    Animated.timing(backgroundColorAnim, {
-      toValue: isSelected ? 1 : 0,
-      duration: 250,
-      useNativeDriver: false,
-    }).start();
-  }, [isSelected, backgroundColorAnim]);
+    useEffect(() => {
+      Animated.timing(backgroundColorAnim, {
+        toValue: isSelected ? 1 : 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    }, [isSelected, backgroundColorAnim]);
 
-  const animatedStyle = {
-    backgroundColor: backgroundColorAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [
-        isDark ? '#2C2C2E' : '#fff',
-        isDark ? '#1A3320' : '#E8F5E9',
-      ],
-    }),
-  };
+    const animatedStyle = {
+      backgroundColor: backgroundColorAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [
+          isDark ? '#2C2C2E' : '#fff',
+          isDark ? '#1A3320' : '#E8F5E9',
+        ],
+      }),
+    };
 
-  const renderRightActions = (
-    progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>,
-  ) => {
-    const trans = dragX.interpolate({
-      inputRange: [-100, 0],
-      outputRange: [0, 100],
-      extrapolate: 'clamp',
-    });
-    return (
-      <TouchableOpacity
-        style={styles.rightAction}
-        onPress={() => {
-          addSong(song.filename);
-          swipeableRow.current?.close();
-        }}
-      >
-        <Animated.View
-          style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
-        >
-          <IconSymbol name="plus.circle" size={22} color="#fff" />
-          <Text style={styles.actionText}>Seleccionar</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderLeftActions = (
-    progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>,
-  ) => {
-    const trans = dragX.interpolate({
-      inputRange: [0, 100],
-      outputRange: [-100, 0],
-      extrapolate: 'clamp',
-    });
-    return (
-      <TouchableOpacity
-        style={styles.leftAction}
-        onPress={() => {
-          removeSong(song.filename);
-          swipeableRow.current?.close();
-        }}
-      >
-        <Animated.View
-          style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
-        >
-          <IconSymbol name="minus.circle" size={22} color="#fff" />
-          <Text style={styles.actionText}>Quitar</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  };
-
-  const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
-
-  return (
-    <Swipeable
-      ref={swipeableRow}
-      renderRightActions={!isSelected ? renderRightActions : undefined}
-      renderLeftActions={isSelected ? renderLeftActions : undefined}
-      onSwipeableOpen={(direction) => {
-        if (direction === 'right' && !isSelected) {
-          addSong(song.filename);
-          swipeableRow.current?.close();
-        } else if (direction === 'left' && isSelected) {
-          removeSong(song.filename);
-          swipeableRow.current?.close();
-        }
-      }}
-    >
-      <Animated.View style={[styles.songItemOuter, animatedStyle]}>
+    const renderRightActions = (
+      progress: Animated.AnimatedInterpolation<number>,
+      dragX: Animated.AnimatedInterpolation<number>,
+    ) => {
+      const trans = dragX.interpolate({
+        inputRange: [-100, 0],
+        outputRange: [0, 100],
+        extrapolate: 'clamp',
+      });
+      return (
         <TouchableOpacity
-          onPress={() => onPress(song)}
-          style={styles.songItemInner}
-          activeOpacity={0.6}
+          style={styles.rightAction}
+          onPress={() => {
+            addSong(song.filename);
+            swipeableRow.current?.close();
+          }}
         >
-          <View style={styles.leftSection}>
-            {isSelected && <View style={styles.selectedDot} />}
-            <View style={styles.songInfoContainer}>
-              <Text
-                style={styles.songTitle}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {cleanTitle}
-              </Text>
-              <View style={styles.metaLine}>
-                {isSearchAllMode &&
-                song.originalCategoryKey &&
-                song.numericFilenamePart ? (
-                  <View style={styles.metaPills}>
-                    <View style={[styles.categoryPill, { marginRight: 8 }]}>
-                      <Text style={styles.categoryPillText}>
-                        {`${song.originalCategoryKey}${song.numericFilenamePart}`}
-                      </Text>
+          <Animated.View
+            style={[
+              styles.actionContent,
+              { transform: [{ translateX: trans }] },
+            ]}
+          >
+            <IconSymbol name="plus.circle" size={22} color="#fff" />
+            <Text style={styles.actionText}>Seleccionar</Text>
+          </Animated.View>
+        </TouchableOpacity>
+      );
+    };
+
+    const renderLeftActions = (
+      progress: Animated.AnimatedInterpolation<number>,
+      dragX: Animated.AnimatedInterpolation<number>,
+    ) => {
+      const trans = dragX.interpolate({
+        inputRange: [0, 100],
+        outputRange: [-100, 0],
+        extrapolate: 'clamp',
+      });
+      return (
+        <TouchableOpacity
+          style={styles.leftAction}
+          onPress={() => {
+            removeSong(song.filename);
+            swipeableRow.current?.close();
+          }}
+        >
+          <Animated.View
+            style={[
+              styles.actionContent,
+              { transform: [{ translateX: trans }] },
+            ]}
+          >
+            <IconSymbol name="minus.circle" size={22} color="#fff" />
+            <Text style={styles.actionText}>Quitar</Text>
+          </Animated.View>
+        </TouchableOpacity>
+      );
+    };
+
+    const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
+
+    return (
+      <Swipeable
+        ref={swipeableRow}
+        renderRightActions={!isSelected ? renderRightActions : undefined}
+        renderLeftActions={isSelected ? renderLeftActions : undefined}
+        onSwipeableOpen={(direction) => {
+          if (direction === 'right' && !isSelected) {
+            addSong(song.filename);
+            swipeableRow.current?.close();
+          } else if (direction === 'left' && isSelected) {
+            removeSong(song.filename);
+            swipeableRow.current?.close();
+          }
+        }}
+      >
+        <Animated.View style={[styles.songItemOuter, animatedStyle]}>
+          <TouchableOpacity
+            onPress={() => onPress(song)}
+            style={styles.songItemInner}
+            activeOpacity={0.6}
+          >
+            <View style={styles.leftSection}>
+              {isSelected && <View style={styles.selectedDot} />}
+              <View style={styles.songInfoContainer}>
+                <Text
+                  style={styles.songTitle}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {cleanTitle}
+                </Text>
+                <View style={styles.metaLine}>
+                  {isSearchAllMode &&
+                  song.originalCategoryKey &&
+                  song.numericFilenamePart ? (
+                    <View style={styles.metaPills}>
+                      <View style={[styles.categoryPill, { marginRight: 8 }]}>
+                        <Text style={styles.categoryPillText}>
+                          {`${song.originalCategoryKey}${song.numericFilenamePart}`}
+                        </Text>
+                      </View>
+                      {song.author && (
+                        <Text
+                          style={styles.authorText}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {song.author}
+                        </Text>
+                      )}
                     </View>
-                    {song.author && (
-                      <Text
-                        style={styles.authorText}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
-                        {song.author}
-                      </Text>
-                    )}
-                  </View>
-                ) : (
-                  <View style={styles.metaPills}>
-                    {song.numericFilenamePart && (
-                      <Text style={styles.numberText}>
-                        #{song.numericFilenamePart}
-                      </Text>
-                    )}
-                    {song.numericFilenamePart && song.author ? (
-                      <Text style={styles.metaSeparator}>{' - '}</Text>
-                    ) : null}
-                    {song.author && (
-                      <Text
-                        style={styles.authorText}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
-                        {song.author}
-                      </Text>
-                    )}
-                  </View>
-                )}
+                  ) : (
+                    <View style={styles.metaPills}>
+                      {song.numericFilenamePart && (
+                        <Text style={styles.numberText}>
+                          #{song.numericFilenamePart}
+                        </Text>
+                      )}
+                      {song.numericFilenamePart && song.author ? (
+                        <Text style={styles.metaSeparator}>{' - '}</Text>
+                      ) : null}
+                      {song.author && (
+                        <Text
+                          style={styles.authorText}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {song.author}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
-          <View style={styles.rightSection}>
-            {song.capo && song.capo > 0 ? (
-              <View style={styles.capoPill}>
-                <Text style={styles.capoText}>{`C${song.capo}`}</Text>
-              </View>
-            ) : null}
-            {song.key ? (
-              <View style={styles.keyPill}>
-                <Text style={styles.keyText}>
-                  {convertChord(song.key.toUpperCase(), notation)}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
-    </Swipeable>
-  );
-});
+            <View style={styles.rightSection}>
+              {song.capo && song.capo > 0 ? (
+                <View style={styles.capoPill}>
+                  <Text style={styles.capoText}>{`C${song.capo}`}</Text>
+                </View>
+              ) : null}
+              {song.key ? (
+                <View style={styles.keyPill}>
+                  <Text style={styles.keyText}>
+                    {convertChord(song.key.toUpperCase(), notation)}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </Swipeable>
+    );
+  },
+);
 
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';

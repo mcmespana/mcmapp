@@ -123,60 +123,71 @@ export default function CategoriesScreen({
     });
   }, [navigation]);
 
+  const renderItem = useCallback(
+    ({
+      item,
+      index,
+    }: {
+      item: (typeof displayCategories)[0];
+      index: number;
+    }) => {
+      const isSpecial = item.id === SELECTED_SONGS_CATEGORY_ID;
+      const { emoji, cleanText } = isSpecial
+        ? { emoji: '🎵', cleanText: item.name }
+        : extractTrailingEmoji(item.name);
+      const displayName = isSpecial
+        ? cleanText
+        : cleanText.replace(/^\w\.?\s*/, '');
+
+      return (
+        <PressableFeedback
+          onPress={() => {
+            if (item.id === SELECTED_SONGS_CATEGORY_ID) {
+              navigation.navigate('SelectedSongs');
+            } else {
+              navigation.navigate('SongsList', {
+                categoryId: item.id,
+                categoryName: item.name,
+              });
+            }
+          }}
+          style={[
+            styles.card,
+            isSpecial && styles.cardSpecial,
+            index === 0 && { marginTop: 12 },
+          ]}
+        >
+          <PressableFeedback.Highlight />
+          <View
+            style={[styles.cardEmoji, isSpecial && styles.cardEmojiSpecial]}
+          >
+            <Text style={styles.emojiText}>{emoji}</Text>
+          </View>
+          <View style={styles.cardContent}>
+            <Text
+              style={[styles.cardTitle, isSpecial && styles.cardTitleSpecial]}
+              numberOfLines={1}
+            >
+              {displayName}
+            </Text>
+          </View>
+          <View style={styles.cardRight}>
+            <Text style={styles.countBadge}>{item.songCount}</Text>
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={isDark ? '#555' : '#C7C7CC'}
+            />
+          </View>
+        </PressableFeedback>
+      );
+    },
+    [isDark, navigation],
+  );
+
   if (loading && sortedCategories.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
-
-  const renderItem = useCallback(({ item, index }: { item: (typeof displayCategories)[0]; index: number; }) => {
-    const isSpecial = item.id === SELECTED_SONGS_CATEGORY_ID;
-    const { emoji, cleanText } = isSpecial
-      ? { emoji: '🎵', cleanText: item.name }
-      : extractTrailingEmoji(item.name);
-    const displayName = isSpecial
-      ? cleanText
-      : cleanText.replace(/^\w\.?\s*/, '');
-
-    return (
-      <PressableFeedback
-        onPress={() => {
-          if (item.id === SELECTED_SONGS_CATEGORY_ID) {
-            navigation.navigate('SelectedSongs');
-          } else {
-            navigation.navigate('SongsList', {
-              categoryId: item.id,
-              categoryName: item.name,
-            });
-          }
-        }}
-        style={[
-          styles.card,
-          isSpecial && styles.cardSpecial,
-          index === 0 && { marginTop: 12 },
-        ]}
-      >
-        <PressableFeedback.Highlight />
-        <View style={[styles.cardEmoji, isSpecial && styles.cardEmojiSpecial]}>
-          <Text style={styles.emojiText}>{emoji}</Text>
-        </View>
-        <View style={styles.cardContent}>
-          <Text
-            style={[styles.cardTitle, isSpecial && styles.cardTitleSpecial]}
-            numberOfLines={1}
-          >
-            {displayName}
-          </Text>
-        </View>
-        <View style={styles.cardRight}>
-          <Text style={styles.countBadge}>{item.songCount}</Text>
-          <MaterialIcons
-            name="chevron-right"
-            size={20}
-            color={isDark ? '#555' : '#C7C7CC'}
-          />
-        </View>
-      </PressableFeedback>
-    );
-  }, [isDark, navigation]);
 
   return (
     <View style={styles.container}>
