@@ -134,7 +134,7 @@ describe('resolveProfileConfig', () => {
     expect(r.tabs).toEqual(['index', 'cancionero', 'mas']);
   });
 
-  it('cae al perfil base si tras sanitización el array queda vacío', () => {
+  it('cae al catálogo completo si tanto config como perfil base están corruptos', () => {
     const corrupted: ProfileConfigData = {
       ...baseConfig,
       profiles: {
@@ -146,15 +146,19 @@ describe('resolveProfileConfig', () => {
       },
     };
     const r = resolveProfileConfig(corrupted, 'familia', null);
-    // El sanitizador devuelve el fallback (perfil base ya tenía sólo los basura,
-    // por lo que queda vacío y el sanitizador devuelve el mismo fallback vacío
-    // → comportamiento defensivo: nunca crashea aunque el array final sea []).
-    expect(Array.isArray(r.tabs)).toBe(true);
+    // Fallback escalonado: sanitizado vacío → perfil base sanitizado vacío →
+    // catálogo completo (KNOWN_TABS). Garantiza que la app NUNCA queda con
+    // 0 tabs aunque la config esté corrupta y el perfil base también.
+    expect(r.tabs.length).toBeGreaterThan(0);
+    expect(r.tabs).toContain('index');
   });
 
   it('no crashea si el perfil pedido no existe (fallback al primer perfil)', () => {
     const r = resolveProfileConfig(baseConfig, 'fantasma' as any, null);
-    expect(r.profileType).toBe('fantasma');
+    // profileType ahora refleja el perfil REALMENTE usado, no el solicitado.
+    // Esto evita que callers comparen `resolved.profileType === 'familia'` y
+    // vean tabs/homeButtons de otro perfil.
+    expect(r.profileType).toBe('familia');
     expect(Array.isArray(r.tabs)).toBe(true);
     expect(r.tabs.length).toBeGreaterThan(0);
   });

@@ -3,12 +3,6 @@
 
 export type ProfileType = 'familia' | 'monitor' | 'miembro';
 
-export const PROFILE_TYPES: readonly ProfileType[] = [
-  'familia',
-  'monitor',
-  'miembro',
-] as const;
-
 /**
  * Configuración base de un perfil. Todos los arrays son IDs que referencian
  * entidades existentes en la app (ver `constants/profileCatalog.ts`).
@@ -74,6 +68,12 @@ export type OverrideKey = `${ProfileType}:${string}`;
 
 /**
  * Documento plano bajo `/profileConfig/data` en Firebase RTDB.
+ *
+ * `delegationList` no se mantiene a mano: el cliente lo deriva siempre desde
+ * `delegations` (en `ProfileConfigContext`) para evitar tener dos fuentes
+ * que se desincronicen. Aquí se declara como requerido porque el contexto
+ * garantiza emitirlo a los consumidores; el JSON del seed/remote puede
+ * omitirlo sin problema.
  */
 export interface ProfileConfigData {
   global: GlobalConfig;

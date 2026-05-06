@@ -6,7 +6,7 @@ import {
   ScrollView,
   Pressable,
   Image,
-  Dimensions,
+  useWindowDimensions,
   ViewStyle,
   TextStyle,
   Platform,
@@ -58,8 +58,7 @@ const T = {
   border: 'rgba(0,0,0,0.07)',
 };
 
-const SCREEN_W = Dimensions.get('window').width;
-const DEVICE_W = Math.min(SCREEN_W, 460);
+const MAX_DEVICE_W = 460;
 
 /* ─────────────────────────────────────
    Reusable bits
@@ -984,6 +983,7 @@ const delegStyles = StyleSheet.create({
 export default function OnboardingScreen() {
   const { rawConfig } = useProfileConfigContext();
   const { setProfile } = useUserProfile();
+  const { width: screenW } = useWindowDimensions();
 
   const [step, setStep] = useState<Step>('welcome');
   const [animDir, setAnimDir] = useState<'forward' | 'back'>('forward');
@@ -1001,6 +1001,18 @@ export default function OnboardingScreen() {
         description: rawConfig.profiles[key].description,
       })),
     [rawConfig],
+  );
+
+  // Pseudo-delegación "Sin delegación" como primera opción del selector.
+  // Permite terminar el onboarding sin pertenecer a ninguna delegación local
+  // (selecciona `_default`), evitando que esos usuarios queden con el banner
+  // "completa tu perfil" para siempre.
+  const delegationEntries = useMemo<{ id: string; label: string }[]>(
+    () => [
+      { id: DEFAULT_DELEGATION_ID, label: 'Sin delegación / General' },
+      ...rawConfig.delegationList,
+    ],
+    [rawConfig.delegationList],
   );
 
   const go = (next: Step, dir: 'forward' | 'back' = 'forward') => {
@@ -1042,19 +1054,16 @@ export default function OnboardingScreen() {
   const delegation = useMemo(
     () =>
       delegationId
-        ? (rawConfig.delegationList.find((d) => d.id === delegationId) ?? null)
+        ? (delegationEntries.find((d) => d.id === delegationId) ?? null)
         : null,
-    [delegationId, rawConfig],
+    [delegationId, delegationEntries],
   );
+
+  const frameWidth = screenW <= MAX_DEVICE_W ? '100%' : MAX_DEVICE_W;
 
   return (
     <SafeAreaView style={shellStyles.safe} edges={['top', 'bottom']}>
-      <View
-        style={[
-          shellStyles.frame,
-          { width: SCREEN_W <= 460 ? '100%' : DEVICE_W },
-        ]}
-      >
+      <View style={[shellStyles.frame, { width: frameWidth }]}>
         {step === 'welcome' && <WelcomeScreen onStart={() => go('profile')} />}
         {step === 'profile' && (
           <ProfileScreen
@@ -1068,7 +1077,7 @@ export default function OnboardingScreen() {
         )}
         {step === 'delegation' && (
           <DelegationScreen
-            delegations={rawConfig.delegationList}
+            delegations={delegationEntries}
             selected={delegationId}
             setSelected={setDelegationId}
             onFinish={handleFinishToSuccess}

@@ -61,6 +61,9 @@ function sanitizeArray(
   const catalog = CATALOGS[field];
   if (!catalog) return uniq(values);
 
+  const filter = (arr: readonly string[]) =>
+    arr.filter((v) => (catalog as readonly string[]).includes(v));
+
   const result: string[] = [];
   for (const value of values) {
     if ((catalog as readonly string[]).includes(value)) {
@@ -69,7 +72,13 @@ function sanitizeArray(
       warn(`ID desconocido en '${field}': '${value}'. Se ignora.`);
     }
   }
-  return result.length > 0 ? uniq(result) : uniq(fallback);
+  if (result.length > 0) return uniq(result);
+
+  // Fallback escalonado: perfil base sanitizado → catálogo completo.
+  // Evita que la app quede con 0 elementos si tanto config como perfil base están corruptos.
+  const fallbackClean = filter(fallback);
+  if (fallbackClean.length > 0) return uniq(fallbackClean);
+  return [...catalog];
 }
 
 /**
@@ -117,12 +126,18 @@ export function resolveProfileConfig(
   const profilesMap =
     config.profiles ?? ({} as Record<ProfileType, ProfileBase>);
   let profile = profilesMap[profileType];
+  let resolvedProfileType: ProfileType = profileType;
   if (!profile) {
     warn(
       `Perfil '${profileType}' no presente en config remota. Usando primer perfil disponible.`,
     );
     const firstKey = Object.keys(profilesMap)[0] as ProfileType | undefined;
-    profile = (firstKey && profilesMap[firstKey]) || FALLBACK_PROFILE;
+    if (firstKey && profilesMap[firstKey]) {
+      profile = profilesMap[firstKey];
+      resolvedProfileType = firstKey;
+    } else {
+      profile = FALLBACK_PROFILE;
+    }
   }
 
   const delegationsMap =
@@ -182,7 +197,7 @@ export function resolveProfileConfig(
   }
 
   // 3. Override específico perfil:delegación
-  const overrideKey = `${profileType}:${resolvedDelegationId}` as const;
+  const overrideKey = `${resolvedProfileType}:${resolvedDelegationId}` as const;
   const specificOverride = config.overrides?.[overrideKey];
   merged = applyOverride(merged, specificOverride);
 
@@ -206,8 +221,9 @@ export function resolveProfileConfig(
     maintenanceMode: global.maintenanceMode ?? false,
     maintenanceMessage: global.maintenanceMessage,
     minAppVersion: global.minAppVersion ?? '0.0.0',
-    // identidad
-    profileType,
+    // identidad — refleja el perfil REALMENTE usado (puede diferir del solicitado
+    //   si el perfil pedido no existía en la config remota).
+    profileType: resolvedProfileType,
     delegationId: resolvedDelegationId,
     delegationLabel: delegation?.label ?? '',
     profileLabel: profile.label,
@@ -232,6 +248,12 @@ export function isAppVersionSupported(
   // Sin minVersion (o "0.0.0") = sin bloqueo. Caso defensivo extra contra
   //   strings vacíos / undefined coercidos.
   if (!minVersion || minVersion === '0.0.0') return true;
+
+  // Política "fail-open": si `minVersion` remoto es inválido (NaN, basura),
+  // `parse()` devuelve [0,0,0] y la app NO bloquea al usuario. Decisión
+  // intencional — un kill-switch corrupto no debe dejar a nadie fuera. El
+  // bloqueo solo se aplica cuando hay un semver válido por encima de la
+  // versión instalada.
 
   const parse = (v: string): [number, number, number] => {
     const safe = typeof v === 'string' && v.length > 0 ? v : '0.0.0';

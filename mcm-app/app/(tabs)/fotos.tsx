@@ -68,23 +68,18 @@ export default function FotosScreen() {
     offline,
   } = useFirebaseData<Album[]>('albums', 'albums');
   const resolved = useResolvedProfileConfig();
-  const visibleAlbums = React.useMemo(
-    () =>
-      (allAlbumsData ?? []).filter((album) =>
-        isAlbumVisibleForProfile(album, resolved.albumTags),
-      ),
-    [allAlbumsData, resolved.albumTags],
-  );
+  const sortedAlbums = React.useMemo(() => {
+    const visible = (allAlbumsData ?? []).filter((album) =>
+      isAlbumVisibleForProfile(album, resolved.albumTags),
+    );
+    // Orden inverso por ID (más nuevos primero).
+    return visible.sort((a, b) => b.id.localeCompare(a.id));
+  }, [allAlbumsData, resolved.albumTags]);
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   useEffect(() => {
-    // Ordenar álbumes por ID en orden inverso (más nuevos primero)
-    const sortedAlbums = [...visibleAlbums].sort((a, b) =>
-      b.id.localeCompare(a.id),
-    );
-
     const initialAlbums = sortedAlbums.slice(0, ALBUMS_PER_PAGE);
     setDisplayedAlbums(initialAlbums);
     setCurrentPage(0);
@@ -92,38 +87,30 @@ export default function FotosScreen() {
       initialAlbums.length < ALBUMS_PER_PAGE ||
         sortedAlbums.length <= ALBUMS_PER_PAGE,
     );
-  }, [visibleAlbums]);
+  }, [sortedAlbums]);
 
   const loadMoreAlbums = () => {
     if (allAlbumsLoaded || isLoadingMore) return;
 
     setIsLoadingMore(true);
-    // Using a short timeout to ensure UI updates before heavy lifting, and to show spinner
-    setTimeout(() => {
-      // Ordenar álbumes por ID en orden inverso (más nuevos primero)
-      const sortedAlbums = [...visibleAlbums].sort((a, b) =>
-        b.id.localeCompare(a.id),
-      );
+    const nextPage = currentPage + 1;
+    const startIndex = nextPage * ALBUMS_PER_PAGE;
+    const endIndex = startIndex + ALBUMS_PER_PAGE;
+    const newAlbums = sortedAlbums.slice(startIndex, endIndex);
 
-      const nextPage = currentPage + 1;
-      const startIndex = nextPage * ALBUMS_PER_PAGE;
-      const endIndex = startIndex + ALBUMS_PER_PAGE;
-      const newAlbums = sortedAlbums.slice(startIndex, endIndex);
-
-      if (newAlbums.length > 0) {
-        setDisplayedAlbums((prevAlbums) => [...prevAlbums, ...newAlbums]);
-        setCurrentPage(nextPage);
-        if (
-          newAlbums.length < ALBUMS_PER_PAGE ||
-          displayedAlbums.length + newAlbums.length === sortedAlbums.length
-        ) {
-          setAllAlbumsLoaded(true);
-        }
-      } else {
+    if (newAlbums.length > 0) {
+      setDisplayedAlbums((prevAlbums) => [...prevAlbums, ...newAlbums]);
+      setCurrentPage(nextPage);
+      if (
+        newAlbums.length < ALBUMS_PER_PAGE ||
+        displayedAlbums.length + newAlbums.length === sortedAlbums.length
+      ) {
         setAllAlbumsLoaded(true);
       }
-      setIsLoadingMore(false);
-    }, 200); // Small delay to allow spinner to show
+    } else {
+      setAllAlbumsLoaded(true);
+    }
+    setIsLoadingMore(false);
   };
 
   const handleAlbumPress = async (albumUrl: string) => {

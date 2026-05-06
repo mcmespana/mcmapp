@@ -25,9 +25,8 @@ Ver `mcm-app/TODO_SISTEMA_PERFILES.md` para el diseño completo.
 - **`data.delegations.{id}`**: el seed ya incluye las 16 delegaciones con su
   `label`. Añade `notificationTopic`, `extraCalendars` o `override` solo a las
   que tengan algo especial. Las que solo tengan `label` heredan todo de
-  `_default`.
-- **`data.delegationList`**: ya viene con las 16 delegaciones. Reordena, añade
-  o quita según necesidad — solo afecta al selector del onboarding/ajustes.
+  `_default`. **El orden de las claves importa** — el cliente deriva la lista
+  visible en el selector de onboarding/ajustes en orden de inserción.
 - **`data.global.minAppVersion`** y **`maintenanceMode`**: kill switches
   remotos. `0.0.0` = sin bloqueo. `maintenanceMode: true` muestra
   `MaintenanceScreen` en toda la app.

@@ -93,10 +93,14 @@ export function useCalendarConfigs() {
       );
       setVisibleCalendars(defaultSelection);
     } else if (visibleCalendars.length !== calendarsToUse.length) {
-      // Adjust array length if number of calendars changed
+      // Adjust array length if number of calendars changed.
+      // Para nuevos calendarios remotos: respetar `defaultSelected` para que
+      // el usuario los vea por defecto si así lo decidió el panel admin
+      // (en lugar de quedar siempre ocultos hasta activación manual).
       const newSelection = [...visibleCalendars];
       while (newSelection.length < calendarsToUse.length) {
-        newSelection.push(false);
+        const idx = newSelection.length;
+        newSelection.push(calendarsToUse[idx]?.defaultSelected ?? false);
       }
       if (newSelection.length > calendarsToUse.length) {
         newSelection.splice(calendarsToUse.length);

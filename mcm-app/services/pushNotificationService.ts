@@ -132,8 +132,9 @@ export const saveTokenToFirebase = async (
   profileMetadata?: TokenProfileMetadata,
 ): Promise<void> => {
   try {
-    // Cachear el token primero (así updateLastActive lo tiene de fallback)
-    await cachePushToken(token);
+    // Nota: el caller (`registerAndSaveToken`) ya cachea el token antes de
+    //   llamar aquí, así que NO volvemos a cachear — evitamos doble escritura
+    //   en AsyncStorage.
 
     // Usar el propio token sanitizado como ID en Firebase en lugar de un deviceId aleatorio.
     // Esto evita que reinstalaciones dejen tokens "huerfanos" en la base de datos a los que

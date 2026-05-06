@@ -43,7 +43,7 @@ const THEME_OPTIONS: {
 export default function SettingsPanel({ visible, onClose }: Props) {
   const { settings, setSettings } = useAppSettings();
   const scheme = useColorScheme();
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
   const fontScale = useFontScale();
   const resolved = useResolvedProfileConfig();
   const { rawConfig } = useProfileConfigContext();
