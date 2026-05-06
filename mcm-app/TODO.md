@@ -34,6 +34,20 @@
 - [ ] **Seguridad — contraseña hardcodeada**: en `components/SecretPanelModal.tsx` la contraseña "coco" está en el código. Mover a variable de entorno o Firebase Remote Config.
 - [ ] **Verificar orden de tabs por perfil**: probar en dispositivo iOS/Android que `TABS_CONFIG` filtrado por `resolved.tabs` muestra los tabs en el orden correcto para cada perfil (Inicio → Cantoral → Contigo → Calendario → Fotos → Más).
 
+## Mantenimiento — vulnerabilidades npm aceptadas
+
+Auditoría revisada 2026-05-06. `npm audit` reporta 17 vulns (5 low, 12 moderate), todas en deps **transitivas dev/build**. Ninguna llega al bundle de producción.
+
+**No ejecutar `npm audit fix --force`** — degradaría `expo 55 → 49`, `jest-expo 55 → 47` y rompería el proyecto.
+
+Cadenas afectadas:
+
+- **`postcss@8.4.49`** (<8.5.10) ← `expo → @expo/metro-config`. Build-time Metro web. XSS via stringify, input = nuestro CSS. Revisitar cuando `@expo/metro-config` bump postcss.
+- **`fast-xml-parser@4.5.6`** (<5.7.0) ← `@react-native-community/cli → cli-platform-{android,apple}`. Build-time. XML injection, input = nuestros manifests. Revisitar cuando RN-CLI ≥20 sea compatible con RN 0.83+.
+- **`@tootallnate/once@2.0.1`** (<3.0.1) ← `jest-expo → jest-environment-jsdom → jsdom → http-proxy-agent`. Test-only. Revisitar cuando `jest-expo` bump jsdom.
+
+Ninguna requiere acción inmediata. Re-ejecutar `npm audit` tras cada `npm update` o upgrade de Expo SDK.
+
 ## Prioridad media (mejoras importantes)
 
 - [ ] **Sección "Contigo"** — nuevo tab con Evangelio del Día, Mi Rato de Oración, Examen del Día + habit tracker espiritual. **Ver `TODO_CONTIGO.md` para el diseño técnico completo.**
