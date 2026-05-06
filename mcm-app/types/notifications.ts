@@ -56,6 +56,11 @@ export interface DeviceToken {
     model?: string;
     osVersion?: string;
   };
+  // Segmentación para envío de notificaciones desde mcmpanel
+  profileType?: 'familia' | 'monitor' | 'miembro' | null;
+  delegationId?: string | null;
+  /** Unión de notificationTopics del perfil + notificationTopic de la delegación. Pre-computado para queries fáciles. */
+  topics?: string[];
 }
 
 /**

@@ -4,7 +4,7 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { StatusBar } from 'expo-status-bar';
 
 // Import iOS-specific NativeTabs
@@ -97,15 +97,13 @@ const TABS_CONFIG: TabConfig[] = [
 // iOS NativeTabs Component
 // ============================================================================
 function IOSNativeTabsLayout() {
-  const featureFlags = useFeatureFlags();
+  const resolved = useResolvedProfileConfig();
+  const visibleTabs = new Set(resolved.tabs);
 
   return (
     <NativeTabs>
       {TABS_CONFIG.map((tab) => {
-        const isEnabled =
-          featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
-
-        if (!isEnabled) return null;
+        if (!visibleTabs.has(tab.name)) return null;
 
         return (
           <NativeTabs.Trigger key={tab.name} name={tab.name}>
@@ -124,17 +122,18 @@ function IOSNativeTabsLayout() {
 function AndroidWebTabsLayout() {
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
-  const featureFlags = useFeatureFlags();
   // En web (sobre todo en PWA standalone iOS) reservamos espacio para la status bar
   // del sistema usando el safe-area-inset top. En navegador normal este valor es 0.
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
   const webBottomPad = Platform.OS === 'web' ? Math.max(insets.bottom, 12) : 8;
+  const resolved = useResolvedProfileConfig();
+  const visibleTabs = new Set(resolved.tabs);
 
   return (
     <ThemeProvider value={theme}>
       <Tabs
-        initialRouteName={featureFlags.defaultTab}
+        initialRouteName={resolved.defaultTab}
         screenOptions={{
           headerShown: true,
           headerTintColor: '#fff',
@@ -167,10 +166,7 @@ function AndroidWebTabsLayout() {
         }}
       >
         {TABS_CONFIG.map((tab) => {
-          const isEnabled =
-            featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
-
-          if (!isEnabled) return null;
+          if (!visibleTabs.has(tab.name)) return null;
 
           return (
             <Tabs.Screen

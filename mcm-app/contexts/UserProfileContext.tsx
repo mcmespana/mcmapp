@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { ProfileType } from '@/types/profileConfig';
 
 export interface UserProfile {
   name: string;
-  location: string;
+  profileType: ProfileType | null;
+  delegationId: string | null;
+  onboardingCompleted: boolean;
 }
 
 interface UserProfileContextType {
@@ -12,7 +15,12 @@ interface UserProfileContextType {
   loading: boolean;
 }
 
-const defaultProfile: UserProfile = { name: '', location: '' };
+const defaultProfile: UserProfile = {
+  name: '',
+  profileType: null,
+  delegationId: null,
+  onboardingCompleted: false,
+};
 const STORAGE_KEY = '@user_profile';
 
 const UserProfileContext = createContext<UserProfileContextType | undefined>(
@@ -32,7 +40,14 @@ export const UserProfileProvider = ({
       try {
         const data = await AsyncStorage.getItem(STORAGE_KEY);
         if (data) {
-          setProfileState((prev) => ({ ...prev, ...JSON.parse(data) }));
+          const parsed = JSON.parse(data);
+          setProfileState((prev) => ({
+            ...prev,
+            name: parsed.name ?? '',
+            profileType: parsed.profileType ?? null,
+            delegationId: parsed.delegationId ?? null,
+            onboardingCompleted: parsed.onboardingCompleted === true,
+          }));
         }
       } catch (e) {
         console.error('Failed loading user profile', e);

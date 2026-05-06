@@ -21,6 +21,7 @@ import {
   cleanSongTitle,
 } from '@/utils/songUtils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 
 interface ReportBugsModalProps {
   visible: boolean;
@@ -50,6 +51,7 @@ export default function ReportBugsModal({
   const isDark = scheme === 'dark';
   const theme = Colors[scheme];
   const { profile } = useUserProfile();
+  const resolved = useResolvedProfileConfig();
   const [bugDescription, setBugDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -73,7 +75,8 @@ export default function ReportBugsModal({
         status: 'pending',
         reportedAt: new Date().toISOString(),
         userName: profile.name || 'Anónimo',
-        userLocation: profile.location || 'Sin ubicación',
+        userProfileType: profile.profileType ?? 'sin-perfil',
+        userDelegation: resolved.delegationLabel || 'Sin delegación',
       });
       setBugDescription('');
       onClose();

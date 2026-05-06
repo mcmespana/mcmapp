@@ -1,0 +1,97 @@
+{
+  "updatedAt": "2026-04-30T00:00:00.000Z",
+  "data": {
+    "global": {
+      "defaultTab": "index",
+      "showNotificationsIcon": true,
+      "showOnboarding": true,
+      "showChangeNameButton": false,
+      "maintenanceMode": false,
+      "maintenanceMessage": "",
+      "minAppVersion": "0.0.0"
+    },
+    "profiles": {
+      "familia": {
+        "label": "Familia",
+        "description": "Padres, madres y familiares",
+        "tabs": [
+          "index",
+          "cancionero",
+          "contigo",
+          "calendario",
+          "fotos",
+          "mas"
+        ],
+        "homeButtons": ["comunica", "cancionero", "fotos", "evangelio", "mas"],
+        "masItems": ["comunica", "jubileo"],
+        "defaultCalendars": ["mcm-europa"],
+        "albumTags": ["all"],
+        "notificationTopics": ["general", "eventos", "familias"]
+      },
+      "monitor": {
+        "label": "Monitor/a",
+        "description": "Monitores y catequistas",
+        "tabs": [
+          "index",
+          "cancionero",
+          "contigo",
+          "calendario",
+          "fotos",
+          "mas"
+        ],
+        "homeButtons": ["comunica", "cancionero", "fotos", "evangelio", "mas"],
+        "masItems": ["comunica", "comunica-gestion", "jubileo"],
+        "defaultCalendars": [],
+        "albumTags": ["all"],
+        "notificationTopics": ["general", "eventos", "monitores"]
+      },
+      "miembro": {
+        "label": "Miembro MCM",
+        "description": "Miembros del movimiento",
+        "tabs": [
+          "index",
+          "cancionero",
+          "contigo",
+          "calendario",
+          "fotos",
+          "mas"
+        ],
+        "homeButtons": ["comunica", "cancionero", "fotos", "evangelio", "mas"],
+        "masItems": ["comunica", "comunica-gestion", "jubileo"],
+        "defaultCalendars": [],
+        "albumTags": ["all"],
+        "notificationTopics": ["general", "eventos", "miembros"]
+      }
+    },
+    "delegations": {
+      "_default": {
+        "label": "General"
+      },
+      "mcm-espana": { "label": "MCM España" },
+      "mcm-benicarlo-vinaros": { "label": "MCM Benicarló-Vinaròs" },
+      "mcm-burriana": { "label": "MCM Burriana" },
+      "mcm-caravaca": { "label": "MCM Caravaca" },
+      "mcm-castellon": {
+        "label": "MCM Castellón",
+        "notificationTopic": "mcm-castellon",
+        "extraCalendars": ["mcm-castellon"]
+      },
+      "mcm-espinardo": { "label": "MCM Espinardo" },
+      "mcm-granada": { "label": "MCM Granada" },
+      "mcm-lalcora": { "label": "MCM l'Alcora" },
+      "mcm-madrid": {
+        "label": "MCM Madrid",
+        "notificationTopic": "mcm-madrid",
+        "extraCalendars": ["mcm-madrid"]
+      },
+      "mcm-nules": { "label": "MCM Nules" },
+      "mcm-onda": { "label": "MCM Onda" },
+      "mcm-quintanar": { "label": "MCM Quintanar" },
+      "mcm-vila-real": { "label": "MCM Vila-real" },
+      "mcm-villacanas": { "label": "MCM Villacañas" },
+      "mcm-zaragoza": { "label": "MCM Zaragoza" },
+      "internacional": { "label": "Internacional" }
+    },
+    "overrides": {}
+  }
+}

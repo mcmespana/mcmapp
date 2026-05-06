@@ -46,6 +46,64 @@
 - **Documentación**: guía completa en la raíz del monorepo (`/EVENTOS.md`) con estructura Firebase, los 3 pasos para crear un evento nuevo, uso del flag `hidden` y flujo de navegación. `CLAUDE.md` del monorepo lo referencia.
 - **Archivos principales**: `constants/events.ts` (nuevo), `hooks/useCurrentEvent.ts` (nuevo), `app/screens/EventHomeScreen.tsx` (nuevo), `app/screens/JubileoHomeScreen.tsx` (eliminado), `hooks/useFirebaseData.ts` (extendido con `hidden`), `app/(tabs)/mas.tsx`, `app/screens/MasHomeScreen.tsx` + las 9 sub-pantallas indicadas, `EVENTOS.md` (nuevo, raíz del monorepo).
 
+## 2026-05-03 — Onboarding · rediseño visual
+
+- Rediseño completo de `app/onboarding.tsx` siguiendo el prototipo de Claude Design (4 pantallas: bienvenida, perfil, delegación, confirmación).
+- Pantalla de bienvenida nueva con logo MCM, ripples animados, shimmer en CTA y fondo `primary`.
+- Animaciones con `react-native-reanimated`: slide-in/out entre pasos, fade-up con stagger en cards, ripple infinito, shimmer en botón "Comenzar".
+- Pantalla de éxito nueva con check animado y resumen del perfil/delegación elegidos.
+- Lógica de datos sin cambios: sigue leyendo `rawConfig.profiles`/`rawConfig.delegationList` desde `ProfileConfigContext` y persiste con `useUserProfile().setProfile`.
+
+## 2026-04-30 — Sistema de Perfiles · auditoría y endurecimiento
+
+Revisión completa del sistema. Cambios:
+
+- **Bug fix (segmentación de notificaciones)**: el resolver descartaba los `notificationTopic` de delegación (ej. `"castellon"`) al sanitizarlos contra `KNOWN_NOTIFICATION_TOPICS`. Resultado: el array `topics` que se subía a `/pushTokens/{id}` nunca incluía la delegación → backend no podía segmentar por delegación local. Ahora `notificationTopics` no se sanea contra catálogo (los IDs base del catálogo siguen presentes en cada perfil).
+- **`utils/resolveProfileConfig.ts`** ahora tolera config remota corrupta sin crashear: perfil ausente → cae al primer perfil válido (o `FALLBACK_PROFILE`); `delegations`, `global` o arrays del perfil ausentes → defaults sensatos.
+- **`isAppVersionSupported`** NaN-safe: strings inválidos (`"foo"`, `""`, undefined coercido) ya no producen `NaN > NaN` (que devolvía `false` y podía bloquear usuarios incorrectamente con la pantalla de actualización). Atajo explícito para `minVersion === '0.0.0'`.
+- **`contexts/ProfileConfigContext.tsx`** valida la forma del documento remoto (`global`, `profiles`, `delegations`, `delegationList`) antes de usarlo. Si está malformado, cae al fallback hardcoded con warning en dev.
+- **Nuevo test** `__tests__/resolveProfileConfig.test.ts` (15 casos): merge perfil+delegación, overrides, sanitización, retención de topics de delegación, tolerancia a config corrupta, semver. Pasan con `npx jest --preset=ts-jest`.
+- **Limpieza**: eliminados `app/(tabs)/_layout.tsx.backup` y `app/(tabs)/jubileo.tsx.old` (orphans de migraciones anteriores).
+- **Docs sincronizados**: `TODO.md`, `TABS_MAINTENANCE.md` y `firebase-seed/README.md` ya no referencian `featureFlags.ts`. La sección "qué editar tras importar el seed" refleja que las 16 delegaciones ya están sembradas y solo hace falta rellenar `defaultCalendars`.
+
+## 2026-04-23 — Sistema de Perfiles de Usuario · Fases 1-8 (reemplaza FeatureFlags)
+
+**Cambio de arquitectura**: toda la visibilidad de tabs/home/más/álbumes/notificaciones se configura ahora desde Firebase RTDB (`/profileConfig`) por perfil (familia/monitor/miembro) y delegación (MCM España y 15 delegaciones locales + Internacional). El antiguo sistema de feature flags está eliminado.
+
+- **Archivos eliminados**: `contexts/FeatureFlagsContext.tsx`, `constants/featureFlags.ts`, `__tests__/featureFlags.test.ts`, `FEATURE_FLAGS_OTA.md`, `components/UserProfileModal.tsx` (huérfano).
+- **Archivos nuevos**:
+  - `contexts/ProfileConfigContext.tsx` — descarga `/profileConfig` con caché offline (patrón `useFirebaseData`).
+  - `hooks/useResolvedProfileConfig.ts` — combina config remota + UserProfile → `ResolvedProfileConfig` memoizado.
+  - `app/onboarding.tsx` — pantalla inicial de 2 pasos (perfil → delegación). Saltable; default = `miembro` + `_default`.
+  - `components/MaintenanceScreen.tsx` — pantalla de bloqueo para `maintenanceMode` y `minAppVersion`.
+- **Archivos modificados**:
+  - `app/_layout.tsx` — reemplaza `FeatureFlagsProvider` por `ProfileConfigProvider`, añade redirect al onboarding, pantallas de mantenimiento/actualización.
+  - `contexts/UserProfileContext.tsx` — amplía con `profileType`, `delegationId`, `onboardingCompleted`; elimina `location`.
+  - `app/(tabs)/_layout.tsx`, `app/(tabs)/index.tsx`, `app/screens/MasHomeScreen.tsx` — filtran tabs/home buttons/más items por `resolved.*`.
+  - `hooks/useCalendarConfigs.ts` — semilla defaults desde `resolved.defaultCalendars`.
+  - `app/(tabs)/fotos.tsx` — filtra álbumes por intersección `album.tags ∩ resolved.albumTags` (álbum sin tags = visible para todos).
+  - `services/pushNotificationService.ts` + `notifications/usePushNotifications.ts` — token ampliado con `profileType`, `delegationId`, `topics`; re-publica metadata al cambiar el perfil.
+  - `components/SettingsPanel.tsx` — añade selectores de perfil y delegación; elimina el botón legacy de cambiar nombre.
+  - `components/AppFeedbackModal.tsx`, `ReportBugsModal.tsx`, `SuggestSongModal.tsx`, `hooks/useWordleStats.ts`, `app/screens/ReflexionesScreen.tsx` — sustituyen `profile.location` por `resolved.delegationLabel` en los reportes a Firebase.
+- **Firebase**:
+  - Nuevo nodo `/profileConfig` con `data.global`, `data.profiles`, `data.delegations`, `data.delegationList`, `data.overrides`.
+  - `/pushTokens/{id}` añade opcionalmente `profileType`, `delegationId`, `topics` para segmentación desde `mcmpanel`.
+  - `/albums/*` admite campo opcional `tags` (álbumes sin tags siguen siendo visibles para todos — retrocompatible).
+- **Pendiente manual del admin**: subir `firebase-seed/profileConfig.json` al nodo `/profileConfig` y rellenar `defaultCalendars` por perfil con los IDs reales de `/calendars`.
+
+## 2026-04-23 — Sistema de Perfiles de Usuario · Fase 0
+
+- **Preparación del nuevo sistema de perfiles/delegaciones**: se crean los cimientos (tipos, resolver puro, catálogo de IDs, fallback hardcoded y seed para Firebase) sin tocar aún los consumidores ni `FeatureFlagsContext`. La app se comporta exactamente igual que antes.
+- Diseño revisado en `TODO_SISTEMA_PERFILES.md`: pseudocódigo corregido, bloque `global` ampliado con todos los flags actuales + `minAppVersion` + `maintenanceMode`, overrides a nivel delegación, hook `useResolvedProfileConfig()` para romper el ciclo de providers, skip del onboarding = `miembro` + `_default`.
+- Archivos nuevos:
+  - `types/profileConfig.ts` — tipos (`ProfileType`, `ProfileBase`, `ProfileConfigData`, `ResolvedProfileConfig`, …)
+  - `constants/profileCatalog.ts` — `KNOWN_TABS`, `KNOWN_HOME_BUTTONS`, `KNOWN_MAS_ITEMS`, `KNOWN_ALBUM_TAGS`, `KNOWN_NOTIFICATION_TOPICS`
+  - `utils/resolveProfileConfig.ts` — resolver puro con sanitización + `isAppVersionSupported`
+  - `firebase-seed/profileConfig.json` — seed listo para importar a Firebase RTDB
+  - `firebase-seed/README.md` — instrucciones de subida
+  - `constants/defaultProfileConfig.ts` — importa el JSON + exporta `DEFAULT_RESOLVED_PROFILE_CONFIG` para render inmediato
+- Pendiente manual: subir `firebase-seed/profileConfig.json` al nodo `/profileConfig`, rellenar `delegationList` con las delegaciones reales y los IDs de `defaultCalendars` por perfil.
+
 ## ${today} — Arreglo de navegación en tabs Más y Cantoral (Restauración)
 
 - **Bug fix**: Se restauró la lógica de navegación para volver a la pantalla inicial (`popToTop`) al pulsar la pestaña "Más" o "Cantoral" si ya se está en ella, usando el listener `tabPress` sobre el navigator padre (`useNavigation().getParent()`).

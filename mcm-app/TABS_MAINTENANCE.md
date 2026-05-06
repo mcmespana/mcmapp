@@ -58,19 +58,16 @@ export const TabHeaderColors = {
 };
 ```
 
-### 3. Actualizar feature flags
+### 3. Registrar el tab en el Sistema de Perfiles
 
-En `constants/featureFlags.ts`:
+El antiguo `constants/featureFlags.ts` ya no existe. Ahora la visibilidad por
+perfil/delegación se controla desde `/profileConfig` en Firebase RTDB. Hay
+que tocar dos sitios:
 
-```typescript
-export interface FeatureFlags {
-  // ... otros flags
-  tabs: {
-    // ... otros tabs
-    nuevoTab: boolean; // Añadir aquí
-  };
-}
-```
+1. **Catálogo local** (`constants/profileCatalog.ts`): añadir el ID del tab
+   a `KNOWN_TABS`. Sin esto el resolver lo descarta como ID desconocido.
+2. **Config remota + seed** (`firebase-seed/profileConfig.json` y `/profileConfig/data/profiles/*` en Firebase):
+   añadir el nuevo ID al array `tabs` de los perfiles que deban verlo.
 
 ### 4. Crear el archivo del tab
 
@@ -155,13 +152,14 @@ Luego, en la configuración del tab en `_layout.tsx`, simplemente referencia el 
 1. **Separación clara**: iOS y Android/Web están completamente separados
 2. **Misma funcionalidad**: Ambos tienen las mismas opciones de tabs
 3. **Fácil de extender**: Añadir un tab nuevo requiere cambios en ambos lugares
-4. **Consistencia**: Los nombres de tabs y feature flags son idénticos
+4. **Consistencia**: Los nombres en `TABS_CONFIG`, `KNOWN_TABS` y `profiles.*.tabs` deben coincidir
 
 ### Checklist para Cambios
 
 - [ ] ¿Añado el tab al array `TABS_CONFIG`?
 - [ ] ¿Defino el color en `TabHeaderColors` (si aplica)?
-- [ ] ¿Actualizo los feature flags?
+- [ ] ¿Añado el ID a `KNOWN_TABS` en `constants/profileCatalog.ts`?
+- [ ] ¿Añado el ID a `tabs` en cada perfil de `firebase-seed/profileConfig.json` **y** en `/profileConfig/data/profiles/*` de Firebase?
 - [ ] ¿Creo el archivo del tab con `TabScreenWrapper`?
 - [ ] ¿Pruebo en iOS, Android y Web?
 
@@ -172,7 +170,7 @@ Luego, en la configuración del tab en `_layout.tsx`, simplemente referencia el 
 **Solución**:
 
 1. Verificar que el tab esté en el array `TABS_CONFIG`
-2. Verificar que el feature flag esté habilitado en `constants/featureFlags.ts`
+2. Verificar que el ID esté en `KNOWN_TABS` (`constants/profileCatalog.ts`) **y** en `tabs` del perfil resuelto (Firebase `/profileConfig/data/profiles/*` y/o `firebase-seed/profileConfig.json`)
 3. Verificar que el archivo del tab exista en `app/(tabs)/nombreTab.tsx`
 
 ### Problema: Error "View config getter callback for component must be a function"

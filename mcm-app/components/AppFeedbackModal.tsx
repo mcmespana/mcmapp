@@ -16,6 +16,7 @@ import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -76,6 +77,7 @@ export default function AppFeedbackModal({
   const isDark = scheme === 'dark';
   const theme = Colors[scheme];
   const { profile } = useUserProfile();
+  const resolved = useResolvedProfileConfig();
   const [selectedCategory, setSelectedCategory] =
     useState<FeedbackCategory | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
@@ -107,7 +109,8 @@ export default function AppFeedbackModal({
         reportedAt: new Date().toISOString(),
         category: selectedCategory,
         userName: profile.name || 'Anónimo',
-        userLocation: profile.location || 'Sin ubicación',
+        userProfileType: profile.profileType ?? 'sin-perfil',
+        userDelegation: resolved.delegationLabel || 'Sin delegación',
       });
 
       setFeedbackText('');

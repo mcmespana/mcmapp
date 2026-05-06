@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFirebaseData } from './useFirebaseData';
+import { useResolvedProfileConfig } from './useResolvedProfileConfig';
 
 export interface CalendarConfigFirebase {
   id: string;
@@ -24,6 +25,8 @@ export function useCalendarConfigs() {
     loading,
     offline,
   } = useFirebaseData<CalendarConfigFirebase[]>('calendars', 'calendars');
+
+  const resolved = useResolvedProfileConfig();
 
   const [visibleCalendars, setVisibleCalendars] = useState<boolean[]>([]);
   const [calendarConfigs, setCalendarConfigs] = useState<CalendarConfig[]>([]);
@@ -78,22 +81,39 @@ export function useCalendarConfigs() {
 
     setCalendarConfigs(configs);
 
-    // If no user settings exist, use default selection
+    // If no user settings exist, derive defaults from the resolved profile
+    // config (IDs de calendario por perfil + extras por delegación). Si el
+    // perfil no define `defaultCalendars`, caemos al flag `defaultSelected`
+    // del propio calendario para retrocompatibilidad.
     if (visibleCalendars.length === 0) {
-      const defaultSelection = calendarsToUse.map((cal) => cal.defaultSelected);
+      const profileDefaults = new Set(resolved.defaultCalendars);
+      const useProfileDefaults = profileDefaults.size > 0;
+      const defaultSelection = calendarsToUse.map((cal) =>
+        useProfileDefaults ? profileDefaults.has(cal.id) : cal.defaultSelected,
+      );
       setVisibleCalendars(defaultSelection);
     } else if (visibleCalendars.length !== calendarsToUse.length) {
-      // Adjust array length if number of calendars changed
+      // Adjust array length if number of calendars changed.
+      // Para nuevos calendarios remotos: respetar `defaultSelected` para que
+      // el usuario los vea por defecto si así lo decidió el panel admin
+      // (en lugar de quedar siempre ocultos hasta activación manual).
       const newSelection = [...visibleCalendars];
       while (newSelection.length < calendarsToUse.length) {
-        newSelection.push(false);
+        const idx = newSelection.length;
+        newSelection.push(calendarsToUse[idx]?.defaultSelected ?? false);
       }
       if (newSelection.length > calendarsToUse.length) {
         newSelection.splice(calendarsToUse.length);
       }
       setVisibleCalendars(newSelection);
     }
-  }, [calendarData, settingsLoaded, fallbackConfigs, visibleCalendars]);
+  }, [
+    calendarData,
+    settingsLoaded,
+    fallbackConfigs,
+    visibleCalendars,
+    resolved.defaultCalendars,
+  ]);
 
   // Save user settings to AsyncStorage whenever they change
   useEffect(() => {

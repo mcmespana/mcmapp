@@ -21,13 +21,11 @@ import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import {
-  getEventCacheKey,
-  getEventFirebasePath,
-} from '@/constants/events';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import GlassFAB from '@/components/ui/GlassFAB.ios';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -65,17 +63,18 @@ export default function ReflexionesScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { profile } = useUserProfile();
+  const resolved = useResolvedProfileConfig();
 
   const getDefaultAuthor = useCallback(() => {
     const parts = [];
     if (profile.name.trim()) {
       parts.push(profile.name.trim());
     }
-    if (profile.location.trim()) {
-      parts.push(profile.location.trim());
+    if (resolved.delegationLabel.trim()) {
+      parts.push(resolved.delegationLabel.trim());
     }
     return parts.join(' · ');
-  }, [profile.name, profile.location]);
+  }, [profile.name, resolved.delegationLabel]);
 
   const event = useCurrentEvent();
   const compartiendoPath = getEventFirebasePath(event, 'compartiendo');
