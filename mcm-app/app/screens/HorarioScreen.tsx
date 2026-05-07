@@ -8,10 +8,7 @@ import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import {
-  getEventCacheKey,
-  getEventFirebasePath,
-} from '@/constants/events';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import DateSelector from '@/components/DateSelector';
 import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';

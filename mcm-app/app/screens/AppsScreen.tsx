@@ -15,10 +15,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import {
-  getEventCacheKey,
-  getEventFirebasePath,
-} from '@/constants/events';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 
 interface AppInfo {

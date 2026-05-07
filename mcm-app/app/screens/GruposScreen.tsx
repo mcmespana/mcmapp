@@ -21,10 +21,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import {
-  getEventCacheKey,
-  getEventFirebasePath,
-} from '@/constants/events';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 

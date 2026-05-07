@@ -36,6 +36,8 @@ import BottomSheet from '@/components/BottomSheet';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 
+import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
+
 // ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
   light: {
@@ -94,8 +96,6 @@ function addDays(dateStr: string, offset: number): string {
   const nd = String(date.getDate()).padStart(2, '0');
   return `${ny}-${nm}-${nd}`;
 }
-
-import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 
 export default function EvangelioScreen() {
   const scheme = useColorScheme();
