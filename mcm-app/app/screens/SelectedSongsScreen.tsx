@@ -394,24 +394,27 @@ const SelectedSongsScreen: React.FC = () => {
     [allSongsData, allSongsMap, songIndexMap, flatSelectedSongs, navigation],
   );
 
-  const renderCategory = ({ item }: { item: CategorizedSongs }) => (
-    <View style={styles.categoryContainer}>
-      <Text style={styles.categoryTitle}>{item.categoryTitle}</Text>
-      {item.data
-        .filter(
-          (song): song is Song & { filename: string } =>
-            song &&
-            typeof song.filename === 'string' &&
-            song.filename.length > 0,
-        )
-        .map((song) => (
-          <SongListItem
-            key={song.filename}
-            song={song}
-            onPress={handleSongPress}
-          />
-        ))}
-    </View>
+  const renderCategory = useCallback(
+    ({ item }: { item: CategorizedSongs }) => (
+      <View style={styles.categoryContainer}>
+        <Text style={styles.categoryTitle}>{item.categoryTitle}</Text>
+        {item.data
+          .filter(
+            (song): song is Song & { filename: string } =>
+              song &&
+              typeof song.filename === 'string' &&
+              song.filename.length > 0,
+          )
+          .map((song) => (
+            <SongListItem
+              key={song.filename}
+              song={song}
+              onPress={handleSongPress}
+            />
+          ))}
+      </View>
+    ),
+    [styles, handleSongPress]
   );
 
   const headerIconColor =
@@ -496,6 +499,18 @@ const SelectedSongsScreen: React.FC = () => {
     headerIconColor,
   ]);
 
+  const listCountHeader = useMemo(
+    () => (
+      <View style={styles.countHeader}>
+        <Text style={styles.selectionCount}>
+          {selectedSongs.length}{' '}
+          {selectedSongs.length === 1 ? 'canción' : 'canciones'}
+        </Text>
+      </View>
+    ),
+    [selectedSongs.length, styles],
+  );
+
   if (loading && selectedSongs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
@@ -533,22 +548,13 @@ const SelectedSongsScreen: React.FC = () => {
     );
   }
 
-  const ListCountHeader = () => (
-    <View style={styles.countHeader}>
-      <Text style={styles.selectionCount}>
-        {selectedSongs.length}{' '}
-        {selectedSongs.length === 1 ? 'canción' : 'canciones'}
-      </Text>
-    </View>
-  );
-
   return (
     <View style={styles.container}>
       <FlatList
         data={categorizedSelectedSongs}
         renderItem={renderCategory}
         keyExtractor={(item) => item.categoryTitle}
-        ListHeaderComponent={<ListCountHeader />}
+        ListHeaderComponent={listCountHeader}
         contentContainerStyle={styles.listContentContainer}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
