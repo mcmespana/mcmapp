@@ -262,6 +262,57 @@ export default function SongsListScreen({
     [songs, categoryId, navigation],
   );
 
+  // ListHeaderComponent: search bar + song count
+  // Goes inside the FlatList so it scrolls with content on iOS
+  // (avoids getting hidden behind transparent header)
+  // ⚡ Bolt: Memoize the rendered element instead of defining a component inside the render scope
+  // to prevent React from unmounting and remounting the input, losing focus on every keystroke.
+  const listHeaderElement = useMemo(
+    () => (
+      <View>
+        {searchVisible && (
+          <View style={styles.searchContainer}>
+            <SearchField
+              value={search}
+              onChange={setSearch}
+            >
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input
+                  placeholder="Título, autor..."
+                  autoFocus={!isSearchAll}
+                  returnKeyType="search"
+                />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+          </View>
+        )}
+        {/* Conteo de canciones — siempre visible, muy sutil */}
+        <View style={styles.countRow}>
+          <Text style={styles.songCount}>
+            {filteredSongs.length}{' '}
+            {filteredSongs.length === 1 ? 'canción' : 'canciones'}
+            {search.length > 0 ? ' encontradas' : ''}
+          </Text>
+        </View>
+      </View>
+    ),
+    [searchVisible, search, isSearchAll, filteredSongs.length, styles],
+  );
+
+  // ⚡ Bolt: Extract renderItem and wrap in useCallback to prevent child re-renders
+  const renderItem = useCallback(
+    ({ item }: { item: Song }) => (
+      <SongListItem
+        song={item}
+        onPress={handleSongPress}
+        isSearchAllMode={isSearchAll}
+      />
+    ),
+    [handleSongPress, isSearchAll],
+  );
+
   if ((isLoading || loadingSongs) && songs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
@@ -278,40 +329,6 @@ export default function SongsListScreen({
     );
   }
 
-  // ListHeaderComponent: search bar + song count
-  // Goes inside the FlatList so it scrolls with content on iOS
-  // (avoids getting hidden behind transparent header)
-  const ListHeader = () => (
-    <View>
-      {searchVisible && (
-        <View style={styles.searchContainer}>
-          <SearchField
-            value={search}
-            onChange={setSearch}
-          >
-            <SearchField.Group>
-              <SearchField.SearchIcon />
-              <SearchField.Input
-                placeholder="Título, autor..."
-                autoFocus={!isSearchAll}
-                returnKeyType="search"
-              />
-              <SearchField.ClearButton />
-            </SearchField.Group>
-          </SearchField>
-        </View>
-      )}
-      {/* Conteo de canciones — siempre visible, muy sutil */}
-      <View style={styles.countRow}>
-        <Text style={styles.songCount}>
-          {filteredSongs.length}{' '}
-          {filteredSongs.length === 1 ? 'canción' : 'canciones'}
-          {search.length > 0 ? ' encontradas' : ''}
-        </Text>
-      </View>
-    </View>
-  );
-
   return (
     <View style={styles.container}>
       <FlatList
@@ -320,14 +337,8 @@ export default function SongsListScreen({
         initialNumToRender={15}
         maxToRenderPerBatch={20}
         windowSize={5}
-        renderItem={({ item }) => (
-          <SongListItem
-            song={item}
-            onPress={handleSongPress}
-            isSearchAllMode={isSearchAll}
-          />
-        )}
-        ListHeaderComponent={<ListHeader />}
+        renderItem={renderItem}
+        ListHeaderComponent={listHeaderElement}
         contentContainerStyle={styles.listContent}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}

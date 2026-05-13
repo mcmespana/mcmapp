@@ -496,6 +496,18 @@ const SelectedSongsScreen: React.FC = () => {
     headerIconColor,
   ]);
 
+  const listCountHeaderElement = useMemo(
+    () => (
+      <View style={styles.countHeader}>
+        <Text style={styles.selectionCount}>
+          {selectedSongs.length}{' '}
+          {selectedSongs.length === 1 ? 'canción' : 'canciones'}
+        </Text>
+      </View>
+    ),
+    [selectedSongs.length, styles],
+  );
+
   if (loading && selectedSongs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
@@ -533,22 +545,13 @@ const SelectedSongsScreen: React.FC = () => {
     );
   }
 
-  const ListCountHeader = () => (
-    <View style={styles.countHeader}>
-      <Text style={styles.selectionCount}>
-        {selectedSongs.length}{' '}
-        {selectedSongs.length === 1 ? 'canción' : 'canciones'}
-      </Text>
-    </View>
-  );
-
   return (
     <View style={styles.container}>
       <FlatList
         data={categorizedSelectedSongs}
         renderItem={renderCategory}
         keyExtractor={(item) => item.categoryTitle}
-        ListHeaderComponent={<ListCountHeader />}
+        ListHeaderComponent={listCountHeaderElement}
         contentContainerStyle={styles.listContentContainer}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
