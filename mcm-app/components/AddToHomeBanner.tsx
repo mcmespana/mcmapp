@@ -42,12 +42,18 @@ export default function AddToHomeScreenPrompt() {
 
   const handleInstall = () => {
     if (installEvent) {
-      installEvent.prompt();
-      installEvent.userChoice.finally(() => {
-        setInstallEvent(null);
-        window.localStorage.setItem('addToHomeDismissed', 'true');
-        setVisible(false);
-      });
+      try {
+        installEvent.prompt();
+      } catch (e) {
+        console.warn('install prompt failed', e);
+      }
+      Promise.resolve(installEvent.userChoice)
+        .catch((e) => console.warn('userChoice rejected', e))
+        .finally(() => {
+          setInstallEvent(null);
+          window.localStorage.setItem('addToHomeDismissed', 'true');
+          setVisible(false);
+        });
     } else {
       window.localStorage.setItem('addToHomeDismissed', 'true');
       setVisible(false);

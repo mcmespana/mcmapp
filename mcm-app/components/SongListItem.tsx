@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -53,96 +53,116 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
       }).start();
     }, [isSelected, backgroundColorAnim]);
 
-    const animatedStyle = {
-      backgroundColor: backgroundColorAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [
-          isDark ? '#2C2C2E' : '#fff',
-          isDark ? '#1A3320' : '#E8F5E9',
-        ],
+    // Estilo animado interpolado: lo memoizamos sobre el valor `Animated`
+    // (estable por useRef) y el scheme. Antes se recreaba en cada render,
+    // generando un nuevo objeto de interpolación inservible.
+    const animatedStyle = useMemo(
+      () => ({
+        backgroundColor: backgroundColorAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [
+            isDark ? '#2C2C2E' : '#fff',
+            isDark ? '#1A3320' : '#E8F5E9',
+          ],
+        }),
       }),
-    };
+      [backgroundColorAnim, isDark],
+    );
 
-    const renderRightActions = (
-      progress: Animated.AnimatedInterpolation<number>,
-      dragX: Animated.AnimatedInterpolation<number>,
-    ) => {
-      const trans = dragX.interpolate({
-        inputRange: [-100, 0],
-        outputRange: [0, 100],
-        extrapolate: 'clamp',
-      });
-      return (
-        <TouchableOpacity
-          style={styles.rightAction}
-          onPress={() => {
-            addSong(song.filename);
-            swipeableRow.current?.close();
-          }}
-        >
-          <Animated.View
-            style={[
-              styles.actionContent,
-              { transform: [{ translateX: trans }] },
-            ]}
-          >
-            <IconSymbol name="plus.circle" size={22} color="#fff" />
-            <Text style={styles.actionText}>Seleccionar</Text>
-          </Animated.View>
-        </TouchableOpacity>
-      );
-    };
+    const handlePress = useCallback(() => onPress(song), [onPress, song]);
 
-    const renderLeftActions = (
-      progress: Animated.AnimatedInterpolation<number>,
-      dragX: Animated.AnimatedInterpolation<number>,
-    ) => {
-      const trans = dragX.interpolate({
-        inputRange: [0, 100],
-        outputRange: [-100, 0],
-        extrapolate: 'clamp',
-      });
-      return (
-        <TouchableOpacity
-          style={styles.leftAction}
-          onPress={() => {
-            removeSong(song.filename);
-            swipeableRow.current?.close();
-          }}
-        >
-          <Animated.View
-            style={[
-              styles.actionContent,
-              { transform: [{ translateX: trans }] },
-            ]}
-          >
-            <IconSymbol name="minus.circle" size={22} color="#fff" />
-            <Text style={styles.actionText}>Quitar</Text>
-          </Animated.View>
-        </TouchableOpacity>
-      );
-    };
+    const handleAdd = useCallback(() => {
+      addSong(song.filename);
+      swipeableRow.current?.close();
+    }, [addSong, song.filename]);
 
-    const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
+    const handleRemove = useCallback(() => {
+      removeSong(song.filename);
+      swipeableRow.current?.close();
+    }, [removeSong, song.filename]);
+
+    const renderRightActions = useCallback(
+      (
+        _progress: Animated.AnimatedInterpolation<number>,
+        dragX: Animated.AnimatedInterpolation<number>,
+      ) => {
+        const trans = dragX.interpolate({
+          inputRange: [-100, 0],
+          outputRange: [0, 100],
+          extrapolate: 'clamp',
+        });
+        return (
+          <TouchableOpacity style={styles.rightAction} onPress={handleAdd}>
+            <Animated.View
+              style={[
+                styles.actionContent,
+                { transform: [{ translateX: trans }] },
+              ]}
+            >
+              <IconSymbol name="plus.circle" size={22} color="#fff" />
+              <Text style={styles.actionText}>Seleccionar</Text>
+            </Animated.View>
+          </TouchableOpacity>
+        );
+      },
+      [styles, handleAdd],
+    );
+
+    const renderLeftActions = useCallback(
+      (
+        _progress: Animated.AnimatedInterpolation<number>,
+        dragX: Animated.AnimatedInterpolation<number>,
+      ) => {
+        const trans = dragX.interpolate({
+          inputRange: [0, 100],
+          outputRange: [-100, 0],
+          extrapolate: 'clamp',
+        });
+        return (
+          <TouchableOpacity style={styles.leftAction} onPress={handleRemove}>
+            <Animated.View
+              style={[
+                styles.actionContent,
+                { transform: [{ translateX: trans }] },
+              ]}
+            >
+              <IconSymbol name="minus.circle" size={22} color="#fff" />
+              <Text style={styles.actionText}>Quitar</Text>
+            </Animated.View>
+          </TouchableOpacity>
+        );
+      },
+      [styles, handleRemove],
+    );
+
+    const cleanTitle = useMemo(
+      () => song.title.replace(/^\d+\.\s*/, ''),
+      [song.title],
+    );
+
+    const onSwipeableOpen = useCallback(
+      (direction: 'left' | 'right') => {
+        if (direction === 'right' && !isSelected) {
+          addSong(song.filename);
+          swipeableRow.current?.close();
+        } else if (direction === 'left' && isSelected) {
+          removeSong(song.filename);
+          swipeableRow.current?.close();
+        }
+      },
+      [isSelected, addSong, removeSong, song.filename],
+    );
 
     return (
       <Swipeable
         ref={swipeableRow}
         renderRightActions={!isSelected ? renderRightActions : undefined}
         renderLeftActions={isSelected ? renderLeftActions : undefined}
-        onSwipeableOpen={(direction) => {
-          if (direction === 'right' && !isSelected) {
-            addSong(song.filename);
-            swipeableRow.current?.close();
-          } else if (direction === 'left' && isSelected) {
-            removeSong(song.filename);
-            swipeableRow.current?.close();
-          }
-        }}
+        onSwipeableOpen={onSwipeableOpen}
       >
         <Animated.View style={[styles.songItemOuter, animatedStyle]}>
           <TouchableOpacity
-            onPress={() => onPress(song)}
+            onPress={handlePress}
             style={styles.songItemInner}
             activeOpacity={0.6}
           >

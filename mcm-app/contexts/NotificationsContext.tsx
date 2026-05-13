@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useMemo,
 } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import {
@@ -81,16 +82,19 @@ export function NotificationsProvider({
     updateCount();
   }, [updateCount]);
 
+  const value = useMemo(
+    () => ({
+      unreadCount,
+      firebaseNotifications,
+      readIds,
+      refreshCount: updateCount,
+      markAllRefresh,
+    }),
+    [unreadCount, firebaseNotifications, readIds, updateCount, markAllRefresh],
+  );
+
   return (
-    <NotificationsContext.Provider
-      value={{
-        unreadCount,
-        firebaseNotifications,
-        readIds,
-        refreshCount: updateCount,
-        markAllRefresh,
-      }}
-    >
+    <NotificationsContext.Provider value={value}>
       {children}
     </NotificationsContext.Provider>
   );

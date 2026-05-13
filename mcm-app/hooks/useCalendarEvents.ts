@@ -132,8 +132,13 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
         state.isConnected && state.isInternetReachable !== false;
       const cachedStr = await AsyncStorage.getItem('calendar_events');
       if (!connected && cachedStr) {
-        setEventsByDate(JSON.parse(cachedStr));
-        setLoading(false);
+        try {
+          if (mounted) setEventsByDate(JSON.parse(cachedStr));
+        } catch {
+          // Caché corrupta: la limpiamos para evitar el mismo crash en cada arranque.
+          AsyncStorage.removeItem('calendar_events').catch(() => {});
+        }
+        if (mounted) setLoading(false);
         return;
       }
       const map: Record<string, CalendarEvent[]> = {};
@@ -168,17 +173,24 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
               if (!map[dateStr]) map[dateStr] = [];
               map[dateStr].push(withCal);
             } else {
-              // For multi-day events, iterate through the range
-              const start = new Date(ev.startDate);
-              const end = new Date(ev.endDate);
-              for (
-                let d = new Date(start);
-                d <= end;
-                d.setDate(d.getDate() + 1)
-              ) {
-                const dateStr = d.toISOString().split('T')[0];
+              // Multi-day events: iteramos por cadena de fechas en UTC para
+              // evitar saltos por DST. Si construyésemos `new Date(YYYY-MM-DD)`
+              // y usásemos setDate(+1), al cruzar el cambio de hora podía
+              // saltarse o repetirse un día.
+              const [sy, sm, sd] = ev.startDate.split('-').map(Number);
+              const [ey, em, ed] = ev.endDate.split('-').map(Number);
+              let cursor = Date.UTC(sy, sm - 1, sd);
+              const endUtc = Date.UTC(ey, em - 1, ed);
+              const ONE_DAY = 24 * 60 * 60 * 1000;
+              // Guard contra rangos absurdos / malformados (max 5 años).
+              const maxIterations = 366 * 5;
+              let i2 = 0;
+              while (cursor <= endUtc && i2 < maxIterations) {
+                const dateStr = new Date(cursor).toISOString().split('T')[0];
                 if (!map[dateStr]) map[dateStr] = [];
                 map[dateStr].push(withCal);
+                cursor += ONE_DAY;
+                i2 += 1;
               }
             }
           });

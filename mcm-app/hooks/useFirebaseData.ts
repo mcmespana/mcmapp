@@ -26,18 +26,38 @@ export function useFirebaseData<T>(
           state.isConnected && state.isInternetReachable !== false;
         setOffline(!connected);
 
-        const [localDataStr, localUpdatedAt, localHiddenStr] = await Promise.all([
-          AsyncStorage.getItem(`${storageKey}_data`),
-          AsyncStorage.getItem(`${storageKey}_updatedAt`),
-          AsyncStorage.getItem(`${storageKey}_hidden`),
-        ]);
+        const [localDataStr, localUpdatedAt, localHiddenStr] =
+          await Promise.all([
+            AsyncStorage.getItem(`${storageKey}_data`),
+            AsyncStorage.getItem(`${storageKey}_updatedAt`),
+            AsyncStorage.getItem(`${storageKey}_hidden`),
+          ]);
 
         if (localDataStr) {
-          const parsed = JSON.parse(localDataStr);
-          const transformed = transform ? transform(parsed) : (parsed as T);
-          if (isMounted) setData(transformed);
-          if (isMounted) setHidden(localHiddenStr === 'true');
-          setLoading(false); // show existing data while fetching remote
+          let parsed: any = null;
+          let parseOk = false;
+          try {
+            parsed = JSON.parse(localDataStr);
+            parseOk = true;
+          } catch (parseErr) {
+            // Caché corrupta (escritura interrumpida, formato cambiado, etc.).
+            // La limpiamos para que la próxima carga parta de cero y para no
+            // quedarnos siempre en este estado de error.
+            console.warn(
+              `Cache corrupta en ${storageKey}_data, limpiando`,
+              parseErr,
+            );
+            await AsyncStorage.removeItem(`${storageKey}_data`).catch(() => {});
+            await AsyncStorage.removeItem(`${storageKey}_updatedAt`).catch(
+              () => {},
+            );
+          }
+          if (parseOk) {
+            const transformed = transform ? transform(parsed) : (parsed as T);
+            if (isMounted) setData(transformed);
+            if (isMounted) setHidden(localHiddenStr === 'true');
+            setLoading(false); // show existing data while fetching remote
+          }
         }
 
         const db = getDatabase(getFirebaseApp());

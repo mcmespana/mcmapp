@@ -1,13 +1,5 @@
 // services/pushNotificationService.ts
-import {
-  getDatabase,
-  ref,
-  set,
-  get,
-  update,
-  onValue,
-  off,
-} from 'firebase/database';
+import { getDatabase, ref, set, get, update, onValue } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -293,8 +285,11 @@ export const subscribeToNotifications = (
       }
     });
 
-    // Retornar función de cleanup
-    return () => off(notificationsRef, 'value', unsubscribe);
+    // `unsubscribe` ya es la función de cleanup devuelta por onValue.
+    // Antes pasábamos `unsubscribe` como tercer argumento de off(), pero off
+    // espera la callback original, no la función de cleanup — el listener
+    // quedaba vivo (memory leak).
+    return unsubscribe;
   } catch (error) {
     console.error('Error suscribiéndose a notificaciones:', error);
     return () => {};

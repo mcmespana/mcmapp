@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ProfileType } from '@/types/profileConfig';
 
@@ -65,14 +72,17 @@ export const UserProfileProvider = ({
     );
   }, [profile, loading]);
 
-  const update = (values: Partial<UserProfile>) => {
+  const update = useCallback((values: Partial<UserProfile>) => {
     setProfileState((prev) => ({ ...prev, ...values }));
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ profile, setProfile: update, loading }),
+    [profile, update, loading],
+  );
 
   return (
-    <UserProfileContext.Provider
-      value={{ profile, setProfile: update, loading }}
-    >
+    <UserProfileContext.Provider value={value}>
       {children}
     </UserProfileContext.Provider>
   );

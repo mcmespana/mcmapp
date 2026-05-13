@@ -160,8 +160,11 @@ export default function SongsListScreen({
                 }
                 // ⚡ Bolt: Pre-calculate the clean title for sorting (Schwartzian transform)
                 // This prevents running the regex multiple times per item during the O(N log N) sort phase.
-                const sortTitle = song.title.replace(/^\d+\.\s*/, '').toLowerCase();
-                const searchableText = `${song.title || ''} ${song.author || ''}`.toLowerCase();
+                const sortTitle = song.title
+                  .replace(/^\d+\.\s*/, '')
+                  .toLowerCase();
+                const searchableText =
+                  `${song.title || ''} ${song.author || ''}`.toLowerCase();
                 return {
                   ...song,
                   originalCategoryKey: categoryLetter,
@@ -200,8 +203,13 @@ export default function SongsListScreen({
                     numericPart = filenameMatch[1].padStart(2, '0');
                   }
                 }
-                const searchableText = `${song.title || ''} ${song.author || ''}`.toLowerCase();
-                return { ...song, numericFilenamePart: numericPart, searchableText };
+                const searchableText =
+                  `${song.title || ''} ${song.author || ''}`.toLowerCase();
+                return {
+                  ...song,
+                  numericFilenamePart: numericPart,
+                  searchableText,
+                };
               });
               songsWithNumericPart.sort((a, b) => {
                 const numA = parseInt(a.numericFilenamePart, 10) || Infinity;
@@ -262,6 +270,17 @@ export default function SongsListScreen({
     [songs, categoryId, navigation],
   );
 
+  const renderItem = useCallback(
+    ({ item }: { item: Song }) => (
+      <SongListItem
+        song={item}
+        onPress={handleSongPress}
+        isSearchAllMode={isSearchAll}
+      />
+    ),
+    [handleSongPress, isSearchAll],
+  );
+
   if ((isLoading || loadingSongs) && songs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
@@ -278,17 +297,15 @@ export default function SongsListScreen({
     );
   }
 
-  // ListHeaderComponent: search bar + song count
-  // Goes inside the FlatList so it scrolls with content on iOS
-  // (avoids getting hidden behind transparent header)
-  const ListHeader = () => (
+  // ListHeader: pasar como ELEMENTO JSX (no como función componente).
+  // Si se define como `const ListHeader = () => (...)` y se pasa como
+  // `<ListHeader />`, cada render del padre genera un nuevo tipo de componente,
+  // FlatList lo desmonta/remonta y el SearchField pierde el foco en cada tecla.
+  const listHeader = (
     <View>
       {searchVisible && (
         <View style={styles.searchContainer}>
-          <SearchField
-            value={search}
-            onChange={setSearch}
-          >
+          <SearchField value={search} onChange={setSearch}>
             <SearchField.Group>
               <SearchField.SearchIcon />
               <SearchField.Input
@@ -320,14 +337,8 @@ export default function SongsListScreen({
         initialNumToRender={15}
         maxToRenderPerBatch={20}
         windowSize={5}
-        renderItem={({ item }) => (
-          <SongListItem
-            song={item}
-            onPress={handleSongPress}
-            isSearchAllMode={isSearchAll}
-          />
-        )}
-        ListHeaderComponent={<ListHeader />}
+        renderItem={renderItem}
+        ListHeaderComponent={listHeader}
         contentContainerStyle={styles.listContent}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}

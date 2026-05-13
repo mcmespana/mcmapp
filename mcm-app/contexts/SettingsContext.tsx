@@ -3,6 +3,9 @@ import React, {
   useState,
   useContext,
   useEffect,
+  useCallback,
+  useMemo,
+  useRef,
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -81,30 +84,28 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
 
   // Save settings to AsyncStorage whenever they change
   useEffect(() => {
-    const saveSettings = async () => {
-      // Don't save during initial loading or if settings are still the default ones (unless explicitly set)
-      if (isLoadingSettings) return;
-      try {
-        await AsyncStorage.setItem(
-          SETTINGS_STORAGE_KEY,
-          JSON.stringify(settings),
-        );
-      } catch (error) {
+    // Don't save during initial loading.
+    if (isLoadingSettings) return;
+    AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)).catch(
+      (error) => {
         console.error('Failed to save settings to AsyncStorage:', error);
-      }
-    };
-
-    saveSettings();
+      },
+    );
   }, [settings, isLoadingSettings]);
 
-  // Ensure latest settings are persisted if the provider unmounts before
-  // the save effect above runs (e.g. user quickly leaves the screen)
+  // Save on unmount usando un ref para los valores actuales, así el effect
+  // de cleanup no se vuelve a registrar en cada cambio (antes duplicaba la
+  // escritura: una en el effect anterior y otra en el cleanup del siguiente).
+  const settingsRef = useRef(settings);
+  const loadingRef = useRef(isLoadingSettings);
+  settingsRef.current = settings;
+  loadingRef.current = isLoadingSettings;
   useEffect(() => {
     return () => {
-      if (isLoadingSettings) return;
+      if (loadingRef.current) return;
       AsyncStorage.setItem(
         SETTINGS_STORAGE_KEY,
-        JSON.stringify(settings),
+        JSON.stringify(settingsRef.current),
       ).catch((error) => {
         console.error(
           'Failed to save settings to AsyncStorage on unmount:',
@@ -112,19 +113,22 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
         );
       });
     };
-  }, [settings, isLoadingSettings]);
+  }, []);
 
-  const handleSetSettings = (newValues: Partial<SongSettings>) => {
+  const handleSetSettings = useCallback((newValues: Partial<SongSettings>) => {
     setAppSettings((prevSettings) => ({
       ...prevSettings,
       ...newValues,
     }));
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ settings, setSettings: handleSetSettings, isLoadingSettings }),
+    [settings, handleSetSettings, isLoadingSettings],
+  );
 
   return (
-    <SettingsContext.Provider
-      value={{ settings, setSettings: handleSetSettings, isLoadingSettings }}
-    >
+    <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
   );
