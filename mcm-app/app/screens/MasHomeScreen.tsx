@@ -13,6 +13,7 @@ import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { takePendingMasScreen } from '@/utils/masNavigation';
 import PageContainer from '@/components/ui/PageContainer';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface NavigationItem {
   label: string;
@@ -67,6 +68,8 @@ export default function MasHomeScreen() {
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const { isMd, isWeb } = useResponsive();
+  const useTwoColumns = isWeb && isMd;
   const resolved = useResolvedProfileConfig();
   const navigationItems = React.useMemo(
     () =>
@@ -101,6 +104,7 @@ export default function MasHomeScreen() {
           style={styles.container}
           contentContainerStyle={[
             styles.scrollContent,
+            useTwoColumns && styles.scrollContentGrid,
             Platform.OS === 'ios' && { paddingBottom: 120 },
           ]}
           showsVerticalScrollIndicator={false}
@@ -110,6 +114,7 @@ export default function MasHomeScreen() {
             key={idx}
             style={[
               styles.card,
+              useTwoColumns && styles.cardGridItem,
               {
                 backgroundColor: isDark ? '#2C2C2E' : '#fff',
               },
@@ -205,10 +210,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
   },
+  scrollContentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+  },
   card: {
     borderRadius: 20,
     marginBottom: 14,
     overflow: 'hidden',
+  },
+  cardGridItem: {
+    // Two columns minus the row gap (14px) divided over 2 items.
+    width: 'calc(50% - 7px)' as any,
+    marginBottom: 0,
   },
   accentBar: {
     height: 4,
