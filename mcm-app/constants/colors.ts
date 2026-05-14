@@ -75,3 +75,40 @@ export const ToastColors = {
   warning: '#FF9800',
   info: '#2196F3',
 } as const;
+
+// Estados visuales compartidos (selección, hover, pressed)
+// Usado en SongListItem y futuros componentes con estado seleccionado.
+export const StateColors = {
+  selectedBgLight: '#E8F5E9', // Fondo de item seleccionado en light
+  selectedBgDark: '#1A3320', // Fondo de item seleccionado en dark
+  hoverOverlay: 'rgba(0, 0, 0, 0.04)',
+  hoverOverlayDark: 'rgba(255, 255, 255, 0.06)',
+  pressedOverlay: 'rgba(0, 0, 0, 0.08)',
+  pressedOverlayDark: 'rgba(255, 255, 255, 0.10)',
+} as const;
+
+// Colores de emociones — usado en Contigo (oración) y disponible para futuros trackers.
+export const EmotionColors = {
+  joy: '#FCD200', // Alegría — amarillo COM
+  sadness: '#31AADF', // Tristeza — celeste
+  anger: '#E15C62', // Enfado — rojo MIC
+  fear: '#6B3FA0', // Miedo — púrpura
+  disgust: '#3A7D44', // Asco — verde bosque
+} as const;
+
+// Versiones suaves (light) de cada emoción para fondos de chips/cards.
+export const EmotionColorsSoft = {
+  joy: '#FDE68A',
+  sadness: '#BFDBFE',
+  anger: '#FECACA',
+  fear: '#DDD6FE',
+  disgust: '#BBF7D0',
+} as const;
+
+// Colores de las categorías del modal de feedback (sustituye magic numbers en AppFeedbackModal).
+export const FeedbackCategoryColors = {
+  bug: '#FF6B6B', // Error / bug
+  idea: '#4ECDC4', // Sugerencia / idea
+  praise: '#FFD93D', // Felicitación
+} as const;
+
