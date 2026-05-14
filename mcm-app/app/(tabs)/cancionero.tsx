@@ -11,6 +11,7 @@ import SongFullscreenScreen from '../screens/SongFullscreenScreen';
 import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 
 import { SettingsProvider } from '../../contexts/SettingsContext';
+import { TabHeaderColors } from '@/constants/colors';
 
 export interface SongNavItem {
   title: string;
@@ -83,11 +84,11 @@ export default function CancioneroTab() {
               ? { backgroundColor: 'transparent' }
               : isWeb
                 ? ({
-                    backgroundColor: '#f4c11e',
+                    backgroundColor: TabHeaderColors.cancionero,
                     borderBottomWidth: StyleSheet.hairlineWidth,
                     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
                   } as any)
-                : ({ backgroundColor: '#f4c11e' } as any),
+                : ({ backgroundColor: TabHeaderColors.cancionero } as any),
             headerTintColor: isIOS ? '#3d79b9ff' : '#1a1a1a',
             headerTitleStyle: {
               fontWeight: '700' as const,

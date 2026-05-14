@@ -13,7 +13,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getDatabase, push, ref, set } from 'firebase/database';
 
 import BottomSheet from './BottomSheet';
-import { Colors } from '@/constants/colors';
+import { Colors, FeedbackCategoryColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -43,7 +43,7 @@ const FEEDBACK_CATEGORIES: CategoryOption[] = [
     id: 'bug',
     label: 'Fallito en la app',
     icon: 'bug-report',
-    color: '#FF6B6B',
+    color: FeedbackCategoryColors.bug,
     placeholder:
       'Describe el problema que has encontrado en la aplicación (pantalla, función que no funciona, error...)',
     submitText: 'Reportar fallito',
@@ -52,7 +52,7 @@ const FEEDBACK_CATEGORIES: CategoryOption[] = [
     id: 'suggestion',
     label: 'Sugerencia de mejora',
     icon: 'lightbulb',
-    color: '#4ECDC4',
+    color: FeedbackCategoryColors.idea,
     placeholder:
       'Cuéntanos tu idea para mejorar la aplicación (nueva función, cambio de diseño...)',
     submitText: 'Enviar sugerencia',
@@ -61,7 +61,7 @@ const FEEDBACK_CATEGORIES: CategoryOption[] = [
     id: 'congratulations',
     label: 'Felicitaciones',
     icon: 'favorite',
-    color: '#FFD93D',
+    color: FeedbackCategoryColors.praise,
     placeholder:
       'Comparte tu experiencia positiva. ¡Nos alegra saber qué te gusta de la app!',
     submitText: 'Enviar felicitación',
