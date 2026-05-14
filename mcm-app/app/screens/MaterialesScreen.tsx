@@ -6,6 +6,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -159,32 +160,34 @@ export default function MaterialesScreen() {
         selectedDate={dia.fecha}
         onSelectDate={(_, i) => setIndex(i)}
       />
-      <ScrollView contentContainerStyle={styles.list}>
-        {dia.actividades.map((act: Actividad, idx: number) => (
-          <PressableFeedback
-            key={idx}
-            style={[
-              styles.card,
-              { backgroundColor: act.color || colors.primary },
-            ]}
-            onPress={() =>
-              navigation.navigate('MaterialPages', {
-                actividad: act,
-                fecha: dia.fecha,
-                eventId: event.id,
-              })
-            }
-          >
-            <PressableFeedback.Highlight />
-            <Text style={styles.emoji} selectable>
-              {act.emoji}
-            </Text>
-            <Text style={styles.cardText} selectable>
-              {act.nombre.toUpperCase()}
-            </Text>
-          </PressableFeedback>
-        ))}
-      </ScrollView>
+      <PageContainer>
+        <ScrollView contentContainerStyle={styles.list}>
+          {dia.actividades.map((act: Actividad, idx: number) => (
+            <PressableFeedback
+              key={idx}
+              style={[
+                styles.card,
+                { backgroundColor: act.color || colors.primary },
+              ]}
+              onPress={() =>
+                navigation.navigate('MaterialPages', {
+                  actividad: act,
+                  fecha: dia.fecha,
+                  eventId: event.id,
+                })
+              }
+            >
+              <PressableFeedback.Highlight />
+              <Text style={styles.emoji} selectable>
+                {act.emoji}
+              </Text>
+              <Text style={styles.cardText} selectable>
+                {act.nombre.toUpperCase()}
+              </Text>
+            </PressableFeedback>
+          ))}
+        </ScrollView>
+      </PageContainer>
     </View>
   );
 }

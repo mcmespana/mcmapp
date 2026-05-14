@@ -14,6 +14,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -83,7 +84,8 @@ export default function VisitasScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.list}>
+      <PageContainer>
+        <ScrollView contentContainerStyle={styles.list}>
         {(visitas || []).map((v, idx) => (
           <TouchableOpacity
             key={idx}
@@ -141,7 +143,8 @@ export default function VisitasScreen() {
             </View>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+        </ScrollView>
+      </PageContainer>
       <Dialog
         isOpen={!!selected}
         onOpenChange={(open) => {

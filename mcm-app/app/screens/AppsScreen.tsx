@@ -20,6 +20,7 @@ import {
   getEventFirebasePath,
 } from '@/constants/events';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
 
 interface AppInfo {
   orden: number;
@@ -81,11 +82,12 @@ export default function AppsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={
-          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
-        }
-      >
+      <PageContainer>
+        <ScrollView
+          contentContainerStyle={
+            Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+          }
+        >
         <View style={styles.introContainer}>
           <Text style={styles.introText}>
             Lista de aplicaciones móviles (algunas necesarias 🌟, otras
@@ -134,7 +136,8 @@ export default function AppsScreen() {
             </View>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+        </ScrollView>
+      </PageContainer>
 
       <Dialog
         isOpen={!!selected}

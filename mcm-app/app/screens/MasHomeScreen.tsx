@@ -12,6 +12,7 @@ import { hexAlpha } from '@/utils/colorUtils';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { takePendingMasScreen } from '@/utils/masNavigation';
+import PageContainer from '@/components/ui/PageContainer';
 
 interface NavigationItem {
   label: string;
@@ -95,14 +96,15 @@ export default function MasHomeScreen() {
       ]}
       edges={['top']}
     >
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.scrollContent,
-          Platform.OS === 'ios' && { paddingBottom: 120 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
+      <PageContainer>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={[
+            styles.scrollContent,
+            Platform.OS === 'ios' && { paddingBottom: 120 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
         {navigationItems.map((item, idx) => (
           <PressableFeedback
             key={idx}
@@ -185,7 +187,8 @@ export default function MasHomeScreen() {
             </View>
           </PressableFeedback>
         ))}
-      </ScrollView>
+        </ScrollView>
+      </PageContainer>
     </SafeAreaView>
   );
 }

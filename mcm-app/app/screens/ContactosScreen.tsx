@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -79,12 +80,13 @@ export default function ContactosScreen() {
   const tints = isDark ? AVATAR_TINTS_DARK : AVATAR_TINTS;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.card}>
+    <PageContainer>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.card}>
         {(data || []).map((c, idx) => {
           const tint = tints[idx % tints.length];
           const isLast = idx === (data?.length ?? 0) - 1;
@@ -137,8 +139,9 @@ export default function ContactosScreen() {
             </View>
           );
         })}
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </PageContainer>
   );
 }
 

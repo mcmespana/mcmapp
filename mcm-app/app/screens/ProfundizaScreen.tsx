@@ -13,6 +13,7 @@ import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import {
@@ -56,41 +57,46 @@ export default function ProfundizaScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.mainTitle}>{data.titulo}</Text>
-      <FormattedContent text={data.introduccion} scale={fontScale} />
-      <View style={{ marginTop: 16 }}>
-        {data.paginas.map((p, idx) => (
-          <View key={idx} style={styles.accordionWrapper}>
-            <TouchableOpacity
-              onPress={() => setOpenIdx(openIdx === idx ? null : idx)}
-              style={[
-                styles.accordion,
-                { backgroundColor: p.color || colors.primary },
-              ]}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.accordionTitle}>{p.titulo}</Text>
-              <MaterialIcons
-                name={openIdx === idx ? 'expand-less' : 'expand-more'}
-                size={24}
-                color={colors.white}
-              />
-            </TouchableOpacity>
-            {openIdx === idx && (
-              <View style={styles.accordionContent}>
-                {p.subtitulo && (
-                  <Text style={styles.subtitulo}>{p.subtitulo}</Text>
-                )}
-                {p.texto && (
-                  <FormattedContent text={p.texto} scale={fontScale} />
-                )}
-              </View>
-            )}
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+    <PageContainer>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+      >
+        <Text style={styles.mainTitle}>{data.titulo}</Text>
+        <FormattedContent text={data.introduccion} scale={fontScale} />
+        <View style={{ marginTop: 16 }}>
+          {data.paginas.map((p, idx) => (
+            <View key={idx} style={styles.accordionWrapper}>
+              <TouchableOpacity
+                onPress={() => setOpenIdx(openIdx === idx ? null : idx)}
+                style={[
+                  styles.accordion,
+                  { backgroundColor: p.color || colors.primary },
+                ]}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.accordionTitle}>{p.titulo}</Text>
+                <MaterialIcons
+                  name={openIdx === idx ? 'expand-less' : 'expand-more'}
+                  size={24}
+                  color={colors.white}
+                />
+              </TouchableOpacity>
+              {openIdx === idx && (
+                <View style={styles.accordionContent}>
+                  {p.subtitulo && (
+                    <Text style={styles.subtitulo}>{p.subtitulo}</Text>
+                  )}
+                  {p.texto && (
+                    <FormattedContent text={p.texto} scale={fontScale} />
+                  )}
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </PageContainer>
   );
 }
 

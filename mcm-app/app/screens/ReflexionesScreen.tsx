@@ -27,6 +27,7 @@ import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import GlassFAB from '@/components/ui/GlassFAB.ios';
+import PageContainer from '@/components/ui/PageContainer';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 interface Grupo {
@@ -179,13 +180,14 @@ export default function ReflexionesScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.list,
-          Platform.OS === 'ios' && { paddingBottom: 100 },
-        ]}
-      >
-        {list
+      <PageContainer>
+        <ScrollView
+          contentContainerStyle={[
+            styles.list,
+            Platform.OS === 'ios' && { paddingBottom: 100 },
+          ]}
+        >
+          {list
           .sort(
             (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
           )
@@ -234,7 +236,8 @@ export default function ReflexionesScreen() {
               </Card.Body>
             </Card>
           ))}
-      </ScrollView>
+        </ScrollView>
+      </PageContainer>
 
       {Platform.OS === 'ios' ? (
         <GlassFAB
