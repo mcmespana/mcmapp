@@ -1,22 +1,28 @@
 import React from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, ViewStyle } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { radii, shadows } from '@/constants/uiStyles';
-import GlassSurface from './GlassSurface';
 
 interface GlassFABProps {
   icon: keyof typeof MaterialIcons.glyphMap;
   onPress: () => void;
+  /** Background color of the FAB. Defaults to MCM yellow. */
   tintColor?: string;
+  /** Icon color. Defaults to near-black. */
   iconColor?: string;
+  /** Icon size. Defaults to 24. */
   size?: number;
   style?: ViewStyle;
 }
 
 /**
- * iOS-only glass FAB. Delegates the glass effect to GlassSurface so the
- * brightness / LiquidGlass-vs-BlurView decision lives in one place.
+ * Android / Web fallback for GlassFAB.
+ * Renders a solid tinted FAB with a prominent shadow — no blur effect
+ * (Android RN has no reliable cheap blur primitive; web could use
+ * backdrop-filter but solid FABs match Material more closely).
+ *
+ * The iOS variant (GlassFAB.ios.tsx) uses real LiquidGlass / BlurView.
  */
 export default function GlassFAB({
   icon,
@@ -27,9 +33,11 @@ export default function GlassFAB({
   style,
 }: GlassFABProps) {
   return (
-    <PressableFeedback onPress={onPress} style={[styles.fab, style]}>
+    <PressableFeedback
+      onPress={onPress}
+      style={[styles.fab, { backgroundColor: tintColor }, style]}
+    >
       <PressableFeedback.Scale />
-      <GlassSurface tintColor={tintColor} variant="regular" />
       <MaterialIcons name={icon} size={size} color={iconColor} />
     </PressableFeedback>
   );
@@ -47,6 +55,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
     zIndex: 1000,
-    ...(shadows.lg as ViewStyle),
+    ...((Platform.OS === 'android' || Platform.OS === 'web'
+      ? shadows.lg
+      : null) as ViewStyle),
   },
 });
