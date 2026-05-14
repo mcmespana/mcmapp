@@ -26,7 +26,7 @@ import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
-import GlassFAB from '@/components/ui/GlassFAB.ios';
+import GlassFAB from '@/components/ui/GlassFAB';
 import { useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -638,24 +638,15 @@ export default function Calendario() {
       )}
 
       {/* FAB to go to today */}
-      {selectedDate !== todayStr &&
-        (Platform.OS === 'ios' ? (
-          <GlassFAB
-            icon="arrow-back"
-            onPress={goToToday}
-            tintColor={colors.info}
-            iconColor="#fff"
-          />
-        ) : (
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={goToToday}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="today" size={18} color="#fff" />
-            <Text style={styles.fabLabel}>Hoy</Text>
-          </TouchableOpacity>
-        ))}
+      {selectedDate !== todayStr ? (
+        <GlassFAB
+          icon={Platform.OS === 'ios' ? 'arrow-back' : 'today'}
+          onPress={goToToday}
+          tintColor={colors.info}
+          iconColor="#fff"
+          label={Platform.OS !== 'ios' ? 'Hoy' : undefined}
+        />
+      ) : null}
     </TabScreenWrapper>
   );
 }
@@ -983,32 +974,5 @@ const createStyles = (scheme: 'light' | 'dark') => {
       fontStyle: 'italic',
     },
 
-    // FAB
-    fab: {
-      position: 'absolute',
-      right: 16,
-      bottom: Platform.OS === 'ios' ? 90 : 24,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      backgroundColor: colors.info,
-      borderRadius: 20,
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      ...(Platform.OS === 'web'
-        ? { boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }
-        : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 6,
-            elevation: 5,
-          }),
-    },
-    fabLabel: {
-      color: '#fff',
-      fontSize: 14,
-      fontWeight: '700',
-    },
   });
 };

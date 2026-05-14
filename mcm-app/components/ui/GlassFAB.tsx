@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, StyleSheet, View, ViewStyle } from 'react-native';
+import { Platform, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -13,6 +13,8 @@ interface GlassFABProps {
   iconColor?: string;
   /** Icon size. Defaults to 24. */
   size?: number;
+  /** Optional label below/next to the icon. When set the FAB becomes a pill. */
+  label?: string;
   style?: ViewStyle;
 }
 
@@ -30,15 +32,25 @@ export default function GlassFAB({
   tintColor = '#f4c11e',
   iconColor = '#222',
   size = 24,
+  label,
   style,
 }: GlassFABProps) {
+  const isPill = !!label;
   return (
     <PressableFeedback
       onPress={onPress}
-      style={[styles.fab, { backgroundColor: tintColor }, style]}
+      style={[
+        styles.fab,
+        isPill && styles.pill,
+        { backgroundColor: tintColor },
+        style,
+      ]}
     >
       <PressableFeedback.Scale />
       <MaterialIcons name={icon} size={size} color={iconColor} />
+      {label ? (
+        <Text style={[styles.label, { color: iconColor }]}>{label}</Text>
+      ) : null}
     </PressableFeedback>
   );
 }
@@ -59,4 +71,11 @@ const styles = StyleSheet.create({
       ? shadows.lg
       : null) as ViewStyle),
   },
+  pill: {
+    width: undefined,
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  label: { fontSize: 13, fontWeight: '700' },
 });

@@ -26,9 +26,8 @@ import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import GlassFAB from '@/components/ui/GlassFAB.ios';
+import GlassFAB from '@/components/ui/GlassFAB';
 import PageContainer from '@/components/ui/PageContainer';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 interface Grupo {
   nombre: string;
@@ -239,19 +238,12 @@ export default function ReflexionesScreen() {
         </ScrollView>
       </PageContainer>
 
-      {Platform.OS === 'ios' ? (
-        <GlassFAB
-          icon="add"
-          onPress={() => setShowForm(true)}
-          tintColor="#A3BD31"
-          iconColor="#fff"
-        />
-      ) : (
-        <PressableFeedback style={styles.fab} onPress={() => setShowForm(true)}>
-          <PressableFeedback.Scale />
-          <MaterialIcons name="add" size={24} color="#fff" />
-        </PressableFeedback>
-      )}
+      <GlassFAB
+        icon="add"
+        onPress={() => setShowForm(true)}
+        tintColor="#A3BD31"
+        iconColor="#fff"
+      />
 
       {/* Form bottom sheet */}
       <BottomSheet
@@ -394,22 +386,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     card: { marginBottom: spacing.md },
     cardGroup: {
       backgroundColor: scheme === 'dark' ? '#2D3B20' : '#E6F4D7',
-    },
-    fab: {
-      position: 'absolute',
-      right: 16,
-      bottom: 16,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.success,
-      justifyContent: 'center',
-      alignItems: 'center',
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
     },
     modalOverlay: {
       flex: 1,
