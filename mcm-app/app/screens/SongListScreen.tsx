@@ -262,6 +262,17 @@ export default function SongsListScreen({
     [songs, categoryId, navigation],
   );
 
+  const renderItem = useCallback(
+    ({ item }: { item: Song }) => (
+      <SongListItem
+        song={item}
+        onPress={handleSongPress}
+        isSearchAllMode={isSearchAll}
+      />
+    ),
+    [handleSongPress, isSearchAll],
+  );
+
   if ((isLoading || loadingSongs) && songs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
@@ -320,13 +331,7 @@ export default function SongsListScreen({
         initialNumToRender={15}
         maxToRenderPerBatch={20}
         windowSize={5}
-        renderItem={({ item }) => (
-          <SongListItem
-            song={item}
-            onPress={handleSongPress}
-            isSearchAllMode={isSearchAll}
-          />
-        )}
+        renderItem={renderItem}
         ListHeaderComponent={<ListHeader />}
         contentContainerStyle={styles.listContent}
         contentInsetAdjustmentBehavior="automatic"
