@@ -58,7 +58,7 @@ const T = {
   border: 'rgba(0,0,0,0.07)',
 };
 
-const MAX_DEVICE_W = 460;
+const MAX_CONTENT_W = 520;
 
 /* ─────────────────────────────────────
    Reusable bits
@@ -210,6 +210,41 @@ const btnStyles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.55)',
     opacity: 0.9,
   } as ViewStyle,
+});
+
+function SkipButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel="Saltar configuración"
+      style={({ pressed }) => [skipBtnStyles.pill, pressed && { opacity: 0.65 }]}
+    >
+      <Text style={skipBtnStyles.text}>Saltar</Text>
+      <MaterialIcons name="arrow-forward" size={13} color={T.primary} />
+    </Pressable>
+  );
+}
+
+const skipBtnStyles = StyleSheet.create({
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(37,56,131,0.28)',
+    backgroundColor: 'rgba(37,56,131,0.06)',
+  } as ViewStyle,
+  text: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.primary,
+    letterSpacing: -0.1,
+  } as TextStyle,
 });
 
 /* ─────────────────────────────────────
@@ -468,9 +503,7 @@ function ProfileScreen({
     >
       <View style={stepStyles.topBar}>
         <View />
-        <Pressable onPress={onSkip} hitSlop={12}>
-          <Text style={stepStyles.skip}>Saltar</Text>
-        </Pressable>
+        <SkipButton onPress={onSkip} />
       </View>
 
       <View style={stepStyles.dotsWrap}>
@@ -587,11 +620,9 @@ function DelegationScreen({
       <View style={stepStyles.topBar}>
         <Pressable onPress={onBack} hitSlop={12} style={stepStyles.backBtn}>
           <MaterialIcons name="arrow-back-ios" size={16} color={T.primary} />
-          <Text style={[stepStyles.skip, { color: T.primary }]}>Atrás</Text>
+          <Text style={stepStyles.backLabel}>Atrás</Text>
         </Pressable>
-        <Pressable onPress={onSkip} hitSlop={12}>
-          <Text style={stepStyles.skip}>Saltar</Text>
-        </Pressable>
+        <SkipButton onPress={onSkip} />
       </View>
 
       <View style={stepStyles.dotsWrap}>
@@ -848,6 +879,7 @@ const stepStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   } as ViewStyle,
+  backLabel: { fontSize: 14, fontWeight: '600', color: T.primary } as TextStyle,
   dotsWrap: { paddingHorizontal: 24, paddingTop: 10 } as ViewStyle,
   hero: {
     paddingHorizontal: 24,
@@ -983,7 +1015,8 @@ const delegStyles = StyleSheet.create({
 export default function OnboardingScreen() {
   const { rawConfig } = useProfileConfigContext();
   const { setProfile } = useUserProfile();
-  const { width: screenW } = useWindowDimensions();
+  const { width: screenW, height: screenH } = useWindowDimensions();
+  const isWide = screenW >= 640;
 
   const [step, setStep] = useState<Step>('welcome');
   const [animDir, setAnimDir] = useState<'forward' | 'back'>('forward');
@@ -1059,11 +1092,22 @@ export default function OnboardingScreen() {
     [delegationId, delegationEntries],
   );
 
-  const frameWidth = screenW <= MAX_DEVICE_W ? '100%' : MAX_DEVICE_W;
+  const frameWidth = isWide ? Math.min(screenW * 0.88, MAX_CONTENT_W) : ('100%' as const);
+  const frameHeight = isWide ? Math.min(screenH * 0.88, 740) : undefined;
 
   return (
-    <SafeAreaView style={shellStyles.safe} edges={['top', 'bottom']}>
-      <View style={[shellStyles.frame, { width: frameWidth }]}>
+    <SafeAreaView
+      style={[shellStyles.safe, isWide && shellStyles.safeWide]}
+      edges={['top', 'bottom']}
+    >
+      <View
+        style={[
+          shellStyles.frame,
+          { width: frameWidth },
+          isWide && shellStyles.frameWide,
+          isWide && frameHeight ? { height: frameHeight } : undefined,
+        ]}
+      >
         {step === 'welcome' && <WelcomeScreen onStart={() => go('profile')} />}
         {step === 'profile' && (
           <ProfileScreen
@@ -1109,5 +1153,20 @@ const shellStyles = StyleSheet.create({
     backgroundColor: T.bg,
     alignItems: 'center',
   } as ViewStyle,
+  safeWide: {
+    backgroundColor: '#EBEEf6',
+    justifyContent: 'center',
+    paddingVertical: 32,
+  } as ViewStyle,
   frame: { flex: 1, alignSelf: 'center' } as ViewStyle,
+  frameWide: {
+    flex: undefined,
+    borderRadius: 22,
+    overflow: 'hidden',
+    shadowColor: '#253883',
+    shadowOpacity: 0.14,
+    shadowRadius: 48,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 16,
+  } as ViewStyle,
 });
