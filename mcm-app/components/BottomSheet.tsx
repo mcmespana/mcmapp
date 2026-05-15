@@ -1,5 +1,7 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native';
+import { UIColors } from '@/constants/colors';
 
 interface BottomSheetProps {
   visible: boolean;
@@ -10,6 +12,10 @@ interface BottomSheetProps {
 /**
  * Wrapper that keeps the existing {visible, onClose, children} API
  * while delegating to HeroUI Native BottomSheet under the hood.
+ *
+ * The overlay is given an explicit dark backdrop so users can always
+ * see the dim "scrim" behind the sheet — without it the underlying
+ * screen stays at full brightness on some platforms.
  */
 export default function BottomSheet({
   visible,
@@ -24,9 +30,15 @@ export default function BottomSheet({
       }}
     >
       <HeroBottomSheet.Portal>
-        <HeroBottomSheet.Overlay />
+        <HeroBottomSheet.Overlay style={styles.overlay} />
         <HeroBottomSheet.Content>{children}</HeroBottomSheet.Content>
       </HeroBottomSheet.Portal>
     </HeroBottomSheet>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    backgroundColor: UIColors.modalOverlay,
+  },
+});

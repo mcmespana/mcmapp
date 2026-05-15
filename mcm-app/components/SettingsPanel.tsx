@@ -8,7 +8,8 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native';
-import { CloseButton, PressableFeedback, useToast } from 'heroui-native';
+import { PressableFeedback, useToast } from 'heroui-native';
+import CloseIconButton from '@/components/ui/CloseIconButton';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
@@ -102,7 +103,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
           {/* Header */}
           <View style={styles.titleRow}>
             <Text style={[styles.title, { color: theme.text }]}>Ajustes</Text>
-            <CloseButton onPress={onClose} />
+            <CloseIconButton onPress={onClose} />
           </View>
 
           {/* ── Sección: Tu perfil MCM ── */}
@@ -349,7 +350,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
         <View style={[styles.container, { backgroundColor: theme.background }]}>
           <View style={styles.titleRow}>
             <Text style={[styles.title, { color: theme.text }]}>Perfil</Text>
-            <CloseButton onPress={() => setProfileSelectorOpen(false)} />
+            <CloseIconButton onPress={() => setProfileSelectorOpen(false)} />
           </View>
           {(Object.keys(rawConfig.profiles) as ProfileType[]).map((key) => {
             const p = rawConfig.profiles[key];
@@ -408,7 +409,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             <Text style={[styles.title, { color: theme.text }]}>
               Delegación
             </Text>
-            <CloseButton onPress={() => setDelegationSelectorOpen(false)} />
+            <CloseIconButton onPress={() => setDelegationSelectorOpen(false)} />
           </View>
           <FlatList
             data={rawConfig.delegationList}

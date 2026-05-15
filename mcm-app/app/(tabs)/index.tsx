@@ -114,9 +114,21 @@ export default function Home() {
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 700;
   const { toast } = useToast();
-  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [settingsVisible, setSettingsVisibleRaw] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
-  const [notifSheetOpen, setNotifSheetOpen] = useState(false);
+  const [notifSheetOpen, setNotifSheetOpenRaw] = useState(false);
+
+  // Settings and notifications panels must be mutually exclusive: opening
+  // one auto-closes the other. Otherwise both panels stack visually and
+  // taps leak through to the header buttons underneath.
+  const setSettingsVisible = (next: boolean) => {
+    setSettingsVisibleRaw(next);
+    if (next) setNotifSheetOpenRaw(false);
+  };
+  const setNotifSheetOpen = (next: boolean) => {
+    setNotifSheetOpenRaw(next);
+    if (next) setSettingsVisibleRaw(false);
+  };
 
   // Primary color readable on both light and dark backgrounds
   const accentColor = scheme === 'dark' ? colors.info : colors.primary;
