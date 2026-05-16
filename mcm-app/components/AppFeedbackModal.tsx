@@ -13,6 +13,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getDatabase, push, ref, set } from 'firebase/database';
 
 import BottomSheet from './BottomSheet';
+import CloseIconButton from '@/components/ui/CloseIconButton';
+import SectionHeader from '@/components/ui/SectionHeader';
 import { Colors, FeedbackCategoryColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -20,6 +22,12 @@ import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
+
+// Apple system colors used inside the modal — not part of the MCM brand
+// palette, but match iOS native conventions for "active border" and
+// "destructive text" inside form controls.
+const APPLE_SYSTEM_GREEN = '#34C759';
+const APPLE_SYSTEM_RED = '#FF3B30';
 
 interface AppFeedbackModalProps {
   visible: boolean;
@@ -150,14 +158,7 @@ export default function AppFeedbackModal({
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={handleClose}
-            style={styles.closeBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="close" size={22} color={theme.icon} />
-          </TouchableOpacity>
+          <CloseIconButton onPress={handleClose} />
           <Text style={[styles.title, { color: theme.text }]}>Feedback 💬</Text>
           <View style={styles.headerSpacer} />
         </View>
@@ -168,9 +169,7 @@ export default function AppFeedbackModal({
 
         {!selectedCategory ? (
           <>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              ¿Qué quieres contarnos?
-            </Text>
+            <SectionHeader label="¿Qué quieres contarnos?" />
 
             {FEEDBACK_CATEGORIES.map((category) => (
               <TouchableOpacity
@@ -226,7 +225,11 @@ export default function AppFeedbackModal({
             <View
               style={[
                 styles.selectedCategoryRow,
-                { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' },
+                {
+                  backgroundColor: isDark
+                    ? Colors.dark.background
+                    : hexAlpha(theme.icon, '14'),
+                },
               ]}
             >
               <MaterialIcons
@@ -245,13 +248,13 @@ export default function AppFeedbackModal({
               style={[
                 styles.textArea,
                 {
-                  backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+                  backgroundColor: isDark
+                    ? Colors.dark.background
+                    : hexAlpha(theme.icon, '14'),
                   color: theme.text,
                   borderColor: feedbackText.trim()
-                    ? '#34C759'
-                    : isDark
-                      ? '#3A3A3C'
-                      : '#E5E5EA',
+                    ? APPLE_SYSTEM_GREEN
+                    : hexAlpha(theme.icon, '40'),
                 },
               ]}
               placeholder={selectedCategoryData!.placeholder}
@@ -273,7 +276,11 @@ export default function AppFeedbackModal({
 
             {errorMsg ? (
               <View style={styles.errorRow}>
-                <MaterialIcons name="error-outline" size={15} color="#FF3B30" />
+                <MaterialIcons
+                  name="error-outline"
+                  size={15}
+                  color={APPLE_SYSTEM_RED}
+                />
                 <Text style={styles.errorText}>{errorMsg}</Text>
               </View>
             ) : null}
@@ -284,9 +291,7 @@ export default function AppFeedbackModal({
                 {
                   backgroundColor: canSubmit
                     ? selectedCategoryData!.color
-                    : isDark
-                      ? '#3A3A3C'
-                      : '#E5E5EA',
+                    : hexAlpha(theme.icon, '40'),
                 },
               ]}
               onPress={handleSubmit}
@@ -331,13 +336,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   headerSpacer: {
     width: 32,
   },
@@ -352,11 +350,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 16,
   },
   categoryBtn: {
     flexDirection: 'row',
@@ -420,7 +413,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   errorText: {
-    color: '#FF3B30',
+    color: APPLE_SYSTEM_RED,
     fontSize: 13,
     fontWeight: '500',
   },
