@@ -10,6 +10,7 @@ type IconMapping = {
   'house.fill': 'home';
   'paperplane.fill': 'send';
   'chevron.left.forwardslash.chevron.right': 'code';
+  'chevron.left': 'chevron-left';
   'chevron.right': 'chevron-right';
   close: 'close';
   settings: 'settings';
@@ -38,6 +39,7 @@ const MAPPING: IconMapping = {
   'house.fill': 'home',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
+  'chevron.left': 'chevron-left',
   'chevron.right': 'chevron-right',
   close: 'close',
   settings: 'settings',
