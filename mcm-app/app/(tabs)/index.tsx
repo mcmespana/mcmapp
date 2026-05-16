@@ -28,7 +28,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import useFontScale from '@/hooks/useFontScale';
-import { useToast } from 'heroui-native';
+import { Skeleton, useToast } from 'heroui-native';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
@@ -217,7 +217,8 @@ export default function Home() {
 
   // Calendar events — filtered by user's visible calendars
   const { calendarConfigs, visibleCalendars } = useCalendarConfigs();
-  const { eventsByDate } = useCalendarEvents(calendarConfigs);
+  const { eventsByDate, loading: eventsLoading } =
+    useCalendarEvents(calendarConfigs);
   const upcomingEvents = useMemo(
     () => getUpcomingEvents(eventsByDate, 2, visibleCalendars),
     [eventsByDate, visibleCalendars],
@@ -701,6 +702,12 @@ export default function Home() {
                   onAction={() => router.push('/calendario')}
                   accentColor={accentColor}
                 />
+              ) : eventsLoading && upcomingEvents.length === 0 ? (
+                /* Loading skeleton — shown only when there is no cached data */
+                <View style={styles.eventsSkeletonWrap}>
+                  <Skeleton style={styles.eventSkeleton} />
+                  <Skeleton style={styles.eventSkeleton} />
+                </View>
               ) : upcomingEvents.length > 0 ? (
                 upcomingEvents.map((evt, idx) => {
                   const evtDate = parseLocalDate(evt.startDate);
@@ -1096,6 +1103,14 @@ const styles = StyleSheet.create({
     gap: 3,
   } as ViewStyle,
   eventMetaText: { flex: 1 } as TextStyle,
+  eventsSkeletonWrap: {
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  } as ViewStyle,
+  eventSkeleton: {
+    height: 78,
+    borderRadius: radii.lg,
+  } as ViewStyle,
   calendarButton: {
     alignItems: 'center',
     justifyContent: 'center',
