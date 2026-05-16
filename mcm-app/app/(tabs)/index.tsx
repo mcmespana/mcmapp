@@ -38,6 +38,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
 import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
+import EmptyState from '@/components/ui/EmptyState';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
@@ -692,43 +693,14 @@ export default function Home() {
 
               {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
                 /* User has calendars but all hidden */
-                <TouchableOpacity
-                  style={[
-                    styles.emptyEventsCard,
-                    {
-                      backgroundColor: theme.card,
-                      borderColor:
-                        scheme === 'dark'
-                          ? 'rgba(255,255,255,0.08)'
-                          : 'rgba(0,0,0,0.06)',
-                    },
-                  ]}
-                  onPress={() => router.push('/calendario')}
-                  accessibilityRole="button"
-                >
-                  <MaterialIcons
-                    name="event-note"
-                    size={28}
-                    color={theme.icon}
-                    style={{ opacity: 0.5 }}
-                  />
-                  <Text
-                    style={[
-                      styles.emptyEventsTitle,
-                      { color: theme.text, fontSize: 14 * fontScale },
-                    ]}
-                  >
-                    Activa algún calendario
-                  </Text>
-                  <Text
-                    style={[
-                      styles.emptyEventsBody,
-                      { color: theme.icon, fontSize: 12 * fontScale },
-                    ]}
-                  >
-                    Selecciona un calendario para ver los próximos eventos aquí.
-                  </Text>
-                </TouchableOpacity>
+                <EmptyState
+                  icon="event-note"
+                  title="Activa algún calendario"
+                  subtitle="Selecciona un calendario para ver los próximos eventos aquí."
+                  actionLabel="Ir al calendario"
+                  onAction={() => router.push('/calendario')}
+                  accentColor={accentColor}
+                />
               ) : upcomingEvents.length > 0 ? (
                 upcomingEvents.map((evt, idx) => {
                   const evtDate = parseLocalDate(evt.startDate);
@@ -834,14 +806,11 @@ export default function Home() {
                 })
               ) : (
                 /* No upcoming events */
-                <Text
-                  style={[
-                    styles.emptyEvents,
-                    { color: theme.icon, fontSize: 13 * fontScale },
-                  ]}
-                >
-                  Sin eventos próximos
-                </Text>
+                <EmptyState
+                  icon="event-busy"
+                  title="Sin eventos próximos"
+                  accentColor={accentColor}
+                />
               )}
 
               <TouchableOpacity
@@ -1127,28 +1096,6 @@ const styles = StyleSheet.create({
     gap: 3,
   } as ViewStyle,
   eventMetaText: { flex: 1 } as TextStyle,
-  emptyEvents: {
-    textAlign: 'center',
-    opacity: 0.6,
-    paddingVertical: spacing.md,
-  } as TextStyle,
-  emptyEventsCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    padding: spacing.lg,
-    marginBottom: spacing.sm,
-    alignItems: 'center',
-    gap: spacing.xs,
-  } as ViewStyle,
-  emptyEventsTitle: {
-    fontWeight: '700',
-    textAlign: 'center',
-  } as TextStyle,
-  emptyEventsBody: {
-    textAlign: 'center',
-    lineHeight: 18,
-    opacity: 0.7,
-  } as TextStyle,
   calendarButton: {
     alignItems: 'center',
     justifyContent: 'center',
