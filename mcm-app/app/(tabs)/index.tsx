@@ -37,6 +37,7 @@ import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
 import { hexAlpha } from '@/utils/colorUtils';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
@@ -341,66 +342,74 @@ export default function Home() {
         onClose={() => setNotifSheetOpen(false)}
       />
 
-      {/* ── Custom Header ── */}
+      {/* ── App-bar header (ScreenHero in compact mode) ── */}
       <View
         style={[
-          styles.header,
           { backgroundColor: theme.background },
           isWide && styles.headerWide,
         ]}
       >
-        <View style={styles.headerLeft}>
-          <View style={styles.logoBox}>
-            <MaterialIcons name="device-hub" size={20} color="white" />
-          </View>
-          <Text style={[styles.logoText, { color: theme.text }]}>MCM App</Text>
-        </View>
-
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            onPress={() => setSettingsVisible(true)}
-            style={styles.headerIconBtn}
-            accessibilityLabel="Perfil y ajustes"
-            accessibilityRole="button"
-          >
-            <MaterialIcons name="account-circle" size={26} color={theme.icon} />
-          </TouchableOpacity>
-
-          {resolved.showNotificationsIcon && (
-            <TouchableOpacity
-              style={styles.headerIconBtn}
-              onPress={() => setNotifSheetOpen(true)}
-              accessibilityLabel={
-                unreadCount > 0
-                  ? `Notificaciones, ${unreadCount} sin leer`
-                  : 'Notificaciones'
-              }
-              accessibilityRole="button"
-            >
-              <View style={styles.bellWrap}>
+        <ScreenHero
+          compact
+          title="MCM App"
+          titleStyle={styles.logoText}
+          left={
+            <View style={styles.logoBox}>
+              <MaterialIcons name="device-hub" size={20} color="white" />
+            </View>
+          }
+          right={
+            <>
+              <TouchableOpacity
+                onPress={() => setSettingsVisible(true)}
+                style={styles.headerIconBtn}
+                accessibilityLabel="Perfil y ajustes"
+                accessibilityRole="button"
+              >
                 <MaterialIcons
-                  name="notifications"
-                  size={24}
+                  name="account-circle"
+                  size={26}
                   color={theme.icon}
                 />
-                {unreadCount > 0 && (
-                  <View style={styles.dotWrap}>
-                    <Animated.View
-                      style={[
-                        styles.dotPing,
-                        {
-                          transform: [{ scale: pingAnim }],
-                          opacity: pingOpacity,
-                        },
-                      ]}
+              </TouchableOpacity>
+
+              {resolved.showNotificationsIcon && (
+                <TouchableOpacity
+                  style={styles.headerIconBtn}
+                  onPress={() => setNotifSheetOpen(true)}
+                  accessibilityLabel={
+                    unreadCount > 0
+                      ? `Notificaciones, ${unreadCount} sin leer`
+                      : 'Notificaciones'
+                  }
+                  accessibilityRole="button"
+                >
+                  <View style={styles.bellWrap}>
+                    <MaterialIcons
+                      name="notifications"
+                      size={24}
+                      color={theme.icon}
                     />
-                    <View style={styles.dot} />
+                    {unreadCount > 0 && (
+                      <View style={styles.dotWrap}>
+                        <Animated.View
+                          style={[
+                            styles.dotPing,
+                            {
+                              transform: [{ scale: pingAnim }],
+                              opacity: pingOpacity,
+                            },
+                          ]}
+                        />
+                        <View style={styles.dot} />
+                      </View>
+                    )}
                   </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
+                </TouchableOpacity>
+              )}
+            </>
+          }
+        />
       </View>
 
       <ScrollView
@@ -882,39 +891,22 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 } as ViewStyle,
 
   // ── Header ──
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-  } as ViewStyle,
   headerWide: {
     maxWidth: 900,
     alignSelf: 'center',
     width: '100%',
-    paddingHorizontal: spacing.lg,
-  } as ViewStyle,
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
   } as ViewStyle,
   logoBox: {
     backgroundColor: colors.primary,
-    padding: 8,
-    borderRadius: 10,
+    padding: spacing.sm,
+    borderRadius: radii.sm + 2, // 10
   } as ViewStyle,
   logoText: {
     fontSize: 20,
     fontWeight: '800',
     letterSpacing: -0.4,
   } as TextStyle,
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  } as ViewStyle,
-  headerIconBtn: { padding: 8, marginLeft: 4 } as ViewStyle,
+  headerIconBtn: { padding: spacing.sm } as ViewStyle,
   bellWrap: { position: 'relative' } as ViewStyle,
   dotWrap: {
     position: 'absolute',
