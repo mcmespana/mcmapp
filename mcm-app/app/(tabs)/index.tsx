@@ -1,7 +1,6 @@
 import React, {
   useLayoutEffect,
   ComponentProps,
-  useRef,
   useEffect,
   useState,
   useMemo,
@@ -13,12 +12,19 @@ import {
   ScrollView,
   TouchableOpacity,
   Pressable,
-  Animated,
   Linking,
   ViewStyle,
   TextStyle,
   useWindowDimensions,
 } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
@@ -175,45 +181,37 @@ export default function Home() {
     });
   }, [latestNotification, readIds]);
 
-  // Animated ping for notification badge
-  const pingAnim = useRef(new Animated.Value(1)).current;
-  const pingOpacity = useRef(new Animated.Value(0.6)).current;
+  // Ping animation for the notification badge (Reanimated 3).
+  const pingScale = useSharedValue(1);
+  const pingOpacity = useSharedValue(0.6);
   useEffect(() => {
     if (unreadCount > 0) {
-      const loop = Animated.loop(
-        Animated.parallel([
-          Animated.sequence([
-            Animated.timing(pingAnim, {
-              toValue: 1.8,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pingAnim, {
-              toValue: 1,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.sequence([
-            Animated.timing(pingOpacity, {
-              toValue: 0,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pingOpacity, {
-              toValue: 0.6,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
+      pingScale.value = withRepeat(
+        withSequence(
+          withTiming(1.8, { duration: 800 }),
+          withTiming(1, { duration: 0 }),
+        ),
+        -1,
       );
-      loop.start();
-      return () => loop.stop();
+      pingOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0, { duration: 800 }),
+          withTiming(0.6, { duration: 0 }),
+        ),
+        -1,
+      );
+      return () => {
+        cancelAnimation(pingScale);
+        cancelAnimation(pingOpacity);
+      };
     }
-    pingAnim.setValue(1);
-    pingOpacity.setValue(0.6);
-  }, [unreadCount, pingAnim, pingOpacity]);
+    pingScale.value = 1;
+    pingOpacity.value = 0.6;
+  }, [unreadCount, pingScale, pingOpacity]);
+  const animatedPingStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pingScale.value }],
+    opacity: pingOpacity.value,
+  }));
 
   // Calendar events — filtered by user's visible calendars
   const { calendarConfigs, visibleCalendars } = useCalendarConfigs();
@@ -395,13 +393,7 @@ export default function Home() {
                     {unreadCount > 0 && (
                       <View style={styles.dotWrap}>
                         <Animated.View
-                          style={[
-                            styles.dotPing,
-                            {
-                              transform: [{ scale: pingAnim }],
-                              opacity: pingOpacity,
-                            },
-                          ]}
+                          style={[styles.dotPing, animatedPingStyle]}
                         />
                         <View style={styles.dot} />
                       </View>
