@@ -13,6 +13,7 @@ import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { takePendingMasScreen } from '@/utils/masNavigation';
 import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useResponsive } from '@/hooks/useResponsive';
 
 interface NavigationItem {
@@ -102,12 +103,17 @@ export default function MasHomeScreen() {
       <PageContainer>
         <ScrollView
           style={styles.container}
-          contentContainerStyle={[
+          contentContainerStyle={
+            Platform.OS === 'ios' ? { paddingBottom: 120 } : undefined
+          }
+          showsVerticalScrollIndicator={false}
+        >
+        <ScreenHero title="Más" subtitle="Atajos y secciones de la app" />
+        <View
+          style={[
             styles.scrollContent,
             useTwoColumns && styles.scrollContentGrid,
-            Platform.OS === 'ios' && { paddingBottom: 120 },
           ]}
-          showsVerticalScrollIndicator={false}
         >
         {navigationItems.map((item, idx) => (
           <PressableFeedback
@@ -192,6 +198,7 @@ export default function MasHomeScreen() {
             </View>
           </PressableFeedback>
         ))}
+        </View>
         </ScrollView>
       </PageContainer>
     </SafeAreaView>

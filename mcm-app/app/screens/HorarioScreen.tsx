@@ -7,6 +7,7 @@ import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import {
@@ -263,6 +264,7 @@ export default function HorarioScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHero title="Horario" />
       <View style={styles.headerSection}>
         <DateSelector
           dates={fechas}

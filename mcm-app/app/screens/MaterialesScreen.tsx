@@ -7,6 +7,7 @@ import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -155,6 +156,7 @@ export default function MaterialesScreen() {
 
   return (
     <View style={styles.container}>
+      <ScreenHero title="Materiales" />
       <DateSelector
         dates={fechas}
         selectedDate={dia.fecha}

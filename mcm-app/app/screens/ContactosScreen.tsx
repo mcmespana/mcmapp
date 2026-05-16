@@ -11,6 +11,7 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -86,6 +87,7 @@ export default function ContactosScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        <ScreenHero title="Contactos" />
         <View style={styles.card}>
         {(data || []).map((c, idx) => {
           const tint = tints[idx % tints.length];

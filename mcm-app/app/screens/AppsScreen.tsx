@@ -21,6 +21,7 @@ import {
 } from '@/constants/events';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 
 interface AppInfo {
   orden: number;
@@ -88,11 +89,11 @@ export default function AppsScreen() {
             Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
           }
         >
+        <ScreenHero
+          title="Apps"
+          subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo."
+        />
         <View style={styles.introContainer}>
-          <Text style={styles.introText}>
-            Lista de aplicaciones móviles (algunas necesarias 🌟, otras
-            opcionales ℹ️) que necesitaremos durante el Jubileo.
-          </Text>
           <Text style={styles.introSubtext}>
             {Platform.OS === 'web'
               ? 'Si tocas el icono de la app te la abrirá directamente. En el modal puedes elegir entre iOS y Android ✨'

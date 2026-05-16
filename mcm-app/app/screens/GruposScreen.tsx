@@ -19,6 +19,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import {
@@ -285,11 +286,19 @@ export default function GruposScreen() {
         style={styles.container}
         contentContainerStyle={styles.catList}
       >
-        <View style={styles.searchButtonWrapper}>
-          <Pressable onPress={() => setShowSearch(true)} style={styles.iconBtn}>
-            <MaterialIcons name="search" size={24} color="#888" />
-          </Pressable>
-        </View>
+        <ScreenHero
+          title="Grupos"
+          right={
+            <Pressable
+              onPress={() => setShowSearch(true)}
+              style={styles.iconBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Buscar grupo"
+            >
+              <MaterialIcons name="search" size={24} color="#888" />
+            </Pressable>
+          }
+        />
         {categorias.map((c) => (
           <PressableFeedback
             key={c.name}

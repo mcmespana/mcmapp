@@ -15,6 +15,7 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -84,6 +85,7 @@ export default function VisitasScreen() {
 
   return (
     <View style={styles.container}>
+      <ScreenHero title="Visitas" />
       <PageContainer>
         <ScrollView contentContainerStyle={styles.list}>
         {(visitas || []).map((v, idx) => (
