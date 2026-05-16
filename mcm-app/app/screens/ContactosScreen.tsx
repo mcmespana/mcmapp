@@ -5,9 +5,9 @@ import {
   ScrollView,
   Platform,
   Linking,
-  TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PageContainer from '@/components/ui/PageContainer';
@@ -111,30 +111,32 @@ export default function ContactosScreen() {
                   ) : null}
                 </View>
                 <View style={styles.actions}>
-                  <TouchableOpacity
+                  <PressableFeedback
                     onPress={() => call(c.telefono)}
                     style={[styles.iconBtn, styles.iconBtnCall]}
-                    activeOpacity={0.7}
+                    accessibilityRole="button"
                     accessibilityLabel={`Llamar a ${c.nombre}`}
                   >
+                    <PressableFeedback.Highlight />
                     <MaterialIcons
                       name="phone"
                       size={20}
                       color={isDark ? '#7AB3FF' : colors.info}
                     />
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </PressableFeedback>
+                  <PressableFeedback
                     onPress={() => whatsapp(c.telefono)}
                     style={[styles.iconBtn, styles.iconBtnWa]}
-                    activeOpacity={0.7}
+                    accessibilityRole="button"
                     accessibilityLabel={`WhatsApp a ${c.nombre}`}
                   >
+                    <PressableFeedback.Highlight />
                     <MaterialIcons
                       name="chat"
                       size={20}
                       color={isDark ? '#A8E0AB' : colors.success}
                     />
-                  </TouchableOpacity>
+                  </PressableFeedback>
                 </View>
               </View>
               {!isLast ? <View style={styles.divider} /> : null}

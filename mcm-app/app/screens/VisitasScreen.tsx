@@ -9,7 +9,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import { Dialog } from 'heroui-native';
+import { Dialog, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -89,12 +89,14 @@ export default function VisitasScreen() {
       <PageContainer>
         <ScrollView contentContainerStyle={styles.list}>
         {(visitas || []).map((v, idx) => (
-          <TouchableOpacity
+          <PressableFeedback
             key={idx}
-            activeOpacity={0.85}
             onPress={() => setSelected(v)}
             style={styles.card}
+            accessibilityRole="button"
+            accessibilityLabel={v.titulo}
           >
+            <PressableFeedback.Highlight />
             {v.imagen ? (
               <Image
                 source={{ uri: v.imagen }}
@@ -143,7 +145,7 @@ export default function VisitasScreen() {
                 </TouchableOpacity>
               ) : null}
             </View>
-          </TouchableOpacity>
+          </PressableFeedback>
         ))}
         </ScrollView>
       </PageContainer>

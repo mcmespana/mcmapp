@@ -5,8 +5,8 @@ import {
   View,
   Platform,
   Text,
-  TouchableOpacity,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';
@@ -69,21 +69,23 @@ export default function ProfundizaScreen() {
           <View style={{ marginTop: 16 }}>
             {data.paginas.map((p, idx) => (
               <View key={idx} style={styles.accordionWrapper}>
-                <TouchableOpacity
+                <PressableFeedback
                   onPress={() => setOpenIdx(openIdx === idx ? null : idx)}
                   style={[
                     styles.accordion,
                     { backgroundColor: p.color || colors.primary },
                   ]}
-                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={p.titulo}
                 >
+                  <PressableFeedback.Highlight />
                   <Text style={styles.accordionTitle}>{p.titulo}</Text>
                   <MaterialIcons
                     name={openIdx === idx ? 'expand-less' : 'expand-more'}
                     size={24}
                     color={colors.white}
                   />
-                </TouchableOpacity>
+                </PressableFeedback>
                 {openIdx === idx && (
                   <View style={styles.accordionContent}>
                     {p.subtitulo && (

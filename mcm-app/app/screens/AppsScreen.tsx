@@ -9,7 +9,7 @@ import {
   Platform,
   Text,
 } from 'react-native';
-import { Chip, Button, Dialog } from 'heroui-native';
+import { Chip, Button, Dialog, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
@@ -102,11 +102,13 @@ export default function AppsScreen() {
         </View>
 
         {apps.map((app, idx) => (
-          <TouchableOpacity
+          <PressableFeedback
             key={idx}
             onPress={() => openApp(app)}
-            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={app.nombre}
           >
+            <PressableFeedback.Highlight />
             <View style={styles.listItemContainer}>
               <View style={styles.iconContainer}>
                 <Image source={{ uri: app.icono }} style={styles.icon} />
@@ -135,7 +137,7 @@ export default function AppsScreen() {
                 </Button>
               </View>
             </View>
-          </TouchableOpacity>
+          </PressableFeedback>
         ))}
         </ScrollView>
       </PageContainer>
