@@ -12,6 +12,9 @@ import { hexAlpha } from '@/utils/colorUtils';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { takePendingMasScreen } from '@/utils/masNavigation';
+import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface NavigationItem {
   label: string;
@@ -66,6 +69,8 @@ export default function MasHomeScreen() {
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const { isMd, isWeb } = useResponsive();
+  const useTwoColumns = isWeb && isMd;
   const resolved = useResolvedProfileConfig();
   const navigationItems = React.useMemo(
     () =>
@@ -95,97 +100,112 @@ export default function MasHomeScreen() {
       ]}
       edges={['top']}
     >
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.scrollContent,
-          Platform.OS === 'ios' && { paddingBottom: 120 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {navigationItems.map((item, idx) => (
-          <PressableFeedback
-            key={idx}
+      <PageContainer>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={
+            Platform.OS === 'ios' ? { paddingBottom: 120 } : undefined
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          <ScreenHero title="Más" subtitle="Atajos y secciones de la app" />
+          <View
             style={[
-              styles.card,
-              {
-                backgroundColor: isDark ? '#2C2C2E' : '#fff',
-              },
-              Platform.OS !== 'web'
-                ? {
-                    shadowColor: item.tintColor,
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: isDark ? 0.3 : 0.15,
-                    shadowRadius: 12,
-                    elevation: 4,
-                  }
-                : {
-                    boxShadow: `0 4px 12px ${item.tintColor}30`,
-                  },
+              styles.scrollContent,
+              useTwoColumns && styles.scrollContentGrid,
             ]}
-            onPress={() =>
-              navigation.navigate(
-                item.target as any,
-                item.eventId ? ({ eventId: item.eventId } as any) : undefined,
-              )
-            }
           >
-            <PressableFeedback.Highlight />
-            {/* Accent bar izquierda */}
-            <View
-              style={[styles.accentBar, { backgroundColor: item.tintColor }]}
-            />
-
-            <View style={styles.cardBody}>
-              {/* Icono grande */}
-              <View
+            {navigationItems.map((item, idx) => (
+              <PressableFeedback
+                key={idx}
                 style={[
-                  styles.iconCircle,
-                  { backgroundColor: hexAlpha(item.tintColor, '18') },
+                  styles.card,
+                  useTwoColumns && styles.cardGridItem,
+                  {
+                    backgroundColor: isDark ? '#2C2C2E' : '#fff',
+                  },
+                  Platform.OS !== 'web'
+                    ? {
+                        shadowColor: item.tintColor,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: isDark ? 0.3 : 0.15,
+                        shadowRadius: 12,
+                        elevation: 4,
+                      }
+                    : {
+                        boxShadow: `0 4px 12px ${item.tintColor}30`,
+                      },
                 ]}
+                onPress={() =>
+                  navigation.navigate(
+                    item.target as any,
+                    item.eventId
+                      ? ({ eventId: item.eventId } as any)
+                      : undefined,
+                  )
+                }
               >
-                <Text style={styles.emoji}>{item.emoji}</Text>
-              </View>
-
-              {/* Texto */}
-              <View style={styles.cardTextArea}>
-                <Text
+                <PressableFeedback.Highlight />
+                {/* Accent bar izquierda */}
+                <View
                   style={[
-                    styles.cardTitle,
-                    { color: isDark ? '#fff' : '#1C1C1E' },
+                    styles.accentBar,
+                    { backgroundColor: item.tintColor },
                   ]}
-                  numberOfLines={1}
-                >
-                  {item.label}
-                </Text>
-                <Text
-                  style={[
-                    styles.cardSubtitle,
-                    { color: isDark ? '#8E8E93' : '#6B7280' },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {item.subtitle}
-                </Text>
-              </View>
-
-              {/* Flecha */}
-              <View
-                style={[
-                  styles.arrowCircle,
-                  { backgroundColor: hexAlpha(item.tintColor, '15') },
-                ]}
-              >
-                <MaterialIcons
-                  name="arrow-forward"
-                  size={18}
-                  color={item.tintColor}
                 />
-              </View>
-            </View>
-          </PressableFeedback>
-        ))}
-      </ScrollView>
+
+                <View style={styles.cardBody}>
+                  {/* Icono grande */}
+                  <View
+                    style={[
+                      styles.iconCircle,
+                      { backgroundColor: hexAlpha(item.tintColor, '18') },
+                    ]}
+                  >
+                    <Text style={styles.emoji}>{item.emoji}</Text>
+                  </View>
+
+                  {/* Texto */}
+                  <View style={styles.cardTextArea}>
+                    <Text
+                      style={[
+                        styles.cardTitle,
+                        { color: isDark ? '#fff' : '#1C1C1E' },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardSubtitle,
+                        { color: isDark ? '#8E8E93' : '#6B7280' },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {item.subtitle}
+                    </Text>
+                  </View>
+
+                  {/* Flecha */}
+                  <View
+                    style={[
+                      styles.arrowCircle,
+                      { backgroundColor: hexAlpha(item.tintColor, '15') },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={18}
+                      color={item.tintColor}
+                    />
+                  </View>
+                </View>
+              </PressableFeedback>
+            ))}
+          </View>
+        </ScrollView>
+      </PageContainer>
     </SafeAreaView>
   );
 }
@@ -202,10 +222,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
   },
+  scrollContentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+  },
   card: {
     borderRadius: 20,
     marginBottom: 14,
     overflow: 'hidden',
+  },
+  cardGridItem: {
+    // Two columns minus the row gap (14px) divided over 2 items.
+    width: 'calc(50% - 7px)' as any,
+    marginBottom: 0,
   },
   accentBar: {
     height: 4,

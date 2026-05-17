@@ -9,11 +9,13 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import { Dialog } from 'heroui-native';
+import { Dialog, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -83,65 +85,70 @@ export default function VisitasScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.list}>
-        {(visitas || []).map((v, idx) => (
-          <TouchableOpacity
-            key={idx}
-            activeOpacity={0.85}
-            onPress={() => setSelected(v)}
-            style={styles.card}
-          >
-            {v.imagen ? (
-              <Image
-                source={{ uri: v.imagen }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-            ) : null}
-            <View style={styles.cardContent}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title} numberOfLines={2}>
-                  {v.titulo}
-                </Text>
-                {v.subtitulo ? (
-                  <Text style={styles.subtitle} numberOfLines={2}>
-                    {v.subtitulo}
+      <ScreenHero title="Visitas" />
+      <PageContainer>
+        <ScrollView contentContainerStyle={styles.list}>
+          {(visitas || []).map((v, idx) => (
+            <PressableFeedback
+              key={idx}
+              onPress={() => setSelected(v)}
+              style={styles.card}
+              accessibilityRole="button"
+              accessibilityLabel={v.titulo}
+            >
+              <PressableFeedback.Highlight />
+              {v.imagen ? (
+                <Image
+                  source={{ uri: v.imagen }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
+              ) : null}
+              <View style={styles.cardContent}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.title} numberOfLines={2}>
+                    {v.titulo}
                   </Text>
-                ) : null}
-                {v.fecha ? (
-                  <View style={styles.dateRow}>
-                    <MaterialIcons
-                      name="calendar-today"
-                      size={14}
-                      color={isDark ? '#A0A0A8' : '#7B7B82'}
-                    />
-                    <Text style={styles.dateText} numberOfLines={1}>
-                      {formatDate(v.fecha)}
+                  {v.subtitulo ? (
+                    <Text style={styles.subtitle} numberOfLines={2}>
+                      {v.subtitulo}
                     </Text>
-                  </View>
+                  ) : null}
+                  {v.fecha ? (
+                    <View style={styles.dateRow}>
+                      <MaterialIcons
+                        name="calendar-today"
+                        size={14}
+                        color={isDark ? '#A0A0A8' : '#7B7B82'}
+                      />
+                      <Text style={styles.dateText} numberOfLines={1}>
+                        {formatDate(v.fecha)}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                {v.mapa ? (
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      openMap(v.mapa);
+                    }}
+                    hitSlop={10}
+                    style={styles.mapBtn}
+                    accessibilityLabel="Abrir en el mapa"
+                  >
+                    <MaterialIcons
+                      name="map"
+                      size={20}
+                      color={isDark ? '#7AB3FF' : '#2563EB'}
+                    />
+                  </TouchableOpacity>
                 ) : null}
               </View>
-              {v.mapa ? (
-                <TouchableOpacity
-                  onPress={(e) => {
-                    e.stopPropagation?.();
-                    openMap(v.mapa);
-                  }}
-                  hitSlop={10}
-                  style={styles.mapBtn}
-                  accessibilityLabel="Abrir en el mapa"
-                >
-                  <MaterialIcons
-                    name="map"
-                    size={20}
-                    color={isDark ? '#7AB3FF' : '#2563EB'}
-                  />
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+            </PressableFeedback>
+          ))}
+        </ScrollView>
+      </PageContainer>
       <Dialog
         isOpen={!!selected}
         onOpenChange={(open) => {

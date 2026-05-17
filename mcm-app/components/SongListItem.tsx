@@ -14,6 +14,8 @@ import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
 import { transposeKey, transposeLabel } from '../utils/transposeKey';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Colors, StateColors } from '@/constants/colors';
+import { durations } from '@/constants/animations';
 
 // Type for song data
 interface Song {
@@ -55,7 +57,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     useEffect(() => {
       Animated.timing(backgroundColorAnim, {
         toValue: isSelected ? 1 : 0,
-        duration: 250,
+        duration: durations.base,
         useNativeDriver: false,
       }).start();
     }, [isSelected, backgroundColorAnim]);
@@ -64,8 +66,8 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
       backgroundColor: backgroundColorAnim.interpolate({
         inputRange: [0, 1],
         outputRange: [
-          isDark ? '#2C2C2E' : '#fff',
-          isDark ? '#1A3320' : '#E8F5E9',
+          isDark ? Colors.dark.background : Colors.light.background,
+          isDark ? StateColors.selectedBgDark : StateColors.selectedBgLight,
         ],
       }),
     };

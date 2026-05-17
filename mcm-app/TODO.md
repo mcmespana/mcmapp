@@ -34,6 +34,45 @@
 - [ ] **Seguridad — contraseña hardcodeada**: en `components/SecretPanelModal.tsx` la contraseña "coco" está en el código. Mover a variable de entorno o Firebase Remote Config.
 - [ ] **Verificar orden de tabs por perfil**: probar en dispositivo iOS/Android que `TABS_CONFIG` filtrado por `resolved.tabs` muestra los tabs en el orden correcto para cada perfil (Inicio → Cantoral → Contigo → Calendario → Fotos → Más).
 
+## Modernización pendiente (prioridad alta)
+
+> Tareas que extienden el trabajo de alineación de estilos hecho en la
+> rama `claude/modernize-app-design-V5LuI`. Cada una es independiente
+> y puede hacerse en su propio PR.
+
+- [ ] **Long-press menús contextuales en items de cantoral**.
+      Usar `Menu` de heroui-native para ofrecer "Compartir", "Copiar
+      letra", "Transponer rápido" sobre cada item al hacer long-press en
+      `SongListScreen`. Punto de partida: `components/SongListItem.tsx`
+      (mantener el `Swipeable` actual; el Menu se activa con `onLongPress`).
+- [ ] **Atajos de teclado en web**.
+  - `Cmd/Ctrl + K` para abrir un buscador global (cantoral, calendario,
+    reflexiones). Implementar con `useEffect` + `window.addEventListener('keydown')`
+    detrás de `Platform.OS === 'web'`. Posible UI: `Dialog` de
+    heroui-native en modo command palette.
+  - `Esc` para cerrar el sheet/diálogo abierto más reciente. Centralizar
+    en un hook `useEscapeToClose` o en cada componente sheet.
+- [ ] **Reanimated 3 en NotificationsBottomSheet**.
+      Migrar el `PanResponder` + `Animated.Value` a `Gesture.Pan()` (RNGH v2)
+  - `useSharedValue` + `withSpring/withTiming`. Riesgo medio: requiere
+    testing exhaustivo del gesto de cierre por swipe-down. Pendiente
+    desde el PR de migración del ping badge en Home (se decidió no tocar
+    este componente para minimizar regresiones).
+- [ ] **`GruposScreen` — `PageContainer` y `ScreenHero`**.
+      Hoy `ScreenHero` solo se aplica en la vista raíz. Aplicar
+      `PageContainer` en las 5 ramas de render para que también centre en
+      web (búsqueda activa, categoría seleccionada, grupo seleccionado, etc.).
+- [ ] **Skeletons en más pantallas**.
+      Replicar el patrón aplicado en Home (eventos próximos) en:
+      Contactos, Visitas, Apps, Materiales, Horario, Profundiza, Grupos.
+      Todas cargan de Firebase y hoy muestran un spinner full-screen
+      (`ProgressWithMessage`). Un Skeleton in-place se siente más
+      responsive.
+- [ ] **`SongListItem` — colores de acción swipe**.
+      Quedan magic numbers `#34C759` (rightAction success), `#FF453A`
+      (leftAction destructive), y los `keyPill` `#1A2744`/`#EEF4FF`.
+      Documentar como Apple system colors o centralizar.
+
 ## Mantenimiento — vulnerabilidades npm aceptadas
 
 Auditoría revisada 2026-05-06. `npm audit` reporta 17 vulns (5 low, 12 moderate), todas en deps **transitivas dev/build**. Ninguna llega al bundle de producción.

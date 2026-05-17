@@ -15,7 +15,14 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import ChoirSessionBanner from '../../components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import colors, { Colors, UIColors } from '@/constants/colors';
+import { shadows } from '@/constants/uiStyles';
+import { durations } from '@/constants/animations';
+
+// Apple iOS system green — used as a "selected/done" tint inside the
+// add/remove song button. Not part of the MCM brand palette: it's an
+// intentional native iOS convention preserved for visual consistency.
+const APPLE_SYSTEM_GREEN = '#34C759';
 
 const availableFonts = [
   {
@@ -145,8 +152,8 @@ export default function SongDetailScreen({
           color={
             Platform.OS === 'web'
               ? currentlySelected
-                ? '#34C759'
-                : '#253883'
+                ? APPLE_SYSTEM_GREEN
+                : colors.primary
               : '#fff'
           }
         />
@@ -278,14 +285,14 @@ export default function SongDetailScreen({
     const toValue = direction === 'next' ? -screenWidth : screenWidth;
     Animated.timing(slideAnim, {
       toValue,
-      duration: 200,
+      duration: durations.quick,
       useNativeDriver: true,
     }).start(() => {
       navigation.setParams(params);
       slideAnim.setValue(-toValue);
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 200,
+        duration: durations.quick,
         useNativeDriver: true,
       }).start();
     });
@@ -328,7 +335,11 @@ export default function SongDetailScreen({
       style={[
         styles.container,
         { transform: [{ translateX: slideAnim }] },
-        { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+        {
+          backgroundColor: isDark
+            ? Colors.dark.background
+            : Colors.light.background,
+        },
       ]}
     >
       {isIOS && <View style={{ height: insets.top + 52 }} />}
@@ -373,10 +384,10 @@ export default function SongDetailScreen({
             accessibilityLabel="Volver"
           >
             <PressableFeedback.Highlight />
-            <MaterialIcons
-              name="chevron-left"
+            <IconSymbol
+              name="chevron.left"
               size={26}
-              color={isDark ? '#f4c11e' : '#253883'}
+              color={isDark ? UIColors.accentYellow : colors.primary}
             />
           </PressableFeedback>
 
@@ -397,7 +408,13 @@ export default function SongDetailScreen({
             <IconSymbol
               name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
               size={22}
-              color={isSelected ? '#34C759' : isDark ? '#f4c11e' : '#253883'}
+              color={
+                isSelected
+                  ? APPLE_SYSTEM_GREEN
+                  : isDark
+                    ? UIColors.accentYellow
+                    : colors.primary
+              }
             />
           </PressableFeedback>
         </View>
@@ -445,14 +462,13 @@ const styles = StyleSheet.create({
   iosFloatBtn: {
     width: 44,
     height: 44,
+    // 44/2 — circular. radii.full (28) is for 56x56 FABs; here we keep
+    // a literal half-of-width because the button is custom-sized.
     borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    ...(shadows.md as object),
   },
   iosFloatBtnDark: {
     backgroundColor: 'rgba(44,44,46,0.88)',

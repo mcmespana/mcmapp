@@ -6,12 +6,11 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import {
-  getEventCacheKey,
-  getEventFirebasePath,
-} from '@/constants/events';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import DateSelector from '@/components/DateSelector';
 import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
@@ -262,6 +261,7 @@ export default function HorarioScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHero title="Horario" />
       <View style={styles.headerSection}>
         <DateSelector
           dates={fechas}
@@ -269,39 +269,41 @@ export default function HorarioScreen() {
           onSelectDate={(_, i) => setIndex(i)}
         />
       </View>
-      <ScrollView
-        contentContainerStyle={styles.eventsContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View
-          style={[
-            dynamicStyles.titleWrapper,
-            isLastDay && {
-              transform: [{ translateX: shakeAnim }],
-              opacity: fadeAnim,
-            },
-          ]}
+      <PageContainer>
+        <ScrollView
+          contentContainerStyle={styles.eventsContainer}
+          showsVerticalScrollIndicator={false}
         >
-          <ThemedText style={styles.titleText} selectable>
-            {dia.titulo}
-          </ThemedText>
-          {isLastDay && (
-            <ThemedText style={styles.sadEmoji} selectable>
-              😢
+          <Animated.View
+            style={[
+              dynamicStyles.titleWrapper,
+              isLastDay && {
+                transform: [{ translateX: shakeAnim }],
+                opacity: fadeAnim,
+              },
+            ]}
+          >
+            <ThemedText style={styles.titleText} selectable>
+              {dia.titulo}
             </ThemedText>
+            {isLastDay && (
+              <ThemedText style={styles.sadEmoji} selectable>
+                😢
+              </ThemedText>
+            )}
+          </Animated.View>
+          {dia.eventos.map(
+            (ev: EventItemData, idx: React.Key | null | undefined) => (
+              <EventItem
+                key={idx}
+                event={ev}
+                dayIndex={index}
+                onNavigateToMateriales={handleNavigateToMateriales}
+              />
+            ),
           )}
-        </Animated.View>
-        {dia.eventos.map(
-          (ev: EventItemData, idx: React.Key | null | undefined) => (
-            <EventItem
-              key={idx}
-              event={ev}
-              dayIndex={index}
-              onNavigateToMateriales={handleNavigateToMateriales}
-            />
-          ),
-        )}
-      </ScrollView>
+        </ScrollView>
+      </PageContainer>
     </SafeAreaView>
   );
 }

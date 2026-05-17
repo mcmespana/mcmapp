@@ -26,8 +26,8 @@ import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import GlassFAB from '@/components/ui/GlassFAB.ios';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import GlassFAB from '@/components/ui/GlassFAB';
+import PageContainer from '@/components/ui/PageContainer';
 
 interface Grupo {
   nombre: string;
@@ -179,76 +179,72 @@ export default function ReflexionesScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.list,
-          Platform.OS === 'ios' && { paddingBottom: 100 },
-        ]}
-      >
-        {list
-          .sort(
-            (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
-          )
-          .map((r) => (
-            <Card
-              key={r.id}
-              style={[styles.card, r.grupal && styles.cardGroup]}
-            >
-              <Card.Body style={{ paddingTop: 8 }}>
-                {r.titulo ? (
+      <PageContainer>
+        <ScrollView
+          contentContainerStyle={[
+            styles.list,
+            Platform.OS === 'ios' && { paddingBottom: 100 },
+          ]}
+        >
+          {list
+            .sort(
+              (a, b) =>
+                new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+            )
+            .map((r) => (
+              <Card
+                key={r.id}
+                style={[styles.card, r.grupal && styles.cardGroup]}
+              >
+                <Card.Body style={{ paddingTop: 8 }}>
+                  {r.titulo ? (
+                    <Text
+                      style={[
+                        { fontWeight: '600', fontSize: 16, marginBottom: 4 },
+                        r.grupal
+                          ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
+                          : { color: scheme === 'dark' ? '#fff' : '#222' },
+                      ]}
+                    >
+                      {r.titulo}
+                    </Text>
+                  ) : null}
+                  <Text
+                    style={
+                      r.grupal
+                        ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
+                        : { color: scheme === 'dark' ? '#fff' : '#222' }
+                    }
+                  >
+                    {r.contenido}
+                  </Text>
                   <Text
                     style={[
-                      { fontWeight: '600', fontSize: 16, marginBottom: 4 },
+                      { marginTop: 4, fontSize: 12 },
                       r.grupal
-                        ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
-                        : { color: scheme === 'dark' ? '#fff' : '#222' },
+                        ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
+                        : { color: scheme === 'dark' ? '#aaa' : '#888' },
                     ]}
                   >
-                    {r.titulo}
+                    {formatFecha(r.fecha)}
+                    {r.grupal
+                      ? ` - ${getGrupoLabel(r.grupo)}`
+                      : r.autor
+                        ? ` - ${r.autor}`
+                        : ''}
                   </Text>
-                ) : null}
-                <Text
-                  style={
-                    r.grupal
-                      ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
-                      : { color: scheme === 'dark' ? '#fff' : '#222' }
-                  }
-                >
-                  {r.contenido}
-                </Text>
-                <Text
-                  style={[
-                    { marginTop: 4, fontSize: 12 },
-                    r.grupal
-                      ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
-                      : { color: scheme === 'dark' ? '#aaa' : '#888' },
-                  ]}
-                >
-                  {formatFecha(r.fecha)}
-                  {r.grupal
-                    ? ` - ${getGrupoLabel(r.grupo)}`
-                    : r.autor
-                      ? ` - ${r.autor}`
-                      : ''}
-                </Text>
-              </Card.Body>
-            </Card>
-          ))}
-      </ScrollView>
+                </Card.Body>
+              </Card>
+            ))}
+        </ScrollView>
+      </PageContainer>
 
-      {Platform.OS === 'ios' ? (
-        <GlassFAB
-          icon="add"
-          onPress={() => setShowForm(true)}
-          tintColor="#A3BD31"
-          iconColor="#fff"
-        />
-      ) : (
-        <PressableFeedback style={styles.fab} onPress={() => setShowForm(true)}>
-          <PressableFeedback.Scale />
-          <MaterialIcons name="add" size={24} color="#fff" />
-        </PressableFeedback>
-      )}
+      <GlassFAB
+        icon="add"
+        onPress={() => setShowForm(true)}
+        tintColor="#A3BD31"
+        iconColor="#fff"
+      />
 
       {/* Form bottom sheet */}
       <BottomSheet
@@ -391,22 +387,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     card: { marginBottom: spacing.md },
     cardGroup: {
       backgroundColor: scheme === 'dark' ? '#2D3B20' : '#E6F4D7',
-    },
-    fab: {
-      position: 'absolute',
-      right: 16,
-      bottom: 16,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.success,
-      justifyContent: 'center',
-      alignItems: 'center',
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
     },
     modalOverlay: {
       flex: 1,

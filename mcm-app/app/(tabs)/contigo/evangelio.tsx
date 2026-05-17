@@ -19,9 +19,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
-import { Card, Tabs, PressableFeedback, CloseButton } from 'heroui-native';
+import { Card, Tabs, PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
+import CloseIconButton from '@/components/ui/CloseIconButton';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
@@ -884,7 +885,7 @@ export default function EvangelioScreen() {
             >
               Fuentes de los textos
             </Text>
-            <CloseButton onPress={() => setCreditsVisible(false)} />
+            <CloseIconButton onPress={() => setCreditsVisible(false)} />
           </View>
 
           <ScrollView

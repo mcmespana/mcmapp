@@ -5,11 +5,13 @@ import {
   ScrollView,
   Platform,
   Linking,
-  TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -79,66 +81,71 @@ export default function ContactosScreen() {
   const tints = isDark ? AVATAR_TINTS_DARK : AVATAR_TINTS;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.card}>
-        {(data || []).map((c, idx) => {
-          const tint = tints[idx % tints.length];
-          const isLast = idx === (data?.length ?? 0) - 1;
-          return (
-            <View key={`${c.nombre}-${idx}`}>
-              <View style={styles.row}>
-                <View style={[styles.avatar, { backgroundColor: tint.bg }]}>
-                  <Text style={[styles.avatarText, { color: tint.fg }]}>
-                    {getInitials(c.nombre)}
-                  </Text>
-                </View>
-                <View style={styles.info}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {c.nombre}
-                  </Text>
-                  {c.responsabilidad ? (
-                    <Text style={styles.role} numberOfLines={1}>
-                      {c.responsabilidad}
+    <PageContainer>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <ScreenHero title="Contactos" />
+        <View style={styles.card}>
+          {(data || []).map((c, idx) => {
+            const tint = tints[idx % tints.length];
+            const isLast = idx === (data?.length ?? 0) - 1;
+            return (
+              <View key={`${c.nombre}-${idx}`}>
+                <View style={styles.row}>
+                  <View style={[styles.avatar, { backgroundColor: tint.bg }]}>
+                    <Text style={[styles.avatarText, { color: tint.fg }]}>
+                      {getInitials(c.nombre)}
                     </Text>
-                  ) : null}
+                  </View>
+                  <View style={styles.info}>
+                    <Text style={styles.name} numberOfLines={1}>
+                      {c.nombre}
+                    </Text>
+                    {c.responsabilidad ? (
+                      <Text style={styles.role} numberOfLines={1}>
+                        {c.responsabilidad}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View style={styles.actions}>
+                    <PressableFeedback
+                      onPress={() => call(c.telefono)}
+                      style={[styles.iconBtn, styles.iconBtnCall]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Llamar a ${c.nombre}`}
+                    >
+                      <PressableFeedback.Highlight />
+                      <MaterialIcons
+                        name="phone"
+                        size={20}
+                        color={isDark ? '#7AB3FF' : colors.info}
+                      />
+                    </PressableFeedback>
+                    <PressableFeedback
+                      onPress={() => whatsapp(c.telefono)}
+                      style={[styles.iconBtn, styles.iconBtnWa]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`WhatsApp a ${c.nombre}`}
+                    >
+                      <PressableFeedback.Highlight />
+                      <MaterialIcons
+                        name="chat"
+                        size={20}
+                        color={isDark ? '#A8E0AB' : colors.success}
+                      />
+                    </PressableFeedback>
+                  </View>
                 </View>
-                <View style={styles.actions}>
-                  <TouchableOpacity
-                    onPress={() => call(c.telefono)}
-                    style={[styles.iconBtn, styles.iconBtnCall]}
-                    activeOpacity={0.7}
-                    accessibilityLabel={`Llamar a ${c.nombre}`}
-                  >
-                    <MaterialIcons
-                      name="phone"
-                      size={20}
-                      color={isDark ? '#7AB3FF' : colors.info}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => whatsapp(c.telefono)}
-                    style={[styles.iconBtn, styles.iconBtnWa]}
-                    activeOpacity={0.7}
-                    accessibilityLabel={`WhatsApp a ${c.nombre}`}
-                  >
-                    <MaterialIcons
-                      name="chat"
-                      size={20}
-                      color={isDark ? '#A8E0AB' : colors.success}
-                    />
-                  </TouchableOpacity>
-                </View>
+                {!isLast ? <View style={styles.divider} /> : null}
               </View>
-              {!isLast ? <View style={styles.divider} /> : null}
-            </View>
-          );
-        })}
-      </View>
-    </ScrollView>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </PageContainer>
   );
 }
 

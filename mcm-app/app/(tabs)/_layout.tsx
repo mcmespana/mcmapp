@@ -51,6 +51,7 @@ const TABS_CONFIG: TabConfig[] = [
     label: 'Cantoral',
     iosIcon: { default: 'music.note', selected: 'music.note' },
     androidIcon: 'music-note',
+    headerColor: TabHeaderColors.cancionero,
     headerShown: false, // Cantoral uses its own StackNavigator header
   },
   {

@@ -1,7 +1,6 @@
 import React, {
   useLayoutEffect,
   ComponentProps,
-  useRef,
   useEffect,
   useState,
   useMemo,
@@ -13,12 +12,19 @@ import {
   ScrollView,
   TouchableOpacity,
   Pressable,
-  Animated,
   Linking,
   ViewStyle,
   TextStyle,
   useWindowDimensions,
 } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
@@ -28,7 +34,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import useFontScale from '@/hooks/useFontScale';
-import { useToast } from 'heroui-native';
+import { Skeleton, useToast } from 'heroui-native';
 import SettingsPanel from '@/components/SettingsPanel';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
@@ -37,6 +43,8 @@ import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
 import { hexAlpha } from '@/utils/colorUtils';
+import ScreenHero from '@/components/ui/ScreenHero';
+import EmptyState from '@/components/ui/EmptyState';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
@@ -114,9 +122,21 @@ export default function Home() {
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 700;
   const { toast } = useToast();
-  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [settingsVisible, setSettingsVisibleRaw] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
-  const [notifSheetOpen, setNotifSheetOpen] = useState(false);
+  const [notifSheetOpen, setNotifSheetOpenRaw] = useState(false);
+
+  // Settings and notifications panels must be mutually exclusive: opening
+  // one auto-closes the other. Otherwise both panels stack visually and
+  // taps leak through to the header buttons underneath.
+  const setSettingsVisible = (next: boolean) => {
+    setSettingsVisibleRaw(next);
+    if (next) setNotifSheetOpenRaw(false);
+  };
+  const setNotifSheetOpen = (next: boolean) => {
+    setNotifSheetOpenRaw(next);
+    if (next) setSettingsVisibleRaw(false);
+  };
 
   // Primary color readable on both light and dark backgrounds
   const accentColor = scheme === 'dark' ? colors.info : colors.primary;
@@ -161,49 +181,42 @@ export default function Home() {
     });
   }, [latestNotification, readIds]);
 
-  // Animated ping for notification badge
-  const pingAnim = useRef(new Animated.Value(1)).current;
-  const pingOpacity = useRef(new Animated.Value(0.6)).current;
+  // Ping animation for the notification badge (Reanimated 3).
+  const pingScale = useSharedValue(1);
+  const pingOpacity = useSharedValue(0.6);
   useEffect(() => {
     if (unreadCount > 0) {
-      const loop = Animated.loop(
-        Animated.parallel([
-          Animated.sequence([
-            Animated.timing(pingAnim, {
-              toValue: 1.8,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pingAnim, {
-              toValue: 1,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.sequence([
-            Animated.timing(pingOpacity, {
-              toValue: 0,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pingOpacity, {
-              toValue: 0.6,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
+      pingScale.value = withRepeat(
+        withSequence(
+          withTiming(1.8, { duration: 800 }),
+          withTiming(1, { duration: 0 }),
+        ),
+        -1,
       );
-      loop.start();
-      return () => loop.stop();
+      pingOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0, { duration: 800 }),
+          withTiming(0.6, { duration: 0 }),
+        ),
+        -1,
+      );
+      return () => {
+        cancelAnimation(pingScale);
+        cancelAnimation(pingOpacity);
+      };
     }
-    pingAnim.setValue(1);
-    pingOpacity.setValue(0.6);
-  }, [unreadCount, pingAnim, pingOpacity]);
+    pingScale.value = 1;
+    pingOpacity.value = 0.6;
+  }, [unreadCount, pingScale, pingOpacity]);
+  const animatedPingStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pingScale.value }],
+    opacity: pingOpacity.value,
+  }));
 
   // Calendar events — filtered by user's visible calendars
   const { calendarConfigs, visibleCalendars } = useCalendarConfigs();
-  const { eventsByDate } = useCalendarEvents(calendarConfigs);
+  const { eventsByDate, loading: eventsLoading } =
+    useCalendarEvents(calendarConfigs);
   const upcomingEvents = useMemo(
     () => getUpcomingEvents(eventsByDate, 2, visibleCalendars),
     [eventsByDate, visibleCalendars],
@@ -329,66 +342,68 @@ export default function Home() {
         onClose={() => setNotifSheetOpen(false)}
       />
 
-      {/* ── Custom Header ── */}
+      {/* ── App-bar header (ScreenHero in compact mode) ── */}
       <View
         style={[
-          styles.header,
           { backgroundColor: theme.background },
           isWide && styles.headerWide,
         ]}
       >
-        <View style={styles.headerLeft}>
-          <View style={styles.logoBox}>
-            <MaterialIcons name="device-hub" size={20} color="white" />
-          </View>
-          <Text style={[styles.logoText, { color: theme.text }]}>MCM App</Text>
-        </View>
-
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            onPress={() => setSettingsVisible(true)}
-            style={styles.headerIconBtn}
-            accessibilityLabel="Perfil y ajustes"
-            accessibilityRole="button"
-          >
-            <MaterialIcons name="account-circle" size={26} color={theme.icon} />
-          </TouchableOpacity>
-
-          {resolved.showNotificationsIcon && (
-            <TouchableOpacity
-              style={styles.headerIconBtn}
-              onPress={() => setNotifSheetOpen(true)}
-              accessibilityLabel={
-                unreadCount > 0
-                  ? `Notificaciones, ${unreadCount} sin leer`
-                  : 'Notificaciones'
-              }
-              accessibilityRole="button"
-            >
-              <View style={styles.bellWrap}>
+        <ScreenHero
+          compact
+          title="MCM App"
+          titleStyle={styles.logoText}
+          left={
+            <View style={styles.logoBox}>
+              <MaterialIcons name="device-hub" size={20} color="white" />
+            </View>
+          }
+          right={
+            <>
+              <TouchableOpacity
+                onPress={() => setSettingsVisible(true)}
+                style={styles.headerIconBtn}
+                accessibilityLabel="Perfil y ajustes"
+                accessibilityRole="button"
+              >
                 <MaterialIcons
-                  name="notifications"
-                  size={24}
+                  name="account-circle"
+                  size={26}
                   color={theme.icon}
                 />
-                {unreadCount > 0 && (
-                  <View style={styles.dotWrap}>
-                    <Animated.View
-                      style={[
-                        styles.dotPing,
-                        {
-                          transform: [{ scale: pingAnim }],
-                          opacity: pingOpacity,
-                        },
-                      ]}
+              </TouchableOpacity>
+
+              {resolved.showNotificationsIcon && (
+                <TouchableOpacity
+                  style={styles.headerIconBtn}
+                  onPress={() => setNotifSheetOpen(true)}
+                  accessibilityLabel={
+                    unreadCount > 0
+                      ? `Notificaciones, ${unreadCount} sin leer`
+                      : 'Notificaciones'
+                  }
+                  accessibilityRole="button"
+                >
+                  <View style={styles.bellWrap}>
+                    <MaterialIcons
+                      name="notifications"
+                      size={24}
+                      color={theme.icon}
                     />
-                    <View style={styles.dot} />
+                    {unreadCount > 0 && (
+                      <View style={styles.dotWrap}>
+                        <Animated.View
+                          style={[styles.dotPing, animatedPingStyle]}
+                        />
+                        <View style={styles.dot} />
+                      </View>
+                    )}
                   </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
+                </TouchableOpacity>
+              )}
+            </>
+          }
+        />
       </View>
 
       <ScrollView
@@ -671,43 +686,20 @@ export default function Home() {
 
               {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
                 /* User has calendars but all hidden */
-                <TouchableOpacity
-                  style={[
-                    styles.emptyEventsCard,
-                    {
-                      backgroundColor: theme.card,
-                      borderColor:
-                        scheme === 'dark'
-                          ? 'rgba(255,255,255,0.08)'
-                          : 'rgba(0,0,0,0.06)',
-                    },
-                  ]}
-                  onPress={() => router.push('/calendario')}
-                  accessibilityRole="button"
-                >
-                  <MaterialIcons
-                    name="event-note"
-                    size={28}
-                    color={theme.icon}
-                    style={{ opacity: 0.5 }}
-                  />
-                  <Text
-                    style={[
-                      styles.emptyEventsTitle,
-                      { color: theme.text, fontSize: 14 * fontScale },
-                    ]}
-                  >
-                    Activa algún calendario
-                  </Text>
-                  <Text
-                    style={[
-                      styles.emptyEventsBody,
-                      { color: theme.icon, fontSize: 12 * fontScale },
-                    ]}
-                  >
-                    Selecciona un calendario para ver los próximos eventos aquí.
-                  </Text>
-                </TouchableOpacity>
+                <EmptyState
+                  icon="event-note"
+                  title="Activa algún calendario"
+                  subtitle="Selecciona un calendario para ver los próximos eventos aquí."
+                  actionLabel="Ir al calendario"
+                  onAction={() => router.push('/calendario')}
+                  accentColor={accentColor}
+                />
+              ) : eventsLoading && upcomingEvents.length === 0 ? (
+                /* Loading skeleton — shown only when there is no cached data */
+                <View style={styles.eventsSkeletonWrap}>
+                  <Skeleton style={styles.eventSkeleton} />
+                  <Skeleton style={styles.eventSkeleton} />
+                </View>
               ) : upcomingEvents.length > 0 ? (
                 upcomingEvents.map((evt, idx) => {
                   const evtDate = parseLocalDate(evt.startDate);
@@ -813,14 +805,11 @@ export default function Home() {
                 })
               ) : (
                 /* No upcoming events */
-                <Text
-                  style={[
-                    styles.emptyEvents,
-                    { color: theme.icon, fontSize: 13 * fontScale },
-                  ]}
-                >
-                  Sin eventos próximos
-                </Text>
+                <EmptyState
+                  icon="event-busy"
+                  title="Sin eventos próximos"
+                  accentColor={accentColor}
+                />
               )}
 
               <TouchableOpacity
@@ -870,39 +859,22 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 } as ViewStyle,
 
   // ── Header ──
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-  } as ViewStyle,
   headerWide: {
     maxWidth: 900,
     alignSelf: 'center',
     width: '100%',
-    paddingHorizontal: spacing.lg,
-  } as ViewStyle,
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
   } as ViewStyle,
   logoBox: {
     backgroundColor: colors.primary,
-    padding: 8,
-    borderRadius: 10,
+    padding: spacing.sm,
+    borderRadius: radii.sm + 2, // 10
   } as ViewStyle,
   logoText: {
     fontSize: 20,
     fontWeight: '800',
     letterSpacing: -0.4,
   } as TextStyle,
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  } as ViewStyle,
-  headerIconBtn: { padding: 8, marginLeft: 4 } as ViewStyle,
+  headerIconBtn: { padding: spacing.sm } as ViewStyle,
   bellWrap: { position: 'relative' } as ViewStyle,
   dotWrap: {
     position: 'absolute',
@@ -1123,28 +1095,14 @@ const styles = StyleSheet.create({
     gap: 3,
   } as ViewStyle,
   eventMetaText: { flex: 1 } as TextStyle,
-  emptyEvents: {
-    textAlign: 'center',
-    opacity: 0.6,
-    paddingVertical: spacing.md,
-  } as TextStyle,
-  emptyEventsCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    padding: spacing.lg,
+  eventsSkeletonWrap: {
+    gap: spacing.sm,
     marginBottom: spacing.sm,
-    alignItems: 'center',
-    gap: spacing.xs,
   } as ViewStyle,
-  emptyEventsTitle: {
-    fontWeight: '700',
-    textAlign: 'center',
-  } as TextStyle,
-  emptyEventsBody: {
-    textAlign: 'center',
-    lineHeight: 18,
-    opacity: 0.7,
-  } as TextStyle,
+  eventSkeleton: {
+    height: 78,
+    borderRadius: radii.lg,
+  } as ViewStyle,
   calendarButton: {
     alignItems: 'center',
     justifyContent: 'center',

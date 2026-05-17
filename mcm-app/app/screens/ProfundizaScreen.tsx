@@ -1,24 +1,17 @@
 import React, { useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  View,
-  Platform,
-  Text,
-  TouchableOpacity,
-} from 'react-native';
+import { ScrollView, StyleSheet, View, Platform, Text } from 'react-native';
+import { PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import {
-  getEventCacheKey,
-  getEventFirebasePath,
-} from '@/constants/events';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 
 interface Pagina {
   titulo: string;
@@ -56,41 +49,50 @@ export default function ProfundizaScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.mainTitle}>{data.titulo}</Text>
-      <FormattedContent text={data.introduccion} scale={fontScale} />
-      <View style={{ marginTop: 16 }}>
-        {data.paginas.map((p, idx) => (
-          <View key={idx} style={styles.accordionWrapper}>
-            <TouchableOpacity
-              onPress={() => setOpenIdx(openIdx === idx ? null : idx)}
-              style={[
-                styles.accordion,
-                { backgroundColor: p.color || colors.primary },
-              ]}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.accordionTitle}>{p.titulo}</Text>
-              <MaterialIcons
-                name={openIdx === idx ? 'expand-less' : 'expand-more'}
-                size={24}
-                color={colors.white}
-              />
-            </TouchableOpacity>
-            {openIdx === idx && (
-              <View style={styles.accordionContent}>
-                {p.subtitulo && (
-                  <Text style={styles.subtitulo}>{p.subtitulo}</Text>
-                )}
-                {p.texto && (
-                  <FormattedContent text={p.texto} scale={fontScale} />
+    <PageContainer>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+      >
+        <ScreenHero title={data.titulo} />
+        <View style={styles.body}>
+          <FormattedContent text={data.introduccion} scale={fontScale} />
+          <View style={{ marginTop: 16 }}>
+            {data.paginas.map((p, idx) => (
+              <View key={idx} style={styles.accordionWrapper}>
+                <PressableFeedback
+                  onPress={() => setOpenIdx(openIdx === idx ? null : idx)}
+                  style={[
+                    styles.accordion,
+                    { backgroundColor: p.color || colors.primary },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={p.titulo}
+                >
+                  <PressableFeedback.Highlight />
+                  <Text style={styles.accordionTitle}>{p.titulo}</Text>
+                  <MaterialIcons
+                    name={openIdx === idx ? 'expand-less' : 'expand-more'}
+                    size={24}
+                    color={colors.white}
+                  />
+                </PressableFeedback>
+                {openIdx === idx && (
+                  <View style={styles.accordionContent}>
+                    {p.subtitulo && (
+                      <Text style={styles.subtitulo}>{p.subtitulo}</Text>
+                    )}
+                    {p.texto && (
+                      <FormattedContent text={p.texto} scale={fontScale} />
+                    )}
+                  </View>
                 )}
               </View>
-            )}
+            ))}
           </View>
-        ))}
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </PageContainer>
   );
 }
 
@@ -98,13 +100,11 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    content: { padding: 16, paddingBottom: Platform.OS === 'ios' ? 100 : 16 },
-    mainTitle: {
-      fontSize: 24 * scale,
-      fontWeight: 'bold',
-      marginBottom: 8,
-      color: theme.text,
+    content: {
+      paddingTop: 8,
+      paddingBottom: Platform.OS === 'ios' ? 100 : 16,
     },
+    body: { paddingHorizontal: 20, paddingTop: 8 },
     accordionWrapper: { marginBottom: 12 },
     accordion: {
       flexDirection: 'row',
