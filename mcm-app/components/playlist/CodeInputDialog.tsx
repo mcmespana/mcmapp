@@ -77,13 +77,14 @@ const COPY: Record<CodeDialogVariant, VariantCopy> = {
   'choir-start': {
     title: 'Iniciar sesión de coro',
     description:
-      'Tu dispositivo será el maestro. Los demás se conectarán con este código.',
+      'Tu dispositivo será el director. Los demás se conectarán con este código.',
     primaryLabel: 'Iniciar',
     showSuggestButtons: true,
   },
   'choir-join': {
     title: 'Unirse al coro',
-    description: 'Introduce el código que el maestro está usando.',
+    description:
+      'Introduce el código proporcionado para seguir las canciones automáticamente.',
     primaryLabel: 'Unirse',
     showSuggestButtons: false,
   },

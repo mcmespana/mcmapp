@@ -798,15 +798,33 @@ const SelectedSongsScreen: React.FC = () => {
           Platform.OS === 'windows' ||
           Platform.OS === 'macos'
             ? 'Copiar lista al portapapeles'
-            : 'Compartir lista como texto',
-        description: 'Mensaje con título, tono y autor',
+            : 'Compartir mensaje con las canciones',
+        description: 'Texto con canción, tono y número',
         onPress: handleShareText,
+      },
+      {
+        id: 'upload-cloud',
+        icon: 'cloud-upload',
+        label: 'Compartir Playlist (código 4 dígitos)',
+        description: lastUploadCode
+          ? `Código actual: ${lastUploadCode}`
+          : 'Cualquiera con el código podrá importarla',
+        onPress: () => setCodeDialog({ variant: 'cloud-upload' }),
+        separator: true,
+      },
+      {
+        id: 'download-cloud',
+        icon: 'cloud-download',
+        label: 'Importar Playlist',
+        description: 'Introduce el código de 4 dígitos que te han pasado',
+
+        onPress: () => setCodeDialog({ variant: 'cloud-download' }),
       },
       {
         id: 'export-file',
         icon: 'file-upload',
         label: 'Exportar a archivo (.mcm)',
-        description: 'Incluye el tono cambiado y el orden personalizado',
+        // description: 'Incluye el tono cambiado y el orden personalizado',
         onPress: handleStartExportFile,
         separator: true,
       },
@@ -816,22 +834,6 @@ const SelectedSongsScreen: React.FC = () => {
         label: 'Importar desde archivo',
         onPress: handleImportFile,
       },
-      {
-        id: 'upload-cloud',
-        icon: 'cloud-upload',
-        label: 'Subir a la nube (código 4 dígitos)',
-        description: lastUploadCode
-          ? `Subida actual: ${lastUploadCode}`
-          : 'Cualquiera con el código podrá importarla',
-        onPress: () => setCodeDialog({ variant: 'cloud-upload' }),
-        separator: true,
-      },
-      {
-        id: 'download-cloud',
-        icon: 'cloud-download',
-        label: 'Descargar desde la nube',
-        onPress: () => setCodeDialog({ variant: 'cloud-download' }),
-      },
     ];
 
     if (lastUploadCode) {
@@ -839,7 +841,7 @@ const SelectedSongsScreen: React.FC = () => {
         {
           id: 'change-cloud-code',
           icon: 'edit',
-          label: 'Cambiar código de la nube',
+          label: 'Cambiar código de la playlist',
           description: `Actual: ${lastUploadCode}`,
           onPress: () =>
             setCodeDialog({
@@ -850,7 +852,7 @@ const SelectedSongsScreen: React.FC = () => {
         {
           id: 'delete-cloud',
           icon: 'cloud-off',
-          label: 'Borrar de la nube',
+          label: 'Borrar playlist de la nube',
           variant: 'danger',
           onPress: handleDeleteFromCloud,
         },
@@ -862,7 +864,7 @@ const SelectedSongsScreen: React.FC = () => {
         {
           id: 'choir-start',
           icon: 'campaign',
-          label: 'Iniciar sesión de coro (maestro)',
+          label: 'Iniciar sesión de coro (ser líder)',
           description:
             'Otros dispositivos te siguen con un código de 4 dígitos',
           onPress: () => setCodeDialog({ variant: 'choir-start' }),
@@ -872,6 +874,7 @@ const SelectedSongsScreen: React.FC = () => {
           id: 'choir-join',
           icon: 'headphones',
           label: 'Unirse a sesión de coro',
+          description: 'Introduces un código y sigues las canciones del líder',
           onPress: () => setCodeDialog({ variant: 'choir-join' }),
         },
       );
@@ -881,7 +884,7 @@ const SelectedSongsScreen: React.FC = () => {
           id: 'choir-change-code',
           icon: 'edit',
           label: 'Cambiar código del coro',
-          description: `Actual: ${choir.code}${choir.mode === 'slave' ? ' (solo maestro puede cambiarlo)' : ''}`,
+          description: `Actual: ${choir.code}${choir.mode === 'slave' ? ' (solo el líder puede cambiarlo)' : ''}`,
           onPress: () =>
             setCodeDialog({
               variant: 'change-code',
@@ -1012,18 +1015,6 @@ const SelectedSongsScreen: React.FC = () => {
       </View>
       <View style={{ gap: 10, marginBottom: Platform.OS === 'ios' ? 100 : 20 }}>
         <PressableFeedback
-          onPress={handleImportFile}
-          style={styles.importButton}
-        >
-          <PressableFeedback.Highlight />
-          <MaterialIcons
-            name="file-download"
-            size={20}
-            color={isDark ? '#7AB3FF' : '#253883'}
-          />
-          <Text style={styles.importButtonText}>Importar desde archivo</Text>
-        </PressableFeedback>
-        <PressableFeedback
           onPress={() => setCodeDialog({ variant: 'cloud-download' })}
           style={styles.importButton}
         >
@@ -1033,7 +1024,9 @@ const SelectedSongsScreen: React.FC = () => {
             size={20}
             color={isDark ? '#7AB3FF' : '#253883'}
           />
-          <Text style={styles.importButtonText}>Descargar con código</Text>
+          <Text style={styles.importButtonText}>
+            Importar playlist con código
+          </Text>
         </PressableFeedback>
         <PressableFeedback
           onPress={() => setCodeDialog({ variant: 'choir-join' })}
@@ -1045,7 +1038,19 @@ const SelectedSongsScreen: React.FC = () => {
             size={20}
             color={isDark ? '#7AB3FF' : '#253883'}
           />
-          <Text style={styles.importButtonText}>Unirse a un coro</Text>
+          <Text style={styles.importButtonText}>Unirme a un coro</Text>
+        </PressableFeedback>
+        <PressableFeedback
+          onPress={handleImportFile}
+          style={styles.importButton}
+        >
+          <PressableFeedback.Highlight />
+          <MaterialIcons
+            name="file-download"
+            size={20}
+            color={isDark ? '#7AB3FF' : '#253883'}
+          />
+          <Text style={styles.importButtonText}>Importar desde archivo</Text>
         </PressableFeedback>
       </View>
     </View>
@@ -1055,6 +1060,12 @@ const SelectedSongsScreen: React.FC = () => {
     const transposedCount = selectedSongs.filter(
       (s) => s.transpose !== 0,
     ).length;
+    /* Eliminado este trozo
+                  {transposedCount > 0
+                ? ` · ${transposedCount} con tono cambiado`
+                : ''} 
+                
+                */
     return (
       <View>
         <ChoirSessionBanner />
@@ -1063,13 +1074,10 @@ const SelectedSongsScreen: React.FC = () => {
             <Text style={styles.selectionCount}>
               {selectedSongs.length}{' '}
               {selectedSongs.length === 1 ? 'canción' : 'canciones'}
-              {transposedCount > 0
-                ? ` · ${transposedCount} con tono cambiado`
-                : ''}
             </Text>
             {lastUploadCode ? (
               <Text style={styles.subInfo}>
-                ☁️ Subida con código {lastUploadCode}
+                ☁️ Guardada con código {lastUploadCode}
               </Text>
             ) : null}
           </View>
@@ -1088,7 +1096,7 @@ const SelectedSongsScreen: React.FC = () => {
                     viewMode === 'category' && styles.viewToggleTextActive,
                   ]}
                 >
-                  Categoría
+                  Por categoría
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -1104,7 +1112,7 @@ const SelectedSongsScreen: React.FC = () => {
                     viewMode === 'manual' && styles.viewToggleTextActive,
                   ]}
                 >
-                  Orden libre
+                  Orden ajustado
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1257,7 +1265,7 @@ const SelectedSongsScreen: React.FC = () => {
                   returnKeyType="done"
                 />
                 <Text style={styles.modalNote}>
-                  Se exportará como archivo .mcm (incluye tono y orden)
+                  Se exportará como archivo .mcm para compartirlo
                 </Text>
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
