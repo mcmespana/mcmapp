@@ -262,26 +262,11 @@ export default function SongsListScreen({
     [songs, categoryId, navigation],
   );
 
-  if ((isLoading || loadingSongs) && songs.length === 0) {
-    return <ProgressWithMessage message="Cargando canciones..." />;
-  }
-
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>{error}</Text>
-        <Text style={styles.debugText}>
-          Categorías disponibles:{' '}
-          {songsData ? Object.keys(songsData).join(', ') : 'N/A'}
-        </Text>
-      </View>
-    );
-  }
-
   // ListHeaderComponent: search bar + song count
   // Goes inside the FlatList so it scrolls with content on iOS
   // (avoids getting hidden behind transparent header)
-  const ListHeader = () => (
+  // ⚡ Bolt: Memoize the header element to prevent functional component remounting
+  const listHeaderElement = useMemo(() => (
     <View>
       {searchVisible && (
         <View style={styles.searchContainer}>
@@ -310,7 +295,35 @@ export default function SongsListScreen({
         </Text>
       </View>
     </View>
+  ), [searchVisible, search, isSearchAll, styles, filteredSongs.length, setSearch]);
+
+  // ⚡ Bolt: Memoize the renderItem function to prevent list items re-rendering on every typing event
+  const renderItem = useCallback(
+    ({ item }: { item: Song }) => (
+      <SongListItem
+        song={item}
+        onPress={handleSongPress}
+        isSearchAllMode={isSearchAll}
+      />
+    ),
+    [handleSongPress, isSearchAll]
   );
+
+  if ((isLoading || loadingSongs) && songs.length === 0) {
+    return <ProgressWithMessage message="Cargando canciones..." />;
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.debugText}>
+          Categorías disponibles:{' '}
+          {songsData ? Object.keys(songsData).join(', ') : 'N/A'}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -320,14 +333,8 @@ export default function SongsListScreen({
         initialNumToRender={15}
         maxToRenderPerBatch={20}
         windowSize={5}
-        renderItem={({ item }) => (
-          <SongListItem
-            song={item}
-            onPress={handleSongPress}
-            isSearchAllMode={isSearchAll}
-          />
-        )}
-        ListHeaderComponent={<ListHeader />}
+        renderItem={renderItem}
+        ListHeaderComponent={listHeaderElement}
         contentContainerStyle={styles.listContent}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
