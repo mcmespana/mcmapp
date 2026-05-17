@@ -12,9 +12,9 @@
     "familia": {
       "label": "Familia",
       "description": "de miembros del MIC y COM",
-      "tabs": ["index", "contigo", "calendario", "fotos"],
-      "homeButtons": ["comunica", "fotos", "evangelio"],
-      "masItems": ["jubileo"],
+      "tabs": ["index", "cancionero", "contigo", "calendario", "fotos", "mas"],
+      "homeButtons": ["comunica", "cancionero", "fotos", "evangelio", "mas"],
+      "masItems": ["comunica", "jubileo"],
       "defaultCalendars": ["mcm-europa"],
       "albumTags": ["all"],
       "notificationTopics": ["general", "eventos", "familias"]
@@ -22,9 +22,9 @@
     "monitor": {
       "label": "Monitor/a",
       "description": "de grupos del MIC y COM",
-      "tabs": ["index", "contigo", "calendario", "fotos"],
-      "homeButtons": ["comunica", "fotos", "evangelio"],
-      "masItems": ["jubileo"],
+      "tabs": ["index", "cancionero", "contigo", "calendario", "fotos", "mas"],
+      "homeButtons": ["comunica", "cancionero", "fotos", "evangelio", "mas"],
+      "masItems": ["comunica", "comunica-gestion", "jubileo"],
       "defaultCalendars": [],
       "albumTags": ["all"],
       "notificationTopics": ["general", "eventos", "monitores"]
@@ -32,9 +32,9 @@
     "miembro": {
       "label": "Miembro MCM",
       "description": "de cualquier etapa",
-      "tabs": ["index", "contigo", "calendario", "fotos"],
-      "homeButtons": ["comunica", "fotos", "evangelio"],
-      "masItems": ["jubileo"],
+      "tabs": ["index", "cancionero", "contigo", "calendario", "fotos", "mas"],
+      "homeButtons": ["comunica", "cancionero", "fotos", "evangelio", "mas"],
+      "masItems": ["comunica", "comunica-gestion", "jubileo"],
       "defaultCalendars": [],
       "albumTags": ["all"],
       "notificationTopics": ["general", "eventos", "miembros"]
