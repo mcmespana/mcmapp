@@ -12,6 +12,8 @@ import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
+import { transposeKey, transposeLabel } from '../utils/transposeKey';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 // Type for song data
 interface Song {
@@ -33,7 +35,8 @@ interface SongListItemProps {
 
 const SongListItem: React.FC<SongListItemProps> = React.memo(
   function SongListItem({ song, onPress, isSearchAllMode = false }) {
-    const { addSong, removeSong, isSongSelected } = useSelectedSongs();
+    const { addSong, removeSong, isSongSelected, getSelectedSong } =
+      useSelectedSongs();
     const { settings } = useSettings();
     const { notation } = settings;
     const scheme = useColorScheme();
@@ -41,6 +44,10 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     const isDark = scheme === 'dark';
     const swipeableRow = useRef<Swipeable>(null);
     const isSelected = isSongSelected(song.filename);
+    const selectedMeta = isSelected
+      ? getSelectedSong(song.filename)
+      : undefined;
+    const selectedTranspose = selectedMeta?.transpose ?? 0;
     const backgroundColorAnim = useRef(
       new Animated.Value(isSelected ? 1 : 0),
     ).current;
@@ -207,11 +214,38 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                 </View>
               ) : null}
               {song.key ? (
-                <View style={styles.keyPill}>
-                  <Text style={styles.keyText}>
-                    {convertChord(song.key.toUpperCase(), notation)}
-                  </Text>
-                </View>
+                selectedTranspose !== 0 ? (
+                  <View style={styles.toneTransposedWrap}>
+                    <Text style={styles.toneOriginalStriked}>
+                      {convertChord(song.key.toUpperCase(), notation)}
+                    </Text>
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={12}
+                      color={isDark ? '#8E8E93' : '#8E8E93'}
+                    />
+                    <View style={styles.keyPillTransposed}>
+                      <Text style={styles.keyTextTransposed}>
+                        {convertChord(
+                          transposeKey(
+                            song.key.toUpperCase(),
+                            selectedTranspose,
+                          ),
+                          notation,
+                        )}
+                      </Text>
+                      <Text style={styles.transposeBadge}>
+                        {transposeLabel(selectedTranspose)}
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.keyPill}>
+                    <Text style={styles.keyText}>
+                      {convertChord(song.key.toUpperCase(), notation)}
+                    </Text>
+                  </View>
+                )
               ) : null}
             </View>
           </TouchableOpacity>
@@ -322,6 +356,42 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontSize: 13,
       fontWeight: '700',
       color: isDark ? '#7AB3FF' : '#253883',
+    },
+    toneTransposedWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    toneOriginalStriked: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: isDark ? '#636366' : '#A0A0A8',
+      textDecorationLine: 'line-through',
+    },
+    keyPillTransposed: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+      borderRadius: 6,
+      backgroundColor: '#FFF4DA',
+      borderWidth: 1,
+      borderColor: '#F4C11E',
+    },
+    keyTextTransposed: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#7A5A00',
+    },
+    transposeBadge: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: '#9D5C00',
+      fontVariant: ['tabular-nums'],
+      backgroundColor: 'rgba(255,255,255,0.7)',
+      paddingHorizontal: 3,
+      borderRadius: 3,
     },
     rightAction: {
       backgroundColor: '#34C759',

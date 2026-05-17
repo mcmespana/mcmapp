@@ -1,6 +1,12 @@
 import { FlatList, Text, StyleSheet, View, Platform } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useLayoutEffect, useMemo, useState, useCallback } from 'react';
+import {
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -12,6 +18,7 @@ import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { consumePendingCloudPlaylistCode } from '@/utils/pendingCloudPlaylist';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
@@ -44,7 +51,7 @@ export default function CategoriesScreen({
     Categories: undefined;
     SongsList: { categoryId: string; categoryName: string };
     SongDetail: { songId: string; songTitle?: string };
-    SelectedSongs: undefined;
+    SelectedSongs: { p?: string } | undefined;
   }>;
 }) {
   const scheme = useColorScheme();
@@ -86,6 +93,17 @@ export default function CategoriesScreen({
   const handleSuccessSubmit = () => {
     toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
+
+  // Deep link: si llegamos con un código pendiente de la nube
+  // (proveniente de /playlist?p=1234), saltamos a la pantalla de
+  // seleccionadas con ese código para que dispare el autoimport.
+  useEffect(() => {
+    const pending = consumePendingCloudPlaylistCode();
+    if (pending) {
+      // setParams no funciona para una nueva pantalla; usamos navigate.
+      navigation.navigate('SelectedSongs', { p: pending } as any);
+    }
+  }, [navigation]);
 
   // Header: search + add buttons together (integrado en el header)
   useLayoutEffect(() => {

@@ -31,8 +31,21 @@ export function useIncomingPlaylist(onImport: ImportCallback) {
       });
 
       const parsed = JSON.parse(content);
+      let filenames: string[] | null = null;
       if (Array.isArray(parsed) && parsed.length > 0) {
-        onImportRef.current(parsed);
+        filenames = parsed;
+      } else if (
+        parsed &&
+        parsed.version === 2 &&
+        Array.isArray(parsed.songs) &&
+        parsed.songs.length > 0
+      ) {
+        filenames = (parsed.songs as { filename: string }[])
+          .map((s) => s.filename)
+          .filter(Boolean);
+      }
+      if (filenames && filenames.length > 0) {
+        onImportRef.current(filenames);
       }
     } catch (err) {
       console.error('Error handling incoming playlist file:', err);
