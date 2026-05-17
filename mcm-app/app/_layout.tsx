@@ -5,7 +5,7 @@ import usePushNotifications from '../notifications/usePushNotifications'; // Hoo
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
@@ -111,6 +111,7 @@ function InnerLayout() {
   useEffect(() => {
     if (showAnimation) return;
     if (profileLoading) return;
+    if (Platform.OS === 'web') return; // Omitir onboarding inicial en plataforma web
     if (!resolved.showOnboarding) return;
     if (profile.profileType !== null) return;
     // Evitar redirigir si ya estamos en la pantalla de onboarding.
