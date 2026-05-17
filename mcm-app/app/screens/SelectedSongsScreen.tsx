@@ -556,7 +556,7 @@ const SelectedSongsScreen: React.FC = () => {
   // --- Nube -----------------------------------------------------------------
 
   const handleUploadToCloud = useCallback(
-    async (code: string) => {
+    async (code: string, name?: string) => {
       const exists = await cloudPlaylistExists(code);
       if (exists) {
         // Pedimos confirmación: sobrescribir / cambiar código / cancelar.
@@ -572,9 +572,9 @@ const SelectedSongsScreen: React.FC = () => {
               onPress: async () => {
                 setConfirmDialog(null);
                 try {
-                  await uploadCloudPlaylist(code, selectedSongs);
+                  await uploadCloudPlaylist(code, selectedSongs, { name });
                   setLastUploadCode(code);
-                  showUploadSuccess(code);
+                  showUploadSuccess(code, name);
                 } catch (e: any) {
                   toast.show({ label: e?.message ?? 'Error al subir' });
                 }
@@ -598,20 +598,22 @@ const SelectedSongsScreen: React.FC = () => {
         // Lanzamos error para que el diálogo no se cierre automáticamente.
         throw new Error('__handled__');
       }
-      await uploadCloudPlaylist(code, selectedSongs);
+      await uploadCloudPlaylist(code, selectedSongs, { name });
       setLastUploadCode(code);
       setCodeDialog(null);
-      showUploadSuccess(code);
+      showUploadSuccess(code, name);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedSongs],
   );
 
   const showUploadSuccess = useCallback(
-    (code: string) => {
+    (code: string, name?: string) => {
       const url = `${WEB_BASE_URL}/playlist?p=${code}`;
       setConfirmDialog({
-        title: `¡Subida! Código ${code}`,
+        title: name
+          ? `¡${name} subida! Código ${code}`
+          : `¡Subida! Código ${code}`,
         description: `Compártelo o copia el enlace:\n${url}`,
         actions: [
           {

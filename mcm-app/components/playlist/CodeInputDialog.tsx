@@ -50,7 +50,7 @@ interface Props {
    * rechaza, se muestra el `message` del error en rojo y el modal sigue
    * abierto para que reintente o cambie el código.
    */
-  onSubmit: (code: string) => Promise<void>;
+  onSubmit: (code: string, name?: string) => Promise<void>;
 }
 
 interface VariantCopy {
@@ -58,15 +58,17 @@ interface VariantCopy {
   description: string;
   primaryLabel: string;
   showSuggestButtons: boolean;
+  askForName?: boolean;
 }
 
 const COPY: Record<CodeDialogVariant, VariantCopy> = {
   'cloud-upload': {
     title: 'Subir playlist a la nube',
     description:
-      'Cualquiera con este código de 4 dígitos podrá importar tu playlist.',
+      'Dale un nombre (opcional) y elige un código de 4 dígitos. Cualquiera con el código podrá importar tu playlist.',
     primaryLabel: 'Subir',
     showSuggestButtons: true,
+    askForName: true,
   },
   'cloud-download': {
     title: 'Descargar playlist',
@@ -109,6 +111,7 @@ const CodeInputDialog: React.FC<Props> = ({
   const copy = COPY[variant];
 
   const [code, setCode] = useState<string>('');
+  const [name, setName] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -128,6 +131,28 @@ const CodeInputDialog: React.FC<Props> = ({
     } else {
       setCode('');
     }
+
+    // Auto-completar un nombre chulo por defecto para la nube
+    if (variant === 'cloud-upload') {
+      const monthNames = [
+        'ene',
+        'feb',
+        'mar',
+        'abr',
+        'may',
+        'jun',
+        'jul',
+        'ago',
+        'sep',
+        'oct',
+        'nov',
+        'dic',
+      ];
+      const now = new Date();
+      setName(`Playlist ${now.getDate()} ${monthNames[now.getMonth()]}`);
+    } else {
+      setName('');
+    }
   }, [visible, variant, initialCode]);
 
   const valid = isValidCode(code);
@@ -137,7 +162,7 @@ const CodeInputDialog: React.FC<Props> = ({
     setSubmitting(true);
     setError(null);
     try {
-      await onSubmit(code);
+      await onSubmit(code, name.trim() || undefined);
     } catch (e: any) {
       setError(e?.message ?? 'Algo salió mal');
       setSubmitting(false);
@@ -170,6 +195,28 @@ const CodeInputDialog: React.FC<Props> = ({
               <Text style={styles.title}>{copy.title}</Text>
               <Text style={styles.description}>{copy.description}</Text>
 
+              {copy.askForName && (
+                <View style={styles.nameRow}>
+                  <Text style={styles.inputLabel}>Nombre</Text>
+                  <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Ej. Cantos domingo"
+                    placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
+                    style={styles.nameInput}
+                    editable={!submitting}
+                  />
+                </View>
+              )}
+
+              <Text
+                style={[
+                  styles.inputLabel,
+                  copy.askForName && { marginTop: 12 },
+                ]}
+              >
+                Código (4 dígitos)
+              </Text>
               <View style={styles.codeRow}>
                 {/* Para máxima fiabilidad cross-platform (web + RN) usamos un
                     único TextInput de N dígitos en lugar de N TextInputs
@@ -315,6 +362,28 @@ const createStyles = (isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 14,
+      marginTop: 6,
+    },
+    nameRow: {
+      marginBottom: 8,
+    },
+    inputLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: isDark ? '#A0A0A8' : '#6B6B70',
+      marginBottom: 6,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    nameInput: {
+      backgroundColor: isDark ? '#1C1C1E' : '#F8F8FA',
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      fontSize: 16,
+      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      borderWidth: 1.5,
+      borderColor: isDark ? '#48484A' : '#D1D1D6',
     },
     hiddenInput: {
       position: 'absolute',
