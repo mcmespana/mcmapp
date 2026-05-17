@@ -8,16 +8,11 @@
 // - Tipo por defecto si el usuario salta el onboarding → `miembro` sin delegación.
 
 import profileConfigSeed from '@/firebase-seed/profileConfig.json';
-import type {
-  ProfileConfigData,
-  ProfileConfigDocument,
-  ProfileType,
-} from '@/types/profileConfig';
+import type { ProfileConfigData, ProfileType } from '@/types/profileConfig';
 
 /** Solo el nodo `data` — suele ser lo que necesita el resolver y los consumidores. */
-export const DEFAULT_PROFILE_CONFIG_DATA: ProfileConfigData = (
-  profileConfigSeed as unknown as ProfileConfigDocument
-).data;
+export const DEFAULT_PROFILE_CONFIG_DATA: ProfileConfigData =
+  profileConfigSeed as unknown as ProfileConfigData;
 
 /** Perfil por defecto si el usuario salta el onboarding. */
 export const DEFAULT_PROFILE_TYPE: ProfileType = 'miembro';
