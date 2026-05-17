@@ -9,9 +9,11 @@ import SongControls from '../../components/SongControls';
 import { RouteProp, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext';
+import { useChoirSession } from '../../contexts/ChoirSessionContext';
 import { IconSymbol } from '../../components/ui/IconSymbol';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useColorScheme } from '../../hooks/useColorScheme';
+import ChoirSessionBanner from '../../components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -58,7 +60,14 @@ export default function SongDetailScreen({
     source,
     firebaseCategory,
   } = route.params;
-  const { addSong, removeSong, isSongSelected } = useSelectedSongs();
+  const {
+    addSong,
+    removeSong,
+    isSongSelected,
+    getSelectedSong,
+    setTranspose: setSelectionTranspose,
+  } = useSelectedSongs();
+  const choir = useChoirSession();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -73,7 +82,24 @@ export default function SongDetailScreen({
 
   const [isFileLoading, setIsFileLoading] = useState(true);
   const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
-  const [currentTranspose, setCurrentTranspose] = useState(0);
+  // Si la canción está en la selección, su `transpose` vive en el contexto
+  // (single source of truth). Si no, usamos este estado local efímero.
+  const selectedMeta = getSelectedSong(filename);
+  const [localTranspose, setLocalTranspose] = useState(0);
+  // En modo coro:
+  //  - el MAESTRO publica el transpose visible (local o seleccionado).
+  //  - el ESCLAVO usa el transpose del maestro salvo que tenga override.
+  const masterCurrent = choir.session?.current;
+  const slaveTransposeFromChoir =
+    choir.mode === 'slave' && masterCurrent?.filename === filename
+      ? (choir.overrideTranspose ?? masterCurrent.transpose)
+      : null;
+  const currentTranspose =
+    slaveTransposeFromChoir !== null
+      ? slaveTransposeFromChoir
+      : selectedMeta
+        ? selectedMeta.transpose
+        : localTranspose;
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
@@ -151,7 +177,33 @@ export default function SongDetailScreen({
       setOriginalChordPro(null);
       setIsFileLoading(false);
     }
+    // Al cambiar de canción reseteamos el transpose efímero local.
+    setLocalTranspose(0);
   }, [filename, content]);
+
+  // Modo coro - MAESTRO: cuando entro a una canción, lo publico para los
+  // esclavos junto con todos los metadatos para que la puedan renderizar
+  // sin tener que buscarla en su cantoral local.
+  useEffect(() => {
+    if (choir.mode !== 'master' || !filename) return;
+    void choir.publishCurrent({
+      filename,
+      transpose: currentTranspose,
+      screen: 'detail',
+      title: _navScreenTitle,
+      author,
+      songKey: key,
+      capo,
+      content,
+      firebaseCategory,
+    });
+    // Solo al montar / cambiar de canción, no en cada cambio de transpose
+    // (eso lo hace explícitamente handleSetTranspose).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [choir.mode, filename]);
+
+  // (la navegación del esclavo se gestiona en `cancionero.tsx` mediante
+  //  un observador del contexto coro que opera sobre el navigator del stack)
 
   const handleToggleChords = () =>
     setSettings({ chordsVisible: !chordsVisible });
@@ -159,7 +211,27 @@ export default function SongDetailScreen({
     let newTranspose = semitones;
     if (newTranspose >= 12 || newTranspose <= -12)
       newTranspose = newTranspose % 12;
-    setCurrentTranspose(newTranspose);
+
+    if (slaveTransposeFromChoir !== null) {
+      // Esclavo: cambiar tono = override local (no afecta a la sesión remota).
+      choir.setOverrideTranspose(newTranspose);
+      return;
+    }
+    if (selectedMeta) {
+      // Persistir en la selección.
+      setSelectionTranspose(filename, newTranspose);
+    } else {
+      setLocalTranspose(newTranspose);
+    }
+    // Si soy maestro, publico el cambio aunque la canción no esté seleccionada
+    // (el maestro puede abrir cualquier canción del cantoral).
+    if (choir.mode === 'master') {
+      void choir.publishCurrent({
+        filename,
+        transpose: newTranspose,
+        screen: 'detail',
+      });
+    }
   };
   const handleSetFontSize = (newSizeEm: number) =>
     setSettings({ fontSize: newSizeEm });
@@ -260,6 +332,7 @@ export default function SongDetailScreen({
       ]}
     >
       {isIOS && <View style={{ height: insets.top + 52 }} />}
+      <ChoirSessionBanner />
       <SongDisplay
         songHtml={songHtml}
         isLoading={isFileLoading || isSongProcessing || isLoadingSettings}

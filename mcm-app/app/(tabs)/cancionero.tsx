@@ -11,6 +11,7 @@ import SongFullscreenScreen from '../screens/SongFullscreenScreen';
 import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 
 import { SettingsProvider } from '../../contexts/SettingsContext';
+import { useChoirSession } from '../../contexts/ChoirSessionContext';
 
 export interface SongNavItem {
   title: string;
@@ -44,7 +45,7 @@ export type RootStackParamList = {
     capo?: number;
     content: string;
   };
-  SelectedSongs: undefined;
+  SelectedSongs: { p?: string } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -58,6 +59,7 @@ export default function CancioneroTab() {
   const webStatusBarHeight = isWeb ? insets.top : undefined;
 
   const navigation = useNavigation();
+  const choir = useChoirSession();
 
   useEffect(() => {
     const unsubscribe = navigation
@@ -71,6 +73,48 @@ export default function CancioneroTab() {
 
     return unsubscribe;
   }, [navigation]);
+
+  // Modo coro - ESCLAVO: cuando el maestro cambia la canción actual,
+  // navegamos automáticamente a SongDetail con los metadatos publicados.
+  // Cubre tanto el caso "ya estoy en SongDetail" (navigate hace setParams)
+  // como "estoy en otra pantalla del stack" (navigate hace push).
+  useEffect(() => {
+    if (choir.mode !== 'slave') return;
+    const remote = choir.session?.current;
+    if (!remote || !remote.filename) return;
+    const nav = stackNavRef.current;
+    if (!nav) return;
+    try {
+      const state = nav.getState?.();
+      const route = state?.routes?.[state.index];
+      if (
+        route?.name === 'SongDetail' &&
+        (route.params as any)?.filename === remote.filename
+      ) {
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    nav.navigate('SongDetail', {
+      filename: remote.filename,
+      title: remote.title ?? remote.filename,
+      author: remote.author,
+      key: remote.songKey,
+      capo: remote.capo,
+      content: remote.content ?? '',
+      firebaseCategory: remote.firebaseCategory,
+      source: 'selection',
+    });
+    // Reaccionamos solo cuando el maestro cambia de canción o re-publica
+    // explícitamente (`updatedAt`). Acceder a `choir.session` aquí causaría
+    // un re-disparo en cada actualización irrelevante (p. ej. `lastActivity`).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    choir.mode,
+    choir.session?.current?.filename,
+    choir.session?.current?.updatedAt,
+  ]);
 
   return (
     <SettingsProvider>

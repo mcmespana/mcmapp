@@ -27,6 +27,7 @@ import {
   SelectedSongsProvider,
   useSelectedSongs,
 } from '@/contexts/SelectedSongsContext';
+import { ChoirSessionProvider } from '@/contexts/ChoirSessionContext';
 import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
 import { useRegisterServiceWorker } from '@/hooks/useRegisterServiceWorker';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -52,9 +53,11 @@ export default function RootLayout() {
                 <UniwindThemeBridge />
                 <UserProfileProvider>
                   <SelectedSongsProvider>
-                    <NotificationsProvider>
-                      <InnerLayout />
-                    </NotificationsProvider>
+                    <ChoirSessionProvider>
+                      <NotificationsProvider>
+                        <InnerLayout />
+                      </NotificationsProvider>
+                    </ChoirSessionProvider>
                   </SelectedSongsProvider>
                 </UserProfileProvider>
               </AppSettingsProvider>
@@ -171,6 +174,12 @@ function InnerLayout() {
           options={{
             headerShown: true,
             title: 'Wordle Jubileo',
+          }}
+        />
+        <Stack.Screen
+          name="playlist"
+          options={{
+            headerShown: false,
           }}
         />
       </Stack>
