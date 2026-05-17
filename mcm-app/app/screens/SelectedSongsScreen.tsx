@@ -44,6 +44,10 @@ import PlaylistRow from '@/components/playlist/PlaylistRow';
 import PlaylistActionsSheet, {
   PlaylistAction,
 } from '@/components/playlist/PlaylistActionsSheet';
+import ExportPdfModal, {
+  PdfExportConfig,
+} from '@/components/playlist/ExportPdfModal';
+import { buildPlaylistPdfHtml } from '@/utils/playlistPdfHtml';
 import CodeInputDialog, {
   CodeDialogVariant,
 } from '@/components/playlist/CodeInputDialog';
@@ -123,6 +127,8 @@ const SelectedSongsScreen: React.FC = () => {
   const [showActions, setShowActions] = useState(false);
   const [showExportFileModal, setShowExportFileModal] = useState(false);
   const [exportFileName, setExportFileName] = useState('');
+  const [showExportPdfModal, setShowExportPdfModal] = useState(false);
+  const [exportPdfDefaultName, setExportPdfDefaultName] = useState('');
 
   // Diálogo genérico de código (variant decide la operación a hacer en submit).
   const [codeDialog, setCodeDialog] = useState<{
@@ -424,6 +430,108 @@ const SelectedSongsScreen: React.FC = () => {
       toast.show({ label: 'Error al exportar' });
     }
   }, [exportFileName, selectedSongs, toast]);
+
+  // --- Exportar a PDF -------------------------------------------------------
+
+  const handleStartExportPdf = useCallback(() => {
+    const monthNames = [
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
+    ];
+    const now = new Date();
+    const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
+    setExportPdfDefaultName(`Playlist ${dateStr}`);
+    setShowExportPdfModal(true);
+  }, []);
+
+  const handleConfirmExportPdf = useCallback(
+    async (cfg: PdfExportConfig) => {
+      try {
+        if (flatSelectedSongs.length === 0) {
+          toast.show({ label: 'Playlist vacía' });
+          setShowExportPdfModal(false);
+          return;
+        }
+        const html = buildPlaylistPdfHtml({
+          playlistName: cfg.playlistName,
+          songs: flatSelectedSongs.map((s) => ({
+            title: s.title,
+            author: s.author,
+            key: s.key,
+            capo: s.capo,
+            content: s.content,
+            transpose: s.transpose,
+          })),
+          notation: settings.notation,
+          pageBreakPerSong: cfg.pageBreakPerSong,
+          showChords: cfg.showChords,
+          lyricsFontPt: cfg.lyricsFontPt,
+        });
+
+        if (Platform.OS === 'web') {
+          // Abre una nueva pestaña con el HTML listo para imprimir/PDF.
+          const w = window.open('', '_blank');
+          if (!w) {
+            toast.show({
+              label: 'Permite las ventanas emergentes para exportar',
+            });
+            return;
+          }
+          w.document.open();
+          w.document.write(html);
+          w.document.close();
+          // Pequeño delay para que Inter cargue antes de lanzar print.
+          setTimeout(() => {
+            try {
+              w.focus();
+              w.print();
+            } catch {}
+          }, 600);
+        } else {
+          const Print = await import('expo-print');
+          const { uri } = await Print.printToFileAsync({
+            html,
+            base64: false,
+          });
+          const safeName =
+            cfg.playlistName
+              .replace(/[^\p{L}\p{N}\-_ ]/gu, '')
+              .trim()
+              .slice(0, 60) || 'Playlist';
+          const finalPath = FileSystem.cacheDirectory + `${safeName}.pdf`;
+          try {
+            await FileSystem.moveAsync({ from: uri, to: finalPath });
+          } catch {
+            // Si el move falla (ya existe), simplemente usamos el original.
+          }
+          const sharePath = (await FileSystem.getInfoAsync(finalPath)).exists
+            ? finalPath
+            : uri;
+          await Sharing.shareAsync(sharePath, {
+            mimeType: 'application/pdf',
+            dialogTitle: 'Compartir playlist en PDF',
+            UTI: 'com.adobe.pdf',
+          });
+        }
+        setShowExportPdfModal(false);
+        toast.show({ label: 'PDF generado' });
+      } catch (err) {
+        console.error('Error exportando PDF', err);
+        toast.show({ label: 'Error al generar el PDF' });
+      }
+    },
+    [flatSelectedSongs, settings.notation, toast],
+  );
 
   /**
    * Importa una lista desde texto JSON. Soporta:
@@ -864,12 +972,19 @@ const SelectedSongsScreen: React.FC = () => {
         onPress: () => setCodeDialog({ variant: 'cloud-download' }),
       },
       {
+        id: 'export-pdf',
+        icon: 'picture-as-pdf',
+        label: 'Exportar a PDF',
+        description: 'Letra y acordes con un formato bonito',
+        onPress: handleStartExportPdf,
+        separator: true,
+      },
+      {
         id: 'export-file',
         icon: 'file-upload',
         label: 'Exportar a archivo (.mcm)',
         // description: 'Incluye el tono cambiado y el orden personalizado',
         onPress: handleStartExportFile,
-        separator: true,
       },
       {
         id: 'import-file',
@@ -982,6 +1097,7 @@ const SelectedSongsScreen: React.FC = () => {
   }, [
     handleShareText,
     handleStartExportFile,
+    handleStartExportPdf,
     handleImportFile,
     lastUploadCode,
     choir,
@@ -1334,6 +1450,14 @@ const SelectedSongsScreen: React.FC = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      <ExportPdfModal
+        visible={showExportPdfModal}
+        initialName={exportPdfDefaultName}
+        songCount={flatSelectedSongs.length}
+        onClose={() => setShowExportPdfModal(false)}
+        onSubmit={handleConfirmExportPdf}
+      />
     </View>
   );
 };
