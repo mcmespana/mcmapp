@@ -292,7 +292,22 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
 export const useChoirSession = (): ChoirSessionContextValue => {
   const ctx = useContext(ChoirSessionContext);
   if (!ctx) {
-    throw new Error('useChoirSession must be used within ChoirSessionProvider');
+    // SSG/SSR fallback — provider not mounted during static render.
+    const noop = async () => {};
+    return {
+      mode: 'off',
+      code: null,
+      session: null,
+      overrideTranspose: null,
+      deviceId: '',
+      startAsMaster: noop as any,
+      joinAsSlave: noop as any,
+      leave: noop,
+      publishCurrent: noop,
+      publishPlaylist: noop,
+      setOverrideTranspose: () => {},
+      changeCode: noop as any,
+    };
   }
   return ctx;
 };

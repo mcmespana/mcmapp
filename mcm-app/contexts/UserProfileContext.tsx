@@ -80,7 +80,13 @@ export const UserProfileProvider = ({
 
 export const useUserProfile = () => {
   const ctx = useContext(UserProfileContext);
-  if (!ctx)
-    throw new Error('useUserProfile must be used within UserProfileProvider');
+  if (!ctx) {
+    // SSG/SSR fallback — provider not mounted during static render.
+    return {
+      profile: defaultProfile,
+      setProfile: () => {},
+      loading: true,
+    } as UserProfileContextType;
+  }
   return ctx;
 };

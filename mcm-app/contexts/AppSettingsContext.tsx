@@ -73,7 +73,15 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAppSettings = () => {
   const ctx = useContext(AppSettingsContext);
-  if (!ctx)
-    throw new Error('useAppSettings must be used within AppSettingsProvider');
+  if (!ctx) {
+    // During SSG/SSR (production web builds), components may render outside
+    // of providers.  Return safe defaults so the static shell can be generated
+    // without crashing.  At runtime the provider is always present.
+    return {
+      settings: defaultSettings,
+      setSettings: () => {},
+      loading: true,
+    } as AppSettingsContextType;
+  }
   return ctx;
 };
