@@ -35,6 +35,8 @@ interface Song {
 interface Props {
   song: Song;
   transpose: number;
+  /** Override de cejilla para esta sesión. null = usar la original. */
+  capoOverride?: number | null;
   /** Si se indica, se muestra como prefijo (#1, #2…). */
   position?: number;
   /** Solo modo "Orden libre". */
@@ -52,6 +54,7 @@ interface Props {
 const PlaylistRow: React.FC<Props> = ({
   song,
   transpose,
+  capoOverride,
   position,
   showReorderControls,
   canMoveUp,
@@ -148,11 +151,29 @@ const PlaylistRow: React.FC<Props> = ({
           </View>
 
           <View style={styles.rightSection}>
-            {song.capo && song.capo > 0 ? (
-              <View style={styles.capoPill}>
-                <Text style={styles.capoText}>{`C${song.capo}`}</Text>
-              </View>
-            ) : null}
+            {(() => {
+              const isOverridden =
+                capoOverride !== null && capoOverride !== undefined;
+              const displayCapo = isOverridden ? capoOverride : song.capo;
+              if (!displayCapo || displayCapo <= 0) return null;
+              return (
+                <View
+                  style={[
+                    styles.capoPill,
+                    isOverridden && styles.capoPillOverridden,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.capoText,
+                      isOverridden && styles.capoTextOverridden,
+                    ]}
+                  >
+                    {`C${displayCapo}${isOverridden ? '✱' : ''}`}
+                  </Text>
+                </View>
+              );
+            })()}
 
             {originalKey ? (
               transpose !== 0 ? (
@@ -315,11 +336,19 @@ const createStyles = (isDark: boolean) =>
       borderRadius: 5,
       backgroundColor: isDark ? '#3A3A3C' : '#EBEBEB',
     },
+    capoPillOverridden: {
+      backgroundColor: isDark ? '#3A2D0A' : '#FFF4DA',
+      borderWidth: 1,
+      borderColor: isDark ? '#7A5A00' : '#F4C11E',
+    },
     capoText: {
       fontSize: 11,
       fontWeight: '600',
       color: isDark ? '#AEAEB2' : '#636366',
       fontVariant: ['tabular-nums'],
+    },
+    capoTextOverridden: {
+      color: isDark ? '#F4C11E' : '#7A5A00',
     },
     keyPill: {
       paddingHorizontal: 8,

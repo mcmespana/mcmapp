@@ -35,6 +35,8 @@ export interface PdfSongInput {
   author?: string;
   key?: string;
   capo?: number;
+  /** Override de cejilla para esta sesión. null/undefined = usar la original. */
+  capoOverride?: number | null;
   content?: string; // ChordPro
   transpose?: number;
 }
@@ -107,8 +109,17 @@ function songBlock(song: PdfSongInput, opts: PdfBuildOptions): string {
       );
     }
   }
-  if (song.capo && song.capo > 0) {
-    metaParts.push(`<span class="meta-tag">Cejilla ${song.capo}</span>`);
+  const isCapoOverridden =
+    song.capoOverride !== null && song.capoOverride !== undefined;
+  const effectiveCapo = isCapoOverridden ? song.capoOverride! : song.capo;
+  if (effectiveCapo && effectiveCapo > 0) {
+    if (isCapoOverridden && song.capo && song.capo !== effectiveCapo) {
+      metaParts.push(
+        `<span class="meta-tag">Cejilla ${effectiveCapo} <span class="meta-tag-capo-orig">(orig. ${song.capo})</span></span>`,
+      );
+    } else {
+      metaParts.push(`<span class="meta-tag">Cejilla ${effectiveCapo}</span>`);
+    }
   }
   if (song.author) {
     metaParts.push(
@@ -317,6 +328,11 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
       font-weight: 600;
       font-size: 9pt;
     }
+    .meta-tag-capo-orig {
+      color: #6b7280;
+      font-style: italic;
+      font-weight: 400;
+    }
     .meta-author {
       color: #6b7280;
       font-style: italic;
@@ -414,10 +430,18 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
               transpose !== 0 ? transposeKey(original, transpose) : original;
             keyStr = escapeHtml(convertChord(target, opts.notation));
           }
+          const tocCapo =
+            s.capoOverride !== null && s.capoOverride !== undefined
+              ? s.capoOverride
+              : s.capo;
+          const capoStr =
+            tocCapo && tocCapo > 0
+              ? ` · C${tocCapo}${s.capoOverride !== null && s.capoOverride !== undefined ? '✱' : ''}`
+              : '';
           return `<div class="cover-toc-item">
             <span class="cover-toc-num">${i + 1}.</span>
             <span class="cover-toc-title">${t}</span>
-            ${keyStr ? `<span class="cover-toc-key">${keyStr}</span>` : ''}
+            ${keyStr ? `<span class="cover-toc-key">${keyStr}${escapeHtml(capoStr)}</span>` : ''}
           </div>`;
         })
         .join('')}
