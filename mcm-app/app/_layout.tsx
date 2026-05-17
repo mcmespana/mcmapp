@@ -38,7 +38,8 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import MaintenanceScreen from '@/components/MaintenanceScreen';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import UniwindThemeBridge from '@/components/UniwindThemeBridge';
-import { HeroUINativeProvider, useToast } from 'heroui-native';
+import { HeroUINativeProvider } from 'heroui-native';
+import { AppToastProvider, useToast } from '@/contexts/AppToastContext';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 
@@ -48,20 +49,22 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <HeroUINativeProvider>
-            <ProfileConfigProvider>
-              <AppSettingsProvider>
-                <UniwindThemeBridge />
-                <UserProfileProvider>
-                  <SelectedSongsProvider>
-                    <ChoirSessionProvider>
-                      <NotificationsProvider>
-                        <InnerLayout />
-                      </NotificationsProvider>
-                    </ChoirSessionProvider>
-                  </SelectedSongsProvider>
-                </UserProfileProvider>
-              </AppSettingsProvider>
-            </ProfileConfigProvider>
+            <AppToastProvider>
+              <ProfileConfigProvider>
+                <AppSettingsProvider>
+                  <UniwindThemeBridge />
+                  <UserProfileProvider>
+                    <SelectedSongsProvider>
+                      <ChoirSessionProvider>
+                        <NotificationsProvider>
+                          <InnerLayout />
+                        </NotificationsProvider>
+                      </ChoirSessionProvider>
+                    </SelectedSongsProvider>
+                  </UserProfileProvider>
+                </AppSettingsProvider>
+              </ProfileConfigProvider>
+            </AppToastProvider>
           </HeroUINativeProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>

@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useToast } from 'heroui-native';
+import { useToast } from '@/contexts/AppToastContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { transposeLabel } from '@/utils/transposeKey';
