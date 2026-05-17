@@ -18,7 +18,8 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { useToast, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
+import { useToast } from '@/contexts/AppToastContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';

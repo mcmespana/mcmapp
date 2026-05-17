@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
-import { useToast, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
+import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import SongFontPanel from './SongFontPanel';

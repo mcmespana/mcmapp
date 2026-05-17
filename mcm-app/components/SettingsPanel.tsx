@@ -8,7 +8,8 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native';
-import { PressableFeedback, useToast } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
+import { useToast } from '@/contexts/AppToastContext';
 import CloseIconButton from '@/components/ui/CloseIconButton';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';

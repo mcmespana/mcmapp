@@ -1,7 +1,8 @@
 import React, { useLayoutEffect, useState } from 'react';
 import { View, StyleSheet, Platform, Linking, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useToast, Spinner, Button, PressableFeedback } from 'heroui-native';
+import { Spinner, Button, PressableFeedback } from 'heroui-native';
+import { useToast } from '@/contexts/AppToastContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { MasStackParamList } from '../(tabs)/mas';

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
-import { Spinner, useToast } from 'heroui-native';
+import { Spinner } from 'heroui-native';
+import { useToast } from '@/contexts/AppToastContext';
 import spacing from '@/constants/spacing';
 import iframeStyles from '../../styles/comunica.module.css';
 
