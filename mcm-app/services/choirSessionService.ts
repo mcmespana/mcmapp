@@ -114,7 +114,8 @@ export async function createChoirSession(
     lastActivity: now,
     expiresAt: now + TWO_WEEKS_MS,
   };
-  await set(getRef(code), payload);
+  const cleanPayload = JSON.parse(JSON.stringify(payload));
+  await set(getRef(code), cleanPayload);
   return payload;
 }
 
@@ -124,13 +125,14 @@ export async function publishChoirPlaylist(
   playlist: SelectedSong[],
 ): Promise<void> {
   const now = Date.now();
-  await update(getRef(code), {
+  const updatePayload = {
     playlist,
     updatedAt: now,
     lastActivity: now,
     expiresAt: now + TWO_WEEKS_MS,
     'master/lastSeen': now,
-  });
+  };
+  await update(getRef(code), JSON.parse(JSON.stringify(updatePayload)));
 }
 
 /** Cambia la "canción actual" que el maestro está mostrando. */
@@ -139,13 +141,14 @@ export async function publishChoirCurrent(
   current: Omit<ChoirCurrentSong, 'updatedAt'>,
 ): Promise<void> {
   const now = Date.now();
-  await update(getRef(code), {
+  const updatePayload = {
     current: { ...current, updatedAt: now },
     updatedAt: now,
     lastActivity: now,
     expiresAt: now + TWO_WEEKS_MS,
     'master/lastSeen': now,
-  });
+  };
+  await update(getRef(code), JSON.parse(JSON.stringify(updatePayload)));
 }
 
 /** Suscripción en tiempo real. Devuelve la función `unsubscribe`. */
@@ -188,7 +191,7 @@ export async function changeChoirSessionCode(
   const cur = await fetchChoirSession(oldCode);
   if (!cur) throw new Error('La sesión original ya no existe');
   const moved: ChoirSession = { ...cur, updatedAt: Date.now() };
-  await set(getRef(newCode), moved);
+  await set(getRef(newCode), JSON.parse(JSON.stringify(moved)));
   await remove(getRef(oldCode));
   return moved;
 }

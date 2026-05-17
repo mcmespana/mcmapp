@@ -244,7 +244,7 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
     async (newCode: string) => {
       if (!code) throw new Error('No hay sesión activa');
       if (mode !== 'master') {
-        throw new Error('Solo el maestro puede cambiar el código');
+        throw new Error('Solo el líder puede cambiar el código');
       }
       await changeChoirSessionCode(code, newCode);
       setCode(newCode);

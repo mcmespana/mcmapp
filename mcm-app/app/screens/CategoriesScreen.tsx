@@ -18,7 +18,10 @@ import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { consumePendingCloudPlaylistCode } from '@/utils/pendingCloudPlaylist';
+import {
+  consumePendingCloudPlaylistCode,
+  consumePendingChoirCode,
+} from '@/utils/pendingCloudPlaylist';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
@@ -51,7 +54,7 @@ export default function CategoriesScreen({
     Categories: undefined;
     SongsList: { categoryId: string; categoryName: string };
     SongDetail: { songId: string; songTitle?: string };
-    SelectedSongs: { p?: string } | undefined;
+    SelectedSongs: { p?: string; c?: string } | undefined;
   }>;
 }) {
   const scheme = useColorScheme();
@@ -95,13 +98,17 @@ export default function CategoriesScreen({
   };
 
   // Deep link: si llegamos con un código pendiente de la nube
-  // (proveniente de /playlist?p=1234), saltamos a la pantalla de
-  // seleccionadas con ese código para que dispare el autoimport.
+  // (proveniente de /playlist?p=1234 o /coro?c=1234), saltamos a la pantalla de
+  // seleccionadas con ese código para que dispare el autoimport o auto-join.
   useEffect(() => {
-    const pending = consumePendingCloudPlaylistCode();
-    if (pending) {
+    const pendingPlaylist = consumePendingCloudPlaylistCode();
+    const pendingChoir = consumePendingChoirCode();
+
+    if (pendingPlaylist) {
       // setParams no funciona para una nueva pantalla; usamos navigate.
-      navigation.navigate('SelectedSongs', { p: pending } as any);
+      navigation.navigate('SelectedSongs', { p: pendingPlaylist } as any);
+    } else if (pendingChoir) {
+      navigation.navigate('SelectedSongs', { c: pendingChoir } as any);
     }
   }, [navigation]);
 

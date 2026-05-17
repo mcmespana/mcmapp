@@ -74,7 +74,8 @@ export async function uploadCloudPlaylist(
     updatedAt: now,
     expiresAt: now + SIX_MONTHS_MS,
   };
-  await set(getRef(code), payload);
+  const cleanPayload = JSON.parse(JSON.stringify(payload));
+  await set(getRef(code), cleanPayload);
   return payload;
 }
 

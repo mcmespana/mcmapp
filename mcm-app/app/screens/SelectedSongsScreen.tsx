@@ -161,15 +161,20 @@ const SelectedSongsScreen: React.FC = () => {
     }
   }, []);
 
-  // Auto-import si llegamos con ?p=XXXX en web (deep link).
+  // Auto-import / auto-join si llegamos con ?p=XXXX o ?c=YYYY en web (deep link).
   const autoImportAttempted = useRef(false);
   useEffect(() => {
     if (autoImportAttempted.current) return;
     const params: any = (route?.params as any) || {};
-    const code = params.p ?? params.code;
-    if (typeof code === 'string' && /^\d{4}$/.test(code)) {
+    const playlistCode = params.p ?? params.code;
+    const choirCode = params.c;
+
+    if (typeof playlistCode === 'string' && /^\d{4}$/.test(playlistCode)) {
       autoImportAttempted.current = true;
-      void handleDownloadFromCloud(code);
+      void handleDownloadFromCloud(playlistCode);
+    } else if (typeof choirCode === 'string' && /^\d{4}$/.test(choirCode)) {
+      autoImportAttempted.current = true;
+      void handleJoinChoir(choirCode);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -604,9 +609,45 @@ const SelectedSongsScreen: React.FC = () => {
 
   const showUploadSuccess = useCallback(
     (code: string) => {
-      const url = `${WEB_BASE_URL}/cancionero/seleccionadas?p=${code}`;
+      const url = `${WEB_BASE_URL}/playlist?p=${code}`;
       setConfirmDialog({
         title: `¡Subida! Código ${code}`,
+        description: `Compártelo o copia el enlace:\n${url}`,
+        actions: [
+          {
+            label: 'Copiar enlace',
+            variant: 'primary',
+            onPress: () => {
+              void Clipboard.setStringAsync(url);
+              toast.show({ label: 'Enlace copiado' });
+              setConfirmDialog(null);
+            },
+          },
+          {
+            label: 'Copiar solo el código',
+            variant: 'secondary',
+            onPress: () => {
+              void Clipboard.setStringAsync(code);
+              toast.show({ label: 'Código copiado' });
+              setConfirmDialog(null);
+            },
+          },
+          {
+            label: 'Cerrar',
+            variant: 'secondary',
+            onPress: () => setConfirmDialog(null),
+          },
+        ],
+      });
+    },
+    [toast],
+  );
+
+  const showChoirSuccess = useCallback(
+    (code: string) => {
+      const url = `${WEB_BASE_URL}/coro?c=${code}`;
+      setConfirmDialog({
+        title: `¡Coro iniciado! Código ${code}`,
         description: `Compártelo o copia el enlace:\n${url}`,
         actions: [
           {
@@ -711,7 +752,7 @@ const SelectedSongsScreen: React.FC = () => {
                 setConfirmDialog(null);
                 try {
                   await choir.startAsMaster(code, selectedSongs);
-                  toast.show({ label: `Sesión coro iniciada: ${code}` });
+                  showChoirSuccess(code);
                 } catch (e: any) {
                   toast.show({ label: e?.message ?? 'Error al iniciar' });
                 }
@@ -736,9 +777,9 @@ const SelectedSongsScreen: React.FC = () => {
       }
       await choir.startAsMaster(code, selectedSongs);
       setCodeDialog(null);
-      toast.show({ label: `Sesión coro iniciada: ${code}` });
+      showChoirSuccess(code);
     },
-    [choir, selectedSongs, toast],
+    [choir, selectedSongs, toast, showChoirSuccess],
   );
 
   const handleJoinChoir = useCallback(

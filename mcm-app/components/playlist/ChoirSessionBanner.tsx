@@ -14,8 +14,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
+  Share,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useToast } from 'heroui-native';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { transposeLabel } from '@/utils/transposeKey';
@@ -39,8 +42,25 @@ const ChoirSessionBanner: React.FC<Props> = ({ floating, topOffset = 0 }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = useMemo(() => createStyles(isDark), [isDark]);
+  const { toast } = useToast();
 
   if (mode === 'off' || !code) return null;
+
+  const handleShare = () => {
+    const url = `https://mcm.expo.app/coro?c=${code}`;
+    const desktopLike =
+      Platform.OS === 'web' ||
+      Platform.OS === 'windows' ||
+      Platform.OS === 'macos';
+    if (desktopLike) {
+      void Clipboard.setStringAsync(url);
+      toast.show({ label: 'Enlace copiado al portapapeles' });
+    } else {
+      Share.share({ message: `Únete al coro con este enlace:\n${url}` }).catch(
+        () => {},
+      );
+    }
+  };
 
   const masterTranspose = session?.current?.transpose ?? 0;
   const isOverriding = overrideTranspose !== null;
@@ -73,7 +93,7 @@ const ChoirSessionBanner: React.FC<Props> = ({ floating, topOffset = 0 }) => {
         </View>
         <View style={styles.textBlock}>
           <Text style={styles.role}>
-            {mode === 'master' ? 'Maestro de coro' : 'Coro'} · {code}
+            {mode === 'master' ? 'Líder de coro' : 'Coro'} · {code}
           </Text>
           <Text style={styles.detail}>
             {session?.current ? (
@@ -92,6 +112,13 @@ const ChoirSessionBanner: React.FC<Props> = ({ floating, topOffset = 0 }) => {
       </View>
 
       <View style={styles.right}>
+        <TouchableOpacity
+          style={styles.leaveBtn}
+          onPress={handleShare}
+          hitSlop={6}
+        >
+          <MaterialIcons name="share" size={16} color="#fff" />
+        </TouchableOpacity>
         {mode === 'slave' && session?.current ? (
           isOverriding ? (
             <TouchableOpacity

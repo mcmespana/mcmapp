@@ -6,18 +6,33 @@
  * lo perdemos y eso está bien — la URL ya no contiene el parámetro tras
  * el redirect.
  */
-let pending: string | null = null;
+let pendingPlaylist: string | null = null;
+let pendingChoir: string | null = null;
 
 export function setPendingCloudPlaylistCode(code: string | null) {
-  pending = code;
+  pendingPlaylist = code;
 }
 
 export function consumePendingCloudPlaylistCode(): string | null {
-  const code = pending;
-  pending = null;
+  const code = pendingPlaylist;
+  pendingPlaylist = null;
   return code;
 }
 
 export function peekPendingCloudPlaylistCode(): string | null {
-  return pending;
+  return pendingPlaylist;
+}
+
+export function setPendingChoirCode(code: string | null) {
+  pendingChoir = code;
+}
+
+export function consumePendingChoirCode(): string | null {
+  const code = pendingChoir;
+  pendingChoir = null;
+  return code;
+}
+
+export function peekPendingChoirCode(): string | null {
+  return pendingChoir;
 }
