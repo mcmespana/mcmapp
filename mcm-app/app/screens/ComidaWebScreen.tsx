@@ -1,13 +1,8 @@
 import React, { useLayoutEffect, useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  Platform,
-  Linking,
-  Text,
-} from 'react-native';
+import { View, StyleSheet, Platform, Linking, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useToast, Spinner, Button, PressableFeedback } from 'heroui-native';
+import { Spinner, Button, PressableFeedback } from 'heroui-native';
+import { useToast } from '@/contexts/AppToastContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { MasStackParamList } from '../(tabs)/mas';
@@ -15,7 +10,7 @@ import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 // Usando el mismo CSS que funcionó en comunica.tsx
-import iframeStyles from '../(tabsdesactivados)/comunica.module.css';
+import iframeStyles from '../../styles/comunica.module.css';
 type Route = RouteProp<MasStackParamList, 'ComidaWeb'>;
 
 export default function ComidaWebScreen() {
@@ -64,7 +59,8 @@ export default function ComidaWebScreen() {
   const onError = () => {
     toast.show({
       variant: 'danger',
-      label: 'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      label:
+        'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
       actionLabel: 'Cerrar',
       onActionPress: ({ hide }) => hide(),
     });
@@ -87,7 +83,9 @@ export default function ComidaWebScreen() {
             style={styles.redirectButton}
           >
             <MaterialIcons name="open-in-new" size={20} color="#fff" />
-            <Button.Label style={styles.redirectButtonText}>Abrir sitio web</Button.Label>
+            <Button.Label style={styles.redirectButtonText}>
+              Abrir sitio web
+            </Button.Label>
           </Button>
           <Button
             variant="ghost"

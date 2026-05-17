@@ -6,23 +6,26 @@ Se ejecuta automáticamente cada día a las **00:05 UTC** vía GitHub Actions, y
 
 ## Estructura Firebase
 
-```
+```json
 seccion_oracion/
   lecturas/
     YYYY-MM-DD/
       evangelio/
         activo: "vidaNueva"              ← fuente preferida (para el frontend)
+        vidaNuevaCita: "Juan 11,1-45..."
         vidaNuevaComentario: "..."
         vidaNuevaComentarista: "..."
-        vidaNuevaCita: "Juan 7,40-53"
         vidaNuevaEvangelioTexto: "..."
-        vidaNuevaTitulo: "..."
-        vidaNuevaPrimeraLectura: "..."
-        vidaNuevaSalmo: "..."
-        vidaNuevaSantos: "..."
-        vidaNuevaURL: "https://..."
         vidaNuevaLastUpdated: "2026-03-21T00:07:33Z"
-```
+        vidaNuevaURL: "https://..."
+      info/
+        activo: "vidaNueva"
+        vidaNuevaDiaLiturgico: "Domingo V de Cuaresma..."
+        vidaNuevaEvangelio: "Juan 11,1-45..."
+        vidaNuevaPrimeraLectura: "Ezequiel 37,12-14"
+        vidaNuevaSegundaLectura: "Romanos 8,8-11"
+        vidaNuevaSalmo: "129"
+        vidaNuevaTitulo: "..."
 
 ## Fuentes implementadas
 

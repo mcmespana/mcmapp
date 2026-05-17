@@ -1,11 +1,5 @@
 import { useEffect, useState, useLayoutEffect, useRef } from 'react';
-import {
-  StyleSheet,
-  View,
-  Platform,
-  Dimensions,
-  Animated,
-} from 'react-native';
+import { StyleSheet, View, Platform, Dimensions, Animated } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GestureRecognizer from 'react-native-swipe-gestures';
@@ -15,11 +9,20 @@ import SongControls from '../../components/SongControls';
 import { RouteProp, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '../../contexts/SelectedSongsContext';
+import { useChoirSession } from '../../contexts/ChoirSessionContext';
 import { IconSymbol } from '../../components/ui/IconSymbol';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useColorScheme } from '../../hooks/useColorScheme';
+import ChoirSessionBanner from '../../components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import colors, { Colors, UIColors } from '@/constants/colors';
+import { shadows } from '@/constants/uiStyles';
+import { durations } from '@/constants/animations';
+
+// Apple iOS system green — used as a "selected/done" tint inside the
+// add/remove song button. Not part of the MCM brand palette: it's an
+// intentional native iOS convention preserved for visual consistency.
+const APPLE_SYSTEM_GREEN = '#34C759';
 
 const availableFonts = [
   {
@@ -64,7 +67,15 @@ export default function SongDetailScreen({
     source,
     firebaseCategory,
   } = route.params;
-  const { addSong, removeSong, isSongSelected } = useSelectedSongs();
+  const {
+    addSong,
+    removeSong,
+    isSongSelected,
+    getSelectedSong,
+    setTranspose: setSelectionTranspose,
+    setCapoOverride: setSelectionCapoOverride,
+  } = useSelectedSongs();
+  const choir = useChoirSession();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -79,7 +90,36 @@ export default function SongDetailScreen({
 
   const [isFileLoading, setIsFileLoading] = useState(true);
   const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
-  const [currentTranspose, setCurrentTranspose] = useState(0);
+  // Si la canción está en la selección, su `transpose` vive en el contexto
+  // (single source of truth). Si no, usamos este estado local efímero.
+  const selectedMeta = getSelectedSong(filename);
+  const [localTranspose, setLocalTranspose] = useState(0);
+  const [localCapoOverride, setLocalCapoOverride] = useState<number | null>(
+    null,
+  );
+  // En modo coro:
+  //  - el MAESTRO publica el transpose visible (local o seleccionado).
+  //  - el ESCLAVO usa el transpose del maestro salvo que tenga override.
+  const masterCurrent = choir.session?.current;
+  const slaveTransposeFromChoir =
+    choir.mode === 'slave' && masterCurrent?.filename === filename
+      ? (choir.overrideTranspose ?? masterCurrent.transpose)
+      : null;
+  const currentTranspose =
+    slaveTransposeFromChoir !== null
+      ? slaveTransposeFromChoir
+      : selectedMeta
+        ? selectedMeta.transpose
+        : localTranspose;
+
+  // Capo override: selección > local efímero. El coro master publica el
+  // override; el esclavo usa el de la selección local (no el del master).
+  const currentCapoOverride =
+    selectedMeta?.capoOverride !== undefined
+      ? (selectedMeta.capoOverride ?? null)
+      : localCapoOverride;
+  const effectiveCapo =
+    currentCapoOverride !== null ? currentCapoOverride : capo;
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
@@ -93,7 +133,8 @@ export default function SongDetailScreen({
     notation,
     author,
     key,
-    capo,
+    capo: effectiveCapo,
+    isDark,
   });
 
   const isSelected = isSongSelected(filename);
@@ -124,8 +165,8 @@ export default function SongDetailScreen({
           color={
             Platform.OS === 'web'
               ? currentlySelected
-                ? '#34C759'
-                : '#253883'
+                ? APPLE_SYSTEM_GREEN
+                : colors.primary
               : '#fff'
           }
         />
@@ -156,7 +197,52 @@ export default function SongDetailScreen({
       setOriginalChordPro(null);
       setIsFileLoading(false);
     }
+    // Al cambiar de canción reseteamos los estados efímeros locales.
+    setLocalTranspose(0);
+    setLocalCapoOverride(null);
   }, [filename, content]);
+
+  // Modo coro - MAESTRO: cuando entro a una canción, lo publico para los
+  // esclavos junto con todos los metadatos para que la puedan renderizar
+  // sin tener que buscarla en su cantoral local.
+  useEffect(() => {
+    if (choir.mode !== 'master' || !filename) return;
+    void choir.publishCurrent({
+      filename,
+      transpose: currentTranspose,
+      capoOverride: currentCapoOverride,
+      screen: 'detail',
+      title: _navScreenTitle,
+      author,
+      songKey: key,
+      capo,
+      content,
+      firebaseCategory,
+    });
+    // Solo al montar / cambiar de canción, no en cada cambio de transpose
+    // (eso lo hace explícitamente handleSetTranspose).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [choir.mode, filename]);
+
+  // (la navegación del esclavo se gestiona en `cancionero.tsx` mediante
+  //  un observador del contexto coro que opera sobre el navigator del stack)
+
+  const handleSetCapoOverride = (newCapo: number | null) => {
+    if (selectedMeta) {
+      setSelectionCapoOverride(filename, newCapo);
+    } else {
+      setLocalCapoOverride(newCapo);
+    }
+    // Si soy maestro, publico el cambio.
+    if (choir.mode === 'master') {
+      void choir.publishCurrent({
+        filename,
+        transpose: currentTranspose,
+        capoOverride: newCapo,
+        screen: 'detail',
+      });
+    }
+  };
 
   const handleToggleChords = () =>
     setSettings({ chordsVisible: !chordsVisible });
@@ -164,7 +250,27 @@ export default function SongDetailScreen({
     let newTranspose = semitones;
     if (newTranspose >= 12 || newTranspose <= -12)
       newTranspose = newTranspose % 12;
-    setCurrentTranspose(newTranspose);
+
+    if (slaveTransposeFromChoir !== null) {
+      // Esclavo: cambiar tono = override local (no afecta a la sesión remota).
+      choir.setOverrideTranspose(newTranspose);
+      return;
+    }
+    if (selectedMeta) {
+      // Persistir en la selección.
+      setSelectionTranspose(filename, newTranspose);
+    } else {
+      setLocalTranspose(newTranspose);
+    }
+    // Si soy maestro, publico el cambio aunque la canción no esté seleccionada
+    // (el maestro puede abrir cualquier canción del cantoral).
+    if (choir.mode === 'master') {
+      void choir.publishCurrent({
+        filename,
+        transpose: newTranspose,
+        screen: 'detail',
+      });
+    }
   };
   const handleSetFontSize = (newSizeEm: number) =>
     setSettings({ fontSize: newSizeEm });
@@ -211,14 +317,14 @@ export default function SongDetailScreen({
     const toValue = direction === 'next' ? -screenWidth : screenWidth;
     Animated.timing(slideAnim, {
       toValue,
-      duration: 200,
+      duration: durations.quick,
       useNativeDriver: true,
     }).start(() => {
       navigation.setParams(params);
       slideAnim.setValue(-toValue);
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 200,
+        duration: durations.quick,
         useNativeDriver: true,
       }).start();
     });
@@ -261,9 +367,15 @@ export default function SongDetailScreen({
       style={[
         styles.container,
         { transform: [{ translateX: slideAnim }] },
-        { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+        {
+          backgroundColor: isDark
+            ? Colors.dark.background
+            : Colors.light.background,
+        },
       ]}
     >
+      {isIOS && <View style={{ height: insets.top + 52 }} />}
+      <ChoirSessionBanner />
       <SongDisplay
         songHtml={songHtml}
         isLoading={isFileLoading || isSongProcessing || isLoadingSettings}
@@ -290,6 +402,8 @@ export default function SongDetailScreen({
         songInfo=""
         songContent={content}
         firebaseCategory={firebaseCategory}
+        currentCapoOverride={currentCapoOverride}
+        onSetCapoOverride={handleSetCapoOverride}
       />
 
       {/* iOS: floating overlay buttons (back + add-to-selection) */}
@@ -304,10 +418,10 @@ export default function SongDetailScreen({
             accessibilityLabel="Volver"
           >
             <PressableFeedback.Highlight />
-            <MaterialIcons
-              name="chevron-left"
+            <IconSymbol
+              name="chevron.left"
               size={26}
-              color={isDark ? '#f4c11e' : '#253883'}
+              color={isDark ? UIColors.accentYellow : colors.primary}
             />
           </PressableFeedback>
 
@@ -328,7 +442,13 @@ export default function SongDetailScreen({
             <IconSymbol
               name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
               size={22}
-              color={isSelected ? '#34C759' : isDark ? '#f4c11e' : '#253883'}
+              color={
+                isSelected
+                  ? APPLE_SYSTEM_GREEN
+                  : isDark
+                    ? UIColors.accentYellow
+                    : colors.primary
+              }
             />
           </PressableFeedback>
         </View>
@@ -376,14 +496,13 @@ const styles = StyleSheet.create({
   iosFloatBtn: {
     width: 44,
     height: 44,
+    // 44/2 — circular. radii.full (28) is for 56x56 FABs; here we keep
+    // a literal half-of-width because the button is custom-sized.
     borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    ...(shadows.md as object),
   },
   iosFloatBtnDark: {
     backgroundColor: 'rgba(44,44,46,0.88)',

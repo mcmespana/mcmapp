@@ -2,17 +2,27 @@ name: Scraper Lecturas Diario
 
 on:
   schedule:
-    - cron: "15 0 * * *"   # 01:15h España invierno (CET = UTC+1)
-    - cron: "15 23 * * *"  # 01:15h España verano  (CEST = UTC+2)
+    - cron: "10 0 * * *"   # 01:10h España invierno (CET  = UTC+1)
+    - cron: "10 23 * * *"  # 01:10h España verano  (CEST = UTC+2)
 
   workflow_dispatch:
     inputs:
       date:
-        description: "Fecha a scrapear (YYYY-MM-DD). Vacío = hoy en UTC."
+        description: "Fecha base (YYYY-MM-DD). Vacío = hoy en Europe/Madrid."
         required: false
         default: ""
       dry_run:
-        description: "Dry-run: hacer scraping sin escribir en Firebase"
+        description: "Dry-run: scraping sin escribir en Firebase"
+        required: false
+        type: boolean
+        default: false
+      backfill_dominicos:
+        description: "Backfill Dominicos: procesa -30..+30 días ignorando skip_existing"
+        required: false
+        type: boolean
+        default: false
+      cleanup_only:
+        description: "Solo limpiar fechas antiguas, sin scraping"
         required: false
         type: boolean
         default: false
@@ -42,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-time
     if: needs.check-time.outputs.should_run == 'true'
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Checkout código
@@ -72,11 +82,18 @@ jobs:
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
+          if [ "${{ github.event.inputs.backfill_dominicos }}" = "true" ]; then
+            ARGS="$ARGS --backfill-dominicos"
+          fi
+          if [ "${{ github.event.inputs.cleanup_only }}" = "true" ]; then
+            ARGS="$ARGS --cleanup-only"
+          fi
           python main.py $ARGS
 
       - name: Resumen en caso de fallo
         if: failure()
         run: |
           echo "::error::El scraper de lecturas falló."
-          echo "::error::Revisar los logs. Si hay HTTP 403, puede ser IP blocking del site."
-          echo "::error::Ver README.md en scrapping-lecturas/ para opciones de solución."
+          echo "::error::Revisar logs. Si hay HTTP 403/429 en Dominicos, posible rate-limit."
+          echo "::error::Si VidaNueva da 403, ver README.md en scrapping-lecturas/."
+          echo "::error::Para backfill manual: workflow_dispatch con backfill_dominicos=true."

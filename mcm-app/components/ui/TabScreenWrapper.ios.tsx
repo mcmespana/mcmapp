@@ -6,7 +6,7 @@ import { useCurrentTabColor } from '@/hooks/useCurrentTabColor';
 interface TabScreenWrapperProps {
   children: React.ReactNode;
   style?: any;
-  edges?: Array<'top' | 'right' | 'bottom' | 'left'>;
+  edges?: ('top' | 'right' | 'bottom' | 'left')[];
 }
 
 export default function TabScreenWrapper({

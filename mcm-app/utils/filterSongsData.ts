@@ -24,7 +24,8 @@ export function filterSongsData(data: SongsData | null): SongsData | null {
     if (!category) return;
     const songs = Array.isArray(category.songs)
       ? category.songs.filter(
-          (s) => !s.status || (s.status !== 'pendiente' && s.status !== 'borrador'),
+          (s) =>
+            !s.status || (s.status !== 'pendiente' && s.status !== 'borrador'),
         )
       : [];
     result[catKey] = { ...category, songs };

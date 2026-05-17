@@ -7,12 +7,15 @@ import {
   Animated,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Chip } from 'heroui-native';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
+import { transposeKey, transposeLabel } from '../utils/transposeKey';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Colors, StateColors } from '@/constants/colors';
+import { durations } from '@/constants/animations';
 
 // Type for song data
 interface Song {
@@ -32,199 +35,227 @@ interface SongListItemProps {
   isSearchAllMode?: boolean;
 }
 
-const SongListItem: React.FC<SongListItemProps> = ({
-  song,
-  onPress,
-  isSearchAllMode = false,
-}) => {
-  const { addSong, removeSong, isSongSelected } = useSelectedSongs();
-  const { settings } = useSettings();
-  const { notation } = settings;
-  const scheme = useColorScheme();
-  const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
-  const isDark = scheme === 'dark';
-  const swipeableRow = useRef<Swipeable>(null);
-  const isSelected = isSongSelected(song.filename);
-  const backgroundColorAnim = useRef(
-    new Animated.Value(isSelected ? 1 : 0),
-  ).current;
+const SongListItem: React.FC<SongListItemProps> = React.memo(
+  function SongListItem({ song, onPress, isSearchAllMode = false }) {
+    const { addSong, removeSong, isSongSelected, getSelectedSong } =
+      useSelectedSongs();
+    const { settings } = useSettings();
+    const { notation } = settings;
+    const scheme = useColorScheme();
+    const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
+    const isDark = scheme === 'dark';
+    const swipeableRow = useRef<Swipeable>(null);
+    const isSelected = isSongSelected(song.filename);
+    const selectedMeta = isSelected
+      ? getSelectedSong(song.filename)
+      : undefined;
+    const selectedTranspose = selectedMeta?.transpose ?? 0;
+    const backgroundColorAnim = useRef(
+      new Animated.Value(isSelected ? 1 : 0),
+    ).current;
 
-  useEffect(() => {
-    Animated.timing(backgroundColorAnim, {
-      toValue: isSelected ? 1 : 0,
-      duration: 250,
-      useNativeDriver: false,
-    }).start();
-  }, [isSelected, backgroundColorAnim]);
+    useEffect(() => {
+      Animated.timing(backgroundColorAnim, {
+        toValue: isSelected ? 1 : 0,
+        duration: durations.base,
+        useNativeDriver: false,
+      }).start();
+    }, [isSelected, backgroundColorAnim]);
 
-  const animatedStyle = {
-    backgroundColor: backgroundColorAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [
-        isDark ? '#2C2C2E' : '#fff',
-        isDark ? '#1A3320' : '#E8F5E9',
-      ],
-    }),
-  };
+    const animatedStyle = {
+      backgroundColor: backgroundColorAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [
+          isDark ? Colors.dark.background : Colors.light.background,
+          isDark ? StateColors.selectedBgDark : StateColors.selectedBgLight,
+        ],
+      }),
+    };
 
-  const renderRightActions = (
-    progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>,
-  ) => {
-    const trans = dragX.interpolate({
-      inputRange: [-100, 0],
-      outputRange: [0, 100],
-      extrapolate: 'clamp',
-    });
-    return (
-      <TouchableOpacity
-        style={styles.rightAction}
-        onPress={() => {
-          addSong(song.filename);
-          swipeableRow.current?.close();
-        }}
-      >
-        <Animated.View
-          style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
-        >
-          <IconSymbol name="plus.circle" size={22} color="#fff" />
-          <Text style={styles.actionText}>Seleccionar</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderLeftActions = (
-    progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>,
-  ) => {
-    const trans = dragX.interpolate({
-      inputRange: [0, 100],
-      outputRange: [-100, 0],
-      extrapolate: 'clamp',
-    });
-    return (
-      <TouchableOpacity
-        style={styles.leftAction}
-        onPress={() => {
-          removeSong(song.filename);
-          swipeableRow.current?.close();
-        }}
-      >
-        <Animated.View
-          style={[styles.actionContent, { transform: [{ translateX: trans }] }]}
-        >
-          <IconSymbol name="minus.circle" size={22} color="#fff" />
-          <Text style={styles.actionText}>Quitar</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  };
-
-  const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
-
-  return (
-    <Swipeable
-      ref={swipeableRow}
-      renderRightActions={!isSelected ? renderRightActions : undefined}
-      renderLeftActions={isSelected ? renderLeftActions : undefined}
-      onSwipeableOpen={(direction) => {
-        if (direction === 'right' && !isSelected) {
-          addSong(song.filename);
-          swipeableRow.current?.close();
-        } else if (direction === 'left' && isSelected) {
-          removeSong(song.filename);
-          swipeableRow.current?.close();
-        }
-      }}
-    >
-      <Animated.View style={[styles.songItemOuter, animatedStyle]}>
+    const renderRightActions = (
+      progress: Animated.AnimatedInterpolation<number>,
+      dragX: Animated.AnimatedInterpolation<number>,
+    ) => {
+      const trans = dragX.interpolate({
+        inputRange: [-100, 0],
+        outputRange: [0, 100],
+        extrapolate: 'clamp',
+      });
+      return (
         <TouchableOpacity
-          onPress={() => onPress(song)}
-          style={styles.songItemInner}
-          activeOpacity={0.6}
+          style={styles.rightAction}
+          onPress={() => {
+            addSong(song.filename);
+            swipeableRow.current?.close();
+          }}
         >
-          <View style={styles.leftSection}>
-            {isSelected && <View style={styles.selectedDot} />}
-            <View style={styles.songInfoContainer}>
-              <Text
-                style={styles.songTitle}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {cleanTitle}
-              </Text>
-              <View style={styles.metaLine}>
-                {isSearchAllMode &&
-                song.originalCategoryKey &&
-                song.numericFilenamePart ? (
-                  <View style={styles.metaPills}>
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      style={{ marginRight: 8 }}
-                    >
-                      <Chip.Label style={styles.categoryPillText}>
-                        {song.originalCategoryKey}
-                        {song.numericFilenamePart}
-                      </Chip.Label>
-                    </Chip>
-                    {song.author && (
-                      <Text
-                        style={styles.authorText}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
-                        {song.author}
-                      </Text>
-                    )}
-                  </View>
-                ) : (
-                  <View style={styles.metaPills}>
-                    {song.numericFilenamePart && (
-                      <Text style={styles.numberText}>
-                        #{song.numericFilenamePart}
-                      </Text>
-                    )}
-                    {song.numericFilenamePart && song.author ? (
-                      <Text style={styles.metaSeparator}>{' - '}</Text>
-                    ) : null}
-                    {song.author && (
-                      <Text
-                        style={styles.authorText}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
-                        {song.author}
-                      </Text>
-                    )}
-                  </View>
-                )}
+          <Animated.View
+            style={[
+              styles.actionContent,
+              { transform: [{ translateX: trans }] },
+            ]}
+          >
+            <IconSymbol name="plus.circle" size={22} color="#fff" />
+            <Text style={styles.actionText}>Seleccionar</Text>
+          </Animated.View>
+        </TouchableOpacity>
+      );
+    };
+
+    const renderLeftActions = (
+      progress: Animated.AnimatedInterpolation<number>,
+      dragX: Animated.AnimatedInterpolation<number>,
+    ) => {
+      const trans = dragX.interpolate({
+        inputRange: [0, 100],
+        outputRange: [-100, 0],
+        extrapolate: 'clamp',
+      });
+      return (
+        <TouchableOpacity
+          style={styles.leftAction}
+          onPress={() => {
+            removeSong(song.filename);
+            swipeableRow.current?.close();
+          }}
+        >
+          <Animated.View
+            style={[
+              styles.actionContent,
+              { transform: [{ translateX: trans }] },
+            ]}
+          >
+            <IconSymbol name="minus.circle" size={22} color="#fff" />
+            <Text style={styles.actionText}>Quitar</Text>
+          </Animated.View>
+        </TouchableOpacity>
+      );
+    };
+
+    const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
+
+    return (
+      <Swipeable
+        ref={swipeableRow}
+        renderRightActions={!isSelected ? renderRightActions : undefined}
+        renderLeftActions={isSelected ? renderLeftActions : undefined}
+        onSwipeableOpen={(direction) => {
+          if (direction === 'right' && !isSelected) {
+            addSong(song.filename);
+            swipeableRow.current?.close();
+          } else if (direction === 'left' && isSelected) {
+            removeSong(song.filename);
+            swipeableRow.current?.close();
+          }
+        }}
+      >
+        <Animated.View style={[styles.songItemOuter, animatedStyle]}>
+          <TouchableOpacity
+            onPress={() => onPress(song)}
+            style={styles.songItemInner}
+            activeOpacity={0.6}
+          >
+            <View style={styles.leftSection}>
+              {isSelected && <View style={styles.selectedDot} />}
+              <View style={styles.songInfoContainer}>
+                <Text
+                  style={styles.songTitle}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {cleanTitle}
+                </Text>
+                <View style={styles.metaLine}>
+                  {isSearchAllMode &&
+                  song.originalCategoryKey &&
+                  song.numericFilenamePart ? (
+                    <View style={styles.metaPills}>
+                      <View style={[styles.categoryPill, { marginRight: 8 }]}>
+                        <Text style={styles.categoryPillText}>
+                          {`${song.originalCategoryKey}${song.numericFilenamePart}`}
+                        </Text>
+                      </View>
+                      {song.author && (
+                        <Text
+                          style={styles.authorText}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {song.author}
+                        </Text>
+                      )}
+                    </View>
+                  ) : (
+                    <View style={styles.metaPills}>
+                      {song.numericFilenamePart && (
+                        <Text style={styles.numberText}>
+                          #{song.numericFilenamePart}
+                        </Text>
+                      )}
+                      {song.numericFilenamePart && song.author ? (
+                        <Text style={styles.metaSeparator}>{' - '}</Text>
+                      ) : null}
+                      {song.author && (
+                        <Text
+                          style={styles.authorText}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {song.author}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
-          <View style={styles.rightSection}>
-            {song.capo && song.capo > 0 ? (
-              <Chip size="sm" variant="soft" color="default">
-                <Chip.Label
-                  style={styles.capoText}
-                >{`C${song.capo}`}</Chip.Label>
-              </Chip>
-            ) : null}
-            {song.key ? (
-              <Chip size="sm" variant="soft" color="accent">
-                <Chip.Label style={styles.keyText}>
-                  {convertChord(song.key.toUpperCase(), notation)}
-                </Chip.Label>
-              </Chip>
-            ) : null}
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
-    </Swipeable>
-  );
-};
+            <View style={styles.rightSection}>
+              {song.capo && song.capo > 0 ? (
+                <View style={styles.capoPill}>
+                  <Text style={styles.capoText}>{`C${song.capo}`}</Text>
+                </View>
+              ) : null}
+              {song.key ? (
+                selectedTranspose !== 0 ? (
+                  <View style={styles.toneTransposedWrap}>
+                    <Text style={styles.toneOriginalStriked}>
+                      {convertChord(song.key.toUpperCase(), notation)}
+                    </Text>
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={12}
+                      color={isDark ? '#8E8E93' : '#8E8E93'}
+                    />
+                    <View style={styles.keyPillTransposed}>
+                      <Text style={styles.keyTextTransposed}>
+                        {convertChord(
+                          transposeKey(
+                            song.key.toUpperCase(),
+                            selectedTranspose,
+                          ),
+                          notation,
+                        )}
+                      </Text>
+                      <Text style={styles.transposeBadge}>
+                        {transposeLabel(selectedTranspose)}
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.keyPill}>
+                    <Text style={styles.keyText}>
+                      {convertChord(song.key.toUpperCase(), notation)}
+                    </Text>
+                  </View>
+                )
+              ) : null}
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </Swipeable>
+    );
+  },
+);
 
 const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';
@@ -271,9 +302,17 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       flex: 1,
     },
+    categoryPill: {
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 100,
+      backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderWidth: 1,
+      borderColor: isDark ? '#48484A' : '#D1D1D6',
+    },
     categoryPillText: {
-      fontSize: 12,
-      fontWeight: '600',
+      fontSize: 11,
+      fontWeight: '700',
       color: isDark ? '#AEAEB2' : '#636366',
       fontVariant: ['tabular-nums'],
     },
@@ -295,17 +334,66 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     rightSection: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: 5,
+    },
+    capoPill: {
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+      borderRadius: 5,
+      backgroundColor: isDark ? '#3A3A3C' : '#EBEBEB',
+    },
+    capoText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: isDark ? '#AEAEB2' : '#636366',
+      fontVariant: ['tabular-nums'],
+    },
+    keyPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
     },
     keyText: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: '700',
       color: isDark ? '#7AB3FF' : '#253883',
     },
-    capoText: {
+    toneTransposedWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    toneOriginalStriked: {
       fontSize: 12,
-      fontWeight: '600',
-      color: isDark ? '#AEAEB2' : '#636366',
+      fontWeight: '500',
+      color: isDark ? '#636366' : '#A0A0A8',
+      textDecorationLine: 'line-through',
+    },
+    keyPillTransposed: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+      borderRadius: 6,
+      backgroundColor: '#FFF4DA',
+      borderWidth: 1,
+      borderColor: '#F4C11E',
+    },
+    keyTextTransposed: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#7A5A00',
+    },
+    transposeBadge: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: '#9D5C00',
+      fontVariant: ['tabular-nums'],
+      backgroundColor: 'rgba(255,255,255,0.7)',
+      paddingHorizontal: 3,
+      borderRadius: 3,
     },
     rightAction: {
       backgroundColor: '#34C759',

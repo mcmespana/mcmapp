@@ -14,27 +14,26 @@ import { Platform } from 'react-native';
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     // Puedes personalizar el comportamiento basado en la categoría
-    const category = notification.request.content.data?.category as string | undefined;
-    const priority = notification.request.content.data?.priority as string | undefined;
+    const category = notification.request.content.data?.category as
+      | string
+      | undefined;
+    const priority = notification.request.content.data?.priority as
+      | string
+      | undefined;
 
-    // Notificaciones urgentes siempre suenan y se muestran
-    if (category === 'urgente' || priority === 'high') {
-      return {
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-        shouldShowAlert: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      };
-    }
-
-    // Notificaciones normales
+    // ── Foreground: NO mostrar banner/alert/list del sistema ──
+    // La notificación se gestiona internamente por el listener
+    // `notificationReceived` de usePushNotifications (la guarda en AsyncStorage
+    // y actualiza el badge). Mostrar también via el sistema nativo causa
+    // duplicados/triplicados en el centro de notificaciones de iOS.
+    //
+    // Solo reproducimos sonido y actualizamos badge del icono de la app.
     return {
       shouldPlaySound: true,
       shouldSetBadge: true,
-      shouldShowAlert: Platform.OS === 'ios',
-      shouldShowBanner: Platform.OS === 'android',
-      shouldShowList: true,
+      shouldShowAlert: false,
+      shouldShowBanner: false,
+      shouldShowList: false,
     };
   },
 });
@@ -52,7 +51,7 @@ if (Platform.OS === 'ios') {
         opensAppToForeground: true,
       },
     },
-  ]).catch(err => console.error('Error configurando categorías:', err));
+  ]).catch((err) => console.error('Error configurando categorías:', err));
 
   Notifications.setNotificationCategoryAsync('eventos', [
     {
@@ -62,7 +61,7 @@ if (Platform.OS === 'ios') {
         opensAppToForeground: true,
       },
     },
-  ]).catch(err => console.error('Error configurando categorías:', err));
+  ]).catch((err) => console.error('Error configurando categorías:', err));
 
   Notifications.setNotificationCategoryAsync('fotos', [
     {
@@ -72,5 +71,5 @@ if (Platform.OS === 'ios') {
         opensAppToForeground: true,
       },
     },
-  ]).catch(err => console.error('Error configurando categorías:', err));
+  ]).catch((err) => console.error('Error configurando categorías:', err));
 }

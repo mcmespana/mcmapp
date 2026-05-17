@@ -32,6 +32,8 @@ interface Song {
   content?: string;
   originalCategoryKey?: string;
   numericFilenamePart?: string;
+  sortTitle?: string;
+  searchableText?: string;
 }
 
 interface SongCategory {
@@ -97,24 +99,24 @@ export default function SongsListScreen({
       headerRight: isSearchAll
         ? undefined
         : () => (
-          <TouchableOpacity
-            onPress={() => setSearchVisible((v) => !v)}
-            style={styles.headerButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <MaterialIcons
-              name={searchVisible ? 'search-off' : 'search'}
-              size={24}
-              color={
-                isIOS
-                  ? '#f4c11e'
-                  : Platform.OS === 'web'
-                    ? '#1a1a1a'
-                    : '#1a1a1a'
-              }
-            />
-          </TouchableOpacity>
-        ),
+            <TouchableOpacity
+              onPress={() => setSearchVisible((v) => !v)}
+              style={styles.headerButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MaterialIcons
+                name={searchVisible ? 'search-off' : 'search'}
+                size={24}
+                color={
+                  isIOS
+                    ? '#f4c11e'
+                    : Platform.OS === 'web'
+                      ? '#1a1a1a'
+                      : '#1a1a1a'
+                }
+              />
+            </TouchableOpacity>
+          ),
     });
   }, [navigation, categoryName, isSearchAll, searchVisible]);
 
@@ -156,18 +158,24 @@ export default function SongsListScreen({
                     numericPart = String(parseInt(filenameMatch[1], 10));
                   }
                 }
+                // ⚡ Bolt: Pre-calculate the clean title for sorting (Schwartzian transform)
+                // This prevents running the regex multiple times per item during the O(N log N) sort phase.
+                const sortTitle = song.title.replace(/^\d+\.\s*/, '').toLowerCase();
+                const searchableText = `${song.title || ''} ${song.author || ''}`.toLowerCase();
                 return {
                   ...song,
                   originalCategoryKey: categoryLetter,
                   numericFilenamePart: numericPart,
+                  sortTitle,
+                  searchableText,
                 };
               });
               allSongs = allSongs.concat(songsWithMetadata);
             }
           }
           allSongs.sort((a, b) => {
-            const titleA = a.title.replace(/^\d+\.\s*/, '').toLowerCase();
-            const titleB = b.title.replace(/^\d+\.\s*/, '').toLowerCase();
+            const titleA = a.sortTitle || a.title;
+            const titleB = b.sortTitle || b.title;
             return titleA.localeCompare(titleB);
           });
           setSongs(allSongs);
@@ -192,7 +200,8 @@ export default function SongsListScreen({
                     numericPart = filenameMatch[1].padStart(2, '0');
                   }
                 }
-                return { ...song, numericFilenamePart: numericPart };
+                const searchableText = `${song.title || ''} ${song.author || ''}`.toLowerCase();
+                return { ...song, numericFilenamePart: numericPart, searchableText };
               });
               songsWithNumericPart.sort((a, b) => {
                 const numA = parseInt(a.numericFilenamePart, 10) || Infinity;
@@ -222,15 +231,15 @@ export default function SongsListScreen({
     loadSongs();
   }, [categoryId, songsData]);
 
-  const filteredSongs = songs.filter((song) => {
-    if (!song) return false;
-    const searchTerm = search.toLowerCase();
-    const titleMatch =
-      song.title && song.title.toLowerCase().includes(searchTerm);
-    const authorMatch =
-      song.author && song.author.toLowerCase().includes(searchTerm);
-    return titleMatch || authorMatch;
-  });
+  const filteredSongs = useMemo(() => {
+    const searchTerm = search.trim().toLowerCase();
+    if (!searchTerm) return songs;
+
+    return songs.filter((song) => {
+      if (!song) return false;
+      return song.searchableText?.includes(searchTerm);
+    });
+  }, [songs, search]);
 
   const handleSongPress = useCallback(
     (song: Song) => {
@@ -276,11 +285,14 @@ export default function SongsListScreen({
     <View>
       {searchVisible && (
         <View style={styles.searchContainer}>
-          <SearchField value={search} onChange={setSearch}>
+          <SearchField
+            value={search}
+            onChange={setSearch}
+          >
             <SearchField.Group>
               <SearchField.SearchIcon />
               <SearchField.Input
-                placeholder="Buscar por título o autor..."
+                placeholder="Título, autor..."
                 autoFocus={!isSearchAll}
                 returnKeyType="search"
               />
@@ -305,6 +317,9 @@ export default function SongsListScreen({
       <FlatList
         data={filteredSongs}
         keyExtractor={(item) => item.filename}
+        initialNumToRender={15}
+        maxToRenderPerBatch={20}
+        windowSize={5}
         renderItem={({ item }) => (
           <SongListItem
             song={item}
@@ -361,6 +376,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       letterSpacing: 0.2,
     },
     listContent: {
+      paddingHorizontal: 12,
       paddingBottom: isIOS ? 100 : 24,
     },
     errorText: {

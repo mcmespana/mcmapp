@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Text,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, Text, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import DateSelector from '@/components/DateSelector';
 import { MasStackParamList } from '../(tabs)/mas';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -37,9 +35,10 @@ export default function MaterialesScreen() {
     () => createStyles(scheme, fontScale),
     [scheme, fontScale],
   );
+  const event = useCurrentEvent();
   const { data: materialesData, loading } = useFirebaseData<any[]>(
-    'jubileo/materiales',
-    'jubileo_materiales',
+    getEventFirebasePath(event, 'materiales'),
+    getEventCacheKey(event, 'materiales'),
   );
 
   // Function to find the closest date index
@@ -157,36 +156,40 @@ export default function MaterialesScreen() {
 
   return (
     <View style={styles.container}>
+      <ScreenHero title="Materiales" />
       <DateSelector
         dates={fechas}
         selectedDate={dia.fecha}
         onSelectDate={(_, i) => setIndex(i)}
       />
-      <ScrollView contentContainerStyle={styles.list}>
-        {dia.actividades.map((act: Actividad, idx: number) => (
-          <PressableFeedback
-            key={idx}
-            style={[
-              styles.card,
-              { backgroundColor: act.color || colors.primary },
-            ]}
-            onPress={() =>
-              navigation.navigate('MaterialPages', {
-                actividad: act,
-                fecha: dia.fecha,
-              })
-            }
-          >
-            <PressableFeedback.Highlight />
-            <Text style={styles.emoji} selectable>
-              {act.emoji}
-            </Text>
-            <Text style={styles.cardText} selectable>
-              {act.nombre.toUpperCase()}
-            </Text>
-          </PressableFeedback>
-        ))}
-      </ScrollView>
+      <PageContainer>
+        <ScrollView contentContainerStyle={styles.list}>
+          {dia.actividades.map((act: Actividad, idx: number) => (
+            <PressableFeedback
+              key={idx}
+              style={[
+                styles.card,
+                { backgroundColor: act.color || colors.primary },
+              ]}
+              onPress={() =>
+                navigation.navigate('MaterialPages', {
+                  actividad: act,
+                  fecha: dia.fecha,
+                  eventId: event.id,
+                })
+              }
+            >
+              <PressableFeedback.Highlight />
+              <Text style={styles.emoji} selectable>
+                {act.emoji}
+              </Text>
+              <Text style={styles.cardText} selectable>
+                {act.nombre.toUpperCase()}
+              </Text>
+            </PressableFeedback>
+          ))}
+        </ScrollView>
+      </PageContainer>
     </View>
   );
 }
@@ -197,14 +200,28 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
     container: { flex: 1, backgroundColor: theme.background },
     list: {
       paddingHorizontal: spacing.lg,
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl,
     },
     card: {
-      borderRadius: 12,
+      borderRadius: 16,
       paddingVertical: spacing.xl,
+      paddingHorizontal: spacing.md,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: spacing.md,
+      ...Platform.select({
+        web: {
+          boxShadow: '0 2px 10px rgba(0,0,0,0.10)',
+        },
+        default: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.12,
+          shadowRadius: 8,
+          elevation: 3,
+        },
+      }),
     },
     emoji: {
       fontSize: 40 * scale,

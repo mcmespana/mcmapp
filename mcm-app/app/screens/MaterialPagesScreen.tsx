@@ -267,7 +267,7 @@ const createStyles = (
   introColor: string,
   scale: number,
 ) => {
-  const theme = Colors[(scheme === 'dark' ? 'dark' : 'light')];
+  const theme = Colors[scheme === 'dark' ? 'dark' : 'light'];
   return StyleSheet.create({
     container: { flex: 1 },
     introPage: {

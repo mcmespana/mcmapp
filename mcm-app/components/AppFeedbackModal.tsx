@@ -1,21 +1,33 @@
 import React, { useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import {
-  Button,
-  CloseButton,
-  TextArea,
-  TextField,
-  useToast,
-} from 'heroui-native';
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  View,
+} from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getDatabase, push, ref, set } from 'firebase/database';
 
 import BottomSheet from './BottomSheet';
-import { Colors } from '@/constants/colors';
+import CloseIconButton from '@/components/ui/CloseIconButton';
+import SectionHeader from '@/components/ui/SectionHeader';
+import { Colors, FeedbackCategoryColors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
+
+// Apple system colors used inside the modal — not part of the MCM brand
+// palette, but match iOS native conventions for "active border" and
+// "destructive text" inside form controls.
+const APPLE_SYSTEM_GREEN = '#34C759';
+const APPLE_SYSTEM_RED = '#FF3B30';
 
 interface AppFeedbackModalProps {
   visible: boolean;
@@ -28,7 +40,7 @@ type FeedbackCategory = 'bug' | 'suggestion' | 'congratulations';
 interface CategoryOption {
   id: FeedbackCategory;
   label: string;
-  icon: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
   color: string;
   placeholder: string;
   submitText: string;
@@ -39,28 +51,28 @@ const FEEDBACK_CATEGORIES: CategoryOption[] = [
     id: 'bug',
     label: 'Fallito en la app',
     icon: 'bug-report',
-    color: '#FF6B6B',
+    color: FeedbackCategoryColors.bug,
     placeholder:
-      'Describe el problema que has encontrado en la aplicacion (pantalla, funcion que no funciona, error, etc.)',
+      'Describe el problema que has encontrado en la aplicación (pantalla, función que no funciona, error...)',
     submitText: 'Reportar fallito',
   },
   {
     id: 'suggestion',
     label: 'Sugerencia de mejora',
     icon: 'lightbulb',
-    color: '#4ECDC4',
+    color: FeedbackCategoryColors.idea,
     placeholder:
-      'Cuentanos tu idea para mejorar la aplicacion (nueva funcion, cambio de diseno, etc.)',
+      'Cuéntanos tu idea para mejorar la aplicación (nueva función, cambio de diseño...)',
     submitText: 'Enviar sugerencia',
   },
   {
     id: 'congratulations',
     label: 'Felicitaciones',
     icon: 'favorite',
-    color: '#FFD93D',
+    color: FeedbackCategoryColors.praise,
     placeholder:
-      'Comparte tu experiencia positiva. Nos alegra saber que te gusta de la app.',
-    submitText: 'Enviar felicitacion',
+      'Comparte tu experiencia positiva. ¡Nos alegra saber qué te gusta de la app!',
+    submitText: 'Enviar felicitación',
   },
 ];
 
@@ -70,31 +82,26 @@ export default function AppFeedbackModal({
   onSuccess,
 }: AppFeedbackModalProps) {
   const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const theme = Colors[scheme];
   const { profile } = useUserProfile();
-  const { toast } = useToast();
+  const resolved = useResolvedProfileConfig();
   const [selectedCategory, setSelectedCategory] =
     useState<FeedbackCategory | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async () => {
     if (!selectedCategory) {
-      toast.show({
-        variant: 'danger',
-        label: 'Por favor selecciona una categoria',
-      });
+      setErrorMsg('Por favor selecciona una categoría');
       return;
     }
-
     if (!feedbackText.trim()) {
-      toast.show({
-        variant: 'danger',
-        label: 'Por favor escribe tu comentario',
-      });
+      setErrorMsg('Por favor escribe tu comentario');
       return;
     }
-
+    setErrorMsg('');
     setIsSubmitting(true);
 
     try {
@@ -109,8 +116,9 @@ export default function AppFeedbackModal({
         status: 'pending',
         reportedAt: new Date().toISOString(),
         category: selectedCategory,
-        userName: profile.name || 'Anonimo',
-        userLocation: profile.location || 'Sin ubicacion',
+        userName: profile.name || 'Anónimo',
+        userProfileType: profile.profileType ?? 'sin-perfil',
+        userDelegation: resolved.delegationLabel || 'Sin delegación',
       });
 
       setFeedbackText('');
@@ -119,37 +127,25 @@ export default function AppFeedbackModal({
       onSuccess?.();
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      toast.show({
-        variant: 'danger',
-        label: 'No se pudo enviar tu comentario. Intentalo de nuevo.',
-      });
+      setErrorMsg('No se pudo enviar. Inténtalo de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    if (feedbackText.trim() || selectedCategory) {
-      toast.show({
-        variant: 'warning',
-        label: 'Cancelar el comentario? Se perdera lo escrito.',
-        actionLabel: 'Si, cancelar',
-        onActionPress: ({ hide }) => {
-          hide();
-          setFeedbackText('');
-          setSelectedCategory(null);
-          onClose();
-        },
-      });
-      return;
-    }
-
+    setFeedbackText('');
+    setSelectedCategory(null);
+    setErrorMsg('');
     onClose();
   };
 
   const selectedCategoryData = selectedCategory
-    ? FEEDBACK_CATEGORIES.find((category) => category.id === selectedCategory)
+    ? FEEDBACK_CATEGORIES.find((c) => c.id === selectedCategory)
     : null;
+
+  const canSubmit =
+    !!selectedCategory && feedbackText.trim().length > 0 && !isSubmitting;
 
   return (
     <BottomSheet visible={visible} onClose={handleClose}>
@@ -158,81 +154,87 @@ export default function AppFeedbackModal({
         keyboardShouldPersistTaps="handled"
         bounces={false}
         overScrollMode="never"
+        contentContainerStyle={styles.content}
       >
+        {/* Header */}
         <View style={styles.header}>
-          <CloseButton onPress={handleClose} />
-          <Text style={[styles.title, { color: theme.text }]}>Fallitos?</Text>
+          <CloseIconButton onPress={handleClose} />
+          <Text style={[styles.title, { color: theme.text }]}>Feedback 💬</Text>
           <View style={styles.headerSpacer} />
         </View>
 
         <Text style={[styles.subtitle, { color: theme.icon }]}>
-          Tu opinion nos ayuda a mejorar la app
+          Tu opinión nos ayuda a mejorar la app
         </Text>
 
         {!selectedCategory ? (
           <>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Que quieres contarnos?
-            </Text>
+            <SectionHeader label="¿Qué quieres contarnos?" />
 
             {FEEDBACK_CATEGORIES.map((category) => (
-              <Button
+              <TouchableOpacity
                 key={category.id}
-                variant="outline"
-                onPress={() => setSelectedCategory(category.id)}
                 style={[
-                  styles.categoryButton,
+                  styles.categoryBtn,
                   {
-                    backgroundColor:
-                      scheme === 'dark'
-                        ? hexAlpha(category.color, '15')
-                        : hexAlpha(category.color, '10'),
+                    backgroundColor: isDark
+                      ? hexAlpha(category.color, '15')
+                      : hexAlpha(category.color, '10'),
                     borderColor: hexAlpha(category.color, '40'),
                   },
                 ]}
+                onPress={() => {
+                  setSelectedCategory(category.id);
+                  setErrorMsg('');
+                }}
+                activeOpacity={0.7}
               >
-                <View style={styles.categoryContent}>
-                  <View style={styles.categoryInfo}>
-                    <MaterialIcons
-                      name={
-                        category.icon as keyof typeof MaterialIcons.glyphMap
-                      }
-                      size={28}
-                      color={category.color}
-                    />
-                    <Button.Label style={{ color: theme.text }}>
-                      {category.label}
-                    </Button.Label>
-                  </View>
-                  <MaterialIcons
-                    name="chevron-right"
-                    size={20}
-                    color={theme.icon}
-                  />
-                </View>
-              </Button>
+                <MaterialIcons
+                  name={category.icon}
+                  size={28}
+                  color={category.color}
+                />
+                <Text style={[styles.categoryBtnText, { color: theme.text }]}>
+                  {category.label}
+                </Text>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={theme.icon}
+                  style={styles.categoryArrow}
+                />
+              </TouchableOpacity>
             ))}
           </>
         ) : (
           <>
-            <Button
-              variant="ghost"
-              onPress={() => setSelectedCategory(null)}
-              style={styles.backButton}
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => {
+                setSelectedCategory(null);
+                setErrorMsg('');
+              }}
+              activeOpacity={0.7}
             >
-              <MaterialIcons name="arrow-back" size={20} color={theme.icon} />
-              <Button.Label style={{ color: theme.icon }}>
-                Cambiar categoria
-              </Button.Label>
-            </Button>
+              <MaterialIcons name="arrow-back" size={18} color={theme.icon} />
+              <Text style={[styles.backBtnText, { color: theme.icon }]}>
+                Cambiar categoría
+              </Text>
+            </TouchableOpacity>
 
-            <View style={styles.selectedCategory}>
+            <View
+              style={[
+                styles.selectedCategoryRow,
+                {
+                  backgroundColor: isDark
+                    ? Colors.dark.background
+                    : hexAlpha(theme.icon, '14'),
+                },
+              ]}
+            >
               <MaterialIcons
-                name={
-                  selectedCategoryData!
-                    .icon as keyof typeof MaterialIcons.glyphMap
-                }
-                size={32}
+                name={selectedCategoryData!.icon}
+                size={26}
                 color={selectedCategoryData!.color}
               />
               <Text
@@ -242,41 +244,80 @@ export default function AppFeedbackModal({
               </Text>
             </View>
 
-            <TextField style={styles.fieldWrapper}>
-              <TextArea
-                placeholder={selectedCategoryData!.placeholder}
-                value={feedbackText}
-                onChangeText={setFeedbackText}
-                maxLength={1000}
-              />
-            </TextField>
-
+            <TextInput
+              style={[
+                styles.textArea,
+                {
+                  backgroundColor: isDark
+                    ? Colors.dark.background
+                    : hexAlpha(theme.icon, '14'),
+                  color: theme.text,
+                  borderColor: feedbackText.trim()
+                    ? APPLE_SYSTEM_GREEN
+                    : hexAlpha(theme.icon, '40'),
+                },
+              ]}
+              placeholder={selectedCategoryData!.placeholder}
+              placeholderTextColor={theme.icon}
+              value={feedbackText}
+              onChangeText={(t) => {
+                setFeedbackText(t);
+                setErrorMsg('');
+              }}
+              maxLength={1000}
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+              editable={!isSubmitting}
+            />
             <Text style={[styles.charCount, { color: theme.icon }]}>
-              {feedbackText.length}/1000 caracteres
+              {feedbackText.length}/1000
             </Text>
 
-            <Button
-              variant="primary"
-              isDisabled={!feedbackText.trim() || isSubmitting}
+            {errorMsg ? (
+              <View style={styles.errorRow}>
+                <MaterialIcons
+                  name="error-outline"
+                  size={15}
+                  color={APPLE_SYSTEM_RED}
+                />
+                <Text style={styles.errorText}>{errorMsg}</Text>
+              </View>
+            ) : null}
+
+            <TouchableOpacity
+              style={[
+                styles.submitBtn,
+                {
+                  backgroundColor: canSubmit
+                    ? selectedCategoryData!.color
+                    : hexAlpha(theme.icon, '40'),
+                },
+              ]}
               onPress={handleSubmit}
-              style={styles.submitButton}
+              disabled={!canSubmit}
+              activeOpacity={0.8}
             >
-              <MaterialIcons
-                name={
-                  isSubmitting
-                    ? 'hourglass-empty'
-                    : (selectedCategoryData!
-                        .icon as keyof typeof MaterialIcons.glyphMap)
-                }
-                size={20}
-                color="#fff"
-              />
-              <Button.Label>
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <MaterialIcons
+                  name={selectedCategoryData!.icon}
+                  size={18}
+                  color={canSubmit ? '#fff' : theme.icon}
+                />
+              )}
+              <Text
+                style={[
+                  styles.submitBtnText,
+                  { color: canSubmit ? '#fff' : theme.icon },
+                ]}
+              >
                 {isSubmitting
                   ? 'Enviando...'
                   : selectedCategoryData!.submitText}
-              </Button.Label>
-            </Button>
+              </Text>
+            </TouchableOpacity>
           </>
         )}
       </ScrollView>
@@ -285,69 +326,107 @@ export default function AppFeedbackModal({
 }
 
 const styles = StyleSheet.create({
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 48,
+  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   headerSpacer: {
-    width: 36,
+    width: 32,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  categoryButton: {
+  categoryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: radii.lg,
+    marginBottom: 10,
     borderWidth: 1.5,
-    height: 'auto',
   },
-  categoryContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  categoryInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  categoryBtnText: {
     flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
   },
-  backButton: {
-    marginBottom: 16,
+  categoryArrow: {
+    marginLeft: 'auto',
   },
-  selectedCategory: {
+  backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    marginBottom: 16,
+    paddingVertical: 4,
+  },
+  backBtnText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  selectedCategoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: radii.md,
     marginBottom: 16,
   },
   selectedCategoryText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    marginLeft: 8,
   },
-  fieldWrapper: {
-    marginBottom: 4,
+  textArea: {
+    borderWidth: 1.5,
+    borderRadius: radii.md,
+    padding: 14,
+    fontSize: 15,
+    minHeight: 120,
+    lineHeight: 22,
   },
   charCount: {
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'right',
-    marginTop: 4,
+    marginTop: 6,
     marginBottom: 16,
   },
-  submitButton: {
-    marginBottom: 8,
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  errorText: {
+    color: APPLE_SYSTEM_RED,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  submitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 15,
+    borderRadius: radii.md,
+  },
+  submitBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
