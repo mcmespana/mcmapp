@@ -36,6 +36,8 @@ export interface ChoirCurrentSong {
   filename: string;
   /** Semitonos sobre el tono original. */
   transpose: number;
+  /** Override de cejilla publicado por el maestro para esta canción. */
+  capoOverride?: number | null;
   /** Marcador opcional: 'detail' (por defecto) o 'fullscreen'. */
   screen?: 'detail' | 'fullscreen';
   updatedAt: number;

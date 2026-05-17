@@ -38,6 +38,9 @@ interface SongControlsProps {
   songInfo?: string;
   songContent?: string;
   firebaseCategory?: string;
+  /** Override de cejilla para esta sesión/playlist. undefined = no disponible. */
+  currentCapoOverride?: number | null;
+  onSetCapoOverride?: (capo: number | null) => void;
 }
 
 const SongControls: React.FC<SongControlsProps> = ({
@@ -62,6 +65,8 @@ const SongControls: React.FC<SongControlsProps> = ({
   songInfo,
   songContent,
   firebaseCategory,
+  currentCapoOverride,
+  onSetCapoOverride,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposePanel, setShowTransposePanel] = useState(false);
@@ -76,6 +81,7 @@ const SongControls: React.FC<SongControlsProps> = ({
 
   const hasModifications =
     currentTranspose !== 0 ||
+    (currentCapoOverride !== null && currentCapoOverride !== undefined) ||
     !chordsVisible ||
     currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
     (availableFonts.length > 0 &&
@@ -213,12 +219,23 @@ const SongControls: React.FC<SongControlsProps> = ({
             <ActionButton
               icon="swap-vert"
               label={
-                currentTranspose !== 0
-                  ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose}`
-                  : 'Cambiar tono'
+                currentTranspose !== 0 &&
+                currentCapoOverride !== null &&
+                currentCapoOverride !== undefined
+                  ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose} · C${currentCapoOverride}`
+                  : currentTranspose !== 0
+                    ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose}`
+                    : currentCapoOverride !== null &&
+                        currentCapoOverride !== undefined
+                      ? `Cejilla ${currentCapoOverride}`
+                      : 'Cambiar tono / cejilla'
               }
               onPress={handleOpenTransposePanel}
-              isActive={currentTranspose !== 0}
+              isActive={
+                currentTranspose !== 0 ||
+                (currentCapoOverride !== null &&
+                  currentCapoOverride !== undefined)
+              }
             />
             <ActionButton
               icon="text-fields"
@@ -297,6 +314,9 @@ const SongControls: React.FC<SongControlsProps> = ({
         onClose={() => setShowTransposePanel(false)}
         currentTranspose={currentTranspose}
         onSetTranspose={handleSetTranspose}
+        originalCapo={songCapo}
+        currentCapoOverride={currentCapoOverride}
+        onSetCapoOverride={onSetCapoOverride}
       />
 
       <ReportBugsModal

@@ -73,6 +73,7 @@ export default function SongDetailScreen({
     isSongSelected,
     getSelectedSong,
     setTranspose: setSelectionTranspose,
+    setCapoOverride: setSelectionCapoOverride,
   } = useSelectedSongs();
   const choir = useChoirSession();
   const scheme = useColorScheme();
@@ -93,6 +94,9 @@ export default function SongDetailScreen({
   // (single source of truth). Si no, usamos este estado local efímero.
   const selectedMeta = getSelectedSong(filename);
   const [localTranspose, setLocalTranspose] = useState(0);
+  const [localCapoOverride, setLocalCapoOverride] = useState<number | null>(
+    null,
+  );
   // En modo coro:
   //  - el MAESTRO publica el transpose visible (local o seleccionado).
   //  - el ESCLAVO usa el transpose del maestro salvo que tenga override.
@@ -108,6 +112,15 @@ export default function SongDetailScreen({
         ? selectedMeta.transpose
         : localTranspose;
 
+  // Capo override: selección > local efímero. El coro master publica el
+  // override; el esclavo usa el de la selección local (no el del master).
+  const currentCapoOverride =
+    selectedMeta?.capoOverride !== undefined
+      ? (selectedMeta.capoOverride ?? null)
+      : localCapoOverride;
+  const effectiveCapo =
+    currentCapoOverride !== null ? currentCapoOverride : capo;
+
   const slideAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
 
@@ -120,7 +133,7 @@ export default function SongDetailScreen({
     notation,
     author,
     key,
-    capo,
+    capo: effectiveCapo,
     isDark,
   });
 
@@ -184,8 +197,9 @@ export default function SongDetailScreen({
       setOriginalChordPro(null);
       setIsFileLoading(false);
     }
-    // Al cambiar de canción reseteamos el transpose efímero local.
+    // Al cambiar de canción reseteamos los estados efímeros locales.
     setLocalTranspose(0);
+    setLocalCapoOverride(null);
   }, [filename, content]);
 
   // Modo coro - MAESTRO: cuando entro a una canción, lo publico para los
@@ -196,6 +210,7 @@ export default function SongDetailScreen({
     void choir.publishCurrent({
       filename,
       transpose: currentTranspose,
+      capoOverride: currentCapoOverride,
       screen: 'detail',
       title: _navScreenTitle,
       author,
@@ -211,6 +226,23 @@ export default function SongDetailScreen({
 
   // (la navegación del esclavo se gestiona en `cancionero.tsx` mediante
   //  un observador del contexto coro que opera sobre el navigator del stack)
+
+  const handleSetCapoOverride = (newCapo: number | null) => {
+    if (selectedMeta) {
+      setSelectionCapoOverride(filename, newCapo);
+    } else {
+      setLocalCapoOverride(newCapo);
+    }
+    // Si soy maestro, publico el cambio.
+    if (choir.mode === 'master') {
+      void choir.publishCurrent({
+        filename,
+        transpose: currentTranspose,
+        capoOverride: newCapo,
+        screen: 'detail',
+      });
+    }
+  };
 
   const handleToggleChords = () =>
     setSettings({ chordsVisible: !chordsVisible });
@@ -370,6 +402,8 @@ export default function SongDetailScreen({
         songInfo=""
         songContent={content}
         firebaseCategory={firebaseCategory}
+        currentCapoOverride={currentCapoOverride}
+        onSetCapoOverride={handleSetCapoOverride}
       />
 
       {/* iOS: floating overlay buttons (back + add-to-selection) */}

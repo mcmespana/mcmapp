@@ -86,6 +86,7 @@ interface CategorizedSongs {
   data: (Song & {
     originalCategoryKey: string;
     transpose: number;
+    capoOverride: number | null;
     order: number;
   })[];
 }
@@ -207,6 +208,7 @@ const SelectedSongsScreen: React.FC = () => {
         return {
           ...meta,
           transpose: sel.transpose,
+          capoOverride: sel.capoOverride ?? null,
           order: sel.order,
         };
       })
@@ -216,6 +218,7 @@ const SelectedSongsScreen: React.FC = () => {
         ): s is Song & {
           originalCategoryKey: string;
           transpose: number;
+          capoOverride: number | null;
           order: number;
         } => s !== null,
       );
@@ -337,8 +340,12 @@ const SelectedSongsScreen: React.FC = () => {
               `\`${convertChord(original, settings.notation)}→` +
               `${convertChord(target, settings.notation)}\` *(${lbl} st)*`;
           }
-          if (song.capo && song.capo > 0) {
-            toneStr += ` \`C/${song.capo}\``;
+          const effectiveCapo =
+            song.capoOverride !== null && song.capoOverride !== undefined
+              ? song.capoOverride
+              : song.capo;
+          if (effectiveCapo && effectiveCapo > 0) {
+            toneStr += ` \`C/${effectiveCapo}${song.capoOverride !== null && song.capoOverride !== undefined ? '✱' : ''}\``;
           }
         }
         const idMatch = song.title.match(/^\d+/);
@@ -470,6 +477,7 @@ const SelectedSongsScreen: React.FC = () => {
             author: s.author,
             key: s.key,
             capo: s.capo,
+            capoOverride: s.capoOverride,
             content: s.content,
             transpose: s.transpose,
           })),
@@ -1292,6 +1300,7 @@ const SelectedSongsScreen: React.FC = () => {
             key={song.filename}
             song={song}
             transpose={song.transpose}
+            capoOverride={song.capoOverride}
             isNowPlaying={isNow}
             onPress={() => handleSongPress(song)}
             onRemove={() => removeSong(song.filename)}
@@ -1313,6 +1322,7 @@ const SelectedSongsScreen: React.FC = () => {
       <PlaylistRow
         song={item}
         transpose={item.transpose}
+        capoOverride={item.capoOverride}
         position={index + 1}
         showReorderControls
         canMoveUp={index > 0}

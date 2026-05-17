@@ -17,6 +17,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  *    baja). Se persiste por canción dentro de la selección. Si el usuario
  *    abre la canción desde fuera de la selección, este valor no aplica
  *    (la pantalla de detalle vuelve a un transpose efímero local).
+ *  - `capoOverride`: cejilla alternativa para esta sesión/playlist. Si es
+ *    null, se usa la cejilla original de la canción. Permite tocar "LA
+ *    cejilla 3" aunque la canción diga "LA cejilla 2", sin cambiar los
+ *    acordes (que siguen siendo LA). Independiente de `transpose`.
  *  - `order`: posición global asignada cuando el usuario reordena
  *    libremente. En modo "por categoría" se ignora.
  *  - `categoryHint`: clave de la categoría original (p. ej. "entrada").
@@ -26,6 +30,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export interface SelectedSong {
   filename: string;
   transpose: number;
+  capoOverride?: number | null;
   order: number;
   categoryHint?: string;
   addedAt: number;
@@ -58,6 +63,8 @@ interface SelectedSongsContextType {
   removeSong: (filename: string) => void;
   clearSelection: () => void;
   setTranspose: (filename: string, transpose: number) => void;
+  /** Sobreescribe la cejilla de una canción para esta playlist. null = usar la original. */
+  setCapoOverride: (filename: string, capo: number | null) => void;
 
   /** Mueve la canción `filename` a la posición destino `toIndex` (0-based). */
   moveSong: (filename: string, toIndex: number) => void;
@@ -206,6 +213,17 @@ export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({
     );
   }, []);
 
+  const setCapoOverride = useCallback(
+    (filename: string, capo: number | null) => {
+      setSelectedSongsState((prev) =>
+        prev.map((s) =>
+          s.filename === filename ? { ...s, capoOverride: capo } : s,
+        ),
+      );
+    },
+    [],
+  );
+
   const moveSong = useCallback((filename: string, toIndex: number) => {
     setSelectedSongsState((prev) => {
       const sorted = [...prev].sort((a, b) => a.order - b.order);
@@ -234,6 +252,7 @@ export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({
       removeSong,
       clearSelection,
       setTranspose,
+      setCapoOverride,
       moveSong,
       replaceAll,
     }),
@@ -247,6 +266,7 @@ export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({
       removeSong,
       clearSelection,
       setTranspose,
+      setCapoOverride,
       moveSong,
       replaceAll,
     ],
