@@ -24,7 +24,11 @@ export default function BottomSheet({
   children,
 }: BottomSheetProps) {
   const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const bgColor = Colors[scheme ?? 'light'].background;
+  const handleIndicatorColor = isDark
+    ? 'rgba(255,255,255,0.25)'
+    : 'rgba(0,0,0,0.18)';
 
   return (
     <HeroBottomSheet
@@ -35,7 +39,11 @@ export default function BottomSheet({
     >
       <HeroBottomSheet.Portal>
         <HeroBottomSheet.Overlay style={styles.overlay} />
-        <HeroBottomSheet.Content style={{ backgroundColor: bgColor }}>
+        <HeroBottomSheet.Content
+          style={{ backgroundColor: bgColor }}
+          handleStyle={{ backgroundColor: bgColor }}
+          handleIndicatorStyle={{ backgroundColor: handleIndicatorColor }}
+        >
           {children}
         </HeroBottomSheet.Content>
       </HeroBottomSheet.Portal>
