@@ -1,13 +1,17 @@
-# .github/workflows/ota-production.yml
-name: OTA Production
+# .github/workflows/ota-preview.yml
+name: OTA Preview
 
 on:
   push:
-    branches: [ production ]
-# on: {}  # No triggers - workflow desactivado
+    branches: [preview]
+  workflow_dispatch:
+
+concurrency:
+  group: ota-preview
+  cancel-in-progress: false
 
 jobs:
-  publish-prod:
+  publish-preview:
     runs-on: ubuntu-latest
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line
@@ -22,26 +26,46 @@ jobs:
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
-        
+        with:
+          fetch-depth: 1
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mcm-app/package-lock.json
+
+      - name: Verificar que EXPO_TOKEN existe
+        run: |
+          if [ -z "${EXPO_TOKEN}" ]; then
+            echo "::error::EXPO_TOKEN no está configurado en los secrets del repositorio"
+            exit 1
+          fi
+
       - name: Instalar EAS CLI
         run: npm install -g eas-cli@latest
-        
+
       - name: Instalar dependencias
         working-directory: ./mcm-app
         run: npm ci
-        
+
       - name: Verificar autenticación
         run: eas whoami
-        
-      - name: Publicar OTA en production
+
+      - name: Preparar mensaje de update
+        id: msg
+        run: |
+          COMMIT_MSG="$(git log -1 --pretty=%s)"
+          # Truncamos a 200 chars para que quepa en EAS Update
+          SHORT_MSG="${COMMIT_MSG:0:200}"
+          echo "message=🔎 ${SHORT_MSG} (${GITHUB_SHA:0:7})" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar OTA en preview
         working-directory: ./mcm-app
         run: |
           eas update \
-            --branch production \
-            --message "🚀 OTA Production: ${{ github.sha }}" \
+            --branch preview \
+            --platform all \
+            --message "${{ steps.msg.outputs.message }}" \
             --non-interactive
