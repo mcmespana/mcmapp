@@ -66,8 +66,10 @@ export function getLiturgicalInfo(dateStr: string) {
         color = 'accent';
         hex = '#6B3FA0';
       } else if (tiempo.id === 'navidad' || tiempo.id === 'pascua') {
-        color = 'default';
-        hex = '#F5F5F5';
+        // 'warning' (golden) renders readable in both light and dark mode;
+        // 'default' renders with dark foreground text that's invisible on dark backgrounds.
+        color = 'warning';
+        hex = '#D4A070';
       } else if (tiempo.id === 'semana_santa') {
         color = 'danger';
         hex = '#C41E3A';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native';
 import { UIColors, Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -10,14 +10,6 @@ interface BottomSheetProps {
   children: React.ReactNode;
 }
 
-/**
- * Wrapper that keeps the existing {visible, onClose, children} API
- * while delegating to HeroUI Native BottomSheet under the hood.
- *
- * The overlay is given an explicit dark backdrop so users can always
- * see the dim "scrim" behind the sheet — without it the underlying
- * screen stays at full brightness on some platforms.
- */
 export default function BottomSheet({
   visible,
   onClose,
@@ -38,13 +30,21 @@ export default function BottomSheet({
       }}
     >
       <HeroBottomSheet.Portal>
-        <HeroBottomSheet.Overlay style={styles.overlay} />
+        {/* onPress ensures tapping the scrim dismisses the sheet */}
+        <HeroBottomSheet.Overlay
+          style={styles.overlay}
+          onPress={onClose}
+        />
         <HeroBottomSheet.Content
           style={{ backgroundColor: bgColor }}
           handleStyle={{ backgroundColor: bgColor }}
           handleIndicatorStyle={{ backgroundColor: handleIndicatorColor }}
         >
-          {children}
+          {/* Explicit wrapper ensures dark background even when children
+              don't set their own (e.g. TransposePanel, SongFontPanel) */}
+          <View style={{ backgroundColor: bgColor }}>
+            {children}
+          </View>
         </HeroBottomSheet.Content>
       </HeroBottomSheet.Portal>
     </HeroBottomSheet>
