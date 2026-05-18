@@ -9,12 +9,16 @@ import {
   Platform,
   Text,
 } from 'react-native';
-import { Chip, Button, Dialog } from 'heroui-native';
+import { Chip, Button, Dialog, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 
 interface AppInfo {
   orden: number;
@@ -31,9 +35,10 @@ interface AppInfo {
 export default function AppsScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const event = useCurrentEvent();
   const { data: appsData, loading } = useFirebaseData<AppInfo[]>(
-    'jubileo/apps',
-    'jubileo_apps',
+    getEventFirebasePath(event, 'apps'),
+    getEventCacheKey(event, 'apps'),
   );
   const [selected, setSelected] = useState<AppInfo | null>(null);
 
@@ -75,64 +80,70 @@ export default function AppsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={
-          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
-        }
-      >
-        <View style={styles.introContainer}>
-          <Text style={styles.introText}>
-            Lista de aplicaciones móviles (algunas necesarias 🌟, otras
-            opcionales ℹ️) que necesitaremos durante el Jubileo.
-          </Text>
-          <Text style={styles.introSubtext}>
-            {Platform.OS === 'web'
-              ? 'Si tocas el icono de la app te la abrirá directamente. En el modal puedes elegir entre iOS y Android ✨'
-              : 'Si tocas el icono de la app te la abrirá directamente o te llevará a la tienda de tu plataforma ✨'}
-          </Text>
-        </View>
+      <PageContainer>
+        <ScrollView
+          contentContainerStyle={
+            Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+          }
+        >
+          <ScreenHero
+            title="Apps"
+            subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo."
+          />
+          <View style={styles.introContainer}>
+            <Text style={styles.introSubtext}>
+              {Platform.OS === 'web'
+                ? 'Si tocas el icono de la app te la abrirá directamente. En el modal puedes elegir entre iOS y Android ✨'
+                : 'Si tocas el icono de la app te la abrirá directamente o te llevará a la tienda de tu plataforma ✨'}
+            </Text>
+          </View>
 
-        {apps.map((app, idx) => (
-          <TouchableOpacity
-            key={idx}
-            onPress={() => openApp(app)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.listItemContainer}>
-              <View style={styles.iconContainer}>
-                <Image source={{ uri: app.icono }} style={styles.icon} />
+          {apps.map((app, idx) => (
+            <PressableFeedback
+              key={idx}
+              onPress={() => openApp(app)}
+              accessibilityRole="button"
+              accessibilityLabel={app.nombre}
+            >
+              <PressableFeedback.Highlight />
+              <View style={styles.listItemContainer}>
+                <View style={styles.iconContainer}>
+                  <Image source={{ uri: app.icono }} style={styles.icon} />
+                </View>
+                <View style={styles.contentContainer}>
+                  <Text style={styles.title}>{app.nombre}</Text>
+                  <Text style={styles.description}>{app.descripcion}</Text>
+                </View>
+                <View style={styles.rightContainer}>
+                  {app.tipo.toLowerCase() === 'necesaria' && (
+                    <Chip size="sm" variant="primary" color="warning">
+                      <MaterialIcons name="star" size={12} color="#fff" />
+                    </Chip>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    onPress={() => setSelected(app)}
+                  >
+                    <MaterialIcons
+                      name="add-circle-outline"
+                      size={24}
+                      color={scheme === 'dark' ? '#ccc' : '#555'}
+                    />
+                  </Button>
+                </View>
               </View>
-              <View style={styles.contentContainer}>
-                <Text style={styles.title}>{app.nombre}</Text>
-                <Text style={styles.description}>{app.descripcion}</Text>
-              </View>
-              <View style={styles.rightContainer}>
-                {app.tipo.toLowerCase() === 'necesaria' && (
-                  <Chip size="sm" variant="primary" color="warning">
-                    <MaterialIcons name="star" size={12} color="#fff" />
-                  </Chip>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  isIconOnly
-                  onPress={() => setSelected(app)}
-                >
-                  <MaterialIcons
-                    name="add-circle-outline"
-                    size={24}
-                    color={scheme === 'dark' ? '#ccc' : '#555'}
-                  />
-                </Button>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+            </PressableFeedback>
+          ))}
+        </ScrollView>
+      </PageContainer>
 
       <Dialog
         isOpen={!!selected}
-        onOpenChange={(open) => { if (!open) setSelected(null); }}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
       >
         <Dialog.Portal>
           <Dialog.Overlay />
@@ -145,10 +156,18 @@ export default function AppsScreen() {
                 <View style={styles.chipRow}>
                   <Chip
                     variant="primary"
-                    color={selected.tipo.toLowerCase() === 'necesaria' ? 'warning' : 'accent'}
+                    color={
+                      selected.tipo.toLowerCase() === 'necesaria'
+                        ? 'warning'
+                        : 'accent'
+                    }
                   >
                     <MaterialIcons
-                      name={selected.tipo.toLowerCase() === 'necesaria' ? 'star' : 'info'}
+                      name={
+                        selected.tipo.toLowerCase() === 'necesaria'
+                          ? 'star'
+                          : 'info'
+                      }
                       size={14}
                       color="#fff"
                     />
@@ -173,17 +192,26 @@ export default function AppsScreen() {
                         variant="outline"
                         onPress={() => Linking.openURL(selected.androidLink)}
                       >
-                        <MaterialIcons name="android" size={20} color="#3DDC84" />
+                        <MaterialIcons
+                          name="android"
+                          size={20}
+                          color="#3DDC84"
+                        />
                         <Button.Label>Android</Button.Label>
                       </Button>
                     </>
                   ) : (
                     <Button
                       variant="primary"
-                      onPress={() => { openApp(selected); setSelected(null); }}
+                      onPress={() => {
+                        openApp(selected);
+                        setSelected(null);
+                      }}
                     >
                       <MaterialIcons
-                        name={Platform.OS === 'ios' ? 'phone-iphone' : 'android'}
+                        name={
+                          Platform.OS === 'ios' ? 'phone-iphone' : 'android'
+                        }
                         size={20}
                         color="#fff"
                       />

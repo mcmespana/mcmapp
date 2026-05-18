@@ -68,15 +68,15 @@ class VidaNuevaScraper(BaseScraper):
     SOURCE_KEY = "vidaNueva"
     SOURCE_URL = URL
 
-    def fetch(self) -> EvangelioData:
+    def fetch(self) -> list[EvangelioData]:
         html_content = self._fetch_html()
         if html_content is None:
-            return EvangelioData(
+            return [EvangelioData(
                 url=URL,
                 fecha="unknown",
                 error="HTTP_FETCH_FAILED",
-            )
-        return self._parse(html_content)
+            )]
+        return [self._parse(html_content)]
 
     # ------------------------------------------------------------------
     # HTTP

@@ -1,12 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, Platform, Text } from 'react-native';
 import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Platform,
-  Text,
-} from 'react-native';
-import { Card, Switch, Chip, Button, Spinner, BottomSheet, PressableFeedback, TextField, Input, TextArea, Dialog } from 'heroui-native';
+  Card,
+  Switch,
+  Chip,
+  Button,
+  Spinner,
+  BottomSheet,
+  PressableFeedback,
+  TextField,
+  Input,
+  TextArea,
+  Dialog,
+} from 'heroui-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -14,11 +20,14 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/hooks/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
-import GlassFAB from '@/components/ui/GlassFAB.ios';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import GlassFAB from '@/components/ui/GlassFAB';
+import PageContainer from '@/components/ui/PageContainer';
 
 interface Grupo {
   nombre: string;
@@ -54,25 +63,28 @@ export default function ReflexionesScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { profile } = useUserProfile();
+  const resolved = useResolvedProfileConfig();
 
   const getDefaultAuthor = useCallback(() => {
     const parts = [];
     if (profile.name.trim()) {
       parts.push(profile.name.trim());
     }
-    if (profile.location.trim()) {
-      parts.push(profile.location.trim());
+    if (resolved.delegationLabel.trim()) {
+      parts.push(resolved.delegationLabel.trim());
     }
     return parts.join(' · ');
-  }, [profile.name, profile.location]);
+  }, [profile.name, resolved.delegationLabel]);
 
+  const event = useCurrentEvent();
+  const compartiendoPath = getEventFirebasePath(event, 'compartiendo');
   const { data: dataRef } = useFirebaseData<Reflexion[]>(
-    'jubileo/compartiendo',
-    'jubileo_compartiendo',
+    compartiendoPath,
+    getEventCacheKey(event, 'compartiendo'),
   );
   const { data: gruposData } = useFirebaseData<Record<string, Grupo[]>>(
-    'jubileo/grupos',
-    'jubileo_grupos',
+    getEventFirebasePath(event, 'grupos'),
+    getEventCacheKey(event, 'grupos'),
   );
 
   const grupos = gruposData?.['Conso+'] ?? [];
@@ -135,10 +147,10 @@ export default function ReflexionesScreen() {
     };
     try {
       const db = getDatabase(getFirebaseApp());
-      const newRef = push(ref(db, 'jubileo/compartiendo/data'));
+      const newRef = push(ref(db, `${compartiendoPath}/data`));
       await set(newRef, nuevo);
       await set(
-        ref(db, 'jubileo/compartiendo/updatedAt'),
+        ref(db, `${compartiendoPath}/updatedAt`),
         Date.now().toString(),
       );
       setList([nuevo, ...list]);
@@ -167,94 +179,95 @@ export default function ReflexionesScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.list,
-          Platform.OS === 'ios' && { paddingBottom: 100 },
-        ]}
-      >
-        {list
-          .sort(
-            (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
-          )
-          .map((r) => (
-            <Card
-              key={r.id}
-              style={[styles.card, r.grupal && styles.cardGroup]}
-            >
-              <Card.Body style={{ paddingTop: 8 }}>
-                {r.titulo ? (
+      <PageContainer>
+        <ScrollView
+          contentContainerStyle={[
+            styles.list,
+            Platform.OS === 'ios' && { paddingBottom: 100 },
+          ]}
+        >
+          {list
+            .sort(
+              (a, b) =>
+                new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+            )
+            .map((r) => (
+              <Card
+                key={r.id}
+                style={[styles.card, r.grupal && styles.cardGroup]}
+              >
+                <Card.Body style={{ paddingTop: 8 }}>
+                  {r.titulo ? (
+                    <Text
+                      style={[
+                        { fontWeight: '600', fontSize: 16, marginBottom: 4 },
+                        r.grupal
+                          ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
+                          : { color: scheme === 'dark' ? '#fff' : '#222' },
+                      ]}
+                    >
+                      {r.titulo}
+                    </Text>
+                  ) : null}
+                  <Text
+                    style={
+                      r.grupal
+                        ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
+                        : { color: scheme === 'dark' ? '#fff' : '#222' }
+                    }
+                  >
+                    {r.contenido}
+                  </Text>
                   <Text
                     style={[
-                      { fontWeight: '600', fontSize: 16, marginBottom: 4 },
+                      { marginTop: 4, fontSize: 12 },
                       r.grupal
-                        ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
-                        : { color: scheme === 'dark' ? '#fff' : '#222' },
+                        ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
+                        : { color: scheme === 'dark' ? '#aaa' : '#888' },
                     ]}
                   >
-                    {r.titulo}
+                    {formatFecha(r.fecha)}
+                    {r.grupal
+                      ? ` - ${getGrupoLabel(r.grupo)}`
+                      : r.autor
+                        ? ` - ${r.autor}`
+                        : ''}
                   </Text>
-                ) : null}
-                <Text
-                  style={
-                    r.grupal
-                      ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
-                      : { color: scheme === 'dark' ? '#fff' : '#222' }
-                  }
-                >
-                  {r.contenido}
-                </Text>
-                <Text
-                  style={[
-                    { marginTop: 4, fontSize: 12 },
-                    r.grupal
-                      ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
-                      : { color: scheme === 'dark' ? '#aaa' : '#888' },
-                  ]}
-                >
-                  {formatFecha(r.fecha)}
-                  {r.grupal
-                    ? ` - ${getGrupoLabel(r.grupo)}`
-                    : r.autor
-                      ? ` - ${r.autor}`
-                      : ''}
-                </Text>
-              </Card.Body>
-            </Card>
-          ))}
-      </ScrollView>
+                </Card.Body>
+              </Card>
+            ))}
+        </ScrollView>
+      </PageContainer>
 
-      {Platform.OS === 'ios' ? (
-        <GlassFAB
-          icon="add"
-          onPress={() => setShowForm(true)}
-          tintColor="#A3BD31"
-          iconColor="#fff"
-        />
-      ) : (
-        <PressableFeedback
-          style={styles.fab}
-          onPress={() => setShowForm(true)}
-        >
-          <PressableFeedback.Scale />
-          <MaterialIcons name="add" size={24} color="#fff" />
-        </PressableFeedback>
-      )}
+      <GlassFAB
+        icon="add"
+        onPress={() => setShowForm(true)}
+        tintColor="#A3BD31"
+        iconColor="#fff"
+      />
 
       {/* Form bottom sheet */}
       <BottomSheet
         isOpen={showForm}
-        onOpenChange={(open) => { if (!open) setShowForm(false); }}
+        onOpenChange={(open) => {
+          if (!open) setShowForm(false);
+        }}
       >
         <BottomSheet.Portal>
           <BottomSheet.Overlay />
           <BottomSheet.Content>
-            <BottomSheet.Title className="mb-2">Compartir reflexión</BottomSheet.Title>
+            <BottomSheet.Title className="mb-2">
+              Compartir reflexión
+            </BottomSheet.Title>
             <ScrollView>
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Título (opcional)</Text>
                 <TextField>
-                  <Input value={titulo} onChangeText={setTitulo} style={styles.input} />
+                  <Input
+                    value={titulo}
+                    onChangeText={setTitulo}
+                    style={styles.input}
+                  />
                 </TextField>
               </View>
               <View style={styles.inputWrapper}>
@@ -268,7 +281,10 @@ export default function ReflexionesScreen() {
                   />
                 </TextField>
               </View>
-              <PressableFeedback onPress={showDatePicker} style={styles.dateField}>
+              <PressableFeedback
+                onPress={showDatePicker}
+                style={styles.dateField}
+              >
                 <PressableFeedback.Highlight />
                 <Text style={styles.inputLabel}>Fecha</Text>
                 <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
@@ -281,8 +297,14 @@ export default function ReflexionesScreen() {
                 <Text style={styles.switchLabel}>Compartiendo en grupo</Text>
               </View>
               {grupal ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                  <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginBottom: 12 }}
+                >
+                  <View
+                    style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}
+                  >
                     {grupos.map((g) => (
                       <Chip
                         key={g.nombre}
@@ -299,7 +321,11 @@ export default function ReflexionesScreen() {
                 <View style={styles.inputWrapper}>
                   <Text style={styles.inputLabel}>Tu nombre (opcional)</Text>
                   <TextField>
-                    <Input value={autor} onChangeText={setAutor} style={styles.input} />
+                    <Input
+                      value={autor}
+                      onChangeText={setAutor}
+                      style={styles.input}
+                    />
                   </TextField>
                 </View>
               )}
@@ -318,7 +344,9 @@ export default function ReflexionesScreen() {
       {/* Date selector modal */}
       <Dialog
         isOpen={showDateSelector}
-        onOpenChange={(open) => { if (!open) setShowDateSelector(false); }}
+        onOpenChange={(open) => {
+          if (!open) setShowDateSelector(false);
+        }}
       >
         <Dialog.Portal>
           <Dialog.Overlay />
@@ -359,22 +387,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     card: { marginBottom: spacing.md },
     cardGroup: {
       backgroundColor: scheme === 'dark' ? '#2D3B20' : '#E6F4D7',
-    },
-    fab: {
-      position: 'absolute',
-      right: 16,
-      bottom: 16,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.success,
-      justifyContent: 'center',
-      alignItems: 'center',
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
     },
     modalOverlay: {
       flex: 1,

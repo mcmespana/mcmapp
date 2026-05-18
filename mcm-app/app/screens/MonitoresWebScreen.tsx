@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
-import { Spinner, useToast } from 'heroui-native';
+import { Spinner } from 'heroui-native';
+import { useToast } from '@/contexts/AppToastContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
-import iframeStyles from '../(tabsdesactivados)/comunica.module.css';
+import iframeStyles from '../../styles/comunica.module.css';
 
 const URL = 'https://movimientoconsolacion.sinergiacrm.org/';
 
@@ -71,6 +73,8 @@ const INJECTED_JAVASCRIPT = `
 export default function MonitoresWebScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
 
   const onLoadEnd = () => {
     setIsLoading(false);
@@ -79,7 +83,8 @@ export default function MonitoresWebScreen() {
   const onError = () => {
     toast.show({
       variant: 'danger',
-      label: 'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
+      label:
+        'Error al cargar el contenido. Por favor, verifica tu conexión a internet.',
       actionLabel: 'Cerrar',
       onActionPress: ({ hide }) => hide(),
     });
@@ -91,64 +96,69 @@ export default function MonitoresWebScreen() {
     console.log('Navigation changed:', navState);
   };
 
+  // Para web, inyectamos los estilos mediante un script cuando carga el iframe
+  React.useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const iframe = document.querySelector(
+      'iframe[title="Comunica MCM - Monitores"]',
+    ) as HTMLIFrameElement;
+    if (!iframe) return;
+    const injectStyles = () => {
+      try {
+        const iframeDoc =
+          iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc) {
+          // Inyectar CSS
+          const style = iframeDoc.createElement('style');
+          style.textContent = INJECTED_CSS;
+          iframeDoc.head.appendChild(style);
+
+          // También ocultar directamente con JavaScript
+          const hideElements = () => {
+            const elementsToHide = iframeDoc.querySelectorAll(
+              '.p_login_top, .p_login_bottom',
+            );
+            elementsToHide.forEach((el: Element) => {
+              const htmlEl = el as HTMLElement;
+              htmlEl.style.display = 'none';
+              htmlEl.style.visibility = 'hidden';
+              htmlEl.style.opacity = '0';
+              htmlEl.style.height = '0';
+              htmlEl.style.overflow = 'hidden';
+            });
+          };
+
+          // Ejecutar inmediatamente
+          hideElements();
+
+          // Observar cambios en el DOM
+          const observer = new MutationObserver(hideElements);
+          observer.observe(iframeDoc.body, {
+            childList: true,
+            subtree: true,
+          });
+
+          // Ejecutar periódicamente durante los primeros 2 segundos
+          let attempts = 0;
+          const interval = setInterval(() => {
+            hideElements();
+            attempts++;
+            if (attempts > 20) {
+              clearInterval(interval);
+            }
+          }, 100);
+        }
+      } catch (e) {
+        // Si hay problemas de CORS, no podemos inyectar estilos en web
+        console.log('No se pudieron inyectar estilos en iframe:', e);
+      }
+    };
+
+    iframe.addEventListener('load', injectStyles);
+  }, []);
+
   // Fallback en web: usamos un iframe con estilos inyectados
   if (Platform.OS === 'web') {
-    // Para web, inyectamos los estilos mediante un script cuando carga el iframe
-    React.useEffect(() => {
-      const iframe = document.querySelector('iframe[title="Comunica MCM - Monitores"]') as HTMLIFrameElement;
-      if (iframe) {
-        const injectStyles = () => {
-          try {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-            if (iframeDoc) {
-              // Inyectar CSS
-              const style = iframeDoc.createElement('style');
-              style.textContent = INJECTED_CSS;
-              iframeDoc.head.appendChild(style);
-
-              // También ocultar directamente con JavaScript
-              const hideElements = () => {
-                const elementsToHide = iframeDoc.querySelectorAll('.p_login_top, .p_login_bottom');
-                elementsToHide.forEach((el: Element) => {
-                  const htmlEl = el as HTMLElement;
-                  htmlEl.style.display = 'none';
-                  htmlEl.style.visibility = 'hidden';
-                  htmlEl.style.opacity = '0';
-                  htmlEl.style.height = '0';
-                  htmlEl.style.overflow = 'hidden';
-                });
-              };
-
-              // Ejecutar inmediatamente
-              hideElements();
-
-              // Observar cambios en el DOM
-              const observer = new MutationObserver(hideElements);
-              observer.observe(iframeDoc.body, {
-                childList: true,
-                subtree: true
-              });
-
-              // Ejecutar periódicamente durante los primeros 2 segundos
-              let attempts = 0;
-              const interval = setInterval(() => {
-                hideElements();
-                attempts++;
-                if (attempts > 20) {
-                  clearInterval(interval);
-                }
-              }, 100);
-            }
-          } catch (e) {
-            // Si hay problemas de CORS, no podemos inyectar estilos en web
-            console.log('No se pudieron inyectar estilos en iframe:', e);
-          }
-        };
-
-        iframe.addEventListener('load', injectStyles);
-      }
-    }, []);
-
     return (
       <View style={styles.containerWeb}>
         <iframe
@@ -159,7 +169,7 @@ export default function MonitoresWebScreen() {
           onLoad={onLoadEnd}
         />
         {isLoading && (
-          <View style={styles.loadingContainer}>
+          <View style={[styles.loadingContainer, { backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]}>
             <Spinner />
           </View>
         )}
@@ -177,7 +187,7 @@ export default function MonitoresWebScreen() {
         injectedJavaScript={INJECTED_JAVASCRIPT}
         onMessage={() => {}}
         renderLoading={() => (
-          <View style={styles.loadingContainer}>
+          <View style={[styles.loadingContainer, { backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]}>
             <Spinner />
           </View>
         )}
@@ -205,7 +215,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   // Estilos para web: eliminamos márgenes y aprovechamos todo el espacio
   containerWeb: {

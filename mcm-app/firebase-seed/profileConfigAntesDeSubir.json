@@ -1,0 +1,167 @@
+{
+  "global": {
+    "defaultTab": "index",
+    "showNotificationsIcon": true,
+    "showOnboarding": true,
+    "showChangeNameButton": false,
+    "maintenanceMode": false,
+    "maintenanceMessage": "",
+    "minAppVersion": "0.0.0"
+  },
+  "profiles": {
+    "familia": {
+      "label": "Familia",
+      "description": "de miembros del MIC y COM",
+      "tabs": ["index", "cancionero", "contigo", "calendario", "fotos", "mas"],
+      "homeButtons": ["comunica", "cancionero", "fotos", "evangelio", "mas"],
+      "masItems": ["comunica", "jubileo"],
+      "defaultCalendars": ["mcm-europa"],
+      "albumTags": ["all"],
+      "notificationTopics": ["general", "eventos", "familias"]
+    },
+    "monitor": {
+      "label": "Monitor/a",
+      "description": "de grupos del MIC y COM",
+      "tabs": ["index", "cancionero", "contigo", "calendario", "fotos", "mas"],
+      "homeButtons": ["comunica", "cancionero", "fotos", "evangelio", "mas"],
+      "masItems": ["comunica", "comunica-gestion", "jubileo"],
+      "defaultCalendars": [],
+      "albumTags": ["all"],
+      "notificationTopics": ["general", "eventos", "monitores"]
+    },
+    "miembro": {
+      "label": "Miembro MCM",
+      "description": "de cualquier etapa",
+      "tabs": ["index", "cancionero", "contigo", "calendario", "fotos", "mas"],
+      "homeButtons": ["comunica", "cancionero", "fotos", "evangelio", "mas"],
+      "masItems": ["comunica", "comunica-gestion", "jubileo"],
+      "defaultCalendars": [],
+      "albumTags": ["all"],
+      "notificationTopics": ["general", "eventos", "miembros"]
+    }
+  },
+  "delegations": {
+    "_default": {
+      "label": "General"
+    },
+    "internacional": {
+      "label": "Internacional"
+    },
+    "mcm-benicarlo-vinaros": {
+      "label": "MCM Benicarló-Vinaròs"
+    },
+    "mcm-burriana": {
+      "label": "MCM Burriana"
+    },
+    "mcm-caravaca": {
+      "label": "MCM Caravaca"
+    },
+    "mcm-castellon": {
+      "extraCalendars": ["mcm-castellon"],
+      "label": "MCM Castellón",
+      "notificationTopic": "mcm-castellon"
+    },
+    "mcm-espana": {
+      "label": "MCM España"
+    },
+    "mcm-espinardo": {
+      "label": "MCM Espinardo"
+    },
+    "mcm-granada": {
+      "label": "MCM Granada"
+    },
+    "mcm-lalcora": {
+      "label": "MCM l'Alcora"
+    },
+    "mcm-madrid": {
+      "extraCalendars": ["mcm-madrid"],
+      "label": "MCM Madrid",
+      "notificationTopic": "mcm-madrid"
+    },
+    "mcm-nules": {
+      "label": "MCM Nules"
+    },
+    "mcm-onda": {
+      "label": "MCM Onda"
+    },
+    "mcm-quintanar": {
+      "label": "MCM Quintanar"
+    },
+    "mcm-vila-real": {
+      "label": "MCM Vila-real"
+    },
+    "mcm-villacanas": {
+      "label": "MCM Villacañas"
+    },
+    "mcm-zaragoza": {
+      "label": "MCM Zaragoza"
+    }
+  },
+  "delegationList": [
+    {
+      "id": "mcm-espana",
+      "label": "MCM España"
+    },
+    {
+      "id": "mcm-benicarlo-vinaros",
+      "label": "MCM Benicarló-Vinaròs"
+    },
+    {
+      "id": "mcm-burriana",
+      "label": "MCM Burriana"
+    },
+    {
+      "id": "mcm-caravaca",
+      "label": "MCM Caravaca"
+    },
+    {
+      "id": "mcm-castellon",
+      "label": "MCM Castellón"
+    },
+    {
+      "id": "mcm-espinardo",
+      "label": "MCM Espinardo"
+    },
+    {
+      "id": "mcm-granada",
+      "label": "MCM Granada"
+    },
+    {
+      "id": "mcm-lalcora",
+      "label": "MCM l'Alcora"
+    },
+    {
+      "id": "mcm-madrid",
+      "label": "MCM Madrid"
+    },
+    {
+      "id": "mcm-nules",
+      "label": "MCM Nules"
+    },
+    {
+      "id": "mcm-onda",
+      "label": "MCM Onda"
+    },
+    {
+      "id": "mcm-quintanar",
+      "label": "MCM Quintanar"
+    },
+    {
+      "id": "mcm-vila-real",
+      "label": "MCM Vila-real"
+    },
+    {
+      "id": "mcm-villacanas",
+      "label": "MCM Villacañas"
+    },
+    {
+      "id": "mcm-zaragoza",
+      "label": "MCM Zaragoza"
+    },
+    {
+      "id": "internacional",
+      "label": "Internacional"
+    }
+  ],
+  "overrides": {}
+}

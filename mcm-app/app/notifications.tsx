@@ -9,14 +9,12 @@ import {
   RefreshControl,
   Animated,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { BottomSheet, Button, Chip } from 'heroui-native';
 // IMPORTANTE: usar TouchableOpacity de gesture-handler (no de RN core)
 // dentro de Swipeable para que los toques anidados funcionen correctamente.
-import {
-  TouchableOpacity,
-  Swipeable,
-} from 'react-native-gesture-handler';
+import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -33,6 +31,7 @@ import {
   getReadNotificationIds,
   markAllNotificationsAsRead,
   initializeNewUserReadStatus,
+  isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { useNotifications } from '@/contexts/NotificationsContext';
@@ -48,9 +47,7 @@ const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
   '/notifications': { label: 'Notificaciones', icon: 'notifications' },
 };
 
-function getRouteLabel(
-  route: string,
-): { label: string; icon: string } | null {
+function getRouteLabel(route: string): { label: string; icon: string } | null {
   return ROUTE_LABELS[route] ?? null;
 }
 
@@ -69,6 +66,19 @@ export default function NotificationsScreen() {
   const [selectedNotification, setSelectedNotification] = useState<
     (NotificationData | ReceivedNotification) | null
   >(null);
+
+  // Helper reutilizable para saber si una notificación está leída.
+  // Declarado arriba porque otros callbacks lo consumen como dependencia.
+  const isNotificationRead = React.useCallback(
+    (n: NotificationData | ReceivedNotification) => {
+      if (readIds.has(n.id)) return true;
+      if ('isRead' in n && n.isRead) return true;
+      const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
+      if (isNotificationOlderThan60Days(dateStr)) return true;
+      return false;
+    },
+    [readIds],
+  );
 
   const loadLocalData = useCallback(async () => {
     try {
@@ -118,7 +128,7 @@ export default function NotificationsScreen() {
 
   const handleMarkAllAsRead = async () => {
     const unreadIds = allNotifications
-      .filter((n) => !readIds.has(n.id) && !('isRead' in n && n.isRead))
+      .filter((n) => !isNotificationRead(n))
       .map((n) => n.id);
     if (unreadIds.length === 0) return;
     await markAllNotificationsAsRead(unreadIds);
@@ -128,28 +138,19 @@ export default function NotificationsScreen() {
 
   const handleNotificationPress = useCallback(
     async (notification: NotificationData | ReceivedNotification) => {
-      const isRead =
-        readIds.has(notification.id) ||
-        ('isRead' in notification && notification.isRead);
-      if (!isRead) {
+      if (!isNotificationRead(notification)) {
         await handleMarkAsRead(notification.id);
       }
       setSelectedNotification(notification);
     },
-    [readIds, handleMarkAsRead],
+    [isNotificationRead, handleMarkAsRead],
   );
 
   const handleActionButtonPress = useCallback(
-    (
-      notification: NotificationData | ReceivedNotification,
-      e: any,
-    ) => {
+    (notification: NotificationData | ReceivedNotification, e: any) => {
       // Prevenir que el tap llegue al card padre
       if (e?.stopPropagation) e.stopPropagation();
-      const isRead =
-        readIds.has(notification.id) ||
-        ('isRead' in notification && notification.isRead);
-      if (!isRead) {
+      if (!isNotificationRead(notification)) {
         handleMarkAsRead(notification.id).catch((err) =>
           console.error('Error marcando como leída:', err),
         );
@@ -167,7 +168,7 @@ export default function NotificationsScreen() {
         );
       }
     },
-    [readIds, handleMarkAsRead],
+    [isNotificationRead, handleMarkAsRead],
   );
 
   const renderRightActions = (
@@ -203,9 +204,7 @@ export default function NotificationsScreen() {
   }: {
     item: NotificationData | ReceivedNotification;
   }) => {
-    const isRead =
-      readIds.has(notification.id) ||
-      ('isRead' in notification && notification.isRead);
+    const isRead = isNotificationRead(notification);
     const isUnread = !isRead;
     const date = new Date(
       'receivedAt' in notification
@@ -254,9 +253,9 @@ export default function NotificationsScreen() {
               </Text>
               <View style={styles.notificationHeaderRight}>
                 {isUnread && <View style={styles.unreadBadge} />}
-                {/* Botón marcar como leída — TouchableOpacity de gesture-handler */}
+                {/* Botón marcar como leída — Pressable para evitar <button> anidado en web */}
                 {isUnread && (
-                  <TouchableOpacity
+                  <Pressable
                     style={styles.markAsReadButton}
                     onPress={() => handleMarkAsRead(notification.id)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -268,7 +267,7 @@ export default function NotificationsScreen() {
                       size={20}
                       color={colors.primary}
                     />
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
             </View>
@@ -290,9 +289,9 @@ export default function NotificationsScreen() {
                     </Text>
                   </View>
                 )}
-                {/* Chip de botón de acción (tappable — navega directamente) */}
+                {/* Chip de botón de acción — Pressable para evitar <button> anidado en web */}
                 {notification.actionButton && (
-                  <TouchableOpacity
+                  <Pressable
                     style={styles.actionChip}
                     onPress={(e?) => handleActionButtonPress(notification, e)}
                     accessibilityLabel={notification.actionButton.text}
@@ -311,7 +310,7 @@ export default function NotificationsScreen() {
                       size={11}
                       color="#fff"
                     />
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
             </View>
@@ -321,21 +320,37 @@ export default function NotificationsScreen() {
     );
   };
 
-  // Combinar Firebase (real-time) + locales, deduplicar, ordenar
-  const allNotifications = [...localNotifications, ...firebaseNotifications]
-    .sort((a, b) => {
-      const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
-      const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
-      return dateB.getTime() - dateA.getTime();
-    })
-    .filter((notification, index, self) => {
-      if (!notification.id) return true; // sin ID: siempre incluir
-      return index === self.findIndex((n) => n.id === notification.id);
-    });
+  // Combinar Firebase (real-time) + locales, deduplicar, ordenar.
+  // Locales van primero porque tienen estado `isRead` más fiable.
+  const allNotifications = React.useMemo(() => {
+    const combined = [...localNotifications, ...firebaseNotifications].sort(
+      (a, b) => {
+        const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
+        const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      },
+    );
 
-  const hasUnread = allNotifications.some(
-    (n) => !readIds.has(n.id) && !('isRead' in n && n.isRead),
-  );
+    // Deduplicar por contenido (título + cuerpo) — la primera aparición gana
+    const seenContentKeys = new Set<string>();
+    const seenIds = new Set<string>();
+    return combined.filter((notification) => {
+      const contentKey = `${notification.title}|${notification.body}`;
+
+      // Si ya vimos este contenido exacto, es duplicado
+      if (seenContentKeys.has(contentKey)) return false;
+
+      // Si ya vimos este ID exacto, es duplicado
+      if (notification.id && seenIds.has(notification.id)) return false;
+
+      seenContentKeys.add(contentKey);
+      if (notification.id) seenIds.add(notification.id);
+
+      return true;
+    });
+  }, [localNotifications, firebaseNotifications]);
+
+  const hasUnread = allNotifications.some((n) => !isNotificationRead(n));
 
   return (
     <SafeAreaView
@@ -426,11 +441,13 @@ function NotificationDetailModal({
   scheme: 'light' | 'dark';
 }) {
   const theme = Colors[scheme ?? 'light'];
-  const date = notification ? new Date(
-    'receivedAt' in notification
-      ? notification.receivedAt
-      : notification.createdAt,
-  ) : new Date();
+  const date = notification
+    ? new Date(
+        'receivedAt' in notification
+          ? notification.receivedAt
+          : notification.createdAt,
+      )
+    : new Date();
   const routeInfo = notification?.internalRoute
     ? getRouteLabel(notification.internalRoute)
     : null;
@@ -464,7 +481,9 @@ function NotificationDetailModal({
   return (
     <BottomSheet
       isOpen={!!notification}
-      onOpenChange={(open) => { if (!open) onClose(); }}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
       <BottomSheet.Portal>
         <BottomSheet.Overlay />
@@ -474,95 +493,106 @@ function NotificationDetailModal({
             showsVerticalScrollIndicator={false}
           >
             {notification && (
-            <>
-            {/* Icono */}
-            {notification.icon && (
-              <Image source={{ uri: notification.icon }} style={dStyles.icon} />
-            )}
+              <>
+                {/* Icono */}
+                {notification.icon && (
+                  <Image
+                    source={{ uri: notification.icon }}
+                    style={dStyles.icon}
+                  />
+                )}
 
-            {/* Título */}
-            <BottomSheet.Title style={[dStyles.title, { color: theme.text }]}>
-              {notification.title}
-            </BottomSheet.Title>
+                {/* Título */}
+                <BottomSheet.Title
+                  style={[dStyles.title, { color: theme.text }]}
+                >
+                  {notification.title}
+                </BottomSheet.Title>
 
-            {/* Fecha */}
-            <Text style={[dStyles.date, { color: theme.icon }]}>
-              {date.toLocaleDateString('es-ES', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
+                {/* Fecha */}
+                <Text style={[dStyles.date, { color: theme.icon }]}>
+                  {date.toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
 
-            {/* Imagen grande */}
-            {notification.imageUrl && (
-              <Image
-                source={{ uri: notification.imageUrl }}
-                style={dStyles.image}
-                resizeMode="cover"
-              />
-            )}
+                {/* Imagen grande */}
+                {notification.imageUrl && (
+                  <Image
+                    source={{ uri: notification.imageUrl }}
+                    style={dStyles.image}
+                    resizeMode="cover"
+                  />
+                )}
 
-            {/* Cuerpo */}
-            <Text style={[dStyles.body, { color: theme.text }]}>
-              {notification.body}
-            </Text>
+                {/* Cuerpo */}
+                <Text style={[dStyles.body, { color: theme.text }]}>
+                  {notification.body}
+                </Text>
 
-            {/* Separador si hay acciones */}
-            {(routeInfo || notification.actionButton) && (
-              <View
-                style={[dStyles.divider, { backgroundColor: hexAlpha(theme.icon, '30') }]}
-              />
-            )}
+                {/* Separador si hay acciones */}
+                {(routeInfo || notification.actionButton) && (
+                  <View
+                    style={[
+                      dStyles.divider,
+                      { backgroundColor: hexAlpha(theme.icon, '30') },
+                    ]}
+                  />
+                )}
 
-            {/* Botón de destino interno (internalRoute) */}
-            {routeInfo && (
-              <Button
-                variant="outline"
-                onPress={handleInternalRoute}
-                style={[dStyles.routeButton, { borderColor: colors.primary }]}
-              >
-                <MaterialIcons
-                  name={routeInfo.icon as any}
-                  size={20}
-                  color={colors.primary}
-                />
-                <Button.Label style={{ color: colors.primary, flex: 1 }}>
-                  Ir a {routeInfo.label}
-                </Button.Label>
-                <MaterialIcons
-                  name="arrow-forward-ios"
-                  size={14}
-                  color={colors.primary}
-                />
-              </Button>
-            )}
+                {/* Botón de destino interno (internalRoute) */}
+                {routeInfo && (
+                  <Button
+                    variant="outline"
+                    onPress={handleInternalRoute}
+                    style={[
+                      dStyles.routeButton,
+                      { borderColor: colors.primary },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={routeInfo.icon as any}
+                      size={20}
+                      color={colors.primary}
+                    />
+                    <Button.Label style={{ color: colors.primary, flex: 1 }}>
+                      Ir a {routeInfo.label}
+                    </Button.Label>
+                    <MaterialIcons
+                      name="arrow-forward-ios"
+                      size={14}
+                      color={colors.primary}
+                    />
+                  </Button>
+                )}
 
-            {/* Botón de acción CTA */}
-            {notification.actionButton && (
-              <Button
-                variant="primary"
-                onPress={handleActionButton}
-                style={dStyles.actionButton}
-              >
-                <Button.Label style={dStyles.actionButtonText}>
-                  {notification.actionButton.text}
-                </Button.Label>
-                <MaterialIcons
-                  name={
-                    notification.actionButton.isInternal
-                      ? 'arrow-forward'
-                      : 'open-in-new'
-                  }
-                  size={18}
-                  color="#fff"
-                />
-              </Button>
-            )}
-            </>
+                {/* Botón de acción CTA */}
+                {notification.actionButton && (
+                  <Button
+                    variant="primary"
+                    onPress={handleActionButton}
+                    style={dStyles.actionButton}
+                  >
+                    <Button.Label style={dStyles.actionButtonText}>
+                      {notification.actionButton.text}
+                    </Button.Label>
+                    <MaterialIcons
+                      name={
+                        notification.actionButton.isInternal
+                          ? 'arrow-forward'
+                          : 'open-in-new'
+                      }
+                      size={18}
+                      color="#fff"
+                    />
+                  </Button>
+                )}
+              </>
             )}
           </ScrollView>
         </BottomSheet.Content>
@@ -580,7 +610,7 @@ const dStyles = StyleSheet.create({
   icon: {
     width: 64,
     height: 64,
-    borderRadius: 32,  // 64/2 — circle
+    borderRadius: 32, // 64/2 — circle
     marginBottom: spacing.md,
     alignSelf: 'center',
   },

@@ -1,11 +1,10 @@
 # .github/workflows/ota-preview.yml
 name: OTA Preview
 
-# DESACTIVADO TEMPORALMENTE - Reactivar descomentando la sección `on:`
-# on:
-#   push:
-#     branches: [ preview ]
-on: {}  # No triggers - workflow desactivado
+on:
+  push:
+    branches: [ preview ]
+# on: {}  # No triggers - workflow desactivado
 
 jobs:
   publish-preview:

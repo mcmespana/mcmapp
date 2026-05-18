@@ -1,23 +1,28 @@
-import {
-  FlatList,
-  Text,
-  StyleSheet,
-  View,
-  Platform,
-} from 'react-native';
+import { FlatList, Text, StyleSheet, View, Platform } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useLayoutEffect, useMemo, useState } from 'react';
+import {
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useToast, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
+import { useToast } from '@/contexts/AppToastContext';
 import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  consumePendingCloudPlaylistCode,
+  consumePendingChoirCode,
+} from '@/utils/pendingCloudPlaylist';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
@@ -50,7 +55,7 @@ export default function CategoriesScreen({
     Categories: undefined;
     SongsList: { categoryId: string; categoryName: string };
     SongDetail: { songId: string; songTitle?: string };
-    SelectedSongs: undefined;
+    SelectedSongs: { p?: string; c?: string } | undefined;
   }>;
 }) {
   const scheme = useColorScheme();
@@ -62,25 +67,29 @@ export default function CategoriesScreen({
     { categoryTitle: string; songs: any[] }
   > | null>('songs', 'songs', filterSongsData);
   const { selectedSongs } = useSelectedSongs();
-  const actualCategories = songsData ? Object.keys(songsData) : [];
-  const sortedCategories = actualCategories.sort((a, b) => {
-    const titleA = songsData?.[a]?.categoryTitle ?? a;
-    const titleB = songsData?.[b]?.categoryTitle ?? b;
-    return titleA.localeCompare(titleB);
-  });
+  const { sortedCategories, displayCategories } = useMemo(() => {
+    const actualCategories = songsData ? Object.keys(songsData) : [];
+    const sortedCats = actualCategories.sort((a, b) => {
+      const titleA = songsData?.[a]?.categoryTitle ?? a;
+      const titleB = songsData?.[b]?.categoryTitle ?? b;
+      return titleA.localeCompare(titleB);
+    });
 
-  const displayCategories = [
-    {
-      id: SELECTED_SONGS_CATEGORY_ID,
-      name: 'Tu selección',
-      songCount: selectedSongs.length,
-    },
-    ...sortedCategories.map((cat) => ({
-      id: cat,
-      name: songsData?.[cat]?.categoryTitle ?? cat,
-      songCount: songsData?.[cat]?.songs?.length || 0,
-    })),
-  ];
+    const displayCats = [
+      {
+        id: SELECTED_SONGS_CATEGORY_ID,
+        name: 'Tu selección',
+        songCount: selectedSongs.length,
+      },
+      ...sortedCats.map((cat) => ({
+        id: cat,
+        name: songsData?.[cat]?.categoryTitle ?? cat,
+        songCount: songsData?.[cat]?.songs?.length || 0,
+      })),
+    ];
+
+    return { sortedCategories: sortedCats, displayCategories: displayCats };
+  }, [songsData, selectedSongs.length]);
 
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
@@ -88,6 +97,21 @@ export default function CategoriesScreen({
   const handleSuccessSubmit = () => {
     toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
+
+  // Deep link: si llegamos con un código pendiente de la nube
+  // (proveniente de /playlist?p=1234 o /coro?c=1234), saltamos a la pantalla de
+  // seleccionadas con ese código para que dispare el autoimport o auto-join.
+  useEffect(() => {
+    const pendingPlaylist = consumePendingCloudPlaylistCode();
+    const pendingChoir = consumePendingChoirCode();
+
+    if (pendingPlaylist) {
+      // setParams no funciona para una nueva pantalla; usamos navigate.
+      navigation.navigate('SelectedSongs', { p: pendingPlaylist } as any);
+    } else if (pendingChoir) {
+      navigation.navigate('SelectedSongs', { c: pendingChoir } as any);
+    }
+  }, [navigation]);
 
   // Header: search + add buttons together (integrado en el header)
   useLayoutEffect(() => {
@@ -125,66 +149,71 @@ export default function CategoriesScreen({
     });
   }, [navigation]);
 
-  if (loading && actualCategories.length === 0) {
+  const renderItem = useCallback(
+    ({
+      item,
+      index,
+    }: {
+      item: (typeof displayCategories)[0];
+      index: number;
+    }) => {
+      const isSpecial = item.id === SELECTED_SONGS_CATEGORY_ID;
+      const { emoji, cleanText } = isSpecial
+        ? { emoji: '🎵', cleanText: item.name }
+        : extractTrailingEmoji(item.name);
+      const displayName = isSpecial
+        ? cleanText
+        : cleanText.replace(/^\w\.?\s*/, '');
+
+      return (
+        <PressableFeedback
+          onPress={() => {
+            if (item.id === SELECTED_SONGS_CATEGORY_ID) {
+              navigation.navigate('SelectedSongs');
+            } else {
+              navigation.navigate('SongsList', {
+                categoryId: item.id,
+                categoryName: item.name,
+              });
+            }
+          }}
+          style={[
+            styles.card,
+            isSpecial && styles.cardSpecial,
+            index === 0 && { marginTop: 12 },
+          ]}
+        >
+          <PressableFeedback.Highlight />
+          <View
+            style={[styles.cardEmoji, isSpecial && styles.cardEmojiSpecial]}
+          >
+            <Text style={styles.emojiText}>{emoji}</Text>
+          </View>
+          <View style={styles.cardContent}>
+            <Text
+              style={[styles.cardTitle, isSpecial && styles.cardTitleSpecial]}
+              numberOfLines={1}
+            >
+              {displayName}
+            </Text>
+          </View>
+          <View style={styles.cardRight}>
+            <Text style={styles.countBadge}>{item.songCount}</Text>
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={isDark ? '#555' : '#C7C7CC'}
+            />
+          </View>
+        </PressableFeedback>
+      );
+    },
+    [isDark, navigation],
+  );
+
+  if (loading && sortedCategories.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
-
-  const renderItem = ({
-    item,
-    index,
-  }: {
-    item: (typeof displayCategories)[0];
-    index: number;
-  }) => {
-    const isSpecial = item.id === SELECTED_SONGS_CATEGORY_ID;
-    const { emoji, cleanText } = isSpecial
-      ? { emoji: '🎵', cleanText: item.name }
-      : extractTrailingEmoji(item.name);
-    const displayName = isSpecial
-      ? cleanText
-      : cleanText.replace(/^\w\.?\s*/, '');
-
-    return (
-      <PressableFeedback
-        onPress={() => {
-          if (item.id === SELECTED_SONGS_CATEGORY_ID) {
-            navigation.navigate('SelectedSongs');
-          } else {
-            navigation.navigate('SongsList', {
-              categoryId: item.id,
-              categoryName: item.name,
-            });
-          }
-        }}
-        style={[
-          styles.card,
-          isSpecial && styles.cardSpecial,
-          index === 0 && { marginTop: 12 },
-        ]}
-      >
-        <PressableFeedback.Highlight />
-        <View style={[styles.cardEmoji, isSpecial && styles.cardEmojiSpecial]}>
-          <Text style={styles.emojiText}>{emoji}</Text>
-        </View>
-        <View style={styles.cardContent}>
-          <Text
-            style={[styles.cardTitle, isSpecial && styles.cardTitleSpecial]}
-            numberOfLines={1}
-          >
-            {displayName}
-          </Text>
-        </View>
-        <View style={styles.cardRight}>
-          <Text style={styles.countBadge}>{item.songCount}</Text>
-          <MaterialIcons
-            name="chevron-right"
-            size={20}
-            color={isDark ? '#555' : '#C7C7CC'}
-          />
-        </View>
-      </PressableFeedback>
-    );
-  };
 
   return (
     <View style={styles.container}>
@@ -199,6 +228,9 @@ export default function CategoriesScreen({
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         contentInsetAdjustmentBehavior="automatic"
+        initialNumToRender={10}
+        maxToRenderPerBatch={15}
+        windowSize={5}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
       />
@@ -210,7 +242,6 @@ export default function CategoriesScreen({
         songsData={songsData}
         onSuccess={handleSuccessSubmit}
       />
-
     </View>
   );
 }
@@ -245,17 +276,17 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: 8,
       ...(Platform.OS === 'web'
         ? {
-          boxShadow: isDark
-            ? '0 1px 3px rgba(0,0,0,0.4)'
-            : '0 1px 3px rgba(0,0,0,0.06)',
-        }
+            boxShadow: isDark
+              ? '0 1px 3px rgba(0,0,0,0.4)'
+              : '0 1px 3px rgba(0,0,0,0.06)',
+          }
         : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.25 : 0.04,
-          shadowRadius: 3,
-          elevation: 1,
-        }),
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: isDark ? 0.25 : 0.04,
+            shadowRadius: 3,
+            elevation: 1,
+          }),
     },
     cardSpecial: {
       backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
@@ -295,9 +326,14 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       gap: 4,
     },
     countBadge: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: isDark ? '#636366' : '#AEAEB2',
+      fontSize: 12,
+      fontWeight: '600',
+      color: isDark ? '#8E8E93' : '#6E6E73',
+      backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 10,
+      overflow: 'hidden',
       fontVariant: ['tabular-nums'],
     },
     topColorBar: {

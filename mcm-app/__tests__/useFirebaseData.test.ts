@@ -41,9 +41,7 @@ describe('useFirebaseData', () => {
       }),
     });
 
-    const { result } = renderHook(() =>
-      useFirebaseData('songs', 'test_songs'),
-    );
+    const { result } = renderHook(() => useFirebaseData('songs', 'test_songs'));
 
     // Al principio está cargando
     expect(result.current.loading).toBe(true);
@@ -68,9 +66,7 @@ describe('useFirebaseData', () => {
       }),
     });
 
-    const { result } = renderHook(() =>
-      useFirebaseData('test', 'cache_test'),
-    );
+    const { result } = renderHook(() => useFirebaseData('test', 'cache_test'));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -148,9 +144,7 @@ describe('useFirebaseData', () => {
       }),
     });
 
-    const { result } = renderHook(() =>
-      useFirebaseData('test', 'same_ts'),
-    );
+    const { result } = renderHook(() => useFirebaseData('test', 'same_ts'));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -166,9 +160,7 @@ describe('useFirebaseData', () => {
       val: () => null,
     });
 
-    const { result } = renderHook(() =>
-      useFirebaseData('empty', 'empty_test'),
-    );
+    const { result } = renderHook(() => useFirebaseData('empty', 'empty_test'));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);

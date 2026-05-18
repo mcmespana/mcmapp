@@ -134,7 +134,12 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
 export const useSettings = (): SettingsContextType => {
   const context = useContext(SettingsContext);
   if (context === undefined) {
-    throw new Error('useSettings must be used within a SettingsProvider');
+    // SSG/SSR fallback — provider not mounted during static render.
+    return {
+      settings: defaultSettings,
+      setSettings: () => {},
+      isLoadingSettings: true,
+    };
   }
   return context;
 };

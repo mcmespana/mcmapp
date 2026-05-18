@@ -1,9 +1,9 @@
 import React from 'react';
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Text, ViewStyle } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
-import { BlurView } from 'expo-blur';
 import { MaterialIcons } from '@expo/vector-icons';
+import { radii, shadows } from '@/constants/uiStyles';
+import GlassSurface from './GlassSurface';
 
 interface GlassFABProps {
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -11,32 +11,36 @@ interface GlassFABProps {
   tintColor?: string;
   iconColor?: string;
   size?: number;
-  style?: any;
+  /** Optional label rendered next to the icon. Turns the FAB into a pill. */
+  label?: string;
+  style?: ViewStyle;
 }
 
+/**
+ * iOS-only glass FAB. Delegates the glass effect to GlassSurface so the
+ * brightness / LiquidGlass-vs-BlurView decision lives in one place.
+ */
 export default function GlassFAB({
   icon,
   onPress,
   tintColor = '#f4c11e',
   iconColor = '#222',
   size = 24,
+  label,
   style,
 }: GlassFABProps) {
+  const isPill = !!label;
   return (
     <PressableFeedback
       onPress={onPress}
-      style={[styles.fab, style]}
+      style={[styles.fab, isPill && styles.pill, style]}
     >
       <PressableFeedback.Scale />
-      <BlurView
-        tint="light"
-        intensity={80}
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: tintColor + 'CC' }, // Semi-transparente con el color
-        ]}
-      />
+      <GlassSurface tintColor={tintColor} variant="regular" />
       <MaterialIcons name={icon} size={size} color={iconColor} />
+      {label ? (
+        <Text style={[styles.label, { color: iconColor }]}>{label}</Text>
+      ) : null}
     </PressableFeedback>
   );
 }
@@ -45,18 +49,21 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 90, // Más arriba para que no quede detrás del tab bar (tab bar tiene ~85px de alto con safe area)
+    bottom: 90,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radii.full,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 1000, // Asegurar que esté por encima de todo
+    zIndex: 1000,
+    ...(shadows.lg as ViewStyle),
   },
+  pill: {
+    width: undefined,
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  label: { fontSize: 13, fontWeight: '700' },
 });

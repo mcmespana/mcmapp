@@ -45,8 +45,9 @@ const EMOJIS = ['😀', '😁', '😊', '😎', '🤩', '🥳'];
 export default function WordleScreen() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
-  const theme = Colors[scheme];
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const theme = Colors[scheme ?? 'light'];
+  const isDark = scheme === 'dark';
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
   const emoji = useMemo(
     () => EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
     [],
@@ -653,7 +654,7 @@ export default function WordleScreen() {
   );
 }
 
-const createStyles = (theme: typeof Colors.light) =>
+const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -716,7 +717,7 @@ const createStyles = (theme: typeof Colors.light) =>
       paddingHorizontal: Platform.OS === 'web' ? 8 : 12,
       marginHorizontal: 3,
       borderRadius: 8,
-      backgroundColor: theme.background === '#2C2C2E' ? '#555' : '#d3d6da',
+      backgroundColor: isDark ? '#555' : '#d3d6da',
       minWidth: Platform.OS === 'web' ? 28 : 32,
       justifyContent: 'center',
       alignItems: 'center',

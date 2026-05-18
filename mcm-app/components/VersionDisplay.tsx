@@ -8,7 +8,7 @@ import { Colors } from '@/constants/colors';
 export const VersionDisplay: React.FC<{ style?: any }> = ({ style }) => {
   const [updateInfo, setUpdateInfo] = useState<string>('');
   const scheme = useColorScheme();
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
 
   useEffect(() => {
     const getUpdateInfo = async () => {

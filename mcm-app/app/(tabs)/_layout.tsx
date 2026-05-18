@@ -4,7 +4,7 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { StatusBar } from 'expo-status-bar';
 
 // Import iOS-specific NativeTabs
@@ -18,6 +18,7 @@ import {
   DarkTheme,
   DefaultTheme,
 } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, TabHeaderColors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import { HapticTab } from '@/components/HapticTab';
@@ -50,7 +51,15 @@ const TABS_CONFIG: TabConfig[] = [
     label: 'Cantoral',
     iosIcon: { default: 'music.note', selected: 'music.note' },
     androidIcon: 'music-note',
+    headerColor: TabHeaderColors.cancionero,
     headerShown: false, // Cantoral uses its own StackNavigator header
+  },
+  {
+    name: 'contigo',
+    label: 'Contigo',
+    iosIcon: { default: 'heart', selected: 'heart.fill' },
+    androidIcon: 'favorite',
+    headerShown: false,
   },
   {
     name: 'calendario',
@@ -89,14 +98,13 @@ const TABS_CONFIG: TabConfig[] = [
 // iOS NativeTabs Component
 // ============================================================================
 function IOSNativeTabsLayout() {
-  const featureFlags = useFeatureFlags();
+  const resolved = useResolvedProfileConfig();
+  const visibleTabs = new Set(resolved.tabs);
 
   return (
     <NativeTabs>
       {TABS_CONFIG.map((tab) => {
-        const isEnabled = featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
-
-        if (!isEnabled) return null;
+        if (!visibleTabs.has(tab.name)) return null;
 
         return (
           <NativeTabs.Trigger key={tab.name} name={tab.name}>
@@ -115,12 +123,18 @@ function IOSNativeTabsLayout() {
 function AndroidWebTabsLayout() {
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? DarkTheme : DefaultTheme;
-  const featureFlags = useFeatureFlags();
+  // En web (sobre todo en PWA standalone iOS) reservamos espacio para la status bar
+  // del sistema usando el safe-area-inset top. En navegador normal este valor es 0.
+  const insets = useSafeAreaInsets();
+  const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
+  const webBottomPad = Platform.OS === 'web' ? Math.max(insets.bottom, 12) : 8;
+  const resolved = useResolvedProfileConfig();
+  const visibleTabs = new Set(resolved.tabs);
 
   return (
     <ThemeProvider value={theme}>
       <Tabs
-        initialRouteName={featureFlags.defaultTab}
+        initialRouteName={resolved.defaultTab}
         screenOptions={{
           headerShown: true,
           headerTintColor: '#fff',
@@ -129,16 +143,19 @@ function AndroidWebTabsLayout() {
             fontSize: 18,
           },
           headerTitleAlign: 'center',
-          headerStatusBarHeight: Platform.OS === 'web' ? 0 : undefined,
+          headerStatusBarHeight: webStatusBarHeight,
           tabBarActiveTintColor: Colors[scheme ?? 'light'].tint,
           tabBarInactiveTintColor: Colors[scheme ?? 'light'].icon,
           tabBarStyle: {
             backgroundColor: Colors[scheme ?? 'light'].background,
             borderTopWidth: 1,
             borderTopColor: hexAlpha(Colors[scheme ?? 'light'].icon, '20'),
-            paddingBottom: Platform.OS === 'web' ? 12 : 8,
+            paddingBottom: webBottomPad,
             paddingTop: 12,
-            height: Platform.OS === 'web' ? 60 : 80,
+            height:
+              Platform.OS === 'web'
+                ? 60 + (insets.bottom > 0 ? insets.bottom : 0)
+                : 80,
             elevation: 8,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: -2 },
@@ -150,9 +167,7 @@ function AndroidWebTabsLayout() {
         }}
       >
         {TABS_CONFIG.map((tab) => {
-          const isEnabled = featureFlags.tabs[tab.name as keyof typeof featureFlags.tabs];
-
-          if (!isEnabled) return null;
+          if (!visibleTabs.has(tab.name)) return null;
 
           return (
             <Tabs.Screen
@@ -161,7 +176,11 @@ function AndroidWebTabsLayout() {
               options={{
                 title: tab.label,
                 tabBarIcon: ({ color, size }) => (
-                  <MaterialIcons name={tab.androidIcon as any} color={color} size={size} />
+                  <MaterialIcons
+                    name={tab.androidIcon as any}
+                    color={color}
+                    size={size}
+                  />
                 ),
                 headerShown: tab.headerShown ?? true,
                 ...(tab.headerColor && {
@@ -172,7 +191,6 @@ function AndroidWebTabsLayout() {
             />
           );
         })}
-
       </Tabs>
     </ThemeProvider>
   );

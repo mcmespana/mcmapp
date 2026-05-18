@@ -35,11 +35,11 @@ export interface NotificationData {
  * Categorías de notificaciones para organización
  */
 export type NotificationCategory =
-  | 'general'      // Anuncios generales
-  | 'eventos'      // Eventos y calendario
-  | 'cancionero'   // Nuevas canciones o actualizaciones
-  | 'fotos'        // Nuevos álbumes de fotos
-  | 'urgente'      // Notificaciones urgentes/importantes
+  | 'general' // Anuncios generales
+  | 'eventos' // Eventos y calendario
+  | 'cancionero' // Nuevas canciones o actualizaciones
+  | 'fotos' // Nuevos álbumes de fotos
+  | 'urgente' // Notificaciones urgentes/importantes
   | 'mantenimiento' // Avisos de mantenimiento de la app
   | 'celebraciones'; // Celebraciones, cumpleaños, etc.
 
@@ -56,6 +56,11 @@ export interface DeviceToken {
     model?: string;
     osVersion?: string;
   };
+  // Segmentación para envío de notificaciones desde mcmpanel
+  profileType?: 'familia' | 'monitor' | 'miembro' | null;
+  delegationId?: string | null;
+  /** Unión de notificationTopics del perfil + notificationTopic de la delegación. Pre-computado para queries fáciles. */
+  topics?: string[];
 }
 
 /**

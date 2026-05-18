@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
-import { useToast, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
+import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
 import SongFontPanel from './SongFontPanel';
@@ -8,6 +9,7 @@ import TransposePanel from './TransposePanel';
 import ReportBugsModal from './ReportBugsModal';
 import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface FontOption {
   name: string;
@@ -36,6 +38,9 @@ interface SongControlsProps {
   songInfo?: string;
   songContent?: string;
   firebaseCategory?: string;
+  /** Override de cejilla para esta sesión/playlist. undefined = no disponible. */
+  currentCapoOverride?: number | null;
+  onSetCapoOverride?: (capo: number | null) => void;
 }
 
 const SongControls: React.FC<SongControlsProps> = ({
@@ -60,6 +65,8 @@ const SongControls: React.FC<SongControlsProps> = ({
   songInfo,
   songContent,
   firebaseCategory,
+  currentCapoOverride,
+  onSetCapoOverride,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
   const [showTransposePanel, setShowTransposePanel] = useState(false);
@@ -69,10 +76,12 @@ const SongControls: React.FC<SongControlsProps> = ({
   const scheme = useColorScheme();
   const { toast } = useToast();
   const isDark = scheme === 'dark';
+  const insets = useSafeAreaInsets();
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const hasModifications =
     currentTranspose !== 0 ||
+    (currentCapoOverride !== null && currentCapoOverride !== undefined) ||
     !chordsVisible ||
     currentFontSizeEm !== DEFAULT_FONT_SIZE_EM ||
     (availableFonts.length > 0 &&
@@ -185,7 +194,12 @@ const SongControls: React.FC<SongControlsProps> = ({
       )}
 
       {/* FAB & Action Menu */}
-      <View style={styles.fabContainer}>
+      <View
+        style={[
+          styles.fabContainer,
+          { bottom: isIOS ? insets.bottom + 60 : 24 },
+        ]}
+      >
         {showActionButtons && (
           <View
             style={[styles.menuContainer, isDark && styles.menuContainerDark]}
@@ -205,12 +219,23 @@ const SongControls: React.FC<SongControlsProps> = ({
             <ActionButton
               icon="swap-vert"
               label={
-                currentTranspose !== 0
-                  ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose}`
-                  : 'Cambiar tono'
+                currentTranspose !== 0 &&
+                currentCapoOverride !== null &&
+                currentCapoOverride !== undefined
+                  ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose} · C${currentCapoOverride}`
+                  : currentTranspose !== 0
+                    ? `Tono ${currentTranspose > 0 ? '+' : ''}${currentTranspose}`
+                    : currentCapoOverride !== null &&
+                        currentCapoOverride !== undefined
+                      ? `Cejilla ${currentCapoOverride}`
+                      : 'Cambiar tono / cejilla'
               }
               onPress={handleOpenTransposePanel}
-              isActive={currentTranspose !== 0}
+              isActive={
+                currentTranspose !== 0 ||
+                (currentCapoOverride !== null &&
+                  currentCapoOverride !== undefined)
+              }
             />
             <ActionButton
               icon="text-fields"
@@ -289,6 +314,9 @@ const SongControls: React.FC<SongControlsProps> = ({
         onClose={() => setShowTransposePanel(false)}
         currentTranspose={currentTranspose}
         onSetTranspose={handleSetTranspose}
+        originalCapo={songCapo}
+        currentCapoOverride={currentCapoOverride}
+        onSetCapoOverride={onSetCapoOverride}
       />
 
       <ReportBugsModal
@@ -333,7 +361,6 @@ const styles = StyleSheet.create({
   },
   fabContainer: {
     position: 'absolute',
-    bottom: isIOS ? 100 : 24,
     right: 16,
     alignItems: 'flex-end',
     zIndex: 1000,
@@ -412,17 +439,21 @@ const styles = StyleSheet.create({
   },
   fabMain: {
     backgroundColor: '#fff',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
       web: {
-        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+        width: 54,
+        height: 54,
+        borderRadius: 27,
+        boxShadow:
+          '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
         cursor: 'pointer',
       },
       default: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,

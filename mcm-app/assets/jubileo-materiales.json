@@ -39,8 +39,8 @@
             "texto": "[b]EL SEÑOR ES MI PASTOR NADA ME FALTA EL SEÑOR ES MI PASTOR. (bis)[/b][br][br] 1. En praderas reposa mi alma, en su agua descansa mi sed. Él me guía por senderos justos por amor, por amor de su nombre.[br] 2. Aunque pase por valles oscuros ningún mal, ningún mal temeré porque sé que el Señor va conmigo su cayado sostiene mi fe. [br]3. Tú preparas por mi una mesa frente a aquellos que buscan mi mal. Con aceite me ungiste, Señor y mi copa rebosa de ti. [br] 4. Gloria a Dios, padre omnipotente y a su hijo Jesús, el Señor, y al Espíritu que habita en el mundo por los siglos eternos. Amén."
           },
           {
-            "titulo" : "Aleluya Cantará",
-            "texto" : "Aleluya cantará quien perdió la esperanza y la tierra sonreirá, aleluya (bis)"
+            "titulo": "Aleluya Cantará",
+            "texto": "Aleluya cantará quien perdió la esperanza y la tierra sonreirá, aleluya (bis)"
           },
           {
             "titulo": "Lectura del Santo Evangelio según San Lucas",
@@ -258,74 +258,74 @@
             "titulo": "Ruta 1",
             "texto": "[h1]Santa María la mayor a Casa Generalicia[/h1]"
           },
-        {
-          "titulo": "Parte 1",
-          "texto": "[h1]1. Inicio en Santa Maria Maggiore[/h1] Visita la basílica: mosaicos del milagro de la nieve, el campanile más alto de Roma, el relicario del pesebre y la tumba de Bernini. [br] En la plaza puedes admirar la Colonna della Pace y una pequeña fuente barroca. [br] [h1]2. Basílica de Santa Prassede[/h1] A solo 2 min a pie (72 m). Tesoro bizantino con [b]mosaicos espectaculares[/b] y [i]restos de la flagelación de Cristo[/i]. [br] [h1]3. Coliseo y Parque Colle Oppio[/h1] Avanza por Via Merulana (trazada por los papas Gregorio XIII y Sixto V), pasando junto a iglesias menores y el ninfeo de Mecenas. [br] En Colle Oppio, disfruta de una [i]vista privilegiada del Coliseo[/i] y haz una pausa en sus jardines. 🌿"
-        },
-        {
-          "titulo": "Parte 2",
-          "texto": "[h1]4. Foros Imperiales y Piazza Venezia[/h1] Continúa por la Via dei Fori Imperiali tras disfrutar del Coliseo. Un paseo impresionante entre [b]ruinas históricas[/b] y memorias del Imperio. [br] [h1]5. Piazza del Campidoglio[/h1] Sube una breve cuesta hasta esta plaza [i]renacentista diseñada por Miguel Ángel[/i], con vistas elevadas al Foro Romano. 🏛️ [br] [h1]6. Piazza Venezia y Via del Corso[/h1] Baja hacia el [b]corazón del centro histórico[/b]: la mole del Vittoriano te da la bienvenida junto a tiendas, cafés y palacios barrocos. ☕🛍️ [br] [h1]7. Fontana di Trevi[/h1] Pasea por callejuelas típicas (Via del Corso o Atlante) hasta llegar a la [i]icónica fuente[/i]. Lanza tu moneda, pide un deseo y déjate llevar por el bullicio. 💧✨"
-        },
-        {
-          "titulo": "Parte 3",
-          "texto": "[h1]8. Piazza di Spagna y Escalinata[/h1] (Opcional según tiempo disponible) Cruza plazas llenas de vida, sube los escalones de la Escalinata de la Plaza de España y disfruta del [i]ambiente cosmopolita[/i]. [br] [h1]9. Castillo de Sant’Angelo[/h1] Ya en camino hacia la Casa Generalicia, cruza por el Ponte Umberto I o Sant’Angelo para pasar junto al castillo y bordear el río. [br] Una última postal majestuosa del centro histórico antes de salir de él. 🏰🌉 [br] [h1]10. Camino a la Casa Generalicia[/h1] La Casa Generalicia de las Hermanas de la Consolación se encuentra en La Giustiniana, al noroeste de Roma, a unos 15 km del centro. [br] [i]El destino final del peregrino consolacionista, donde termina el camino y comienza la acogida. 🤍[/i]"
-        }
+          {
+            "titulo": "Parte 1",
+            "texto": "[h1]1. Inicio en Santa Maria Maggiore[/h1] Visita la basílica: mosaicos del milagro de la nieve, el campanile más alto de Roma, el relicario del pesebre y la tumba de Bernini. [br] En la plaza puedes admirar la Colonna della Pace y una pequeña fuente barroca. [br] [h1]2. Basílica de Santa Prassede[/h1] A solo 2 min a pie (72 m). Tesoro bizantino con [b]mosaicos espectaculares[/b] y [i]restos de la flagelación de Cristo[/i]. [br] [h1]3. Coliseo y Parque Colle Oppio[/h1] Avanza por Via Merulana (trazada por los papas Gregorio XIII y Sixto V), pasando junto a iglesias menores y el ninfeo de Mecenas. [br] En Colle Oppio, disfruta de una [i]vista privilegiada del Coliseo[/i] y haz una pausa en sus jardines. 🌿"
+          },
+          {
+            "titulo": "Parte 2",
+            "texto": "[h1]4. Foros Imperiales y Piazza Venezia[/h1] Continúa por la Via dei Fori Imperiali tras disfrutar del Coliseo. Un paseo impresionante entre [b]ruinas históricas[/b] y memorias del Imperio. [br] [h1]5. Piazza del Campidoglio[/h1] Sube una breve cuesta hasta esta plaza [i]renacentista diseñada por Miguel Ángel[/i], con vistas elevadas al Foro Romano. 🏛️ [br] [h1]6. Piazza Venezia y Via del Corso[/h1] Baja hacia el [b]corazón del centro histórico[/b]: la mole del Vittoriano te da la bienvenida junto a tiendas, cafés y palacios barrocos. ☕🛍️ [br] [h1]7. Fontana di Trevi[/h1] Pasea por callejuelas típicas (Via del Corso o Atlante) hasta llegar a la [i]icónica fuente[/i]. Lanza tu moneda, pide un deseo y déjate llevar por el bullicio. 💧✨"
+          },
+          {
+            "titulo": "Parte 3",
+            "texto": "[h1]8. Piazza di Spagna y Escalinata[/h1] (Opcional según tiempo disponible) Cruza plazas llenas de vida, sube los escalones de la Escalinata de la Plaza de España y disfruta del [i]ambiente cosmopolita[/i]. [br] [h1]9. Castillo de Sant’Angelo[/h1] Ya en camino hacia la Casa Generalicia, cruza por el Ponte Umberto I o Sant’Angelo para pasar junto al castillo y bordear el río. [br] Una última postal majestuosa del centro histórico antes de salir de él. 🏰🌉 [br] [h1]10. Camino a la Casa Generalicia[/h1] La Casa Generalicia de las Hermanas de la Consolación se encuentra en La Giustiniana, al noroeste de Roma, a unos 15 km del centro. [br] [i]El destino final del peregrino consolacionista, donde termina el camino y comienza la acogida. 🤍[/i]"
+          }
         ]
       },
       {
         "nombre": "Casa Generalicia",
         "emoji": "🏠",
-        "color":"#FF8A65",
+        "color": "#FF8A65",
         "paginas": [
-            {
-              "titulo": "Jubileo Consolación 🏠",
-              "texto": "[h1]Bienvenidos a la Casa Generalicia [/h1][i]Consolad, consolad… [/i][br]El espíritu sigue suscitando a través del tiempo nuevos profetas de un Dios que llene el corazón de amor y de luz a una vida nueva [br]Es llamada a adentrarnos en el misterio, a renovar nuestro ser consolación a descubrir nuevos horizontes en nuestro servicio a Dios y a los hombres[br][b]ES UN HOY ES UN MAÑANA, ESPERANZA Y CERTEZA, ES UN DON UN COMPROMISO UN RETO UNA PROMESA (CONSOLAD) NUESTRO SER CONSOLACION[/b] [br] Amaremos nuestro carisma, dando LA vida, sin limitación Viviendo dentro de LA iglesia, renovando cada día nuestra consagración [br]Es un proyecto a vivir, es apertura, es contemplación, es hacer sentir al mundo, LA fuerza de un Dios que es consolación"
-            },
-            {
-              "titulo": "Escuchamos 👂",
-              "texto": "Nos situamos en ese momento, 14 de noviembre de 1858, Mª Rosa Molas y las primeras hermanas reciben una carta del Vicario Capitular donde dice: [br] [gquote]Atendiendo a que las obras en que de ordinario se ejercitan las Hermanas de su Instituto se dirigen todas a consolar a sus prójimos, ya cuando se hallan postrados en el lecho del dolor en los Hospitales, ya también en los tiernos niños huérfanos, que se cobijan bajo su protección y amparo; he creído conveniente imponer por nombre a esa Comunidad, a las demás que de ella tomaren origen, Congregación de Hermanas de la Consolación.[/gquote]"
-            },
-            {
-              "titulo": "Cantamos 🎶",
-              "texto": "[b]María Rosa es, la mujer que vivió el desafío del amor para entregar a cristo el Consolador[/b][br][i]Paseando por calles y plazas el mensaje del amor y buscando nuevas sendas donde el hombre necesite Consolación[/i]"
-            },
-            {
-              "titulo": "Para esuchar la palabra 🎶",
-              "texto": "[b]Habla Señor, que tu siervo escucha, Habla Señor que tu siervo escucha[/b][br][i]Muéstrame tu voluntad a través de la palabra, quiero conocerte más para amarte y seguirte[/i]"
-            },
-            {
-              "titulo": "De Isaías 40 libro 📖",
-              "texto": "[gquote]Consolad, consolad a mi pueblo, dice vuestro Dios: hablad al corazón de Jerusalén, gritadle que se ha cumplido su servicio y está pagado su crimen, pues de la mano del Señor ha recibido doble castigo por sus pecados. Una voz grita: En el desierto preparad un camino al Señor; allanad en la estepa una calzada para nuestro Dios; que los valles se levanten, que montes y colinas se abajen, que lo torcido se enderece y lo escabroso se nivele; y se revelará la gloria del Señor y la verán todos los hombres juntos –ha hablado la boca del Señor–. Dice una voz: Grita. Respondo: ¿Qué debo gritar? Toda carne es hierba y su belleza como flor campestre: se agosta la hierba, se marchita la flor, cuando el aliento del Señor sopla sobre ellos; se agosta la hierba, se marchita la flor, pero la Palabra de nuestro Dios se cumple siempre. Súbete a un monte elevado, mensajero de Sión; alza fuerte la voz, mensajero de Jerusalén; álzala, no temas, di a las ciudades de Judá: Aquí está vuestro Dios. [/gquote][br][i]Dejamos un momento de silencio... [/i]"
-            },
-            {
-              "titulo": "Querido joven de la Consolación... 💬",
-              "texto": "Si estás aquí, no es por casualidad. El mundo de hoy te necesita. Por eso, la Iglesia, que cree en vos, te convoca y te dice: Ayúdame a seguir construyendo la civilización de amor. Te necesito caminante, portador de esperanza, que dejes huellas de consolación a cada pisada ¿Te animas a decirle que SÍ? [br] El Jubileo que estamos viviendo nos interpela a enfrentarnos al camino de nuestra vida. No se trata de tener todo claro. Sino de testimonear nuestra experiencia de Dios, como peregrinos de corazones ardientes, peregrinos inconformistas, inquietos, sensibles. Jóvenes que no se permiten quedarse de brazos cruzados frente ante una realidad que los escandaliza. Esa en una misión que nace del consuelo recibido. Porque hemos sido consolados por amor, y quien ha experimentado el consuelo de Dios no puede permanecer quieto e indiferente ante el desconsuelo del mundo. [br] [quote]“Consolad a mi pueblo, dice el Señor”.[/quote] [br]Con el anuncio de Isaías, Dios te llama personalmente a ser instrumento de consolación para los demás. Pero no con un acto puntual o como algo pasajero, sino como un estilo de vida, en donde cada palabra, cada gesto, cada elección esté atravesada por la ternura y el consuelo de Dios. Como un modo peregrinar nuestro día a día hacia nuevos horizontes, más humanos, más humildes, más entregados, como una opción radical por el amor, al modo de María Rosa Molas.  [br][quote]¿Y tú, dónde quieres dejar tu huella? [/quote]"
-            },
-            {
-              "titulo": "Oración 🙏🏼",
-              "texto": "Señor, hoy me llamás a ser peregrino de una esperanza que consuele.[br] A dejar que tus palabras pasen por mi voz, y tus abrazos por mis brazos. [br]Dame un corazón que arda por ti. [br]Dame la fuerza de María Rosa. [br]Haz de mí un peregrino que no se detiene, porque sé que el mundo necesita de tu consuelo [br]Y vos, Señor, querés dejar tu huella con cada uno de mis pasos. [br]Amén"
-            },
-            {
-              "titulo": "Cantamos 🎶",
-              "texto": "Consolad a mi pueblo dice el Señor, hablad al corazón del hombre Gritad que mi amor ha vencido, preparad el camino, que viene tu redentor. [br] [b]YO TE HE ELEGIDO PARA AMAR, TE DOY MI FUERZA Y LUZ PARA GUIAR,  YO SOY CONSUELO EN TU MIRAR, GLORIA A DIOS.[/b][br] Consolad a mi pueblo dice el Señor, sacad de la ceguera a mi pueblo.  Yo he sellado contigo la alianza perpetua. Yo soy el único Dios. [br] [b]YO TE HE ELEGIDO PARA AMAR, TE DOY MI FUERZA Y LUZ PARA GUIAR,  YO SOY CONSUELO EN TU MIRAR, GLORIA A DIOS.[/b] [br]Consolad a mi pueblo dice el Señor, mostradles el camino de libertad. Yo os daré fuertes alas, transformaré tus pisadas en sendas de eternidad."
-            },
-            {
-              "titulo": "Escuchamos 👂",
-              "texto": "[h1]Testimonios[/h1]"
-            },
-            {
-              "titulo": "Cantamos 🎶",
-              "texto": "[b]El amor, no tiene fronteras, el amor no tiene fronteras...[/b][br][br][br][b]ES UN HOY ES UN MAÑANA, ESPERANZA Y CERTEZA, ES UN DON UN COMPROMISO UN RETO UNA PROMESA (CONSOLAD) NUESTRO SER CONSOLACION[/b]"
-            },
-            {
-              "titulo": "Escuchamos 👂",
-              "texto": "[h1]Mensajes[/h1]"
-            },
-            {
-              "titulo": "Cantamos 🎶",
-              "texto": "Nos reunimos aquí de tantos lugares, tantos amigos, unidos por un ideal, el Evangelio de Jesús, unidos por una experiencia vivida en el corazón: Dios nos da su Consolación. [br][b]SOMOS CONSOLACIÓN, LLEVAMOS LA ESPERANZA Y LA PAZ DE DIOS. SOMOS CONSOLACIÓN, SEGUIMOS TRAS LAS HUELLAS DEL SEÑOR JESÚS QUEREMOS SER SUS MANOS Y SU CORAZÓN EN MEDIO DE UN MUNDO SEDIENTO DE AMOR. ¡¡SOMOS, ¡SOMOS, SOMOS CONSOLACIÓN! [/b][br] Nos reunimos aquí y recordamos tantos momentos vividos en grupos del COM, que animaron nuestra fe. Roma, Tortosa… y por todo el mundo se Extiende ya como una luz, la gente del COM. [br]Nos reunimos aquí y hacemos presente a Mª Rosa, aquella mujer que vivió en la Iglesia para Dios, que sólo buscó Consolar al que sufre, en nombre de Dios y empezó un Carisma que todos vivimos hoy."
-            }
-          ]
+          {
+            "titulo": "Jubileo Consolación 🏠",
+            "texto": "[h1]Bienvenidos a la Casa Generalicia [/h1][i]Consolad, consolad… [/i][br]El espíritu sigue suscitando a través del tiempo nuevos profetas de un Dios que llene el corazón de amor y de luz a una vida nueva [br]Es llamada a adentrarnos en el misterio, a renovar nuestro ser consolación a descubrir nuevos horizontes en nuestro servicio a Dios y a los hombres[br][b]ES UN HOY ES UN MAÑANA, ESPERANZA Y CERTEZA, ES UN DON UN COMPROMISO UN RETO UNA PROMESA (CONSOLAD) NUESTRO SER CONSOLACION[/b] [br] Amaremos nuestro carisma, dando LA vida, sin limitación Viviendo dentro de LA iglesia, renovando cada día nuestra consagración [br]Es un proyecto a vivir, es apertura, es contemplación, es hacer sentir al mundo, LA fuerza de un Dios que es consolación"
+          },
+          {
+            "titulo": "Escuchamos 👂",
+            "texto": "Nos situamos en ese momento, 14 de noviembre de 1858, Mª Rosa Molas y las primeras hermanas reciben una carta del Vicario Capitular donde dice: [br] [gquote]Atendiendo a que las obras en que de ordinario se ejercitan las Hermanas de su Instituto se dirigen todas a consolar a sus prójimos, ya cuando se hallan postrados en el lecho del dolor en los Hospitales, ya también en los tiernos niños huérfanos, que se cobijan bajo su protección y amparo; he creído conveniente imponer por nombre a esa Comunidad, a las demás que de ella tomaren origen, Congregación de Hermanas de la Consolación.[/gquote]"
+          },
+          {
+            "titulo": "Cantamos 🎶",
+            "texto": "[b]María Rosa es, la mujer que vivió el desafío del amor para entregar a cristo el Consolador[/b][br][i]Paseando por calles y plazas el mensaje del amor y buscando nuevas sendas donde el hombre necesite Consolación[/i]"
+          },
+          {
+            "titulo": "Para esuchar la palabra 🎶",
+            "texto": "[b]Habla Señor, que tu siervo escucha, Habla Señor que tu siervo escucha[/b][br][i]Muéstrame tu voluntad a través de la palabra, quiero conocerte más para amarte y seguirte[/i]"
+          },
+          {
+            "titulo": "De Isaías 40 libro 📖",
+            "texto": "[gquote]Consolad, consolad a mi pueblo, dice vuestro Dios: hablad al corazón de Jerusalén, gritadle que se ha cumplido su servicio y está pagado su crimen, pues de la mano del Señor ha recibido doble castigo por sus pecados. Una voz grita: En el desierto preparad un camino al Señor; allanad en la estepa una calzada para nuestro Dios; que los valles se levanten, que montes y colinas se abajen, que lo torcido se enderece y lo escabroso se nivele; y se revelará la gloria del Señor y la verán todos los hombres juntos –ha hablado la boca del Señor–. Dice una voz: Grita. Respondo: ¿Qué debo gritar? Toda carne es hierba y su belleza como flor campestre: se agosta la hierba, se marchita la flor, cuando el aliento del Señor sopla sobre ellos; se agosta la hierba, se marchita la flor, pero la Palabra de nuestro Dios se cumple siempre. Súbete a un monte elevado, mensajero de Sión; alza fuerte la voz, mensajero de Jerusalén; álzala, no temas, di a las ciudades de Judá: Aquí está vuestro Dios. [/gquote][br][i]Dejamos un momento de silencio... [/i]"
+          },
+          {
+            "titulo": "Querido joven de la Consolación... 💬",
+            "texto": "Si estás aquí, no es por casualidad. El mundo de hoy te necesita. Por eso, la Iglesia, que cree en vos, te convoca y te dice: Ayúdame a seguir construyendo la civilización de amor. Te necesito caminante, portador de esperanza, que dejes huellas de consolación a cada pisada ¿Te animas a decirle que SÍ? [br] El Jubileo que estamos viviendo nos interpela a enfrentarnos al camino de nuestra vida. No se trata de tener todo claro. Sino de testimonear nuestra experiencia de Dios, como peregrinos de corazones ardientes, peregrinos inconformistas, inquietos, sensibles. Jóvenes que no se permiten quedarse de brazos cruzados frente ante una realidad que los escandaliza. Esa en una misión que nace del consuelo recibido. Porque hemos sido consolados por amor, y quien ha experimentado el consuelo de Dios no puede permanecer quieto e indiferente ante el desconsuelo del mundo. [br] [quote]“Consolad a mi pueblo, dice el Señor”.[/quote] [br]Con el anuncio de Isaías, Dios te llama personalmente a ser instrumento de consolación para los demás. Pero no con un acto puntual o como algo pasajero, sino como un estilo de vida, en donde cada palabra, cada gesto, cada elección esté atravesada por la ternura y el consuelo de Dios. Como un modo peregrinar nuestro día a día hacia nuevos horizontes, más humanos, más humildes, más entregados, como una opción radical por el amor, al modo de María Rosa Molas.  [br][quote]¿Y tú, dónde quieres dejar tu huella? [/quote]"
+          },
+          {
+            "titulo": "Oración 🙏🏼",
+            "texto": "Señor, hoy me llamás a ser peregrino de una esperanza que consuele.[br] A dejar que tus palabras pasen por mi voz, y tus abrazos por mis brazos. [br]Dame un corazón que arda por ti. [br]Dame la fuerza de María Rosa. [br]Haz de mí un peregrino que no se detiene, porque sé que el mundo necesita de tu consuelo [br]Y vos, Señor, querés dejar tu huella con cada uno de mis pasos. [br]Amén"
+          },
+          {
+            "titulo": "Cantamos 🎶",
+            "texto": "Consolad a mi pueblo dice el Señor, hablad al corazón del hombre Gritad que mi amor ha vencido, preparad el camino, que viene tu redentor. [br] [b]YO TE HE ELEGIDO PARA AMAR, TE DOY MI FUERZA Y LUZ PARA GUIAR,  YO SOY CONSUELO EN TU MIRAR, GLORIA A DIOS.[/b][br] Consolad a mi pueblo dice el Señor, sacad de la ceguera a mi pueblo.  Yo he sellado contigo la alianza perpetua. Yo soy el único Dios. [br] [b]YO TE HE ELEGIDO PARA AMAR, TE DOY MI FUERZA Y LUZ PARA GUIAR,  YO SOY CONSUELO EN TU MIRAR, GLORIA A DIOS.[/b] [br]Consolad a mi pueblo dice el Señor, mostradles el camino de libertad. Yo os daré fuertes alas, transformaré tus pisadas en sendas de eternidad."
+          },
+          {
+            "titulo": "Escuchamos 👂",
+            "texto": "[h1]Testimonios[/h1]"
+          },
+          {
+            "titulo": "Cantamos 🎶",
+            "texto": "[b]El amor, no tiene fronteras, el amor no tiene fronteras...[/b][br][br][br][b]ES UN HOY ES UN MAÑANA, ESPERANZA Y CERTEZA, ES UN DON UN COMPROMISO UN RETO UNA PROMESA (CONSOLAD) NUESTRO SER CONSOLACION[/b]"
+          },
+          {
+            "titulo": "Escuchamos 👂",
+            "texto": "[h1]Mensajes[/h1]"
+          },
+          {
+            "titulo": "Cantamos 🎶",
+            "texto": "Nos reunimos aquí de tantos lugares, tantos amigos, unidos por un ideal, el Evangelio de Jesús, unidos por una experiencia vivida en el corazón: Dios nos da su Consolación. [br][b]SOMOS CONSOLACIÓN, LLEVAMOS LA ESPERANZA Y LA PAZ DE DIOS. SOMOS CONSOLACIÓN, SEGUIMOS TRAS LAS HUELLAS DEL SEÑOR JESÚS QUEREMOS SER SUS MANOS Y SU CORAZÓN EN MEDIO DE UN MUNDO SEDIENTO DE AMOR. ¡¡SOMOS, ¡SOMOS, SOMOS CONSOLACIÓN! [/b][br] Nos reunimos aquí y recordamos tantos momentos vividos en grupos del COM, que animaron nuestra fe. Roma, Tortosa… y por todo el mundo se Extiende ya como una luz, la gente del COM. [br]Nos reunimos aquí y hacemos presente a Mª Rosa, aquella mujer que vivió en la Iglesia para Dios, que sólo buscó Consolar al que sufre, en nombre de Dios y empezó un Carisma que todos vivimos hoy."
+          }
+        ]
       },
       {
         "nombre": "Grupos Conso+",
@@ -527,7 +527,7 @@
   {
     "fecha": "2025-08-03",
     "actividades": [
-     {
+      {
         "nombre": "Grupos Conso+",
         "emoji": "💬",
         "color": "#8BC34A",

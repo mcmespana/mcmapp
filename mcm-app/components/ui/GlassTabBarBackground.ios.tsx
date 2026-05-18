@@ -1,29 +1,18 @@
+import React from 'react';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
-import { BlurView } from 'expo-blur';
-import { StyleSheet } from 'react-native';
+import GlassSurface from './GlassSurface';
 
+/**
+ * iOS tab-bar background using the unified GlassSurface (LiquidGlass on
+ * iOS 18+, BlurView fallback on iOS <18).
+ *
+ * Note: the tab bar uses the system "chromeMaterial" tint on iOS <18.
+ * GlassSurface delegates to BlurView with `light` tint when no color is
+ * provided; for the tab bar we keep its native chrome by relying on
+ * `clear` variant (most translucent).
+ */
 export default function GlassTabBarBackground() {
-  // Verificar si LiquidGlass está disponible (iOS 18+)
-  const glassAvailable = isLiquidGlassAvailable();
-
-  if (glassAvailable) {
-    return (
-      <GlassView
-        glassEffectStyle="clear"
-        style={StyleSheet.absoluteFill}
-      />
-    );
-  }
-
-  // Fallback para iOS < 18
-  return (
-    <BlurView
-      tint="systemChromeMaterial"
-      intensity={100}
-      style={StyleSheet.absoluteFill}
-    />
-  );
+  return <GlassSurface variant="clear" />;
 }
 
 export function useBottomTabOverflow() {

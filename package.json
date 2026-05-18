@@ -5,6 +5,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@heroui/native-mcp": "^1.1.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.3.1",
     "prettier": "^3.2.5"

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Vatican News - Evangelio de hoy</title>
+    <link>https://www.vaticannews.va/es/evangelio-de-hoy.html</link>
+    <description>Evangelio del día con reflexión papal</description>
+
+    <!-- Item 1: Normal case — has palabras de los Papas section -->
+    <item>
+      <title>Evangelio del 13 de abril de 2026</title>
+      <pubDate>Mon, 13 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://www.vaticannews.va/es/evangelio-de-hoy/2026/04/13.html</guid>
+      <description><![CDATA[
+        <p>En aquel tiempo, Jesús dijo a Nicodemo: «El viento sopla donde quiere; oyes su voz, pero no sabes de dónde viene ni adónde va.»</p>
+        <h3>Las palabras de los Papas</h3>
+        <p>«El Espíritu Santo es el amor de Dios hecho don para nosotros. Él nos sostiene en el camino de la vida y nos conduce hacia el Padre.»</p>
+        <p>(Benedicto XVI - Audiencia general, 14 de abril de 2010)</p>
+      ]]></description>
+    </item>
+
+    <!-- Item 2: Author format with comma instead of dash -->
+    <item>
+      <title>Evangelio del 14 de abril de 2026</title>
+      <pubDate>Tue, 14 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://www.vaticannews.va/es/evangelio-de-hoy/2026/04/14.html</guid>
+      <description><![CDATA[
+        <p>En aquel tiempo, María Magdalena fue al sepulcro...</p>
+        <p><strong>Las palabras de los Papas</strong></p>
+        <p>«La resurrección no es simplemente un evento del pasado; es una fuerza que ha transformado el mundo.»</p>
+        <p>(Francisco, Homilía Vigilia Pascual, 19 de abril de 2014)</p>
+      ]]></description>
+    </item>
+
+    <!-- Item 3: No palabras section — should be skipped -->
+    <item>
+      <title>Evangelio del 15 de abril de 2026</title>
+      <pubDate>Wed, 15 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://www.vaticannews.va/es/evangelio-de-hoy/2026/04/15.html</guid>
+      <description><![CDATA[
+        <p>En aquel tiempo, el Señor resucitado se apareció a sus discípulos.</p>
+        <p>Este es el día que hizo el Señor.</p>
+      ]]></description>
+    </item>
+
+  </channel>
+</rss>

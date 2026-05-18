@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Linking, Image, Platform, Text } from 'react-native';
-import { Card, Button, Chip, Dialog, PressableFeedback } from 'heroui-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Linking,
+  Image,
+  Platform,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
+import { Dialog, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
+import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 
 interface Visita {
   titulo: string;
@@ -43,16 +56,18 @@ const WEEKDAYS = [
 function formatDate(fecha?: string) {
   if (!fecha) return '';
   const d = new Date(fecha);
-  if (isNaN(d.getTime())) return fecha; // if string not parseable, return as is
+  if (isNaN(d.getTime())) return fecha;
   return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
 export default function VisitasScreen() {
   const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const event = useCurrentEvent();
   const { data: visitas, loading } = useFirebaseData<Visita[]>(
-    'jubileo/visitas',
-    'jubileo_visitas',
+    getEventFirebasePath(event, 'visitas'),
+    getEventCacheKey(event, 'visitas'),
   );
   const [selected, setSelected] = useState<Visita | null>(null);
 
@@ -70,73 +85,115 @@ export default function VisitasScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.list}>
-        {(visitas || []).map((v, idx) => (
-          <PressableFeedback key={idx} onPress={() => setSelected(v)}>
-            <PressableFeedback.Highlight />
-            <Card style={styles.card}>
-              {v.imagen && (
+      <ScreenHero title="Visitas" />
+      <PageContainer>
+        <ScrollView contentContainerStyle={styles.list}>
+          {(visitas || []).map((v, idx) => (
+            <PressableFeedback
+              key={idx}
+              onPress={() => setSelected(v)}
+              style={styles.card}
+              accessibilityRole="button"
+              accessibilityLabel={v.titulo}
+            >
+              <PressableFeedback.Highlight />
+              {v.imagen ? (
                 <Image
                   source={{ uri: v.imagen }}
                   style={styles.image}
                   resizeMode="cover"
                 />
-              )}
-              <Card.Body style={styles.cardContent}>
+              ) : null}
+              <View style={styles.cardContent}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.title}>{v.titulo}</Text>
-                  {v.subtitulo && (
-                    <Text style={styles.subtitle}>{v.subtitulo}</Text>
-                  )}
-                  {v.fecha && (
+                  <Text style={styles.title} numberOfLines={2}>
+                    {v.titulo}
+                  </Text>
+                  {v.subtitulo ? (
+                    <Text style={styles.subtitle} numberOfLines={2}>
+                      {v.subtitulo}
+                    </Text>
+                  ) : null}
+                  {v.fecha ? (
                     <View style={styles.dateRow}>
-                      <MaterialIcons name="calendar-today" size={18} color="#888" />
-                      <Chip size="sm" variant="soft" color="default" style={{ marginLeft: 4 }}>
-                        <Chip.Label>{formatDate(v.fecha)}</Chip.Label>
-                      </Chip>
+                      <MaterialIcons
+                        name="calendar-today"
+                        size={14}
+                        color={isDark ? '#A0A0A8' : '#7B7B82'}
+                      />
+                      <Text style={styles.dateText} numberOfLines={1}>
+                        {formatDate(v.fecha)}
+                      </Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
-                {v.mapa && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    isIconOnly
-                    onPress={() => openMap(v.mapa)}
+                {v.mapa ? (
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      openMap(v.mapa);
+                    }}
+                    hitSlop={10}
+                    style={styles.mapBtn}
+                    accessibilityLabel="Abrir en el mapa"
                   >
-                    <MaterialIcons name="map" size={24} color="#888" />
-                  </Button>
-                )}
-              </Card.Body>
-            </Card>
-          </PressableFeedback>
-        ))}
-      </ScrollView>
+                    <MaterialIcons
+                      name="map"
+                      size={20}
+                      color={isDark ? '#7AB3FF' : '#2563EB'}
+                    />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </PressableFeedback>
+          ))}
+        </ScrollView>
+      </PageContainer>
       <Dialog
         isOpen={!!selected}
-        onOpenChange={(open) => { if (!open) setSelected(null); }}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
       >
         <Dialog.Portal>
           <Dialog.Overlay />
           <Dialog.Content>
             <Dialog.Close />
-            {selected && (
-              <View style={{ gap: 8 }}>
+            {selected ? (
+              <View style={{ gap: 12 }}>
                 <Dialog.Title>{selected.titulo}</Dialog.Title>
-                {selected.texto && (
+                {selected.texto ? (
                   <Dialog.Description>{selected.texto}</Dialog.Description>
-                )}
-                {selected.mapa && (
-                  <Button
-                    variant="secondary"
-                    onPress={() => { openMap(selected.mapa); setSelected(null); }}
+                ) : null}
+                {selected.mapa ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.dialogMapBtn,
+                      { backgroundColor: isDark ? '#1A2744' : '#E8F0FE' },
+                    ]}
+                    onPress={() => {
+                      const url = selected.mapa;
+                      setSelected(null);
+                      openMap(url);
+                    }}
                   >
-                    <MaterialIcons name="map" size={18} color="#fff" />
-                    <Button.Label>Ver en mapa</Button.Label>
-                  </Button>
-                )}
+                    <MaterialIcons
+                      name="map"
+                      size={18}
+                      color={isDark ? '#7AB3FF' : '#2563EB'}
+                    />
+                    <Text
+                      style={[
+                        styles.dialogMapBtnText,
+                        { color: isDark ? '#7AB3FF' : '#2563EB' },
+                      ]}
+                    >
+                      Ver en mapa
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
-            )}
+            ) : null}
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog>
@@ -145,28 +202,90 @@ export default function VisitasScreen() {
 }
 
 const createStyles = (scheme: 'light' | 'dark') => {
+  const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    list: { padding: 16, paddingBottom: Platform.OS === 'ios' ? 100 : 16 },
-    card: { marginBottom: 16, backgroundColor: theme.background },
+    list: {
+      padding: 16,
+      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
+      gap: 14,
+    },
+    card: {
+      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      borderRadius: 16,
+      overflow: 'hidden',
+      ...Platform.select({
+        web: {
+          boxShadow: isDark
+            ? '0 2px 8px rgba(0,0,0,0.35)'
+            : '0 2px 8px rgba(0,0,0,0.08)',
+        },
+        default: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: isDark ? 0.3 : 0.08,
+          shadowRadius: 8,
+          elevation: 3,
+        },
+      }),
+    },
     image: {
       width: '100%',
       height: 160,
-      borderTopLeftRadius: 16,
-      borderTopRightRadius: 16,
-      borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0,
-      marginBottom: 16, // spacing below image
+      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
-    cardContent: { flexDirection: 'row', alignItems: 'center' },
+    cardContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 14,
+      gap: 12,
+    },
     title: {
       fontSize: 16,
-      fontWeight: 'bold',
+      fontWeight: '700',
+      letterSpacing: -0.2,
+      color: isDark ? '#F5F5F7' : '#1C1C1E',
       marginBottom: 4,
-      color: theme.text,
     },
-    subtitle: { fontSize: 14, marginBottom: 4, color: theme.text },
-    dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    subtitle: {
+      fontSize: 14,
+      color: isDark ? '#C7C7CC' : '#3A3A3C',
+      marginBottom: 8,
+      lineHeight: 19,
+    },
+    dateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 2,
+    },
+    dateText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: isDark ? '#A0A0A8' : '#7B7B82',
+      textTransform: 'capitalize',
+    },
+    mapBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dialogMapBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 12,
+      borderRadius: 12,
+      marginTop: 4,
+    },
+    dialogMapBtnText: {
+      fontSize: 15,
+      fontWeight: '600',
+    },
   });
 };

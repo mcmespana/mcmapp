@@ -10,9 +10,7 @@
 //      a. notificationReceived — app en foreground: guarda la notificación localmente y actualiza badge
 //      b. notificationResponse — usuario toca la notificación: navega a la ruta correspondiente y marca como leída
 //
-// TODO: Eliminar console.log/warn/error de debug una vez estabilizado el sistema de notificaciones
-//
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
@@ -22,31 +20,42 @@ import {
   updateLastActive,
   saveReceivedNotificationLocally,
   markNotificationAsRead,
-  getDeviceId,
+  type TokenProfileMetadata,
 } from '@/services/pushNotificationService';
 import { ReceivedNotification } from '@/types/notifications';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { router } from 'expo-router';
-import { getDatabase, ref, set } from 'firebase/database';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
 
 /**
- * Escribe logs de diagnóstico en Firebase /debug/{deviceId}
- * Así puedes verlos en Firebase Console sin necesitar herramientas de desarrollo.
- * BORRAR cuando el problema esté resuelto.
+ * Genera un ID estable y determinístico para una notificación.
+ * Si el backend envía `data.id`, lo usa. Si no, genera un hash
+ * basado en título+cuerpo para que la misma notificación siempre
+ * tenga el mismo ID independientemente de cuántas veces se entregue.
+ *
+ * Esto soluciona el problema de que `notification.request.identifier`
+ * es un UUID aleatorio por cada entrega, lo que causaba que la
+ * deduplicación fallara y aparecieran duplicados.
  */
-async function logToFirebase(data: Record<string, any>) {
-  try {
-    const deviceId = await getDeviceId();
-    const db = getDatabase(getFirebaseApp());
-    await set(ref(db, `debug/${deviceId}`), {
-      ...data,
-      platform: Platform.OS,
-      timestamp: new Date().toISOString(),
-    });
-  } catch {
-    // Silencioso: si esto falla también, al menos tenemos console.error
+function getStableNotificationId(
+  content: Notifications.NotificationContent,
+): string {
+  // 1. ID explícito del backend — siempre preferido
+  if (content.data?.id && typeof content.data.id === 'string') {
+    return content.data.id;
   }
+
+  // 2. ID determinístico basado en contenido (título + cuerpo)
+  // Simple hash numérico convertido a string — suficiente para deduplicación
+  const raw = `${content.title || ''}|${content.body || ''}`;
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0; // Convert to 32-bit integer
+  }
+  return `local_${Math.abs(hash).toString(36)}`;
 }
 
 // Mapeo de actionIdentifier de iOS a rutas internas
@@ -61,20 +70,38 @@ export default function usePushNotifications() {
   const responseListener = useRef<any>(null);
   const { refreshCount } = useNotifications();
 
+  const resolved = useResolvedProfileConfig();
+  const { profile } = useUserProfile();
+
+  // Metadata para segmentación en Firebase. Solo la construimos cuando el
+  // usuario ya tiene perfil/delegación definidos (post onboarding). Antes,
+  // pasamos `null` para marcar "todavía sin clasificar".
+  const profileMetadata = useMemo<TokenProfileMetadata>(
+    () => ({
+      profileType: profile.profileType,
+      delegationId: profile.delegationId,
+      topics: resolved.notificationTopics,
+    }),
+    [profile.profileType, profile.delegationId, resolved.notificationTopics],
+  );
+
+  // Mantener una referencia mutable para que los efectos puedan leer el valor
+  // más reciente sin recrearse (evita duplicar listeners y reescribir el token).
+  const metadataRef = useRef(profileMetadata);
+  useEffect(() => {
+    metadataRef.current = profileMetadata;
+  }, [profileMetadata]);
+
   useEffect(() => {
     // Registrar token y guardar en Firebase, luego heartbeat inicial
-    registerAndSaveToken().then(() => {
-      updateLastActive().catch((err) =>
-        console.error('Error en heartbeat inicial:', err),
-      );
+    registerAndSaveToken(metadataRef.current).then(() => {
+      updateLastActive(metadataRef.current).catch(() => {});
     });
 
     // Actualizar última actividad periódicamente (cada 5 minutos)
     const intervalId = setInterval(
       () => {
-        updateLastActive().catch((err) =>
-          console.error('Error actualizando lastActive:', err),
-        );
+        updateLastActive(metadataRef.current).catch(() => {});
       },
       5 * 60 * 1000,
     );
@@ -82,11 +109,9 @@ export default function usePushNotifications() {
     // Listener para notificaciones recibidas (app en foreground)
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
-        console.log('🔔 Notificación recibida:', notification.request.content);
-
-        const notificationId =
-          (notification.request.content.data?.id as string) ||
-          notification.request.identifier;
+        const notificationId = getStableNotificationId(
+          notification.request.content,
+        );
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: notification.request.content.title || 'Notificación',
@@ -110,9 +135,7 @@ export default function usePushNotifications() {
             // Actualizar badge en tiempo real al recibir en foreground
             refreshCount();
           })
-          .catch((err) =>
-            console.error('Error guardando notificación localmente:', err),
-          );
+          .catch(() => {});
       });
 
     // Listener para cuando el usuario toca la notificación
@@ -139,14 +162,13 @@ export default function usePushNotifications() {
         if (targetRoute) {
           try {
             router.navigate(targetRoute as any);
-          } catch (error) {
-            console.error('Error navegando a ruta:', error);
-          }
+          } catch {}
         }
 
         // Guardar y marcar como leída
-        const notificationId =
-          (data?.id as string) || response.notification.request.identifier;
+        const notificationId = getStableNotificationId(
+          response.notification.request.content,
+        );
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: response.notification.request.content.title || 'Notificación',
@@ -164,9 +186,7 @@ export default function usePushNotifications() {
         saveReceivedNotificationLocally(receivedNotification)
           .then(() => markNotificationAsRead(receivedNotification.id))
           .then(() => refreshCount())
-          .catch((err) =>
-            console.error('Error procesando notificación:', err),
-          );
+          .catch(() => {});
       });
 
     // Cleanup
@@ -180,32 +200,38 @@ export default function usePushNotifications() {
       clearInterval(intervalId);
     };
   }, [refreshCount]);
+
+  // Cuando cambie el perfil/delegación después del onboarding, re-publica la
+  // metadata en Firebase (updateLastActive con metadata hace merge). Esto es
+  // barato y mantiene segmentación actualizada.
+  useEffect(() => {
+    updateLastActive(profileMetadata).catch(() => {});
+  }, [profileMetadata]);
 }
 
 /**
  * Flujo completo: permisos → token → guardar en Firebase
  * Con logging detallado para diagnosticar problemas
  */
-async function registerAndSaveToken() {
+async function registerAndSaveToken(profileMetadata: TokenProfileMetadata) {
   if (Platform.OS === 'web') return;
 
   try {
     // 1. Permisos
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    console.log('📋 [PASO 1] Estado de permisos:', existingStatus);
+    // Cast to any: TS no resuelve `expo-modules-core` (anidado bajo expo/) y
+    // por eso no ve los campos heredados de PermissionResponse (`status`,
+    // `granted`...). En runtime sí existen.
+    const existing = (await Notifications.getPermissionsAsync()) as any;
+    let granted: boolean = !!existing.granted;
 
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+    if (!granted) {
+      const requested = (await Notifications.requestPermissionsAsync()) as any;
+      granted = !!requested.granted;
     }
 
-    if (finalStatus !== 'granted') {
-      console.warn('⚠️ Permisos denegados:', finalStatus);
-      logToFirebase({ paso: 1, resultado: 'PERMISOS_DENEGADOS', finalStatus });
+    if (!granted) {
       return;
     }
-    console.log('✅ [PASO 1] Permisos concedidos');
 
     // 2. Canal Android
     if (Platform.OS === 'android') {
@@ -221,43 +247,20 @@ async function registerAndSaveToken() {
     const projectId =
       Constants?.expoConfig?.extra?.eas?.projectId ??
       Constants?.easConfig?.projectId;
-    console.log('📋 [PASO 3] projectId:', projectId || '(auto)');
 
-    let tokenResponse;
-    try {
-      tokenResponse = await Notifications.getExpoPushTokenAsync(
-        projectId ? { projectId } : undefined,
-      );
-    } catch (tokenError: any) {
-      const msg = tokenError?.message || String(tokenError);
-      console.error('❌ [PASO 3] getExpoPushTokenAsync FALLÓ:', msg);
-      logToFirebase({ paso: 3, resultado: 'TOKEN_ERROR', error: msg, projectId: projectId || '(auto)' });
-      throw tokenError;
-    }
+    const tokenResponse = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined,
+    );
 
     const token = tokenResponse.data;
     if (!token) {
-      console.error('❌ [PASO 3] token vacío');
-      logToFirebase({ paso: 3, resultado: 'TOKEN_VACIO' });
       return;
     }
-    console.log('✅ [PASO 3] Token:', token.substring(0, 40) + '...');
 
     // 4. Cachear
     await cachePushToken(token);
-    console.log('✅ [PASO 4] Token cacheado');
 
     // 5. Guardar en Firebase
-    console.log('📋 [PASO 5] Guardando en Firebase...');
-    await saveTokenToFirebase(token);
-    console.log('✅ [PASO 5] Token guardado en Firebase');
-    logToFirebase({ paso: 5, resultado: 'EXITO', token: token.substring(0, 30) + '...' });
-
-  } catch (error: any) {
-    const msg = error?.message || String(error);
-    console.error('❌ Error en registerAndSaveToken:', msg);
-    logToFirebase({ resultado: 'ERROR_GENERAL', error: msg });
-  }
+    await saveTokenToFirebase(token, profileMetadata);
+  } catch {}
 }
-
-

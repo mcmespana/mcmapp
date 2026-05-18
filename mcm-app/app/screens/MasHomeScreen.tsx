@@ -1,15 +1,8 @@
 import React, { useCallback } from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  ScrollView,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, Text, ScrollView, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
@@ -17,8 +10,11 @@ import type { ComponentProps } from 'react';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 import { MasStackParamList } from '../(tabs)/mas';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { takePendingMasScreen } from '@/utils/masNavigation';
+import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface NavigationItem {
   label: string;
@@ -27,48 +23,45 @@ interface NavigationItem {
   materialIcon: ComponentProps<typeof MaterialIcons>['name'];
   target: keyof MasStackParamList;
   tintColor: string;
+  /** Id del evento a pasar como route param cuando target === 'JubileoHome'. */
+  eventId?: string;
 }
 
-interface FeatureOptions {
-  showComunica: boolean;
-  showComunicaGestion: boolean;
-}
-
-const getAllNavigationItems = (opts: FeatureOptions): NavigationItem[] => {
-  const items: NavigationItem[] = [];
-
-  if (opts.showComunica) {
-    items.push({
-      label: 'Comunica',
-      subtitle: 'Portal de comunicación MCM',
-      emoji: '📣',
-      materialIcon: 'forum',
-      target: 'Comunica',
-      tintColor: '#E08A3C',
-    });
-  }
-
-  if (opts.showComunicaGestion) {
-    items.push({
-      label: 'Gestión',
-      subtitle: 'Administración y CRM',
-      emoji: '⚙️',
-      materialIcon: 'admin-panel-settings',
-      target: 'ComunicaGestion',
-      tintColor: '#607D8B',
-    });
-  }
-
-  items.push({
+const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
+  comunica: {
+    label: 'Comunica',
+    subtitle: 'Portal de comunicación MCM',
+    emoji: '📣',
+    materialIcon: 'forum',
+    target: 'Comunica',
+    tintColor: '#E08A3C',
+  },
+  'comunica-gestion': {
+    label: 'Gestión',
+    subtitle: 'Administración y CRM',
+    emoji: '⚙️',
+    materialIcon: 'admin-panel-settings',
+    target: 'ComunicaGestion',
+    tintColor: '#607D8B',
+  },
+  jubileo: {
     label: 'Jubileo',
     subtitle: 'Horarios, materiales, grupos...',
     emoji: '🎉',
     materialIcon: 'celebration',
     target: 'JubileoHome',
     tintColor: '#A3BD31',
-  });
-
-  return items;
+  },
+  // ── Añadir eventos futuros aquí ──
+  // Ejemplo:
+  //   items.push({
+  //     label: 'Encuentro 2027',
+  //     subtitle: 'Programa y materiales',
+  //     emoji: '✨',
+  //     materialIcon: 'auto-awesome',
+  //     target: 'JubileoHome',      // ← mismo hub genérico
+  //     tintColor: '#E15C62',
+  //   });
 };
 
 export default function MasHomeScreen() {
@@ -76,14 +69,15 @@ export default function MasHomeScreen() {
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const featureFlags = useFeatureFlags();
+  const { isMd, isWeb } = useResponsive();
+  const useTwoColumns = isWeb && isMd;
+  const resolved = useResolvedProfileConfig();
   const navigationItems = React.useMemo(
     () =>
-      getAllNavigationItems({
-        showComunica: featureFlags.showComunica,
-        showComunicaGestion: featureFlags.showComunicaGestion,
-      }),
-    [featureFlags.showComunica, featureFlags.showComunicaGestion],
+      resolved.masItems
+        .map((id) => MAS_ITEM_CATALOG[id])
+        .filter((item): item is NavigationItem => Boolean(item)),
+    [resolved.masItems],
   );
 
   // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
@@ -106,92 +100,112 @@ export default function MasHomeScreen() {
       ]}
       edges={['top']}
     >
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.scrollContent,
-          Platform.OS === 'ios' && { paddingBottom: 120 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {navigationItems.map((item, idx) => (
-          <PressableFeedback
-            key={idx}
+      <PageContainer>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={
+            Platform.OS === 'ios' ? { paddingBottom: 120 } : undefined
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          <ScreenHero title="Más" subtitle="Atajos y secciones de la app" />
+          <View
             style={[
-              styles.card,
-              {
-                backgroundColor: isDark ? '#2C2C2E' : '#fff',
-              },
-              Platform.OS !== 'web'
-                ? {
-                    shadowColor: item.tintColor,
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: isDark ? 0.3 : 0.15,
-                    shadowRadius: 12,
-                    elevation: 4,
-                  }
-                : {
-                    boxShadow: `0 4px 12px ${item.tintColor}30`,
-                  },
+              styles.scrollContent,
+              useTwoColumns && styles.scrollContentGrid,
             ]}
-            onPress={() => navigation.navigate(item.target as any)}
           >
-            <PressableFeedback.Highlight />
-            {/* Accent bar izquierda */}
-            <View
-              style={[styles.accentBar, { backgroundColor: item.tintColor }]}
-            />
-
-            <View style={styles.cardBody}>
-              {/* Icono grande */}
-              <View
+            {navigationItems.map((item, idx) => (
+              <PressableFeedback
+                key={idx}
                 style={[
-                  styles.iconCircle,
-                  { backgroundColor: hexAlpha(item.tintColor, '18') },
+                  styles.card,
+                  useTwoColumns && styles.cardGridItem,
+                  {
+                    backgroundColor: isDark ? '#2C2C2E' : '#fff',
+                  },
+                  Platform.OS !== 'web'
+                    ? {
+                        shadowColor: item.tintColor,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: isDark ? 0.3 : 0.15,
+                        shadowRadius: 12,
+                        elevation: 4,
+                      }
+                    : {
+                        boxShadow: `0 4px 12px ${item.tintColor}30`,
+                      },
                 ]}
+                onPress={() =>
+                  navigation.navigate(
+                    item.target as any,
+                    item.eventId
+                      ? ({ eventId: item.eventId } as any)
+                      : undefined,
+                  )
+                }
               >
-                <Text style={styles.emoji}>{item.emoji}</Text>
-              </View>
-
-              {/* Texto */}
-              <View style={styles.cardTextArea}>
-                <Text
+                <PressableFeedback.Highlight />
+                {/* Accent bar izquierda */}
+                <View
                   style={[
-                    styles.cardTitle,
-                    { color: isDark ? '#fff' : '#1C1C1E' },
+                    styles.accentBar,
+                    { backgroundColor: item.tintColor },
                   ]}
-                  numberOfLines={1}
-                >
-                  {item.label}
-                </Text>
-                <Text
-                  style={[
-                    styles.cardSubtitle,
-                    { color: isDark ? '#8E8E93' : '#6B7280' },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {item.subtitle}
-                </Text>
-              </View>
-
-              {/* Flecha */}
-              <View
-                style={[
-                  styles.arrowCircle,
-                  { backgroundColor: hexAlpha(item.tintColor, '15') },
-                ]}
-              >
-                <MaterialIcons
-                  name="arrow-forward"
-                  size={18}
-                  color={item.tintColor}
                 />
-              </View>
-            </View>
-          </PressableFeedback>
-        ))}
-      </ScrollView>
+
+                <View style={styles.cardBody}>
+                  {/* Icono grande */}
+                  <View
+                    style={[
+                      styles.iconCircle,
+                      { backgroundColor: hexAlpha(item.tintColor, '18') },
+                    ]}
+                  >
+                    <Text style={styles.emoji}>{item.emoji}</Text>
+                  </View>
+
+                  {/* Texto */}
+                  <View style={styles.cardTextArea}>
+                    <Text
+                      style={[
+                        styles.cardTitle,
+                        { color: isDark ? '#fff' : '#1C1C1E' },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.cardSubtitle,
+                        { color: isDark ? '#8E8E93' : '#6B7280' },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {item.subtitle}
+                    </Text>
+                  </View>
+
+                  {/* Flecha */}
+                  <View
+                    style={[
+                      styles.arrowCircle,
+                      { backgroundColor: hexAlpha(item.tintColor, '15') },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={18}
+                      color={item.tintColor}
+                    />
+                  </View>
+                </View>
+              </PressableFeedback>
+            ))}
+          </View>
+        </ScrollView>
+      </PageContainer>
     </SafeAreaView>
   );
 }
@@ -208,10 +222,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
   },
+  scrollContentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+  },
   card: {
     borderRadius: 20,
     marginBottom: 14,
     overflow: 'hidden',
+  },
+  cardGridItem: {
+    // Two columns minus the row gap (14px) divided over 2 items.
+    width: 'calc(50% - 7px)' as any,
+    marginBottom: 0,
   },
   accentBar: {
     height: 4,

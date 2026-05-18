@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Platform,
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
@@ -43,7 +38,7 @@ export default function AddToHomeScreenPrompt() {
   }, []);
 
   if (!visible) return null;
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
 
   const handleInstall = () => {
     if (installEvent) {

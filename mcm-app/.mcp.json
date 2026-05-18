@@ -3,6 +3,10 @@
     "heroui-native": {
       "command": "npx",
       "args": ["-y", "@heroui/native-mcp@latest"]
+    },
+    "firebase": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/firebase-mcp@latest"]
     }
   }
 }
