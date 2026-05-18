@@ -38,7 +38,7 @@ export default function AddToHomeScreenPrompt() {
   }, []);
 
   if (!visible) return null;
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
 
   const handleInstall = () => {
     if (installEvent) {

@@ -35,7 +35,7 @@ export default function SongFontPanel({
 }: Props) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
 
   const reset = () => {
     onSetFontSize(DEFAULT_FONT_SIZE_EM);

@@ -34,7 +34,7 @@ const FullBottomSheet = ({
   children: React.ReactNode;
 }) => {
   const scheme = useColorScheme();
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
 
   return (
     <Modal
@@ -102,7 +102,7 @@ export default function SecretPanelModal({
   onSuccess,
 }: SecretPanelModalProps) {
   const scheme = useColorScheme();
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
