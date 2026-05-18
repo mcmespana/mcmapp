@@ -3,6 +3,7 @@ import { useRef, useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 import CategoriesScreen from '../screens/CategoriesScreen';
 import SongListScreen from '../screens/SongListScreen';
@@ -58,6 +59,7 @@ export default function CancioneroTab() {
   const stackNavRef = useRef<any>(null);
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = isWeb ? insets.top : undefined;
+  const scheme = useColorScheme();
 
   const navigation = useNavigation();
   const choir = useChoirSession();
@@ -147,6 +149,12 @@ export default function CancioneroTab() {
             headerShadowVisible: false,
             headerBackTitle: 'Volver',
             headerBackButtonDisplayMode: 'minimal' as const,
+            // Prevents screens from appearing transparent during swipe-back
+            // gestures. headerTransparent:true makes the card itself transparent
+            // so we must set an explicit background on the content area.
+            contentStyle: isIOS
+              ? { backgroundColor: scheme === 'dark' ? '#1C1C1E' : '#F2F2F7' }
+              : undefined,
           };
         }}
       >
