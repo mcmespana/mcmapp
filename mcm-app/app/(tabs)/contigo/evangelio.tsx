@@ -212,10 +212,10 @@ export default function EvangelioScreen() {
 
   // Liturgical color for subtle tinting
   const liturgicalAccent =
-    liturgicalInfo.hex === '#F5F5F5'
+    liturgicalInfo.hex === '#D4A070'
       ? isDark
-        ? '#888888'
-        : '#999999'
+        ? '#D4A070'
+        : '#A0693A'
       : liturgicalInfo.hex;
 
   return (

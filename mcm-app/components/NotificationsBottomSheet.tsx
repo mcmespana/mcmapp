@@ -963,11 +963,10 @@ const listStyles = StyleSheet.create({
   rightAction: {
     backgroundColor: colors.success,
     justifyContent: 'center',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     borderRadius: radii.md,
     marginBottom: spacing.md,
-    paddingRight: spacing.md,
-    minWidth: 90,
+    width: 80,
   },
   actionContent: { alignItems: 'center', justifyContent: 'center' },
   actionText: {

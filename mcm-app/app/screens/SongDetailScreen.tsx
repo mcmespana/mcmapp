@@ -139,6 +139,16 @@ export default function SongDetailScreen({
 
   const isSelected = isSongSelected(filename);
 
+  // iOS: disable native swipe-back gesture when a navigation list is active so
+  // that the custom left/right swipe handler can take full ownership of the
+  // horizontal axis without fighting the system back gesture.
+  useLayoutEffect(() => {
+    if (!isIOS) return;
+    const hasSwipeNav =
+      Boolean(navigationList) && typeof currentIndex === 'number';
+    navigation.setOptions({ gestureEnabled: !hasSwipeNav });
+  }, [navigation, navigationList, currentIndex]);
+
   // Android/Web: header button
   useLayoutEffect(() => {
     if (isIOS || !filename) return;
@@ -459,7 +469,14 @@ export default function SongDetailScreen({
   if (navigationList && typeof currentIndex === 'number') {
     return (
       <GestureRecognizer
-        style={{ flex: 1 }}
+        style={[
+          { flex: 1 },
+          {
+            backgroundColor: isDark
+              ? Colors.dark.background
+              : Colors.light.background,
+          },
+        ]}
         onSwipeLeft={handleSwipeRight}
         onSwipeRight={handleSwipeLeft}
       >

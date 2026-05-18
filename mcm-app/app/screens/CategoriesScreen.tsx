@@ -202,7 +202,7 @@ export default function CategoriesScreen({
             <MaterialIcons
               name="chevron-right"
               size={20}
-              color={isDark ? '#555' : '#C7C7CC'}
+              color={isDark ? '#8E8E93' : '#C7C7CC'}
             />
           </View>
         </PressableFeedback>
