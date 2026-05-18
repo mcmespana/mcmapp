@@ -289,58 +289,66 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             </View>
           </View>
 
-          {/* ── Sección: Debug ── */}
-          <Text
-            style={[
-              styles.sectionLabel,
-              { color: theme.icon, marginTop: spacing.md },
-            ]}
-          >
-            DEPURACIÓN
-          </Text>
-          <PressableFeedback
-            style={[
-              styles.surface,
-              styles.surfaceClickable,
-              { backgroundColor: surfaceBg },
-            ]}
-            onPress={async () => {
-              try {
-                const projectId =
-                  Constants?.expoConfig?.extra?.eas?.projectId ??
-                  Constants?.easConfig?.projectId;
-                const Notifications = await import('expo-notifications');
-                const { data } = await Notifications.getExpoPushTokenAsync(
-                  projectId ? { projectId } : undefined,
-                );
-                await Clipboard.setStringAsync(data);
-                toast.show({
-                  variant: 'success',
-                  label: 'Expo Token copiado al portapapeles',
-                });
-              } catch (err) {
-                toast.show({
-                  variant: 'danger',
-                  label: 'Error obteniendo token: ' + String(err),
-                });
-              }
-            }}
-            accessibilityRole="button"
-          >
-            <PressableFeedback.Highlight />
-            <View style={[styles.surfaceRow, { flex: 1 }]}>
-              <MaterialIcons name="bug-report" size={20} color={theme.icon} />
-              <Text style={[styles.surfaceLabel, { color: theme.text }]}>
-                Copiar Expo Push Token
+          {/* ── Sección: Debug (solo en desarrollo) ── */}
+          {__DEV__ && (
+            <>
+              <Text
+                style={[
+                  styles.sectionLabel,
+                  { color: theme.icon, marginTop: spacing.md },
+                ]}
+              >
+                DEPURACIÓN
               </Text>
-            </View>
-            <MaterialIcons
-              name="content-copy"
-              size={20}
-              color={theme.icon}
-              style={{ opacity: 0.4 }}
-            />
-          </PressableFeedback>
+              <PressableFeedback
+                style={[
+                  styles.surface,
+                  styles.surfaceClickable,
+                  { backgroundColor: surfaceBg },
+                ]}
+                onPress={async () => {
+                  try {
+                    const projectId =
+                      Constants?.expoConfig?.extra?.eas?.projectId ??
+                      Constants?.easConfig?.projectId;
+                    const Notifications = await import('expo-notifications');
+                    const { data } = await Notifications.getExpoPushTokenAsync(
+                      projectId ? { projectId } : undefined,
+                    );
+                    await Clipboard.setStringAsync(data);
+                    toast.show({
+                      variant: 'success',
+                      label: 'Expo Token copiado al portapapeles',
+                    });
+                  } catch (err) {
+                    toast.show({
+                      variant: 'danger',
+                      label: 'Error obteniendo token: ' + String(err),
+                    });
+                  }
+                }}
+                accessibilityRole="button"
+              >
+                <PressableFeedback.Highlight />
+                <View style={[styles.surfaceRow, { flex: 1 }]}>
+                  <MaterialIcons
+                    name="bug-report"
+                    size={20}
+                    color={theme.icon}
+                  />
+                  <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+                    Copiar Expo Push Token
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="content-copy"
+                  size={20}
+                  color={theme.icon}
+                  style={{ opacity: 0.4 }}
+                />
+              </PressableFeedback>
+            </>
+          )}
         </View>
       </BottomSheet>
 
