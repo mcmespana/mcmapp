@@ -437,7 +437,7 @@ export default function Calendario() {
             }}
           >
             <Calendar
-              key={calendarKey}
+              key={`${calendarKey}-${scheme ?? 'light'}`}
               current={selectedDate}
               onDayPress={(day) => {
                 if (day.dateString !== selectedDate) {
@@ -450,7 +450,10 @@ export default function Calendario() {
               markedDates={markedDates}
               markingType="multi-period"
               firstDay={1}
-              style={styles.calendar}
+              style={[
+                styles.calendar,
+                { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+              ]}
               theme={{
                 calendarBackground: isDark ? '#1C1C1E' : '#F2F2F7',
                 dayTextColor: isDark ? '#FFFFFF' : '#1C1C1E',

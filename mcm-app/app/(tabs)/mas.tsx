@@ -147,16 +147,29 @@ export default function MasTab() {
   const navigation = useNavigation();
 
   useEffect(() => {
-    const unsubscribe = navigation
+    // When this tab gains focus coming from another tab, reset the stack.
+    // We do NOT call e.preventDefault here so the tab switch happens normally.
+    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
+      if (stackNavRef.current?.canGoBack()) {
+        stackNavRef.current.popToTop();
+      }
+    });
+
+    // When the user taps this tab while already on it, prevent the default
+    // scroll-to-top behavior and pop to root instead.
+    const unsubscribeTabPress = navigation
       .getParent()
       ?.addListener('tabPress' as any, (e: any) => {
-        if (stackNavRef.current?.canGoBack()) {
+        if ((navigation as any).isFocused?.() && stackNavRef.current?.canGoBack()) {
           e.preventDefault?.();
           stackNavRef.current.popToTop();
         }
       });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeFocus();
+      unsubscribeTabPress?.();
+    };
   }, [navigation]);
 
   return (
