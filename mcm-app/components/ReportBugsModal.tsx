@@ -49,7 +49,7 @@ export default function ReportBugsModal({
 }: ReportBugsModalProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
   const [bugDescription, setBugDescription] = useState('');

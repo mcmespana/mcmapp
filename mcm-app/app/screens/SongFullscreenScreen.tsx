@@ -26,7 +26,7 @@ export default function SongFullscreenScreen({
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;
 

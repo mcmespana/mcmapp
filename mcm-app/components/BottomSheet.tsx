@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native';
-import { UIColors } from '@/constants/colors';
+import { UIColors, Colors } from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface BottomSheetProps {
   visible: boolean;
@@ -22,6 +23,9 @@ export default function BottomSheet({
   onClose,
   children,
 }: BottomSheetProps) {
+  const scheme = useColorScheme();
+  const bgColor = Colors[scheme ?? 'light'].background;
+
   return (
     <HeroBottomSheet
       isOpen={visible}
@@ -31,7 +35,9 @@ export default function BottomSheet({
     >
       <HeroBottomSheet.Portal>
         <HeroBottomSheet.Overlay style={styles.overlay} />
-        <HeroBottomSheet.Content>{children}</HeroBottomSheet.Content>
+        <HeroBottomSheet.Content style={{ backgroundColor: bgColor }}>
+          {children}
+        </HeroBottomSheet.Content>
       </HeroBottomSheet.Portal>
     </HeroBottomSheet>
   );

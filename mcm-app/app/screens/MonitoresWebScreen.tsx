@@ -3,6 +3,7 @@ import { Platform, View, StyleSheet } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import { Spinner } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import iframeStyles from '../../styles/comunica.module.css';
 
@@ -72,6 +73,8 @@ const INJECTED_JAVASCRIPT = `
 export default function MonitoresWebScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
 
   const onLoadEnd = () => {
     setIsLoading(false);
@@ -166,7 +169,7 @@ export default function MonitoresWebScreen() {
           onLoad={onLoadEnd}
         />
         {isLoading && (
-          <View style={styles.loadingContainer}>
+          <View style={[styles.loadingContainer, { backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]}>
             <Spinner />
           </View>
         )}
@@ -184,7 +187,7 @@ export default function MonitoresWebScreen() {
         injectedJavaScript={INJECTED_JAVASCRIPT}
         onMessage={() => {}}
         renderLoading={() => (
-          <View style={styles.loadingContainer}>
+          <View style={[styles.loadingContainer, { backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]}>
             <Spinner />
           </View>
         )}
@@ -212,7 +215,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   // Estilos para web: eliminamos márgenes y aprovechamos todo el espacio
   containerWeb: {
