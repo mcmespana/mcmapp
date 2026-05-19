@@ -5,6 +5,7 @@ import {
   PanResponder,
   Pressable,
   View,
+  Text,
   Animated,
   StyleSheet,
   Dimensions,
@@ -26,6 +27,7 @@ interface BottomSheetProps {
   onClose: () => void;
   children: React.ReactNode;
   height?: number;
+  title?: string;
 }
 
 export default function BottomSheet({
@@ -33,6 +35,7 @@ export default function BottomSheet({
   onClose,
   children,
   height,
+  title,
 }: BottomSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -144,10 +147,17 @@ export default function BottomSheet({
           },
         ]}
       >
-        {/* Handle with drag gesture */}
+        {/* Handle + optional title — both serve as drag targets */}
         <View style={styles.handleWrap} {...panResponder.panHandlers}>
           <View style={[styles.handle, { backgroundColor: handleColor }]} />
         </View>
+        {title && (
+          <View style={styles.titleBar} {...panResponder.panHandlers}>
+            <Text style={[styles.titleText, { color: Colors[scheme ?? 'light'].text }]}>
+              {title}
+            </Text>
+          </View>
+        )}
 
         <View style={{ backgroundColor: bgColor }}>{children}</View>
       </Animated.View>
@@ -174,5 +184,15 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
+  },
+  titleBar: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+  titleText: {
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
 });

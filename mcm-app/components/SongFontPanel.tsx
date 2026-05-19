@@ -61,22 +61,15 @@ export default function SongFontPanel({
   );
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <BottomSheet visible={visible} onClose={onClose} title="Tipo de letra">
       <View
         style={[
           styles.container,
           {
-            paddingBottom:
-              Platform.OS === 'web' ? 24 : 16,
+            paddingBottom: Platform.OS === 'web' ? 16 : 4,
           },
         ]}
       >
-        <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            Tipo de letra
-          </Text>
-        </View>
-
         {/* ━━━━━━━━━━━━━━ TAMAÑO ━━━━━━━━━━━━━━ */}
         <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.cardHeader}>
@@ -359,17 +352,6 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 4,
     gap: 12,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 4,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.3,
   },
   card: {
     backgroundColor: '#F7F7FB',
