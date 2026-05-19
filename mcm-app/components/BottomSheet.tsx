@@ -25,12 +25,14 @@ interface BottomSheetProps {
   visible: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  height?: number;
 }
 
 export default function BottomSheet({
   visible,
   onClose,
   children,
+  height,
 }: BottomSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -130,7 +132,7 @@ export default function BottomSheet({
       {/* Tap-to-close area behind the sheet */}
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
-      {/* Sheet — slides up from bottom, sized to content */}
+      {/* Sheet — slides up from bottom, sized to content or fixed height */}
       <Animated.View
         style={[
           styles.sheet,
@@ -138,6 +140,7 @@ export default function BottomSheet({
             backgroundColor: bgColor,
             paddingBottom: insets.bottom,
             transform: [{ translateY }],
+            ...(height !== undefined && { height }),
           },
         ]}
       >
