@@ -4,9 +4,9 @@ Funciones programadas que mantienen Firebase Realtime Database limpio.
 
 ## Funciones
 
-| Nombre                 | Trigger                  | Qué hace                                                                 |
-| ---------------------- | ------------------------ | ------------------------------------------------------------------------ |
-| `purgeExpiredShares`   | Schedule (24h, Europe/Madrid) | Borra entradas de `/playlistShares` y `/choirSessions` con `expiresAt` en el pasado. |
+| Nombre               | Trigger                       | Qué hace                                                                             |
+| -------------------- | ----------------------------- | ------------------------------------------------------------------------------------ |
+| `purgeExpiredShares` | Schedule (24h, Europe/Madrid) | Borra entradas de `/playlistShares` y `/choirSessions` con `expiresAt` en el pasado. |
 
 ## Requisitos
 
@@ -50,5 +50,6 @@ firebase functions:log --only purgeExpiredShares
 ## Coste estimado
 
 `purgeExpiredShares` corre 1×/día. En cuotas Blaze:
+
 - 1 invocación/día × 30 días = 30 invocaciones/mes (gratis hasta 2M).
 - Coste real estimado: **0 €** (entra de sobra en el free tier).

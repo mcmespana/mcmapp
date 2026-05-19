@@ -169,7 +169,16 @@ export default function MonitoresWebScreen() {
           onLoad={onLoadEnd}
         />
         {isLoading && (
-          <View style={[styles.loadingContainer, { backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]}>
+          <View
+            style={[
+              styles.loadingContainer,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(0,0,0,0.8)'
+                  : 'rgba(255,255,255,0.8)',
+              },
+            ]}
+          >
             <Spinner />
           </View>
         )}
@@ -187,7 +196,16 @@ export default function MonitoresWebScreen() {
         injectedJavaScript={INJECTED_JAVASCRIPT}
         onMessage={() => {}}
         renderLoading={() => (
-          <View style={[styles.loadingContainer, { backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }]}>
+          <View
+            style={[
+              styles.loadingContainer,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(0,0,0,0.8)'
+                  : 'rgba(255,255,255,0.8)',
+              },
+            ]}
+          >
             <Spinner />
           </View>
         )}

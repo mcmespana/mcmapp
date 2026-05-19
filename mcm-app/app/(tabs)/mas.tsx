@@ -160,7 +160,10 @@ export default function MasTab() {
     const unsubscribeTabPress = navigation
       .getParent()
       ?.addListener('tabPress' as any, (e: any) => {
-        if ((navigation as any).isFocused?.() && stackNavRef.current?.canGoBack()) {
+        if (
+          (navigation as any).isFocused?.() &&
+          stackNavRef.current?.canGoBack()
+        ) {
           e.preventDefault?.();
           stackNavRef.current.popToTop();
         }

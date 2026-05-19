@@ -153,7 +153,12 @@ export default function BottomSheet({
         </View>
         {title && (
           <View style={styles.titleBar} {...panResponder.panHandlers}>
-            <Text style={[styles.titleText, { color: Colors[scheme ?? 'light'].text }]}>
+            <Text
+              style={[
+                styles.titleText,
+                { color: Colors[scheme ?? 'light'].text },
+              ]}
+            >
               {title}
             </Text>
           </View>

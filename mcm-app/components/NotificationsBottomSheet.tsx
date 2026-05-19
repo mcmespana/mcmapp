@@ -184,7 +184,8 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
 
   const handleNotificationPress = useCallback(
     async (notification: NotificationData | ReceivedNotification) => {
-      if (!isNotificationRead(notification)) await handleMarkAsRead(notification.id);
+      if (!isNotificationRead(notification))
+        await handleMarkAsRead(notification.id);
       setSelectedNotification(notification);
     },
     [isNotificationRead, handleMarkAsRead],
@@ -258,7 +259,10 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
         <TouchableOpacity
           style={[
             listStyles.card,
-            { backgroundColor: theme.background, borderColor: isDark ? '#3A3A3C' : colors.border },
+            {
+              backgroundColor: theme.background,
+              borderColor: isDark ? '#3A3A3C' : colors.border,
+            },
             isUnread && {
               backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
               borderColor: colors.primary,

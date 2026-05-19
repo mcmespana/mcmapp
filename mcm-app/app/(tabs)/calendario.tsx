@@ -281,11 +281,7 @@ export default function Calendario() {
           </View>
           {ev.location ? (
             <View style={styles.eventMeta}>
-              <MaterialIcons
-                name="place"
-                size={14}
-                color='#8E8E93'
-              />
+              <MaterialIcons name="place" size={14} color="#8E8E93" />
               <Text
                 style={[styles.eventLocation, isPast && styles.pastText]}
                 numberOfLines={1}
@@ -296,11 +292,7 @@ export default function Calendario() {
           ) : null}
           {ev.endDate && ev.startDate !== ev.endDate ? (
             <View style={styles.eventMeta}>
-              <MaterialIcons
-                name="date-range"
-                size={14}
-                color='#8E8E93'
-              />
+              <MaterialIcons name="date-range" size={14} color="#8E8E93" />
               <Text style={[styles.eventDuration, isPast && styles.pastText]}>
                 Hasta {formatDate(ev.endDate)}
               </Text>

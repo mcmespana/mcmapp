@@ -181,8 +181,11 @@ export default function ReflexionesScreen() {
   };
 
   const sortedList = useMemo(
-    () => [...list].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()),
-    [list]
+    () =>
+      [...list].sort(
+        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+      ),
+    [list],
   );
 
   return (
@@ -195,50 +198,50 @@ export default function ReflexionesScreen() {
           ]}
         >
           {sortedList.map((r) => (
-              <Card
-                key={r.id}
-                style={[styles.card, r.grupal && styles.cardGroup]}
-              >
-                <Card.Body style={{ paddingTop: 8 }}>
-                  {r.titulo ? (
-                    <Text
-                      style={[
-                        { fontWeight: '600', fontSize: 16, marginBottom: 4 },
-                        r.grupal
-                          ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
-                          : { color: theme.text },
-                      ]}
-                    >
-                      {r.titulo}
-                    </Text>
-                  ) : null}
-                  <Text
-                    style={
-                      r.grupal
-                        ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
-                        : { color: theme.text }
-                    }
-                  >
-                    {r.contenido}
-                  </Text>
+            <Card
+              key={r.id}
+              style={[styles.card, r.grupal && styles.cardGroup]}
+            >
+              <Card.Body style={{ paddingTop: 8 }}>
+                {r.titulo ? (
                   <Text
                     style={[
-                      { marginTop: 4, fontSize: 12 },
+                      { fontWeight: '600', fontSize: 16, marginBottom: 4 },
                       r.grupal
-                        ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
-                        : { color: theme.icon },
+                        ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
+                        : { color: theme.text },
                     ]}
                   >
-                    {formatFecha(r.fecha)}
-                    {r.grupal
-                      ? ` - ${getGrupoLabel(r.grupo)}`
-                      : r.autor
-                        ? ` - ${r.autor}`
-                        : ''}
+                    {r.titulo}
                   </Text>
-                </Card.Body>
-              </Card>
-            ))}
+                ) : null}
+                <Text
+                  style={
+                    r.grupal
+                      ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
+                      : { color: theme.text }
+                  }
+                >
+                  {r.contenido}
+                </Text>
+                <Text
+                  style={[
+                    { marginTop: 4, fontSize: 12 },
+                    r.grupal
+                      ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
+                      : { color: theme.icon },
+                  ]}
+                >
+                  {formatFecha(r.fecha)}
+                  {r.grupal
+                    ? ` - ${getGrupoLabel(r.grupo)}`
+                    : r.autor
+                      ? ` - ${r.autor}`
+                      : ''}
+                </Text>
+              </Card.Body>
+            </Card>
+          ))}
         </ScrollView>
       </PageContainer>
 
