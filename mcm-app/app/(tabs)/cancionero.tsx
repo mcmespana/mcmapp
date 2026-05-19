@@ -147,11 +147,19 @@ export default function CancioneroTab() {
                     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
                   } as any)
                 : ({ backgroundColor: TabHeaderColors.cancionero } as any),
-            headerTintColor: isIOS ? '#3d79b9ff' : '#1a1a1a',
+            headerTintColor: isIOS
+              ? scheme === 'dark'
+                ? '#f4c11e'
+                : '#3d79b9ff'
+              : '#1a1a1a',
             headerTitleStyle: {
               fontWeight: '700' as const,
               fontSize: 17,
-              color: isIOS ? '#000' : '#1a1a1a',
+              color: isIOS
+                ? scheme === 'dark'
+                  ? '#FFFFFF'
+                  : '#000000'
+                : '#1a1a1a',
               letterSpacing: -0.3,
             },
             ...(isWeb &&
@@ -189,7 +197,6 @@ export default function CancioneroTab() {
           component={SongDetailScreen}
           options={({ route }) => ({
             title: route.params?.title || 'Letra y Acordes',
-            headerShown: !isIOS,
           })}
         />
         <Stack.Screen
