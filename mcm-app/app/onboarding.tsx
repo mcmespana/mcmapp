@@ -30,6 +30,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import colors from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import {
@@ -47,6 +48,7 @@ const PROFILE_ICONS: Record<ProfileType, keyof typeof MaterialIcons.glyphMap> =
     miembro: 'person',
   };
 
+// Static light-mode T used only for module-level StyleSheet defaults
 const T = {
   primary: colors.primary,
   secondary: colors.secondary,
@@ -58,6 +60,23 @@ const T = {
   border: 'rgba(0,0,0,0.07)',
 };
 
+function useThemeT() {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  return {
+    primary: colors.primary,
+    secondary: colors.secondary,
+    accent: colors.accent,
+    success: colors.success,
+    text: isDark ? '#FFFFFF' : '#11181C',
+    muted: isDark ? '#8E8E93' : '#687076',
+    bg: isDark ? '#1C1C1E' : '#ffffff',
+    card: isDark ? '#2C2C2E' : '#ffffff',
+    border: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)',
+    isDark,
+  };
+}
+
 const MAX_CONTENT_W = 520;
 
 /* ─────────────────────────────────────
@@ -65,6 +84,7 @@ const MAX_CONTENT_W = 520;
 ─────────────────────────────────────── */
 
 function ProgressDots({ current, total }: { current: number; total: number }) {
+  const TT = useThemeT();
   return (
     <View style={dotsStyles.row}>
       {Array.from({ length: total }, (_, i) => {
@@ -76,7 +96,7 @@ function ProgressDots({ current, total }: { current: number; total: number }) {
               dotsStyles.dot,
               {
                 width: active ? 22 : 6,
-                backgroundColor: active ? T.primary : 'rgba(37,56,131,0.18)',
+                backgroundColor: active ? TT.primary : 'rgba(37,56,131,0.18)',
               },
             ]}
           />
@@ -213,6 +233,7 @@ const btnStyles = StyleSheet.create({
 });
 
 function SkipButton({ onPress }: { onPress: () => void }) {
+  const TT = useThemeT();
   return (
     <Pressable
       onPress={onPress}
@@ -221,8 +242,8 @@ function SkipButton({ onPress }: { onPress: () => void }) {
       accessibilityLabel="Saltar configuración"
       style={({ pressed }) => [skipBtnStyles.pill, pressed && { opacity: 0.65 }]}
     >
-      <Text style={skipBtnStyles.text}>Saltar</Text>
-      <MaterialIcons name="arrow-forward" size={13} color={T.primary} />
+      <Text style={[skipBtnStyles.text, { color: TT.primary }]}>Saltar</Text>
+      <MaterialIcons name="arrow-forward" size={13} color={TT.primary} />
     </Pressable>
   );
 }
@@ -494,12 +515,13 @@ function ProfileScreen({
   onSkip: () => void;
   animDir: 'forward' | 'back';
 }) {
+  const TT = useThemeT();
   const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
 
   return (
     <Animated.View
       entering={Entering.duration(320).easing(Easing.bezier(0.22, 1, 0.36, 1))}
-      style={stepStyles.root}
+      style={[stepStyles.root, { backgroundColor: TT.bg }]}
     >
       <View style={stepStyles.topBar}>
         <View />
@@ -512,10 +534,10 @@ function ProfileScreen({
 
       <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
         <View style={stepStyles.heroIcon}>
-          <MaterialIcons name="person-search" size={28} color={T.primary} />
+          <MaterialIcons name="person-search" size={28} color={TT.primary} />
         </View>
-        <Text style={stepStyles.heroTitle}>¿Quién eres?</Text>
-        <Text style={stepStyles.heroSub}>
+        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>¿Quién eres?</Text>
+        <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
           Dinos quién eres y te mostraremos lo que más te interesa.
         </Text>
       </Animated.View>
@@ -538,6 +560,7 @@ function ProfileScreen({
                 onPress={() => setSelected(p.id)}
                 style={({ pressed }) => [
                   cardStyles.card,
+                  { backgroundColor: TT.card, borderColor: TT.border },
                   sel && cardStyles.cardSelected,
                   pressed && { transform: [{ scale: 0.97 }] },
                 ]}
@@ -551,19 +574,19 @@ function ProfileScreen({
                   <MaterialIcons
                     name={PROFILE_ICONS[p.id]}
                     size={24}
-                    color={sel ? '#fff' : T.primary}
+                    color={sel ? '#fff' : TT.primary}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={[
                       cardStyles.cardTitle,
-                      { color: sel ? T.primary : T.text },
+                      { color: sel ? TT.primary : TT.text },
                     ]}
                   >
                     {p.label}
                   </Text>
-                  <Text style={cardStyles.cardDesc} numberOfLines={2}>
+                  <Text style={[cardStyles.cardDesc, { color: TT.muted }]} numberOfLines={2}>
                     {p.description}
                   </Text>
                 </View>
@@ -571,7 +594,7 @@ function ProfileScreen({
                   <MaterialIcons
                     name="check-circle"
                     size={22}
-                    color={T.primary}
+                    color={TT.primary}
                   />
                 )}
               </Pressable>
