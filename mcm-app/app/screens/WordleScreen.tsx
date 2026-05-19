@@ -450,8 +450,7 @@ export default function WordleScreen() {
         </View>
       )}
 
-      <BottomSheet visible={showInfo} onClose={() => setShowInfo(false)}>
-        <Text style={styles.infoTitle}>¿Cómo jugar?</Text>
+      <BottomSheet visible={showInfo} onClose={() => setShowInfo(false)} title="¿Cómo jugar?">
         <Text style={styles.infoText}>
           Adivina una palabra de 5 letras en 6 intentos.{'\n'}
           Cada día a las 7h y a las 19h una palabra nueva.{'\n\n'}
@@ -469,7 +468,7 @@ export default function WordleScreen() {
         </Text>
       </BottomSheet>
 
-      <BottomSheet visible={showStats} onClose={() => setShowStats(false)}>
+      <BottomSheet visible={showStats} onClose={() => setShowStats(false)} title="Estadísticas">
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[

@@ -188,6 +188,7 @@ const styles = StyleSheet.create({
   },
   titleBar: {
     alignItems: 'center',
+    paddingTop: 6,
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
