@@ -11,41 +11,23 @@ export const VersionDisplay: React.FC<{ style?: any }> = ({ style }) => {
   const theme = Colors[scheme ?? 'light'];
 
   useEffect(() => {
-    const getUpdateInfo = async () => {
-      const appVersion = Constants.expoConfig?.version || '1.0.1';
+    // Solo mostramos versión + hash del bundle OTA cuando aplica. La
+    // notificación de "hay update disponible" la gestiona el modal
+    // <OTAUpdatePrompt> montado en el root layout — aquí no duplicamos
+    // ese mensaje para evitar ruido visual en el pie de la Home.
+    const appVersion = Constants.expoConfig?.version || '1.0.1';
 
-      if (!__DEV__ && Updates.isEnabled) {
-        try {
-          // Obtener info del update actual
-          const update = await Updates.checkForUpdateAsync();
+    if (__DEV__) {
+      setUpdateInfo(`v${appVersion} • dev`);
+      return;
+    }
 
-          if (update.isAvailable) {
-            // Hay un update disponible pero no aplicado aún
-            setUpdateInfo(
-              `v${appVersion} • actualización disponible reiniciando la app 🔄✅`,
-            );
-          } else {
-            // Verificar si estamos en un update OTA
-            const currentUpdate = Updates.updateId;
-            if (currentUpdate) {
-              // Estamos en un update OTA, mostrar los primeros 6 chars
-              const shortId = currentUpdate.slice(0, 6);
-              setUpdateInfo(`v${appVersion}+${shortId}`);
-            } else {
-              // Build original, sin updates
-              setUpdateInfo(`v${appVersion}`);
-            }
-          }
-        } catch {
-          setUpdateInfo(`v${appVersion}`);
-        }
-      } else {
-        // Desarrollo o Updates deshabilitados
-        setUpdateInfo(__DEV__ ? `v${appVersion} • dev` : `v${appVersion}`);
-      }
-    };
-
-    getUpdateInfo();
+    if (Updates.isEnabled && Updates.updateId) {
+      const shortId = Updates.updateId.slice(0, 6);
+      setUpdateInfo(`v${appVersion}+${shortId}`);
+    } else {
+      setUpdateInfo(`v${appVersion}`);
+    }
   }, []);
 
   if (!updateInfo) return null;
