@@ -109,8 +109,9 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
   // PanResponder usa refs directamente, sin capturar callbacks que puedan quedar obsoletos
   const panResponder = useRef(
     PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, gestureState) =>
-        gestureState.dy > 10 && (scrollOffsetRef.current ?? 0) <= 0,
+        gestureState.dy > 0 && (scrollOffsetRef.current ?? 0) <= 0,
       onPanResponderMove: (_, { dy }) => {
         if (dy > 0) translateY.setValue(dy);
       },
@@ -532,8 +533,9 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
           />
         ) : (
           <>
-            {/* Cabecera lista */}
+            {/* Cabecera lista — también arrastra el sheet */}
             <View
+              {...panResponder.panHandlers}
               style={[
                 sheetStyles.header,
                 { borderBottomColor: hexAlpha(theme.icon, '15') },

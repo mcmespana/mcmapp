@@ -167,7 +167,6 @@ export default function CancioneroTab() {
             headerTransparent: isIOS,
             headerBlurEffect: isIOS ? 'systemChromeMaterial' : undefined,
             headerShadowVisible: false,
-            headerBackTitle: 'Volver',
             headerBackButtonDisplayMode: 'minimal' as const,
             // Prevents screens from appearing transparent during swipe-back
             // gestures. headerTransparent:true makes the card itself transparent
