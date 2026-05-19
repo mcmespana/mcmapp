@@ -174,14 +174,14 @@ def test_no_html_artifacts_in_comentario(scraper, html_content):
 @responses_lib.activate
 def test_paragraph_separators_in_texto(scraper, html_content):
     """
-    Multi-paragraph texts use \\n\\n between paragraphs.
-    Single <br> within a paragraph becomes \\n.
-    The fixture gospel text contains <br> tags → should appear as \\n.
+    <br> within a <p> (prose mode) becomes a space, not a newline.
+    The fixture gospel text contains <br> tags — they should vanish as spaces,
+    not produce mid-sentence line breaks.
     """
     responses_lib.add(responses_lib.GET, URL, body=html_content, status=200)
     data = scraper.fetch()[0]
     assert data.evangelio_texto is not None
-    # The fixture gospel has <br> line breaks inside — they become \n
-    assert "\n" in data.evangelio_texto
+    # <br> inside a paragraph must NOT produce bare \n (prose mode converts to space)
+    assert "\n" not in data.evangelio_texto.replace("\n\n", "")
     # No raw HTML line break tags
     assert "<br" not in data.evangelio_texto
