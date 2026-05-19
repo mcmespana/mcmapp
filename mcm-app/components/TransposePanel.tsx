@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
@@ -39,7 +38,6 @@ export default function TransposePanel({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
-  const insets = useSafeAreaInsets();
 
   const showCapoSection = onSetCapoOverride !== undefined;
   const isCapoOverridden =
@@ -67,8 +65,7 @@ export default function TransposePanel({
         style={[
           styles.container,
           {
-            paddingBottom:
-              Math.max(insets.bottom, 12) + (Platform.OS === 'web' ? 8 : 4),
+            paddingBottom: Platform.OS === 'web' ? 24 : 16,
           },
         ]}
       >

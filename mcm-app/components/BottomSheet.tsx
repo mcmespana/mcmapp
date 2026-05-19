@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 const nativeDriver = Platform.OS !== 'web';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UIColors, Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -34,6 +35,9 @@ export default function BottomSheet({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const bgColor = Colors[scheme ?? 'light'].background;
+  // useSafeAreaInsets inside Modal returns the real screen safe area (home
+  // indicator only, ~34px on iPhone X+), NOT the tab bar height.
+  const insets = useSafeAreaInsets();
 
   const [modalVisible, setModalVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(OFF_SCREEN)).current;
@@ -132,6 +136,7 @@ export default function BottomSheet({
           styles.sheet,
           {
             backgroundColor: bgColor,
+            paddingBottom: insets.bottom,
             transform: [{ translateY }],
           },
         ]}

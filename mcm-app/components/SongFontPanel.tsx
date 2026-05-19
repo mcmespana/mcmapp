@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
@@ -40,7 +39,6 @@ export default function SongFontPanel({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
-  const insets = useSafeAreaInsets();
 
   const defaultFamily = availableFonts[0]?.cssValue ?? currentFontFamily;
   const isSizeModified =
@@ -69,7 +67,7 @@ export default function SongFontPanel({
           styles.container,
           {
             paddingBottom:
-              Math.max(insets.bottom, 12) + (Platform.OS === 'web' ? 8 : 4),
+              Platform.OS === 'web' ? 24 : 16,
           },
         ]}
       >
