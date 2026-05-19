@@ -15,7 +15,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
-import colors, { Colors } from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
@@ -138,52 +138,9 @@ export default function SongDetailScreen({
 
   const isSelected = isSongSelected(filename);
 
-  // Header right button: add/remove song from selection (all platforms)
   useLayoutEffect(() => {
-    if (!filename) return;
-
-    const currentlySelected = isSelected;
-    const iconColor = isIOS
-      ? isDark
-        ? '#f4c11e'
-        : '#3d79b9ff'
-      : Platform.OS === 'web'
-        ? currentlySelected
-          ? APPLE_SYSTEM_GREEN
-          : colors.primary
-        : '#fff';
-    const headerRight = () => (
-      <PressableFeedback
-        onPress={() => {
-          if (currentlySelected) {
-            removeSong(filename);
-          } else {
-            addSong(filename);
-          }
-        }}
-        style={styles.headerButton}
-        accessibilityLabel={
-          currentlySelected ? 'Quitar de selección' : 'Añadir a selección'
-        }
-      >
-        <PressableFeedback.Highlight />
-        <IconSymbol
-          name={currentlySelected ? 'checkmark.circle.fill' : 'plus.circle'}
-          size={24}
-          color={currentlySelected && isIOS ? APPLE_SYSTEM_GREEN : iconColor}
-        />
-      </PressableFeedback>
-    );
-
-    navigation.setOptions({ headerRight, headerShown: true });
-
-    if (Platform.OS === 'web') {
-      const timer = setTimeout(() => {
-        navigation.setOptions({ headerRight, headerShown: true });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [navigation, filename, isSelected, isDark, addSong, removeSong]);
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   useEffect(() => {
     setIsFileLoading(true);
@@ -364,19 +321,48 @@ export default function SongDetailScreen({
     // Brief settings loading
   }
 
+  const screenBg = isDark ? Colors.dark.background : Colors.light.background;
+  const floatBtnBg = isDark ? 'rgba(44,44,46,0.92)' : 'rgba(255,255,255,0.92)';
+  const floatIconColor = isDark ? '#F5F5F7' : '#1C1C1E';
+  const btnTop = insets.top + 8;
+
+  const floatingButtons = (
+    <>
+      <PressableFeedback
+        style={[styles.floatBtn, { top: btnTop, left: 16, backgroundColor: floatBtnBg }]}
+        onPress={() => navigation.goBack()}
+        accessibilityLabel="Volver"
+      >
+        <PressableFeedback.Scale />
+        <IconSymbol name="chevron.left" size={20} color={floatIconColor} />
+      </PressableFeedback>
+      <PressableFeedback
+        style={[styles.floatBtn, { top: btnTop, right: 16, backgroundColor: floatBtnBg }]}
+        onPress={() => {
+          if (isSelected) removeSong(filename);
+          else addSong(filename);
+        }}
+        accessibilityLabel={isSelected ? 'Quitar de selección' : 'Añadir a selección'}
+      >
+        <PressableFeedback.Scale />
+        <IconSymbol
+          name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
+          size={24}
+          color={isSelected ? APPLE_SYSTEM_GREEN : floatIconColor}
+        />
+      </PressableFeedback>
+    </>
+  );
+
   const contentView = (
     <Animated.View
       style={[
         styles.container,
         { transform: [{ translateX: slideAnim }] },
-        {
-          backgroundColor: isDark
-            ? Colors.dark.background
-            : Colors.light.background,
-        },
+        { backgroundColor: screenBg },
       ]}
     >
-      <View style={{ height: isIOS ? insets.top + 44 : 0 }} />
+      <View style={{ height: insets.top + 44 }} />
       <ChoirSessionBanner />
       <SongDisplay
         songHtml={songHtml}
@@ -410,10 +396,8 @@ export default function SongDetailScreen({
     </Animated.View>
   );
 
-  if (navigationList && typeof currentIndex === 'number') {
-    // Web has no touch screen — skip the gesture wrapper entirely.
-    if (Platform.OS === 'web') return contentView;
-    return (
+  const gestureContent =
+    navigationList && typeof currentIndex === 'number' && Platform.OS !== 'web' ? (
       <PanGestureHandler
         activeOffsetX={[-20, 20]}
         failOffsetY={[-15, 15]}
@@ -427,10 +411,16 @@ export default function SongDetailScreen({
       >
         {contentView}
       </PanGestureHandler>
+    ) : (
+      contentView
     );
-  }
 
-  return contentView;
+  return (
+    <View style={{ flex: 1, backgroundColor: screenBg }}>
+      {gestureContent}
+      {floatingButtons}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -438,11 +428,23 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 0,
   },
-  headerButton: {
-    padding: 8,
-    marginRight: Platform.OS === 'web' ? 8 : 0,
+  floatBtn: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    ...(Platform.OS === 'web' ? { cursor: 'pointer' as any } : {}),
+    zIndex: 10,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.15)' } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        elevation: 4,
+      },
+    }),
   },
 });

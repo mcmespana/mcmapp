@@ -12,8 +12,8 @@ import {
   StyleSheet,
   Platform,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
-import { SearchField } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -287,17 +287,32 @@ export default function SongsListScreen({
       <View>
         {searchVisible && (
           <View style={styles.searchContainer}>
-            <SearchField value={search} onChange={setSearch}>
-              <SearchField.Group>
-                <SearchField.SearchIcon />
-                <SearchField.Input
-                  placeholder="Título, autor..."
-                  autoFocus={!isSearchAll}
-                  returnKeyType="search"
-                />
-                <SearchField.ClearButton />
-              </SearchField.Group>
-            </SearchField>
+            <View style={styles.searchBox}>
+              <MaterialIcons
+                name="search"
+                size={18}
+                color={isDark ? '#636366' : '#8E8E93'}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Título, autor..."
+                placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
+                value={search}
+                onChangeText={setSearch}
+                autoFocus={!isSearchAll}
+                returnKeyType="search"
+                clearButtonMode="while-editing"
+              />
+              {Platform.OS !== 'ios' && search.length > 0 && (
+                <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <MaterialIcons
+                    name="cancel"
+                    size={16}
+                    color={isDark ? '#636366' : '#8E8E93'}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
         {/* Conteo de canciones — siempre visible, muy sutil */}
@@ -396,6 +411,22 @@ const createStyles = (
       paddingHorizontal: 16,
       paddingTop: 10,
       paddingBottom: 4,
+    },
+    searchBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: Platform.OS === 'ios' ? 9 : 7,
+      gap: 6,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 16,
+      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      padding: 0,
+      margin: 0,
     },
     countRow: {
       paddingHorizontal: 20,

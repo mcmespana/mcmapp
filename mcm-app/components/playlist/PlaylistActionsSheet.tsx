@@ -1,21 +1,15 @@
-/**
- * Menú principal de acciones de la pantalla "Seleccionadas". Reemplaza
- * los 4 iconitos del header anterior por un único botón "…" que abre
- * este menú. Permite muchas más acciones sin saturar.
- */
 import React, { useMemo } from 'react';
 import {
-  Modal,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BottomSheet from '@/components/BottomSheet';
 
 export interface PlaylistAction {
   id: string;
@@ -36,11 +30,6 @@ interface Props {
   title?: string;
 }
 
-/**
- * Implementado como modal de RN con un panel "bottom sheet" estático
- * (sin gestos). Es suficiente para esta UX y evita pelearnos con la
- * portabilidad del BottomSheet de heroui en web.
- */
 const PlaylistActionsSheet: React.FC<Props> = ({
   visible,
   actions,
@@ -49,124 +38,72 @@ const PlaylistActionsSheet: React.FC<Props> = ({
 }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const insets = useSafeAreaInsets();
-  const styles = useMemo(
-    () => createStyles(isDark, insets.bottom),
-    [isDark, insets.bottom],
-  );
+  const styles = useMemo(() => createStyles(isDark), [isDark]);
+  const maxListHeight = Dimensions.get('window').height * 0.6;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop}>
-          <TouchableWithoutFeedback>
-            <View style={styles.sheet}>
-              <View style={styles.handle} />
-              <Text style={styles.title}>{title}</Text>
-              <ScrollView
-                style={styles.list}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
+    <BottomSheet visible={visible} onClose={onClose} title={title}>
+      <ScrollView
+        style={[styles.list, { maxHeight: maxListHeight }]}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {actions.map((a, i) => (
+          <React.Fragment key={a.id}>
+            {a.separator && i > 0 ? (
+              <View style={styles.separator} />
+            ) : null}
+            <TouchableOpacity
+              style={[styles.item, a.disabled && styles.itemDisabled]}
+              onPress={() => {
+                if (a.disabled) return;
+                onClose();
+                setTimeout(() => a.onPress(), 50);
+              }}
+              disabled={a.disabled}
+            >
+              <View
+                style={[
+                  styles.iconWrap,
+                  a.variant === 'danger' && styles.iconWrapDanger,
+                ]}
               >
-                {actions.map((a, i) => (
-                  <React.Fragment key={a.id}>
-                    {a.separator && i > 0 ? (
-                      <View style={styles.separator} />
-                    ) : null}
-                    <TouchableOpacity
-                      style={[styles.item, a.disabled && styles.itemDisabled]}
-                      onPress={() => {
-                        if (a.disabled) return;
-                        onClose();
-                        // Defer slightly so the modal can dismiss before the
-                        // action triggers another modal (avoids race on web).
-                        setTimeout(() => a.onPress(), 50);
-                      }}
-                      disabled={a.disabled}
-                    >
-                      <View
-                        style={[
-                          styles.iconWrap,
-                          a.variant === 'danger' && styles.iconWrapDanger,
-                        ]}
-                      >
-                        <MaterialIcons
-                          name={a.icon}
-                          size={22}
-                          color={
-                            a.variant === 'danger'
-                              ? '#FF453A'
-                              : isDark
-                                ? '#7AB3FF'
-                                : '#253883'
-                          }
-                        />
-                      </View>
-                      <View style={styles.itemText}>
-                        <Text
-                          style={[
-                            styles.itemLabel,
-                            a.variant === 'danger' && styles.itemLabelDanger,
-                          ]}
-                        >
-                          {a.label}
-                        </Text>
-                        {a.description ? (
-                          <Text style={styles.itemDescription}>
-                            {a.description}
-                          </Text>
-                        ) : null}
-                      </View>
-                    </TouchableOpacity>
-                  </React.Fragment>
-                ))}
-              </ScrollView>
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
+                <MaterialIcons
+                  name={a.icon}
+                  size={22}
+                  color={
+                    a.variant === 'danger'
+                      ? '#FF453A'
+                      : isDark
+                        ? '#7AB3FF'
+                        : '#253883'
+                  }
+                />
+              </View>
+              <View style={styles.itemText}>
+                <Text
+                  style={[
+                    styles.itemLabel,
+                    a.variant === 'danger' && styles.itemLabelDanger,
+                  ]}
+                >
+                  {a.label}
+                </Text>
+                {a.description ? (
+                  <Text style={styles.itemDescription}>{a.description}</Text>
+                ) : null}
+              </View>
+            </TouchableOpacity>
+          </React.Fragment>
+        ))}
+      </ScrollView>
+    </BottomSheet>
   );
 };
 
-const createStyles = (isDark: boolean, bottomInset: number) =>
+const createStyles = (isDark: boolean) =>
   StyleSheet.create({
-    backdrop: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'flex-end',
-    },
-    sheet: {
-      backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderTopLeftRadius: 22,
-      borderTopRightRadius: 22,
-      paddingTop: 8,
-      paddingBottom: bottomInset + 16,
-      maxHeight: '85%',
-    },
-    handle: {
-      width: 40,
-      height: 5,
-      borderRadius: 3,
-      backgroundColor: isDark ? '#48484A' : '#D1D1D6',
-      alignSelf: 'center',
-      marginBottom: 8,
-    },
-    title: {
-      fontSize: 17,
-      fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      paddingHorizontal: 20,
-      paddingVertical: 8,
-    },
-    list: {
-      maxHeight: '100%',
-    },
+    list: {},
     listContent: {
       paddingHorizontal: 8,
       paddingBottom: 8,
@@ -206,7 +143,7 @@ const createStyles = (isDark: boolean, bottomInset: number) =>
     },
     itemDescription: {
       fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: '#8E8E93',
       marginTop: 2,
     },
     separator: {
