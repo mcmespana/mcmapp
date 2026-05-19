@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
-import CloseIconButton from '@/components/ui/CloseIconButton';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
@@ -99,14 +98,8 @@ export default function SettingsPanel({ visible, onClose }: Props) {
 
   return (
     <>
-      <BottomSheet visible={visible} onClose={onClose}>
+      <BottomSheet visible={visible} onClose={onClose} title="Ajustes">
         <View style={[styles.container, { backgroundColor: theme.background }]}>
-          {/* Header */}
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: theme.text }]}>Ajustes</Text>
-            <CloseIconButton onPress={onClose} />
-          </View>
-
           {/* ── Sección: Tu perfil MCM ── */}
           <Text style={[styles.sectionLabel, { color: theme.icon }]}>
             TU PERFIL EN MCM
@@ -355,12 +348,9 @@ export default function SettingsPanel({ visible, onClose }: Props) {
       <BottomSheet
         visible={profileSelectorOpen}
         onClose={() => setProfileSelectorOpen(false)}
+        title="Perfil"
       >
         <View style={[styles.container, { backgroundColor: theme.background }]}>
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: theme.text }]}>Perfil</Text>
-            <CloseIconButton onPress={() => setProfileSelectorOpen(false)} />
-          </View>
           {(Object.keys(rawConfig.profiles) as ProfileType[]).map((key) => {
             const p = rawConfig.profiles[key];
             const selected = profile.profileType === key;
@@ -406,6 +396,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
       <BottomSheet
         visible={delegationSelectorOpen}
         onClose={() => setDelegationSelectorOpen(false)}
+        title="Delegación"
       >
         <View
           style={[
@@ -414,12 +405,6 @@ export default function SettingsPanel({ visible, onClose }: Props) {
             { backgroundColor: theme.background },
           ]}
         >
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: theme.text }]}>
-              Delegación
-            </Text>
-            <CloseIconButton onPress={() => setDelegationSelectorOpen(false)} />
-          </View>
           <FlatList
             data={rawConfig.delegationList}
             keyExtractor={(d) => d.id}
@@ -470,18 +455,6 @@ const styles = StyleSheet.create({
   delegationContainer: {
     maxHeight: '90%',
   } as ViewStyle,
-
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  } as ViewStyle,
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  } as TextStyle,
 
   sectionLabel: {
     fontSize: 11,

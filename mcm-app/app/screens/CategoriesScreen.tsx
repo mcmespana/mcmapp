@@ -113,34 +113,34 @@ export default function CategoriesScreen({
     }
   }, [navigation]);
 
-  // Header: search + add buttons together (integrado en el header)
+  // Header: add on left, search on right
   useLayoutEffect(() => {
     const iconColor = isIOS ? '#f4c11e' : '#1a1a1a';
     navigation.setOptions({
+      headerLeft: () => (
+        <PressableFeedback
+          onPress={() => setShowForm(true)}
+          style={styles.headerButton}
+          accessibilityLabel="Sugerir canción"
+        >
+          <PressableFeedback.Highlight />
+          <MaterialIcons name="add" size={26} color={iconColor} />
+        </PressableFeedback>
+      ),
       headerRight: () => (
-        <View style={styles.headerButtons}>
-          <PressableFeedback
-            onPress={() => setShowForm(true)}
-            style={styles.headerButton}
-            accessibilityLabel="Sugerir canción"
-          >
-            <PressableFeedback.Highlight />
-            <MaterialIcons name="add" size={26} color={iconColor} />
-          </PressableFeedback>
-          <PressableFeedback
-            onPress={() =>
-              navigation.navigate('SongsList', {
-                categoryId: ALL_SONGS_CATEGORY_ID,
-                categoryName: ALL_SONGS_CATEGORY_NAME,
-              })
-            }
-            style={styles.headerButton}
-            accessibilityLabel="Buscar canción"
-          >
-            <PressableFeedback.Highlight />
-            <MaterialIcons name="search" size={26} color={iconColor} />
-          </PressableFeedback>
-        </View>
+        <PressableFeedback
+          onPress={() =>
+            navigation.navigate('SongsList', {
+              categoryId: ALL_SONGS_CATEGORY_ID,
+              categoryName: ALL_SONGS_CATEGORY_NAME,
+            })
+          }
+          style={styles.headerButton}
+          accessibilityLabel="Buscar canción"
+        >
+          <PressableFeedback.Highlight />
+          <MaterialIcons name="search" size={26} color={iconColor} />
+        </PressableFeedback>
       ),
     });
   }, [navigation]);
@@ -248,12 +248,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     container: {
       flex: 1,
       backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
-    },
-    headerButtons: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      marginRight: Platform.OS === 'web' ? 8 : 0,
     },
     headerButton: {
       padding: 8,
