@@ -197,6 +197,7 @@ export default function CancioneroTab() {
           component={SongFullscreenScreen}
           options={() => ({
             headerShown: false,
+            presentation: 'fullScreenModal',
           })}
         />
         <Stack.Screen
