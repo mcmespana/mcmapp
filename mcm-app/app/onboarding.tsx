@@ -41,12 +41,45 @@ import type { ProfileType } from '@/types/profileConfig';
 
 type Step = 'welcome' | 'profile' | 'delegation' | 'success';
 
-const PROFILE_ICONS: Record<ProfileType, keyof typeof MaterialIcons.glyphMap> =
-  {
-    familia: 'family-restroom',
-    monitor: 'groups',
-    miembro: 'person',
-  };
+// "Otros" es un atajo visual del onboarding. Internamente mapea a
+// `miembro` + `mcm-espana`, así cubre a quien no se identifica con ningún
+// perfil ni delegación sin tener que extender la taxonomía real.
+const OTROS_PROFILE_ID = 'otros' as const;
+const OTROS_DELEGATION_ID = '__otros__' as const;
+const OTROS_PROFILE_DESCRIPTION =
+  'Si no te identificas con ninguno de los anteriores o simplemente quieres probar la app';
+const OTROS_DELEGATION_DESCRIPTION =
+  'Si no perteneces a ninguna o solo quieres probar la app';
+const OTROS_FALLBACK_PROFILE: ProfileType = 'miembro';
+const OTROS_FALLBACK_DELEGATION = 'mcm-espana';
+
+type OnboardingProfileId = ProfileType | typeof OTROS_PROFILE_ID;
+
+const PROFILE_ICONS: Record<
+  OnboardingProfileId,
+  keyof typeof MaterialIcons.glyphMap
+> = {
+  familia: 'family-restroom',
+  monitor: 'groups',
+  miembro: 'person',
+  otros: 'more-horiz',
+};
+
+function resolveOnboardingValues(
+  selectedProfile: OnboardingProfileId | null,
+  selectedDelegation: string | null,
+): { profileType: ProfileType; delegationId: string } {
+  const isOtrosProfile = selectedProfile === OTROS_PROFILE_ID;
+  const isOtrosDelegation = selectedDelegation === OTROS_DELEGATION_ID;
+  const profileType: ProfileType = isOtrosProfile
+    ? OTROS_FALLBACK_PROFILE
+    : ((selectedProfile as ProfileType | null) ?? DEFAULT_PROFILE_TYPE);
+  const delegationId =
+    isOtrosProfile || isOtrosDelegation
+      ? OTROS_FALLBACK_DELEGATION
+      : (selectedDelegation ?? DEFAULT_DELEGATION_ID);
+  return { profileType, delegationId };
+}
 
 // Static light-mode T used only for module-level StyleSheet defaults
 const T = {
@@ -508,9 +541,9 @@ function ProfileScreen({
   onSkip,
   animDir,
 }: {
-  profiles: { id: ProfileType; label: string; description: string }[];
-  selected: ProfileType | null;
-  setSelected: (id: ProfileType) => void;
+  profiles: { id: OnboardingProfileId; label: string; description: string }[];
+  selected: OnboardingProfileId | null;
+  setSelected: (id: OnboardingProfileId) => void;
   onContinue: () => void;
   onSkip: () => void;
   animDir: 'forward' | 'back';
@@ -586,7 +619,7 @@ function ProfileScreen({
                   >
                     {p.label}
                   </Text>
-                  <Text style={[cardStyles.cardDesc, { color: TT.muted }]} numberOfLines={2}>
+                  <Text style={[cardStyles.cardDesc, { color: TT.muted }]} numberOfLines={3}>
                     {p.description}
                   </Text>
                 </View>
@@ -626,7 +659,7 @@ function DelegationScreen({
   onBack,
   onSkip,
 }: {
-  delegations: { id: string; label: string }[];
+  delegations: { id: string; label: string; description?: string }[];
   selected: string | null;
   setSelected: (id: string) => void;
   onFinish: () => void;
@@ -686,17 +719,27 @@ function DelegationScreen({
                   pressed && { transform: [{ scale: 0.98 }] },
                 ]}
               >
-                <Text
-                  style={[
-                    delegStyles.label,
-                    {
-                      color: sel ? TT.primary : TT.text,
-                      fontWeight: sel ? '700' : '500',
-                    },
-                  ]}
-                >
-                  {d.label}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      delegStyles.label,
+                      {
+                        color: sel ? TT.primary : TT.text,
+                        fontWeight: sel ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    {d.label}
+                  </Text>
+                  {d.description ? (
+                    <Text
+                      style={[delegStyles.desc, { color: TT.muted }]}
+                      numberOfLines={2}
+                    >
+                      {d.description}
+                    </Text>
+                  ) : null}
+                </View>
                 {sel && (
                   <MaterialIcons
                     name="check-circle"
@@ -731,7 +774,7 @@ function SuccessScreen({
   delegation,
   onContinue,
 }: {
-  profile: { id: ProfileType; label: string } | null;
+  profile: { id: OnboardingProfileId; label: string } | null;
   delegation: { id: string; label: string } | null;
   onContinue: () => void;
 }) {
@@ -1032,6 +1075,11 @@ const delegStyles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   } as TextStyle,
+  desc: {
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
+  } as TextStyle,
 });
 
 /* ─────────────────────────────────────
@@ -1047,19 +1095,27 @@ export default function OnboardingScreen() {
 
   const [step, setStep] = useState<Step>('welcome');
   const [animDir, setAnimDir] = useState<'forward' | 'back'>('forward');
-  const [profileType, setProfileType] = useState<ProfileType | null>(null);
+  const [profileType, setProfileType] = useState<OnboardingProfileId | null>(
+    null,
+  );
   const [delegationId, setDelegationId] = useState<string | null>(null);
   const finishedRef = useRef(false);
 
   const profileEntries = useMemo<
-    { id: ProfileType; label: string; description: string }[]
+    { id: OnboardingProfileId; label: string; description: string }[]
   >(
-    () =>
-      (Object.keys(rawConfig.profiles) as ProfileType[]).map((key) => ({
-        id: key,
+    () => [
+      ...(Object.keys(rawConfig.profiles) as ProfileType[]).map((key) => ({
+        id: key as OnboardingProfileId,
         label: rawConfig.profiles[key].label,
         description: rawConfig.profiles[key].description,
       })),
+      {
+        id: OTROS_PROFILE_ID,
+        label: 'Otros',
+        description: OTROS_PROFILE_DESCRIPTION,
+      },
+    ],
     [rawConfig],
   );
 
@@ -1067,9 +1123,19 @@ export default function OnboardingScreen() {
   // Permite terminar el onboarding sin pertenecer a ninguna delegación local
   // (selecciona `_default`), evitando que esos usuarios queden con el banner
   // "completa tu perfil" para siempre.
-  const delegationEntries = useMemo<{ id: string; label: string }[]>(
+  // "Otros" va inmediatamente después: en una lista larga (>15 delegaciones)
+  // queremos que el atajo "no me identifico con ninguna" sea visible sin
+  // scrollear. Internamente se persiste como `mcm-espana`.
+  const delegationEntries = useMemo<
+    { id: string; label: string; description?: string }[]
+  >(
     () => [
       { id: DEFAULT_DELEGATION_ID, label: 'Sin delegación / General' },
+      {
+        id: OTROS_DELEGATION_ID,
+        label: 'Otros',
+        description: OTROS_DELEGATION_DESCRIPTION,
+      },
       ...rawConfig.delegationList,
     ],
     [rawConfig.delegationList],
@@ -1092,32 +1158,44 @@ export default function OnboardingScreen() {
   };
 
   const handleSkip = () => {
+    const resolved = resolveOnboardingValues(profileType, delegationId);
     persistAndExit({
-      profileType: profileType ?? DEFAULT_PROFILE_TYPE,
-      delegationId: delegationId ?? DEFAULT_DELEGATION_ID,
+      profileType: resolved.profileType,
+      delegationId: resolved.delegationId,
       onboardingCompleted: false,
     });
+  };
+
+  // Si el usuario eligió "Otros" como perfil, no le mostramos la pantalla de
+  // delegación: por dentro fijamos `miembro` + `mcm-espana`. El usuario no
+  // tiene por qué saber este mapeo.
+  const handleProfileContinue = () => {
+    if (profileType === OTROS_PROFILE_ID) {
+      setDelegationId(OTROS_DELEGATION_ID);
+      go('success');
+      return;
+    }
+    go('delegation');
   };
 
   const handleFinishToSuccess = () => {
     go('success');
   };
 
-  const profile = useMemo(
-    () =>
-      profileType
-        ? { id: profileType, label: rawConfig.profiles[profileType].label }
-        : null,
-    [profileType, rawConfig],
-  );
+  const profile = useMemo(() => {
+    if (!profileType) return null;
+    if (profileType === OTROS_PROFILE_ID) {
+      return { id: OTROS_PROFILE_ID, label: 'Otros' };
+    }
+    return { id: profileType, label: rawConfig.profiles[profileType].label };
+  }, [profileType, rawConfig]);
 
-  const delegation = useMemo(
-    () =>
-      delegationId
-        ? (delegationEntries.find((d) => d.id === delegationId) ?? null)
-        : null,
-    [delegationId, delegationEntries],
-  );
+  const delegation = useMemo(() => {
+    if (!delegationId) return null;
+    // Si el perfil ya es "Otros", evitamos un segundo pill duplicado.
+    if (profileType === OTROS_PROFILE_ID) return null;
+    return delegationEntries.find((d) => d.id === delegationId) ?? null;
+  }, [delegationId, delegationEntries, profileType]);
 
   const frameWidth = isWide ? Math.min(screenW * 0.88, MAX_CONTENT_W) : ('100%' as const);
   const frameHeight = isWide ? Math.min(screenH * 0.88, 740) : undefined;
@@ -1142,7 +1220,7 @@ export default function OnboardingScreen() {
             selected={profileType}
             setSelected={setProfileType}
             animDir={animDir}
-            onContinue={() => go('delegation')}
+            onContinue={handleProfileContinue}
             onSkip={handleSkip}
           />
         )}
@@ -1160,13 +1238,17 @@ export default function OnboardingScreen() {
           <SuccessScreen
             profile={profile}
             delegation={delegation}
-            onContinue={() =>
+            onContinue={() => {
+              const resolved = resolveOnboardingValues(
+                profileType,
+                delegationId,
+              );
               persistAndExit({
-                profileType: profileType ?? DEFAULT_PROFILE_TYPE,
-                delegationId: delegationId ?? DEFAULT_DELEGATION_ID,
+                profileType: resolved.profileType,
+                delegationId: resolved.delegationId,
                 onboardingCompleted: true,
-              })
-            }
+              });
+            }}
           />
         )}
       </View>
