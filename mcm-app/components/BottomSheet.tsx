@@ -10,7 +10,6 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const nativeDriver = Platform.OS !== 'web';
 import { UIColors, Colors } from '@/constants/colors';
@@ -150,7 +149,6 @@ export default function BottomSheet({
         </View>
         {title && (
           <View style={styles.titleBar} {...panResponder.panHandlers}>
-            <View style={{ width: 36 }} />
             <Text
               style={[
                 styles.titleText,
@@ -159,13 +157,6 @@ export default function BottomSheet({
             >
               {title}
             </Text>
-            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
-              <MaterialIcons
-                name="close"
-                size={18}
-                color={isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.35)'}
-              />
-            </Pressable>
           </View>
         )}
 
@@ -196,23 +187,14 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   titleBar: {
-    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 16,
     paddingBottom: 10,
   },
   titleText: {
-    flex: 1,
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: -0.3,
     textAlign: 'center',
-  },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

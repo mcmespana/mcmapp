@@ -381,7 +381,12 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
   const sheetHeight = SCREEN_HEIGHT - (insets.top + SHEET_GAP);
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} height={sheetHeight}>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      height={sheetHeight}
+      title={selectedNotification ? undefined : 'Notificaciones'}
+    >
       {selectedNotification ? (
         <NotificationDetail
           notification={selectedNotification}
@@ -392,39 +397,16 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
         />
       ) : (
         <>
-          {/* Header */}
-          <View
-            style={[
-              sheetStyles.header,
-              { borderBottomColor: hexAlpha(theme.icon, '15') },
-            ]}
-          >
-            {hasUnread ? (
-              <TouchableOpacity
-                onPress={handleMarkAllAsRead}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <MaterialIcons
-                  name="done-all"
-                  size={22}
-                  color={colors.primary}
-                />
-              </TouchableOpacity>
-            ) : (
-              <View style={{ width: 32 }} />
-            )}
-            <Text style={[sheetStyles.headerTitle, { color: theme.text }]}>
-              Notificaciones
-            </Text>
+          {hasUnread && (
             <TouchableOpacity
-              onPress={onClose}
-              style={sheetStyles.closeBtn}
+              onPress={handleMarkAllAsRead}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              activeOpacity={0.7}
+              style={sheetStyles.markAllBtn}
             >
-              <MaterialIcons name="close" size={22} color={theme.icon} />
+              <MaterialIcons name="done-all" size={18} color={colors.primary} />
+              <Text style={sheetStyles.markAllText}>Marcar todo como leído</Text>
             </TouchableOpacity>
-          </View>
+          )}
 
           {loading ? (
             <View style={sheetStyles.empty}>
@@ -646,26 +628,18 @@ function NotificationDetail({
 // ============================================================================
 
 const sheetStyles = StyleSheet.create({
-  header: {
+  markAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
+    alignSelf: 'flex-end',
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    flex: 1,
-    textAlign: 'center',
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+  markAllText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: '600',
   },
   empty: {
     flex: 1,
