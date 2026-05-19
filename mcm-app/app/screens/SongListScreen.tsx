@@ -65,7 +65,7 @@ export default function SongsListScreen({
   navigation,
 }: {
   route: { params: { categoryId: string; categoryName: string } };
-  navigation: any;
+  navigation: { navigate: (screen: string, params?: object) => void; goBack: () => void; setOptions: (opts: object) => void };
 }) {
   const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<
     Record<string, SongCategory>

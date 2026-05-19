@@ -60,23 +60,25 @@ export default function AppsScreen() {
         await Linking.openURL(storeUrl);
       }
     } catch (error) {
-      console.log('Error opening app:', error);
       const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
       if (storeUrl) {
         try {
           await Linking.openURL(storeUrl);
-        } catch (storeError) {
-          console.log('Error opening store:', storeError);
+        } catch {
+          // ignore
         }
       }
     }
   };
 
+  const apps = useMemo(
+    () => (appsData ? [...appsData].sort((a, b) => a.orden - b.orden) : []),
+    [appsData],
+  );
+
   if (loading || !appsData) {
     return <ProgressWithMessage message="Cargando aplicaciones..." />;
   }
-
-  const apps = [...appsData].sort((a, b) => a.orden - b.orden);
 
   return (
     <View style={styles.container}>
