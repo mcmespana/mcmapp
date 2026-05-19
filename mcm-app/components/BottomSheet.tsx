@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
+  Platform,
   Pressable,
   View,
   Animated,
   StyleSheet,
   Dimensions,
 } from 'react-native';
+
+const nativeDriver = Platform.OS !== 'web';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UIColors, Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -44,12 +47,12 @@ export default function BottomSheet({
         Animated.timing(slideAnim, {
           toValue: 0,
           duration: DURATION,
-          useNativeDriver: true,
+          useNativeDriver: nativeDriver,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
           duration: DURATION,
-          useNativeDriver: true,
+          useNativeDriver: nativeDriver,
         }),
       ]).start();
     } else {
@@ -57,12 +60,12 @@ export default function BottomSheet({
         Animated.timing(slideAnim, {
           toValue: OFF_SCREEN,
           duration: DURATION,
-          useNativeDriver: true,
+          useNativeDriver: nativeDriver,
         }),
         Animated.timing(opacityAnim, {
           toValue: 0,
           duration: DURATION,
-          useNativeDriver: true,
+          useNativeDriver: nativeDriver,
         }),
       ]).start(() => setModalVisible(false));
     }

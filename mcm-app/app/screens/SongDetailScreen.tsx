@@ -413,6 +413,8 @@ export default function SongDetailScreen({
   );
 
   if (navigationList && typeof currentIndex === 'number') {
+    // Web has no touch screen — skip the gesture wrapper entirely.
+    if (Platform.OS === 'web') return contentView;
     return (
       <PanGestureHandler
         activeOffsetX={[-20, 20]}

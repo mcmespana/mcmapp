@@ -93,7 +93,7 @@ const SongControls: React.FC<SongControlsProps> = ({
     setShowActionButtons(toOpen);
     Animated.spring(rotateAnim, {
       toValue: toOpen ? 1 : 0,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
       friction: 6,
     }).start();
   };
