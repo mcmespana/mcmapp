@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, Platform, Animated, Pressable } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -190,7 +190,7 @@ const SongControls: React.FC<SongControlsProps> = ({
     <>
       {/* Scrim when menu is open */}
       {showActionButtons && (
-        <PressableFeedback style={styles.scrim} onPress={toggleMenu} />
+        <Pressable style={styles.scrim} onPress={toggleMenu} />
       )}
 
       {/* FAB & Action Menu */}

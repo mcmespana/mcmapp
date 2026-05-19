@@ -2,7 +2,7 @@ import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import { StyleSheet, View, Platform, Dimensions, Animated } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import GestureRecognizer from 'react-native-swipe-gestures';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
 import SongControls from '@/components/SongControls';
@@ -138,15 +138,6 @@ export default function SongDetailScreen({
 
   const isSelected = isSongSelected(filename);
 
-  // iOS: disable native swipe-back gesture when a navigation list is active so
-  // that the custom left/right swipe handler can take full ownership of the
-  // horizontal axis without fighting the system back gesture.
-  useLayoutEffect(() => {
-    if (!isIOS) return;
-    const hasSwipeNav =
-      Boolean(navigationList) && typeof currentIndex === 'number';
-    navigation.setOptions({ gestureEnabled: !hasSwipeNav });
-  }, [navigation, navigationList, currentIndex]);
 
   // Header right button: add/remove song from selection (all platforms)
   useLayoutEffect(() => {
@@ -386,7 +377,7 @@ export default function SongDetailScreen({
         },
       ]}
     >
-      <View style={{ height: isIOS ? 0 : insets.top }} />
+      <View style={{ height: isIOS ? insets.top + 44 : 0 }} />
       <ChoirSessionBanner />
       <SongDisplay
         songHtml={songHtml}
@@ -423,20 +414,19 @@ export default function SongDetailScreen({
 
   if (navigationList && typeof currentIndex === 'number') {
     return (
-      <GestureRecognizer
-        style={[
-          { flex: 1 },
-          {
-            backgroundColor: isDark
-              ? Colors.dark.background
-              : Colors.light.background,
-          },
-        ]}
-        onSwipeLeft={handleSwipeRight}
-        onSwipeRight={handleSwipeLeft}
+      <PanGestureHandler
+        activeOffsetX={[-20, 20]}
+        failOffsetY={[-15, 15]}
+        onHandlerStateChange={(event) => {
+          if (event.nativeEvent.state !== State.END) return;
+          const { translationX, velocityX } = event.nativeEvent;
+          if (Math.abs(translationX) < 60 || Math.abs(velocityX) < 150) return;
+          if (translationX > 0) handleSwipeLeft();
+          else handleSwipeRight();
+        }}
       >
         {contentView}
-      </GestureRecognizer>
+      </PanGestureHandler>
     );
   }
 
