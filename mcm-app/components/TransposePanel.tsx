@@ -108,7 +108,7 @@ export default function TransposePanel({
                 !isTransposed && styles.resetIconBtnHidden,
               ]}
               onPress={() => onSetTranspose(0)}
-              disabled={!isTransposed}
+              isDisabled={!isTransposed}
               accessibilityLabel="Restablecer tono"
             >
               <PressableFeedback.Highlight />
@@ -196,7 +196,7 @@ export default function TransposePanel({
                   !isCapoOverridden && styles.resetIconBtnHidden,
                 ]}
                 onPress={() => onSetCapoOverride!(null)}
-                disabled={!isCapoOverridden}
+                isDisabled={!isCapoOverridden}
                 accessibilityLabel="Restablecer cejilla"
               >
                 <PressableFeedback.Highlight />
@@ -216,7 +216,7 @@ export default function TransposePanel({
                   effectiveCapo <= 0 && styles.capoStepBtnDisabled,
                 ]}
                 onPress={handleCapoMinus}
-                disabled={effectiveCapo <= 0}
+                isDisabled={effectiveCapo <= 0}
               >
                 <PressableFeedback.Highlight />
                 <MaterialIcons

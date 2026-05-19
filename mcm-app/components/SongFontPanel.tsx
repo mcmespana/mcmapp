@@ -107,7 +107,7 @@ export default function SongFontPanel({
                 !isSizeModified && styles.resetIconBtnHidden,
               ]}
               onPress={resetSize}
-              disabled={!isSizeModified}
+              isDisabled={!isSizeModified}
               accessibilityLabel="Restablecer tamaño"
             >
               <PressableFeedback.Highlight />
@@ -127,7 +127,7 @@ export default function SongFontPanel({
                 currentFontSize <= MIN_SIZE + 0.001 && styles.sizeStepDisabled,
               ]}
               onPress={decrease}
-              disabled={currentFontSize <= MIN_SIZE + 0.001}
+              isDisabled={currentFontSize <= MIN_SIZE + 0.001}
             >
               <PressableFeedback.Highlight />
               <MaterialIcons
@@ -211,7 +211,7 @@ export default function SongFontPanel({
                 currentFontSize >= MAX_SIZE - 0.001 && styles.sizeStepDisabled,
               ]}
               onPress={increase}
-              disabled={currentFontSize >= MAX_SIZE - 0.001}
+              isDisabled={currentFontSize >= MAX_SIZE - 0.001}
             >
               <PressableFeedback.Highlight />
               <MaterialIcons
@@ -260,7 +260,7 @@ export default function SongFontPanel({
                 !isFontModified && styles.resetIconBtnHidden,
               ]}
               onPress={resetFont}
-              disabled={!isFontModified}
+              isDisabled={!isFontModified}
               accessibilityLabel="Restablecer fuente"
             >
               <PressableFeedback.Highlight />
