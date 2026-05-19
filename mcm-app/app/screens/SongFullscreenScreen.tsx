@@ -27,9 +27,18 @@ import { Colors } from '../../constants/colors';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
-const MIN_SPEED_PPT = 0.5;
-const MAX_SPEED_PPT = 7;
-const TICK_MS = 50;
+// Pixels per frame at ~60fps
+const MIN_SPEED_PPF = 0.1; // ~6 px/s — very slow
+const MAX_SPEED_PPF = 3.8; // ~228 px/s — fast
+
+// Injected into WebView on page load — drives rAF scroll loop
+const SCROLL_CONTROLLER_JS =
+  '(function(){var _v=0,_a=0,_r=null;' +
+  'function _t(){_a+=_v;var p=Math.floor(_a);' +
+  'if(p>0){window.scrollBy(0,p);_a-=p;}' +
+  'if(_v>0){_r=requestAnimationFrame(_t);}else{_r=null;}}' +
+  'window.__mcmScroll=function(v){_v=v;if(v>0&&!_r){_r=requestAnimationFrame(_t);}};' +
+  '})();true;';
 
 // Vertical slider geometry
 const SLIDER_H = 130; // draggable range height (px)
@@ -147,7 +156,7 @@ export default function SongFullscreenScreen({
 }: {
   route: SongFullscreenRouteProp;
 }) {
-  const { author, key, capo, content } = route.params;
+  const { author, key, capo, content, title } = route.params;
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
@@ -162,6 +171,7 @@ export default function SongFullscreenScreen({
     chordsVisible,
     currentFontSizeEm: fontSize * 1.6,
     currentFontFamily: fontFamily,
+    title,
     author,
     key,
     capo,
@@ -179,6 +189,14 @@ export default function SongFullscreenScreen({
   const [controlsVisible, setControlsVisible] = useState(false);
   const controlsOpacity = useRef(new Animated.Value(0)).current;
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Refs for fluid web rAF scroll (avoid stale closures)
+  const webRafRef = useRef<number | null>(null);
+  const webAccRef = useRef(0);
+  const autoScrollRef = useRef(autoScroll);
+  const speedFactorRef = useRef(speedFactor);
+  autoScrollRef.current = autoScroll;
+  speedFactorRef.current = speedFactor;
 
   // Fade-in entry
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -208,34 +226,54 @@ export default function SongFullscreenScreen({
     }, 2400);
   }, [controlsOpacity]);
 
+  // Web: fluid rAF scroll loop driven from React side
   useEffect(() => {
-    const parent = navigation.getParent();
-    parent?.setOptions({ tabBarStyle: { display: 'none' } });
-    return () => {
-      parent?.setOptions({ tabBarStyle: undefined });
-    };
-  }, [navigation]);
-
-  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (webRafRef.current !== null) {
+      cancelAnimationFrame(webRafRef.current);
+      webRafRef.current = null;
+    }
     if (!autoScroll) return;
-    const speedPpt =
-      MIN_SPEED_PPT + speedFactor * (MAX_SPEED_PPT - MIN_SPEED_PPT);
-    const id = setInterval(() => {
-      if (Platform.OS === 'web') {
-        divRef.current?.scrollBy({ top: speedPpt });
-      } else {
-        webViewRef.current?.injectJavaScript(
-          `window.scrollBy(0,${speedPpt}); true;`,
-        );
+    webAccRef.current = 0;
+    const ppf = MIN_SPEED_PPF + speedFactor * (MAX_SPEED_PPF - MIN_SPEED_PPF);
+    const step = () => {
+      webAccRef.current += ppf;
+      const px = Math.floor(webAccRef.current);
+      if (px >= 1) {
+        divRef.current?.scrollBy({ top: px });
+        webAccRef.current -= px;
       }
-    }, TICK_MS);
-    return () => clearInterval(id);
+      webRafRef.current = requestAnimationFrame(step);
+    };
+    webRafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (webRafRef.current !== null) cancelAnimationFrame(webRafRef.current);
+    };
+  }, [autoScroll, speedFactor]);
+
+  // Native WebView: send velocity to injected rAF controller
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const ppf = MIN_SPEED_PPF + speedFactor * (MAX_SPEED_PPF - MIN_SPEED_PPF);
+    webViewRef.current?.injectJavaScript(
+      `if(window.__mcmScroll)window.__mcmScroll(${autoScroll ? ppf : 0});true;`,
+    );
   }, [autoScroll, speedFactor]);
 
   useEffect(() => {
     return () => {
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
+  }, []);
+
+  // Re-apply velocity after WebView reloads (e.g. when songHtml changes)
+  const handleWebViewLoad = useCallback(() => {
+    if (!autoScrollRef.current) return;
+    const ppf =
+      MIN_SPEED_PPF + speedFactorRef.current * (MAX_SPEED_PPF - MIN_SPEED_PPF);
+    webViewRef.current?.injectJavaScript(
+      `if(window.__mcmScroll)window.__mcmScroll(${ppf});true;`,
+    );
   }, []);
 
   const isIOS = Platform.OS === 'ios';
@@ -316,6 +354,8 @@ export default function SongFullscreenScreen({
             showsVerticalScrollIndicator={false}
             contentInsetAdjustmentBehavior="never"
             automaticallyAdjustContentInsets={false}
+            injectedJavaScript={SCROLL_CONTROLLER_JS}
+            onLoadEnd={handleWebViewLoad}
           />
         )}
       </View>
