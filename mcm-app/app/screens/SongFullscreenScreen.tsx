@@ -1,6 +1,4 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Platform, Animated } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -148,7 +146,6 @@ export default function SongFullscreenScreen({
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const isDark = scheme === 'dark';
-  const insets = useSafeAreaInsets();
   const theme = Colors[scheme ?? 'light'];
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;
@@ -296,34 +293,6 @@ export default function SongFullscreenScreen({
         { backgroundColor: theme.background, opacity: fadeAnim },
       ]}
     >
-      {/* Close button — glass effect */}
-      <PressableFeedback
-        style={[
-          styles.closeButton,
-          { top: insets.top + 8 },
-          !isIOS &&
-            (isDark
-              ? styles.closeButtonDarkFallback
-              : styles.closeButtonFallback),
-        ]}
-        onPress={() => navigation.goBack()}
-        accessibilityLabel="Cerrar pantalla completa"
-      >
-        <PressableFeedback.Scale />
-        {isIOS && (
-          <BlurView
-            tint={isDark ? 'dark' : 'light'}
-            intensity={72}
-            style={[StyleSheet.absoluteFill, styles.blurFill]}
-          />
-        )}
-        <MaterialIcons
-          name="close"
-          color={isDark ? '#EBEBF0' : '#fff'}
-          size={20}
-        />
-      </PressableFeedback>
-
       {/* Song content — fills the screen; padding applied inside HTML */}
       <View style={styles.contentWrapper}>
         {isWeb ? (
