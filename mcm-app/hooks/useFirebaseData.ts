@@ -26,11 +26,12 @@ export function useFirebaseData<T>(
           state.isConnected && state.isInternetReachable !== false;
         setOffline(!connected);
 
-        const [localDataStr, localUpdatedAt, localHiddenStr] = await Promise.all([
-          AsyncStorage.getItem(`${storageKey}_data`),
-          AsyncStorage.getItem(`${storageKey}_updatedAt`),
-          AsyncStorage.getItem(`${storageKey}_hidden`),
-        ]);
+        const [localDataStr, localUpdatedAt, localHiddenStr] =
+          await Promise.all([
+            AsyncStorage.getItem(`${storageKey}_data`),
+            AsyncStorage.getItem(`${storageKey}_updatedAt`),
+            AsyncStorage.getItem(`${storageKey}_hidden`),
+          ]);
 
         if (localDataStr) {
           const parsed = JSON.parse(localDataStr);

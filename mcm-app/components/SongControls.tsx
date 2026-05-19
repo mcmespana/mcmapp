@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform, Animated, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Platform,
+  Animated,
+  Pressable,
+} from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -446,8 +453,7 @@ const styles = StyleSheet.create({
         width: 54,
         height: 54,
         borderRadius: 27,
-        boxShadow:
-          '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
+        boxShadow: '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
         cursor: 'pointer',
       },
       default: {

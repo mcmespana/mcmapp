@@ -59,9 +59,15 @@ function VerticalSlider({
       onPanResponderGrant: () => {
         startRef.current = valueRef.current;
       },
-      onPanResponderMove: (_evt: GestureResponderEvent, { dy }: PanResponderGestureState) => {
+      onPanResponderMove: (
+        _evt: GestureResponderEvent,
+        { dy }: PanResponderGestureState,
+      ) => {
         // dy > 0 = moved down = slower; top = fast (value 1)
-        const next = Math.max(0, Math.min(1, startRef.current - dy / DRAG_RANGE));
+        const next = Math.max(
+          0,
+          Math.min(1, startRef.current - dy / DRAG_RANGE),
+        );
         onChange(next);
       },
     }),

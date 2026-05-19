@@ -27,6 +27,7 @@ App ID: `5P53S6QB23.com.familiaconsolacion.mcmapp` (Team ID + bundleId).
   Pegarlo en `sha256_cert_fingerprints` con el formato `AA:BB:CC:...:99`.
 
   **Opción B (vía EAS):**
+
   ```bash
   eas credentials -p android
   # → seleccionar el keystore de producción y leer la huella SHA-256

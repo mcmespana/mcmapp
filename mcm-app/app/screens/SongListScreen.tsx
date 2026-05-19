@@ -66,7 +66,11 @@ export default function SongsListScreen({
   navigation,
 }: {
   route: { params: { categoryId: string; categoryName: string } };
-  navigation: { navigate: (screen: string, params?: object) => void; goBack: () => void; setOptions: (opts: object) => void };
+  navigation: {
+    navigate: (screen: string, params?: object) => void;
+    goBack: () => void;
+    setOptions: (opts: object) => void;
+  };
 }) {
   const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<
     Record<string, SongCategory>
@@ -79,7 +83,10 @@ export default function SongsListScreen({
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
-  const styles = useMemo(() => createStyles(scheme || 'light', insets.bottom), [scheme, insets.bottom]);
+  const styles = useMemo(
+    () => createStyles(scheme || 'light', insets.bottom),
+    [scheme, insets.bottom],
+  );
   const isDark = scheme === 'dark';
   const [search, setSearch] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
@@ -162,8 +169,11 @@ export default function SongsListScreen({
                 }
                 // ⚡ Bolt: Pre-calculate the clean title for sorting (Schwartzian transform)
                 // This prevents running the regex multiple times per item during the O(N log N) sort phase.
-                const sortTitle = song.title.replace(/^\d+\.\s*/, '').toLowerCase();
-                const searchableText = `${song.title || ''} ${song.author || ''}`.toLowerCase();
+                const sortTitle = song.title
+                  .replace(/^\d+\.\s*/, '')
+                  .toLowerCase();
+                const searchableText =
+                  `${song.title || ''} ${song.author || ''}`.toLowerCase();
                 return {
                   ...song,
                   originalCategoryKey: categoryLetter,
@@ -202,8 +212,13 @@ export default function SongsListScreen({
                     numericPart = filenameMatch[1].padStart(2, '0');
                   }
                 }
-                const searchableText = `${song.title || ''} ${song.author || ''}`.toLowerCase();
-                return { ...song, numericFilenamePart: numericPart, searchableText };
+                const searchableText =
+                  `${song.title || ''} ${song.author || ''}`.toLowerCase();
+                return {
+                  ...song,
+                  numericFilenamePart: numericPart,
+                  searchableText,
+                };
               });
               songsWithNumericPart.sort((a, b) => {
                 const numA = parseInt(a.numericFilenamePart, 10) || Infinity;
@@ -267,36 +282,43 @@ export default function SongsListScreen({
   // ListHeaderComponent: search bar + song count
   // Goes inside the FlatList so it scrolls with content on iOS
   // (avoids getting hidden behind transparent header)
-  const listHeaderComponent = useMemo(() => (
-    <View>
-      {searchVisible && (
-        <View style={styles.searchContainer}>
-          <SearchField
-            value={search}
-            onChange={setSearch}
-          >
-            <SearchField.Group>
-              <SearchField.SearchIcon />
-              <SearchField.Input
-                placeholder="Título, autor..."
-                autoFocus={!isSearchAll}
-                returnKeyType="search"
-              />
-              <SearchField.ClearButton />
-            </SearchField.Group>
-          </SearchField>
+  const listHeaderComponent = useMemo(
+    () => (
+      <View>
+        {searchVisible && (
+          <View style={styles.searchContainer}>
+            <SearchField value={search} onChange={setSearch}>
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input
+                  placeholder="Título, autor..."
+                  autoFocus={!isSearchAll}
+                  returnKeyType="search"
+                />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+          </View>
+        )}
+        {/* Conteo de canciones — siempre visible, muy sutil */}
+        <View style={styles.countRow}>
+          <Text style={styles.songCount}>
+            {filteredSongs.length}{' '}
+            {filteredSongs.length === 1 ? 'canción' : 'canciones'}
+            {search.length > 0 ? ' encontradas' : ''}
+          </Text>
         </View>
-      )}
-      {/* Conteo de canciones — siempre visible, muy sutil */}
-      <View style={styles.countRow}>
-        <Text style={styles.songCount}>
-          {filteredSongs.length}{' '}
-          {filteredSongs.length === 1 ? 'canción' : 'canciones'}
-          {search.length > 0 ? ' encontradas' : ''}
-        </Text>
       </View>
-    </View>
-  ), [searchVisible, search, isSearchAll, filteredSongs.length, styles, setSearch]);
+    ),
+    [
+      searchVisible,
+      search,
+      isSearchAll,
+      filteredSongs.length,
+      styles,
+      setSearch,
+    ],
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: Song }) => (
@@ -356,7 +378,10 @@ export default function SongsListScreen({
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark' | null, bottomInset: number = 0) => {
+const createStyles = (
+  scheme: 'light' | 'dark' | null,
+  bottomInset: number = 0,
+) => {
   const isDark = scheme === 'dark';
   return StyleSheet.create({
     container: {

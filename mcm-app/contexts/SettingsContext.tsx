@@ -125,13 +125,11 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
 
   const value = useMemo(
     () => ({ settings, setSettings: handleSetSettings, isLoadingSettings }),
-    [settings, handleSetSettings, isLoadingSettings]
+    [settings, handleSetSettings, isLoadingSettings],
   );
 
   return (
-    <SettingsContext.Provider
-      value={value}
-    >
+    <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
   );

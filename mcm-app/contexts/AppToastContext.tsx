@@ -155,10 +155,7 @@ export function AppToastProvider({ children }: { children: React.ReactNode }) {
       <View style={styles.root}>
         {children}
         {current !== null && (
-          <View
-            style={styles.overlay}
-            pointerEvents="box-none"
-          >
+          <View style={styles.overlay} pointerEvents="box-none">
             <ToastItem key={current.id} toast={current} onHide={hide} />
           </View>
         )}

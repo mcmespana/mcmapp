@@ -66,13 +66,11 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
 
   const value = useMemo(
     () => ({ settings, setSettings: update, loading }),
-    [settings, update, loading]
+    [settings, update, loading],
   );
 
   return (
-    <AppSettingsContext.Provider
-      value={value}
-    >
+    <AppSettingsContext.Provider value={value}>
       {children}
     </AppSettingsContext.Provider>
   );

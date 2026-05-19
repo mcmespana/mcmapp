@@ -240,7 +240,10 @@ function SkipButton({ onPress }: { onPress: () => void }) {
       hitSlop={10}
       accessibilityRole="button"
       accessibilityLabel="Saltar configuración"
-      style={({ pressed }) => [skipBtnStyles.pill, pressed && { opacity: 0.65 }]}
+      style={({ pressed }) => [
+        skipBtnStyles.pill,
+        pressed && { opacity: 0.65 },
+      ]}
     >
       <Text style={[skipBtnStyles.text, { color: TT.primary }]}>Saltar</Text>
       <MaterialIcons name="arrow-forward" size={13} color={TT.primary} />
@@ -536,7 +539,9 @@ function ProfileScreen({
         <View style={stepStyles.heroIcon}>
           <MaterialIcons name="person-search" size={28} color={TT.primary} />
         </View>
-        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>¿Quién eres?</Text>
+        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
+          ¿Quién eres?
+        </Text>
         <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
           Dinos quién eres y te mostraremos lo que más te interesa.
         </Text>
@@ -586,7 +591,10 @@ function ProfileScreen({
                   >
                     {p.label}
                   </Text>
-                  <Text style={[cardStyles.cardDesc, { color: TT.muted }]} numberOfLines={2}>
+                  <Text
+                    style={[cardStyles.cardDesc, { color: TT.muted }]}
+                    numberOfLines={2}
+                  >
                     {p.description}
                   </Text>
                 </View>
@@ -644,7 +652,9 @@ function DelegationScreen({
       <View style={stepStyles.topBar}>
         <Pressable onPress={onBack} hitSlop={12} style={stepStyles.backBtn}>
           <MaterialIcons name="arrow-back-ios" size={16} color={TT.primary} />
-          <Text style={[stepStyles.backLabel, { color: TT.primary }]}>Atrás</Text>
+          <Text style={[stepStyles.backLabel, { color: TT.primary }]}>
+            Atrás
+          </Text>
         </Pressable>
         <SkipButton onPress={onSkip} />
       </View>
@@ -657,7 +667,9 @@ function DelegationScreen({
         <View style={stepStyles.heroIcon}>
           <MaterialIcons name="location-on" size={28} color={TT.primary} />
         </View>
-        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>¿De qué delegación?</Text>
+        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
+          ¿De qué delegación?
+        </Text>
         <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
           Recibirás las notificaciones y el calendario de tu delegación.
         </Text>
@@ -753,7 +765,10 @@ function SuccessScreen({
   }));
 
   return (
-    <Animated.View entering={FadeIn.duration(380)} style={[successStyles.root, { backgroundColor: TT.bg }]}>
+    <Animated.View
+      entering={FadeIn.duration(380)}
+      style={[successStyles.root, { backgroundColor: TT.bg }]}
+    >
       <Animated.View
         entering={FadeIn.duration(550).easing(
           Easing.bezier(0.34, 1.56, 0.64, 1),
@@ -791,13 +806,17 @@ function SuccessScreen({
                 size={20}
                 color={TT.primary}
               />
-              <Text style={[successStyles.pillText, { color: TT.primary }]}>{profile.label}</Text>
+              <Text style={[successStyles.pillText, { color: TT.primary }]}>
+                {profile.label}
+              </Text>
             </View>
           )}
           {delegation && (
             <View style={successStyles.pill}>
               <MaterialIcons name="location-on" size={20} color={TT.primary} />
-              <Text style={[successStyles.pillText, { color: TT.primary }]}>{delegation.label}</Text>
+              <Text style={[successStyles.pillText, { color: TT.primary }]}>
+                {delegation.label}
+              </Text>
             </View>
           )}
         </Animated.View>
@@ -1119,12 +1138,18 @@ export default function OnboardingScreen() {
     [delegationId, delegationEntries],
   );
 
-  const frameWidth = isWide ? Math.min(screenW * 0.88, MAX_CONTENT_W) : ('100%' as const);
+  const frameWidth = isWide
+    ? Math.min(screenW * 0.88, MAX_CONTENT_W)
+    : ('100%' as const);
   const frameHeight = isWide ? Math.min(screenH * 0.88, 740) : undefined;
 
   return (
     <SafeAreaView
-      style={[shellStyles.safe, { backgroundColor: TT.bg }, isWide && shellStyles.safeWide]}
+      style={[
+        shellStyles.safe,
+        { backgroundColor: TT.bg },
+        isWide && shellStyles.safeWide,
+      ]}
       edges={['top', 'bottom']}
     >
       <View

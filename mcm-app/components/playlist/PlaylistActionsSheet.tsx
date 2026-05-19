@@ -50,7 +50,10 @@ const PlaylistActionsSheet: React.FC<Props> = ({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
-  const styles = useMemo(() => createStyles(isDark, insets.bottom), [isDark, insets.bottom]);
+  const styles = useMemo(
+    () => createStyles(isDark, insets.bottom),
+    [isDark, insets.bottom],
+  );
 
   return (
     <Modal

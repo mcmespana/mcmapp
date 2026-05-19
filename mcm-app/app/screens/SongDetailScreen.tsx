@@ -138,7 +138,6 @@ export default function SongDetailScreen({
 
   const isSelected = isSongSelected(filename);
 
-
   // Header right button: add/remove song from selection (all platforms)
   useLayoutEffect(() => {
     if (!filename) return;
@@ -408,7 +407,6 @@ export default function SongDetailScreen({
         currentCapoOverride={currentCapoOverride}
         onSetCapoOverride={handleSetCapoOverride}
       />
-
     </Animated.View>
   );
 

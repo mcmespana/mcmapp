@@ -525,8 +525,7 @@ export default function WordleScreen() {
                   <View
                     style={{
                       flex: 1,
-                      backgroundColor:
-                        isDark ? '#555' : '#d3d6da',
+                      backgroundColor: isDark ? '#555' : '#d3d6da',
                       height: 10,
                       marginHorizontal: 4,
                     }}
@@ -595,7 +594,6 @@ export default function WordleScreen() {
           </View>
         )}
       </BottomSheet>
-
     </SafeAreaView>
   );
 }
