@@ -92,7 +92,7 @@ export default function FormattedContent({
         color: theme.text,
       },
       a: {
-        color: colors.primary,
+        color: scheme === 'dark' ? colors.info : colors.primary,
         textDecorationLine: 'underline' as const,
       },
     }),
@@ -215,6 +215,42 @@ export default function FormattedContent({
     [fontScale, scheme],
   );
 
+  const renderButton = (color: string, tnode: any) => (
+    <TouchableOpacity
+      style={{
+        backgroundColor: color,
+        borderColor: color,
+        borderWidth: 1,
+        paddingVertical: 12 * fontScale,
+        paddingHorizontal: 20 * fontScale,
+        borderRadius: 8,
+        marginVertical: 8 * fontScale,
+        marginHorizontal: 4 * fontScale,
+        minWidth: 120 * fontScale,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        shadowColor: color,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
+      }}
+      activeOpacity={0.8}
+    >
+      <Text
+        style={{
+          color: colors.white,
+          fontSize: 16 * fontScale,
+          fontWeight: '600' as const,
+          textAlign: 'center' as const,
+          lineHeight: 20 * fontScale,
+        }}
+      >
+        {tnode.children?.[0]?.data || 'Botón'}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <RenderHTML
       contentWidth={width}
@@ -225,82 +261,10 @@ export default function FormattedContent({
       renderers={{
         span: ({ tnode }: { tnode: any }) => {
           const className = tnode.attributes?.class;
-
-          if (className === 'btn-primary') {
-            const buttonStyles = {
-              backgroundColor: colors.primary,
-              borderColor: colors.primary,
-              borderWidth: 1,
-              paddingVertical: 12 * fontScale,
-              paddingHorizontal: 20 * fontScale,
-              borderRadius: 8,
-              marginVertical: 8 * fontScale,
-              marginHorizontal: 4 * fontScale,
-              minWidth: 120 * fontScale,
-              alignItems: 'center' as const,
-              justifyContent: 'center' as const,
-              shadowColor: colors.primary,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.3,
-              shadowRadius: 4,
-              elevation: 4,
-            };
-
-            const textStyles = {
-              color: colors.white,
-              fontSize: 16 * fontScale,
-              fontWeight: '600' as const,
-              textAlign: 'center' as const,
-              lineHeight: 20 * fontScale,
-            };
-
-            return (
-              <TouchableOpacity style={buttonStyles} activeOpacity={0.8}>
-                <Text style={textStyles}>
-                  {tnode.children?.[0]?.data || 'Botón'}
-                </Text>
-              </TouchableOpacity>
-            );
-          }
-
-          if (className === 'btn-secondary') {
-            const buttonStyles = {
-              backgroundColor: colors.accent,
-              borderColor: colors.accent,
-              borderWidth: 1,
-              paddingVertical: 12 * fontScale,
-              paddingHorizontal: 20 * fontScale,
-              borderRadius: 8,
-              marginVertical: 8 * fontScale,
-              marginHorizontal: 4 * fontScale,
-              minWidth: 120 * fontScale,
-              alignItems: 'center' as const,
-              justifyContent: 'center' as const,
-              shadowColor: colors.accent,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.3,
-              shadowRadius: 4,
-              elevation: 4,
-            };
-
-            const textStyles = {
-              color: colors.white,
-              fontSize: 16 * fontScale,
-              fontWeight: '600' as const,
-              textAlign: 'center' as const,
-              lineHeight: 20 * fontScale,
-            };
-
-            return (
-              <TouchableOpacity style={buttonStyles} activeOpacity={0.8}>
-                <Text style={textStyles}>
-                  {tnode.children?.[0]?.data || 'Botón'}
-                </Text>
-              </TouchableOpacity>
-            );
-          }
-
-          // Para otros spans, usar el renderizador por defecto
+          if (className === 'btn-primary')
+            return renderButton(colors.primary, tnode);
+          if (className === 'btn-secondary')
+            return renderButton(colors.accent, tnode);
           return undefined;
         },
       }}

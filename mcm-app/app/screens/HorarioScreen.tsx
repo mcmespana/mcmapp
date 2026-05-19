@@ -308,7 +308,7 @@ export default function HorarioScreen() {
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark', scale: number) => {
+const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: {

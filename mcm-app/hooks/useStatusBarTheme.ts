@@ -87,7 +87,6 @@ export function useStatusBarTheme(pathname: string) {
     }
     navButtonMeta.content = config.themeColor;
 
-    console.log(`🎨 Theme updated for ${pathname}:`, config);
   }, [pathname]);
 }
 

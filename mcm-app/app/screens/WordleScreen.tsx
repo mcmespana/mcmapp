@@ -212,12 +212,7 @@ export default function WordleScreen() {
     if (isGameLocked) return;
 
     if (k === 'ENTER') {
-      const res = submitGuess();
-      if (res === 'not-enough') {
-        console.log('No hay suficientes letras');
-      } else if (res === 'invalid') {
-        console.log('Palabra no válida');
-      }
+      submitGuess();
     } else if (k === 'DEL') {
       removeLetter();
     } else {
@@ -531,7 +526,7 @@ export default function WordleScreen() {
                     style={{
                       flex: 1,
                       backgroundColor:
-                        theme.background === '#2C2C2E' ? '#555' : '#d3d6da',
+                        isDark ? '#555' : '#d3d6da',
                       height: 10,
                       marginHorizontal: 4,
                     }}
@@ -601,55 +596,6 @@ export default function WordleScreen() {
         )}
       </BottomSheet>
 
-      {status === 'won' && (
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          {/* Confeti cayendo desde la parte superior de la pantalla */}
-          <ConfettiCannon
-            count={60}
-            origin={{ x: -10, y: -50 }}
-            fallSpeed={2500}
-            fadeOut={true}
-            autoStart={true}
-          />
-          <ConfettiCannon
-            count={60}
-            origin={{ x: 10, y: -50 }}
-            fallSpeed={2500}
-            fadeOut={true}
-            autoStart={true}
-          />
-
-          <Animated.View
-            style={[
-              styles.shareBtn,
-              {
-                transform: [{ scale: buttonAnimation }],
-              },
-            ]}
-          >
-            <TouchableOpacity
-              onPress={shareCustomResult}
-              style={{ width: '100%', alignItems: 'center' }}
-            >
-              <Text style={styles.shareBtnText}>
-                🎉 ¡Compartir mi victoria! 🎊
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      )}
-
-      {isGameLocked && status !== 'won' && status !== 'lost' && (
-        <View style={styles.lockedGameMessage}>
-          <Text style={styles.lockedGameText}>
-            🎯 ¡Ya completaste el Wordle de este turno!
-          </Text>
-          <Text style={styles.lockedGameSubtext}>
-            Vuelve a las {cycle === 'morning' ? '19:00' : '07:00'} para una
-            nueva palabra
-          </Text>
-        </View>
-      )}
     </SafeAreaView>
   );
 }

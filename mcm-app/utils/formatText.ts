@@ -15,13 +15,13 @@ export function formatBBCodeToHtml(text: string): string {
   replaceIteratively(/\[i\](.*?)\[\/i\]/gis, '<em>$1</em>');
   replaceIteratively(/\[u\](.*?)\[\/u\]/gis, '<u>$1</u>');
   replaceIteratively(/\[h1\](.*?)\[\/h1\]/gis, '<h2>$1</h2>');
-  replaceIteratively(/\[url=(.*?)\](.*?)\[\/url\]/gis, '<a href="$1">$2</a>');
+  replaceIteratively(/\[url=(https?:\/\/[^\]]*?)\](.*?)\[\/url\]/gis, '<a href="$1">$2</a>');
   replaceIteratively(
-    /\[btn-primary=(.*?)\](.*?)\[\/btn-primary\]/gis,
+    /\[btn-primary=(https?:\/\/[^\]]*?)\](.*?)\[\/btn-primary\]/gis,
     '<a href="$1" class="btn-primary">$2</a>',
   );
   replaceIteratively(
-    /\[btn-secondary=(.*?)\](.*?)\[\/btn-secondary\]/gis,
+    /\[btn-secondary=(https?:\/\/[^\]]*?)\](.*?)\[\/btn-secondary\]/gis,
     '<a href="$1" class="btn-secondary">$2</a>',
   );
   replaceIteratively(

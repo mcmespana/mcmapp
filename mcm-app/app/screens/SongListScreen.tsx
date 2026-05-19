@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SearchField } from 'heroui-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
@@ -65,7 +66,7 @@ export default function SongsListScreen({
   navigation,
 }: {
   route: { params: { categoryId: string; categoryName: string } };
-  navigation: any;
+  navigation: { navigate: (screen: string, params?: object) => void; goBack: () => void; setOptions: (opts: object) => void };
 }) {
   const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<
     Record<string, SongCategory>
@@ -77,7 +78,8 @@ export default function SongsListScreen({
   const songsData = useMemo(() => getSongsData(firebaseSongs), [firebaseSongs]);
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
-  const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(scheme || 'light', insets.bottom), [scheme, insets.bottom]);
   const isDark = scheme === 'dark';
   const [search, setSearch] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
@@ -354,7 +356,7 @@ export default function SongsListScreen({
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark' | null) => {
+const createStyles = (scheme: 'light' | 'dark' | null, bottomInset: number = 0) => {
   const isDark = scheme === 'dark';
   return StyleSheet.create({
     container: {
@@ -382,7 +384,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     listContent: {
       paddingHorizontal: 12,
-      paddingBottom: isIOS ? 100 : 24,
+      paddingBottom: bottomInset + 20,
     },
     errorText: {
       fontSize: 16,

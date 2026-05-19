@@ -224,7 +224,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                     <MaterialIcons
                       name="arrow-forward"
                       size={12}
-                      color={isDark ? '#8E8E93' : '#8E8E93'}
+                      color='#8E8E93'
                     />
                     <View style={styles.keyPillTransposed}>
                       <Text style={styles.keyTextTransposed}>
@@ -377,7 +377,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingHorizontal: 7,
       paddingVertical: 3,
       borderRadius: 6,
-      backgroundColor: '#FFF4DA',
+      backgroundColor: isDark ? '#3A2800' : '#FFF4DA',
       borderWidth: 1,
       borderColor: '#F4C11E',
     },
