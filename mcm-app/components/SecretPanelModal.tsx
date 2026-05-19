@@ -152,11 +152,6 @@ export default function SecretPanelModal({
   };
 
   const handleSaveChanges = async () => {
-    console.log('=== INICIO handleSaveChanges ===');
-    console.log('songTitle:', songTitle);
-    console.log('songFilename:', songFilename);
-    console.log('firebaseCategory:', firebaseCategory);
-
     if (!editTitle.trim()) {
       Alert.alert('Error', 'El título es obligatorio');
       return;
@@ -207,17 +202,8 @@ export default function SecretPanelModal({
         if ((originalValues as any)[field] !== (newValues as any)[field]) {
           changes[`${field}Old`] = (originalValues as any)[field];
           changes[`${field}New`] = (newValues as any)[field];
-          console.log(
-            `🔄 Campo '${field}' cambió:`,
-            `"${(originalValues as any)[field]}" → "${(newValues as any)[field]}"`,
-          );
         }
       });
-
-      console.log(
-        '📊 Total de cambios detectados:',
-        Object.keys(changes).length / 2,
-      );
 
       // Si no hay cambios, no hacer nada
       if (Object.keys(changes).length === 0) {
@@ -233,21 +219,15 @@ export default function SecretPanelModal({
       // La categoría de Firebase ya viene en el formato correcto (ej: "adoracion")
       const category = firebaseCategory;
 
-      console.log('Buscando en categoría:', category);
-      console.log('Ruta completa:', `songs/data/${category}/songs`);
-
       // 1. Leer todas las canciones de la categoría para encontrar la canción específica
       const songsRef = ref(db, `songs/data/${category}/songs`);
       const songsSnapshot = await get(songsRef);
-
-      console.log('songsSnapshot exists:', songsSnapshot.exists());
 
       if (!songsSnapshot.exists()) {
         console.error(
           'No se encontró la ruta:',
           `songs/data/${category}/songs`,
         );
-        console.error('firebaseCategory recibido:', firebaseCategory);
         throw new Error(
           `No se encontró la categoría de canciones en: songs/data/${category}/songs`,
         );

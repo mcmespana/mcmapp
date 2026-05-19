@@ -212,12 +212,7 @@ export default function WordleScreen() {
     if (isGameLocked) return;
 
     if (k === 'ENTER') {
-      const res = submitGuess();
-      if (res === 'not-enough') {
-        console.log('No hay suficientes letras');
-      } else if (res === 'invalid') {
-        console.log('Palabra no válida');
-      }
+      submitGuess();
     } else if (k === 'DEL') {
       removeLetter();
     } else {

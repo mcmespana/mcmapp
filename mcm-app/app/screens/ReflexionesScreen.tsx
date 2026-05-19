@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Platform, Text } from 'react-native';
 import {
   Card,
@@ -177,6 +177,11 @@ export default function ReflexionesScreen() {
       : nombre;
   };
 
+  const sortedList = useMemo(
+    () => [...list].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()),
+    [list]
+  );
+
   return (
     <View style={styles.container}>
       <PageContainer>
@@ -186,12 +191,7 @@ export default function ReflexionesScreen() {
             Platform.OS === 'ios' && { paddingBottom: 100 },
           ]}
         >
-          {list
-            .sort(
-              (a, b) =>
-                new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
-            )
-            .map((r) => (
+          {sortedList.map((r) => (
               <Card
                 key={r.id}
                 style={[styles.card, r.grupal && styles.cardGroup]}
