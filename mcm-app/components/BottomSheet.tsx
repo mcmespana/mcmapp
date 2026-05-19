@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Platform,
+  PanResponder,
   Pressable,
   View,
   Animated,
@@ -10,14 +11,14 @@ import {
 } from 'react-native';
 
 const nativeDriver = Platform.OS !== 'web';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UIColors, Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-// Using a fixed large value avoids re-renders on dimension change while
-// guaranteeing the sheet starts fully off-screen.
 const OFF_SCREEN = Dimensions.get('window').height;
 const DURATION = 300;
+// Swipe down threshold to trigger close
+const CLOSE_THRESHOLD = 80;
+const VELOCITY_THRESHOLD = 400;
 
 interface BottomSheetProps {
   visible: boolean;
@@ -33,15 +34,15 @@ export default function BottomSheet({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const bgColor = Colors[scheme ?? 'light'].background;
-  const insets = useSafeAreaInsets();
 
-  // Keep Modal mounted until the close animation finishes.
   const [modalVisible, setModalVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(OFF_SCREEN)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const dragAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
+      dragAnim.setValue(0);
       setModalVisible(true);
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -69,9 +70,41 @@ export default function BottomSheet({
         }),
       ]).start(() => setModalVisible(false));
     }
-  }, [visible, slideAnim, opacityAnim]);
+  }, [visible, slideAnim, opacityAnim, dragAnim]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, { dy, dx }) =>
+        Math.abs(dy) > Math.abs(dx) && dy > 0,
+      onPanResponderMove: (_, { dy }) => {
+        if (dy > 0) dragAnim.setValue(dy);
+      },
+      onPanResponderRelease: (_, { dy, vy }) => {
+        if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
+          onClose();
+        } else {
+          Animated.spring(dragAnim, {
+            toValue: 0,
+            useNativeDriver: nativeDriver,
+            tension: 180,
+            friction: 20,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(dragAnim, {
+          toValue: 0,
+          useNativeDriver: nativeDriver,
+          tension: 180,
+          friction: 20,
+        }).start();
+      },
+    }),
+  ).current;
 
   const handleColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.18)';
+  const translateY = Animated.add(slideAnim, dragAnim);
 
   return (
     <Modal
@@ -81,7 +114,7 @@ export default function BottomSheet({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      {/* Visual backdrop — pointerEvents none so the Pressable below handles touch */}
+      {/* Backdrop */}
       <Animated.View
         style={[
           StyleSheet.absoluteFill,
@@ -90,24 +123,24 @@ export default function BottomSheet({
         pointerEvents="none"
       />
 
-      {/* Full-screen tap-to-close area. Rendered before the sheet so the
-          sheet (later sibling = higher z-order) intercepts its own touches. */}
+      {/* Tap-to-close area behind the sheet */}
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
-      {/* Sheet — slides up from bottom */}
+      {/* Sheet — slides up from bottom, sized to content */}
       <Animated.View
         style={[
           styles.sheet,
           {
             backgroundColor: bgColor,
-            paddingBottom: insets.bottom,
-            transform: [{ translateY: slideAnim }],
+            transform: [{ translateY }],
           },
         ]}
       >
-        <View style={styles.handleWrap}>
+        {/* Handle with drag gesture */}
+        <View style={styles.handleWrap} {...panResponder.panHandlers}>
           <View style={[styles.handle, { backgroundColor: handleColor }]} />
         </View>
+
         <View style={{ backgroundColor: bgColor }}>{children}</View>
       </Animated.View>
     </Modal>
