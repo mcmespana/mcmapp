@@ -60,21 +60,15 @@ export default function TransposePanel({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
+    <BottomSheet visible={visible} onClose={onClose} title="Ajustes de canción">
       <View
         style={[
           styles.container,
           {
-            paddingBottom: Platform.OS === 'web' ? 24 : 16,
+            paddingBottom: Platform.OS === 'web' ? 16 : 4,
           },
         ]}
       >
-        <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            Ajustes de canción
-          </Text>
-        </View>
-
         {/* ━━━━━━━━━━━━━━ TONO ━━━━━━━━━━━━━━ */}
         <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.cardHeader}>
@@ -297,17 +291,6 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 4,
     gap: 12,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 4,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.3,
   },
   card: {
     backgroundColor: '#F7F7FB',
