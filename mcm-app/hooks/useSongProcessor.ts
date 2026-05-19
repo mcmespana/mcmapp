@@ -25,6 +25,10 @@ interface UseSongProcessorParams {
   capo?: number; // Added to pass capo
   isFullscreen?: boolean; // Added for fullscreen mode
   isDark?: boolean; // Dark mode support
+  /** Padding superior extra (px). Útil en fullscreen para evitar notch / close button. */
+  topInset?: number;
+  /** Padding inferior extra (px). Útil en fullscreen para no esconder texto bajo play/safe-area. */
+  bottomInset?: number;
 }
 
 export const useSongProcessor = ({
@@ -39,6 +43,8 @@ export const useSongProcessor = ({
   capo,
   isFullscreen = false,
   isDark = false,
+  topInset,
+  bottomInset,
 }: UseSongProcessorParams) => {
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
@@ -149,14 +155,23 @@ export const useSongProcessor = ({
         ? ''
         : '<style>.chord { display: none !important; }</style>';
 
-      // Platform-aware bottom padding
-      const bottomPadding = isFullscreen
-        ? 0
-        : Platform.OS === 'ios'
-          ? 120
-          : Platform.OS === 'web'
-            ? 40
-            : 80;
+      // Platform-aware bottom padding.
+      // En fullscreen reservamos espacio para el botón de play translúcido
+      // y el safe-area inferior (home indicator en iOS). En detalle, espacio
+      // suficiente para que el FAB no tape la última línea.
+      const bottomPadding =
+        bottomInset !== undefined
+          ? bottomInset
+          : isFullscreen
+            ? 110
+            : Platform.OS === 'ios'
+              ? 120
+              : Platform.OS === 'web'
+                ? 40
+                : 80;
+      // Padding superior: en fullscreen, espacio para el close button y notch.
+      const topPadding =
+        topInset !== undefined ? topInset : isFullscreen ? 72 : 16;
 
       // Dark mode aware colors
       const c = {
@@ -185,8 +200,7 @@ export const useSongProcessor = ({
             body {
               font-family: ${currentFontFamily};
               margin: 0;
-              padding: 16px 16px;
-              ${bottomPadding > 0 ? `padding-bottom: ${bottomPadding}px;` : ''}
+              padding: ${topPadding}px 16px ${bottomPadding}px 16px;
               background-color: ${c.bodyBg};
               color: ${c.bodyText};
               font-size: 100%;
@@ -341,6 +355,9 @@ export const useSongProcessor = ({
     key,
     capo,
     isDark,
+    isFullscreen,
+    topInset,
+    bottomInset,
   ]);
 
   return { songHtml, isLoadingSong };
