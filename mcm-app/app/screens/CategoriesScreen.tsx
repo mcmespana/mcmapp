@@ -252,11 +252,12 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     headerButtons: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
+      gap: 8,
       marginRight: Platform.OS === 'web' ? 8 : 0,
     },
     headerButton: {
       padding: 8,
+      borderRadius: 8,
     },
     listContent: {
       paddingHorizontal: 16,

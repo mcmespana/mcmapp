@@ -65,7 +65,7 @@ export default function TransposePanel({
         style={[
           styles.container,
           {
-            paddingBottom: Platform.OS === 'web' ? 16 : 4,
+            paddingBottom: Platform.OS === 'web' ? 16 : 0,
           },
         ]}
       >

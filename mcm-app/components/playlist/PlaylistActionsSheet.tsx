@@ -105,7 +105,6 @@ const createStyles = (isDark: boolean) =>
   StyleSheet.create({
     list: {},
     listContent: {
-      paddingHorizontal: 8,
       paddingBottom: 8,
     },
     item: {
