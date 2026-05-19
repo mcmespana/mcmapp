@@ -88,10 +88,10 @@ export const useSongProcessor = ({
       const parser = new ChordProParser();
       const originalParsedSong = parser.parse(processedChordPro);
 
-      let songForFormatting: Song = originalParsedSong;
+      const songForFormatting: Song = originalParsedSong;
 
       const formatter = new HtmlDivFormatter();
-      let formattedSong = formatter.format(songForFormatting);
+      const formattedSong = formatter.format(songForFormatting);
 
       let metaInsert = '';
       if (author && !isFullscreen) {
