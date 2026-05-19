@@ -223,7 +223,7 @@ class VidaNuevaScraper(BaseScraper):
                     state = "COMMENTARY"
 
             elif child.name == "p":
-                plain = html_to_plain(child)
+                plain = html_to_plain(child, prose=True)
                 if not plain:
                     continue
                 if state == "GOSPEL":

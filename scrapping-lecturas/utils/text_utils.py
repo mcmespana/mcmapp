@@ -6,32 +6,34 @@ import re
 from bs4 import Tag
 
 
-def html_to_plain(element: Tag) -> str:
+def html_to_plain(element: Tag, prose: bool = False) -> str:
     """
     Convert a BeautifulSoup element to clean plaintext.
 
-    - Replaces <br> tags with newlines
+    - prose=False (default): <br> → newline (for structured text like poetry/verses)
+    - prose=True: <br> → space (for flowing paragraph text where <br> is a CMS artifact)
     - Strips all remaining HTML tags
-    - Normalizes whitespace (collapses multiple blank lines)
+    - Normalizes whitespace
     - Unescapes HTML entities (&amp; → &, etc.)
     """
-    # Replace <br> with newline before stripping
+    br_replacement = " " if prose else "\n"
     for br in element.find_all("br"):
-        br.replace_with("\n")
+        br.replace_with(br_replacement)
 
     text = element.get_text(separator="")
 
-    # Collapse more than 2 consecutive newlines
-    text = re.sub(r"\n{3,}", "\n\n", text)
+    if prose:
+        # Collapse any internal whitespace runs (including stray \n) to a single space
+        text = re.sub(r"[ \t]*\n[ \t]*", " ", text)
+        text = re.sub(r" {2,}", " ", text)
+    else:
+        # Collapse more than 2 consecutive newlines
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        # Strip leading/trailing whitespace on each line
+        lines = [line.strip() for line in text.splitlines()]
+        text = "\n".join(lines)
 
-    # Strip leading/trailing whitespace on each line
-    lines = [line.strip() for line in text.splitlines()]
-    text = "\n".join(lines)
-
-    # Remove leading/trailing blank lines
-    text = text.strip()
-
-    return html.unescape(text)
+    return html.unescape(text.strip())
 
 
 def join_paragraphs(paragraphs: list[str]) -> str:
