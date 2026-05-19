@@ -149,7 +149,7 @@ export default function ContactosScreen() {
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark') => {
+const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({

@@ -284,7 +284,7 @@ export default function Calendario() {
               <MaterialIcons
                 name="place"
                 size={14}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color='#8E8E93'
               />
               <Text
                 style={[styles.eventLocation, isPast && styles.pastText]}
@@ -299,7 +299,7 @@ export default function Calendario() {
               <MaterialIcons
                 name="date-range"
                 size={14}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color='#8E8E93'
               />
               <Text style={[styles.eventDuration, isPast && styles.pastText]}>
                 Hasta {formatDate(ev.endDate)}
@@ -847,12 +847,12 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     eventLocation: {
       fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: '#8E8E93',
       flex: 1,
     },
     eventDuration: {
       fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: '#8E8E93',
     },
 
     // Empty state
@@ -941,7 +941,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     sectionWeekday: {
       fontSize: 11,
       fontWeight: '700',
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: '#8E8E93',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },

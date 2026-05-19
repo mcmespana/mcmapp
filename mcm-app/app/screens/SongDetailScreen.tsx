@@ -3,17 +3,17 @@ import { StyleSheet, View, Platform, Dimensions, Animated } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GestureRecognizer from 'react-native-swipe-gestures';
-import SongDisplay from '../../components/SongDisplay';
-import { useSongProcessor } from '../../hooks/useSongProcessor';
-import SongControls from '../../components/SongControls';
+import SongDisplay from '@/components/SongDisplay';
+import { useSongProcessor } from '@/hooks/useSongProcessor';
+import SongControls from '@/components/SongControls';
 import { RouteProp, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../(tabs)/cancionero';
-import { useSelectedSongs } from '../../contexts/SelectedSongsContext';
-import { useChoirSession } from '../../contexts/ChoirSessionContext';
-import { IconSymbol } from '../../components/ui/IconSymbol';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useColorScheme } from '../../hooks/useColorScheme';
-import ChoirSessionBanner from '../../components/playlist/ChoirSessionBanner';
+import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
+import { useChoirSession } from '@/contexts/ChoirSessionContext';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
 import colors, { Colors, UIColors } from '@/constants/colors';
 import { shadows } from '@/constants/uiStyles';
@@ -384,7 +384,7 @@ export default function SongDetailScreen({
         },
       ]}
     >
-      {isIOS && <View style={{ height: insets.top + 52 }} />}
+      <View style={{ height: insets.top + (isIOS ? 52 : 0) }} />
       <ChoirSessionBanner />
       <SongDisplay
         songHtml={songHtml}

@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Platform, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Card,
   Switch,
@@ -61,6 +62,8 @@ const WEEKDAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
 export default function ReflexionesScreen() {
   const scheme = useColorScheme();
+  const insets = useSafeAreaInsets();
+  const theme = Colors[scheme ?? 'light'];
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
@@ -177,21 +180,21 @@ export default function ReflexionesScreen() {
       : nombre;
   };
 
+  const sortedList = useMemo(
+    () => [...list].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()),
+    [list]
+  );
+
   return (
     <View style={styles.container}>
       <PageContainer>
         <ScrollView
           contentContainerStyle={[
             styles.list,
-            Platform.OS === 'ios' && { paddingBottom: 100 },
+            { paddingBottom: insets.bottom + 20 },
           ]}
         >
-          {list
-            .sort(
-              (a, b) =>
-                new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
-            )
-            .map((r) => (
+          {sortedList.map((r) => (
               <Card
                 key={r.id}
                 style={[styles.card, r.grupal && styles.cardGroup]}
@@ -203,7 +206,7 @@ export default function ReflexionesScreen() {
                         { fontWeight: '600', fontSize: 16, marginBottom: 4 },
                         r.grupal
                           ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
-                          : { color: scheme === 'dark' ? '#fff' : '#222' },
+                          : { color: theme.text },
                       ]}
                     >
                       {r.titulo}
@@ -213,7 +216,7 @@ export default function ReflexionesScreen() {
                     style={
                       r.grupal
                         ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
-                        : { color: scheme === 'dark' ? '#fff' : '#222' }
+                        : { color: theme.text }
                     }
                   >
                     {r.contenido}
@@ -223,7 +226,7 @@ export default function ReflexionesScreen() {
                       { marginTop: 4, fontSize: 12 },
                       r.grupal
                         ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
-                        : { color: scheme === 'dark' ? '#aaa' : '#888' },
+                        : { color: theme.icon },
                     ]}
                   >
                     {formatFecha(r.fecha)}

@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, Platform, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   RouteProp,
   useNavigation,
@@ -25,6 +26,7 @@ export default function SongFullscreenScreen({
   const { author, key, capo, content } = route.params;
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const scheme = useColorScheme();
+  const insets = useSafeAreaInsets();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   const { settings } = useSettings();
@@ -119,6 +121,7 @@ export default function SongFullscreenScreen({
       <PressableFeedback
         style={[
           styles.closeButton,
+          { top: insets.top + 8 },
           !isIOS &&
             (isDark
               ? styles.closeButtonDarkFallback
@@ -254,7 +257,7 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     left: 16,
-    top: Platform.OS === 'ios' ? 54 : 16,
+    top: 8,
     width: 36,
     height: 36,
     borderRadius: 18,

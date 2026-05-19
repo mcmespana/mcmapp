@@ -11,11 +11,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Platform,
   ScrollView,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface PlaylistAction {
   id: string;
@@ -49,7 +49,8 @@ const PlaylistActionsSheet: React.FC<Props> = ({
 }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const styles = useMemo(() => createStyles(isDark), [isDark]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(isDark, insets.bottom), [isDark, insets.bottom]);
 
   return (
     <Modal
@@ -130,7 +131,7 @@ const PlaylistActionsSheet: React.FC<Props> = ({
   );
 };
 
-const createStyles = (isDark: boolean) =>
+const createStyles = (isDark: boolean, bottomInset: number) =>
   StyleSheet.create({
     backdrop: {
       flex: 1,
@@ -142,7 +143,7 @@ const createStyles = (isDark: boolean) =>
       borderTopLeftRadius: 22,
       borderTopRightRadius: 22,
       paddingTop: 8,
-      paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+      paddingBottom: bottomInset + 16,
       maxHeight: '85%',
     },
     handle: {

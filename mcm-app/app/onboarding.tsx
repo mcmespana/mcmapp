@@ -30,6 +30,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import colors from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import {
@@ -47,6 +48,7 @@ const PROFILE_ICONS: Record<ProfileType, keyof typeof MaterialIcons.glyphMap> =
     miembro: 'person',
   };
 
+// Static light-mode T used only for module-level StyleSheet defaults
 const T = {
   primary: colors.primary,
   secondary: colors.secondary,
@@ -58,6 +60,23 @@ const T = {
   border: 'rgba(0,0,0,0.07)',
 };
 
+function useThemeT() {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  return {
+    primary: colors.primary,
+    secondary: colors.secondary,
+    accent: colors.accent,
+    success: colors.success,
+    text: isDark ? '#FFFFFF' : '#11181C',
+    muted: isDark ? '#8E8E93' : '#687076',
+    bg: isDark ? '#1C1C1E' : '#ffffff',
+    card: isDark ? '#2C2C2E' : '#ffffff',
+    border: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)',
+    isDark,
+  };
+}
+
 const MAX_CONTENT_W = 520;
 
 /* ─────────────────────────────────────
@@ -65,6 +84,7 @@ const MAX_CONTENT_W = 520;
 ─────────────────────────────────────── */
 
 function ProgressDots({ current, total }: { current: number; total: number }) {
+  const TT = useThemeT();
   return (
     <View style={dotsStyles.row}>
       {Array.from({ length: total }, (_, i) => {
@@ -76,7 +96,7 @@ function ProgressDots({ current, total }: { current: number; total: number }) {
               dotsStyles.dot,
               {
                 width: active ? 22 : 6,
-                backgroundColor: active ? T.primary : 'rgba(37,56,131,0.18)',
+                backgroundColor: active ? TT.primary : 'rgba(37,56,131,0.18)',
               },
             ]}
           />
@@ -213,6 +233,7 @@ const btnStyles = StyleSheet.create({
 });
 
 function SkipButton({ onPress }: { onPress: () => void }) {
+  const TT = useThemeT();
   return (
     <Pressable
       onPress={onPress}
@@ -221,8 +242,8 @@ function SkipButton({ onPress }: { onPress: () => void }) {
       accessibilityLabel="Saltar configuración"
       style={({ pressed }) => [skipBtnStyles.pill, pressed && { opacity: 0.65 }]}
     >
-      <Text style={skipBtnStyles.text}>Saltar</Text>
-      <MaterialIcons name="arrow-forward" size={13} color={T.primary} />
+      <Text style={[skipBtnStyles.text, { color: TT.primary }]}>Saltar</Text>
+      <MaterialIcons name="arrow-forward" size={13} color={TT.primary} />
     </Pressable>
   );
 }
@@ -494,12 +515,13 @@ function ProfileScreen({
   onSkip: () => void;
   animDir: 'forward' | 'back';
 }) {
+  const TT = useThemeT();
   const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
 
   return (
     <Animated.View
       entering={Entering.duration(320).easing(Easing.bezier(0.22, 1, 0.36, 1))}
-      style={stepStyles.root}
+      style={[stepStyles.root, { backgroundColor: TT.bg }]}
     >
       <View style={stepStyles.topBar}>
         <View />
@@ -512,10 +534,10 @@ function ProfileScreen({
 
       <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
         <View style={stepStyles.heroIcon}>
-          <MaterialIcons name="person-search" size={28} color={T.primary} />
+          <MaterialIcons name="person-search" size={28} color={TT.primary} />
         </View>
-        <Text style={stepStyles.heroTitle}>¿Quién eres?</Text>
-        <Text style={stepStyles.heroSub}>
+        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>¿Quién eres?</Text>
+        <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
           Dinos quién eres y te mostraremos lo que más te interesa.
         </Text>
       </Animated.View>
@@ -538,6 +560,7 @@ function ProfileScreen({
                 onPress={() => setSelected(p.id)}
                 style={({ pressed }) => [
                   cardStyles.card,
+                  { backgroundColor: TT.card, borderColor: TT.border },
                   sel && cardStyles.cardSelected,
                   pressed && { transform: [{ scale: 0.97 }] },
                 ]}
@@ -551,19 +574,19 @@ function ProfileScreen({
                   <MaterialIcons
                     name={PROFILE_ICONS[p.id]}
                     size={24}
-                    color={sel ? '#fff' : T.primary}
+                    color={sel ? '#fff' : TT.primary}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={[
                       cardStyles.cardTitle,
-                      { color: sel ? T.primary : T.text },
+                      { color: sel ? TT.primary : TT.text },
                     ]}
                   >
                     {p.label}
                   </Text>
-                  <Text style={cardStyles.cardDesc} numberOfLines={2}>
+                  <Text style={[cardStyles.cardDesc, { color: TT.muted }]} numberOfLines={2}>
                     {p.description}
                   </Text>
                 </View>
@@ -571,7 +594,7 @@ function ProfileScreen({
                   <MaterialIcons
                     name="check-circle"
                     size={22}
-                    color={T.primary}
+                    color={TT.primary}
                   />
                 )}
               </Pressable>
@@ -610,17 +633,18 @@ function DelegationScreen({
   onBack: () => void;
   onSkip: () => void;
 }) {
+  const TT = useThemeT();
   return (
     <Animated.View
       entering={SlideInRight.duration(320).easing(
         Easing.bezier(0.22, 1, 0.36, 1),
       )}
-      style={stepStyles.root}
+      style={[stepStyles.root, { backgroundColor: TT.bg }]}
     >
       <View style={stepStyles.topBar}>
         <Pressable onPress={onBack} hitSlop={12} style={stepStyles.backBtn}>
-          <MaterialIcons name="arrow-back-ios" size={16} color={T.primary} />
-          <Text style={stepStyles.backLabel}>Atrás</Text>
+          <MaterialIcons name="arrow-back-ios" size={16} color={TT.primary} />
+          <Text style={[stepStyles.backLabel, { color: TT.primary }]}>Atrás</Text>
         </Pressable>
         <SkipButton onPress={onSkip} />
       </View>
@@ -631,10 +655,10 @@ function DelegationScreen({
 
       <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
         <View style={stepStyles.heroIcon}>
-          <MaterialIcons name="location-on" size={28} color={T.primary} />
+          <MaterialIcons name="location-on" size={28} color={TT.primary} />
         </View>
-        <Text style={stepStyles.heroTitle}>¿De qué delegación?</Text>
-        <Text style={stepStyles.heroSub}>
+        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>¿De qué delegación?</Text>
+        <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
           Recibirás las notificaciones y el calendario de tu delegación.
         </Text>
       </Animated.View>
@@ -657,6 +681,7 @@ function DelegationScreen({
                 onPress={() => setSelected(d.id)}
                 style={({ pressed }) => [
                   delegStyles.row,
+                  { borderColor: TT.border, backgroundColor: TT.card },
                   sel && delegStyles.rowSelected,
                   pressed && { transform: [{ scale: 0.98 }] },
                 ]}
@@ -665,7 +690,7 @@ function DelegationScreen({
                   style={[
                     delegStyles.label,
                     {
-                      color: sel ? T.primary : T.text,
+                      color: sel ? TT.primary : TT.text,
                       fontWeight: sel ? '700' : '500',
                     },
                   ]}
@@ -676,7 +701,7 @@ function DelegationScreen({
                   <MaterialIcons
                     name="check-circle"
                     size={20}
-                    color={T.primary}
+                    color={TT.primary}
                   />
                 )}
               </Pressable>
@@ -685,12 +710,12 @@ function DelegationScreen({
         })}
       </ScrollView>
 
-      <View style={stepStyles.footer}>
+      <View style={[stepStyles.footer, { borderTopColor: TT.border }]}>
         <PrimaryButton
           label="¡Empezar!"
           onPress={onFinish}
           disabled={!selected}
-          color={T.accent}
+          color={TT.accent}
         />
       </View>
     </Animated.View>
@@ -710,6 +735,7 @@ function SuccessScreen({
   delegation: { id: string; label: string } | null;
   onContinue: () => void;
 }) {
+  const TT = useThemeT();
   const ripple = useSharedValue(0);
   useEffect(() => {
     ripple.value = withDelay(
@@ -727,7 +753,7 @@ function SuccessScreen({
   }));
 
   return (
-    <Animated.View entering={FadeIn.duration(380)} style={successStyles.root}>
+    <Animated.View entering={FadeIn.duration(380)} style={[successStyles.root, { backgroundColor: TT.bg }]}>
       <Animated.View
         entering={FadeIn.duration(550).easing(
           Easing.bezier(0.34, 1.56, 0.64, 1),
@@ -736,19 +762,19 @@ function SuccessScreen({
       >
         <Animated.View style={[successStyles.iconRipple, rippleStyle]} />
         <View style={successStyles.iconCircle}>
-          <MaterialIcons name="check-circle" size={48} color={T.success} />
+          <MaterialIcons name="check-circle" size={48} color={TT.success} />
         </View>
       </Animated.View>
 
       <Animated.Text
         entering={FadeInDown.delay(120).duration(380)}
-        style={successStyles.title}
+        style={[successStyles.title, { color: TT.text }]}
       >
         ¡Todo listo!
       </Animated.Text>
       <Animated.Text
         entering={FadeInDown.delay(180).duration(380)}
-        style={successStyles.sub}
+        style={[successStyles.sub, { color: TT.muted }]}
       >
         ¡Gracias! Tu comunidad te espera.
       </Animated.Text>
@@ -763,15 +789,15 @@ function SuccessScreen({
               <MaterialIcons
                 name={PROFILE_ICONS[profile.id]}
                 size={20}
-                color={T.primary}
+                color={TT.primary}
               />
-              <Text style={successStyles.pillText}>{profile.label}</Text>
+              <Text style={[successStyles.pillText, { color: TT.primary }]}>{profile.label}</Text>
             </View>
           )}
           {delegation && (
             <View style={successStyles.pill}>
-              <MaterialIcons name="location-on" size={20} color={T.primary} />
-              <Text style={successStyles.pillText}>{delegation.label}</Text>
+              <MaterialIcons name="location-on" size={20} color={TT.primary} />
+              <Text style={[successStyles.pillText, { color: TT.primary }]}>{delegation.label}</Text>
             </View>
           )}
         </Animated.View>
@@ -1015,6 +1041,7 @@ const delegStyles = StyleSheet.create({
 export default function OnboardingScreen() {
   const { rawConfig } = useProfileConfigContext();
   const { setProfile } = useUserProfile();
+  const TT = useThemeT();
   const { width: screenW, height: screenH } = useWindowDimensions();
   const isWide = screenW >= 640;
 
@@ -1097,7 +1124,7 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView
-      style={[shellStyles.safe, isWide && shellStyles.safeWide]}
+      style={[shellStyles.safe, { backgroundColor: TT.bg }, isWide && shellStyles.safeWide]}
       edges={['top', 'bottom']}
     >
       <View

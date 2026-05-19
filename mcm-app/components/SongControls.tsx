@@ -197,7 +197,7 @@ const SongControls: React.FC<SongControlsProps> = ({
       <View
         style={[
           styles.fabContainer,
-          { bottom: isIOS ? insets.bottom + 60 : 24 },
+          { bottom: insets.bottom + (isIOS ? 60 : 24) },
         ]}
       >
         {showActionButtons && (
