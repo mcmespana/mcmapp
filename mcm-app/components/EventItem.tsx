@@ -131,6 +131,7 @@ export default function EventItem({
 }
 
 const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
+  const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     card: {
@@ -198,7 +199,7 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
     },
     location: {
       fontSize: 14 * scale,
-      color: '#666',
+      color: isDark ? '#aaa' : '#666',
       fontWeight: '500',
       lineHeight: 18 * scale,
       marginLeft: spacing.xs / 2,

@@ -79,6 +79,7 @@ interface Props {
 
 export default function NotificationsBottomSheet({ visible, onClose }: Props) {
   const scheme = useColorScheme() ?? 'light';
+  const isDark = scheme === 'dark';
   const theme = Colors[scheme];
   const insets = useSafeAreaInsets();
   const { firebaseNotifications, refreshCount } = useNotifications();
@@ -103,12 +104,13 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
     onCloseRef.current = onClose;
   }, [onClose]);
 
+  const scrollOffsetRef = useRef(0);
+
   // PanResponder usa refs directamente, sin capturar callbacks que puedan quedar obsoletos
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, { dy, dx }) =>
-        Math.abs(dy) > Math.abs(dx) && dy > 2,
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        gestureState.dy > 10 && (scrollOffsetRef.current ?? 0) <= 0,
       onPanResponderMove: (_, { dy }) => {
         if (dy > 0) translateY.setValue(dy);
       },
@@ -352,7 +354,7 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
         <TouchableOpacity
           style={[
             listStyles.card,
-            { backgroundColor: theme.background, borderColor: colors.border },
+            { backgroundColor: theme.background, borderColor: isDark ? '#3A3A3C' : colors.border },
             isUnread && {
               backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
               borderColor: colors.primary,
@@ -595,6 +597,8 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
                   listStyles.listContent,
                   { paddingBottom: insets.bottom + spacing.md },
                 ]}
+                onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
+                scrollEventThrottle={16}
                 refreshControl={
                   <RefreshControl
                     refreshing={refreshing}

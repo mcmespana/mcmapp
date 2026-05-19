@@ -9,6 +9,7 @@ import {
   Platform,
   Text,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Chip, Button, Dialog, PressableFeedback } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -34,6 +35,7 @@ interface AppInfo {
 
 export default function AppsScreen() {
   const scheme = useColorScheme();
+  const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
   const { data: appsData, loading } = useFirebaseData<AppInfo[]>(
@@ -84,9 +86,7 @@ export default function AppsScreen() {
     <View style={styles.container}>
       <PageContainer>
         <ScrollView
-          contentContainerStyle={
-            Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
-          }
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
         >
           <ScreenHero
             title="Apps"

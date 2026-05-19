@@ -92,7 +92,7 @@ export default function FormattedContent({
         color: theme.text,
       },
       a: {
-        color: colors.primary,
+        color: scheme === 'dark' ? colors.info : colors.primary,
         textDecorationLine: 'underline' as const,
       },
     }),

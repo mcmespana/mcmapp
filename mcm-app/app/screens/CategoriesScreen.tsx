@@ -115,11 +115,7 @@ export default function CategoriesScreen({
 
   // Header: search + add buttons together (integrado en el header)
   useLayoutEffect(() => {
-    const iconColor = isIOS
-      ? '#f4c11e'
-      : Platform.OS === 'web'
-        ? '#1a1a1a'
-        : '#1a1a1a';
+    const iconColor = isIOS ? '#f4c11e' : '#1a1a1a';
     navigation.setOptions({
       headerRight: () => (
         <View style={styles.headerButtons}>

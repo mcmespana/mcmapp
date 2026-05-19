@@ -384,7 +384,7 @@ export default function SongDetailScreen({
         },
       ]}
     >
-      {isIOS && <View style={{ height: insets.top + 52 }} />}
+      <View style={{ height: insets.top + (isIOS ? 52 : 0) }} />
       <ChoirSessionBanner />
       <SongDisplay
         songHtml={songHtml}

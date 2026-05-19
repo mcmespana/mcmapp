@@ -689,7 +689,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       alignItems: 'center',
       padding: spacing.md,
       borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      borderBottomColor: scheme === 'dark' ? '#3A3A3C' : colors.border,
       backgroundColor: theme.background,
     },
     backButton: { marginRight: spacing.md },

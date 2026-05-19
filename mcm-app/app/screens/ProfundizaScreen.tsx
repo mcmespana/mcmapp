@@ -96,7 +96,7 @@ export default function ProfundizaScreen() {
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark', scale: number) => {
+const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
@@ -117,7 +117,7 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
     accordionTitle: { color: colors.white, fontWeight: 'bold', flex: 1 },
     accordionContent: {
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: scheme === 'dark' ? '#555' : colors.border,
       borderBottomLeftRadius: 12,
       borderBottomRightRadius: 12,
       padding: 12,

@@ -7,7 +7,6 @@ import {
   TextInput,
   Alert,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
@@ -57,19 +56,15 @@ const FullBottomSheet = ({
       scrollOffsetMax={0}
       propagateSwipe={true}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+      <View
+        style={[
+          styles.keyboardView,
+          styles.fullModalContainer,
+          { backgroundColor: theme.background },
+        ]}
       >
-        <View
-          style={[
-            styles.fullModalContainer,
-            { backgroundColor: theme.background },
-          ]}
-        >
-          {children}
-        </View>
-      </KeyboardAvoidingView>
+        {children}
+      </View>
     </Modal>
   );
 };
