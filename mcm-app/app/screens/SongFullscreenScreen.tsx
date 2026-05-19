@@ -1,5 +1,14 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Platform,
+  Animated,
+  PanResponder,
+  GestureResponderEvent,
+  PanResponderGestureState,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   RouteProp,
@@ -9,7 +18,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { BlurView } from 'expo-blur';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Slider, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
@@ -18,12 +27,114 @@ import { Colors } from '../../constants/colors';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
-// Rango de velocidades del auto-scroll, en píxeles por tick (50ms = 20 ticks/s).
-// - MIN: lectura muy lenta a ritmo de canto (≈10 px/s).
-// - MAX: scroll rápido cuando ya conoces la letra (≈140 px/s).
 const MIN_SPEED_PPT = 0.5;
 const MAX_SPEED_PPT = 7;
 const TICK_MS = 50;
+
+// Vertical slider geometry
+const SLIDER_H = 130; // draggable range height (px)
+const THUMB_D = 22; // thumb diameter
+const DRAG_RANGE = SLIDER_H - THUMB_D;
+const TRACK_W = 3;
+
+/** Cross-platform vertical slider via PanResponder. value: 0..1 */
+function VerticalSlider({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const valueRef = useRef(value);
+  const startRef = useRef(value);
+
+  useEffect(() => {
+    valueRef.current = value;
+  });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        startRef.current = valueRef.current;
+      },
+      onPanResponderMove: (_evt: GestureResponderEvent, { dy }: PanResponderGestureState) => {
+        // dy > 0 = moved down = slower; top = fast (value 1)
+        const next = Math.max(0, Math.min(1, startRef.current - dy / DRAG_RANGE));
+        onChange(next);
+      },
+    }),
+  ).current;
+
+  const thumbTop = (1 - value) * DRAG_RANGE;
+
+  return (
+    <View
+      style={sliderStyles.container}
+      {...panResponder.panHandlers}
+      // Extra hit area so small thumbs are easy to grab
+      hitSlop={{ top: 8, bottom: 8, left: 14, right: 14 }}
+    >
+      {/* Track background */}
+      <View style={sliderStyles.trackBg} />
+      {/* Filled portion: from thumb down to bottom = the selected speed level */}
+      <View
+        style={[
+          sliderStyles.trackFill,
+          {
+            top: thumbTop + THUMB_D / 2,
+            height: value * DRAG_RANGE,
+          },
+        ]}
+      />
+      {/* Thumb */}
+      <View style={[sliderStyles.thumb, { top: thumbTop }]} />
+    </View>
+  );
+}
+
+const sliderStyles = StyleSheet.create({
+  container: {
+    width: THUMB_D,
+    height: SLIDER_H,
+  },
+  trackBg: {
+    position: 'absolute',
+    top: THUMB_D / 2,
+    bottom: THUMB_D / 2,
+    left: (THUMB_D - TRACK_W) / 2,
+    width: TRACK_W,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: TRACK_W / 2,
+  },
+  trackFill: {
+    position: 'absolute',
+    left: (THUMB_D - TRACK_W) / 2,
+    width: TRACK_W,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    borderRadius: TRACK_W / 2,
+  },
+  thumb: {
+    position: 'absolute',
+    left: 0,
+    width: THUMB_D,
+    height: THUMB_D,
+    borderRadius: THUMB_D / 2,
+    backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.35,
+        shadowRadius: 3,
+        elevation: 3,
+      },
+    }),
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function SongFullscreenScreen({
   route,
@@ -51,20 +162,19 @@ export default function SongFullscreenScreen({
     notation,
     isFullscreen: true,
     isDark,
-    topInset: Math.max(insets.top, 16) + 56, // notch + close button
-    bottomInset: Math.max(insets.bottom, 16) + 96, // home indicator + play button
+    topInset: Math.max(insets.top, 16) + 56,
+    bottomInset: Math.max(insets.bottom, 16) + 96,
   });
 
   const webViewRef = useRef<WebView>(null);
   const divRef = useRef<HTMLDivElement | null>(null);
   const [autoScroll, setAutoScroll] = useState(false);
-  // Factor 0..1 del slider. La velocidad real interpola entre MIN y MAX.
   const [speedFactor, setSpeedFactor] = useState(0.35);
   const [controlsVisible, setControlsVisible] = useState(false);
   const controlsOpacity = useRef(new Animated.Value(0)).current;
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fade-in entry animation
+  // Fade-in entry
   const fadeAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -106,9 +216,7 @@ export default function SongFullscreenScreen({
       MIN_SPEED_PPT + speedFactor * (MAX_SPEED_PPT - MIN_SPEED_PPT);
     const id = setInterval(() => {
       if (Platform.OS === 'web') {
-        if (divRef.current) {
-          divRef.current.scrollBy({ top: speedPpt });
-        }
+        divRef.current?.scrollBy({ top: speedPpt });
       } else {
         webViewRef.current?.injectJavaScript(
           `window.scrollBy(0,${speedPpt}); true;`,
@@ -118,7 +226,6 @@ export default function SongFullscreenScreen({
     return () => clearInterval(id);
   }, [autoScroll, speedFactor]);
 
-  // Limpieza del timer al desmontar
   useEffect(() => {
     return () => {
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
@@ -130,7 +237,6 @@ export default function SongFullscreenScreen({
   const closeTop = Math.max(insets.top, 12) + 8;
   const controlsBottom = Math.max(insets.bottom, 12) + 16;
 
-  // Etiqueta legible para la velocidad
   const speedLabel = (() => {
     if (speedFactor < 0.2) return 'Lento';
     if (speedFactor < 0.55) return 'Normal';
@@ -138,18 +244,17 @@ export default function SongFullscreenScreen({
     return 'Muy rápido';
   })();
 
-  const TranslucentBg = ({ style }: { style?: any }) =>
+  const TranslucentBg = ({ style }: { style?: object }) =>
     isIOS ? (
       <>
         <BlurView
           tint={isDark ? 'dark' : 'light'}
           intensity={60}
-          style={[StyleSheet.absoluteFill, styles.absFill, style]}
+          style={[StyleSheet.absoluteFill, style]}
         />
         <View
           style={[
             StyleSheet.absoluteFill,
-            styles.absFill,
             {
               backgroundColor: isDark
                 ? 'rgba(20,20,22,0.35)'
@@ -163,7 +268,6 @@ export default function SongFullscreenScreen({
       <View
         style={[
           StyleSheet.absoluteFill,
-          styles.absFill,
           isWeb
             ? ({
                 backgroundColor: isDark
@@ -189,9 +293,7 @@ export default function SongFullscreenScreen({
         { backgroundColor: theme.background, opacity: fadeAnim },
       ]}
     >
-      {/* Contenido — ocupa toda la pantalla; el padding superior/inferior
-          se aplica dentro del HTML (vía useSongProcessor) para que el
-          contenido pueda hacer scroll bajo los botones translúcidos. */}
+      {/* Song content — fills the screen; padding applied inside HTML */}
       <View style={styles.contentWrapper}>
         {isWeb ? (
           <div
@@ -219,68 +321,47 @@ export default function SongFullscreenScreen({
         accessibilityLabel="Cerrar pantalla completa"
       >
         <PressableFeedback.Scale />
-        <TranslucentBg style={{ borderRadius: 18 }} />
-        <MaterialIcons
-          name="close"
-          color={isDark ? '#FFFFFF' : '#FFFFFF'}
-          size={22}
-        />
+        <TranslucentBg style={{ borderRadius: 20 }} />
+        <MaterialIcons name="close" color="#FFFFFF" size={22} />
       </PressableFeedback>
 
-      {/* Controles inferiores — siempre translúcidos para no tapar texto. */}
+      {/* Controls cluster — bottom right, vertical stack */}
       <View
-        style={[
-          styles.controlsCluster,
-          { bottom: controlsBottom },
-        ]}
+        style={[styles.controlsCluster, { bottom: controlsBottom }]}
         pointerEvents="box-none"
       >
-        {/* Speed pill (slider + label) — aparece a la izquierda del play */}
+        {/* Speed slider — appears above play button when controls are visible */}
         {controlsVisible && (
           <Animated.View
-            style={[
-              styles.speedPill,
-              { opacity: controlsOpacity },
-            ]}
+            style={[styles.speedPill, { opacity: controlsOpacity }]}
             pointerEvents="auto"
           >
-            <TranslucentBg style={{ borderRadius: 22 }} />
+            <TranslucentBg style={{ borderRadius: 24 }} />
             <Text style={styles.speedLabel} numberOfLines={1}>
               {speedLabel}
             </Text>
-            <View style={styles.speedSliderWrap}>
-              <Slider
-                value={Math.round(speedFactor * 100)}
-                onChange={(v) => {
-                  setSpeedFactor((v as number) / 100);
-                  showControls();
-                }}
-                minValue={0}
-                maxValue={100}
-                step={1}
-                style={styles.speedSlider}
-              >
-                <Slider.Track>
-                  <Slider.Fill />
-                  <Slider.Thumb />
-                </Slider.Track>
-              </Slider>
-            </View>
+            <VerticalSlider
+              value={speedFactor}
+              onChange={(v) => {
+                setSpeedFactor(v);
+                showControls();
+              }}
+            />
           </Animated.View>
         )}
 
-        {/* Play / pause — siempre visible, translúcido */}
+        {/* Play / pause */}
         <PressableFeedback
           style={styles.playButton}
           onPress={() => {
-            setAutoScroll((s) => !s);
+            setAutoScroll((s: boolean) => !s);
             showControls();
           }}
           onLongPress={() => showControls()}
           accessibilityLabel={autoScroll ? 'Pausar scroll' : 'Iniciar scroll'}
         >
           <PressableFeedback.Scale />
-          <TranslucentBg style={{ borderRadius: 26 }} />
+          <TranslucentBg style={{ borderRadius: 28 }} />
           <MaterialIcons
             name={autoScroll ? 'pause' : 'play-arrow'}
             color="#FFFFFF"
@@ -306,10 +387,7 @@ const styles = StyleSheet.create({
   contentWrapper: {
     flex: 1,
   },
-  absFill: {
-    borderRadius: 22,
-  },
-  /* Close button — top right */
+  /* Close — top right */
   closeButton: {
     position: 'absolute',
     right: 16,
@@ -323,7 +401,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.22)',
     ...Platform.select({
-      web: { boxShadow: '0 2px 10px rgba(0,0,0,0.25)' },
+      web: { boxShadow: '0 2px 10px rgba(0,0,0,0.25)' } as any,
       default: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -333,16 +411,43 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  /* Bottom-right cluster: speed pill + play button */
+  /* Column cluster at bottom right */
   controlsCluster: {
     position: 'absolute',
     right: 16,
-    left: 16,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'flex-end',
     gap: 10,
     zIndex: 3,
+  },
+  /* Vertical speed slider pill */
+  speedPill: {
+    width: 52,
+    paddingTop: 10,
+    paddingBottom: 10,
+    borderRadius: 26,
+    alignItems: 'center',
+    gap: 8,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.22)',
+    ...Platform.select({
+      web: { boxShadow: '0 4px 18px rgba(0,0,0,0.28)' } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.28,
+        shadowRadius: 10,
+        elevation: 7,
+      },
+    }),
+  },
+  speedLabel: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   /* Play / pause */
   playButton: {
@@ -355,7 +460,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.22)',
     ...Platform.select({
-      web: { boxShadow: '0 4px 18px rgba(0,0,0,0.28)' },
+      web: { boxShadow: '0 4px 18px rgba(0,0,0,0.28)' } as any,
       default: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
@@ -364,46 +469,5 @@ const styles = StyleSheet.create({
         elevation: 7,
       },
     }),
-  },
-  /* Speed pill */
-  speedPill: {
-    flexShrink: 1,
-    minWidth: 200,
-    maxWidth: 320,
-    height: 44,
-    borderRadius: 22,
-    paddingLeft: 14,
-    paddingRight: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.22)',
-    ...Platform.select({
-      web: { boxShadow: '0 4px 18px rgba(0,0,0,0.25)' },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.22,
-        shadowRadius: 10,
-        elevation: 6,
-      },
-    }),
-  },
-  speedLabel: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-    minWidth: 64,
-  },
-  speedSliderWrap: {
-    flex: 1,
-    height: 32,
-    justifyContent: 'center',
-  },
-  speedSlider: {
-    width: '100%',
   },
 });
