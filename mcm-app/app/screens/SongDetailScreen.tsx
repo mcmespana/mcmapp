@@ -15,8 +15,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
-import colors, { Colors, UIColors } from '@/constants/colors';
-import { shadows } from '@/constants/uiStyles';
+import colors, { Colors } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
@@ -149,11 +148,20 @@ export default function SongDetailScreen({
     navigation.setOptions({ gestureEnabled: !hasSwipeNav });
   }, [navigation, navigationList, currentIndex]);
 
-  // Android/Web: header button
+  // Header right button: add/remove song from selection (all platforms)
   useLayoutEffect(() => {
-    if (isIOS || !filename) return;
+    if (!filename) return;
 
     const currentlySelected = isSelected;
+    const iconColor = isIOS
+      ? isDark
+        ? '#f4c11e'
+        : '#3d79b9ff'
+      : Platform.OS === 'web'
+        ? currentlySelected
+          ? APPLE_SYSTEM_GREEN
+          : colors.primary
+        : '#fff';
     const headerRight = () => (
       <PressableFeedback
         onPress={() => {
@@ -172,13 +180,7 @@ export default function SongDetailScreen({
         <IconSymbol
           name={currentlySelected ? 'checkmark.circle.fill' : 'plus.circle'}
           size={24}
-          color={
-            Platform.OS === 'web'
-              ? currentlySelected
-                ? APPLE_SYSTEM_GREEN
-                : colors.primary
-              : '#fff'
-          }
+          color={currentlySelected && isIOS ? APPLE_SYSTEM_GREEN : iconColor}
         />
       </PressableFeedback>
     );
@@ -191,7 +193,7 @@ export default function SongDetailScreen({
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [navigation, filename, isSelected, addSong, removeSong]);
+  }, [navigation, filename, isSelected, isDark, addSong, removeSong]);
 
   useEffect(() => {
     setIsFileLoading(true);
@@ -384,7 +386,7 @@ export default function SongDetailScreen({
         },
       ]}
     >
-      <View style={{ height: insets.top + (isIOS ? 52 : 0) }} />
+      <View style={{ height: isIOS ? 0 : insets.top }} />
       <ChoirSessionBanner />
       <SongDisplay
         songHtml={songHtml}
@@ -416,53 +418,6 @@ export default function SongDetailScreen({
         onSetCapoOverride={handleSetCapoOverride}
       />
 
-      {/* iOS: floating overlay buttons (back + add-to-selection) */}
-      {isIOS && (
-        <View
-          style={[styles.iosFloatingBar, { top: insets.top + 8 }]}
-          pointerEvents="box-none"
-        >
-          <PressableFeedback
-            style={[styles.iosFloatBtn, isDark && styles.iosFloatBtnDark]}
-            onPress={() => navigation.goBack()}
-            accessibilityLabel="Volver"
-          >
-            <PressableFeedback.Highlight />
-            <IconSymbol
-              name="chevron.left"
-              size={26}
-              color={isDark ? UIColors.accentYellow : colors.primary}
-            />
-          </PressableFeedback>
-
-          <PressableFeedback
-            style={[
-              styles.iosFloatBtn,
-              isDark && styles.iosFloatBtnDark,
-              isSelected && styles.iosFloatBtnSelected,
-            ]}
-            onPress={() =>
-              isSelected ? removeSong(filename) : addSong(filename)
-            }
-            accessibilityLabel={
-              isSelected ? 'Quitar de selección' : 'Añadir a selección'
-            }
-          >
-            <PressableFeedback.Highlight />
-            <IconSymbol
-              name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
-              size={22}
-              color={
-                isSelected
-                  ? APPLE_SYSTEM_GREEN
-                  : isDark
-                    ? UIColors.accentYellow
-                    : colors.primary
-              }
-            />
-          </PressableFeedback>
-        </View>
-      )}
     </Animated.View>
   );
 
@@ -499,32 +454,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...(Platform.OS === 'web' ? { cursor: 'pointer' as any } : {}),
-  },
-  // iOS floating bar: back (left) + add (right)
-  iosFloatingBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    pointerEvents: 'box-none',
-  } as any,
-  iosFloatBtn: {
-    width: 44,
-    height: 44,
-    // 44/2 — circular. radii.full (28) is for 56x56 FABs; here we keep
-    // a literal half-of-width because the button is custom-sized.
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...(shadows.md as object),
-  },
-  iosFloatBtnDark: {
-    backgroundColor: 'rgba(44,44,46,0.88)',
-  },
-  iosFloatBtnSelected: {
-    backgroundColor: 'rgba(52,199,89,0.15)',
   },
 });
