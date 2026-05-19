@@ -13,7 +13,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getDatabase, push, ref, set } from 'firebase/database';
 
 import BottomSheet from './BottomSheet';
-import CloseIconButton from '@/components/ui/CloseIconButton';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { Colors, FeedbackCategoryColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
@@ -148,7 +147,7 @@ export default function AppFeedbackModal({
     !!selectedCategory && feedbackText.trim().length > 0 && !isSubmitting;
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose}>
+    <BottomSheet visible={visible} onClose={handleClose} title="Feedback 💬">
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -156,13 +155,6 @@ export default function AppFeedbackModal({
         overScrollMode="never"
         contentContainerStyle={styles.content}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <CloseIconButton onPress={handleClose} />
-          <Text style={[styles.title, { color: theme.text }]}>Feedback 💬</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
         <Text style={[styles.subtitle, { color: theme.icon }]}>
           Tu opinión nos ayuda a mejorar la app
         </Text>
@@ -330,21 +322,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 48,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  headerSpacer: {
-    width: 32,
-  },
-  title: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 14,
