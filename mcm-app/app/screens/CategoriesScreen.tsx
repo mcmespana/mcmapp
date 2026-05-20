@@ -118,35 +118,10 @@ export default function CategoriesScreen({
     }
   }, [navigation]);
 
-  // Header: add on left, search on right
+  // Header: hidden to use custom inline header
   useLayoutEffect(() => {
-    const iconColor = isIOS ? '#f4c11e' : '#1a1a1a';
     navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => setShowForm(true)}
-          style={styles.headerButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityLabel="Sugerir canción"
-        >
-          <MaterialIcons name="add" size={26} color={iconColor} />
-        </TouchableOpacity>
-      ),
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('SongsList', {
-              categoryId: ALL_SONGS_CATEGORY_ID,
-              categoryName: ALL_SONGS_CATEGORY_NAME,
-            })
-          }
-          style={styles.headerButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityLabel="Buscar canción"
-        >
-          <MaterialIcons name="search" size={26} color={iconColor} />
-        </TouchableOpacity>
-      ),
+      headerShown: false,
     });
   }, [navigation]);
 
@@ -289,11 +264,48 @@ export default function CategoriesScreen({
   const listHeader = useMemo(
     () => (
       <View>
+        <View style={[styles.inlineHeader, { paddingTop: insets.top + 14 }]}>
+          <View style={styles.headerLeftContainer}>
+            <Text style={styles.headerTitle}>Cantoral</Text>
+            <Text style={styles.headerSubtitle}>Canta y camina</Text>
+          </View>
+          <View style={styles.headerRightContainer}>
+            <TouchableOpacity
+              onPress={() => setShowForm(true)}
+              style={styles.headerFloatingButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityLabel="Sugerir canción"
+            >
+              <MaterialIcons
+                name="add"
+                size={22}
+                color={isDark ? '#DAA520' : '#C4922A'}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('SongsList', {
+                  categoryId: ALL_SONGS_CATEGORY_ID,
+                  categoryName: ALL_SONGS_CATEGORY_NAME,
+                })
+              }
+              style={styles.headerFloatingButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityLabel="Buscar canción"
+            >
+              <MaterialIcons
+                name="search"
+                size={22}
+                color={isDark ? '#DAA520' : '#C4922A'}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
         {renderSelectionHero()}
         {sectionLabel()}
       </View>
     ),
-    [renderSelectionHero, sectionLabel],
+    [renderSelectionHero, sectionLabel, insets.top, isDark, navigation, styles],
   );
 
   if (loading && sortedCategories.length === 0) {
@@ -302,12 +314,7 @@ export default function CategoriesScreen({
 
   return (
     <View style={styles.container}>
-      {/* Línea de color amarillo en la parte superior — visible sobre el header glass en iOS */}
-      {isIOS && (
-        <View
-          style={[styles.topColorBar, { height: insets.top > 0 ? 4 : 4 }]}
-        />
-      )}
+      {/* Old topColorBar removed to clean up inline custom header */}
       <FlatList
         data={gridData}
         keyExtractor={(item) => item.id}
@@ -375,6 +382,47 @@ const createStyles = (
     container: {
       flex: 1,
       backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+    },
+    inlineHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      paddingBottom: 16,
+      paddingHorizontal: 4,
+      marginBottom: 8,
+    },
+    headerLeftContainer: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    headerTitle: {
+      fontSize: 34,
+      fontWeight: '800',
+      letterSpacing: -1.4,
+      lineHeight: 38,
+      color: isDark ? '#FFFFFF' : '#1C1C1E',
+    },
+    headerSubtitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: isDark ? '#A09A8A' : '#7A6550',
+      marginTop: 2,
+    },
+    headerRightContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 2,
+    },
+    headerFloatingButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(218, 165, 32, 0.3)' : 'rgba(196, 146, 42, 0.25)',
+      backgroundColor: isDark ? 'rgba(218, 165, 32, 0.08)' : 'rgba(196, 146, 42, 0.06)',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     headerButton: {
       padding: 4,

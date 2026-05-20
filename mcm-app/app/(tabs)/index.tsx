@@ -355,6 +355,11 @@ export default function Home() {
     '/(tabs)/mas': { label: 'Más', icon: 'more-horiz' },
     '/(tabs)/index': { label: 'Inicio', icon: 'home' },
     '/wordle': { label: 'Wordle', icon: 'games' },
+    '/(tabs)/contigo': { label: 'Contigo', icon: 'favorite' },
+    '/(tabs)/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
+    '/(tabs)/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
+    '/(tabs)/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
+    '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
   };
   const internalRouteInfo = latestNotification?.internalRoute
     ? (ROUTE_LABELS[latestNotification.internalRoute] ?? null)
