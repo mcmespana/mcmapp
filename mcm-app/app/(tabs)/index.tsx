@@ -51,7 +51,7 @@ import {
   getLocalNotificationsHistory,
   isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
-import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
+import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
@@ -215,7 +215,7 @@ export default function Home() {
   }));
 
   // Calendar events — filtered by user's visible calendars
-  const { calendarConfigs, visibleCalendars } = useCalendarConfigs();
+  const { calendarConfigs, visibleCalendars } = useCalendarConfig();
   const { eventsByDate, loading: eventsLoading } =
     useCalendarEvents(calendarConfigs);
   const upcomingEvents = useMemo(

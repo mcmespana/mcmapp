@@ -37,6 +37,7 @@ import AddToHomeBanner from '@/components/AddToHomeBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import MaintenanceScreen from '@/components/MaintenanceScreen';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
+import { CalendarConfigProvider } from '@/contexts/CalendarConfigContext';
 import UniwindThemeBridge from '@/components/UniwindThemeBridge';
 import { HeroUINativeProvider } from 'heroui-native';
 import { AppToastProvider, useToast } from '@/contexts/AppToastContext';
@@ -59,7 +60,9 @@ export default function RootLayout() {
                     <SelectedSongsProvider>
                       <ChoirSessionProvider>
                         <NotificationsProvider>
-                          <InnerLayout />
+                          <CalendarConfigProvider>
+                            <InnerLayout />
+                          </CalendarConfigProvider>
                         </NotificationsProvider>
                       </ChoirSessionProvider>
                     </SelectedSongsProvider>
