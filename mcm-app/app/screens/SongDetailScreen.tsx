@@ -1,5 +1,6 @@
 import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import { StyleSheet, View, Platform, Dimensions, Animated, TouchableOpacity } from 'react-native';
+import GlassSurface from '@/components/ui/GlassSurface';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import SongDisplay from '@/components/SongDisplay';
@@ -328,15 +329,24 @@ export default function SongDetailScreen({
   const floatingButtons = (
     <>
       <TouchableOpacity
-        style={[styles.floatBtn, { top: btnTop, left: 16, backgroundColor: floatBtnBg }]}
+        style={[
+          styles.floatBtn,
+          { top: btnTop, left: 16 },
+          Platform.OS !== 'ios' && { backgroundColor: floatBtnBg },
+        ]}
         onPress={() => navigation.goBack()}
         activeOpacity={0.7}
         accessibilityLabel="Volver"
       >
+        {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
         <IconSymbol name="chevron.left" size={20} color={floatIconColor} />
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.floatBtn, { top: btnTop, right: 16, backgroundColor: floatBtnBg }]}
+        style={[
+          styles.floatBtn,
+          { top: btnTop, right: 16 },
+          Platform.OS !== 'ios' && { backgroundColor: floatBtnBg },
+        ]}
         onPress={() => {
           if (isSelected) removeSong(filename);
           else addSong(filename);
@@ -344,6 +354,7 @@ export default function SongDetailScreen({
         activeOpacity={0.7}
         accessibilityLabel={isSelected ? 'Quitar de selección' : 'Añadir a selección'}
       >
+        {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
         <IconSymbol
           name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
           size={24}
@@ -434,6 +445,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
     zIndex: 10,
     ...Platform.select({
       web: { boxShadow: '0 2px 8px rgba(0,0,0,0.15)' } as any,
