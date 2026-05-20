@@ -17,6 +17,7 @@ import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
 import { Colors } from '@/constants/colors';
 import { durations } from '@/constants/animations';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
 // add/remove song button. Not part of the MCM brand palette: it's an
@@ -317,6 +318,15 @@ export default function SongDetailScreen({
     }
   };
 
+  // Web keyboard shortcuts (no-op on native).
+  useKeyboardShortcut('arrowleft', handleSwipeLeft);
+  useKeyboardShortcut('arrowright', handleSwipeRight);
+  useKeyboardShortcut(['+', '='], () =>
+    handleSetTranspose(currentTranspose + 1),
+  );
+  useKeyboardShortcut('-', () => handleSetTranspose(currentTranspose - 1));
+  useKeyboardShortcut('f', handleNavigateToFullscreen);
+
   if (isLoadingSettings) {
     // Brief settings loading
   }
@@ -329,7 +339,10 @@ export default function SongDetailScreen({
   const floatingButtons = (
     <>
       <PressableFeedback
-        style={[styles.floatBtn, { top: btnTop, left: 16, backgroundColor: floatBtnBg }]}
+        style={[
+          styles.floatBtn,
+          { top: btnTop, left: 16, backgroundColor: floatBtnBg },
+        ]}
         onPress={() => navigation.goBack()}
         accessibilityLabel="Volver"
       >
@@ -337,12 +350,17 @@ export default function SongDetailScreen({
         <IconSymbol name="chevron.left" size={20} color={floatIconColor} />
       </PressableFeedback>
       <PressableFeedback
-        style={[styles.floatBtn, { top: btnTop, right: 16, backgroundColor: floatBtnBg }]}
+        style={[
+          styles.floatBtn,
+          { top: btnTop, right: 16, backgroundColor: floatBtnBg },
+        ]}
         onPress={() => {
           if (isSelected) removeSong(filename);
           else addSong(filename);
         }}
-        accessibilityLabel={isSelected ? 'Quitar de selección' : 'Añadir a selección'}
+        accessibilityLabel={
+          isSelected ? 'Quitar de selección' : 'Añadir a selección'
+        }
       >
         <PressableFeedback.Scale />
         <IconSymbol
@@ -397,7 +415,9 @@ export default function SongDetailScreen({
   );
 
   const gestureContent =
-    navigationList && typeof currentIndex === 'number' && Platform.OS !== 'web' ? (
+    navigationList &&
+    typeof currentIndex === 'number' &&
+    Platform.OS !== 'web' ? (
       <PanGestureHandler
         activeOffsetX={[-20, 20]}
         failOffsetY={[-15, 15]}

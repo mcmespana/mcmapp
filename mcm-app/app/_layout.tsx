@@ -34,6 +34,7 @@ import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { isAppVersionSupported } from '@/utils/resolveProfileConfig';
 import { HelloWave } from '@/components/HelloWave';
 import AddToHomeBanner from '@/components/AddToHomeBanner';
+import CommandPalette from '@/components/CommandPalette';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import MaintenanceScreen from '@/components/MaintenanceScreen';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
@@ -199,6 +200,7 @@ function InnerLayout() {
       </Stack>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AddToHomeBanner />
+      <CommandPalette />
       <OTAUpdatePrompt
         visible={(ota.isReady || ota.isDownloading) && !otaDismissed}
         isDownloading={ota.isDownloading && !ota.isReady}
