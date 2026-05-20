@@ -17,6 +17,8 @@ import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useResponsive } from '@/hooks/useResponsive';
 import { splitTabsForIOS } from '@/constants/tabsCatalog';
+import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 
 interface NavigationItem {
   label: string;
@@ -254,23 +256,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingTop: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xl,
   },
   scrollContentGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 14,
+    gap: spacing.md,
   },
   card: {
-    borderRadius: 20,
-    marginBottom: 14,
+    borderRadius: radii.xl,
+    marginBottom: spacing.md,
     overflow: 'hidden',
   },
   cardGridItem: {
-    // Two columns minus the row gap (14px) divided over 2 items.
-    width: 'calc(50% - 7px)' as any,
+    // Two columns minus the row gap (spacing.md) divided over 2 items.
+    width: `calc(50% - ${spacing.md / 2}px)` as any,
     marginBottom: 0,
   },
   accentBar: {
@@ -280,14 +282,14 @@ const styles = StyleSheet.create({
   cardBody: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 22,
-    gap: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
   },
   iconCircle: {
     width: 56,
     height: 56,
-    borderRadius: 16,
+    borderRadius: radii.md,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
@@ -297,7 +299,7 @@ const styles = StyleSheet.create({
   },
   cardTextArea: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   cardTitle: {
     fontSize: 18,
