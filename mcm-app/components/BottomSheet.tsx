@@ -111,7 +111,7 @@ export default function BottomSheet({
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, { dy, dx }) =>
         Math.abs(dy) > Math.abs(dx) && dy > 0,
       onPanResponderMove: (_, { dy }) => {
