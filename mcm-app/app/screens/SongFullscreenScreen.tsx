@@ -21,6 +21,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { Colors } from '../../constants/colors';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
@@ -176,6 +177,13 @@ export default function SongFullscreenScreen({
   const insets = useSafeAreaInsets();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
+
+  // Web: F y Esc salen del modo presentación. Esc viaja por el modal nativo
+  // en algunos navegadores; añadimos handler explícito por seguridad.
+  useKeyboardShortcut('f', () => navigation.goBack());
+  useKeyboardShortcut('escape', () => navigation.goBack(), {
+    preventDefault: false,
+  });
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;
 
