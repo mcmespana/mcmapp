@@ -38,6 +38,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import MaintenanceScreen from '@/components/MaintenanceScreen';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { CalendarConfigProvider } from '@/contexts/CalendarConfigContext';
+import { OverlayStackProvider } from '@/contexts/OverlayStackContext';
 import UniwindThemeBridge from '@/components/UniwindThemeBridge';
 import { HeroUINativeProvider } from 'heroui-native';
 import { AppToastProvider, useToast } from '@/contexts/AppToastContext';
@@ -53,22 +54,24 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <HeroUINativeProvider>
             <AppToastProvider>
-              <ProfileConfigProvider>
-                <AppSettingsProvider>
-                  <UniwindThemeBridge />
-                  <UserProfileProvider>
-                    <SelectedSongsProvider>
-                      <ChoirSessionProvider>
-                        <NotificationsProvider>
-                          <CalendarConfigProvider>
-                            <InnerLayout />
-                          </CalendarConfigProvider>
-                        </NotificationsProvider>
-                      </ChoirSessionProvider>
-                    </SelectedSongsProvider>
-                  </UserProfileProvider>
-                </AppSettingsProvider>
-              </ProfileConfigProvider>
+              <OverlayStackProvider>
+                <ProfileConfigProvider>
+                  <AppSettingsProvider>
+                    <UniwindThemeBridge />
+                    <UserProfileProvider>
+                      <SelectedSongsProvider>
+                        <ChoirSessionProvider>
+                          <NotificationsProvider>
+                            <CalendarConfigProvider>
+                              <InnerLayout />
+                            </CalendarConfigProvider>
+                          </NotificationsProvider>
+                        </ChoirSessionProvider>
+                      </SelectedSongsProvider>
+                    </UserProfileProvider>
+                  </AppSettingsProvider>
+                </ProfileConfigProvider>
+              </OverlayStackProvider>
             </AppToastProvider>
           </HeroUINativeProvider>
         </SafeAreaProvider>
