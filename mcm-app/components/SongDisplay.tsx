@@ -3,6 +3,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Spinner } from 'heroui-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 interface SongDisplayProps {
   songHtml: string;
@@ -12,6 +13,18 @@ interface SongDisplayProps {
 const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const layout = useResponsiveLayout();
+  // En iPad / web amplio la card del WebView está dentro de un wrapper
+  // centrado con margen alrededor. Para que no se vea cortada por abajo
+  // (en iOS sólo aplicamos esquinas top-only), añadimos las esquinas
+  // inferiores también.
+  const wideRadiusStyle = layout.isWide
+    ? {
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        marginBottom: 8,
+      }
+    : null;
 
   if (isLoading) {
     return (
@@ -20,6 +33,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
           styles.cardContainer,
           isDark && styles.cardContainerDark,
           styles.loadingContainer,
+          wideRadiusStyle,
         ]}
       >
         <Spinner size="lg" color="#f4c11e" />
@@ -29,7 +43,13 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
 
   if (Platform.OS === 'web') {
     return (
-      <View style={[styles.cardContainer, isDark && styles.cardContainerDark]}>
+      <View
+        style={[
+          styles.cardContainer,
+          isDark && styles.cardContainerDark,
+          wideRadiusStyle,
+        ]}
+      >
         <iframe
           srcDoc={songHtml}
           style={{
@@ -46,7 +66,13 @@ const SongDisplay: React.FC<SongDisplayProps> = ({ songHtml, isLoading }) => {
   }
 
   return (
-    <View style={[styles.cardContainer, isDark && styles.cardContainerDark]}>
+    <View
+      style={[
+        styles.cardContainer,
+        isDark && styles.cardContainerDark,
+        wideRadiusStyle,
+      ]}
+    >
       <WebView
         originWhitelist={['*']}
         source={{ html: songHtml }}

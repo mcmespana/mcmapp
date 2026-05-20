@@ -151,9 +151,10 @@ export default function CategoriesScreen({
   }, [navigation]);
 
   // En iPad/web amplio rendiriamos la "Tu selección" en una card destacada
-  // de ancho completo arriba, y las categorías reales en un grid de 2 cols.
+  // de ancho completo arriba, y las categorías reales en un grid de 2-3 cols
+  // según ancho (3 cols en iPad landscape / desktop, 2 cols en iPad portrait).
   const isWideLayout = layout.isWide;
-  const numColumns = isWideLayout ? 2 : 1;
+  const numColumns = layout.gridColumns;
   const gridData = useMemo(() => {
     if (!isWideLayout) return displayCategories;
     // En grid, la primera card ("Tu selección") la rendirizamos a parte
