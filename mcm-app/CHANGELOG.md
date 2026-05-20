@@ -13,6 +13,17 @@
 
 ---
 
+## 2026-05-20 — Fix: cabecera de Fotos en stack de Más (iOS overflow)
+
+- **Problema**: tras los cambios de overflow en iOS (Fotos cae fuera del tab bar nativo y se accede desde el stack de Más), la pantalla Fotos quedó sin cabecera coherente. El fix anterior usó `headerShown: false` para evitar un supuesto conflicto con `TabScreenWrapper`, pero eso dejó la pantalla sin identidad visual ni botón de "atrás" claro.
+- **Solución**: registramos la `Stack.Screen` de `Fotos` con el mismo patrón que el resto de pantallas del stack de Más — header con `TabHeaderColors.fotos` (rojo MIC), `GlassHeader` en iOS y `getHeaderStyle`/`getTextColor` para coherencia con web/Android. Mismo color y estilo que la cabecera del tab Calendario, ajustado al color de Fotos.
+- **No hay conflicto real con `TabScreenWrapper`**: cuando se accede a Fotos vía el stack de Más, `usePathname()` devuelve `/mas`, así que `useCurrentTabColor()` retorna `undefined` y la barra de color de 8px no se renderiza — el header del stack es el único elemento decorativo arriba.
+- **Navegación atrás**: el header ahora muestra el botón nativo de back (1 tap, determinista). El swipe-back nativo de iOS sigue funcionando. El `tabPress` listener en `mas.tsx` también sigue popeando a `MasHome` al tocar el tab Más mientras se está en Fotos.
+- **Archivos**:
+  - `app/(tabs)/mas.tsx`: reemplazado `{ headerShown: false }` por opciones completas con `TabHeaderColors.fotos`, `GlassHeader` y `headerRight: () => null` para no heredar los iconos de settings/forum del navigator-level.
+
+---
+
 ## 2026-05-20 — Eventos próximos: más eventos y agrupados por semana
 
 - **Más eventos visibles**: aumentado de 2 a 8 eventos máximos en el Home, para que el usuario vea un panorama más amplio de lo que se acerca.
