@@ -97,7 +97,7 @@ const COPY: Record<CodeDialogVariant, VariantCopy> = {
   },
 };
 
-const CodeInputDialog: React.FC<Props> = ({
+const CodeInputModal: React.FC<Props> = ({
   visible,
   variant,
   initialCode,
@@ -443,4 +443,4 @@ const createStyles = (isDark: boolean) =>
     },
   });
 
-export default CodeInputDialog;
+export default CodeInputModal;

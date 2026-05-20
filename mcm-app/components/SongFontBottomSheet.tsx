@@ -27,7 +27,7 @@ interface Props {
 const MIN_SIZE = 0.6;
 const MAX_SIZE = 2.0;
 
-export default function SongFontPanel({
+export default function SongFontBottomSheet({
   visible,
   onClose,
   availableFonts,

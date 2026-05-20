@@ -43,17 +43,17 @@ import { RootStackParamList } from '../(tabs)/cancionero';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 
 import PlaylistRow from '@/components/playlist/PlaylistRow';
-import PlaylistActionsSheet, {
+import PlaylistActionsBottomSheet, {
   PlaylistAction,
-} from '@/components/playlist/PlaylistActionsSheet';
+} from '@/components/playlist/PlaylistActionsBottomSheet';
 import ExportPdfModal, {
   PdfExportConfig,
 } from '@/components/playlist/ExportPdfModal';
 import { buildPlaylistPdfHtml } from '@/utils/playlistPdfHtml';
-import CodeInputDialog, {
+import CodeInputModal, {
   CodeDialogVariant,
-} from '@/components/playlist/CodeInputDialog';
-import ConfirmChoiceDialog from '@/components/playlist/ConfirmChoiceDialog';
+} from '@/components/playlist/CodeInputModal';
+import ConfirmChoiceModal from '@/components/playlist/ConfirmChoiceModal';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 
 import {
@@ -1376,7 +1376,7 @@ const SelectedSongsScreen: React.FC = () => {
         />
       )}
 
-      <PlaylistActionsSheet
+      <PlaylistActionsBottomSheet
         visible={showActions}
         actions={sheetActions}
         onClose={() => setShowActions(false)}
@@ -1388,7 +1388,7 @@ const SelectedSongsScreen: React.FC = () => {
       />
 
       {codeDialog ? (
-        <CodeInputDialog
+        <CodeInputModal
           visible
           variant={codeDialog.variant}
           initialCode={codeDialog.initial}
@@ -1406,7 +1406,7 @@ const SelectedSongsScreen: React.FC = () => {
       ) : null}
 
       {confirmDialog ? (
-        <ConfirmChoiceDialog
+        <ConfirmChoiceModal
           visible
           title={confirmDialog.title}
           description={confirmDialog.description}

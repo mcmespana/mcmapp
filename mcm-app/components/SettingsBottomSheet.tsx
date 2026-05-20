@@ -42,7 +42,7 @@ const THEME_OPTIONS: {
   { key: 'system', icon: 'brightness-auto', label: 'Auto' },
 ];
 
-export default function SettingsPanel({ visible, onClose }: Props) {
+export default function SettingsBottomSheet({ visible, onClose }: Props) {
   const { settings, setSettings } = useAppSettings();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];

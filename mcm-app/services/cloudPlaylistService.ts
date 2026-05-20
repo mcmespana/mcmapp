@@ -7,7 +7,7 @@
  * creación; la purga real se hace por backend más adelante.
  */
 import { getDatabase, ref, get, set, remove } from 'firebase/database';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 import type { SelectedSong } from '@/contexts/SelectedSongsContext';
 import { CODE_LENGTH, isValidCode } from '@/utils/playlistCodes';
 
