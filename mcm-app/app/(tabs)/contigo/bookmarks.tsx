@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,6 +30,15 @@ export default function BookmarksScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const W = warm(isDark);
+  const { width: windowWidth } = useWindowDimensions();
+  const isWide = windowWidth >= 720;
+  const wideWrapperStyle = isWide
+    ? {
+        width: '100%' as const,
+        maxWidth: windowWidth >= 1100 ? 880 : 720,
+        alignSelf: 'center' as const,
+      }
+    : undefined;
 
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -136,110 +146,112 @@ export default function BookmarksScreen() {
           contentContainerStyle={styles.listWrap}
           showsVerticalScrollIndicator={false}
         >
-          {bookmarks.map((b) => {
-            const ev = b.readings?.evangelio;
-            const titulo =
-              b.readings?.info?.titulo || ev?.cita || 'Evangelio guardado';
-            const firstLine = ev?.texto
-              ? ev.texto
-                  .split('\n')
-                  .map((l: string) => l.trim())
-                  .filter(Boolean)[0]
-              : '';
-            return (
-              <View
-                key={b.date}
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: W.bgCard,
-                    borderColor: W.border,
-                    shadowColor: W.shadow,
-                  },
-                ]}
-              >
-                <LinearGradient
-                  colors={['#E8A838', '#C4922A']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.cardBar}
-                />
-                <View style={styles.cardBody}>
-                  <View style={styles.cardHdrRow}>
-                    <View style={{ flex: 1 }}>
-                      {ev?.cita ? (
+          <View style={wideWrapperStyle}>
+            {bookmarks.map((b) => {
+              const ev = b.readings?.evangelio;
+              const titulo =
+                b.readings?.info?.titulo || ev?.cita || 'Evangelio guardado';
+              const firstLine = ev?.texto
+                ? ev.texto
+                    .split('\n')
+                    .map((l: string) => l.trim())
+                    .filter(Boolean)[0]
+                : '';
+              return (
+                <View
+                  key={b.date}
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: W.bgCard,
+                      borderColor: W.border,
+                      shadowColor: W.shadow,
+                    },
+                  ]}
+                >
+                  <LinearGradient
+                    colors={['#E8A838', '#C4922A']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.cardBar}
+                  />
+                  <View style={styles.cardBody}>
+                    <View style={styles.cardHdrRow}>
+                      <View style={{ flex: 1 }}>
+                        {ev?.cita ? (
+                          <Text
+                            style={[styles.cita, { color: W.accent }]}
+                            numberOfLines={1}
+                          >
+                            {ev.cita}
+                          </Text>
+                        ) : null}
                         <Text
-                          style={[styles.cita, { color: W.accent }]}
+                          style={[styles.dateText, { color: W.textMuted }]}
                           numberOfLines={1}
                         >
-                          {ev.cita}
+                          {formatDateLong(b.date)}
                         </Text>
-                      ) : null}
-                      <Text
-                        style={[styles.dateText, { color: W.textMuted }]}
-                        numberOfLines={1}
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => removeBookmark(b.date)}
+                        style={[
+                          styles.removeBtn,
+                          {
+                            backgroundColor: isDark
+                              ? 'rgba(255,255,255,0.08)'
+                              : 'rgba(0,0,0,0.05)',
+                          },
+                        ]}
+                        accessibilityLabel="Quitar de guardados"
                       >
-                        {formatDateLong(b.date)}
-                      </Text>
+                        <MaterialIcons
+                          name="close"
+                          size={14}
+                          color={W.textMuted}
+                        />
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => removeBookmark(b.date)}
-                      style={[
-                        styles.removeBtn,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255,255,255,0.08)'
-                            : 'rgba(0,0,0,0.05)',
-                        },
-                      ]}
-                      accessibilityLabel="Quitar de guardados"
-                    >
-                      <MaterialIcons
-                        name="close"
-                        size={14}
-                        color={W.textMuted}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  <Text
-                    style={[styles.cardTitle, { color: W.text }]}
-                    numberOfLines={2}
-                  >
-                    {titulo}
-                  </Text>
-                  {firstLine ? (
                     <Text
-                      style={[styles.preview, { color: W.textSec }]}
+                      style={[styles.cardTitle, { color: W.text }]}
                       numberOfLines={2}
                     >
-                      «{firstLine.replace(/^«|»$/g, '').trim()}»
+                      {titulo}
                     </Text>
-                  ) : null}
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push({
-                        pathname: '/(tabs)/contigo/evangelio',
-                        params: { date: b.date },
-                      } as never)
-                    }
-                    style={[
-                      styles.openBtn,
-                      {
-                        backgroundColor: isDark
-                          ? 'rgba(218,165,32,0.10)'
-                          : 'rgba(196,146,42,0.09)',
-                        borderColor: W.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.openText, { color: W.accent }]}>
-                      Leer evangelio →
-                    </Text>
-                  </TouchableOpacity>
+                    {firstLine ? (
+                      <Text
+                        style={[styles.preview, { color: W.textSec }]}
+                        numberOfLines={2}
+                      >
+                        «{firstLine.replace(/^«|»$/g, '').trim()}»
+                      </Text>
+                    ) : null}
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push({
+                          pathname: '/(tabs)/contigo/evangelio',
+                          params: { date: b.date },
+                        } as never)
+                      }
+                      style={[
+                        styles.openBtn,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(218,165,32,0.10)'
+                            : 'rgba(196,146,42,0.09)',
+                          borderColor: W.border,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.openText, { color: W.accent }]}>
+                        Leer evangelio →
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            );
-          })}
+              );
+            })}
+          </View>
         </ScrollView>
       )}
     </View>

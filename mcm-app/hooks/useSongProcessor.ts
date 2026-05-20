@@ -153,7 +153,9 @@ export const useSongProcessor = ({
         }
         if (currentTranspose !== 0) {
           const td =
-            currentTranspose > 0 ? `+${currentTranspose}` : `${currentTranspose}`;
+            currentTranspose > 0
+              ? `+${currentTranspose}`
+              : `${currentTranspose}`;
           fsMeta += `<span class="fs-badge-sm fs-badge-accent">${td} semitonos</span>`;
         }
         fsHeader = `<div class="fs-header">${title ? `<div class="fs-title">${title}</div>` : ''}${fsMeta ? `<div class="fs-meta">${fsMeta}</div>` : ''}</div>`;
@@ -234,6 +236,12 @@ export const useSongProcessor = ({
               -webkit-font-smoothing: antialiased;
               scrollbar-width: none;
               -ms-overflow-style: none;
+            }
+            /* En pantalla completa sobre iPad / web amplio limitamos la
+               longitud de línea para que los versos sigan siendo legibles
+               y no atraviesen toda la pantalla. */
+            @media (min-width: 720px) {
+              body { padding-left: max(16px, calc((100% - ${isFullscreen ? 920 : 760}px) / 2)); padding-right: max(16px, calc((100% - ${isFullscreen ? 920 : 760}px) / 2)); }
             }
             body::-webkit-scrollbar { width: 0; height: 0; }
             h1 {

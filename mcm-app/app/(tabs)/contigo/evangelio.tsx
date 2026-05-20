@@ -10,6 +10,7 @@ import {
   Animated,
   Easing,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import {
   SafeAreaView,
@@ -35,6 +36,8 @@ import SettingsPanel from '@/components/SettingsPanel';
 import BottomSheet from '@/components/BottomSheet';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
+
+import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 
 // ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
@@ -95,8 +98,6 @@ function addDays(dateStr: string, offset: number): string {
   return `${ny}-${nm}-${nd}`;
 }
 
-import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
-
 export default function EvangelioScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -105,6 +106,17 @@ export default function EvangelioScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const fontScale = useFontScale();
+  const { width: windowWidth } = useWindowDimensions();
+  // iPad / large tablet / desktop web — cap content width.
+  const isWide = windowWidth >= 720;
+  const contentMaxWidth = windowWidth >= 1100 ? 880 : 720;
+  const wideWrapperStyle = isWide
+    ? {
+        width: '100%' as const,
+        maxWidth: contentMaxWidth,
+        alignSelf: 'center' as const,
+      }
+    : undefined;
 
   const { todayStr, getRecord, setReadingDone } = useContigoHabits();
   const params = useLocalSearchParams<{ date?: string }>();
@@ -297,559 +309,570 @@ export default function EvangelioScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Date Navigator with liturgical color backdrop ── */}
-        <View
-          style={[
-            styles.dateNav,
-            {
-              backgroundColor: isDark
-                ? hexAlpha(liturgicalAccent, '10')
-                : hexAlpha(liturgicalAccent, '08'),
-              borderBottomColor: isDark
-                ? 'rgba(255,255,255,0.04)'
-                : 'rgba(0,0,0,0.04)',
-            },
-          ]}
-        >
-          <TouchableOpacity
-            onPress={() => changeDate(-1)}
+        <View style={wideWrapperStyle}>
+          {/* ── Date Navigator with liturgical color backdrop ── */}
+          <View
             style={[
-              styles.dateNavBtn,
+              styles.dateNav,
               {
                 backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.08)'
-                  : 'rgba(0,0,0,0.05)',
+                  ? hexAlpha(liturgicalAccent, '10')
+                  : hexAlpha(liturgicalAccent, '08'),
+                borderBottomColor: isDark
+                  ? 'rgba(255,255,255,0.04)'
+                  : 'rgba(0,0,0,0.04)',
               },
             ]}
-            accessibilityLabel="Día anterior"
           >
-            <MaterialIcons name="chevron-left" size={26} color={theme.text} />
-          </TouchableOpacity>
-
-          <View style={styles.dateDisplay}>
-            <Text style={[styles.dateText, { color: theme.text }]}>
-              {formatDateDisplay(selectedDate)}
-            </Text>
-
-            {/* Liturgical badge */}
-            <View style={styles.badgeRow}>
-              <LiturgicalBadge dateStr={selectedDate} />
-            </View>
-
-            {/* Done / Pendiente chip */}
-            <View
-              style={[
-                styles.statusChip,
-                isDone
-                  ? {
-                      backgroundColor: isDark
-                        ? 'rgba(163,189,49,0.14)'
-                        : 'rgba(58,125,68,0.10)',
-                    }
-                  : {
-                      backgroundColor: isDark
-                        ? 'rgba(255,255,255,0.06)'
-                        : 'rgba(0,0,0,0.05)',
-                    },
-              ]}
-            >
-              {isDone ? (
-                <>
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      color: isDark ? '#A3BD31' : '#3A7D44',
-                    }}
-                  >
-                    ✓
-                  </Text>
-                  <Text
-                    style={[
-                      styles.statusChipText,
-                      { color: isDark ? '#A3BD31' : '#3A7D44' },
-                    ]}
-                  >
-                    Leído
-                  </Text>
-                </>
-              ) : (
-                <Text style={[styles.statusChipText, { color: warm.warmGray }]}>
-                  Pendiente
-                </Text>
-              )}
-            </View>
-
-            {/* Liturgical day name / celebration */}
-            {readings?.info?.diaLiturgico ? (
-              <Text
-                style={[styles.diaLiturgico, { color: liturgicalAccent }]}
-                numberOfLines={2}
-              >
-                {readings.info.diaLiturgico}
-              </Text>
-            ) : null}
-
-            {/* Motivational title */}
-            {readings?.info?.titulo ? (
-              <Text
-                style={[
-                  styles.tituloLiturgico,
-                  { color: isDark ? warm.warmGray : '#8B7E6E' },
-                ]}
-                numberOfLines={2}
-              >
-                {readings.info.titulo}
-              </Text>
-            ) : null}
-          </View>
-
-          <TouchableOpacity
-            onPress={() => changeDate(1)}
-            style={[
-              styles.dateNavBtn,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.08)'
-                  : 'rgba(0,0,0,0.05)',
-              },
-            ]}
-            accessibilityLabel="Día siguiente"
-          >
-            <MaterialIcons name="chevron-right" size={26} color={theme.text} />
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Content ── */}
-        {isLoading ? (
-          <View style={styles.stateContainer}>
-            <ActivityIndicator size="large" color={warm.accent} />
-            <Text style={[styles.stateText, { color: warm.warmGray }]}>
-              Preparando la Palabra...
-            </Text>
-          </View>
-        ) : error || !readings?.evangelio ? (
-          <View style={styles.stateContainer}>
-            <MaterialIcons name="cloud-off" size={48} color={warm.warmGray} />
-            <Text style={[styles.stateText, { color: warm.warmGray }]}>
-              No se encontraron lecturas para este día.
-            </Text>
             <TouchableOpacity
-              onPress={() => setSelectedDate(todayStr)}
+              onPress={() => changeDate(-1)}
               style={[
-                styles.todayBtn,
-                { backgroundColor: hexAlpha(warm.accent, '15') },
-              ]}
-            >
-              <Text style={[styles.todayBtnText, { color: warm.accent }]}>
-                Volver a hoy
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.mainContent}>
-            {/* ── Evangelio Card ── */}
-            <Card
-              style={[
-                styles.evangelioCard,
+                styles.dateNavBtn,
                 {
-                  backgroundColor: theme.card,
-                  borderColor: isDark
-                    ? 'rgba(255,255,255,0.06)'
-                    : 'rgba(0,0,0,0.04)',
+                  backgroundColor: isDark
+                    ? 'rgba(255,255,255,0.08)'
+                    : 'rgba(0,0,0,0.05)',
                 },
               ]}
+              accessibilityLabel="Día anterior"
             >
-              {/* HeroUI Tabs — Lectura / Comentario */}
-              {readings.evangelio.comentario ? (
-                <View>
-                  <View
-                    style={[
-                      styles.segmentedContainer,
-                      {
+              <MaterialIcons name="chevron-left" size={26} color={theme.text} />
+            </TouchableOpacity>
+
+            <View style={styles.dateDisplay}>
+              <Text style={[styles.dateText, { color: theme.text }]}>
+                {formatDateDisplay(selectedDate)}
+              </Text>
+
+              {/* Liturgical badge */}
+              <View style={styles.badgeRow}>
+                <LiturgicalBadge dateStr={selectedDate} />
+              </View>
+
+              {/* Done / Pendiente chip */}
+              <View
+                style={[
+                  styles.statusChip,
+                  isDone
+                    ? {
+                        backgroundColor: isDark
+                          ? 'rgba(163,189,49,0.14)'
+                          : 'rgba(58,125,68,0.10)',
+                      }
+                    : {
                         backgroundColor: isDark
                           ? 'rgba(255,255,255,0.06)'
-                          : 'rgba(0,0,0,0.04)',
+                          : 'rgba(0,0,0,0.05)',
                       },
-                    ]}
-                  >
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() => setViewMode('lectura')}
-                      style={[
-                        styles.segmentButton,
-                        viewMode === 'lectura' && [
-                          styles.segmentActive,
-                          {
-                            backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
-                            borderColor: isDark
-                              ? 'rgba(255,255,255,0.1)'
-                              : 'rgba(0,0,0,0.04)',
-                          },
-                        ],
-                      ]}
-                    >
-                      <MaterialIcons
-                        name="menu-book"
-                        size={16}
-                        color={
-                          viewMode === 'lectura'
-                            ? isDark
-                              ? '#DAA520'
-                              : '#B8860B'
-                            : isDark
-                              ? '#A09A94'
-                              : '#888888'
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.segmentText,
-                          {
-                            color:
-                              viewMode === 'lectura'
-                                ? isDark
-                                  ? '#DAA520'
-                                  : '#B8860B'
-                                : isDark
-                                  ? '#A09A94'
-                                  : '#888888',
-                            fontWeight: viewMode === 'lectura' ? '700' : '500',
-                          },
-                        ]}
-                      >
-                        Lectura
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() => setViewMode('comentario')}
-                      style={[
-                        styles.segmentButton,
-                        viewMode === 'comentario' && [
-                          styles.segmentActive,
-                          {
-                            backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
-                            borderColor: isDark
-                              ? 'rgba(255,255,255,0.1)'
-                              : 'rgba(0,0,0,0.04)',
-                          },
-                        ],
-                      ]}
-                    >
-                      <MaterialIcons
-                        name="lightbulb-outline"
-                        size={16}
-                        color={
-                          viewMode === 'comentario'
-                            ? isDark
-                              ? '#DAA520'
-                              : '#B8860B'
-                            : isDark
-                              ? '#A09A94'
-                              : '#888888'
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.segmentText,
-                          {
-                            color:
-                              viewMode === 'comentario'
-                                ? isDark
-                                  ? '#DAA520'
-                                  : '#B8860B'
-                                : isDark
-                                  ? '#A09A94'
-                                  : '#888888',
-                            fontWeight:
-                              viewMode === 'comentario' ? '700' : '500',
-                          },
-                        ]}
-                      >
-                        Comentario
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.cardContent}>
-                    {viewMode === 'lectura' ? (
-                      <>
-                        <View
-                          style={[
-                            styles.citaBadge,
-                            { backgroundColor: hexAlpha(warm.accent, '12') },
-                          ]}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 13,
-                              color: warm.accent,
-                              marginRight: 6,
-                              lineHeight: 16,
-                            }}
-                          >
-                            ✦
-                          </Text>
-                          <Text
-                            style={[styles.citaText, { color: warm.accent }]}
-                          >
-                            {readings.evangelio.cita}
-                          </Text>
-                        </View>
-                        <Text
-                          style={[
-                            styles.bodyText,
-                            {
-                              color: theme.text,
-                              fontSize: 18 * fontScale,
-                              lineHeight: 28 * fontScale,
-                              fontFamily:
-                                Platform.OS === 'ios' ? 'Palatino' : 'serif',
-                            },
-                          ]}
-                          selectable
-                        >
-                          {readings.evangelio.texto}
-                        </Text>
-                      </>
-                    ) : (
-                      <>
-                        <Text
-                          style={[
-                            styles.bodyText,
-                            {
-                              color: theme.text,
-                              fontSize: 18 * fontScale,
-                              lineHeight: 28 * fontScale,
-                            },
-                          ]}
-                          selectable
-                        >
-                          {readings.evangelio.comentario}
-                        </Text>
-
-                        {readings.evangelio.comentarista ? (
-                          <Text
-                            style={[
-                              styles.authorText,
-                              { color: warm.warmGray },
-                            ]}
-                          >
-                            — {readings.evangelio.comentarista}
-                          </Text>
-                        ) : null}
-
-                        {readings.evangelio.url ? (
-                          <TouchableOpacity
-                            onPress={openSource}
-                            style={[
-                              styles.sourceLink,
-                              {
-                                borderTopColor: isDark
-                                  ? 'rgba(255,255,255,0.06)'
-                                  : 'rgba(0,0,0,0.04)',
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.sourceText,
-                                { color: warm.accent },
-                              ]}
-                            >
-                              Leer original completo
-                            </Text>
-                            <MaterialIcons
-                              name="open-in-new"
-                              size={14}
-                              color={warm.accent}
-                            />
-                          </TouchableOpacity>
-                        ) : null}
-                      </>
-                    )}
-                  </View>
-                </View>
-              ) : (
-                <View style={styles.cardContent}>
-                  <View
-                    style={[
-                      styles.citaBadge,
-                      { backgroundColor: hexAlpha(warm.accent, '12') },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: warm.accent,
-                        marginRight: 6,
-                        lineHeight: 16,
-                      }}
-                    >
-                      ✦
-                    </Text>
-                    <Text style={[styles.citaText, { color: warm.accent }]}>
-                      {readings.evangelio.cita}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.bodyText,
-                      {
-                        color: theme.text,
-                        fontSize: 18 * fontScale,
-                        lineHeight: 28 * fontScale,
-                        fontFamily:
-                          Platform.OS === 'ios' ? 'Palatino' : 'serif',
-                      },
-                    ]}
-                    selectable
-                  >
-                    {readings.evangelio.texto}
-                  </Text>
-                </View>
-              )}
-            </Card>
-
-            {/* ── Tracker button ── */}
-            <View style={styles.trackerContainer}>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={handleToggleDone}
-                style={[
-                  styles.trackerBtnWrap,
-                  !isDone && {
-                    shadowColor: '#1D4ED8',
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: isDark ? 0.45 : 0.35,
-                    shadowRadius: 16,
-                    elevation: 6,
-                  },
                 ]}
               >
                 {isDone ? (
-                  <View
-                    style={[
-                      styles.trackerGradient,
-                      {
-                        backgroundColor: isDark
-                          ? 'rgba(163,189,49,0.12)'
-                          : 'rgba(58,125,68,0.08)',
-                        borderColor: isDark
-                          ? 'rgba(163,189,49,0.28)'
-                          : 'rgba(58,125,68,0.22)',
-                        borderWidth: 1.5,
-                      },
-                    ]}
+                  <>
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        color: isDark ? '#A3BD31' : '#3A7D44',
+                      }}
+                    >
+                      ✓
+                    </Text>
+                    <Text
+                      style={[
+                        styles.statusChipText,
+                        { color: isDark ? '#A3BD31' : '#3A7D44' },
+                      ]}
+                    >
+                      Leído
+                    </Text>
+                  </>
+                ) : (
+                  <Text
+                    style={[styles.statusChipText, { color: warm.warmGray }]}
                   >
-                    <View style={styles.trackerContent}>
-                      <MaterialIcons
-                        name="check-circle"
-                        size={22}
-                        color={isDark ? '#A3BD31' : '#3A7D44'}
-                      />
-                      <Text
+                    Pendiente
+                  </Text>
+                )}
+              </View>
+
+              {/* Liturgical day name / celebration */}
+              {readings?.info?.diaLiturgico ? (
+                <Text
+                  style={[styles.diaLiturgico, { color: liturgicalAccent }]}
+                  numberOfLines={2}
+                >
+                  {readings.info.diaLiturgico}
+                </Text>
+              ) : null}
+
+              {/* Motivational title */}
+              {readings?.info?.titulo ? (
+                <Text
+                  style={[
+                    styles.tituloLiturgico,
+                    { color: isDark ? warm.warmGray : '#8B7E6E' },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {readings.info.titulo}
+                </Text>
+              ) : null}
+            </View>
+
+            <TouchableOpacity
+              onPress={() => changeDate(1)}
+              style={[
+                styles.dateNavBtn,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(255,255,255,0.08)'
+                    : 'rgba(0,0,0,0.05)',
+                },
+              ]}
+              accessibilityLabel="Día siguiente"
+            >
+              <MaterialIcons
+                name="chevron-right"
+                size={26}
+                color={theme.text}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Content ── */}
+          {isLoading ? (
+            <View style={styles.stateContainer}>
+              <ActivityIndicator size="large" color={warm.accent} />
+              <Text style={[styles.stateText, { color: warm.warmGray }]}>
+                Preparando la Palabra...
+              </Text>
+            </View>
+          ) : error || !readings?.evangelio ? (
+            <View style={styles.stateContainer}>
+              <MaterialIcons name="cloud-off" size={48} color={warm.warmGray} />
+              <Text style={[styles.stateText, { color: warm.warmGray }]}>
+                No se encontraron lecturas para este día.
+              </Text>
+              <TouchableOpacity
+                onPress={() => setSelectedDate(todayStr)}
+                style={[
+                  styles.todayBtn,
+                  { backgroundColor: hexAlpha(warm.accent, '15') },
+                ]}
+              >
+                <Text style={[styles.todayBtnText, { color: warm.accent }]}>
+                  Volver a hoy
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.mainContent}>
+              {/* ── Evangelio Card ── */}
+              <Card
+                style={[
+                  styles.evangelioCard,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: isDark
+                      ? 'rgba(255,255,255,0.06)'
+                      : 'rgba(0,0,0,0.04)',
+                  },
+                ]}
+              >
+                {/* HeroUI Tabs — Lectura / Comentario */}
+                {readings.evangelio.comentario ? (
+                  <View>
+                    <View
+                      style={[
+                        styles.segmentedContainer,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(255,255,255,0.06)'
+                            : 'rgba(0,0,0,0.04)',
+                        },
+                      ]}
+                    >
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => setViewMode('lectura')}
                         style={[
-                          styles.trackerText,
-                          { color: isDark ? '#A3BD31' : '#3A7D44' },
+                          styles.segmentButton,
+                          viewMode === 'lectura' && [
+                            styles.segmentActive,
+                            {
+                              backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
+                              borderColor: isDark
+                                ? 'rgba(255,255,255,0.1)'
+                                : 'rgba(0,0,0,0.04)',
+                            },
+                          ],
                         ]}
                       >
-                        ¡He rezado hoy con el Evangelio!
-                      </Text>
+                        <MaterialIcons
+                          name="menu-book"
+                          size={16}
+                          color={
+                            viewMode === 'lectura'
+                              ? isDark
+                                ? '#DAA520'
+                                : '#B8860B'
+                              : isDark
+                                ? '#A09A94'
+                                : '#888888'
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.segmentText,
+                            {
+                              color:
+                                viewMode === 'lectura'
+                                  ? isDark
+                                    ? '#DAA520'
+                                    : '#B8860B'
+                                  : isDark
+                                    ? '#A09A94'
+                                    : '#888888',
+                              fontWeight:
+                                viewMode === 'lectura' ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          Lectura
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => setViewMode('comentario')}
+                        style={[
+                          styles.segmentButton,
+                          viewMode === 'comentario' && [
+                            styles.segmentActive,
+                            {
+                              backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
+                              borderColor: isDark
+                                ? 'rgba(255,255,255,0.1)'
+                                : 'rgba(0,0,0,0.04)',
+                            },
+                          ],
+                        ]}
+                      >
+                        <MaterialIcons
+                          name="lightbulb-outline"
+                          size={16}
+                          color={
+                            viewMode === 'comentario'
+                              ? isDark
+                                ? '#DAA520'
+                                : '#B8860B'
+                              : isDark
+                                ? '#A09A94'
+                                : '#888888'
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.segmentText,
+                            {
+                              color:
+                                viewMode === 'comentario'
+                                  ? isDark
+                                    ? '#DAA520'
+                                    : '#B8860B'
+                                  : isDark
+                                    ? '#A09A94'
+                                    : '#888888',
+                              fontWeight:
+                                viewMode === 'comentario' ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          Comentario
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.cardContent}>
+                      {viewMode === 'lectura' ? (
+                        <>
+                          <View
+                            style={[
+                              styles.citaBadge,
+                              { backgroundColor: hexAlpha(warm.accent, '12') },
+                            ]}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: warm.accent,
+                                marginRight: 6,
+                                lineHeight: 16,
+                              }}
+                            >
+                              ✦
+                            </Text>
+                            <Text
+                              style={[styles.citaText, { color: warm.accent }]}
+                            >
+                              {readings.evangelio.cita}
+                            </Text>
+                          </View>
+                          <Text
+                            style={[
+                              styles.bodyText,
+                              {
+                                color: theme.text,
+                                fontSize: 18 * fontScale,
+                                lineHeight: 28 * fontScale,
+                                fontFamily:
+                                  Platform.OS === 'ios' ? 'Palatino' : 'serif',
+                              },
+                            ]}
+                            selectable
+                          >
+                            {readings.evangelio.texto}
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text
+                            style={[
+                              styles.bodyText,
+                              {
+                                color: theme.text,
+                                fontSize: 18 * fontScale,
+                                lineHeight: 28 * fontScale,
+                              },
+                            ]}
+                            selectable
+                          >
+                            {readings.evangelio.comentario}
+                          </Text>
+
+                          {readings.evangelio.comentarista ? (
+                            <Text
+                              style={[
+                                styles.authorText,
+                                { color: warm.warmGray },
+                              ]}
+                            >
+                              — {readings.evangelio.comentarista}
+                            </Text>
+                          ) : null}
+
+                          {readings.evangelio.url ? (
+                            <TouchableOpacity
+                              onPress={openSource}
+                              style={[
+                                styles.sourceLink,
+                                {
+                                  borderTopColor: isDark
+                                    ? 'rgba(255,255,255,0.06)'
+                                    : 'rgba(0,0,0,0.04)',
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.sourceText,
+                                  { color: warm.accent },
+                                ]}
+                              >
+                                Leer original completo
+                              </Text>
+                              <MaterialIcons
+                                name="open-in-new"
+                                size={14}
+                                color={warm.accent}
+                              />
+                            </TouchableOpacity>
+                          ) : null}
+                        </>
+                      )}
                     </View>
                   </View>
                 ) : (
-                  <LinearGradient
-                    colors={['#3B82F6', '#1D4ED8']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.trackerGradient}
-                  >
-                    <View style={styles.trackerContent}>
-                      <MaterialIcons
-                        name="auto-stories"
-                        size={22}
-                        color="#FFFFFF"
-                      />
-                      <Text style={[styles.trackerText, { color: '#FFFFFF' }]}>
-                        Marcar como leído
+                  <View style={styles.cardContent}>
+                    <View
+                      style={[
+                        styles.citaBadge,
+                        { backgroundColor: hexAlpha(warm.accent, '12') },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          color: warm.accent,
+                          marginRight: 6,
+                          lineHeight: 16,
+                        }}
+                      >
+                        ✦
+                      </Text>
+                      <Text style={[styles.citaText, { color: warm.accent }]}>
+                        {readings.evangelio.cita}
                       </Text>
                     </View>
-                  </LinearGradient>
+                    <Text
+                      style={[
+                        styles.bodyText,
+                        {
+                          color: theme.text,
+                          fontSize: 18 * fontScale,
+                          lineHeight: 28 * fontScale,
+                          fontFamily:
+                            Platform.OS === 'ios' ? 'Palatino' : 'serif',
+                        },
+                      ]}
+                      selectable
+                    >
+                      {readings.evangelio.texto}
+                    </Text>
+                  </View>
                 )}
-              </TouchableOpacity>
-              <Text style={[styles.trackerNote, { color: warm.warmGray }]}>
-                Marcando este día sumas a tu constancia en «Contigo».
-              </Text>
-            </View>
+              </Card>
 
-            {/* ── Other Readings ── */}
-            {(readings.lectura1 || readings.salmo || readings.lectura2) && (
-              <View style={styles.otherReadings}>
-                <View
+              {/* ── Tracker button ── */}
+              <View style={styles.trackerContainer}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleToggleDone}
                   style={[
-                    styles.divider,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(255,255,255,0.06)'
-                        : 'rgba(0,0,0,0.05)',
+                    styles.trackerBtnWrap,
+                    !isDone && {
+                      shadowColor: '#1D4ED8',
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: isDark ? 0.45 : 0.35,
+                      shadowRadius: 16,
+                      elevation: 6,
                     },
                   ]}
-                />
-                <Text
-                  style={[styles.otherReadingsTitle, { color: theme.text }]}
                 >
-                  Otras lecturas de la misa
+                  {isDone ? (
+                    <View
+                      style={[
+                        styles.trackerGradient,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(163,189,49,0.12)'
+                            : 'rgba(58,125,68,0.08)',
+                          borderColor: isDark
+                            ? 'rgba(163,189,49,0.28)'
+                            : 'rgba(58,125,68,0.22)',
+                          borderWidth: 1.5,
+                        },
+                      ]}
+                    >
+                      <View style={styles.trackerContent}>
+                        <MaterialIcons
+                          name="check-circle"
+                          size={22}
+                          color={isDark ? '#A3BD31' : '#3A7D44'}
+                        />
+                        <Text
+                          style={[
+                            styles.trackerText,
+                            { color: isDark ? '#A3BD31' : '#3A7D44' },
+                          ]}
+                        >
+                          ¡He rezado hoy con el Evangelio!
+                        </Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <LinearGradient
+                      colors={['#3B82F6', '#1D4ED8']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.trackerGradient}
+                    >
+                      <View style={styles.trackerContent}>
+                        <MaterialIcons
+                          name="auto-stories"
+                          size={22}
+                          color="#FFFFFF"
+                        />
+                        <Text
+                          style={[styles.trackerText, { color: '#FFFFFF' }]}
+                        >
+                          Marcar como leído
+                        </Text>
+                      </View>
+                    </LinearGradient>
+                  )}
+                </TouchableOpacity>
+                <Text style={[styles.trackerNote, { color: warm.warmGray }]}>
+                  Marcando este día sumas a tu constancia en «Contigo».
                 </Text>
-
-                {readings.lectura1 && (
-                  <ReadingCard
-                    title="Primera Lectura"
-                    cita={readings.lectura1.cita}
-                    texto={readings.lectura1.texto}
-                  />
-                )}
-
-                {readings.salmo && (
-                  <ReadingCard
-                    title="Salmo"
-                    cita={readings.salmo.cita}
-                    texto={readings.salmo.texto}
-                  />
-                )}
-
-                {readings.lectura2 && (
-                  <ReadingCard
-                    title="Segunda Lectura"
-                    cita={readings.lectura2.cita}
-                    texto={readings.lectura2.texto}
-                  />
-                )}
               </View>
-            )}
 
-            <TouchableOpacity
-              onPress={() => setCreditsVisible(true)}
-              style={{
-                alignItems: 'center',
-                paddingVertical: 24,
-                marginTop: 10,
-                paddingBottom: 40,
-              }}
-            >
-              <Text
+              {/* ── Other Readings ── */}
+              {(readings.lectura1 || readings.salmo || readings.lectura2) && (
+                <View style={styles.otherReadings}>
+                  <View
+                    style={[
+                      styles.divider,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255,255,255,0.06)'
+                          : 'rgba(0,0,0,0.05)',
+                      },
+                    ]}
+                  />
+                  <Text
+                    style={[styles.otherReadingsTitle, { color: theme.text }]}
+                  >
+                    Otras lecturas de la misa
+                  </Text>
+
+                  {readings.lectura1 && (
+                    <ReadingCard
+                      title="Primera Lectura"
+                      cita={readings.lectura1.cita}
+                      texto={readings.lectura1.texto}
+                    />
+                  )}
+
+                  {readings.salmo && (
+                    <ReadingCard
+                      title="Salmo"
+                      cita={readings.salmo.cita}
+                      texto={readings.salmo.texto}
+                    />
+                  )}
+
+                  {readings.lectura2 && (
+                    <ReadingCard
+                      title="Segunda Lectura"
+                      cita={readings.lectura2.cita}
+                      texto={readings.lectura2.texto}
+                    />
+                  )}
+                </View>
+              )}
+
+              <TouchableOpacity
+                onPress={() => setCreditsVisible(true)}
                 style={{
-                  fontSize: 13,
-                  color: warm.warmGray,
-                  textDecorationLine: 'underline',
+                  alignItems: 'center',
+                  paddingVertical: 24,
+                  marginTop: 10,
+                  paddingBottom: 40,
                 }}
               >
-                ¿De dónde sacamos los textos?
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: warm.warmGray,
+                    textDecorationLine: 'underline',
+                  }}
+                >
+                  ¿De dónde sacamos los textos?
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* Celebration burst animation */}

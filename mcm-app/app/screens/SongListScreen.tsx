@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { filterSongsData } from '@/utils/filterSongsData';
@@ -87,9 +88,16 @@ export default function SongsListScreen({
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
   const styles = useMemo(
-    () => createStyles(scheme || 'light', insets.bottom),
-    [scheme, insets.bottom],
+    () =>
+      createStyles(
+        scheme || 'light',
+        insets.bottom,
+        layout.isWide,
+        layout.readableMaxWidth,
+      ),
+    [scheme, insets.bottom, layout.isWide, layout.readableMaxWidth],
   );
   const isDark = scheme === 'dark';
   const { addSong, removeSong, isSongSelected } = useSelectedSongs();
@@ -345,7 +353,10 @@ export default function SongsListScreen({
                 clearButtonMode="while-editing"
               />
               {Platform.OS !== 'ios' && search.length > 0 && (
-                <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <TouchableOpacity
+                  onPress={() => setSearch('')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                   <MaterialIcons
                     name="cancel"
                     size={16}
@@ -478,6 +489,8 @@ export default function SongsListScreen({
 const createStyles = (
   scheme: 'light' | 'dark' | null,
   bottomInset: number = 0,
+  isWide: boolean = false,
+  maxWidth: number = 9999,
 ) => {
   const isDark = scheme === 'dark';
   return StyleSheet.create({
@@ -490,7 +503,7 @@ const createStyles = (
       marginRight: Platform.OS === 'web' ? 8 : 0,
     },
     searchContainer: {
-      paddingHorizontal: 16,
+      paddingHorizontal: isWide ? 0 : 16,
       paddingTop: 10,
       paddingBottom: 4,
     },
@@ -498,20 +511,20 @@ const createStyles = (
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
-      borderRadius: 10,
-      paddingHorizontal: 10,
-      paddingVertical: Platform.OS === 'ios' ? 9 : 7,
-      gap: 6,
+      borderRadius: isWide ? 14 : 10,
+      paddingHorizontal: isWide ? 14 : 10,
+      paddingVertical: isWide ? 12 : Platform.OS === 'ios' ? 9 : 7,
+      gap: 8,
     },
     searchInput: {
       flex: 1,
-      fontSize: 16,
+      fontSize: isWide ? 17 : 16,
       color: isDark ? '#F5F5F7' : '#1C1C1E',
       padding: 0,
       margin: 0,
     },
     countRow: {
-      paddingHorizontal: 20,
+      paddingHorizontal: isWide ? 4 : 20,
       paddingTop: 10,
       paddingBottom: 2,
     },
@@ -521,8 +534,15 @@ const createStyles = (
       letterSpacing: 0.2,
     },
     listContent: {
-      paddingHorizontal: 12,
+      paddingHorizontal: isWide ? 20 : 12,
       paddingBottom: bottomInset + 20,
+      ...(isWide
+        ? {
+            maxWidth,
+            width: '100%',
+            alignSelf: 'center',
+          }
+        : null),
     },
     errorText: {
       fontSize: 16,

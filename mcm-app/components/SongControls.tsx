@@ -18,6 +18,7 @@ import TransposePanel from './TransposePanel';
 import ReportBugsModal from './ReportBugsModal';
 import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface FontOption {
@@ -86,7 +87,17 @@ const SongControls: React.FC<SongControlsProps> = ({
   const { toast } = useToast();
   const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
   const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  // En iPad / web amplio el contenido del SongDetail está centrado con
+  // `contentMaxWidth`. Alineamos el FAB con el borde derecho de ese
+  // contenedor centrado en vez de pegarlo al borde de la pantalla para
+  // que visualmente "pertenezca" a la card de la canción.
+  const fabRightOffset =
+    layout.isWide && layout.width > layout.contentMaxWidth
+      ? (layout.width - layout.contentMaxWidth) / 2 + 16
+      : 16;
 
   const hasModifications =
     currentTranspose !== 0 ||
@@ -206,7 +217,10 @@ const SongControls: React.FC<SongControlsProps> = ({
       <View
         style={[
           styles.fabContainer,
-          { bottom: insets.bottom + (isIOS ? 52 : 24) },
+          {
+            bottom: insets.bottom + (isIOS ? 52 : 24),
+            right: fabRightOffset,
+          },
         ]}
       >
         {showActionButtons && (
