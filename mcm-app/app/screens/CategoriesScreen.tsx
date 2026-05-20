@@ -1,4 +1,4 @@
-import { FlatList, Text, StyleSheet, View, Platform } from 'react-native';
+import { FlatList, Text, StyleSheet, View, Platform, TouchableOpacity } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   useLayoutEffect,
@@ -118,17 +118,17 @@ export default function CategoriesScreen({
     const iconColor = isIOS ? '#f4c11e' : '#1a1a1a';
     navigation.setOptions({
       headerLeft: () => (
-        <PressableFeedback
+        <TouchableOpacity
           onPress={() => setShowForm(true)}
           style={styles.headerButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityLabel="Sugerir canción"
         >
-          <PressableFeedback.Highlight />
           <MaterialIcons name="add" size={26} color={iconColor} />
-        </PressableFeedback>
+        </TouchableOpacity>
       ),
       headerRight: () => (
-        <PressableFeedback
+        <TouchableOpacity
           onPress={() =>
             navigation.navigate('SongsList', {
               categoryId: ALL_SONGS_CATEGORY_ID,
@@ -136,11 +136,11 @@ export default function CategoriesScreen({
             })
           }
           style={styles.headerButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityLabel="Buscar canción"
         >
-          <PressableFeedback.Highlight />
           <MaterialIcons name="search" size={26} color={iconColor} />
-        </PressableFeedback>
+        </TouchableOpacity>
       ),
     });
   }, [navigation]);
@@ -250,8 +250,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
     headerButton: {
-      padding: 8,
-      borderRadius: 8,
+      padding: 4,
+      marginHorizontal: Platform.OS === 'web' ? 4 : 0,
     },
     listContent: {
       paddingHorizontal: 16,
