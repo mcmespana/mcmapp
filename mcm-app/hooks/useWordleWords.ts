@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
-import { getFirebaseApp } from './firebaseApp';
+import { getFirebaseApp } from '../utils/firebaseApp';
 import dailyWordsLocal from '@/assets/wordle-daily.json';
 
 const FALLBACK_WORDS = ['ROMAN', 'AMIGO', 'JOVEN', 'SALVE', 'MARIA'];

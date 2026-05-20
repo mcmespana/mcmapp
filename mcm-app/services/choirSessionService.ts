@@ -25,7 +25,7 @@ import {
   onValue,
   off,
 } from 'firebase/database';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 import type { SelectedSong } from '@/contexts/SelectedSongsContext';
 import { CODE_LENGTH, isValidCode } from '@/utils/playlistCodes';
 

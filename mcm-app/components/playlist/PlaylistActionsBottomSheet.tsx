@@ -30,7 +30,7 @@ interface Props {
   title?: string;
 }
 
-const PlaylistActionsSheet: React.FC<Props> = ({
+const PlaylistActionsBottomSheet: React.FC<Props> = ({
   visible,
   actions,
   onClose,
@@ -171,4 +171,4 @@ const createStyles = (isDark: boolean) =>
     },
   });
 
-export default PlaylistActionsSheet;
+export default PlaylistActionsBottomSheet;

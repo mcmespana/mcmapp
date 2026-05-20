@@ -32,7 +32,7 @@ import {
   getLiturgicalInfo,
 } from '@/components/contigo/LiturgicalBadge';
 import { ReadingCard } from '@/components/contigo/ReadingCard';
-import SettingsPanel from '@/components/SettingsPanel';
+import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import BottomSheet from '@/components/BottomSheet';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -878,7 +878,7 @@ export default function EvangelioScreen() {
       {/* Celebration burst animation */}
       <CelebrationAnimation visible={showCheck} isDark={isDark} />
 
-      <SettingsPanel
+      <SettingsBottomSheet
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
       />

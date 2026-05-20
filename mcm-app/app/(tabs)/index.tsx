@@ -37,7 +37,7 @@ import { radii, shadows } from '@/constants/uiStyles';
 import useFontScale from '@/hooks/useFontScale';
 import { Skeleton } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
-import SettingsPanel from '@/components/SettingsPanel';
+import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
 import { VersionDisplay } from '@/components/VersionDisplay';
@@ -381,7 +381,7 @@ export default function Home() {
       style={[styles.safeArea, { backgroundColor: theme.background }]}
       edges={['top']}
     >
-      <SettingsPanel
+      <SettingsBottomSheet
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
       />

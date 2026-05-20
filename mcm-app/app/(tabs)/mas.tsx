@@ -25,7 +25,7 @@ import AlbumListScreen from '../screens/AlbumListScreen';
 import WordleScreen from '../screens/WordleScreen';
 import ComidaScreen from '../screens/ComidaScreen';
 import ComidaWebScreen from '../screens/ComidaWebScreen';
-import SettingsPanel from '@/components/SettingsPanel';
+import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import { getEvent } from '@/constants/events';
 import { TabHeaderColors } from '@/constants/colors';
 
@@ -180,7 +180,7 @@ export default function MasTab() {
 
   return (
     <>
-      <SettingsPanel
+      <SettingsBottomSheet
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
       />

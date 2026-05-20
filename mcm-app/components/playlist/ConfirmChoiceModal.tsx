@@ -30,7 +30,7 @@ interface Props {
   onClose: () => void;
 }
 
-const ConfirmChoiceDialog: React.FC<Props> = ({
+const ConfirmChoiceModal: React.FC<Props> = ({
   visible,
   title,
   description,
@@ -165,4 +165,4 @@ const createStyles = (isDark: boolean) =>
     },
   });
 
-export default ConfirmChoiceDialog;
+export default ConfirmChoiceModal;

@@ -248,7 +248,7 @@ Luego, en la configuración del tab en `_layout.tsx`, simplemente referencia el 
 - **Definir colores** en `constants/colors.ts` en lugar de hardcodear
 - **Configuración centralizada**: Todos los tabs se definen en `TABS_CONFIG`
 - **Probar** en todas las plataformas después de cambios
-- **Mantener** los feature flags sincronizados
+- **Mantener** sincronizados `TABS_CONFIG`, `KNOWN_TABS` y el perfil en Firebase
 
 ## 🆕 Mejoras Recientes (v2.0)
 
