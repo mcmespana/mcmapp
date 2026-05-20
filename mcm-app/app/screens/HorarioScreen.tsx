@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Animated, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
+import { radii } from '@/constants/uiStyles';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -252,11 +253,17 @@ export default function HorarioScreen() {
   );
 
   if (!dia) {
-    return <ProgressWithMessage message="Cargando horario..." />;
-  }
-
-  if (loading) {
-    return <ProgressWithMessage message="Actualizando horario..." />;
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }} edges={['top']}>
+        <ScreenHero title="Horario" />
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.md }}>
+          <Skeleton style={{ height: 54, borderRadius: radii.xl }} />
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} style={{ height: 72, borderRadius: radii.lg }} />
+          ))}
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (

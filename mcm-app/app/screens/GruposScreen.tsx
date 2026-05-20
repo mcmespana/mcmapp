@@ -14,11 +14,13 @@ import {
   Separator,
   Button,
   PressableFeedback,
+  Skeleton,
 } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
+import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
@@ -50,7 +52,7 @@ export default function GruposScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
-  const { data: gruposData, loading } = useFirebaseData<Data>(
+  const { data: gruposData } = useFirebaseData<Data>(
     getEventFirebasePath(event, 'grupos'),
     getEventCacheKey(event, 'grupos'),
   );
@@ -123,11 +125,14 @@ export default function GruposScreen() {
   }, [search, data]);
 
   if (categoria && !data) {
-    return <ProgressWithMessage message="Cargando grupos..." />;
-  }
-
-  if (categoria && loading) {
-    return <ProgressWithMessage message="Actualizando grupos..." />;
+    return (
+      <ScrollView style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: spacing.md }}>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} style={{ height: 56, borderRadius: radii.lg }} />
+        ))}
+      </ScrollView>
+    );
   }
 
   // Si hay un grupo seleccionado, mostrar la vista del grupo (prioridad máxima)

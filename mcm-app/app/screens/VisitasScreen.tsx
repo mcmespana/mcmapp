@@ -9,11 +9,12 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import { Dialog, PressableFeedback } from 'heroui-native';
+import { Dialog, PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
+import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -76,11 +77,18 @@ export default function VisitasScreen() {
   };
 
   if (!visitas) {
-    return <ProgressWithMessage message="Cargando visitas..." />;
-  }
-
-  if (loading) {
-    return <ProgressWithMessage message="Actualizando visitas..." />;
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}>
+        <ScreenHero title="Visitas" />
+        <PageContainer>
+          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 14 }}>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} style={{ height: 220, borderRadius: radii.xl }} />
+            ))}
+          </ScrollView>
+        </PageContainer>
+      </View>
+    );
   }
 
   return (
