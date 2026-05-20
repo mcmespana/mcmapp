@@ -860,7 +860,7 @@ export default function Home() {
                       </React.Fragment>
                     );
                   }),
-                ))
+                )
               ) : (
                 /* No upcoming events */
                 <EmptyState
