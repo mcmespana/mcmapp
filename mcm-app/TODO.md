@@ -32,6 +32,8 @@
 - [x] ~~Skeletons en más pantallas~~ → Contactos, Visitas, Apps, Materiales, Horario, Profundiza, Grupos
 - [x] ~~`SongListItem` swipe colors~~ → centralizados en `SwipeColors` + `KeyPillColors` en `constants/colors.ts`
 - [x] ~~`BottomSheet` borderRadius~~ → usa `radii.xl` de `constants/uiStyles.ts`
+- [x] ~~`GruposScreen` — `PageContainer` y `ScreenHero`~~ → aplicados a las 5 ramas de render (skeleton, grupo, búsqueda, raíz, lista por categoría). Sigue el patrón de `MaterialesScreen` y `ContactosScreen`.
+- [x] ~~Menú contextual del cantoral en web~~ → nuevo hook `useContextMenu` traduce `onLongPress` (móvil) ↔ `onContextMenu` (web). Aplicado a `SongListItem`. Reutilizable para Reflexiones/Notificaciones/Contactos/Playlist (pendiente).
 
 ---
 
@@ -83,10 +85,13 @@ El compilador analiza automáticamente el árbol de componentes y memoiza en tie
 > rama `claude/modernize-app-design-V5LuI`. Cada una es independiente
 > y puede hacerse en su propio PR.
 
-- [ ] **`GruposScreen` — `PageContainer` y `ScreenHero`**.
-      Hoy `ScreenHero` solo se aplica en la vista raíz. Aplicar
-      `PageContainer` en las 5 ramas de render para que también centre en
-      web (búsqueda activa, categoría seleccionada, grupo seleccionado, etc.).
+- [ ] **Extender `useContextMenu` a otras listas**: el hook ya existe
+      (`hooks/useContextMenu.ts`) y se usa en `SongListItem`. Pendiente
+      aplicarlo a:
+  - Notificaciones (`app/notifications.tsx`) — marcar leída / eliminar
+  - Reflexiones (`app/screens/ReflexionesScreen.tsx`) — editar / copiar / compartir
+  - Contactos (`app/screens/ContactosScreen.tsx`) — llamar / WhatsApp / copiar teléfono
+  - Playlist (`app/screens/SelectedSongsScreen.tsx`) — subir / bajar / quitar
 
 ## Mantenimiento
 

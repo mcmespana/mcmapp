@@ -13,6 +13,16 @@
 
 ---
 
+## 2026-05-20 — Menú contextual del cantoral funcional en web (click derecho)
+
+- **Problema**: `onLongPress` de React Native no se dispara en web, así que el menú contextual de `SongListItem` (Añadir/Quitar lista + Compartir) quedaba inaccesible al abrir la app en navegador.
+- **Solución**: nuevo hook `useContextMenu(handler)` que devuelve `onLongPress` en nativo y `onContextMenu` (con `preventDefault`) en web. Cero cambios en API externa.
+- **Archivos**:
+  - `hooks/useContextMenu.ts` (nuevo): puente long-press ↔ click derecho, reutilizable en otras listas.
+  - `components/SongListItem.tsx`: consume el hook y esparce las props sobre `TouchableOpacity`. El menú custom (BottomSheet en `SongListScreen`) ya funcionaba en web; ahora también se abre.
+
+---
+
 ## 2026-05-20 — Eventos próximos: más eventos y agrupados por semana
 
 - **Más eventos visibles**: aumentado de 2 a 8 eventos máximos en el Home, para que el usuario vea un panorama más amplio de lo que se acerca.
