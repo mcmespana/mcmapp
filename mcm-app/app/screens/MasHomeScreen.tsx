@@ -87,17 +87,22 @@ export default function MasHomeScreen() {
     if (Platform.OS === 'ios') {
       const visibleSet = new Set(resolved.tabs);
       const { overflowTabs } = splitTabsForIOS(visibleSet);
+      // Tabs cuyo screen está registrado en el stack de Más (no accesibles vía router.navigate en iOS)
+      const OVERFLOW_STACK_TARGETS: Partial<Record<string, keyof MasStackParamList>> = {
+        fotos: 'Fotos',
+      };
       for (const tab of overflowTabs) {
         // 'mas' nunca debería estar en overflow (splitTabsForIOS lo garantiza),
         // pero filtramos defensivamente para no auto-referenciar esta pantalla.
         if (tab.name === 'mas') continue;
+        const stackTarget = OVERFLOW_STACK_TARGETS[tab.name];
         items.push({
           label: tab.label,
           subtitle: tab.subtitle,
           emoji: tab.emoji,
           materialIcon: tab.androidIcon,
-          routePath: `/${tab.name}`,
           tintColor: tab.tintColor,
+          ...(stackTarget ? { target: stackTarget } : { routePath: `/${tab.name}` }),
         });
       }
     }

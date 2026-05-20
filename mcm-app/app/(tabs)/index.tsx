@@ -84,9 +84,10 @@ function getWeekLabel(date: Date, today: Date): string {
   if (diffDays === 1) return 'Mañana';
   if (diffDays < 7) return 'Esta semana';
   if (diffDays < 14) return 'Próxima semana';
+  if (diffDays < 28) return 'Este mes';
 
-  const weeksAhead = Math.ceil(diffDays / 7);
-  return `En ${weeksAhead} semanas`;
+  // Beyond 28 days → don't show
+  return null;
 }
 
 interface EventGroup {
@@ -113,9 +114,10 @@ function getUpcomingEventsByWeek(
         if (visibleCalendars[evt.calendarIndex] === false) return;
         const key = `${evt.title}|${evt.startDate}`;
         if (!seen.has(key) && seen.size < maxEvents) {
-          seen.add(key);
           const eventDate = parseLocalDate(dateStr);
           const label = getWeekLabel(eventDate, today);
+          if (label === null) return; // beyond 4 weeks — skip
+          seen.add(key);
 
           if (!eventsByWeek.has(label)) {
             eventsByWeek.set(label, []);
@@ -125,8 +127,8 @@ function getUpcomingEventsByWeek(
       });
     });
 
-  // Preserve order: Hoy → Mañana → Esta semana → Próxima semana → En X semanas
-  const order = ['Hoy', 'Mañana', 'Esta semana', 'Próxima semana'];
+  // Preserve order: Hoy → Mañana → Esta semana → Próxima semana → Este mes
+  const order = ['Hoy', 'Mañana', 'Esta semana', 'Próxima semana', 'Este mes'];
   const groups: EventGroup[] = [];
 
   order.forEach((label) => {
