@@ -4,6 +4,7 @@ import {
   useMemo,
   useLayoutEffect,
   useCallback,
+  useRef,
 } from 'react';
 import {
   FlatList,
@@ -98,6 +99,9 @@ export default function SongsListScreen({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [menuSong, setMenuSong] = useState<Song | null>(null);
+  // Message to share — stored in a ref so we can fire it after the sheet
+  // Modal is fully dismissed (iOS can't present two Modals simultaneously).
+  const pendingShareRef = useRef<string | null>(null);
   const isSearchAll = categoryId === '__ALL__';
 
   // In __ALL__ mode, search is always visible
@@ -172,8 +176,7 @@ export default function SongsListScreen({
                     numericPart = String(parseInt(filenameMatch[1], 10));
                   }
                 }
-                // ⚡ Bolt: Pre-calculate the clean title for sorting (Schwartzian transform)
-                // This prevents running the regex multiple times per item during the O(N log N) sort phase.
+                // Pre-calculate the clean title for sorting (Schwartzian transform)
                 const sortTitle = song.title
                   .replace(/^\d+\.\s*/, '')
                   .toLowerCase();
@@ -277,15 +280,24 @@ export default function SongsListScreen({
     setMenuSong(null);
   }, [menuSong, isSongSelected, addSong, removeSong]);
 
-  const handleMenuShare = useCallback(async () => {
+  // Captures the share message and closes the sheet. The actual Share.share()
+  // call happens in handleSheetCloseComplete, fired after the Modal is gone.
+  const handleMenuShare = useCallback(() => {
     if (!menuSong) return;
     const cleanTitle = menuSong.title.replace(/^\d+\.\s*/, '');
-    const message = menuSong.author
+    pendingShareRef.current = menuSong.author
       ? `${cleanTitle} — ${menuSong.author}`
       : cleanTitle;
     setMenuSong(null);
-    await Share.share({ message });
   }, [menuSong]);
+
+  const handleSheetCloseComplete = useCallback(() => {
+    const msg = pendingShareRef.current;
+    if (msg) {
+      pendingShareRef.current = null;
+      Share.share({ message: msg });
+    }
+  }, []);
 
   const handleSongPress = useCallback(
     (song: Song) => {
@@ -403,6 +415,7 @@ export default function SongsListScreen({
         visible={!!menuSong}
         onClose={() => setMenuSong(null)}
         title={menuSongClean}
+        onCloseComplete={handleSheetCloseComplete}
       >
         <View style={styles.menuActions}>
           <TouchableOpacity
