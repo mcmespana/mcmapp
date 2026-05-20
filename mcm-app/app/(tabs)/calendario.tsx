@@ -23,7 +23,7 @@ import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
+import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import GlassFAB from '@/components/ui/GlassFAB';
@@ -86,7 +86,7 @@ export default function Calendario() {
     toggleCalendarVisibility,
     loading: configsLoading,
     offline,
-  } = useCalendarConfigs();
+  } = useCalendarConfig();
 
   const todayStr = new Date().toISOString().split('T')[0];
 
