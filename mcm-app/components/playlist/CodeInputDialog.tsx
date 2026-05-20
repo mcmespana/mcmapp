@@ -13,12 +13,10 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Modal,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   Platform,
   ActivityIndicator,
   TextInput,
@@ -31,6 +29,7 @@ import {
   isValidCode,
   todayCode,
 } from '@/utils/playlistCodes';
+import BottomSheet from '../BottomSheet';
 
 export type CodeDialogVariant =
   | 'cloud-upload'
@@ -176,180 +175,141 @@ const CodeInputDialog: React.FC<Props> = ({
   };
 
   return (
-    <Modal
+    <BottomSheet
       visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={() => {
+      onClose={() => {
         if (!submitting) onClose();
       }}
+      title={copy.title}
     >
-      <TouchableWithoutFeedback
-        onPress={() => {
-          if (!submitting) onClose();
-        }}
-      >
-        <View style={styles.backdrop}>
-          <TouchableWithoutFeedback>
-            <View style={styles.card}>
-              <Text style={styles.title}>{copy.title}</Text>
-              <Text style={styles.description}>{copy.description}</Text>
+      <View style={styles.container}>
+        <Text style={styles.description}>{copy.description}</Text>
 
-              {copy.askForName && (
-                <View style={styles.nameRow}>
-                  <Text style={styles.inputLabel}>Nombre</Text>
-                  <TextInput
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Ej. Cantos domingo"
-                    placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
-                    style={styles.nameInput}
-                    editable={!submitting}
-                  />
-                </View>
-              )}
+        {copy.askForName && (
+          <View style={styles.nameRow}>
+            <Text style={styles.inputLabel}>Nombre</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Ej. Cantos domingo"
+              placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
+              style={styles.nameInput}
+              editable={!submitting}
+            />
+          </View>
+        )}
 
-              <Text
-                style={[
-                  styles.inputLabel,
-                  copy.askForName && { marginTop: 12 },
-                ]}
-              >
-                Código (4 dígitos)
-              </Text>
-              <View style={styles.codeRow}>
-                {/* Para máxima fiabilidad cross-platform (web + RN) usamos un
-                    único TextInput de N dígitos en lugar de N TextInputs
-                    separados. Visualmente lo presentamos con celdas. */}
-                <TextInput
-                  value={code}
-                  onChangeText={handleChangeText}
-                  keyboardType="number-pad"
-                  inputMode="numeric"
-                  autoFocus
-                  maxLength={CODE_LENGTH}
-                  selectTextOnFocus
-                  style={styles.hiddenInput}
-                  editable={!submitting}
-                  onSubmitEditing={handleSubmit}
-                  returnKeyType="done"
-                />
-                <View style={styles.cells} pointerEvents="none">
-                  {Array.from({ length: CODE_LENGTH }).map((_, i) => {
-                    const char = code[i] ?? '';
-                    const active = i === code.length;
-                    return (
-                      <View
-                        key={i}
-                        style={[
-                          styles.cell,
-                          active && !submitting && styles.cellActive,
-                          !!char && styles.cellFilled,
-                        ]}
-                      >
-                        <Text style={styles.cellText}>{char}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {copy.showSuggestButtons && (
-                <View style={styles.suggestRow}>
-                  <TouchableOpacity
-                    style={styles.suggestBtn}
-                    onPress={() => setCode(generateRandomCode())}
-                    disabled={submitting}
-                  >
-                    <MaterialIcons
-                      name="casino"
-                      size={16}
-                      color={isDark ? '#7AB3FF' : '#253883'}
-                    />
-                    <Text style={styles.suggestText}>Aleatorio</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.suggestBtn}
-                    onPress={() => setCode(todayCode())}
-                    disabled={submitting}
-                  >
-                    <MaterialIcons
-                      name="event"
-                      size={16}
-                      color={isDark ? '#7AB3FF' : '#253883'}
-                    />
-                    <Text style={styles.suggestText}>Hoy (DDMM)</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {error ? <Text style={styles.error}>{error}</Text> : null}
-
-              <View style={styles.buttons}>
-                <TouchableOpacity
-                  style={[styles.btn, styles.btnSecondary]}
-                  onPress={onClose}
-                  disabled={submitting}
-                >
-                  <Text style={styles.btnSecondaryText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+        <Text
+          style={[
+            styles.inputLabel,
+            copy.askForName && { marginTop: 12 },
+          ]}
+        >
+          Código (4 dígitos)
+        </Text>
+        <View style={styles.codeRow}>
+          {/* Para máxima fiabilidad cross-platform (web + RN) usamos un
+              único TextInput de N dígitos en lugar de N TextInputs
+              separados. Visualmente lo presentamos con celdas. */}
+          <TextInput
+            value={code}
+            onChangeText={handleChangeText}
+            keyboardType="number-pad"
+            inputMode="numeric"
+            autoFocus
+            maxLength={CODE_LENGTH}
+            selectTextOnFocus
+            style={styles.hiddenInput}
+            editable={!submitting}
+            onSubmitEditing={handleSubmit}
+            returnKeyType="done"
+          />
+          <View style={styles.cells} pointerEvents="none">
+            {Array.from({ length: CODE_LENGTH }).map((_, i) => {
+              const char = code[i] ?? '';
+              const active = i === code.length;
+              return (
+                <View
+                  key={i}
                   style={[
-                    styles.btn,
-                    styles.btnPrimary,
-                    (!valid || submitting) && styles.btnDisabled,
+                    styles.cell,
+                    active && !submitting && styles.cellActive,
+                    !!char && styles.cellFilled,
                   ]}
-                  onPress={handleSubmit}
-                  disabled={!valid || submitting}
                 >
-                  {submitting ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.btnPrimaryText}>
-                      {copy.primaryLabel}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
+                  <Text style={styles.cellText}>{char}</Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
-      </TouchableWithoutFeedback>
-    </Modal>
+
+        {copy.showSuggestButtons && (
+          <View style={styles.suggestRow}>
+            <TouchableOpacity
+              style={styles.suggestBtn}
+              onPress={() => setCode(generateRandomCode())}
+              disabled={submitting}
+            >
+              <MaterialIcons
+                name="casino"
+                size={16}
+                color={isDark ? '#7AB3FF' : '#253883'}
+              />
+              <Text style={styles.suggestText}>Aleatorio</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.suggestBtn}
+              onPress={() => setCode(todayCode())}
+              disabled={submitting}
+            >
+              <MaterialIcons
+                name="event"
+                size={16}
+                color={isDark ? '#7AB3FF' : '#253883'}
+              />
+              <Text style={styles.suggestText}>Hoy (DDMM)</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <View style={styles.buttons}>
+          <TouchableOpacity
+            style={[styles.btn, styles.btnSecondary]}
+            onPress={onClose}
+            disabled={submitting}
+          >
+            <Text style={styles.btnSecondaryText}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.btn,
+              styles.btnPrimary,
+              (!valid || submitting) && styles.btnDisabled,
+            ]}
+            onPress={handleSubmit}
+            disabled={!valid || submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.btnPrimaryText}>
+                {copy.primaryLabel}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </BottomSheet>
   );
 };
 
 const createStyles = (isDark: boolean) =>
   StyleSheet.create({
-    backdrop: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.45)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 20,
-    },
-    card: {
-      width: '100%',
-      maxWidth: 420,
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
-      borderRadius: 18,
-      padding: 22,
-      ...Platform.select({
-        web: { boxShadow: '0 12px 40px rgba(0,0,0,0.25)' },
-        default: {
-          shadowColor: '#000',
-          shadowOpacity: 0.25,
-          shadowRadius: 20,
-          shadowOffset: { width: 0, height: 8 },
-          elevation: 12,
-        },
-      }),
-    },
-    title: {
-      fontSize: 19,
-      fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      marginBottom: 6,
+    container: {
+      paddingBottom: 24,
     },
     description: {
       fontSize: 14,

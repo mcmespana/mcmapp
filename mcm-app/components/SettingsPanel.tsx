@@ -106,21 +106,29 @@ export default function SettingsPanel({ visible, onClose }: Props) {
         ? 'Delegación'
         : 'Ajustes';
 
+  const headerLeft =
+    panelView !== 'settings' ? (
+      <TouchableOpacity
+        onPress={() => setPanelView('settings')}
+        accessibilityRole="button"
+        accessibilityLabel="Volver a ajustes"
+        style={{ padding: 4 }}
+      >
+        <MaterialIcons name="arrow-back" size={22} color={theme.text} />
+      </TouchableOpacity>
+    ) : undefined;
+
   return (
     <>
-      <BottomSheet visible={visible} onClose={handleClose} title={sheetTitle}>
+      <BottomSheet
+        visible={visible}
+        onClose={handleClose}
+        title={sheetTitle}
+        headerLeft={headerLeft}
+      >
         <View style={[styles.container, { backgroundColor: theme.background }]}>
           {panelView === 'profile' && (
             <>
-              <TouchableOpacity
-                style={styles.backRow}
-                onPress={() => setPanelView('settings')}
-                accessibilityRole="button"
-                accessibilityLabel="Volver a ajustes"
-              >
-                <MaterialIcons name="arrow-back" size={20} color={theme.icon} />
-                <Text style={[styles.backLabel, { color: theme.icon }]}>Ajustes</Text>
-              </TouchableOpacity>
               {(Object.keys(rawConfig.profiles) as ProfileType[]).map((key) => {
                 const p = rawConfig.profiles[key];
                 const selected = profile.profileType === key;
@@ -165,15 +173,6 @@ export default function SettingsPanel({ visible, onClose }: Props) {
 
           {panelView === 'delegation' && (
             <>
-              <TouchableOpacity
-                style={styles.backRow}
-                onPress={() => setPanelView('settings')}
-                accessibilityRole="button"
-                accessibilityLabel="Volver a ajustes"
-              >
-                <MaterialIcons name="arrow-back" size={20} color={theme.icon} />
-                <Text style={[styles.backLabel, { color: theme.icon }]}>Ajustes</Text>
-              </TouchableOpacity>
               <ScrollView
                 style={styles.delegationScroll}
                 showsVerticalScrollIndicator={false}
