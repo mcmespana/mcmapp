@@ -46,6 +46,11 @@ const ROUTE_LABELS: Record<
   '/(tabs)/mas': { label: 'Más', icon: 'more-horiz' },
   '/(tabs)/index': { label: 'Inicio', icon: 'home' },
   '/wordle': { label: 'Wordle', icon: 'games' },
+  '/(tabs)/contigo': { label: 'Contigo', icon: 'favorite' },
+  '/(tabs)/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
+  '/(tabs)/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
+  '/(tabs)/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
+  '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
 };
 
 function getRouteLabel(route: string) {
@@ -413,6 +418,7 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
       title={sheetTitle}
       headerLeft={headerLeft}
       headerRight={headerRight}
+      dragFromContent={true}
     >
       {selectedNotification ? (
         <NotificationDetail
@@ -551,7 +557,7 @@ function NotificationDetail({
           {notification.body}
         </Text>
 
-        {(routeInfo || notification.actionButton) && (
+        {(notification.internalRoute || notification.actionButton) && (
           <View
             style={[
               detailStyles.divider,
@@ -560,20 +566,20 @@ function NotificationDetail({
           />
         )}
 
-        {routeInfo && notification.internalRoute && (
+        {notification.internalRoute && (
           <Pressable
             style={[detailStyles.routeBtn, { borderColor: colors.primary }]}
             onPress={() => navigateTo(notification.internalRoute!)}
           >
             <MaterialIcons
-              name={routeInfo.icon}
+              name={(routeInfo?.icon ?? 'launch') as any}
               size={20}
               color={colors.primary}
             />
             <Text
               style={[detailStyles.routeBtnText, { color: colors.primary }]}
             >
-              Ir a {routeInfo.label}
+              {routeInfo ? `Ir a ${routeInfo.label}` : 'Abrir sección'}
             </Text>
             <MaterialIcons
               name="chevron-right"

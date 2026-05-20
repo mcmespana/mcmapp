@@ -45,6 +45,11 @@ const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
   '/(tabs)/index': { label: 'Inicio', icon: 'home' },
   '/wordle': { label: 'Wordle', icon: 'games' },
   '/notifications': { label: 'Notificaciones', icon: 'notifications' },
+  '/(tabs)/contigo': { label: 'Contigo', icon: 'favorite' },
+  '/(tabs)/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
+  '/(tabs)/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
+  '/(tabs)/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
+  '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
 };
 
 function getRouteLabel(route: string): { label: string; icon: string } | null {
@@ -538,7 +543,7 @@ function NotificationDetailModal({
                 </Text>
 
                 {/* Separador si hay acciones */}
-                {(routeInfo || notification.actionButton) && (
+                {(notification.internalRoute || notification.actionButton) && (
                   <View
                     style={[
                       dStyles.divider,
@@ -548,7 +553,7 @@ function NotificationDetailModal({
                 )}
 
                 {/* Botón de destino interno (internalRoute) */}
-                {routeInfo && (
+                {notification.internalRoute && (
                   <Button
                     variant="outline"
                     onPress={handleInternalRoute}
@@ -558,12 +563,12 @@ function NotificationDetailModal({
                     ]}
                   >
                     <MaterialIcons
-                      name={routeInfo.icon as any}
+                      name={(routeInfo?.icon ?? 'launch') as any}
                       size={20}
                       color={colors.primary}
                     />
                     <Button.Label style={{ color: colors.primary, flex: 1 }}>
-                      Ir a {routeInfo.label}
+                      {routeInfo ? `Ir a ${routeInfo.label}` : 'Abrir sección'}
                     </Button.Label>
                     <MaterialIcons
                       name="arrow-forward-ios"

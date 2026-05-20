@@ -37,6 +37,7 @@ interface BottomSheetProps {
    *  show two Modals simultaneously, so actions must wait for full dismissal. */
   onCloseComplete?: () => void;
   paddingHorizontal?: number;
+  dragFromContent?: boolean;
 }
 
 export default function BottomSheet({
@@ -49,6 +50,7 @@ export default function BottomSheet({
   headerRight,
   onCloseComplete,
   paddingHorizontal = 16,
+  dragFromContent = false,
 }: BottomSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -146,9 +148,9 @@ export default function BottomSheet({
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, { dy, dx }) =>
-        Math.abs(dy) > Math.abs(dx) && dy > 0,
+        Math.abs(dy) > Math.abs(dx) && dy > 5,
       onPanResponderMove: (_, { dy }) => {
         if (dy > 0) dragAnim.setValue(dy);
       },
@@ -252,6 +254,7 @@ export default function BottomSheet({
               height !== undefined && { flex: 1 },
             ]}
             onStartShouldSetResponder={() => true}
+            {...(dragFromContent ? panResponder.panHandlers : {})}
           >
             {children}
           </View>

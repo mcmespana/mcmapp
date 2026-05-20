@@ -125,6 +125,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
         onClose={handleClose}
         title={sheetTitle}
         headerLeft={headerLeft}
+        dragFromContent={true}
       >
         <View style={[styles.container, { backgroundColor: theme.background }]}>
           {panelView === 'profile' && (
