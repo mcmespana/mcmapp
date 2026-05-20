@@ -297,7 +297,7 @@ export default function Home() {
         icon: 'image',
         iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
         iconColor: '#34D399',
-        href: '/fotos',
+        href: '/mas',
       },
       evangelio: {
         key: 'evangelio',
@@ -672,6 +672,8 @@ export default function Home() {
                     onPress={() => {
                       if (item.key === 'comunica') {
                         setPendingMasScreen('Comunica');
+                      } else if (item.key === 'fotos') {
+                        setPendingMasScreen('Fotos');
                       }
                       if (item.href) router.push(item.href as any);
                     }}
