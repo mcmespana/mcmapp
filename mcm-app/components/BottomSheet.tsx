@@ -91,7 +91,14 @@ export default function BottomSheet({
         }),
       ]).start(() => {
         setModalVisible(false);
-        onCloseCompleteRef.current?.();
+        // Android / Web: call directly — no native sequencing concern.
+        // iOS: onDismiss on the Modal fires instead, after UIKit confirms the
+        // view controller is gone. Calling here on iOS would batch this with
+        // setModalVisible(false), making the new Modal appear in the same
+        // render cycle — which iOS rejects silently.
+        if (Platform.OS !== 'ios') {
+          onCloseCompleteRef.current?.();
+        }
       });
     }
   }, [visible, slideAnim, opacityAnim, dragAnim, keyboardOffsetAnim]);
@@ -169,6 +176,7 @@ export default function BottomSheet({
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
+      onDismiss={() => onCloseCompleteRef.current?.()}
     >
       {/* Backdrop */}
       <Animated.View
