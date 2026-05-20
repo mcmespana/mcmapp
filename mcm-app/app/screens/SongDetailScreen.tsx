@@ -13,6 +13,7 @@ import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
 import { Colors } from '@/constants/colors';
@@ -78,6 +79,7 @@ export default function SongDetailScreen({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
 
   const { settings, setSettings, isLoadingSettings } = useSettings();
   const {
@@ -329,7 +331,10 @@ export default function SongDetailScreen({
   const floatingButtons = (
     <>
       <PressableFeedback
-        style={[styles.floatBtn, { top: btnTop, left: 16, backgroundColor: floatBtnBg }]}
+        style={[
+          styles.floatBtn,
+          { top: btnTop, left: 16, backgroundColor: floatBtnBg },
+        ]}
         onPress={() => navigation.goBack()}
         accessibilityLabel="Volver"
       >
@@ -337,12 +342,17 @@ export default function SongDetailScreen({
         <IconSymbol name="chevron.left" size={20} color={floatIconColor} />
       </PressableFeedback>
       <PressableFeedback
-        style={[styles.floatBtn, { top: btnTop, right: 16, backgroundColor: floatBtnBg }]}
+        style={[
+          styles.floatBtn,
+          { top: btnTop, right: 16, backgroundColor: floatBtnBg },
+        ]}
         onPress={() => {
           if (isSelected) removeSong(filename);
           else addSong(filename);
         }}
-        accessibilityLabel={isSelected ? 'Quitar de selección' : 'Añadir a selección'}
+        accessibilityLabel={
+          isSelected ? 'Quitar de selección' : 'Añadir a selección'
+        }
       >
         <PressableFeedback.Scale />
         <IconSymbol
@@ -354,6 +364,17 @@ export default function SongDetailScreen({
     </>
   );
 
+  // En iPad/web amplio centramos la card del WebView para mantener
+  // longitud de línea cómoda. En móvil, ancho completo.
+  const songCardWrapperStyle = layout.isWide
+    ? {
+        flex: 1,
+        width: '100%' as const,
+        maxWidth: layout.contentMaxWidth,
+        alignSelf: 'center' as const,
+      }
+    : { flex: 1 };
+
   const contentView = (
     <Animated.View
       style={[
@@ -364,10 +385,12 @@ export default function SongDetailScreen({
     >
       <View style={{ height: insets.top + 44 }} />
       <ChoirSessionBanner />
-      <SongDisplay
-        songHtml={songHtml}
-        isLoading={isFileLoading || isSongProcessing || isLoadingSettings}
-      />
+      <View style={songCardWrapperStyle}>
+        <SongDisplay
+          songHtml={songHtml}
+          isLoading={isFileLoading || isSongProcessing || isLoadingSettings}
+        />
+      </View>
       <SongControls
         chordsVisible={chordsVisible}
         currentTranspose={currentTranspose}
@@ -397,7 +420,9 @@ export default function SongDetailScreen({
   );
 
   const gestureContent =
-    navigationList && typeof currentIndex === 'number' && Platform.OS !== 'web' ? (
+    navigationList &&
+    typeof currentIndex === 'number' &&
+    Platform.OS !== 'web' ? (
       <PanGestureHandler
         activeOffsetX={[-20, 20]}
         failOffsetY={[-15, 15]}
