@@ -44,13 +44,18 @@
 - [ ] En iPad Contigo se ven desproporcionados los habit tracker
 
 
-- [ ] **Atajos de teclado en web**.
-  - `Cmd/Ctrl + K` para abrir un buscador global (cantoral, calendario,
-    reflexiones). Implementar con `useEffect` + `window.addEventListener('keydown')`
-    detrás de `Platform.OS === 'web'`. Posible UI: `Dialog` de
-    heroui-native en modo command palette.
-  - `Esc` para cerrar el sheet/diálogo abierto más reciente. Centralizar
-    en un hook `useEscapeToClose` o en cada componente sheet.
+- [x] ~~Atajos de teclado en web (Cmd+K, Esc, atajos del cantoral)~~ →
+      infraestructura en `hooks/useKeyboardShortcut.ts` +
+      `hooks/useEscapeToClose.ts` + `contexts/OverlayStackContext.tsx`.
+      Command Palette en `components/CommandPalette.tsx` (v1 navega a
+      pantallas top-level). Atajos ←/→/+/-/F en `SongDetailScreen`.
+- [ ] **Command Palette v2: deep-link a contenidos**: el palette actual sólo
+      navega a tabs/pantallas top-level. Para saltar a una canción concreta
+      o a un punto dentro de los stacks anidados (cancionero, más) hace
+      falta exponer su `navigation ref` (p. ej. via un
+      `CancioneroNavRefContext` o un `RootNavigationRef` global). Indexar
+      después canciones (`songs/data`), reflexiones (`compartiendo/data`) y
+      eventos del calendario.
 
 
 
