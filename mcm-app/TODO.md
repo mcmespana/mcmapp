@@ -24,27 +24,24 @@
 - [x] ~~Accesibilidad~~ → `accessibilityLabel` y `accessibilityRole` en Home y Notificaciones
 - [x] ~~Dark mode~~ → corregidos ErrorBoundary, SongFullscreen, Comida, Monitores, Wordle, Reflexiones
 - [x] ~~Performance Home~~ → `React.memo()` en ContextualDecoration, `useRef` para animaciones
+- [x] ~~Firebase 11 → 12~~ → ya en `^12.10.0` en package.json
+- [x] ~~Reanimated 3 en BottomSheet~~ → migrado a `Gesture.Pan()` + `useSharedValue`
+- [x] ~~Modo oscuro en sección Contigo~~ → colores y lectura del evangelio corregidos
+- [x] ~~Arreglar textos~~ → corregido
+- [x] ~~Long-press menús contextuales en cantoral~~ → `onLongPress` en `SongListItem`, menú en `SongListScreen` (Añadir/Quitar lista + Compartir)
+- [x] ~~Skeletons en más pantallas~~ → Contactos, Visitas, Apps, Materiales, Horario, Profundiza, Grupos
+- [x] ~~`SongListItem` swipe colors~~ → centralizados en `SwipeColors` + `KeyPillColors` en `constants/colors.ts`
+- [x] ~~`BottomSheet` borderRadius~~ → usa `radii.xl` de `constants/uiStyles.ts`
 
 ---
 
 ## Prioridad alta (hacer pronto)
 
-- [ ] **Upgrade a Expo SDK 55**: actualizar expo y todos los paquetes expo-\* a la versión 55. Requiere `npx expo install --fix` y testing completo. React Native 0.81→0.84, React 19.1→19.2. Ver `npm outdated` para la lista completa.
-- [ ] **Firebase 11 → 12**: major version upgrade. Revisar [guía de migración](https://firebase.google.com/support/release-notes/js) antes de actualizar. Puede haber breaking changes en la API.
-- [ ] **Seguridad — contraseña hardcodeada**: en `components/SecretPanelModal.tsx` la contraseña "coco" está en el código. Mover a variable de entorno o Firebase Remote Config.
-- [ ] **Verificar orden de tabs por perfil**: probar en dispositivo iOS/Android que `TABS_CONFIG` filtrado por `resolved.tabs` muestra los tabs en el orden correcto para cada perfil (Inicio → Cantoral → Contigo → Calendario → Fotos → Más).
+- [ ] Revisar pestaña más del menu de abajo, diseñarla bien cuando no sale
+- [ ] Revisar diseño en iPads y arreglarlo. 
+- [ ] En iPad Contigo se ven desproporcionados los habit tracker
 
-## Modernización pendiente (prioridad alta)
 
-> Tareas que extienden el trabajo de alineación de estilos hecho en la
-> rama `claude/modernize-app-design-V5LuI`. Cada una es independiente
-> y puede hacerse en su propio PR.
-
-- [ ] **Long-press menús contextuales en items de cantoral**.
-      Usar `Menu` de heroui-native para ofrecer "Compartir", "Copiar
-      letra", "Transponer rápido" sobre cada item al hacer long-press en
-      `SongListScreen`. Punto de partida: `components/SongListItem.tsx`
-      (mantener el `Swipeable` actual; el Menu se activa con `onLongPress`).
 - [ ] **Atajos de teclado en web**.
   - `Cmd/Ctrl + K` para abrir un buscador global (cantoral, calendario,
     reflexiones). Implementar con `useEffect` + `window.addEventListener('keydown')`
@@ -52,56 +49,56 @@
     heroui-native en modo command palette.
   - `Esc` para cerrar el sheet/diálogo abierto más reciente. Centralizar
     en un hook `useEscapeToClose` o en cada componente sheet.
-- [ ] **Reanimated 3 en NotificationsBottomSheet**.
-      Migrar el `PanResponder` + `Animated.Value` a `Gesture.Pan()` (RNGH v2)
-  - `useSharedValue` + `withSpring/withTiming`. Riesgo medio: requiere
-    testing exhaustivo del gesto de cierre por swipe-down. Pendiente
-    desde el PR de migración del ping badge en Home (se decidió no tocar
-    este componente para minimizar regresiones).
+
+
+
+## Mejoras técnicas posibles (Claude, haz un análisis sobre su conveniencia)
+
+1. Pre-procesado en tiempo de compilación: Custom Metro Transformer para archivos ChordPro (.cho)
+El Problema: La app lee canciones en formato crudo ChordPro y las parsea en tiempo de ejecución en el dispositivo usando chordsheetjs. Esto consume CPU en el JS Thread cada vez que el usuario abre una canción, lo que puede causar saltos de fotogramas (jank) al abrir la pantalla de detalle.
+La Solución Técnica: Crear un cargador personalizado en 
+metro.config.js
+ para interceptar los archivos con extensión .cho.
+Implementación:
+Instalar chordsheetjs como una devDependency.
+Modificar el transformer de Metro para que cuando encuentre un archivo .cho, lo parsee a un objeto estructurado JSON (el AST del acordero) en el ordenador del desarrollador durante el build.
+En la app, al hacer import song from '@/assets/songs/song.cho', el objeto ya importado es un JSON pre-procesado listo para renderizar directamente, eliminando el peso del parser en producción y el coste de CPU en el móvil.
+2. Habilitar el React Compiler (React 19 native optimization)
+El Problema: Mantener useMemo, useCallback y React.memo a mano (como en el grid de la Home o el listado del Cantoral) ensucia el código, consume esfuerzo cognitivo y suele estar mal optimizado si se olvidan dependencias en los arrays.
+La Solución Técnica: Integrar el nuevo React Compiler (React Forget) que viene soportado de forma nativa a partir de React 19.
+Implementación:
+Configurar babel.config.js instalando y añadiendo el plugin de compilación:
+javascript
+
+
+plugins: [
+  ['babel-plugin-react-compiler', { target: '19' }],
+  'react-native-reanimated/plugin',
+]
+El compilador analiza automáticamente el árbol de componentes y memoiza en tiempo de compilación únicamente lo que de verdad cambia, reduciendo drásticamente los renders del árbol de componentes de React Native sin escribir un solo useMemo.
+
+## Modernización pendiente (prioridad alta)
+
+> Tareas que extienden el trabajo de alineación de estilos hecho en la
+> rama `claude/modernize-app-design-V5LuI`. Cada una es independiente
+> y puede hacerse en su propio PR.
+
 - [ ] **`GruposScreen` — `PageContainer` y `ScreenHero`**.
       Hoy `ScreenHero` solo se aplica en la vista raíz. Aplicar
       `PageContainer` en las 5 ramas de render para que también centre en
       web (búsqueda activa, categoría seleccionada, grupo seleccionado, etc.).
-- [ ] **Skeletons en más pantallas**.
-      Replicar el patrón aplicado en Home (eventos próximos) en:
-      Contactos, Visitas, Apps, Materiales, Horario, Profundiza, Grupos.
-      Todas cargan de Firebase y hoy muestran un spinner full-screen
-      (`ProgressWithMessage`). Un Skeleton in-place se siente más
-      responsive.
-- [ ] **`SongListItem` — colores de acción swipe**.
-      Quedan magic numbers `#34C759` (rightAction success), `#FF453A`
-      (leftAction destructive), y los `keyPill` `#1A2744`/`#EEF4FF`.
-      Documentar como Apple system colors o centralizar.
 
-## Mantenimiento — vulnerabilidades npm aceptadas
+## Mantenimiento
 
-Auditoría revisada 2026-05-06. `npm audit` reporta 17 vulns (5 low, 12 moderate), todas en deps **transitivas dev/build**. Ninguna llega al bundle de producción.
 
-**No ejecutar `npm audit fix --force`** — degradaría `expo 55 → 49`, `jest-expo 55 → 47` y rompería el proyecto.
-
-Cadenas afectadas:
-
-- **`postcss@8.4.49`** (<8.5.10) ← `expo → @expo/metro-config`. Build-time Metro web. XSS via stringify, input = nuestro CSS. Revisitar cuando `@expo/metro-config` bump postcss.
-- **`fast-xml-parser@4.5.6`** (<5.7.0) ← `@react-native-community/cli → cli-platform-{android,apple}`. Build-time. XML injection, input = nuestros manifests. Revisitar cuando RN-CLI ≥20 sea compatible con RN 0.83+.
-- **`@tootallnate/once@2.0.1`** (<3.0.1) ← `jest-expo → jest-environment-jsdom → jsdom → http-proxy-agent`. Test-only. Revisitar cuando `jest-expo` bump jsdom.
-
-Ninguna requiere acción inmediata. Re-ejecutar `npm audit` tras cada `npm update` o upgrade de Expo SDK.
-
-## Prioridad media (mejoras importantes)
-
-- [ ] **Sección "Contigo"** — nuevo tab con Evangelio del Día, Mi Rato de Oración, Examen del Día + habit tracker espiritual. **Ver `TODO_CONTIGO.md` para el diseño técnico completo.**
-
-- [ ] **Pantalla de inicio (Home)**: rediseñar la home screen (ver sección Ideas más abajo).
-- [ ] **Notificaciones — backend (panel admin)**: en desarrollo en `mcmespana/mcmpanel`. La app (cliente) ya está lista para recibir notificaciones. Ver `NOTIFICACIONES.md` para la especificación del backend y formato de mensajes Expo Push.
-- [ ] **Pendiente del admin para Sistema de Perfiles**: subir `firebase-seed/profileConfig.json` al nodo `/profileConfig`, rellenar `defaultCalendars` por perfil con los IDs reales de `/calendars`, y añadir entradas en `delegations.{id}` para delegaciones con calendario/topic propio. Ver `TODO_SISTEMA_PERFILES.md`.
-- [ ] **Configurar tests**: cuando se retome testing, instalar jest-expo, @testing-library/react-native, crear jest.config.js. Priorizar tests para utils/ y hooks/.
+- [ ] **Escribir tests**: infraestructura ya lista (jest.config.js + @testing-library/react-native). Priorizar tests para `utils/` y `hooks/`.
 
 ## Prioridad baja (nice to have)
 
-- [ ] **Limpiar carpeta `(tabsdesactivados)/`**: decidir si eliminar o mantener `comunica.tsx` como referencia.
+- [ ] **Ordenar los archivos**: Hay *.tsx en app, en tabs contigo... ordenar un poco esa movida*
+
 - [ ] **Accesibilidad — ampliar cobertura**: las pantallas principales (Home, Notificaciones) ya tienen labels. Falta cubrir el resto de pantallas (Cantoral, Calendario, Fotos, Reflexiones, etc.).
-- [ ] **Borrar rama `origin/notificaciones`**: es un artefacto histórico, todo está superado por main.
-- [ ] **Notificaciones — mejoras extra (Fase 3)**: agrupación por fecha, filtros/búsqueda, notificaciones programadas, segmentación por plataforma. Ver `NOTIFICACIONES.md`.
+
 
 ---
 
@@ -109,13 +106,8 @@ Ninguna requiere acción inmediata. Re-ejecutar `npm audit` tras cada `npm updat
 
 > Detectadas al documentar `DESIGN.md`. Revisar y unificar cuando se pueda.
 
-- [x] ~~Dos sistemas de colores "primary" en conflicto~~ → `theme.ts` ahora re-exporta `UIColors` desde `colors.ts`. Los colores de UI (`#007bff`) están en `UIColors` con nombre explícito (`activePrimary`), separados de los de marca (`#253883` en `brand.primary`).
-- [x] ~~Border radius inconsistente~~ → tokens centralizados en `uiStyles.ts` (`radii.sm=8, radii.md=12, radii.lg=14, radii.xl=18, radii.pill=20, radii.full=28`). Los componentes existentes siguen con valores inline pero los nuevos deben usar `radii.*`.
-- [x] ~~Sombras ad-hoc por componente~~ → 3 presets en `uiStyles.ts` (`shadows.sm`, `shadows.md`, `shadows.lg`). Los componentes existentes siguen con valores inline pero los nuevos deben usar `shadows.*`.
-- [x] ~~Color de fondo dark mode hardcodeado~~ → añadido `Colors.dark.card: '#3A3A3C'` y `Colors.light.card: '#FFFFFF'`. Reemplazadas 20+ ocurrencias de `#3A3A3C` hardcodeado en 8 archivos.
-- [ ] **Tipografía no conectada a componentes**: `constants/typography.ts` define h1/h2/body/caption/button, pero la mayoría de componentes definen fontSize y fontWeight inline en sus StyleSheets. El archivo typography solo se importa en 5 archivos.
-- [x] ~~Colores de toast no centralizados~~ → exportados como `ToastColors` desde `colors.ts`. `Toast.tsx` actualizado para usarlos.
-- [x] ~~spacing.js debería ser .ts~~ → renombrado a `spacing.ts` con `as const`.
+
+- [ ] **Tipografía no conectada a componentes**: `constants/typography.ts` define h1/h2/body/caption/button, pero la mayoría de componentes definen fontSize y fontWeight inline en sus StyleSheets. El archivo typography solo se importa en 5 archivos
 - [ ] **Falta token para modal borderRadius**: modales usan 8px o 12px según el componente. `radii.sm=8` y `radii.md=12` están disponibles pero no se aplican aún a los modales existentes.
 - [ ] **Peso de fuente inconsistente en labels**: labels de sección usan `fontWeight: '800'`, badges usan `'800'`, títulos de cards usan `'700'`, botones usan `'500'`/`'700'` — no hay una guía clara de qué peso usar para qué nivel.
 - [ ] **Migrar componentes existentes a tokens**: los nuevos tokens (`radii.*`, `shadows.*`) están definidos pero los componentes existentes siguen usando valores inline. Ir migrando gradualmente en futuras iteraciones.
@@ -201,12 +193,9 @@ curl https://[PROJECT_ID].firebaseio.com/songs.json
 
 ### ✨ Nuevas Funcionalidades "Killer"
 
-- [ ] **🎵 "Modo Director" en el Cantoral (Sincronización en Tiempo Real)**
-  - **El concepto:** Un músico o director crea una "Sala" a la que se unen los demás miembros del coro.
-  - **La magia:** Al cambiar de canción, transponer acordes o hacer scroll en el dispositivo del Director, la pantalla de todos los músicos conectados se actualiza instantáneamente usando Firebase Realtime Database.
-  - **Impacto:** Convierte el Cantoral de la app en una herramienta profesional para coros; todos sincronizados automáticamente, sin hojas ni despistes.
 
-- [ ] **📻 Mini-Reproductor de Audio (Podcast/Música en Background) en "Contigo"**
+
+- [ ] **📻 Mini-Reproductor de Audio (Música en Background) en "Contigo"**
   - **El concepto:** Integrar un reproductor de audio sutil y flotante utilizando `expo-av` o `react-native-track-player`.
   - **La magia:** Los usuarios podrán escuchar oraciones guiadas, cantos relajantes o podcasts formativos mientras navegan libremente por el "Evangelio del Día" o el calendario, incluso con la pantalla bloqueada.
   - **Impacto:** Fomenta la retención de la app y proporciona una experiencia espiritual inmersiva que acompaña al usuario durante su rato de oración o su día a día.

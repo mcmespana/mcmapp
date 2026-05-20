@@ -54,7 +54,7 @@ export default function GlassSurface({
       style={[
         StyleSheet.absoluteFill,
         { backgroundColor: webBackground },
-        webBlur,
+        webBlur as any,
         style,
       ]}
     >

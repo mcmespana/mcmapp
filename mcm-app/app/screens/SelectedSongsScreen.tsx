@@ -1117,7 +1117,11 @@ const SelectedSongsScreen: React.FC = () => {
   // --- Header ---------------------------------------------------------------
 
   const headerIconColor =
-    Platform.OS === 'ios' || Platform.OS === 'web' ? '#1a1a1a' : '#fff';
+    Platform.OS === 'ios' || Platform.OS === 'web'
+      ? isDark
+        ? '#ffffff'
+        : '#1a1a1a'
+      : '#fff';
 
   useLayoutEffect(() => {
     navigation.setOptions({

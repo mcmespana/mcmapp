@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View, Platform, Text } from 'react-native';
-import { PressableFeedback } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
+import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -28,7 +29,7 @@ export default function ProfundizaScreen() {
     [scheme, fontScale],
   );
   const event = useCurrentEvent();
-  const { data: profundizaData, loading } = useFirebaseData<any>(
+  const { data: profundizaData } = useFirebaseData<any>(
     getEventFirebasePath(event, 'profundiza'),
     getEventCacheKey(event, 'profundiza'),
   );
@@ -41,11 +42,21 @@ export default function ProfundizaScreen() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   if (!data) {
-    return <ProgressWithMessage message="Cargando profundiza..." />;
-  }
-
-  if (loading) {
-    return <ProgressWithMessage message="Actualizando profundiza..." />;
+    return (
+      <PageContainer>
+        <ScrollView
+          style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
+        >
+          <ScreenHero title="Profundiza" />
+          <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 12 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} style={{ height: 56, borderRadius: radii.xl }} />
+            ))}
+          </View>
+        </ScrollView>
+      </PageContainer>
+    );
   }
 
   return (
@@ -96,7 +107,7 @@ export default function ProfundizaScreen() {
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark', scale: number) => {
+const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
@@ -117,7 +128,7 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
     accordionTitle: { color: colors.white, fontWeight: 'bold', flex: 1 },
     accordionContent: {
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: scheme === 'dark' ? '#555' : colors.border,
       borderBottomLeftRadius: 12,
       borderBottomRightRadius: 12,
       padding: 12,

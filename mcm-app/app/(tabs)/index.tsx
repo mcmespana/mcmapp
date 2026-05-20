@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   Pressable,
   Linking,
+  Platform,
   ViewStyle,
   TextStyle,
   useWindowDimensions,
@@ -51,7 +52,7 @@ import {
   getLocalNotificationsHistory,
   isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
-import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
+import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
@@ -75,32 +76,75 @@ function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
-function getUpcomingEvents(
+function getWeekLabel(date: Date, today: Date): string {
+  const diffTime = date.getTime() - today.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return 'Pasado';
+  if (diffDays === 0) return 'Hoy';
+  if (diffDays === 1) return 'Mañana';
+  if (diffDays < 7) return 'Esta semana';
+  if (diffDays < 14) return 'Próxima semana';
+  if (diffDays < 28) return 'Este mes';
+
+  // Beyond 28 days → don't show
+  return null;
+}
+
+interface EventGroup {
+  label: string;
+  events: CalendarEvent[];
+}
+
+function getUpcomingEventsByWeek(
   eventsByDate: Record<string, CalendarEvent[]>,
-  limit: number,
+  maxEvents: number,
   visibleCalendars: boolean[],
-): CalendarEvent[] {
+): EventGroup[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
   const seen = new Set<string>();
-  const events: CalendarEvent[] = [];
+  const eventsByWeek: Map<string, CalendarEvent[]> = new Map();
 
   Object.entries(eventsByDate)
     .filter(([date]) => date >= todayStr)
     .sort(([a], [b]) => a.localeCompare(b))
-    .forEach(([, evts]) => {
+    .forEach(([dateStr, evts]) => {
       evts.forEach((evt) => {
         if (visibleCalendars[evt.calendarIndex] === false) return;
         const key = `${evt.title}|${evt.startDate}`;
-        if (!seen.has(key)) {
+        if (!seen.has(key) && seen.size < maxEvents) {
+          const eventDate = parseLocalDate(dateStr);
+          const label = getWeekLabel(eventDate, today);
+          if (label === null) return; // beyond 4 weeks — skip
           seen.add(key);
-          events.push(evt);
+
+          if (!eventsByWeek.has(label)) {
+            eventsByWeek.set(label, []);
+          }
+          eventsByWeek.get(label)!.push(evt);
         }
       });
     });
 
-  return events.slice(0, limit);
+  // Preserve order: Hoy → Mañana → Esta semana → Próxima semana → Este mes
+  const order = ['Hoy', 'Mañana', 'Esta semana', 'Próxima semana', 'Este mes'];
+  const groups: EventGroup[] = [];
+
+  order.forEach((label) => {
+    if (eventsByWeek.has(label)) {
+      groups.push({ label, events: eventsByWeek.get(label)! });
+      eventsByWeek.delete(label);
+    }
+  });
+
+  // Add remaining weeks in order
+  eventsByWeek.forEach((events, label) => {
+    groups.push({ label, events });
+  });
+
+  return groups;
 }
 
 interface QuickItem {
@@ -215,16 +259,17 @@ export default function Home() {
   }));
 
   // Calendar events — filtered by user's visible calendars
-  const { calendarConfigs, visibleCalendars } = useCalendarConfigs();
+  const { calendarConfigs, visibleCalendars } = useCalendarConfig();
   const { eventsByDate, loading: eventsLoading } =
     useCalendarEvents(calendarConfigs);
-  const upcomingEvents = useMemo(
-    () => getUpcomingEvents(eventsByDate, 2, visibleCalendars),
+  const upcomingEventGroups = useMemo(
+    () => getUpcomingEventsByWeek(eventsByDate, 8, visibleCalendars),
     [eventsByDate, visibleCalendars],
   );
 
   const hasAnyVisibleCalendar =
     calendarConfigs.length > 0 && visibleCalendars.some(Boolean);
+  const hasUpcomingEvents = upcomingEventGroups.some(g => g.events.length > 0);
 
   // Quick grid items — filtrados por la config del perfil resuelto
   const quickItems = useMemo<QuickItem[]>(() => {
@@ -252,7 +297,7 @@ export default function Home() {
         icon: 'image',
         iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
         iconColor: '#34D399',
-        href: '/fotos',
+        href: '/mas',
       },
       evangelio: {
         key: 'evangelio',
@@ -412,6 +457,7 @@ export default function Home() {
         contentContainerStyle={[
           styles.scrollContent,
           isWide && styles.scrollContentWide,
+          Platform.OS === 'ios' && { paddingBottom: 120 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -626,6 +672,8 @@ export default function Home() {
                     onPress={() => {
                       if (item.key === 'comunica') {
                         setPendingMasScreen('Comunica');
+                      } else if (item.key === 'fotos') {
+                        setPendingMasScreen('Fotos');
                       }
                       if (item.href) router.push(item.href as any);
                     }}
@@ -695,115 +743,130 @@ export default function Home() {
                   onAction={() => router.push('/calendario')}
                   accentColor={accentColor}
                 />
-              ) : eventsLoading && upcomingEvents.length === 0 ? (
+              ) : eventsLoading && !hasUpcomingEvents ? (
                 /* Loading skeleton — shown only when there is no cached data */
                 <View style={styles.eventsSkeletonWrap}>
                   <Skeleton style={styles.eventSkeleton} />
                   <Skeleton style={styles.eventSkeleton} />
                 </View>
-              ) : upcomingEvents.length > 0 ? (
-                upcomingEvents.map((evt, idx) => {
-                  const evtDate = parseLocalDate(evt.startDate);
-                  const calColor =
-                    calendarConfigs[evt.calendarIndex]?.color ?? accentColor;
-                  const calName = calendarConfigs[evt.calendarIndex]?.name;
-                  return (
-                    <TouchableOpacity
-                      key={`${evt.title}|${evt.startDate}|${idx}`}
-                      style={StyleSheet.flatten([
-                        styles.eventCard,
-                        {
-                          backgroundColor: theme.card,
-                          borderColor:
-                            scheme === 'dark'
-                              ? 'rgba(255,255,255,0.09)'
-                              : 'rgba(0,0,0,0.06)',
-                          borderLeftColor: calColor,
-                        },
-                      ])}
-                      onPress={() =>
-                        router.push({
-                          pathname: '/calendario',
-                          params: { date: evt.startDate },
-                        } as any)
-                      }
-                      accessibilityRole="button"
-                      accessibilityLabel={`Evento: ${evt.title}`}
-                    >
-                      <View
-                        style={[
-                          styles.eventDateBox,
-                          { backgroundColor: hexAlpha(calColor, '18') },
-                        ]}
-                      >
-                        <Text style={[styles.eventMonth, { color: calColor }]}>
-                          {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
-                        </Text>
-                        <Text style={[styles.eventDay, { color: calColor }]}>
-                          {evtDate.getDate()}
-                        </Text>
-                      </View>
-
-                      <View style={styles.eventInfo}>
-                        <Text
-                          style={[
-                            styles.eventTitle,
+              ) : hasUpcomingEvents ? (
+                upcomingEventGroups.map((group) =>
+                  group.events.map((evt, idx) => {
+                    const isFirstInGroup = idx === 0;
+                    const evtDate = parseLocalDate(evt.startDate);
+                    const calColor =
+                      calendarConfigs[evt.calendarIndex]?.color ?? accentColor;
+                    const calName = calendarConfigs[evt.calendarIndex]?.name;
+                    return (
+                      <React.Fragment key={`${group.label}|${evt.title}|${evt.startDate}|${idx}`}>
+                        {isFirstInGroup && (
+                          <Text
+                            style={[
+                              styles.weekSeparator,
+                              { color: theme.icon },
+                            ]}
+                          >
+                            {group.label}
+                          </Text>
+                        )}
+                        <TouchableOpacity
+                          key={`${evt.title}|${evt.startDate}|${idx}`}
+                          style={StyleSheet.flatten([
+                            styles.eventCard,
                             {
-                              color: theme.text,
-                              fontSize: 13 * fontScale,
+                              backgroundColor: theme.card,
+                              borderColor:
+                                scheme === 'dark'
+                                  ? 'rgba(255,255,255,0.09)'
+                                  : 'rgba(0,0,0,0.06)',
+                              borderLeftColor: calColor,
                             },
-                          ]}
-                          numberOfLines={1}
+                          ])}
+                          onPress={() =>
+                            router.push({
+                              pathname: '/calendario',
+                              params: { date: evt.startDate },
+                            } as any)
+                          }
+                          accessibilityRole="button"
+                          accessibilityLabel={`Evento: ${evt.title}`}
                         >
-                          {evt.title}
-                        </Text>
-                        {calName && (
                           <View
                             style={[
-                              styles.calBadge,
+                              styles.eventDateBox,
                               { backgroundColor: hexAlpha(calColor, '18') },
                             ]}
                           >
-                            <Text
-                              style={[styles.calBadgeText, { color: calColor }]}
-                              numberOfLines={1}
-                            >
-                              {calName}
+                            <Text style={[styles.eventMonth, { color: calColor }]}>
+                              {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
+                            </Text>
+                            <Text style={[styles.eventDay, { color: calColor }]}>
+                              {evtDate.getDate()}
                             </Text>
                           </View>
-                        )}
-                        {evt.location ? (
-                          <View style={styles.eventMeta}>
-                            <MaterialIcons
-                              name="schedule"
-                              size={11}
-                              color={theme.icon}
-                            />
+
+                          <View style={styles.eventInfo}>
                             <Text
                               style={[
-                                styles.eventMetaText,
+                                styles.eventTitle,
                                 {
-                                  color: theme.icon,
-                                  fontSize: 11 * fontScale,
+                                  color: theme.text,
+                                  fontSize: 13 * fontScale,
                                 },
                               ]}
                               numberOfLines={1}
                             >
-                              {evt.location}
+                              {evt.title}
                             </Text>
+                            {calName && (
+                              <View
+                                style={[
+                                  styles.calBadge,
+                                  { backgroundColor: hexAlpha(calColor, '18') },
+                                ]}
+                              >
+                                <Text
+                                  style={[styles.calBadgeText, { color: calColor }]}
+                                  numberOfLines={1}
+                                >
+                                  {calName}
+                                </Text>
+                              </View>
+                            )}
+                            {evt.location ? (
+                              <View style={styles.eventMeta}>
+                                <MaterialIcons
+                                  name="schedule"
+                                  size={11}
+                                  color={theme.icon}
+                                />
+                                <Text
+                                  style={[
+                                    styles.eventMetaText,
+                                    {
+                                      color: theme.icon,
+                                      fontSize: 11 * fontScale,
+                                    },
+                                  ]}
+                                  numberOfLines={1}
+                                >
+                                  {evt.location}
+                                </Text>
+                              </View>
+                            ) : null}
                           </View>
-                        ) : null}
-                      </View>
 
-                      <MaterialIcons
-                        name="chevron-right"
-                        size={20}
-                        color={theme.icon}
-                        style={{ opacity: 0.3 }}
-                      />
-                    </TouchableOpacity>
-                  );
-                })
+                          <MaterialIcons
+                            name="chevron-right"
+                            size={20}
+                            color={theme.icon}
+                            style={{ opacity: 0.3 }}
+                          />
+                        </TouchableOpacity>
+                      </React.Fragment>
+                    );
+                  }),
+                )
               ) : (
                 /* No upcoming events */
                 <EmptyState
@@ -1104,6 +1167,14 @@ const styles = StyleSheet.create({
     height: 78,
     borderRadius: radii.lg,
   } as ViewStyle,
+  weekSeparator: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: spacing.sm + 2,
+    marginBottom: spacing.xs,
+    marginLeft: spacing.xs,
+    opacity: 0.7,
+  } as TextStyle,
   calendarButton: {
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
@@ -19,6 +19,13 @@ interface Props {
   onSetCapoOverride?: (capo: number | null) => void;
 }
 
+const TONE_STEPS: { value: number; label: string }[] = [
+  { value: -2, label: '−2' },
+  { value: -1, label: '−1' },
+  { value: 1, label: '+1' },
+  { value: 2, label: '+2' },
+];
+
 export default function TransposePanel({
   visible,
   onClose,
@@ -30,234 +37,70 @@ export default function TransposePanel({
 }: Props) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
 
-  const TransposeButton = ({
-    label,
-    value,
-    variant,
-  }: {
-    label: string;
-    value: number;
-    variant: 'up' | 'down';
-  }) => (
-    <PressableFeedback
-      style={[
-        styles.transposeButton,
-        isDark && styles.transposeButtonDark,
-        variant === 'up' &&
-          (isDark ? styles.transposeUpDark : styles.transposeUp),
-        variant === 'down' &&
-          (isDark ? styles.transposeDownDark : styles.transposeDown),
-      ]}
-      onPress={() => onSetTranspose(value)}
-    >
-      <PressableFeedback.Highlight />
-      <MaterialIcons
-        name={variant === 'up' ? 'arrow-upward' : 'arrow-downward'}
-        size={18}
-        color={
-          variant === 'up'
-            ? isDark
-              ? '#81C784'
-              : '#2E7D32'
-            : isDark
-              ? '#E57373'
-              : '#C62828'
-        }
-      />
-      <Text
+  const showCapoSection = onSetCapoOverride !== undefined;
+  const isCapoOverridden =
+    currentCapoOverride !== null && currentCapoOverride !== undefined;
+  const effectiveCapo = isCapoOverridden
+    ? (currentCapoOverride as number)
+    : (originalCapo ?? 0);
+  const isTransposed = currentTranspose !== 0;
+
+  const handleCapoMinus = () => {
+    if (!onSetCapoOverride) return;
+    const next = effectiveCapo - 1;
+    if (next < 0) return;
+    onSetCapoOverride(next === (originalCapo ?? 0) ? null : next);
+  };
+  const handleCapoPlus = () => {
+    if (!onSetCapoOverride) return;
+    const next = effectiveCapo + 1;
+    onSetCapoOverride(next === (originalCapo ?? 0) ? null : next);
+  };
+
+  return (
+    <BottomSheet visible={visible} onClose={onClose} title="Ajustes de canción">
+      <View
         style={[
-          styles.transposeButtonText,
+          styles.container,
           {
-            color:
-              variant === 'up'
-                ? isDark
-                  ? '#81C784'
-                  : '#2E7D32'
-                : isDark
-                  ? '#E57373'
-                  : '#C62828',
+            paddingBottom: Platform.OS === 'web' ? 16 : 0,
           },
         ]}
       >
-        {label}
-      </Text>
-    </PressableFeedback>
-  );
-
-  // Cejilla efectiva a mostrar: override si existe, original si no.
-  const effectiveCapo =
-    currentCapoOverride !== null && currentCapoOverride !== undefined
-      ? currentCapoOverride
-      : (originalCapo ?? 0);
-  const isCapoOverridden =
-    currentCapoOverride !== null && currentCapoOverride !== undefined;
-  const showCapoSection = onSetCapoOverride !== undefined;
-
-  return (
-    <BottomSheet visible={visible} onClose={onClose}>
-      <Text style={[styles.title, { color: theme.text }]}>Cambiar tono</Text>
-
-      <View style={styles.currentDisplay}>
-        <Text style={styles.currentLabel}>Transposición actual</Text>
-        <Text
-          style={[
-            styles.currentValue,
-            {
-              color:
-                currentTranspose === 0
-                  ? isDark
-                    ? '#8E8E93'
-                    : '#636366'
-                  : currentTranspose > 0
-                    ? isDark
-                      ? '#81C784'
-                      : '#2E7D32'
-                    : isDark
-                      ? '#E57373'
-                      : '#C62828',
-            },
-          ]}
-        >
-          {currentTranspose === 0
-            ? 'Original'
-            : `${currentTranspose > 0 ? '+' : ''}${currentTranspose} semitonos`}
-        </Text>
-      </View>
-
-      <View style={styles.buttonsGrid}>
-        <View style={styles.buttonsRow}>
-          <TransposeButton
-            label="+1"
-            value={currentTranspose + 1}
-            variant="up"
-          />
-          <TransposeButton
-            label="+2"
-            value={currentTranspose + 2}
-            variant="up"
-          />
-        </View>
-        <View style={styles.buttonsRow}>
-          <TransposeButton
-            label="-1"
-            value={currentTranspose - 1}
-            variant="down"
-          />
-          <TransposeButton
-            label="-2"
-            value={currentTranspose - 2}
-            variant="down"
-          />
-        </View>
-      </View>
-
-      <PressableFeedback
-        style={[styles.resetButton, isDark && styles.resetButtonDark]}
-        onPress={() => onSetTranspose(0)}
-      >
-        <PressableFeedback.Highlight />
-        <MaterialIcons
-          name="refresh"
-          size={18}
-          color={isDark ? '#AEAEB2' : '#636366'}
-        />
-        <Text
-          style={[styles.resetText, { color: isDark ? '#AEAEB2' : '#636366' }]}
-        >
-          Tono original
-        </Text>
-      </PressableFeedback>
-
-      {showCapoSection && (
-        <>
-          <View style={[styles.divider, isDark && styles.dividerDark]} />
-
-          <Text style={[styles.capoSectionTitle, { color: theme.text }]}>
-            Cejilla para esta sesión
-          </Text>
-
-          {originalCapo !== undefined && originalCapo > 0 && !isCapoOverridden && (
-            <Text style={styles.capoOriginalHint}>
-              Original: cejilla {originalCapo}
-            </Text>
-          )}
-          {isCapoOverridden && originalCapo !== undefined && originalCapo > 0 && (
-            <Text style={styles.capoOriginalHint}>
-              Original: cejilla {originalCapo} · sesión: cejilla{' '}
-              {currentCapoOverride}
-            </Text>
-          )}
-
-          <View style={styles.capoStepper}>
-            <PressableFeedback
-              style={[
-                styles.capoStepBtn,
-                isDark && styles.capoStepBtnDark,
-                effectiveCapo <= 0 && styles.capoStepBtnDisabled,
-              ]}
-              onPress={() => {
-                if (effectiveCapo > 0)
-                  onSetCapoOverride(effectiveCapo - 1 === 0 ? null : effectiveCapo - 1);
-              }}
-              disabled={effectiveCapo <= 0}
-            >
-              <PressableFeedback.Highlight />
-              <MaterialIcons
-                name="remove"
-                size={22}
-                color={
-                  effectiveCapo <= 0
-                    ? isDark
-                      ? '#48484A'
-                      : '#C7C7CC'
-                    : isDark
-                      ? '#E57373'
-                      : '#C62828'
-                }
-              />
-            </PressableFeedback>
-
-            <View style={styles.capoValueWrap}>
+        {/* ━━━━━━━━━━━━━━ TONO ━━━━━━━━━━━━━━ */}
+        <View style={[styles.card, isDark && styles.cardDark]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardLabel}>TONO</Text>
+            <View style={styles.cardValueWrap}>
               <Text
                 style={[
-                  styles.capoValue,
+                  styles.cardValue,
                   {
-                    color: isCapoOverridden
+                    color: isTransposed
                       ? isDark
-                        ? '#F4C11E'
-                        : '#7A5A00'
+                        ? '#FFB74D'
+                        : '#C77700'
                       : isDark
                         ? '#8E8E93'
-                        : '#636366',
+                        : '#8E8E93',
                   },
                 ]}
               >
-                {effectiveCapo === 0 ? 'Sin cejilla' : `Cejilla ${effectiveCapo}`}
+                {isTransposed
+                  ? `${currentTranspose > 0 ? '+' : ''}${currentTranspose} semitonos`
+                  : 'Original'}
               </Text>
-              {isCapoOverridden && (
-                <Text style={styles.capoOverrideBadge}>modificada</Text>
-              )}
             </View>
-
             <PressableFeedback
-              style={[styles.capoStepBtn, isDark && styles.capoStepBtnDark]}
-              onPress={() => onSetCapoOverride(effectiveCapo + 1)}
-            >
-              <PressableFeedback.Highlight />
-              <MaterialIcons
-                name="add"
-                size={22}
-                color={isDark ? '#81C784' : '#2E7D32'}
-              />
-            </PressableFeedback>
-          </View>
-
-          {isCapoOverridden && (
-            <PressableFeedback
-              style={[styles.resetButton, isDark && styles.resetButtonDark]}
-              onPress={() => onSetCapoOverride(null)}
+              style={[
+                styles.resetIconBtn,
+                !isTransposed && styles.resetIconBtnHidden,
+              ]}
+              onPress={() => onSetTranspose(0)}
+              isDisabled={!isTransposed}
+              accessibilityLabel="Restablecer tono"
             >
               <PressableFeedback.Highlight />
               <MaterialIcons
@@ -265,152 +108,310 @@ export default function TransposePanel({
                 size={18}
                 color={isDark ? '#AEAEB2' : '#636366'}
               />
-              <Text
+            </PressableFeedback>
+          </View>
+
+          <View style={styles.toneRow}>
+            {TONE_STEPS.map((step) => {
+              const isUp = step.value > 0;
+              return (
+                <PressableFeedback
+                  key={step.value}
+                  style={[
+                    styles.toneBtn,
+                    isUp
+                      ? isDark
+                        ? styles.toneBtnUpDark
+                        : styles.toneBtnUp
+                      : isDark
+                        ? styles.toneBtnDownDark
+                        : styles.toneBtnDown,
+                  ]}
+                  onPress={() => onSetTranspose(currentTranspose + step.value)}
+                >
+                  <PressableFeedback.Highlight />
+                  <Text
+                    style={[
+                      styles.toneBtnText,
+                      {
+                        color: isUp
+                          ? isDark
+                            ? '#81C784'
+                            : '#2E7D32'
+                          : isDark
+                            ? '#E57373'
+                            : '#C62828',
+                      },
+                    ]}
+                  >
+                    {step.label}
+                  </Text>
+                </PressableFeedback>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ━━━━━━━━━━━━━━ CEJILLA ━━━━━━━━━━━━━━ */}
+        {showCapoSection && (
+          <View style={[styles.card, isDark && styles.cardDark]}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardLabel}>CEJILLA</Text>
+              <View style={styles.cardValueWrap}>
+                <Text
+                  style={[
+                    styles.cardValue,
+                    {
+                      color: isCapoOverridden
+                        ? isDark
+                          ? '#FFB74D'
+                          : '#C77700'
+                        : isDark
+                          ? '#8E8E93'
+                          : '#8E8E93',
+                    },
+                  ]}
+                >
+                  {isCapoOverridden
+                    ? originalCapo && originalCapo > 0
+                      ? `Original: ${originalCapo}`
+                      : 'Original: sin cejilla'
+                    : originalCapo && originalCapo > 0
+                      ? `Original: ${originalCapo}`
+                      : 'Sin cejilla'}
+                </Text>
+              </View>
+              <PressableFeedback
                 style={[
-                  styles.resetText,
-                  { color: isDark ? '#AEAEB2' : '#636366' },
+                  styles.resetIconBtn,
+                  !isCapoOverridden && styles.resetIconBtnHidden,
+                ]}
+                onPress={() => onSetCapoOverride!(null)}
+                isDisabled={!isCapoOverridden}
+                accessibilityLabel="Restablecer cejilla"
+              >
+                <PressableFeedback.Highlight />
+                <MaterialIcons
+                  name="refresh"
+                  size={18}
+                  color={isDark ? '#AEAEB2' : '#636366'}
+                />
+              </PressableFeedback>
+            </View>
+
+            <View style={styles.capoRow}>
+              <PressableFeedback
+                style={[
+                  styles.capoStepBtn,
+                  isDark ? styles.toneBtnDownDark : styles.toneBtnDown,
+                  effectiveCapo <= 0 && styles.capoStepBtnDisabled,
+                ]}
+                onPress={handleCapoMinus}
+                isDisabled={effectiveCapo <= 0}
+              >
+                <PressableFeedback.Highlight />
+                <MaterialIcons
+                  name="remove"
+                  size={26}
+                  color={
+                    effectiveCapo <= 0
+                      ? isDark
+                        ? '#48484A'
+                        : '#C7C7CC'
+                      : isDark
+                        ? '#E57373'
+                        : '#C62828'
+                  }
+                />
+              </PressableFeedback>
+
+              <View
+                style={[
+                  styles.capoDisplay,
+                  isCapoOverridden
+                    ? isDark
+                      ? styles.capoDisplayOverriddenDark
+                      : styles.capoDisplayOverridden
+                    : isDark
+                      ? styles.capoDisplayDark
+                      : null,
                 ]}
               >
-                Cejilla original
-              </Text>
-            </PressableFeedback>
-          )}
-        </>
-      )}
+                <Text
+                  style={[
+                    styles.capoDisplayValue,
+                    {
+                      color: isCapoOverridden
+                        ? isDark
+                          ? '#F4C11E'
+                          : '#7A5A00'
+                        : isDark
+                          ? '#EBEBF0'
+                          : '#1C1C1E',
+                    },
+                  ]}
+                >
+                  {effectiveCapo === 0
+                    ? 'Sin cejilla'
+                    : `Cejilla ${effectiveCapo}`}
+                </Text>
+                <Text
+                  style={[
+                    styles.capoDisplayBadge,
+                    !isCapoOverridden && styles.capoDisplayBadgeHidden,
+                  ]}
+                >
+                  modificada
+                </Text>
+              </View>
+
+              <PressableFeedback
+                style={[
+                  styles.capoStepBtn,
+                  isDark ? styles.toneBtnUpDark : styles.toneBtnUp,
+                ]}
+                onPress={handleCapoPlus}
+              >
+                <PressableFeedback.Highlight />
+                <MaterialIcons
+                  name="add"
+                  size={26}
+                  color={isDark ? '#81C784' : '#2E7D32'}
+                />
+              </PressableFeedback>
+            </View>
+          </View>
+        )}
+      </View>
     </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 20,
-    textAlign: 'center',
-    letterSpacing: -0.4,
+  container: {
+    paddingTop: 4,
+    gap: 12,
   },
-  currentDisplay: {
+  card: {
+    backgroundColor: '#F7F7FB',
+    borderRadius: radii.lg,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  cardDark: {
+    backgroundColor: Colors.dark.card,
+  },
+  cardHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    minHeight: 28,
   },
-  currentLabel: {
-    fontSize: 13,
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
     color: '#8E8E93',
-    marginBottom: 4,
   },
-  currentValue: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  buttonsGrid: {
-    gap: 10,
-    marginBottom: 16,
-  },
-  buttonsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  transposeButton: {
+  cardValueWrap: {
     flex: 1,
-    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardValue: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  resetIconBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: radii.md,
+    backgroundColor: 'transparent',
+  },
+  resetIconBtnHidden: {
+    opacity: 0,
+  },
+  toneRow: {
+    flexDirection: 'row',
     gap: 8,
   },
-  transposeButtonDark: {},
-  transposeUp: {
+  toneBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toneBtnUp: {
     backgroundColor: '#E8F5E9',
   },
-  transposeUpDark: {
+  toneBtnUpDark: {
     backgroundColor: '#1B3A1B',
   },
-  transposeDown: {
+  toneBtnDown: {
     backgroundColor: '#FFEBEE',
   },
-  transposeDownDark: {
+  toneBtnDownDark: {
     backgroundColor: '#3A1B1B',
   },
-  transposeButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  resetButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: radii.md,
-    backgroundColor: '#F2F2F7',
-    gap: 8,
-  },
-  resetButtonDark: {
-    backgroundColor: Colors.dark.card,
-  },
-  resetText: {
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.08)',
-    marginVertical: 16,
-  },
-  dividerDark: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  capoSectionTitle: {
+  toneBtnText: {
     fontSize: 17,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 6,
-    letterSpacing: -0.3,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
-  capoOriginalHint: {
-    fontSize: 13,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  capoStepper: {
+  capoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 10,
-    marginBottom: 10,
   },
   capoStepBtn: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: radii.md,
-    backgroundColor: '#F2F2F7',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  capoStepBtnDark: {
-    backgroundColor: Colors.dark.card,
-  },
   capoStepBtnDisabled: {
-    opacity: 0.4,
+    opacity: 0.35,
   },
-  capoValueWrap: {
+  capoDisplay: {
     flex: 1,
+    height: 56,
+    borderRadius: radii.md,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
   },
-  capoValue: {
-    fontSize: 17,
-    fontWeight: '700',
+  capoDisplayDark: {
+    backgroundColor: '#1C1C1E',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  capoOverrideBadge: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9D5C00',
+  capoDisplayOverridden: {
     backgroundColor: '#FFF4DA',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginTop: 4,
-    overflow: 'hidden',
+    borderColor: '#F4C11E',
+  },
+  capoDisplayOverriddenDark: {
+    backgroundColor: '#3A2D0A',
+    borderColor: '#7A5A00',
+  },
+  capoDisplayValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  capoDisplayBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#9D5C00',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  capoDisplayBadgeHidden: {
+    opacity: 0,
   },
 });

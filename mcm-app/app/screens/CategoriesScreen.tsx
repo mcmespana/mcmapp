@@ -1,4 +1,4 @@
-import { FlatList, Text, StyleSheet, View, Platform } from 'react-native';
+import { FlatList, Text, StyleSheet, View, Platform, TouchableOpacity } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   useLayoutEffect,
@@ -113,38 +113,34 @@ export default function CategoriesScreen({
     }
   }, [navigation]);
 
-  // Header: search + add buttons together (integrado en el header)
+  // Header: add on left, search on right
   useLayoutEffect(() => {
-    const iconColor = isIOS
-      ? '#f4c11e'
-      : Platform.OS === 'web'
-        ? '#1a1a1a'
-        : '#1a1a1a';
+    const iconColor = isIOS ? '#f4c11e' : '#1a1a1a';
     navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => setShowForm(true)}
+          style={styles.headerButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Sugerir canción"
+        >
+          <MaterialIcons name="add" size={26} color={iconColor} />
+        </TouchableOpacity>
+      ),
       headerRight: () => (
-        <View style={styles.headerButtons}>
-          <PressableFeedback
-            onPress={() => setShowForm(true)}
-            style={styles.headerButton}
-            accessibilityLabel="Sugerir canción"
-          >
-            <PressableFeedback.Highlight />
-            <MaterialIcons name="add" size={26} color={iconColor} />
-          </PressableFeedback>
-          <PressableFeedback
-            onPress={() =>
-              navigation.navigate('SongsList', {
-                categoryId: ALL_SONGS_CATEGORY_ID,
-                categoryName: ALL_SONGS_CATEGORY_NAME,
-              })
-            }
-            style={styles.headerButton}
-            accessibilityLabel="Buscar canción"
-          >
-            <PressableFeedback.Highlight />
-            <MaterialIcons name="search" size={26} color={iconColor} />
-          </PressableFeedback>
-        </View>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('SongsList', {
+              categoryId: ALL_SONGS_CATEGORY_ID,
+              categoryName: ALL_SONGS_CATEGORY_NAME,
+            })
+          }
+          style={styles.headerButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Buscar canción"
+        >
+          <MaterialIcons name="search" size={26} color={iconColor} />
+        </TouchableOpacity>
       ),
     });
   }, [navigation]);
@@ -202,7 +198,7 @@ export default function CategoriesScreen({
             <MaterialIcons
               name="chevron-right"
               size={20}
-              color={isDark ? '#555' : '#C7C7CC'}
+              color={isDark ? '#8E8E93' : '#C7C7CC'}
             />
           </View>
         </PressableFeedback>
@@ -253,14 +249,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
       backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
     },
-    headerButtons: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      marginRight: Platform.OS === 'web' ? 8 : 0,
-    },
     headerButton: {
-      padding: 8,
+      padding: 4,
+      marginHorizontal: Platform.OS === 'web' ? 4 : 0,
     },
     listContent: {
       paddingHorizontal: 16,

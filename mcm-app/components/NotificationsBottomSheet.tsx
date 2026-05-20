@@ -10,10 +10,7 @@ import {
   Animated,
   ScrollView,
   Pressable,
-  Modal,
-  PanResponder,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,10 +31,10 @@ import {
 } from '@/services/pushNotificationService';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import BottomSheet from './BottomSheet';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const DRAG_THRESHOLD = 60;
-const SHEET_GAP = 80; // espacio por debajo del safe-area (notch/Dynamic Island)
+const SHEET_GAP = 80; // space below safe-area (notch / Dynamic Island)
 
 const ROUTE_LABELS: Record<
   string,
@@ -79,6 +76,7 @@ interface Props {
 
 export default function NotificationsBottomSheet({ visible, onClose }: Props) {
   const scheme = useColorScheme() ?? 'light';
+  const isDark = scheme === 'dark';
   const theme = Colors[scheme];
   const insets = useSafeAreaInsets();
   const { firebaseNotifications, refreshCount } = useNotifications();
@@ -93,101 +91,13 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
     (NotificationData | ReceivedNotification) | null
   >(null);
 
-  // ── Animación ──────────────────────────────────────────────────────────────
-  const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
-
-  // Ref estable para onClose — evita stale closure en PanResponder
-  const onCloseRef = useRef(onClose);
+  // Reset detail view when sheet closes
   useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  // PanResponder usa refs directamente, sin capturar callbacks que puedan quedar obsoletos
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, { dy, dx }) =>
-        Math.abs(dy) > Math.abs(dx) && dy > 2,
-      onPanResponderMove: (_, { dy }) => {
-        if (dy > 0) translateY.setValue(dy);
-      },
-      onPanResponderRelease: (_, { dy, vy }) => {
-        if (dy > DRAG_THRESHOLD || vy > 0.5) {
-          Animated.parallel([
-            Animated.timing(translateY, {
-              toValue: SCREEN_HEIGHT,
-              duration: 280,
-              useNativeDriver: true,
-            }),
-            Animated.timing(overlayOpacity, {
-              toValue: 0,
-              duration: 220,
-              useNativeDriver: true,
-            }),
-          ]).start(() => {
-            onCloseRef.current?.();
-          });
-        } else {
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 80,
-            friction: 12,
-          }).start();
-        }
-      },
-      onPanResponderTerminate: () => {
-        // Si otro gestor roba el gesto, volvemos a posición original
-        Animated.spring(translateY, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 80,
-          friction: 12,
-        }).start();
-      },
-    }),
-  ).current;
-
-  const animateOpen = useCallback(() => {
-    translateY.setValue(SCREEN_HEIGHT);
-    overlayOpacity.setValue(0);
-    Animated.parallel([
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 12,
-      }),
-      Animated.timing(overlayOpacity, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [translateY, overlayOpacity]);
-
-  const animateClose = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: SCREEN_HEIGHT,
-        duration: 280,
-        useNativeDriver: true,
-      }),
-      Animated.timing(overlayOpacity, {
-        toValue: 0,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setSelectedNotification(null);
-      onClose();
-    });
-  }, [translateY, overlayOpacity, onClose]);
+    if (!visible) setSelectedNotification(null);
+  }, [visible]);
 
   useEffect(() => {
     if (visible) {
-      animateOpen();
       loadLocalData();
       refreshCount();
     }
@@ -228,7 +138,6 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
       },
     );
 
-    // Deduplicar por contenido (título + cuerpo) — la primera aparición gana
     const seenContentKeys = new Set<string>();
     const seenIds = new Set<string>();
     return combined.filter((n) => {
@@ -241,7 +150,6 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
     });
   }, [localNotifications, firebaseNotifications]);
 
-  // Helper reutilizable para saber si una notificación está leída
   const isNotificationRead = React.useCallback(
     (n: NotificationData | ReceivedNotification) => {
       if (readIds.has(n.id)) return true;
@@ -276,17 +184,16 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
 
   const handleNotificationPress = useCallback(
     async (notification: NotificationData | ReceivedNotification) => {
-      if (!isNotificationRead(notification)) await handleMarkAsRead(notification.id);
+      if (!isNotificationRead(notification))
+        await handleMarkAsRead(notification.id);
       setSelectedNotification(notification);
     },
     [isNotificationRead, handleMarkAsRead],
   );
 
-  // Chip de destino → navega directamente sin abrir el detalle
   const handleDestinationChipPress = useCallback(
     (route: string) => {
-      animateClose();
-      // Esperar a que el sheet cierre antes de navegar
+      onClose();
       setTimeout(() => {
         try {
           router.push(route as any);
@@ -295,7 +202,7 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
         }
       }, 320);
     },
-    [animateClose],
+    [onClose],
   );
 
   // ── Swipe action ──────────────────────────────────────────────────────────
@@ -352,7 +259,10 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
         <TouchableOpacity
           style={[
             listStyles.card,
-            { backgroundColor: theme.background, borderColor: colors.border },
+            {
+              backgroundColor: theme.background,
+              borderColor: isDark ? '#3A3A3C' : colors.border,
+            },
             isUnread && {
               backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
               borderColor: colors.primary,
@@ -369,7 +279,6 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
           )}
 
           <View style={listStyles.content}>
-            {/* Título + indicadores */}
             <View style={listStyles.row}>
               <Text
                 style={[
@@ -398,7 +307,6 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
               </View>
             </View>
 
-            {/* Cuerpo */}
             <Text
               style={[listStyles.body, { color: theme.icon }]}
               numberOfLines={2}
@@ -406,13 +314,11 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
               {notification.body}
             </Text>
 
-            {/* Footer: fecha + chips */}
             <View style={listStyles.footer}>
               <Text style={[listStyles.date, { color: theme.icon }]}>
                 {formatDate(date)}
               </Text>
               <View style={listStyles.chipsRow}>
-                {/* Chip de destino → navega directo con "›" */}
                 {routeInfo && notification.internalRoute && (
                   <Pressable
                     style={listStyles.destChip}
@@ -431,13 +337,12 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
                     />
                   </Pressable>
                 )}
-                {/* Chip de acción */}
                 {notification.actionButton && (
                   <Pressable
                     style={listStyles.actionChip}
                     onPress={() => {
                       const btn = notification.actionButton!;
-                      animateClose();
+                      onClose();
                       setTimeout(() => {
                         if (btn.isInternal) {
                           try {
@@ -472,149 +377,88 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
     );
   };
 
-  if (!visible) return null;
-
-  // Offset dinámico: siempre por debajo del safe area (notch / Dynamic Island)
-  const topOffset = insets.top + SHEET_GAP;
-  const sheetHeight = SCREEN_HEIGHT - topOffset;
+  // Fixed height so FlatList can scroll: leave SHEET_GAP below Dynamic Island
+  const sheetHeight = SCREEN_HEIGHT - (insets.top + SHEET_GAP);
 
   return (
-    <Modal
+    <BottomSheet
       visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={animateClose}
-      statusBarTranslucent
+      onClose={onClose}
+      height={sheetHeight}
+      title={selectedNotification ? undefined : 'Notificaciones'}
     >
-      {/* Overlay oscuro — Pressable para cerrar al tocar fuera del sheet */}
-      <Pressable style={StyleSheet.absoluteFill} onPress={animateClose}>
-        <Animated.View
-          style={[
-            StyleSheet.absoluteFill,
-            sheetStyles.overlay,
-            { opacity: overlayOpacity },
-          ]}
-          pointerEvents="none"
+      {selectedNotification ? (
+        <NotificationDetail
+          notification={selectedNotification}
+          onBack={() => setSelectedNotification(null)}
+          onClose={onClose}
+          scheme={scheme}
+          bottomInset={insets.bottom}
         />
-      </Pressable>
-
-      {/* Sheet */}
-      <Animated.View
-        style={[
-          sheetStyles.sheet,
-          {
-            height: sheetHeight,
-            top: topOffset,
-            backgroundColor: theme.background,
-            transform: [{ translateY }],
-          },
-        ]}
-      >
-        {/* Handle — zona de arrastre, ancho completo */}
-        <View {...panResponder.panHandlers} style={sheetStyles.handleArea}>
-          <View
-            style={[
-              sheetStyles.handle,
-              { backgroundColor: hexAlpha(theme.icon, '35') },
-            ]}
-          />
-        </View>
-
-        {selectedNotification ? (
-          <NotificationDetail
-            notification={selectedNotification}
-            onBack={() => setSelectedNotification(null)}
-            onClose={animateClose}
-            scheme={scheme}
-            bottomInset={insets.bottom}
-          />
-        ) : (
-          <>
-            {/* Cabecera lista */}
-            <View
-              style={[
-                sheetStyles.header,
-                { borderBottomColor: hexAlpha(theme.icon, '15') },
-              ]}
+      ) : (
+        <>
+          {hasUnread && (
+            <TouchableOpacity
+              onPress={handleMarkAllAsRead}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={sheetStyles.markAllBtn}
             >
-              {hasUnread ? (
-                <TouchableOpacity
-                  onPress={handleMarkAllAsRead}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <MaterialIcons
-                    name="done-all"
-                    size={22}
-                    color={colors.primary}
-                  />
-                </TouchableOpacity>
-              ) : (
-                <View style={{ width: 32 }} />
-              )}
-              <Text style={[sheetStyles.headerTitle, { color: theme.text }]}>
-                Notificaciones
-              </Text>
-              <TouchableOpacity
-                onPress={animateClose}
-                style={sheetStyles.closeBtn}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons name="close" size={22} color={theme.icon} />
-              </TouchableOpacity>
-            </View>
+              <MaterialIcons name="done-all" size={18} color={colors.primary} />
+              <Text style={sheetStyles.markAllText}>Marcar todo como leído</Text>
+            </TouchableOpacity>
+          )}
 
-            {loading ? (
-              <View style={sheetStyles.empty}>
-                <Text style={[sheetStyles.emptyText, { color: theme.icon }]}>
-                  Cargando…
-                </Text>
-              </View>
-            ) : allNotifications.length === 0 ? (
-              <View style={sheetStyles.empty}>
-                <MaterialIcons
-                  name="notifications-none"
-                  size={64}
-                  color={theme.icon}
-                />
-                <Text style={[sheetStyles.emptyTitle, { color: theme.text }]}>
-                  No hay notificaciones
-                </Text>
-                <Text style={[sheetStyles.emptyText, { color: theme.icon }]}>
-                  Aquí aparecerán tus notificaciones cuando las tengas.
-                </Text>
-              </View>
-            ) : (
-              <FlatList
-                data={allNotifications}
-                keyExtractor={(item, idx) =>
-                  item.id ? item.id.toString() : `fb-${idx}`
-                }
-                renderItem={renderNotification}
-                contentContainerStyle={[
-                  listStyles.listContent,
-                  { paddingBottom: insets.bottom + spacing.md },
-                ]}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={() => {
-                      setRefreshing(true);
-                      loadLocalData();
-                    }}
-                  />
-                }
+          {loading ? (
+            <View style={sheetStyles.empty}>
+              <Text style={[sheetStyles.emptyText, { color: theme.icon }]}>
+                Cargando…
+              </Text>
+            </View>
+          ) : allNotifications.length === 0 ? (
+            <View style={sheetStyles.empty}>
+              <MaterialIcons
+                name="notifications-none"
+                size={64}
+                color={theme.icon}
               />
-            )}
-          </>
-        )}
-      </Animated.View>
-    </Modal>
+              <Text style={[sheetStyles.emptyTitle, { color: theme.text }]}>
+                No hay notificaciones
+              </Text>
+              <Text style={[sheetStyles.emptyText, { color: theme.icon }]}>
+                Aquí aparecerán tus notificaciones cuando las tengas.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={allNotifications}
+              keyExtractor={(item, idx) =>
+                item.id ? item.id.toString() : `fb-${idx}`
+              }
+              renderItem={renderNotification}
+              contentContainerStyle={[
+                listStyles.listContent,
+                { paddingBottom: insets.bottom + spacing.md },
+              ]}
+              scrollEventThrottle={16}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={() => {
+                    setRefreshing(true);
+                    loadLocalData();
+                  }}
+                />
+              }
+            />
+          )}
+        </>
+      )}
+    </BottomSheet>
   );
 }
 
 // ============================================================================
-// Vista de detalle — reemplaza la lista dentro del sheet (sin bottom sheet anidado)
+// Vista de detalle
 // ============================================================================
 
 function NotificationDetail({
@@ -651,7 +495,6 @@ function NotificationDetail({
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Cabecera del detalle */}
       <View
         style={[
           detailStyles.header,
@@ -674,7 +517,6 @@ function NotificationDetail({
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Contenido scrollable */}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[
@@ -727,7 +569,6 @@ function NotificationDetail({
           />
         )}
 
-        {/* Botón de destino interno */}
         {routeInfo && notification.internalRoute && (
           <Pressable
             style={[detailStyles.routeBtn, { borderColor: colors.primary }]}
@@ -751,7 +592,6 @@ function NotificationDetail({
           </Pressable>
         )}
 
-        {/* Botón de acción CTA */}
         {notification.actionButton && (
           <Pressable
             style={detailStyles.actionBtn}
@@ -788,59 +628,18 @@ function NotificationDetail({
 // ============================================================================
 
 const sheetStyles = StyleSheet.create({
-  overlay: {
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.18,
-        shadowRadius: 12,
-      },
-      android: { elevation: 20 },
-    }),
-  },
-  handleArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Ancho completo + generosa área vertical para que sea fácil de agarrar
-    width: '100%',
-    paddingTop: 14,
-    paddingBottom: 10,
-  },
-  handle: {
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-  },
-  header: {
+  markAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
+    alignSelf: 'flex-end',
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    flex: 1,
-    textAlign: 'center',
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+  markAllText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: '600',
   },
   empty: {
     flex: 1,
@@ -963,11 +762,10 @@ const listStyles = StyleSheet.create({
   rightAction: {
     backgroundColor: colors.success,
     justifyContent: 'center',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     borderRadius: radii.md,
     marginBottom: spacing.md,
-    paddingRight: spacing.md,
-    minWidth: 90,
+    width: 80,
   },
   actionContent: { alignItems: 'center', justifyContent: 'center' },
   actionText: {

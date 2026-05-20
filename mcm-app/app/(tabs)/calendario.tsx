@@ -23,7 +23,7 @@ import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
+import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import GlassFAB from '@/components/ui/GlassFAB';
@@ -86,7 +86,7 @@ export default function Calendario() {
     toggleCalendarVisibility,
     loading: configsLoading,
     offline,
-  } = useCalendarConfigs();
+  } = useCalendarConfig();
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -281,11 +281,7 @@ export default function Calendario() {
           </View>
           {ev.location ? (
             <View style={styles.eventMeta}>
-              <MaterialIcons
-                name="place"
-                size={14}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
-              />
+              <MaterialIcons name="place" size={14} color="#8E8E93" />
               <Text
                 style={[styles.eventLocation, isPast && styles.pastText]}
                 numberOfLines={1}
@@ -296,11 +292,7 @@ export default function Calendario() {
           ) : null}
           {ev.endDate && ev.startDate !== ev.endDate ? (
             <View style={styles.eventMeta}>
-              <MaterialIcons
-                name="date-range"
-                size={14}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
-              />
+              <MaterialIcons name="date-range" size={14} color="#8E8E93" />
               <Text style={[styles.eventDuration, isPast && styles.pastText]}>
                 Hasta {formatDate(ev.endDate)}
               </Text>
@@ -437,7 +429,7 @@ export default function Calendario() {
             }}
           >
             <Calendar
-              key={calendarKey}
+              key={`${calendarKey}-${scheme ?? 'light'}`}
               current={selectedDate}
               onDayPress={(day) => {
                 if (day.dateString !== selectedDate) {
@@ -450,7 +442,10 @@ export default function Calendario() {
               markedDates={markedDates}
               markingType="multi-period"
               firstDay={1}
-              style={styles.calendar}
+              style={[
+                styles.calendar,
+                { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+              ]}
               theme={{
                 calendarBackground: isDark ? '#1C1C1E' : '#F2F2F7',
                 dayTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
@@ -844,12 +839,12 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     eventLocation: {
       fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: '#8E8E93',
       flex: 1,
     },
     eventDuration: {
       fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: '#8E8E93',
     },
 
     // Empty state
@@ -938,7 +933,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     sectionWeekday: {
       fontSize: 11,
       fontWeight: '700',
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: '#8E8E93',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },

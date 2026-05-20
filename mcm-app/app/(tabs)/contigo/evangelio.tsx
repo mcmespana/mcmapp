@@ -22,7 +22,6 @@ import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { Card, Tabs, PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
-import CloseIconButton from '@/components/ui/CloseIconButton';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
@@ -212,10 +211,10 @@ export default function EvangelioScreen() {
 
   // Liturgical color for subtle tinting
   const liturgicalAccent =
-    liturgicalInfo.hex === '#F5F5F5'
+    liturgicalInfo.hex === '#D4A070'
       ? isDark
-        ? '#888888'
-        : '#999999'
+        ? '#D4A070'
+        : '#A0693A'
       : liturgicalInfo.hex;
 
   return (
@@ -865,29 +864,9 @@ export default function EvangelioScreen() {
       <BottomSheet
         visible={creditsVisible}
         onClose={() => setCreditsVisible(false)}
+        title="Fuentes de los textos"
       >
         <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 20,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: '800',
-                color: theme.text,
-                letterSpacing: -0.3,
-              }}
-            >
-              Fuentes de los textos
-            </Text>
-            <CloseIconButton onPress={() => setCreditsVisible(false)} />
-          </View>
-
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ gap: 20, paddingBottom: 20 }}

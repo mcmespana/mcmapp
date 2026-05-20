@@ -1,27 +1,36 @@
-import React, { useCallback } from 'react';
-import { View, StyleSheet, Text, ScrollView, Platform } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, StyleSheet, Text, ScrollView, Platform, TouchableOpacity } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
+import { VersionDisplay } from '@/components/VersionDisplay';
+import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { takePendingMasScreen } from '@/utils/masNavigation';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useResponsive } from '@/hooks/useResponsive';
+import { splitTabsForIOS } from '@/constants/tabsCatalog';
+import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 
 interface NavigationItem {
   label: string;
   subtitle: string;
   emoji: string;
   materialIcon: ComponentProps<typeof MaterialIcons>['name'];
-  target: keyof MasStackParamList;
+  /** Si está definido, navega a una ruta expo-router (overflow de tab). */
+  routePath?: string;
+  /** Si está definido, navega a una pantalla dentro del stack de Mas. */
+  target?: keyof MasStackParamList;
   tintColor: string;
   /** Id del evento a pasar como route param cuando target === 'JubileoHome'. */
   eventId?: string;
@@ -69,16 +78,45 @@ export default function MasHomeScreen() {
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
   const { isMd, isWeb } = useResponsive();
   const useTwoColumns = isWeb && isMd;
   const resolved = useResolvedProfileConfig();
-  const navigationItems = React.useMemo(
-    () =>
-      resolved.masItems
-        .map((id) => MAS_ITEM_CATALOG[id])
-        .filter((item): item is NavigationItem => Boolean(item)),
-    [resolved.masItems],
-  );
+  const navigationItems = React.useMemo(() => {
+    const items: NavigationItem[] = [];
+
+    // En iOS la barra nativa sólo admite 5 triggers; los tabs que no caben
+    // se exponen aquí como tarjetas para evitar el "More" automático del sistema.
+    if (Platform.OS === 'ios') {
+      const visibleSet = new Set(resolved.tabs);
+      const { overflowTabs } = splitTabsForIOS(visibleSet);
+      // Tabs cuyo screen está registrado en el stack de Más (no accesibles vía router.navigate en iOS)
+      const OVERFLOW_STACK_TARGETS: Partial<Record<string, keyof MasStackParamList>> = {
+        fotos: 'Fotos',
+      };
+      for (const tab of overflowTabs) {
+        // 'mas' nunca debería estar en overflow (splitTabsForIOS lo garantiza),
+        // pero filtramos defensivamente para no auto-referenciar esta pantalla.
+        if (tab.name === 'mas') continue;
+        const stackTarget = OVERFLOW_STACK_TARGETS[tab.name];
+        items.push({
+          label: tab.label,
+          subtitle: tab.subtitle,
+          emoji: tab.emoji,
+          materialIcon: tab.androidIcon,
+          tintColor: tab.tintColor,
+          ...(stackTarget ? { target: stackTarget } : { routePath: `/${tab.name}` }),
+        });
+      }
+    }
+
+    for (const id of resolved.masItems) {
+      const entry = MAS_ITEM_CATALOG[id];
+      if (entry) items.push(entry);
+    }
+
+    return items;
+  }, [resolved.masItems, resolved.tabs]);
 
   // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
   useFocusEffect(
@@ -100,11 +138,15 @@ export default function MasHomeScreen() {
       ]}
       edges={['top']}
     >
+      <AppFeedbackModal
+        visible={feedbackVisible}
+        onClose={() => setFeedbackVisible(false)}
+      />
       <PageContainer>
         <ScrollView
           style={styles.container}
           contentContainerStyle={
-            Platform.OS === 'ios' ? { paddingBottom: 120 } : undefined
+            Platform.OS === 'ios' ? { paddingBottom: 140 } : { paddingBottom: spacing.xl }
           }
           showsVerticalScrollIndicator={false}
         >
@@ -136,14 +178,22 @@ export default function MasHomeScreen() {
                         boxShadow: `0 4px 12px ${item.tintColor}30`,
                       },
                 ]}
-                onPress={() =>
-                  navigation.navigate(
-                    item.target as any,
-                    item.eventId
-                      ? ({ eventId: item.eventId } as any)
-                      : undefined,
-                  )
-                }
+                onPress={() => {
+                  if (item.routePath) {
+                    // Overflow de tab: salta al tab sibling vía expo-router.
+                    // La ruta sigue existiendo aunque no tenga NativeTabs.Trigger.
+                    router.navigate(item.routePath as any);
+                    return;
+                  }
+                  if (item.target) {
+                    navigation.navigate(
+                      item.target as any,
+                      item.eventId
+                        ? ({ eventId: item.eventId } as any)
+                        : undefined,
+                    );
+                  }
+                }}
               >
                 <PressableFeedback.Highlight />
                 {/* Accent bar izquierda */}
@@ -204,6 +254,22 @@ export default function MasHomeScreen() {
               </PressableFeedback>
             ))}
           </View>
+
+          {/* ── Pie ── */}
+          <View style={styles.footer}>
+            <VersionDisplay />
+            <TouchableOpacity
+              onPress={() => setFeedbackVisible(true)}
+              style={styles.feedbackLink}
+            >
+              <Text style={[styles.feedbackText, { color: isDark ? '#8E8E93' : '#6B7280' }]}>
+                ¿Algún fallo? Cuéntanoslo
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.tagline, { color: isDark ? '#8E8E93' : '#6B7280' }]}>
+              Movimiento Consolación para el Mundo
+            </Text>
+          </View>
         </ScrollView>
       </PageContainer>
     </SafeAreaView>
@@ -218,23 +284,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingTop: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xl,
   },
   scrollContentGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 14,
+    gap: spacing.md,
   },
   card: {
-    borderRadius: 20,
-    marginBottom: 14,
+    borderRadius: radii.xl,
+    marginBottom: spacing.md,
     overflow: 'hidden',
   },
   cardGridItem: {
-    // Two columns minus the row gap (14px) divided over 2 items.
-    width: 'calc(50% - 7px)' as any,
+    // Two columns minus the row gap (spacing.md) divided over 2 items.
+    width: `calc(50% - ${spacing.md / 2}px)` as any,
     marginBottom: 0,
   },
   accentBar: {
@@ -244,14 +310,14 @@ const styles = StyleSheet.create({
   cardBody: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 22,
-    gap: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
   },
   iconCircle: {
     width: 56,
     height: 56,
-    borderRadius: 16,
+    borderRadius: radii.md,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
@@ -261,7 +327,7 @@ const styles = StyleSheet.create({
   },
   cardTextArea: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   cardTitle: {
     fontSize: 18,
@@ -279,5 +345,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
+  },
+  footer: {
+    alignItems: 'center',
+    paddingTop: spacing.xs,
+  },
+  feedbackLink: {
+    padding: spacing.sm,
+    marginTop: 4,
+  },
+  feedbackText: {
+    fontSize: 12,
+    opacity: 0.6,
+  },
+  tagline: {
+    fontSize: 11,
+    opacity: 0.3,
+    marginTop: spacing.sm,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
   },
 });

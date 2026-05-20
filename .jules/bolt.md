@@ -5,3 +5,6 @@
 ## 2024-05-03 - [React Native Performance] FlatList virtualization props
 **Learning:** Default FlatList virtualization can result in rendering too many items upfront, delaying the initial render. Furthermore, passing an inline `renderItem` function causes new function references on every render, which can defeat `React.memo` on list items.
 **Action:** Always provide `initialNumToRender`, `maxToRenderPerBatch`, and `windowSize` props to FlatLists rendering complex items. Wrap the `renderItem` function in `useCallback` to preserve function references and ensure list items wrapped in `React.memo` actually benefit from memoization.
+## 2024-05-04 - [React Native Performance] FlatList header unmounting
+**Learning:** Defining a functional component for a `FlatList` header *inside* the parent component's scope (e.g., `const ListHeader = () => ...`) causes the header's component type reference to change on every parent render. This forces React to completely unmount and remount the header element, triggering unnecessary garbage collection, losing state (like input focus), and degrading scroll performance.
+**Action:** Always either define sub-components outside the parent scope, or memoize the rendered JSX element using `useMemo` (e.g., `const listHeaderComponent = useMemo(() => (...), [...])`) before passing it to `ListHeaderComponent`.

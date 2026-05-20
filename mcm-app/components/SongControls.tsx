@@ -1,6 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Platform,
+  Animated,
+  Pressable,
+  TouchableOpacity,
+} from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import GlassSurface from '@/components/ui/GlassSurface';
 import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
@@ -93,7 +102,7 @@ const SongControls: React.FC<SongControlsProps> = ({
     setShowActionButtons(toOpen);
     Animated.spring(rotateAnim, {
       toValue: toOpen ? 1 : 0,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
       friction: 6,
     }).start();
   };
@@ -190,14 +199,14 @@ const SongControls: React.FC<SongControlsProps> = ({
     <>
       {/* Scrim when menu is open */}
       {showActionButtons && (
-        <PressableFeedback style={styles.scrim} onPress={toggleMenu} />
+        <Pressable style={styles.scrim} onPress={toggleMenu} />
       )}
 
       {/* FAB & Action Menu */}
       <View
         style={[
           styles.fabContainer,
-          { bottom: isIOS ? insets.bottom + 60 : 24 },
+          { bottom: insets.bottom + (isIOS ? 52 : 24) },
         ]}
       >
         {showActionButtons && (
@@ -276,16 +285,22 @@ const SongControls: React.FC<SongControlsProps> = ({
           {hasModifications && !showActionButtons && (
             <View style={[styles.badge, isDark && styles.badgeDark]} />
           )}
-          <PressableFeedback
+          <TouchableOpacity
             style={[
               styles.fabMain,
-              isDark && styles.fabMainDark,
-              showActionButtons && styles.fabMainOpen,
+              Platform.OS !== 'ios' && isDark && styles.fabMainDark,
+              Platform.OS !== 'ios' && showActionButtons && styles.fabMainOpen,
             ]}
             onPress={toggleMenu}
+            activeOpacity={0.75}
             accessibilityLabel="Configuración"
           >
-            <PressableFeedback.Scale />
+            {Platform.OS === 'ios' && (
+              <GlassSurface
+                variant="regular"
+                tintColor={showActionButtons ? '#FF453A' : undefined}
+              />
+            )}
             <Animated.View
               style={{ transform: [{ rotate: rotateInterpolation }] }}
             >
@@ -295,7 +310,7 @@ const SongControls: React.FC<SongControlsProps> = ({
                 color={isDark ? '#fff' : '#1C1C1E'}
               />
             </Animated.View>
-          </PressableFeedback>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -438,16 +453,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fabMain: {
-    backgroundColor: '#fff',
+    backgroundColor: Platform.OS === 'ios' ? 'transparent' : '#fff',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
     ...Platform.select({
       web: {
         width: 54,
         height: 54,
         borderRadius: 27,
-        boxShadow:
-          '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
+        boxShadow: '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
         cursor: 'pointer',
       },
       default: {

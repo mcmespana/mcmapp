@@ -23,20 +23,11 @@ export default function useWordleWords() {
         if (snapshot.exists()) {
           const firebaseWords = snapshot.val() as DailyWords;
           setWords(firebaseWords);
-          console.log(
-            'Palabras cargadas desde Firebase:',
-            Object.keys(firebaseWords).length,
-            'fechas',
-          );
         } else {
-          console.log(
-            'No se encontraron palabras en Firebase, usando archivo local',
-          );
           setWords(dailyWordsLocal);
         }
       } catch (error) {
         console.error('Error cargando palabras desde Firebase:', error);
-        console.log('Usando palabras del archivo local como fallback');
         setWords(dailyWordsLocal);
       } finally {
         setLoading(false);

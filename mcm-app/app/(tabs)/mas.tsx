@@ -21,11 +21,13 @@ import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
 import ReflexionesScreen from '../screens/ReflexionesScreen';
 import AppsScreen from '../screens/AppsScreen';
+import AlbumListScreen from '../screens/AlbumListScreen';
 import WordleScreen from '../screens/WordleScreen';
 import ComidaScreen from '../screens/ComidaScreen';
 import ComidaWebScreen from '../screens/ComidaWebScreen';
 import SettingsPanel from '@/components/SettingsPanel';
 import { getEvent } from '@/constants/events';
+import { TabHeaderColors } from '@/constants/colors';
 
 /**
  * Route params comunes a todas las pantallas de un evento (Jubileo u otros
@@ -37,6 +39,7 @@ type EventRouteParams = { eventId?: string };
 
 export type MasStackParamList = {
   MasHome: { directTo?: string } | undefined;
+  Fotos: undefined;
   Comunica: undefined;
   ComunicaGestion: undefined;
   JubileoHome: EventRouteParams | undefined;
@@ -147,16 +150,32 @@ export default function MasTab() {
   const navigation = useNavigation();
 
   useEffect(() => {
-    const unsubscribe = navigation
+    // When this tab gains focus coming from another tab, reset the stack.
+    // We do NOT call e.preventDefault here so the tab switch happens normally.
+    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
+      if (stackNavRef.current?.canGoBack()) {
+        stackNavRef.current.popToTop();
+      }
+    });
+
+    // When the user taps this tab while already on it, prevent the default
+    // scroll-to-top behavior and pop to root instead.
+    const unsubscribeTabPress = navigation
       .getParent()
       ?.addListener('tabPress' as any, (e: any) => {
-        if (stackNavRef.current?.canGoBack()) {
+        if (
+          (navigation as any).isFocused?.() &&
+          stackNavRef.current?.canGoBack()
+        ) {
           e.preventDefault?.();
           stackNavRef.current.popToTop();
         }
       });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeFocus();
+      unsubscribeTabPress?.();
+    };
   }, [navigation]);
 
   return (
@@ -261,6 +280,27 @@ export default function MasTab() {
             title: 'Más',
             headerShown: false,
             headerRight: undefined,
+          }}
+        />
+        <Stack.Screen
+          name="Fotos"
+          component={AlbumListScreen}
+          options={{
+            title: 'Fotos',
+            headerStyle:
+              Platform.OS === 'ios'
+                ? { backgroundColor: 'transparent' }
+                : { backgroundColor: TabHeaderColors.fotos },
+            headerTintColor: Platform.OS === 'ios' ? '#1a1a1a' : '#fff',
+            headerTitleStyle: {
+              fontWeight: '700' as const,
+              fontSize: 18,
+              color: Platform.OS === 'ios' ? '#1a1a1a' : '#fff',
+            },
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor={TabHeaderColors.fotos} />
+              ) : undefined,
           }}
         />
         <Stack.Screen

@@ -49,7 +49,7 @@ export default function ReportBugsModal({
 }: ReportBugsModalProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
   const [bugDescription, setBugDescription] = useState('');
@@ -96,28 +96,12 @@ export default function ReportBugsModal({
   const canSubmit = bugDescription.trim().length > 0 && !isSubmitting;
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose}>
+    <BottomSheet visible={visible} onClose={handleClose} title="Reportar fallitos 🐛">
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={handleClose}
-            style={styles.closeBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="close" size={22} color={theme.icon} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>
-            Reportar fallitos 🐛
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
         {songTitle && (
           <View
             style={[
@@ -255,28 +239,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 48,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerSpacer: {
-    width: 32,
-  },
-  title: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: -0.3,
   },
   songBadge: {
     flexDirection: 'row',

@@ -20,11 +20,16 @@ interface UseSongProcessorParams {
   currentFontSizeEm: number;
   currentFontFamily: string;
   notation: Notation;
-  author?: string; // Added to pass author
-  key?: string; // Added to pass key
-  capo?: number; // Added to pass capo
-  isFullscreen?: boolean; // Added for fullscreen mode
-  isDark?: boolean; // Dark mode support
+  title?: string;
+  author?: string;
+  key?: string;
+  capo?: number;
+  isFullscreen?: boolean;
+  isDark?: boolean;
+  /** Padding superior extra (px). Útil en fullscreen para evitar notch / close button. */
+  topInset?: number;
+  /** Padding inferior extra (px). Útil en fullscreen para no esconder texto bajo play/safe-area. */
+  bottomInset?: number;
 }
 
 export const useSongProcessor = ({
@@ -34,11 +39,14 @@ export const useSongProcessor = ({
   currentFontSizeEm,
   currentFontFamily,
   notation,
+  title,
   author,
   key,
   capo,
   isFullscreen = false,
   isDark = false,
+  topInset,
+  bottomInset,
 }: UseSongProcessorParams) => {
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
@@ -82,10 +90,10 @@ export const useSongProcessor = ({
       const parser = new ChordProParser();
       const originalParsedSong = parser.parse(processedChordPro);
 
-      let songForFormatting: Song = originalParsedSong;
+      const songForFormatting: Song = originalParsedSong;
 
       const formatter = new HtmlDivFormatter();
-      let formattedSong = formatter.format(songForFormatting);
+      const formattedSong = formatter.format(songForFormatting);
 
       let metaInsert = '';
       if (author && !isFullscreen) {
@@ -126,8 +134,29 @@ export const useSongProcessor = ({
           currentTranspose > 0 ? `+${currentTranspose}` : `${currentTranspose}`;
         badges += `<span class="meta-badge meta-badge-accent">${transposeDisplay} semitonos</span>`;
       }
-      if (badges) {
+      // Badges below title in normal mode; in fullscreen they go in the fixed header
+      if (badges && !isFullscreen) {
         metaInsert += `<div class="song-meta-keycapo">${badges}</div>`;
+      }
+
+      // Fixed overlay header for fullscreen: title + compact meta line
+      let fsHeader = '';
+      if (isFullscreen) {
+        let fsMeta = '';
+        if (author) fsMeta += `<span class="fs-author">${author}</span>`;
+        if (displayKey) {
+          if (fsMeta) fsMeta += `<span class="fs-sep">·</span>`;
+          fsMeta += `<span class="fs-badge-sm">${convertChord(displayKey, notation)}</span>`;
+        }
+        if (capo !== undefined && capo > 0) {
+          fsMeta += `<span class="fs-badge-sm">Cejilla ${capo}</span>`;
+        }
+        if (currentTranspose !== 0) {
+          const td =
+            currentTranspose > 0 ? `+${currentTranspose}` : `${currentTranspose}`;
+          fsMeta += `<span class="fs-badge-sm fs-badge-accent">${td} semitonos</span>`;
+        }
+        fsHeader = `<div class="fs-header">${title ? `<div class="fs-title">${title}</div>` : ''}${fsMeta ? `<div class="fs-meta">${fsMeta}</div>` : ''}</div>`;
       }
 
       let finalSongContentWithMeta = formattedSong;
@@ -149,14 +178,23 @@ export const useSongProcessor = ({
         ? ''
         : '<style>.chord { display: none !important; }</style>';
 
-      // Platform-aware bottom padding
-      const bottomPadding = isFullscreen
-        ? 0
-        : Platform.OS === 'ios'
-          ? 120
-          : Platform.OS === 'web'
-            ? 40
-            : 80;
+      // Platform-aware bottom padding.
+      // En fullscreen reservamos espacio para el botón de play translúcido
+      // y el safe-area inferior (home indicator en iOS). En detalle, espacio
+      // suficiente para que el FAB no tape la última línea.
+      const bottomPadding =
+        bottomInset !== undefined
+          ? bottomInset
+          : isFullscreen
+            ? 110
+            : Platform.OS === 'ios'
+              ? 120
+              : Platform.OS === 'web'
+                ? 40
+                : 80;
+      // Padding superior: en fullscreen, espacio para el close button y notch.
+      const topPadding =
+        topInset !== undefined ? topInset : isFullscreen ? 72 : 16;
 
       // Dark mode aware colors
       const c = {
@@ -185,8 +223,7 @@ export const useSongProcessor = ({
             body {
               font-family: ${currentFontFamily};
               margin: 0;
-              padding: 16px 16px;
-              ${bottomPadding > 0 ? `padding-bottom: ${bottomPadding}px;` : ''}
+              padding: ${topPadding}px 16px ${bottomPadding}px 16px;
               background-color: ${c.bodyBg};
               color: ${c.bodyText};
               font-size: 100%;
@@ -313,11 +350,72 @@ export const useSongProcessor = ({
             .paragraph.chorus .lyrics {
               text-transform: uppercase;
             }
+            ${
+              isFullscreen
+                ? `
+            .fs-header {
+              position: fixed;
+              top: 0;
+              left: 0;
+              right: 0;
+              padding: ${Math.max(topPadding - 48, 8)}px 60px 16px 16px;
+              background: linear-gradient(to bottom,
+                ${isDark ? 'rgba(44,44,46,0.97)' : 'rgba(255,255,255,0.97)'} 0%,
+                ${isDark ? 'rgba(44,44,46,0.88)' : 'rgba(255,255,255,0.88)'} 72%,
+                transparent 100%
+              );
+              z-index: 10;
+              pointer-events: none;
+            }
+            .fs-title {
+              font-size: 0.9em;
+              font-weight: 700;
+              color: ${c.titleText};
+              line-height: 1.25;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              margin-bottom: 3px;
+              opacity: 0.88;
+            }
+            .fs-meta {
+              display: flex;
+              align-items: center;
+              flex-wrap: wrap;
+              gap: 4px;
+            }
+            .fs-author {
+              font-size: 0.7em;
+              color: ${c.authorText};
+              font-style: italic;
+            }
+            .fs-sep {
+              font-size: 0.65em;
+              color: ${c.authorText};
+              opacity: 0.45;
+              margin: 0 1px;
+            }
+            .fs-badge-sm {
+              font-size: 0.65em;
+              font-weight: 600;
+              color: ${c.badgeText};
+              background: ${c.badgeBg};
+              padding: 1px 6px;
+              border-radius: 8px;
+              letter-spacing: 0.01em;
+            }
+            .fs-badge-accent {
+              color: ${c.badgeAccentText};
+              background: ${c.badgeAccentBg};
+            }`
+                : ''
+            }
             ${fontSizeCss}
           </style>
           ${chordsCss}
         </head>
         <body>
+          ${fsHeader}
           ${finalSongContentWithMeta}
         </body>
         </html>
@@ -337,10 +435,14 @@ export const useSongProcessor = ({
     currentFontSizeEm,
     currentFontFamily,
     notation,
+    title,
     author,
     key,
     capo,
     isDark,
+    isFullscreen,
+    topInset,
+    bottomInset,
   ]);
 
   return { songHtml, isLoadingSong };

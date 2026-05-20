@@ -334,7 +334,7 @@ const createStyles = (
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: '#ccc',
+      backgroundColor: scheme === 'dark' ? '#555' : '#ccc',
     },
     dotActive: {
       backgroundColor: colors.accent,

@@ -52,7 +52,7 @@ export default function ComidaScreen() {
   const navigation = useNavigation<Nav>();
   const scheme = useColorScheme();
   const event = useCurrentEvent();
-  const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const styles = React.useMemo(() => createStyles(scheme ?? 'light'), [scheme]);
   const { width, height } = useWindowDimensions();
   const containerPadding = spacing.md;
   const gap = spacing.md;

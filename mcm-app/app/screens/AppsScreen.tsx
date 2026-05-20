@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,16 +9,19 @@ import {
   Platform,
   Text,
 } from 'react-native';
-import { Chip, Button, Dialog, PressableFeedback } from 'heroui-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Chip, Button, Dialog, PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
+import spacing from '@/constants/spacing';
+import { radii, shadows } from '@/constants/uiStyles';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
+import { hexAlpha } from '@/utils/colorUtils';
 
 interface AppInfo {
   orden: number;
@@ -34,6 +37,7 @@ interface AppInfo {
 
 export default function AppsScreen() {
   const scheme = useColorScheme();
+  const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
   const { data: appsData, loading } = useFirebaseData<AppInfo[]>(
@@ -60,31 +64,47 @@ export default function AppsScreen() {
         await Linking.openURL(storeUrl);
       }
     } catch (error) {
-      console.log('Error opening app:', error);
       const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
       if (storeUrl) {
         try {
           await Linking.openURL(storeUrl);
-        } catch (storeError) {
-          console.log('Error opening store:', storeError);
+        } catch {
+          // ignore
         }
       }
     }
   };
 
-  if (loading || !appsData) {
-    return <ProgressWithMessage message="Cargando aplicaciones..." />;
-  }
+  const apps = useMemo(
+    () => (appsData ? [...appsData].sort((a, b) => a.orden - b.orden) : []),
+    [appsData],
+  );
 
-  const apps = [...appsData].sort((a, b) => a.orden - b.orden);
+  if (!appsData) {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}>
+        <PageContainer>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl }}>
+            <ScreenHero
+              title="Apps"
+              subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo."
+            />
+            <View style={{ gap: spacing.sm }}>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} style={{ height: 72, borderRadius: radii.lg }} />
+              ))}
+            </View>
+          </ScrollView>
+        </PageContainer>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <PageContainer>
         <ScrollView
-          contentContainerStyle={
-            Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
-          }
+          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: insets.bottom + spacing.xl }}
         >
           <ScreenHero
             title="Apps"
@@ -235,16 +255,20 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     introContainer: {
-      padding: 20,
-      paddingBottom: 16,
-      backgroundColor: theme.background,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      backgroundColor: hexAlpha(theme.accent, '12'),
+      borderColor: hexAlpha(theme.accent, '30'),
+      borderWidth: 1,
+      borderRadius: radii.md,
+      marginBottom: spacing.md,
     },
     introText: {
       fontSize: 16,
       color: theme.text,
       textAlign: 'center',
       lineHeight: 22,
-      marginBottom: 8,
+      marginBottom: spacing.xs,
       fontWeight: '500',
     },
     introSubtext: {
@@ -257,48 +281,54 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     listItemContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      backgroundColor: theme.background,
-      borderBottomWidth: 1,
-      borderBottomColor: scheme === 'dark' ? '#333' : '#f0f0f0',
-    },
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      backgroundColor: theme.card,
+      borderRadius: radii.lg,
+      marginBottom: spacing.sm,
+      ...shadows.sm,
+    } as any,
     iconContainer: {
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: 16,
+      marginRight: spacing.md,
+      width: 56,
+      height: 56,
+      borderRadius: radii.md,
+      backgroundColor: hexAlpha(theme.accent, '15'),
     },
     icon: {
       width: 48,
       height: 48,
-      borderRadius: 12,
+      borderRadius: radii.md,
     },
     contentContainer: {
       flex: 1,
       justifyContent: 'center',
+      gap: spacing.xs,
     },
     title: {
-      fontWeight: 'bold',
+      fontWeight: '700',
       color: theme.text,
-      fontSize: 16,
-      marginBottom: 4,
+      fontSize: 15,
     },
     description: {
       color: theme.text,
       opacity: 0.7,
-      fontSize: 14,
+      fontSize: 13,
       lineHeight: 18,
     },
     rightContainer: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: spacing.xs,
     },
-    chipRow: { alignItems: 'center', marginBottom: 12 },
+    chipRow: { alignItems: 'center', marginBottom: spacing.sm },
     downloadRow: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      marginTop: 8,
-      gap: 8,
+      marginTop: spacing.sm,
+      gap: spacing.sm,
     },
   });
 };

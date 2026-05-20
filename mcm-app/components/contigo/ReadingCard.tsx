@@ -9,8 +9,6 @@ import { hexAlpha } from '@/utils/colorUtils';
 
 import useFontScale from '@/hooks/useFontScale';
 
-
-
 interface ReadingCardProps {
   title: string;
   cita: string;

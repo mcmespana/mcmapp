@@ -45,8 +45,9 @@ const EMOJIS = ['😀', '😁', '😊', '😎', '🤩', '🥳'];
 export default function WordleScreen() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
-  const theme = Colors[scheme];
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const theme = Colors[scheme ?? 'light'];
+  const isDark = scheme === 'dark';
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark]);
   const emoji = useMemo(
     () => EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
     [],
@@ -211,12 +212,7 @@ export default function WordleScreen() {
     if (isGameLocked) return;
 
     if (k === 'ENTER') {
-      const res = submitGuess();
-      if (res === 'not-enough') {
-        console.log('No hay suficientes letras');
-      } else if (res === 'invalid') {
-        console.log('Palabra no válida');
-      }
+      submitGuess();
     } else if (k === 'DEL') {
       removeLetter();
     } else {
@@ -454,8 +450,7 @@ export default function WordleScreen() {
         </View>
       )}
 
-      <BottomSheet visible={showInfo} onClose={() => setShowInfo(false)}>
-        <Text style={styles.infoTitle}>¿Cómo jugar?</Text>
+      <BottomSheet visible={showInfo} onClose={() => setShowInfo(false)} title="¿Cómo jugar?">
         <Text style={styles.infoText}>
           Adivina una palabra de 5 letras en 6 intentos.{'\n'}
           Cada día a las 7h y a las 19h una palabra nueva.{'\n\n'}
@@ -473,7 +468,7 @@ export default function WordleScreen() {
         </Text>
       </BottomSheet>
 
-      <BottomSheet visible={showStats} onClose={() => setShowStats(false)}>
+      <BottomSheet visible={showStats} onClose={() => setShowStats(false)} title="Estadísticas">
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[
@@ -529,8 +524,7 @@ export default function WordleScreen() {
                   <View
                     style={{
                       flex: 1,
-                      backgroundColor:
-                        theme.background === '#2C2C2E' ? '#555' : '#d3d6da',
+                      backgroundColor: isDark ? '#555' : '#d3d6da',
                       height: 10,
                       marginHorizontal: 4,
                     }}
@@ -599,61 +593,11 @@ export default function WordleScreen() {
           </View>
         )}
       </BottomSheet>
-
-      {status === 'won' && (
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          {/* Confeti cayendo desde la parte superior de la pantalla */}
-          <ConfettiCannon
-            count={60}
-            origin={{ x: -10, y: -50 }}
-            fallSpeed={2500}
-            fadeOut={true}
-            autoStart={true}
-          />
-          <ConfettiCannon
-            count={60}
-            origin={{ x: 10, y: -50 }}
-            fallSpeed={2500}
-            fadeOut={true}
-            autoStart={true}
-          />
-
-          <Animated.View
-            style={[
-              styles.shareBtn,
-              {
-                transform: [{ scale: buttonAnimation }],
-              },
-            ]}
-          >
-            <TouchableOpacity
-              onPress={shareCustomResult}
-              style={{ width: '100%', alignItems: 'center' }}
-            >
-              <Text style={styles.shareBtnText}>
-                🎉 ¡Compartir mi victoria! 🎊
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      )}
-
-      {isGameLocked && status !== 'won' && status !== 'lost' && (
-        <View style={styles.lockedGameMessage}>
-          <Text style={styles.lockedGameText}>
-            🎯 ¡Ya completaste el Wordle de este turno!
-          </Text>
-          <Text style={styles.lockedGameSubtext}>
-            Vuelve a las {cycle === 'morning' ? '19:00' : '07:00'} para una
-            nueva palabra
-          </Text>
-        </View>
-      )}
     </SafeAreaView>
   );
 }
 
-const createStyles = (theme: typeof Colors.light) =>
+const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -716,7 +660,7 @@ const createStyles = (theme: typeof Colors.light) =>
       paddingHorizontal: Platform.OS === 'web' ? 8 : 12,
       marginHorizontal: 3,
       borderRadius: 8,
-      backgroundColor: theme.background === '#2C2C2E' ? '#555' : '#d3d6da',
+      backgroundColor: isDark ? '#555' : '#d3d6da',
       minWidth: Platform.OS === 'web' ? 28 : 32,
       justifyContent: 'center',
       alignItems: 'center',
