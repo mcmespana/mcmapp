@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -10,11 +10,17 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useContextMenu } from '@/hooks/useContextMenu';
 import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
 import { transposeKey, transposeLabel } from '../utils/transposeKey';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Colors, StateColors, SwipeColors, KeyPillColors } from '@/constants/colors';
+import {
+  Colors,
+  StateColors,
+  SwipeColors,
+  KeyPillColors,
+} from '@/constants/colors';
 import { durations } from '@/constants/animations';
 
 // Type for song data
@@ -37,7 +43,12 @@ interface SongListItemProps {
 }
 
 const SongListItem: React.FC<SongListItemProps> = React.memo(
-  function SongListItem({ song, onPress, onLongPress, isSearchAllMode = false }) {
+  function SongListItem({
+    song,
+    onPress,
+    onLongPress,
+    isSearchAllMode = false,
+  }) {
     const { addSong, removeSong, isSongSelected, getSelectedSong } =
       useSelectedSongs();
     const { settings } = useSettings();
@@ -135,6 +146,14 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
 
     const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
 
+    const contextHandler = useCallback(
+      () => onLongPress?.(song),
+      [onLongPress, song],
+    );
+    const contextMenuProps = useContextMenu(
+      onLongPress ? contextHandler : undefined,
+    );
+
     return (
       <Swipeable
         ref={swipeableRow}
@@ -153,10 +172,9 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         <Animated.View style={[styles.songItemOuter, animatedStyle]}>
           <TouchableOpacity
             onPress={() => onPress(song)}
-            onLongPress={() => onLongPress?.(song)}
-            delayLongPress={400}
             style={styles.songItemInner}
             activeOpacity={0.6}
+            {...contextMenuProps}
           >
             <View style={styles.leftSection}>
               {isSelected && <View style={styles.selectedDot} />}
