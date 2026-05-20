@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react';
-import { View, StyleSheet, Text, ScrollView, Platform } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, StyleSheet, Text, ScrollView, Platform, TouchableOpacity } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -10,6 +10,8 @@ import type { ComponentProps } from 'react';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
+import { VersionDisplay } from '@/components/VersionDisplay';
+import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { takePendingMasScreen } from '@/utils/masNavigation';
@@ -76,6 +78,7 @@ export default function MasHomeScreen() {
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
   const { isMd, isWeb } = useResponsive();
   const useTwoColumns = isWeb && isMd;
   const resolved = useResolvedProfileConfig();
@@ -135,11 +138,15 @@ export default function MasHomeScreen() {
       ]}
       edges={['top']}
     >
+      <AppFeedbackModal
+        visible={feedbackVisible}
+        onClose={() => setFeedbackVisible(false)}
+      />
       <PageContainer>
         <ScrollView
           style={styles.container}
           contentContainerStyle={
-            Platform.OS === 'ios' ? { paddingBottom: 120 } : undefined
+            Platform.OS === 'ios' ? { paddingBottom: 140 } : { paddingBottom: spacing.xl }
           }
           showsVerticalScrollIndicator={false}
         >
@@ -247,6 +254,22 @@ export default function MasHomeScreen() {
               </PressableFeedback>
             ))}
           </View>
+
+          {/* ── Pie ── */}
+          <View style={styles.footer}>
+            <VersionDisplay />
+            <TouchableOpacity
+              onPress={() => setFeedbackVisible(true)}
+              style={styles.feedbackLink}
+            >
+              <Text style={[styles.feedbackText, { color: isDark ? '#8E8E93' : '#6B7280' }]}>
+                ¿Algún fallo? Cuéntanoslo
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.tagline, { color: isDark ? '#8E8E93' : '#6B7280' }]}>
+              Movimiento Consolación para el Mundo
+            </Text>
+          </View>
         </ScrollView>
       </PageContainer>
     </SafeAreaView>
@@ -322,5 +345,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
+  },
+  footer: {
+    alignItems: 'center',
+    paddingTop: spacing.xs,
+  },
+  feedbackLink: {
+    padding: spacing.sm,
+    marginTop: 4,
+  },
+  feedbackText: {
+    fontSize: 12,
+    opacity: 0.6,
+  },
+  tagline: {
+    fontSize: 11,
+    opacity: 0.3,
+    marginTop: spacing.sm,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
   },
 });

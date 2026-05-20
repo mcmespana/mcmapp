@@ -6,6 +6,7 @@ import {
   Platform,
   Animated,
   Pressable,
+  TouchableOpacity,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
@@ -283,16 +284,16 @@ const SongControls: React.FC<SongControlsProps> = ({
           {hasModifications && !showActionButtons && (
             <View style={[styles.badge, isDark && styles.badgeDark]} />
           )}
-          <PressableFeedback
+          <TouchableOpacity
             style={[
               styles.fabMain,
               isDark && styles.fabMainDark,
               showActionButtons && styles.fabMainOpen,
             ]}
             onPress={toggleMenu}
+            activeOpacity={0.75}
             accessibilityLabel="Configuración"
           >
-            <PressableFeedback.Scale />
             <Animated.View
               style={{ transform: [{ rotate: rotateInterpolation }] }}
             >
@@ -302,7 +303,7 @@ const SongControls: React.FC<SongControlsProps> = ({
                 color={isDark ? '#fff' : '#1C1C1E'}
               />
             </Animated.View>
-          </PressableFeedback>
+          </TouchableOpacity>
         </View>
       </View>
 

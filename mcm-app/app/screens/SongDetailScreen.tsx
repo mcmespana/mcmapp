@@ -1,6 +1,5 @@
 import { useEffect, useState, useLayoutEffect, useRef } from 'react';
-import { StyleSheet, View, Platform, Dimensions, Animated } from 'react-native';
-import { PressableFeedback } from 'heroui-native';
+import { StyleSheet, View, Platform, Dimensions, Animated, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import SongDisplay from '@/components/SongDisplay';
@@ -328,29 +327,29 @@ export default function SongDetailScreen({
 
   const floatingButtons = (
     <>
-      <PressableFeedback
+      <TouchableOpacity
         style={[styles.floatBtn, { top: btnTop, left: 16, backgroundColor: floatBtnBg }]}
         onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
         accessibilityLabel="Volver"
       >
-        <PressableFeedback.Scale />
         <IconSymbol name="chevron.left" size={20} color={floatIconColor} />
-      </PressableFeedback>
-      <PressableFeedback
+      </TouchableOpacity>
+      <TouchableOpacity
         style={[styles.floatBtn, { top: btnTop, right: 16, backgroundColor: floatBtnBg }]}
         onPress={() => {
           if (isSelected) removeSong(filename);
           else addSong(filename);
         }}
+        activeOpacity={0.7}
         accessibilityLabel={isSelected ? 'Quitar de selección' : 'Añadir a selección'}
       >
-        <PressableFeedback.Scale />
         <IconSymbol
           name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
           size={24}
           color={isSelected ? APPLE_SYSTEM_GREEN : floatIconColor}
         />
-      </PressableFeedback>
+      </TouchableOpacity>
     </>
   );
 
