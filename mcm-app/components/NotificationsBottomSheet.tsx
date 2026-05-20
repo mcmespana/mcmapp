@@ -53,8 +53,40 @@ const ROUTE_LABELS: Record<
   '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
 };
 
+function normalizeRoute(route: string): string {
+  if (!route) return '';
+  let clean = route.trim();
+  if (clean.startsWith('http')) return clean;
+
+  clean = clean.replace(/\/+/g, '/');
+
+  const hasSlash = clean.startsWith('/');
+  const naked = hasSlash ? clean.substring(1) : clean;
+
+  if (naked.startsWith('(tabs)/')) {
+    return '/' + naked;
+  }
+
+  const tabPaths = [
+    'cancionero',
+    'calendario',
+    'fotos',
+    'mas',
+    'index',
+    'contigo',
+  ];
+
+  const isTab = tabPaths.some(p => naked === p || naked.startsWith(p + '/'));
+  if (isTab) {
+    return '/(tabs)/' + naked;
+  }
+
+  return '/' + naked;
+}
+
 function getRouteLabel(route: string) {
-  return ROUTE_LABELS[route] ?? null;
+  const norm = normalizeRoute(route);
+  return ROUTE_LABELS[norm] ?? ROUTE_LABELS[route] ?? null;
 }
 
 function formatDate(date: Date): string {
@@ -199,9 +231,10 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
   const handleDestinationChipPress = useCallback(
     (route: string) => {
       onClose();
+      const clean = normalizeRoute(route);
       setTimeout(() => {
         try {
-          router.push(route as any);
+          router.push(clean as any);
         } catch (e) {
           console.error('Error navegando:', e);
         }
@@ -352,7 +385,7 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
                         setTimeout(() => {
                           if (btn.isInternal) {
                             try {
-                              router.push(btn.url as any);
+                              router.push(normalizeRoute(btn.url) as any);
                             } catch (e) {}
                           } else {
                             Linking.openURL(btn.url).catch(console.error);
@@ -505,9 +538,10 @@ function NotificationDetail({
 
   const navigateTo = (route: string) => {
     onClose();
+    const clean = normalizeRoute(route);
     setTimeout(() => {
       try {
-        router.push(route as any);
+        router.push(clean as any);
       } catch (e) {}
     }, 320);
   };

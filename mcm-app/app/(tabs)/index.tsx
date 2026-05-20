@@ -47,6 +47,7 @@ import { setPendingMasScreen } from '@/utils/masNavigation';
 import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
+import GlassSurface from '@/components/ui/GlassSurface';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
@@ -344,6 +345,37 @@ export default function Home() {
     ? latestNotification.body
     : 'Mantente al día con las novedades de la comunidad.';
 
+  const normalizeRoute = (route: string): string => {
+    if (!route) return '';
+    let clean = route.trim();
+    if (clean.startsWith('http')) return clean;
+
+    clean = clean.replace(/\/+/g, '/');
+
+    const hasSlash = clean.startsWith('/');
+    const naked = hasSlash ? clean.substring(1) : clean;
+
+    if (naked.startsWith('(tabs)/')) {
+      return '/' + naked;
+    }
+
+    const tabPaths = [
+      'cancionero',
+      'calendario',
+      'fotos',
+      'mas',
+      'index',
+      'contigo',
+    ];
+
+    const isTab = tabPaths.some(p => naked === p || naked.startsWith(p + '/'));
+    if (isTab) {
+      return '/(tabs)/' + naked;
+    }
+
+    return '/' + naked;
+  };
+
   // Mapeo de rutas internas a etiquetas + iconos (coherente con notifications.tsx)
   const ROUTE_LABELS: Record<
     string,
@@ -362,7 +394,7 @@ export default function Home() {
     '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
   };
   const internalRouteInfo = latestNotification?.internalRoute
-    ? (ROUTE_LABELS[latestNotification.internalRoute] ?? null)
+    ? (ROUTE_LABELS[normalizeRoute(latestNotification.internalRoute)] ?? ROUTE_LABELS[latestNotification.internalRoute] ?? null)
     : null;
   const internalRouteLabel = internalRouteInfo?.label ?? null;
 
@@ -370,7 +402,7 @@ export default function Home() {
     const btn = latestNotification?.actionButton;
     if (!btn) return;
     if (btn.isInternal) {
-      router.push(btn.url as any);
+      router.push(normalizeRoute(btn.url) as any);
     } else {
       Linking.openURL(btn.url).catch((e) => console.error(e));
     }
@@ -426,13 +458,19 @@ export default function Home() {
                   style={[
                     styles.headerBtn,
                     {
-                      backgroundColor: scheme === 'dark' ? 'rgba(163,189,49,0.15)' : 'rgba(163,189,49,0.12)',
+                      backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(163,189,49,0.15)' : 'rgba(163,189,49,0.12)'),
                       borderColor: colors.success,
                     },
                   ]}
                   accessibilityLabel="Actualización disponible. Toca para reiniciar"
                   accessibilityRole="button"
                 >
+                  {Platform.OS === 'ios' && (
+                    <GlassSurface
+                      variant="regular"
+                      tintColor={colors.success}
+                    />
+                  )}
                   <MaterialIcons
                     name="system-update"
                     size={22}
@@ -446,7 +484,7 @@ export default function Home() {
                   style={[
                     styles.headerBtn,
                     {
-                      backgroundColor: scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+                      backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
                       borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
                     },
                   ]}
@@ -458,6 +496,9 @@ export default function Home() {
                   }
                   accessibilityRole="button"
                 >
+                  {Platform.OS === 'ios' && (
+                    <GlassSurface variant="regular" />
+                  )}
                   <View style={styles.bellWrap}>
                     <MaterialIcons
                       name="notifications"
@@ -481,13 +522,16 @@ export default function Home() {
                 style={[
                   styles.headerBtn,
                   {
-                    backgroundColor: scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+                    backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
                     borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
                   },
                 ]}
                 accessibilityLabel="Perfil y ajustes"
                 accessibilityRole="button"
               >
+                {Platform.OS === 'ios' && (
+                  <GlassSurface variant="regular" />
+                )}
                 <MaterialIcons
                   name="account-circle"
                   size={22}
@@ -994,6 +1038,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+    overflow: 'hidden',
   } as ViewStyle,
   bellWrap: { position: 'relative' } as ViewStyle,
   dotWrap: {
