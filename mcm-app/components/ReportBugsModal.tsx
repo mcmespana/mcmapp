@@ -15,7 +15,7 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
 import { getDatabase, ref, push, set } from 'firebase/database';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 import {
   getCategoryFromFirebaseCategory,
   cleanSongTitle,

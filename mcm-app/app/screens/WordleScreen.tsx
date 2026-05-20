@@ -28,7 +28,7 @@ import useWordleGame from '@/hooks/useWordleGame';
 import useWordleStats from '@/hooks/useWordleStats';
 import useWordleWords from '@/hooks/useWordleWords';
 import { getDatabase, ref, get } from 'firebase/database';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import useWordleLeaderboard from '@/hooks/useWordleLeaderboard';

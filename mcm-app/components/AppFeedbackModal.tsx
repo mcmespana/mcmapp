@@ -18,7 +18,7 @@ import { Colors, FeedbackCategoryColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 

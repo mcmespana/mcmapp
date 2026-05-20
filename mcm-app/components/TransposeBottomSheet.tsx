@@ -26,7 +26,7 @@ const TONE_STEPS: { value: number; label: string }[] = [
   { value: 2, label: '+2' },
 ];
 
-export default function TransposePanel({
+export default function TransposeBottomSheet({
   visible,
   onClose,
   currentTranspose,

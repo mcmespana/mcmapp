@@ -8,7 +8,7 @@ import {
   onValue,
   off,
 } from 'firebase/database';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';

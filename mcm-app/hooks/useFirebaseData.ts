@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getFirebaseApp } from './firebaseApp';
+import { getFirebaseApp } from '../utils/firebaseApp';
 import * as Network from 'expo-network';
 
 export function useFirebaseData<T>(

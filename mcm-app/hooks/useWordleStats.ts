@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDatabase, push, ref, set } from 'firebase/database';
-import { getFirebaseApp } from './firebaseApp';
+import { getFirebaseApp } from '../utils/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from './useResolvedProfileConfig';
 

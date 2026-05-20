@@ -13,8 +13,8 @@ import GlassSurface from '@/components/ui/GlassSurface';
 import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
-import SongFontPanel from './SongFontPanel';
-import TransposePanel from './TransposePanel';
+import SongFontBottomSheet from './SongFontBottomSheet';
+import TransposeBottomSheet from './TransposeBottomSheet';
 import ReportBugsModal from './ReportBugsModal';
 import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -79,7 +79,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   onSetCapoOverride,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
-  const [showTransposePanel, setShowTransposePanel] = useState(false);
+  const [showTransposeBottomSheet, setShowTransposeBottomSheet] = useState(false);
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showReportBugsModal, setShowReportBugsModal] = useState(false);
   const [showSecretPanel, setShowSecretPanel] = useState(false);
@@ -126,14 +126,14 @@ const SongControls: React.FC<SongControlsProps> = ({
   useEffect(() => {
     return () => {
       setShowActionButtons(false);
-      setShowTransposePanel(false);
+      setShowTransposeBottomSheet(false);
       setShowFontPanel(false);
       setShowReportBugsModal(false);
       setShowSecretPanel(false);
     };
   }, []);
 
-  const handleOpenTransposePanel = () => setShowTransposePanel(true);
+  const handleOpenTransposeBottomSheet = () => setShowTransposeBottomSheet(true);
   const handleOpenFontPanel = () => setShowFontPanel(true);
 
   const handleReportSuccess = () => {
@@ -253,7 +253,7 @@ const SongControls: React.FC<SongControlsProps> = ({
                       ? `Cejilla ${currentCapoOverride}`
                       : 'Cambiar tono / cejilla'
               }
-              onPress={handleOpenTransposePanel}
+              onPress={handleOpenTransposeBottomSheet}
               isActive={
                 currentTranspose !== 0 ||
                 (currentCapoOverride !== null &&
@@ -328,7 +328,7 @@ const SongControls: React.FC<SongControlsProps> = ({
         </View>
       </View>
 
-      <SongFontPanel
+      <SongFontBottomSheet
         visible={showFontPanel}
         onClose={() => setShowFontPanel(false)}
         availableFonts={availableFonts}
@@ -338,9 +338,9 @@ const SongControls: React.FC<SongControlsProps> = ({
         onSetFontFamily={onSetFontFamily}
       />
 
-      <TransposePanel
-        visible={showTransposePanel}
-        onClose={() => setShowTransposePanel(false)}
+      <TransposeBottomSheet
+        visible={showTransposeBottomSheet}
+        onClose={() => setShowTransposeBottomSheet(false)}
         currentTranspose={currentTranspose}
         onSetTranspose={handleSetTranspose}
         originalCapo={songCapo}
