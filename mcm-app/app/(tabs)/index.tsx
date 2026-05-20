@@ -53,6 +53,7 @@ import {
   isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
 import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
+import { useOTAContext } from '@/contexts/OTAContext';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
@@ -185,6 +186,14 @@ export default function Home() {
 
   // Primary color readable on both light and dark backgrounds
   const accentColor = scheme === 'dark' ? colors.info : colors.primary;
+
+  // OTA update badge (show in header after user dismisses the modal)
+  const {
+    isReady: otaReady,
+    dismissed: otaDismissed,
+    applyUpdate: otaApply,
+  } = useOTAContext();
+  const showUpdateBadge = otaReady && otaDismissed;
 
   // Notifications
   const { firebaseNotifications, readIds, unreadCount } = useNotifications();
@@ -396,7 +405,7 @@ export default function Home() {
         ]}
       >
         <ScreenHero
-          compact
+          compact={false}
           title="MCM App"
           titleStyle={styles.logoText}
           left={
@@ -406,22 +415,36 @@ export default function Home() {
           }
           right={
             <>
-              <TouchableOpacity
-                onPress={() => setSettingsVisible(true)}
-                style={styles.headerIconBtn}
-                accessibilityLabel="Perfil y ajustes"
-                accessibilityRole="button"
-              >
-                <MaterialIcons
-                  name="account-circle"
-                  size={26}
-                  color={theme.icon}
-                />
-              </TouchableOpacity>
+              {showUpdateBadge && (
+                <TouchableOpacity
+                  onPress={otaApply}
+                  style={[
+                    styles.headerBtn,
+                    {
+                      backgroundColor: scheme === 'dark' ? 'rgba(163,189,49,0.15)' : 'rgba(163,189,49,0.12)',
+                      borderColor: colors.success,
+                    },
+                  ]}
+                  accessibilityLabel="Actualización disponible. Toca para reiniciar"
+                  accessibilityRole="button"
+                >
+                  <MaterialIcons
+                    name="system-update"
+                    size={22}
+                    color={colors.success}
+                  />
+                </TouchableOpacity>
+              )}
 
               {resolved.showNotificationsIcon && (
                 <TouchableOpacity
-                  style={styles.headerIconBtn}
+                  style={[
+                    styles.headerBtn,
+                    {
+                      backgroundColor: scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+                      borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                    },
+                  ]}
                   onPress={() => setNotifSheetOpen(true)}
                   accessibilityLabel={
                     unreadCount > 0
@@ -433,7 +456,7 @@ export default function Home() {
                   <View style={styles.bellWrap}>
                     <MaterialIcons
                       name="notifications"
-                      size={24}
+                      size={22}
                       color={theme.icon}
                     />
                     {unreadCount > 0 && (
@@ -447,6 +470,25 @@ export default function Home() {
                   </View>
                 </TouchableOpacity>
               )}
+
+              <TouchableOpacity
+                onPress={() => setSettingsVisible(true)}
+                style={[
+                  styles.headerBtn,
+                  {
+                    backgroundColor: scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+                    borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                  },
+                ]}
+                accessibilityLabel="Perfil y ajustes"
+                accessibilityRole="button"
+              >
+                <MaterialIcons
+                  name="account-circle"
+                  size={22}
+                  color={theme.icon}
+                />
+              </TouchableOpacity>
             </>
           }
         />
@@ -934,11 +976,20 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm + 2, // 10
   } as ViewStyle,
   logoText: {
-    fontSize: 20,
+    fontSize: 34,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -1.4,
+    lineHeight: 38,
   } as TextStyle,
   headerIconBtn: { padding: spacing.sm } as ViewStyle,
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  } as ViewStyle,
   bellWrap: { position: 'relative' } as ViewStyle,
   dotWrap: {
     position: 'absolute',

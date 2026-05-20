@@ -25,6 +25,7 @@ export interface OTAUpdateState {
 }
 
 const CHECK_DELAY_MS = 2500; // dar tiempo a que arranque la app antes de pedir red
+const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 min periodic check
 
 export default function useOTAUpdate(): OTAUpdateState {
   const [isReady, setIsReady] = useState(false);
@@ -73,8 +74,15 @@ export default function useOTAUpdate(): OTAUpdateState {
       }
     });
 
+    // Comprobación periódica cada 15 minutos mientras la app está activa.
+    const poll = setInterval(() => {
+      checkedRef.current = false;
+      checkAndFetch();
+    }, POLL_INTERVAL_MS);
+
     return () => {
       clearTimeout(timer);
+      clearInterval(poll);
       sub.remove();
     };
   }, [checkAndFetch]);
