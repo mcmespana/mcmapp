@@ -285,7 +285,25 @@ export default function MasTab() {
         <Stack.Screen
           name="Fotos"
           component={FotosScreen}
-          options={{ headerShown: false }}
+          options={(() => {
+            const tint = TabHeaderColors.fotos;
+            const textColor = getTextColor(tint);
+            return {
+              title: 'Fotos',
+              headerStyle: getHeaderStyle(tint),
+              headerTintColor: textColor,
+              headerTitleStyle: {
+                fontWeight: '700' as const,
+                fontSize: 18,
+                color: textColor,
+              },
+              headerBackground: () =>
+                Platform.OS === 'ios' ? (
+                  <GlassHeader tintColor={tint} />
+                ) : undefined,
+              headerRight: () => null,
+            };
+          })()}
         />
         <Stack.Screen
           name="Comunica"
