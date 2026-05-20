@@ -188,7 +188,9 @@ export default function MasTab() {
         initialRouteName="MasHome"
         screenOptions={({ navigation, route }) => {
           // Capture stack navigation ref for tab press handling
-          stackNavRef.current = navigation;
+          if (route.name === 'MasHome') {
+            stackNavRef.current = navigation;
+          }
           return {
             headerBackTitle: 'Atrás',
             headerStyle:
@@ -229,7 +231,9 @@ export default function MasTab() {
             headerRight: () => {
               // Solo mostrar los botones en las pantallas de un evento
               const isEventScreen =
-                route.name !== 'MasHome' && route.name !== 'JubileoHome';
+                route.name !== 'MasHome' &&
+                route.name !== 'JubileoHome' &&
+                route.name !== 'Fotos';
               if (!isEventScreen) return null;
 
               // Color del icono según el evento activo (cae a Jubileo)

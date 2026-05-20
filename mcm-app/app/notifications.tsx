@@ -216,107 +216,109 @@ export default function NotificationsScreen() {
       : null;
 
     return (
-      <Swipeable
-        renderRightActions={(progress, dragX) =>
-          isUnread ? renderRightActions(progress, dragX, notification.id) : null
-        }
-        rightThreshold={40}
-        overshootRight={false}
-      >
-        {/* TouchableOpacity de gesture-handler para evitar conflictos dentro de Swipeable */}
-        <TouchableOpacity
-          style={[styles.notificationCard, isUnread && styles.unreadCard]}
-          onPress={() => handleNotificationPress(notification)}
-          activeOpacity={0.7}
-          accessibilityLabel={`${isUnread ? 'No leída: ' : ''}${notification.title}`}
-          accessibilityRole="button"
+      <View style={{ marginBottom: spacing.md }}>
+        <Swipeable
+          renderRightActions={(progress, dragX) =>
+            isUnread ? renderRightActions(progress, dragX, notification.id) : null
+          }
+          rightThreshold={40}
+          overshootRight={false}
         >
-          {notification.icon && (
-            <Image
-              source={{ uri: notification.icon }}
-              style={styles.notificationIcon}
-              accessibilityLabel="Icono de notificación"
-            />
-          )}
-
-          <View style={styles.notificationContent}>
-            {/* Cabecera: título + indicadores */}
-            <View style={styles.notificationHeader}>
-              <Text
-                style={[
-                  styles.notificationTitle,
-                  !isUnread && styles.notificationTitleRead,
-                ]}
-                numberOfLines={1}
-              >
-                {notification.title}
+          {/* TouchableOpacity de gesture-handler para evitar conflictos dentro de Swipeable */}
+          <TouchableOpacity
+            style={[styles.notificationCard, isUnread && styles.unreadCard]}
+            onPress={() => handleNotificationPress(notification)}
+            activeOpacity={0.7}
+            accessibilityLabel={`${isUnread ? 'No leída: ' : ''}${notification.title}`}
+            accessibilityRole="button"
+          >
+            {notification.icon && (
+              <Image
+                source={{ uri: notification.icon }}
+                style={styles.notificationIcon}
+                accessibilityLabel="Icono de notificación"
+              />
+            )}
+  
+            <View style={styles.notificationContent}>
+              {/* Cabecera: título + indicadores */}
+              <View style={styles.notificationHeader}>
+                <Text
+                  style={[
+                    styles.notificationTitle,
+                    !isUnread && styles.notificationTitleRead,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {notification.title}
+                </Text>
+                <View style={styles.notificationHeaderRight}>
+                  {isUnread && <View style={styles.unreadBadge} />}
+                  {/* Botón marcar como leída — Pressable para evitar <button> anidado en web */}
+                  {isUnread && (
+                    <Pressable
+                      style={styles.markAsReadButton}
+                      onPress={() => handleMarkAsRead(notification.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      accessibilityLabel="Marcar como leída"
+                      accessibilityRole="button"
+                    >
+                      <MaterialIcons
+                        name="check-circle-outline"
+                        size={20}
+                        color={colors.primary}
+                      />
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+  
+              {/* Cuerpo */}
+              <Text style={styles.notificationBody} numberOfLines={2}>
+                {notification.body}
               </Text>
-              <View style={styles.notificationHeaderRight}>
-                {isUnread && <View style={styles.unreadBadge} />}
-                {/* Botón marcar como leída — Pressable para evitar <button> anidado en web */}
-                {isUnread && (
-                  <Pressable
-                    style={styles.markAsReadButton}
-                    onPress={() => handleMarkAsRead(notification.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    accessibilityLabel="Marcar como leída"
-                    accessibilityRole="button"
-                  >
-                    <MaterialIcons
-                      name="check-circle-outline"
-                      size={20}
-                      color={colors.primary}
-                    />
-                  </Pressable>
-                )}
+  
+              {/* Fila inferior: fecha + chips de destino/acción */}
+              <View style={styles.notificationFooter}>
+                <Text style={styles.notificationDate}>{formatDate(date)}</Text>
+                <View style={styles.chipsRow}>
+                  {/* Chip de destino interno */}
+                  {routeInfo && (
+                    <View style={styles.destinationChip}>
+                      <Text style={styles.destinationChipText}>
+                        {routeInfo.label}
+                      </Text>
+                    </View>
+                  )}
+                  {/* Chip de botón de acción — Pressable para evitar <button> anidado en web */}
+                  {notification.actionButton && (
+                    <Pressable
+                      style={styles.actionChip}
+                      onPress={(e?) => handleActionButtonPress(notification, e)}
+                      accessibilityLabel={notification.actionButton.text}
+                      accessibilityRole="button"
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.actionChipText} numberOfLines={1}>
+                        {notification.actionButton.text}
+                      </Text>
+                      <MaterialIcons
+                        name={
+                          notification.actionButton.isInternal
+                            ? 'arrow-forward'
+                            : 'open-in-new'
+                        }
+                        size={11}
+                        color="#fff"
+                      />
+                    </Pressable>
+                  )}
+                </View>
               </View>
             </View>
-
-            {/* Cuerpo */}
-            <Text style={styles.notificationBody} numberOfLines={2}>
-              {notification.body}
-            </Text>
-
-            {/* Fila inferior: fecha + chips de destino/acción */}
-            <View style={styles.notificationFooter}>
-              <Text style={styles.notificationDate}>{formatDate(date)}</Text>
-              <View style={styles.chipsRow}>
-                {/* Chip de destino interno */}
-                {routeInfo && (
-                  <View style={styles.destinationChip}>
-                    <Text style={styles.destinationChipText}>
-                      {routeInfo.label}
-                    </Text>
-                  </View>
-                )}
-                {/* Chip de botón de acción — Pressable para evitar <button> anidado en web */}
-                {notification.actionButton && (
-                  <Pressable
-                    style={styles.actionChip}
-                    onPress={(e?) => handleActionButtonPress(notification, e)}
-                    accessibilityLabel={notification.actionButton.text}
-                    accessibilityRole="button"
-                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  >
-                    <Text style={styles.actionChipText} numberOfLines={1}>
-                      {notification.actionButton.text}
-                    </Text>
-                    <MaterialIcons
-                      name={
-                        notification.actionButton.isInternal
-                          ? 'arrow-forward'
-                          : 'open-in-new'
-                      }
-                      size={11}
-                      color="#fff"
-                    />
-                  </Pressable>
-                )}
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Swipeable>
+          </TouchableOpacity>
+        </Swipeable>
+      </View>
     );
   };
 
@@ -728,7 +730,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
       backgroundColor: theme.background,
       borderRadius: radii.md,
       padding: spacing.md,
-      marginBottom: spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
       ...shadows.sm,
@@ -781,7 +782,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       justifyContent: 'center',
       alignItems: 'flex-end',
       borderRadius: radii.md,
-      marginBottom: spacing.md,
+      height: '100%',
       paddingRight: spacing.md,
       minWidth: 90,
     },

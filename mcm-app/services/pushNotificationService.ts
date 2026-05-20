@@ -235,7 +235,12 @@ export const getNotificationsHistory = async (): Promise<
     }
 
     const notificationsData = snapshot.val();
-    const notifications: NotificationData[] = Object.values(notificationsData);
+    const notifications: NotificationData[] = Object.entries(notificationsData).map(
+      ([key, val]: [string, any]) => ({
+        ...val,
+        id: val.id || key,
+      }),
+    );
 
     // Ordenar por fecha de creación (más recientes primero)
     return notifications.sort(
@@ -261,8 +266,12 @@ export const subscribeToNotifications = (
     const unsubscribe = onValue(notificationsRef, (snapshot) => {
       if (snapshot.exists()) {
         const notificationsData = snapshot.val();
-        const notifications: NotificationData[] =
-          Object.values(notificationsData);
+        const notifications: NotificationData[] = Object.entries(notificationsData).map(
+          ([key, val]: [string, any]) => ({
+            ...val,
+            id: val.id || key,
+          }),
+        );
 
         // Ordenar por fecha
         const sorted = notifications.sort(
