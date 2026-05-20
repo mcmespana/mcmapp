@@ -21,11 +21,13 @@ import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
 import ReflexionesScreen from '../screens/ReflexionesScreen';
 import AppsScreen from '../screens/AppsScreen';
+import FotosScreen from './fotos';
 import WordleScreen from '../screens/WordleScreen';
 import ComidaScreen from '../screens/ComidaScreen';
 import ComidaWebScreen from '../screens/ComidaWebScreen';
 import SettingsPanel from '@/components/SettingsPanel';
 import { getEvent } from '@/constants/events';
+import { TabHeaderColors } from '@/constants/colors';
 
 /**
  * Route params comunes a todas las pantallas de un evento (Jubileo u otros
@@ -37,6 +39,7 @@ type EventRouteParams = { eventId?: string };
 
 export type MasStackParamList = {
   MasHome: { directTo?: string } | undefined;
+  Fotos: undefined;
   Comunica: undefined;
   ComunicaGestion: undefined;
   JubileoHome: EventRouteParams | undefined;
@@ -277,6 +280,24 @@ export default function MasTab() {
             title: 'Más',
             headerShown: false,
             headerRight: undefined,
+          }}
+        />
+        <Stack.Screen
+          name="Fotos"
+          component={FotosScreen}
+          options={{
+            title: 'Fotos',
+            headerStyle:
+              Platform.OS === 'ios'
+                ? { backgroundColor: 'transparent' }
+                : { backgroundColor: TabHeaderColors.fotos },
+            headerTintColor:
+              Platform.OS === 'ios' ? '#1a1a1a' : '#fff',
+            headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor={TabHeaderColors.fotos} />
+              ) : undefined,
           }}
         />
         <Stack.Screen
