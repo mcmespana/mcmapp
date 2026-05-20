@@ -25,6 +25,9 @@
 - [x] ~~Dark mode~~ → corregidos ErrorBoundary, SongFullscreen, Comida, Monitores, Wordle, Reflexiones
 - [x] ~~Performance Home~~ → `React.memo()` en ContextualDecoration, `useRef` para animaciones
 - [x] ~~Firebase 11 → 12~~ → ya en `^12.10.0` en package.json
+- [x] ~~Reanimated 3 en BottomSheet~~ → migrado a `Gesture.Pan()` + `useSharedValue`
+- [x] ~~Modo oscuro en sección Contigo~~ → colores y lectura del evangelio corregidos
+- [x] ~~Arreglar textos~~ → corregido
 
 ---
 
@@ -33,9 +36,6 @@
 - [ ] Revisar pestaña más del menu de abajo, diseñarla bien cuando no sale
 - [ ] Revisar diseño en iPads y arreglarlo. 
 - [ ] En iPad Contigo se ven desproporcionados los habit tracker
-- [ ] Revisar modo oscuro en seccion contigo, con los colores, la lectura del evangelio....
-- [ ] Arreglar los textos 
-
 
 
 - [ ] **Long-press menús contextuales en items de cantoral**.
@@ -84,12 +84,6 @@ El compilador analiza automáticamente el árbol de componentes y memoiza en tie
 > rama `claude/modernize-app-design-V5LuI`. Cada una es independiente
 > y puede hacerse en su propio PR.
 
-- [ ] **Reanimated 3 en NotificationsBottomSheet**.
-      Migrar el `PanResponder` + `Animated.Value` a `Gesture.Pan()` (RNGH v2)
-  - `useSharedValue` + `withSpring/withTiming`. Riesgo medio: requiere
-    testing exhaustivo del gesto de cierre por swipe-down. Pendiente
-    desde el PR de migración del ping badge en Home (se decidió no tocar
-    este componente para minimizar regresiones).
 - [ ] **`GruposScreen` — `PageContainer` y `ScreenHero`**.
       Hoy `ScreenHero` solo se aplica en la vista raíz. Aplicar
       `PageContainer` en las 5 ramas de render para que también centre en
