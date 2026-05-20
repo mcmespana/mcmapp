@@ -44,7 +44,7 @@ import UniwindThemeBridge from '@/components/UniwindThemeBridge';
 import { HeroUINativeProvider } from 'heroui-native';
 import { AppToastProvider, useToast } from '@/contexts/AppToastContext';
 import OTAUpdatePrompt from '@/components/OTAUpdatePrompt';
-import useOTAUpdate from '@/hooks/useOTAUpdate';
+import { OTAProvider, useOTAContext } from '@/contexts/OTAContext';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 
@@ -64,7 +64,9 @@ export default function RootLayout() {
                         <ChoirSessionProvider>
                           <NotificationsProvider>
                             <CalendarConfigProvider>
-                              <InnerLayout />
+                              <OTAProvider>
+                                <InnerLayout />
+                              </OTAProvider>
                             </CalendarConfigProvider>
                           </NotificationsProvider>
                         </ChoirSessionProvider>
@@ -83,7 +85,8 @@ export default function RootLayout() {
 
 function InnerLayout() {
   const [showAnimation, setShowAnimation] = useState(true);
-  const [otaDismissed, setOtaDismissed] = useState(false);
+  const { isReady, isDownloading, applyUpdate, dismissed, setDismissed } =
+    useOTAContext();
   const scheme = useColorScheme();
   const pathname = usePathname();
   const segments = useSegments();
@@ -91,7 +94,6 @@ function InnerLayout() {
   const resolved = useResolvedProfileConfig();
   const { addSong } = useSelectedSongs();
   const { toast } = useToast();
-  const ota = useOTAUpdate();
 
   // Handle incoming .mcm files (opened from WhatsApp, Files, etc.)
   const handleIncomingPlaylist = useCallback(
@@ -202,10 +204,10 @@ function InnerLayout() {
       <AddToHomeBanner />
       <CommandPalette />
       <OTAUpdatePrompt
-        visible={(ota.isReady || ota.isDownloading) && !otaDismissed}
-        isDownloading={ota.isDownloading && !ota.isReady}
-        onApply={ota.applyUpdate}
-        onLater={() => setOtaDismissed(true)}
+        visible={(isReady || isDownloading) && !dismissed}
+        isDownloading={isDownloading && !isReady}
+        onApply={applyUpdate}
+        onLater={() => setDismissed(true)}
       />
     </NavThemeProvider>
   );
