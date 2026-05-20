@@ -21,7 +21,7 @@ import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
 import ReflexionesScreen from '../screens/ReflexionesScreen';
 import AppsScreen from '../screens/AppsScreen';
-import FotosScreen from './fotos';
+import AlbumListScreen from '../screens/AlbumListScreen';
 import WordleScreen from '../screens/WordleScreen';
 import ComidaScreen from '../screens/ComidaScreen';
 import ComidaWebScreen from '../screens/ComidaWebScreen';
@@ -284,26 +284,24 @@ export default function MasTab() {
         />
         <Stack.Screen
           name="Fotos"
-          component={FotosScreen}
-          options={(() => {
-            const tint = TabHeaderColors.fotos;
-            const textColor = getTextColor(tint);
-            return {
-              title: 'Fotos',
-              headerStyle: getHeaderStyle(tint),
-              headerTintColor: textColor,
-              headerTitleStyle: {
-                fontWeight: '700' as const,
-                fontSize: 18,
-                color: textColor,
-              },
-              headerBackground: () =>
-                Platform.OS === 'ios' ? (
-                  <GlassHeader tintColor={tint} />
-                ) : undefined,
-              headerRight: () => null,
-            };
-          })()}
+          component={AlbumListScreen}
+          options={{
+            title: 'Fotos',
+            headerStyle:
+              Platform.OS === 'ios'
+                ? { backgroundColor: 'transparent' }
+                : { backgroundColor: TabHeaderColors.fotos },
+            headerTintColor: Platform.OS === 'ios' ? '#1a1a1a' : '#fff',
+            headerTitleStyle: {
+              fontWeight: '700' as const,
+              fontSize: 18,
+              color: Platform.OS === 'ios' ? '#1a1a1a' : '#fff',
+            },
+            headerBackground: () =>
+              Platform.OS === 'ios' ? (
+                <GlassHeader tintColor={TabHeaderColors.fotos} />
+              ) : undefined,
+          }}
         />
         <Stack.Screen
           name="Comunica"
