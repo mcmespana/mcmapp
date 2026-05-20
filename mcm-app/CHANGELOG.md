@@ -13,6 +13,14 @@
 
 ---
 
+## 2026-05-20 — Fix slider fullscreen del cantoral + Contigo responsive en iPad
+
+- **Slider de velocidad en `SongFullscreenScreen` migrado a react-native-gesture-handler + Reanimated**. La implementación anterior con `PanResponder` competía por los gestos con los componentes `PressableFeedback` de heroui-native (que ya usan RNGH internamente), lo que hacía que el slider se rompiera de forma recurrente. La nueva implementación con `Gesture.Pan()` + `useSharedValue` es estable cross-platform y soporta además tap-on-track para saltar a una posición concreta. También se pausa el auto-hide de los controles mientras se está arrastrando para que el slider no desaparezca a mitad del gesto.
+- **Contigo en iPad — wrappers con `maxWidth` y centrado**: aplicado un wrapper `View` con `maxWidth` (720/880 según ancho de ventana) y `alignSelf: 'center'` en `ContigoScreen`, `EvangelioScreen`, `RevisionScreen` y `BookmarksScreen`. Antes la página se estiraba a lo ancho del iPad dejando el HeroCard, los HabitTile y las stats cards en un layout muy disperso y desproporcionado. Ahora el contenido se mantiene legible y compacto en iPad/web sin afectar el diseño en móvil.
+- **Archivos**: `app/screens/SongFullscreenScreen.tsx`, `app/(tabs)/contigo/index.tsx`, `app/(tabs)/contigo/evangelio.tsx`, `app/(tabs)/contigo/revision.tsx`, `app/(tabs)/contigo/bookmarks.tsx`.
+
+---
+
 ## 2026-05-19 — Onboarding: opción "Otros" en perfil y delegación
 
 - **Nueva opción "Otros" en el paso de perfil** del onboarding (`app/onboarding.tsx`), con el texto «Si no te identificas con ninguno de los anteriores o simplemente quieres probar la app». Pensada para visitantes y casos no contemplados. Si el usuario la elige, se salta directamente la pantalla de delegación y se va al éxito.
