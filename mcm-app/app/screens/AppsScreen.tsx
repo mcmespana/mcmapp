@@ -15,12 +15,13 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
-import { radii } from '@/constants/uiStyles';
+import { radii, shadows } from '@/constants/uiStyles';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
+import { hexAlpha } from '@/utils/colorUtils';
 
 interface AppInfo {
   orden: number;
@@ -83,12 +84,12 @@ export default function AppsScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}>
         <PageContainer>
-          <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl }}>
             <ScreenHero
               title="Apps"
               subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo."
             />
-            <View style={{ paddingHorizontal: 16, gap: spacing.sm }}>
+            <View style={{ gap: spacing.sm }}>
               {[0, 1, 2, 3, 4].map((i) => (
                 <Skeleton key={i} style={{ height: 72, borderRadius: radii.lg }} />
               ))}
@@ -103,7 +104,7 @@ export default function AppsScreen() {
     <View style={styles.container}>
       <PageContainer>
         <ScrollView
-          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: insets.bottom + spacing.xl }}
         >
           <ScreenHero
             title="Apps"
@@ -254,16 +255,20 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     introContainer: {
-      padding: 20,
-      paddingBottom: 16,
-      backgroundColor: theme.background,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      backgroundColor: hexAlpha(theme.accent, '12'),
+      borderColor: hexAlpha(theme.accent, '30'),
+      borderWidth: 1,
+      borderRadius: radii.md,
+      marginBottom: spacing.md,
     },
     introText: {
       fontSize: 16,
       color: theme.text,
       textAlign: 'center',
       lineHeight: 22,
-      marginBottom: 8,
+      marginBottom: spacing.xs,
       fontWeight: '500',
     },
     introSubtext: {
@@ -276,48 +281,54 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     listItemContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      backgroundColor: theme.background,
-      borderBottomWidth: 1,
-      borderBottomColor: scheme === 'dark' ? '#333' : '#f0f0f0',
-    },
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      backgroundColor: theme.card,
+      borderRadius: radii.lg,
+      marginBottom: spacing.sm,
+      ...shadows.sm,
+    } as any,
     iconContainer: {
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: 16,
+      marginRight: spacing.md,
+      width: 56,
+      height: 56,
+      borderRadius: radii.md,
+      backgroundColor: hexAlpha(theme.accent, '15'),
     },
     icon: {
       width: 48,
       height: 48,
-      borderRadius: 12,
+      borderRadius: radii.md,
     },
     contentContainer: {
       flex: 1,
       justifyContent: 'center',
+      gap: spacing.xs,
     },
     title: {
-      fontWeight: 'bold',
+      fontWeight: '700',
       color: theme.text,
-      fontSize: 16,
-      marginBottom: 4,
+      fontSize: 15,
     },
     description: {
       color: theme.text,
       opacity: 0.7,
-      fontSize: 14,
+      fontSize: 13,
       lineHeight: 18,
     },
     rightContainer: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: spacing.xs,
     },
-    chipRow: { alignItems: 'center', marginBottom: 12 },
+    chipRow: { alignItems: 'center', marginBottom: spacing.sm },
     downloadRow: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      marginTop: 8,
-      gap: 8,
+      marginTop: spacing.sm,
+      gap: spacing.sm,
     },
   });
 };
