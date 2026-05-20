@@ -14,6 +14,7 @@ import {
 
 const nativeDriver = Platform.OS !== 'web';
 import { UIColors, Colors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const OFF_SCREEN = Dimensions.get('window').height;
@@ -226,8 +227,8 @@ const styles = StyleSheet.create({
     right: 0,
   },
   sheet: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     overflow: 'hidden',
   },
   handleWrap: {

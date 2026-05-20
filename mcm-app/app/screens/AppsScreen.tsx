@@ -10,14 +10,15 @@ import {
   Text,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Chip, Button, Dialog, PressableFeedback } from 'heroui-native';
+import { Chip, Button, Dialog, PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
+import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 
@@ -78,8 +79,24 @@ export default function AppsScreen() {
     [appsData],
   );
 
-  if (loading || !appsData) {
-    return <ProgressWithMessage message="Cargando aplicaciones..." />;
+  if (!appsData) {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}>
+        <PageContainer>
+          <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+            <ScreenHero
+              title="Apps"
+              subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo."
+            />
+            <View style={{ paddingHorizontal: 16, gap: spacing.sm }}>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} style={{ height: 72, borderRadius: radii.lg }} />
+              ))}
+            </View>
+          </ScrollView>
+        </PageContainer>
+      </View>
+    );
   }
 
   return (

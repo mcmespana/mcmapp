@@ -14,7 +14,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { convertChord } from '../utils/chordNotation';
 import { transposeKey, transposeLabel } from '../utils/transposeKey';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Colors, StateColors } from '@/constants/colors';
+import { Colors, StateColors, SwipeColors, KeyPillColors } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 
 // Type for song data
@@ -32,11 +32,12 @@ interface Song {
 interface SongListItemProps {
   song: Song;
   onPress: (song: Song) => void;
+  onLongPress?: (song: Song) => void;
   isSearchAllMode?: boolean;
 }
 
 const SongListItem: React.FC<SongListItemProps> = React.memo(
-  function SongListItem({ song, onPress, isSearchAllMode = false }) {
+  function SongListItem({ song, onPress, onLongPress, isSearchAllMode = false }) {
     const { addSong, removeSong, isSongSelected, getSelectedSong } =
       useSelectedSongs();
     const { settings } = useSettings();
@@ -152,6 +153,8 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         <Animated.View style={[styles.songItemOuter, animatedStyle]}>
           <TouchableOpacity
             onPress={() => onPress(song)}
+            onLongPress={() => onLongPress?.(song)}
+            delayLongPress={400}
             style={styles.songItemInner}
             activeOpacity={0.6}
           >
@@ -280,7 +283,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       width: 6,
       height: 6,
       borderRadius: 3,
-      backgroundColor: '#34C759',
+      backgroundColor: SwipeColors.add,
       marginRight: 10,
     },
     songInfoContainer: {
@@ -352,7 +355,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingHorizontal: 8,
       paddingVertical: 3,
       borderRadius: 6,
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     keyText: {
       fontSize: 13,
@@ -396,13 +399,13 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderRadius: 3,
     },
     rightAction: {
-      backgroundColor: '#34C759',
+      backgroundColor: SwipeColors.add,
       justifyContent: 'center',
       alignItems: 'center',
       width: 100,
     },
     leftAction: {
-      backgroundColor: '#FF453A',
+      backgroundColor: SwipeColors.remove,
       justifyContent: 'center',
       alignItems: 'center',
       width: 100,

@@ -87,6 +87,18 @@ export const StateColors = {
   pressedOverlayDark: 'rgba(255, 255, 255, 0.10)',
 } as const;
 
+// Swipe action colors en SongListItem — Apple system colors
+export const SwipeColors = {
+  add: '#34C759',    // Apple system green — swipe derecho "Seleccionar"
+  remove: '#FF453A', // Apple system red — swipe izquierdo "Quitar"
+} as const;
+
+// Key pill background en SongListItem
+export const KeyPillColors = {
+  bgLight: '#EEF4FF',
+  bgDark: '#1A2744',
+} as const;
+
 // Colores de emociones — usado en Contigo (oración) y disponible para futuros trackers.
 export const EmotionColors = {
   joy: '#FCD200', // Alegría — amarillo COM
