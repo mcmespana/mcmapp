@@ -96,7 +96,12 @@ export default function ReportBugsModal({
   const canSubmit = bugDescription.trim().length > 0 && !isSubmitting;
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose} title="Reportar fallitos 🐛">
+    <BottomSheet
+      visible={visible}
+      onClose={handleClose}
+      title="Reportar fallitos 🐛"
+      paddingHorizontal={0}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

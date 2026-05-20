@@ -114,7 +114,12 @@ export default function SuggestSongModal({
     titulo.trim().length > 0 && artista.trim().length > 0 && !isSubmitting;
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose} title="Sugerir canción 🎵">
+    <BottomSheet
+      visible={visible}
+      onClose={handleClose}
+      title="Sugerir canción 🎵"
+      paddingHorizontal={0}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

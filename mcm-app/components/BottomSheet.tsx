@@ -30,10 +30,13 @@ interface BottomSheetProps {
   children: React.ReactNode;
   height?: number;
   title?: string;
+  headerLeft?: React.ReactNode;
+  headerRight?: React.ReactNode;
   /** Called after the close animation finishes and the Modal is unmounted.
    *  Use this to present a second Modal or call Share.share() — iOS cannot
    *  show two Modals simultaneously, so actions must wait for full dismissal. */
   onCloseComplete?: () => void;
+  paddingHorizontal?: number;
 }
 
 export default function BottomSheet({
@@ -42,7 +45,10 @@ export default function BottomSheet({
   children,
   height,
   title,
+  headerLeft,
+  headerRight,
   onCloseComplete,
+  paddingHorizontal = 16,
 }: BottomSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -172,6 +178,8 @@ export default function BottomSheet({
   const handleColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.18)';
   const translateY = Animated.add(slideAnim, dragAnim);
 
+  const hasHeader = title !== undefined || headerLeft !== undefined || headerRight !== undefined;
+
   return (
     <Modal
       visible={modalVisible}
@@ -212,20 +220,27 @@ export default function BottomSheet({
             },
           ]}
         >
-          {/* Handle + optional title — both serve as drag targets */}
+          {/* Handle capsule serves as a drag target */}
           <View style={styles.handleWrap} {...panResponder.panHandlers}>
             <View style={[styles.handle, { backgroundColor: handleColor }]} />
           </View>
-          {title && (
-            <View style={styles.titleBar} {...panResponder.panHandlers}>
-              <Text
-                style={[
-                  styles.titleText,
-                  { color: Colors[scheme ?? 'light'].text },
-                ]}
-              >
-                {title}
-              </Text>
+
+          {/* Unified Premium Header Container serves as a drag target */}
+          {hasHeader && (
+            <View style={styles.headerContainer} {...panResponder.panHandlers}>
+              {headerLeft && <View style={styles.headerLeft}>{headerLeft}</View>}
+              {title && (
+                <Text
+                  style={[
+                    styles.titleText,
+                    { color: Colors[scheme ?? 'light'].text },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {title}
+                </Text>
+              )}
+              {headerRight && <View style={styles.headerRight}>{headerRight}</View>}
             </View>
           )}
 
@@ -233,7 +248,7 @@ export default function BottomSheet({
               don't fall through to the backdrop Pressable behind the sheet. */}
           <View
             style={[
-              { backgroundColor: bgColor, paddingHorizontal: 16 },
+              { backgroundColor: bgColor, paddingHorizontal },
               height !== undefined && { flex: 1 },
             ]}
             onStartShouldSetResponder={() => true}
@@ -268,11 +283,29 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
   },
-  titleBar: {
+  headerContainer: {
+    height: 48,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 6,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
+    justifyContent: 'center',
+    paddingHorizontal: 54, // Ensure title text doesn't overlap absolute buttons
+    position: 'relative',
+  },
+  headerLeft: {
+    position: 'absolute',
+    left: 16,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  headerRight: {
+    position: 'absolute',
+    right: 16,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   titleText: {
     fontSize: 17,

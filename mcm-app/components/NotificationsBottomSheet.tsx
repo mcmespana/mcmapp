@@ -382,39 +382,47 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
   // Fixed height so FlatList can scroll: leave SHEET_GAP below Dynamic Island
   const sheetHeight = SCREEN_HEIGHT - (insets.top + SHEET_GAP);
 
+  const headerLeft = selectedNotification ? (
+    <TouchableOpacity
+      onPress={() => setSelectedNotification(null)}
+      style={{ padding: 4 }}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <MaterialIcons name="arrow-back" size={24} color={theme.text} />
+    </TouchableOpacity>
+  ) : undefined;
+
+  const headerRight = !selectedNotification && hasUnread ? (
+    <TouchableOpacity
+      onPress={handleMarkAllAsRead}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      style={sheetStyles.markAllHeaderBtn}
+    >
+      <MaterialIcons name="done-all" size={18} color={colors.primary} />
+      <Text style={sheetStyles.markAllHeaderText}>Marcar todo</Text>
+    </TouchableOpacity>
+  ) : undefined;
+
+  const sheetTitle = selectedNotification ? selectedNotification.title : 'Notificaciones';
+
   return (
     <BottomSheet
       visible={visible}
       onClose={onClose}
       height={sheetHeight}
-      title={undefined}
+      title={sheetTitle}
+      headerLeft={headerLeft}
+      headerRight={headerRight}
     >
       {selectedNotification ? (
         <NotificationDetail
           notification={selectedNotification}
-          onBack={() => setSelectedNotification(null)}
           onClose={onClose}
           scheme={scheme}
           bottomInset={insets.bottom}
         />
       ) : (
         <>
-          <View style={sheetStyles.headerRow}>
-            <Text style={[sheetStyles.headerTitle, { color: theme.text }]}>
-              Notificaciones
-            </Text>
-            {hasUnread && (
-              <TouchableOpacity
-                onPress={handleMarkAllAsRead}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={sheetStyles.markAllHeaderBtn}
-              >
-                <MaterialIcons name="done-all" size={18} color={colors.primary} />
-                <Text style={sheetStyles.markAllHeaderText}>Marcar todo</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
           {loading ? (
             <View style={sheetStyles.empty}>
               <Text style={[sheetStyles.emptyText, { color: theme.icon }]}>
@@ -470,13 +478,11 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
 
 function NotificationDetail({
   notification,
-  onBack,
   onClose,
   scheme,
   bottomInset,
 }: {
   notification: NotificationData | ReceivedNotification;
-  onBack: () => void;
   onClose: () => void;
   scheme: 'light' | 'dark';
   bottomInset: number;
@@ -502,28 +508,6 @@ function NotificationDetail({
 
   return (
     <View style={{ flex: 1 }}>
-      <View
-        style={[
-          detailStyles.header,
-          { borderBottomColor: hexAlpha(theme.icon, '15') },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={onBack}
-          style={detailStyles.backBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <MaterialIcons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        <Text
-          style={[detailStyles.headerTitle, { color: theme.text }]}
-          numberOfLines={1}
-        >
-          {notification.title}
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
-
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[
