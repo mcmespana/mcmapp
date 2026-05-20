@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   Pressable,
   Linking,
+  Platform,
   ViewStyle,
   TextStyle,
   useWindowDimensions,
@@ -456,6 +457,7 @@ export default function Home() {
         contentContainerStyle={[
           styles.scrollContent,
           isWide && styles.scrollContentWide,
+          Platform.OS === 'ios' && { paddingBottom: 120 },
         ]}
         showsVerticalScrollIndicator={false}
       >
