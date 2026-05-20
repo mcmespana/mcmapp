@@ -1,14 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  Animated,
-  PanResponder,
-  GestureResponderEvent,
-  PanResponderGestureState,
-} from 'react-native';
+import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   RouteProp,
@@ -19,11 +10,18 @@ import { WebView } from 'react-native-webview';
 import { BlurView } from 'expo-blur';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { PressableFeedback } from 'heroui-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Reanimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  runOnJS,
+} from 'react-native-reanimated';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { Colors } from '../../constants/colors';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
@@ -46,66 +44,83 @@ const THUMB_D = 22; // thumb diameter
 const DRAG_RANGE = SLIDER_H - THUMB_D;
 const TRACK_W = 3;
 
-/** Cross-platform vertical slider via PanResponder. value: 0..1 */
+/**
+ * Cross-platform vertical slider built on react-native-gesture-handler +
+ * Reanimated. Using RNGH (instead of PanResponder) avoids gesture conflicts
+ * with the surrounding heroui-native PressableFeedback components, which is
+ * what kept breaking the previous implementation. value: 0..1
+ */
 function VerticalSlider({
   value,
   onChange,
+  onStart,
+  onEnd,
 }: {
   value: number;
   onChange: (v: number) => void;
+  onStart?: () => void;
+  onEnd?: () => void;
 }) {
-  const valueRef = useRef(value);
-  const startRef = useRef(value);
+  const sv = useSharedValue(value);
+  const start = useSharedValue(value);
 
   useEffect(() => {
-    valueRef.current = value;
+    sv.value = value;
+  }, [value, sv]);
+
+  const pan = Gesture.Pan()
+    .minDistance(0)
+    .onBegin(() => {
+      start.value = sv.value;
+      if (onStart) runOnJS(onStart)();
+    })
+    .onUpdate((e) => {
+      // dy > 0 = moved down = slower; top = fast (value 1)
+      const next = Math.max(
+        0,
+        Math.min(1, start.value - e.translationY / DRAG_RANGE),
+      );
+      sv.value = next;
+      runOnJS(onChange)(next);
+    })
+    .onFinalize(() => {
+      if (onEnd) runOnJS(onEnd)();
+    });
+
+  // Tap on the track to jump to that position.
+  const tap = Gesture.Tap().onEnd((e) => {
+    const raw = 1 - (e.y - THUMB_D / 2) / DRAG_RANGE;
+    const next = Math.max(0, Math.min(1, raw));
+    sv.value = next;
+    runOnJS(onChange)(next);
+    if (onEnd) runOnJS(onEnd)();
   });
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        startRef.current = valueRef.current;
-      },
-      onPanResponderMove: (
-        _evt: GestureResponderEvent,
-        { dy }: PanResponderGestureState,
-      ) => {
-        // dy > 0 = moved down = slower; top = fast (value 1)
-        const next = Math.max(
-          0,
-          Math.min(1, startRef.current - dy / DRAG_RANGE),
-        );
-        onChange(next);
-      },
-    }),
-  ).current;
+  const gesture = Gesture.Exclusive(pan, tap);
 
-  const thumbTop = (1 - value) * DRAG_RANGE;
+  const thumbStyle = useAnimatedStyle(() => ({
+    top: (1 - sv.value) * DRAG_RANGE,
+  }));
+  const fillStyle = useAnimatedStyle(() => ({
+    top: (1 - sv.value) * DRAG_RANGE + THUMB_D / 2,
+    height: sv.value * DRAG_RANGE,
+  }));
 
   return (
-    <View
-      style={sliderStyles.container}
-      {...panResponder.panHandlers}
-      // Extra hit area so small thumbs are easy to grab
-      hitSlop={{ top: 8, bottom: 8, left: 14, right: 14 }}
-    >
-      {/* Track background */}
-      <View style={sliderStyles.trackBg} />
-      {/* Filled portion: from thumb down to bottom = the selected speed level */}
+    <GestureDetector gesture={gesture}>
       <View
-        style={[
-          sliderStyles.trackFill,
-          {
-            top: thumbTop + THUMB_D / 2,
-            height: value * DRAG_RANGE,
-          },
-        ]}
-      />
-      {/* Thumb */}
-      <View style={[sliderStyles.thumb, { top: thumbTop }]} />
-    </View>
+        style={sliderStyles.container}
+        // Extra hit area so small thumbs are easy to grab
+        hitSlop={{ top: 8, bottom: 8, left: 14, right: 14 }}
+      >
+        {/* Track background */}
+        <View style={sliderStyles.trackBg} />
+        {/* Filled portion: from thumb down to bottom = the selected speed level */}
+        <Reanimated.View style={[sliderStyles.trackFill, fillStyle]} />
+        {/* Thumb */}
+        <Reanimated.View style={[sliderStyles.thumb, thumbStyle]} />
+      </View>
+    </GestureDetector>
   );
 }
 
@@ -162,6 +177,13 @@ export default function SongFullscreenScreen({
   const insets = useSafeAreaInsets();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
+
+  // Web: F y Esc salen del modo presentación. Esc viaja por el modal nativo
+  // en algunos navegadores; añadimos handler explícito por seguridad.
+  useKeyboardShortcut('f', () => navigation.goBack());
+  useKeyboardShortcut('escape', () => navigation.goBack(), {
+    preventDefault: false,
+  });
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;
 
@@ -189,6 +211,7 @@ export default function SongFullscreenScreen({
   const [controlsVisible, setControlsVisible] = useState(false);
   const controlsOpacity = useRef(new Animated.Value(0)).current;
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDraggingRef = useRef(false);
 
   // Refs for fluid web rAF scroll (avoid stale closures)
   const webRafRef = useRef<number | null>(null);
@@ -217,6 +240,9 @@ export default function SongFullscreenScreen({
     }).start();
 
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    // Don't schedule auto-hide while the user is dragging the slider —
+    // hiding mid-drag would unmount the gesture target.
+    if (isDraggingRef.current) return;
     hideTimeoutRef.current = setTimeout(() => {
       Animated.timing(controlsOpacity, {
         toValue: 0,
@@ -225,6 +251,15 @@ export default function SongFullscreenScreen({
       }).start(() => setControlsVisible(false));
     }, 2400);
   }, [controlsOpacity]);
+
+  const handleSliderStart = useCallback(() => {
+    isDraggingRef.current = true;
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+  }, []);
+  const handleSliderEnd = useCallback(() => {
+    isDraggingRef.current = false;
+    showControls();
+  }, [showControls]);
 
   // Web: fluid rAF scroll loop driven from React side
   useEffect(() => {
@@ -388,10 +423,9 @@ export default function SongFullscreenScreen({
             </Text>
             <VerticalSlider
               value={speedFactor}
-              onChange={(v) => {
-                setSpeedFactor(v);
-                showControls();
-              }}
+              onChange={setSpeedFactor}
+              onStart={handleSliderStart}
+              onEnd={handleSliderEnd}
             />
           </Animated.View>
         )}

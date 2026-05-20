@@ -13,6 +13,28 @@
 
 ---
 
+## 2026-05-20 — Atajos de teclado en web: Cmd+K, Esc y cantoral
+
+- **Cmd/Ctrl+K**: nuevo Command Palette global (web-only) montado en `app/_layout.tsx`. Lista las pantallas top-level del expo-router con sinónimos en castellano e inglés para búsqueda rápida.
+- **Esc**: cierra el overlay más reciente. Pila LIFO global (`OverlayStackProvider` en `contexts/OverlayStackContext.tsx`) compartida entre todos los `BottomSheet` y el Command Palette.
+- **Atajos del cantoral** (`SongDetailScreen`): ← / → canción anterior/siguiente, +/- transponer ±1 semitono, F fullscreen. `SongFullscreenScreen` sale con F o Esc.
+- **Infra**: `hooks/useKeyboardShortcut(key, handler, options)` wrap sobre `window.addEventListener('keydown')` con guard `Platform.OS === 'web'`. Ignora teclas si el foco está en un input, salvo combinaciones meta-prefixed.
+- **Archivos**:
+  - Nuevos: `hooks/useKeyboardShortcut.ts`, `hooks/useEscapeToClose.ts`, `contexts/OverlayStackContext.tsx`, `components/CommandPalette.tsx`.
+  - Modificados: `app/_layout.tsx` (provider + montaje del palette), `components/BottomSheet.tsx` (Esc), `app/screens/SongDetailScreen.tsx`, `app/screens/SongFullscreenScreen.tsx`.
+
+---
+
+## 2026-05-20 — Menú contextual del cantoral funcional en web (click derecho)
+
+- **Problema**: `onLongPress` de React Native no se dispara en web, así que el menú contextual de `SongListItem` (Añadir/Quitar lista + Compartir) quedaba inaccesible al abrir la app en navegador.
+- **Solución**: nuevo hook `useContextMenu(handler)` que devuelve `onLongPress` en nativo y `onContextMenu` (con `preventDefault`) en web. Cero cambios en API externa.
+- **Archivos**:
+  - `hooks/useContextMenu.ts` (nuevo): puente long-press ↔ click derecho, reutilizable en otras listas.
+  - `components/SongListItem.tsx`: consume el hook y esparce las props sobre `TouchableOpacity`. El menú custom (BottomSheet en `SongListScreen`) ya funcionaba en web; ahora también se abre.
+
+---
+
 ## 2026-05-20 — Fix: cabecera de Fotos en stack de Más (iOS overflow)
 
 - **Problema**: tras los cambios de overflow en iOS (Fotos cae fuera del tab bar nativo y se accede desde el stack de Más), la pantalla Fotos quedó sin cabecera coherente. El fix anterior usó `headerShown: false` para evitar un supuesto conflicto con `TabScreenWrapper`, pero eso dejó la pantalla sin identidad visual ni botón de "atrás" claro.
@@ -70,6 +92,25 @@
   - `constants/tabsCatalog.ts` (nuevo): `TABS_CONFIG`, `splitTabsForIOS()` y constante `IOS_MAX_NATIVE_TABS = 5`. Movido desde `app/(tabs)/_layout.tsx` para ser consumido también por `MasHomeScreen`.
   - `app/(tabs)/_layout.tsx`: el componente `IOSNativeTabsLayout` ahora sólo renderiza los `mainTabs` calculados por `splitTabsForIOS`.
   - `app/screens/MasHomeScreen.tsx`: añade los tabs overflow como `NavigationItem` con `routePath` (en lugar de `target`); el `onPress` salta a `router.navigate(routePath)` para esos.
+
+---
+
+## 2026-05-20 — Rediseño completo del cantoral para iPad (portrait + landscape)
+
+- **Nuevo hook `useResponsiveLayout`** (`hooks/useResponsiveLayout.ts`) que centraliza los breakpoints responsive (`xs`/`sm`/`md`/`lg`), expone `isWide`, `isExtraWide`, `isLandscape`/`isPortrait` y devuelve `gridColumns`, `readableMaxWidth` y `contentMaxWidth` recomendados según el ancho. Pensado para ser usado en cualquier pantalla que necesite adaptarse a iPad / web amplio.
+- **`CategoriesScreen` — grid de tarjetas en iPad**: en wide la primera tarjeta "Tu selección" se convierte en una hero card destacada con subtítulo informativo, y el resto de categorías se renderizan en un grid de 2 columnas con cards estilo dashboard (emoji grande, título, contador de canciones). En móvil se mantiene la lista tradicional. Contenido centrado con `maxWidth` cómodo.
+- **`SongListScreen` — lista centrada en iPad**: la lista de canciones y la barra de búsqueda se centran con `maxWidth: 640/760`. Los inputs y radios crecen en wide para sentirse nativos en tablet.
+- **`SongDetailScreen` — letra y acordes centrados en iPad**: el card del WebView se envuelve en un wrapper centrado con `maxWidth` amplio (760/980), manteniendo el banner del coro, la barra de pestañas y los botones flotantes en sus posiciones originales (top-left/right de la pantalla).
+- **`SelectedSongsScreen` — playlist centrada en iPad**: tanto la vista de canciones como el estado vacío usan `maxWidth + alignSelf: 'center'`.
+- **Archivos**: `hooks/useResponsiveLayout.ts` (nuevo), `app/screens/CategoriesScreen.tsx`, `app/screens/SongListScreen.tsx`, `app/screens/SongDetailScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`.
+
+---
+
+## 2026-05-20 — Fix slider fullscreen del cantoral + Contigo responsive en iPad
+
+- **Slider de velocidad en `SongFullscreenScreen` migrado a react-native-gesture-handler + Reanimated**. La implementación anterior con `PanResponder` competía por los gestos con los componentes `PressableFeedback` de heroui-native (que ya usan RNGH internamente), lo que hacía que el slider se rompiera de forma recurrente. La nueva implementación con `Gesture.Pan()` + `useSharedValue` es estable cross-platform y soporta además tap-on-track para saltar a una posición concreta. También se pausa el auto-hide de los controles mientras se está arrastrando para que el slider no desaparezca a mitad del gesto.
+- **Contigo en iPad — wrappers con `maxWidth` y centrado**: aplicado un wrapper `View` con `maxWidth` (720/880 según ancho de ventana) y `alignSelf: 'center'` en `ContigoScreen`, `EvangelioScreen`, `RevisionScreen` y `BookmarksScreen`. Antes la página se estiraba a lo ancho del iPad dejando el HeroCard, los HabitTile y las stats cards en un layout muy disperso y desproporcionado. Ahora el contenido se mantiene legible y compacto en iPad/web sin afectar el diseño en móvil.
+- **Archivos**: `app/screens/SongFullscreenScreen.tsx`, `app/(tabs)/contigo/index.tsx`, `app/(tabs)/contigo/evangelio.tsx`, `app/(tabs)/contigo/revision.tsx`, `app/(tabs)/contigo/bookmarks.tsx`.
 
 ---
 

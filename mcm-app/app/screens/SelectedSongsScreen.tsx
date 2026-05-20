@@ -36,6 +36,7 @@ import {
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { RootStackParamList } from '../(tabs)/cancionero';
@@ -117,7 +118,11 @@ const SelectedSongsScreen: React.FC = () => {
   const route = useRoute();
   const scheme = useColorScheme() || 'light';
   const isDark = scheme === 'dark';
-  const styles = useMemo(() => createStyles(scheme), [scheme]);
+  const layout = useResponsiveLayout();
+  const styles = useMemo(
+    () => createStyles(scheme, layout.isWide, layout.readableMaxWidth),
+    [scheme, layout.isWide, layout.readableMaxWidth],
+  );
   const { data: allSongsData, loading } = useFirebaseData<
     Record<string, { categoryTitle: string; songs: Song[] }>
   >('songs', 'songs');
@@ -1477,7 +1482,11 @@ const SelectedSongsScreen: React.FC = () => {
   );
 };
 
-const createStyles = (scheme: 'light' | 'dark' | null) => {
+const createStyles = (
+  scheme: 'light' | 'dark' | null,
+  isWide: boolean = false,
+  maxWidth: number = 9999,
+) => {
   const isDark = scheme === 'dark';
   return StyleSheet.create({
     container: {
@@ -1554,6 +1563,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     listContentContainer: {
       paddingBottom: Platform.OS === 'ios' ? 100 : 24,
+      ...(isWide ? { maxWidth, width: '100%', alignSelf: 'center' } : null),
     },
     categoryContainer: {
       marginTop: 12,
@@ -1591,6 +1601,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       padding: 20,
       backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
       justifyContent: 'space-between',
+      ...(isWide ? { maxWidth, width: '100%', alignSelf: 'center' } : null),
     },
     emptyContent: {
       flex: 1,

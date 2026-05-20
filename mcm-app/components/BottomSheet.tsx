@@ -16,6 +16,7 @@ const nativeDriver = Platform.OS !== 'web';
 import { UIColors, Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 
 const OFF_SCREEN = Dimensions.get('window').height;
 const DURATION = 300;
@@ -46,6 +47,8 @@ export default function BottomSheet({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const bgColor = Colors[scheme ?? 'light'].background;
+
+  useEscapeToClose(visible, onClose);
 
   // Ref so the animation callback always calls the latest version of the prop
   // without needing it in the useEffect dependency array.

@@ -249,131 +249,133 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
       : null;
 
     return (
-      <Swipeable
-        renderRightActions={(progress, dragX) =>
-          isUnread ? renderRightActions(progress, dragX, notification.id) : null
-        }
-        rightThreshold={40}
-        overshootRight={false}
-      >
-        <TouchableOpacity
-          style={[
-            listStyles.card,
-            {
-              backgroundColor: theme.background,
-              borderColor: isDark ? '#3A3A3C' : colors.border,
-            },
-            isUnread && {
-              backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
-              borderColor: colors.primary,
-            },
-          ]}
-          onPress={() => handleNotificationPress(notification)}
-          activeOpacity={0.7}
+      <View style={{ marginBottom: spacing.md }}>
+        <Swipeable
+          renderRightActions={(progress, dragX) =>
+            isUnread ? renderRightActions(progress, dragX, notification.id) : null
+          }
+          rightThreshold={40}
+          overshootRight={false}
         >
-          {notification.icon && (
-            <Image
-              source={{ uri: notification.icon }}
-              style={listStyles.icon}
-            />
-          )}
+          <TouchableOpacity
+            style={[
+              listStyles.card,
+              {
+                backgroundColor: theme.background,
+                borderColor: isDark ? '#3A3A3C' : colors.border,
+              },
+              isUnread && {
+                backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
+                borderColor: colors.primary,
+              },
+            ]}
+            onPress={() => handleNotificationPress(notification)}
+            activeOpacity={0.7}
+          >
+            {notification.icon && (
+              <Image
+                source={{ uri: notification.icon }}
+                style={listStyles.icon}
+              />
+            )}
 
-          <View style={listStyles.content}>
-            <View style={listStyles.row}>
+            <View style={listStyles.content}>
+              <View style={listStyles.row}>
+                <Text
+                  style={[
+                    listStyles.title,
+                    { color: theme.text },
+                    !isUnread && { fontWeight: '500' },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {notification.title}
+                </Text>
+                <View style={listStyles.rightRow}>
+                  {isUnread && <View style={listStyles.dot} />}
+                  {isUnread && (
+                    <Pressable
+                      onPress={() => handleMarkAsRead(notification.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <MaterialIcons
+                        name="check-circle-outline"
+                        size={20}
+                        color={colors.primary}
+                      />
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+
               <Text
-                style={[
-                  listStyles.title,
-                  { color: theme.text },
-                  !isUnread && { fontWeight: '500' },
-                ]}
-                numberOfLines={1}
+                style={[listStyles.body, { color: theme.icon }]}
+                numberOfLines={2}
               >
-                {notification.title}
+                {notification.body}
               </Text>
-              <View style={listStyles.rightRow}>
-                {isUnread && <View style={listStyles.dot} />}
-                {isUnread && (
-                  <Pressable
-                    onPress={() => handleMarkAsRead(notification.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <MaterialIcons
-                      name="check-circle-outline"
-                      size={20}
-                      color={colors.primary}
-                    />
-                  </Pressable>
-                )}
-              </View>
-            </View>
 
-            <Text
-              style={[listStyles.body, { color: theme.icon }]}
-              numberOfLines={2}
-            >
-              {notification.body}
-            </Text>
-
-            <View style={listStyles.footer}>
-              <Text style={[listStyles.date, { color: theme.icon }]}>
-                {formatDate(date)}
-              </Text>
-              <View style={listStyles.chipsRow}>
-                {routeInfo && notification.internalRoute && (
-                  <Pressable
-                    style={listStyles.destChip}
-                    onPress={() =>
-                      handleDestinationChipPress(notification.internalRoute!)
-                    }
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={listStyles.destChipText}>
-                      {routeInfo.label}
-                    </Text>
-                    <MaterialIcons
-                      name="chevron-right"
-                      size={13}
-                      color={colors.primary}
-                    />
-                  </Pressable>
-                )}
-                {notification.actionButton && (
-                  <Pressable
-                    style={listStyles.actionChip}
-                    onPress={() => {
-                      const btn = notification.actionButton!;
-                      onClose();
-                      setTimeout(() => {
-                        if (btn.isInternal) {
-                          try {
-                            router.push(btn.url as any);
-                          } catch (e) {}
-                        } else {
-                          Linking.openURL(btn.url).catch(console.error);
-                        }
-                      }, 320);
-                    }}
-                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  >
-                    <Text style={listStyles.actionChipText} numberOfLines={1}>
-                      {notification.actionButton.text}
-                    </Text>
-                    <MaterialIcons
-                      name={
-                        notification.actionButton.isInternal
-                          ? 'chevron-right'
-                          : 'open-in-new'
+              <View style={listStyles.footer}>
+                <Text style={[listStyles.date, { color: theme.icon }]}>
+                  {formatDate(date)}
+                </Text>
+                <View style={listStyles.chipsRow}>
+                  {routeInfo && notification.internalRoute && (
+                    <Pressable
+                      style={listStyles.destChip}
+                      onPress={() =>
+                        handleDestinationChipPress(notification.internalRoute!)
                       }
-                      size={11}
-                      color="#fff"
-                    />
-                  </Pressable>
-                )}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={listStyles.destChipText}>
+                        {routeInfo.label}
+                      </Text>
+                      <MaterialIcons
+                        name="chevron-right"
+                        size={13}
+                        color={colors.primary}
+                      />
+                    </Pressable>
+                  )}
+                  {notification.actionButton && (
+                    <Pressable
+                      style={listStyles.actionChip}
+                      onPress={() => {
+                        const btn = notification.actionButton!;
+                        onClose();
+                        setTimeout(() => {
+                          if (btn.isInternal) {
+                            try {
+                              router.push(btn.url as any);
+                            } catch (e) {}
+                          } else {
+                            Linking.openURL(btn.url).catch(console.error);
+                          }
+                        }, 320);
+                      }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={listStyles.actionChipText} numberOfLines={1}>
+                        {notification.actionButton.text}
+                      </Text>
+                      <MaterialIcons
+                        name={
+                          notification.actionButton.isInternal
+                            ? 'chevron-right'
+                            : 'open-in-new'
+                        }
+                        size={11}
+                        color="#fff"
+                      />
+                    </Pressable>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
-        </TouchableOpacity>
-      </Swipeable>
+          </TouchableOpacity>
+        </Swipeable>
+      </View>
     );
   };
 
@@ -385,7 +387,7 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
       visible={visible}
       onClose={onClose}
       height={sheetHeight}
-      title={selectedNotification ? undefined : 'Notificaciones'}
+      title={undefined}
     >
       {selectedNotification ? (
         <NotificationDetail
@@ -397,16 +399,21 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
         />
       ) : (
         <>
-          {hasUnread && (
-            <TouchableOpacity
-              onPress={handleMarkAllAsRead}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={sheetStyles.markAllBtn}
-            >
-              <MaterialIcons name="done-all" size={18} color={colors.primary} />
-              <Text style={sheetStyles.markAllText}>Marcar todo como leído</Text>
-            </TouchableOpacity>
-          )}
+          <View style={sheetStyles.headerRow}>
+            <Text style={[sheetStyles.headerTitle, { color: theme.text }]}>
+              Notificaciones
+            </Text>
+            {hasUnread && (
+              <TouchableOpacity
+                onPress={handleMarkAllAsRead}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={sheetStyles.markAllHeaderBtn}
+              >
+                <MaterialIcons name="done-all" size={18} color={colors.primary} />
+                <Text style={sheetStyles.markAllHeaderText}>Marcar todo</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {loading ? (
             <View style={sheetStyles.empty}>
@@ -628,16 +635,29 @@ function NotificationDetail({
 // ============================================================================
 
 const sheetStyles = StyleSheet.create({
-  markAllBtn: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-end',
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
   },
-  markAllText: {
-    fontSize: 13,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  markAllHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: hexAlpha(colors.primary, '10'),
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: radii.md,
+  },
+  markAllHeaderText: {
+    fontSize: 12,
     color: colors.primary,
     fontWeight: '600',
   },
@@ -669,7 +689,6 @@ const listStyles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: radii.md,
     padding: spacing.md,
-    marginBottom: spacing.md,
     borderWidth: 1,
     ...shadows.sm,
   },
@@ -764,7 +783,7 @@ const listStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radii.md,
-    marginBottom: spacing.md,
+    height: '100%',
     width: 80,
   },
   actionContent: { alignItems: 'center', justifyContent: 'center' },

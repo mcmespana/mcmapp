@@ -8,6 +8,7 @@ import {
   TextInput,
   Platform,
   KeyboardAvoidingView,
+  useWindowDimensions,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -38,6 +39,16 @@ export default function RevisionScreen() {
   const isDark = scheme === 'dark';
   const W = warm(isDark);
   const purple = isDark ? WARM_DARK.purple : WARM_LIGHT.purple;
+  const { width: windowWidth } = useWindowDimensions();
+  // iPad / large tablet / desktop web — cap content width.
+  const isWide = windowWidth >= 720;
+  const wideWrapperStyle = isWide
+    ? {
+        width: '100%' as const,
+        maxWidth: windowWidth >= 1100 ? 760 : 640,
+        alignSelf: 'center' as const,
+      }
+    : undefined;
 
   const params = useLocalSearchParams<{ date?: string }>();
   const { todayStr, setRevisionDone } = useContigoHabits();
@@ -298,19 +309,25 @@ export default function RevisionScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {step === 0 ? (
-            <GratefulStep
-              isDark={isDark}
-              mode={mode}
-              setMode={setMode}
-              items={items}
-              setItems={setItems}
-              singleGrat={singleGrat}
-              setSingleGrat={setSingleGrat}
-            />
-          ) : (
-            <RevisarStep isDark={isDark} text={revText} setText={setRevText} />
-          )}
+          <View style={wideWrapperStyle}>
+            {step === 0 ? (
+              <GratefulStep
+                isDark={isDark}
+                mode={mode}
+                setMode={setMode}
+                items={items}
+                setItems={setItems}
+                singleGrat={singleGrat}
+                setSingleGrat={setSingleGrat}
+              />
+            ) : (
+              <RevisarStep
+                isDark={isDark}
+                text={revText}
+                setText={setRevText}
+              />
+            )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -327,47 +344,55 @@ export default function RevisionScreen() {
           },
         ]}
       >
-        {saved ? (
-          <View style={styles.savedRow}>
-            <MaterialIcons name="check-circle" size={22} color={W.green} />
-            <Text style={[styles.savedText, { color: W.green }]}>
-              Revisión guardada
-            </Text>
-          </View>
-        ) : (
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            {step > 0 && (
+        <View style={wideWrapperStyle}>
+          {saved ? (
+            <View style={styles.savedRow}>
+              <MaterialIcons name="check-circle" size={22} color={W.green} />
+              <Text style={[styles.savedText, { color: W.green }]}>
+                Revisión guardada
+              </Text>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {step > 0 && (
+                <TouchableOpacity
+                  onPress={() => setStep(step - 1)}
+                  style={[
+                    styles.backBtn,
+                    {
+                      borderColor: W.border,
+                    },
+                  ]}
+                  accessibilityLabel="Paso anterior"
+                >
+                  <MaterialIcons
+                    name="arrow-back"
+                    size={20}
+                    color={W.textSec}
+                  />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
-                onPress={() => setStep(step - 1)}
-                style={[
-                  styles.backBtn,
-                  {
-                    borderColor: W.border,
-                  },
-                ]}
-                accessibilityLabel="Paso anterior"
+                onPress={handleNext}
+                activeOpacity={0.85}
+                style={{ flex: 1 }}
               >
-                <MaterialIcons name="arrow-back" size={20} color={W.textSec} />
+                <LinearGradient
+                  colors={['#8B5CF6', '#6D28D9']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.nextBtn}
+                >
+                  <Text style={styles.nextBtnText}>
+                    {step < totalSteps - 1
+                      ? 'Continuar →'
+                      : '✓ Guardar revisión'}
+                  </Text>
+                </LinearGradient>
               </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              onPress={handleNext}
-              activeOpacity={0.85}
-              style={{ flex: 1 }}
-            >
-              <LinearGradient
-                colors={['#8B5CF6', '#6D28D9']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.nextBtn}
-              >
-                <Text style={styles.nextBtnText}>
-                  {step < totalSteps - 1 ? 'Continuar →' : '✓ Guardar revisión'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        )}
+            </View>
+          )}
+        </View>
       </View>
 
       {phase === 'breathing' && (
