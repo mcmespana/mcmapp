@@ -146,7 +146,37 @@ export default function BottomSheet({
     };
   }, [keyboardOffsetAnim]);
 
-  const panResponder = useRef(
+  const headerPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, { dy }) => {
+        if (dy > 0) dragAnim.setValue(dy);
+      },
+      onPanResponderRelease: (_, { dy, vy }) => {
+        if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
+          onClose();
+        } else {
+          Animated.spring(dragAnim, {
+            toValue: 0,
+            useNativeDriver: nativeDriver,
+            tension: 180,
+            friction: 20,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(dragAnim, {
+          toValue: 0,
+          useNativeDriver: nativeDriver,
+          tension: 180,
+          friction: 20,
+        }).start();
+      },
+    }),
+  ).current;
+
+  const contentPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, { dy, dx }) =>
@@ -223,13 +253,13 @@ export default function BottomSheet({
           ]}
         >
           {/* Handle capsule serves as a drag target */}
-          <View style={styles.handleWrap} {...panResponder.panHandlers}>
+          <View style={styles.handleWrap} {...headerPanResponder.panHandlers}>
             <View style={[styles.handle, { backgroundColor: handleColor }]} />
           </View>
 
           {/* Unified Premium Header Container serves as a drag target */}
           {hasHeader && (
-            <View style={styles.headerContainer} {...panResponder.panHandlers}>
+            <View style={styles.headerContainer} {...headerPanResponder.panHandlers}>
               {headerLeft && <View style={styles.headerLeft}>{headerLeft}</View>}
               {title && (
                 <Text
@@ -254,7 +284,7 @@ export default function BottomSheet({
               height !== undefined && { flex: 1 },
             ]}
             onStartShouldSetResponder={() => true}
-            {...(dragFromContent ? panResponder.panHandlers : {})}
+            {...(dragFromContent ? contentPanResponder.panHandlers : {})}
           >
             {children}
           </View>

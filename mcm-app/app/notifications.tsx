@@ -38,22 +38,78 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 
 // Mapeo de rutas internas a nombres legibles
 const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
+  // With group
   '/(tabs)/calendario': { label: 'Calendario', icon: 'calendar-today' },
   '/(tabs)/fotos': { label: 'Fotos', icon: 'photo-library' },
   '/(tabs)/cancionero': { label: 'Cantoral', icon: 'music-note' },
   '/(tabs)/mas': { label: 'Más', icon: 'more-horiz' },
   '/(tabs)/index': { label: 'Inicio', icon: 'home' },
-  '/wordle': { label: 'Wordle', icon: 'games' },
-  '/notifications': { label: 'Notificaciones', icon: 'notifications' },
   '/(tabs)/contigo': { label: 'Contigo', icon: 'favorite' },
   '/(tabs)/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
   '/(tabs)/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
   '/(tabs)/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
   '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
+
+  // Without group
+  '/calendario': { label: 'Calendario', icon: 'calendar-today' },
+  '/fotos': { label: 'Fotos', icon: 'photo-library' },
+  '/cancionero': { label: 'Cantoral', icon: 'music-note' },
+  '/mas': { label: 'Más', icon: 'more-horiz' },
+  '/index': { label: 'Inicio', icon: 'home' },
+  '/contigo': { label: 'Contigo', icon: 'favorite' },
+  '/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
+  '/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
+  '/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
+  '/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
+
+  // Naked strings (no leading slash)
+  'calendario': { label: 'Calendario', icon: 'calendar-today' },
+  'fotos': { label: 'Fotos', icon: 'photo-library' },
+  'cancionero': { label: 'Cantoral', icon: 'music-note' },
+  'mas': { label: 'Más', icon: 'more-horiz' },
+  'contigo': { label: 'Contigo', icon: 'favorite' },
+
+  // Others
+  '/wordle': { label: 'Wordle', icon: 'games' },
+  '/notifications': { label: 'Notificaciones', icon: 'notifications' },
+  'wordle': { label: 'Wordle', icon: 'games' },
+  'notifications': { label: 'Notificaciones', icon: 'notifications' },
 };
 
+function normalizeRoute(route: string): string {
+  if (!route) return '';
+  let clean = route.trim();
+  if (clean.startsWith('http')) return clean;
+
+  clean = clean.replace(/\/+/g, '/');
+
+  const hasSlash = clean.startsWith('/');
+  const naked = hasSlash ? clean.substring(1) : clean;
+
+  if (naked.startsWith('(tabs)/')) {
+    return '/' + naked;
+  }
+
+  const tabPaths = [
+    'cancionero',
+    'calendario',
+    'fotos',
+    'mas',
+    'index',
+    'contigo',
+  ];
+
+  const isTab = tabPaths.some(p => naked === p || naked.startsWith(p + '/'));
+  if (isTab) {
+    return '/(tabs)/' + naked;
+  }
+
+  return '/' + naked;
+}
+
 function getRouteLabel(route: string): { label: string; icon: string } | null {
-  return ROUTE_LABELS[route] ?? null;
+  const norm = normalizeRoute(route);
+  return ROUTE_LABELS[norm] ?? ROUTE_LABELS[route] ?? null;
 }
 
 export default function NotificationsScreen() {
@@ -151,6 +207,21 @@ export default function NotificationsScreen() {
     [isNotificationRead, handleMarkAsRead],
   );
 
+  const safePushRoute = useCallback((route: string) => {
+    if (!route) return;
+    const clean = normalizeRoute(route);
+    try {
+      router.push(clean as any);
+    } catch (e) {
+      console.warn('Navigation failed for ' + clean + ', trying direct route...', e);
+      try {
+        router.push(route as any);
+      } catch (err) {
+        console.error('All navigation fallbacks failed:', err);
+      }
+    }
+  }, []);
+
   const handleActionButtonPress = useCallback(
     (notification: NotificationData | ReceivedNotification, e: any) => {
       // Prevenir que el tap llegue al card padre
@@ -162,18 +233,14 @@ export default function NotificationsScreen() {
       }
       if (!notification.actionButton) return;
       if (notification.actionButton.isInternal) {
-        try {
-          router.push(notification.actionButton.url as any);
-        } catch (error) {
-          console.error('Error navegando:', error);
-        }
+        safePushRoute(notification.actionButton.url);
       } else {
         Linking.openURL(notification.actionButton.url).catch((err) =>
           console.error('Error abriendo URL:', err),
         );
       }
     },
-    [isNotificationRead, handleMarkAsRead],
+    [isNotificationRead, handleMarkAsRead, safePushRoute],
   );
 
   const renderRightActions = (
@@ -459,25 +526,32 @@ function NotificationDetailModal({
     ? getRouteLabel(notification.internalRoute)
     : null;
 
+  const safePushRoute = (route: string) => {
+    if (!route) return;
+    const clean = normalizeRoute(route);
+    try {
+      router.push(clean as any);
+    } catch (e) {
+      console.warn('Navigation failed for ' + clean + ', trying direct route...', e);
+      try {
+        router.push(route as any);
+      } catch (err) {
+        console.error('All navigation fallbacks failed:', err);
+      }
+    }
+  };
+
   const handleInternalRoute = () => {
     if (!notification) return;
     onClose();
-    try {
-      router.push(notification.internalRoute as any);
-    } catch (error) {
-      console.error('Error navegando:', error);
-    }
+    safePushRoute(notification.internalRoute);
   };
 
   const handleActionButton = () => {
     if (!notification?.actionButton) return;
     if (notification.actionButton.isInternal) {
       onClose();
-      try {
-        router.push(notification.actionButton.url as any);
-      } catch (error) {
-        console.error('Error navegando:', error);
-      }
+      safePushRoute(notification.actionButton.url);
     } else {
       Linking.openURL(notification.actionButton.url).catch((err) =>
         console.error('Error abriendo URL:', err),
