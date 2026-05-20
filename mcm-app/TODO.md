@@ -28,6 +28,10 @@
 - [x] ~~Reanimated 3 en BottomSheet~~ → migrado a `Gesture.Pan()` + `useSharedValue`
 - [x] ~~Modo oscuro en sección Contigo~~ → colores y lectura del evangelio corregidos
 - [x] ~~Arreglar textos~~ → corregido
+- [x] ~~Long-press menús contextuales en cantoral~~ → `onLongPress` en `SongListItem`, menú en `SongListScreen` (Añadir/Quitar lista + Compartir)
+- [x] ~~Skeletons en más pantallas~~ → Contactos, Visitas, Apps, Materiales, Horario, Profundiza, Grupos
+- [x] ~~`SongListItem` swipe colors~~ → centralizados en `SwipeColors` + `KeyPillColors` en `constants/colors.ts`
+- [x] ~~`BottomSheet` borderRadius~~ → usa `radii.xl` de `constants/uiStyles.ts`
 
 ---
 
@@ -38,11 +42,6 @@
 - [ ] En iPad Contigo se ven desproporcionados los habit tracker
 
 
-- [ ] **Long-press menús contextuales en items de cantoral**.
-      Usar `Menu` de heroui-native para ofrecer "Compartir", "Copiar
-      letra", "Transponer rápido" sobre cada item al hacer long-press en
-      `SongListScreen`. Punto de partida: `components/SongListItem.tsx`
-      (mantener el `Swipeable` actual; el Menu se activa con `onLongPress`).
 - [ ] **Atajos de teclado en web**.
   - `Cmd/Ctrl + K` para abrir un buscador global (cantoral, calendario,
     reflexiones). Implementar con `useEffect` + `window.addEventListener('keydown')`
@@ -88,16 +87,6 @@ El compilador analiza automáticamente el árbol de componentes y memoiza en tie
       Hoy `ScreenHero` solo se aplica en la vista raíz. Aplicar
       `PageContainer` en las 5 ramas de render para que también centre en
       web (búsqueda activa, categoría seleccionada, grupo seleccionado, etc.).
-- [ ] **Skeletons en más pantallas**.
-      Replicar el patrón aplicado en Home (eventos próximos) en:
-      Contactos, Visitas, Apps, Materiales, Horario, Profundiza, Grupos.
-      Todas cargan de Firebase y hoy muestran un spinner full-screen
-      (`ProgressWithMessage`). Un Skeleton in-place se siente más
-      responsive.
-- [ ] **`SongListItem` — colores de acción swipe**.
-      Quedan magic numbers `#34C759` (rightAction success), `#FF453A`
-      (leftAction destructive), y los `keyPill` `#1A2744`/`#EEF4FF`.
-      Documentar como Apple system colors o centralizar.
 
 ## Mantenimiento
 
