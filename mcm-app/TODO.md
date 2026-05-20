@@ -24,6 +24,7 @@
 - [x] ~~Accesibilidad~~ → `accessibilityLabel` y `accessibilityRole` en Home y Notificaciones
 - [x] ~~Dark mode~~ → corregidos ErrorBoundary, SongFullscreen, Comida, Monitores, Wordle, Reflexiones
 - [x] ~~Performance Home~~ → `React.memo()` en ContextualDecoration, `useRef` para animaciones
+- [x] ~~Firebase 11 → 12~~ → ya en `^12.10.0` en package.json
 
 ---
 
@@ -35,9 +36,6 @@
 - [ ] Revisar modo oscuro en seccion contigo, con los colores, la lectura del evangelio....
 - [ ] Arreglar los textos 
 
-
-
-- [ ] **Firebase 11 → 12**: major version upgrade. Revisar [guía de migración](https://firebase.google.com/support/release-notes/js) antes de actualizar. Puede haber breaking changes en la API.
 
 
 - [ ] **Long-press menús contextuales en items de cantoral**.
@@ -110,7 +108,7 @@ El compilador analiza automáticamente el árbol de componentes y memoiza en tie
 ## Mantenimiento
 
 
-- [ ] **Configurar tests**: cuando se retome testing, instalar jest-expo, @testing-library/react-native, crear jest.config.js. Priorizar tests para utils/ y hooks/.
+- [ ] **Escribir tests**: infraestructura ya lista (jest.config.js + @testing-library/react-native). Priorizar tests para `utils/` y `hooks/`.
 
 ## Prioridad baja (nice to have)
 
