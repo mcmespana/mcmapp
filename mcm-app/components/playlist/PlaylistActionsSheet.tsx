@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -41,8 +41,23 @@ const PlaylistActionsSheet: React.FC<Props> = ({
   const styles = useMemo(() => createStyles(isDark), [isDark]);
   const maxListHeight = Dimensions.get('window').height * 0.6;
 
+  // Store the action to fire once the sheet is fully dismissed.
+  // Using a ref (not state) avoids a re-render between press and close.
+  const pendingActionRef = useRef<PlaylistAction | null>(null);
+
+  const handleCloseComplete = useCallback(() => {
+    const action = pendingActionRef.current;
+    pendingActionRef.current = null;
+    action?.onPress();
+  }, []);
+
   return (
-    <BottomSheet visible={visible} onClose={onClose} title={title}>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={title}
+      onCloseComplete={handleCloseComplete}
+    >
       <ScrollView
         style={[styles.list, { maxHeight: maxListHeight }]}
         contentContainerStyle={styles.listContent}
@@ -57,11 +72,11 @@ const PlaylistActionsSheet: React.FC<Props> = ({
               style={[styles.item, a.disabled && styles.itemDisabled]}
               onPress={() => {
                 if (a.disabled) return;
+                // Store the action so handleCloseComplete fires it after
+                // the sheet Modal is fully dismissed. iOS cannot present a
+                // second Modal while the first one is still mounted.
+                pendingActionRef.current = a;
                 onClose();
-                // BottomSheet animation takes 300 ms. Waiting until it's fully
-                // dismissed prevents iOS from rejecting a second Modal that
-                // would try to appear while the first one is still mounted.
-                setTimeout(() => a.onPress(), 320);
               }}
               disabled={a.disabled}
             >

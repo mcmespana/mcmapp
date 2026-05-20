@@ -29,6 +29,10 @@ interface BottomSheetProps {
   children: React.ReactNode;
   height?: number;
   title?: string;
+  /** Called after the close animation finishes and the Modal is unmounted.
+   *  Use this to present a second Modal or call Share.share() — iOS cannot
+   *  show two Modals simultaneously, so actions must wait for full dismissal. */
+  onCloseComplete?: () => void;
 }
 
 export default function BottomSheet({
@@ -37,10 +41,16 @@ export default function BottomSheet({
   children,
   height,
   title,
+  onCloseComplete,
 }: BottomSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const bgColor = Colors[scheme ?? 'light'].background;
+
+  // Ref so the animation callback always calls the latest version of the prop
+  // without needing it in the useEffect dependency array.
+  const onCloseCompleteRef = useRef(onCloseComplete);
+  onCloseCompleteRef.current = onCloseComplete;
 
   const [modalVisible, setModalVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(OFF_SCREEN)).current;
@@ -79,7 +89,10 @@ export default function BottomSheet({
           duration: DURATION,
           useNativeDriver: nativeDriver,
         }),
-      ]).start(() => setModalVisible(false));
+      ]).start(() => {
+        setModalVisible(false);
+        onCloseCompleteRef.current?.();
+      });
     }
   }, [visible, slideAnim, opacityAnim, dragAnim, keyboardOffsetAnim]);
 
