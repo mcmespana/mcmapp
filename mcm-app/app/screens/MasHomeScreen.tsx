@@ -4,6 +4,7 @@ import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 
@@ -15,13 +16,17 @@ import { takePendingMasScreen } from '@/utils/masNavigation';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useResponsive } from '@/hooks/useResponsive';
+import { splitTabsForIOS } from '@/constants/tabsCatalog';
 
 interface NavigationItem {
   label: string;
   subtitle: string;
   emoji: string;
   materialIcon: ComponentProps<typeof MaterialIcons>['name'];
-  target: keyof MasStackParamList;
+  /** Si está definido, navega a una ruta expo-router (overflow de tab). */
+  routePath?: string;
+  /** Si está definido, navega a una pantalla dentro del stack de Mas. */
+  target?: keyof MasStackParamList;
   tintColor: string;
   /** Id del evento a pasar como route param cuando target === 'JubileoHome'. */
   eventId?: string;
@@ -72,13 +77,36 @@ export default function MasHomeScreen() {
   const { isMd, isWeb } = useResponsive();
   const useTwoColumns = isWeb && isMd;
   const resolved = useResolvedProfileConfig();
-  const navigationItems = React.useMemo(
-    () =>
-      resolved.masItems
-        .map((id) => MAS_ITEM_CATALOG[id])
-        .filter((item): item is NavigationItem => Boolean(item)),
-    [resolved.masItems],
-  );
+  const navigationItems = React.useMemo(() => {
+    const items: NavigationItem[] = [];
+
+    // En iOS la barra nativa sólo admite 5 triggers; los tabs que no caben
+    // se exponen aquí como tarjetas para evitar el "More" automático del sistema.
+    if (Platform.OS === 'ios') {
+      const visibleSet = new Set(resolved.tabs);
+      const { overflowTabs } = splitTabsForIOS(visibleSet);
+      for (const tab of overflowTabs) {
+        // 'mas' nunca debería estar en overflow (splitTabsForIOS lo garantiza),
+        // pero filtramos defensivamente para no auto-referenciar esta pantalla.
+        if (tab.name === 'mas') continue;
+        items.push({
+          label: tab.label,
+          subtitle: tab.subtitle,
+          emoji: tab.emoji,
+          materialIcon: tab.androidIcon,
+          routePath: `/${tab.name}`,
+          tintColor: tab.tintColor,
+        });
+      }
+    }
+
+    for (const id of resolved.masItems) {
+      const entry = MAS_ITEM_CATALOG[id];
+      if (entry) items.push(entry);
+    }
+
+    return items;
+  }, [resolved.masItems, resolved.tabs]);
 
   // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
   useFocusEffect(
@@ -136,14 +164,22 @@ export default function MasHomeScreen() {
                         boxShadow: `0 4px 12px ${item.tintColor}30`,
                       },
                 ]}
-                onPress={() =>
-                  navigation.navigate(
-                    item.target as any,
-                    item.eventId
-                      ? ({ eventId: item.eventId } as any)
-                      : undefined,
-                  )
-                }
+                onPress={() => {
+                  if (item.routePath) {
+                    // Overflow de tab: salta al tab sibling vía expo-router.
+                    // La ruta sigue existiendo aunque no tenga NativeTabs.Trigger.
+                    router.navigate(item.routePath as any);
+                    return;
+                  }
+                  if (item.target) {
+                    navigation.navigate(
+                      item.target as any,
+                      item.eventId
+                        ? ({ eventId: item.eventId } as any)
+                        : undefined,
+                    );
+                  }
+                }}
               >
                 <PressableFeedback.Highlight />
                 {/* Accent bar izquierda */}
