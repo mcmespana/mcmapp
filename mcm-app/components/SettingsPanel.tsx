@@ -5,8 +5,9 @@ import {
   StyleSheet,
   ViewStyle,
   TextStyle,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
@@ -50,8 +51,8 @@ export default function SettingsPanel({ visible, onClose }: Props) {
   const { rawConfig } = useProfileConfigContext();
   const { profile, setProfile } = useUserProfile();
   const { toast } = useToast();
-  const [profileSelectorOpen, setProfileSelectorOpen] = useState(false);
-  const [delegationSelectorOpen, setDelegationSelectorOpen] = useState(false);
+  type PanelView = 'settings' | 'profile' | 'delegation';
+  const [panelView, setPanelView] = useState<PanelView>('settings');
 
   const increase = () => {
     setSettings({ fontScale: Math.min(settings.fontScale + 0.1, 2) });
@@ -85,21 +86,139 @@ export default function SettingsPanel({ visible, onClose }: Props) {
 
   const handleSelectProfile = (profileType: ProfileType) => {
     setProfile({ profileType, onboardingCompleted: true });
-    setProfileSelectorOpen(false);
+    setPanelView('settings');
   };
 
   const handleSelectDelegation = (delegationId: string | null) => {
-    setProfile({
-      delegationId,
-      onboardingCompleted: true,
-    });
-    setDelegationSelectorOpen(false);
+    setProfile({ delegationId, onboardingCompleted: true });
+    setPanelView('settings');
   };
+
+  const handleClose = () => {
+    setPanelView('settings');
+    onClose();
+  };
+
+  const sheetTitle =
+    panelView === 'profile'
+      ? 'Perfil'
+      : panelView === 'delegation'
+        ? 'Delegación'
+        : 'Ajustes';
 
   return (
     <>
-      <BottomSheet visible={visible} onClose={onClose} title="Ajustes">
+      <BottomSheet visible={visible} onClose={handleClose} title={sheetTitle}>
         <View style={[styles.container, { backgroundColor: theme.background }]}>
+          {panelView === 'profile' && (
+            <>
+              <TouchableOpacity
+                style={styles.backRow}
+                onPress={() => setPanelView('settings')}
+                accessibilityRole="button"
+                accessibilityLabel="Volver a ajustes"
+              >
+                <MaterialIcons name="arrow-back" size={20} color={theme.icon} />
+                <Text style={[styles.backLabel, { color: theme.icon }]}>Ajustes</Text>
+              </TouchableOpacity>
+              {(Object.keys(rawConfig.profiles) as ProfileType[]).map((key) => {
+                const p = rawConfig.profiles[key];
+                const selected = profile.profileType === key;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={[
+                      styles.optionRow,
+                      { backgroundColor: surfaceBg },
+                      selected && {
+                        borderColor: accentColor,
+                        backgroundColor: hexAlpha(accentColor, '15'),
+                      },
+                    ]}
+                    onPress={() => handleSelectProfile(key)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.optionLabel, { color: theme.text }]}>
+                        {p.label}
+                      </Text>
+                      <Text
+                        style={[styles.optionDesc, { color: theme.icon }]}
+                        numberOfLines={2}
+                      >
+                        {p.description}
+                      </Text>
+                    </View>
+                    {selected && (
+                      <MaterialIcons
+                        name="check-circle"
+                        size={20}
+                        color={accentColor}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </>
+          )}
+
+          {panelView === 'delegation' && (
+            <>
+              <TouchableOpacity
+                style={styles.backRow}
+                onPress={() => setPanelView('settings')}
+                accessibilityRole="button"
+                accessibilityLabel="Volver a ajustes"
+              >
+                <MaterialIcons name="arrow-back" size={20} color={theme.icon} />
+                <Text style={[styles.backLabel, { color: theme.icon }]}>Ajustes</Text>
+              </TouchableOpacity>
+              <ScrollView
+                style={styles.delegationScroll}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {rawConfig.delegationList.map((item, idx) => {
+                  const selected = profile.delegationId === item.id;
+                  return (
+                    <React.Fragment key={item.id}>
+                      {idx > 0 && <View style={{ height: 8 }} />}
+                      <TouchableOpacity
+                        style={[
+                          styles.optionRowCompact,
+                          { backgroundColor: surfaceBg },
+                          selected && {
+                            borderColor: accentColor,
+                            backgroundColor: hexAlpha(accentColor, '15'),
+                          },
+                        ]}
+                        onPress={() => handleSelectDelegation(item.id)}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text
+                          style={[styles.optionLabel, { color: theme.text, flex: 1 }]}
+                        >
+                          {item.label}
+                        </Text>
+                        {selected && (
+                          <MaterialIcons
+                            name="check-circle"
+                            size={20}
+                            color={accentColor}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    </React.Fragment>
+                  );
+                })}
+                <View style={{ height: 16 }} />
+              </ScrollView>
+            </>
+          )}
+
+          {panelView === 'settings' && (<>
           {/* ── Sección: Tu perfil MCM ── */}
           <Text style={[styles.sectionLabel, { color: theme.icon }]}>
             TU PERFIL EN MCM
@@ -111,7 +230,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
               styles.surfaceClickable,
               { backgroundColor: surfaceBg },
             ]}
-            onPress={() => setProfileSelectorOpen(true)}
+            onPress={() => setPanelView('profile')}
             accessibilityRole="button"
             accessibilityLabel="Cambiar perfil"
           >
@@ -141,7 +260,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
               styles.surfaceClickable,
               { backgroundColor: surfaceBg },
             ]}
-            onPress={() => setDelegationSelectorOpen(true)}
+            onPress={() => setPanelView('delegation')}
             accessibilityRole="button"
             accessibilityLabel="Cambiar delegación"
           >
@@ -342,105 +461,7 @@ export default function SettingsPanel({ visible, onClose }: Props) {
               </PressableFeedback>
             </>
           )}
-        </View>
-      </BottomSheet>
-
-      <BottomSheet
-        visible={profileSelectorOpen}
-        onClose={() => setProfileSelectorOpen(false)}
-        title="Perfil"
-      >
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
-          {(Object.keys(rawConfig.profiles) as ProfileType[]).map((key) => {
-            const p = rawConfig.profiles[key];
-            const selected = profile.profileType === key;
-            return (
-              <TouchableOpacity
-                key={key}
-                style={[
-                  styles.optionRow,
-                  { backgroundColor: surfaceBg },
-                  selected && {
-                    borderColor: accentColor,
-                    backgroundColor: hexAlpha(accentColor, '15'),
-                  },
-                ]}
-                onPress={() => handleSelectProfile(key)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.optionLabel, { color: theme.text }]}>
-                    {p.label}
-                  </Text>
-                  <Text
-                    style={[styles.optionDesc, { color: theme.icon }]}
-                    numberOfLines={2}
-                  >
-                    {p.description}
-                  </Text>
-                </View>
-                {selected && (
-                  <MaterialIcons
-                    name="check-circle"
-                    size={20}
-                    color={accentColor}
-                  />
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </BottomSheet>
-
-      <BottomSheet
-        visible={delegationSelectorOpen}
-        onClose={() => setDelegationSelectorOpen(false)}
-        title="Delegación"
-      >
-        <View
-          style={[
-            styles.container,
-            styles.delegationContainer,
-            { backgroundColor: theme.background },
-          ]}
-        >
-          <FlatList
-            data={rawConfig.delegationList}
-            keyExtractor={(d) => d.id}
-            renderItem={({ item }) => {
-              const selected = profile.delegationId === item.id;
-              return (
-                <TouchableOpacity
-                  style={[
-                    styles.optionRowCompact,
-                    { backgroundColor: surfaceBg },
-                    selected && {
-                      borderColor: accentColor,
-                      backgroundColor: hexAlpha(accentColor, '15'),
-                    },
-                  ]}
-                  onPress={() => handleSelectDelegation(item.id)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                >
-                  <Text
-                    style={[styles.optionLabel, { color: theme.text, flex: 1 }]}
-                  >
-                    {item.label}
-                  </Text>
-                  {selected && (
-                    <MaterialIcons
-                      name="check-circle"
-                      size={20}
-                      color={accentColor}
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            }}
-            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          />
+          </>)}
         </View>
       </BottomSheet>
     </>
@@ -452,9 +473,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: 40,
   } as ViewStyle,
-  delegationContainer: {
-    maxHeight: '90%',
+  delegationScroll: {
+    maxHeight: Dimensions.get('window').height * 0.55,
   } as ViewStyle,
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  } as ViewStyle,
+  backLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  } as TextStyle,
 
   sectionLabel: {
     fontSize: 11,
