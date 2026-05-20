@@ -54,7 +54,7 @@ app/
 │   ├── calendario.tsx          # Calendario: eventos ICS
 │   ├── fotos.tsx               # Galería de fotos
 │   └── mas.tsx                 # Más opciones (JubileoHome, Grupos, Materiales, etc.)
-├── (tabsdesactivados)/
+├── (disabled)/
 │   └── comunica.tsx            # Tab desactivada (movida fuera de tabs activos)
 ├── screens/                    # 20 pantallas individuales
 │   ├── CategoriesScreen.tsx    # Lista de categorías del cantoral
@@ -62,7 +62,7 @@ app/
 │   ├── SongDetailScreen.tsx    # Detalle de canción con acordes
 │   ├── SongFullscreenScreen.tsx # Modo presentación
 │   ├── SelectedSongsScreen.tsx # Playlist de canciones seleccionadas
-│   ├── JubileoHomeScreen.tsx   # Menú del Jubileo
+│   ├── EventHomeScreen.tsx     # Hub genérico de eventos (Jubileo, encuentros, etc.)
 │   ├── MasHomeScreen.tsx       # Menú "Más"
 │   ├── GruposScreen.tsx        # Grupos
 │   ├── MaterialesScreen.tsx    # Materiales (BBCode → HTML)
@@ -74,7 +74,6 @@ app/
 │   ├── WordleScreen.tsx        # Juego Wordle
 │   ├── ComidaScreen.tsx        # Comida
 │   ├── ComidaWebScreen.tsx     # Comida versión web
-│   ├── MonitoresWebScreen.tsx  # Monitores
 │   ├── AppsScreen.tsx          # Apps recomendadas
 │   └── MaterialPagesScreen.tsx # Páginas de materiales
 ├── wordle.tsx                  # Entrada al Wordle desde root stack
