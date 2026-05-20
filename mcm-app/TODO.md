@@ -55,7 +55,30 @@
 
 
 
+## Mejoras técnicas posibles (Claude, haz un análisis sobre su conveniencia)
 
+1. Pre-procesado en tiempo de compilación: Custom Metro Transformer para archivos ChordPro (.cho)
+El Problema: La app lee canciones en formato crudo ChordPro y las parsea en tiempo de ejecución en el dispositivo usando chordsheetjs. Esto consume CPU en el JS Thread cada vez que el usuario abre una canción, lo que puede causar saltos de fotogramas (jank) al abrir la pantalla de detalle.
+La Solución Técnica: Crear un cargador personalizado en 
+metro.config.js
+ para interceptar los archivos con extensión .cho.
+Implementación:
+Instalar chordsheetjs como una devDependency.
+Modificar el transformer de Metro para que cuando encuentre un archivo .cho, lo parsee a un objeto estructurado JSON (el AST del acordero) en el ordenador del desarrollador durante el build.
+En la app, al hacer import song from '@/assets/songs/song.cho', el objeto ya importado es un JSON pre-procesado listo para renderizar directamente, eliminando el peso del parser en producción y el coste de CPU en el móvil.
+2. Habilitar el React Compiler (React 19 native optimization)
+El Problema: Mantener useMemo, useCallback y React.memo a mano (como en el grid de la Home o el listado del Cantoral) ensucia el código, consume esfuerzo cognitivo y suele estar mal optimizado si se olvidan dependencias en los arrays.
+La Solución Técnica: Integrar el nuevo React Compiler (React Forget) que viene soportado de forma nativa a partir de React 19.
+Implementación:
+Configurar babel.config.js instalando y añadiendo el plugin de compilación:
+javascript
+
+
+plugins: [
+  ['babel-plugin-react-compiler', { target: '19' }],
+  'react-native-reanimated/plugin',
+]
+El compilador analiza automáticamente el árbol de componentes y memoiza en tiempo de compilación únicamente lo que de verdad cambia, reduciendo drásticamente los renders del árbol de componentes de React Native sin escribir un solo useMemo.
 
 ## Modernización pendiente (prioridad alta)
 

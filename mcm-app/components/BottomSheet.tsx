@@ -9,6 +9,7 @@ import {
   Animated,
   StyleSheet,
   Dimensions,
+  Keyboard,
 } from 'react-native';
 
 const nativeDriver = Platform.OS !== 'web';
@@ -44,10 +45,12 @@ export default function BottomSheet({
   const slideAnim = useRef(new Animated.Value(OFF_SCREEN)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const dragAnim = useRef(new Animated.Value(0)).current;
+  const keyboardHeightAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
       dragAnim.setValue(0);
+      keyboardHeightAnim.setValue(0);
       setModalVisible(true);
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -75,7 +78,36 @@ export default function BottomSheet({
         }),
       ]).start(() => setModalVisible(false));
     }
-  }, [visible, slideAnim, opacityAnim, dragAnim]);
+  }, [visible, slideAnim, opacityAnim, dragAnim, keyboardHeightAnim]);
+
+  // Shift the sheet up when the keyboard appears (iOS only)
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    const showSub = Keyboard.addListener(
+      'keyboardWillShow',
+      (e: { endCoordinates: { height: number }; duration: number }) => {
+        Animated.timing(keyboardHeightAnim, {
+          toValue: e.endCoordinates.height,
+          duration: e.duration ?? 250,
+          useNativeDriver: false,
+        }).start();
+      },
+    );
+    const hideSub = Keyboard.addListener(
+      'keyboardWillHide',
+      (e: { duration: number }) => {
+        Animated.timing(keyboardHeightAnim, {
+          toValue: 0,
+          duration: e.duration ?? 250,
+          useNativeDriver: false,
+        }).start();
+      },
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardHeightAnim]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -138,6 +170,7 @@ export default function BottomSheet({
           {
             backgroundColor: bgColor,
             paddingBottom: 8,
+            bottom: keyboardHeightAnim,
             transform: [{ translateY }],
             ...(height !== undefined && { height }),
           },
@@ -160,7 +193,14 @@ export default function BottomSheet({
           </View>
         )}
 
-        <View style={{ backgroundColor: bgColor, paddingHorizontal: 16 }}>{children}</View>
+        <View
+          style={[
+            { backgroundColor: bgColor, paddingHorizontal: 16 },
+            height !== undefined && { flex: 1 },
+          ]}
+        >
+          {children}
+        </View>
       </Animated.View>
     </Modal>
   );
