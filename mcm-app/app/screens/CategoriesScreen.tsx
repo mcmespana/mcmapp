@@ -263,7 +263,7 @@ export default function CategoriesScreen({
   const listHeader = useMemo(
     () => (
       <View>
-        <View style={[styles.inlineHeader]}>
+        <View style={[styles.inlineHeader, { paddingTop: 14 }]}>
           <View style={styles.headerLeftContainer}>
             <Text style={styles.headerTitle}>Cantoral</Text>
           </View>
