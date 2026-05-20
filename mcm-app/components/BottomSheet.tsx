@@ -14,6 +14,7 @@ import {
 
 const nativeDriver = Platform.OS !== 'web';
 import { UIColors, Colors } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const OFF_SCREEN = Dimensions.get('window').height;
@@ -45,12 +46,14 @@ export default function BottomSheet({
   const slideAnim = useRef(new Animated.Value(OFF_SCREEN)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const dragAnim = useRef(new Animated.Value(0)).current;
-  const keyboardHeightAnim = useRef(new Animated.Value(0)).current;
+  // Keyboard offset: negative value moves the sheet up. Kept separate from
+  // translateY so both can use useNativeDriver without a driver conflict.
+  const keyboardOffsetAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
       dragAnim.setValue(0);
-      keyboardHeightAnim.setValue(0);
+      keyboardOffsetAnim.setValue(0);
       setModalVisible(true);
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -78,28 +81,31 @@ export default function BottomSheet({
         }),
       ]).start(() => setModalVisible(false));
     }
-  }, [visible, slideAnim, opacityAnim, dragAnim, keyboardHeightAnim]);
+  }, [visible, slideAnim, opacityAnim, dragAnim, keyboardOffsetAnim]);
 
-  // Shift the sheet up when the keyboard appears (iOS only)
+  // Shift the sheet up when the keyboard appears (iOS only).
+  // Uses a separate Animated.Value so it can share the native driver with
+  // translateY — mixing useNativeDriver: false and true on one Animated.View
+  // crashes React Native.
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
     const showSub = Keyboard.addListener(
       'keyboardWillShow',
       (e: { endCoordinates: { height: number }; duration: number }) => {
-        Animated.timing(keyboardHeightAnim, {
-          toValue: e.endCoordinates.height,
+        Animated.timing(keyboardOffsetAnim, {
+          toValue: -e.endCoordinates.height,
           duration: e.duration ?? 250,
-          useNativeDriver: false,
+          useNativeDriver: nativeDriver,
         }).start();
       },
     );
     const hideSub = Keyboard.addListener(
       'keyboardWillHide',
       (e: { duration: number }) => {
-        Animated.timing(keyboardHeightAnim, {
+        Animated.timing(keyboardOffsetAnim, {
           toValue: 0,
           duration: e.duration ?? 250,
-          useNativeDriver: false,
+          useNativeDriver: nativeDriver,
         }).start();
       },
     );
@@ -107,7 +113,7 @@ export default function BottomSheet({
       showSub.remove();
       hideSub.remove();
     };
-  }, [keyboardHeightAnim]);
+  }, [keyboardOffsetAnim]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -163,57 +169,69 @@ export default function BottomSheet({
       {/* Tap-to-close area behind the sheet */}
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
-      {/* Sheet — slides up from bottom, sized to content or fixed height */}
+      {/* Outer: keyboard avoidance — moves the whole sheet up via transform */}
       <Animated.View
         style={[
-          styles.sheet,
-          {
-            backgroundColor: bgColor,
-            paddingBottom: 8,
-            bottom: keyboardHeightAnim,
-            transform: [{ translateY }],
-            ...(height !== undefined && { height }),
-          },
+          styles.sheetPositioner,
+          { transform: [{ translateY: keyboardOffsetAnim }] },
         ]}
       >
-        {/* Handle + optional title — both serve as drag targets */}
-        <View style={styles.handleWrap} {...panResponder.panHandlers}>
-          <View style={[styles.handle, { backgroundColor: handleColor }]} />
-        </View>
-        {title && (
-          <View style={styles.titleBar} {...panResponder.panHandlers}>
-            <Text
-              style={[
-                styles.titleText,
-                { color: Colors[scheme ?? 'light'].text },
-              ]}
-            >
-              {title}
-            </Text>
-          </View>
-        )}
-
-        <View
+        {/* Inner: slide-in / drag animation */}
+        <Animated.View
           style={[
-            { backgroundColor: bgColor, paddingHorizontal: 16 },
-            height !== undefined && { flex: 1 },
+            styles.sheet,
+            {
+              backgroundColor: bgColor,
+              paddingBottom: 8,
+              transform: [{ translateY }],
+              ...(height !== undefined && { height }),
+            },
           ]}
         >
-          {children}
-        </View>
+          {/* Handle + optional title — both serve as drag targets */}
+          <View style={styles.handleWrap} {...panResponder.panHandlers}>
+            <View style={[styles.handle, { backgroundColor: handleColor }]} />
+          </View>
+          {title && (
+            <View style={styles.titleBar} {...panResponder.panHandlers}>
+              <Text
+                style={[
+                  styles.titleText,
+                  { color: Colors[scheme ?? 'light'].text },
+                ]}
+              >
+                {title}
+              </Text>
+            </View>
+          )}
+
+          {/* onStartShouldSetResponder absorbs touches on empty areas so they
+              don't fall through to the backdrop Pressable behind the sheet. */}
+          <View
+            style={[
+              { backgroundColor: bgColor, paddingHorizontal: 16 },
+              height !== undefined && { flex: 1 },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
+            {children}
+          </View>
+        </Animated.View>
       </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  sheet: {
+  sheetPositioner: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+  },
+  sheet: {
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     overflow: 'hidden',
   },
   handleWrap: {

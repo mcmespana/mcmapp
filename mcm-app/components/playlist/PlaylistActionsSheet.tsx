@@ -58,7 +58,10 @@ const PlaylistActionsSheet: React.FC<Props> = ({
               onPress={() => {
                 if (a.disabled) return;
                 onClose();
-                setTimeout(() => a.onPress(), 50);
+                // BottomSheet animation takes 300 ms. Waiting until it's fully
+                // dismissed prevents iOS from rejecting a second Modal that
+                // would try to appear while the first one is still mounted.
+                setTimeout(() => a.onPress(), 320);
               }}
               disabled={a.disabled}
             >
