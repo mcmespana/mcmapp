@@ -238,9 +238,8 @@ export default function CategoriesScreen({
           <Text style={styles.heroSubtitle}>
             {selectionItem.songCount === 0
               ? 'Añade canciones a tu playlist para tenerlas a mano'
-              : `${selectionItem.songCount} ${
-                  selectionItem.songCount === 1 ? 'canción' : 'canciones'
-                } en tu playlist`}
+              : `${selectionItem.songCount} ${selectionItem.songCount === 1 ? 'canción' : 'canciones'
+              } en tu playlist`}
           </Text>
         </View>
         <MaterialIcons
@@ -264,10 +263,9 @@ export default function CategoriesScreen({
   const listHeader = useMemo(
     () => (
       <View>
-        <View style={[styles.inlineHeader, { paddingTop: insets.top + 14 }]}>
+        <View style={[styles.inlineHeader]}>
           <View style={styles.headerLeftContainer}>
             <Text style={styles.headerTitle}>Cantoral</Text>
-            <Text style={styles.headerSubtitle}>Canta y camina</Text>
           </View>
           <View style={styles.headerRightContainer}>
             <TouchableOpacity
@@ -352,31 +350,31 @@ const createStyles = (
   const cardShadow =
     Platform.OS === 'web'
       ? ({
-          boxShadow: isDark
-            ? '0 1px 3px rgba(0,0,0,0.4)'
-            : '0 1px 3px rgba(0,0,0,0.06)',
-        } as any)
+        boxShadow: isDark
+          ? '0 1px 3px rgba(0,0,0,0.4)'
+          : '0 1px 3px rgba(0,0,0,0.06)',
+      } as any)
       : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.25 : 0.04,
-          shadowRadius: 3,
-          elevation: 1,
-        };
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: isDark ? 0.25 : 0.04,
+        shadowRadius: 3,
+        elevation: 1,
+      };
   const gridCardShadow =
     Platform.OS === 'web'
       ? ({
-          boxShadow: isDark
-            ? '0 2px 10px rgba(0,0,0,0.4)'
-            : '0 2px 10px rgba(0,0,0,0.06)',
-        } as any)
+        boxShadow: isDark
+          ? '0 2px 10px rgba(0,0,0,0.4)'
+          : '0 2px 10px rgba(0,0,0,0.06)',
+      } as any)
       : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.3 : 0.06,
-          shadowRadius: 8,
-          elevation: 2,
-        };
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDark ? 0.3 : 0.06,
+        shadowRadius: 8,
+        elevation: 2,
+      };
 
   return StyleSheet.create({
     container: {
@@ -433,10 +431,10 @@ const createStyles = (
       paddingBottom: isIOS ? 100 : 80,
       ...(isWide
         ? {
-            maxWidth: contentMaxWidth,
-            width: '100%',
-            alignSelf: 'center',
-          }
+          maxWidth: contentMaxWidth,
+          width: '100%',
+          alignSelf: 'center',
+        }
         : null),
     },
     // ── Móvil: fila tradicional ─────────────────────────────────────────
