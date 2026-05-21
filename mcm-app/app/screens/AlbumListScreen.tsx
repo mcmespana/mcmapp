@@ -9,13 +9,13 @@ import {
   Platform,
 } from 'react-native';
 import { Button, Spinner } from 'heroui-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import { Colors as ThemeColors } from '@/constants/colors';
+import { Colors as ThemeColors, TabHeaderColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const ALBUMS_PER_PAGE = 4;
@@ -132,12 +132,13 @@ export default function AlbumListScreen() {
   }
 
   return (
-    <SafeAreaView
+    <TabScreenWrapper
       style={[
         styles.container,
         { backgroundColor: ThemeColors[scheme ?? 'light'].background },
       ]}
-      edges={['bottom']}
+      edges={['top']}
+      tintColor={TabHeaderColors.fotos}
     >
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
       <FlatList
@@ -160,13 +161,13 @@ export default function AlbumListScreen() {
         contentContainerStyle={[
           styles.listContent,
           { maxWidth: width > 1200 ? 1600 : 1200, alignSelf: 'center' },
-          Platform.OS === 'ios' && { paddingBottom: 20 },
+          Platform.OS === 'ios' && { paddingBottom: 100 },
         ]}
         onEndReached={loadMoreAlbums}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
       />
-    </SafeAreaView>
+    </TabScreenWrapper>
   );
 }
 
