@@ -141,6 +141,9 @@ export default function CancioneroTab() {
         screenOptions={({ navigation }) => {
           stackNavRef.current = navigation;
           return {
+            // Congela las pantallas que no están visibles al cambiar de tab:
+            // libera CPU/memoria (especialmente del WebView del detalle).
+            freezeOnBlur: true,
             headerStyle: isIOS
               ? { backgroundColor: 'transparent' }
               : isWeb

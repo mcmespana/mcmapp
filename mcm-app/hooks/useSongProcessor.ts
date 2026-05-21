@@ -1,17 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Platform } from 'react-native';
-import {
-  ChordProParser,
-  HtmlDivFormatter,
-  Song,
-  ChordLyricsPair,
-} from 'chordsheetjs';
+import { ChordProParser, HtmlDivFormatter, Song } from 'chordsheetjs';
 import { UIColors } from '@/constants/colors';
 import {
   convertHtmlChords,
   convertChord,
   Notation,
 } from '../utils/chordNotation';
+import { transposeKey } from '../utils/transposeKey';
 
 interface UseSongProcessorParams {
   originalChordPro: string | null;
@@ -51,46 +47,49 @@ export const useSongProcessor = ({
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
 
+  // Parseamos ChordPro UNA sola vez por contenido. La transposición se aplica
+  // después sobre el objeto Song, lo que es mucho más barato que reparsear.
+  const baseSong = useMemo<Song | null>(() => {
+    if (!originalChordPro) return null;
+    try {
+      const cleaned = originalChordPro
+        .replace(/\{sov\}/gi, '{start_of_verse}')
+        .replace(/\{eov\}/gi, '{end_of_verse}')
+        .replace(/\{soc\}/gi, '{start_of_chorus}')
+        .replace(/\{eoc\}/gi, '{end_of_chorus}')
+        .replace(/\{sob\}/gi, '{start_of_bridge}')
+        .replace(/\{eob\}/gi, '{end_of_bridge}')
+        .replace(/\{transpose:.*\}\n?/gi, '');
+      return new ChordProParser().parse(cleaned);
+    } catch (e) {
+      console.error('Error parseando ChordPro en useSongProcessor:', e);
+      return null;
+    }
+  }, [originalChordPro]);
+
   useEffect(() => {
     if (!originalChordPro) {
+      setIsLoadingSong(false);
+      return;
+    }
+    if (!baseSong) {
+      setSongHtml('❌ Error preparando la canción.');
       setIsLoadingSong(false);
       return;
     }
 
     setIsLoadingSong(true);
     try {
-      let processedChordPro = originalChordPro;
-
-      processedChordPro = processedChordPro
-        .replace(/\{sov\}/gi, '{start_of_verse}')
-        .replace(/\{eov\}/gi, '{end_of_verse}')
-        .replace(/\{soc\}/gi, '{start_of_chorus}')
-        .replace(/\{eoc\}/gi, '{end_of_chorus}')
-        .replace(/\{sob\}/gi, '{start_of_bridge}')
-        .replace(/\{eob\}/gi, '{end_of_bridge}');
-      processedChordPro = processedChordPro.replace(
-        /\{transpose:.*\}\n?/gi,
-        '',
-      );
-
-      if (currentTranspose !== 0) {
-        const chordProValueForDirective =
-          currentTranspose < 0 ? currentTranspose + 12 : currentTranspose;
-        if (chordProValueForDirective !== 0) {
-          processedChordPro = `{transpose: ${chordProValueForDirective}}\n${processedChordPro}`;
-        }
-      }
-
       const fontSizeCss = `
         .chord-sheet .lyrics, .chord-sheet .chord {
           font-size: ${currentFontSizeEm}em !important;
         }
       `;
 
-      const parser = new ChordProParser();
-      const originalParsedSong = parser.parse(processedChordPro);
-
-      const songForFormatting: Song = originalParsedSong;
+      const songForFormatting: Song =
+        currentTranspose !== 0
+          ? baseSong.transpose(currentTranspose)
+          : baseSong;
 
       const formatter = new HtmlDivFormatter();
       const formattedSong = formatter.format(songForFormatting);
@@ -100,27 +99,11 @@ export const useSongProcessor = ({
         metaInsert += `<div class="song-meta-author">${author}</div>`;
       }
 
-      let displayKey = key ? key.toUpperCase() : '';
-
-      if (key && currentTranspose !== 0) {
-        try {
-          const tempSongForKey = new ChordProParser().parse(
-            `{key: ${key}}\n[${key}]`,
-          );
-          const transposedTempSong = tempSongForKey.transpose(currentTranspose);
-          if (
-            transposedTempSong.lines.length > 0 &&
-            transposedTempSong.lines[0].items.length > 0
-          ) {
-            const firstItem = transposedTempSong.lines[0].items[0];
-            if (firstItem instanceof ChordLyricsPair && firstItem.chords) {
-              displayKey = firstItem.chords.toUpperCase();
-            }
-          }
-        } catch (e) {
-          console.warn('Could not calculate transposed key for display:', e);
-        }
-      }
+      const displayKey = key
+        ? currentTranspose !== 0
+          ? transposeKey(key, currentTranspose)
+          : key.toUpperCase()
+        : '';
 
       let badges = '';
       if (displayKey) {
@@ -438,6 +421,7 @@ export const useSongProcessor = ({
     }
   }, [
     originalChordPro,
+    baseSong,
     currentTranspose,
     chordsVisible,
     currentFontSizeEm,

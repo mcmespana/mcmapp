@@ -135,14 +135,17 @@ describe('useFirebaseData', () => {
       return Promise.resolve(null);
     });
 
-    // Firebase devuelve el mismo timestamp
-    (get as jest.Mock).mockResolvedValueOnce({
-      exists: () => true,
-      val: () => ({
-        updatedAt: '500',
-        data: { new: 'data' },
-      }),
-    });
+    // Cuando hay caché local, el hook hace dos lecturas pequeñas en paralelo:
+    // path/updatedAt y path/hidden. Sólo si updatedAt cambia descarga `data`.
+    (get as jest.Mock)
+      .mockResolvedValueOnce({
+        exists: () => true,
+        val: () => '500',
+      })
+      .mockResolvedValueOnce({
+        exists: () => true,
+        val: () => false,
+      });
 
     const { result } = renderHook(() => useFirebaseData('test', 'same_ts'));
 
@@ -150,7 +153,7 @@ describe('useFirebaseData', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    // Debe usar los datos de caché, no los nuevos
+    // Debe usar los datos de caché, no descargar `data`
     expect(result.current.data).toEqual({ old: 'data' });
   });
 

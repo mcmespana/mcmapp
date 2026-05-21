@@ -74,9 +74,9 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 
 **Quick wins (bajo esfuerzo, bajo riesgo) — empezar por aquí:**
 
-- [ ] **Firebase: descargar `updatedAt` antes que `data`** en `hooks/useFirebaseData.ts`. Hoy se descarga el nodo entero en cada arranque aunque no haya cambios (impacto grande en `songs`/`albums`). Ver MEJORAS.md §1.1.
-- [ ] **Memoizar parser ChordPro** en `hooks/useSongProcessor.ts:90` y eliminar el segundo parser temporal usado para `displayKey` (línea 107). Ver MEJORAS.md §1.3.
-- [ ] **`freezeOnBlur: true`** en los stacks anidados de `cancionero` y `mas`. Ver MEJORAS.md §1.7.
+- [x] **Firebase: descargar `updatedAt` antes que `data`** en `hooks/useFirebaseData.ts`. Cuando hay caché local, primero se comprueba `updatedAt` + `hidden` (pocos bytes) y `data` sólo se baja si cambió. Ver MEJORAS.md §1.1.
+- [x] **Memoizar parser ChordPro** en `hooks/useSongProcessor.ts` y eliminar el segundo parser temporal usado para `displayKey` (ahora vía `utils/transposeKey.ts`). Ver MEJORAS.md §1.3.
+- [x] **`freezeOnBlur: true`** en los stacks anidados de `cancionero` y `mas`. Ver MEJORAS.md §1.7.
 - [ ] **`expo-image` en `AlbumCard`**: ya está instalado (`package.json:42`) pero nadie lo importa. Reemplazar `ImageBackground` y añadir `placeholder`/`transition`. Ver MEJORAS.md §1.5.
 - [ ] **`React.memo` en `SongSearch`, `AlbumCard`, `EventItem`**. Ver MEJORAS.md §1.9.
 - [ ] **Eliminar `lodash`** de `package.json` (0 importaciones). Ver MEJORAS.md §1.10.
