@@ -11,7 +11,8 @@
 ├── README.md              ← Guía rápida para humanos
 ├── AGENTS.md              ← Definición de agentes especializados
 ├── NOTIFICACIONES.md      ← Documentación completa del sistema de notificaciones push
-└── EVENTOS.md             ← Cómo crear eventos (Jubileo, encuentros, retiros…) y estructura Firebase
+├── EVENTOS.md             ← Cómo crear eventos (Jubileo, encuentros, retiros…) y estructura Firebase
+└── PERFORMANCE.md         ← Análisis técnico de fluidez/velocidad + plan priorizado (referenciado desde mcm-app/TODO.md)
 ```
 
 ## Reglas para agentes

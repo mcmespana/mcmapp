@@ -32,7 +32,7 @@
 
 ## Prioridad baja
 
-- [ ] **Accesibilidad — ampliar cobertura**: Home y Notificaciones ya tienen `accessibilityLabel`. Falta el resto (Cantoral, Calendario, Fotos, Reflexiones, etc.).
+- [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales. Falta auditar Fotos (`AlbumListScreen`), Materiales, Horario, Comida, MasHome y los componentes `AlbumCard`/`EventItem`.
 
 ---
 
@@ -68,8 +68,28 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 
 ---
 
-## Mejoras técnicas a valorar
+## Mejoras técnicas — rendimiento
 
-1. **Pre-procesado ChordPro en compilación** — crear un Metro Transformer para parsear `.cho` durante el build en vez de en runtime, eliminando el coste de CPU de ChordSheetJS al abrir canciones.
+> Análisis técnico completo en **`/PERFORMANCE.md`** (raíz del monorepo). Cada item de abajo tiene su sección con archivo:línea y propuesta concreta.
 
-2. **React Compiler** — activar `babel-plugin-react-compiler` (soportado en React 19). Memoiza automáticamente sin necesidad de `useMemo`/`useCallback` manuales.
+**Quick wins (bajo esfuerzo, bajo riesgo) — empezar por aquí:**
+
+- [ ] **Firebase: descargar `updatedAt` antes que `data`** en `hooks/useFirebaseData.ts`. Hoy se descarga el nodo entero en cada arranque aunque no haya cambios (impacto grande en `songs`/`albums`). Ver PERFORMANCE.md §1.
+- [ ] **Memoizar parser ChordPro** en `hooks/useSongProcessor.ts:90` y eliminar el segundo parser temporal usado para `displayKey` (línea 107). Ver PERFORMANCE.md §3.
+- [ ] **`freezeOnBlur: true`** en los stacks anidados de `cancionero` y `mas`. Ver PERFORMANCE.md §7.
+- [ ] **`expo-image` en `AlbumCard`**: ya está instalado (`package.json:42`) pero nadie lo importa. Reemplazar `ImageBackground` y añadir `placeholder`/`transition`. Ver PERFORMANCE.md §5.
+- [ ] **`React.memo` en `SongSearch`, `AlbumCard`, `EventItem`**. Ver PERFORMANCE.md §9.
+- [ ] **Eliminar `lodash`** de `package.json` (0 importaciones). Ver PERFORMANCE.md §10.
+- [ ] **Reducir `HelloWave`** a 2 repeticiones (600 ms) o saltarlo tras el primer arranque. Ver PERFORMANCE.md §8.
+
+**Iteraciones siguientes (más esfuerzo, más impacto):**
+
+- [ ] **React Compiler** — activar `babel-plugin-react-compiler` (soportado en React 19). Memoiza automáticamente. Ver PERFORMANCE.md §6.
+- [ ] **`GruposScreen` → `SectionList`** y **`ContactosScreen` → `FlatList`** (ahora son `ScrollView+.map()` anidados). Ver PERFORMANCE.md §4.
+- [ ] **WebView estable con `postMessage`** para aplicar tono/fuente/notación sin recrear el HTML. Elimina el parpadeo al cambiar ajustes en una canción. Ver PERFORMANCE.md §2.
+- [ ] **Pre-procesado ChordPro en compilación** — Metro Transformer para parsear `.cho` durante el build en vez de en runtime, eliminando el coste de CPU de ChordSheetJS al abrir canciones. Ver PERFORMANCE.md §3.
+
+**A valorar:**
+
+- [ ] Auditar si `react-native-render-html` compensa (solo se usa en `FormattedContent.tsx`). Si BBCode simple bastara, ahorraría peso de bundle. Ver PERFORMANCE.md §10.
+- [ ] Cómo medir antes/después (cold start, transpose, bytes de red, memoria) → PERFORMANCE.md "Cómo medir".
