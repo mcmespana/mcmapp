@@ -27,7 +27,6 @@ import ComidaScreen from '../screens/ComidaScreen';
 import ComidaWebScreen from '../screens/ComidaWebScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import { getEvent } from '@/constants/events';
-import { TabHeaderColors } from '@/constants/colors';
 
 /**
  * Route params comunes a todas las pantallas de un evento (Jubileo u otros
@@ -290,21 +289,12 @@ export default function MasTab() {
           name="Fotos"
           component={AlbumListScreen}
           options={{
-            title: 'Fotos',
-            headerStyle:
-              Platform.OS === 'ios'
-                ? { backgroundColor: 'transparent' }
-                : { backgroundColor: TabHeaderColors.fotos },
-            headerTintColor: Platform.OS === 'ios' ? '#1a1a1a' : '#fff',
-            headerTitleStyle: {
-              fontWeight: '700' as const,
-              fontSize: 18,
-              color: Platform.OS === 'ios' ? '#1a1a1a' : '#fff',
-            },
-            headerBackground: () =>
-              Platform.OS === 'ios' ? (
-                <GlassHeader tintColor={TabHeaderColors.fotos} />
-              ) : undefined,
+            // Fotos se comporta como un tab "de plataforma" (cantoral,
+            // calendario): pinta su franja de color desde TabScreenWrapper
+            // dentro de la propia pantalla en lugar de un header pesado.
+            // El gesto de swipe-back de iOS / botón nativo Android cubren
+            // la navegación de vuelta.
+            headerShown: false,
           }}
         />
         <Stack.Screen

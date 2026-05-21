@@ -7,14 +7,20 @@ interface TabScreenWrapperProps {
   children: React.ReactNode;
   style?: any;
   edges?: ('top' | 'right' | 'bottom' | 'left')[];
+  /** Override the tint color derived from the current tab pathname. Useful
+   *  cuando la pantalla se alcanza desde un stack (p.ej. Fotos vía MasHome
+   *  overflow en iOS) y el pathname no coincide con un tab conocido. */
+  tintColor?: string;
 }
 
 export default function TabScreenWrapper({
   children,
   style,
   edges = ['top'],
+  tintColor,
 }: TabScreenWrapperProps) {
   const tabColor = useCurrentTabColor();
+  const resolvedColor = tintColor ?? tabColor;
 
   if (Platform.OS !== 'ios') {
     // On Android/Web, just use regular SafeAreaView
@@ -28,8 +34,8 @@ export default function TabScreenWrapper({
   // On iOS, add the color bar at the top
   return (
     <View style={styles.container}>
-      {tabColor && (
-        <View style={[styles.colorBar, { backgroundColor: tabColor }]} />
+      {resolvedColor && (
+        <View style={[styles.colorBar, { backgroundColor: resolvedColor }]} />
       )}
       <SafeAreaView style={[styles.content, style]} edges={edges}>
         {children}
