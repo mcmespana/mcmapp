@@ -13,6 +13,24 @@
 
 ---
 
+## 2026-05-21 — Auto-scroll del cantoral en pantalla completa, reescrito
+
+- **Problema**: el desplazador automático del modo pantalla completa era frágil. Slider vertical con gestos en conflicto con `PressableFeedback`, bucle frame-based (la velocidad cambiaba según refresh rate), sin persistencia entre sesiones, sin auto-pausa al final del documento ni cuando el usuario tocaba la pantalla, y dos bucles distintos en lados opuestos del puente nativo.
+- **Solución**: nuevo hook `hooks/useAutoScroller.ts` que aísla toda la lógica del desplazamiento y expone una API limpia (`isPlaying`, `speedIndex`, `setSpeedIndex`, `play/pause/toggle`, handlers de WebView). En la pantalla, el slider vertical se sustituye por un selector segmentado horizontal de 5 niveles ("Muy lento" … "Muy rápido").
+- **Mejoras técnicas**:
+  - **Time-based (px/s)** en lugar de frame-based: misma velocidad real en pantallas a 60Hz, 90Hz o 120Hz.
+  - **Acumulación sub-píxel** + **rampa de aceleración/frenado**: el inicio/parada es suave y los niveles bajos producen un movimiento continuo, no a saltos.
+  - **Bucle en la WebView**: en iOS/Android el rAF vive dentro de la propia WebView (cero overhead del puente). El lado React sólo envía la velocidad objetivo cuando cambia. Para web, rAF en lado React sobre el `div` scrollable.
+  - **Auto-pausa**: cuando el usuario interactúa manualmente (touch/wheel/mousedown/keydown) o al llegar al final del documento; en nativo el controlador postea un mensaje (`postMessage`) y React sincroniza estado.
+  - **Persistencia**: nivel de velocidad guardado en AsyncStorage (`@mcm_song_autoscroll_speed_index`); el usuario recupera su preferencia al volver a entrar.
+  - **Resiliencia**: `__mcmScrollInstalled` guard evita doble inyección; `onLoadEnd` reinyecta la velocidad si la WebView recarga con la reproducción activa.
+- **UX**: indicador discreto del nivel actual encima del play, panel de velocidades que aparece al pulsar y se oculta a los 3.2s, haptics (`Medium` en play/pause, `Light` al cambiar de nivel), atajos de teclado en web (`Espacio` play/pause, `↑/↓` subir/bajar velocidad), accesibilidad (`accessibilityState`, etiquetas).
+- **Archivos**:
+  - Nuevo: `hooks/useAutoScroller.ts`.
+  - Reescrito: `app/screens/SongFullscreenScreen.tsx` (eliminados `VerticalSlider`, `SCROLL_CONTROLLER_JS`, estado/refs/efectos del scroll inline).
+
+---
+
 ## 2026-05-20 — Atajos de teclado en web: Cmd+K, Esc y cantoral
 
 - **Cmd/Ctrl+K**: nuevo Command Palette global (web-only) montado en `app/_layout.tsx`. Lista las pantallas top-level del expo-router con sinónimos en castellano e inglés para búsqueda rápida.
