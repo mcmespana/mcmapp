@@ -143,38 +143,39 @@ const eventHubScreenOptions = ({ route }: { route: EventScreenRoute }) => {
 export default function MasTab() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const stackNavRef = useRef<any>(null);
+  // Tracks whether we left this tab (blur) so focus knows to pop to root.
+  // We only pop when returning FROM another tab, never on same-tab re-tap.
+  // On iOS, NativeTabs (UITabBarController) handles same-tab press natively;
+  // our JS handler would conflict with that native behavior and freeze the tab.
+  const wasBlurredRef = useRef(false);
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
 
   const navigation = useNavigation();
 
   useEffect(() => {
-    // When this tab gains focus coming from another tab, reset the stack.
-    // We do NOT call e.preventDefault here so the tab switch happens normally.
-    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
-      if (stackNavRef.current?.canGoBack()) {
-        stackNavRef.current.popToTop();
-      }
+    const unsubscribeBlur = navigation.addListener('blur' as any, () => {
+      wasBlurredRef.current = true;
     });
 
-    // When the user taps this tab while already on it, prevent the default
-    // scroll-to-top behavior and pop to root instead.
-    const unsubscribeTabPress = navigation
-      .getParent()
-      ?.addListener('tabPress' as any, (e: any) => {
-        if (
-          (navigation as any).isFocused?.() &&
-          stackNavRef.current?.canGoBack()
-        ) {
-          // Do NOT call e.preventDefault() — on iOS NativeTabs it desyncs
-          // the native tab bar from the JS navigation state, freezing the tab.
+    // Pop to root only when returning from another tab (blur → focus).
+    // Same-tab re-tap does NOT trigger blur, so wasBlurredRef stays false
+    // and we skip the pop — leaving native UITabBarController in full control.
+    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
+      if (!wasBlurredRef.current) return;
+      wasBlurredRef.current = false;
+      // Defer to the next tick so we don't interrupt any ongoing native
+      // tab-switch animation with a simultaneous stack pop.
+      setTimeout(() => {
+        if (stackNavRef.current?.canGoBack()) {
           stackNavRef.current.popToTop();
         }
-      });
+      }, 0);
+    });
 
     return () => {
+      unsubscribeBlur();
       unsubscribeFocus();
-      unsubscribeTabPress?.();
     };
   }, [navigation]);
 
