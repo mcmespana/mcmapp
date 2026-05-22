@@ -39,7 +39,19 @@ function IOSNativeTabsLayout() {
   return (
     <NativeTabs>
       {mainTabs.map((tab) => (
-        <NativeTabs.Trigger key={tab.name} name={tab.name}>
+        // disablePopToTop + disableScrollToTop son CRÍTICOS: sin ellos, en
+        // iOS el UITabBarController nativo llama popToRootViewController
+        // sobre el UINavigationController de `createNativeStackNavigator`
+        // al re-tappear el mismo tab — bypasea React Navigation y deja JS y
+        // nativo desincronizados → la pantalla queda congelada. Con estas
+        // props deshabilitamos el comportamiento nativo y replicamos la UX
+        // (pop a la raíz al re-tap) desde JS de forma segura.
+        <NativeTabs.Trigger
+          key={tab.name}
+          name={tab.name}
+          disablePopToTop
+          disableScrollToTop
+        >
           <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon sf={tab.iosIcon as any} />
         </NativeTabs.Trigger>

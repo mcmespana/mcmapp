@@ -158,14 +158,10 @@ export default function MasTab() {
       wasBlurredRef.current = true;
     });
 
-    // Pop to root only when returning from another tab (blur → focus).
-    // Same-tab re-tap does NOT trigger blur, so wasBlurredRef stays false
-    // and we skip the pop — leaving native UITabBarController in full control.
+    // Cross-tab return (blur → focus): pop to root from JS.
     const unsubscribeFocus = navigation.addListener('focus' as any, () => {
       if (!wasBlurredRef.current) return;
       wasBlurredRef.current = false;
-      // Defer to the next tick so we don't interrupt any ongoing native
-      // tab-switch animation with a simultaneous stack pop.
       setTimeout(() => {
         if (stackNavRef.current?.canGoBack()) {
           stackNavRef.current.popToTop();
@@ -173,9 +169,23 @@ export default function MasTab() {
       }, 0);
     });
 
+    // Same-tab re-tap: ahora SEGURO porque `disablePopToTop` (en _layout.tsx)
+    // bloquea el popToRootViewController nativo que antes desincronizaba JS
+    // y nativo. Hacemos el pop manualmente desde JS para preservar la UX iOS
+    // de "tap tab activo → vuelve a la raíz".
+    const unsubscribeTabPress = navigation
+      .getParent()
+      ?.addListener('tabPress' as any, () => {
+        if (!(navigation as any).isFocused?.()) return;
+        if (stackNavRef.current?.canGoBack()) {
+          stackNavRef.current.popToTop();
+        }
+      });
+
     return () => {
       unsubscribeBlur();
       unsubscribeFocus();
+      unsubscribeTabPress?.();
     };
   }, [navigation]);
 
