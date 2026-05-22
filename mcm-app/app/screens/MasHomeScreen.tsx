@@ -1,5 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, Text, ScrollView, Platform, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Text,
+  ScrollView,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -11,6 +18,7 @@ import type { ComponentProps } from 'react';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 import { VersionDisplay } from '@/components/VersionDisplay';
+import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -91,7 +99,9 @@ export default function MasHomeScreen() {
       const visibleSet = new Set(resolved.tabs);
       const { overflowTabs } = splitTabsForIOS(visibleSet);
       // Tabs cuyo screen está registrado en el stack de Más (no accesibles vía router.navigate en iOS)
-      const OVERFLOW_STACK_TARGETS: Partial<Record<string, keyof MasStackParamList>> = {
+      const OVERFLOW_STACK_TARGETS: Partial<
+        Record<string, keyof MasStackParamList>
+      > = {
         fotos: 'Fotos',
       };
       for (const tab of overflowTabs) {
@@ -105,7 +115,9 @@ export default function MasHomeScreen() {
           emoji: tab.emoji,
           materialIcon: tab.androidIcon,
           tintColor: tab.tintColor,
-          ...(stackTarget ? { target: stackTarget } : { routePath: `/${tab.name}` }),
+          ...(stackTarget
+            ? { target: stackTarget }
+            : { routePath: `/${tab.name}` }),
         });
       }
     }
@@ -146,7 +158,9 @@ export default function MasHomeScreen() {
         <ScrollView
           style={styles.container}
           contentContainerStyle={
-            Platform.OS === 'ios' ? { paddingBottom: 140 } : { paddingBottom: spacing.xl }
+            Platform.OS === 'ios'
+              ? { paddingBottom: 140 }
+              : { paddingBottom: spacing.xl }
           }
           showsVerticalScrollIndicator={false}
         >
@@ -262,13 +276,25 @@ export default function MasHomeScreen() {
               onPress={() => setFeedbackVisible(true)}
               style={styles.feedbackLink}
             >
-              <Text style={[styles.feedbackText, { color: isDark ? '#8E8E93' : '#6B7280' }]}>
+              <Text
+                style={[
+                  styles.feedbackText,
+                  { color: isDark ? '#8E8E93' : '#6B7280' },
+                ]}
+              >
                 ¿Algún fallo? Cuéntanoslo
               </Text>
             </TouchableOpacity>
-            <Text style={[styles.tagline, { color: isDark ? '#8E8E93' : '#6B7280' }]}>
-              Movimiento Consolación para el Mundo
-            </Text>
+            <SecretMenuTrigger>
+              <Text
+                style={[
+                  styles.tagline,
+                  { color: isDark ? '#8E8E93' : '#6B7280' },
+                ]}
+              >
+                Movimiento Consolación para el Mundo
+              </Text>
+            </SecretMenuTrigger>
           </View>
         </ScrollView>
       </PageContainer>
