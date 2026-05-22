@@ -45,6 +45,8 @@ import { HeroUINativeProvider } from 'heroui-native';
 import { AppToastProvider, useToast } from '@/contexts/AppToastContext';
 import OTAUpdatePrompt from '@/components/OTAUpdatePrompt';
 import { OTAProvider, useOTAContext } from '@/contexts/OTAContext';
+import { PreviewChannelProvider } from '@/contexts/PreviewChannelContext';
+import { PreviewChannelModal } from '@/components/PreviewChannelModal';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 
@@ -64,9 +66,11 @@ export default function RootLayout() {
                         <ChoirSessionProvider>
                           <NotificationsProvider>
                             <CalendarConfigProvider>
-                              <OTAProvider>
-                                <InnerLayout />
-                              </OTAProvider>
+                              <PreviewChannelProvider>
+                                <OTAProvider>
+                                  <InnerLayout />
+                                </OTAProvider>
+                              </PreviewChannelProvider>
                             </CalendarConfigProvider>
                           </NotificationsProvider>
                         </ChoirSessionProvider>
@@ -209,6 +213,7 @@ function InnerLayout() {
         onApply={applyUpdate}
         onLater={() => setDismissed(true)}
       />
+      <PreviewChannelModal />
     </NavThemeProvider>
   );
 }

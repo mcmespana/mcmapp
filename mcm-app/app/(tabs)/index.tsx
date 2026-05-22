@@ -41,6 +41,7 @@ import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
 import { VersionDisplay } from '@/components/VersionDisplay';
+import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
@@ -279,7 +280,9 @@ export default function Home() {
 
   const hasAnyVisibleCalendar =
     calendarConfigs.length > 0 && visibleCalendars.some(Boolean);
-  const hasUpcomingEvents = upcomingEventGroups.some(g => g.events.length > 0);
+  const hasUpcomingEvents = upcomingEventGroups.some(
+    (g) => g.events.length > 0,
+  );
 
   // Quick grid items — filtrados por la config del perfil resuelto
   const quickItems = useMemo<QuickItem[]>(() => {
@@ -368,7 +371,9 @@ export default function Home() {
       'contigo',
     ];
 
-    const isTab = tabPaths.some(p => naked === p || naked.startsWith(p + '/'));
+    const isTab = tabPaths.some(
+      (p) => naked === p || naked.startsWith(p + '/'),
+    );
     if (isTab) {
       return '/(tabs)/' + naked;
     }
@@ -394,7 +399,9 @@ export default function Home() {
     '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
   };
   const internalRouteInfo = latestNotification?.internalRoute
-    ? (ROUTE_LABELS[normalizeRoute(latestNotification.internalRoute)] ?? ROUTE_LABELS[latestNotification.internalRoute] ?? null)
+    ? (ROUTE_LABELS[normalizeRoute(latestNotification.internalRoute)] ??
+      ROUTE_LABELS[latestNotification.internalRoute] ??
+      null)
     : null;
   const internalRouteLabel = internalRouteInfo?.label ?? null;
 
@@ -458,7 +465,12 @@ export default function Home() {
                   style={[
                     styles.headerBtn,
                     {
-                      backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(163,189,49,0.15)' : 'rgba(163,189,49,0.12)'),
+                      backgroundColor:
+                        Platform.OS === 'ios'
+                          ? 'transparent'
+                          : scheme === 'dark'
+                            ? 'rgba(163,189,49,0.15)'
+                            : 'rgba(163,189,49,0.12)',
                       borderColor: colors.success,
                     },
                   ]}
@@ -484,8 +496,16 @@ export default function Home() {
                   style={[
                     styles.headerBtn,
                     {
-                      backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
-                      borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                      backgroundColor:
+                        Platform.OS === 'ios'
+                          ? 'transparent'
+                          : scheme === 'dark'
+                            ? 'rgba(255,255,255,0.07)'
+                            : 'rgba(0,0,0,0.05)',
+                      borderColor:
+                        scheme === 'dark'
+                          ? 'rgba(255,255,255,0.12)'
+                          : 'rgba(0,0,0,0.08)',
                     },
                   ]}
                   onPress={() => setNotifSheetOpen(true)}
@@ -496,9 +516,7 @@ export default function Home() {
                   }
                   accessibilityRole="button"
                 >
-                  {Platform.OS === 'ios' && (
-                    <GlassSurface variant="regular" />
-                  )}
+                  {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
                   <View style={styles.bellWrap}>
                     <MaterialIcons
                       name="notifications"
@@ -522,16 +540,22 @@ export default function Home() {
                 style={[
                   styles.headerBtn,
                   {
-                    backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
-                    borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                    backgroundColor:
+                      Platform.OS === 'ios'
+                        ? 'transparent'
+                        : scheme === 'dark'
+                          ? 'rgba(255,255,255,0.07)'
+                          : 'rgba(0,0,0,0.05)',
+                    borderColor:
+                      scheme === 'dark'
+                        ? 'rgba(255,255,255,0.12)'
+                        : 'rgba(0,0,0,0.08)',
                   },
                 ]}
                 accessibilityLabel="Perfil y ajustes"
                 accessibilityRole="button"
               >
-                {Platform.OS === 'ios' && (
-                  <GlassSurface variant="regular" />
-                )}
+                {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
                 <MaterialIcons
                   name="account-circle"
                   size={22}
@@ -849,7 +873,9 @@ export default function Home() {
                       calendarConfigs[evt.calendarIndex]?.color ?? accentColor;
                     const calName = calendarConfigs[evt.calendarIndex]?.name;
                     return (
-                      <React.Fragment key={`${group.label}|${evt.title}|${evt.startDate}|${idx}`}>
+                      <React.Fragment
+                        key={`${group.label}|${evt.title}|${evt.startDate}|${idx}`}
+                      >
                         {isFirstInGroup && (
                           <Text
                             style={[
@@ -888,10 +914,14 @@ export default function Home() {
                               { backgroundColor: hexAlpha(calColor, '18') },
                             ]}
                           >
-                            <Text style={[styles.eventMonth, { color: calColor }]}>
+                            <Text
+                              style={[styles.eventMonth, { color: calColor }]}
+                            >
                               {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
                             </Text>
-                            <Text style={[styles.eventDay, { color: calColor }]}>
+                            <Text
+                              style={[styles.eventDay, { color: calColor }]}
+                            >
                               {evtDate.getDate()}
                             </Text>
                           </View>
@@ -917,7 +947,10 @@ export default function Home() {
                                 ]}
                               >
                                 <Text
-                                  style={[styles.calBadgeText, { color: calColor }]}
+                                  style={[
+                                    styles.calBadgeText,
+                                    { color: calColor },
+                                  ]}
                                   numberOfLines={1}
                                 >
                                   {calName}
@@ -1001,9 +1034,11 @@ export default function Home() {
               ¿Algún fallo? Cuéntanoslo
             </Text>
           </TouchableOpacity>
-          <Text style={[styles.tagline, { color: theme.icon }]}>
-            Movimiento Consolación para el Mundo
-          </Text>
+          <SecretMenuTrigger>
+            <Text style={[styles.tagline, { color: theme.icon }]}>
+              Movimiento Consolación para el Mundo
+            </Text>
+          </SecretMenuTrigger>
         </View>
       </ScrollView>
     </SafeAreaView>

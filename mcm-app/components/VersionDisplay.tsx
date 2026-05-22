@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
+import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
+import { usePreviewChannel } from '@/contexts/PreviewChannelContext';
 
 export const VersionDisplay: React.FC<{ style?: any }> = ({ style }) => {
   const [updateInfo, setUpdateInfo] = useState<string>('');
@@ -33,13 +35,24 @@ export const VersionDisplay: React.FC<{ style?: any }> = ({ style }) => {
   if (!updateInfo) return null;
 
   return (
-    <View style={[styles.container, style]}>
+    <SecretMenuTrigger
+      style={[styles.container, style]}
+      accessibilityLabel="Versión de la app"
+    >
       <Text style={[styles.versionText, { color: theme.icon }]}>
         {updateInfo}
+        <PreviewBadge />
       </Text>
-    </View>
+    </SecretMenuTrigger>
   );
 };
+
+/** Pequeño indicador discreto cuando el dispositivo está suscrito a preview. */
+function PreviewBadge() {
+  const { enabled } = usePreviewChannel();
+  if (!enabled) return null;
+  return <Text style={styles.previewBadge}>{' · alpha'}</Text>;
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -51,5 +64,8 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     fontFamily: 'System',
     fontWeight: '400',
+  },
+  previewBadge: {
+    fontWeight: '700',
   },
 });
