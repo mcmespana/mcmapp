@@ -115,7 +115,7 @@ export default function ComidaWebScreen() {
         />
         {isLoading && (
           <View style={styles.loadingContainer}>
-            <Spinner size="lg" color={ThemeColors[scheme].tint} />
+            <Spinner size="lg" color={ThemeColors[scheme ?? 'light'].tint} />
           </View>
         )}
       </View>
@@ -130,7 +130,7 @@ export default function ComidaWebScreen() {
         startInLoadingState={true}
         renderLoading={() => (
           <View style={styles.loadingContainer}>
-            <Spinner size="lg" color={ThemeColors[scheme].tint} />
+            <Spinner size="lg" color={ThemeColors[scheme ?? 'light'].tint} />
           </View>
         )}
         onLoadEnd={onLoadEnd}

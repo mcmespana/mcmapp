@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   Pressable,
   Linking,
+  Platform,
   ViewStyle,
   TextStyle,
   useWindowDimensions,
@@ -36,7 +37,7 @@ import { radii, shadows } from '@/constants/uiStyles';
 import useFontScale from '@/hooks/useFontScale';
 import { Skeleton } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
-import SettingsPanel from '@/components/SettingsPanel';
+import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
 import { VersionDisplay } from '@/components/VersionDisplay';
@@ -46,12 +47,14 @@ import { setPendingMasScreen } from '@/utils/masNavigation';
 import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
+import GlassSurface from '@/components/ui/GlassSurface';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
   isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
-import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
+import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
+import { useOTAContext } from '@/contexts/OTAContext';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
@@ -75,32 +78,75 @@ function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
-function getUpcomingEvents(
+function getWeekLabel(date: Date, today: Date): string {
+  const diffTime = date.getTime() - today.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return 'Pasado';
+  if (diffDays === 0) return 'Hoy';
+  if (diffDays === 1) return 'Mañana';
+  if (diffDays < 7) return 'Esta semana';
+  if (diffDays < 14) return 'Próxima semana';
+  if (diffDays < 28) return 'Este mes';
+
+  // Beyond 28 days → don't show
+  return null;
+}
+
+interface EventGroup {
+  label: string;
+  events: CalendarEvent[];
+}
+
+function getUpcomingEventsByWeek(
   eventsByDate: Record<string, CalendarEvent[]>,
-  limit: number,
+  maxEvents: number,
   visibleCalendars: boolean[],
-): CalendarEvent[] {
+): EventGroup[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
   const seen = new Set<string>();
-  const events: CalendarEvent[] = [];
+  const eventsByWeek: Map<string, CalendarEvent[]> = new Map();
 
   Object.entries(eventsByDate)
     .filter(([date]) => date >= todayStr)
     .sort(([a], [b]) => a.localeCompare(b))
-    .forEach(([, evts]) => {
+    .forEach(([dateStr, evts]) => {
       evts.forEach((evt) => {
         if (visibleCalendars[evt.calendarIndex] === false) return;
         const key = `${evt.title}|${evt.startDate}`;
-        if (!seen.has(key)) {
+        if (!seen.has(key) && seen.size < maxEvents) {
+          const eventDate = parseLocalDate(dateStr);
+          const label = getWeekLabel(eventDate, today);
+          if (label === null) return; // beyond 4 weeks — skip
           seen.add(key);
-          events.push(evt);
+
+          if (!eventsByWeek.has(label)) {
+            eventsByWeek.set(label, []);
+          }
+          eventsByWeek.get(label)!.push(evt);
         }
       });
     });
 
-  return events.slice(0, limit);
+  // Preserve order: Hoy → Mañana → Esta semana → Próxima semana → Este mes
+  const order = ['Hoy', 'Mañana', 'Esta semana', 'Próxima semana', 'Este mes'];
+  const groups: EventGroup[] = [];
+
+  order.forEach((label) => {
+    if (eventsByWeek.has(label)) {
+      groups.push({ label, events: eventsByWeek.get(label)! });
+      eventsByWeek.delete(label);
+    }
+  });
+
+  // Add remaining weeks in order
+  eventsByWeek.forEach((events, label) => {
+    groups.push({ label, events });
+  });
+
+  return groups;
 }
 
 interface QuickItem {
@@ -141,6 +187,14 @@ export default function Home() {
 
   // Primary color readable on both light and dark backgrounds
   const accentColor = scheme === 'dark' ? colors.info : colors.primary;
+
+  // OTA update badge (show in header after user dismisses the modal)
+  const {
+    isReady: otaReady,
+    dismissed: otaDismissed,
+    applyUpdate: otaApply,
+  } = useOTAContext();
+  const showUpdateBadge = otaReady && otaDismissed;
 
   // Notifications
   const { firebaseNotifications, readIds, unreadCount } = useNotifications();
@@ -215,16 +269,17 @@ export default function Home() {
   }));
 
   // Calendar events — filtered by user's visible calendars
-  const { calendarConfigs, visibleCalendars } = useCalendarConfigs();
+  const { calendarConfigs, visibleCalendars } = useCalendarConfig();
   const { eventsByDate, loading: eventsLoading } =
     useCalendarEvents(calendarConfigs);
-  const upcomingEvents = useMemo(
-    () => getUpcomingEvents(eventsByDate, 2, visibleCalendars),
+  const upcomingEventGroups = useMemo(
+    () => getUpcomingEventsByWeek(eventsByDate, 8, visibleCalendars),
     [eventsByDate, visibleCalendars],
   );
 
   const hasAnyVisibleCalendar =
     calendarConfigs.length > 0 && visibleCalendars.some(Boolean);
+  const hasUpcomingEvents = upcomingEventGroups.some(g => g.events.length > 0);
 
   // Quick grid items — filtrados por la config del perfil resuelto
   const quickItems = useMemo<QuickItem[]>(() => {
@@ -252,7 +307,7 @@ export default function Home() {
         icon: 'image',
         iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
         iconColor: '#34D399',
-        href: '/fotos',
+        href: '/mas',
       },
       evangelio: {
         key: 'evangelio',
@@ -290,6 +345,37 @@ export default function Home() {
     ? latestNotification.body
     : 'Mantente al día con las novedades de la comunidad.';
 
+  const normalizeRoute = (route: string): string => {
+    if (!route) return '';
+    let clean = route.trim();
+    if (clean.startsWith('http')) return clean;
+
+    clean = clean.replace(/\/+/g, '/');
+
+    const hasSlash = clean.startsWith('/');
+    const naked = hasSlash ? clean.substring(1) : clean;
+
+    if (naked.startsWith('(tabs)/')) {
+      return '/' + naked;
+    }
+
+    const tabPaths = [
+      'cancionero',
+      'calendario',
+      'fotos',
+      'mas',
+      'index',
+      'contigo',
+    ];
+
+    const isTab = tabPaths.some(p => naked === p || naked.startsWith(p + '/'));
+    if (isTab) {
+      return '/(tabs)/' + naked;
+    }
+
+    return '/' + naked;
+  };
+
   // Mapeo de rutas internas a etiquetas + iconos (coherente con notifications.tsx)
   const ROUTE_LABELS: Record<
     string,
@@ -301,9 +387,14 @@ export default function Home() {
     '/(tabs)/mas': { label: 'Más', icon: 'more-horiz' },
     '/(tabs)/index': { label: 'Inicio', icon: 'home' },
     '/wordle': { label: 'Wordle', icon: 'games' },
+    '/(tabs)/contigo': { label: 'Contigo', icon: 'favorite' },
+    '/(tabs)/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
+    '/(tabs)/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
+    '/(tabs)/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
+    '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
   };
   const internalRouteInfo = latestNotification?.internalRoute
-    ? (ROUTE_LABELS[latestNotification.internalRoute] ?? null)
+    ? (ROUTE_LABELS[normalizeRoute(latestNotification.internalRoute)] ?? ROUTE_LABELS[latestNotification.internalRoute] ?? null)
     : null;
   const internalRouteLabel = internalRouteInfo?.label ?? null;
 
@@ -311,7 +402,7 @@ export default function Home() {
     const btn = latestNotification?.actionButton;
     if (!btn) return;
     if (btn.isInternal) {
-      router.push(btn.url as any);
+      router.push(normalizeRoute(btn.url) as any);
     } else {
       Linking.openURL(btn.url).catch((e) => console.error(e));
     }
@@ -322,7 +413,7 @@ export default function Home() {
       style={[styles.safeArea, { backgroundColor: theme.background }]}
       edges={['top']}
     >
-      <SettingsPanel
+      <SettingsBottomSheet
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
       />
@@ -351,7 +442,7 @@ export default function Home() {
         ]}
       >
         <ScreenHero
-          compact
+          compact={false}
           title="MCM App"
           titleStyle={styles.logoText}
           left={
@@ -361,22 +452,42 @@ export default function Home() {
           }
           right={
             <>
-              <TouchableOpacity
-                onPress={() => setSettingsVisible(true)}
-                style={styles.headerIconBtn}
-                accessibilityLabel="Perfil y ajustes"
-                accessibilityRole="button"
-              >
-                <MaterialIcons
-                  name="account-circle"
-                  size={26}
-                  color={theme.icon}
-                />
-              </TouchableOpacity>
+              {showUpdateBadge && (
+                <TouchableOpacity
+                  onPress={otaApply}
+                  style={[
+                    styles.headerBtn,
+                    {
+                      backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(163,189,49,0.15)' : 'rgba(163,189,49,0.12)'),
+                      borderColor: colors.success,
+                    },
+                  ]}
+                  accessibilityLabel="Actualización disponible. Toca para reiniciar"
+                  accessibilityRole="button"
+                >
+                  {Platform.OS === 'ios' && (
+                    <GlassSurface
+                      variant="regular"
+                      tintColor={colors.success}
+                    />
+                  )}
+                  <MaterialIcons
+                    name="system-update"
+                    size={22}
+                    color={colors.success}
+                  />
+                </TouchableOpacity>
+              )}
 
               {resolved.showNotificationsIcon && (
                 <TouchableOpacity
-                  style={styles.headerIconBtn}
+                  style={[
+                    styles.headerBtn,
+                    {
+                      backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+                      borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                    },
+                  ]}
                   onPress={() => setNotifSheetOpen(true)}
                   accessibilityLabel={
                     unreadCount > 0
@@ -385,10 +496,13 @@ export default function Home() {
                   }
                   accessibilityRole="button"
                 >
+                  {Platform.OS === 'ios' && (
+                    <GlassSurface variant="regular" />
+                  )}
                   <View style={styles.bellWrap}>
                     <MaterialIcons
                       name="notifications"
-                      size={24}
+                      size={22}
                       color={theme.icon}
                     />
                     {unreadCount > 0 && (
@@ -402,6 +516,28 @@ export default function Home() {
                   </View>
                 </TouchableOpacity>
               )}
+
+              <TouchableOpacity
+                onPress={() => setSettingsVisible(true)}
+                style={[
+                  styles.headerBtn,
+                  {
+                    backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+                    borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                  },
+                ]}
+                accessibilityLabel="Perfil y ajustes"
+                accessibilityRole="button"
+              >
+                {Platform.OS === 'ios' && (
+                  <GlassSurface variant="regular" />
+                )}
+                <MaterialIcons
+                  name="account-circle"
+                  size={22}
+                  color={theme.icon}
+                />
+              </TouchableOpacity>
             </>
           }
         />
@@ -412,6 +548,7 @@ export default function Home() {
         contentContainerStyle={[
           styles.scrollContent,
           isWide && styles.scrollContentWide,
+          Platform.OS === 'ios' && { paddingBottom: 120 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -626,6 +763,8 @@ export default function Home() {
                     onPress={() => {
                       if (item.key === 'comunica') {
                         setPendingMasScreen('Comunica');
+                      } else if (item.key === 'fotos') {
+                        setPendingMasScreen('Fotos');
                       }
                       if (item.href) router.push(item.href as any);
                     }}
@@ -695,115 +834,130 @@ export default function Home() {
                   onAction={() => router.push('/calendario')}
                   accentColor={accentColor}
                 />
-              ) : eventsLoading && upcomingEvents.length === 0 ? (
+              ) : eventsLoading && !hasUpcomingEvents ? (
                 /* Loading skeleton — shown only when there is no cached data */
                 <View style={styles.eventsSkeletonWrap}>
                   <Skeleton style={styles.eventSkeleton} />
                   <Skeleton style={styles.eventSkeleton} />
                 </View>
-              ) : upcomingEvents.length > 0 ? (
-                upcomingEvents.map((evt, idx) => {
-                  const evtDate = parseLocalDate(evt.startDate);
-                  const calColor =
-                    calendarConfigs[evt.calendarIndex]?.color ?? accentColor;
-                  const calName = calendarConfigs[evt.calendarIndex]?.name;
-                  return (
-                    <TouchableOpacity
-                      key={`${evt.title}|${evt.startDate}|${idx}`}
-                      style={StyleSheet.flatten([
-                        styles.eventCard,
-                        {
-                          backgroundColor: theme.card,
-                          borderColor:
-                            scheme === 'dark'
-                              ? 'rgba(255,255,255,0.09)'
-                              : 'rgba(0,0,0,0.06)',
-                          borderLeftColor: calColor,
-                        },
-                      ])}
-                      onPress={() =>
-                        router.push({
-                          pathname: '/calendario',
-                          params: { date: evt.startDate },
-                        } as any)
-                      }
-                      accessibilityRole="button"
-                      accessibilityLabel={`Evento: ${evt.title}`}
-                    >
-                      <View
-                        style={[
-                          styles.eventDateBox,
-                          { backgroundColor: hexAlpha(calColor, '18') },
-                        ]}
-                      >
-                        <Text style={[styles.eventMonth, { color: calColor }]}>
-                          {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
-                        </Text>
-                        <Text style={[styles.eventDay, { color: calColor }]}>
-                          {evtDate.getDate()}
-                        </Text>
-                      </View>
-
-                      <View style={styles.eventInfo}>
-                        <Text
-                          style={[
-                            styles.eventTitle,
+              ) : hasUpcomingEvents ? (
+                upcomingEventGroups.map((group) =>
+                  group.events.map((evt, idx) => {
+                    const isFirstInGroup = idx === 0;
+                    const evtDate = parseLocalDate(evt.startDate);
+                    const calColor =
+                      calendarConfigs[evt.calendarIndex]?.color ?? accentColor;
+                    const calName = calendarConfigs[evt.calendarIndex]?.name;
+                    return (
+                      <React.Fragment key={`${group.label}|${evt.title}|${evt.startDate}|${idx}`}>
+                        {isFirstInGroup && (
+                          <Text
+                            style={[
+                              styles.weekSeparator,
+                              { color: theme.icon },
+                            ]}
+                          >
+                            {group.label}
+                          </Text>
+                        )}
+                        <TouchableOpacity
+                          key={`${evt.title}|${evt.startDate}|${idx}`}
+                          style={StyleSheet.flatten([
+                            styles.eventCard,
                             {
-                              color: theme.text,
-                              fontSize: 13 * fontScale,
+                              backgroundColor: theme.card,
+                              borderColor:
+                                scheme === 'dark'
+                                  ? 'rgba(255,255,255,0.09)'
+                                  : 'rgba(0,0,0,0.06)',
+                              borderLeftColor: calColor,
                             },
-                          ]}
-                          numberOfLines={1}
+                          ])}
+                          onPress={() =>
+                            router.push({
+                              pathname: '/calendario',
+                              params: { date: evt.startDate },
+                            } as any)
+                          }
+                          accessibilityRole="button"
+                          accessibilityLabel={`Evento: ${evt.title}`}
                         >
-                          {evt.title}
-                        </Text>
-                        {calName && (
                           <View
                             style={[
-                              styles.calBadge,
+                              styles.eventDateBox,
                               { backgroundColor: hexAlpha(calColor, '18') },
                             ]}
                           >
-                            <Text
-                              style={[styles.calBadgeText, { color: calColor }]}
-                              numberOfLines={1}
-                            >
-                              {calName}
+                            <Text style={[styles.eventMonth, { color: calColor }]}>
+                              {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
+                            </Text>
+                            <Text style={[styles.eventDay, { color: calColor }]}>
+                              {evtDate.getDate()}
                             </Text>
                           </View>
-                        )}
-                        {evt.location ? (
-                          <View style={styles.eventMeta}>
-                            <MaterialIcons
-                              name="schedule"
-                              size={11}
-                              color={theme.icon}
-                            />
+
+                          <View style={styles.eventInfo}>
                             <Text
                               style={[
-                                styles.eventMetaText,
+                                styles.eventTitle,
                                 {
-                                  color: theme.icon,
-                                  fontSize: 11 * fontScale,
+                                  color: theme.text,
+                                  fontSize: 13 * fontScale,
                                 },
                               ]}
                               numberOfLines={1}
                             >
-                              {evt.location}
+                              {evt.title}
                             </Text>
+                            {calName && (
+                              <View
+                                style={[
+                                  styles.calBadge,
+                                  { backgroundColor: hexAlpha(calColor, '18') },
+                                ]}
+                              >
+                                <Text
+                                  style={[styles.calBadgeText, { color: calColor }]}
+                                  numberOfLines={1}
+                                >
+                                  {calName}
+                                </Text>
+                              </View>
+                            )}
+                            {evt.location ? (
+                              <View style={styles.eventMeta}>
+                                <MaterialIcons
+                                  name="schedule"
+                                  size={11}
+                                  color={theme.icon}
+                                />
+                                <Text
+                                  style={[
+                                    styles.eventMetaText,
+                                    {
+                                      color: theme.icon,
+                                      fontSize: 11 * fontScale,
+                                    },
+                                  ]}
+                                  numberOfLines={1}
+                                >
+                                  {evt.location}
+                                </Text>
+                              </View>
+                            ) : null}
                           </View>
-                        ) : null}
-                      </View>
 
-                      <MaterialIcons
-                        name="chevron-right"
-                        size={20}
-                        color={theme.icon}
-                        style={{ opacity: 0.3 }}
-                      />
-                    </TouchableOpacity>
-                  );
-                })
+                          <MaterialIcons
+                            name="chevron-right"
+                            size={20}
+                            color={theme.icon}
+                            style={{ opacity: 0.3 }}
+                          />
+                        </TouchableOpacity>
+                      </React.Fragment>
+                    );
+                  }),
+                )
               ) : (
                 /* No upcoming events */
                 <EmptyState
@@ -871,11 +1025,21 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm + 2, // 10
   } as ViewStyle,
   logoText: {
-    fontSize: 20,
+    fontSize: 34,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -1.4,
+    lineHeight: 38,
   } as TextStyle,
   headerIconBtn: { padding: spacing.sm } as ViewStyle,
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    overflow: 'hidden',
+  } as ViewStyle,
   bellWrap: { position: 'relative' } as ViewStyle,
   dotWrap: {
     position: 'absolute',
@@ -1104,6 +1268,14 @@ const styles = StyleSheet.create({
     height: 78,
     borderRadius: radii.lg,
   } as ViewStyle,
+  weekSeparator: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: spacing.sm + 2,
+    marginBottom: spacing.xs,
+    marginLeft: spacing.xs,
+    opacity: 0.7,
+  } as TextStyle,
   calendarButton: {
     alignItems: 'center',
     justifyContent: 'center',

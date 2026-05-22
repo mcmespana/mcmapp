@@ -4,6 +4,7 @@ import {
   useMemo,
   useLayoutEffect,
   useCallback,
+  useRef,
 } from 'react';
 import {
   FlatList,
@@ -11,15 +12,20 @@ import {
   View,
   StyleSheet,
   Platform,
+  Share,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
-import { SearchField } from 'heroui-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { filterSongsData } from '@/utils/filterSongsData';
+import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import SongListItem from '../../components/SongListItem';
+import BottomSheet from '@/components/BottomSheet';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 interface Song {
@@ -65,7 +71,11 @@ export default function SongsListScreen({
   navigation,
 }: {
   route: { params: { categoryId: string; categoryName: string } };
-  navigation: any;
+  navigation: {
+    navigate: (screen: string, params?: object) => void;
+    goBack: () => void;
+    setOptions: (opts: object) => void;
+  };
 }) {
   const { data: firebaseSongs, loading: loadingSongs } = useFirebaseData<
     Record<string, SongCategory>
@@ -77,13 +87,29 @@ export default function SongsListScreen({
   const songsData = useMemo(() => getSongsData(firebaseSongs), [firebaseSongs]);
   const { categoryId, categoryName } = route.params;
   const scheme = useColorScheme();
-  const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
+  const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
+  const styles = useMemo(
+    () =>
+      createStyles(
+        scheme || 'light',
+        insets.bottom,
+        layout.isWide,
+        layout.readableMaxWidth,
+      ),
+    [scheme, insets.bottom, layout.isWide, layout.readableMaxWidth],
+  );
   const isDark = scheme === 'dark';
+  const { addSong, removeSong, isSongSelected } = useSelectedSongs();
   const [search, setSearch] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [menuSong, setMenuSong] = useState<Song | null>(null);
+  // Message to share — stored in a ref so we can fire it after the sheet
+  // Modal is fully dismissed (iOS can't present two Modals simultaneously).
+  const pendingShareRef = useRef<string | null>(null);
   const isSearchAll = categoryId === '__ALL__';
 
   // In __ALL__ mode, search is always visible
@@ -158,10 +184,12 @@ export default function SongsListScreen({
                     numericPart = String(parseInt(filenameMatch[1], 10));
                   }
                 }
-                // ⚡ Bolt: Pre-calculate the clean title for sorting (Schwartzian transform)
-                // This prevents running the regex multiple times per item during the O(N log N) sort phase.
-                const sortTitle = song.title.replace(/^\d+\.\s*/, '').toLowerCase();
-                const searchableText = `${song.title || ''} ${song.author || ''}`.toLowerCase();
+                // Pre-calculate the clean title for sorting (Schwartzian transform)
+                const sortTitle = song.title
+                  .replace(/^\d+\.\s*/, '')
+                  .toLowerCase();
+                const searchableText =
+                  `${song.title || ''} ${song.author || ''}`.toLowerCase();
                 return {
                   ...song,
                   originalCategoryKey: categoryLetter,
@@ -200,8 +228,13 @@ export default function SongsListScreen({
                     numericPart = filenameMatch[1].padStart(2, '0');
                   }
                 }
-                const searchableText = `${song.title || ''} ${song.author || ''}`.toLowerCase();
-                return { ...song, numericFilenamePart: numericPart, searchableText };
+                const searchableText =
+                  `${song.title || ''} ${song.author || ''}`.toLowerCase();
+                return {
+                  ...song,
+                  numericFilenamePart: numericPart,
+                  searchableText,
+                };
               });
               songsWithNumericPart.sort((a, b) => {
                 const numA = parseInt(a.numericFilenamePart, 10) || Infinity;
@@ -241,6 +274,39 @@ export default function SongsListScreen({
     });
   }, [songs, search]);
 
+  const handleSongLongPress = useCallback((song: Song) => {
+    setMenuSong(song);
+  }, []);
+
+  const handleMenuSelect = useCallback(() => {
+    if (!menuSong) return;
+    if (isSongSelected(menuSong.filename)) {
+      removeSong(menuSong.filename);
+    } else {
+      addSong(menuSong.filename);
+    }
+    setMenuSong(null);
+  }, [menuSong, isSongSelected, addSong, removeSong]);
+
+  // Captures the share message and closes the sheet. The actual Share.share()
+  // call happens in handleSheetCloseComplete, fired after the Modal is gone.
+  const handleMenuShare = useCallback(() => {
+    if (!menuSong) return;
+    const cleanTitle = menuSong.title.replace(/^\d+\.\s*/, '');
+    pendingShareRef.current = menuSong.author
+      ? `${cleanTitle} — ${menuSong.author}`
+      : cleanTitle;
+    setMenuSong(null);
+  }, [menuSong]);
+
+  const handleSheetCloseComplete = useCallback(() => {
+    const msg = pendingShareRef.current;
+    if (msg) {
+      pendingShareRef.current = null;
+      Share.share({ message: msg });
+    }
+  }, []);
+
   const handleSongPress = useCallback(
     (song: Song) => {
       const index = songs.findIndex((s) => s.filename === song.filename);
@@ -262,6 +328,77 @@ export default function SongsListScreen({
     [songs, categoryId, navigation],
   );
 
+  // ListHeaderComponent: search bar + song count
+  // Goes inside the FlatList so it scrolls with content on iOS
+  // (avoids getting hidden behind transparent header)
+  const listHeaderComponent = useMemo(
+    () => (
+      <View>
+        {searchVisible && (
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBox}>
+              <MaterialIcons
+                name="search"
+                size={18}
+                color={isDark ? '#636366' : '#8E8E93'}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Título, autor..."
+                placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
+                value={search}
+                onChangeText={setSearch}
+                autoFocus={!isSearchAll}
+                returnKeyType="search"
+                clearButtonMode="while-editing"
+              />
+              {Platform.OS !== 'ios' && search.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSearch('')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <MaterialIcons
+                    name="cancel"
+                    size={16}
+                    color={isDark ? '#636366' : '#8E8E93'}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+        {/* Conteo de canciones — siempre visible, muy sutil */}
+        <View style={styles.countRow}>
+          <Text style={styles.songCount}>
+            {filteredSongs.length}{' '}
+            {filteredSongs.length === 1 ? 'canción' : 'canciones'}
+            {search.length > 0 ? ' encontradas' : ''}
+          </Text>
+        </View>
+      </View>
+    ),
+    [
+      searchVisible,
+      search,
+      isSearchAll,
+      filteredSongs.length,
+      styles,
+      setSearch,
+    ],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: Song }) => (
+      <SongListItem
+        song={item}
+        onPress={handleSongPress}
+        onLongPress={handleSongLongPress}
+        isSearchAllMode={isSearchAll}
+      />
+    ),
+    [handleSongPress, handleSongLongPress, isSearchAll],
+  );
+
   if ((isLoading || loadingSongs) && songs.length === 0) {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
@@ -278,56 +415,56 @@ export default function SongsListScreen({
     );
   }
 
-  // ListHeaderComponent: search bar + song count
-  // Goes inside the FlatList so it scrolls with content on iOS
-  // (avoids getting hidden behind transparent header)
-  const ListHeader = () => (
-    <View>
-      {searchVisible && (
-        <View style={styles.searchContainer}>
-          <SearchField
-            value={search}
-            onChange={setSearch}
-          >
-            <SearchField.Group>
-              <SearchField.SearchIcon />
-              <SearchField.Input
-                placeholder="Título, autor..."
-                autoFocus={!isSearchAll}
-                returnKeyType="search"
-              />
-              <SearchField.ClearButton />
-            </SearchField.Group>
-          </SearchField>
-        </View>
-      )}
-      {/* Conteo de canciones — siempre visible, muy sutil */}
-      <View style={styles.countRow}>
-        <Text style={styles.songCount}>
-          {filteredSongs.length}{' '}
-          {filteredSongs.length === 1 ? 'canción' : 'canciones'}
-          {search.length > 0 ? ' encontradas' : ''}
-        </Text>
-      </View>
-    </View>
-  );
+  const menuSongClean = menuSong
+    ? menuSong.title.replace(/^\d+\.\s*/, '')
+    : '';
+  const menuSongSelected = menuSong ? isSongSelected(menuSong.filename) : false;
 
   return (
     <View style={styles.container}>
+      <BottomSheet
+        visible={!!menuSong}
+        onClose={() => setMenuSong(null)}
+        title={menuSongClean}
+        onCloseComplete={handleSheetCloseComplete}
+      >
+        <View style={styles.menuActions}>
+          <TouchableOpacity
+            style={styles.menuAction}
+            onPress={handleMenuSelect}
+          >
+            <MaterialIcons
+              name={menuSongSelected ? 'playlist-remove' : 'playlist-add'}
+              size={22}
+              color={isDark ? '#7AB3FF' : '#253883'}
+            />
+            <Text style={[styles.menuActionText, { color: isDark ? '#F5F5F7' : '#1C1C1E' }]}>
+              {menuSongSelected ? 'Quitar de la lista' : 'Añadir a la lista'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuAction}
+            onPress={handleMenuShare}
+          >
+            <MaterialIcons
+              name="share"
+              size={22}
+              color={isDark ? '#7AB3FF' : '#253883'}
+            />
+            <Text style={[styles.menuActionText, { color: isDark ? '#F5F5F7' : '#1C1C1E' }]}>
+              Compartir
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
       <FlatList
         data={filteredSongs}
         keyExtractor={(item) => item.filename}
         initialNumToRender={15}
         maxToRenderPerBatch={20}
         windowSize={5}
-        renderItem={({ item }) => (
-          <SongListItem
-            song={item}
-            onPress={handleSongPress}
-            isSearchAllMode={isSearchAll}
-          />
-        )}
-        ListHeaderComponent={<ListHeader />}
+        renderItem={renderItem}
+        ListHeaderComponent={listHeaderComponent}
         contentContainerStyle={styles.listContent}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -349,7 +486,12 @@ export default function SongsListScreen({
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark' | null) => {
+const createStyles = (
+  scheme: 'light' | 'dark' | null,
+  bottomInset: number = 0,
+  isWide: boolean = false,
+  maxWidth: number = 9999,
+) => {
   const isDark = scheme === 'dark';
   return StyleSheet.create({
     container: {
@@ -361,12 +503,28 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginRight: Platform.OS === 'web' ? 8 : 0,
     },
     searchContainer: {
-      paddingHorizontal: 16,
+      paddingHorizontal: isWide ? 0 : 16,
       paddingTop: 10,
       paddingBottom: 4,
     },
+    searchBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
+      borderRadius: isWide ? 14 : 10,
+      paddingHorizontal: isWide ? 14 : 10,
+      paddingVertical: isWide ? 12 : Platform.OS === 'ios' ? 9 : 7,
+      gap: 8,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: isWide ? 17 : 16,
+      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      padding: 0,
+      margin: 0,
+    },
     countRow: {
-      paddingHorizontal: 20,
+      paddingHorizontal: isWide ? 4 : 20,
       paddingTop: 10,
       paddingBottom: 2,
     },
@@ -376,8 +534,15 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       letterSpacing: 0.2,
     },
     listContent: {
-      paddingHorizontal: 12,
-      paddingBottom: isIOS ? 100 : 24,
+      paddingHorizontal: isWide ? 20 : 12,
+      paddingBottom: bottomInset + 20,
+      ...(isWide
+        ? {
+            maxWidth,
+            width: '100%',
+            alignSelf: 'center',
+          }
+        : null),
     },
     errorText: {
       fontSize: 16,
@@ -415,6 +580,21 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontSize: 14,
       color: isDark ? '#636366' : '#AEAEB2',
       textAlign: 'center',
+    },
+    menuActions: {
+      paddingBottom: 8,
+    },
+    menuAction: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      paddingVertical: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+    },
+    menuActionText: {
+      fontSize: 16,
+      fontWeight: '500',
     },
   });
 };

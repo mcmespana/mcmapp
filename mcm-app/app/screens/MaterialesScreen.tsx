@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Text, Platform } from 'react-native';
-import { PressableFeedback } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
 import spacing from '@/constants/spacing';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
+import { radii } from '@/constants/uiStyles';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -147,11 +147,16 @@ export default function MaterialesScreen() {
   const dia = materialesData ? materialesData[index] : null;
 
   if (!dia) {
-    return <ProgressWithMessage message="Cargando materiales..." />;
-  }
-
-  if (loading) {
-    return <ProgressWithMessage message="Actualizando materiales..." />;
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}>
+        <ScreenHero title="Materiales" />
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md }}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} style={{ height: 100, borderRadius: radii.xl }} />
+          ))}
+        </View>
+      </View>
+    );
   }
 
   return (

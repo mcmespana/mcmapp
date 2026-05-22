@@ -1,22 +1,21 @@
 import { useEffect, useState, useLayoutEffect, useRef } from 'react';
-import { StyleSheet, View, Platform, Dimensions, Animated } from 'react-native';
-import { PressableFeedback } from 'heroui-native';
+import { StyleSheet, View, Platform, Dimensions, Animated, TouchableOpacity } from 'react-native';
+import GlassSurface from '@/components/ui/GlassSurface';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import GestureRecognizer from 'react-native-swipe-gestures';
-import SongDisplay from '../../components/SongDisplay';
-import { useSongProcessor } from '../../hooks/useSongProcessor';
-import SongControls from '../../components/SongControls';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import SongDisplay from '@/components/SongDisplay';
+import { useSongProcessor } from '@/hooks/useSongProcessor';
+import SongControls from '@/components/SongControls';
 import { RouteProp, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../(tabs)/cancionero';
-import { useSelectedSongs } from '../../contexts/SelectedSongsContext';
-import { useChoirSession } from '../../contexts/ChoirSessionContext';
-import { IconSymbol } from '../../components/ui/IconSymbol';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useColorScheme } from '../../hooks/useColorScheme';
-import ChoirSessionBanner from '../../components/playlist/ChoirSessionBanner';
+import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
+import { useChoirSession } from '@/contexts/ChoirSessionContext';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
-import colors, { Colors, UIColors } from '@/constants/colors';
-import { shadows } from '@/constants/uiStyles';
+import { Colors } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
@@ -139,49 +138,9 @@ export default function SongDetailScreen({
 
   const isSelected = isSongSelected(filename);
 
-  // Android/Web: header button
   useLayoutEffect(() => {
-    if (isIOS || !filename) return;
-
-    const currentlySelected = isSelected;
-    const headerRight = () => (
-      <PressableFeedback
-        onPress={() => {
-          if (currentlySelected) {
-            removeSong(filename);
-          } else {
-            addSong(filename);
-          }
-        }}
-        style={styles.headerButton}
-        accessibilityLabel={
-          currentlySelected ? 'Quitar de selección' : 'Añadir a selección'
-        }
-      >
-        <PressableFeedback.Highlight />
-        <IconSymbol
-          name={currentlySelected ? 'checkmark.circle.fill' : 'plus.circle'}
-          size={24}
-          color={
-            Platform.OS === 'web'
-              ? currentlySelected
-                ? APPLE_SYSTEM_GREEN
-                : colors.primary
-              : '#fff'
-          }
-        />
-      </PressableFeedback>
-    );
-
-    navigation.setOptions({ headerRight, headerShown: true });
-
-    if (Platform.OS === 'web') {
-      const timer = setTimeout(() => {
-        navigation.setOptions({ headerRight, headerShown: true });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [navigation, filename, isSelected, addSong, removeSong]);
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   useEffect(() => {
     setIsFileLoading(true);
@@ -362,19 +321,58 @@ export default function SongDetailScreen({
     // Brief settings loading
   }
 
+  const screenBg = isDark ? Colors.dark.background : Colors.light.background;
+  const floatBtnBg = isDark ? 'rgba(44,44,46,0.92)' : 'rgba(255,255,255,0.92)';
+  const floatIconColor = isDark ? '#F5F5F7' : '#1C1C1E';
+  const btnTop = insets.top + 8;
+
+  const floatingButtons = (
+    <>
+      <TouchableOpacity
+        style={[
+          styles.floatBtn,
+          { top: btnTop, left: 16 },
+          Platform.OS !== 'ios' && { backgroundColor: floatBtnBg },
+        ]}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+        accessibilityLabel="Volver"
+      >
+        {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
+        <IconSymbol name="chevron.left" size={20} color={floatIconColor} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[
+          styles.floatBtn,
+          { top: btnTop, right: 16 },
+          Platform.OS !== 'ios' && { backgroundColor: floatBtnBg },
+        ]}
+        onPress={() => {
+          if (isSelected) removeSong(filename);
+          else addSong(filename);
+        }}
+        activeOpacity={0.7}
+        accessibilityLabel={isSelected ? 'Quitar de selección' : 'Añadir a selección'}
+      >
+        {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
+        <IconSymbol
+          name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
+          size={24}
+          color={isSelected ? APPLE_SYSTEM_GREEN : floatIconColor}
+        />
+      </TouchableOpacity>
+    </>
+  );
+
   const contentView = (
     <Animated.View
       style={[
         styles.container,
         { transform: [{ translateX: slideAnim }] },
-        {
-          backgroundColor: isDark
-            ? Colors.dark.background
-            : Colors.light.background,
-        },
+        { backgroundColor: screenBg },
       ]}
     >
-      {isIOS && <View style={{ height: insets.top + 52 }} />}
+      <View style={{ height: insets.top + 44 }} />
       <ChoirSessionBanner />
       <SongDisplay
         songHtml={songHtml}
@@ -405,70 +403,34 @@ export default function SongDetailScreen({
         currentCapoOverride={currentCapoOverride}
         onSetCapoOverride={handleSetCapoOverride}
       />
-
-      {/* iOS: floating overlay buttons (back + add-to-selection) */}
-      {isIOS && (
-        <View
-          style={[styles.iosFloatingBar, { top: insets.top + 8 }]}
-          pointerEvents="box-none"
-        >
-          <PressableFeedback
-            style={[styles.iosFloatBtn, isDark && styles.iosFloatBtnDark]}
-            onPress={() => navigation.goBack()}
-            accessibilityLabel="Volver"
-          >
-            <PressableFeedback.Highlight />
-            <IconSymbol
-              name="chevron.left"
-              size={26}
-              color={isDark ? UIColors.accentYellow : colors.primary}
-            />
-          </PressableFeedback>
-
-          <PressableFeedback
-            style={[
-              styles.iosFloatBtn,
-              isDark && styles.iosFloatBtnDark,
-              isSelected && styles.iosFloatBtnSelected,
-            ]}
-            onPress={() =>
-              isSelected ? removeSong(filename) : addSong(filename)
-            }
-            accessibilityLabel={
-              isSelected ? 'Quitar de selección' : 'Añadir a selección'
-            }
-          >
-            <PressableFeedback.Highlight />
-            <IconSymbol
-              name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
-              size={22}
-              color={
-                isSelected
-                  ? APPLE_SYSTEM_GREEN
-                  : isDark
-                    ? UIColors.accentYellow
-                    : colors.primary
-              }
-            />
-          </PressableFeedback>
-        </View>
-      )}
     </Animated.View>
   );
 
-  if (navigationList && typeof currentIndex === 'number') {
-    return (
-      <GestureRecognizer
-        style={{ flex: 1 }}
-        onSwipeLeft={handleSwipeRight}
-        onSwipeRight={handleSwipeLeft}
+  const gestureContent =
+    navigationList && typeof currentIndex === 'number' && Platform.OS !== 'web' ? (
+      <PanGestureHandler
+        activeOffsetX={[-20, 20]}
+        failOffsetY={[-15, 15]}
+        onHandlerStateChange={(event) => {
+          if (event.nativeEvent.state !== State.END) return;
+          const { translationX, velocityX } = event.nativeEvent;
+          if (Math.abs(translationX) < 60 || Math.abs(velocityX) < 150) return;
+          if (translationX > 0) handleSwipeLeft();
+          else handleSwipeRight();
+        }}
       >
         {contentView}
-      </GestureRecognizer>
+      </PanGestureHandler>
+    ) : (
+      contentView
     );
-  }
 
-  return contentView;
+  return (
+    <View style={{ flex: 1, backgroundColor: screenBg }}>
+      {gestureContent}
+      {floatingButtons}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -476,38 +438,24 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 0,
   },
-  headerButton: {
-    padding: 8,
-    marginRight: Platform.OS === 'web' ? 8 : 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...(Platform.OS === 'web' ? { cursor: 'pointer' as any } : {}),
-  },
-  // iOS floating bar: back (left) + add (right)
-  iosFloatingBar: {
+  floatBtn: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    pointerEvents: 'box-none',
-  } as any,
-  iosFloatBtn: {
-    width: 44,
-    height: 44,
-    // 44/2 — circular. radii.full (28) is for 56x56 FABs; here we keep
-    // a literal half-of-width because the button is custom-sized.
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    ...(shadows.md as object),
-  },
-  iosFloatBtnDark: {
-    backgroundColor: 'rgba(44,44,46,0.88)',
-  },
-  iosFloatBtnSelected: {
-    backgroundColor: 'rgba(52,199,89,0.15)',
+    overflow: 'hidden',
+    zIndex: 10,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.15)' } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        elevation: 4,
+      },
+    }),
   },
 });

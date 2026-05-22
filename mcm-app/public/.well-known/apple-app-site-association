@@ -1,0 +1,27 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["5P53S6QB23.com.familiaconsolacion.mcmapp"],
+        "components": [
+          {
+            "/": "/playlist",
+            "comment": "Cloud playlist import"
+          },
+          {
+            "/": "/playlist*",
+            "comment": "Cloud playlist import (con query)"
+          },
+          {
+            "/": "/coro",
+            "comment": "Choir session join"
+          },
+          {
+            "/": "/coro*",
+            "comment": "Choir session join (con query)"
+          }
+        ]
+      }
+    ]
+  }
+}

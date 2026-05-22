@@ -8,7 +8,7 @@ import {
   onValue,
   off,
 } from 'firebase/database';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
@@ -143,19 +143,7 @@ export const saveTokenToFirebase = async (
     const db = getDatabase(getFirebaseApp());
     const tokenData = buildTokenData(token, profileMetadata);
 
-    // Log de diagnóstico: mostrar exactamente qué se va a escribir
-    console.log('📝 Intentando escribir en Firebase:', {
-      path: `pushTokens/${safeTokenId}`,
-      tokenData: JSON.stringify(tokenData),
-    });
-
     await set(ref(db, `pushTokens/${safeTokenId}`), tokenData);
-    console.log(
-      '✅ Token guardado en Firebase para safeTokenId:',
-      safeTokenId,
-      'token:',
-      token.substring(0, 30) + '...',
-    );
   } catch (error: any) {
     // Log detallado para diagnosticar errores de Firebase (reglas, serialización, etc.)
     console.error('❌ Error guardando token en Firebase:');
@@ -185,17 +173,12 @@ export const updateLastActive = async (
       const existingData = snapshot.exists() ? snapshot.val() : null;
 
       if (!existingData?.token) {
-        // El token no está en Firebase — escribir datos completos
-        console.log(
-          '🔄 Token no encontrado en Firebase, guardando datos completos...',
-        );
         const tokenData = buildTokenData(token, profileMetadata);
         // Preservar registeredAt original si existe
         if (existingData?.registeredAt) {
           tokenData.registeredAt = existingData.registeredAt;
         }
         await set(deviceRef, tokenData);
-        console.log('✅ Token guardado en Firebase via heartbeat');
         return;
       }
 
@@ -252,7 +235,12 @@ export const getNotificationsHistory = async (): Promise<
     }
 
     const notificationsData = snapshot.val();
-    const notifications: NotificationData[] = Object.values(notificationsData);
+    const notifications: NotificationData[] = Object.entries(notificationsData).map(
+      ([key, val]: [string, any]) => ({
+        ...val,
+        id: val.id || key,
+      }),
+    );
 
     // Ordenar por fecha de creación (más recientes primero)
     return notifications.sort(
@@ -278,8 +266,12 @@ export const subscribeToNotifications = (
     const unsubscribe = onValue(notificationsRef, (snapshot) => {
       if (snapshot.exists()) {
         const notificationsData = snapshot.val();
-        const notifications: NotificationData[] =
-          Object.values(notificationsData);
+        const notifications: NotificationData[] = Object.entries(notificationsData).map(
+          ([key, val]: [string, any]) => ({
+            ...val,
+            id: val.id || key,
+          }),
+        );
 
         // Ordenar por fecha
         const sorted = notifications.sort(
@@ -339,7 +331,6 @@ export const saveReceivedNotificationLocally = async (
         NOTIFICATIONS_HISTORY_KEY,
         JSON.stringify(limited),
       );
-      console.log('📝 Notificación guardada localmente:', notification.title);
     }
   } catch (error) {
     console.error('Error guardando notificación localmente:', error);
@@ -531,7 +522,6 @@ export const getUnreadNotificationsCount = async (): Promise<number> => {
 export const clearLocalNotifications = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem(NOTIFICATIONS_HISTORY_KEY);
-    console.log('🗑️ Historial local limpiado');
   } catch (error) {
     console.error('Error limpiando historial local:', error);
   }
@@ -581,9 +571,6 @@ export const initializeNewUserReadStatus = async (
 
     if (toMarkRead.length > 0) {
       await markAllNotificationsAsRead(toMarkRead);
-      console.log(
-        `📖 Primer uso: ${toMarkRead.length} notificaciones antiguas marcadas como leídas`,
-      );
     }
 
     return true;

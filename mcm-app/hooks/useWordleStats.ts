@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDatabase, push, ref, set } from 'firebase/database';
-import { getFirebaseApp } from './firebaseApp';
+import { getFirebaseApp } from '../utils/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from './useResolvedProfileConfig';
 
@@ -51,6 +51,7 @@ export default function useWordleStats() {
   }, []);
 
   const recordGame = async (attempts: number, key: string) => {
+    if (attempts < 1 || attempts > 6) return;
     const newStats: WordleStats = {
       ...stats,
       played: stats.played + 1,
@@ -66,6 +67,7 @@ export default function useWordleStats() {
   };
 
   const saveResultToServer = async (key: string, attempts: number) => {
+    if (attempts < 1 || attempts > 6) return;
     try {
       const db = getDatabase(getFirebaseApp());
       const [date, cycle] = key.split('_');

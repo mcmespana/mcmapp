@@ -133,7 +133,7 @@ export default function FotosScreen() {
       return (
         <Spinner
           size="lg"
-          color={ThemeColors.light.tint}
+          color={ThemeColors[scheme ?? 'light'].tint}
           style={{ marginVertical: 20 }}
         />
       );

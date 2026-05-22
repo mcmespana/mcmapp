@@ -1,14 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Platform,
+  Animated,
+  Pressable,
+  TouchableOpacity,
+} from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import GlassSurface from '@/components/ui/GlassSurface';
 import { useToast } from '@/contexts/AppToastContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEFAULT_FONT_SIZE_EM } from '../contexts/SettingsContext';
-import SongFontPanel from './SongFontPanel';
-import TransposePanel from './TransposePanel';
+import SongFontBottomSheet from './SongFontBottomSheet';
+import TransposeBottomSheet from './TransposeBottomSheet';
 import ReportBugsModal from './ReportBugsModal';
 import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface FontOption {
@@ -69,7 +79,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   onSetCapoOverride,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
-  const [showTransposePanel, setShowTransposePanel] = useState(false);
+  const [showTransposeBottomSheet, setShowTransposeBottomSheet] = useState(false);
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showReportBugsModal, setShowReportBugsModal] = useState(false);
   const [showSecretPanel, setShowSecretPanel] = useState(false);
@@ -77,7 +87,17 @@ const SongControls: React.FC<SongControlsProps> = ({
   const { toast } = useToast();
   const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
   const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  // En iPad / web amplio el contenido del SongDetail está centrado con
+  // `contentMaxWidth`. Alineamos el FAB con el borde derecho de ese
+  // contenedor centrado en vez de pegarlo al borde de la pantalla para
+  // que visualmente "pertenezca" a la card de la canción.
+  const fabRightOffset =
+    layout.isWide && layout.width > layout.contentMaxWidth
+      ? (layout.width - layout.contentMaxWidth) / 2 + 16
+      : 16;
 
   const hasModifications =
     currentTranspose !== 0 ||
@@ -93,7 +113,7 @@ const SongControls: React.FC<SongControlsProps> = ({
     setShowActionButtons(toOpen);
     Animated.spring(rotateAnim, {
       toValue: toOpen ? 1 : 0,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
       friction: 6,
     }).start();
   };
@@ -106,14 +126,14 @@ const SongControls: React.FC<SongControlsProps> = ({
   useEffect(() => {
     return () => {
       setShowActionButtons(false);
-      setShowTransposePanel(false);
+      setShowTransposeBottomSheet(false);
       setShowFontPanel(false);
       setShowReportBugsModal(false);
       setShowSecretPanel(false);
     };
   }, []);
 
-  const handleOpenTransposePanel = () => setShowTransposePanel(true);
+  const handleOpenTransposeBottomSheet = () => setShowTransposeBottomSheet(true);
   const handleOpenFontPanel = () => setShowFontPanel(true);
 
   const handleReportSuccess = () => {
@@ -190,14 +210,17 @@ const SongControls: React.FC<SongControlsProps> = ({
     <>
       {/* Scrim when menu is open */}
       {showActionButtons && (
-        <PressableFeedback style={styles.scrim} onPress={toggleMenu} />
+        <Pressable style={styles.scrim} onPress={toggleMenu} />
       )}
 
       {/* FAB & Action Menu */}
       <View
         style={[
           styles.fabContainer,
-          { bottom: isIOS ? insets.bottom + 60 : 24 },
+          {
+            bottom: insets.bottom + (isIOS ? 52 : 24),
+            right: fabRightOffset,
+          },
         ]}
       >
         {showActionButtons && (
@@ -230,7 +253,7 @@ const SongControls: React.FC<SongControlsProps> = ({
                       ? `Cejilla ${currentCapoOverride}`
                       : 'Cambiar tono / cejilla'
               }
-              onPress={handleOpenTransposePanel}
+              onPress={handleOpenTransposeBottomSheet}
               isActive={
                 currentTranspose !== 0 ||
                 (currentCapoOverride !== null &&
@@ -276,16 +299,22 @@ const SongControls: React.FC<SongControlsProps> = ({
           {hasModifications && !showActionButtons && (
             <View style={[styles.badge, isDark && styles.badgeDark]} />
           )}
-          <PressableFeedback
+          <TouchableOpacity
             style={[
               styles.fabMain,
-              isDark && styles.fabMainDark,
-              showActionButtons && styles.fabMainOpen,
+              Platform.OS !== 'ios' && isDark && styles.fabMainDark,
+              Platform.OS !== 'ios' && showActionButtons && styles.fabMainOpen,
             ]}
             onPress={toggleMenu}
+            activeOpacity={0.75}
             accessibilityLabel="Configuración"
           >
-            <PressableFeedback.Scale />
+            {Platform.OS === 'ios' && (
+              <GlassSurface
+                variant="regular"
+                tintColor={showActionButtons ? '#FF453A' : undefined}
+              />
+            )}
             <Animated.View
               style={{ transform: [{ rotate: rotateInterpolation }] }}
             >
@@ -295,11 +324,11 @@ const SongControls: React.FC<SongControlsProps> = ({
                 color={isDark ? '#fff' : '#1C1C1E'}
               />
             </Animated.View>
-          </PressableFeedback>
+          </TouchableOpacity>
         </View>
       </View>
 
-      <SongFontPanel
+      <SongFontBottomSheet
         visible={showFontPanel}
         onClose={() => setShowFontPanel(false)}
         availableFonts={availableFonts}
@@ -309,9 +338,9 @@ const SongControls: React.FC<SongControlsProps> = ({
         onSetFontFamily={onSetFontFamily}
       />
 
-      <TransposePanel
-        visible={showTransposePanel}
-        onClose={() => setShowTransposePanel(false)}
+      <TransposeBottomSheet
+        visible={showTransposeBottomSheet}
+        onClose={() => setShowTransposeBottomSheet(false)}
         currentTranspose={currentTranspose}
         onSetTranspose={handleSetTranspose}
         originalCapo={songCapo}
@@ -438,16 +467,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fabMain: {
-    backgroundColor: '#fff',
+    backgroundColor: Platform.OS === 'ios' ? 'transparent' : '#fff',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
     ...Platform.select({
       web: {
         width: 54,
         height: 54,
         borderRadius: 27,
-        boxShadow:
-          '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
+        boxShadow: '0 3px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08)',
         cursor: 'pointer',
       },
       default: {

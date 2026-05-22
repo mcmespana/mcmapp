@@ -15,7 +15,7 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
 import { getDatabase, ref, push, set } from 'firebase/database';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 
@@ -36,7 +36,7 @@ export default function SuggestSongModal({
 }: SuggestSongModalProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
 
@@ -114,7 +114,12 @@ export default function SuggestSongModal({
     titulo.trim().length > 0 && artista.trim().length > 0 && !isSubmitting;
 
   return (
-    <BottomSheet visible={visible} onClose={handleClose}>
+    <BottomSheet
+      visible={visible}
+      onClose={handleClose}
+      title="Sugerir canción 🎵"
+      paddingHorizontal={0}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -122,22 +127,6 @@ export default function SuggestSongModal({
         overScrollMode="never"
         contentContainerStyle={styles.content}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={handleClose}
-            style={styles.closeBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="close" size={22} color={theme.icon} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>
-            Sugerir canción 🎵
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
         {/* Título */}
         <Text style={[styles.fieldLabel, { color: theme.text }]}>Título *</Text>
         <TextInput
@@ -337,28 +326,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 48,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerSpacer: {
-    width: 32,
-  },
-  title: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: -0.3,
   },
   fieldLabel: {
     fontSize: 14,

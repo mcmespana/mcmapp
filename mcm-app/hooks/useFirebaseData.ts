@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getFirebaseApp } from './firebaseApp';
+import { getFirebaseApp } from '../utils/firebaseApp';
 import * as Network from 'expo-network';
 
 export function useFirebaseData<T>(
@@ -26,11 +26,12 @@ export function useFirebaseData<T>(
           state.isConnected && state.isInternetReachable !== false;
         setOffline(!connected);
 
-        const [localDataStr, localUpdatedAt, localHiddenStr] = await Promise.all([
-          AsyncStorage.getItem(`${storageKey}_data`),
-          AsyncStorage.getItem(`${storageKey}_updatedAt`),
-          AsyncStorage.getItem(`${storageKey}_hidden`),
-        ]);
+        const [localDataStr, localUpdatedAt, localHiddenStr] =
+          await Promise.all([
+            AsyncStorage.getItem(`${storageKey}_data`),
+            AsyncStorage.getItem(`${storageKey}_updatedAt`),
+            AsyncStorage.getItem(`${storageKey}_hidden`),
+          ]);
 
         if (localDataStr) {
           const parsed = JSON.parse(localDataStr);

@@ -54,7 +54,7 @@ app/
 │   ├── calendario.tsx          # Calendario: eventos ICS
 │   ├── fotos.tsx               # Galería de fotos
 │   └── mas.tsx                 # Más opciones (JubileoHome, Grupos, Materiales, etc.)
-├── (tabsdesactivados)/
+├── (disabled)/
 │   └── comunica.tsx            # Tab desactivada (movida fuera de tabs activos)
 ├── screens/                    # 20 pantallas individuales
 │   ├── CategoriesScreen.tsx    # Lista de categorías del cantoral
@@ -62,7 +62,7 @@ app/
 │   ├── SongDetailScreen.tsx    # Detalle de canción con acordes
 │   ├── SongFullscreenScreen.tsx # Modo presentación
 │   ├── SelectedSongsScreen.tsx # Playlist de canciones seleccionadas
-│   ├── JubileoHomeScreen.tsx   # Menú del Jubileo
+│   ├── EventHomeScreen.tsx     # Hub genérico de eventos (Jubileo, encuentros, etc.)
 │   ├── MasHomeScreen.tsx       # Menú "Más"
 │   ├── GruposScreen.tsx        # Grupos
 │   ├── MaterialesScreen.tsx    # Materiales (BBCode → HTML)
@@ -74,7 +74,6 @@ app/
 │   ├── WordleScreen.tsx        # Juego Wordle
 │   ├── ComidaScreen.tsx        # Comida
 │   ├── ComidaWebScreen.tsx     # Comida versión web
-│   ├── MonitoresWebScreen.tsx  # Monitores
 │   ├── AppsScreen.tsx          # Apps recomendadas
 │   └── MaterialPagesScreen.tsx # Páginas de materiales
 ├── wordle.tsx                  # Entrada al Wordle desde root stack
@@ -90,9 +89,9 @@ components/                     # ~40 componentes
 │   ├── TopColorBar.ios.tsx       # Barra de color superior (iOS)
 │   ├── IconSymbol.tsx / .ios.tsx  # Iconos por plataforma
 │   └── TabBarBackground.tsx / .ios.tsx
-├── Song*.tsx                   # SongControls, SongDisplay, SongFontPanel, SongListItem, SongSearch
+├── Song*.tsx                   # SongControls, SongDisplay, SongFontBottomSheet, SongListItem, SongSearch
 ├── Toast.tsx                   # Sistema de toasts
-├── SettingsPanel.tsx           # Panel de ajustes (Home)
+├── SettingsBottomSheet.tsx     # Bottom sheet de ajustes (Home, Mas, Contigo)
 ├── AppFeedbackModal.tsx        # Modal de feedback/bugs
 ├── UserProfileModal.tsx        # Modal de perfil de usuario
 ├── FormattedContent.tsx        # Renderizador de BBCode → HTML
@@ -108,7 +107,6 @@ contexts/                       # Estado global (React Context, NO Redux)
 └── SelectedSongsContext.tsx   # Playlist temporal (in-memory)
 
 hooks/                          # Custom hooks
-├── firebaseApp.ts             # Singleton de Firebase App
 ├── useFirebaseData.ts         # CLAVE: fetch genérico con caché offline
 ├── useSongProcessor.ts        # ChordPro → HTML
 ├── useCalendarEvents.ts       # ICS → eventos
@@ -134,6 +132,7 @@ constants/
 └── iconAssets.ts              # Precarga de iconos
 
 utils/
+├── firebaseApp.ts             # Singleton de Firebase App
 ├── chordNotation.ts           # Conversión acordes EN ↔ ES
 ├── filterSongsData.ts         # Filtra canciones borrador/pendiente
 ├── songUtils.ts               # Limpieza de títulos, mapeo de categorías
@@ -174,7 +173,7 @@ RootLayout (Stack)
 
 ## Sistema de Perfiles (reemplaza a los feature flags)
 
-> Antiguo `constants/featureFlags.ts` + `FeatureFlagsContext` eliminado. Toda la visibilidad se configura ahora desde Firebase RTDB (`/profileConfig`). Ver **`TODO_SISTEMA_PERFILES.md`** para el diseño completo.
+> Antiguo `constants/featureFlags.ts` + `FeatureFlagsContext` eliminado. Toda la visibilidad se configura ahora desde Firebase RTDB (`/profileConfig`).
 
 ### Piezas clave
 
@@ -306,7 +305,7 @@ const { data, loading, offline } = useFirebaseData<TipoData>(
 Documentar SÍ:
 
 - Nuevas pantallas o funcionalidades
-- Cambios en navegación o feature flags
+- Cambios en navegación o visibilidad por perfil
 - Nuevas dependencias o actualizaciones mayores
 - Cambios en estructura de Firebase
 - Fixes de bugs significativos
@@ -325,14 +324,13 @@ Documentar NO:
 | Entry point                  | `app/_layout.tsx`                                        |
 | Configuración de tabs        | `app/(tabs)/_layout.tsx`                                 |
 | Home screen                  | `app/(tabs)/index.tsx`                                   |
-| Sistema de perfiles (diseño) | `TODO_SISTEMA_PERFILES.md`                               |
 | Fallback de perfiles         | `constants/defaultProfileConfig.ts`                      |
 | Catálogo de IDs conocidos    | `constants/profileCatalog.ts`                            |
 | Resolver de perfil           | `utils/resolveProfileConfig.ts`                          |
 | Seed JSON de Firebase        | `firebase-seed/profileConfig.json`                       |
 | Colores                      | `constants/colors.ts`                                    |
 | Firebase config              | `constants/firebase.ts`                                  |
-| Firebase app singleton       | `hooks/firebaseApp.ts`                                   |
+| Firebase app singleton       | `utils/firebaseApp.ts`                                   |
 | Fetch de datos               | `hooks/useFirebaseData.ts`                               |
 | Procesador de canciones      | `hooks/useSongProcessor.ts`                              |
 | Parser de calendario         | `hooks/useCalendarEvents.ts`                             |
@@ -516,5 +514,5 @@ npx heroui-cli@latest agents-md --native --output AGENTS.md
 - `ReportBugsModal.tsx` es usado por `SongControls.tsx` — NO eliminar (las variantes *Fixed, *New, \*Simple ya fueron eliminadas)
 - `ErrorBoundary.tsx` envuelve toda la app en `_layout.tsx`
 - Splash screen: HelloWave con 3 repeticiones (900ms total)
-- Sistema de Perfiles: ver `TODO_SISTEMA_PERFILES.md`. Reemplaza al viejo `featureFlags.ts`
+- Sistema de Perfiles: reemplaza al viejo `featureFlags.ts`. Ver `types/profileConfig.ts` + `utils/resolveProfileConfig.ts`
 - Sistema de notificaciones push: ver `NOTIFICACIONES.md` en la raíz del monorepo

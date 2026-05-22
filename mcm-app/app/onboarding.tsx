@@ -30,6 +30,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import colors from '@/constants/colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import {
@@ -40,13 +41,47 @@ import type { ProfileType } from '@/types/profileConfig';
 
 type Step = 'welcome' | 'profile' | 'delegation' | 'success';
 
-const PROFILE_ICONS: Record<ProfileType, keyof typeof MaterialIcons.glyphMap> =
-  {
-    familia: 'family-restroom',
-    monitor: 'groups',
-    miembro: 'person',
-  };
+// "Otros" es un atajo visual del onboarding. Internamente mapea a
+// `miembro` + `mcm-espana`, así cubre a quien no se identifica con ningún
+// perfil ni delegación sin tener que extender la taxonomía real.
+const OTROS_PROFILE_ID = 'otros' as const;
+const OTROS_DELEGATION_ID = '__otros__' as const;
+const OTROS_PROFILE_DESCRIPTION =
+  'Si no te identificas con ninguno de los anteriores o simplemente quieres probar la app';
+const OTROS_DELEGATION_DESCRIPTION =
+  'Si no perteneces a ninguna o solo quieres probar la app';
+const OTROS_FALLBACK_PROFILE: ProfileType = 'miembro';
+const OTROS_FALLBACK_DELEGATION = 'mcm-espana';
 
+type OnboardingProfileId = ProfileType | typeof OTROS_PROFILE_ID;
+
+const PROFILE_ICONS: Record<
+  OnboardingProfileId,
+  keyof typeof MaterialIcons.glyphMap
+> = {
+  familia: 'family-restroom',
+  monitor: 'groups',
+  miembro: 'person',
+  otros: 'more-horiz',
+};
+
+function resolveOnboardingValues(
+  selectedProfile: OnboardingProfileId | null,
+  selectedDelegation: string | null,
+): { profileType: ProfileType; delegationId: string } {
+  const isOtrosProfile = selectedProfile === OTROS_PROFILE_ID;
+  const isOtrosDelegation = selectedDelegation === OTROS_DELEGATION_ID;
+  const profileType: ProfileType = isOtrosProfile
+    ? OTROS_FALLBACK_PROFILE
+    : ((selectedProfile as ProfileType | null) ?? DEFAULT_PROFILE_TYPE);
+  const delegationId =
+    isOtrosProfile || isOtrosDelegation
+      ? OTROS_FALLBACK_DELEGATION
+      : (selectedDelegation ?? DEFAULT_DELEGATION_ID);
+  return { profileType, delegationId };
+}
+
+// Static light-mode T used only for module-level StyleSheet defaults
 const T = {
   primary: colors.primary,
   secondary: colors.secondary,
@@ -58,6 +93,23 @@ const T = {
   border: 'rgba(0,0,0,0.07)',
 };
 
+function useThemeT() {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  return {
+    primary: colors.primary,
+    secondary: colors.secondary,
+    accent: colors.accent,
+    success: colors.success,
+    text: isDark ? '#FFFFFF' : '#11181C',
+    muted: isDark ? '#8E8E93' : '#687076',
+    bg: isDark ? '#1C1C1E' : '#ffffff',
+    card: isDark ? '#2C2C2E' : '#ffffff',
+    border: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)',
+    isDark,
+  };
+}
+
 const MAX_CONTENT_W = 520;
 
 /* ─────────────────────────────────────
@@ -65,6 +117,7 @@ const MAX_CONTENT_W = 520;
 ─────────────────────────────────────── */
 
 function ProgressDots({ current, total }: { current: number; total: number }) {
+  const TT = useThemeT();
   return (
     <View style={dotsStyles.row}>
       {Array.from({ length: total }, (_, i) => {
@@ -76,7 +129,7 @@ function ProgressDots({ current, total }: { current: number; total: number }) {
               dotsStyles.dot,
               {
                 width: active ? 22 : 6,
-                backgroundColor: active ? T.primary : 'rgba(37,56,131,0.18)',
+                backgroundColor: active ? TT.primary : 'rgba(37,56,131,0.18)',
               },
             ]}
           />
@@ -213,16 +266,20 @@ const btnStyles = StyleSheet.create({
 });
 
 function SkipButton({ onPress }: { onPress: () => void }) {
+  const TT = useThemeT();
   return (
     <Pressable
       onPress={onPress}
       hitSlop={10}
       accessibilityRole="button"
       accessibilityLabel="Saltar configuración"
-      style={({ pressed }) => [skipBtnStyles.pill, pressed && { opacity: 0.65 }]}
+      style={({ pressed }) => [
+        skipBtnStyles.pill,
+        pressed && { opacity: 0.65 },
+      ]}
     >
-      <Text style={skipBtnStyles.text}>Saltar</Text>
-      <MaterialIcons name="arrow-forward" size={13} color={T.primary} />
+      <Text style={[skipBtnStyles.text, { color: TT.primary }]}>Saltar</Text>
+      <MaterialIcons name="arrow-forward" size={13} color={TT.primary} />
     </Pressable>
   );
 }
@@ -487,19 +544,20 @@ function ProfileScreen({
   onSkip,
   animDir,
 }: {
-  profiles: { id: ProfileType; label: string; description: string }[];
-  selected: ProfileType | null;
-  setSelected: (id: ProfileType) => void;
+  profiles: { id: OnboardingProfileId; label: string; description: string }[];
+  selected: OnboardingProfileId | null;
+  setSelected: (id: OnboardingProfileId) => void;
   onContinue: () => void;
   onSkip: () => void;
   animDir: 'forward' | 'back';
 }) {
+  const TT = useThemeT();
   const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
 
   return (
     <Animated.View
       entering={Entering.duration(320).easing(Easing.bezier(0.22, 1, 0.36, 1))}
-      style={stepStyles.root}
+      style={[stepStyles.root, { backgroundColor: TT.bg }]}
     >
       <View style={stepStyles.topBar}>
         <View />
@@ -512,10 +570,12 @@ function ProfileScreen({
 
       <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
         <View style={stepStyles.heroIcon}>
-          <MaterialIcons name="person-search" size={28} color={T.primary} />
+          <MaterialIcons name="person-search" size={28} color={TT.primary} />
         </View>
-        <Text style={stepStyles.heroTitle}>¿Quién eres?</Text>
-        <Text style={stepStyles.heroSub}>
+        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
+          ¿Quién eres?
+        </Text>
+        <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
           Dinos quién eres y te mostraremos lo que más te interesa.
         </Text>
       </Animated.View>
@@ -538,6 +598,7 @@ function ProfileScreen({
                 onPress={() => setSelected(p.id)}
                 style={({ pressed }) => [
                   cardStyles.card,
+                  { backgroundColor: TT.card, borderColor: TT.border },
                   sel && cardStyles.cardSelected,
                   pressed && { transform: [{ scale: 0.97 }] },
                 ]}
@@ -551,19 +612,19 @@ function ProfileScreen({
                   <MaterialIcons
                     name={PROFILE_ICONS[p.id]}
                     size={24}
-                    color={sel ? '#fff' : T.primary}
+                    color={sel ? '#fff' : TT.primary}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={[
                       cardStyles.cardTitle,
-                      { color: sel ? T.primary : T.text },
+                      { color: sel ? TT.primary : TT.text },
                     ]}
                   >
                     {p.label}
                   </Text>
-                  <Text style={cardStyles.cardDesc} numberOfLines={2}>
+                  <Text style={[cardStyles.cardDesc, { color: TT.muted }]} numberOfLines={3}>
                     {p.description}
                   </Text>
                 </View>
@@ -571,7 +632,7 @@ function ProfileScreen({
                   <MaterialIcons
                     name="check-circle"
                     size={22}
-                    color={T.primary}
+                    color={TT.primary}
                   />
                 )}
               </Pressable>
@@ -603,24 +664,27 @@ function DelegationScreen({
   onBack,
   onSkip,
 }: {
-  delegations: { id: string; label: string }[];
+  delegations: { id: string; label: string; description?: string }[];
   selected: string | null;
   setSelected: (id: string) => void;
   onFinish: () => void;
   onBack: () => void;
   onSkip: () => void;
 }) {
+  const TT = useThemeT();
   return (
     <Animated.View
       entering={SlideInRight.duration(320).easing(
         Easing.bezier(0.22, 1, 0.36, 1),
       )}
-      style={stepStyles.root}
+      style={[stepStyles.root, { backgroundColor: TT.bg }]}
     >
       <View style={stepStyles.topBar}>
         <Pressable onPress={onBack} hitSlop={12} style={stepStyles.backBtn}>
-          <MaterialIcons name="arrow-back-ios" size={16} color={T.primary} />
-          <Text style={stepStyles.backLabel}>Atrás</Text>
+          <MaterialIcons name="arrow-back-ios" size={16} color={TT.primary} />
+          <Text style={[stepStyles.backLabel, { color: TT.primary }]}>
+            Atrás
+          </Text>
         </Pressable>
         <SkipButton onPress={onSkip} />
       </View>
@@ -631,10 +695,12 @@ function DelegationScreen({
 
       <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
         <View style={stepStyles.heroIcon}>
-          <MaterialIcons name="location-on" size={28} color={T.primary} />
+          <MaterialIcons name="location-on" size={28} color={TT.primary} />
         </View>
-        <Text style={stepStyles.heroTitle}>¿De qué delegación?</Text>
-        <Text style={stepStyles.heroSub}>
+        <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
+          ¿De qué delegación?
+        </Text>
+        <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
           Recibirás las notificaciones y el calendario de tu delegación.
         </Text>
       </Animated.View>
@@ -657,26 +723,37 @@ function DelegationScreen({
                 onPress={() => setSelected(d.id)}
                 style={({ pressed }) => [
                   delegStyles.row,
+                  { borderColor: TT.border, backgroundColor: TT.card },
                   sel && delegStyles.rowSelected,
                   pressed && { transform: [{ scale: 0.98 }] },
                 ]}
               >
-                <Text
-                  style={[
-                    delegStyles.label,
-                    {
-                      color: sel ? T.primary : T.text,
-                      fontWeight: sel ? '700' : '500',
-                    },
-                  ]}
-                >
-                  {d.label}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      delegStyles.label,
+                      {
+                        color: sel ? TT.primary : TT.text,
+                        fontWeight: sel ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    {d.label}
+                  </Text>
+                  {d.description ? (
+                    <Text
+                      style={[delegStyles.desc, { color: TT.muted }]}
+                      numberOfLines={2}
+                    >
+                      {d.description}
+                    </Text>
+                  ) : null}
+                </View>
                 {sel && (
                   <MaterialIcons
                     name="check-circle"
                     size={20}
-                    color={T.primary}
+                    color={TT.primary}
                   />
                 )}
               </Pressable>
@@ -685,12 +762,12 @@ function DelegationScreen({
         })}
       </ScrollView>
 
-      <View style={stepStyles.footer}>
+      <View style={[stepStyles.footer, { borderTopColor: TT.border }]}>
         <PrimaryButton
           label="¡Empezar!"
           onPress={onFinish}
           disabled={!selected}
-          color={T.accent}
+          color={TT.accent}
         />
       </View>
     </Animated.View>
@@ -706,10 +783,11 @@ function SuccessScreen({
   delegation,
   onContinue,
 }: {
-  profile: { id: ProfileType; label: string } | null;
+  profile: { id: OnboardingProfileId; label: string } | null;
   delegation: { id: string; label: string } | null;
   onContinue: () => void;
 }) {
+  const TT = useThemeT();
   const ripple = useSharedValue(0);
   useEffect(() => {
     ripple.value = withDelay(
@@ -727,7 +805,10 @@ function SuccessScreen({
   }));
 
   return (
-    <Animated.View entering={FadeIn.duration(380)} style={successStyles.root}>
+    <Animated.View
+      entering={FadeIn.duration(380)}
+      style={[successStyles.root, { backgroundColor: TT.bg }]}
+    >
       <Animated.View
         entering={FadeIn.duration(550).easing(
           Easing.bezier(0.34, 1.56, 0.64, 1),
@@ -736,19 +817,19 @@ function SuccessScreen({
       >
         <Animated.View style={[successStyles.iconRipple, rippleStyle]} />
         <View style={successStyles.iconCircle}>
-          <MaterialIcons name="check-circle" size={48} color={T.success} />
+          <MaterialIcons name="check-circle" size={48} color={TT.success} />
         </View>
       </Animated.View>
 
       <Animated.Text
         entering={FadeInDown.delay(120).duration(380)}
-        style={successStyles.title}
+        style={[successStyles.title, { color: TT.text }]}
       >
         ¡Todo listo!
       </Animated.Text>
       <Animated.Text
         entering={FadeInDown.delay(180).duration(380)}
-        style={successStyles.sub}
+        style={[successStyles.sub, { color: TT.muted }]}
       >
         ¡Gracias! Tu comunidad te espera.
       </Animated.Text>
@@ -763,15 +844,19 @@ function SuccessScreen({
               <MaterialIcons
                 name={PROFILE_ICONS[profile.id]}
                 size={20}
-                color={T.primary}
+                color={TT.primary}
               />
-              <Text style={successStyles.pillText}>{profile.label}</Text>
+              <Text style={[successStyles.pillText, { color: TT.primary }]}>
+                {profile.label}
+              </Text>
             </View>
           )}
           {delegation && (
             <View style={successStyles.pill}>
-              <MaterialIcons name="location-on" size={20} color={T.primary} />
-              <Text style={successStyles.pillText}>{delegation.label}</Text>
+              <MaterialIcons name="location-on" size={20} color={TT.primary} />
+              <Text style={[successStyles.pillText, { color: TT.primary }]}>
+                {delegation.label}
+              </Text>
             </View>
           )}
         </Animated.View>
@@ -1006,6 +1091,11 @@ const delegStyles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   } as TextStyle,
+  desc: {
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
+  } as TextStyle,
 });
 
 /* ─────────────────────────────────────
@@ -1015,24 +1105,33 @@ const delegStyles = StyleSheet.create({
 export default function OnboardingScreen() {
   const { rawConfig } = useProfileConfigContext();
   const { setProfile } = useUserProfile();
+  const TT = useThemeT();
   const { width: screenW, height: screenH } = useWindowDimensions();
   const isWide = screenW >= 640;
 
   const [step, setStep] = useState<Step>('welcome');
   const [animDir, setAnimDir] = useState<'forward' | 'back'>('forward');
-  const [profileType, setProfileType] = useState<ProfileType | null>(null);
+  const [profileType, setProfileType] = useState<OnboardingProfileId | null>(
+    null,
+  );
   const [delegationId, setDelegationId] = useState<string | null>(null);
   const finishedRef = useRef(false);
 
   const profileEntries = useMemo<
-    { id: ProfileType; label: string; description: string }[]
+    { id: OnboardingProfileId; label: string; description: string }[]
   >(
-    () =>
-      (Object.keys(rawConfig.profiles) as ProfileType[]).map((key) => ({
-        id: key,
+    () => [
+      ...(Object.keys(rawConfig.profiles) as ProfileType[]).map((key) => ({
+        id: key as OnboardingProfileId,
         label: rawConfig.profiles[key].label,
         description: rawConfig.profiles[key].description,
       })),
+      {
+        id: OTROS_PROFILE_ID,
+        label: 'Otros',
+        description: OTROS_PROFILE_DESCRIPTION,
+      },
+    ],
     [rawConfig],
   );
 
@@ -1040,9 +1139,19 @@ export default function OnboardingScreen() {
   // Permite terminar el onboarding sin pertenecer a ninguna delegación local
   // (selecciona `_default`), evitando que esos usuarios queden con el banner
   // "completa tu perfil" para siempre.
-  const delegationEntries = useMemo<{ id: string; label: string }[]>(
+  // "Otros" va inmediatamente después: en una lista larga (>15 delegaciones)
+  // queremos que el atajo "no me identifico con ninguna" sea visible sin
+  // scrollear. Internamente se persiste como `mcm-espana`.
+  const delegationEntries = useMemo<
+    { id: string; label: string; description?: string }[]
+  >(
     () => [
       { id: DEFAULT_DELEGATION_ID, label: 'Sin delegación / General' },
+      {
+        id: OTROS_DELEGATION_ID,
+        label: 'Otros',
+        description: OTROS_DELEGATION_DESCRIPTION,
+      },
       ...rawConfig.delegationList,
     ],
     [rawConfig.delegationList],
@@ -1065,39 +1174,57 @@ export default function OnboardingScreen() {
   };
 
   const handleSkip = () => {
+    const resolved = resolveOnboardingValues(profileType, delegationId);
     persistAndExit({
-      profileType: profileType ?? DEFAULT_PROFILE_TYPE,
-      delegationId: delegationId ?? DEFAULT_DELEGATION_ID,
+      profileType: resolved.profileType,
+      delegationId: resolved.delegationId,
       onboardingCompleted: false,
     });
+  };
+
+  // Si el usuario eligió "Otros" como perfil, no le mostramos la pantalla de
+  // delegación: por dentro fijamos `miembro` + `mcm-espana`. El usuario no
+  // tiene por qué saber este mapeo.
+  const handleProfileContinue = () => {
+    if (profileType === OTROS_PROFILE_ID) {
+      setDelegationId(OTROS_DELEGATION_ID);
+      go('success');
+      return;
+    }
+    go('delegation');
   };
 
   const handleFinishToSuccess = () => {
     go('success');
   };
 
-  const profile = useMemo(
-    () =>
-      profileType
-        ? { id: profileType, label: rawConfig.profiles[profileType].label }
-        : null,
-    [profileType, rawConfig],
-  );
+  const profile = useMemo(() => {
+    if (!profileType) return null;
+    if (profileType === OTROS_PROFILE_ID) {
+      return { id: OTROS_PROFILE_ID, label: 'Otros' };
+    }
+    return { id: profileType, label: rawConfig.profiles[profileType].label };
+  }, [profileType, rawConfig]);
 
-  const delegation = useMemo(
-    () =>
-      delegationId
-        ? (delegationEntries.find((d) => d.id === delegationId) ?? null)
-        : null,
-    [delegationId, delegationEntries],
-  );
+  const delegation = useMemo(() => {
+    if (!delegationId) return null;
+    // Si el perfil ya es "Otros", evitamos un segundo pill duplicado.
+    if (profileType === OTROS_PROFILE_ID) return null;
+    return delegationEntries.find((d) => d.id === delegationId) ?? null;
+  }, [delegationId, delegationEntries, profileType]);
 
-  const frameWidth = isWide ? Math.min(screenW * 0.88, MAX_CONTENT_W) : ('100%' as const);
+  const frameWidth = isWide
+    ? Math.min(screenW * 0.88, MAX_CONTENT_W)
+    : ('100%' as const);
   const frameHeight = isWide ? Math.min(screenH * 0.88, 740) : undefined;
 
   return (
     <SafeAreaView
-      style={[shellStyles.safe, isWide && shellStyles.safeWide]}
+      style={[
+        shellStyles.safe,
+        { backgroundColor: TT.bg },
+        isWide && shellStyles.safeWide,
+      ]}
       edges={['top', 'bottom']}
     >
       <View
@@ -1115,7 +1242,7 @@ export default function OnboardingScreen() {
             selected={profileType}
             setSelected={setProfileType}
             animDir={animDir}
-            onContinue={() => go('delegation')}
+            onContinue={handleProfileContinue}
             onSkip={handleSkip}
           />
         )}
@@ -1133,13 +1260,17 @@ export default function OnboardingScreen() {
           <SuccessScreen
             profile={profile}
             delegation={delegation}
-            onContinue={() =>
+            onContinue={() => {
+              const resolved = resolveOnboardingValues(
+                profileType,
+                delegationId,
+              );
               persistAndExit({
-                profileType: profileType ?? DEFAULT_PROFILE_TYPE,
-                delegationId: delegationId ?? DEFAULT_DELEGATION_ID,
+                profileType: resolved.profileType,
+                delegationId: resolved.delegationId,
                 onboardingCompleted: true,
-              })
-            }
+              });
+            }}
           />
         )}
       </View>

@@ -7,15 +7,16 @@ import {
   Linking,
   StyleSheet,
 } from 'react-native';
-import { PressableFeedback } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import colors, { Colors } from '@/constants/colors';
+import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface Contacto {
@@ -72,10 +73,22 @@ export default function ContactosScreen() {
   };
 
   if (!data) {
-    return <ProgressWithMessage message="Cargando contactos..." />;
-  }
-  if (loading) {
-    return <ProgressWithMessage message="Actualizando contactos..." />;
+    return (
+      <PageContainer>
+        <ScrollView
+          style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <ScreenHero title="Contactos" />
+          <View style={{ gap: spacing.sm }}>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} style={{ height: 68, borderRadius: radii.lg }} />
+            ))}
+          </View>
+        </ScrollView>
+      </PageContainer>
+    );
   }
 
   const tints = isDark ? AVATAR_TINTS_DARK : AVATAR_TINTS;
@@ -149,7 +162,7 @@ export default function ContactosScreen() {
   );
 }
 
-const createStyles = (scheme: 'light' | 'dark') => {
+const createStyles = (scheme: 'light' | 'dark' | null) => {
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({

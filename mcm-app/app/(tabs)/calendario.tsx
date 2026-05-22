@@ -23,7 +23,7 @@ import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { useCalendarConfigs } from '@/hooks/useCalendarConfigs';
+import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import GlassFAB from '@/components/ui/GlassFAB';
@@ -86,7 +86,7 @@ export default function Calendario() {
     toggleCalendarVisibility,
     loading: configsLoading,
     offline,
-  } = useCalendarConfigs();
+  } = useCalendarConfig();
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -281,11 +281,7 @@ export default function Calendario() {
           </View>
           {ev.location ? (
             <View style={styles.eventMeta}>
-              <MaterialIcons
-                name="place"
-                size={14}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
-              />
+              <MaterialIcons name="place" size={14} color="#8E8E93" />
               <Text
                 style={[styles.eventLocation, isPast && styles.pastText]}
                 numberOfLines={1}
@@ -296,11 +292,7 @@ export default function Calendario() {
           ) : null}
           {ev.endDate && ev.startDate !== ev.endDate ? (
             <View style={styles.eventMeta}>
-              <MaterialIcons
-                name="date-range"
-                size={14}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
-              />
+              <MaterialIcons name="date-range" size={14} color="#8E8E93" />
               <Text style={[styles.eventDuration, isPast && styles.pastText]}>
                 Hasta {formatDate(ev.endDate)}
               </Text>
@@ -436,36 +428,38 @@ export default function Calendario() {
               if (Math.abs(dx) > 60) changeMonth(dx < 0 ? 1 : -1);
             }}
           >
-            <Calendar
-              key={calendarKey}
-              current={selectedDate}
-              onDayPress={(day) => {
-                if (day.dateString !== selectedDate) {
-                  setSelectedDate(day.dateString);
-                }
-              }}
-              onMonthChange={(month) => {
-                setSelectedDate(month.dateString);
-              }}
-              markedDates={markedDates}
-              markingType="multi-period"
-              firstDay={1}
-              style={styles.calendar}
-              theme={{
-                calendarBackground: isDark ? '#1C1C1E' : '#F2F2F7',
-                dayTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
-                monthTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
-                textSectionTitleColor: isDark ? '#8E8E93' : '#8E8E93',
-                selectedDayBackgroundColor: colors.info,
-                selectedDayTextColor: colors.white,
-                arrowColor: colors.info,
-                todayTextColor: colors.info,
-                textDayFontWeight: '500',
-                textMonthFontWeight: '700',
-                textDayHeaderFontWeight: '600',
-                textMonthFontSize: 18,
-              }}
-            />
+            <View style={styles.calendarCardContainer}>
+              <Calendar
+                key={`${calendarKey}-${scheme ?? 'light'}`}
+                current={selectedDate}
+                onDayPress={(day) => {
+                  if (day.dateString !== selectedDate) {
+                    setSelectedDate(day.dateString);
+                  }
+                }}
+                onMonthChange={(month) => {
+                  setSelectedDate(month.dateString);
+                }}
+                markedDates={markedDates}
+                markingType="multi-period"
+                firstDay={1}
+                style={{ borderRadius: 20 }}
+                theme={{
+                  calendarBackground: isDark ? '#2C2C2E' : '#FFFFFF',
+                  dayTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
+                  monthTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
+                  textSectionTitleColor: isDark ? '#8E8E93' : '#8E8E93',
+                  selectedDayBackgroundColor: colors.info,
+                  selectedDayTextColor: colors.white,
+                  arrowColor: colors.info,
+                  todayTextColor: colors.info,
+                  textDayFontWeight: '500',
+                  textMonthFontWeight: '700',
+                  textDayHeaderFontWeight: '600',
+                  textMonthFontSize: 18,
+                }}
+              />
+            </View>
           </View>
 
           {/* Filter chips */}
@@ -640,11 +634,11 @@ export default function Calendario() {
       {/* FAB to go to today */}
       {selectedDate !== todayStr ? (
         <GlassFAB
-          icon={Platform.OS === 'ios' ? 'arrow-back' : 'today'}
+          icon="today"
           onPress={goToToday}
           tintColor={colors.info}
           iconColor="#fff"
-          label={Platform.OS !== 'ios' ? 'Hoy' : undefined}
+          label="Hoy"
         />
       ) : null}
     </TabScreenWrapper>
@@ -697,6 +691,30 @@ const createStyles = (scheme: 'light' | 'dark') => {
     // Calendar
     calendar: {
       marginBottom: 4,
+    },
+    calendarCardContainer: {
+      marginHorizontal: 16,
+      marginTop: 8,
+      marginBottom: 12,
+      borderRadius: 20,
+      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: isDark ? 0.4 : 0.08,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 4,
+        },
+        web: {
+          boxShadow: isDark
+            ? '0 4px 12px rgba(0,0,0,0.3)'
+            : '0 4px 12px rgba(0,0,0,0.06)',
+        },
+      }),
     },
 
     // Filter chips
@@ -844,12 +862,12 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     eventLocation: {
       fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: '#8E8E93',
       flex: 1,
     },
     eventDuration: {
       fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: '#8E8E93',
     },
 
     // Empty state
@@ -938,7 +956,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     sectionWeekday: {
       fontSize: 11,
       fontWeight: '700',
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: '#8E8E93',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },

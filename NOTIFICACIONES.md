@@ -4,7 +4,7 @@
 
 ---
 
-## Estado actual (marzo 2026)
+## Estado actual (mayo 2026)
 
 ### Lo que funciona (cliente)
 - Permisos de notificaciones (solicitud al arrancar)
@@ -25,13 +25,10 @@
 - **Auto-inicialización de primer uso**: al registrarse, solo las 3 notificaciones más recientes (últimos 4 meses) quedan como no leídas; el resto se marca automáticamente como leídas
 
 ### Backend (panel admin)
-- **Repositorio**: `mcmespana/mcmpanel` — en desarrollo (marzo 2026)
+- **Repositorio**: `mcmespana/mcmpanel` — en desarrollo
 - El cliente de la app está **completamente listo** para recibir y mostrar notificaciones
 - El backend solo necesita: enviar via Expo Push API + guardar en Firebase `/notifications/{id}`
 - Ver Fase 2 más abajo para la especificación completa del backend
-
-### Rama `origin/notificaciones`
-Analizada y **descartable**. Solo tiene 1 commit sobre main con código OneSignal comentado. Todo el sistema actual (Expo Notifications + Firebase) se construyó en main y lo supera completamente. Se puede borrar la rama.
 
 ---
 
@@ -332,7 +329,7 @@ Nota: `/(tabs)/comunica` está desactivada actualmente.
 | IDs no coinciden | Backend no envía `data.id` | Backend DEBE incluir `data.id` con el UUID de Firebase |
 | Badge no se actualiza | Error en NotificationsContext | Verificar que `NotificationsProvider` envuelve `_layout.tsx`, revisar logs de `subscribeToNotifications` |
 | Historial vacío | Firebase rules, ID mismatch | Verificar `.read: true` en `/notifications`, verificar IDs |
-| Navegación no funciona | Ruta inválida, tab desactivada | Verificar ruta existe, verificar feature flags |
+| Navegación no funciona | Ruta inválida, tab desactivada | Verificar ruta existe, verificar perfil activo en Firebase |
 
 ---
 

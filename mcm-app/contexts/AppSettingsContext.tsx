@@ -3,6 +3,8 @@ import React, {
   useContext,
   useEffect,
   useState,
+  useCallback,
+  useMemo,
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -58,14 +60,17 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [settings, loading]);
 
-  const update = (values: Partial<AppSettings>) => {
+  const update = useCallback((values: Partial<AppSettings>) => {
     setSettingsState((prev) => ({ ...prev, ...values }));
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ settings, setSettings: update, loading }),
+    [settings, update, loading],
+  );
 
   return (
-    <AppSettingsContext.Provider
-      value={{ settings, setSettings: update, loading }}
-    >
+    <AppSettingsContext.Provider value={value}>
       {children}
     </AppSettingsContext.Provider>
   );

@@ -14,12 +14,15 @@ import {
   Separator,
   Button,
   PressableFeedback,
+  Skeleton,
 } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import ProgressWithMessage from '@/components/ProgressWithMessage';
+import spacing from '@/constants/spacing';
+import { radii } from '@/constants/uiStyles';
 import ScreenHero from '@/components/ui/ScreenHero';
+import PageContainer from '@/components/ui/PageContainer';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -50,7 +53,7 @@ export default function GruposScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
-  const { data: gruposData, loading } = useFirebaseData<Data>(
+  const { data: gruposData } = useFirebaseData<Data>(
     getEventFirebasePath(event, 'grupos'),
     getEventCacheKey(event, 'grupos'),
   );
@@ -123,78 +126,113 @@ export default function GruposScreen() {
   }, [search, data]);
 
   if (categoria && !data) {
-    return <ProgressWithMessage message="Cargando grupos..." />;
-  }
-
-  if (categoria && loading) {
-    return <ProgressWithMessage message="Actualizando grupos..." />;
+    return (
+      <PageContainer>
+        <ScrollView
+          style={{
+            flex: 1,
+            backgroundColor: Colors[scheme ?? 'light'].background,
+          }}
+          contentContainerStyle={{
+            paddingBottom: 100,
+            gap: spacing.md,
+          }}
+        >
+          <ScreenHero
+            title={categoria}
+            left={
+              <Pressable
+                onPress={() => setCategoria(null)}
+                style={styles.iconBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Volver"
+              >
+                <MaterialIcons name="arrow-back" size={24} color="#888" />
+              </Pressable>
+            }
+          />
+          <View style={{ paddingHorizontal: 16, gap: spacing.md }}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Skeleton
+                key={i}
+                style={{ height: 56, borderRadius: radii.lg }}
+              />
+            ))}
+          </View>
+        </ScrollView>
+      </PageContainer>
+    );
   }
 
   // Si hay un grupo seleccionado, mostrar la vista del grupo (prioridad máxima)
   if (grupo) {
     return (
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={
-          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
-        }
-      >
-        <View style={styles.backWrapper}>
-          <Pressable
-            onPress={() => {
-              setGrupo(null);
-              if (search.trim().length >= 3) {
-                setShowSearch(true);
-                setCategoria(null);
-              }
-            }}
-            style={styles.iconBtn}
-          >
-            <MaterialIcons name="arrow-back" size={24} color="#888" />
-          </Pressable>
-        </View>
-        <View style={styles.groupContainer}>
-          <View style={styles.groupHeader}>
-            <Text style={styles.groupTitle}>{grupo.nombre}</Text>
+      <PageContainer>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={
+            Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+          }
+        >
+          <ScreenHero
+            title={grupo.nombre}
+            kicker={categoria ?? undefined}
+            left={
+              <Pressable
+                onPress={() => {
+                  setGrupo(null);
+                  if (search.trim().length >= 3) {
+                    setShowSearch(true);
+                    setCategoria(null);
+                  }
+                }}
+                style={styles.iconBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Volver"
+              >
+                <MaterialIcons name="arrow-back" size={24} color="#888" />
+              </Pressable>
+            }
+          />
+          <View style={styles.groupContainer}>
+            {grupo.subtitulo && (
+              <View style={styles.quoteContainer}>
+                <View style={styles.quoteBorder} />
+                <Text style={styles.quoteText}>{grupo.subtitulo}</Text>
+              </View>
+            )}
+
+            {grupo.mapa && (
+              <Button
+                variant="secondary"
+                onPress={() => openMap(grupo.mapa)}
+                className="my-3"
+              >
+                <Button.Label>📍 Ubicación</Button.Label>
+              </Button>
+            )}
+
+            {grupo.responsable && (
+              <>
+                <Text style={styles.sectionHeader}>Acompaña...</Text>
+                <View style={styles.listItem}>
+                  <Text style={styles.listItemTitle}>{grupo.responsable}</Text>
+                </View>
+              </>
+            )}
+            <Text style={styles.sectionHeader}>
+              Forman parte... ({grupo.miembros?.length || 0})
+            </Text>
+            {(grupo.miembros || [])
+              .filter((m) => m && typeof m === 'string')
+              .map((m, idx) => (
+                <View key={idx} style={styles.listItem}>
+                  <Text style={styles.listItemTitle}>{m}</Text>
+                </View>
+              ))}
           </View>
-
-          {grupo.subtitulo && (
-            <View style={styles.quoteContainer}>
-              <View style={styles.quoteBorder} />
-              <Text style={styles.quoteText}>{grupo.subtitulo}</Text>
-            </View>
-          )}
-
-          {grupo.mapa && (
-            <Button
-              variant="secondary"
-              onPress={() => openMap(grupo.mapa)}
-              className="my-3"
-            >
-              <Button.Label>📍 Ubicación</Button.Label>
-            </Button>
-          )}
-
-          {grupo.responsable && (
-            <>
-              <Text style={styles.sectionHeader}>Acompaña...</Text>
-              <View style={styles.listItem}>
-                <Text style={styles.listItemTitle}>{grupo.responsable}</Text>
-              </View>
-            </>
-          )}
-          <Text style={styles.sectionHeader}>
-            Forman parte... ({grupo.miembros?.length || 0})
-          </Text>
-          {(grupo.miembros || [])
-            .filter((m) => m && typeof m === 'string')
-            .map((m, idx) => (
-              <View key={idx} style={styles.listItem}>
-                <Text style={styles.listItemTitle}>{m}</Text>
-              </View>
-            ))}
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </PageContainer>
     );
   }
 
@@ -205,168 +243,161 @@ export default function GruposScreen() {
       grouped[r.categoria].push({ grupo: r.grupo, matches: r.matches });
     });
     return (
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={
-          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
-        }
-      >
-        <View style={styles.searchContainer}>
-          <SearchField value={search} onChange={setSearch}>
-            <SearchField.Group>
-              <SearchField.SearchIcon />
-              <SearchField.Input
-                placeholder="Buscar grupo o persona"
-                autoFocus={showSearch}
-              />
-              <SearchField.ClearButton />
-            </SearchField.Group>
-          </SearchField>
-        </View>
-        {search.trim().length < 3 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.hintText}>Escribe al menos 3 caracteres</Text>
+      <PageContainer>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={
+            Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+          }
+        >
+          <ScreenHero
+            title="Buscar"
+            left={
+              <Pressable
+                onPress={() => {
+                  setShowSearch(false);
+                  setSearch('');
+                }}
+                style={styles.iconBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar búsqueda"
+              >
+                <MaterialIcons name="arrow-back" size={24} color="#888" />
+              </Pressable>
+            }
+          />
+          <View style={styles.searchContainer}>
+            <SearchField value={search} onChange={setSearch}>
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input
+                  placeholder="Buscar grupo o persona"
+                  autoFocus={showSearch}
+                />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
           </View>
-        ) : searchResults.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              No he encontrado nada, ya lo siento 😔
-            </Text>
-          </View>
-        ) : (
-          Object.entries(grouped).map(([cat, grupos]) => (
-            <View key={cat}>
-              <Text style={styles.sectionHeader}>{cat}</Text>
-              <ListGroup variant="transparent">
-                {grupos.map(({ grupo: g, matches }, idx) => (
-                  <React.Fragment key={idx}>
-                    <ListGroup.Item
-                      onPress={() => {
-                        setCategoria(cat);
-                        setGrupo(g);
-                        setShowSearch(false);
-                      }}
-                    >
-                      <ListGroup.ItemContent>
-                        <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
-                        {g.subtitulo ? (
-                          <ListGroup.ItemDescription>
-                            {g.subtitulo}
-                          </ListGroup.ItemDescription>
-                        ) : null}
-                      </ListGroup.ItemContent>
-                    </ListGroup.Item>
-                    {matches
-                      .filter((m) => m !== '__match_name__')
-                      .map((m, j) => (
-                        <View
-                          key={j}
-                          style={[styles.listItem, styles.matchItem]}
-                        >
-                          <Text style={styles.listItemTitle}>{m}</Text>
-                        </View>
-                      ))}
-                    {idx < grupos.length - 1 && <Separator />}
-                  </React.Fragment>
-                ))}
-              </ListGroup>
+          {search.trim().length < 3 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.hintText}>Escribe al menos 3 caracteres</Text>
             </View>
-          ))
-        )}
-      </ScrollView>
+          ) : searchResults.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                No he encontrado nada, ya lo siento 😔
+              </Text>
+            </View>
+          ) : (
+            Object.entries(grouped).map(([cat, grupos]) => (
+              <View key={cat}>
+                <Text style={styles.sectionHeader}>{cat}</Text>
+                <ListGroup variant="transparent">
+                  {grupos.map(({ grupo: g, matches }, idx) => (
+                    <React.Fragment key={idx}>
+                      <ListGroup.Item
+                        onPress={() => {
+                          setCategoria(cat);
+                          setGrupo(g);
+                          setShowSearch(false);
+                        }}
+                      >
+                        <ListGroup.ItemContent>
+                          <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
+                          {g.subtitulo ? (
+                            <ListGroup.ItemDescription>
+                              {g.subtitulo}
+                            </ListGroup.ItemDescription>
+                          ) : null}
+                        </ListGroup.ItemContent>
+                      </ListGroup.Item>
+                      {matches
+                        .filter((m) => m !== '__match_name__')
+                        .map((m, j) => (
+                          <View
+                            key={j}
+                            style={[styles.listItem, styles.matchItem]}
+                          >
+                            <Text style={styles.listItemTitle}>{m}</Text>
+                          </View>
+                        ))}
+                      {idx < grupos.length - 1 && <Separator />}
+                    </React.Fragment>
+                  ))}
+                </ListGroup>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </PageContainer>
     );
   }
 
   if (!categoria && !showSearch && search.trim().length < 3) {
     return (
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.catList}
-      >
-        <ScreenHero
-          title="Grupos"
-          right={
-            <Pressable
-              onPress={() => setShowSearch(true)}
-              style={styles.iconBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Buscar grupo"
+      <PageContainer>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.catList}
+        >
+          <ScreenHero
+            title="Grupos"
+            right={
+              <Pressable
+                onPress={() => setShowSearch(true)}
+                style={styles.iconBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Buscar grupo"
+              >
+                <MaterialIcons name="search" size={24} color="#888" />
+              </Pressable>
+            }
+          />
+          {categorias.map((c) => (
+            <PressableFeedback
+              key={c.name}
+              style={[styles.catCard, { backgroundColor: c.color }]}
+              onPress={() => setCategoria(c.name)}
             >
-              <MaterialIcons name="search" size={24} color="#888" />
-            </Pressable>
-          }
-        />
-        {categorias.map((c) => (
-          <PressableFeedback
-            key={c.name}
-            style={[styles.catCard, { backgroundColor: c.color }]}
-            onPress={() => setCategoria(c.name)}
-          >
-            <PressableFeedback.Highlight />
-            <MaterialIcons
-              name={c.icon}
-              size={40}
-              color={colors.white}
-              style={styles.catIcon}
-            />
-            <Text style={styles.catLabel}>{c.name}</Text>
-          </PressableFeedback>
-        ))}
-      </ScrollView>
+              <PressableFeedback.Highlight />
+              <MaterialIcons
+                name={c.icon}
+                size={40}
+                color={colors.white}
+                style={styles.catIcon}
+              />
+              <Text style={styles.catLabel}>{c.name}</Text>
+            </PressableFeedback>
+          ))}
+        </ScrollView>
+      </PageContainer>
     );
   }
 
   if (categoria && !grupo) {
     return (
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={
-          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
-        }
-      >
-        <View style={styles.backWrapper}>
-          <Pressable onPress={() => setCategoria(null)} style={styles.iconBtn}>
-            <MaterialIcons name="arrow-back" size={24} color="#888" />
-          </Pressable>
-        </View>
-        <ListGroup variant="transparent">
-          {(data?.[categoria] || []).map((g, idx) => (
-            <React.Fragment key={idx}>
-              <ListGroup.Item onPress={() => setGrupo(g)}>
-                <ListGroup.ItemContent>
-                  <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
-                  {g.subtitulo ? (
-                    <ListGroup.ItemDescription>
-                      {g.subtitulo}
-                    </ListGroup.ItemDescription>
-                  ) : null}
-                </ListGroup.ItemContent>
-              </ListGroup.Item>
-              {idx < (data?.[categoria]?.length ?? 0) - 1 && <Separator />}
-            </React.Fragment>
-          ))}
-        </ListGroup>
-      </ScrollView>
-    );
-  }
-
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={
-        Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
-      }
-    >
-      <View style={styles.backWrapper}>
-        <Pressable onPress={() => setCategoria(null)} style={styles.iconBtn}>
-          <MaterialIcons name="arrow-back" size={24} color="#888" />
-        </Pressable>
-      </View>
-      <ListGroup variant="transparent">
-        {(categoria && data?.[categoria] ? data[categoria] : []).map(
-          (g: Grupo, idx: number) => {
-            const list = categoria && data?.[categoria] ? data[categoria] : [];
-            return (
+      <PageContainer>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={
+            Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+          }
+        >
+          <ScreenHero
+            title={categoria}
+            left={
+              <Pressable
+                onPress={() => setCategoria(null)}
+                style={styles.iconBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Volver a categorías"
+              >
+                <MaterialIcons name="arrow-back" size={24} color="#888" />
+              </Pressable>
+            }
+          />
+          <ListGroup variant="transparent">
+            {(data?.[categoria] || []).map((g, idx) => (
               <React.Fragment key={idx}>
                 <ListGroup.Item onPress={() => setGrupo(g)}>
                   <ListGroup.ItemContent>
@@ -378,13 +409,61 @@ export default function GruposScreen() {
                     ) : null}
                   </ListGroup.ItemContent>
                 </ListGroup.Item>
-                {idx < list.length - 1 && <Separator />}
+                {idx < (data?.[categoria]?.length ?? 0) - 1 && <Separator />}
               </React.Fragment>
-            );
-          },
-        )}
-      </ListGroup>
-    </ScrollView>
+            ))}
+          </ListGroup>
+        </ScrollView>
+      </PageContainer>
+    );
+  }
+
+  return (
+    <PageContainer>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={
+          Platform.OS === 'ios' ? { paddingBottom: 100 } : undefined
+        }
+      >
+        <ScreenHero
+          title={categoria ?? 'Grupos'}
+          left={
+            <Pressable
+              onPress={() => setCategoria(null)}
+              style={styles.iconBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+            >
+              <MaterialIcons name="arrow-back" size={24} color="#888" />
+            </Pressable>
+          }
+        />
+        <ListGroup variant="transparent">
+          {(categoria && data?.[categoria] ? data[categoria] : []).map(
+            (g: Grupo, idx: number) => {
+              const list =
+                categoria && data?.[categoria] ? data[categoria] : [];
+              return (
+                <React.Fragment key={idx}>
+                  <ListGroup.Item onPress={() => setGrupo(g)}>
+                    <ListGroup.ItemContent>
+                      <ListGroup.ItemTitle>{g.nombre}</ListGroup.ItemTitle>
+                      {g.subtitulo ? (
+                        <ListGroup.ItemDescription>
+                          {g.subtitulo}
+                        </ListGroup.ItemDescription>
+                      ) : null}
+                    </ListGroup.ItemContent>
+                  </ListGroup.Item>
+                  {idx < list.length - 1 && <Separator />}
+                </React.Fragment>
+              );
+            },
+          )}
+        </ListGroup>
+      </ScrollView>
+    </PageContainer>
   );
 }
 
@@ -403,7 +482,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     catIcon: { marginBottom: 4 },
     catLabel: { fontSize: 18, fontWeight: 'bold', color: colors.white },
     groupListTitle: { fontSize: 16, color: theme.text },
-    backWrapper: { padding: 8 },
     sectionHeader: {
       fontSize: 16,
       fontWeight: 'bold',
@@ -412,17 +490,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingVertical: 8,
     },
     groupContainer: { paddingHorizontal: 16 },
-    groupHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    groupTitle: {
-      fontSize: 22,
-      fontWeight: 'bold',
-      marginVertical: 8,
-      color: theme.text,
-    },
     iconBtn: {
       padding: 8,
       borderRadius: 20,

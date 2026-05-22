@@ -1,5 +1,13 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Platform, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Platform,
+  Animated,
+  Pressable,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   RouteProp,
   useNavigation,
@@ -8,25 +16,241 @@ import {
 import { WebView } from 'react-native-webview';
 import { BlurView } from 'expo-blur';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Slider, PressableFeedback } from 'heroui-native';
+import * as Haptics from 'expo-haptics';
+import { PressableFeedback } from 'heroui-native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { Colors } from '../../constants/colors';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
+import {
+  AUTO_SCROLL_SPEEDS,
+  AUTO_SCROLL_CONTROLLER_JS,
+  useAutoScroller,
+} from '@/hooks/useAutoScroller';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
+
+const isIOS = Platform.OS === 'ios';
+const isWeb = Platform.OS === 'web';
+
+const triggerHaptic = (style: Haptics.ImpactFeedbackStyle) => {
+  if (Platform.OS === 'web') return;
+  Haptics.impactAsync(style).catch(() => {});
+};
+
+// ─── Controles de auto-scroll (segmented + play) ─────────────────────────────
+
+interface AutoScrollControlsProps {
+  isPlaying: boolean;
+  speedIndex: number;
+  onToggle: () => void;
+  onSelectSpeed: (i: number) => void;
+  isDark: boolean;
+  bottom: number;
+}
+
+function AutoScrollControls({
+  isPlaying,
+  speedIndex,
+  onToggle,
+  onSelectSpeed,
+  isDark,
+  bottom,
+}: AutoScrollControlsProps) {
+  const [expanded, setExpanded] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelHideTimer = useCallback(() => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleHide = useCallback(() => {
+    cancelHideTimer();
+    hideTimerRef.current = setTimeout(() => setExpanded(false), 3200);
+  }, [cancelHideTimer]);
+
+  const showPicker = useCallback(() => {
+    setExpanded(true);
+    scheduleHide();
+  }, [scheduleHide]);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: expanded ? 1 : 0,
+      duration: expanded ? 180 : 240,
+      useNativeDriver: true,
+    }).start();
+    if (!expanded) cancelHideTimer();
+  }, [expanded, fadeAnim, cancelHideTimer]);
+
+  useEffect(() => () => cancelHideTimer(), [cancelHideTimer]);
+
+  const handlePlay = useCallback(() => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    onToggle();
+    // Al iniciar reproducción mostramos brevemente el selector como pista visual.
+    if (!isPlaying) showPicker();
+  }, [onToggle, isPlaying, showPicker]);
+
+  const handleSelectSpeed = useCallback(
+    (i: number) => {
+      if (i !== speedIndex) triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+      onSelectSpeed(i);
+      showPicker();
+    },
+    [onSelectSpeed, speedIndex, showPicker],
+  );
+
+  const currentLabel = AUTO_SCROLL_SPEEDS[speedIndex].label;
+
+  return (
+    <View style={[styles.controlsCluster, { bottom }]} pointerEvents="box-none">
+      {/* Selector de velocidad — pill horizontal, sólo visible al interactuar */}
+      <Animated.View
+        style={[styles.speedPanel, { opacity: fadeAnim }]}
+        pointerEvents={expanded ? 'auto' : 'none'}
+      >
+        <TranslucentBg isDark={isDark} style={styles.speedPanelBg} />
+        <Text style={styles.speedHeading} numberOfLines={1}>
+          {currentLabel}
+        </Text>
+        <View
+          style={styles.segmentRow}
+          accessibilityRole="adjustable"
+          accessibilityLabel={`Velocidad de auto-scroll: ${currentLabel}`}
+        >
+          {AUTO_SCROLL_SPEEDS.map((s, i) => {
+            const selected = i === speedIndex;
+            return (
+              <Pressable
+                key={s.label}
+                style={({ pressed }) => [
+                  styles.segment,
+                  selected && styles.segmentSelected,
+                  pressed && styles.segmentPressed,
+                ]}
+                onPress={() => handleSelectSpeed(i)}
+                hitSlop={6}
+                accessibilityLabel={s.label}
+                accessibilityState={{ selected }}
+              >
+                <Text
+                  style={[
+                    styles.segmentText,
+                    selected && styles.segmentTextSelected,
+                  ]}
+                >
+                  {i + 1}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Animated.View>
+
+      {/* Play / Pause + acceso al selector con long-press */}
+      <PressableFeedback
+        style={styles.playButton}
+        onPress={handlePlay}
+        onLongPress={() => {
+          triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+          showPicker();
+        }}
+        accessibilityLabel={
+          isPlaying ? 'Pausar desplazamiento' : 'Iniciar desplazamiento'
+        }
+        accessibilityRole="button"
+      >
+        <PressableFeedback.Scale />
+        <TranslucentBg isDark={isDark} style={styles.playButtonBg} />
+        <MaterialIcons
+          name={isPlaying ? 'pause' : 'play-arrow'}
+          color="#FFFFFF"
+          size={28}
+        />
+        {/* Indicador discreto del nivel actual sobre el botón */}
+        <View style={styles.levelBadge} pointerEvents="none">
+          <Text style={styles.levelBadgeText}>{speedIndex + 1}</Text>
+        </View>
+      </PressableFeedback>
+    </View>
+  );
+}
+
+// ─── Fondo translúcido reutilizable ──────────────────────────────────────────
+
+function TranslucentBg({ isDark, style }: { isDark: boolean; style?: object }) {
+  if (isIOS) {
+    return (
+      <>
+        <BlurView
+          tint={isDark ? 'dark' : 'light'}
+          intensity={60}
+          style={[StyleSheet.absoluteFill, style]}
+        />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: isDark
+                ? 'rgba(20,20,22,0.35)'
+                : 'rgba(0,0,0,0.22)',
+            },
+            style,
+          ]}
+        />
+      </>
+    );
+  }
+  return (
+    <View
+      style={[
+        StyleSheet.absoluteFill,
+        isWeb
+          ? ({
+              backgroundColor: isDark
+                ? 'rgba(28,28,30,0.55)'
+                : 'rgba(0,0,0,0.42)',
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+            } as any)
+          : {
+              backgroundColor: isDark
+                ? 'rgba(40,40,42,0.82)'
+                : 'rgba(0,0,0,0.62)',
+            },
+        style,
+      ]}
+    />
+  );
+}
+
+// ─── Pantalla ────────────────────────────────────────────────────────────────
 
 export default function SongFullscreenScreen({
   route,
 }: {
   route: SongFullscreenRouteProp;
 }) {
-  const { author, key, capo, content } = route.params;
+  const { author, key, capo, content, title } = route.params;
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const scheme = useColorScheme();
+  const insets = useSafeAreaInsets();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
+
+  // Web: F y Esc salen del modo presentación.
+  useKeyboardShortcut('f', () => navigation.goBack());
+  useKeyboardShortcut('escape', () => navigation.goBack(), {
+    preventDefault: false,
+  });
+
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;
 
@@ -36,24 +260,35 @@ export default function SongFullscreenScreen({
     chordsVisible,
     currentFontSizeEm: fontSize * 1.6,
     currentFontFamily: fontFamily,
+    title,
     author,
     key,
     capo,
     notation,
     isFullscreen: true,
     isDark,
+    topInset: Math.max(insets.top, 16) + 56,
+    bottomInset: Math.max(insets.bottom, 16) + 96,
   });
 
-  const webViewRef = useRef<WebView>(null);
-  const divRef = useRef<HTMLDivElement | null>(null);
-  const [autoScroll, setAutoScroll] = useState(false);
-  const [scrollSpeed, setScrollSpeed] = useState(0.25);
-  const maxSpeed = 3;
-  const [sliderVisible, setSliderVisible] = useState(false);
-  const sliderOpacity = useRef(new Animated.Value(0)).current;
-  const sliderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const webViewRef = useRef<WebView | null>(null);
+  const webContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Fade-in entry animation
+  const autoScroll = useAutoScroller({
+    webViewRef,
+    webContainerRef,
+  });
+
+  // Atajos de teclado: espacio = play/pause, ↑/↓ = subir/bajar velocidad.
+  useKeyboardShortcut(' ', () => autoScroll.toggle());
+  useKeyboardShortcut('arrowup', () =>
+    autoScroll.setSpeedIndex(autoScroll.speedIndex + 1),
+  );
+  useKeyboardShortcut('arrowdown', () =>
+    autoScroll.setSpeedIndex(autoScroll.speedIndex - 1),
+  );
+
+  // Fade-in de entrada
   const fadeAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -61,52 +296,10 @@ export default function SongFullscreenScreen({
       duration: 400,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
-  const showSlider = useCallback(() => {
-    setSliderVisible(true);
-    Animated.timing(sliderOpacity, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-
-    if (sliderTimeoutRef.current) clearTimeout(sliderTimeoutRef.current);
-    sliderTimeoutRef.current = setTimeout(() => {
-      Animated.timing(sliderOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => setSliderVisible(false));
-    }, 2000);
-  }, [sliderOpacity]);
-
-  useEffect(() => {
-    const parent = navigation.getParent();
-    parent?.setOptions({ tabBarStyle: { display: 'none' } });
-    return () => {
-      parent?.setOptions({ tabBarStyle: undefined });
-    };
-  }, [navigation]);
-
-  useEffect(() => {
-    if (!autoScroll) return;
-    const id = setInterval(() => {
-      const delta = scrollSpeed * maxSpeed;
-      if (Platform.OS === 'web') {
-        if (divRef.current) {
-          divRef.current.scrollBy({ top: delta });
-        }
-      } else {
-        webViewRef.current?.injectJavaScript(
-          `window.scrollBy(0,${delta}); true;`,
-        );
-      }
-    }, 50);
-    return () => clearInterval(id);
-  }, [autoScroll, scrollSpeed]);
-
-  const isIOS = Platform.OS === 'ios';
+  const closeTop = Math.max(insets.top, 12) + 8;
+  const controlsBottom = Math.max(insets.bottom, 12) + 16;
 
   return (
     <Animated.View
@@ -115,38 +308,11 @@ export default function SongFullscreenScreen({
         { backgroundColor: theme.background, opacity: fadeAnim },
       ]}
     >
-      {/* Close button — glass effect */}
-      <PressableFeedback
-        style={[
-          styles.closeButton,
-          !isIOS &&
-            (isDark
-              ? styles.closeButtonDarkFallback
-              : styles.closeButtonFallback),
-        ]}
-        onPress={() => navigation.goBack()}
-        accessibilityLabel="Cerrar pantalla completa"
-      >
-        <PressableFeedback.Scale />
-        {isIOS && (
-          <BlurView
-            tint={isDark ? 'dark' : 'light'}
-            intensity={72}
-            style={[StyleSheet.absoluteFill, styles.blurFill]}
-          />
-        )}
-        <MaterialIcons
-          name="close"
-          color={isDark ? '#EBEBF0' : '#fff'}
-          size={20}
-        />
-      </PressableFeedback>
-
-      {/* Song content with horizontal breathing room */}
+      {/* Contenido de la canción */}
       <View style={styles.contentWrapper}>
-        {Platform.OS === 'web' ? (
+        {isWeb ? (
           <div
-            ref={divRef}
+            ref={webContainerRef}
             style={webContainerStyle as any}
             dangerouslySetInnerHTML={{ __html: songHtml }}
           />
@@ -155,77 +321,37 @@ export default function SongFullscreenScreen({
             ref={webViewRef}
             originWhitelist={['*']}
             source={{ html: songHtml }}
-            style={{ flex: 1 }}
+            style={{ flex: 1, backgroundColor: 'transparent' }}
             showsVerticalScrollIndicator={false}
+            contentInsetAdjustmentBehavior="never"
+            automaticallyAdjustContentInsets={false}
+            injectedJavaScript={AUTO_SCROLL_CONTROLLER_JS}
+            onLoadEnd={autoScroll.handleWebViewLoad}
+            onMessage={autoScroll.handleWebViewMessage}
           />
         )}
       </View>
 
-      {/* Vertical speed slider — liquid glass */}
-      {sliderVisible && (
-        <Animated.View
-          style={[
-            styles.sliderWrapper,
-            !isIOS && styles.sliderWrapperFallback,
-            { opacity: sliderOpacity },
-          ]}
-        >
-          {isIOS && (
-            <BlurView
-              tint={isDark ? 'dark' : 'light'}
-              intensity={72}
-              style={[StyleSheet.absoluteFill, styles.blurFill]}
-            />
-          )}
-          <Slider
-            value={Math.round(scrollSpeed * 100)}
-            onChange={(v) => {
-              setScrollSpeed((v as number) / 100);
-              showSlider();
-            }}
-            minValue={0}
-            maxValue={100}
-            step={1}
-            orientation="vertical"
-            style={styles.sliderControl}
-          >
-            <Slider.Track>
-              <Slider.Fill />
-              <Slider.Thumb />
-            </Slider.Track>
-          </Slider>
-        </Animated.View>
-      )}
-
-      {/* Play / pause button — liquid glass, semi-transparent when active */}
+      {/* Cerrar — esquina superior derecha */}
       <PressableFeedback
-        style={[
-          styles.scrollButton,
-          !isIOS &&
-            (isDark
-              ? styles.scrollButtonDarkFallback
-              : styles.scrollButtonFallback),
-          autoScroll && styles.scrollButtonActive,
-        ]}
-        onPress={() => {
-          setAutoScroll((s) => !s);
-          showSlider();
-        }}
+        style={[styles.closeButton, { top: closeTop }]}
+        onPress={() => navigation.goBack()}
+        accessibilityLabel="Cerrar pantalla completa"
       >
         <PressableFeedback.Scale />
-        {isIOS && (
-          <BlurView
-            tint={isDark ? 'dark' : 'light'}
-            intensity={72}
-            style={[StyleSheet.absoluteFill, styles.blurFill]}
-          />
-        )}
-        <MaterialIcons
-          name={autoScroll ? 'pause' : 'play-arrow'}
-          color={isDark ? '#EBEBF0' : '#fff'}
-          size={26}
-        />
+        <TranslucentBg isDark={isDark} style={{ borderRadius: 20 }} />
+        <MaterialIcons name="close" color="#FFFFFF" size={22} />
       </PressableFeedback>
+
+      {/* Controles de auto-scroll — esquina inferior derecha */}
+      <AutoScrollControls
+        isPlaying={autoScroll.isPlaying}
+        speedIndex={autoScroll.speedIndex}
+        onToggle={autoScroll.toggle}
+        onSelectSpeed={autoScroll.setSpeedIndex}
+        isDark={isDark}
+        bottom={controlsBottom}
+      />
     </Animated.View>
   );
 }
@@ -234,7 +360,6 @@ const webContainerStyle = {
   width: '100%',
   height: '100%',
   overflowY: 'auto',
-  paddingHorizontal: 12,
   boxSizing: 'border-box',
 } as unknown as React.CSSProperties;
 
@@ -244,113 +369,142 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
-    marginHorizontal: 12,
-    marginTop: 8,
   },
-  blurFill: {
-    borderRadius: 20,
-  },
-  /* Close button — top left */
+  /* Cerrar — superior derecha */
   closeButton: {
     position: 'absolute',
-    left: 16,
-    top: Platform.OS === 'ios' ? 54 : 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    zIndex: 3,
+    zIndex: 4,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255,255,255,0.22)',
     ...Platform.select({
-      web: { boxShadow: '0 2px 10px rgba(0,0,0,0.2)' },
+      web: { boxShadow: '0 2px 10px rgba(0,0,0,0.25)' } as any,
       default: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
-        elevation: 4,
-      },
-    }),
-  },
-  closeButtonFallback: {
-    backgroundColor: 'rgba(0,0,0,0.72)',
-  },
-  closeButtonDarkFallback: {
-    backgroundColor: 'rgba(60,60,60,0.82)',
-  },
-  /* Scroll button */
-  scrollButton: {
-    position: 'absolute',
-    right: 20,
-    bottom: 36,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-    zIndex: 2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.2)',
-    ...Platform.select({
-      web: { boxShadow: '0 4px 16px rgba(0,0,0,0.25)' },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 6,
-      },
-    }),
-  },
-  scrollButtonFallback: {
-    backgroundColor: 'rgba(0,0,0,0.72)',
-  },
-  scrollButtonDarkFallback: {
-    backgroundColor: 'rgba(60,60,60,0.82)',
-  },
-  scrollButtonActive: {
-    opacity: 0.6,
-  },
-  /* Vertical slider */
-  sliderWrapper: {
-    position: 'absolute',
-    right: 20,
-    bottom: 104, // 36 (button bottom) + 52 (button height) + 16 (gap)
-    width: 44,
-    height: 180,
-    borderRadius: 22,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.18)',
-    zIndex: 2,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        backgroundColor: 'rgba(0,0,0,0.45)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
+        shadowRadius: 6,
         elevation: 5,
       },
     }),
   },
-  sliderWrapperFallback: {
-    backgroundColor: 'rgba(0,0,0,0.65)',
+  /* Cluster inferior derecha */
+  controlsCluster: {
+    position: 'absolute',
+    right: 16,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 10,
+    zIndex: 3,
   },
-  sliderControl: {
-    flex: 1,
-    width: '100%',
-    paddingVertical: 14,
+  /* Panel horizontal con selector de velocidad */
+  speedPanel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 22,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.22)',
+    gap: 10,
+    ...Platform.select({
+      web: { boxShadow: '0 4px 18px rgba(0,0,0,0.28)' } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.28,
+        shadowRadius: 10,
+        elevation: 7,
+      },
+    }),
+  },
+  speedPanelBg: {
+    borderRadius: 22,
+  },
+  speedHeading: {
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    minWidth: 64,
+    textAlign: 'right',
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  segment: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  segmentSelected: {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  segmentPressed: {
+    opacity: 0.7,
+  },
+  segmentText: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  segmentTextSelected: {
+    color: '#1C1C1E',
+  },
+  /* Play / pause */
+  playButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.22)',
+    ...Platform.select({
+      web: { boxShadow: '0 4px 18px rgba(0,0,0,0.28)' } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.28,
+        shadowRadius: 10,
+        elevation: 7,
+      },
+    }),
+  },
+  playButtonBg: {
+    borderRadius: 28,
+  },
+  /* Pequeño badge con el nivel actual sobre el botón de play */
+  levelBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  levelBadgeText: {
+    color: '#1C1C1E',
+    fontSize: 10,
+    fontWeight: '800',
+    lineHeight: 12,
   },
 });

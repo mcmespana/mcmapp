@@ -7,72 +7,20 @@ import {
   TextInput,
   Alert,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
-import Modal from 'react-native-modal';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDatabase, ref, set, push, get } from 'firebase/database';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 import {
   getCategoryFromFirebaseCategory,
   cleanSongTitle,
 } from '@/utils/songUtils';
-
-// Custom BottomSheet para el SecretPanel que ocupa más espacio
-const FullBottomSheet = ({
-  visible,
-  onClose,
-  children,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}) => {
-  const scheme = useColorScheme();
-  const theme = Colors[scheme];
-
-  return (
-    <Modal
-      isVisible={visible}
-      onBackdropPress={onClose}
-      style={styles.fullModal}
-      swipeDirection="down"
-      onSwipeComplete={onClose}
-      backdropOpacity={0.3}
-      animationIn="slideInUp"
-      animationOut="slideOutDown"
-      animationInTiming={300}
-      animationOutTiming={250}
-      backdropTransitionInTiming={300}
-      backdropTransitionOutTiming={250}
-      useNativeDriverForBackdrop={true}
-      hideModalContentWhileAnimating={false}
-      avoidKeyboard={true}
-      scrollOffset={0}
-      scrollOffsetMax={0}
-      propagateSwipe={true}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <View
-          style={[
-            styles.fullModalContainer,
-            { backgroundColor: theme.background },
-          ]}
-        >
-          {children}
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-};
 
 interface SecretPanelModalProps {
   visible: boolean;
@@ -102,7 +50,7 @@ export default function SecretPanelModal({
   onSuccess,
 }: SecretPanelModalProps) {
   const scheme = useColorScheme();
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -152,11 +100,6 @@ export default function SecretPanelModal({
   };
 
   const handleSaveChanges = async () => {
-    console.log('=== INICIO handleSaveChanges ===');
-    console.log('songTitle:', songTitle);
-    console.log('songFilename:', songFilename);
-    console.log('firebaseCategory:', firebaseCategory);
-
     if (!editTitle.trim()) {
       Alert.alert('Error', 'El título es obligatorio');
       return;
@@ -207,17 +150,8 @@ export default function SecretPanelModal({
         if ((originalValues as any)[field] !== (newValues as any)[field]) {
           changes[`${field}Old`] = (originalValues as any)[field];
           changes[`${field}New`] = (newValues as any)[field];
-          console.log(
-            `🔄 Campo '${field}' cambió:`,
-            `"${(originalValues as any)[field]}" → "${(newValues as any)[field]}"`,
-          );
         }
       });
-
-      console.log(
-        '📊 Total de cambios detectados:',
-        Object.keys(changes).length / 2,
-      );
 
       // Si no hay cambios, no hacer nada
       if (Object.keys(changes).length === 0) {
@@ -233,21 +167,15 @@ export default function SecretPanelModal({
       // La categoría de Firebase ya viene en el formato correcto (ej: "adoracion")
       const category = firebaseCategory;
 
-      console.log('Buscando en categoría:', category);
-      console.log('Ruta completa:', `songs/data/${category}/songs`);
-
       // 1. Leer todas las canciones de la categoría para encontrar la canción específica
       const songsRef = ref(db, `songs/data/${category}/songs`);
       const songsSnapshot = await get(songsRef);
-
-      console.log('songsSnapshot exists:', songsSnapshot.exists());
 
       if (!songsSnapshot.exists()) {
         console.error(
           'No se encontró la ruta:',
           `songs/data/${category}/songs`,
         );
-        console.error('firebaseCategory recibido:', firebaseCategory);
         throw new Error(
           `No se encontró la categoría de canciones en: songs/data/${category}/songs`,
         );
@@ -363,19 +291,15 @@ export default function SecretPanelModal({
 
   // Pantalla de autenticación
   if (!isAuthenticated) {
+    const isDark = scheme === 'dark';
     return (
-      <BottomSheet visible={visible} onClose={onClose}>
+      <BottomSheet
+        visible={visible}
+        onClose={onClose}
+        title="🔒 Panel Secreto"
+        paddingHorizontal={0}
+      >
         <View style={styles.authContainer}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} accessibilityLabel="Cerrar">
-              <MaterialIcons name="close" size={24} color={theme.text} />
-            </TouchableOpacity>
-            <Text style={[styles.title, { color: theme.text }]}>
-              🔒 Panel Secreto
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
-
           <View style={styles.mysteriousContent}>
             <MaterialIcons
               name="security"
@@ -397,9 +321,9 @@ export default function SecretPanelModal({
               style={[
                 styles.passwordInput,
                 {
-                  backgroundColor: theme.background,
+                  backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
                   color: theme.text,
-                  borderColor: theme.icon,
+                  borderColor: password.trim() ? '#4CAF50' : theme.icon,
                 },
               ]}
               placeholder="Introduce la palabra secreta"
@@ -421,6 +345,7 @@ export default function SecretPanelModal({
               ]}
               onPress={handlePasswordSubmit}
               disabled={!password.trim()}
+              activeOpacity={0.8}
             >
               <MaterialIcons name="vpn-key" size={20} color="#fff" />
               <Text style={styles.authButtonText}>Acceder</Text>
@@ -432,25 +357,18 @@ export default function SecretPanelModal({
   }
 
   // Panel de edición
-  return (
-    <FullBottomSheet visible={visible} onClose={handleClose}>
-      <View style={styles.fullContainer}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={handleClose}
-            accessibilityLabel="Cerrar"
-            style={styles.closeButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="close" size={24} color={theme.text} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.text }]}>
-            🛠️ Editor Avanzado
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
+  const isDark = scheme === 'dark';
+  const inputBg = isDark ? '#2C2C2E' : '#F2F2F7';
+  const inputBorder = isDark ? '#3A3A3C' : '#E5E5EA';
 
+  return (
+    <BottomSheet
+      visible={visible}
+      onClose={handleClose}
+      title="🛠️ Editor Avanzado"
+      height={Dimensions.get('window').height * 0.90}
+    >
+      <View style={styles.fullContainer}>
         {songTitle && (
           <Text style={[styles.songInfo, { color: theme.icon }]}>
             Editando: &ldquo;{songTitle}&rdquo;
@@ -469,9 +387,9 @@ export default function SecretPanelModal({
             style={[
               styles.textInput,
               {
-                backgroundColor: theme.background,
+                backgroundColor: inputBg,
                 color: theme.text,
-                borderColor: theme.icon,
+                borderColor: editTitle.trim() ? '#34C759' : inputBorder,
               },
             ]}
             placeholder="Título de la canción"
@@ -487,9 +405,9 @@ export default function SecretPanelModal({
             style={[
               styles.textInput,
               {
-                backgroundColor: theme.background,
+                backgroundColor: inputBg,
                 color: theme.text,
-                borderColor: theme.icon,
+                borderColor: editAuthor.trim() ? '#34C759' : inputBorder,
               },
             ]}
             placeholder="Autor de la canción"
@@ -507,9 +425,9 @@ export default function SecretPanelModal({
                 style={[
                   styles.textInput,
                   {
-                    backgroundColor: theme.background,
+                    backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: theme.icon,
+                    borderColor: editKey.trim() ? '#34C759' : inputBorder,
                   },
                 ]}
                 placeholder="Ej: G, Am, C"
@@ -525,9 +443,9 @@ export default function SecretPanelModal({
                 style={[
                   styles.textInput,
                   {
-                    backgroundColor: theme.background,
+                    backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: theme.icon,
+                    borderColor: editCapo.trim() ? '#34C759' : inputBorder,
                   },
                 ]}
                 placeholder="0"
@@ -548,9 +466,9 @@ export default function SecretPanelModal({
             style={[
               styles.textInput,
               {
-                backgroundColor: theme.background,
+                backgroundColor: inputBg,
                 color: theme.text,
-                borderColor: theme.icon,
+                borderColor: editInfo.trim() ? '#34C759' : inputBorder,
               },
             ]}
             placeholder="Información adicional sobre la canción"
@@ -571,9 +489,9 @@ export default function SecretPanelModal({
               styles.textInput,
               styles.contentInput,
               {
-                backgroundColor: theme.background,
+                backgroundColor: inputBg,
                 color: theme.text,
-                borderColor: theme.icon,
+                borderColor: editContent.trim() ? '#34C759' : inputBorder,
               },
             ]}
             placeholder="Contenido completo de la canción (ChordPro format)"
@@ -600,6 +518,7 @@ export default function SecretPanelModal({
             ]}
             onPress={handleSaveChanges}
             disabled={!editTitle.trim() || !editContent.trim() || isSubmitting}
+            activeOpacity={0.8}
           >
             <MaterialIcons
               name={isSubmitting ? 'hourglass-empty' : 'save'}
@@ -618,28 +537,11 @@ export default function SecretPanelModal({
           </Text>
         </ScrollView>
       </View>
-    </FullBottomSheet>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  // Estilos para el FullBottomSheet personalizado
-  fullModal: {
-    margin: 0,
-    justifyContent: 'flex-end',
-  },
-  keyboardView: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  fullModalContainer: {
-    padding: 20,
-    paddingBottom: 40,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    maxHeight: '95%',
-    height: '95%',
-  },
   // Estilos originales
   container: {
     minHeight: '90%',
@@ -655,24 +557,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    zIndex: 10,
-    elevation: 10,
-  },
-  closeButton: {
-    padding: 5,
-    borderRadius: radii.pill,
-    zIndex: 20,
-    elevation: 20,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
   },
   songInfo: {
     fontSize: 14,

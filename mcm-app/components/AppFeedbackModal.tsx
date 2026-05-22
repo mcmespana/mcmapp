@@ -13,13 +13,12 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getDatabase, push, ref, set } from 'firebase/database';
 
 import BottomSheet from './BottomSheet';
-import CloseIconButton from '@/components/ui/CloseIconButton';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { Colors, FeedbackCategoryColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import { getFirebaseApp } from '@/hooks/firebaseApp';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 
@@ -83,7 +82,7 @@ export default function AppFeedbackModal({
 }: AppFeedbackModalProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme];
+  const theme = Colors[scheme ?? 'light'];
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
   const [selectedCategory, setSelectedCategory] =
@@ -147,8 +146,29 @@ export default function AppFeedbackModal({
   const canSubmit =
     !!selectedCategory && feedbackText.trim().length > 0 && !isSubmitting;
 
+  const headerLeft = selectedCategory ? (
+    <TouchableOpacity
+      onPress={() => {
+        setSelectedCategory(null);
+        setErrorMsg('');
+      }}
+      accessibilityRole="button"
+      accessibilityLabel="Cambiar categoría"
+      style={{ padding: 4 }}
+      activeOpacity={0.7}
+    >
+      <MaterialIcons name="arrow-back" size={22} color={theme.text} />
+    </TouchableOpacity>
+  ) : undefined;
+
   return (
-    <BottomSheet visible={visible} onClose={handleClose}>
+    <BottomSheet
+      visible={visible}
+      onClose={handleClose}
+      title="Feedback 💬"
+      headerLeft={headerLeft}
+      paddingHorizontal={0}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -156,21 +176,14 @@ export default function AppFeedbackModal({
         overScrollMode="never"
         contentContainerStyle={styles.content}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <CloseIconButton onPress={handleClose} />
-          <Text style={[styles.title, { color: theme.text }]}>Feedback 💬</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
         <Text style={[styles.subtitle, { color: theme.icon }]}>
           Tu opinión nos ayuda a mejorar la app
         </Text>
-
+ 
         {!selectedCategory ? (
           <>
             <SectionHeader label="¿Qué quieres contarnos?" />
-
+ 
             {FEEDBACK_CATEGORIES.map((category) => (
               <TouchableOpacity
                 key={category.id}
@@ -208,20 +221,6 @@ export default function AppFeedbackModal({
           </>
         ) : (
           <>
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={() => {
-                setSelectedCategory(null);
-                setErrorMsg('');
-              }}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="arrow-back" size={18} color={theme.icon} />
-              <Text style={[styles.backBtnText, { color: theme.icon }]}>
-                Cambiar categoría
-              </Text>
-            </TouchableOpacity>
-
             <View
               style={[
                 styles.selectedCategoryRow,
@@ -331,21 +330,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 48,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  headerSpacer: {
-    width: 32,
-  },
-  title: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
   subtitle: {
     fontSize: 14,
     textAlign: 'center',
@@ -367,17 +351,6 @@ const styles = StyleSheet.create({
   },
   categoryArrow: {
     marginLeft: 'auto',
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 16,
-    paddingVertical: 4,
-  },
-  backBtnText: {
-    fontSize: 14,
-    fontWeight: '500',
   },
   selectedCategoryRow: {
     flexDirection: 'row',

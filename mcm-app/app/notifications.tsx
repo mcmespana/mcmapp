@@ -38,17 +38,78 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 
 // Mapeo de rutas internas a nombres legibles
 const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
+  // With group
   '/(tabs)/calendario': { label: 'Calendario', icon: 'calendar-today' },
   '/(tabs)/fotos': { label: 'Fotos', icon: 'photo-library' },
   '/(tabs)/cancionero': { label: 'Cantoral', icon: 'music-note' },
   '/(tabs)/mas': { label: 'Más', icon: 'more-horiz' },
   '/(tabs)/index': { label: 'Inicio', icon: 'home' },
+  '/(tabs)/contigo': { label: 'Contigo', icon: 'favorite' },
+  '/(tabs)/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
+  '/(tabs)/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
+  '/(tabs)/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
+  '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
+
+  // Without group
+  '/calendario': { label: 'Calendario', icon: 'calendar-today' },
+  '/fotos': { label: 'Fotos', icon: 'photo-library' },
+  '/cancionero': { label: 'Cantoral', icon: 'music-note' },
+  '/mas': { label: 'Más', icon: 'more-horiz' },
+  '/index': { label: 'Inicio', icon: 'home' },
+  '/contigo': { label: 'Contigo', icon: 'favorite' },
+  '/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
+  '/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
+  '/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
+  '/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
+
+  // Naked strings (no leading slash)
+  'calendario': { label: 'Calendario', icon: 'calendar-today' },
+  'fotos': { label: 'Fotos', icon: 'photo-library' },
+  'cancionero': { label: 'Cantoral', icon: 'music-note' },
+  'mas': { label: 'Más', icon: 'more-horiz' },
+  'contigo': { label: 'Contigo', icon: 'favorite' },
+
+  // Others
   '/wordle': { label: 'Wordle', icon: 'games' },
   '/notifications': { label: 'Notificaciones', icon: 'notifications' },
+  'wordle': { label: 'Wordle', icon: 'games' },
+  'notifications': { label: 'Notificaciones', icon: 'notifications' },
 };
 
+function normalizeRoute(route: string): string {
+  if (!route) return '';
+  let clean = route.trim();
+  if (clean.startsWith('http')) return clean;
+
+  clean = clean.replace(/\/+/g, '/');
+
+  const hasSlash = clean.startsWith('/');
+  const naked = hasSlash ? clean.substring(1) : clean;
+
+  if (naked.startsWith('(tabs)/')) {
+    return '/' + naked;
+  }
+
+  const tabPaths = [
+    'cancionero',
+    'calendario',
+    'fotos',
+    'mas',
+    'index',
+    'contigo',
+  ];
+
+  const isTab = tabPaths.some(p => naked === p || naked.startsWith(p + '/'));
+  if (isTab) {
+    return '/(tabs)/' + naked;
+  }
+
+  return '/' + naked;
+}
+
 function getRouteLabel(route: string): { label: string; icon: string } | null {
-  return ROUTE_LABELS[route] ?? null;
+  const norm = normalizeRoute(route);
+  return ROUTE_LABELS[norm] ?? ROUTE_LABELS[route] ?? null;
 }
 
 export default function NotificationsScreen() {
@@ -146,6 +207,21 @@ export default function NotificationsScreen() {
     [isNotificationRead, handleMarkAsRead],
   );
 
+  const safePushRoute = useCallback((route: string) => {
+    if (!route) return;
+    const clean = normalizeRoute(route);
+    try {
+      router.push(clean as any);
+    } catch (e) {
+      console.warn('Navigation failed for ' + clean + ', trying direct route...', e);
+      try {
+        router.push(route as any);
+      } catch (err) {
+        console.error('All navigation fallbacks failed:', err);
+      }
+    }
+  }, []);
+
   const handleActionButtonPress = useCallback(
     (notification: NotificationData | ReceivedNotification, e: any) => {
       // Prevenir que el tap llegue al card padre
@@ -157,18 +233,14 @@ export default function NotificationsScreen() {
       }
       if (!notification.actionButton) return;
       if (notification.actionButton.isInternal) {
-        try {
-          router.push(notification.actionButton.url as any);
-        } catch (error) {
-          console.error('Error navegando:', error);
-        }
+        safePushRoute(notification.actionButton.url);
       } else {
         Linking.openURL(notification.actionButton.url).catch((err) =>
           console.error('Error abriendo URL:', err),
         );
       }
     },
-    [isNotificationRead, handleMarkAsRead],
+    [isNotificationRead, handleMarkAsRead, safePushRoute],
   );
 
   const renderRightActions = (
@@ -216,107 +288,109 @@ export default function NotificationsScreen() {
       : null;
 
     return (
-      <Swipeable
-        renderRightActions={(progress, dragX) =>
-          isUnread ? renderRightActions(progress, dragX, notification.id) : null
-        }
-        rightThreshold={40}
-        overshootRight={false}
-      >
-        {/* TouchableOpacity de gesture-handler para evitar conflictos dentro de Swipeable */}
-        <TouchableOpacity
-          style={[styles.notificationCard, isUnread && styles.unreadCard]}
-          onPress={() => handleNotificationPress(notification)}
-          activeOpacity={0.7}
-          accessibilityLabel={`${isUnread ? 'No leída: ' : ''}${notification.title}`}
-          accessibilityRole="button"
+      <View style={{ marginBottom: spacing.md }}>
+        <Swipeable
+          renderRightActions={(progress, dragX) =>
+            isUnread ? renderRightActions(progress, dragX, notification.id) : null
+          }
+          rightThreshold={40}
+          overshootRight={false}
         >
-          {notification.icon && (
-            <Image
-              source={{ uri: notification.icon }}
-              style={styles.notificationIcon}
-              accessibilityLabel="Icono de notificación"
-            />
-          )}
-
-          <View style={styles.notificationContent}>
-            {/* Cabecera: título + indicadores */}
-            <View style={styles.notificationHeader}>
-              <Text
-                style={[
-                  styles.notificationTitle,
-                  !isUnread && styles.notificationTitleRead,
-                ]}
-                numberOfLines={1}
-              >
-                {notification.title}
+          {/* TouchableOpacity de gesture-handler para evitar conflictos dentro de Swipeable */}
+          <TouchableOpacity
+            style={[styles.notificationCard, isUnread && styles.unreadCard]}
+            onPress={() => handleNotificationPress(notification)}
+            activeOpacity={0.7}
+            accessibilityLabel={`${isUnread ? 'No leída: ' : ''}${notification.title}`}
+            accessibilityRole="button"
+          >
+            {notification.icon && (
+              <Image
+                source={{ uri: notification.icon }}
+                style={styles.notificationIcon}
+                accessibilityLabel="Icono de notificación"
+              />
+            )}
+  
+            <View style={styles.notificationContent}>
+              {/* Cabecera: título + indicadores */}
+              <View style={styles.notificationHeader}>
+                <Text
+                  style={[
+                    styles.notificationTitle,
+                    !isUnread && styles.notificationTitleRead,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {notification.title}
+                </Text>
+                <View style={styles.notificationHeaderRight}>
+                  {isUnread && <View style={styles.unreadBadge} />}
+                  {/* Botón marcar como leída — Pressable para evitar <button> anidado en web */}
+                  {isUnread && (
+                    <Pressable
+                      style={styles.markAsReadButton}
+                      onPress={() => handleMarkAsRead(notification.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      accessibilityLabel="Marcar como leída"
+                      accessibilityRole="button"
+                    >
+                      <MaterialIcons
+                        name="check-circle-outline"
+                        size={20}
+                        color={colors.primary}
+                      />
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+  
+              {/* Cuerpo */}
+              <Text style={styles.notificationBody} numberOfLines={2}>
+                {notification.body}
               </Text>
-              <View style={styles.notificationHeaderRight}>
-                {isUnread && <View style={styles.unreadBadge} />}
-                {/* Botón marcar como leída — Pressable para evitar <button> anidado en web */}
-                {isUnread && (
-                  <Pressable
-                    style={styles.markAsReadButton}
-                    onPress={() => handleMarkAsRead(notification.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    accessibilityLabel="Marcar como leída"
-                    accessibilityRole="button"
-                  >
-                    <MaterialIcons
-                      name="check-circle-outline"
-                      size={20}
-                      color={colors.primary}
-                    />
-                  </Pressable>
-                )}
+  
+              {/* Fila inferior: fecha + chips de destino/acción */}
+              <View style={styles.notificationFooter}>
+                <Text style={styles.notificationDate}>{formatDate(date)}</Text>
+                <View style={styles.chipsRow}>
+                  {/* Chip de destino interno */}
+                  {routeInfo && (
+                    <View style={styles.destinationChip}>
+                      <Text style={styles.destinationChipText}>
+                        {routeInfo.label}
+                      </Text>
+                    </View>
+                  )}
+                  {/* Chip de botón de acción — Pressable para evitar <button> anidado en web */}
+                  {notification.actionButton && (
+                    <Pressable
+                      style={styles.actionChip}
+                      onPress={(e?) => handleActionButtonPress(notification, e)}
+                      accessibilityLabel={notification.actionButton.text}
+                      accessibilityRole="button"
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.actionChipText} numberOfLines={1}>
+                        {notification.actionButton.text}
+                      </Text>
+                      <MaterialIcons
+                        name={
+                          notification.actionButton.isInternal
+                            ? 'arrow-forward'
+                            : 'open-in-new'
+                        }
+                        size={11}
+                        color="#fff"
+                      />
+                    </Pressable>
+                  )}
+                </View>
               </View>
             </View>
-
-            {/* Cuerpo */}
-            <Text style={styles.notificationBody} numberOfLines={2}>
-              {notification.body}
-            </Text>
-
-            {/* Fila inferior: fecha + chips de destino/acción */}
-            <View style={styles.notificationFooter}>
-              <Text style={styles.notificationDate}>{formatDate(date)}</Text>
-              <View style={styles.chipsRow}>
-                {/* Chip de destino interno */}
-                {routeInfo && (
-                  <View style={styles.destinationChip}>
-                    <Text style={styles.destinationChipText}>
-                      {routeInfo.label}
-                    </Text>
-                  </View>
-                )}
-                {/* Chip de botón de acción — Pressable para evitar <button> anidado en web */}
-                {notification.actionButton && (
-                  <Pressable
-                    style={styles.actionChip}
-                    onPress={(e?) => handleActionButtonPress(notification, e)}
-                    accessibilityLabel={notification.actionButton.text}
-                    accessibilityRole="button"
-                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  >
-                    <Text style={styles.actionChipText} numberOfLines={1}>
-                      {notification.actionButton.text}
-                    </Text>
-                    <MaterialIcons
-                      name={
-                        notification.actionButton.isInternal
-                          ? 'arrow-forward'
-                          : 'open-in-new'
-                      }
-                      size={11}
-                      color="#fff"
-                    />
-                  </Pressable>
-                )}
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Swipeable>
+          </TouchableOpacity>
+        </Swipeable>
+      </View>
     );
   };
 
@@ -452,25 +526,32 @@ function NotificationDetailModal({
     ? getRouteLabel(notification.internalRoute)
     : null;
 
+  const safePushRoute = (route: string) => {
+    if (!route) return;
+    const clean = normalizeRoute(route);
+    try {
+      router.push(clean as any);
+    } catch (e) {
+      console.warn('Navigation failed for ' + clean + ', trying direct route...', e);
+      try {
+        router.push(route as any);
+      } catch (err) {
+        console.error('All navigation fallbacks failed:', err);
+      }
+    }
+  };
+
   const handleInternalRoute = () => {
     if (!notification) return;
     onClose();
-    try {
-      router.push(notification.internalRoute as any);
-    } catch (error) {
-      console.error('Error navegando:', error);
-    }
+    safePushRoute(notification.internalRoute);
   };
 
   const handleActionButton = () => {
     if (!notification?.actionButton) return;
     if (notification.actionButton.isInternal) {
       onClose();
-      try {
-        router.push(notification.actionButton.url as any);
-      } catch (error) {
-        console.error('Error navegando:', error);
-      }
+      safePushRoute(notification.actionButton.url);
     } else {
       Linking.openURL(notification.actionButton.url).catch((err) =>
         console.error('Error abriendo URL:', err),
@@ -536,7 +617,7 @@ function NotificationDetailModal({
                 </Text>
 
                 {/* Separador si hay acciones */}
-                {(routeInfo || notification.actionButton) && (
+                {(notification.internalRoute || notification.actionButton) && (
                   <View
                     style={[
                       dStyles.divider,
@@ -546,7 +627,7 @@ function NotificationDetailModal({
                 )}
 
                 {/* Botón de destino interno (internalRoute) */}
-                {routeInfo && (
+                {notification.internalRoute && (
                   <Button
                     variant="outline"
                     onPress={handleInternalRoute}
@@ -556,12 +637,12 @@ function NotificationDetailModal({
                     ]}
                   >
                     <MaterialIcons
-                      name={routeInfo.icon as any}
+                      name={(routeInfo?.icon ?? 'launch') as any}
                       size={20}
                       color={colors.primary}
                     />
                     <Button.Label style={{ color: colors.primary, flex: 1 }}>
-                      Ir a {routeInfo.label}
+                      {routeInfo ? `Ir a ${routeInfo.label}` : 'Abrir sección'}
                     </Button.Label>
                     <MaterialIcons
                       name="arrow-forward-ios"
@@ -689,7 +770,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       alignItems: 'center',
       padding: spacing.md,
       borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      borderBottomColor: scheme === 'dark' ? '#3A3A3C' : colors.border,
       backgroundColor: theme.background,
     },
     backButton: { marginRight: spacing.md },
@@ -728,7 +809,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
       backgroundColor: theme.background,
       borderRadius: radii.md,
       padding: spacing.md,
-      marginBottom: spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
       ...shadows.sm,
@@ -781,7 +861,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       justifyContent: 'center',
       alignItems: 'flex-end',
       borderRadius: radii.md,
-      marginBottom: spacing.md,
+      height: '100%',
       paddingRight: spacing.md,
       minWidth: 90,
     },

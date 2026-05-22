@@ -1,0 +1,59 @@
+name: Deploy Web on Production
+
+on:
+  push:
+    branches: [production]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy-web:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line
+      EXPO_PUBLIC_FIREBASE_API_KEY: ${{ secrets.EXPO_PUBLIC_FIREBASE_API_KEY }}
+      EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      EXPO_PUBLIC_FIREBASE_DATABASE_URL: ${{ secrets.EXPO_PUBLIC_FIREBASE_DATABASE_URL }}
+      EXPO_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_PROJECT_ID }}
+      EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      EXPO_PUBLIC_FIREBASE_APP_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_APP_ID }}
+      EXPO_PUBLIC_CORS_PROXY_URL: ${{ secrets.EXPO_PUBLIC_CORS_PROXY_URL }}
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mcm-app/package-lock.json
+
+      - name: Verificar que EXPO_TOKEN existe
+        run: |
+          if [ -z "${EXPO_TOKEN}" ]; then
+            echo "::error::EXPO_TOKEN no está configurado en los secrets del repositorio"
+            exit 1
+          fi
+
+      - name: Instalar dependencias
+        working-directory: ./mcm-app
+        run: npm ci
+
+      - name: Instalar EAS CLI
+        run: npm install -g eas-cli@latest
+
+      - name: Verificar autenticación Expo
+        run: eas whoami
+
+      - name: Build web assets
+        working-directory: ./mcm-app
+        run: npx expo export --platform web
+
+      - name: Deploy to Expo Hosting
+        working-directory: ./mcm-app
+        run: npx eas deploy --prod --non-interactive

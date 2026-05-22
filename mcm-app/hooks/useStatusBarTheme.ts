@@ -86,8 +86,6 @@ export function useStatusBarTheme(pathname: string) {
       document.head.appendChild(navButtonMeta);
     }
     navButtonMeta.content = config.themeColor;
-
-    console.log(`🎨 Theme updated for ${pathname}:`, config);
   }, [pathname]);
 }
 

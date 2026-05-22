@@ -3,6 +3,7 @@ import { useRef, useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 import CategoriesScreen from '../screens/CategoriesScreen';
 import SongListScreen from '../screens/SongListScreen';
@@ -58,21 +59,38 @@ export default function CancioneroTab() {
   const stackNavRef = useRef<any>(null);
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = isWeb ? insets.top : undefined;
+  const scheme = useColorScheme();
 
   const navigation = useNavigation();
   const choir = useChoirSession();
 
   useEffect(() => {
-    const unsubscribe = navigation
+    // When this tab gains focus coming from another tab, reset the stack.
+    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
+      if (stackNavRef.current?.canGoBack()) {
+        stackNavRef.current.popToTop();
+      }
+    });
+
+    // When the user taps this tab while already on it, prevent the default
+    // scroll-to-top behavior and pop to root instead.
+    const unsubscribeTabPress = navigation
       .getParent()
       ?.addListener('tabPress' as any, (e: any) => {
-        if (stackNavRef.current?.canGoBack()) {
-          e.preventDefault?.();
+        if (
+          (navigation as any).isFocused?.() &&
+          stackNavRef.current?.canGoBack()
+        ) {
+          // Do NOT call e.preventDefault() — on iOS NativeTabs it desyncs
+          // the native tab bar from the JS navigation state, freezing the tab.
           stackNavRef.current.popToTop();
         }
       });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeFocus();
+      unsubscribeTabPress?.();
+    };
   }, [navigation]);
 
   // Modo coro - ESCLAVO: cuando el maestro cambia la canción actual,
@@ -133,11 +151,19 @@ export default function CancioneroTab() {
                     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
                   } as any)
                 : ({ backgroundColor: TabHeaderColors.cancionero } as any),
-            headerTintColor: isIOS ? '#3d79b9ff' : '#1a1a1a',
+            headerTintColor: isIOS
+              ? scheme === 'dark'
+                ? '#f4c11e'
+                : '#3d79b9ff'
+              : '#1a1a1a',
             headerTitleStyle: {
               fontWeight: '700' as const,
               fontSize: 17,
-              color: isIOS ? '#000' : '#1a1a1a',
+              color: isIOS
+                ? scheme === 'dark'
+                  ? '#FFFFFF'
+                  : '#000000'
+                : '#1a1a1a',
               letterSpacing: -0.3,
             },
             ...(isWeb &&
@@ -145,8 +171,13 @@ export default function CancioneroTab() {
             headerTransparent: isIOS,
             headerBlurEffect: isIOS ? 'systemChromeMaterial' : undefined,
             headerShadowVisible: false,
-            headerBackTitle: 'Volver',
             headerBackButtonDisplayMode: 'minimal' as const,
+            // Prevents screens from appearing transparent during swipe-back
+            // gestures. headerTransparent:true makes the card itself transparent
+            // so we must set an explicit background on the content area.
+            contentStyle: isIOS
+              ? { backgroundColor: scheme === 'dark' ? '#1C1C1E' : '#F2F2F7' }
+              : undefined,
           };
         }}
       >
@@ -155,11 +186,6 @@ export default function CancioneroTab() {
           component={CategoriesScreen}
           options={{
             title: 'Cantoral',
-            headerLargeTitle: isIOS,
-            headerLargeTitleShadowVisible: false,
-            headerLargeStyle: isIOS
-              ? { backgroundColor: 'transparent' }
-              : undefined,
           }}
         />
         <Stack.Screen
@@ -167,11 +193,6 @@ export default function CancioneroTab() {
           component={SongListScreen}
           options={({ route }) => ({
             title: route.params?.categoryName || 'Canciones',
-            headerLargeTitle: isIOS,
-            headerLargeTitleShadowVisible: false,
-            headerLargeStyle: isIOS
-              ? { backgroundColor: 'transparent' }
-              : undefined,
           })}
         />
         <Stack.Screen
@@ -179,7 +200,6 @@ export default function CancioneroTab() {
           component={SongDetailScreen}
           options={({ route }) => ({
             title: route.params?.title || 'Letra y Acordes',
-            headerShown: !isIOS,
           })}
         />
         <Stack.Screen
@@ -187,6 +207,7 @@ export default function CancioneroTab() {
           component={SongFullscreenScreen}
           options={() => ({
             headerShown: false,
+            presentation: 'fullScreenModal',
           })}
         />
         <Stack.Screen
@@ -194,11 +215,6 @@ export default function CancioneroTab() {
           component={SelectedSongsScreen}
           options={{
             title: 'Seleccionadas',
-            headerLargeTitle: isIOS,
-            headerLargeTitleShadowVisible: false,
-            headerLargeStyle: isIOS
-              ? { backgroundColor: 'transparent' }
-              : undefined,
           }}
         />
       </Stack.Navigator>

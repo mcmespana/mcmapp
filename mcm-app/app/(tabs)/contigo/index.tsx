@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +31,11 @@ export default function ContigoScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const W = warm(isDark);
+  const { width: windowWidth } = useWindowDimensions();
+  // iPad / large tablet / desktop web — cap content width so the layout
+  // doesn't stretch into a sparse, unbalanced canvas.
+  const isWide = windowWidth >= 720;
+  const contentMaxWidth = windowWidth >= 1100 ? 880 : 720;
 
   const {
     todayStr,
@@ -113,165 +119,185 @@ export default function ContigoScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header ─────────────────────────────────── */}
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text
-              style={[styles.title, { color: isDark ? '#F5EFE3' : '#2A1E0E' }]}
-            >
-              Contigo
-            </Text>
-            <Text style={[styles.subtitle, { color: W.textSec }]}>
-              {formatDateLong(todayStr)}
-            </Text>
-          </View>
-          <View style={styles.headerRight}>
-            <View style={styles.headerBadgeWrap}>
-              <LiturgicalBadge dateStr={todayStr} />
+        <View
+          style={
+            isWide
+              ? {
+                  width: '100%',
+                  maxWidth: contentMaxWidth,
+                  alignSelf: 'center',
+                }
+              : undefined
+          }
+        >
+          {/* ── Header ─────────────────────────────────── */}
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[
+                  styles.title,
+                  { color: isDark ? '#F5EFE3' : '#2A1E0E' },
+                ]}
+              >
+                Contigo
+              </Text>
+              <Text style={[styles.subtitle, { color: W.textSec }]}>
+                {formatDateLong(todayStr)}
+              </Text>
             </View>
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/contigo/bookmarks')}
-              style={[
-                styles.headerBtn,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(255,255,255,0.07)'
-                    : 'rgba(0,0,0,0.05)',
-                  borderColor: W.border,
-                },
-              ]}
-              accessibilityLabel="Ver evangelios guardados"
-            >
-              <MaterialIcons name="bookmarks" size={18} color={W.accent} />
-            </TouchableOpacity>
+            <View style={styles.headerRight}>
+              <View style={styles.headerBadgeWrap}>
+                <LiturgicalBadge dateStr={todayStr} />
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push('/(tabs)/contigo/bookmarks')}
+                style={[
+                  styles.headerBtn,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(255,255,255,0.07)'
+                      : 'rgba(0,0,0,0.05)',
+                    borderColor: W.border,
+                  },
+                ]}
+                accessibilityLabel="Ver evangelios guardados"
+              >
+                <MaterialIcons name="bookmarks" size={18} color={W.accent} />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        {/* ── Hero card ──────────────────────────────── */}
-        <View style={styles.section}>
-          <HeroCard
-            doneCount={doneCount}
-            prayStreak={prayStreak}
-            totalMins={totalMins}
-            isDark={isDark}
-          />
-        </View>
-
-        {/* ── Three habit tiles ──────────────────────── */}
-        <View style={[styles.section, styles.tilesRow]}>
-          <HabitTile
-            habitKey="evangelio"
-            done={readingDone}
-            onPress={() => router.push('/(tabs)/contigo/evangelio')}
-            isDark={isDark}
-          />
-          <HabitTile
-            habitKey="oracion"
-            done={prayerDone}
-            onPress={() => router.push('/(tabs)/contigo/oracion')}
-            isDark={isDark}
-          />
-          <HabitTile
-            habitKey="revision"
-            done={revisionDone}
-            onPress={() => router.push('/(tabs)/contigo/revision' as never)}
-            isDark={isDark}
-          />
-        </View>
-
-        {/* ── Evangelio teaser ───────────────────────── */}
-        <View style={styles.section}>
-          <EvangelioTeaserCard
-            titulo={readings?.info?.titulo}
-            cita={readings?.evangelio?.cita}
-            texto={readings?.evangelio?.texto}
-            readingDone={readingDone}
-            onOpen={() => router.push('/(tabs)/contigo/evangelio')}
-            isDark={isDark}
-          />
-        </View>
-
-        {/* ── Esta semana ────────────────────────────── */}
-        <View style={[styles.section, { paddingTop: 18 }]}>
-          <Text style={[styles.smallLabel, { color: W.textMuted }]}>
-            ESTA SEMANA
-          </Text>
-          <View
-            style={[
-              styles.cardSurface,
-              {
-                backgroundColor: W.bgCard,
-                borderColor: W.border,
-                shadowColor: W.shadow,
-              },
-            ]}
-          >
-            <WeekStrip records={records} todayStr={todayStr} isDark={isDark} />
+          {/* ── Hero card ──────────────────────────────── */}
+          <View style={styles.section}>
+            <HeroCard
+              doneCount={doneCount}
+              prayStreak={prayStreak}
+              totalMins={totalMins}
+              isDark={isDark}
+            />
           </View>
-        </View>
 
-        {/* ── Stats ──────────────────────────────────── */}
-        <View style={[styles.section, styles.statsRow]}>
-          <StatCard
-            icon="🔥"
-            value={prayStreak}
-            label={'racha de\noración'}
-            color={W.fire}
-            isDark={isDark}
-          />
-          <StatCard
-            icon="⏱"
-            value={`${totalMins}'`}
-            label={'min\nesta sem.'}
-            color={W.accent}
-            isDark={isDark}
-          />
-          <StatCard
-            icon="📖"
-            value={totalReads}
-            label={'lecturas\neste mes'}
-            color={W.blue}
-            isDark={isDark}
-          />
-        </View>
+          {/* ── Three habit tiles ──────────────────────── */}
+          <View style={[styles.section, styles.tilesRow]}>
+            <HabitTile
+              habitKey="evangelio"
+              done={readingDone}
+              onPress={() => router.push('/(tabs)/contigo/evangelio')}
+              isDark={isDark}
+            />
+            <HabitTile
+              habitKey="oracion"
+              done={prayerDone}
+              onPress={() => router.push('/(tabs)/contigo/oracion')}
+              isDark={isDark}
+            />
+            <HabitTile
+              habitKey="revision"
+              done={revisionDone}
+              onPress={() => router.push('/(tabs)/contigo/revision' as never)}
+              isDark={isDark}
+            />
+          </View>
 
-        {/* ── Calendario completo ────────────────────── */}
-        <View style={[styles.section, { paddingTop: 18 }]}>
-          <View style={styles.monthHdr}>
+          {/* ── Evangelio teaser ───────────────────────── */}
+          <View style={styles.section}>
+            <EvangelioTeaserCard
+              titulo={readings?.info?.titulo}
+              cita={readings?.evangelio?.cita}
+              texto={readings?.evangelio?.texto}
+              readingDone={readingDone}
+              onOpen={() => router.push('/(tabs)/contigo/evangelio')}
+              isDark={isDark}
+            />
+          </View>
+
+          {/* ── Esta semana ────────────────────────────── */}
+          <View style={[styles.section, { paddingTop: 18 }]}>
             <Text style={[styles.smallLabel, { color: W.textMuted }]}>
-              {monthLabel.toUpperCase()}
+              ESTA SEMANA
             </Text>
             <View
               style={[
-                styles.monthBadge,
+                styles.cardSurface,
                 {
-                  backgroundColor: isDark
-                    ? 'rgba(218,165,32,0.12)'
-                    : 'rgba(196,146,42,0.10)',
+                  backgroundColor: W.bgCard,
+                  borderColor: W.border,
+                  shadowColor: W.shadow,
                 },
               ]}
             >
-              <Text style={[styles.monthBadgeText, { color: W.accent }]}>
-                {activeDays} {activeDays === 1 ? 'día activo' : 'días activos'}
-              </Text>
+              <WeekStrip
+                records={records}
+                todayStr={todayStr}
+                isDark={isDark}
+              />
             </View>
           </View>
-          <View
-            style={[
-              styles.cardSurface,
-              {
-                backgroundColor: W.bgCard,
-                borderColor: W.border,
-                shadowColor: W.shadow,
-              },
-            ]}
-          >
-            <MonthHeatmap
-              records={records}
-              todayStr={todayStr}
+
+          {/* ── Stats ──────────────────────────────────── */}
+          <View style={[styles.section, styles.statsRow]}>
+            <StatCard
+              icon="🔥"
+              value={prayStreak}
+              label={'racha de\noración'}
+              color={W.fire}
               isDark={isDark}
-              onDayPress={handleDayPress}
             />
+            <StatCard
+              icon="⏱"
+              value={`${totalMins}'`}
+              label={'min\nesta sem.'}
+              color={W.accent}
+              isDark={isDark}
+            />
+            <StatCard
+              icon="📖"
+              value={totalReads}
+              label={'lecturas\neste mes'}
+              color={W.blue}
+              isDark={isDark}
+            />
+          </View>
+
+          {/* ── Calendario completo ────────────────────── */}
+          <View style={[styles.section, { paddingTop: 18 }]}>
+            <View style={styles.monthHdr}>
+              <Text style={[styles.smallLabel, { color: W.textMuted }]}>
+                {monthLabel.toUpperCase()}
+              </Text>
+              <View
+                style={[
+                  styles.monthBadge,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(218,165,32,0.12)'
+                      : 'rgba(196,146,42,0.10)',
+                  },
+                ]}
+              >
+                <Text style={[styles.monthBadgeText, { color: W.accent }]}>
+                  {activeDays}{' '}
+                  {activeDays === 1 ? 'día activo' : 'días activos'}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={[
+                styles.cardSurface,
+                {
+                  backgroundColor: W.bgCard,
+                  borderColor: W.border,
+                  shadowColor: W.shadow,
+                },
+              ]}
+            >
+              <MonthHeatmap
+                records={records}
+                todayStr={todayStr}
+                isDark={isDark}
+                onDayPress={handleDayPress}
+              />
+            </View>
           </View>
         </View>
       </ScrollView>

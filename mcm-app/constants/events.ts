@@ -161,10 +161,7 @@ export function getEvent(id?: string | null): EventConfig {
 }
 
 /** Path de Firebase de una sección: `<firebasePrefix>/<key>`. */
-export function getEventFirebasePath(
-  event: EventConfig,
-  key: string,
-): string {
+export function getEventFirebasePath(event: EventConfig, key: string): string {
   return `${event.firebasePrefix}/${key}`;
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
-import { getFirebaseApp } from './firebaseApp';
+import { getFirebaseApp } from '../utils/firebaseApp';
 
 interface LeaderboardEntry {
   userId: string;

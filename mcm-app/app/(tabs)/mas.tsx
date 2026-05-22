@@ -21,10 +21,11 @@ import GruposScreen from '../screens/GruposScreen';
 import ContactosScreen from '../screens/ContactosScreen';
 import ReflexionesScreen from '../screens/ReflexionesScreen';
 import AppsScreen from '../screens/AppsScreen';
+import AlbumListScreen from '../screens/AlbumListScreen';
 import WordleScreen from '../screens/WordleScreen';
 import ComidaScreen from '../screens/ComidaScreen';
 import ComidaWebScreen from '../screens/ComidaWebScreen';
-import SettingsPanel from '@/components/SettingsPanel';
+import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import { getEvent } from '@/constants/events';
 
 /**
@@ -37,6 +38,7 @@ type EventRouteParams = { eventId?: string };
 
 export type MasStackParamList = {
   MasHome: { directTo?: string } | undefined;
+  Fotos: undefined;
   Comunica: undefined;
   ComunicaGestion: undefined;
   JubileoHome: EventRouteParams | undefined;
@@ -147,28 +149,46 @@ export default function MasTab() {
   const navigation = useNavigation();
 
   useEffect(() => {
-    const unsubscribe = navigation
+    // When this tab gains focus coming from another tab, reset the stack.
+    // We do NOT call e.preventDefault here so the tab switch happens normally.
+    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
+      if (stackNavRef.current?.canGoBack()) {
+        stackNavRef.current.popToTop();
+      }
+    });
+
+    // When the user taps this tab while already on it, prevent the default
+    // scroll-to-top behavior and pop to root instead.
+    const unsubscribeTabPress = navigation
       .getParent()
       ?.addListener('tabPress' as any, (e: any) => {
-        if (stackNavRef.current?.canGoBack()) {
-          e.preventDefault?.();
+        if (
+          (navigation as any).isFocused?.() &&
+          stackNavRef.current?.canGoBack()
+        ) {
+          // Do NOT call e.preventDefault() — on iOS NativeTabs it desyncs
+          // the native tab bar from the JS navigation state, freezing the tab.
           stackNavRef.current.popToTop();
         }
       });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeFocus();
+      unsubscribeTabPress?.();
+    };
   }, [navigation]);
 
   return (
     <>
-      <SettingsPanel
+      <SettingsBottomSheet
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
       />
       <Stack.Navigator
         initialRouteName="MasHome"
         screenOptions={({ navigation, route }) => {
-          // Capture stack navigation ref for tab press handling
+          // Always capture the active screen's nav ref so canGoBack() and
+          // popToTop() reflect the real stack depth (not just the root screen).
           stackNavRef.current = navigation;
           return {
             headerBackTitle: 'Atrás',
@@ -210,7 +230,9 @@ export default function MasTab() {
             headerRight: () => {
               // Solo mostrar los botones en las pantallas de un evento
               const isEventScreen =
-                route.name !== 'MasHome' && route.name !== 'JubileoHome';
+                route.name !== 'MasHome' &&
+                route.name !== 'JubileoHome' &&
+                route.name !== 'Fotos';
               if (!isEventScreen) return null;
 
               // Color del icono según el evento activo (cae a Jubileo)
@@ -261,6 +283,18 @@ export default function MasTab() {
             title: 'Más',
             headerShown: false,
             headerRight: undefined,
+          }}
+        />
+        <Stack.Screen
+          name="Fotos"
+          component={AlbumListScreen}
+          options={{
+            // Fotos se comporta como un tab "de plataforma" (cantoral,
+            // calendario): pinta su franja de color desde TabScreenWrapper
+            // dentro de la propia pantalla en lugar de un header pesado.
+            // El gesto de swipe-back de iOS / botón nativo Android cubren
+            // la navegación de vuelta.
+            headerShown: false,
           }}
         />
         <Stack.Screen
