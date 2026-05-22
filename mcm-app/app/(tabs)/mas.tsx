@@ -202,6 +202,9 @@ export default function MasTab() {
           // popToTop() reflect the real stack depth (not just the root screen).
           stackNavRef.current = navigation;
           return {
+            // Congela pantallas que no están visibles al cambiar de tab:
+            // libera CPU/memoria de las que tienen contenido pesado.
+            freezeOnBlur: true,
             headerBackTitle: 'Atrás',
             headerStyle:
               Platform.OS === 'ios'
