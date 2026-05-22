@@ -166,7 +166,8 @@ export default function MasTab() {
           (navigation as any).isFocused?.() &&
           stackNavRef.current?.canGoBack()
         ) {
-          e.preventDefault?.();
+          // Do NOT call e.preventDefault() — on iOS NativeTabs it desyncs
+          // the native tab bar from the JS navigation state, freezing the tab.
           stackNavRef.current.popToTop();
         }
       });
@@ -186,10 +187,9 @@ export default function MasTab() {
       <Stack.Navigator
         initialRouteName="MasHome"
         screenOptions={({ navigation, route }) => {
-          // Capture stack navigation ref for tab press handling
-          if (route.name === 'MasHome') {
-            stackNavRef.current = navigation;
-          }
+          // Always capture the active screen's nav ref so canGoBack() and
+          // popToTop() reflect the real stack depth (not just the root screen).
+          stackNavRef.current = navigation;
           return {
             headerBackTitle: 'Atrás',
             headerStyle:

@@ -81,7 +81,8 @@ export default function CancioneroTab() {
           (navigation as any).isFocused?.() &&
           stackNavRef.current?.canGoBack()
         ) {
-          e.preventDefault?.();
+          // Do NOT call e.preventDefault() — on iOS NativeTabs it desyncs
+          // the native tab bar from the JS navigation state, freezing the tab.
           stackNavRef.current.popToTop();
         }
       });
