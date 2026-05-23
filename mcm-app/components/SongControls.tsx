@@ -8,6 +8,7 @@ import {
   Pressable,
   TouchableOpacity,
 } from 'react-native';
+import { h } from '@/utils/haptics';
 import { PressableFeedback } from 'heroui-native';
 import GlassSurface from '@/components/ui/GlassSurface';
 import { useToast } from '@/contexts/AppToastContext';
@@ -110,6 +111,7 @@ const SongControls: React.FC<SongControlsProps> = ({
 
   const toggleMenu = () => {
     const toOpen = !showActionButtons;
+    toOpen ? h.menuOpen() : h.menuClose();
     setShowActionButtons(toOpen);
     Animated.spring(rotateAnim, {
       toValue: toOpen ? 1 : 0,
@@ -175,7 +177,7 @@ const SongControls: React.FC<SongControlsProps> = ({
         isActive &&
           (isDark ? styles.actionButtonActiveDark : styles.actionButtonActive),
       ]}
-      onPress={onPress}
+      onPress={() => { h.tap(); onPress(); }}
     >
       <PressableFeedback.Highlight />
       <MaterialIcons

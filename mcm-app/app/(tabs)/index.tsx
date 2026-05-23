@@ -56,6 +56,7 @@ import {
 } from '@/services/pushNotificationService';
 import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import { useOTAContext } from '@/contexts/OTAContext';
+import { h } from '@/utils/haptics';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
@@ -785,6 +786,7 @@ export default function Home() {
                     accessibilityLabel={item.label}
                     accessibilityRole="button"
                     onPress={() => {
+                      h.tap();
                       if (item.key === 'comunica') {
                         setPendingMasScreen('Comunica');
                       } else if (item.key === 'fotos') {
