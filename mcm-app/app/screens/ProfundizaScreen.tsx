@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View, Platform, Text } from 'react-native';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { h } from '@/utils/haptics';
 import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -72,7 +73,7 @@ export default function ProfundizaScreen() {
             {data.paginas.map((p, idx) => (
               <View key={idx} style={styles.accordionWrapper}>
                 <PressableFeedback
-                  onPress={() => setOpenIdx(openIdx === idx ? null : idx)}
+                  onPress={() => { h.toggle(); setOpenIdx(openIdx === idx ? null : idx); }}
                   style={[
                     styles.accordion,
                     { backgroundColor: p.color || colors.primary },

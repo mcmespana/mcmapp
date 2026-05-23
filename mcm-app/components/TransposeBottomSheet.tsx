@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import { h } from '@/utils/haptics';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
 import { Colors } from '@/constants/colors';
@@ -127,7 +128,7 @@ export default function TransposeBottomSheet({
                         ? styles.toneBtnDownDark
                         : styles.toneBtnDown,
                   ]}
-                  onPress={() => onSetTranspose(currentTranspose + step.value)}
+                  onPress={() => { h.select(); onSetTranspose(currentTranspose + step.value); }}
                 >
                   <PressableFeedback.Highlight />
                   <Text
@@ -206,7 +207,7 @@ export default function TransposeBottomSheet({
                   isDark ? styles.toneBtnDownDark : styles.toneBtnDown,
                   effectiveCapo <= 0 && styles.capoStepBtnDisabled,
                 ]}
-                onPress={handleCapoMinus}
+                onPress={() => { h.select(); handleCapoMinus(); }}
                 isDisabled={effectiveCapo <= 0}
               >
                 <PressableFeedback.Highlight />
@@ -270,7 +271,7 @@ export default function TransposeBottomSheet({
                   styles.capoStepBtn,
                   isDark ? styles.toneBtnUpDark : styles.toneBtnUp,
                 ]}
-                onPress={handleCapoPlus}
+                onPress={() => { h.select(); handleCapoPlus(); }}
               >
                 <PressableFeedback.Highlight />
                 <MaterialIcons

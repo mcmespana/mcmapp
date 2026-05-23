@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSelectedSongs } from '../contexts/SelectedSongsContext';
+import { h } from '@/utils/haptics';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContextMenu } from '@/hooks/useContextMenu';
@@ -146,10 +147,10 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
 
     const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
 
-    const contextHandler = useCallback(
-      () => onLongPress?.(song),
-      [onLongPress, song],
-    );
+    const contextHandler = useCallback(() => {
+      h.tap();
+      onLongPress?.(song);
+    }, [onLongPress, song]);
     const contextMenuProps = useContextMenu(
       onLongPress ? contextHandler : undefined,
     );
@@ -161,9 +162,11 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         renderLeftActions={isSelected ? renderLeftActions : undefined}
         onSwipeableOpen={(direction) => {
           if (direction === 'right' && !isSelected) {
+            h.add();
             addSong(song.filename);
             swipeableRow.current?.close();
           } else if (direction === 'left' && isSelected) {
+            h.remove();
             removeSong(song.filename);
             swipeableRow.current?.close();
           }

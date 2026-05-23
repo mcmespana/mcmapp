@@ -30,6 +30,7 @@ import GlassFAB from '@/components/ui/GlassFAB';
 import { useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
+import { h } from '@/utils/haptics';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -434,6 +435,7 @@ export default function Calendario() {
                 current={selectedDate}
                 onDayPress={(day) => {
                   if (day.dateString !== selectedDate) {
+                    h.select();
                     setSelectedDate(day.dateString);
                   }
                 }}

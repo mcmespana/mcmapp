@@ -25,6 +25,7 @@ import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
+import { h } from '@/utils/haptics';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import GlassFAB from '@/components/ui/GlassFAB';
@@ -139,6 +140,7 @@ export default function ReflexionesScreen() {
 
   async function addReflexion() {
     if (!fecha) return;
+    h.tap();
     setSaving(true);
     const nuevo: Reflexion = {
       id: Date.now().toString(),
@@ -157,6 +159,7 @@ export default function ReflexionesScreen() {
         Date.now().toString(),
       );
       setList([nuevo, ...list]);
+      h.formSuccess();
     } catch (e) {
       console.error('Error adding post', e);
     }

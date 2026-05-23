@@ -17,6 +17,7 @@ import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
 import { Colors } from '@/constants/colors';
 import { durations } from '@/constants/animations';
+import { h } from '@/utils/haptics';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
 // add/remove song button. Not part of the MCM brand palette: it's an
@@ -295,6 +296,7 @@ export default function SongDetailScreen({
       typeof currentIndex === 'number' &&
       currentIndex > 0
     ) {
+      h.navigate();
       const prevSong = navigationList[currentIndex - 1];
       animateAndSet(
         { ...prevSong, navigationList, currentIndex: currentIndex - 1, source },
@@ -309,6 +311,7 @@ export default function SongDetailScreen({
       typeof currentIndex === 'number' &&
       currentIndex < navigationList.length - 1
     ) {
+      h.navigate();
       const nextSong = navigationList[currentIndex + 1];
       animateAndSet(
         { ...nextSong, navigationList, currentIndex: currentIndex + 1, source },
@@ -348,8 +351,8 @@ export default function SongDetailScreen({
           Platform.OS !== 'ios' && { backgroundColor: floatBtnBg },
         ]}
         onPress={() => {
-          if (isSelected) removeSong(filename);
-          else addSong(filename);
+          if (isSelected) { h.remove(); removeSong(filename); }
+          else { h.add(); addSong(filename); }
         }}
         activeOpacity={0.7}
         accessibilityLabel={isSelected ? 'Quitar de selección' : 'Añadir a selección'}
