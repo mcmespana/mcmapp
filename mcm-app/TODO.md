@@ -77,10 +77,10 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 - [x] **Firebase: descargar `updatedAt` antes que `data`** en `hooks/useFirebaseData.ts`. Cuando hay caché local, primero se comprueba `updatedAt` + `hidden` (pocos bytes) y `data` sólo se baja si cambió. Ver MEJORAS.md §1.1.
 - [x] **Memoizar parser ChordPro** en `hooks/useSongProcessor.ts` y eliminar el segundo parser temporal usado para `displayKey` (ahora vía `utils/transposeKey.ts`). Ver MEJORAS.md §1.3.
 - [x] **`freezeOnBlur: true`** en los stacks anidados de `cancionero` y `mas`. Ver MEJORAS.md §1.7.
-- [ ] **`expo-image` en `AlbumCard`**: ya está instalado (`package.json:42`) pero nadie lo importa. Reemplazar `ImageBackground` y añadir `placeholder`/`transition`. Ver MEJORAS.md §1.5.
-- [ ] **`React.memo` en `SongSearch`, `AlbumCard`, `EventItem`**. Ver MEJORAS.md §1.9.
-- [ ] **Eliminar `lodash`** de `package.json` (0 importaciones). Ver MEJORAS.md §1.10.
-- [ ] **Reducir `HelloWave`** a 2 repeticiones (600 ms) o saltarlo tras el primer arranque. Ver MEJORAS.md §1.8.
+- [x] **`expo-image` en `AlbumCard`**: ya está instalado (`package.json:42`) pero nadie lo importa. Reemplazar `ImageBackground` y añadir `placeholder`/`transition`. Ver MEJORAS.md §1.5.
+- [x] **`React.memo` en `SongSearch`, `AlbumCard`, `EventItem`**. Ver MEJORAS.md §1.9.
+- [x] **Eliminar `lodash`** de `package.json` (0 importaciones). Ver MEJORAS.md §1.10.
+- [x] **Reducir `HelloWave`** a 2 repeticiones (600 ms) o saltarlo tras el primer arranque. Ver MEJORAS.md §1.8.
 
 **Iteraciones siguientes (más esfuerzo, más impacto):**
 

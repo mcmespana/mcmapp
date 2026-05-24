@@ -2,11 +2,11 @@ import React from 'react';
 import {
   View,
   Text,
-  ImageBackground,
   StyleSheet,
   useWindowDimensions,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -31,16 +31,18 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
     <PressableFeedback style={activeStyles.card} onPress={onPress}>
       <PressableFeedback.Highlight />
       <View style={activeStyles.cardContent}>
-        <ImageBackground
-          source={{ uri: album.imageUrl }}
-          style={activeStyles.imageBackground}
-          imageStyle={activeStyles.image}
-          onError={(error) =>
-            console.log(
-              `Error loading image for ${album.title}: ${error.nativeEvent.error}`,
-            )
-          }
-        >
+        <View style={activeStyles.imageBackground}>
+          <Image
+            source={{ uri: album.imageUrl }}
+            style={StyleSheet.absoluteFillObject}
+            contentFit="cover"
+            transition={300}
+            onError={(event) =>
+              console.log(
+                `Error loading image for ${album.title}: ${event.error}`,
+              )
+            }
+          />
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.65)']}
             locations={[0.3, 1]}
@@ -77,7 +79,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
               </View>
             )}
           </View>
-        </ImageBackground>
+        </View>
       </View>
     </PressableFeedback>
   );
@@ -112,7 +114,6 @@ const createStyles = (screenWidth: number) =>
       flex: 1,
       justifyContent: 'flex-end',
     },
-    image: {},
     gradient: {
       ...StyleSheet.absoluteFillObject,
     },
@@ -148,4 +149,4 @@ const createStyles = (screenWidth: number) =>
     },
   });
 
-export default AlbumCard;
+export default React.memo(AlbumCard);
