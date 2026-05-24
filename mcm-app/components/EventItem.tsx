@@ -18,7 +18,7 @@ export interface EventItemData {
   materiales?: boolean; // Si tiene materiales disponibles
 }
 
-export default function EventItem({
+function EventItem({
   event,
   dayIndex,
   onNavigateToMateriales,
@@ -209,3 +209,5 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
     },
   });
 };
+
+export default React.memo(EventItem);
