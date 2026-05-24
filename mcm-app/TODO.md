@@ -7,9 +7,7 @@
 
 ## Prioridad alta
 
-- [ ] Revisar pestaña "más" del menu de abajo — diseñarla bien cuando no sale completa
 - [ ] Revisar diseño en iPads y arreglarlo
-- [ ] En iPad Contigo se ven desproporcionados los habit trackers
 - [ ] **Command Palette v2: deep-link a contenidos** — el palette actual (`CommandPalette.tsx`) solo navega a tabs/pantallas top-level. Para saltar a una canción concreta o a un punto dentro de los stacks anidados hay que exponer un `navigation ref` (p.ej. `CancioneroNavRefContext`). Después indexar canciones (`songs/data`), reflexiones (`compartiendo/data`) y eventos del calendario.
 
 ---
@@ -77,17 +75,17 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 - [x] **Firebase: descargar `updatedAt` antes que `data`** en `hooks/useFirebaseData.ts`. Cuando hay caché local, primero se comprueba `updatedAt` + `hidden` (pocos bytes) y `data` sólo se baja si cambió. Ver MEJORAS.md §1.1.
 - [x] **Memoizar parser ChordPro** en `hooks/useSongProcessor.ts` y eliminar el segundo parser temporal usado para `displayKey` (ahora vía `utils/transposeKey.ts`). Ver MEJORAS.md §1.3.
 - [x] **`freezeOnBlur: true`** en los stacks anidados de `cancionero` y `mas`. Ver MEJORAS.md §1.7.
-- [ ] **`expo-image` en `AlbumCard`**: ya está instalado (`package.json:42`) pero nadie lo importa. Reemplazar `ImageBackground` y añadir `placeholder`/`transition`. Ver MEJORAS.md §1.5.
-- [ ] **`React.memo` en `SongSearch`, `AlbumCard`, `EventItem`**. Ver MEJORAS.md §1.9.
-- [ ] **Eliminar `lodash`** de `package.json` (0 importaciones). Ver MEJORAS.md §1.10.
-- [ ] **Reducir `HelloWave`** a 2 repeticiones (600 ms) o saltarlo tras el primer arranque. Ver MEJORAS.md §1.8.
+- [x] **`expo-image` en `AlbumCard`**: ya está instalado (`package.json:42`) pero nadie lo importa. Reemplazar `ImageBackground` y añadir `placeholder`/`transition`. Ver MEJORAS.md §1.5.
+- [x] **`React.memo` en `SongSearch`, `AlbumCard`, `EventItem`**. Ver MEJORAS.md §1.9.
+- [x] **Eliminar `lodash`** de `package.json` (0 importaciones). Ver MEJORAS.md §1.10.
+- [x] **Reducir `HelloWave`** a 2 repeticiones (600 ms) o saltarlo tras el primer arranque. Ver MEJORAS.md §1.8.
 
 **Iteraciones siguientes (más esfuerzo, más impacto):**
 
 - [ ] **React Compiler** — activar `babel-plugin-react-compiler` (soportado en React 19). Memoiza automáticamente. Ver MEJORAS.md §1.6.
-- [ ] **`GruposScreen` → `SectionList`** y **`ContactosScreen` → `FlatList`** (ahora son `ScrollView+.map()` anidados). Ver MEJORAS.md §1.4.
-- [ ] **WebView estable con `postMessage`** para aplicar tono/fuente/notación sin recrear el HTML. Elimina el parpadeo al cambiar ajustes en una canción. Ver MEJORAS.md §1.2.
-- [ ] **Pre-procesado ChordPro en compilación** — Metro Transformer para parsear `.cho` durante el build en vez de en runtime, eliminando el coste de CPU de ChordSheetJS al abrir canciones. Ver MEJORAS.md §1.3.
+- [x] **`GruposScreen` → `SectionList`** y **`ContactosScreen` → `FlatList`**. Hecho 2026-05-24: GruposScreen rediseñado (buscador siempre visible, "Encuéntrame" por `UserProfile.name`, badge "tú", filtro interno en grupos grandes); ContactosScreen virtualizado con buscador.
+- [x] **WebView estable con `postMessage`** para aplicar fuente/tamaño/tema/visibilidad de acordes sin recrear el HTML. Hecho 2026-05-24: `useSongProcessor` separa estructura/estilo y devuelve `styleState`; el bridge `window.__SONG_BRIDGE__` aplica CSS vars + clases sin recargar. Nota: cambios de tono y notación EN/ES siguen regenerando HTML (modifican el contenido).
+- [x] **Pre-procesado ChordPro** — adaptado a caché de módulo (FIFO de 64 entradas en `useSongProcessor.ts`). Reabrir una canción ya no la reparsea. El plan original de Metro Transformer no aplica: las canciones viven en Firebase, no en el bundle.
 
 **A valorar:**
 

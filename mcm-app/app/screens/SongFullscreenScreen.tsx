@@ -254,7 +254,7 @@ export default function SongFullscreenScreen({
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;
 
-  const { songHtml } = useSongProcessor({
+  const { songHtml, styleState } = useSongProcessor({
     originalChordPro: content || null,
     currentTranspose: 0,
     chordsVisible,
@@ -273,6 +273,34 @@ export default function SongFullscreenScreen({
 
   const webViewRef = useRef<WebView | null>(null);
   const webContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Push live style updates (font size, theme, etc.) into the WebView/iframe
+  // without rebuilding the HTML. Mirrors SongDisplay's bridge.
+  useEffect(() => {
+    if (!styleState) return;
+    const payload = JSON.stringify(styleState);
+    if (isWeb) {
+      const container = webContainerRef.current;
+      // Direct DOM: apply the style on the rendered div since there's no iframe
+      // sandbox here. The bootstrap script inside songHtml already exposes the
+      // helper on window, but the contentful div lives in the parent document,
+      // so we apply CSS variables / classes directly.
+      if (!container) return;
+      try {
+        const r = container.style as CSSStyleDeclaration;
+        r.setProperty('--song-font-size', `${styleState.fontSize}em`);
+        r.setProperty('--song-font-family', styleState.fontFamily);
+        r.setProperty('--song-pad-top', `${styleState.topPadding}px`);
+        r.setProperty('--song-pad-bottom', `${styleState.bottomPadding}px`);
+      } catch {
+        /* noop */
+      }
+      return;
+    }
+    if (!webViewRef.current) return;
+    const js = `(function(){try{var s=${payload};if(window.__SONG_BRIDGE__){window.__SONG_BRIDGE__.apply(s);}}catch(_){};true;})();`;
+    webViewRef.current.injectJavaScript(js);
+  }, [styleState]);
 
   const autoScroll = useAutoScroller({
     webViewRef,

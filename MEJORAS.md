@@ -28,33 +28,9 @@
 | **14. Documentación**               | Muy buena (CLAUDE.md, AGENTS.md, etc.) pero con datos obsoletos | Sincronizar AGENTS.md y CLAUDE.md con realidad actual    |
 
 ---
-
-## 1. Rendimiento y fluidez
-
-> Esta es la sección más detallada. Es la que motivó el documento originalmente.
+## 0. Cosas HECHAS :)
 
 ### 1.1 Firebase: descarga el nodo entero aunque no haya cambiado nada
-
-**Archivo:** `mcm-app/hooks/useFirebaseData.ts:44-69`
-
-`get(ref(db, path))` baja `{ data, updatedAt, hidden }` completo y luego compara `updatedAt` con el cacheado. Si `songs` pesa varios MB, lo descarga cada arranque aunque no haya cambios.
-
-**Propuesta** (bajo riesgo, alto impacto):
-
-```ts
-// 1. Bajar SOLO updatedAt (~ pocos bytes)
-const metaSnap = await get(ref(db, `${path}/updatedAt`));
-const remoteUpdatedAt = String(metaSnap.val() ?? '0');
-
-// 2. Bajar el resto solo si cambió
-if (!localUpdatedAt || localUpdatedAt !== remoteUpdatedAt) {
-  const dataSnap = await get(ref(db, `${path}/data`));
-  // …guardar en AsyncStorage…
-}
-const hiddenSnap = await get(ref(db, `${path}/hidden`));
-```
-
-Hacer las tres llamadas en `Promise.all`. La ganancia en `songs` y `albums` (los nodos grandes) es sustancial.
 
 ### 1.2 WebView del cantoral: se reconstruye en cada interacción
 
@@ -101,6 +77,13 @@ b) **Mientras tanto, separar dependencias del efecto**: cosas que cambian estruc
 
 **Propuesta:** reemplazar por `<Image>` de `expo-image` con `placeholder` (blurhash) y `transition={200}`.
 
+
+
+## 1. Rendimiento y fluidez
+
+> Esta es la sección más detallada. Es la que motivó el documento originalmente.
+
+
 ### 1.6 `babel.config.js` vacío — falta `react-compiler`
 
 **Archivo:** `mcm-app/babel.config.js:1-7`
@@ -129,33 +112,13 @@ Añadir `screenOptions={{ freezeOnBlur: true }}` en los stacks de tabs no visibl
 
 `SongListItem.tsx:45` ya usa `React.memo` (referencia de buen patrón).
 
-### 1.10 Dependencias muertas o pesadas
-
-- `lodash` (`^4.17.21`) — **0 importaciones**. Eliminar.
-- `react-native-render-html` (`^6.3.4`) — solo en `FormattedContent.tsx`. Si BBCode simple bastara, ahorraría peso.
 
 ### 1.11 Otros
 
 - `mcm-app/contexts/SettingsContext.tsx:85-117` — dos `useEffect` guardan settings (uno redundante).
 - 12 providers anidados en `mcm-app/app/_layout.tsx:51-83`. Considerar agrupar contextos relacionados.
 
-### 1.12 Plan recomendado (rendimiento)
 
-| Paso | Tarea                                                       | Impacto | Esfuerzo |
-| ---- | ----------------------------------------------------------- | ------- | -------- |
-| 1    | `useFirebaseData`: cargar `updatedAt` antes de `data`       | Alto    | Bajo     |
-| 2    | Memoizar parser ChordPro + eliminar segundo parser de `key` | Alto    | Bajo     |
-| 3    | `freezeOnBlur` en stacks anidados                           | Medio   | Trivial  |
-| 4    | `expo-image` en `AlbumCard` con `placeholder`               | Medio   | Bajo     |
-| 5    | `babel-plugin-react-compiler`                               | Medio   | Bajo     |
-| 6    | `React.memo` en `SongSearch`, `AlbumCard`, `EventItem`      | Bajo    | Trivial  |
-| 7    | Quitar `lodash`                                             | Bajo    | Trivial  |
-| 8    | `HelloWave`: 600 ms o saltar tras primer launch             | Bajo    | Trivial  |
-| 9    | `GruposScreen` → `SectionList`; `ContactosScreen` → `FlatList` | Medio | Medio    |
-| 10   | WebView con `postMessage` para estilo                       | Alto    | Alto     |
-| 11   | Preprocesado `.cho` en build (Metro Transformer)            | Alto    | Alto     |
-
----
 
 ## 2. Arquitectura y mantenibilidad
 
@@ -249,13 +212,6 @@ Ver §11. Hoy un PR puede romper tests sin que nadie se entere.
 - Pesos de fuente: `'800'`/`'700'`/`'500'` mezclados sin guía clara.
 - `borderRadius` de modales: 8 o 12 según el componente.
 
-### 5.3 Pantalla Home estática
-
-(Hereda del TODO actual.) Opciones A/B/C ya documentadas; la **A (dinámica)** es la recomendada — próximo evento + accesos rápidos + canción del día.
-
-### 5.4 iPad y pestaña "Más"
-
-Ya están como **prioridad alta** en `TODO.md`. Confirmado.
 
 ---
 
@@ -434,9 +390,6 @@ Está en CLAUDE.md como recomendación, pero **no existe** como script de npm. A
 
 ## 12. Build, EAS y OTA
 
-### 12.1 EAS bien configurado
-
-`mcm-app/eas.json` tiene `development`, `preview`, `production`, `development-simulator`. `package.json` envuelve `eas build` con limpieza de symlinks de Claude Code. Bien.
 
 ### 12.2 OTA: criterios de promoción
 
