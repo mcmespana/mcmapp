@@ -85,9 +85,9 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 **Iteraciones siguientes (más esfuerzo, más impacto):**
 
 - [ ] **React Compiler** — activar `babel-plugin-react-compiler` (soportado en React 19). Memoiza automáticamente. Ver MEJORAS.md §1.6.
-- [ ] **`GruposScreen` → `SectionList`** y **`ContactosScreen` → `FlatList`** (ahora son `ScrollView+.map()` anidados). Ver MEJORAS.md §1.4.
-- [ ] **WebView estable con `postMessage`** para aplicar tono/fuente/notación sin recrear el HTML. Elimina el parpadeo al cambiar ajustes en una canción. Ver MEJORAS.md §1.2.
-- [ ] **Pre-procesado ChordPro en compilación** — Metro Transformer para parsear `.cho` durante el build en vez de en runtime, eliminando el coste de CPU de ChordSheetJS al abrir canciones. Ver MEJORAS.md §1.3.
+- [x] **`GruposScreen` → `SectionList`** y **`ContactosScreen` → `FlatList`**. Hecho 2026-05-24: GruposScreen rediseñado (buscador siempre visible, "Encuéntrame" por `UserProfile.name`, badge "tú", filtro interno en grupos grandes); ContactosScreen virtualizado con buscador.
+- [x] **WebView estable con `postMessage`** para aplicar fuente/tamaño/tema/visibilidad de acordes sin recrear el HTML. Hecho 2026-05-24: `useSongProcessor` separa estructura/estilo y devuelve `styleState`; el bridge `window.__SONG_BRIDGE__` aplica CSS vars + clases sin recargar. Nota: cambios de tono y notación EN/ES siguen regenerando HTML (modifican el contenido).
+- [x] **Pre-procesado ChordPro** — adaptado a caché de módulo (FIFO de 64 entradas en `useSongProcessor.ts`). Reabrir una canción ya no la reparsea. El plan original de Metro Transformer no aplica: las canciones viven en Firebase, no en el bundle.
 
 **A valorar:**
 
