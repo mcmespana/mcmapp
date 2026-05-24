@@ -7,9 +7,7 @@
 
 ## Prioridad alta
 
-- [ ] Revisar pestaña "más" del menu de abajo — diseñarla bien cuando no sale completa
 - [ ] Revisar diseño en iPads y arreglarlo
-- [ ] En iPad Contigo se ven desproporcionados los habit trackers
 - [ ] **Command Palette v2: deep-link a contenidos** — el palette actual (`CommandPalette.tsx`) solo navega a tabs/pantallas top-level. Para saltar a una canción concreta o a un punto dentro de los stacks anidados hay que exponer un `navigation ref` (p.ej. `CancioneroNavRefContext`). Después indexar canciones (`songs/data`), reflexiones (`compartiendo/data`) y eventos del calendario.
 
 ---
