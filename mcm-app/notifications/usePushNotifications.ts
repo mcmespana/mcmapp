@@ -11,7 +11,7 @@
 //      b. notificationResponse — usuario toca la notificación: navega a la ruta correspondiente y marca como leída
 //
 import { useEffect, useMemo, useRef } from 'react';
-import { Platform } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import {
@@ -65,6 +65,25 @@ const ACTION_ROUTES: Record<string, string> = {
   view_photos: '/(tabs)/fotos',
 };
 
+// Metadata más reciente conocida del perfil. Se mantiene a nivel de módulo
+// para que `tryRegisterPushToken()` (invocado desde el banner de permisos)
+// pueda registrar el token con los topics correctos sin tener que pasar
+// la metadata como argumento.
+let latestMetadata: TokenProfileMetadata | null = null;
+
+/**
+ * Intenta registrar el token push usando la metadata de perfil más reciente
+ * conocida por el hook. Es idempotente y seguro de llamar desde cualquier
+ * punto: si los permisos no están concedidos, devuelve sin error.
+ *
+ * Pensado para el flujo del banner de permisos: tras conceder los permisos
+ * (in-app prompt o vuelta desde Ajustes), se llama esta función para que el
+ * token quede registrado sin esperar al siguiente arranque de la app.
+ */
+export async function tryRegisterPushToken(): Promise<void> {
+  await registerAndSaveToken(latestMetadata);
+}
+
 export default function usePushNotifications() {
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
@@ -90,6 +109,8 @@ export default function usePushNotifications() {
   const metadataRef = useRef(profileMetadata);
   useEffect(() => {
     metadataRef.current = profileMetadata;
+    // Espejo a nivel de módulo para `tryRegisterPushToken()`.
+    latestMetadata = profileMetadata;
   }, [profileMetadata]);
 
   useEffect(() => {
@@ -207,13 +228,28 @@ export default function usePushNotifications() {
   useEffect(() => {
     updateLastActive(profileMetadata).catch(() => {});
   }, [profileMetadata]);
+
+  // Al volver al foreground, reintenta el registro. Cubre el caso de
+  // "vuelvo de Ajustes tras conceder permisos": `registerAndSaveToken`
+  // es idempotente (no-op si los permisos siguen denegados, refresca
+  // token y guarda en Firebase si pasaron a granted).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      if (next === 'active') {
+        registerAndSaveToken(metadataRef.current).catch(() => {});
+      }
+    });
+    return () => sub.remove();
+  }, []);
 }
 
 /**
  * Flujo completo: permisos → token → guardar en Firebase
  * Con logging detallado para diagnosticar problemas
  */
-async function registerAndSaveToken(profileMetadata: TokenProfileMetadata) {
+async function registerAndSaveToken(
+  profileMetadata: TokenProfileMetadata | null,
+) {
   if (Platform.OS === 'web') return;
 
   try {
@@ -261,6 +297,6 @@ async function registerAndSaveToken(profileMetadata: TokenProfileMetadata) {
     await cachePushToken(token);
 
     // 5. Guardar en Firebase
-    await saveTokenToFirebase(token, profileMetadata);
+    await saveTokenToFirebase(token, profileMetadata ?? undefined);
   } catch {}
 }

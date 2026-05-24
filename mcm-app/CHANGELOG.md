@@ -13,6 +13,22 @@
 
 ---
 
+## 2026-05-24 — Banner de permisos de notificaciones
+
+- **Qué hace**: cuando el usuario aún no ha concedido permisos de notificaciones, aparece un banner en Home y en la pantalla de Notificaciones invitando a activarlas. Se descarta durante 7 días al pulsar la X.
+- **Estados manejados**: se muestra en `undetermined` (CTA "Activar" dispara el prompt nativo del sistema) y en `denied` (CTA "Abrir Ajustes" abre los Ajustes de la app con `Linking.openSettings()`). Se oculta en `granted` y `provisional`. En web no se muestra nunca.
+- **Persistencia**: timestamp de descarte en AsyncStorage (`@mcm_notif_permission_banner_dismissed_at`). El banner reaparece pasados 7 días.
+- **Reconsulta**: el banner vuelve a comprobar el estado de permisos cuando la app vuelve al foreground (`AppState 'active'`), de modo que se oculta automáticamente al volver de Ajustes tras conceder los permisos.
+- **Registro inmediato del token**: `usePushNotifications` ahora expone `tryRegisterPushToken()` y registra un listener de `AppState` que reintenta `registerAndSaveToken` al volver al foreground. Resultado: al conceder permisos (en-app o vía Ajustes), el token Expo Push se registra en Firebase sin esperar al siguiente arranque.
+- **Archivos nuevos**:
+  - `components/NotificationPermissionBanner.tsx`: componente reutilizable con prop `placement: 'home' | 'notifications'`.
+- **Archivos modificados**:
+  - `notifications/usePushNotifications.ts`: nuevo export `tryRegisterPushToken()`, espejo de metadata a nivel de módulo, listener de `AppState` para re-registro idempotente al foregroundear.
+  - `app/(tabs)/index.tsx`: inserta el banner en la columna izquierda, justo antes de la tarjeta de Novedades.
+  - `app/notifications.tsx`: inserta el banner justo debajo del header.
+
+---
+
 ## 2026-05-22 — Canal "preview" en caliente: modo Laboratorio Alpha (7 taps)
 
 - **Qué hace**: permite a un dispositivo suscribirse al canal `preview` de EAS Update desde dentro de la app instalada en stores, sin necesidad de un binario aparte. Mientras esté activo, los OTAs vienen de la rama `preview` (que ya publica `/.github/workflows/ota-preview.yml`); al desactivarlo, en el siguiente arranque vuelve al canal `production`.

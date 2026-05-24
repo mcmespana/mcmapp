@@ -40,6 +40,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
+import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -620,6 +621,9 @@ export default function Home() {
                 />
               </TouchableOpacity>
             )}
+
+            {/* ── Banner de permisos de notificaciones (denied / undetermined) ── */}
+            <NotificationPermissionBanner placement="home" />
 
             {/* ── Novedades ── */}
             <View style={styles.section}>
