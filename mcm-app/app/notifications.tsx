@@ -35,6 +35,7 @@ import {
 } from '@/services/pushNotificationService';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 
 // Mapeo de rutas internas a nombres legibles
 const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
@@ -460,6 +461,8 @@ export default function NotificationsScreen() {
           <View style={styles.headerRight} />
         )}
       </View>
+
+      <NotificationPermissionBanner placement="notifications" />
 
       {loading ? (
         <View style={styles.emptyState}>
