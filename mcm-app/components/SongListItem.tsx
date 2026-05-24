@@ -7,7 +7,6 @@ import {
   Animated,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { useSelectedSongs } from '../contexts/SelectedSongsContext';
 import { h } from '@/utils/haptics';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -41,6 +40,10 @@ interface SongListItemProps {
   onPress: (song: Song) => void;
   onLongPress?: (song: Song) => void;
   isSearchAllMode?: boolean;
+  isSelected: boolean;
+  selectedTranspose: number;
+  onAddSong: (filename: string) => void;
+  onRemoveSong: (filename: string) => void;
 }
 
 const SongListItem: React.FC<SongListItemProps> = React.memo(
@@ -49,20 +52,17 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     onPress,
     onLongPress,
     isSearchAllMode = false,
+    isSelected,
+    selectedTranspose,
+    onAddSong,
+    onRemoveSong,
   }) {
-    const { addSong, removeSong, isSongSelected, getSelectedSong } =
-      useSelectedSongs();
     const { settings } = useSettings();
     const { notation } = settings;
     const scheme = useColorScheme();
     const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
     const isDark = scheme === 'dark';
     const swipeableRow = useRef<Swipeable>(null);
-    const isSelected = isSongSelected(song.filename);
-    const selectedMeta = isSelected
-      ? getSelectedSong(song.filename)
-      : undefined;
-    const selectedTranspose = selectedMeta?.transpose ?? 0;
     const backgroundColorAnim = useRef(
       new Animated.Value(isSelected ? 1 : 0),
     ).current;
@@ -98,7 +98,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         <TouchableOpacity
           style={styles.rightAction}
           onPress={() => {
-            addSong(song.filename);
+            onAddSong(song.filename);
             swipeableRow.current?.close();
           }}
         >
@@ -128,7 +128,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         <TouchableOpacity
           style={styles.leftAction}
           onPress={() => {
-            removeSong(song.filename);
+            onRemoveSong(song.filename);
             swipeableRow.current?.close();
           }}
         >
@@ -163,11 +163,11 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         onSwipeableOpen={(direction) => {
           if (direction === 'right' && !isSelected) {
             h.add();
-            addSong(song.filename);
+            onAddSong(song.filename);
             swipeableRow.current?.close();
           } else if (direction === 'left' && isSelected) {
             h.remove();
-            removeSong(song.filename);
+            onRemoveSong(song.filename);
             swipeableRow.current?.close();
           }
         }}

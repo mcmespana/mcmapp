@@ -100,7 +100,7 @@ export default function SongsListScreen({
     [scheme, insets.bottom, layout.isWide, layout.readableMaxWidth],
   );
   const isDark = scheme === 'dark';
-  const { addSong, removeSong, isSongSelected } = useSelectedSongs();
+  const { addSong, removeSong, isSongSelected, getSelectedSong } = useSelectedSongs();
   const [search, setSearch] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
   const [songs, setSongs] = useState<Song[]>([]);
@@ -394,9 +394,21 @@ export default function SongsListScreen({
         onPress={handleSongPress}
         onLongPress={handleSongLongPress}
         isSearchAllMode={isSearchAll}
+        isSelected={isSongSelected(item.filename)}
+        selectedTranspose={getSelectedSong(item.filename)?.transpose ?? 0}
+        onAddSong={addSong}
+        onRemoveSong={removeSong}
       />
     ),
-    [handleSongPress, handleSongLongPress, isSearchAll],
+    [
+      handleSongPress,
+      handleSongLongPress,
+      isSearchAll,
+      isSongSelected,
+      getSelectedSong,
+      addSong,
+      removeSong,
+    ],
   );
 
   if ((isLoading || loadingSongs) && songs.length === 0) {
