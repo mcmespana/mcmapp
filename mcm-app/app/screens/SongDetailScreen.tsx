@@ -1,5 +1,12 @@
 import { useEffect, useState, useLayoutEffect, useRef } from 'react';
-import { StyleSheet, View, Platform, Dimensions, Animated, TouchableOpacity } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Platform,
+  Dimensions,
+  Animated,
+  TouchableOpacity,
+} from 'react-native';
 import GlassSurface from '@/components/ui/GlassSurface';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -124,7 +131,11 @@ export default function SongDetailScreen({
   const slideAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
 
-  const { songHtml, isLoadingSong: isSongProcessing } = useSongProcessor({
+  const {
+    songHtml,
+    isLoadingSong: isSongProcessing,
+    styleState,
+  } = useSongProcessor({
     originalChordPro,
     currentTranspose,
     chordsVisible,
@@ -351,11 +362,18 @@ export default function SongDetailScreen({
           Platform.OS !== 'ios' && { backgroundColor: floatBtnBg },
         ]}
         onPress={() => {
-          if (isSelected) { h.remove(); removeSong(filename); }
-          else { h.add(); addSong(filename); }
+          if (isSelected) {
+            h.remove();
+            removeSong(filename);
+          } else {
+            h.add();
+            addSong(filename);
+          }
         }}
         activeOpacity={0.7}
-        accessibilityLabel={isSelected ? 'Quitar de selección' : 'Añadir a selección'}
+        accessibilityLabel={
+          isSelected ? 'Quitar de selección' : 'Añadir a selección'
+        }
       >
         {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
         <IconSymbol
@@ -380,6 +398,7 @@ export default function SongDetailScreen({
       <SongDisplay
         songHtml={songHtml}
         isLoading={isFileLoading || isSongProcessing || isLoadingSettings}
+        styleState={styleState}
       />
       <SongControls
         chordsVisible={chordsVisible}
@@ -410,7 +429,9 @@ export default function SongDetailScreen({
   );
 
   const gestureContent =
-    navigationList && typeof currentIndex === 'number' && Platform.OS !== 'web' ? (
+    navigationList &&
+    typeof currentIndex === 'number' &&
+    Platform.OS !== 'web' ? (
       <PanGestureHandler
         activeOffsetX={[-20, 20]}
         failOffsetY={[-15, 15]}

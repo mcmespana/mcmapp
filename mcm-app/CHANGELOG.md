@@ -13,6 +13,48 @@
 
 ---
 
+## 2026-05-24 — Virtualización de listas, WebView estable y rediseño de Grupos
+
+Tres cambios de rendimiento + UX descritos en `MEJORAS.md` §1.2, §1.3 y §1.4.
+
+### `GruposScreen` — rediseño completo + `SectionList`
+
+- **Buscador siempre visible** en la vista principal con resultados agrupados por categoría (`SectionList` con sticky section headers y resaltado del texto coincidente).
+- **Botón "Encuéntrame"** que pre-rellena la búsqueda con el nombre del `UserProfile` cuando está disponible. Las filas y tarjetas de grupo donde aparece el usuario muestran un badge "tú" y borde de acento.
+- **Filtro interno en la vista de grupo** (`FlatList` virtualizada de miembros) que aparece sólo cuando hay más de 8 miembros — clave para grupos grandes.
+- **Búsqueda con normalización** (case + diacríticos) y umbral de 2 caracteres (antes 3) para que cosas como "ana" funcionen.
+- **`GrupoCard` y `MemberRow`** extraídos como `React.memo` para que la virtualización no re-renderice todo al cambiar el filtro.
+- **`ScrollView+.map()` anidados** eliminados — todas las listas largas son ahora `SectionList`/`FlatList` con `initialNumToRender`, `windowSize` y `removeClippedSubviews`.
+
+### `ContactosScreen` → `FlatList`
+
+- Sustituye el `ScrollView+.map()` por `FlatList` virtualizada (clave para crecimientos futuros del listado).
+- Buscador integrado en el header (visible cuando hay >6 contactos) que filtra por nombre, responsabilidad o teléfono con normalización de diacríticos.
+- `ContactRow` extraído como `React.memo`.
+
+### WebView estable con `postMessage` (§1.2)
+
+- `useSongProcessor` ahora separa entradas **estructurales** (`originalChordPro`, `currentTranspose`, `notation`, `title`, `author`, `key`, `capo`, `isFullscreen`) de entradas **de estilo** (`fontSize`, `fontFamily`, `isDark`, `chordsVisible`, `topPadding`, `bottomPadding`). Sólo las primeras regeneran el HTML.
+- Devuelve `{ songHtml, isLoadingSong, styleState }`. El HTML inyectado expone `window.__SONG_BRIDGE__.apply(s)` que aplica los cambios vía CSS variables y clases (`.theme-dark`, `.chords-hidden`) sin recargar.
+- `SongDisplay` (móvil) usa `WebView.injectJavaScript(...)` cuando cambia `styleState`. En web envía `postMessage` al `<iframe>`. `SongFullscreenScreen` hace lo mismo sobre su WebView/`<div>` propio.
+- **Efecto visible**: cambiar tamaño de letra, fuente, tema o visibilidad de acordes desde el bottom sheet es ahora instantáneo, sin parpadeo de 200–500 ms.
+
+### Caché de parser ChordPro a nivel de módulo (§1.3, adaptado)
+
+- `useSongProcessor.ts` cachea los objetos `Song` parseados en un `Map` FIFO de hasta 64 entradas (claveado por el contenido ChordPro completo). Abrir, cerrar y reabrir una canción ya no reparsea.
+- Nota: el plan original de un Metro Transformer no aplica porque las canciones no viven en el bundle (vienen de Firebase). El caché en runtime es la alternativa equivalente.
+
+### Archivos modificados
+
+- `app/screens/GruposScreen.tsx` — rewrite completo.
+- `app/screens/ContactosScreen.tsx` — rewrite a `FlatList` + búsqueda.
+- `app/screens/SongDetailScreen.tsx` — propaga `styleState` a `SongDisplay`.
+- `app/screens/SongFullscreenScreen.tsx` — inyecta `styleState` en su WebView/iframe.
+- `hooks/useSongProcessor.ts` — split estructural/estilo + caché de parser + bootstrap script.
+- `components/SongDisplay.tsx` — refs a WebView/iframe y bridge de `postMessage`.
+
+---
+
 ## 2026-05-24 — Banner de permisos de notificaciones
 
 - **Qué hace**: cuando el usuario aún no ha concedido permisos de notificaciones, aparece un banner en Home y en la pantalla de Notificaciones invitando a activarlas. Se descarta durante 7 días al pulsar la X.
