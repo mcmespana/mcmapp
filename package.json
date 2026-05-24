@@ -11,11 +11,10 @@
     "prettier": "^3.2.5"
   },
   "lint-staged": {
-    "mcm-app/**/*.{js,jsx,ts,tsx}": [
-      "prettier --write"
-    ],
-    "mcm-app/**/*.{json,md}": [
-      "prettier --write"
-    ]
+    "mcm-app/**/*.{js,jsx,ts,tsx}": [ "prettier --write" ],
+    "mcm-app/**/*.{json,md}": [ "prettier --write" ]
+  },
+  "dependencies": {
+    "vexo-analytics": "1.5.6"
   }
 }
