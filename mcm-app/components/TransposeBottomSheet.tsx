@@ -38,7 +38,6 @@ export default function TransposeBottomSheet({
 }: Props) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme ?? 'light'];
 
   const showCapoSection = onSetCapoOverride !== undefined;
   const isCapoOverridden =

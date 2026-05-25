@@ -17,10 +17,6 @@ import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getDatabase, ref, set, push, get } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
-import {
-  getCategoryFromFirebaseCategory,
-  cleanSongTitle,
-} from '@/utils/songUtils';
 
 interface SecretPanelModalProps {
   visible: boolean;
@@ -196,11 +192,6 @@ export default function SecretPanelModal({
       }
 
       // 2. Actualizar solo los campos que cambiaron en Firebase
-      const songUpdateRef = ref(
-        db,
-        `songs/data/${category}/songs/${songIndex}`,
-      );
-
       // Crear objeto con solo los campos que cambiaron
       const fieldsToUpdate: Record<string, any> = {};
       Object.keys(changes).forEach((key) => {

@@ -7,7 +7,6 @@ import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
-import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';

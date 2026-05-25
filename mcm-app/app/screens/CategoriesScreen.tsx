@@ -19,7 +19,6 @@ import { useToast } from '@/contexts/AppToastContext';
 import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   consumePendingCloudPlaylistCode,
   consumePendingChoirCode,
@@ -66,7 +65,6 @@ export default function CategoriesScreen({
     [scheme, layout.isWide, layout.contentMaxWidth],
   );
   const isDark = scheme === 'dark';
-  const insets = useSafeAreaInsets();
   const { data: songsData, loading } = useFirebaseData<Record<
     string,
     { categoryTitle: string; songs: any[] }
@@ -303,7 +301,7 @@ export default function CategoriesScreen({
         {sectionLabel()}
       </View>
     ),
-    [renderSelectionHero, sectionLabel, insets.top, isDark, navigation, styles],
+    [renderSelectionHero, sectionLabel, isDark, navigation, styles],
   );
 
   if (loading && sortedCategories.length === 0) {

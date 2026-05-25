@@ -12,7 +12,6 @@ import {
 import { Dialog, PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
-import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import PageContainer from '@/components/ui/PageContainer';
@@ -66,7 +65,7 @@ export default function VisitasScreen() {
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
-  const { data: visitas, loading } = useFirebaseData<Visita[]>(
+  const { data: visitas } = useFirebaseData<Visita[]>(
     getEventFirebasePath(event, 'visitas'),
     getEventCacheKey(event, 'visitas'),
   );

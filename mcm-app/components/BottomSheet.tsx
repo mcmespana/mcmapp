@@ -11,12 +11,12 @@ import {
   Dimensions,
   Keyboard,
 } from 'react-native';
-
-const nativeDriver = Platform.OS !== 'web';
 import { UIColors, Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useEscapeToClose } from '@/hooks/useEscapeToClose';
+
+const nativeDriver = Platform.OS !== 'web';
 
 const OFF_SCREEN = Dimensions.get('window').height;
 const DURATION = 300;

@@ -5,8 +5,6 @@ import type {
   ProfileType,
   ResolvedProfileConfig,
 } from '@/types/profileConfig';
-
-declare const __DEV__: boolean;
 import {
   KNOWN_ALBUM_TAGS,
   KNOWN_HOME_BUTTONS,
@@ -14,9 +12,11 @@ import {
   KNOWN_TABS,
 } from '@/constants/profileCatalog';
 
+declare const __DEV__: boolean;
+
 const DEFAULT_DELEGATION_ID = '_default';
 
-const ARRAY_FIELDS: ReadonlyArray<keyof ProfileBase> = [
+const ARRAY_FIELDS: readonly (keyof ProfileBase)[] = [
   'tabs',
   'homeButtons',
   'masItems',
@@ -43,7 +43,6 @@ function uniq<T>(arr: readonly T[]): T[] {
 
 function warn(message: string) {
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
-    // eslint-disable-next-line no-console
     console.warn(`[profileConfig] ${message}`);
   }
 }

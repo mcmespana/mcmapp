@@ -11,7 +11,7 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
-import { BottomSheet, Button, Chip } from 'heroui-native';
+import { BottomSheet, Button } from 'heroui-native';
 // IMPORTANTE: usar TouchableOpacity de gesture-handler (no de RN core)
 // dentro de Swipeable para que los toques anidados funcionen correctamente.
 import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';

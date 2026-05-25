@@ -17,7 +17,6 @@ import {
   TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
@@ -144,7 +143,7 @@ export default function SongsListScreen({
             </TouchableOpacity>
           ),
     });
-  }, [navigation, categoryName, isSearchAll, searchVisible]);
+  }, [navigation, categoryName, isSearchAll, searchVisible, styles]);
 
   useEffect(() => {
     if (!songsData) return;
@@ -384,6 +383,7 @@ export default function SongsListScreen({
       filteredSongs.length,
       styles,
       setSearch,
+      isDark,
     ],
   );
 

@@ -30,7 +30,7 @@ export default function HorarioScreen() {
     [scheme, fontScale],
   );
   const event = useCurrentEvent();
-  const { data: horarioData, loading } = useFirebaseData<any[]>(
+  const { data: horarioData } = useFirebaseData<any[]>(
     getEventFirebasePath(event, 'horario'),
     getEventCacheKey(event, 'horario'),
   );
@@ -132,6 +132,7 @@ export default function HorarioScreen() {
       );
       setIndex(newIndex);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [horarioData]);
 
   // Animation values for last day

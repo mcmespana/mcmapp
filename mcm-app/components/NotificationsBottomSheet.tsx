@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -386,7 +386,7 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
                           if (btn.isInternal) {
                             try {
                               router.push(normalizeRoute(btn.url) as any);
-                            } catch (e) {}
+                            } catch {}
                           } else {
                             Linking.openURL(btn.url).catch(console.error);
                           }
@@ -542,7 +542,7 @@ function NotificationDetail({
     setTimeout(() => {
       try {
         router.push(clean as any);
-      } catch (e) {}
+      } catch {}
     }, 320);
   };
 

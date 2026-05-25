@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  TouchableOpacity,
   Linking,
   Platform,
   Text,
@@ -40,7 +39,7 @@ export default function AppsScreen() {
   const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
-  const { data: appsData, loading } = useFirebaseData<AppInfo[]>(
+  const { data: appsData } = useFirebaseData<AppInfo[]>(
     getEventFirebasePath(event, 'apps'),
     getEventCacheKey(event, 'apps'),
   );
@@ -63,7 +62,7 @@ export default function AppsScreen() {
       if (storeUrl) {
         await Linking.openURL(storeUrl);
       }
-    } catch (error) {
+    } catch {
       const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
       if (storeUrl) {
         try {
