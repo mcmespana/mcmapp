@@ -4,6 +4,7 @@ import '../notifications/NotificationHandler'; // Inicializa el handler de notif
 import usePushNotifications from '../notifications/usePushNotifications'; // Hook para notificaciones push
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { vexo, identifyDevice } from 'vexo-analytics';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet, Platform } from 'react-native';
 import Constants from 'expo-constants';
@@ -49,6 +50,10 @@ import { PreviewChannelProvider } from '@/contexts/PreviewChannelContext';
 import { PreviewChannelModal } from '@/components/PreviewChannelModal';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
+
+if (!__DEV__) {
+  vexo('0b444fa8-3d09-451f-b7ad-a7b97bed2500');
+}
 
 export default function RootLayout() {
   return (
@@ -149,6 +154,15 @@ function InnerLayout() {
   ]);
 
   usePushNotifications();
+
+  useEffect(() => {
+    if (__DEV__) return;
+    if (profileLoading || !profile.name) return;
+    const id = profile.delegationId
+      ? `${profile.name} (${profile.delegationId})`
+      : profile.name;
+    identifyDevice(id);
+  }, [profile.name, profile.delegationId, profileLoading]);
 
   // Registra el service worker en web (PWA)
   useRegisterServiceWorker();
