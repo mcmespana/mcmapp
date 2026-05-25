@@ -851,7 +851,7 @@ export default function Home() {
                   },
                 ]}
               >
-                PRÓXIMIIISIMOS EVENTOOOS ESTÁS EN RAMA PREVIEWWWW
+                PRÓXIMOS EVENTOS
               </Text>
 
               {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
