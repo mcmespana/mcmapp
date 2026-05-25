@@ -9,6 +9,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,md}'",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
     "eas:build": "rm -rf .agent .agents && npx eas-cli@latest build",
     "eas:build:ios": "rm -rf .agent .agents && npx eas-cli@latest build -p ios",
