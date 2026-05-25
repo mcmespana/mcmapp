@@ -13,6 +13,35 @@
 
 ---
 
+## 2026-05-25 — Activación de React Compiler
+
+- **Qué cambia**: se activa `babel-plugin-react-compiler` (React 19 + Babel 7.25). El compilador memoiza automáticamente componentes y valores derivados, eliminando re-renders innecesarios sin necesidad de `useMemo`/`useCallback`/`React.memo` manuales.
+- **Cómo se activa en Expo SDK 55**: requiere DOS cosas (no basta sólo con el preset):
+  1. `experiments.reactCompiler: true` en `app.json` → hace que Metro pase `supportsReactCompiler: true` al caller de Babel.
+  2. `babel-plugin-react-compiler` instalado + opciones opcionales vía `babel-preset-expo` (`['babel-preset-expo', { 'react-compiler': {} }]`).
+- **Orden con Reanimated**: el preset de Expo se encarga de inyectar el compilador como primer plugin y el plugin de worklets después, así que no hay conflicto manual.
+- **Verificación**: transformando un componente con `caller.supportsReactCompiler = true` aparece el import `react/compiler-runtime` y el `c(N)` de memo cache → confirma que el compilador procesa el código.
+- **Archivos afectados**:
+  - `babel.config.js`: preset pasa de `'babel-preset-expo'` a `['babel-preset-expo', { 'react-compiler': {} }]`.
+  - `app.json`: añadido `experiments.reactCompiler: true`.
+  - `package.json`: nueva devDependency `babel-plugin-react-compiler@^1.0.0`.
+
+---
+
+## 2026-05-25 — Suscripción a calendarios públicos desde la pestaña Calendario
+
+Nueva funcionalidad que permite al usuario suscribirse a los calendarios ICS configurados en Firebase directamente desde su app de calendario nativa.
+
+- **Punto de entrada**: icono `bookmark-add` en el header de la pestaña Calendario, a la derecha del selector Mes/Agenda. Solo visible cuando hay al menos un calendario configurado.
+- **iOS**: botón "Apple Calendario" abre el URL `webcal://...` → diálogo nativo de suscripción de Apple Calendar. Botón "Google Calendar" abre `calendar.google.com/r?cid=...`.
+- **Android / Web**: solo botón "Google Calendar" (Android no tiene handler nativo para `webcal://`). Abre Google Calendar web con prompt de suscripción; los eventos sincronizan automáticamente con la app Android.
+- **Copiar enlace**: copia la URL ICS al portapapeles + toast confirmación.
+- **Acordeón de ayuda**: instrucciones por plataforma (Apple Calendar, Google Calendar, Outlook, Otra app).
+- Archivos nuevos: `utils/calendarSubscription.ts`, `components/CalendarSubscribeBottomSheet.tsx`.
+- Archivos modificados: `app/(tabs)/calendario.tsx`, `app.json` (añadido `LSApplicationQueriesSchemes: ["webcal"]` — requiere nuevo build EAS para aplicar en iOS).
+
+---
+
 ## 2026-05-24 — Virtualización de listas, WebView estable y rediseño de Grupos
 
 Tres cambios de rendimiento + UX descritos en `MEJORAS.md` §1.2, §1.3 y §1.4.
@@ -52,6 +81,21 @@ Tres cambios de rendimiento + UX descritos en `MEJORAS.md` §1.2, §1.3 y §1.4.
 - `app/screens/SongFullscreenScreen.tsx` — inyecta `styleState` en su WebView/iframe.
 - `hooks/useSongProcessor.ts` — split estructural/estilo + caché de parser + bootstrap script.
 - `components/SongDisplay.tsx` — refs a WebView/iframe y bridge de `postMessage`.
+
+---
+
+## 2026-05-25 — Activación de React Compiler
+
+- **Qué cambia**: se activa `babel-plugin-react-compiler` (React 19 + Babel 7.25). El compilador memoiza automáticamente componentes y valores derivados, eliminando re-renders innecesarios sin necesidad de `useMemo`/`useCallback`/`React.memo` manuales.
+- **Cómo se activa en Expo SDK 55**: requiere DOS cosas (no basta sólo con el preset):
+  1. `experiments.reactCompiler: true` en `app.json` → hace que Metro pase `supportsReactCompiler: true` al caller de Babel.
+  2. `babel-plugin-react-compiler` instalado + opciones opcionales vía `babel-preset-expo` (`['babel-preset-expo', { 'react-compiler': {} }]`).
+- **Orden con Reanimated**: el preset de Expo se encarga de inyectar el compilador como primer plugin y el plugin de worklets después, así que no hay conflicto manual.
+- **Verificación**: transformando un componente con `caller.supportsReactCompiler = true` aparece el import `react/compiler-runtime` y el `c(N)` de memo cache → confirma que el compilador procesa el código.
+- **Archivos afectados**:
+  - `babel.config.js`: preset pasa de `'babel-preset-expo'` a `['babel-preset-expo', { 'react-compiler': {} }]`.
+  - `app.json`: añadido `experiments.reactCompiler: true`.
+  - `package.json`: nueva devDependency `babel-plugin-react-compiler@^1.0.0`.
 
 ---
 

@@ -1,7 +1,7 @@
 module.exports = function (api) {
   api.cache(true);
   return {
-    presets: ['babel-preset-expo'],
+    presets: [['babel-preset-expo', { 'react-compiler': {} }]],
     plugins: [], // 'expo-router/babel' a veces se pone pero siempre nos dicen que lo quitemos
   };
 };
