@@ -45,30 +45,24 @@ const STORAGE_KEY = '@mcm_song_autoscroll_speed_index';
  */
 export const AUTO_SCROLL_CONTROLLER_JS = `(function(){
   if (window.__mcmScrollInstalled) return; window.__mcmScrollInstalled = true;
-  var target = 0;       // px/s objetivo
-  var current = 0;      // px/s real (con rampa suave)
-  var acc = 0;          // acumulador sub-píxel
+  var target = 0;
+  var current = 0;
   var lastT = 0;
   var raf = null;
-  var RAMP = 600;       // px/s por segundo (rampa de aceleración/frenado)
+  var RAMP = 600;
+  var scrollEl = document.scrollingElement || document.documentElement;
   function post(type){ try { window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: type })); } catch(e){} }
   function atBottom(){
-    var sy = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
-    var vh = window.innerHeight || document.documentElement.clientHeight || 0;
-    var sh = Math.max(document.documentElement.scrollHeight || 0, document.body ? document.body.scrollHeight : 0);
-    return sy + vh >= sh - 1;
+    return scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 2;
   }
   function step(t){
     if (!lastT) lastT = t;
-    var dt = Math.min((t - lastT) / 1000, 0.05); // cap 50ms (evita saltos tras un freeze)
+    var dt = Math.min((t - lastT) / 1000, 0.05);
     lastT = t;
-    // Rampa suave hacia el objetivo
     if (current < target) current = Math.min(target, current + RAMP * dt);
     else if (current > target) current = Math.max(target, current - RAMP * dt);
     if (current > 0) {
-      acc += current * dt;
-      var px = Math.floor(acc);
-      if (px > 0) { window.scrollBy(0, px); acc -= px; }
+      scrollEl.scrollTop += current * dt;
       if (atBottom()) { target = 0; current = 0; raf = null; lastT = 0; post('scroll-end'); return; }
       raf = requestAnimationFrame(step);
     } else if (target <= 0) {
@@ -81,7 +75,6 @@ export const AUTO_SCROLL_CONTROLLER_JS = `(function(){
     target = +v || 0;
     if (target > 0 && !raf) { lastT = 0; raf = requestAnimationFrame(step); }
   };
-  // Interacción manual del usuario → pausar inmediatamente
   var onUserScroll = function(){
     if (target > 0) { target = 0; current = 0; post('user-paused'); }
   };
@@ -181,8 +174,7 @@ export function useAutoScroller({
 
     let raf: number | null = null;
     let lastT = 0;
-    let acc = 0;
-    let current = 0; // px/s con rampa suave
+    let current = 0;
     const RAMP = 600;
 
     const step = (t: number) => {
@@ -196,14 +188,9 @@ export function useAutoScroller({
         current = Math.max(target, current - RAMP * dt);
 
       if (current > 0) {
-        acc += current * dt;
-        const px = Math.floor(acc);
-        if (px > 0) {
-          el.scrollBy({ top: px });
-          acc -= px;
-        }
-        // Auto-pausa al llegar al final
-        const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+        el.scrollTop += current * dt;
+        const atBottom =
+          el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
         if (atBottom) {
           setIsPlaying(false);
           raf = null;

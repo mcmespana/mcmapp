@@ -111,21 +111,20 @@ function AutoScrollControls({
 
   return (
     <View style={[styles.controlsCluster, { bottom }]} pointerEvents="box-none">
-      {/* Selector de velocidad — pill horizontal, sólo visible al interactuar */}
+      {/* Selector de velocidad — pill vertical, sólo visible al interactuar */}
       <Animated.View
         style={[styles.speedPanel, { opacity: fadeAnim }]}
         pointerEvents={expanded ? 'auto' : 'none'}
       >
         <TranslucentBg isDark={isDark} style={styles.speedPanelBg} />
-        <Text style={styles.speedHeading} numberOfLines={1}>
-          {currentLabel}
-        </Text>
+        {/* Segmentos del 5 (arriba/rápido) al 1 (abajo/lento) */}
         <View
-          style={styles.segmentRow}
+          style={styles.segmentColumn}
           accessibilityRole="adjustable"
           accessibilityLabel={`Velocidad de auto-scroll: ${currentLabel}`}
         >
-          {AUTO_SCROLL_SPEEDS.map((s, i) => {
+          {[...AUTO_SCROLL_SPEEDS].reverse().map((s, reversedI) => {
+            const i = AUTO_SCROLL_SPEEDS.length - 1 - reversedI;
             const selected = i === speedIndex;
             return (
               <Pressable
@@ -152,6 +151,9 @@ function AutoScrollControls({
             );
           })}
         </View>
+        <Text style={styles.speedHeading} numberOfLines={1}>
+          {currentLabel}
+        </Text>
       </Animated.View>
 
       {/* Play / Pause + acceso al selector con long-press */}
@@ -422,26 +424,26 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  /* Cluster inferior derecha */
+  /* Cluster inferior derecha — columna vertical alineada a la derecha */
   controlsCluster: {
     position: 'absolute',
     right: 16,
     flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: 10,
+    alignItems: 'center',
+    gap: 8,
     zIndex: 3,
   },
-  /* Panel horizontal con selector de velocidad */
+  /* Panel vertical con selector de velocidad */
   speedPanel: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     borderRadius: 22,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.22)',
-    gap: 10,
+    gap: 6,
     ...Platform.select({
       web: { boxShadow: '0 4px 18px rgba(0,0,0,0.28)' } as any,
       default: {
@@ -457,23 +459,22 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   speedHeading: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 11,
+    color: 'rgba(255,255,255,0.70)',
+    fontSize: 9,
     fontWeight: '700',
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
     textTransform: 'uppercase',
-    minWidth: 64,
-    textAlign: 'right',
+    textAlign: 'center',
   },
-  segmentRow: {
-    flexDirection: 'row',
+  segmentColumn: {
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   segment: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.10)',
