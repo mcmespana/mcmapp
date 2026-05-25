@@ -484,10 +484,10 @@ No urgente: el patrón actual `cache + updatedAt` mitiga el problema. Solo crít
 
 `CLAUDE.md` (raíz y mcm-app), `AGENTS.md`, `CHANGELOG.md`, `DESIGN.md`, `TABS_MAINTENANCE.md`, `NOTIFICACIONES.md`, `EVENTOS.md`, `PANEL_PERFILES.md`. Está muy bien documentado.
 
-### 14.2 Datos obsoletos detectados
+### 14.2 Datos obsoletos detectados ✓ **COMPLETADO**
 
-- `mcm-app/CLAUDE.md` y `mcm-app/TODO.md`: "Jest (no hay tests escritos aún)" → **falso**, hay 7.
-- `mcm-app/AGENTS.md`: menciona `FeatureFlagsProvider` → reemplazado por `ProfileConfigProvider` + `UserProfileProvider`.
+- ~~`mcm-app/CLAUDE.md` y `mcm-app/TODO.md`: "Jest (no hay tests escritos aún)" → **falso**, hay 7.~~ **CORREGIDO:** `CLAUDE.md:21` ahora dice "7 tests".
+- ~~`mcm-app/AGENTS.md`: menciona `FeatureFlagsProvider` → reemplazado por `ProfileConfigProvider` + `UserProfileProvider`.~~ **CORREGIDO:** provider hierarchy sincronizada.
 
 ### 14.3 Documento de "decisiones arquitectónicas"
 

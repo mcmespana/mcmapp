@@ -18,7 +18,7 @@ npm run android        # App en Android
 npm run ios            # App en iOS
 npm run lint           # ESLint
 npm run format         # Prettier
-npm test               # Jest (sin tests escritos aún)
+npm test               # Jest (7 tests en mcm-app/__tests__/)
 npx tsc --noEmit       # Verificar tipos TypeScript
 ```
 
