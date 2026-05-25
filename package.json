@@ -12,7 +12,8 @@
   },
   "lint-staged": {
     "mcm-app/**/*.{js,jsx,ts,tsx}": [
-      "prettier --write"
+      "prettier --write",
+      "eslint --max-warnings=0 --fix"
     ],
     "mcm-app/**/*.{json,md}": [
       "prettier --write"
