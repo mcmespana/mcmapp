@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 import { ChordProParser, HtmlDivFormatter, Song } from 'chordsheetjs';
 import { UIColors } from '@/constants/colors';
@@ -28,6 +28,79 @@ interface UseSongProcessorParams {
   bottomInset?: number;
 }
 
+/**
+ * Live style snapshot that the WebView can apply without reloading the HTML.
+ * Anything in this object can be flipped via `postMessage` / `injectJavaScript`
+ * by reading `__SONG_BRIDGE__` inside the document.
+ */
+export interface SongStyleState {
+  fontSize: number;
+  fontFamily: string;
+  isDark: boolean;
+  chordsVisible: boolean;
+  topPadding: number;
+  bottomPadding: number;
+}
+
+// ─── Module-level cache for parsed ChordPro ───
+// Pre-procesar `.cho` en build time (Metro Transformer) no aplica aquí porque
+// las canciones viven en Firebase, no en el bundle. La alternativa más cercana
+// es cachear el objeto `Song` parseado a nivel de módulo, de modo que abrir y
+// cerrar una canción no la re-parsee. Limitamos el tamaño con FIFO básico.
+const PARSED_CACHE = new Map<string, Song | null>();
+const PARSED_CACHE_LIMIT = 64;
+function parseChordPro(chordPro: string): Song | null {
+  const cached = PARSED_CACHE.get(chordPro);
+  if (cached !== undefined) return cached;
+  let song: Song | null;
+  try {
+    const cleaned = chordPro
+      .replace(/\{sov\}/gi, '{start_of_verse}')
+      .replace(/\{eov\}/gi, '{end_of_verse}')
+      .replace(/\{soc\}/gi, '{start_of_chorus}')
+      .replace(/\{eoc\}/gi, '{end_of_chorus}')
+      .replace(/\{sob\}/gi, '{start_of_bridge}')
+      .replace(/\{eob\}/gi, '{end_of_bridge}')
+      .replace(/\{transpose:.*\}\n?/gi, '');
+    song = new ChordProParser().parse(cleaned);
+  } catch (e) {
+    console.error('Error parseando ChordPro en useSongProcessor:', e);
+    song = null;
+  }
+  if (PARSED_CACHE.size >= PARSED_CACHE_LIMIT) {
+    const firstKey = PARSED_CACHE.keys().next().value;
+    if (firstKey !== undefined) PARSED_CACHE.delete(firstKey);
+  }
+  PARSED_CACHE.set(chordPro, song);
+  return song;
+}
+
+const themeVarsFor = (isDark: boolean) => ({
+  bodyBg: isDark ? '#2C2C2E' : '#ffffff',
+  bodyText: isDark ? '#E5E5EA' : '#212529',
+  titleText: isDark ? '#F5F5F7' : '#1C1C1E',
+  authorText: isDark ? '#98989D' : '#8E8E93',
+  chordColor: isDark ? '#64B5F6' : UIColors.activePrimary,
+  commentText: isDark ? '#98989D' : UIColors.secondaryText,
+  badgeBg: isDark ? 'rgba(244, 193, 30, 0.12)' : 'rgba(37, 56, 131, 0.06)',
+  badgeText: isDark ? '#F4C11E' : '#253883',
+  badgeAccentBg: isDark ? 'rgba(225, 92, 98, 0.15)' : 'rgba(225, 92, 98, 0.08)',
+  badgeAccentText: isDark ? '#FF8A80' : '#C62828',
+  fsBgTop: isDark ? 'rgba(44,44,46,0.97)' : 'rgba(255,255,255,0.97)',
+  fsBgMid: isDark ? 'rgba(44,44,46,0.88)' : 'rgba(255,255,255,0.88)',
+});
+
+const defaultBottomPadding = (isFullscreen: boolean) =>
+  isFullscreen
+    ? 110
+    : Platform.OS === 'ios'
+      ? 120
+      : Platform.OS === 'web'
+        ? 40
+        : 80;
+
+const defaultTopPadding = (isFullscreen: boolean) => (isFullscreen ? 72 : 16);
+
 export const useSongProcessor = ({
   originalChordPro,
   currentTranspose,
@@ -47,25 +120,44 @@ export const useSongProcessor = ({
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
 
-  // Parseamos ChordPro UNA sola vez por contenido. La transposición se aplica
-  // después sobre el objeto Song, lo que es mucho más barato que reparsear.
   const baseSong = useMemo<Song | null>(() => {
     if (!originalChordPro) return null;
-    try {
-      const cleaned = originalChordPro
-        .replace(/\{sov\}/gi, '{start_of_verse}')
-        .replace(/\{eov\}/gi, '{end_of_verse}')
-        .replace(/\{soc\}/gi, '{start_of_chorus}')
-        .replace(/\{eoc\}/gi, '{end_of_chorus}')
-        .replace(/\{sob\}/gi, '{start_of_bridge}')
-        .replace(/\{eob\}/gi, '{end_of_bridge}')
-        .replace(/\{transpose:.*\}\n?/gi, '');
-      return new ChordProParser().parse(cleaned);
-    } catch (e) {
-      console.error('Error parseando ChordPro en useSongProcessor:', e);
-      return null;
-    }
+    return parseChordPro(originalChordPro);
   }, [originalChordPro]);
+
+  // Style snapshot for live updates. Computed every render but stable per
+  // structural pass thanks to derived values.
+  const topPadding =
+    topInset !== undefined ? topInset : defaultTopPadding(isFullscreen);
+  const bottomPadding =
+    bottomInset !== undefined
+      ? bottomInset
+      : defaultBottomPadding(isFullscreen);
+
+  const styleState = useMemo<SongStyleState>(
+    () => ({
+      fontSize: currentFontSizeEm,
+      fontFamily: currentFontFamily,
+      isDark,
+      chordsVisible,
+      topPadding,
+      bottomPadding,
+    }),
+    [
+      currentFontSizeEm,
+      currentFontFamily,
+      isDark,
+      chordsVisible,
+      topPadding,
+      bottomPadding,
+    ],
+  );
+
+  // Capture latest style in a ref so we can bake current values into HTML
+  // whenever structural deps change (without re-running the structural effect
+  // on every style change).
+  const styleRef = useRef(styleState);
+  styleRef.current = styleState;
 
   useEffect(() => {
     if (!originalChordPro) {
@@ -80,11 +172,8 @@ export const useSongProcessor = ({
 
     setIsLoadingSong(true);
     try {
-      const fontSizeCss = `
-        .chord-sheet .lyrics, .chord-sheet .chord {
-          font-size: ${currentFontSizeEm}em !important;
-        }
-      `;
+      const s = styleRef.current;
+      const c = themeVarsFor(s.isDark);
 
       const songForFormatting: Song =
         currentTranspose !== 0
@@ -117,12 +206,10 @@ export const useSongProcessor = ({
           currentTranspose > 0 ? `+${currentTranspose}` : `${currentTranspose}`;
         badges += `<span class="meta-badge meta-badge-accent">${transposeDisplay} semitonos</span>`;
       }
-      // Badges below title in normal mode; in fullscreen they go in the fixed header
       if (badges && !isFullscreen) {
         metaInsert += `<div class="song-meta-keycapo">${badges}</div>`;
       }
 
-      // Fixed overlay header for fullscreen: title + compact meta line
       let fsHeader = '';
       if (isFullscreen) {
         let fsMeta = '';
@@ -159,56 +246,61 @@ export const useSongProcessor = ({
         }
       }
 
-      const chordsCss = chordsVisible
-        ? ''
-        : '<style>.chord { display: none !important; }</style>';
+      // ── Bootstrap script: receives postMessage / injectJavaScript calls
+      // ── and updates CSS variables / classes live without reloading HTML.
+      const bootstrap = `
+        (function(){
+          var docEl = document.documentElement;
+          function apply(s) {
+            if (!s || typeof s !== 'object') return;
+            var r = docEl.style;
+            if (typeof s.fontSize === 'number') r.setProperty('--song-font-size', s.fontSize + 'em');
+            if (typeof s.fontFamily === 'string') r.setProperty('--song-font-family', s.fontFamily);
+            if (typeof s.topPadding === 'number') r.setProperty('--song-pad-top', s.topPadding + 'px');
+            if (typeof s.bottomPadding === 'number') r.setProperty('--song-pad-bottom', s.bottomPadding + 'px');
+            if (typeof s.isDark === 'boolean') {
+              document.body.classList.toggle('theme-dark', s.isDark);
+            }
+            if (typeof s.chordsVisible === 'boolean') {
+              document.body.classList.toggle('chords-hidden', !s.chordsVisible);
+            }
+          }
+          window.__SONG_BRIDGE__ = { apply: apply };
+          function onMessage(ev) {
+            try {
+              var data = typeof ev.data === 'string' ? ev.data : '';
+              if (!data) return;
+              apply(JSON.parse(data));
+            } catch (_) {}
+          }
+          // RN WebView (Android) dispatches on document, iOS/web on window.
+          document.addEventListener('message', onMessage);
+          window.addEventListener('message', onMessage);
+        })();
+      `;
 
-      // Platform-aware bottom padding.
-      // En fullscreen reservamos espacio para el botón de play translúcido
-      // y el safe-area inferior (home indicator en iOS). En detalle, espacio
-      // suficiente para que el FAB no tape la última línea.
-      const bottomPadding =
-        bottomInset !== undefined
-          ? bottomInset
-          : isFullscreen
-            ? 110
-            : Platform.OS === 'ios'
-              ? 120
-              : Platform.OS === 'web'
-                ? 40
-                : 80;
-      // Padding superior: en fullscreen, espacio para el close button y notch.
-      const topPadding =
-        topInset !== undefined ? topInset : isFullscreen ? 72 : 16;
-
-      // Dark mode aware colors
-      const c = {
-        bodyBg: isDark ? '#2C2C2E' : '#ffffff',
-        bodyText: isDark ? '#E5E5EA' : '#212529',
-        titleText: isDark ? '#F5F5F7' : '#1C1C1E',
-        authorText: isDark ? '#98989D' : '#8E8E93',
-        chordColor: isDark ? '#64B5F6' : UIColors.activePrimary,
-        commentText: isDark ? '#98989D' : UIColors.secondaryText,
-        badgeBg: isDark
-          ? 'rgba(244, 193, 30, 0.12)'
-          : 'rgba(37, 56, 131, 0.06)',
-        badgeText: isDark ? '#F4C11E' : '#253883',
-        badgeAccentBg: isDark
-          ? 'rgba(225, 92, 98, 0.15)'
-          : 'rgba(225, 92, 98, 0.08)',
-        badgeAccentText: isDark ? '#FF8A80' : '#C62828',
-      };
+      // CSS variables driven by styleState. Defaults match current snapshot
+      // so the first render looks right with no extra round-trip.
+      const cssVars = `
+        :root {
+          --song-font-size: ${s.fontSize}em;
+          --song-font-family: ${s.fontFamily};
+          --song-pad-top: ${s.topPadding}px;
+          --song-pad-bottom: ${s.bottomPadding}px;
+        }
+      `;
 
       let finalHtml = `
         <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
           <style>
+            ${cssVars}
             * { box-sizing: border-box; }
             body {
-              font-family: ${currentFontFamily};
+              font-family: var(--song-font-family);
               margin: 0;
-              padding: ${topPadding}px 16px ${bottomPadding}px 16px;
+              padding: var(--song-pad-top) 16px var(--song-pad-bottom) 16px;
               background-color: ${c.bodyBg};
               color: ${c.bodyText};
               font-size: 100%;
@@ -219,16 +311,50 @@ export const useSongProcessor = ({
               -webkit-font-smoothing: antialiased;
               scrollbar-width: none;
               -ms-overflow-style: none;
+              transition: background-color 0.15s ease, color 0.15s ease;
             }
-            /* En pantalla completa sobre iPad / web amplio limitamos la
-               longitud de línea para que los versos sigan siendo legibles
-               y no atraviesen toda la pantalla. */
+            /* Dark theme — toggled live via .theme-dark on <body>. The default
+               above is whichever the page was rendered with; flipping the
+               class swaps the palette without reload. */
+            body.theme-dark {
+              background-color: #2C2C2E;
+              color: #E5E5EA;
+            }
+            body.theme-dark h1 { color: #F5F5F7; }
+            body.theme-dark .song-meta-author { color: #98989D; }
+            body.theme-dark .chord-sheet .chord { color: #64B5F6; }
+            body.theme-dark .comment, body.theme-dark .c { color: #98989D; }
+            body.theme-dark .meta-badge {
+              background: rgba(244, 193, 30, 0.12);
+              color: #F4C11E;
+            }
+            body.theme-dark .meta-badge-accent {
+              background: rgba(225, 92, 98, 0.15);
+              color: #FF8A80;
+            }
+            body:not(.theme-dark) {
+              background-color: #ffffff;
+              color: #212529;
+            }
+            body:not(.theme-dark) h1 { color: #1C1C1E; }
+            body:not(.theme-dark) .song-meta-author { color: #8E8E93; }
+            body:not(.theme-dark) .chord-sheet .chord { color: ${UIColors.activePrimary}; }
+            body:not(.theme-dark) .comment, body:not(.theme-dark) .c { color: ${UIColors.secondaryText}; }
+            body:not(.theme-dark) .meta-badge {
+              background: rgba(37, 56, 131, 0.06);
+              color: #253883;
+            }
+            body:not(.theme-dark) .meta-badge-accent {
+              background: rgba(225, 92, 98, 0.08);
+              color: #C62828;
+            }
+            /* Live toggle: hide chords when body has .chords-hidden */
+            body.chords-hidden .chord { display: none !important; }
             @media (min-width: 720px) {
               body { padding-left: max(16px, calc((100% - ${isFullscreen ? 920 : 760}px) / 2)); padding-right: max(16px, calc((100% - ${isFullscreen ? 920 : 760}px) / 2)); }
             }
             body::-webkit-scrollbar { width: 0; height: 0; }
             h1 {
-              color: ${c.titleText};
               margin: 4px 0 8px;
               font-size: 1.35em;
               font-weight: 700;
@@ -250,7 +376,6 @@ export const useSongProcessor = ({
               border-radius: 2px;
             }
             .song-meta-author {
-              color: ${c.authorText};
               font-size: 0.88em;
               margin: 0 0 10px;
               font-style: italic;
@@ -265,17 +390,11 @@ export const useSongProcessor = ({
             }
             .meta-badge {
               display: inline-block;
-              background: ${c.badgeBg};
-              color: ${c.badgeText};
               padding: 4px 12px;
               border-radius: 16px;
               font-size: 0.78em;
               font-weight: 600;
               letter-spacing: 0.02em;
-            }
-            .meta-badge-accent {
-              background: ${c.badgeAccentBg};
-              color: ${c.badgeAccentText};
             }
             .chord-sheet {
               margin-top: 0.5em;
@@ -296,11 +415,11 @@ export const useSongProcessor = ({
               word-wrap: break-word;
             }
             .chord-sheet .chord {
-              color: ${c.chordColor};
               font-weight: bold;
               white-space: pre;
               display: block;
               min-height: 1.2em;
+              font-size: var(--song-font-size);
             }
             .chord-sheet .lyrics {
               white-space: pre-wrap;
@@ -309,9 +428,9 @@ export const useSongProcessor = ({
               display: block;
               min-height: 1.2em;
               max-width: 100%;
+              font-size: var(--song-font-size);
             }
             .comment, .c {
-              color: ${c.commentText};
               font-style: italic;
               white-space: pre-wrap;
               word-wrap: break-word;
@@ -349,10 +468,10 @@ export const useSongProcessor = ({
               top: 0;
               left: 0;
               right: 0;
-              padding: ${Math.max(topPadding - 48, 8)}px 60px 16px 16px;
+              padding: ${Math.max(s.topPadding - 48, 8)}px 60px 16px 16px;
               background: linear-gradient(to bottom,
-                ${isDark ? 'rgba(44,44,46,0.97)' : 'rgba(255,255,255,0.97)'} 0%,
-                ${isDark ? 'rgba(44,44,46,0.88)' : 'rgba(255,255,255,0.88)'} 72%,
+                ${c.fsBgTop} 0%,
+                ${c.fsBgMid} 72%,
                 transparent 100%
               );
               z-index: 10;
@@ -401,13 +520,12 @@ export const useSongProcessor = ({
             }`
                 : ''
             }
-            ${fontSizeCss}
           </style>
-          ${chordsCss}
         </head>
-        <body>
+        <body class="${s.isDark ? 'theme-dark' : ''}${s.chordsVisible ? '' : ' chords-hidden'}">
           ${fsHeader}
           ${finalSongContentWithMeta}
+          <script>${bootstrap}</script>
         </body>
         </html>
       `;
@@ -419,23 +537,21 @@ export const useSongProcessor = ({
     } finally {
       setIsLoadingSong(false);
     }
+    // Structural-only deps. Style-only changes (fontSize, fontFamily, isDark,
+    // chordsVisible, top/bottomInset) are picked up by `styleRef` for the next
+    // structural rebuild but do NOT trigger a rebuild on their own — the
+    // WebView updates them live via postMessage.
   }, [
     originalChordPro,
     baseSong,
     currentTranspose,
-    chordsVisible,
-    currentFontSizeEm,
-    currentFontFamily,
     notation,
     title,
     author,
     key,
     capo,
-    isDark,
     isFullscreen,
-    topInset,
-    bottomInset,
   ]);
 
-  return { songHtml, isLoadingSong };
+  return { songHtml, isLoadingSong, styleState };
 };

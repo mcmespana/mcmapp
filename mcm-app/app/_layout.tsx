@@ -120,7 +120,7 @@ function InnerLayout() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowAnimation(false);
-    }, 900);
+    }, 600);
     return () => clearTimeout(timer);
   }, []);
 
