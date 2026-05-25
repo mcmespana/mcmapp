@@ -18,7 +18,7 @@ export interface EventItemData {
   materiales?: boolean; // Si tiene materiales disponibles
 }
 
-function EventItem({
+const EventItem = React.memo(function EventItem({
   event,
   dayIndex,
   onNavigateToMateriales,
@@ -128,7 +128,7 @@ function EventItem({
       </Card.Body>
     </Card>
   );
-}
+});
 
 const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   const isDark = scheme === 'dark';
@@ -210,4 +210,4 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   });
 };
 
-export default React.memo(EventItem);
+export default EventItem;
