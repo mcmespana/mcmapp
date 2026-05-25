@@ -148,4 +148,4 @@ const createStyles = (screenWidth: number) =>
     },
   });
 
-export default AlbumCard;
+export default React.memo(AlbumCard);

@@ -4,6 +4,7 @@ import '../notifications/NotificationHandler'; // Inicializa el handler de notif
 import usePushNotifications from '../notifications/usePushNotifications'; // Hook para notificaciones push
 
 import React, { useState, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet, Platform } from 'react-native';
 import Constants from 'expo-constants';
@@ -118,9 +119,19 @@ function InnerLayout() {
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowAnimation(false);
-    }, 900);
+    let timer: ReturnType<typeof setTimeout>;
+    AsyncStorage.getItem('seenWelcomeOnce')
+      .then((seen) => {
+        if (seen) {
+          setShowAnimation(false);
+          return;
+        }
+        AsyncStorage.setItem('seenWelcomeOnce', '1').catch(() => {});
+        timer = setTimeout(() => setShowAnimation(false), 600);
+      })
+      .catch(() => {
+        timer = setTimeout(() => setShowAnimation(false), 600);
+      });
     return () => clearTimeout(timer);
   }, []);
 

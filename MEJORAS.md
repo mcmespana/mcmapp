@@ -8,6 +8,17 @@
 
 ---
 
+## ✅ Ya implementado
+
+| ID  | Mejora                                        | Commit / fecha      |
+| --- | --------------------------------------------- | ------------------- |
+| 1.7 | `freezeOnBlur: true` en stacks de `cancionero.tsx` y `mas.tsx` | Previo al análisis |
+| 1.8 | HelloWave: 2 reps (600 ms) + skip tras primer arranque (`seenWelcomeOnce`) | 2026-05-25 |
+| 1.9 | `React.memo` en `SongSearch`, `AlbumCard`, `EventItem` | 2026-05-25 |
+| 1.11a | `SettingsContext`: eliminado `useEffect` redundante de guardado al desmontar | 2026-05-25 |
+
+---
+
 ## Resumen ejecutivo por áreas
 
 | Área                                | Estado actual                           | Acciones más relevantes                                   |
@@ -109,35 +120,35 @@ React 19 + Babel 7.25 soportan `babel-plugin-react-compiler`. La app ya está en
 
 **Propuesta:** instalar `babel-plugin-react-compiler` y añadirlo al `plugins`. Validar en `npm run lint` y benchmark de arranque. Revisar orden con reanimated si hay warnings.
 
-### 1.7 Stacks anidados sin `freezeOnBlur`
+### ~~1.7 Stacks anidados sin `freezeOnBlur`~~ ✅ HECHO
 
 **Archivos:** `mcm-app/app/_layout.tsx:182-202`, stacks internos de `cancionero.tsx` y `mas.tsx`.
 
-Añadir `screenOptions={{ freezeOnBlur: true }}` en los stacks de tabs no visibles libera CPU/memoria al cambiar de tab. Validar que no rompe estado al volver.
+`freezeOnBlur: true` ya estaba aplicado en ambos stacks antes del análisis. Las pantallas no visibles se congelan al cambiar de tab, liberando CPU/memoria.
 
-### 1.8 Splash post-launch de 900 ms (HelloWave)
+### ~~1.8 Splash post-launch de 900 ms (HelloWave)~~ ✅ HECHO
 
 **Archivos:** `mcm-app/components/HelloWave.tsx:22`, `mcm-app/app/_layout.tsx:116-121`
 
-3 repeticiones × 300 ms + `setTimeout(900)`. Reducir a 2 (600 ms) o saltar tras el primer arranque (`AsyncStorage` flag `seenWelcomeOnce`).
+Reducido a 2 repeticiones × 300 ms (600 ms). Además, el splash se salta por completo en arranques posteriores al primero mediante el flag `seenWelcomeOnce` en AsyncStorage.
 
-### 1.9 Componentes sin `React.memo` que sí lo necesitan
+### ~~1.9 Componentes sin `React.memo` que sí lo necesitan~~ ✅ HECHO
 
-- `mcm-app/components/SongSearch.tsx` — re-render en cada keystroke del padre.
-- `mcm-app/components/AlbumCard.tsx` — N renders en galerías.
-- `mcm-app/components/EventItem.tsx` — verificar.
+- `mcm-app/components/SongSearch.tsx` — envuelto en `React.memo`.
+- `mcm-app/components/AlbumCard.tsx` — envuelto en `React.memo`.
+- `mcm-app/components/EventItem.tsx` — envuelto en `React.memo` (ya usaba `useMemo` para estilos).
 
-`SongListItem.tsx:45` ya usa `React.memo` (referencia de buen patrón).
+`SongListItem.tsx:45` ya usaba `React.memo` como referencia de buen patrón.
 
 ### 1.10 Dependencias muertas o pesadas
 
 - `lodash` (`^4.17.21`) — **0 importaciones**. Eliminar.
 - `react-native-render-html` (`^6.3.4`) — solo en `FormattedContent.tsx`. Si BBCode simple bastara, ahorraría peso.
 
-### 1.11 Otros
+### 1.11 Otros (parcialmente resuelto)
 
-- `mcm-app/contexts/SettingsContext.tsx:85-117` — dos `useEffect` guardan settings (uno redundante).
-- 12 providers anidados en `mcm-app/app/_layout.tsx:51-83`. Considerar agrupar contextos relacionados.
+- ~~`mcm-app/contexts/SettingsContext.tsx:85-117` — dos `useEffect` guardan settings (uno redundante).~~ ✅ HECHO — eliminado el tercer `useEffect` de guardado al desmontar; el segundo ya persiste los settings en cada cambio.
+- `mcm-app/app/_layout.tsx:51-83` — **pendiente**: 12 providers anidados. Considerar agrupar contextos relacionados (ej. `UserProfile` + `ProfileConfig`) para reducir re-renders en cascada. Cambio de mayor envergadura, no trivial.
 
 ### 1.12 Plan recomendado (rendimiento)
 
