@@ -31,6 +31,7 @@ import { useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
+import CalendarSubscribeBottomSheet from '@/components/CalendarSubscribeBottomSheet';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -93,6 +94,7 @@ export default function Calendario() {
 
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
+  const [subscribeOpen, setSubscribeOpen] = useState(false);
 
   useEffect(() => {
     if (params.date && typeof params.date === 'string') {
@@ -415,6 +417,24 @@ export default function Calendario() {
             </Text>
           </TouchableOpacity>
         </View>
+        {!configsLoading && calendarConfigs.length > 0 && (
+          <TouchableOpacity
+            style={styles.subscribeIconBtn}
+            onPress={() => {
+              h.tap();
+              setSubscribeOpen(true);
+            }}
+            activeOpacity={0.75}
+            accessibilityLabel="Suscribirse a calendarios"
+            accessibilityRole="button"
+          >
+            <MaterialIcons
+              name="bookmark-add"
+              size={20}
+              color={isDark ? colors.info : colors.primary}
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
       {viewMode === 'calendar' ? (
@@ -643,6 +663,12 @@ export default function Calendario() {
           label="Hoy"
         />
       ) : null}
+
+      <CalendarSubscribeBottomSheet
+        visible={subscribeOpen}
+        onClose={() => setSubscribeOpen(false)}
+        calendars={calendarConfigs}
+      />
     </TabScreenWrapper>
   );
 }
@@ -659,11 +685,23 @@ const createStyles = (scheme: 'light' | 'dark') => {
 
     // View mode switcher
     switcherWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
       marginHorizontal: 16,
       marginTop: 12,
       marginBottom: 8,
     },
+    subscribeIconBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     segmentedControl: {
+      flex: 1,
       flexDirection: 'row',
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
       borderRadius: 10,
