@@ -48,6 +48,8 @@ import OTAUpdatePrompt from '@/components/OTAUpdatePrompt';
 import { OTAProvider, useOTAContext } from '@/contexts/OTAContext';
 import { PreviewChannelProvider } from '@/contexts/PreviewChannelContext';
 import { PreviewChannelModal } from '@/components/PreviewChannelModal';
+import { CarismochitoProvider } from '@/contexts/CarismochitoContext';
+import CarismochitoOverlay from '@/components/CarismochitoOverlay';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 
@@ -69,7 +71,9 @@ export default function RootLayout() {
                             <CalendarConfigProvider>
                               <PreviewChannelProvider>
                                 <OTAProvider>
-                                  <InnerLayout />
+                                  <CarismochitoProvider>
+                                    <InnerLayout />
+                                  </CarismochitoProvider>
                                 </OTAProvider>
                               </PreviewChannelProvider>
                             </CalendarConfigProvider>
@@ -225,6 +229,7 @@ function InnerLayout() {
         onLater={() => setDismissed(true)}
       />
       <PreviewChannelModal />
+      <CarismochitoOverlay />
     </NavThemeProvider>
   );
 }
