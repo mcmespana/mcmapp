@@ -184,7 +184,12 @@ export default function CancioneroTab() {
             ...(isWeb &&
               ({ headerStatusBarHeight: webStatusBarHeight } as any)),
             headerTransparent: isIOS,
-            headerBlurEffect: isIOS ? 'systemChromeMaterial' : undefined,
+            // iOS 26+ aplica su propio efecto glass via scrollEdgeEffects;
+            // combinarlo con headerBlurEffect provoca solape (warning RNScreens).
+            headerBlurEffect:
+              isIOS && parseInt(String(Platform.Version), 10) < 26
+                ? 'systemChromeMaterial'
+                : undefined,
             headerShadowVisible: false,
             headerBackButtonDisplayMode: 'minimal' as const,
             // Prevents screens from appearing transparent during swipe-back

@@ -13,6 +13,13 @@
 
 ---
 
+## 2026-05-26 — Limpieza de warnings iOS 26
+
+- Silenciado el log informativo `HeroUI Native Styling Principles` en arranque: `HeroUINativeProvider` ahora recibe `config={{ devInfo: { stylingPrinciples: false } }}` en `app/_layout.tsx`.
+- Resuelto warning `[RNScreens] Using both blurEffect and scrollEdgeEffects simultaneously` en el stack del Cantoral: `headerBlurEffect` se aplica solo en iOS < 26 (en iOS 26+ el sistema ya pinta el efecto glass vía `scrollEdgeEffects` por defecto). Archivo: `app/(tabs)/cancionero.tsx`.
+
+---
+
 ## 2026-05-25 — Modo Carismochito (easter egg por shake)
 
 Easter egg: al agitar el móvil aparece una cuenta atrás de 5 segundos que, si no se cancela, activa el "Modo Carismochito" — un guiño a la mascota del MCM tintando toda la app de un verde lima deliberadamente exagerado. Se desactiva agitando otra vez o tocando el badge flotante.
