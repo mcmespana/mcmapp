@@ -65,9 +65,7 @@ const PlaylistActionsBottomSheet: React.FC<Props> = ({
       >
         {actions.map((a, i) => (
           <React.Fragment key={a.id}>
-            {a.separator && i > 0 ? (
-              <View style={styles.separator} />
-            ) : null}
+            {a.separator && i > 0 ? <View style={styles.separator} /> : null}
             <TouchableOpacity
               style={[styles.item, a.disabled && styles.itemDisabled]}
               onPress={() => {

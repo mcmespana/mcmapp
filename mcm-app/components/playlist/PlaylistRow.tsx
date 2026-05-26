@@ -213,7 +213,10 @@ const PlaylistRow: React.FC<Props> = ({
                 styles.reorderBtn,
                 !canMoveUp && styles.reorderBtnDisabled,
               ]}
-              onPress={() => { h.select(); onMoveUp?.(); }}
+              onPress={() => {
+                h.select();
+                onMoveUp?.();
+              }}
               disabled={!canMoveUp}
               hitSlop={6}
             >
@@ -236,7 +239,10 @@ const PlaylistRow: React.FC<Props> = ({
                 styles.reorderBtn,
                 !canMoveDown && styles.reorderBtnDisabled,
               ]}
-              onPress={() => { h.select(); onMoveDown?.(); }}
+              onPress={() => {
+                h.select();
+                onMoveDown?.();
+              }}
               disabled={!canMoveDown}
               hitSlop={6}
             >

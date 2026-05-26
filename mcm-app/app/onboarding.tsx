@@ -624,7 +624,10 @@ function ProfileScreen({
                   >
                     {p.label}
                   </Text>
-                  <Text style={[cardStyles.cardDesc, { color: TT.muted }]} numberOfLines={3}>
+                  <Text
+                    style={[cardStyles.cardDesc, { color: TT.muted }]}
+                    numberOfLines={3}
+                  >
                     {p.description}
                   </Text>
                 </View>
