@@ -357,7 +357,7 @@ export default function SecretPanelModal({
       visible={visible}
       onClose={handleClose}
       title="🛠️ Editor Avanzado"
-      height={Dimensions.get('window').height * 0.90}
+      height={Dimensions.get('window').height * 0.9}
     >
       <View style={styles.fullContainer}>
         {songTitle && (

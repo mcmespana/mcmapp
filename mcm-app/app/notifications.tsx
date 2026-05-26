@@ -64,17 +64,17 @@ const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
   '/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
 
   // Naked strings (no leading slash)
-  'calendario': { label: 'Calendario', icon: 'calendar-today' },
-  'fotos': { label: 'Fotos', icon: 'photo-library' },
-  'cancionero': { label: 'Cantoral', icon: 'music-note' },
-  'mas': { label: 'Más', icon: 'more-horiz' },
-  'contigo': { label: 'Contigo', icon: 'favorite' },
+  calendario: { label: 'Calendario', icon: 'calendar-today' },
+  fotos: { label: 'Fotos', icon: 'photo-library' },
+  cancionero: { label: 'Cantoral', icon: 'music-note' },
+  mas: { label: 'Más', icon: 'more-horiz' },
+  contigo: { label: 'Contigo', icon: 'favorite' },
 
   // Others
   '/wordle': { label: 'Wordle', icon: 'games' },
   '/notifications': { label: 'Notificaciones', icon: 'notifications' },
-  'wordle': { label: 'Wordle', icon: 'games' },
-  'notifications': { label: 'Notificaciones', icon: 'notifications' },
+  wordle: { label: 'Wordle', icon: 'games' },
+  notifications: { label: 'Notificaciones', icon: 'notifications' },
 };
 
 function normalizeRoute(route: string): string {
@@ -100,7 +100,7 @@ function normalizeRoute(route: string): string {
     'contigo',
   ];
 
-  const isTab = tabPaths.some(p => naked === p || naked.startsWith(p + '/'));
+  const isTab = tabPaths.some((p) => naked === p || naked.startsWith(p + '/'));
   if (isTab) {
     return '/(tabs)/' + naked;
   }
@@ -214,7 +214,10 @@ export default function NotificationsScreen() {
     try {
       router.push(clean as any);
     } catch (e) {
-      console.warn('Navigation failed for ' + clean + ', trying direct route...', e);
+      console.warn(
+        'Navigation failed for ' + clean + ', trying direct route...',
+        e,
+      );
       try {
         router.push(route as any);
       } catch (err) {
@@ -292,7 +295,9 @@ export default function NotificationsScreen() {
       <View style={{ marginBottom: spacing.md }}>
         <Swipeable
           renderRightActions={(progress, dragX) =>
-            isUnread ? renderRightActions(progress, dragX, notification.id) : null
+            isUnread
+              ? renderRightActions(progress, dragX, notification.id)
+              : null
           }
           rightThreshold={40}
           overshootRight={false}
@@ -312,7 +317,7 @@ export default function NotificationsScreen() {
                 accessibilityLabel="Icono de notificación"
               />
             )}
-  
+
             <View style={styles.notificationContent}>
               {/* Cabecera: título + indicadores */}
               <View style={styles.notificationHeader}>
@@ -345,12 +350,12 @@ export default function NotificationsScreen() {
                   )}
                 </View>
               </View>
-  
+
               {/* Cuerpo */}
               <Text style={styles.notificationBody} numberOfLines={2}>
                 {notification.body}
               </Text>
-  
+
               {/* Fila inferior: fecha + chips de destino/acción */}
               <View style={styles.notificationFooter}>
                 <Text style={styles.notificationDate}>{formatDate(date)}</Text>
@@ -535,7 +540,10 @@ function NotificationDetailModal({
     try {
       router.push(clean as any);
     } catch (e) {
-      console.warn('Navigation failed for ' + clean + ', trying direct route...', e);
+      console.warn(
+        'Navigation failed for ' + clean + ', trying direct route...',
+        e,
+      );
       try {
         router.push(route as any);
       } catch (err) {

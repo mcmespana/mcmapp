@@ -210,7 +210,10 @@ export default function BottomSheet({
   const handleColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.18)';
   const translateY = Animated.add(slideAnim, dragAnim);
 
-  const hasHeader = title !== undefined || headerLeft !== undefined || headerRight !== undefined;
+  const hasHeader =
+    title !== undefined ||
+    headerLeft !== undefined ||
+    headerRight !== undefined;
 
   return (
     <Modal
@@ -259,8 +262,13 @@ export default function BottomSheet({
 
           {/* Unified Premium Header Container serves as a drag target */}
           {hasHeader && (
-            <View style={styles.headerContainer} {...headerPanResponder.panHandlers}>
-              {headerLeft && <View style={styles.headerLeft}>{headerLeft}</View>}
+            <View
+              style={styles.headerContainer}
+              {...headerPanResponder.panHandlers}
+            >
+              {headerLeft && (
+                <View style={styles.headerLeft}>{headerLeft}</View>
+              )}
               {title && (
                 <Text
                   style={[
@@ -272,7 +280,9 @@ export default function BottomSheet({
                   {title}
                 </Text>
               )}
-              {headerRight && <View style={styles.headerRight}>{headerRight}</View>}
+              {headerRight && (
+                <View style={styles.headerRight}>{headerRight}</View>
+              )}
             </View>
           )}
 

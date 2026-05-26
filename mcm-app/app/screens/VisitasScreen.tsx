@@ -77,12 +77,22 @@ export default function VisitasScreen() {
 
   if (!visitas) {
     return (
-      <View style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: Colors[scheme ?? 'light'].background,
+        }}
+      >
         <ScreenHero title="Visitas" />
         <PageContainer>
-          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 14 }}>
+          <ScrollView
+            contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 14 }}
+          >
             {[0, 1, 2].map((i) => (
-              <Skeleton key={i} style={{ height: 220, borderRadius: radii.xl }} />
+              <Skeleton
+                key={i}
+                style={{ height: 220, borderRadius: radii.xl }}
+              />
             ))}
           </ScrollView>
         </PageContainer>

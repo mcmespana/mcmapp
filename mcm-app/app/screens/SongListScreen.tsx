@@ -99,7 +99,8 @@ export default function SongsListScreen({
     [scheme, insets.bottom, layout.isWide, layout.readableMaxWidth],
   );
   const isDark = scheme === 'dark';
-  const { addSong, removeSong, isSongSelected, getSelectedSong } = useSelectedSongs();
+  const { addSong, removeSong, isSongSelected, getSelectedSong } =
+    useSelectedSongs();
   const [search, setSearch] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
   const [songs, setSongs] = useState<Song[]>([]);
@@ -427,9 +428,7 @@ export default function SongsListScreen({
     );
   }
 
-  const menuSongClean = menuSong
-    ? menuSong.title.replace(/^\d+\.\s*/, '')
-    : '';
+  const menuSongClean = menuSong ? menuSong.title.replace(/^\d+\.\s*/, '') : '';
   const menuSongSelected = menuSong ? isSongSelected(menuSong.filename) : false;
 
   return (
@@ -450,20 +449,27 @@ export default function SongsListScreen({
               size={22}
               color={isDark ? '#7AB3FF' : '#253883'}
             />
-            <Text style={[styles.menuActionText, { color: isDark ? '#F5F5F7' : '#1C1C1E' }]}>
+            <Text
+              style={[
+                styles.menuActionText,
+                { color: isDark ? '#F5F5F7' : '#1C1C1E' },
+              ]}
+            >
               {menuSongSelected ? 'Quitar de la lista' : 'Añadir a la lista'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.menuAction}
-            onPress={handleMenuShare}
-          >
+          <TouchableOpacity style={styles.menuAction} onPress={handleMenuShare}>
             <MaterialIcons
               name="share"
               size={22}
               color={isDark ? '#7AB3FF' : '#253883'}
             />
-            <Text style={[styles.menuActionText, { color: isDark ? '#F5F5F7' : '#1C1C1E' }]}>
+            <Text
+              style={[
+                styles.menuActionText,
+                { color: isDark ? '#F5F5F7' : '#1C1C1E' },
+              ]}
+            >
               Compartir
             </Text>
           </TouchableOpacity>

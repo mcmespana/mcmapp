@@ -166,9 +166,7 @@ export default function CalendarSubscribeBottomSheet({
             >
               {/* Calendar name row */}
               <View style={styles.calNameRow}>
-                <View
-                  style={[styles.calDot, { backgroundColor: cal.color }]}
-                />
+                <View style={[styles.calDot, { backgroundColor: cal.color }]} />
                 <Text
                   style={[styles.calName, { color: theme.text }]}
                   numberOfLines={1}
@@ -264,20 +262,26 @@ export default function CalendarSubscribeBottomSheet({
 
           {INSTRUCTIONS.map((item) => {
             const isOpen = openInstruction === item.key;
-            const hideApple =
-              Platform.OS !== 'ios' && item.key === 'apple';
+            const hideApple = Platform.OS !== 'ios' && item.key === 'apple';
             if (hideApple) return null;
 
             return (
               <View key={item.key}>
                 <TouchableOpacity
-                  style={[styles.accordionHeader, { backgroundColor: surfaceBg }]}
+                  style={[
+                    styles.accordionHeader,
+                    { backgroundColor: surfaceBg },
+                  ]}
                   onPress={() => toggleInstruction(item.key)}
                   activeOpacity={0.75}
                   accessibilityRole="button"
                   accessibilityState={{ expanded: isOpen }}
                 >
-                  <MaterialIcons name={item.icon} size={18} color={theme.icon} />
+                  <MaterialIcons
+                    name={item.icon}
+                    size={18}
+                    color={theme.icon}
+                  />
                   <Text
                     style={[styles.accordionTitle, { color: theme.text }]}
                     numberOfLines={1}

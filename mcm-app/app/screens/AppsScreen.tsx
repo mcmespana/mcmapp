@@ -9,7 +9,13 @@ import {
   Text,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Chip, Button, Dialog, PressableFeedback, Skeleton } from 'heroui-native';
+import {
+  Chip,
+  Button,
+  Dialog,
+  PressableFeedback,
+  Skeleton,
+} from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
@@ -81,16 +87,29 @@ export default function AppsScreen() {
 
   if (!appsData) {
     return (
-      <View style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: Colors[scheme ?? 'light'].background,
+        }}
+      >
         <PageContainer>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl }}>
+          <ScrollView
+            contentContainerStyle={{
+              paddingHorizontal: spacing.md,
+              paddingBottom: spacing.xl,
+            }}
+          >
             <ScreenHero
               title="Apps"
               subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo."
             />
             <View style={{ gap: spacing.sm }}>
               {[0, 1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} style={{ height: 72, borderRadius: radii.lg }} />
+                <Skeleton
+                  key={i}
+                  style={{ height: 72, borderRadius: radii.lg }}
+                />
               ))}
             </View>
           </ScrollView>
@@ -103,7 +122,10 @@ export default function AppsScreen() {
     <View style={styles.container}>
       <PageContainer>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: insets.bottom + spacing.xl }}
+          contentContainerStyle={{
+            paddingHorizontal: spacing.md,
+            paddingBottom: insets.bottom + spacing.xl,
+          }}
         >
           <ScreenHero
             title="Apps"
