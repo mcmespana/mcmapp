@@ -851,7 +851,7 @@ export default function Home() {
                   },
                 ]}
               >
-                PRÓXIMOS EVENTOS
+                PRÓXIMOS EVENTOSSS
               </Text>
 
               {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
