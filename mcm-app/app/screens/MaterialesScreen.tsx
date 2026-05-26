@@ -36,7 +36,7 @@ export default function MaterialesScreen() {
     [scheme, fontScale],
   );
   const event = useCurrentEvent();
-  const { data: materialesData, loading } = useFirebaseData<any[]>(
+  const { data: materialesData } = useFirebaseData<any[]>(
     getEventFirebasePath(event, 'materiales'),
     getEventCacheKey(event, 'materiales'),
   );
@@ -140,6 +140,7 @@ export default function MaterialesScreen() {
     ) {
       setIndex(getClosestDateIndex(materialesData));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [materialesData, route.params?.initialDayIndex]);
   const fechas = materialesData
     ? materialesData.map((d) => ({ fecha: d.fecha }))
@@ -148,9 +149,20 @@ export default function MaterialesScreen() {
 
   if (!dia) {
     return (
-      <View style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: Colors[scheme ?? 'light'].background,
+        }}
+      >
         <ScreenHero title="Materiales" />
-        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md }}>
+        <View
+          style={{
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.md,
+            gap: spacing.md,
+          }}
+        >
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} style={{ height: 100, borderRadius: radii.xl }} />
           ))}

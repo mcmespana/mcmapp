@@ -11,7 +11,6 @@ import {
   Platform,
 } from 'react-native';
 import { Button, Spinner } from 'heroui-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';

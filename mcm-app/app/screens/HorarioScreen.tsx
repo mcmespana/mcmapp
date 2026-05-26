@@ -30,7 +30,7 @@ export default function HorarioScreen() {
     [scheme, fontScale],
   );
   const event = useCurrentEvent();
-  const { data: horarioData, loading } = useFirebaseData<any[]>(
+  const { data: horarioData } = useFirebaseData<any[]>(
     getEventFirebasePath(event, 'horario'),
     getEventCacheKey(event, 'horario'),
   );
@@ -132,6 +132,7 @@ export default function HorarioScreen() {
       );
       setIndex(newIndex);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [horarioData]);
 
   // Animation values for last day
@@ -254,9 +255,21 @@ export default function HorarioScreen() {
 
   if (!dia) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }} edges={['top']}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: Colors[scheme ?? 'light'].background,
+        }}
+        edges={['top']}
+      >
         <ScreenHero title="Horario" />
-        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.md }}>
+        <View
+          style={{
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.lg,
+            gap: spacing.md,
+          }}
+        >
           <Skeleton style={{ height: 54, borderRadius: radii.xl }} />
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} style={{ height: 72, borderRadius: radii.lg }} />

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   View,
@@ -7,20 +7,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Linking,
-  Animated,
-  Easing,
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
-import { Card, Tabs, PressableFeedback } from 'heroui-native';
+import { Card } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -181,8 +176,6 @@ export default function EvangelioScreen() {
   const isDone = record?.readingDone || false;
 
   const liturgicalInfo = getLiturgicalInfo(selectedDate);
-  const isToday = selectedDate === todayStr;
-
   const goBack = () => router.back();
 
   const changeDate = (offset: number) => {

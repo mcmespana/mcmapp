@@ -24,15 +24,15 @@ export const h = {
 
   success: () =>
     isNative &&
-    Haptics.notificationAsync(
-      Haptics.NotificationFeedbackType.Success,
-    ).catch(() => {}),
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+      () => {},
+    ),
 
   error: () =>
     isNative &&
-    Haptics.notificationAsync(
-      Haptics.NotificationFeedbackType.Error,
-    ).catch(() => {}),
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+      () => {},
+    ),
 
   toggle: () =>
     isNative &&
