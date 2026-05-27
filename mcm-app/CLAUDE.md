@@ -22,6 +22,50 @@ npm test               # Jest (sin tests escritos aún)
 npx tsc --noEmit       # Verificar tipos TypeScript
 ```
 
+## 🚨🚨🚨 CRÍTICO: OTA vs Build de Tienda 🚨🚨🚨
+
+### ⚠️ Cuándo NO se puede usar OTA (EAS Update)
+
+Los **OTA updates** sólo envían el **bundle JavaScript**. **NO incluyen código nativo.**
+
+Si el cambio añade cualquiera de estas cosas, la OTA **ROMPERÁ LA APP** en producción:
+
+- ❌ Un paquete npm nuevo con módulos nativos (mayoría de `expo-*`, `react-native-*`)
+- ❌ Actualización de SDK de Expo a versión mayor
+- ❌ Cambios en `app.json` que afecten la capa nativa (permisos, plugins)
+
+**Por qué crashea:** el bundle JS llama a un módulo nativo que no existe en el binario instalado → crash inmediato.
+
+### ✅ Protocolo obligatorio cuando añadas paquetes nativos
+
+1. 🔍 Verifica si el paquete tiene código nativo (busca `ios/` o `android/` en su repositorio)
+2. 🏷️ Añade `[skip-ota]` al mensaje del commit para bloquear el workflow OTA automático
+3. 📢 Muestra al usuario este aviso:
+
+> 🚨🚨🚨 **ATENCIÓN: ESTE CAMBIO REQUIERE BUILD DE TIENDA** 🚨🚨🚨
+>
+> ⛔ **NO se puede desplegar por OTA.** Se han añadido paquetes con código nativo:
+> `<lista de paquetes>`
+>
+> 📦 Para que funcione en producción hay que hacer un **build de producción** y subir a App Store / Play Store:
+> ```bash
+> npm run eas:build -- --profile production
+> ```
+>
+> ✅ El commit lleva `[skip-ota]` → el workflow OTA quedará en pausa automáticamente.
+>
+> ⚠️ Si haces merge a `production` sin `[skip-ota]` y sin subir el build a tienda, **la app crasheará para todos los usuarios.**
+
+### 🏷️ Sintaxis de `[skip-ota]`
+
+```
+feat: añadir expo-camera para escanear QR [skip-ota]
+```
+
+El workflow `.github/workflows/ota-production.yml` detecta `[skip-ota]` en el mensaje del commit y no lanza el OTA. En `workflow_dispatch` manual siempre corre.
+
+---
+
 ### Builds EAS (IMPORTANTE)
 
 **NUNCA uses `npx eas-cli build` directamente.** Usa siempre los scripts npm que limpian los symlinks de skills de Claude Code (`.agent/`, `.agents/`) antes de comprimir. Sin esto, EAS falla en Windows con error `EPERM: operation not permitted, symlink`.
