@@ -555,7 +555,7 @@ function NotificationDetailModal({
   const handleInternalRoute = () => {
     if (!notification) return;
     onClose();
-    safePushRoute(notification.internalRoute);
+    safePushRoute(notification.internalRoute ?? '');
   };
 
   const handleActionButton = () => {
