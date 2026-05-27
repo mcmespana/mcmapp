@@ -47,6 +47,7 @@ import OTAUpdatePrompt from '@/components/OTAUpdatePrompt';
 import { OTAProvider, useOTAContext } from '@/contexts/OTAContext';
 import { PreviewChannelProvider } from '@/contexts/PreviewChannelContext';
 import { PreviewChannelModal } from '@/components/PreviewChannelModal';
+import CarismochitoMode from '@/components/CarismochitoMode';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 
@@ -216,6 +217,7 @@ function InnerLayout() {
         onLater={() => setDismissed(true)}
       />
       <PreviewChannelModal />
+      <CarismochitoMode />
     </NavThemeProvider>
   );
 }

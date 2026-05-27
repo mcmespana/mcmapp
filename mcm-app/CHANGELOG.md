@@ -20,19 +20,16 @@
 
 ---
 
-## 2026-05-25 — Modo Carismochito (easter egg por shake)
+## 2026-05-27 — Modo Carismochito (easter egg por shake)
 
-Easter egg: al agitar el móvil aparece una cuenta atrás de 5 segundos que, si no se cancela, activa el "Modo Carismochito" — un guiño a la mascota del MCM tintando toda la app de un verde lima deliberadamente exagerado. Se desactiva agitando otra vez o tocando el badge flotante.
+Easter egg: al agitar el dispositivo aparece una cuenta atrás de 5 segundos que, si no se cancela, activa el "Modo Carismochito" — guiño a la mascota del MCM tintando toda la app de un verde neón deliberadamente feo (`#39FF14`). Una segunda agitada lanza la cuenta atrás de desactivación. La cuenta atrás también se puede cancelar tocando fuera del modal o pulsando "Cancelar".
 
-- **Detección de shake**: nuevo `hooks/useShakeDetector.ts` basado en `expo-sensors` (carga perezosa para no romper en web). Umbral configurable (~3 picos > 1.9g en 700ms, cooldown 1.2s).
-- **Estado global**: `contexts/CarismochitoContext.tsx` con tres estados (`idle`, `countingDown`, `active`); una sola acción de "shake" se interpreta como activar / cancelar / desactivar según el estado actual.
-- **UI**: `components/CarismochitoOverlay.tsx` renderiza:
-  - Pantalla de cuenta atrás con la mascota SVG (verde slime con ojos negros, lengua rosa), número pulsante, halo verde y botón "Cancelar".
-  - Cuando está activo: tinte verde lima (`#7FFF00`) sobre toda la app con viñeta superior/inferior + badge flotante "MODO CARISMOCHITO" que también permite desactivar al tocarlo.
-- **Wiring**: `CarismochitoProvider` añadido al árbol de providers y `<CarismochitoOverlay />` al final de `InnerLayout` (encima de tabs, debajo del toast).
-- **Nueva dependencia nativa**: `expo-sensors ~55.0.8` — **requiere un nuevo build EAS** para que funcione en dispositivo (en web queda inerte).
-- Archivos nuevos: `hooks/useShakeDetector.ts`, `contexts/CarismochitoContext.tsx`, `components/CarismochitoOverlay.tsx`.
-- Archivos modificados: `app/_layout.tsx`, `package.json`.
+- **Detección de shake** (`hooks/useShakeDetector.ts`): basado en `expo-sensors` (Accelerometer). Mide jerk entre muestras a 80ms; umbral por defecto 1.8g, cooldown 1.2s para evitar disparos repetidos. Maneja permisos web automáticamente y tolera ausencia del sensor sin romper.
+- **Componente único** (`components/CarismochitoMode.tsx`): un solo archivo que reúne estado (con persistencia en `AsyncStorage`), modal de cuenta atrás con anillo pulsante + número con bounce, y overlay verde global (`pointerEvents="none"`, no bloquea taps) con borde y badge flotante "MODO CARISMOCHITO" animado.
+- **Wiring**: añadido `<CarismochitoMode />` al final de `InnerLayout` en `app/_layout.tsx`. Sin nuevos contextos ni providers — el componente es autocontenido.
+- **Nueva dependencia nativa**: `expo-sensors ~55.0.0` — **requiere un nuevo build EAS de dev/producción** para que el sensor funcione en dispositivo. En web requiere permiso del usuario (algunos navegadores móviles lo piden tras tocar la pantalla).
+- Archivos nuevos: `hooks/useShakeDetector.ts`, `components/CarismochitoMode.tsx`.
+- Archivos modificados: `app/_layout.tsx`, `package.json`, `package-lock.json`.
 
 ---
 
