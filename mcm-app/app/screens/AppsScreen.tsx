@@ -18,7 +18,7 @@ import {
 } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -278,8 +278,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     introContainer: {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
-      backgroundColor: hexAlpha(theme.accent, '12'),
-      borderColor: hexAlpha(theme.accent, '30'),
+      backgroundColor: hexAlpha(colors.accent, '12'),
+      borderColor: hexAlpha(colors.accent, '30'),
       borderWidth: 1,
       borderRadius: radii.md,
       marginBottom: spacing.md,
@@ -316,7 +316,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       width: 56,
       height: 56,
       borderRadius: radii.md,
-      backgroundColor: hexAlpha(theme.accent, '15'),
+      backgroundColor: hexAlpha(colors.accent, '15'),
     },
     icon: {
       width: 48,
