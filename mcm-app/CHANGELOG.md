@@ -13,6 +13,15 @@
 
 ---
 
+## 2026-05-27 — Onboarding edge-to-edge
+
+- El onboarding ahora ocupa la pantalla completa, incluida la zona del notch / status bar / home indicator. El fondo del paso actual (azul marca en la bienvenida, blanco en los siguientes) cubre todo el shell sin recortes blancos arriba.
+- `app/_layout.tsx`: la pantalla `onboarding` pasa de `presentation: 'modal'` a `presentation: 'fullScreenModal'` y se le fija `contentStyle.backgroundColor` al azul de marca para evitar parpadeos blancos al abrir.
+- `app/onboarding.tsx`: sustituido el `SafeAreaView` exterior por un `View` con fondo dinámico por paso; cada step gestiona sus propios `insets` vía `useSafeAreaInsets`. La status bar se conmuta a `light` durante la bienvenida.
+- Pequeños retoques de diseño (no funcionales): badge "Te damos la bienvenida", logo con flotación suave, copy más cálido ("¡Vamos allá!"), icono `celebration` y pequeño pop en la pantalla de éxito.
+
+---
+
 ## 2026-05-26 — Limpieza de warnings iOS 26
 
 - Silenciado el log informativo `HeroUI Native Styling Principles` en arranque: `HeroUINativeProvider` ahora recibe `config={{ devInfo: { stylingPrinciples: false } }}` en `app/_layout.tsx`.
