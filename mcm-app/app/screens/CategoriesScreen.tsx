@@ -1,4 +1,11 @@
-import { FlatList, Text, StyleSheet, View, Platform, TouchableOpacity } from 'react-native';
+import {
+  FlatList,
+  Text,
+  StyleSheet,
+  View,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   useLayoutEffect,
@@ -19,7 +26,6 @@ import { useToast } from '@/contexts/AppToastContext';
 import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   consumePendingCloudPlaylistCode,
   consumePendingChoirCode,
@@ -66,7 +72,6 @@ export default function CategoriesScreen({
     [scheme, layout.isWide, layout.contentMaxWidth],
   );
   const isDark = scheme === 'dark';
-  const insets = useSafeAreaInsets();
   const { data: songsData, loading } = useFirebaseData<Record<
     string,
     { categoryTitle: string; songs: any[] }
@@ -238,8 +243,9 @@ export default function CategoriesScreen({
           <Text style={styles.heroSubtitle}>
             {selectionItem.songCount === 0
               ? 'Añade canciones a tu playlist para tenerlas a mano'
-              : `${selectionItem.songCount} ${selectionItem.songCount === 1 ? 'canción' : 'canciones'
-              } en tu playlist`}
+              : `${selectionItem.songCount} ${
+                  selectionItem.songCount === 1 ? 'canción' : 'canciones'
+                } en tu playlist`}
           </Text>
         </View>
         <MaterialIcons
@@ -303,7 +309,7 @@ export default function CategoriesScreen({
         {sectionLabel()}
       </View>
     ),
-    [renderSelectionHero, sectionLabel, insets.top, isDark, navigation, styles],
+    [renderSelectionHero, sectionLabel, isDark, navigation, styles],
   );
 
   if (loading && sortedCategories.length === 0) {
@@ -350,31 +356,31 @@ const createStyles = (
   const cardShadow =
     Platform.OS === 'web'
       ? ({
-        boxShadow: isDark
-          ? '0 1px 3px rgba(0,0,0,0.4)'
-          : '0 1px 3px rgba(0,0,0,0.06)',
-      } as any)
+          boxShadow: isDark
+            ? '0 1px 3px rgba(0,0,0,0.4)'
+            : '0 1px 3px rgba(0,0,0,0.06)',
+        } as any)
       : {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: isDark ? 0.25 : 0.04,
-        shadowRadius: 3,
-        elevation: 1,
-      };
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isDark ? 0.25 : 0.04,
+          shadowRadius: 3,
+          elevation: 1,
+        };
   const gridCardShadow =
     Platform.OS === 'web'
       ? ({
-        boxShadow: isDark
-          ? '0 2px 10px rgba(0,0,0,0.4)'
-          : '0 2px 10px rgba(0,0,0,0.06)',
-      } as any)
+          boxShadow: isDark
+            ? '0 2px 10px rgba(0,0,0,0.4)'
+            : '0 2px 10px rgba(0,0,0,0.06)',
+        } as any)
       : {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: isDark ? 0.3 : 0.06,
-        shadowRadius: 8,
-        elevation: 2,
-      };
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: isDark ? 0.3 : 0.06,
+          shadowRadius: 8,
+          elevation: 2,
+        };
 
   return StyleSheet.create({
     container: {
@@ -417,8 +423,12 @@ const createStyles = (
       height: 36,
       borderRadius: 18,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(218, 165, 32, 0.3)' : 'rgba(196, 146, 42, 0.25)',
-      backgroundColor: isDark ? 'rgba(218, 165, 32, 0.08)' : 'rgba(196, 146, 42, 0.06)',
+      borderColor: isDark
+        ? 'rgba(218, 165, 32, 0.3)'
+        : 'rgba(196, 146, 42, 0.25)',
+      backgroundColor: isDark
+        ? 'rgba(218, 165, 32, 0.08)'
+        : 'rgba(196, 146, 42, 0.06)',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -431,10 +441,10 @@ const createStyles = (
       paddingBottom: isIOS ? 100 : 80,
       ...(isWide
         ? {
-          maxWidth: contentMaxWidth,
-          width: '100%',
-          alignSelf: 'center',
-        }
+            maxWidth: contentMaxWidth,
+            width: '100%',
+            alignSelf: 'center',
+          }
         : null),
     },
     // ── Móvil: fila tradicional ─────────────────────────────────────────

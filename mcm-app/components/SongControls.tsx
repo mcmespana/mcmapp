@@ -80,7 +80,8 @@ const SongControls: React.FC<SongControlsProps> = ({
   onSetCapoOverride,
 }) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
-  const [showTransposeBottomSheet, setShowTransposeBottomSheet] = useState(false);
+  const [showTransposeBottomSheet, setShowTransposeBottomSheet] =
+    useState(false);
   const [showFontPanel, setShowFontPanel] = useState(false);
   const [showReportBugsModal, setShowReportBugsModal] = useState(false);
   const [showSecretPanel, setShowSecretPanel] = useState(false);
@@ -111,7 +112,8 @@ const SongControls: React.FC<SongControlsProps> = ({
 
   const toggleMenu = () => {
     const toOpen = !showActionButtons;
-    toOpen ? h.menuOpen() : h.menuClose();
+    if (toOpen) h.menuOpen();
+    else h.menuClose();
     setShowActionButtons(toOpen);
     Animated.spring(rotateAnim, {
       toValue: toOpen ? 1 : 0,
@@ -135,7 +137,8 @@ const SongControls: React.FC<SongControlsProps> = ({
     };
   }, []);
 
-  const handleOpenTransposeBottomSheet = () => setShowTransposeBottomSheet(true);
+  const handleOpenTransposeBottomSheet = () =>
+    setShowTransposeBottomSheet(true);
   const handleOpenFontPanel = () => setShowFontPanel(true);
 
   const handleReportSuccess = () => {
@@ -177,7 +180,10 @@ const SongControls: React.FC<SongControlsProps> = ({
         isActive &&
           (isDark ? styles.actionButtonActiveDark : styles.actionButtonActive),
       ]}
-      onPress={() => { h.tap(); onPress(); }}
+      onPress={() => {
+        h.tap();
+        onPress();
+      }}
     >
       <PressableFeedback.Highlight />
       <MaterialIcons

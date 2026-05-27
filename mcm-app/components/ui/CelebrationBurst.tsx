@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import { durations, easings } from '@/constants/animations';
 
 const DEFAULT_PARTICLES: { tx: number; ty: number; c: string }[] = [

@@ -7,7 +7,6 @@ import FormattedContent from '@/components/FormattedContent';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
-import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
@@ -46,13 +45,19 @@ export default function ProfundizaScreen() {
     return (
       <PageContainer>
         <ScrollView
-          style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}
+          style={{
+            flex: 1,
+            backgroundColor: Colors[scheme ?? 'light'].background,
+          }}
           contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
         >
           <ScreenHero title="Profundiza" />
           <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 12 }}>
             {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} style={{ height: 56, borderRadius: radii.xl }} />
+              <Skeleton
+                key={i}
+                style={{ height: 56, borderRadius: radii.xl }}
+              />
             ))}
           </View>
         </ScrollView>
@@ -73,7 +78,10 @@ export default function ProfundizaScreen() {
             {data.paginas.map((p, idx) => (
               <View key={idx} style={styles.accordionWrapper}>
                 <PressableFeedback
-                  onPress={() => { h.toggle(); setOpenIdx(openIdx === idx ? null : idx); }}
+                  onPress={() => {
+                    h.toggle();
+                    setOpenIdx(openIdx === idx ? null : idx);
+                  }}
                   style={[
                     styles.accordion,
                     { backgroundColor: p.color || colors.primary },
