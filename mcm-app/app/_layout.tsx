@@ -205,7 +205,11 @@ function InnerLayout() {
         <Stack.Screen name="notifications" options={{ headerShown: false }} />
         <Stack.Screen
           name="onboarding"
-          options={{ headerShown: false, presentation: 'modal' }}
+          options={{
+            headerShown: false,
+            presentation: 'fullScreenModal',
+            contentStyle: { backgroundColor: '#253883' },
+          }}
         />
         <Stack.Screen
           name="wordle"
