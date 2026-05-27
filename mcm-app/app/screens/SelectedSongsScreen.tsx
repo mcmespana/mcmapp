@@ -1234,15 +1234,6 @@ const SelectedSongsScreen: React.FC = () => {
   );
 
   const renderHeaderBar = () => {
-    const transposedCount = selectedSongs.filter(
-      (s) => s.transpose !== 0,
-    ).length;
-    /* Eliminado este trozo
-                  {transposedCount > 0
-                ? ` · ${transposedCount} con tono cambiado`
-                : ''} 
-                
-                */
     return (
       <View>
         <ChoirSessionBanner />

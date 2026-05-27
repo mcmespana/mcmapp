@@ -38,7 +38,6 @@ export default function SongFontBottomSheet({
 }: Props) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme ?? 'light'];
 
   const defaultFamily = availableFonts[0]?.cssValue ?? currentFontFamily;
   const isSizeModified =

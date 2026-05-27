@@ -179,11 +179,11 @@ export default function AppFeedbackModal({
         <Text style={[styles.subtitle, { color: theme.icon }]}>
           Tu opinión nos ayuda a mejorar la app
         </Text>
- 
+
         {!selectedCategory ? (
           <>
             <SectionHeader label="¿Qué quieres contarnos?" />
- 
+
             {FEEDBACK_CATEGORIES.map((category) => (
               <TouchableOpacity
                 key={category.id}

@@ -89,7 +89,7 @@ export const StateColors = {
 
 // Swipe action colors en SongListItem — Apple system colors
 export const SwipeColors = {
-  add: '#34C759',    // Apple system green — swipe derecho "Seleccionar"
+  add: '#34C759', // Apple system green — swipe derecho "Seleccionar"
   remove: '#FF453A', // Apple system red — swipe izquierdo "Quitar"
 } as const;
 

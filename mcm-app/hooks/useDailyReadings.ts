@@ -64,7 +64,7 @@ export function useDailyReadings(dateStr: string) {
                 cached = JSON.stringify(foundInBookmarks);
               }
             }
-          } catch (e) {}
+          } catch {}
         }
 
         if (cached) {

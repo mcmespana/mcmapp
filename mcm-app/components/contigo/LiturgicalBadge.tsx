@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
 import { Chip } from 'heroui-native';
 import liturgicalCalendar from '@/assets/calendario-liturgico.json';
 
@@ -11,7 +10,7 @@ interface LiturgicalBadgeProps {
 type ChipColor = 'accent' | 'default' | 'success' | 'warning' | 'danger';
 
 export function getLiturgicalInfo(dateStr: string) {
-  const [year, month, day] = dateStr.split('-');
+  const [year] = dateStr.split('-');
   const calYear = liturgicalCalendar[year as keyof typeof liturgicalCalendar];
   if (!calYear)
     return {
