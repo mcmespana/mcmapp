@@ -13,6 +13,44 @@
 
 ---
 
+## 2026-05-26 — Limpieza de warnings iOS 26
+
+- Silenciado el log informativo `HeroUI Native Styling Principles` en arranque: `HeroUINativeProvider` ahora recibe `config={{ devInfo: { stylingPrinciples: false } }}` en `app/_layout.tsx`.
+- Resuelto warning `[RNScreens] Using both blurEffect and scrollEdgeEffects simultaneously` en el stack del Cantoral: `headerBlurEffect` se aplica solo en iOS < 26 (en iOS 26+ el sistema ya pinta el efecto glass vía `scrollEdgeEffects` por defecto). Archivo: `app/(tabs)/cancionero.tsx`.
+
+---
+
+## 2026-05-25 — Modo Carismochito (easter egg por shake)
+
+Easter egg: al agitar el móvil aparece una cuenta atrás de 5 segundos que, si no se cancela, activa el "Modo Carismochito" — un guiño a la mascota del MCM tintando toda la app de un verde lima deliberadamente exagerado. Se desactiva agitando otra vez o tocando el badge flotante.
+
+- **Detección de shake**: nuevo `hooks/useShakeDetector.ts` basado en `expo-sensors` (carga perezosa para no romper en web). Umbral configurable (~3 picos > 1.9g en 700ms, cooldown 1.2s).
+- **Estado global**: `contexts/CarismochitoContext.tsx` con tres estados (`idle`, `countingDown`, `active`); una sola acción de "shake" se interpreta como activar / cancelar / desactivar según el estado actual.
+- **UI**: `components/CarismochitoOverlay.tsx` renderiza:
+  - Pantalla de cuenta atrás con la mascota SVG (verde slime con ojos negros, lengua rosa), número pulsante, halo verde y botón "Cancelar".
+  - Cuando está activo: tinte verde lima (`#7FFF00`) sobre toda la app con viñeta superior/inferior + badge flotante "MODO CARISMOCHITO" que también permite desactivar al tocarlo.
+- **Wiring**: `CarismochitoProvider` añadido al árbol de providers y `<CarismochitoOverlay />` al final de `InnerLayout` (encima de tabs, debajo del toast).
+- **Nueva dependencia nativa**: `expo-sensors ~55.0.8` — **requiere un nuevo build EAS** para que funcione en dispositivo (en web queda inerte).
+- Archivos nuevos: `hooks/useShakeDetector.ts`, `contexts/CarismochitoContext.tsx`, `components/CarismochitoOverlay.tsx`.
+- Archivos modificados: `app/_layout.tsx`, `package.json`.
+
+---
+
+## 2026-05-25 — Activación de React Compiler
+
+- **Qué cambia**: se activa `babel-plugin-react-compiler` (React 19 + Babel 7.25). El compilador memoiza automáticamente componentes y valores derivados, eliminando re-renders innecesarios sin necesidad de `useMemo`/`useCallback`/`React.memo` manuales.
+- **Cómo se activa en Expo SDK 55**: requiere DOS cosas (no basta sólo con el preset):
+  1. `experiments.reactCompiler: true` en `app.json` → hace que Metro pase `supportsReactCompiler: true` al caller de Babel.
+  2. `babel-plugin-react-compiler` instalado + opciones opcionales vía `babel-preset-expo` (`['babel-preset-expo', { 'react-compiler': {} }]`).
+- **Orden con Reanimated**: el preset de Expo se encarga de inyectar el compilador como primer plugin y el plugin de worklets después, así que no hay conflicto manual.
+- **Verificación**: transformando un componente con `caller.supportsReactCompiler = true` aparece el import `react/compiler-runtime` y el `c(N)` de memo cache → confirma que el compilador procesa el código.
+- **Archivos afectados**:
+  - `babel.config.js`: preset pasa de `'babel-preset-expo'` a `['babel-preset-expo', { 'react-compiler': {} }]`.
+  - `app.json`: añadido `experiments.reactCompiler: true`.
+  - `package.json`: nueva devDependency `babel-plugin-react-compiler@^1.0.0`.
+
+---
+
 ## 2026-05-25 — Suscripción a calendarios públicos desde la pestaña Calendario
 
 Nueva funcionalidad que permite al usuario suscribirse a los calendarios ICS configurados en Firebase directamente desde su app de calendario nativa.

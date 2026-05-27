@@ -55,7 +55,9 @@ export default function RootLayout() {
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <HeroUINativeProvider>
+          <HeroUINativeProvider
+            config={{ devInfo: { stylingPrinciples: false } }}
+          >
             <AppToastProvider>
               <OverlayStackProvider>
                 <ProfileConfigProvider>
