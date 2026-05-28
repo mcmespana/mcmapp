@@ -6,14 +6,20 @@ import type { CalendarConfig } from './useCalendarConfigs';
 export interface CalendarEvent {
   startDate: string; // YYYY-MM-DD
   endDate?: string; // YYYY-MM-DD
+  startTime?: string; // HH:MM (only present for non all-day events)
+  endTime?: string; // HH:MM
   title: string;
   description?: string;
   location?: string;
   url?: string;
+  conferenceUrl?: string; // Detected Meet/Zoom/Teams link
   calendarIndex: number;
   isAllDay?: boolean; // Track if this is an all-day event
   isSingleDay?: boolean; // Track if this is effectively a single day event (after corrections)
 }
+
+const CONFERENCE_URL_REGEX =
+  /https?:\/\/(?:[\w-]+\.)*(?:meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com|webex\.com|gotomeeting\.com|whereby\.com|jit\.si|meet\.jit\.si)\/[^\s<>"')]+/i;
 
 function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
   // Unfold lines that start with a space as specified in RFC 5545
@@ -64,10 +70,20 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
     } else if (line.startsWith('SUMMARY:')) {
       current.title = line.slice('SUMMARY:'.length).trim();
     } else if (line.startsWith('DESCRIPTION:')) {
-      current.description = line
+      const raw = line
         .slice('DESCRIPTION:'.length)
-        .replace(/\\n/g, ' ')
+        .replace(/\\n/g, '\n')
+        .replace(/\\,/g, ',')
+        .replace(/\\;/g, ';')
         .trim();
+      current.description = raw || undefined;
+      // If we haven't found a conference URL yet, try to detect one in the description
+      if (!current.conferenceUrl && raw) {
+        const match = raw.match(CONFERENCE_URL_REGEX);
+        if (match) current.conferenceUrl = match[0];
+      }
+    } else if (line.startsWith('X-GOOGLE-CONFERENCE:')) {
+      current.conferenceUrl = line.slice('X-GOOGLE-CONFERENCE:'.length).trim();
     } else if (line.startsWith('LOCATION:')) {
       current.location =
         line
@@ -91,13 +107,17 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
           current.isAllDay = true;
         }
 
-        // Solo nos quedamos con la parte de fecha (sin hora)
         const datePart = value.replace(/T.*$/, '');
         if (/^\d{8}$/.test(datePart)) {
           const year = datePart.substring(0, 4);
           const month = datePart.substring(4, 6);
           const day = datePart.substring(6, 8);
           current.startDate = `${year}-${month}-${day}`;
+        }
+
+        const timeMatch = value.match(/T(\d{2})(\d{2})/);
+        if (timeMatch && !isDateOnly) {
+          current.startTime = `${timeMatch[1]}:${timeMatch[2]}`;
         }
       }
     } else if (line.startsWith('DTEND')) {
@@ -110,6 +130,11 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
           const month = datePart.substring(4, 6);
           const day = datePart.substring(6, 8);
           current.endDate = `${year}-${month}-${day}`;
+        }
+
+        const timeMatch = value.match(/T(\d{2})(\d{2})/);
+        if (timeMatch && !value.match(/^\d{8}$/)) {
+          current.endTime = `${timeMatch[1]}:${timeMatch[2]}`;
         }
       }
     }
