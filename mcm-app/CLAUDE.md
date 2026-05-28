@@ -22,47 +22,19 @@ npm test               # Jest (sin tests escritos aún)
 npx tsc --noEmit       # Verificar tipos TypeScript
 ```
 
-## 🚨🚨🚨 CRÍTICO: OTA vs Build de Tienda 🚨🚨🚨
+## OTA vs Build de tienda
 
-### ⚠️ Cuándo NO se puede usar OTA (EAS Update)
+Los OTA updates (EAS Update) solo envían el **bundle JS** — no incluyen código nativo. Si añades un paquete con módulos nativos (`expo-*`, `react-native-*` con carpeta `ios/` o `android/`) y haces OTA, **la app crashea** porque el binario instalado no tiene ese módulo.
 
-Los **OTA updates** sólo envían el **bundle JavaScript**. **NO incluyen código nativo.**
+Cuando añadas un paquete nativo:
+1. Añade `[skip-ota]` al mensaje del commit → el workflow `ota-production.yml` se salta automáticamente
+2. Avisa al usuario de que necesita un **build de producción** antes de mergear a `production`:
+   ```
+   ⚠️ Este cambio incluye paquetes nativos ([lista]). Requiere build de tienda antes del merge a production. El commit lleva [skip-ota] para no lanzar la OTA.
+   ```
+3. Comando para el build: `npm run eas:build -- --profile production`
 
-Si el cambio añade cualquiera de estas cosas, la OTA **ROMPERÁ LA APP** en producción:
-
-- ❌ Un paquete npm nuevo con módulos nativos (mayoría de `expo-*`, `react-native-*`)
-- ❌ Actualización de SDK de Expo a versión mayor
-- ❌ Cambios en `app.json` que afecten la capa nativa (permisos, plugins)
-
-**Por qué crashea:** el bundle JS llama a un módulo nativo que no existe en el binario instalado → crash inmediato.
-
-### ✅ Protocolo obligatorio cuando añadas paquetes nativos
-
-1. 🔍 Verifica si el paquete tiene código nativo (busca `ios/` o `android/` en su repositorio)
-2. 🏷️ Añade `[skip-ota]` al mensaje del commit para bloquear el workflow OTA automático
-3. 📢 Muestra al usuario este aviso:
-
-> 🚨🚨🚨 **ATENCIÓN: ESTE CAMBIO REQUIERE BUILD DE TIENDA** 🚨🚨🚨
->
-> ⛔ **NO se puede desplegar por OTA.** Se han añadido paquetes con código nativo:
-> `<lista de paquetes>`
->
-> 📦 Para que funcione en producción hay que hacer un **build de producción** y subir a App Store / Play Store:
-> ```bash
-> npm run eas:build -- --profile production
-> ```
->
-> ✅ El commit lleva `[skip-ota]` → el workflow OTA quedará en pausa automáticamente.
->
-> ⚠️ Si haces merge a `production` sin `[skip-ota]` y sin subir el build a tienda, **la app crasheará para todos los usuarios.**
-
-### 🏷️ Sintaxis de `[skip-ota]`
-
-```
-feat: añadir expo-camera para escanear QR [skip-ota]
-```
-
-El workflow `.github/workflows/ota-production.yml` detecta `[skip-ota]` en el mensaje del commit y no lanza el OTA. En `workflow_dispatch` manual siempre corre.
+En `workflow_dispatch` manual la OTA siempre corre independientemente del flag.
 
 ---
 
