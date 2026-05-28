@@ -104,7 +104,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
           sizes="512x512"
           href="/icons/icon-512.png"
         />
-        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="shortcut icon" href="/icons/favicon.png" />
 
         {/* Manifest PWA */}
         <link rel="manifest" href="/manifest.json" />
