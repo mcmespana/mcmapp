@@ -199,12 +199,7 @@ const CodeInputModal: React.FC<Props> = ({
           </View>
         )}
 
-        <Text
-          style={[
-            styles.inputLabel,
-            copy.askForName && { marginTop: 12 },
-          ]}
-        >
+        <Text style={[styles.inputLabel, copy.askForName && { marginTop: 12 }]}>
           Código (4 dígitos)
         </Text>
         <View style={styles.codeRow}>
@@ -295,9 +290,7 @@ const CodeInputModal: React.FC<Props> = ({
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.btnPrimaryText}>
-                {copy.primaryLabel}
-              </Text>
+              <Text style={styles.btnPrimaryText}>{copy.primaryLabel}</Text>
             )}
           </TouchableOpacity>
         </View>

@@ -1,12 +1,5 @@
-import React, {
-  createContext,
-  useContext,
-  ReactNode,
-} from 'react';
-import {
-  useCalendarConfigs,
-  CalendarConfig,
-} from '@/hooks/useCalendarConfigs';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useCalendarConfigs, CalendarConfig } from '@/hooks/useCalendarConfigs';
 
 interface CalendarConfigContextType {
   calendarConfigs: CalendarConfig[];

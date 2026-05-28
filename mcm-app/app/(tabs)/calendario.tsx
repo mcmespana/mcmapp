@@ -19,7 +19,6 @@ import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import { Calendar, CalendarProps, LocaleConfig } from 'react-native-calendars';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';

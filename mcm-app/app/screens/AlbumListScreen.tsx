@@ -75,7 +75,10 @@ export default function AlbumListScreen() {
     setIsLoadingMore(true);
     const nextPage = currentPage + 1;
     const startIndex = nextPage * ALBUMS_PER_PAGE;
-    const newAlbums = sortedAlbums.slice(startIndex, startIndex + ALBUMS_PER_PAGE);
+    const newAlbums = sortedAlbums.slice(
+      startIndex,
+      startIndex + ALBUMS_PER_PAGE,
+    );
     if (newAlbums.length > 0) {
       setDisplayedAlbums((prev) => [...prev, ...newAlbums]);
       setCurrentPage(nextPage);
@@ -145,9 +148,7 @@ export default function AlbumListScreen() {
         data={displayedAlbums}
         renderItem={({ item }) => (
           <View
-            style={
-              width > 600 ? styles.cardTwoColumns : styles.cardOneColumn
-            }
+            style={width > 600 ? styles.cardTwoColumns : styles.cardOneColumn}
           >
             <AlbumCard
               album={item}

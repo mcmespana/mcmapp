@@ -38,7 +38,6 @@ export default function TransposeBottomSheet({
 }: Props) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const theme = Colors[scheme ?? 'light'];
 
   const showCapoSection = onSetCapoOverride !== undefined;
   const isCapoOverridden =
@@ -128,7 +127,10 @@ export default function TransposeBottomSheet({
                         ? styles.toneBtnDownDark
                         : styles.toneBtnDown,
                   ]}
-                  onPress={() => { h.select(); onSetTranspose(currentTranspose + step.value); }}
+                  onPress={() => {
+                    h.select();
+                    onSetTranspose(currentTranspose + step.value);
+                  }}
                 >
                   <PressableFeedback.Highlight />
                   <Text
@@ -207,7 +209,10 @@ export default function TransposeBottomSheet({
                   isDark ? styles.toneBtnDownDark : styles.toneBtnDown,
                   effectiveCapo <= 0 && styles.capoStepBtnDisabled,
                 ]}
-                onPress={() => { h.select(); handleCapoMinus(); }}
+                onPress={() => {
+                  h.select();
+                  handleCapoMinus();
+                }}
                 isDisabled={effectiveCapo <= 0}
               >
                 <PressableFeedback.Highlight />
@@ -271,7 +276,10 @@ export default function TransposeBottomSheet({
                   styles.capoStepBtn,
                   isDark ? styles.toneBtnUpDark : styles.toneBtnUp,
                 ]}
-                onPress={() => { h.select(); handleCapoPlus(); }}
+                onPress={() => {
+                  h.select();
+                  handleCapoPlus();
+                }}
               >
                 <PressableFeedback.Highlight />
                 <MaterialIcons

@@ -56,8 +56,6 @@ interface SongDetailScreenProps {
   navigation: SongDetailScreenNavigationProp;
 }
 
-const isIOS = Platform.OS === 'ios';
-
 export default function SongDetailScreen({
   route,
   navigation,

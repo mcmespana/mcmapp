@@ -4,16 +4,21 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  TouchableOpacity,
   Linking,
   Platform,
   Text,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Chip, Button, Dialog, PressableFeedback, Skeleton } from 'heroui-native';
+import {
+  Chip,
+  Button,
+  Dialog,
+  PressableFeedback,
+  Skeleton,
+} from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -40,7 +45,7 @@ export default function AppsScreen() {
   const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
-  const { data: appsData, loading } = useFirebaseData<AppInfo[]>(
+  const { data: appsData } = useFirebaseData<AppInfo[]>(
     getEventFirebasePath(event, 'apps'),
     getEventCacheKey(event, 'apps'),
   );
@@ -63,7 +68,7 @@ export default function AppsScreen() {
       if (storeUrl) {
         await Linking.openURL(storeUrl);
       }
-    } catch (error) {
+    } catch {
       const storeUrl = Platform.OS === 'ios' ? app.iosLink : app.androidLink;
       if (storeUrl) {
         try {
@@ -82,16 +87,29 @@ export default function AppsScreen() {
 
   if (!appsData) {
     return (
-      <View style={{ flex: 1, backgroundColor: Colors[scheme ?? 'light'].background }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: Colors[scheme ?? 'light'].background,
+        }}
+      >
         <PageContainer>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl }}>
+          <ScrollView
+            contentContainerStyle={{
+              paddingHorizontal: spacing.md,
+              paddingBottom: spacing.xl,
+            }}
+          >
             <ScreenHero
               title="Apps"
               subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo."
             />
             <View style={{ gap: spacing.sm }}>
               {[0, 1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} style={{ height: 72, borderRadius: radii.lg }} />
+                <Skeleton
+                  key={i}
+                  style={{ height: 72, borderRadius: radii.lg }}
+                />
               ))}
             </View>
           </ScrollView>
@@ -104,7 +122,10 @@ export default function AppsScreen() {
     <View style={styles.container}>
       <PageContainer>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: insets.bottom + spacing.xl }}
+          contentContainerStyle={{
+            paddingHorizontal: spacing.md,
+            paddingBottom: insets.bottom + spacing.xl,
+          }}
         >
           <ScreenHero
             title="Apps"
@@ -257,8 +278,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     introContainer: {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
-      backgroundColor: hexAlpha(theme.accent, '12'),
-      borderColor: hexAlpha(theme.accent, '30'),
+      backgroundColor: hexAlpha(colors.accent, '12'),
+      borderColor: hexAlpha(colors.accent, '30'),
       borderWidth: 1,
       borderRadius: radii.md,
       marginBottom: spacing.md,
@@ -295,7 +316,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       width: 56,
       height: 56,
       borderRadius: radii.md,
-      backgroundColor: hexAlpha(theme.accent, '15'),
+      backgroundColor: hexAlpha(colors.accent, '15'),
     },
     icon: {
       width: 48,
