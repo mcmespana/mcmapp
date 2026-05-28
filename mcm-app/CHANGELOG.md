@@ -13,6 +13,17 @@
 
 ---
 
+## 2026-05-28 — Calendario: detalles de evento + parser ICS enriquecido
+
+- **Detalles de evento al hacer tap**: cada tarjeta de evento ahora abre un `EventDetailsBottomSheet` (nuevo componente) con fecha y hora, ubicación con botón "Abrir en Mapas/Maps", videollamada destacada (Meet/Zoom/Teams/Webex/Jitsi), descripción con saltos de línea y URLs tappables, y enlace "Abrir en Google Calendar" si el evento trae `URL`.
+- **Parser ICS enriquecido** (`hooks/useCalendarEvents.ts`): el tipo `CalendarEvent` añade `startTime`, `endTime` y `conferenceUrl`. `DTSTART`/`DTEND` ahora extraen también la hora (`HH:MM`). Se detectan videollamadas vía `X-GOOGLE-CONFERENCE` y, como fallback, regex sobre `DESCRIPTION` (Meet, Zoom, Teams, Webex, GoToMeeting, Whereby, Jitsi). `DESCRIPTION` conserva los saltos de línea originales.
+- **FAB "Hoy" rediseñado**: sustituido el `GlassFAB` flotante por una píldora compacta "Volver a hoy" en el header de la sección de eventos (modo Mes) y sobre la lista (modo Agenda). Aparece solo cuando la fecha/mes seleccionado no es el actual.
+- **Hora en la tarjeta del día**: si el evento tiene `startTime`, se muestra `HH:MM – HH:MM` con icono de reloj en la tarjeta de la lista del día.
+- Archivos nuevos: `components/EventDetailsBottomSheet.tsx`.
+- Archivos modificados: `hooks/useCalendarEvents.ts`, `app/(tabs)/calendario.tsx`.
+
+---
+
 ## 2026-05-27 — Onboarding edge-to-edge
 
 - El onboarding ahora ocupa la pantalla completa, incluida la zona del notch / status bar / home indicator. El fondo del paso actual (azul marca en la bienvenida, blanco en los siguientes) cubre todo el shell sin recortes blancos arriba.
