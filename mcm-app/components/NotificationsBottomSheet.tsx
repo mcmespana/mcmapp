@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -76,7 +76,7 @@ function normalizeRoute(route: string): string {
     'contigo',
   ];
 
-  const isTab = tabPaths.some(p => naked === p || naked.startsWith(p + '/'));
+  const isTab = tabPaths.some((p) => naked === p || naked.startsWith(p + '/'));
   if (isTab) {
     return '/(tabs)/' + naked;
   }
@@ -290,7 +290,9 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
       <View style={{ marginBottom: spacing.md }}>
         <Swipeable
           renderRightActions={(progress, dragX) =>
-            isUnread ? renderRightActions(progress, dragX, notification.id) : null
+            isUnread
+              ? renderRightActions(progress, dragX, notification.id)
+              : null
           }
           rightThreshold={40}
           overshootRight={false}
@@ -386,7 +388,7 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
                           if (btn.isInternal) {
                             try {
                               router.push(normalizeRoute(btn.url) as any);
-                            } catch (e) {}
+                            } catch {}
                           } else {
                             Linking.openURL(btn.url).catch(console.error);
                           }
@@ -430,18 +432,21 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
     </TouchableOpacity>
   ) : undefined;
 
-  const headerRight = !selectedNotification && hasUnread ? (
-    <TouchableOpacity
-      onPress={handleMarkAllAsRead}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      style={sheetStyles.markAllHeaderBtn}
-    >
-      <MaterialIcons name="done-all" size={18} color={colors.primary} />
-      <Text style={sheetStyles.markAllHeaderText}>Marcar todo</Text>
-    </TouchableOpacity>
-  ) : undefined;
+  const headerRight =
+    !selectedNotification && hasUnread ? (
+      <TouchableOpacity
+        onPress={handleMarkAllAsRead}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        style={sheetStyles.markAllHeaderBtn}
+      >
+        <MaterialIcons name="done-all" size={18} color={colors.primary} />
+        <Text style={sheetStyles.markAllHeaderText}>Marcar todo</Text>
+      </TouchableOpacity>
+    ) : undefined;
 
-  const sheetTitle = selectedNotification ? selectedNotification.title : 'Notificaciones';
+  const sheetTitle = selectedNotification
+    ? selectedNotification.title
+    : 'Notificaciones';
 
   return (
     <BottomSheet
@@ -542,7 +547,7 @@ function NotificationDetail({
     setTimeout(() => {
       try {
         router.push(clean as any);
-      } catch (e) {}
+      } catch {}
     }, 320);
   };
 

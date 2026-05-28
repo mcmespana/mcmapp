@@ -81,7 +81,7 @@ function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
-function getWeekLabel(date: Date, today: Date): string {
+function getWeekLabel(date: Date, today: Date): string | null {
   const diffTime = date.getTime() - today.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
