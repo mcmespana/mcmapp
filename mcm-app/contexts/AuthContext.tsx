@@ -42,7 +42,12 @@ function providerFromFirebase(firebaseUser: {
   providerData: { providerId: string }[];
 }): 'google' | 'apple' {
   const pid = firebaseUser.providerData[0]?.providerId ?? '';
-  return pid.includes('apple') ? 'apple' : 'google';
+  if (pid.includes('apple')) return 'apple';
+  // google.com, googleusercontent.com or any other provider defaults to google
+  if (__DEV__ && !pid.includes('google')) {
+    console.warn(`[AuthContext] Proveedor desconocido "${pid}", usando google por defecto`);
+  }
+  return 'google';
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {

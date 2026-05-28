@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Avatar } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, type AuthUser } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
@@ -53,23 +53,29 @@ export default function SocialLoginSection({ onDarkBackground = false }: Props) 
     }
   }, [user, profile.name, setProfile]);
 
+  const persistLogin = (authUser: AuthUser, provider: 'google' | 'apple') => {
+    if (!authUser) return;
+    // writeUserOnLogin is fire-and-forget — UI is already updated via onAuthStateChanged
+    writeUserOnLogin(
+      authUser.uid,
+      authUser.displayName,
+      authUser.email,
+      authUser.photoURL,
+      provider,
+      {
+        profileType: profile.profileType,
+        delegationId: profile.delegationId,
+        onboardingCompleted: profile.onboardingCompleted,
+      },
+    );
+  };
+
   const handleGoogleSignIn = async () => {
     setSigningIn('google');
     try {
       const authUser = await signInWithGoogle();
       if (authUser) {
-        await writeUserOnLogin(
-          authUser.uid,
-          authUser.displayName,
-          authUser.email,
-          authUser.photoURL,
-          'google',
-          {
-            profileType: profile.profileType,
-            delegationId: profile.delegationId,
-            onboardingCompleted: profile.onboardingCompleted,
-          },
-        );
+        persistLogin(authUser, 'google');
         toast.show({ variant: 'success', label: 'Sesión iniciada con Google' });
       }
     } catch {
@@ -84,18 +90,7 @@ export default function SocialLoginSection({ onDarkBackground = false }: Props) 
     try {
       const authUser = await signInWithApple();
       if (authUser) {
-        await writeUserOnLogin(
-          authUser.uid,
-          authUser.displayName,
-          authUser.email,
-          authUser.photoURL,
-          'apple',
-          {
-            profileType: profile.profileType,
-            delegationId: profile.delegationId,
-            onboardingCompleted: profile.onboardingCompleted,
-          },
-        );
+        persistLogin(authUser, 'apple');
         toast.show({ variant: 'success', label: 'Sesión iniciada con Apple' });
       }
     } catch {
@@ -106,8 +101,12 @@ export default function SocialLoginSection({ onDarkBackground = false }: Props) 
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    toast.show({ label: 'Sesión cerrada' });
+    try {
+      await signOut();
+      toast.show({ label: 'Sesión cerrada' });
+    } catch {
+      toast.show({ variant: 'danger', label: 'Error al cerrar sesión' });
+    }
   };
 
   if (loading) {

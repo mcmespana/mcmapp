@@ -1,9 +1,6 @@
 // Native implementation: uses @react-native-google-signin/google-signin and
 // expo-apple-authentication.
-import {
-  GoogleSignin,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import {
   GoogleAuthProvider,
   OAuthProvider,

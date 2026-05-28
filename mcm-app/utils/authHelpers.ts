@@ -1,4 +1,4 @@
-import { getDatabase, ref, update, get, set } from 'firebase/database';
+import { getDatabase, ref, update, get, set, remove } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import type { DayRecord } from '@/hooks/useContigoHabits';
 
@@ -88,7 +88,6 @@ export async function syncContigoBookmark(
   try {
     const bookmarkRef = ref(db(), `users/${uid}/contigo/bookmarks/${date}`);
     if (bookmark === null) {
-      const { remove } = await import('firebase/database');
       await remove(bookmarkRef);
     } else {
       await set(bookmarkRef, bookmark);
