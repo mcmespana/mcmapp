@@ -48,6 +48,7 @@
 La home actual es un grid de botones estático. Opciones para hacerla más útil:
 
 ### Opción A: Home con contenido dinámico (recomendada)
+
 - Próximo evento del calendario (tarjeta destacada arriba)
 - Accesos rápidos más compactos
 - Canción del día (si el cantoral está activo)
@@ -55,11 +56,13 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 - Último contenido actualizado (materiales, reflexiones)
 
 ### Opción B: Home tipo dashboard
+
 - Saludo personalizado (si UserProfile tiene nombre)
 - Fecha de hoy + próximo evento
 - Cards apiladas con preview de contenido
 
 ### Opción C: Home minimalista
+
 - Logo MCM grande arriba
 - Lista simple de secciones con subtítulo
 - Barra de búsqueda global

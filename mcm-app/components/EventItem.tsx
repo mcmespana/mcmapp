@@ -130,8 +130,6 @@ const EventItem = React.memo(function EventItem({
   );
 });
 
-export default EventItem;
-
 const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
@@ -212,3 +210,4 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   });
 };
 
+export default EventItem;

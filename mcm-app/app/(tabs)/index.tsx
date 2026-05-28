@@ -851,7 +851,7 @@ export default function Home() {
                   },
                 ]}
               >
-                PRÓXIMOS EVENTOS JEJE COMMIT
+                PRÓXIMOS EVENTOSSS
               </Text>
 
               {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (

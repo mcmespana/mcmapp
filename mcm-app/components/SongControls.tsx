@@ -112,8 +112,11 @@ const SongControls: React.FC<SongControlsProps> = ({
 
   const toggleMenu = () => {
     const toOpen = !showActionButtons;
-    if (toOpen) h.menuOpen();
-    else h.menuClose();
+    if (toOpen) {
+      h.menuOpen();
+    } else {
+      h.menuClose();
+    }
     setShowActionButtons(toOpen);
     Animated.spring(rotateAnim, {
       toValue: toOpen ? 1 : 0,

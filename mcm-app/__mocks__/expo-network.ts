@@ -9,7 +9,7 @@ let mockNetworkState = {
   type: 'wifi',
 };
 
-const listeners: Array<(state: typeof mockNetworkState) => void> = [];
+const listeners: ((state: typeof mockNetworkState) => void)[] = [];
 
 export const getNetworkStateAsync = jest.fn(() =>
   Promise.resolve(mockNetworkState),

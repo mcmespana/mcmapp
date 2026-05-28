@@ -13,14 +13,6 @@ import { Platform } from 'react-native';
  */
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
-    // Puedes personalizar el comportamiento basado en la categoría
-    const category = notification.request.content.data?.category as
-      | string
-      | undefined;
-    const priority = notification.request.content.data?.priority as
-      | string
-      | undefined;
-
     // ── Foreground: NO mostrar banner/alert/list del sistema ──
     // La notificación se gestiona internamente por el listener
     // `notificationReceived` de usePushNotifications (la guarda en AsyncStorage

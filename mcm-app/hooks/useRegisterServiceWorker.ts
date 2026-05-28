@@ -17,7 +17,6 @@ export function useRegisterServiceWorker() {
         .register('/sw.js', { scope: '/' })
         .catch((err) => {
           // No bloqueamos la app si falla el SW, solo lo registramos.
-
           console.warn('[PWA] Service worker registration failed:', err);
         });
     };

@@ -10,7 +10,6 @@ import { Image } from 'expo-image';
 import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-
 interface AlbumCardProps {
   album: {
     id: string;
