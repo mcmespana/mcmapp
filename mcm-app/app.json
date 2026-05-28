@@ -96,8 +96,7 @@
             "120": "./assets/images/icon-120.png",
             "152": "./assets/images/icon-152.png",
             "167": "./assets/images/icon-167.png",
-            "180": "./assets/images/icon-180.png",
-            "1024": "./assets/images/icon-1024.png"
+            "180": "./assets/images/icon-180.png"
           }
         },
         "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
