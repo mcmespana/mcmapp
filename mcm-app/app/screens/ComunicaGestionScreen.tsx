@@ -21,7 +21,6 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 // CSS module reutilizado del iframe (solo aplica en web)
 /* eslint-disable @typescript-eslint/no-require-imports */
 const iframeStyles =
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   Platform.OS === 'web' ? require('../../styles/comunica.module.css') : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
