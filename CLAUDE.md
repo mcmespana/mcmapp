@@ -15,63 +15,6 @@
 └── MEJORAS.md             ← Análisis técnico transversal (rendimiento, arquitectura, seguridad, observabilidad, DX, CI…) + plan priorizado (referenciado desde mcm-app/TODO.md)
 ```
 
-## 🚨🚨🚨 CRÍTICO: OTA vs Build de Tienda 🚨🚨🚨
-
-> **LEE ESTO ANTES DE CUALQUIER CAMBIO QUE AÑADA PAQUETES**
-
-### ⚠️ Cuándo NO se puede usar OTA (EAS Update)
-
-Los **OTA updates** (Expo/EAS Update) sólo envían el **bundle JavaScript**. NO incluyen código nativo.
-
-**Si el cambio añade cualquiera de estas cosas, la OTA ROMPERÁ LA APP en producción:**
-
-- ❌ Un paquete npm nuevo que tenga módulos nativos (la mayoría de `expo-*`, `react-native-*`)
-- ❌ Una actualización de SDK de Expo a una versión mayor
-- ❌ Cualquier cambio en `app.json` que afecte a la capa nativa (permisos, plugins, etc.)
-- ❌ Cambios en `package.json` que incluyan paquetes con código nativo nuevo
-
-**Por qué crashea:** el bundle JS llama a un módulo nativo que no existe en el binario instalado → crash inmediato al arrancar.
-
-### ✅ Regla para agentes
-
-**ANTES de proponer o hacer commit de un cambio que añada paquetes:**
-
-1. 🔍 **Investiga** si el paquete tiene código nativo (busca `ios/` o `android/` en su repo, o `"nativeModulesDir"` en `package.json`)
-2. 🛑 Si tiene código nativo → **el cambio NO puede desplegarse por OTA**
-3. 📢 **Avisa al usuario con el bloque de advertencia de abajo**
-4. 🏷️ **Añade `[skip-ota]` al mensaje del commit** (o al merge commit) para que el workflow de GitHub Actions NO lance el OTA automático
-
-### 🚫 Bloque de advertencia obligatorio para el usuario
-
-Cuando detectes que un cambio incluye paquetes nativos, COPIA y MUESTRA este mensaje al usuario:
-
----
-
-> 🚨🚨🚨 **ATENCIÓN: ESTE CAMBIO REQUIERE BUILD DE TIENDA** 🚨🚨🚨
->
-> ⛔ **NO se puede desplegar por OTA.** Se han añadido paquetes con código nativo:
-> `<lista de paquetes>`
->
-> 📦 **Para que funcione en producción hay que:**
-> 1. Hacer un **build de producción** (`npm run eas:build -- --profile production`) y subir a App Store / Play Store
-> 2. El commit de merge a `production` lleva `[skip-ota]` en el mensaje → el workflow OTA quedará en pausa automáticamente ✅
->
-> ⚠️ Si haces merge a `production` sin `[skip-ota]` y sin haber subido el build a tienda, **la app crasheará para todos los usuarios.**
-
----
-
-### 🏷️ Cómo usar `[skip-ota]`
-
-Incluye `[skip-ota]` en el **mensaje del commit** (o del merge commit a `production`/`preview`):
-
-```
-feat: añadir expo-camera para escanear QR [skip-ota]
-```
-
-El workflow `.github/workflows/ota-production.yml` detecta esto y **no lanza el OTA**, evitando el crash. En `workflow_dispatch` manual siempre corre (asumiendo que el usuario lo lanzó a propósito).
-
----
-
 ## Reglas para agentes
 
 1. **Trabaja siempre desde `mcm-app/`** para cualquier cambio de código
@@ -79,7 +22,7 @@ El workflow `.github/workflows/ota-production.yml` detecta esto y **no lanza el 
 3. **Documenta cambios importantes en `mcm-app/CHANGELOG.md`** — NO documentes cambios cosméticos (colores, padding, etc.), SÍ documenta: nuevas pantallas, cambios de navegación, cambios de lógica de datos, cambios en feature flags, nuevas dependencias, cambios en Firebase
 4. **Consulta `mcm-app/TODO.md`** para ver la lista de tareas pendientes de mantenimiento y mejora
 5. **No toques archivos `.env.local`** — contienen credenciales de Firebase
-6. **Si añades paquetes nativos → añade `[skip-ota]` al commit y avisa al usuario** (ver sección crítica arriba)
+6. **Si añades paquetes con código nativo → añade `[skip-ota]` al commit y avisa al usuario** (ver OTA en `mcm-app/CLAUDE.md`)
 
 ## Comandos rápidos (desde mcm-app/)
 
