@@ -27,6 +27,8 @@ import {
 } from '@/components/contigo/theme';
 import { BreathingPhase } from '@/components/contigo/BreathingPhase';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
+import { useAuth } from '@/contexts/AuthContext';
+import { syncContigoRevision } from '@/utils/authHelpers';
 
 const REVISION_STORAGE = '@contigo_revision_';
 
@@ -36,6 +38,7 @@ export default function RevisionScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const scheme = useColorScheme();
+  const { user: authUser } = useAuth();
   const isDark = scheme === 'dark';
   const W = warm(isDark);
   const purple = isDark ? WARM_DARK.purple : WARM_LIGHT.purple;
@@ -139,21 +142,23 @@ export default function RevisionScreen() {
   };
 
   const handleSave = async () => {
+    const revisionData = {
+      date: selDate,
+      type: 'grateful' as const,
+      grateful: {
+        mode,
+        items: mode === 'list' ? items.filter((g) => g.trim()) : [singleGrat],
+        revision: revText,
+      },
+    };
     try {
       await AsyncStorage.setItem(
         REVISION_STORAGE + selDate,
-        JSON.stringify({
-          date: selDate,
-          type: 'grateful',
-          grateful: {
-            mode,
-            items:
-              mode === 'list' ? items.filter((g) => g.trim()) : [singleGrat],
-            revision: revText,
-          },
-          ts: Date.now(),
-        }),
+        JSON.stringify({ ...revisionData, ts: Date.now() }),
       );
+      if (authUser) {
+        syncContigoRevision(authUser.uid, selDate, revisionData);
+      }
     } catch {}
     // Always mark the habit done — the streak / heatmap / week strip should
     // reflect any saved reflection, even retroactive ones.

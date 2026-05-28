@@ -13,4 +13,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     firebaseAppId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
   },
+  plugins: [
+    ...(Array.isArray(config.plugins) ? config.plugins : []),
+    [
+      '@react-native-google-signin/google-signin',
+      {
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      },
+    ],
+  ],
 });

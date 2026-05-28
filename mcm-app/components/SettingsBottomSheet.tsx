@@ -23,6 +23,7 @@ import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import type { ProfileType } from '@/types/profileConfig';
 import BottomSheet from './BottomSheet';
+import SocialLoginSection from '@/components/SocialLoginSection';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -219,8 +220,16 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
           )}
 
           {panelView === 'settings' && (<>
-          {/* ── Sección: Tu perfil MCM ── */}
+          {/* ── Sección: Cuenta ── */}
           <Text style={[styles.sectionLabel, { color: theme.icon }]}>
+            CUENTA
+          </Text>
+          <View style={[styles.surface, { backgroundColor: surfaceBg, gap: 10, paddingVertical: spacing.md }]}>
+            <SocialLoginSection />
+          </View>
+
+          {/* ── Sección: Tu perfil MCM ── */}
+          <Text style={[styles.sectionLabel, { color: theme.icon, marginTop: spacing.md }]}>
             TU PERFIL EN MCM
           </Text>
 

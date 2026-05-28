@@ -33,13 +33,14 @@ import colors from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import SocialLoginSection from '@/components/SocialLoginSection';
 import {
   DEFAULT_DELEGATION_ID,
   DEFAULT_PROFILE_TYPE,
 } from '@/constants/defaultProfileConfig';
 import type { ProfileType } from '@/types/profileConfig';
 
-type Step = 'welcome' | 'profile' | 'delegation' | 'success';
+type Step = 'welcome' | 'profile' | 'delegation' | 'login' | 'success';
 
 // "Otros" es un atajo visual del onboarding. Internamente mapea a
 // `miembro` + `mcm-espana`, así cubre a quien no se identifica con ningún
@@ -1099,6 +1100,170 @@ const delegStyles = StyleSheet.create({
 });
 
 /* ─────────────────────────────────────
+   Login screen (onboarding step)
+─────────────────────────────────────── */
+
+function LoginOnboardingScreen({
+  onContinue,
+  onBack,
+  animDir,
+}: {
+  onContinue: () => void;
+  onBack: () => void;
+  animDir: 'forward' | 'back';
+}) {
+  const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
+  const { width: screenW } = useWindowDimensions();
+  const isWide = screenW >= 640;
+
+  return (
+    <Animated.View
+      entering={Entering.duration(320).easing(Easing.bezier(0.22, 1, 0.36, 1))}
+      style={loginOnbStyles.root}
+    >
+      {/* Decorative background circles */}
+      <View style={[loginOnbStyles.deco, { top: -80, right: -60, width: 220, height: 220, backgroundColor: 'rgba(149,210,242,0.10)' }]} />
+      <View style={[loginOnbStyles.deco, { bottom: 120, left: -60, width: 180, height: 180, backgroundColor: 'rgba(149,210,242,0.07)' }]} />
+      <View style={[loginOnbStyles.deco, { bottom: -30, right: 10, width: 120, height: 120, backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+
+      {/* Back button */}
+      <Pressable
+        onPress={onBack}
+        style={loginOnbStyles.backBtn}
+        accessibilityRole="button"
+        accessibilityLabel="Volver"
+      >
+        <MaterialIcons name="arrow-back" size={22} color="rgba(255,255,255,0.75)" />
+      </Pressable>
+
+      {/* Content */}
+      <View style={[loginOnbStyles.center, isWide && { paddingHorizontal: 48 }]}>
+        {/* Logo */}
+        <Animated.View
+          entering={FadeIn.delay(80).duration(500)}
+          style={loginOnbStyles.logoWrap}
+        >
+          <View style={loginOnbStyles.logoCircle}>
+            <Image
+              source={require('@/assets/images/icon.png')}
+              style={loginOnbStyles.logoImg}
+              resizeMode="contain"
+            />
+          </View>
+        </Animated.View>
+
+        <Animated.Text
+          entering={FadeInUp.delay(120).duration(400)}
+          style={loginOnbStyles.title}
+        >
+          Guarda tu progreso
+        </Animated.Text>
+
+        <Animated.Text
+          entering={FadeInUp.delay(180).duration(400)}
+          style={loginOnbStyles.body}
+        >
+          Sincroniza tus hábitos de oración, evangelios guardados y reflexiones
+          entre todos tus dispositivos.
+        </Animated.Text>
+
+        {/* Login buttons */}
+        <Animated.View
+          entering={FadeInUp.delay(240).duration(400)}
+          style={loginOnbStyles.buttonsWrap}
+        >
+          <SocialLoginSection onDarkBackground />
+        </Animated.View>
+      </View>
+
+      {/* Skip */}
+      <Animated.View
+        entering={FadeInUp.delay(320).duration(380)}
+        style={loginOnbStyles.skipWrap}
+      >
+        <Pressable
+          onPress={onContinue}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Continuar sin cuenta"
+          style={({ pressed }) => [pressed && { opacity: 0.65 }]}
+        >
+          <Text style={loginOnbStyles.skipText}>Continuar sin cuenta →</Text>
+        </Pressable>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+const loginOnbStyles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: T.primary,
+    position: 'relative',
+    overflow: 'hidden',
+  } as ViewStyle,
+  deco: { position: 'absolute', borderRadius: 999 } as ViewStyle,
+  backBtn: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 10,
+    padding: 8,
+  } as ViewStyle,
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 40,
+    gap: 0,
+  } as ViewStyle,
+  logoWrap: {
+    marginBottom: 28,
+  } as ViewStyle,
+  logoCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  logoImg: { width: 60, height: 60 } as any,
+  title: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    textAlign: 'center',
+    marginBottom: 12,
+  } as TextStyle,
+  body: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+    maxWidth: 280,
+    marginBottom: 32,
+  } as TextStyle,
+  buttonsWrap: {
+    width: '100%',
+    maxWidth: 320,
+  } as ViewStyle,
+  skipWrap: {
+    paddingBottom: Platform.OS === 'ios' ? 32 : 24,
+    alignItems: 'center',
+  } as ViewStyle,
+  skipText: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 13,
+    fontWeight: '500',
+  } as TextStyle,
+});
+
+/* ─────────────────────────────────────
    Coordinator
 ─────────────────────────────────────── */
 
@@ -1194,8 +1359,16 @@ export default function OnboardingScreen() {
     go('delegation');
   };
 
+  // Monitor y miembro van al paso de login antes del éxito
+  const needsLoginStep = (p: OnboardingProfileId | null) =>
+    p === 'monitor' || p === 'miembro';
+
   const handleFinishToSuccess = () => {
-    go('success');
+    if (needsLoginStep(profileType)) {
+      go('login');
+    } else {
+      go('success');
+    }
   };
 
   const profile = useMemo(() => {
@@ -1254,6 +1427,13 @@ export default function OnboardingScreen() {
             onFinish={handleFinishToSuccess}
             onBack={() => go('profile', 'back')}
             onSkip={handleSkip}
+          />
+        )}
+        {step === 'login' && (
+          <LoginOnboardingScreen
+            onContinue={() => go('success')}
+            onBack={() => go('delegation', 'back')}
+            animDir={animDir}
           />
         )}
         {step === 'success' && (

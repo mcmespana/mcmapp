@@ -38,6 +38,8 @@ import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
+import { useAuth } from '@/contexts/AuthContext';
+import { syncContigoBookmark } from '@/utils/authHelpers';
 
 // ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
@@ -118,6 +120,7 @@ export default function EvangelioScreen() {
       }
     : undefined;
 
+  const { user: authUser } = useAuth();
   const { todayStr, getRecord, setReadingDone } = useContigoHabits();
   const params = useLocalSearchParams<{ date?: string }>();
   const initialDate =
@@ -171,7 +174,20 @@ export default function EvangelioScreen() {
         '@contigo_bookmarks',
         JSON.stringify(bookmarks),
       );
-      setIsBookmarked(!isBookmarked);
+      const nowBookmarked = !isBookmarked;
+      setIsBookmarked(nowBookmarked);
+      // Sync solo metadatos (sin texto completo) a RTDB si hay sesión
+      if (authUser) {
+        if (nowBookmarked && readings?.evangelio) {
+          syncContigoBookmark(authUser.uid, selectedDate, {
+            bookmarkedAt: Date.now(),
+            cita: readings.evangelio.cita ?? '',
+            diaLiturgico: readings.info?.diaLiturgico,
+          });
+        } else {
+          syncContigoBookmark(authUser.uid, selectedDate, null);
+        }
+      }
     } catch (e) {
       console.error('Failed to save bookmark', e);
     }
