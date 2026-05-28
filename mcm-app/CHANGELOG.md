@@ -22,6 +22,7 @@
 
 ---
 
+<<<<<<< HEAD
 ## 2026-05-26 — Limpieza de warnings iOS 26
 
 - Silenciado el log informativo `HeroUI Native Styling Principles` en arranque: `HeroUINativeProvider` ahora recibe `config={{ devInfo: { stylingPrinciples: false } }}` en `app/_layout.tsx`.
@@ -54,6 +55,8 @@ Easter egg: al agitar el móvil aparece una cuenta atrás de 5 segundos que, si 
 
 ---
 
+=======
+>>>>>>> mcmespana/claude/onboarding-fullscreen-layout-Vn7UE
 ## 2026-05-26 — Limpieza de warnings iOS 26
 
 - Silenciado el log informativo `HeroUI Native Styling Principles` en arranque: `HeroUINativeProvider` ahora recibe `config={{ devInfo: { stylingPrinciples: false } }}` en `app/_layout.tsx`.
