@@ -13,6 +13,19 @@
 
 ---
 
+## 2026-05-29 — Visita Papa León XIV 2026: evento activo + eventos pasados
+
+- **Nueva tab "Visita Papa"** (`app/(tabs)/visitapapa.tsx`): el evento `visitapapa26` (Firebase `activities/visitapapa26`) tiene su propia pestaña antes de Calendario, con su hub y sub-pantallas (Horario, Materiales, Visitas, Profundiza, Grupos, Contactos, Apps, Reflexiones). Color de marca `#FCD200`.
+- **Modo evento**: `visitapapa26` es el evento activo/destacado (`ACTIVE_EVENT_ID` y evento por defecto en `constants/events.ts`). Se anuncia con un banner en la Home (`app/(tabs)/index.tsx`) y un botón de acceso rápido, ambos visibles solo para perfiles con acceso al evento.
+- **Sección-enlace "Comida de Domingo"**: nuevo campo `url` en `EventSection`. Si está presente, la tarjeta abre un enlace externo (Google Maps) con `Linking.openURL` en vez de navegar a una pantalla (`app/screens/EventHomeScreen.tsx`). El evento no usa las pantallas Comida/ComidaWeb.
+- **Eventos pasados**: nuevo flag `status: 'active' | 'archived'` por evento y pantalla `app/screens/EventosPasadosScreen.tsx` accesible desde "Más > Eventos pasados" (item `eventos-pasados`). Jubileo pasa a `archived` y se accede desde ahí (ya no como item suelto de "Más").
+- **Refactor**: las sub-pantallas de evento y el plumbing del header se extraen a `app/screens/eventStackScreens.tsx`, compartido por el tab "Más" y la tab de evento (alta de futuras actividades-tab = un archivo fino + 1 entrada en `events.ts`).
+- **Perfiles** (`firebase-seed/profileConfig.json`): monitor y miembro reciben la tab y el botón Home de Visita Papa; todos los perfiles cambian el item `jubileo` por `eventos-pasados`. Recuerda replicar en `/profileConfig` de Firebase para el gating en runtime.
+- Catálogos: `tabsCatalog.ts`, `colors.ts`, `profileCatalog.ts`, `MasHomeScreen.tsx`.
+- **Pendiente** (`PROMPT_MCMPANEL_VISITAPAPA.md`): gestionar el evento activo/archivado desde mcmpanel (nodo `activities/` en Firebase) en vez de en código.
+
+---
+
 ## 2026-05-28 — Calendario: detalles de evento + parser ICS enriquecido
 
 - **Detalles de evento al hacer tap**: cada tarjeta de evento ahora abre un `EventDetailsBottomSheet` (nuevo componente) con fecha y hora, ubicación con botón "Abrir en Mapas/Maps", videollamada destacada (Meet/Zoom/Teams/Webex/Jitsi), descripción con saltos de línea y URLs tappables, y enlace "Abrir en Google Calendar" si el evento trae `URL`.

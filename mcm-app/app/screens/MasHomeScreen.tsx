@@ -67,7 +67,16 @@ const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
     emoji: '🎉',
     materialIcon: 'celebration',
     target: 'JubileoHome',
+    eventId: 'jubileo',
     tintColor: '#A3BD31',
+  },
+  'eventos-pasados': {
+    label: 'Eventos pasados',
+    subtitle: 'Jubileo y otros encuentros',
+    emoji: '🗂️',
+    materialIcon: 'history',
+    target: 'EventosPasados',
+    tintColor: '#9FA8DA',
   },
   // ── Añadir eventos futuros aquí ──
   // Ejemplo:

@@ -14,7 +14,7 @@
       "description": "de miembros del MIC y COM",
       "tabs": ["index", "contigo", "calendario", "fotos"],
       "homeButtons": ["fotos", "evangelio"],
-      "masItems": ["jubileo"],
+      "masItems": ["eventos-pasados"],
       "defaultCalendars": ["mcm-europa"],
       "albumTags": ["all"],
       "notificationTopics": ["general", "eventos", "familias"]
@@ -22,9 +22,9 @@
     "monitor": {
       "label": "Monitor/a",
       "description": "de grupos del MIC y COM",
-      "tabs": ["index", "contigo", "calendario", "fotos"],
-      "homeButtons": ["fotos", "evangelio"],
-      "masItems": ["jubileo"],
+      "tabs": ["index", "contigo", "visitapapa", "calendario", "fotos"],
+      "homeButtons": ["fotos", "evangelio", "visitapapa"],
+      "masItems": ["eventos-pasados"],
       "defaultCalendars": ["mcm-europa"],
       "albumTags": ["all"],
       "notificationTopics": ["general", "eventos", "monitores"]
@@ -32,9 +32,9 @@
     "miembro": {
       "label": "Miembro MCM",
       "description": "de cualquier etapa",
-      "tabs": ["index", "contigo", "calendario", "fotos"],
-      "homeButtons": ["fotos", "evangelio"],
-      "masItems": ["jubileo"],
+      "tabs": ["index", "contigo", "visitapapa", "calendario", "fotos"],
+      "homeButtons": ["fotos", "evangelio", "visitapapa"],
+      "masItems": ["eventos-pasados"],
       "defaultCalendars": ["mcm-europa"],
       "albumTags": ["all"],
       "notificationTopics": ["general", "eventos", "miembros"]

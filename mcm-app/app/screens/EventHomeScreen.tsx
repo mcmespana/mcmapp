@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   ScrollView,
   Platform,
+  Linking,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +20,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 import { radii } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
-import { MasStackParamList } from '../(tabs)/mas';
+import { EventStackParamList } from './eventStackScreens';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import useNetworkStatus from '@/hooks/useNetworkStatus';
 import OfflineBanner from '@/components/OfflineBanner';
@@ -44,7 +45,7 @@ const WIDE_BREAKPOINT = 700;
  */
 export default function EventHomeScreen() {
   const navigation =
-    useNavigation<NativeStackNavigationProp<MasStackParamList>>();
+    useNavigation<NativeStackNavigationProp<EventStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const event = useCurrentEvent();
@@ -86,16 +87,23 @@ export default function EventHomeScreen() {
         <View style={[styles.gridContainer, { gap }]}>
           {visibleSections.map((section) => (
             <SectionCard
-              key={section.target + section.label}
+              key={section.firebaseKey ?? section.url ?? section.label}
               section={section}
               event={event}
               width={itemWidth}
               isDark={isDark}
-              onPress={() =>
-                (navigation as any).navigate(section.target, {
-                  eventId: event.id,
-                })
-              }
+              onPress={() => {
+                // Sección-enlace: abre la URL externa (ej. Google Maps).
+                if (section.url) {
+                  Linking.openURL(section.url).catch(() => {});
+                  return;
+                }
+                if (section.target) {
+                  (navigation as any).navigate(section.target, {
+                    eventId: event.id,
+                  });
+                }
+              }}
             />
           ))}
         </View>
@@ -123,13 +131,14 @@ function SectionCard({
   onPress: () => void;
 }) {
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
+  const sectionSlug = section.firebaseKey ?? section.target ?? section.label;
   const { hidden: firebaseHidden } = useFirebaseData(
     section.firebaseKey
       ? getEventFirebasePath(event, section.firebaseKey)
-      : `__noop__/${section.target}`,
+      : `__noop__/${sectionSlug}`,
     section.firebaseKey
       ? getEventCacheKey(event, section.firebaseKey)
-      : `__noop__${event.id}_${section.target}`,
+      : `__noop__${event.id}_${sectionSlug}`,
   );
 
   if (firebaseHidden) return null;
