@@ -17,7 +17,6 @@
   },
   "dependencies": {
     "@expo/config": "^55.0.7",
-    "@expo/metro-config": "^55.0.23",
     "@expo/vector-icons": "^15.0.2",
     "@gorhom/bottom-sheet": "^5.2.9",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -90,6 +89,7 @@
     "@types/node": "^22.16.5",
     "@types/react": "~19.2.10",
     "babel-plugin-react-compiler": "^1.0.0",
+    "babel-preset-expo": "~55.0.22",
     "copy-webpack-plugin": "^14.0.0",
     "cross-env": "^7.0.3",
     "eslint": "^9.39.4",
