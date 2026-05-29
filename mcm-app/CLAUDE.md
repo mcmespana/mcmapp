@@ -360,8 +360,8 @@ Documentar NO:
 - **Android Package**: `com.mcmespana.mcmapp`
 - **Apple Team ID**: `5P53S6QB23`
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
-- **App version**: 1.0.1
-- **Runtime version**: 1.0.1
+- **App version**: 2.0.0
+- **Runtime version**: 2.0.0
 
 ## HeroUI Native — UI Library
 

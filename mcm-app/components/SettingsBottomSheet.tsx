@@ -23,6 +23,7 @@ import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import type { ProfileType } from '@/types/profileConfig';
 import BottomSheet from './BottomSheet';
+import SocialLoginSection from '@/components/SocialLoginSection';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -198,10 +199,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                         accessibilityState={{ selected }}
                       >
                         <Text
-                          style={[
-                            styles.optionLabel,
-                            { color: theme.text, flex: 1 },
-                          ]}
+                          style={[styles.optionLabel, { color: theme.text, flex: 1 }]}
                         >
                           {item.label}
                         </Text>
@@ -221,262 +219,258 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
             </>
           )}
 
-          {panelView === 'settings' && (
-            <>
-              {/* ── Sección: Tu perfil MCM ── */}
-              <Text style={[styles.sectionLabel, { color: theme.icon }]}>
-                TU PERFIL EN MCM
+          {panelView === 'settings' && (<>
+          {/* ── Sección: Cuenta ── */}
+          <Text style={[styles.sectionLabel, { color: theme.icon }]}>
+            CUENTA
+          </Text>
+          <View style={[styles.surface, { backgroundColor: surfaceBg, gap: 10, paddingVertical: spacing.md }]}>
+            <SocialLoginSection />
+          </View>
+
+          {/* ── Sección: Tu perfil MCM ── */}
+          <Text style={[styles.sectionLabel, { color: theme.icon, marginTop: spacing.md }]}>
+            TU PERFIL EN MCM
+          </Text>
+
+          <PressableFeedback
+            style={[
+              styles.surface,
+              styles.surfaceClickable,
+              { backgroundColor: surfaceBg },
+            ]}
+            onPress={() => setPanelView('profile')}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar perfil"
+          >
+            <PressableFeedback.Highlight />
+            <View style={[styles.surfaceRow, { flex: 1 }]}>
+              <MaterialIcons name="person" size={20} color={theme.icon} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+                  Perfil
+                </Text>
+                <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                  {profileLabel}
+                </Text>
+              </View>
+            </View>
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={theme.icon}
+              style={{ opacity: 0.4 }}
+            />
+          </PressableFeedback>
+
+          <PressableFeedback
+            style={[
+              styles.surface,
+              styles.surfaceClickable,
+              { backgroundColor: surfaceBg },
+            ]}
+            onPress={() => setPanelView('delegation')}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar delegación"
+          >
+            <PressableFeedback.Highlight />
+            <View style={[styles.surfaceRow, { flex: 1 }]}>
+              <MaterialIcons name="place" size={20} color={theme.icon} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+                  Delegación
+                </Text>
+                <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                  {delegationLabel}
+                </Text>
+              </View>
+            </View>
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={theme.icon}
+              style={{ opacity: 0.4 }}
+            />
+          </PressableFeedback>
+
+          {/* ── Sección: Apariencia ── */}
+          <Text
+            style={[
+              styles.sectionLabel,
+              { color: theme.icon, marginTop: spacing.md },
+            ]}
+          >
+            APARIENCIA
+          </Text>
+
+          {/* Theme segmented control */}
+          <View style={[styles.surface, { backgroundColor: surfaceBg }]}>
+            <View style={styles.surfaceRow}>
+              <MaterialIcons name="palette" size={20} color={theme.icon} />
+              <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+                Tema
+              </Text>
+            </View>
+            <View style={[styles.themeSegment, { backgroundColor: segmentBg }]}>
+              {THEME_OPTIONS.map((opt) => {
+                const isSelected = settings.theme === opt.key;
+                return (
+                  <PressableFeedback
+                    key={opt.key}
+                    style={[
+                      styles.themeOption,
+                      isSelected && {
+                        backgroundColor: colors.primary,
+                        shadowColor: colors.primary,
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.35,
+                        shadowRadius: 4,
+                        elevation: 3,
+                      },
+                    ]}
+                    onPress={() => setSettings({ theme: opt.key })}
+                    accessibilityLabel={`Tema ${opt.label}`}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isSelected }}
+                  >
+                    <PressableFeedback.Highlight />
+                    <MaterialIcons
+                      name={opt.icon as any}
+                      size={17}
+                      color={isSelected ? '#fff' : theme.icon}
+                    />
+                    <Text
+                      style={[
+                        styles.themeOptionText,
+                        { color: isSelected ? '#fff' : theme.icon },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </PressableFeedback>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Font size */}
+          <View style={[styles.surface, { backgroundColor: surfaceBg }]}>
+            <View style={styles.surfaceRow}>
+              <MaterialIcons name="text-fields" size={20} color={theme.icon} />
+              <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+                Tamaño de texto
+              </Text>
+            </View>
+            <View style={styles.fontRow}>
+              <PressableFeedback
+                onPress={settings.fontScale <= 1 ? undefined : decrease}
+                style={[
+                  styles.fontBtn,
+                  { backgroundColor: segmentBg },
+                  settings.fontScale <= 1 && { opacity: 0.35 },
+                ]}
+                accessibilityLabel="Reducir tamaño de texto"
+                accessibilityRole="button"
+              >
+                <PressableFeedback.Highlight />
+                <MaterialIcons
+                  name="text-fields"
+                  size={20}
+                  color={theme.text}
+                  style={{ transform: [{ scaleY: 0.75 }] }}
+                />
+              </PressableFeedback>
+
+              <Text
+                style={[
+                  styles.fontValue,
+                  { color: theme.text, fontSize: 16 * fontScale },
+                ]}
+              >
+                {(settings.fontScale * 100).toFixed(0)}%
               </Text>
 
               <PressableFeedback
+                onPress={settings.fontScale >= 2 ? undefined : increase}
                 style={[
-                  styles.surface,
-                  styles.surfaceClickable,
-                  { backgroundColor: surfaceBg },
+                  styles.fontBtn,
+                  { backgroundColor: segmentBg },
+                  settings.fontScale >= 2 && { opacity: 0.35 },
                 ]}
-                onPress={() => setPanelView('profile')}
+                accessibilityLabel="Aumentar tamaño de texto"
                 accessibilityRole="button"
-                accessibilityLabel="Cambiar perfil"
               >
                 <PressableFeedback.Highlight />
-                <View style={[styles.surfaceRow, { flex: 1 }]}>
-                  <MaterialIcons name="person" size={20} color={theme.icon} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.surfaceLabel, { color: theme.text }]}>
-                      Perfil
-                    </Text>
-                    <Text style={[styles.surfaceHint, { color: theme.icon }]}>
-                      {profileLabel}
-                    </Text>
-                  </View>
-                </View>
                 <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={theme.icon}
-                  style={{ opacity: 0.4 }}
+                  name="text-fields"
+                  size={28}
+                  color={theme.text}
                 />
               </PressableFeedback>
+            </View>
+          </View>
 
-              <PressableFeedback
-                style={[
-                  styles.surface,
-                  styles.surfaceClickable,
-                  { backgroundColor: surfaceBg },
-                ]}
-                onPress={() => setPanelView('delegation')}
-                accessibilityRole="button"
-                accessibilityLabel="Cambiar delegación"
-              >
-                <PressableFeedback.Highlight />
-                <View style={[styles.surfaceRow, { flex: 1 }]}>
-                  <MaterialIcons name="place" size={20} color={theme.icon} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.surfaceLabel, { color: theme.text }]}>
-                      Delegación
-                    </Text>
-                    <Text style={[styles.surfaceHint, { color: theme.icon }]}>
-                      {delegationLabel}
-                    </Text>
-                  </View>
-                </View>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={20}
-                  color={theme.icon}
-                  style={{ opacity: 0.4 }}
-                />
-              </PressableFeedback>
-
-              {/* ── Sección: Apariencia ── */}
+          {/* ── Sección: Debug (solo en desarrollo) ── */}
+          {__DEV__ && (
+            <>
               <Text
                 style={[
                   styles.sectionLabel,
                   { color: theme.icon, marginTop: spacing.md },
                 ]}
               >
-                APARIENCIA
+                DEPURACIÓN
               </Text>
-
-              {/* Theme segmented control */}
-              <View style={[styles.surface, { backgroundColor: surfaceBg }]}>
-                <View style={styles.surfaceRow}>
-                  <MaterialIcons name="palette" size={20} color={theme.icon} />
-                  <Text style={[styles.surfaceLabel, { color: theme.text }]}>
-                    Tema
-                  </Text>
-                </View>
-                <View
-                  style={[styles.themeSegment, { backgroundColor: segmentBg }]}
-                >
-                  {THEME_OPTIONS.map((opt) => {
-                    const isSelected = settings.theme === opt.key;
-                    return (
-                      <PressableFeedback
-                        key={opt.key}
-                        style={[
-                          styles.themeOption,
-                          isSelected && {
-                            backgroundColor: colors.primary,
-                            shadowColor: colors.primary,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.35,
-                            shadowRadius: 4,
-                            elevation: 3,
-                          },
-                        ]}
-                        onPress={() => setSettings({ theme: opt.key })}
-                        accessibilityLabel={`Tema ${opt.label}`}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected: isSelected }}
-                      >
-                        <PressableFeedback.Highlight />
-                        <MaterialIcons
-                          name={opt.icon as any}
-                          size={17}
-                          color={isSelected ? '#fff' : theme.icon}
-                        />
-                        <Text
-                          style={[
-                            styles.themeOptionText,
-                            { color: isSelected ? '#fff' : theme.icon },
-                          ]}
-                        >
-                          {opt.label}
-                        </Text>
-                      </PressableFeedback>
+              <PressableFeedback
+                style={[
+                  styles.surface,
+                  styles.surfaceClickable,
+                  { backgroundColor: surfaceBg },
+                ]}
+                onPress={async () => {
+                  try {
+                    const projectId =
+                      Constants?.expoConfig?.extra?.eas?.projectId ??
+                      Constants?.easConfig?.projectId;
+                    const Notifications = await import('expo-notifications');
+                    const { data } = await Notifications.getExpoPushTokenAsync(
+                      projectId ? { projectId } : undefined,
                     );
-                  })}
-                </View>
-              </View>
-
-              {/* Font size */}
-              <View style={[styles.surface, { backgroundColor: surfaceBg }]}>
-                <View style={styles.surfaceRow}>
+                    await Clipboard.setStringAsync(data);
+                    toast.show({
+                      variant: 'success',
+                      label: 'Expo Token copiado al portapapeles',
+                    });
+                  } catch (err) {
+                    toast.show({
+                      variant: 'danger',
+                      label: 'Error obteniendo token: ' + String(err),
+                    });
+                  }
+                }}
+                accessibilityRole="button"
+              >
+                <PressableFeedback.Highlight />
+                <View style={[styles.surfaceRow, { flex: 1 }]}>
                   <MaterialIcons
-                    name="text-fields"
+                    name="bug-report"
                     size={20}
                     color={theme.icon}
                   />
                   <Text style={[styles.surfaceLabel, { color: theme.text }]}>
-                    Tamaño de texto
+                    Copiar Expo Push Token
                   </Text>
                 </View>
-                <View style={styles.fontRow}>
-                  <PressableFeedback
-                    onPress={settings.fontScale <= 1 ? undefined : decrease}
-                    style={[
-                      styles.fontBtn,
-                      { backgroundColor: segmentBg },
-                      settings.fontScale <= 1 && { opacity: 0.35 },
-                    ]}
-                    accessibilityLabel="Reducir tamaño de texto"
-                    accessibilityRole="button"
-                  >
-                    <PressableFeedback.Highlight />
-                    <MaterialIcons
-                      name="text-fields"
-                      size={20}
-                      color={theme.text}
-                      style={{ transform: [{ scaleY: 0.75 }] }}
-                    />
-                  </PressableFeedback>
-
-                  <Text
-                    style={[
-                      styles.fontValue,
-                      { color: theme.text, fontSize: 16 * fontScale },
-                    ]}
-                  >
-                    {(settings.fontScale * 100).toFixed(0)}%
-                  </Text>
-
-                  <PressableFeedback
-                    onPress={settings.fontScale >= 2 ? undefined : increase}
-                    style={[
-                      styles.fontBtn,
-                      { backgroundColor: segmentBg },
-                      settings.fontScale >= 2 && { opacity: 0.35 },
-                    ]}
-                    accessibilityLabel="Aumentar tamaño de texto"
-                    accessibilityRole="button"
-                  >
-                    <PressableFeedback.Highlight />
-                    <MaterialIcons
-                      name="text-fields"
-                      size={28}
-                      color={theme.text}
-                    />
-                  </PressableFeedback>
-                </View>
-              </View>
-
-              {/* ── Sección: Debug (solo en desarrollo) ── */}
-              {__DEV__ && (
-                <>
-                  <Text
-                    style={[
-                      styles.sectionLabel,
-                      { color: theme.icon, marginTop: spacing.md },
-                    ]}
-                  >
-                    DEPURACIÓN
-                  </Text>
-                  <PressableFeedback
-                    style={[
-                      styles.surface,
-                      styles.surfaceClickable,
-                      { backgroundColor: surfaceBg },
-                    ]}
-                    onPress={async () => {
-                      try {
-                        const projectId =
-                          Constants?.expoConfig?.extra?.eas?.projectId ??
-                          Constants?.easConfig?.projectId;
-                        const Notifications =
-                          await import('expo-notifications');
-                        const { data } =
-                          await Notifications.getExpoPushTokenAsync(
-                            projectId ? { projectId } : undefined,
-                          );
-                        await Clipboard.setStringAsync(data);
-                        toast.show({
-                          variant: 'success',
-                          label: 'Expo Token copiado al portapapeles',
-                        });
-                      } catch (err) {
-                        toast.show({
-                          variant: 'danger',
-                          label: 'Error obteniendo token: ' + String(err),
-                        });
-                      }
-                    }}
-                    accessibilityRole="button"
-                  >
-                    <PressableFeedback.Highlight />
-                    <View style={[styles.surfaceRow, { flex: 1 }]}>
-                      <MaterialIcons
-                        name="bug-report"
-                        size={20}
-                        color={theme.icon}
-                      />
-                      <Text
-                        style={[styles.surfaceLabel, { color: theme.text }]}
-                      >
-                        Copiar Expo Push Token
-                      </Text>
-                    </View>
-                    <MaterialIcons
-                      name="content-copy"
-                      size={20}
-                      color={theme.icon}
-                      style={{ opacity: 0.4 }}
-                    />
-                  </PressableFeedback>
-                </>
-              )}
+                <MaterialIcons
+                  name="content-copy"
+                  size={20}
+                  color={theme.icon}
+                  style={{ opacity: 0.4 }}
+                />
+              </PressableFeedback>
             </>
           )}
+          </>)}
         </View>
       </BottomSheet>
     </>

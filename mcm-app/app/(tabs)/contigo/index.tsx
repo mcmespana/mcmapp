@@ -24,11 +24,14 @@ import {
   MonthHeatmap,
 } from '@/components/contigo/HomeWidgets';
 import { LiturgicalBadge } from '@/components/contigo/LiturgicalBadge';
+import LoginNudgeBanner from '@/components/LoginNudgeBanner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ContigoScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const scheme = useColorScheme();
+  const { user: authUser } = useAuth();
   const isDark = scheme === 'dark';
   const W = warm(isDark);
   const { width: windowWidth } = useWindowDimensions();
@@ -166,6 +169,13 @@ export default function ContigoScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* ── Login nudge (solo si hay hábitos y no hay sesión) ── */}
+          {!authUser && Object.keys(records).length > 0 && (
+            <View style={[styles.section, { alignItems: 'center' }]}>
+              <LoginNudgeBanner />
+            </View>
+          )}
 
           {/* ── Hero card ──────────────────────────────── */}
           <View style={styles.section}>

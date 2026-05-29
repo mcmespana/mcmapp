@@ -48,6 +48,8 @@ import OTAUpdatePrompt from '@/components/OTAUpdatePrompt';
 import { OTAProvider, useOTAContext } from '@/contexts/OTAContext';
 import { PreviewChannelProvider } from '@/contexts/PreviewChannelContext';
 import { PreviewChannelModal } from '@/components/PreviewChannelModal';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { updateUserMCMData } from '@/utils/authHelpers';
 import { CarismochitoProvider } from '@/contexts/CarismochitoContext';
 import CarismochitoOverlay from '@/components/CarismochitoOverlay';
 import { ActiveEventProvider } from '@/contexts/ActiveEventContext';
@@ -68,6 +70,7 @@ export default function RootLayout() {
                   <AppSettingsProvider>
                     <UniwindThemeBridge />
                     <UserProfileProvider>
+                      <AuthProvider>
                       <SelectedSongsProvider>
                         <ChoirSessionProvider>
                           <NotificationsProvider>
@@ -85,6 +88,7 @@ export default function RootLayout() {
                           </NotificationsProvider>
                         </ChoirSessionProvider>
                       </SelectedSongsProvider>
+                      </AuthProvider>
                     </UserProfileProvider>
                   </AppSettingsProvider>
                 </ProfileConfigProvider>
@@ -105,7 +109,23 @@ function InnerLayout() {
   const pathname = usePathname();
   const segments = useSegments();
   const { profile, loading: profileLoading } = useUserProfile();
+  const { user: authUser } = useAuth();
   const resolved = useResolvedProfileConfig();
+
+  // Sync MCM profile data to RTDB whenever user is logged in and profile changes
+  useEffect(() => {
+    if (!authUser) return;
+    updateUserMCMData(authUser.uid, {
+      profileType: profile.profileType,
+      delegationId: profile.delegationId,
+      onboardingCompleted: profile.onboardingCompleted,
+    });
+  }, [
+    authUser,
+    profile.profileType,
+    profile.delegationId,
+    profile.onboardingCompleted,
+  ]);
   const { addSong } = useSelectedSongs();
   const { toast } = useToast();
 
