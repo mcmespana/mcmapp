@@ -22,6 +22,7 @@
 3. **Documenta cambios importantes en `mcm-app/CHANGELOG.md`** — NO documentes cambios cosméticos (colores, padding, etc.), SÍ documenta: nuevas pantallas, cambios de navegación, cambios de lógica de datos, cambios en feature flags, nuevas dependencias, cambios en Firebase
 4. **Consulta `mcm-app/TODO.md`** para ver la lista de tareas pendientes de mantenimiento y mejora
 5. **No toques archivos `.env.local`** — contienen credenciales de Firebase
+6. **Si añades paquetes con código nativo → añade `[skip-ota]` al commit y avisa al usuario** (ver OTA en `mcm-app/CLAUDE.md`)
 
 ## Comandos rápidos (desde mcm-app/)
 

@@ -52,6 +52,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { updateUserMCMData } from '@/utils/authHelpers';
 import { CarismochitoProvider } from '@/contexts/CarismochitoContext';
 import CarismochitoOverlay from '@/components/CarismochitoOverlay';
+import { ActiveEventProvider } from '@/contexts/ActiveEventContext';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 
@@ -77,7 +78,9 @@ export default function RootLayout() {
                               <PreviewChannelProvider>
                                 <OTAProvider>
                                   <CarismochitoProvider>
-                                    <InnerLayout />
+                                    <ActiveEventProvider>
+                                      <InnerLayout />
+                                    </ActiveEventProvider>
                                   </CarismochitoProvider>
                                 </OTAProvider>
                               </PreviewChannelProvider>

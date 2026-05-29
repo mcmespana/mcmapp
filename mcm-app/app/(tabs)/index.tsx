@@ -31,6 +31,7 @@ import { router } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
+import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -191,6 +192,17 @@ export default function Home() {
   // Primary color readable on both light and dark backgrounds
   const accentColor = scheme === 'dark' ? colors.info : colors.primary;
 
+  // Banner "modo evento": destaca el evento activo en la Home. Solo se muestra
+  // a los perfiles que tienen acceso al evento (tab o botón Home).
+  // El evento activo se lee de Firebase (`activities/_meta`) con fallback al
+  // valor hardcoded en `constants/events.ts`.
+  const { activeEvent } = useActiveMeta();
+  const activeTabId = activeEvent.tabId ?? '';
+  const showEventBanner =
+    activeTabId !== '' &&
+    (resolved.tabs.includes(activeTabId) ||
+      resolved.homeButtons.includes(activeTabId));
+
   // OTA update badge (show in header after user dismisses the modal)
   const {
     isReady: otaReady,
@@ -305,6 +317,14 @@ export default function Home() {
         iconBg: scheme === 'dark' ? '#1A1A3A' : '#E8E0FF',
         iconColor: '#6366F1',
         href: '/cancionero',
+      },
+      visitapapa: {
+        key: 'visitapapa',
+        label: 'Visita Papa',
+        icon: 'church',
+        iconBg: scheme === 'dark' ? '#332B00' : '#FFF8D6',
+        iconColor: '#C9A800',
+        href: '/visitapapa',
       },
       fotos: {
         key: 'fotos',
@@ -624,6 +644,55 @@ export default function Home() {
 
             {/* ── Banner de permisos de notificaciones (denied / undetermined) ── */}
             <NotificationPermissionBanner placement="home" />
+
+            {/* ── Banner del evento activo (modo evento) ── */}
+            {showEventBanner && (
+              <TouchableOpacity
+                style={[
+                  styles.eventBanner,
+                  {
+                    backgroundColor: hexAlpha(activeEvent.tintColor, '20'),
+                    borderColor: hexAlpha(activeEvent.tintColor, '50'),
+                  },
+                ]}
+                onPress={() => {
+                  h.tap();
+                  router.push('/visitapapa');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={activeEvent.title}
+              >
+                <View
+                  style={[
+                    styles.eventBannerIcon,
+                    { backgroundColor: hexAlpha(activeEvent.tintColor, '35') },
+                  ]}
+                >
+                  <MaterialIcons name="church" size={22} color="#8A6D00" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[styles.eventBannerTitle, { color: theme.text }]}
+                    numberOfLines={1}
+                  >
+                    {activeEvent.title}
+                  </Text>
+                  {activeEvent.bannerText && (
+                    <Text
+                      style={[styles.eventBannerBody, { color: theme.icon }]}
+                      numberOfLines={2}
+                    >
+                      {activeEvent.bannerText}
+                    </Text>
+                  )}
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={22}
+                  color={theme.icon}
+                />
+              </TouchableOpacity>
+            )}
 
             {/* ── Novedades ── */}
             <View style={styles.section}>
@@ -1344,6 +1413,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   } as TextStyle,
   onboardingBannerBody: {
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+    opacity: 0.8,
+  } as TextStyle,
+
+  // ── Banner del evento activo (modo evento) ──
+  eventBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm + 4,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+  } as ViewStyle,
+  eventBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  eventBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  } as TextStyle,
+  eventBannerBody: {
     fontSize: 11,
     marginTop: 2,
     lineHeight: 15,

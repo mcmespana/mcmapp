@@ -11,12 +11,13 @@
     "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,md}'",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "eas:build": "rm -rf .agent .agents && npx eas-cli@latest build",
-    "eas:build:ios": "rm -rf .agent .agents && npx eas-cli@latest build -p ios",
-    "eas:build:android": "rm -rf .agent .agents && npx eas-cli@latest build -p android"
+    "eas:build": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build",
+    "eas:build:ios": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build -p ios",
+    "eas:build:android": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build -p android"
   },
   "dependencies": {
     "@expo/config": "^55.0.7",
+    "@expo/metro-config": "^55.0.23",
     "@expo/vector-icons": "^15.0.2",
     "@gorhom/bottom-sheet": "^5.2.9",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -90,6 +91,7 @@
     "@types/react": "~19.2.10",
     "babel-plugin-react-compiler": "^1.0.0",
     "copy-webpack-plugin": "^14.0.0",
+    "cross-env": "^7.0.3",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~55.0.0",
     "eslint-config-prettier": "^9.1.2",
@@ -105,7 +107,8 @@
     "react-native-calendars": {
       "react-native-safe-area-context": "~5.6.0"
     },
-    "react-test-renderer": "19.2.0"
+    "react-test-renderer": "19.2.0",
+    "unrs-resolver": "1.11.1"
   },
   "expo": {
     "doctor": {

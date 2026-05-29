@@ -25,12 +25,12 @@ import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
-import GlassFAB from '@/components/ui/GlassFAB';
 import { useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import CalendarSubscribeBottomSheet from '@/components/CalendarSubscribeBottomSheet';
+import EventDetailsBottomSheet from '@/components/EventDetailsBottomSheet';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -94,6 +94,7 @@ export default function Calendario() {
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
   const [subscribeOpen, setSubscribeOpen] = useState(false);
+  const [detailsEvent, setDetailsEvent] = useState<CalendarEvent | null>(null);
 
   useEffect(() => {
     if (params.date && typeof params.date === 'string') {
@@ -249,11 +250,23 @@ export default function Calendario() {
   ) => {
     const calColor = calendarConfigs[ev.calendarIndex]?.color || colors.info;
 
+    const timeLabel = ev.startTime
+      ? ev.endTime
+        ? `${ev.startTime} – ${ev.endTime}`
+        : ev.startTime
+      : null;
+
     return (
       <TouchableOpacity
         key={index}
         activeOpacity={0.7}
         style={[styles.eventCard, isPast && styles.pastEventCard]}
+        onPress={() => {
+          h.tap();
+          setDetailsEvent(ev);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`Ver detalles de ${ev.title}`}
       >
         <View style={[styles.eventColorBar, { backgroundColor: calColor }]} />
         <View style={styles.eventCardBody}>
@@ -281,6 +294,17 @@ export default function Calendario() {
               </Text>
             </View>
           </View>
+          {timeLabel ? (
+            <View style={styles.eventMeta}>
+              <MaterialIcons name="schedule" size={14} color="#8E8E93" />
+              <Text
+                style={[styles.eventLocation, isPast && styles.pastText]}
+                numberOfLines={1}
+              >
+                {timeLabel}
+              </Text>
+            </View>
+          ) : null}
           {ev.location ? (
             <View style={styles.eventMeta}>
               <MaterialIcons name="place" size={14} color="#8E8E93" />
@@ -509,6 +533,9 @@ export default function Calendario() {
                   )}
                 </View>
               </View>
+              {selectedDate !== todayStr && (
+                <BackToTodayPill onPress={goToToday} styles={styles} />
+              )}
             </View>
 
             {eventsForSelected.length > 0 ? (
@@ -561,6 +588,12 @@ export default function Calendario() {
 
           {/* Filter chips */}
           {renderFilterChips()}
+
+          {selectedDate.slice(0, 7) !== todayStr.slice(0, 7) && (
+            <View style={styles.agendaBackToTodayRow}>
+              <BackToTodayPill onPress={goToToday} styles={styles} />
+            </View>
+          )}
 
           <SectionList
             sections={agendaSectionsFiltered}
@@ -652,23 +685,44 @@ export default function Calendario() {
         </View>
       )}
 
-      {/* FAB to go to today */}
-      {selectedDate !== todayStr ? (
-        <GlassFAB
-          icon="today"
-          onPress={goToToday}
-          tintColor={colors.info}
-          iconColor="#fff"
-          label="Hoy"
-        />
-      ) : null}
-
       <CalendarSubscribeBottomSheet
         visible={subscribeOpen}
         onClose={() => setSubscribeOpen(false)}
         calendars={calendarConfigs}
       />
+
+      <EventDetailsBottomSheet
+        visible={!!detailsEvent}
+        onClose={() => setDetailsEvent(null)}
+        event={detailsEvent}
+        calendarConfig={
+          detailsEvent ? calendarConfigs[detailsEvent.calendarIndex] : undefined
+        }
+      />
     </TabScreenWrapper>
+  );
+}
+
+interface BackToTodayPillProps {
+  onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
+}
+
+function BackToTodayPill({ onPress, styles }: BackToTodayPillProps) {
+  return (
+    <TouchableOpacity
+      style={styles.backToTodayPill}
+      onPress={() => {
+        h.tap();
+        onPress();
+      }}
+      activeOpacity={0.75}
+      accessibilityRole="button"
+      accessibilityLabel="Volver a hoy"
+    >
+      <MaterialIcons name="today" size={14} color={colors.info} />
+      <Text style={styles.backToTodayLabel}>Volver a hoy</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -801,8 +855,35 @@ const createStyles = (scheme: 'light' | 'dark') => {
     eventSectionHeader: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       marginBottom: 12,
       marginTop: 4,
+      gap: 8,
+    },
+    backToTodayPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: radii.pill,
+      backgroundColor: hexAlpha(colors.info, '12'),
+      borderWidth: 1,
+      borderColor: hexAlpha(colors.info, '30'),
+      alignSelf: 'flex-start',
+    },
+    backToTodayLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.info,
+      letterSpacing: -0.1,
+    },
+    agendaBackToTodayRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      paddingHorizontal: 16,
+      paddingTop: 4,
+      paddingBottom: 6,
     },
     eventSectionLeft: {
       flexDirection: 'row',

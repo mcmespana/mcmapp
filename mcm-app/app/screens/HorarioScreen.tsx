@@ -130,7 +130,6 @@ export default function HorarioScreen() {
       );
       setIndex(newIndex);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [horarioData]);
 
   // Animation values for last day

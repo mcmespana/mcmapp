@@ -22,6 +22,22 @@ npm test               # Jest (sin tests escritos aún)
 npx tsc --noEmit       # Verificar tipos TypeScript
 ```
 
+## OTA vs Build de tienda
+
+Los OTA updates (EAS Update) solo envían el **bundle JS** — no incluyen código nativo. Si añades un paquete con módulos nativos (`expo-*`, `react-native-*` con carpeta `ios/` o `android/`) y haces OTA, **la app crashea** porque el binario instalado no tiene ese módulo.
+
+Cuando añadas un paquete nativo:
+1. Añade `[skip-ota]` al mensaje del commit → el workflow `ota-production.yml` se salta automáticamente
+2. Avisa al usuario de que necesita un **build de producción** antes de mergear a `production`:
+   ```
+   ⚠️ Este cambio incluye paquetes nativos ([lista]). Requiere build de tienda antes del merge a production. El commit lleva [skip-ota] para no lanzar la OTA.
+   ```
+3. Comando para el build: `npm run eas:build -- --profile production`
+
+En `workflow_dispatch` manual la OTA siempre corre independientemente del flag.
+
+---
+
 ### Builds EAS (IMPORTANTE)
 
 **NUNCA uses `npx eas-cli build` directamente.** Usa siempre los scripts npm que limpian los symlinks de skills de Claude Code (`.agent/`, `.agents/`) antes de comprimir. Sin esto, EAS falla en Windows con error `EPERM: operation not permitted, symlink`.

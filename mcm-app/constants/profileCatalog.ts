@@ -9,6 +9,7 @@ export const KNOWN_TABS = [
   'index',
   'cancionero',
   'contigo',
+  'visitapapa',
   'calendario',
   'fotos',
   'comunica',
@@ -21,6 +22,7 @@ export const KNOWN_HOME_BUTTONS = [
   'cancionero',
   'fotos',
   'evangelio',
+  'visitapapa',
   'mas',
 ] as const;
 
@@ -29,6 +31,7 @@ export const KNOWN_MAS_ITEMS = [
   'comunica',
   'comunica-gestion',
   'jubileo',
+  'eventos-pasados',
 ] as const;
 
 /**

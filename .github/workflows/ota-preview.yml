@@ -12,6 +12,11 @@ concurrency:
 
 jobs:
   publish-preview:
+    # Salta si el mensaje del commit contiene [skip-ota] (p.ej. cuando se añaden paquetes nativos)
+    # En workflow_dispatch siempre corre (el usuario lo lanzó explícitamente)
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      !contains(github.event.head_commit.message, '[skip-ota]')
     runs-on: ubuntu-latest
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line

@@ -12,3 +12,10 @@
 ## 2026-05-24 - [React Native Context Performance] Avoid context consumption deep in list items
 **Learning:** Consuming context (e.g., `useSelectedSongs()`) inside list item components (like `SongListItem`) completely defeats `React.memo`. When the context changes (e.g. a user adds a song to the list), *every single item* in the `FlatList` re-renders, causing an O(N) performance bottleneck for simple list interactions.
 **Action:** Keep list item components pure. Extract context consumption to the parent list component (e.g., `SongListScreen`) and pass only the necessary scalar values or stable callbacks down to the list items via props. This allows `React.memo` to successfully prevent re-renders for the N-1 untouched items.
+## 2026-05-29 - [JS Performance] Array pushing vs concatenation in loops
+**Learning:** In JavaScript loops, using `array = array.concat(newItems)` creates a new array in memory on every iteration, leading to O(N²) memory allocations and triggering excessive garbage collection pauses.
+**Action:** Replace `concat` in loops with `array.push(...newItems)` to mutate the existing array in-place, achieving O(N) performance.
+
+## 2026-05-29 - [React Anti-Pattern] Context stability via refs
+**Learning:** Attempting to stabilize Context callback functions (like `isSongSelected`) by reading from a mutable `useRef` that is updated via `useEffect` is a dangerous anti-pattern. It guarantees that any components consuming the context will read stale state during the render cycle immediately following an update.
+**Action:** Accept that Context functions relying on changing state must change references. If list items are re-rendering excessively, extract the context consumption to a parent component and pass scalar values as props, relying on `React.memo` to prevent unnecessary component updates.
