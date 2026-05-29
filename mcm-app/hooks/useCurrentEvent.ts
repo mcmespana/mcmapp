@@ -3,7 +3,7 @@ import { getEvent, EventConfig } from '@/constants/events';
 
 /**
  * Lee `eventId` del route param actual y devuelve la config del evento.
- * Si no hay eventId o es inválido, cae al evento por defecto (Jubileo).
+ * Si no hay eventId o es inválido, cae al evento por defecto (`DEFAULT_EVENT_ID`).
  *
  * Uso desde cualquier sub-pantalla montada en el MasStack:
  *

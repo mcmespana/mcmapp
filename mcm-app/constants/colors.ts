@@ -62,6 +62,7 @@ export const UIColors = {
 // Colores de tabs (cabecera)
 export const TabHeaderColors = {
   cancionero: '#f4c11e', // Amarillo Cantoral
+  visitapapa: '#FCD200', // Amarillo Vaticano — Visita Papa
   calendario: '#31AADF', // Celeste
   fotos: '#E15C62', // Rojo MIC
   comunica: 'rgba(157, 30, 116, 0.87)', // Morado LC con transparencia
