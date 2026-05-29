@@ -1,8 +1,6 @@
 import React from 'react';
-import { View, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { MaterialIcons } from '@expo/vector-icons';
-import { PressableFeedback } from 'heroui-native';
 
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 import { getEvent } from '@/constants/events';
@@ -37,6 +35,26 @@ import WordleScreen from './WordleScreen';
  * qué colores usar en el header. Si no se pasa, se usa el evento por defecto.
  */
 export type EventRouteParams = { eventId?: string };
+
+/**
+ * Rutas de sub-pantalla de evento (todo menos el hub `JubileoHome`). Los tabs
+ * de evento usan esta lista para decidir cuándo mostrar los FAB glass de
+ * acción (`EventActionButtons`) por encima del navigator.
+ */
+export const EVENT_SUB_ROUTES = [
+  'Horario',
+  'Materiales',
+  'MaterialPages',
+  'Visitas',
+  'Profundiza',
+  'Grupos',
+  'Contactos',
+  'Apps',
+  'Reflexiones',
+  'Comida',
+  'ComidaWeb',
+  'Wordle',
+] as const;
 
 /** Pantallas comunes a cualquier evento. */
 export type EventStackParamList = {
@@ -97,13 +115,18 @@ export const getTextColor = (_tintColor?: string) => {
  * reusar todas las sub-pantallas para eventos nuevos sin duplicar registros.
  */
 export const eventScreenOptions =
-  (title: string) =>
+  (title: string, opts?: { hideHeaderTitle?: boolean }) =>
   ({ route }: { route: EventScreenRoute }) => {
     const event = getEvent(route.params?.eventId);
     const tint = event.tintColor;
     const textColor = getTextColor(tint);
     return {
       title,
+      // Las pantallas que ya muestran un título grande dentro del contenido
+      // (ScreenHero) ocultan el del header para no duplicarlo. Queda solo la
+      // barra glass + la flecha de volver; las acciones viven en los FAB glass
+      // flotantes (ver EventActionButtons).
+      ...(opts?.hideHeaderTitle ? { headerTitle: () => null } : {}),
       headerStyle: getHeaderStyle(tint),
       headerTintColor: textColor,
       // Quita la sombra pesada bajo la barra de color (coherente con el
@@ -134,66 +157,24 @@ export const eventHubScreenOptions = ({
 };
 
 /**
- * Botones del header derecho en las sub-pantallas de evento (ajustes +
- * reflexiones). No se muestran en el hub ni en pantallas no-evento.
- */
-export function eventHeaderRight({
-  navigation,
-  route,
-  onSettings,
-}: {
-  navigation: any;
-  route: { name: string; params?: { eventId?: string } };
-  onSettings: () => void;
-}) {
-  const isEventScreen =
-    route.name !== 'MasHome' &&
-    route.name !== 'JubileoHome' &&
-    route.name !== 'Fotos';
-  if (!isEventScreen) return null;
-
-  const eventId = route.params?.eventId;
-  const iconColor = getTextColor(getEvent(eventId).tintColor);
-
-  return (
-    <View
-      style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}
-    >
-      <PressableFeedback onPress={onSettings} style={{ padding: 10 }}>
-        <PressableFeedback.Highlight />
-        <MaterialIcons name="settings" size={26} color={iconColor} />
-      </PressableFeedback>
-      {route.name !== 'Reflexiones' && (
-        <PressableFeedback
-          onPress={() => navigation.navigate('Reflexiones', { eventId })}
-          style={{ padding: 10 }}
-        >
-          <PressableFeedback.Highlight />
-          <MaterialIcons name="forum" size={26} color={iconColor} />
-        </PressableFeedback>
-      )}
-    </View>
-  );
-}
-
-/**
  * Builder del `screenOptions` del Stack.Navigator de un evento. Replica el
  * header gris por defecto (que cada pantalla sobreescribe con su tint vía
- * `eventScreenOptions`) y los botones settings/reflexiones.
+ * `eventScreenOptions`).
  *
- * @param onSettings   abre el bottom sheet de ajustes del tab.
+ * Las acciones de evento (ajustes + Compartiendo) ya no viven en el header:
+ * se muestran como FAB glass flotantes (`EventActionButtons`) que el tab
+ * renderiza por encima del navigator.
+ *
  * @param onNavReady   recibe el `navigation` del stack activo (para popToTop).
  */
 export function eventStackScreenOptions({
-  onSettings,
   webStatusBarHeight,
   onNavReady,
 }: {
-  onSettings: () => void;
   webStatusBarHeight?: number;
   onNavReady?: (navigation: any) => void;
 }) {
-  return ({ navigation, route }: { navigation: any; route: any }) => {
+  return ({ navigation }: { navigation: any; route: any }) => {
     onNavReady?.(navigation);
     return {
       freezeOnBlur: true,
@@ -222,7 +203,6 @@ export function eventStackScreenOptions({
       headerTransparent: false,
       headerBackground: () =>
         Platform.OS === 'ios' ? <GlassHeader tintColor="#78909C" /> : undefined,
-      headerRight: () => eventHeaderRight({ navigation, route, onSettings }),
     };
   };
 }
@@ -252,12 +232,12 @@ export function renderEventScreens(
       <Stack.Screen
         name="Horario"
         component={HorarioScreen}
-        options={eventScreenOptions('Horario')}
+        options={eventScreenOptions('Horario', { hideHeaderTitle: true })}
       />
       <Stack.Screen
         name="Materiales"
         component={MaterialesScreen}
-        options={eventScreenOptions('Materiales')}
+        options={eventScreenOptions('Materiales', { hideHeaderTitle: true })}
       />
       <Stack.Screen
         name="MaterialPages"
@@ -267,27 +247,27 @@ export function renderEventScreens(
       <Stack.Screen
         name="Visitas"
         component={VisitasScreen}
-        options={eventScreenOptions('Visitas')}
+        options={eventScreenOptions('Visitas', { hideHeaderTitle: true })}
       />
       <Stack.Screen
         name="Profundiza"
         component={ProfundizaScreen}
-        options={eventScreenOptions('Profundiza')}
+        options={eventScreenOptions('Profundiza', { hideHeaderTitle: true })}
       />
       <Stack.Screen
         name="Grupos"
         component={GruposScreen}
-        options={eventScreenOptions('Grupos')}
+        options={eventScreenOptions('Grupos', { hideHeaderTitle: true })}
       />
       <Stack.Screen
         name="Contactos"
         component={ContactosScreen}
-        options={eventScreenOptions('Contactos')}
+        options={eventScreenOptions('Contactos', { hideHeaderTitle: true })}
       />
       <Stack.Screen
         name="Apps"
         component={AppsScreen}
-        options={eventScreenOptions('Apps')}
+        options={eventScreenOptions('Apps', { hideHeaderTitle: true })}
       />
       <Stack.Screen
         name="Reflexiones"

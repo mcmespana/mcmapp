@@ -6,12 +6,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import EventHomeScreen from '../screens/EventHomeScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
+import EventActionButtons from '@/components/EventActionButtons';
 import {
+  EVENT_SUB_ROUTES,
   EventStackParamList,
   eventHubScreenOptions,
   eventStackScreenOptions,
   renderEventScreens,
 } from '../screens/eventStackScreens';
+
+const EVENT_ID = 'visitapapa26';
 
 /**
  * Tab del evento activo "Visita Papa León XIV 2026" (modo evento).
@@ -25,6 +29,7 @@ const Stack = createNativeStackNavigator<EventStackParamList>();
 
 export default function VisitaPapaTab() {
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [activeRoute, setActiveRoute] = useState<string>('JubileoHome');
   const stackNavRef = useRef<any>(null);
   const wasBlurredRef = useRef(false);
   const insets = useSafeAreaInsets();
@@ -74,21 +79,36 @@ export default function VisitaPapaTab() {
       <Stack.Navigator
         initialRouteName="JubileoHome"
         screenOptions={eventStackScreenOptions({
-          onSettings: () => setSettingsVisible(true),
           webStatusBarHeight,
           onNavReady: (nav) => {
             stackNavRef.current = nav;
           },
         })}
+        screenListeners={{
+          state: (e) => {
+            const navState: any = (e.data as any)?.state;
+            const route = navState?.routes?.[navState.index];
+            if (route?.name) setActiveRoute(route.name);
+          },
+        }}
       >
         <Stack.Screen
           name="JubileoHome"
           component={EventHomeScreen}
-          initialParams={{ eventId: 'visitapapa26' }}
+          initialParams={{ eventId: EVENT_ID }}
           options={eventHubScreenOptions}
         />
         {renderEventScreens(Stack, { skipHub: true, includeExtras: false })}
       </Stack.Navigator>
+      {(EVENT_SUB_ROUTES as readonly string[]).includes(activeRoute) && (
+        <EventActionButtons
+          onSettings={() => setSettingsVisible(true)}
+          onCompartiendo={() =>
+            stackNavRef.current?.navigate('Reflexiones', { eventId: EVENT_ID })
+          }
+          showCompartiendo={activeRoute !== 'Reflexiones'}
+        />
+      )}
     </>
   );
 }

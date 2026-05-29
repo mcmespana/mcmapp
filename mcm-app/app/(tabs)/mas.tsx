@@ -11,7 +11,9 @@ import AlbumListScreen from '../screens/AlbumListScreen';
 import CalendarioScreen from './calendario';
 import EventosPasadosScreen from '../screens/EventosPasadosScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
+import EventActionButtons from '@/components/EventActionButtons';
 import {
+  EVENT_SUB_ROUTES,
   EventStackParamList,
   eventStackScreenOptions,
   renderEventScreens,
@@ -35,6 +37,10 @@ const Stack = createNativeStackNavigator<MasStackParamList>();
 
 export default function MasTab() {
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [activeRoute, setActiveRoute] = useState<string>('MasHome');
+  const [activeEventId, setActiveEventId] = useState<string | undefined>(
+    undefined,
+  );
   const stackNavRef = useRef<any>(null);
   // Tracks whether we left this tab (blur) so focus knows to pop to root.
   // We only pop when returning FROM another tab, never on same-tab re-tap.
@@ -91,12 +97,21 @@ export default function MasTab() {
       <Stack.Navigator
         initialRouteName="MasHome"
         screenOptions={eventStackScreenOptions({
-          onSettings: () => setSettingsVisible(true),
           webStatusBarHeight,
           onNavReady: (nav) => {
             stackNavRef.current = nav;
           },
         })}
+        screenListeners={{
+          state: (e) => {
+            const navState: any = (e.data as any)?.state;
+            const route = navState?.routes?.[navState.index];
+            if (route?.name) {
+              setActiveRoute(route.name);
+              setActiveEventId(route.params?.eventId);
+            }
+          },
+        }}
       >
         <Stack.Screen
           name="MasHome"
@@ -154,6 +169,17 @@ export default function MasTab() {
         />
         {renderEventScreens(Stack as never, { includeExtras: true })}
       </Stack.Navigator>
+      {(EVENT_SUB_ROUTES as readonly string[]).includes(activeRoute) && (
+        <EventActionButtons
+          onSettings={() => setSettingsVisible(true)}
+          onCompartiendo={() =>
+            stackNavRef.current?.navigate('Reflexiones', {
+              eventId: activeEventId,
+            })
+          }
+          showCompartiendo={activeRoute !== 'Reflexiones'}
+        />
+      )}
     </>
   );
 }

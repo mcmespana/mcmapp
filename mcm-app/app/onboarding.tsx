@@ -109,6 +109,15 @@ function useThemeT() {
     bg: isDark ? '#1C1C1E' : '#ffffff',
     card: isDark ? '#2C2C2E' : '#ffffff',
     border: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)',
+    // Accent used for on-surface interactive elements (icons, selected text,
+    // checks, links). In dark mode the deep primary blue is too low-contrast
+    // over the dark background, so we switch to the lighter secondary blue.
+    tint: isDark ? colors.secondary : colors.primary,
+    // Tinted backgrounds for icon circles / selected cards / summary pills.
+    iconBg: isDark ? 'rgba(149,210,242,0.14)' : 'rgba(37,56,131,0.09)',
+    selectedBg: isDark ? 'rgba(149,210,242,0.12)' : 'rgba(37,56,131,0.055)',
+    chipBg: isDark ? 'rgba(149,210,242,0.12)' : 'rgba(37,56,131,0.06)',
+    chipBorder: isDark ? 'rgba(149,210,242,0.22)' : 'rgba(37,56,131,0.10)',
     isDark,
   };
 }
@@ -119,12 +128,32 @@ const MAX_CONTENT_W = 520;
    Reusable bits
 ─────────────────────────────────────── */
 
-function ProgressDots({ current, total }: { current: number; total: number }) {
+function ProgressDots({
+  current,
+  total,
+  onDark,
+}: {
+  current: number;
+  total: number;
+  onDark?: boolean;
+}) {
   const TT = useThemeT();
+  const activeColor = onDark ? '#ffffff' : TT.tint;
+  const doneColor = onDark ? 'rgba(255,255,255,0.7)' : TT.tint;
+  const inactiveColor = onDark
+    ? 'rgba(255,255,255,0.28)'
+    : TT.isDark
+      ? 'rgba(255,255,255,0.22)'
+      : 'rgba(37,56,131,0.18)';
   return (
-    <View style={dotsStyles.row}>
+    <View
+      style={dotsStyles.row}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 1, max: total, now: current + 1 }}
+    >
       {Array.from({ length: total }, (_, i) => {
         const active = i === current;
+        const done = i < current;
         return (
           <View
             key={i}
@@ -132,7 +161,11 @@ function ProgressDots({ current, total }: { current: number; total: number }) {
               dotsStyles.dot,
               {
                 width: active ? 22 : 6,
-                backgroundColor: active ? TT.primary : 'rgba(37,56,131,0.18)',
+                backgroundColor: active
+                  ? activeColor
+                  : done
+                    ? doneColor
+                    : inactiveColor,
               },
             ]}
           />
@@ -171,8 +204,11 @@ function PrimaryButton({
   shimmer?: boolean;
   textColor?: string;
 }) {
-  const bg = disabled ? 'rgba(37,56,131,0.13)' : color || T.primary;
-  const fg = disabled ? 'rgba(37,56,131,0.35)' : textColor || '#fff';
+  const { isDark } = useThemeT();
+  const disabledBg = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(37,56,131,0.13)';
+  const disabledFg = isDark ? 'rgba(255,255,255,0.32)' : 'rgba(37,56,131,0.35)';
+  const bg = disabled ? disabledBg : color || T.primary;
+  const fg = disabled ? disabledFg : textColor || '#fff';
 
   const scale = useSharedValue(1);
   const aStyle = useAnimatedStyle(() => ({
@@ -278,11 +314,19 @@ function SkipButton({ onPress }: { onPress: () => void }) {
       accessibilityLabel="Saltar configuración"
       style={({ pressed }) => [
         skipBtnStyles.pill,
+        {
+          borderColor: TT.isDark
+            ? 'rgba(149,210,242,0.30)'
+            : 'rgba(37,56,131,0.28)',
+          backgroundColor: TT.isDark
+            ? 'rgba(149,210,242,0.10)'
+            : 'rgba(37,56,131,0.06)',
+        },
         pressed && { opacity: 0.65 },
       ]}
     >
-      <Text style={[skipBtnStyles.text, { color: TT.primary }]}>Saltar</Text>
-      <MaterialIcons name="arrow-forward" size={13} color={TT.primary} />
+      <Text style={[skipBtnStyles.text, { color: TT.tint }]}>Saltar</Text>
+      <MaterialIcons name="arrow-forward" size={13} color={TT.tint} />
     </Pressable>
   );
 }
@@ -612,6 +656,7 @@ function ProfileScreen({
   onSkip,
   animDir,
   applySafeArea,
+  totalSteps,
 }: {
   profiles: { id: OnboardingProfileId; label: string; description: string }[];
   selected: OnboardingProfileId | null;
@@ -620,6 +665,7 @@ function ProfileScreen({
   onSkip: () => void;
   animDir: 'forward' | 'back';
   applySafeArea: boolean;
+  totalSteps: number;
 }) {
   const TT = useThemeT();
   const insets = useSafeAreaInsets();
@@ -640,12 +686,12 @@ function ProfileScreen({
       </View>
 
       <View style={stepStyles.dotsWrap}>
-        <ProgressDots current={0} total={2} />
+        <ProgressDots current={0} total={totalSteps} />
       </View>
 
       <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
-        <View style={stepStyles.heroIcon}>
-          <MaterialIcons name="person-search" size={28} color={TT.primary} />
+        <View style={[stepStyles.heroIcon, { backgroundColor: TT.iconBg }]}>
+          <MaterialIcons name="person-search" size={28} color={TT.tint} />
         </View>
         <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
           ¿Quién eres?
@@ -675,26 +721,32 @@ function ProfileScreen({
                   cardStyles.card,
                   { backgroundColor: TT.card, borderColor: TT.border },
                   sel && cardStyles.cardSelected,
+                  sel && {
+                    borderColor: TT.tint,
+                    backgroundColor: TT.selectedBg,
+                  },
                   pressed && { transform: [{ scale: 0.97 }] },
                 ]}
               >
                 <View
                   style={[
                     cardStyles.iconCircle,
+                    { backgroundColor: TT.iconBg },
                     sel && cardStyles.iconCircleSelected,
+                    sel && { backgroundColor: TT.tint },
                   ]}
                 >
                   <MaterialIcons
                     name={PROFILE_ICONS[p.id]}
                     size={24}
-                    color={sel ? '#fff' : TT.primary}
+                    color={sel ? (TT.isDark ? '#1C1C1E' : '#fff') : TT.tint}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={[
                       cardStyles.cardTitle,
-                      { color: sel ? TT.primary : TT.text },
+                      { color: sel ? TT.tint : TT.text },
                     ]}
                   >
                     {p.label}
@@ -710,7 +762,7 @@ function ProfileScreen({
                   <MaterialIcons
                     name="check-circle"
                     size={22}
-                    color={TT.primary}
+                    color={TT.tint}
                   />
                 )}
               </Pressable>
@@ -747,6 +799,9 @@ function DelegationScreen({
   onBack,
   onSkip,
   applySafeArea,
+  stepIndex,
+  totalSteps,
+  finishLabel,
 }: {
   delegations: { id: string; label: string; description?: string }[];
   selected: string | null;
@@ -755,6 +810,9 @@ function DelegationScreen({
   onBack: () => void;
   onSkip: () => void;
   applySafeArea: boolean;
+  stepIndex: number;
+  totalSteps: number;
+  finishLabel: string;
 }) {
   const TT = useThemeT();
   const insets = useSafeAreaInsets();
@@ -772,21 +830,19 @@ function DelegationScreen({
       <StatusBar style={TT.isDark ? 'light' : 'dark'} animated />
       <View style={[stepStyles.topBar, { paddingTop: topPad }]}>
         <Pressable onPress={onBack} hitSlop={12} style={stepStyles.backBtn}>
-          <MaterialIcons name="arrow-back-ios" size={16} color={TT.primary} />
-          <Text style={[stepStyles.backLabel, { color: TT.primary }]}>
-            Atrás
-          </Text>
+          <MaterialIcons name="arrow-back-ios" size={16} color={TT.tint} />
+          <Text style={[stepStyles.backLabel, { color: TT.tint }]}>Atrás</Text>
         </Pressable>
         <SkipButton onPress={onSkip} />
       </View>
 
       <View style={stepStyles.dotsWrap}>
-        <ProgressDots current={1} total={2} />
+        <ProgressDots current={stepIndex} total={totalSteps} />
       </View>
 
       <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
-        <View style={stepStyles.heroIcon}>
-          <MaterialIcons name="location-on" size={28} color={TT.primary} />
+        <View style={[stepStyles.heroIcon, { backgroundColor: TT.iconBg }]}>
+          <MaterialIcons name="location-on" size={28} color={TT.tint} />
         </View>
         <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
           ¿De qué delegación?
@@ -816,6 +872,10 @@ function DelegationScreen({
                   delegStyles.row,
                   { borderColor: TT.border, backgroundColor: TT.card },
                   sel && delegStyles.rowSelected,
+                  sel && {
+                    borderColor: TT.tint,
+                    backgroundColor: TT.selectedBg,
+                  },
                   pressed && { transform: [{ scale: 0.98 }] },
                 ]}
               >
@@ -824,7 +884,7 @@ function DelegationScreen({
                     style={[
                       delegStyles.label,
                       {
-                        color: sel ? TT.primary : TT.text,
+                        color: sel ? TT.tint : TT.text,
                         fontWeight: sel ? '700' : '500',
                       },
                     ]}
@@ -844,7 +904,7 @@ function DelegationScreen({
                   <MaterialIcons
                     name="check-circle"
                     size={20}
-                    color={TT.primary}
+                    color={TT.tint}
                   />
                 )}
               </Pressable>
@@ -860,7 +920,7 @@ function DelegationScreen({
         ]}
       >
         <PrimaryButton
-          label="¡Empezar!"
+          label={finishLabel}
           onPress={onFinish}
           disabled={!selected}
           color={TT.accent}
@@ -961,21 +1021,31 @@ function SuccessScreen({
           style={successStyles.pills}
         >
           {profile && (
-            <View style={successStyles.pill}>
+            <View
+              style={[
+                successStyles.pill,
+                { backgroundColor: TT.chipBg, borderColor: TT.chipBorder },
+              ]}
+            >
               <MaterialIcons
                 name={PROFILE_ICONS[profile.id]}
                 size={20}
-                color={TT.primary}
+                color={TT.tint}
               />
-              <Text style={[successStyles.pillText, { color: TT.primary }]}>
+              <Text style={[successStyles.pillText, { color: TT.tint }]}>
                 {profile.label}
               </Text>
             </View>
           )}
           {delegation && (
-            <View style={successStyles.pill}>
-              <MaterialIcons name="location-on" size={20} color={TT.primary} />
-              <Text style={[successStyles.pillText, { color: TT.primary }]}>
+            <View
+              style={[
+                successStyles.pill,
+                { backgroundColor: TT.chipBg, borderColor: TT.chipBorder },
+              ]}
+            >
+              <MaterialIcons name="location-on" size={20} color={TT.tint} />
+              <Text style={[successStyles.pillText, { color: TT.tint }]}>
                 {delegation.label}
               </Text>
             </View>
@@ -1224,18 +1294,29 @@ const delegStyles = StyleSheet.create({
 ─────────────────────────────────────── */
 
 function LoginOnboardingScreen({
-  onContinue,
+  onFinish,
+  onSkip,
   onBack,
   animDir,
+  profile,
+  delegation,
+  stepIndex,
+  totalSteps,
 }: {
-  onContinue: () => void;
+  onFinish: () => void;
+  onSkip: () => void;
   onBack: () => void;
   animDir: 'forward' | 'back';
+  profile: { id: OnboardingProfileId; label: string } | null;
+  delegation: { id: string; label: string } | null;
+  stepIndex: number;
+  totalSteps: number;
 }) {
   const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
   const { width: screenW } = useWindowDimensions();
   const isWide = screenW >= 640;
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   return (
     <Animated.View
@@ -1283,7 +1364,7 @@ function LoginOnboardingScreen({
       {/* Back button */}
       <Pressable
         onPress={onBack}
-        style={loginOnbStyles.backBtn}
+        style={[loginOnbStyles.backBtn, { top: insets.top + 4 }]}
         accessibilityRole="button"
         accessibilityLabel="Volver"
       >
@@ -1294,7 +1375,13 @@ function LoginOnboardingScreen({
         />
       </Pressable>
 
-      {/* Content */}
+      {/* Step indicator */}
+      <View style={[loginOnbStyles.dotsTop, { top: insets.top + 14 }]}>
+        <ProgressDots current={stepIndex} total={totalSteps} onDark />
+      </View>
+
+      {/* Content — al iniciar sesión esta pantalla pasa a ser el resumen
+          final del onboarding, con el CTA centrado verticalmente. */}
       <View
         style={[loginOnbStyles.center, isWide && { paddingHorizontal: 48 }]}
       >
@@ -1316,43 +1403,76 @@ function LoginOnboardingScreen({
           entering={FadeInUp.delay(120).duration(400)}
           style={loginOnbStyles.title}
         >
-          Guarda tu progreso
+          {user ? '¡Todo listo!' : 'Guarda tu progreso'}
         </Animated.Text>
 
         <Animated.Text
           entering={FadeInUp.delay(180).duration(400)}
           style={loginOnbStyles.body}
         >
-          Sincroniza tus hábitos de oración, evangelios guardados y reflexiones
-          entre todos tus dispositivos.
+          {user
+            ? 'Tu sesión está activa y tu progreso se sincronizará entre dispositivos. ¡A disfrutar de tu comunidad!'
+            : 'Sincroniza tus hábitos de oración, evangelios guardados y reflexiones entre todos tus dispositivos.'}
         </Animated.Text>
 
-        {/* Login buttons */}
+        {/* Login buttons / authenticated card */}
         <Animated.View
           entering={FadeInUp.delay(240).duration(400)}
           style={loginOnbStyles.buttonsWrap}
         >
           <SocialLoginSection onDarkBackground />
         </Animated.View>
+
+        {/* Resumen + CTA cuando hay sesión (centrado verticalmente) */}
+        {user && (
+          <Animated.View
+            entering={FadeInUp.delay(300).duration(400)}
+            style={loginOnbStyles.summaryWrap}
+          >
+            {(profile || delegation) && (
+              <View style={loginOnbStyles.summaryPills}>
+                {profile && (
+                  <View style={loginOnbStyles.summaryPill}>
+                    <MaterialIcons
+                      name={PROFILE_ICONS[profile.id]}
+                      size={16}
+                      color="#fff"
+                    />
+                    <Text style={loginOnbStyles.summaryPillText}>
+                      {profile.label}
+                    </Text>
+                  </View>
+                )}
+                {delegation && (
+                  <View style={loginOnbStyles.summaryPill}>
+                    <MaterialIcons name="location-on" size={16} color="#fff" />
+                    <Text style={loginOnbStyles.summaryPillText}>
+                      {delegation.label}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+            <PrimaryButton
+              label="Ir a la app"
+              onPress={onFinish}
+              color="#ffffff"
+              textColor={T.primary}
+              shimmer
+            />
+          </Animated.View>
+        )}
       </View>
 
-      {/* CTA: si ya hay sesión, botón grande para continuar; si no, enlace
-          pequeño para seguir sin cuenta. */}
-      <Animated.View
-        entering={FadeInUp.delay(320).duration(380)}
-        style={user ? loginOnbStyles.continueWrap : loginOnbStyles.skipWrap}
-      >
-        {user ? (
-          <PrimaryButton
-            label="Continuar"
-            onPress={onContinue}
-            color="#ffffff"
-            textColor={T.primary}
-            shimmer
-          />
-        ) : (
+      {/* Cuando NO hay sesión, enlace inferior para continuar sin cuenta
+          (lleva al resumen final). */}
+      {!user && (
+        <Animated.View
+          entering={FadeInUp.delay(320).duration(380)}
+          style={loginOnbStyles.skipWrap}
+        >
           <Pressable
-            onPress={onContinue}
+            onPress={onSkip}
             hitSlop={10}
             accessibilityRole="button"
             accessibilityLabel="Continuar sin cuenta"
@@ -1360,8 +1480,8 @@ function LoginOnboardingScreen({
           >
             <Text style={loginOnbStyles.skipText}>Continuar sin cuenta →</Text>
           </Pressable>
-        )}
-      </Animated.View>
+        </Animated.View>
+      )}
     </Animated.View>
   );
 }
@@ -1423,13 +1543,44 @@ const loginOnbStyles = StyleSheet.create({
     width: '100%',
     maxWidth: 320,
   } as ViewStyle,
+  dotsTop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 5,
+  } as ViewStyle,
+  summaryWrap: {
+    width: '100%',
+    maxWidth: 320,
+    marginTop: 24,
+    gap: 16,
+  } as ViewStyle,
+  summaryPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  } as ViewStyle,
+  summaryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.24)',
+  } as ViewStyle,
+  summaryPillText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  } as TextStyle,
   skipWrap: {
     paddingBottom: Platform.OS === 'ios' ? 32 : 24,
     alignItems: 'center',
-  } as ViewStyle,
-  continueWrap: {
-    paddingHorizontal: 24,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 24,
   } as ViewStyle,
   skipText: {
     color: 'rgba(255,255,255,0.55)',
@@ -1546,6 +1697,25 @@ export default function OnboardingScreen() {
     }
   };
 
+  // Al iniciar sesión, la pantalla de login pasa a ser el resumen final: el
+  // botón "Ir a la app" cierra el onboarding directamente (sin pantalla
+  // `success` extra).
+  const handleLoginFinish = () => {
+    const resolved = resolveOnboardingValues(profileType, delegationId);
+    persistAndExit({
+      profileType: resolved.profileType,
+      delegationId: resolved.delegationId,
+      onboardingCompleted: true,
+    });
+  };
+
+  // Indicador de pasos: el total depende del perfil elegido (otros → 1,
+  // familia → 2, monitor/miembro → 3). Bienvenida y resumen no cuentan.
+  const needsDelegation = profileType !== OTROS_PROFILE_ID;
+  const totalSteps =
+    1 + (needsDelegation ? 1 : 0) + (needsLoginStep(profileType) ? 1 : 0);
+  const loginStepIndex = needsDelegation ? 2 : 1;
+
   const profile = useMemo(() => {
     if (!profileType) return null;
     if (profileType === OTROS_PROFILE_ID) {
@@ -1613,6 +1783,7 @@ export default function OnboardingScreen() {
             onContinue={handleProfileContinue}
             onSkip={handleSkip}
             applySafeArea={applySafeArea}
+            totalSteps={totalSteps}
           />
         )}
         {step === 'delegation' && (
@@ -1624,13 +1795,23 @@ export default function OnboardingScreen() {
             onBack={() => go('profile', 'back')}
             onSkip={handleSkip}
             applySafeArea={applySafeArea}
+            stepIndex={1}
+            totalSteps={totalSteps}
+            finishLabel={
+              needsLoginStep(profileType) ? 'Continuar' : '¡Empezar!'
+            }
           />
         )}
         {step === 'login' && (
           <LoginOnboardingScreen
-            onContinue={() => go('success')}
+            onFinish={handleLoginFinish}
+            onSkip={() => go('success')}
             onBack={() => go('delegation', 'back')}
             animDir={animDir}
+            profile={profile}
+            delegation={delegation}
+            stepIndex={loginStepIndex}
+            totalSteps={totalSteps}
           />
         )}
         {step === 'success' && (

@@ -1,11 +1,18 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, Platform, Text } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  Text,
+  Pressable,
+} from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Card,
   Switch,
   Chip,
-  Button,
   Spinner,
   BottomSheet,
   PressableFeedback,
@@ -265,16 +272,29 @@ export default function ReflexionesScreen() {
         <BottomSheet.Portal>
           <BottomSheet.Overlay />
           <BottomSheet.Content>
-            <BottomSheet.Title className="mb-2">
-              Compartir reflexión
-            </BottomSheet.Title>
-            <ScrollView>
+            <View style={styles.sheetHeader}>
+              <View style={styles.sheetIcon}>
+                <MaterialIcons
+                  name="auto-stories"
+                  size={20}
+                  color={colors.success}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <BottomSheet.Title>Compartir reflexión</BottomSheet.Title>
+                <Text style={styles.sheetSubtitle}>
+                  Tu experiencia puede iluminar a otros
+                </Text>
+              </View>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Título (opcional)</Text>
                 <TextField>
                   <Input
                     value={titulo}
                     onChangeText={setTitulo}
+                    placeholder="Un título breve"
                     style={styles.input}
                   />
                 </TextField>
@@ -285,8 +305,12 @@ export default function ReflexionesScreen() {
                   <TextArea
                     value={contenido}
                     onChangeText={setContenido}
-                    numberOfLines={4}
-                    style={[styles.input, { minHeight: 100 }]}
+                    numberOfLines={5}
+                    placeholder="Escribe aquí tu reflexión"
+                    style={[
+                      styles.input,
+                      { minHeight: 120, textAlignVertical: 'top' },
+                    ]}
                   />
                 </TextField>
               </View>
@@ -295,21 +319,32 @@ export default function ReflexionesScreen() {
                 style={styles.dateField}
               >
                 <PressableFeedback.Highlight />
-                <Text style={styles.inputLabel}>Fecha</Text>
+                <MaterialIcons name="event" size={20} color={colors.success} />
+                <Text style={styles.dateFieldLabel}>Fecha</Text>
                 <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={theme.icon}
+                />
               </PressableFeedback>
               <View style={styles.row}>
+                <MaterialIcons
+                  name="groups"
+                  size={20}
+                  color={grupal ? colors.success : theme.icon}
+                />
+                <Text style={styles.switchLabel}>Compartir en grupo</Text>
                 <Switch
                   isSelected={grupal}
                   onSelectedChange={(v) => setGrupal(v)}
                 />
-                <Text style={styles.switchLabel}>Compartiendo en grupo</Text>
               </View>
               {grupal ? (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  style={{ marginBottom: 12 }}
+                  style={{ marginBottom: spacing.md }}
                 >
                   <View
                     style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}
@@ -338,13 +373,18 @@ export default function ReflexionesScreen() {
                   </TextField>
                 </View>
               )}
-              <Button
-                variant="primary"
+              <Pressable
                 onPress={addReflexion}
-                className="mt-4 mb-6"
+                accessibilityRole="button"
+                accessibilityLabel="Guardar reflexión"
+                style={({ pressed }) => [
+                  styles.saveBtn,
+                  pressed && { opacity: 0.85 },
+                ]}
               >
-                <Button.Label>Guardar reflexión</Button.Label>
-              </Button>
+                <MaterialIcons name="send" size={18} color="#fff" />
+                <Text style={styles.saveBtnLabel}>Compartir</Text>
+              </Pressable>
             </ScrollView>
           </BottomSheet.Content>
         </BottomSheet.Portal>
@@ -403,38 +443,87 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       justifyContent: 'center',
       alignItems: 'center',
     },
+    sheetHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    sheetIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor:
+        scheme === 'dark' ? 'rgba(163,189,49,0.18)' : 'rgba(163,189,49,0.12)',
+    },
+    sheetSubtitle: {
+      fontSize: 13,
+      color: theme.icon,
+      marginTop: 2,
+    },
     inputWrapper: { marginBottom: spacing.md },
     inputLabel: {
       fontSize: 12,
       color: colors.success,
-      fontWeight: '600',
-      marginBottom: 4,
+      fontWeight: '700',
+      letterSpacing: 0.2,
+      marginBottom: 6,
     },
     input: {
       borderWidth: 1,
-      borderColor: scheme === 'dark' ? '#555' : '#ccc',
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
+      borderColor: scheme === 'dark' ? '#48484A' : '#D8DCC8',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
       fontSize: 16,
       color: theme.text,
       backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
     },
     dateField: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
       marginBottom: spacing.md,
       borderWidth: 1,
-      borderColor: scheme === 'dark' ? '#555' : '#ccc',
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
+      borderColor: scheme === 'dark' ? '#48484A' : '#D8DCC8',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 13,
     },
-    dateValue: { fontSize: 16, color: theme.text },
+    dateFieldLabel: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '500',
+      color: theme.text,
+    },
+    dateValue: { fontSize: 15, fontWeight: '600', color: colors.success },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: spacing.sm,
       marginBottom: spacing.md,
+      paddingVertical: 4,
     },
-    switchLabel: { marginLeft: spacing.sm, color: theme.text },
+    switchLabel: { flex: 1, fontSize: 15, color: theme.text },
+    saveBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      backgroundColor: colors.success,
+      borderRadius: 14,
+      paddingVertical: 15,
+      marginTop: spacing.md,
+      marginBottom: spacing.lg,
+    },
+    saveBtnLabel: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: 0.2,
+    },
     savingModal: {
       backgroundColor: theme.background,
       padding: spacing.lg,

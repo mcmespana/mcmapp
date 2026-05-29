@@ -276,8 +276,14 @@ export default function SocialLoginSection({
   const googleBg = onDarkBackground ? 'rgba(255,255,255,0.12)' : theme.card;
   const googleBorder = onDarkBackground
     ? 'rgba(255,255,255,0.22)'
-    : 'rgba(0,0,0,0.10)';
-  const googleText = onDarkBackground ? '#fff' : '#3C4043';
+    : scheme === 'dark'
+      ? 'rgba(255,255,255,0.16)'
+      : 'rgba(0,0,0,0.10)';
+  const googleText = onDarkBackground
+    ? '#fff'
+    : scheme === 'dark'
+      ? '#ECEDEE'
+      : '#3C4043';
 
   const brand = brandColors.primary;
   const hintBg = onDarkBackground
@@ -341,6 +347,9 @@ export default function SocialLoginSection({
           style={[
             styles.socialBtn,
             styles.appleBtn,
+            !onDarkBackground && scheme === 'dark'
+              ? { borderColor: 'rgba(255,255,255,0.18)' }
+              : null,
             ...(signingIn && signingIn !== 'apple' ? [styles.btnDisabled] : []),
           ]}
           onPress={handleAppleSignIn}
