@@ -45,13 +45,14 @@ export function useShakeDetector(
     let cancelled = false;
 
     // Carga perezosa para que la app arranque aunque el módulo nativo no esté.
+    // @ts-ignore expo-sensors optional native dependency
     import('expo-sensors')
-      .then(({ Accelerometer }) => {
+      .then(({ Accelerometer }: { Accelerometer: any }) => {
         if (cancelled) return;
         Accelerometer.setUpdateInterval(80);
         const peaks: number[] = [];
         let lastFireAt = 0;
-        subscription = Accelerometer.addListener(({ x, y, z }) => {
+        subscription = Accelerometer.addListener(({ x, y, z }: { x: number; y: number; z: number }) => {
           const magnitude = Math.sqrt(x * x + y * y + z * z);
           const now = Date.now();
           // Limpia picos fuera de la ventana.

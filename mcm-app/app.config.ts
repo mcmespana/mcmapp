@@ -15,11 +15,20 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     ...(Array.isArray(config.plugins) ? config.plugins : []),
-    [
-      '@react-native-google-signin/google-signin',
-      {
-        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-      },
-    ],
+    ...(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+      ? [
+          [
+            '@react-native-google-signin/google-signin',
+            {
+              iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+              // reversed iOS client ID, required when not using the Firebase Expo plugin
+              iosUrlScheme: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+                .split('.')
+                .reverse()
+                .join('.'),
+            },
+          ] as [string, object],
+        ]
+      : []),
   ],
 });
