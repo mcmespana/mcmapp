@@ -207,7 +207,7 @@ export const VISITAPAPA: EventConfig = {
       emoji: '🍽️',
       materialIcon: 'restaurant',
       tintColor: '#F06292',
-      url: 'https://maps.app.goo.gl/teJTgd1etjTYhANZA',
+      url: 'https://maps.app.goo.gl/7DEtUhW1tfrnY9Sk7',
     },
     {
       label: 'Visitas',
