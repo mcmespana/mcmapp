@@ -80,30 +80,15 @@ export const getHeaderStyle = (tintColor: string) => {
   }
 };
 
-// Helper para obtener el color del texto según el color de fondo
-export const getTextColor = (tintColor: string) => {
-  const hex = tintColor.replace('#', '');
-  const r = parseInt(
-    hex.length === 6 ? hex.substring(0, 2) : hex[0] + hex[0],
-    16,
-  );
-  const g = parseInt(
-    hex.length === 6 ? hex.substring(2, 4) : hex[1] + hex[1],
-    16,
-  );
-  const b = parseInt(
-    hex.length === 6 ? hex.substring(4, 6) : hex[2] + hex[2],
-    16,
-  );
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-
-  if (Platform.OS === 'ios') {
-    return '#1a1a1a'; // iOS siempre usa texto oscuro con GlassHeader
-  } else if (Platform.OS === 'web') {
-    return brightness > 180 ? '#1a1a1a' : '#fff';
-  } else {
-    return '#fff'; // Android usa texto blanco por defecto
-  }
+// Helper para obtener el color del texto del header.
+// iOS y web usan siempre texto oscuro (coherente con el resto de tabs, p.ej.
+// el cantoral, que pinta texto oscuro sobre su franja de color). Antes web
+// volteaba a blanco para tints medios/oscuros (el verde de Jubileo), lo que
+// rompía la coherencia visual con el resto de la app. Android sigue la
+// convención Material de texto blanco sobre la barra de color.
+// (El parámetro se mantiene por compatibilidad de firma.)
+export const getTextColor = (_tintColor?: string) => {
+  return Platform.OS === 'android' ? '#fff' : '#1a1a1a';
 };
 
 /**
@@ -121,6 +106,10 @@ export const eventScreenOptions =
       title,
       headerStyle: getHeaderStyle(tint),
       headerTintColor: textColor,
+      // Quita la sombra pesada bajo la barra de color (coherente con el
+      // cantoral). En web/android `shadowOpacity`/`elevation` del headerStyle
+      // no bastan: la sombra se controla con esta prop.
+      headerShadowVisible: false,
       headerTitleStyle: {
         fontWeight: '700' as const,
         fontSize: 18,
@@ -222,6 +211,7 @@ export function eventStackScreenOptions({
               }
             : { backgroundColor: '#78909C' },
       headerTintColor: Platform.OS === 'ios' ? '#1a1a1a' : '#fff',
+      headerShadowVisible: false,
       headerTitleStyle: {
         fontWeight: '700' as const,
         fontSize: 18,
