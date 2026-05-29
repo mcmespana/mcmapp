@@ -6,6 +6,22 @@ function db() {
   return getDatabase(getFirebaseApp());
 }
 
+/** RTDB rechaza valores `undefined`. Elimina recursivamente las claves cuyo
+ *  valor sea `undefined` antes de escribir. */
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((v) => stripUndefined(v)) as unknown as T;
+  }
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v !== undefined) out[k] = stripUndefined(v);
+    }
+    return out as T;
+  }
+  return value;
+}
+
 export interface UserMCMData {
   profileType: string | null;
   delegationId: string | null;
@@ -72,7 +88,7 @@ export async function syncContigoHabit(
 ): Promise<void> {
   try {
     const habitRef = ref(db(), `users/${uid}/contigo/habits/${date}`);
-    await set(habitRef, record);
+    await set(habitRef, stripUndefined(record));
   } catch (err) {
     console.error('[authHelpers] syncContigoHabit:', err);
   }
@@ -83,14 +99,18 @@ export async function syncContigoHabit(
 export async function syncContigoBookmark(
   uid: string,
   date: string,
-  bookmark: { bookmarkedAt: number; cita: string; diaLiturgico?: string } | null,
+  bookmark: {
+    bookmarkedAt: number;
+    cita: string;
+    diaLiturgico?: string;
+  } | null,
 ): Promise<void> {
   try {
     const bookmarkRef = ref(db(), `users/${uid}/contigo/bookmarks/${date}`);
     if (bookmark === null) {
       await remove(bookmarkRef);
     } else {
-      await set(bookmarkRef, bookmark);
+      await set(bookmarkRef, stripUndefined(bookmark));
     }
   } catch (err) {
     console.error('[authHelpers] syncContigoBookmark:', err);
@@ -108,7 +128,7 @@ export async function syncContigoRevision(
 ): Promise<void> {
   try {
     const revisionRef = ref(db(), `users/${uid}/contigo/revisions/${date}`);
-    await set(revisionRef, data);
+    await set(revisionRef, stripUndefined(data));
   } catch (err) {
     console.error('[authHelpers] syncContigoRevision:', err);
   }
