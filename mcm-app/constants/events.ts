@@ -79,6 +79,13 @@ export interface EventConfig {
   status?: 'active' | 'archived';
   /** Subtítulo del banner destacado de la Home (modo evento). */
   bannerText?: string;
+  /**
+   * Nombre del tab de expo-router que representa este evento (ej.
+   * `'visitapapa'`). Lo usa el banner de la Home para el gating de visibilidad
+   * (solo se muestra si el perfil tiene acceso al tab o al botón Home).
+   * Vacío/ausente = sin tab propio (evento solo accesible desde "Más").
+   */
+  tabId?: string;
   sections: EventSection[];
 }
 
@@ -173,6 +180,7 @@ export const VISITAPAPA: EventConfig = {
   firebasePrefix: 'activities/visitapapa26',
   status: 'active',
   bannerText: 'Horarios, materiales y todo para vivir la visita del Papa',
+  tabId: 'visitapapa',
   sections: [
     {
       label: 'Horario',

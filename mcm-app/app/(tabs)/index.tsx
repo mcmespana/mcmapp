@@ -31,7 +31,7 @@ import { router } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
-import { getEvent, ACTIVE_EVENT_ID } from '@/constants/events';
+import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -194,10 +194,14 @@ export default function Home() {
 
   // Banner "modo evento": destaca el evento activo en la Home. Solo se muestra
   // a los perfiles que tienen acceso al evento (tab o botón Home).
-  const activeEvent = getEvent(ACTIVE_EVENT_ID);
+  // El evento activo se lee de Firebase (`activities/_meta`) con fallback al
+  // valor hardcoded en `constants/events.ts`.
+  const { activeEvent } = useActiveMeta();
+  const activeTabId = activeEvent.tabId ?? '';
   const showEventBanner =
-    resolved.tabs.includes('visitapapa') ||
-    resolved.homeButtons.includes('visitapapa');
+    activeTabId !== '' &&
+    (resolved.tabs.includes(activeTabId) ||
+      resolved.homeButtons.includes(activeTabId));
 
   // OTA update badge (show in header after user dismisses the modal)
   const {
