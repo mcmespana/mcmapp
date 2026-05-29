@@ -34,6 +34,7 @@ import colors from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useAuth } from '@/contexts/AuthContext';
 import SocialLoginSection from '@/components/SocialLoginSection';
 import {
   DEFAULT_DELEGATION_ID,
@@ -1234,6 +1235,7 @@ function LoginOnboardingScreen({
   const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
   const { width: screenW } = useWindowDimensions();
   const isWide = screenW >= 640;
+  const { user } = useAuth();
 
   return (
     <Animated.View
@@ -1241,9 +1243,42 @@ function LoginOnboardingScreen({
       style={loginOnbStyles.root}
     >
       {/* Decorative background circles */}
-      <View style={[loginOnbStyles.deco, { top: -80, right: -60, width: 220, height: 220, backgroundColor: 'rgba(149,210,242,0.10)' }]} />
-      <View style={[loginOnbStyles.deco, { bottom: 120, left: -60, width: 180, height: 180, backgroundColor: 'rgba(149,210,242,0.07)' }]} />
-      <View style={[loginOnbStyles.deco, { bottom: -30, right: 10, width: 120, height: 120, backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+      <View
+        style={[
+          loginOnbStyles.deco,
+          {
+            top: -80,
+            right: -60,
+            width: 220,
+            height: 220,
+            backgroundColor: 'rgba(149,210,242,0.10)',
+          },
+        ]}
+      />
+      <View
+        style={[
+          loginOnbStyles.deco,
+          {
+            bottom: 120,
+            left: -60,
+            width: 180,
+            height: 180,
+            backgroundColor: 'rgba(149,210,242,0.07)',
+          },
+        ]}
+      />
+      <View
+        style={[
+          loginOnbStyles.deco,
+          {
+            bottom: -30,
+            right: 10,
+            width: 120,
+            height: 120,
+            backgroundColor: 'rgba(255,255,255,0.04)',
+          },
+        ]}
+      />
 
       {/* Back button */}
       <Pressable
@@ -1252,11 +1287,17 @@ function LoginOnboardingScreen({
         accessibilityRole="button"
         accessibilityLabel="Volver"
       >
-        <MaterialIcons name="arrow-back" size={22} color="rgba(255,255,255,0.75)" />
+        <MaterialIcons
+          name="arrow-back"
+          size={22}
+          color="rgba(255,255,255,0.75)"
+        />
       </Pressable>
 
       {/* Content */}
-      <View style={[loginOnbStyles.center, isWide && { paddingHorizontal: 48 }]}>
+      <View
+        style={[loginOnbStyles.center, isWide && { paddingHorizontal: 48 }]}
+      >
         {/* Logo */}
         <Animated.View
           entering={FadeIn.delay(80).duration(500)}
@@ -1295,20 +1336,31 @@ function LoginOnboardingScreen({
         </Animated.View>
       </View>
 
-      {/* Skip */}
+      {/* CTA: si ya hay sesión, botón grande para continuar; si no, enlace
+          pequeño para seguir sin cuenta. */}
       <Animated.View
         entering={FadeInUp.delay(320).duration(380)}
-        style={loginOnbStyles.skipWrap}
+        style={user ? loginOnbStyles.continueWrap : loginOnbStyles.skipWrap}
       >
-        <Pressable
-          onPress={onContinue}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel="Continuar sin cuenta"
-          style={({ pressed }) => [pressed && { opacity: 0.65 }]}
-        >
-          <Text style={loginOnbStyles.skipText}>Continuar sin cuenta →</Text>
-        </Pressable>
+        {user ? (
+          <PrimaryButton
+            label="Continuar"
+            onPress={onContinue}
+            color="#ffffff"
+            textColor={T.primary}
+            shimmer
+          />
+        ) : (
+          <Pressable
+            onPress={onContinue}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Continuar sin cuenta"
+            style={({ pressed }) => [pressed && { opacity: 0.65 }]}
+          >
+            <Text style={loginOnbStyles.skipText}>Continuar sin cuenta →</Text>
+          </Pressable>
+        )}
       </Animated.View>
     </Animated.View>
   );
@@ -1374,6 +1426,10 @@ const loginOnbStyles = StyleSheet.create({
   skipWrap: {
     paddingBottom: Platform.OS === 'ios' ? 32 : 24,
     alignItems: 'center',
+  } as ViewStyle,
+  continueWrap: {
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 24,
   } as ViewStyle,
   skipText: {
     color: 'rgba(255,255,255,0.55)',

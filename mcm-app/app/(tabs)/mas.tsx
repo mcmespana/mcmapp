@@ -8,6 +8,7 @@ import MasHomeScreen from '../screens/MasHomeScreen';
 import ComunicaScreen from '../screens/ComunicaScreen';
 import ComunicaGestionScreen from '../screens/ComunicaGestionScreen';
 import AlbumListScreen from '../screens/AlbumListScreen';
+import CalendarioScreen from './calendario';
 import EventosPasadosScreen from '../screens/EventosPasadosScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import {
@@ -24,6 +25,7 @@ import {
 export type MasStackParamList = EventStackParamList & {
   MasHome: { directTo?: string } | undefined;
   Fotos: undefined;
+  Calendario: undefined;
   Comunica: undefined;
   ComunicaGestion: undefined;
   EventosPasados: undefined;
@@ -114,6 +116,16 @@ export default function MasTab() {
             // dentro de la propia pantalla en lugar de un header pesado.
             // El gesto de swipe-back de iOS / botón nativo Android cubren
             // la navegación de vuelta.
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Calendario"
+          component={CalendarioScreen}
+          options={{
+            // Calendario se comporta como un tab "de plataforma": pinta su
+            // propio header/contenido vía TabScreenWrapper. El swipe-back de
+            // iOS / botón nativo Android cubren la navegación de vuelta.
             headerShown: false,
           }}
         />

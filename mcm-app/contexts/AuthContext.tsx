@@ -45,7 +45,9 @@ function providerFromFirebase(firebaseUser: {
   if (pid.includes('apple')) return 'apple';
   // google.com, googleusercontent.com or any other provider defaults to google
   if (__DEV__ && !pid.includes('google')) {
-    console.warn(`[AuthContext] Proveedor desconocido "${pid}", usando google por defecto`);
+    console.warn(
+      `[AuthContext] Proveedor desconocido "${pid}", usando google por defecto`,
+    );
   }
   return 'google';
 }
@@ -116,8 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
     } catch (err: any) {
       const cancelled =
-        err?.code === 'ERR_CANCELED' ||
-        String(err?.message).includes('cancel');
+        err?.code === 'ERR_CANCELED' || String(err?.message).includes('cancel');
       if (!cancelled) {
         console.error('[AuthContext] signInWithApple:', err);
       }

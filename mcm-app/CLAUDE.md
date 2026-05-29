@@ -27,6 +27,7 @@ npx tsc --noEmit       # Verificar tipos TypeScript
 Los OTA updates (EAS Update) solo envían el **bundle JS** — no incluyen código nativo. Si añades un paquete con módulos nativos (`expo-*`, `react-native-*` con carpeta `ios/` o `android/`) y haces OTA, **la app crashea** porque el binario instalado no tiene ese módulo.
 
 Cuando añadas un paquete nativo:
+
 1. Añade `[skip-ota]` al mensaje del commit → el workflow `ota-production.yml` se salta automáticamente
 2. Avisa al usuario de que necesita un **build de producción** antes de mergear a `production`:
    ```

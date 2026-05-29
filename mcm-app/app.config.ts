@@ -29,8 +29,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             {
               iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
               // reversed iOS client ID, required when not using the Firebase Expo plugin
-              iosUrlScheme: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
-                .split('.')
+              iosUrlScheme: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID.split(
+                '.',
+              )
                 .reverse()
                 .join('.'),
             },

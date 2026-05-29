@@ -50,9 +50,12 @@ export default function AlbumListScreen() {
   } = useFirebaseData<Album[]>('albums', 'albums');
   const resolved = useResolvedProfileConfig();
   const sortedAlbums = React.useMemo(() => {
-    const visible = (allAlbumsData ?? []).filter((album) =>
-      isAlbumVisibleForProfile(album, resolved.albumTags),
-    );
+    const seen = new Set<string>();
+    const visible = (allAlbumsData ?? []).filter((album) => {
+      if (seen.has(album.id)) return false;
+      seen.add(album.id);
+      return isAlbumVisibleForProfile(album, resolved.albumTags);
+    });
     return visible.sort((a, b) => b.id.localeCompare(a.id));
   }, [allAlbumsData, resolved.albumTags]);
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);

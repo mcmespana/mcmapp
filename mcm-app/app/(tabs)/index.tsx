@@ -665,10 +665,21 @@ export default function Home() {
                 <View
                   style={[
                     styles.eventBannerIcon,
-                    { backgroundColor: hexAlpha(activeEvent.tintColor, '35') },
+                    {
+                      backgroundColor: hexAlpha(
+                        activeEvent.tintColor,
+                        scheme === 'dark' ? '45' : '35',
+                      ),
+                    },
                   ]}
                 >
-                  <MaterialIcons name="church" size={22} color="#8A6D00" />
+                  <MaterialIcons
+                    name="church"
+                    size={22}
+                    color={
+                      scheme === 'dark' ? activeEvent.tintColor : '#8A6D00'
+                    }
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text

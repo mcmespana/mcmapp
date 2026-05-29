@@ -69,7 +69,7 @@ export const TABS_CONFIG: TabConfig[] = [
     label: 'Visita Papa',
     subtitle: 'Visita del Papa León XIV 2026',
     emoji: '🕊️',
-    iosIcon: { default: 'cross.circle', selected: 'cross.circle.fill' },
+    iosIcon: { default: 'church', selected: 'church' },
     androidIcon: 'church',
     tintColor: TabHeaderColors.visitapapa,
     headerColor: TabHeaderColors.visitapapa,

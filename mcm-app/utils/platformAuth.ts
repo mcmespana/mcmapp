@@ -1,5 +1,9 @@
 // Web implementation: uses Firebase signInWithPopup for both Google and Apple.
-import { signInWithPopup, GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
+  OAuthProvider,
+} from 'firebase/auth';
 import type { Auth, UserCredential } from 'firebase/auth';
 
 export async function configureGoogleSignIn(): Promise<void> {

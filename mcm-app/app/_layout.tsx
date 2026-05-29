@@ -71,23 +71,23 @@ export default function RootLayout() {
                     <UniwindThemeBridge />
                     <UserProfileProvider>
                       <AuthProvider>
-                      <SelectedSongsProvider>
-                        <ChoirSessionProvider>
-                          <NotificationsProvider>
-                            <CalendarConfigProvider>
-                              <PreviewChannelProvider>
-                                <OTAProvider>
-                                  <CarismochitoProvider>
-                                    <ActiveEventProvider>
-                                      <InnerLayout />
-                                    </ActiveEventProvider>
-                                  </CarismochitoProvider>
-                                </OTAProvider>
-                              </PreviewChannelProvider>
-                            </CalendarConfigProvider>
-                          </NotificationsProvider>
-                        </ChoirSessionProvider>
-                      </SelectedSongsProvider>
+                        <SelectedSongsProvider>
+                          <ChoirSessionProvider>
+                            <NotificationsProvider>
+                              <CalendarConfigProvider>
+                                <PreviewChannelProvider>
+                                  <OTAProvider>
+                                    <CarismochitoProvider>
+                                      <ActiveEventProvider>
+                                        <InnerLayout />
+                                      </ActiveEventProvider>
+                                    </CarismochitoProvider>
+                                  </OTAProvider>
+                                </PreviewChannelProvider>
+                              </CalendarConfigProvider>
+                            </NotificationsProvider>
+                          </ChoirSessionProvider>
+                        </SelectedSongsProvider>
                       </AuthProvider>
                     </UserProfileProvider>
                   </AppSettingsProvider>

@@ -112,6 +112,7 @@ export default function MasHomeScreen() {
         Record<string, keyof MasStackParamList>
       > = {
         fotos: 'Fotos',
+        calendario: 'Calendario',
       };
       for (const tab of overflowTabs) {
         // 'mas' nunca debería estar en overflow (splitTabsForIOS lo garantiza),

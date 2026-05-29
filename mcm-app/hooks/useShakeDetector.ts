@@ -52,23 +52,25 @@ export function useShakeDetector(
         Accelerometer.setUpdateInterval(80);
         const peaks: number[] = [];
         let lastFireAt = 0;
-        subscription = Accelerometer.addListener(({ x, y, z }: { x: number; y: number; z: number }) => {
-          const magnitude = Math.sqrt(x * x + y * y + z * z);
-          const now = Date.now();
-          // Limpia picos fuera de la ventana.
-          while (peaks.length && now - peaks[0] > windowMs) peaks.shift();
-          if (magnitude >= threshold) {
-            peaks.push(now);
-            if (
-              peaks.length >= peaksRequired &&
-              now - lastFireAt >= cooldownMs
-            ) {
-              lastFireAt = now;
-              peaks.length = 0;
-              callbackRef.current();
+        subscription = Accelerometer.addListener(
+          ({ x, y, z }: { x: number; y: number; z: number }) => {
+            const magnitude = Math.sqrt(x * x + y * y + z * z);
+            const now = Date.now();
+            // Limpia picos fuera de la ventana.
+            while (peaks.length && now - peaks[0] > windowMs) peaks.shift();
+            if (magnitude >= threshold) {
+              peaks.push(now);
+              if (
+                peaks.length >= peaksRequired &&
+                now - lastFireAt >= cooldownMs
+              ) {
+                lastFireAt = now;
+                peaks.length = 0;
+                callbackRef.current();
+              }
             }
-          }
-        });
+          },
+        );
       })
       .catch(() => {
         // expo-sensors no disponible — feature degrada en silencio.
