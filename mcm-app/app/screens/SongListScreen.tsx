@@ -204,7 +204,7 @@ export default function SongsListScreen({
                   searchableText,
                 };
               });
-              allSongs = allSongs.concat(songsWithMetadata);
+              allSongs.push(...songsWithMetadata);
             }
           }
           allSongs.sort((a, b) => {
