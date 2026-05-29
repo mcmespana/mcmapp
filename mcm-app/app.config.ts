@@ -2,6 +2,13 @@ import { ExpoConfig, ConfigContext } from '@expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
+  android: {
+    ...config.android,
+    // En builds de EAS se inyecta vía variable de entorno de fichero;
+    // en local cae al fichero del disco (gitignored).
+    googleServicesFile:
+      process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
+  },
   extra: {
     ...config.extra,
     firebaseApiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
