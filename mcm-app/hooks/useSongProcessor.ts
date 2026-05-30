@@ -11,6 +11,7 @@ import { transposeKey } from '../utils/transposeKey';
 import {
   preprocessArrangements,
   postProcessArrangementsHtml,
+  injectRowLineIndices,
 } from '../utils/arrangements';
 
 interface UseSongProcessorParams {
@@ -32,6 +33,12 @@ interface UseSongProcessorParams {
   topInset?: number;
   /** Padding inferior extra (px). Útil en fullscreen para no esconder texto bajo play/safe-area. */
   bottomInset?: number;
+  /**
+   * Modo admin: si es true, cada línea renderizada se etiqueta con el índice de
+   * su línea en el ChordPro original y un long-press sobre ella envía ese índice
+   * a RN (mensaje `{ type: 'arr-longpress', line }`) para insertar un `{arr:}`.
+   */
+  adminMode?: boolean;
 }
 
 /**
@@ -124,6 +131,7 @@ export const useSongProcessor = ({
   isDark = false,
   topInset,
   bottomInset,
+  adminMode = false,
 }: UseSongProcessorParams) => {
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
@@ -191,9 +199,16 @@ export const useSongProcessor = ({
           : baseSong;
 
       const formatter = new HtmlDivFormatter();
-      const formattedSong = postProcessArrangementsHtml(
+      let formattedSong = postProcessArrangementsHtml(
         formatter.format(songForFormatting),
       );
+      // En modo admin, etiquetamos cada fila con el índice de su línea en el
+      // ChordPro original para poder insertar arreglos por long-press. La
+      // transposición no altera el número/orden de filas, así que mapeamos
+      // sobre el ChordPro original (no el transpuesto).
+      if (adminMode && originalChordPro) {
+        formattedSong = injectRowLineIndices(formattedSong, originalChordPro);
+      }
 
       let metaInsert = '';
       if (author && !isFullscreen) {
@@ -291,6 +306,74 @@ export const useSongProcessor = ({
           // RN WebView (Android) dispatches on document, iOS/web on window.
           document.addEventListener('message', onMessage);
           window.addEventListener('message', onMessage);
+
+          ${
+            adminMode
+              ? `
+          // ── Modo admin: long-press sobre una fila → avisar a RN con el índice
+          // de la línea original (data-line) para insertar un {arr:} encima. ──
+          (function(){
+            function post(payload) {
+              var msg = JSON.stringify(payload);
+              if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+                window.ReactNativeWebView.postMessage(msg);
+              } else if (window.parent && window.parent !== window) {
+                window.parent.postMessage(msg, '*'); // web (iframe)
+              }
+            }
+            var timer = null, startX = 0, startY = 0, target = null, fired = false;
+            var MOVE_CANCEL = 12, DELAY = 450;
+            function rowFor(el) {
+              while (el && el !== document.body) {
+                if (el.classList && el.classList.contains('row') &&
+                    el.hasAttribute('data-line')) return el;
+                el = el.parentElement;
+              }
+              return null;
+            }
+            function flash(el) {
+              var prev = el.style.backgroundColor;
+              el.style.transition = 'background-color 0.15s ease';
+              el.style.backgroundColor = 'rgba(225,92,98,0.18)';
+              setTimeout(function(){ el.style.backgroundColor = prev; }, 220);
+            }
+            function clear() { if (timer) { clearTimeout(timer); timer = null; } target = null; }
+            function start(x, y, el) {
+              var row = rowFor(el);
+              if (!row) return;
+              target = row; startX = x; startY = y; fired = false;
+              timer = setTimeout(function(){
+                fired = true;
+                var line = parseInt(target.getAttribute('data-line'), 10);
+                if (!isNaN(line)) { flash(target); post({ type: 'arr-longpress', line: line }); }
+                clear();
+              }, DELAY);
+            }
+            document.addEventListener('touchstart', function(e){
+              if (!e.touches || !e.touches.length) return;
+              start(e.touches[0].clientX, e.touches[0].clientY, e.target);
+            }, { passive: true });
+            document.addEventListener('touchmove', function(e){
+              if (!timer || !e.touches || !e.touches.length) return;
+              var dx = Math.abs(e.touches[0].clientX - startX);
+              var dy = Math.abs(e.touches[0].clientY - startY);
+              if (dx > MOVE_CANCEL || dy > MOVE_CANCEL) clear();
+            }, { passive: true });
+            document.addEventListener('touchend', function(){ clear(); }, { passive: true });
+            document.addEventListener('touchcancel', function(){ clear(); }, { passive: true });
+            // Soporte ratón (web): mousedown/up con el mismo retardo.
+            document.addEventListener('mousedown', function(e){ start(e.clientX, e.clientY, e.target); });
+            document.addEventListener('mousemove', function(e){
+              if (!timer) return;
+              if (Math.abs(e.clientX - startX) > MOVE_CANCEL || Math.abs(e.clientY - startY) > MOVE_CANCEL) clear();
+            });
+            document.addEventListener('mouseup', function(){ clear(); });
+            // Evitar el menú contextual del navegador en long-press (web).
+            document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+          })();
+          `
+              : ''
+          }
         })();
       `;
 
@@ -374,7 +457,7 @@ export const useSongProcessor = ({
               text-align: right;
               font-style: italic;
               font-weight: 500;
-              font-size: calc(var(--song-font-size) * 0.82);
+              font-size: calc(var(--song-font-size) * 0.78);
               line-height: 1.3;
               margin: 0.35em 0 0.55em;
               opacity: 0.95;
@@ -585,6 +668,7 @@ export const useSongProcessor = ({
     key,
     capo,
     isFullscreen,
+    adminMode,
   ]);
 
   return { songHtml, isLoadingSong, styleState };

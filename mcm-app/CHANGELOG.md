@@ -22,6 +22,57 @@
 
 ---
 
+## 2026-05-30 — Cantoral: arreglos `{arr:}` por long-press en vivo (admin)
+
+- **Long-press para añadir arreglos** (`app/screens/SongDetailScreen.tsx`,
+  `components/ArrangementInputModal.tsx`): si el usuario es admin (`isAdmin`),
+  mantener pulsada una línea de la canción abre una hoja para escribir un
+  arreglo. Se inserta `{arr: ...}` **encima** de esa línea, se **renderiza al
+  instante** en el dispositivo y se propone a `songs/ediciones`
+  (`contentOld`/`contentNew` + filename + category + timestamp,
+  `status: 'arrangement'`).
+- **Mapeo fila↔línea robusto y transpose-invariante** (`utils/arrangements.ts`):
+  `HtmlDivFormatter` emite una `<div class="row">` por línea renderable (letra y
+  comentarios/arreglos) en orden de fuente. `injectRowLineIndices` etiqueta cada
+  fila con `data-line` = índice de su línea en el ChordPro original (con guarda:
+  si los conteos no cuadran, no toca nada). La transposición no altera el número
+  ni el orden de filas, así que el índice es estable. Helpers nuevos:
+  `renderableRowLineIndices`, `injectRowLineIndices`, `insertArrangementAtLine`,
+  con tests en `__tests__/arrangements.test.ts`.
+- **WebView** (`hooks/useSongProcessor.ts`, `components/SongDisplay.tsx`): nuevo
+  prop `adminMode` inyecta JS que captura el long-press por fila (touch + ratón,
+  con cancelación al hacer scroll) y manda `{ type: 'arr-longpress', line }` a RN
+  vía `postMessage`. `SongDisplay` gana un prop `onMessage` (WebView nativo +
+  iframe web). Sin `adminMode` el comportamiento es idéntico al anterior; el modo
+  presentación (fullscreen) usa su propio WebView y no se ve afectado.
+
+---
+
+## 2026-05-30 — Cantoral: panel admin persistente + campos multimedia
+
+- **Modo admin persistente** (`contexts/SettingsContext.tsx`): al introducir la
+  contraseña del panel secreto (`coco`), se guarda un flag `isAdmin` en
+  AsyncStorage. Mientras esté activo, el panel de edición se abre sin volver a
+  pedir la contraseña. Nuevo par `isAdmin` / `setIsAdmin` en el contexto.
+- **Panel secreto ampliado** (`components/SecretPanelModal.tsx`): además de
+  título/autor/key/capo/info/contenido, el admin puede editar **álbum**,
+  **fuente**, **ritmo**, **vídeo de YouTube** (pega una URL normal y se convierte
+  automáticamente a URL de _embed_) y listas repetibles de **enlaces de YouTube**
+  y **enlaces de audio** (`{label, url}`). Estos campos se cargan desde
+  `songs/data` al abrir el panel y se proponen a `songs/ediciones` con pares
+  `*Old`/`*New` (los enlaces como arrays de `{label,url}`, descartando filas
+  vacías). **Aún NO se muestran al usuario final** — solo edición de admin.
+- **Helper** `utils/youtube.ts` (`extractYouTubeId`, `toYouTubeEmbedUrl`):
+  reconoce `watch?v=`, `youtu.be`, `/embed/`, `/shorts/`, `/live/` y el ID a
+  secas; idempotente sobre URLs de embed. Con tests en `__tests__/youtube.test.ts`.
+- **Render de arreglos `{arr:}`**: ahora con prefijo `"| "` delante y un punto
+  más pequeños (app `0.82 → 0.78`, PDF `0.88 → 0.84`). `utils/arrangements.ts`,
+  `hooks/useSongProcessor.ts`, `utils/playlistPdfHtml.ts`.
+- Pendiente (2ª iteración): añadir arreglos `{arr:}` con long-press sobre la
+  línea en el visor (JS inyectado en el WebView) con render en vivo. Ver `TODO.md`.
+
+---
+
 ## 2026-05-30 — Cantoral: anotaciones de arreglo `{arr: ...}`
 
 - **Nueva directiva ChordPro `{arr: texto}`** para anotaciones de arreglo (quién canta una

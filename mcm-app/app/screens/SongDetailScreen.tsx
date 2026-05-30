@@ -19,13 +19,16 @@ import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useSettings } from '@/contexts/SettingsContext';
-import { hasArrangements } from '@/utils/arrangements';
+import { hasArrangements, insertArrangementAtLine } from '@/utils/arrangements';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
+import ArrangementInputModal from '@/components/ArrangementInputModal';
 import * as Clipboard from 'expo-clipboard';
 import { Colors } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 import { h } from '@/utils/haptics';
+import { getDatabase, ref, push, set } from 'firebase/database';
+import { getFirebaseApp } from '@/utils/firebaseApp';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
 // add/remove song button. Not part of the MCM brand palette: it's an
@@ -86,13 +89,21 @@ export default function SongDetailScreen({
   const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
 
-  const { settings, setSettings, isLoadingSettings } = useSettings();
+  const { settings, setSettings, isLoadingSettings, isAdmin } = useSettings();
   const {
     chordsVisible,
     fontSize: currentFontSizeEm,
     fontFamily: currentFontFamily,
     notation,
   } = settings;
+
+  // Edición de arreglos por long-press (solo admin). El índice apunta a una
+  // línea del ChordPro vivo (`originalChordPro`); el texto de preview es la
+  // línea sobre la que se insertará.
+  const [arrModalVisible, setArrModalVisible] = useState(false);
+  const [arrLineIndex, setArrLineIndex] = useState<number | null>(null);
+  const [arrSaving, setArrSaving] = useState(false);
+  const [arrError, setArrError] = useState<string | null>(null);
 
   const [isFileLoading, setIsFileLoading] = useState(true);
   const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
@@ -106,9 +117,12 @@ export default function SongDetailScreen({
   // Arreglos {arr:}: visibilidad efímera por canción. Si la canción tiene
   // arreglos, se muestran activados por defecto; ocultarlos no se persiste ni
   // se arrastra a otras canciones (se resetea al cambiar de canción).
+  // Basado en el ChordPro VIVO (`originalChordPro`) para que, si el admin añade
+  // un arreglo, se detecte y se muestre al instante. Cae a `content` mientras
+  // el estado vivo aún no está poblado.
   const songHasArrangements = useMemo(
-    () => hasArrangements(content),
-    [content],
+    () => hasArrangements(originalChordPro ?? content),
+    [originalChordPro, content],
   );
   const [arrangementsVisible, setArrangementsVisible] = useState(true);
   // En modo coro:
@@ -154,6 +168,7 @@ export default function SongDetailScreen({
     key,
     capo: effectiveCapo,
     isDark,
+    adminMode: isAdmin,
   });
 
   const isSelected = isSongSelected(filename);
@@ -294,6 +309,70 @@ export default function SongDetailScreen({
     await Clipboard.setStringAsync(text);
   };
 
+  // ── Arreglos por long-press (admin) ──
+  // Mensaje desde el WebView/iframe: el usuario mantuvo pulsada una línea.
+  const handleSongMessage = (data: any) => {
+    if (!isAdmin || !data || data.type !== 'arr-longpress') return;
+    if (typeof data.line !== 'number') return;
+    h.select();
+    setArrLineIndex(data.line);
+    setArrError(null);
+    setArrModalVisible(true);
+  };
+
+  // Texto (preview) de la línea sobre la que se insertará el arreglo.
+  const arrPreviewLine = useMemo(() => {
+    if (arrLineIndex === null || !originalChordPro) return undefined;
+    const line = originalChordPro.split(/\r?\n/)[arrLineIndex];
+    if (!line) return undefined;
+    // Mostramos la letra sin los acordes entre corchetes, más legible.
+    const clean = line.replace(/\[[^\]]*\]/g, '').trim();
+    return clean || line.trim();
+  }, [arrLineIndex, originalChordPro]);
+
+  const handleSaveArrangement = async (text: string) => {
+    if (arrLineIndex === null || !originalChordPro) {
+      setArrModalVisible(false);
+      return;
+    }
+    setArrSaving(true);
+    setArrError(null);
+    const before = originalChordPro;
+    const after = insertArrangementAtLine(before, arrLineIndex, text);
+    try {
+      // 1) Render en vivo inmediato en el dispositivo.
+      setOriginalChordPro(after);
+
+      // 2) Proponer la edición a Firebase (songs/ediciones). Solo si tenemos
+      //    los identificadores necesarios; si no, el cambio local ya está hecho.
+      if (firebaseCategory && filename) {
+        const db = getDatabase(getFirebaseApp());
+        const edicionRef = push(ref(db, 'songs/ediciones'));
+        await set(edicionRef, {
+          filename,
+          category: firebaseCategory,
+          contentOld: before,
+          contentNew: after,
+          editedAt: new Date().toISOString(),
+          timestamp: Date.now(),
+          platform: Platform.OS,
+          status: 'arrangement',
+        });
+      }
+      h.formSuccess();
+      setArrModalVisible(false);
+      setArrLineIndex(null);
+    } catch (err) {
+      console.error('Error guardando arreglo:', err);
+      // El render local ya se aplicó; avisamos de que no se pudo sincronizar.
+      setArrError(
+        'Se añadió en el dispositivo, pero no se pudo sincronizar. Reintenta.',
+      );
+    } finally {
+      setArrSaving(false);
+    }
+  };
+
   const animateAndSet = (params: any, direction: 'next' | 'prev') => {
     const toValue = direction === 'next' ? -screenWidth : screenWidth;
     Animated.timing(slideAnim, {
@@ -409,6 +488,7 @@ export default function SongDetailScreen({
         songHtml={songHtml}
         isLoading={isFileLoading || isSongProcessing || isLoadingSettings}
         styleState={styleState}
+        onMessage={isAdmin ? handleSongMessage : undefined}
       />
       <SongControls
         chordsVisible={chordsVisible}
@@ -466,6 +546,20 @@ export default function SongDetailScreen({
     <View style={{ flex: 1, backgroundColor: screenBg }}>
       {gestureContent}
       {floatingButtons}
+      {isAdmin && (
+        <ArrangementInputModal
+          visible={arrModalVisible}
+          previewLine={arrPreviewLine}
+          saving={arrSaving}
+          error={arrError}
+          onCancel={() => {
+            setArrModalVisible(false);
+            setArrLineIndex(null);
+            setArrError(null);
+          }}
+          onSave={handleSaveArrangement}
+        />
+      )}
     </View>
   );
 }
