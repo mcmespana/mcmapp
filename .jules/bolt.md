@@ -19,3 +19,6 @@
 ## 2026-05-29 - [React Anti-Pattern] Context stability via refs
 **Learning:** Attempting to stabilize Context callback functions (like `isSongSelected`) by reading from a mutable `useRef` that is updated via `useEffect` is a dangerous anti-pattern. It guarantees that any components consuming the context will read stale state during the render cycle immediately following an update.
 **Action:** Accept that Context functions relying on changing state must change references. If list items are re-rendering excessively, extract the context consumption to a parent component and pass scalar values as props, relying on `React.memo` to prevent unnecessary component updates.
+## 2024-05-30 - [Array Performance] Chained array methods on unbounded sets
+**Learning:** Using chained array methods (like `.entries().filter().sort().forEach()`) to find a limited subset of items (e.g. top N events) forces iteration over the *entire dataset* multiple times, bypassing the possibility of an early exit.
+**Action:** When a function only needs to extract a limited number of items from a large list or dictionary, replace array chains with a native `for...of` or `for...in` loop that includes an explicit `if (condition) break;` or `return` statement to stop processing as soon as the limit is met.
