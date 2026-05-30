@@ -22,6 +22,13 @@ interface SettingsContextType {
   settings: SongSettings;
   setSettings: (settings: Partial<SongSettings>) => void;
   isLoadingSettings: boolean;
+  /**
+   * Modo administrador local: se activa al introducir la contraseña del panel
+   * secreto y se persiste en el dispositivo. Mientras esté activo, el panel de
+   * edición del cantoral se abre sin volver a pedir la contraseña.
+   */
+  isAdmin: boolean;
+  setIsAdmin: (value: boolean) => void;
 }
 
 export const DEFAULT_FONT_SIZE_EM = 1.25; // baseline font size (ligeramente mayor para mejor legibilidad)
@@ -36,6 +43,8 @@ const defaultSettings: SongSettings = {
 
 // Storage key
 const SETTINGS_STORAGE_KEY = '@mcm_song_settings';
+// Storage key independiente para el modo admin (no forma parte de SongSettings).
+const ADMIN_STORAGE_KEY = '@mcm_is_admin';
 
 // Create the context
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -53,6 +62,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
 }) => {
   const [settings, setAppSettings] = useState<SongSettings>(defaultSettings);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [isAdmin, setIsAdminState] = useState(false);
 
   // Load settings from AsyncStorage when the provider mounts
   useEffect(() => {
@@ -74,6 +84,13 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
       } catch (error) {
         console.error('Failed to load settings from AsyncStorage:', error);
         setAppSettings(defaultSettings); // Fallback to defaults on error
+      }
+      // Cargar el modo admin persistido (independiente de SongSettings).
+      try {
+        const storedAdmin = await AsyncStorage.getItem(ADMIN_STORAGE_KEY);
+        setIsAdminState(storedAdmin === 'true');
+      } catch (error) {
+        console.error('Failed to load admin flag from AsyncStorage:', error);
       }
       setIsLoadingSettings(false);
     };
@@ -106,9 +123,24 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
     }));
   }, []);
 
+  const handleSetIsAdmin = useCallback((nextValue: boolean) => {
+    setIsAdminState(nextValue);
+    AsyncStorage.setItem(ADMIN_STORAGE_KEY, nextValue ? 'true' : 'false').catch(
+      (error) => {
+        console.error('Failed to save admin flag to AsyncStorage:', error);
+      },
+    );
+  }, []);
+
   const value = useMemo(
-    () => ({ settings, setSettings: handleSetSettings, isLoadingSettings }),
-    [settings, handleSetSettings, isLoadingSettings],
+    () => ({
+      settings,
+      setSettings: handleSetSettings,
+      isLoadingSettings,
+      isAdmin,
+      setIsAdmin: handleSetIsAdmin,
+    }),
+    [settings, handleSetSettings, isLoadingSettings, isAdmin, handleSetIsAdmin],
   );
 
   return (
@@ -127,6 +159,8 @@ export const useSettings = (): SettingsContextType => {
       settings: defaultSettings,
       setSettings: () => {},
       isLoadingSettings: true,
+      isAdmin: false,
+      setIsAdmin: () => {},
     };
   }
   return context;

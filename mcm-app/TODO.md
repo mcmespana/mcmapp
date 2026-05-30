@@ -7,6 +7,8 @@
 
 ## Prioridad alta
 
+- [ ] **Cantoral — arreglos `{arr:}` por long-press en vivo (admin)**: cuando `isAdmin`, permitir añadir una línea `{arr: ...}` encima de cualquier línea del visor mediante long-press. Enfoque acordado: JS inyectado en el WebView (`hooks/useSongProcessor.ts` + `components/SongDisplay.tsx`) que capture el long-press por línea y mande el índice a RN por `postMessage`; RN inserta el `{arr:}` en el ChordPro original (cuidando el mapeo de índice ↔ línea fuente y la transposición) y recarga el WebView al instante (render en vivo), además de proponer la edición a `songs/ediciones`. Pendiente de la 2ª iteración (ya están hechos el panel admin y el estilo).
+- [ ] **Cantoral — mostrar campos multimedia al usuario final**: hoy `rhythm`, `album`, `source`, `videoEmbed`, `youtubeLinks` y `audioLinks` solo son **editables por el admin** (`SecretPanelModal`) y NO se muestran en el visor. Diseñar y exponer estos datos al usuario final (cabecera de canción / hoja de detalles / reproductor embebido) cuando se decida el diseño.
 - [ ] Revisar diseño en iPads y arreglarlo
 - [ ] **Command Palette v2: deep-link a contenidos** — el palette actual (`CommandPalette.tsx`) solo navega a tabs/pantallas top-level. Para saltar a una canción concreta o a un punto dentro de los stacks anidados hay que exponer un `navigation ref` (p.ej. `CancioneroNavRefContext`). Después indexar canciones (`songs/data`), reflexiones (`compartiendo/data`) y eventos del calendario.
 

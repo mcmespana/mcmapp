@@ -29,9 +29,10 @@ los violines", "intro solo guitarra", dinámicas, entradas de voces, etc.).
 ## Cómo se ve en la app
 
 - El texto del arreglo se muestra **alineado a la derecha**, en cursiva, algo más pequeño
-  que la letra y en color de acento (rojo MCM `#E15C62`; en modo oscuro `#FF8A80`). Es
-  deliberadamente sutil: complementa la letra sin competir con ella. La alineación a la
-  derecha es el rasgo que lo hace identificable de un vistazo.
+  que la letra y en color de acento (rojo MCM `#E15C62`; en modo oscuro `#FF8A80`), con un
+  prefijo `"| "` delante. Es deliberadamente sutil: complementa la letra sin competir con
+  ella. La alineación a la derecha y la barra `|` son los rasgos que lo hacen identificable
+  de un vistazo.
 - **Activación (ON por canción):** cualquier canción que contenga `{arr:}` muestra los
   arreglos **activados por defecto**. Se pueden ocultar desde el botón flotante de ajustes
   (acción "Arreglos ON/OFF"), pero ese estado **no se persiste** ni se arrastra a otras
@@ -49,7 +50,8 @@ los violines", "intro solo guitarra", dinámicas, entradas de voces, etc.).
   - `preprocessArrangements(chordPro)` — convierte `{arr: T}` en `{comment: @@ARR@@T}`
     **antes** de parsear con ChordSheetJS (así el `HtmlDivFormatter` lo posiciona solo).
   - `postProcessArrangementsHtml(html)` — reetiqueta esos comentarios-centinela como
-    `<div class="arrangement">…</div>`.
+    `<div class="arrangement">…</div>` y antepone el prefijo `"| "` al texto (sin duplicarlo
+    si ya empieza por `|`).
 - El toggle de visibilidad usa la clase `arr-hidden` en `<body>` (igual que `chords-hidden`),
   por lo que es un cambio **en vivo** sin reconstruir el HTML (`hooks/useSongProcessor.ts`).
 - `utils/playlistPdfHtml.ts` aplica el mismo pre/post-proceso para el PDF.

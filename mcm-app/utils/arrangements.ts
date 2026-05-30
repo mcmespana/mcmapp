@@ -48,9 +48,10 @@ export function postProcessArrangementsHtml(html: string): string {
     `<div([^>]*\\bclass="(?:comment|c)"[^>]*)>${sentinel}([\\s\\S]*?)<\\/div>`,
     'gi',
   );
-  return html.replace(
-    re,
-    (_m, _attrs: string, inner: string) =>
-      `<div class="arrangement">${inner}</div>`,
-  );
+  return html.replace(re, (_m, _attrs: string, inner: string) => {
+    // Prefijo "| " como rasgo visual del arreglo. Evitamos duplicarlo si el
+    // texto del arreglo ya empieza por una barra vertical.
+    const prefixed = /^\s*\|/.test(inner) ? inner : `| ${inner}`;
+    return `<div class="arrangement">${prefixed}</div>`;
+  });
 }

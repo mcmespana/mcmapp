@@ -22,6 +22,31 @@
 
 ---
 
+## 2026-05-30 — Cantoral: panel admin persistente + campos multimedia
+
+- **Modo admin persistente** (`contexts/SettingsContext.tsx`): al introducir la
+  contraseña del panel secreto (`coco`), se guarda un flag `isAdmin` en
+  AsyncStorage. Mientras esté activo, el panel de edición se abre sin volver a
+  pedir la contraseña. Nuevo par `isAdmin` / `setIsAdmin` en el contexto.
+- **Panel secreto ampliado** (`components/SecretPanelModal.tsx`): además de
+  título/autor/key/capo/info/contenido, el admin puede editar **álbum**,
+  **fuente**, **ritmo**, **vídeo de YouTube** (pega una URL normal y se convierte
+  automáticamente a URL de _embed_) y listas repetibles de **enlaces de YouTube**
+  y **enlaces de audio** (`{label, url}`). Estos campos se cargan desde
+  `songs/data` al abrir el panel y se proponen a `songs/ediciones` con pares
+  `*Old`/`*New` (los enlaces como arrays de `{label,url}`, descartando filas
+  vacías). **Aún NO se muestran al usuario final** — solo edición de admin.
+- **Helper** `utils/youtube.ts` (`extractYouTubeId`, `toYouTubeEmbedUrl`):
+  reconoce `watch?v=`, `youtu.be`, `/embed/`, `/shorts/`, `/live/` y el ID a
+  secas; idempotente sobre URLs de embed. Con tests en `__tests__/youtube.test.ts`.
+- **Render de arreglos `{arr:}`**: ahora con prefijo `"| "` delante y un punto
+  más pequeños (app `0.82 → 0.78`, PDF `0.88 → 0.84`). `utils/arrangements.ts`,
+  `hooks/useSongProcessor.ts`, `utils/playlistPdfHtml.ts`.
+- Pendiente (2ª iteración): añadir arreglos `{arr:}` con long-press sobre la
+  línea en el visor (JS inyectado en el WebView) con render en vivo. Ver `TODO.md`.
+
+---
+
 ## 2026-05-30 — Cantoral: anotaciones de arreglo `{arr: ...}`
 
 - **Nueva directiva ChordPro `{arr: texto}`** para anotaciones de arreglo (quién canta una

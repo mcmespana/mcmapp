@@ -405,7 +405,7 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
       color: #E15C62;
       font-style: italic;
       font-weight: 500;
-      font-size: ${(lyricsPt * 0.88).toFixed(1)}pt;
+      font-size: ${(lyricsPt * 0.84).toFixed(1)}pt;
       margin: 3pt 0 5pt;
     }
     .no-chords .chord {

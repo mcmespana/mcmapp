@@ -374,7 +374,7 @@ export const useSongProcessor = ({
               text-align: right;
               font-style: italic;
               font-weight: 500;
-              font-size: calc(var(--song-font-size) * 0.82);
+              font-size: calc(var(--song-font-size) * 0.78);
               line-height: 1.3;
               margin: 0.35em 0 0.55em;
               opacity: 0.95;
