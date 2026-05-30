@@ -1,4 +1,4 @@
-import { useEffect, useState, useLayoutEffect, useRef } from 'react';
+import { useEffect, useState, useLayoutEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -19,6 +19,7 @@ import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useSettings } from '@/contexts/SettingsContext';
+import { hasArrangements } from '@/utils/arrangements';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import * as Clipboard from 'expo-clipboard';
@@ -102,6 +103,14 @@ export default function SongDetailScreen({
   const [localCapoOverride, setLocalCapoOverride] = useState<number | null>(
     null,
   );
+  // Arreglos {arr:}: visibilidad efímera por canción. Si la canción tiene
+  // arreglos, se muestran activados por defecto; ocultarlos no se persiste ni
+  // se arrastra a otras canciones (se resetea al cambiar de canción).
+  const songHasArrangements = useMemo(
+    () => hasArrangements(content),
+    [content],
+  );
+  const [arrangementsVisible, setArrangementsVisible] = useState(true);
   // En modo coro:
   //  - el MAESTRO publica el transpose visible (local o seleccionado).
   //  - el ESCLAVO usa el transpose del maestro salvo que tenga override.
@@ -137,6 +146,7 @@ export default function SongDetailScreen({
     originalChordPro,
     currentTranspose,
     chordsVisible,
+    arrangementsVisible: songHasArrangements && arrangementsVisible,
     currentFontSizeEm,
     currentFontFamily,
     notation,
@@ -169,6 +179,7 @@ export default function SongDetailScreen({
     // Al cambiar de canción reseteamos los estados efímeros locales.
     setLocalTranspose(0);
     setLocalCapoOverride(null);
+    setArrangementsVisible(true);
   }, [filename, content]);
 
   // Modo coro - MAESTRO: cuando entro a una canción, lo publico para los
@@ -215,6 +226,7 @@ export default function SongDetailScreen({
 
   const handleToggleChords = () =>
     setSettings({ chordsVisible: !chordsVisible });
+  const handleToggleArrangements = () => setArrangementsVisible((v) => !v);
   const handleSetTranspose = (semitones: number) => {
     let newTranspose = semitones;
     if (newTranspose >= 12 || newTranspose <= -12)
@@ -400,6 +412,9 @@ export default function SongDetailScreen({
       />
       <SongControls
         chordsVisible={chordsVisible}
+        hasArrangements={songHasArrangements}
+        arrangementsVisible={arrangementsVisible}
+        onToggleArrangements={handleToggleArrangements}
         currentTranspose={currentTranspose}
         currentFontSizeEm={currentFontSizeEm}
         currentFontFamily={currentFontFamily}
