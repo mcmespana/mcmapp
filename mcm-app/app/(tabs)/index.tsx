@@ -113,26 +113,36 @@ function getUpcomingEventsByWeek(
   const seen = new Set<string>();
   const eventsByWeek: Map<string, CalendarEvent[]> = new Map();
 
-  Object.entries(eventsByDate)
-    .filter(([date]) => date >= todayStr)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .forEach(([dateStr, evts]) => {
-      evts.forEach((evt) => {
-        if (visibleCalendars[evt.calendarIndex] === false) return;
-        const key = `${evt.title}|${evt.startDate}`;
-        if (!seen.has(key) && seen.size < maxEvents) {
-          const eventDate = parseLocalDate(dateStr);
-          const label = getWeekLabel(eventDate, today);
-          if (label === null) return; // beyond 4 weeks — skip
-          seen.add(key);
+  // ⚡ Bolt Optimization: Replaced chained .entries().filter().sort().forEach() with native for-of loops.
+  // This allows early exits (break) when we reach maxEvents, avoiding processing
+  // the entire calendar dataset unnecessarily when we only need the first few upcoming events.
+  const sortedDates = Object.keys(eventsByDate)
+    .filter((date) => date >= todayStr)
+    .sort();
 
-          if (!eventsByWeek.has(label)) {
-            eventsByWeek.set(label, []);
-          }
-          eventsByWeek.get(label)!.push(evt);
+  for (const dateStr of sortedDates) {
+    if (seen.size >= maxEvents) break;
+
+    const evts = eventsByDate[dateStr];
+    for (const evt of evts) {
+      if (seen.size >= maxEvents) break;
+      if (visibleCalendars[evt.calendarIndex] === false) continue;
+
+      const key = `${evt.title}|${evt.startDate}`;
+      if (!seen.has(key)) {
+        const eventDate = parseLocalDate(dateStr);
+        const label = getWeekLabel(eventDate, today);
+        if (label === null) continue; // beyond 4 weeks — skip
+
+        seen.add(key);
+
+        if (!eventsByWeek.has(label)) {
+          eventsByWeek.set(label, []);
         }
-      });
-    });
+        eventsByWeek.get(label)!.push(evt);
+      }
+    }
+  }
 
   // Preserve order: Hoy → Mañana → Esta semana → Próxima semana → Este mes
   const order = ['Hoy', 'Mañana', 'Esta semana', 'Próxima semana', 'Este mes'];
