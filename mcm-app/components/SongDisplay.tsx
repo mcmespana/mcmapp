@@ -15,12 +15,18 @@ interface SongDisplayProps {
    * caused the previous 200–500ms flicker on every settings tweak.
    */
   styleState?: SongStyleState;
+  /**
+   * Mensajes que la página (HTML/WebView) envía a RN. Usado en modo admin para
+   * el long-press de arreglos (`{ type: 'arr-longpress', line }`).
+   */
+  onMessage?: (data: any) => void;
 }
 
 const SongDisplay: React.FC<SongDisplayProps> = ({
   songHtml,
   isLoading,
   styleState,
+  onMessage,
 }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -32,6 +38,29 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
   // Latest style we tried to apply (to re-flush on (re)load).
   const pendingStyleRef = useRef<SongStyleState | undefined>(styleState);
   pendingStyleRef.current = styleState;
+  // Latest onMessage in a ref so the web listener stays stable.
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
+
+  // Parse a raw message string coming from the page and relay it.
+  const handleRawMessage = (raw: string) => {
+    if (!onMessageRef.current || !raw) return;
+    try {
+      onMessageRef.current(JSON.parse(raw));
+    } catch {
+      /* ignore non-JSON messages */
+    }
+  };
+
+  // Web (iframe): listen for window messages from the document.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const listener = (ev: MessageEvent) => {
+      if (typeof ev.data === 'string') handleRawMessage(ev.data);
+    };
+    window.addEventListener('message', listener);
+    return () => window.removeEventListener('message', listener);
+  }, []);
   // En iPad / web amplio la card del WebView está dentro de un wrapper
   // centrado con margen alrededor. Para que no se vea cortada por abajo
   // (en iOS sólo aplicamos esquinas top-only), añadimos las esquinas
@@ -145,6 +174,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         source={{ html: songHtml }}
         style={styles.webView}
         showsVerticalScrollIndicator={false}
+        onMessage={(event) => handleRawMessage(event.nativeEvent.data)}
         onLoadEnd={() => {
           readyRef.current = true;
           const s = pendingStyleRef.current;

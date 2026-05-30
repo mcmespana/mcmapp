@@ -43,6 +43,24 @@ los violines", "intro solo guitarra", dinámicas, entradas de voces, etc.).
 - **Alcance:** se muestran en el detalle de canción, en pantalla completa (presentación) y
   en la exportación a PDF de playlists.
 
+## Añadir arreglos desde la app (admin)
+
+- **Quién:** solo en **modo admin** (se activa al introducir la contraseña del panel
+  secreto, `coco`; el flag `isAdmin` se persiste — ver `contexts/SettingsContext.tsx`).
+- **Cómo:** **mantén pulsada** (long-press, ~450 ms) la línea de la canción sobre la que
+  quieras anotar. Se abre una hoja (`components/ArrangementInputModal.tsx`) donde escribes
+  el texto del arreglo; al confirmar se inserta `{arr: ...}` **encima** de esa línea.
+- **En vivo:** el arreglo se ve **al instante** en el dispositivo (se actualiza el ChordPro
+  local) y además se **propone como edición** a `songs/ediciones`
+  (`contentOld`/`contentNew`, `status: 'arrangement'`) para que el repo lo sincronice al
+  `.cho`.
+- **Mapeo robusto:** el visor renderiza HTML en un WebView. `HtmlDivFormatter` emite una
+  `<div class="row">` por cada línea renderable, en orden de fuente, así que etiquetamos
+  cada fila con `data-line` = índice de su línea en el ChordPro original
+  (`injectRowLineIndices`). La transposición no cambia el número ni el orden de filas, por
+  lo que el índice es **transpose-invariante**. Si por lo que sea los conteos no cuadran,
+  no se etiqueta nada (no se arriesga una inserción en el sitio equivocado).
+
 ## Detalles técnicos (para mantenimiento)
 
 - `utils/arrangements.ts` centraliza la lógica:
