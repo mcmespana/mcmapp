@@ -8,11 +8,17 @@ import {
   Notation,
 } from '../utils/chordNotation';
 import { transposeKey } from '../utils/transposeKey';
+import {
+  preprocessArrangements,
+  postProcessArrangementsHtml,
+} from '../utils/arrangements';
 
 interface UseSongProcessorParams {
   originalChordPro: string | null;
   currentTranspose: number;
   chordsVisible: boolean;
+  /** Mostrar anotaciones de arreglo `{arr:}`. Default true. */
+  arrangementsVisible?: boolean;
   currentFontSizeEm: number;
   currentFontFamily: string;
   notation: Notation;
@@ -38,6 +44,7 @@ export interface SongStyleState {
   fontFamily: string;
   isDark: boolean;
   chordsVisible: boolean;
+  arrangementsVisible: boolean;
   topPadding: number;
   bottomPadding: number;
 }
@@ -54,7 +61,7 @@ function parseChordPro(chordPro: string): Song | null {
   if (cached !== undefined) return cached;
   let song: Song | null;
   try {
-    const cleaned = chordPro
+    const cleaned = preprocessArrangements(chordPro)
       .replace(/\{sov\}/gi, '{start_of_verse}')
       .replace(/\{eov\}/gi, '{end_of_verse}')
       .replace(/\{soc\}/gi, '{start_of_chorus}')
@@ -105,6 +112,7 @@ export const useSongProcessor = ({
   originalChordPro,
   currentTranspose,
   chordsVisible,
+  arrangementsVisible = true,
   currentFontSizeEm,
   currentFontFamily,
   notation,
@@ -140,6 +148,7 @@ export const useSongProcessor = ({
       fontFamily: currentFontFamily,
       isDark,
       chordsVisible,
+      arrangementsVisible,
       topPadding,
       bottomPadding,
     }),
@@ -148,6 +157,7 @@ export const useSongProcessor = ({
       currentFontFamily,
       isDark,
       chordsVisible,
+      arrangementsVisible,
       topPadding,
       bottomPadding,
     ],
@@ -181,7 +191,9 @@ export const useSongProcessor = ({
           : baseSong;
 
       const formatter = new HtmlDivFormatter();
-      const formattedSong = formatter.format(songForFormatting);
+      const formattedSong = postProcessArrangementsHtml(
+        formatter.format(songForFormatting),
+      );
 
       let metaInsert = '';
       if (author && !isFullscreen) {
@@ -264,6 +276,9 @@ export const useSongProcessor = ({
             if (typeof s.chordsVisible === 'boolean') {
               document.body.classList.toggle('chords-hidden', !s.chordsVisible);
             }
+            if (typeof s.arrangementsVisible === 'boolean') {
+              document.body.classList.toggle('arr-hidden', !s.arrangementsVisible);
+            }
           }
           window.__SONG_BRIDGE__ = { apply: apply };
           function onMessage(ev) {
@@ -324,6 +339,7 @@ export const useSongProcessor = ({
             body.theme-dark .song-meta-author { color: #98989D; }
             body.theme-dark .chord-sheet .chord { color: #64B5F6; }
             body.theme-dark .comment, body.theme-dark .c { color: #98989D; }
+            body.theme-dark .arrangement { color: #FF8A80; }
             body.theme-dark .meta-badge {
               background: rgba(244, 193, 30, 0.12);
               color: #F4C11E;
@@ -340,6 +356,7 @@ export const useSongProcessor = ({
             body:not(.theme-dark) .song-meta-author { color: #8E8E93; }
             body:not(.theme-dark) .chord-sheet .chord { color: ${UIColors.activePrimary}; }
             body:not(.theme-dark) .comment, body:not(.theme-dark) .c { color: ${UIColors.secondaryText}; }
+            body:not(.theme-dark) .arrangement { color: #E15C62; }
             body:not(.theme-dark) .meta-badge {
               background: rgba(37, 56, 131, 0.06);
               color: #253883;
@@ -350,6 +367,23 @@ export const useSongProcessor = ({
             }
             /* Live toggle: hide chords when body has .chords-hidden */
             body.chords-hidden .chord { display: none !important; }
+            /* Anotaciones de arreglo {arr:} — sutiles y alineadas a la derecha
+               como rasgo distintivo. Toggle en vivo con .arr-hidden. */
+            .arrangement {
+              display: block;
+              text-align: right;
+              font-style: italic;
+              font-weight: 500;
+              font-size: calc(var(--song-font-size) * 0.82);
+              line-height: 1.3;
+              margin: 0.35em 0 0.55em;
+              opacity: 0.95;
+              white-space: pre-wrap;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+              max-width: 100%;
+            }
+            body.arr-hidden .arrangement { display: none !important; }
             @media (min-width: 720px) {
               body { padding-left: max(16px, calc((100% - ${isFullscreen ? 920 : 760}px) / 2)); padding-right: max(16px, calc((100% - ${isFullscreen ? 920 : 760}px) / 2)); }
             }
@@ -522,7 +556,7 @@ export const useSongProcessor = ({
             }
           </style>
         </head>
-        <body class="${s.isDark ? 'theme-dark' : ''}${s.chordsVisible ? '' : ' chords-hidden'}">
+        <body class="${s.isDark ? 'theme-dark' : ''}${s.chordsVisible ? '' : ' chords-hidden'}${s.arrangementsVisible ? '' : ' arr-hidden'}">
           ${fsHeader}
           ${finalSongContentWithMeta}
           <script>${bootstrap}</script>

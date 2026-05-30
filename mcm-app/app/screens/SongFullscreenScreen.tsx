@@ -1,4 +1,10 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   View,
   Text,
@@ -20,6 +26,7 @@ import * as Haptics from 'expo-haptics';
 import { PressableFeedback } from 'heroui-native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSettings } from '../../contexts/SettingsContext';
+import { hasArrangements } from '../../utils/arrangements';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { Colors } from '../../constants/colors';
@@ -254,10 +261,17 @@ export default function SongFullscreenScreen({
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;
 
+  // En presentación mostramos los arreglos siempre que la canción los tenga.
+  const songHasArrangements = useMemo(
+    () => hasArrangements(content),
+    [content],
+  );
+
   const { songHtml, styleState } = useSongProcessor({
     originalChordPro: content || null,
     currentTranspose: 0,
     chordsVisible,
+    arrangementsVisible: songHasArrangements,
     currentFontSizeEm: fontSize * 1.6,
     currentFontFamily: fontFamily,
     title,

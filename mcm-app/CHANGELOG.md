@@ -13,6 +13,22 @@
 
 ---
 
+## 2026-05-30 — Cantoral: anotaciones de arreglo `{arr: ...}`
+
+- **Nueva directiva ChordPro `{arr: texto}`** para anotaciones de arreglo (quién canta una
+  parte, qué instrumento entra, dinámicas…). Se renderiza de forma sutil y **alineada a la
+  derecha** (cursiva, color de acento, tamaño menor), complementando la letra sin competir.
+- **Toggle ON por canción (efímero):** las canciones con arreglos los muestran activados por
+  defecto; se pueden ocultar desde el botón flotante (acción "Arreglos ON/OFF") pero no se
+  persiste. La acción solo aparece si la canción tiene arreglos, y el FAB muestra un indicador
+  de acento cuando hay arreglos disponibles. El toggle es en vivo (clase `arr-hidden`).
+- **Alcance:** detalle de canción, pantalla completa y exportación PDF de playlists.
+- Archivos nuevos: `utils/arrangements.ts`, `ARREGLOS.md` (doc + prompt para el generador de
+  ChordPro). Modificados: `hooks/useSongProcessor.ts`, `app/screens/SongDetailScreen.tsx`,
+  `components/SongControls.tsx`, `app/screens/SongFullscreenScreen.tsx`, `utils/playlistPdfHtml.ts`.
+
+---
+
 ## 2026-05-29 — Visita Papa León XIV 2026: evento activo + eventos pasados
 
 - **Nueva tab "Visita Papa"** (`app/(tabs)/visitapapa.tsx`): el evento `visitapapa26` (Firebase `activities/visitapapa26`) tiene su propia pestaña antes de Calendario, con su hub y sub-pantallas (Horario, Materiales, Visitas, Profundiza, Grupos, Contactos, Apps, Reflexiones). Color de marca `#FCD200`.

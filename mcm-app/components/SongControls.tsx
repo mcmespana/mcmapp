@@ -29,6 +29,11 @@ interface FontOption {
 
 interface SongControlsProps {
   chordsVisible: boolean;
+  /** La canción tiene al menos una directiva {arr:}. */
+  hasArrangements?: boolean;
+  /** Arreglos visibles (efímero por canción). */
+  arrangementsVisible?: boolean;
+  onToggleArrangements?: () => void;
   currentTranspose: number;
   currentFontSizeEm: number;
   currentFontFamily: string;
@@ -56,6 +61,9 @@ interface SongControlsProps {
 
 const SongControls: React.FC<SongControlsProps> = ({
   chordsVisible,
+  hasArrangements = false,
+  arrangementsVisible = true,
+  onToggleArrangements,
   currentTranspose,
   currentFontSizeEm,
   currentFontFamily,
@@ -244,6 +252,14 @@ const SongControls: React.FC<SongControlsProps> = ({
               onPress={onToggleChords}
               isActive={!chordsVisible}
             />
+            {hasArrangements && onToggleArrangements && (
+              <ActionButton
+                icon="auto-awesome"
+                label={`Arreglos ${arrangementsVisible ? 'ON' : 'OFF'}`}
+                onPress={onToggleArrangements}
+                isActive={arrangementsVisible}
+              />
+            )}
             <ActionButton
               icon="translate"
               label={`Notación: ${notation}`}
@@ -309,6 +325,9 @@ const SongControls: React.FC<SongControlsProps> = ({
         <View style={{ position: 'relative' }}>
           {hasModifications && !showActionButtons && (
             <View style={[styles.badge, isDark && styles.badgeDark]} />
+          )}
+          {hasArrangements && !showActionButtons && (
+            <View style={[styles.arrBadge, isDark && styles.arrBadgeDark]} />
           )}
           <TouchableOpacity
             style={[
@@ -521,6 +540,23 @@ const styles = StyleSheet.create({
     borderColor: '#F2F2F7',
   },
   badgeDark: {
+    borderColor: '#1C1C1E',
+  },
+  // Indicador de "arreglos disponibles" — acento MCM, esquina superior izquierda
+  // para no chocar con el badge de modificaciones (rojo, derecha).
+  arrBadge: {
+    position: 'absolute',
+    left: -1,
+    top: -1,
+    backgroundColor: '#E15C62',
+    borderRadius: 6,
+    width: 12,
+    height: 12,
+    zIndex: 10,
+    borderWidth: 2,
+    borderColor: '#F2F2F7',
+  },
+  arrBadgeDark: {
     borderColor: '#1C1C1E',
   },
 });
