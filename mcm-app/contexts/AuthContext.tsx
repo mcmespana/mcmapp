@@ -61,22 +61,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const auth = getFirebaseAuth();
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          provider: providerFromFirebase(firebaseUser),
-        });
-      } else {
-        setUser(null);
-      }
+    let unsub: (() => void) | undefined;
+    try {
+      const auth = getFirebaseAuth();
+      unsub = onAuthStateChanged(
+        auth,
+        (firebaseUser) => {
+          if (firebaseUser) {
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              provider: providerFromFirebase(firebaseUser),
+            });
+          } else {
+            setUser(null);
+          }
+          setLoading(false);
+        },
+        (error) => {
+          // Auth error (e.g. auth/invalid-api-key) — fail gracefully so the
+          // rest of the app (cantoral, calendar, etc.) keeps working.
+          console.error('[AuthContext] onAuthStateChanged error:', error);
+          setUser(null);
+          setLoading(false);
+        },
+      );
+    } catch (error) {
+      console.error('[AuthContext] Firebase Auth init failed:', error);
+      setUser(null);
       setLoading(false);
-    });
-    return unsub;
+    }
+    return () => unsub?.();
   }, []);
 
   const signInWithGoogle = useCallback(async (): Promise<AuthUser | null> => {
