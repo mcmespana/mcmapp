@@ -49,7 +49,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <TouchableOpacity style={styles.button} onPress={this.handleReset}>
             <Text style={styles.buttonText}>Reintentar</Text>
           </TouchableOpacity>
-          {__DEV__ && this.state.error && (
+          {this.state.error && (
             <ScrollView style={dynamicStyles.errorBox}>
               <Text style={styles.errorText}>
                 {this.state.error.toString()}
