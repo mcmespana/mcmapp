@@ -1,6 +1,10 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
+import {
+  GlassView,
+  isLiquidGlassAvailable,
+  isGlassEffectAPIAvailable,
+} from 'expo-glass-effect';
 import { BlurView, BlurTint } from 'expo-blur';
 import { pickGlassTint } from './glass';
 
@@ -41,7 +45,10 @@ export default function GlassSurface({
   children,
   style,
 }: GlassSurfaceProps) {
-  const liquidAvailable = isLiquidGlassAvailable();
+  // isGlassEffectAPIAvailable() guards against crashes on some iOS 26 beta
+  // builds where isLiquidGlassAvailable() returns true but the native API
+  // isn't actually safe to use. See: https://github.com/expo/expo/issues/40911
+  const liquidAvailable = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
   const {
     backgroundColor,
     blurTint: autoTint,
