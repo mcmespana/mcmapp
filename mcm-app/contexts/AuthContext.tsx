@@ -25,6 +25,8 @@ export interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
+  /** Non-null when Firebase is misconfigured (bad/missing API key, etc.). */
+  configError: string | null;
   signInWithGoogle: () => Promise<AuthUser | null>;
   signInWithApple: () => Promise<AuthUser | null>;
   signOut: () => Promise<void>;
@@ -33,6 +35,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  configError: null,
   signInWithGoogle: async () => null,
   signInWithApple: async () => null,
   signOut: async () => {},
@@ -55,6 +58,7 @@ function providerFromFirebase(firebaseUser: {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   useEffect(() => {
     configureGoogleSignIn().catch(() => {});
@@ -80,16 +84,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
           setLoading(false);
         },
-        (error) => {
-          // Auth error (e.g. auth/invalid-api-key) — fail gracefully so the
-          // rest of the app (cantoral, calendar, etc.) keeps working.
+        (error: any) => {
           console.error('[AuthContext] onAuthStateChanged error:', error);
+          setConfigError(error?.message ?? String(error));
           setUser(null);
           setLoading(false);
         },
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AuthContext] Firebase Auth init failed:', error);
+      setConfigError(error?.message ?? String(error));
       setUser(null);
       setLoading(false);
     }
@@ -154,7 +158,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signInWithGoogle, signInWithApple, signOut }}
+      value={{ user, loading, configError, signInWithGoogle, signInWithApple, signOut }}
     >
       {children}
     </AuthContext.Provider>

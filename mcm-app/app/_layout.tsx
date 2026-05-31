@@ -50,6 +50,7 @@ import { PreviewChannelProvider } from '@/contexts/PreviewChannelContext';
 import { PreviewChannelModal } from '@/components/PreviewChannelModal';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { updateUserMCMData } from '@/utils/authHelpers';
+import FirebaseConfigErrorScreen from '@/components/FirebaseConfigErrorScreen';
 import { CarismochitoProvider } from '@/contexts/CarismochitoContext';
 import CarismochitoOverlay from '@/components/CarismochitoOverlay';
 import { ActiveEventProvider } from '@/contexts/ActiveEventContext';
@@ -109,7 +110,7 @@ function InnerLayout() {
   const pathname = usePathname();
   const segments = useSegments();
   const { profile, loading: profileLoading } = useUserProfile();
-  const { user: authUser } = useAuth();
+  const { user: authUser, configError: firebaseConfigError } = useAuth();
   const resolved = useResolvedProfileConfig();
 
   // Sync MCM profile data to RTDB whenever user is logged in and profile changes
@@ -199,6 +200,11 @@ function InnerLayout() {
         <HelloWave />
       </View>
     );
+  }
+
+  // Firebase mal configurado — pantalla de diagnóstico para el desarrollador
+  if (firebaseConfigError) {
+    return <FirebaseConfigErrorScreen error={firebaseConfigError} />;
   }
 
   // Kill switches remotos: mantenimiento + versión mínima
