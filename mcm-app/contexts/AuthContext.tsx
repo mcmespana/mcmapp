@@ -25,6 +25,8 @@ export interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
+  /** Non-null when Firebase is misconfigured (bad/missing API key, etc.). */
+  configError: string | null;
   signInWithGoogle: () => Promise<AuthUser | null>;
   signInWithApple: () => Promise<AuthUser | null>;
   signOut: () => Promise<void>;
@@ -33,6 +35,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  configError: null,
   signInWithGoogle: async () => null,
   signInWithApple: async () => null,
   signOut: async () => {},
@@ -55,28 +58,46 @@ function providerFromFirebase(firebaseUser: {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   useEffect(() => {
     configureGoogleSignIn().catch(() => {});
   }, []);
 
   useEffect(() => {
-    const auth = getFirebaseAuth();
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          provider: providerFromFirebase(firebaseUser),
-        });
-      } else {
-        setUser(null);
-      }
+    let unsub: (() => void) | undefined;
+    try {
+      const auth = getFirebaseAuth();
+      unsub = onAuthStateChanged(
+        auth,
+        (firebaseUser) => {
+          if (firebaseUser) {
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              provider: providerFromFirebase(firebaseUser),
+            });
+          } else {
+            setUser(null);
+          }
+          setLoading(false);
+        },
+        (error: any) => {
+          console.error('[AuthContext] onAuthStateChanged error:', error);
+          setConfigError(error?.message ?? String(error));
+          setUser(null);
+          setLoading(false);
+        },
+      );
+    } catch (error: any) {
+      console.error('[AuthContext] Firebase Auth init failed:', error);
+      setConfigError(error?.message ?? String(error));
+      setUser(null);
       setLoading(false);
-    });
-    return unsub;
+    }
+    return () => unsub?.();
   }, []);
 
   const signInWithGoogle = useCallback(async (): Promise<AuthUser | null> => {
@@ -137,7 +158,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signInWithGoogle, signInWithApple, signOut }}
+      value={{ user, loading, configError, signInWithGoogle, signInWithApple, signOut }}
     >
       {children}
     </AuthContext.Provider>
