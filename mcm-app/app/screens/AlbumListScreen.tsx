@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   FlatList,
@@ -73,7 +73,7 @@ export default function AlbumListScreen() {
     );
   }, [sortedAlbums]);
 
-  const loadMoreAlbums = () => {
+  const loadMoreAlbums = useCallback(() => {
     if (allAlbumsLoaded || isLoadingMore) return;
     setIsLoadingMore(true);
     const nextPage = currentPage + 1;
@@ -95,9 +95,15 @@ export default function AlbumListScreen() {
       setAllAlbumsLoaded(true);
     }
     setIsLoadingMore(false);
-  };
+  }, [
+    allAlbumsLoaded,
+    isLoadingMore,
+    currentPage,
+    sortedAlbums,
+    displayedAlbums.length,
+  ]);
 
-  const handleAlbumPress = async (albumUrl: string) => {
+  const handleAlbumPress = useCallback(async (albumUrl: string) => {
     const supported = await Linking.canOpenURL(albumUrl);
     if (supported) {
       try {
@@ -108,9 +114,9 @@ export default function AlbumListScreen() {
     } else {
       Alert.alert('Enlace inválido', `No se puede abrir: ${albumUrl}`);
     }
-  };
+  }, []);
 
-  const renderFooter = () => {
+  const listFooterComponent = useMemo(() => {
     if (isLoadingMore) {
       return (
         <Spinner
@@ -131,7 +137,19 @@ export default function AlbumListScreen() {
         <Button.Label>Cargar Más</Button.Label>
       </Button>
     );
-  };
+  }, [isLoadingMore, allAlbumsLoaded, scheme, loadMoreAlbums]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Album }) => (
+      <View style={width > 600 ? styles.cardTwoColumns : styles.cardOneColumn}>
+        <AlbumCard
+          album={item}
+          onPress={() => handleAlbumPress(item.albumUrl)}
+        />
+      </View>
+    ),
+    [width, handleAlbumPress],
+  );
 
   if (loading && displayedAlbums.length === 0) {
     return <ProgressWithMessage message="Cargando álbumes..." />;
@@ -149,19 +167,13 @@ export default function AlbumListScreen() {
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
       <FlatList
         data={displayedAlbums}
-        renderItem={({ item }) => (
-          <View
-            style={width > 600 ? styles.cardTwoColumns : styles.cardOneColumn}
-          >
-            <AlbumCard
-              album={item}
-              onPress={() => handleAlbumPress(item.albumUrl)}
-            />
-          </View>
-        )}
+        renderItem={renderItem}
         keyExtractor={(item) => item.id}
         numColumns={width > 600 ? 2 : 1}
         key={width > 600 ? 'TWO_COLUMNS' : 'ONE_COLUMN'}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={5}
         contentContainerStyle={[
           styles.listContent,
           { maxWidth: width > 1200 ? 1600 : 1200, alignSelf: 'center' },
@@ -169,7 +181,7 @@ export default function AlbumListScreen() {
         ]}
         onEndReached={loadMoreAlbums}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
+        ListFooterComponent={listFooterComponent}
       />
     </TabScreenWrapper>
   );
