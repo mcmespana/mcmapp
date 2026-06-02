@@ -13,6 +13,31 @@
 
 ---
 
+## 2026-06-02 — Eventos (Visita Papa): rediseño de headers, hero, estados vacíos y FABs
+
+- **Header de sub-pantallas iOS rediseñado** (`app/screens/eventStackScreens.tsx`,
+  `components/ui/GlassBackButton.{ios,}.tsx`): en iOS desaparece la barra de color
+  plana; el header es transparente y el botón "Atrás" pasa a ser un pill
+  liquid-glass flotante (`GlassBackButton`). El título grande del contenido
+  (`ScreenHero`) queda justo debajo, muy pegado. Android/Web mantienen la barra
+  de color con el botón de retroceso nativo. Se corrige el doble safe-area top
+  (hueco blanco) en `HorarioScreen` quitando el `SafeAreaView` redundante.
+- **Hub del evento con hero** (`app/screens/EventHomeScreen.tsx`): nuevo hero con
+  degradado del color del evento (emblema + título + subtítulo) que rellena el
+  espacio superior, lema **"Alzad la mirada"** al pie, y se elimina el hueco
+  blanco superior (el header nativo se oculta cuando el hub es raíz de la tab y
+  solo aparece, con botón Atrás flotante, al abrirlo desde "Más"). El emblema es
+  un placeholder fácil de sustituir por el logo del encuentro.
+- **Estados vacíos "Próximamente"** (`components/ui/ComingSoon.tsx` + Horario,
+  Materiales, Visitas, Profundiza, Grupos, Contactos, Apps): cuando una sección
+  no tiene datos en Firebase (o llegan vacíos/mal formados) se muestra un estado
+  vacío elegante en vez de un esqueleto infinito. **Fix de crash en
+  `ProfundizaScreen`** (`data.paginas.map` reventaba si faltaba `paginas`).
+- **Acciones de evento como botones glass arriba a la derecha**
+  (`components/EventActionButtons.tsx`, `components/ui/GlassIconButton.tsx`):
+  los FAB de Ajustes y Compartiendo dejan de estar abajo-derecha apilados y
+  pasan a ser dos botones liquid-glass flotantes arriba a la derecha, alineados
+  con la fila del header.
 ## 2026-06-02 — Notificaciones: alineación con el contrato del MCM Panel
 
 - **Normalización de rutas + alias** (`utils/notificationRoutes.ts` nuevo,
@@ -142,8 +167,6 @@
 - Pequeños retoques de diseño (no funcionales): badge "Te damos la bienvenida", logo con flotación suave, copy más cálido ("¡Vamos allá!"), icono `celebration` y pequeño pop en la pantalla de éxito.
 
 ---
-
-<<<<<<< HEAD
 
 ## 2026-05-26 — Limpieza de warnings iOS 26
 

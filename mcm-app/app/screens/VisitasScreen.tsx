@@ -16,6 +16,7 @@ import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
+import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -65,7 +66,7 @@ export default function VisitasScreen() {
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
-  const { data: visitas } = useFirebaseData<Visita[]>(
+  const { data: visitas, loading } = useFirebaseData<Visita[]>(
     getEventFirebasePath(event, 'visitas'),
     getEventCacheKey(event, 'visitas'),
   );
@@ -75,7 +76,8 @@ export default function VisitasScreen() {
     if (url) Linking.openURL(url);
   };
 
-  if (!visitas) {
+  if (!visitas || visitas.length === 0) {
+    const showSkeleton = loading && !visitas;
     return (
       <View
         style={{
@@ -84,18 +86,26 @@ export default function VisitasScreen() {
         }}
       >
         <ScreenHero title="Visitas" />
-        <PageContainer>
-          <ScrollView
-            contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 14 }}
-          >
-            {[0, 1, 2].map((i) => (
-              <Skeleton
-                key={i}
-                style={{ height: 220, borderRadius: radii.xl }}
-              />
-            ))}
-          </ScrollView>
-        </PageContainer>
+        {!showSkeleton ? (
+          <ComingSoon accentColor={event.tintColor} />
+        ) : (
+          <PageContainer>
+            <ScrollView
+              contentContainerStyle={{
+                padding: 16,
+                paddingBottom: 100,
+                gap: 14,
+              }}
+            >
+              {[0, 1, 2].map((i) => (
+                <Skeleton
+                  key={i}
+                  style={{ height: 220, borderRadius: radii.xl }}
+                />
+              ))}
+            </ScrollView>
+          </PageContainer>
+        )}
       </View>
     );
   }

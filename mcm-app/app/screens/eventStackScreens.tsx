@@ -1,8 +1,9 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import GlassHeader from '@/components/ui/GlassHeader.ios';
+import GlassBackButton from '@/components/ui/GlassBackButton';
 import { getEvent } from '@/constants/events';
 
 import EventHomeScreen from './EventHomeScreen';
@@ -35,6 +36,10 @@ import WordleScreen from './WordleScreen';
  * qué colores usar en el header. Si no se pasa, se usa el evento por defecto.
  */
 export type EventRouteParams = { eventId?: string };
+
+const styles = StyleSheet.create({
+  transparentHeader: { backgroundColor: 'transparent' },
+});
 
 /**
  * Rutas de sub-pantalla de evento (todo menos el hub `JubileoHome`). Los tabs
@@ -120,12 +125,16 @@ export const eventScreenOptions =
     const event = getEvent(route.params?.eventId);
     const tint = event.tintColor;
     const textColor = getTextColor(tint);
+    const isIOS = Platform.OS === 'ios';
+    // El tratamiento "flotante" (header transparente + botón Atrás glass) solo
+    // se aplica a las pantallas que ya muestran su propio título grande en el
+    // contenido (`hideHeaderTitle`). Las que muestran título EN el header
+    // (Material, Compartiendo, Comida…) conservan la barra glass tintada para
+    // que el texto siga siendo legible — sobre todo en modo oscuro, donde un
+    // título oscuro flotando sobre fondo oscuro sería invisible.
+    const useFloating = isIOS && !!opts?.hideHeaderTitle;
     return {
       title,
-      // Las pantallas que ya muestran un título grande dentro del contenido
-      // (ScreenHero) ocultan el del header para no duplicarlo. Queda solo la
-      // barra glass + la flecha de volver; las acciones viven en los FAB glass
-      // flotantes (ver EventActionButtons).
       ...(opts?.hideHeaderTitle ? { headerTitle: () => null } : {}),
       headerStyle: getHeaderStyle(tint),
       headerTintColor: textColor,
@@ -139,19 +148,40 @@ export const eventScreenOptions =
         color: textColor,
       },
       headerBackground: () =>
-        Platform.OS === 'ios' ? <GlassHeader tintColor={tint} /> : undefined,
+        isIOS ? (
+          useFloating ? (
+            // Fondo transparente: solo deja flotar el botón Atrás sobre el
+            // contenido. La identidad de color la aporta ya el contenido.
+            <View style={[StyleSheet.absoluteFill, styles.transparentHeader]} />
+          ) : (
+            <GlassHeader tintColor={tint} />
+          )
+        ) : undefined,
+      ...(useFloating ? { headerLeft: () => <GlassBackButton /> } : {}),
     };
   };
 
-/** Igual que eventScreenOptions pero usa `event.title` y oculta headerRight. */
+/**
+ * Opciones del hub del evento (EventHomeScreen). Oculta el título del header
+ * (el hero del contenido ya lo muestra) y deja headerRight vacío.
+ *
+ * El header solo se muestra cuando hay sitio al que volver (`canGoBack`): en la
+ * tab propia del evento el hub es la raíz (sin back) → header oculto, y el hero
+ * arranca desde el safe-area sin huecos. Desde "Más" (Jubileo) el hub está
+ * apilado sobre MasHome → header visible con el botón Atrás flotante.
+ */
 export const eventHubScreenOptions = ({
   route,
+  navigation,
 }: {
   route: EventScreenRoute;
+  navigation: { canGoBack: () => boolean };
 }) => {
   const event = getEvent(route.params?.eventId);
+  const canGoBack = navigation.canGoBack();
   return {
-    ...eventScreenOptions(event.title)({ route }),
+    ...eventScreenOptions(event.title, { hideHeaderTitle: true })({ route }),
+    headerShown: canGoBack,
     headerRight: undefined,
   };
 };

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Animated, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -9,6 +8,7 @@ import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
+import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -108,7 +108,7 @@ export default function HorarioScreen() {
     [scheme, fontScale],
   );
   const event = useCurrentEvent();
-  const { data: horarioData } = useFirebaseData<any[]>(
+  const { data: horarioData, loading } = useFirebaseData<any[]>(
     getEventFirebasePath(event, 'horario'),
     getEventCacheKey(event, 'horario'),
   );
@@ -251,33 +251,40 @@ export default function HorarioScreen() {
   );
 
   if (!dia) {
+    const empty = !loading && (!horarioData || horarioData.length === 0);
     return (
-      <SafeAreaView
+      <View
         style={{
           flex: 1,
           backgroundColor: Colors[scheme ?? 'light'].background,
         }}
-        edges={['top']}
       >
         <ScreenHero title="Horario" />
-        <View
-          style={{
-            paddingHorizontal: spacing.lg,
-            paddingTop: spacing.lg,
-            gap: spacing.md,
-          }}
-        >
-          <Skeleton style={{ height: 54, borderRadius: radii.xl }} />
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} style={{ height: 72, borderRadius: radii.lg }} />
-          ))}
-        </View>
-      </SafeAreaView>
+        {empty ? (
+          <ComingSoon accentColor={event.tintColor} />
+        ) : (
+          <View
+            style={{
+              paddingHorizontal: spacing.lg,
+              paddingTop: spacing.lg,
+              gap: spacing.md,
+            }}
+          >
+            <Skeleton style={{ height: 54, borderRadius: radii.xl }} />
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton
+                key={i}
+                style={{ height: 72, borderRadius: radii.lg }}
+              />
+            ))}
+          </View>
+        )}
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <ScreenHero title="Horario" />
       <View style={styles.headerSection}>
         <DateSelector
@@ -321,7 +328,7 @@ export default function HorarioScreen() {
           )}
         </ScrollView>
       </PageContainer>
-    </SafeAreaView>
+    </View>
   );
 }
 

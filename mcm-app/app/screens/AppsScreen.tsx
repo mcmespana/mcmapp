@@ -26,6 +26,7 @@ import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
+import ComingSoon from '@/components/ui/ComingSoon';
 import { hexAlpha } from '@/utils/colorUtils';
 
 interface AppInfo {
@@ -45,7 +46,7 @@ export default function AppsScreen() {
   const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
-  const { data: appsData } = useFirebaseData<AppInfo[]>(
+  const { data: appsData, loading } = useFirebaseData<AppInfo[]>(
     getEventFirebasePath(event, 'apps'),
     getEventCacheKey(event, 'apps'),
   );
@@ -85,7 +86,8 @@ export default function AppsScreen() {
     [appsData],
   );
 
-  if (!appsData) {
+  if (!appsData || appsData.length === 0) {
+    const showSkeleton = loading && !appsData;
     return (
       <View
         style={{
@@ -94,25 +96,32 @@ export default function AppsScreen() {
         }}
       >
         <PageContainer>
-          <ScrollView
-            contentContainerStyle={{
-              paddingHorizontal: spacing.md,
-              paddingBottom: spacing.xl,
-            }}
-          >
-            <ScreenHero
-              title="Apps"
-              subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo."
-            />
-            <View style={{ gap: spacing.sm }}>
-              {[0, 1, 2, 3, 4].map((i) => (
-                <Skeleton
-                  key={i}
-                  style={{ height: 72, borderRadius: radii.lg }}
-                />
-              ))}
+          {showSkeleton ? (
+            <ScrollView
+              contentContainerStyle={{
+                paddingHorizontal: spacing.md,
+                paddingBottom: spacing.xl,
+              }}
+            >
+              <ScreenHero
+                title="Apps"
+                subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el evento."
+              />
+              <View style={{ gap: spacing.sm }}>
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <Skeleton
+                    key={i}
+                    style={{ height: 72, borderRadius: radii.lg }}
+                  />
+                ))}
+              </View>
+            </ScrollView>
+          ) : (
+            <View style={{ flex: 1 }}>
+              <ScreenHero title="Apps" />
+              <ComingSoon accentColor={event.tintColor} />
             </View>
-          </ScrollView>
+          )}
         </PageContainer>
       </View>
     );

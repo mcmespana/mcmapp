@@ -11,6 +11,7 @@ import { PressableFeedback, SearchField, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
+import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -134,7 +135,7 @@ export default function ContactosScreen() {
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
-  const { data: contacts } = useFirebaseData<Contacto[]>(
+  const { data: contacts, loading } = useFirebaseData<Contacto[]>(
     getEventFirebasePath(event, 'contactos'),
     getEventCacheKey(event, 'contactos'),
   );
@@ -162,19 +163,24 @@ export default function ContactosScreen() {
 
   const tints = isDark ? AVATAR_TINTS_DARK : AVATAR_TINTS;
 
-  if (!data) {
+  if (!data || data.length === 0) {
+    const showSkeleton = loading && !data;
     return (
       <PageContainer>
         <View style={styles.container}>
           <ScreenHero title="Contactos" />
-          <View style={{ padding: 16, gap: spacing.sm }}>
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton
-                key={i}
-                style={{ height: 68, borderRadius: radii.lg }}
-              />
-            ))}
-          </View>
+          {showSkeleton ? (
+            <View style={{ padding: 16, gap: spacing.sm }}>
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton
+                  key={i}
+                  style={{ height: 68, borderRadius: radii.lg }}
+                />
+              ))}
+            </View>
+          ) : (
+            <ComingSoon accentColor={event.tintColor} />
+          )}
         </View>
       </PageContainer>
     );
