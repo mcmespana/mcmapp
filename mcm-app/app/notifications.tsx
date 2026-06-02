@@ -34,6 +34,7 @@ import {
   isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
+import { normalizeNotificationRoute } from '@/utils/notificationRoutes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 
@@ -77,36 +78,9 @@ const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
   notifications: { label: 'Notificaciones', icon: 'notifications' },
 };
 
-function normalizeRoute(route: string): string {
-  if (!route) return '';
-  let clean = route.trim();
-  if (clean.startsWith('http')) return clean;
-
-  clean = clean.replace(/\/+/g, '/');
-
-  const hasSlash = clean.startsWith('/');
-  const naked = hasSlash ? clean.substring(1) : clean;
-
-  if (naked.startsWith('(tabs)/')) {
-    return '/' + naked;
-  }
-
-  const tabPaths = [
-    'cancionero',
-    'calendario',
-    'fotos',
-    'mas',
-    'index',
-    'contigo',
-  ];
-
-  const isTab = tabPaths.some((p) => naked === p || naked.startsWith(p + '/'));
-  if (isTab) {
-    return '/(tabs)/' + naked;
-  }
-
-  return '/' + naked;
-}
+// Delega en el normalizador compartido (incluye el mapa de alias para rutas
+// heredadas/incorrectas que pueda mandar el panel).
+const normalizeRoute = normalizeNotificationRoute;
 
 function getRouteLabel(route: string): { label: string; icon: string } | null {
   const norm = normalizeRoute(route);

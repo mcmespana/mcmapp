@@ -47,6 +47,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.mcmespana.mcmapp",
+      "blockedPermissions": ["android.permission.ACTIVITY_RECOGNITION"],
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
