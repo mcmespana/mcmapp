@@ -37,6 +37,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import GlassFAB from '@/components/ui/GlassFAB';
 import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 
 interface Grupo {
   nombre: string;
@@ -200,6 +201,10 @@ export default function ReflexionesScreen() {
 
   return (
     <View style={styles.container}>
+      <ScreenHero
+        title="Compartiendo"
+        subtitle="Reflexiones que iluminan a la comunidad"
+      />
       <PageContainer>
         <ScrollView
           contentContainerStyle={[
@@ -271,7 +276,7 @@ export default function ReflexionesScreen() {
       >
         <BottomSheet.Portal>
           <BottomSheet.Overlay />
-          <BottomSheet.Content>
+          <BottomSheet.Content style={styles.sheetContent}>
             <View style={styles.sheetHeader}>
               <View style={styles.sheetIcon}>
                 <MaterialIcons
@@ -287,7 +292,10 @@ export default function ReflexionesScreen() {
                 </Text>
               </View>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Título (opcional)</Text>
                 <TextField>
@@ -432,6 +440,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
+    // Padding horizontal explícito: sin él, el contenido del bottom sheet
+    // quedaba pegado al borde y las etiquetas se recortaban por la izquierda.
+    sheetContent: { paddingHorizontal: spacing.lg },
     list: { padding: spacing.md },
     card: { marginBottom: spacing.md },
     cardGroup: {

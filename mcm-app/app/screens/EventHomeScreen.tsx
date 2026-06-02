@@ -74,10 +74,13 @@ export default function EventHomeScreen() {
   const isConnected = useNetworkStatus();
   const offline = isConnected === false;
 
-  // El header nativo solo se muestra cuando hay back (hub abierto desde "Más").
-  // En la tab propia del evento es la raíz → sin header, así que aquí sí
-  // añadimos el safe-area top y evitamos el doble hueco blanco que había antes.
-  const canGoBack = navigation.canGoBack();
+  // El header nativo solo se muestra cuando el hub está apilado sobre otra
+  // pantalla (índice > 0, p.ej. abierto desde "Más"). En la tab propia del
+  // evento es la raíz del stack → sin header, así que aquí añadimos el
+  // safe-area top y evitamos el hueco blanco que había antes.
+  const stackIndex =
+    (navigation.getState?.() as { index?: number } | undefined)?.index ?? 0;
+  const isPushed = stackIndex > 0;
 
   const tint = event.tintColor;
   const tintIsLight = getBrightness(tint) > 175;
@@ -90,7 +93,7 @@ export default function EventHomeScreen() {
     : 'rgba(255,255,255,0.16)';
 
   return (
-    <SafeAreaView style={styles.container} edges={canGoBack ? [] : ['top']}>
+    <SafeAreaView style={styles.container} edges={isPushed ? [] : ['top']}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
