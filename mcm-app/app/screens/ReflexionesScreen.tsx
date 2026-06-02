@@ -6,6 +6,7 @@ import {
   Platform,
   Text,
   Pressable,
+  TextInput,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,10 +16,6 @@ import {
   Chip,
   Spinner,
   BottomSheet,
-  PressableFeedback,
-  TextField,
-  Input,
-  TextArea,
   Dialog,
 } from 'heroui-native';
 import DateTimePicker, {
@@ -37,6 +34,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import GlassFAB from '@/components/ui/GlassFAB';
 import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
 
 interface Grupo {
   nombre: string;
@@ -200,6 +198,10 @@ export default function ReflexionesScreen() {
 
   return (
     <View style={styles.container}>
+      <ScreenHero
+        title="Compartiendo"
+        subtitle="Reflexiones que iluminan a la comunidad"
+      />
       <PageContainer>
         <ScrollView
           contentContainerStyle={[
@@ -272,53 +274,64 @@ export default function ReflexionesScreen() {
         <BottomSheet.Portal>
           <BottomSheet.Overlay />
           <BottomSheet.Content>
-            <View style={styles.sheetHeader}>
-              <View style={styles.sheetIcon}>
-                <MaterialIcons
-                  name="auto-stories"
-                  size={20}
-                  color={colors.success}
+            {/* Todo el contenido vive dentro de un único ScrollView con
+                padding en contentContainerStyle — patrón que sí funciona con
+                el BottomSheet de heroui (ver app/notifications.tsx). El
+                BottomSheet.Content no aplica padding propio. */}
+            <ScrollView
+              contentContainerStyle={styles.sheetScroll}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.sheetHeader}>
+                <View style={styles.sheetIcon}>
+                  <MaterialIcons
+                    name="auto-stories"
+                    size={20}
+                    color={colors.success}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <BottomSheet.Title>Compartir reflexión</BottomSheet.Title>
+                  <Text style={styles.sheetSubtitle}>
+                    Tu experiencia puede iluminar a otros
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.field}>
+                <Text style={styles.inputLabel}>Título (opcional)</Text>
+                <TextInput
+                  value={titulo}
+                  onChangeText={setTitulo}
+                  placeholder="Un título breve"
+                  placeholderTextColor={theme.icon}
+                  style={styles.input}
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <BottomSheet.Title>Compartir reflexión</BottomSheet.Title>
-                <Text style={styles.sheetSubtitle}>
-                  Tu experiencia puede iluminar a otros
-                </Text>
+
+              <View style={styles.field}>
+                <Text style={styles.inputLabel}>Compartiendo…</Text>
+                <TextInput
+                  value={contenido}
+                  onChangeText={setContenido}
+                  placeholder="Escribe aquí tu reflexión"
+                  placeholderTextColor={theme.icon}
+                  multiline
+                  textAlignVertical="top"
+                  style={[styles.input, styles.textArea]}
+                />
               </View>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>Título (opcional)</Text>
-                <TextField>
-                  <Input
-                    value={titulo}
-                    onChangeText={setTitulo}
-                    placeholder="Un título breve"
-                    style={styles.input}
-                  />
-                </TextField>
-              </View>
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>Compartiendo...</Text>
-                <TextField>
-                  <TextArea
-                    value={contenido}
-                    onChangeText={setContenido}
-                    numberOfLines={5}
-                    placeholder="Escribe aquí tu reflexión"
-                    style={[
-                      styles.input,
-                      { minHeight: 120, textAlignVertical: 'top' },
-                    ]}
-                  />
-                </TextField>
-              </View>
-              <PressableFeedback
+
+              <Pressable
                 onPress={showDatePicker}
-                style={styles.dateField}
+                style={({ pressed }) => [
+                  styles.dateField,
+                  pressed && styles.pressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Elegir fecha"
               >
-                <PressableFeedback.Highlight />
                 <MaterialIcons name="event" size={20} color={colors.success} />
                 <Text style={styles.dateFieldLabel}>Fecha</Text>
                 <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
@@ -327,8 +340,9 @@ export default function ReflexionesScreen() {
                   size={20}
                   color={theme.icon}
                 />
-              </PressableFeedback>
-              <View style={styles.row}>
+              </Pressable>
+
+              <View style={styles.switchRow}>
                 <MaterialIcons
                   name="groups"
                   size={20}
@@ -340,39 +354,38 @@ export default function ReflexionesScreen() {
                   onSelectedChange={(v) => setGrupal(v)}
                 />
               </View>
+
               {grupal ? (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  style={{ marginBottom: spacing.md }}
+                  contentContainerStyle={styles.chipRow}
+                  style={styles.chipScroll}
                 >
-                  <View
-                    style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}
-                  >
-                    {grupos.map((g) => (
-                      <Chip
-                        key={g.nombre}
-                        variant={grupo === g.nombre ? 'primary' : 'soft'}
-                        color="success"
-                        onPress={() => setGrupo(g.nombre)}
-                      >
-                        <Chip.Label>{getGrupoLabel(g.nombre)}</Chip.Label>
-                      </Chip>
-                    ))}
-                  </View>
+                  {grupos.map((g) => (
+                    <Chip
+                      key={g.nombre}
+                      variant={grupo === g.nombre ? 'primary' : 'soft'}
+                      color="success"
+                      onPress={() => setGrupo(g.nombre)}
+                    >
+                      <Chip.Label>{getGrupoLabel(g.nombre)}</Chip.Label>
+                    </Chip>
+                  ))}
                 </ScrollView>
               ) : (
-                <View style={styles.inputWrapper}>
+                <View style={styles.field}>
                   <Text style={styles.inputLabel}>Tu nombre (opcional)</Text>
-                  <TextField>
-                    <Input
-                      value={autor}
-                      onChangeText={setAutor}
-                      style={styles.input}
-                    />
-                  </TextField>
+                  <TextInput
+                    value={autor}
+                    onChangeText={setAutor}
+                    placeholder="Cómo quieres firmar"
+                    placeholderTextColor={theme.icon}
+                    style={styles.input}
+                  />
                 </View>
               )}
+
               <Pressable
                 onPress={addReflexion}
                 accessibilityRole="button"
@@ -432,6 +445,14 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
+    // El padding del contenido del bottom sheet va aquí (en el ScrollView),
+    // no en BottomSheet.Content — que no aplica padding propio. Sin esto las
+    // etiquetas se recortaban por la izquierda.
+    sheetScroll: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xl,
+    },
     list: { padding: spacing.md },
     card: { marginBottom: spacing.md },
     cardGroup: {
@@ -463,7 +484,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: theme.icon,
       marginTop: 2,
     },
-    inputWrapper: { marginBottom: spacing.md },
+    field: { marginBottom: spacing.md },
     inputLabel: {
       fontSize: 12,
       color: colors.success,
@@ -481,6 +502,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: theme.text,
       backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
     },
+    textArea: { minHeight: 120, paddingTop: 12 },
     dateField: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -491,7 +513,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderRadius: 12,
       paddingHorizontal: 14,
       paddingVertical: 13,
+      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
     },
+    pressed: { opacity: 0.7 },
     dateFieldLabel: {
       flex: 1,
       fontSize: 15,
@@ -499,7 +523,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: theme.text,
     },
     dateValue: { fontSize: 15, fontWeight: '600', color: colors.success },
-    row: {
+    switchRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
@@ -507,6 +531,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingVertical: 4,
     },
     switchLabel: { flex: 1, fontSize: 15, color: theme.text },
+    chipScroll: { marginBottom: spacing.md },
+    chipRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
     saveBtn: {
       flexDirection: 'row',
       alignItems: 'center',

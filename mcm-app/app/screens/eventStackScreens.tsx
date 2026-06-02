@@ -126,16 +126,28 @@ export const eventScreenOptions =
     const tint = event.tintColor;
     const textColor = getTextColor(tint);
     const isIOS = Platform.OS === 'ios';
-    // El tratamiento "flotante" (header transparente + botón Atrás glass) solo
-    // se aplica a las pantallas que ya muestran su propio título grande en el
-    // contenido (`hideHeaderTitle`). Las que muestran título EN el header
-    // (Material, Compartiendo, Comida…) conservan la barra glass tintada para
-    // que el texto siga siendo legible — sobre todo en modo oscuro, donde un
-    // título oscuro flotando sobre fondo oscuro sería invisible.
-    const useFloating = isIOS && !!opts?.hideHeaderTitle;
+    // "Flotante" = sin header visible: barra TOTALMENTE transparente, sin
+    // título (lo pone el ScreenHero del contenido) + botón "Atrás" glass
+    // flotante a la izquierda. Las acciones glass van arriba a la derecha vía
+    // `EventActionButtons`. Se aplica a todas las sub-pantallas con título
+    // grande propio (`hideHeaderTitle`) en TODAS las plataformas.
+    const useFloating = !!opts?.hideHeaderTitle;
+    if (useFloating) {
+      return {
+        title,
+        // `() => <View />` oculta el título de forma fiable (un `() => null`
+        // no basta: native-stack reaparece el `title` por defecto).
+        headerTitle: () => <View />,
+        headerStyle: { backgroundColor: 'transparent' },
+        headerShadowVisible: false,
+        headerBackground: () => (
+          <View style={[StyleSheet.absoluteFill, styles.transparentHeader]} />
+        ),
+        headerLeft: () => <GlassBackButton />,
+      };
+    }
     return {
       title,
-      ...(opts?.hideHeaderTitle ? { headerTitle: () => null } : {}),
       headerStyle: getHeaderStyle(tint),
       headerTintColor: textColor,
       // Quita la sombra pesada bajo la barra de color (coherente con el
@@ -148,16 +160,7 @@ export const eventScreenOptions =
         color: textColor,
       },
       headerBackground: () =>
-        isIOS ? (
-          useFloating ? (
-            // Fondo transparente: solo deja flotar el botón Atrás sobre el
-            // contenido. La identidad de color la aporta ya el contenido.
-            <View style={[StyleSheet.absoluteFill, styles.transparentHeader]} />
-          ) : (
-            <GlassHeader tintColor={tint} />
-          )
-        ) : undefined,
-      ...(useFloating ? { headerLeft: () => <GlassBackButton /> } : {}),
+        isIOS ? <GlassHeader tintColor={tint} /> : undefined,
     };
   };
 
@@ -175,13 +178,18 @@ export const eventHubScreenOptions = ({
   navigation,
 }: {
   route: EventScreenRoute;
-  navigation: { canGoBack: () => boolean };
+  navigation: { getState?: () => { index?: number } | undefined };
 }) => {
   const event = getEvent(route.params?.eventId);
-  const canGoBack = navigation.canGoBack();
+  // El hub solo muestra header cuando está apilado sobre otra pantalla (índice
+  // > 0 en su stack, p.ej. abierto desde "Más"). En la tab propia del evento es
+  // la raíz del stack → sin header, y el hero arranca desde el safe-area sin
+  // huecos. `canGoBack()` no sirve aquí porque sube a los navigators padre.
+  const idx = navigation.getState?.()?.index ?? 0;
+  const isPushed = idx > 0;
   return {
     ...eventScreenOptions(event.title, { hideHeaderTitle: true })({ route }),
-    headerShown: canGoBack,
+    headerShown: isPushed,
     headerRight: undefined,
   };
 };
@@ -302,7 +310,7 @@ export function renderEventScreens(
       <Stack.Screen
         name="Reflexiones"
         component={ReflexionesScreen}
-        options={eventScreenOptions('Compartiendo')}
+        options={eventScreenOptions('Compartiendo', { hideHeaderTitle: true })}
       />
       {includeExtras && (
         <>

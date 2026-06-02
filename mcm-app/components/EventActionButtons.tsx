@@ -1,9 +1,10 @@
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import GlassIconButton from '@/components/ui/GlassIconButton';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors from '@/constants/colors';
+import { shadows } from '@/constants/uiStyles';
+import GlassSurface from '@/components/ui/GlassSurface';
 
 interface Props {
   /** Abre el bottom sheet de ajustes del tab. */
@@ -17,14 +18,16 @@ interface Props {
   showCompartiendo?: boolean;
 }
 
+const H = 38;
+
 /**
- * Acciones de evento como botones liquid-glass flotantes arriba a la derecha,
- * alineados con la fila del header (donde vive el botón "Atrás" a la izquierda).
- * Se renderizan por encima del Stack.Navigator del evento (ver
- * `app/(tabs)/visitapapa.tsx` y `app/(tabs)/mas.tsx`).
+ * Acciones de evento (Compartiendo + Ajustes) como un único grupo segmentado
+ * liquid-glass, arriba a la derecha y alineado con la fila del header (donde
+ * el botón "Atrás" flotante vive a la izquierda). Ambos iconos comparten el
+ * mismo estilo neutro — coherente con los controles agrupados del cantoral.
  *
- * - Compartiendo: cristal con tinte verde + icono blanco (acción principal).
- * - Ajustes: cristal neutro + icono gris adaptado al esquema (secundaria).
+ * Se renderiza por encima del Stack.Navigator del evento (ver
+ * `app/(tabs)/visitapapa.tsx` y `app/(tabs)/mas.tsx`).
  */
 export default function EventActionButtons({
   onSettings,
@@ -33,40 +36,73 @@ export default function EventActionButtons({
 }: Props) {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
-  const settingsIcon = scheme === 'dark' ? '#EDEDED' : '#5B6573';
-  // Alinea las acciones con la fila del header del stack.
-  const top = insets.top + (Platform.OS === 'android' ? 8 : 2);
+  const isDark = scheme === 'dark';
+  const fg = isDark ? '#EDEDED' : '#3A3A3C';
+  const divider = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)';
+  // Alinea con el centro del botón "Atrás" flotante (headerLeft) de la fila.
+  const top =
+    insets.top +
+    (Platform.OS === 'android' ? 10 : Platform.OS === 'web' ? 12 : 3);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <View style={[styles.row, { top }]} pointerEvents="box-none">
-        {showCompartiendo && (
-          <GlassIconButton
-            icon="forum"
-            onPress={onCompartiendo}
-            tintColor={colors.success}
-            iconColor="#FFFFFF"
-            accessibilityLabel="Compartiendo"
-          />
-        )}
-        <GlassIconButton
-          icon="settings"
-          onPress={onSettings}
-          iconColor={settingsIcon}
-          iconSize={21}
-          accessibilityLabel="Ajustes"
-        />
+      <View style={[styles.anchor, { top }]} pointerEvents="box-none">
+        <View style={styles.shadow}>
+          <View style={styles.group}>
+            <GlassSurface variant="regular" style={styles.glass} />
+            {showCompartiendo && (
+              <>
+                <Pressable
+                  onPress={onCompartiendo}
+                  style={styles.half}
+                  accessibilityRole="button"
+                  accessibilityLabel="Compartiendo"
+                  hitSlop={6}
+                >
+                  <MaterialIcons name="forum" size={20} color={fg} />
+                </Pressable>
+                <View style={[styles.divider, { backgroundColor: divider }]} />
+              </>
+            )}
+            <Pressable
+              onPress={onSettings}
+              style={styles.half}
+              accessibilityRole="button"
+              accessibilityLabel="Ajustes"
+              hitSlop={6}
+            >
+              <MaterialIcons name="settings" size={20} color={fg} />
+            </Pressable>
+          </View>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    position: 'absolute',
-    right: 14,
-    flexDirection: 'row',
-    gap: 10,
-    zIndex: 1000,
+  anchor: { position: 'absolute', right: 14, zIndex: 1000 },
+  shadow: {
+    borderRadius: H / 2,
+    ...(shadows.sm as ViewStyle),
   },
+  group: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: H,
+    borderRadius: H / 2,
+    overflow: 'hidden',
+  },
+  glass: {
+    borderRadius: H / 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+  },
+  half: {
+    width: 44,
+    height: H,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  divider: { width: StyleSheet.hairlineWidth, height: 20 },
 });
