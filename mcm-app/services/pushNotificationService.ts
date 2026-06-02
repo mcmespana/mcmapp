@@ -17,6 +17,24 @@ import {
   NotificationData,
   ReceivedNotification,
 } from '@/types/notifications';
+import { extractActionButton } from '@/utils/notificationRoutes';
+
+/**
+ * Normaliza un registro de notificación de Firebase a la forma canónica que usa
+ * la app. En particular convierte `actionButtons` (array, formato del contrato
+ * del panel) al `actionButton` único que renderiza la pantalla.
+ */
+const normalizeNotificationRecord = (
+  key: string,
+  val: any,
+): NotificationData => {
+  const actionButton = extractActionButton(val);
+  return {
+    ...val,
+    id: val.id || key,
+    ...(actionButton ? { actionButton } : {}),
+  };
+};
 
 const DEVICE_ID_KEY = '@mcm_device_id';
 const PUSH_TOKEN_KEY = '@mcm_push_token';
@@ -237,10 +255,7 @@ export const getNotificationsHistory = async (): Promise<
     const notificationsData = snapshot.val();
     const notifications: NotificationData[] = Object.entries(
       notificationsData,
-    ).map(([key, val]: [string, any]) => ({
-      ...val,
-      id: val.id || key,
-    }));
+    ).map(([key, val]: [string, any]) => normalizeNotificationRecord(key, val));
 
     // Ordenar por fecha de creación (más recientes primero)
     return notifications.sort(
@@ -268,10 +283,9 @@ export const subscribeToNotifications = (
         const notificationsData = snapshot.val();
         const notifications: NotificationData[] = Object.entries(
           notificationsData,
-        ).map(([key, val]: [string, any]) => ({
-          ...val,
-          id: val.id || key,
-        }));
+        ).map(([key, val]: [string, any]) =>
+          normalizeNotificationRecord(key, val),
+        );
 
         // Ordenar por fecha
         const sorted = notifications.sort(

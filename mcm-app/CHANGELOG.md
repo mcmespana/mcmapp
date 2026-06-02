@@ -13,6 +13,27 @@
 
 ---
 
+## 2026-06-02 — Notificaciones: alineación con el contrato del MCM Panel
+
+- **Normalización de rutas + alias** (`utils/notificationRoutes.ts` nuevo,
+  `notifications/usePushNotifications.ts`, `app/notifications.tsx`): el `internalRoute`
+  que manda el panel se normaliza antes de navegar, con un mapa de alias para rutas
+  heredadas/incorrectas (`/(tabs)/actividades`/`jubileo` → `/(tabs)/mas`,
+  `/(tabs)/albums` → `/(tabs)/fotos`, `/(tabs)/wordle` → `/wordle`). **Fix**: el botón
+  iOS `view` apuntaba a `/(tabs)/notifications` (ruta inexistente) → `/notifications`.
+- **Botón de acción tolerante a ambos formatos** (`utils/notificationRoutes.ts`,
+  `services/pushNotificationService.ts`): se acepta tanto `data.actionButton` (objeto
+  canónico) como `data.actionButtons` (array del contrato del panel, se usa el primer
+  elemento), infiriendo `isInternal` si no viene. Aplica al push y al historial de
+  Firebase.
+- **Tests** (`__tests__/notificationRoutes.test.ts`).
+- **Contrato revisado** (`NOTIFICACIONES_CONTRATO.md` en raíz del monorepo): respuesta
+  a las 9 preguntas del panel + correcciones (rutas reales, `/pushTokens` usa
+  `profileType`/`delegationId`/`topics` —no `userType`/`delegacion`—, segmentación por
+  `topics`, iOS sin NSE, channel único `default`). Sin código nativo → compatible OTA.
+
+---
+
 ## 2026-05-29 — UI fixes: onboarding, eventos (Liquid Glass), modo oscuro login
 
 - **Onboarding — paso de login como pantalla final/resumen** (`app/onboarding.tsx`): para perfiles con login (monitor/miembro), al iniciar sesión la pantalla de login pasa a ser el último paso y muestra el resumen (perfil + delegación) con el botón "Ir a la app" centrado verticalmente; ya no hay pantalla `success` extra en ese flujo. Quien continúa sin cuenta sigue viendo la pantalla de resumen `success`.
