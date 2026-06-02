@@ -38,6 +38,24 @@
   los FAB de Ajustes y Compartiendo dejan de estar abajo-derecha apilados y
   pasan a ser dos botones liquid-glass flotantes arriba a la derecha, alineados
   con la fila del header.
+## 2026-06-02 — Notificaciones: alineación con el contrato del MCM Panel
+
+- **Normalización de rutas + alias** (`utils/notificationRoutes.ts` nuevo,
+  `notifications/usePushNotifications.ts`, `app/notifications.tsx`): el `internalRoute`
+  que manda el panel se normaliza antes de navegar, con un mapa de alias para rutas
+  heredadas/incorrectas (`/(tabs)/actividades`/`jubileo` → `/(tabs)/mas`,
+  `/(tabs)/albums` → `/(tabs)/fotos`, `/(tabs)/wordle` → `/wordle`). **Fix**: el botón
+  iOS `view` apuntaba a `/(tabs)/notifications` (ruta inexistente) → `/notifications`.
+- **Botón de acción tolerante a ambos formatos** (`utils/notificationRoutes.ts`,
+  `services/pushNotificationService.ts`): se acepta tanto `data.actionButton` (objeto
+  canónico) como `data.actionButtons` (array del contrato del panel, se usa el primer
+  elemento), infiriendo `isInternal` si no viene. Aplica al push y al historial de
+  Firebase.
+- **Tests** (`__tests__/notificationRoutes.test.ts`).
+- **Contrato revisado** (`NOTIFICACIONES_CONTRATO.md` en raíz del monorepo): respuesta
+  a las 9 preguntas del panel + correcciones (rutas reales, `/pushTokens` usa
+  `profileType`/`delegationId`/`topics` —no `userType`/`delegacion`—, segmentación por
+  `topics`, iOS sin NSE, channel único `default`). Sin código nativo → compatible OTA.
 
 ---
 
@@ -149,8 +167,6 @@
 - Pequeños retoques de diseño (no funcionales): badge "Te damos la bienvenida", logo con flotación suave, copy más cálido ("¡Vamos allá!"), icono `celebration` y pequeño pop en la pantalla de éxito.
 
 ---
-
-<<<<<<< HEAD
 
 ## 2026-05-26 — Limpieza de warnings iOS 26
 

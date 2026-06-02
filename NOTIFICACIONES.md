@@ -254,16 +254,32 @@ El backend debe:
 ## Rutas internas disponibles para deep linking
 
 ```
-/(tabs)/index          Inicio
-/(tabs)/cancionero     Cantoral (activar feature flag primero)
-/(tabs)/calendario     Calendario
-/(tabs)/fotos          Galería de fotos
-/(tabs)/mas            Más opciones
-/notifications         Pantalla de notificaciones
-/wordle                Juego Wordle
+/(tabs)/index               Inicio
+/(tabs)/cancionero          Cantoral (según perfil)
+/(tabs)/calendario          Calendario
+/(tabs)/fotos               Galería de fotos (NO "albums")
+/(tabs)/mas                 Más opciones (hub de eventos: Jubileo, etc.)
+/(tabs)/contigo             Contigo (según perfil)
+/(tabs)/contigo/evangelio   Evangelio del día
+/(tabs)/contigo/oracion     Oración
+/(tabs)/contigo/revision    Revisión
+/(tabs)/contigo/bookmarks   Favoritos
+/(tabs)/visitapapa          Visita del Papa (según perfil)
+/notifications              Pantalla de notificaciones (raíz, NO bajo tabs)
+/wordle                     Juego Wordle (dormido, no usar)
 ```
 
-Nota: `/(tabs)/comunica` está desactivada actualmente.
+Notas:
+
+- `jubileo`, `actividades` y `albums` **NO** son rutas propias. Jubileo y las
+  actividades viven dentro de `/(tabs)/mas` (`EventHomeScreen`); la galería es
+  `/(tabs)/fotos`. La app aplica **alias automáticos** para estos casos — ver
+  `utils/notificationRoutes.ts`.
+- La visibilidad de algunas tabs depende del **perfil** (`/profileConfig`). Para
+  destinos universales usa `index`, `calendario`, `fotos` o `mas`.
+- **Contrato completo con el MCM Panel** (campos del payload, `/pushTokens`,
+  segmentación, correcciones): ver `NOTIFICACIONES_CONTRATO.md` en la raíz del
+  monorepo.
 
 ---
 

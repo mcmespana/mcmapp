@@ -23,6 +23,10 @@ import {
   type TokenProfileMetadata,
 } from '@/services/pushNotificationService';
 import { ReceivedNotification } from '@/types/notifications';
+import {
+  normalizeNotificationRoute,
+  extractActionButton,
+} from '@/utils/notificationRoutes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -58,9 +62,12 @@ function getStableNotificationId(
   return `local_${Math.abs(hash).toString(36)}`;
 }
 
-// Mapeo de actionIdentifier de iOS a rutas internas
+// Mapeo de actionIdentifier de iOS a rutas internas.
+// Los valores se pasan por `normalizeNotificationRoute` antes de navegar, así
+// que basta con que apunten a una ruta real (p. ej. el centro de notificaciones
+// es `/notifications`, no `/(tabs)/notifications`).
 const ACTION_ROUTES: Record<string, string> = {
-  view: '/(tabs)/notifications',
+  view: '/notifications',
   view_event: '/(tabs)/calendario',
   view_photos: '/(tabs)/fotos',
 };
@@ -141,7 +148,7 @@ export default function usePushNotifications() {
           imageUrl: notification.request.content.data?.imageUrl as
             | string
             | undefined,
-          actionButton: notification.request.content.data?.actionButton as any,
+          actionButton: extractActionButton(notification.request.content.data),
           receivedAt: new Date().toISOString(),
           isRead: false,
           category: notification.request.content.data?.category as any,
@@ -181,8 +188,9 @@ export default function usePushNotifications() {
         }
 
         if (targetRoute) {
+          const normalized = normalizeNotificationRoute(targetRoute);
           try {
-            router.navigate(targetRoute as any);
+            router.navigate(normalized as any);
           } catch {}
         }
 
@@ -196,7 +204,7 @@ export default function usePushNotifications() {
           body: response.notification.request.content.body || '',
           icon: data?.icon as string | undefined,
           imageUrl: data?.imageUrl as string | undefined,
-          actionButton: data?.actionButton as any,
+          actionButton: extractActionButton(data),
           receivedAt: new Date().toISOString(),
           isRead: false,
           category: data?.category as any,
