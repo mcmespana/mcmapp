@@ -23,6 +23,7 @@ import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import ScreenHero from '@/components/ui/ScreenHero';
 import PageContainer from '@/components/ui/PageContainer';
+import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -92,11 +93,14 @@ export default function GruposScreen() {
   const event = useCurrentEvent();
   const { profile } = useUserProfile();
   const myName = (profile?.name || '').trim();
-  const { data: gruposData } = useFirebaseData<Data>(
+  const { data: gruposData, loading } = useFirebaseData<Data>(
     getEventFirebasePath(event, 'grupos'),
     getEventCacheKey(event, 'grupos'),
   );
   const data = gruposData as Data | undefined;
+  const hasGroups =
+    !!data &&
+    Object.values(data).some((arr) => Array.isArray(arr) && arr.length > 0);
 
   const categorias = useMemo(() => {
     const base = Object.keys(CATEGORY_CONFIG).map((name) => ({
@@ -199,6 +203,20 @@ export default function GruposScreen() {
     setSearch(myName);
     // Open search field if collapsed (no-op here since search is always visible)
   }, [myName]);
+
+  // ──────────────────────────────────────────────────────────
+  // 0) EMPTY STATE — sin grupos en Firebase (y ya no estamos cargando)
+  // ──────────────────────────────────────────────────────────
+  if (!hasGroups && !loading) {
+    return (
+      <PageContainer>
+        <View style={styles.container}>
+          <ScreenHero title="Grupos" />
+          <ComingSoon accentColor={event.tintColor} />
+        </View>
+      </PageContainer>
+    );
+  }
 
   // ──────────────────────────────────────────────────────────
   // 1) GROUP DETAIL VIEW (highest priority)

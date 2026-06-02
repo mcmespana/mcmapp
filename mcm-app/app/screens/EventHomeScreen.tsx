@@ -11,14 +11,16 @@ import {
   Linking,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { hexAlpha } from '@/utils/colorUtils';
-import { radii } from '@/constants/uiStyles';
+import { hexAlpha, darkenHex } from '@/utils/colorUtils';
+import { getBrightness } from '@/components/ui/glass';
+import { radii, shadows } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
 import { EventStackParamList } from './eventStackScreens';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -72,8 +74,23 @@ export default function EventHomeScreen() {
   const isConnected = useNetworkStatus();
   const offline = isConnected === false;
 
+  // El header nativo solo se muestra cuando hay back (hub abierto desde "Más").
+  // En la tab propia del evento es la raíz → sin header, así que aquí sí
+  // añadimos el safe-area top y evitamos el doble hueco blanco que había antes.
+  const canGoBack = navigation.canGoBack();
+
+  const tint = event.tintColor;
+  const tintIsLight = getBrightness(tint) > 175;
+  const heroFg = tintIsLight ? '#1A1A1A' : '#FFFFFF';
+  const heroMuted = tintIsLight
+    ? 'rgba(26,26,26,0.72)'
+    : 'rgba(255,255,255,0.9)';
+  const emblemBg = tintIsLight
+    ? 'rgba(255,255,255,0.5)'
+    : 'rgba(255,255,255,0.16)';
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={canGoBack ? [] : ['top']}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -83,6 +100,29 @@ export default function EventHomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
+
+        {/* ── Hero del evento ── */}
+        {/* Rellena el espacio superior con identidad: emblema + título + lema.
+            El emblema es un placeholder discreto; cuando llegue el logo del
+            encuentro basta con sustituir el <MaterialIcons> por un <Image>. */}
+        <LinearGradient
+          colors={[tint, darkenHex(tint, 0.22)]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={[styles.heroEmblem, { backgroundColor: emblemBg }]}>
+            <MaterialIcons name="auto-awesome" size={26} color={heroFg} />
+          </View>
+          <Text style={[styles.heroTitle, { color: heroFg }]}>
+            {event.title}
+          </Text>
+          {event.bannerText ? (
+            <Text style={[styles.heroSubtitle, { color: heroMuted }]}>
+              {event.bannerText}
+            </Text>
+          ) : null}
+        </LinearGradient>
 
         <View style={[styles.gridContainer, { gap }]}>
           {visibleSections.map((section) => (
@@ -106,6 +146,31 @@ export default function EventHomeScreen() {
               }}
             />
           ))}
+        </View>
+
+        {/* ── Lema del encuentro ── */}
+        <View style={styles.motto}>
+          <View
+            style={[
+              styles.mottoLine,
+              { backgroundColor: hexAlpha(tint, '55') },
+            ]}
+          />
+          <MaterialIcons name="arrow-upward" size={15} color={tint} />
+          <Text
+            style={[
+              styles.mottoText,
+              { color: isDark ? '#C7C7CC' : '#6B7280' },
+            ]}
+          >
+            Alzad la mirada
+          </Text>
+          <View
+            style={[
+              styles.mottoLine,
+              { backgroundColor: hexAlpha(tint, '55') },
+            ]}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -229,6 +294,13 @@ interface Styles {
   container: ViewStyle;
   scrollView: ViewStyle;
   scrollContent: ViewStyle;
+  hero: ViewStyle;
+  heroEmblem: ViewStyle;
+  heroTitle: TextStyle;
+  heroSubtitle: TextStyle;
+  motto: ViewStyle;
+  mottoLine: ViewStyle;
+  mottoText: TextStyle;
   gridContainer: ViewStyle;
   card: ViewStyle;
   accentBar: ViewStyle;
@@ -253,6 +325,59 @@ const createStyles = (isDark: boolean) =>
       flexGrow: 1,
       alignItems: 'center',
       paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl,
+    },
+    hero: {
+      width: '100%',
+      maxWidth: 1100,
+      borderRadius: radii.xxl,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.lg,
+      marginBottom: spacing.xs,
+      overflow: 'hidden',
+      ...(Platform.OS === 'web'
+        ? ({ boxShadow: '0 10px 30px rgba(0,0,0,0.16)' } as ViewStyle)
+        : (shadows.xl as ViewStyle)),
+    },
+    heroEmblem: {
+      width: 52,
+      height: 52,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.md,
+    },
+    heroTitle: {
+      fontSize: 26,
+      fontWeight: '800',
+      letterSpacing: -0.6,
+      lineHeight: 30,
+    },
+    heroSubtitle: {
+      fontSize: 14,
+      fontWeight: '500',
+      lineHeight: 19,
+      marginTop: 6,
+      maxWidth: 460,
+    },
+    motto: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: spacing.md,
+      paddingHorizontal: spacing.lg,
+    },
+    mottoLine: {
+      height: StyleSheet.hairlineWidth * 2,
+      width: 28,
+      borderRadius: 1,
+    },
+    mottoText: {
+      fontSize: 13,
+      fontWeight: '700',
+      fontStyle: 'italic',
+      letterSpacing: 0.3,
+      textTransform: 'uppercase',
     },
     gridContainer: {
       flexDirection: 'row',

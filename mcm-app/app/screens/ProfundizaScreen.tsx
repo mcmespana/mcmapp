@@ -10,6 +10,7 @@ import useFontScale from '@/hooks/useFontScale';
 import { radii } from '@/constants/uiStyles';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
+import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -29,38 +30,59 @@ export default function ProfundizaScreen() {
     [scheme, fontScale],
   );
   const event = useCurrentEvent();
-  const { data: profundizaData } = useFirebaseData<any>(
+  const { data: profundizaData, loading } = useFirebaseData<any>(
     getEventFirebasePath(event, 'profundiza'),
     getEventCacheKey(event, 'profundiza'),
   );
   const data = profundizaData as {
-    titulo: string;
-    introduccion: string;
-    paginas: Pagina[];
-  };
+    titulo?: string;
+    introduccion?: string;
+    paginas?: Pagina[];
+  } | null;
 
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
-  if (!data) {
+  // Defensa frente a datos ausentes o mal formados (antes `data.paginas.map`
+  // reventaba si Firebase venía vacío o sin `paginas`).
+  const paginas = Array.isArray(data?.paginas) ? data!.paginas! : [];
+  const hasContent = !!(data && (data.introduccion || paginas.length > 0));
+
+  if (!hasContent) {
+    // Aún cargando (sin caché) → esqueleto. Cargado pero vacío → "Próximamente".
+    if (loading && !data) {
+      return (
+        <PageContainer>
+          <ScrollView
+            style={{
+              flex: 1,
+              backgroundColor: Colors[scheme ?? 'light'].background,
+            }}
+            contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
+          >
+            <ScreenHero title="Profundiza" />
+            <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 12 }}>
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton
+                  key={i}
+                  style={{ height: 56, borderRadius: radii.xl }}
+                />
+              ))}
+            </View>
+          </ScrollView>
+        </PageContainer>
+      );
+    }
     return (
       <PageContainer>
-        <ScrollView
+        <View
           style={{
             flex: 1,
             backgroundColor: Colors[scheme ?? 'light'].background,
           }}
-          contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
         >
           <ScreenHero title="Profundiza" />
-          <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 12 }}>
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton
-                key={i}
-                style={{ height: 56, borderRadius: radii.xl }}
-              />
-            ))}
-          </View>
-        </ScrollView>
+          <ComingSoon accentColor={event.tintColor} />
+        </View>
       </PageContainer>
     );
   }
@@ -71,11 +93,13 @@ export default function ProfundizaScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
       >
-        <ScreenHero title={data.titulo} />
+        <ScreenHero title={data!.titulo || 'Profundiza'} />
         <View style={styles.body}>
-          <FormattedContent text={data.introduccion} scale={fontScale} />
+          {data!.introduccion ? (
+            <FormattedContent text={data!.introduccion} scale={fontScale} />
+          ) : null}
           <View style={{ marginTop: 16 }}>
-            {data.paginas.map((p, idx) => (
+            {paginas.map((p, idx) => (
               <View key={idx} style={styles.accordionWrapper}>
                 <PressableFeedback
                   onPress={() => {

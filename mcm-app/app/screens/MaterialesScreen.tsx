@@ -8,6 +8,7 @@ import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
+import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -106,7 +107,7 @@ export default function MaterialesScreen() {
     [scheme, fontScale],
   );
   const event = useCurrentEvent();
-  const { data: materialesData } = useFirebaseData<any[]>(
+  const { data: materialesData, loading } = useFirebaseData<any[]>(
     getEventFirebasePath(event, 'materiales'),
     getEventCacheKey(event, 'materiales'),
   );
@@ -137,6 +138,7 @@ export default function MaterialesScreen() {
   const dia = materialesData ? materialesData[index] : null;
 
   if (!dia) {
+    const empty = !loading && (!materialesData || materialesData.length === 0);
     return (
       <View
         style={{
@@ -145,17 +147,24 @@ export default function MaterialesScreen() {
         }}
       >
         <ScreenHero title="Materiales" />
-        <View
-          style={{
-            paddingHorizontal: spacing.lg,
-            paddingTop: spacing.md,
-            gap: spacing.md,
-          }}
-        >
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} style={{ height: 100, borderRadius: radii.xl }} />
-          ))}
-        </View>
+        {empty ? (
+          <ComingSoon accentColor={event.tintColor} />
+        ) : (
+          <View
+            style={{
+              paddingHorizontal: spacing.lg,
+              paddingTop: spacing.md,
+              gap: spacing.md,
+            }}
+          >
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton
+                key={i}
+                style={{ height: 100, borderRadius: radii.xl }}
+              />
+            ))}
+          </View>
+        )}
       </View>
     );
   }

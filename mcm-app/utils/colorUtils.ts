@@ -27,3 +27,17 @@ export const hexAlpha = (hex: string, alphaHex: string): string => {
   const a = (parseInt(alphaHex, 16) / 255).toFixed(2);
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 };
+
+/**
+ * Oscurece un color hex mezclándolo hacia negro.
+ * @param ratio 0 = sin cambio, 1 = negro. p.ej. 0.2 → 20% más oscuro.
+ * @example darkenHex('#FCD200', 0.2) → 'rgb(202, 168, 0)'
+ */
+export const darkenHex = (hex: string, ratio: number): string => {
+  const full = expandHex(hex);
+  const f = Math.max(0, Math.min(1, 1 - ratio));
+  const r = Math.round(parseInt(full.slice(1, 3), 16) * f);
+  const g = Math.round(parseInt(full.slice(3, 5), 16) * f);
+  const b = Math.round(parseInt(full.slice(5, 7), 16) * f);
+  return `rgb(${r}, ${g}, ${b})`;
+};
