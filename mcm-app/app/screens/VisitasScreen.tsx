@@ -8,6 +8,7 @@ import {
   Platform,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import { Dialog, PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -65,6 +66,7 @@ export default function VisitasScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const { height: windowHeight } = useWindowDimensions();
   const event = useCurrentEvent();
   const { data: visitas, loading } = useFirebaseData<Visita[]>(
     getEventFirebasePath(event, 'visitas'),
@@ -187,10 +189,39 @@ export default function VisitasScreen() {
           <Dialog.Content>
             <Dialog.Close />
             {selected ? (
-              <View style={{ gap: 12 }}>
+              <ScrollView
+                style={{ maxHeight: windowHeight * 0.7 }}
+                contentContainerStyle={styles.dialogInner}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+              >
+                {selected.imagen ? (
+                  <Image
+                    source={{ uri: selected.imagen }}
+                    style={styles.dialogImage}
+                    resizeMode="cover"
+                  />
+                ) : null}
                 <Dialog.Title>{selected.titulo}</Dialog.Title>
+                {selected.subtitulo ? (
+                  <Text style={styles.dialogSubtitle}>
+                    {selected.subtitulo}
+                  </Text>
+                ) : null}
+                {selected.fecha ? (
+                  <View style={styles.dialogDateRow}>
+                    <MaterialIcons
+                      name="calendar-today"
+                      size={15}
+                      color={isDark ? '#A0A0A8' : '#7B7B82'}
+                    />
+                    <Text style={styles.dialogDateText} numberOfLines={1}>
+                      {formatDate(selected.fecha)}
+                    </Text>
+                  </View>
+                ) : null}
                 {selected.texto ? (
-                  <Dialog.Description>{selected.texto}</Dialog.Description>
+                  <Text style={styles.dialogText}>{selected.texto}</Text>
                 ) : null}
                 {selected.mapa ? (
                   <TouchableOpacity
@@ -219,7 +250,7 @@ export default function VisitasScreen() {
                     </Text>
                   </TouchableOpacity>
                 ) : null}
-              </View>
+              </ScrollView>
             ) : null}
           </Dialog.Content>
         </Dialog.Portal>
@@ -300,6 +331,39 @@ const createStyles = (scheme: 'light' | 'dark') => {
       backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    dialogInner: {
+      gap: 12,
+      paddingTop: 4,
+      paddingBottom: 4,
+    },
+    dialogImage: {
+      width: '100%',
+      height: 150,
+      borderRadius: 14,
+      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+    },
+    dialogSubtitle: {
+      fontSize: 15,
+      color: isDark ? '#C7C7CC' : '#3A3A3C',
+      lineHeight: 20,
+      marginTop: -4,
+    },
+    dialogDateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    dialogDateText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: isDark ? '#A0A0A8' : '#7B7B82',
+      textTransform: 'capitalize',
+    },
+    dialogText: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: isDark ? '#E5E5EA' : '#2C2C2E',
     },
     dialogMapBtn: {
       flexDirection: 'row',
