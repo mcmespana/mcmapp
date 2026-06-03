@@ -1,5 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Animated, Platform } from 'react-native';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Animated,
+  Platform,
+} from 'react-native';
 import { Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -12,6 +19,7 @@ import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import { getClosestDateIndex } from '@/utils/dateUtils';
 import DateSelector from '@/components/DateSelector';
 import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
@@ -21,83 +29,7 @@ import { MasStackParamList } from '../(tabs)/mas';
 
 type Nav = NativeStackNavigationProp<MasStackParamList, 'Materiales'>;
 
-// Function to parse date strings like "28 de enero" to Date object
-function parseDateString(dateStr: string): Date | null {
-  if (!dateStr) return null;
-
-  const months: { [key: string]: number } = {
-    enero: 0,
-    febrero: 1,
-    marzo: 2,
-    abril: 3,
-    mayo: 4,
-    junio: 5,
-    julio: 6,
-    agosto: 7,
-    septiembre: 8,
-    octubre: 9,
-    noviembre: 10,
-    diciembre: 11,
-  };
-
-  const parts = dateStr.toLowerCase().split(' de ');
-  if (parts.length !== 2) return null;
-
-  const day = parseInt(parts[0]);
-  const monthName = parts[1];
-  const monthIndex = months[monthName];
-
-  if (isNaN(day) || monthIndex === undefined) return null;
-
-  const currentYear = new Date().getFullYear();
-  let year = currentYear;
-
-  const testDate = new Date(year, monthIndex, day);
-  const today = new Date();
-
-  if (
-    testDate < today &&
-    today.getTime() - testDate.getTime() > 6 * 30 * 24 * 60 * 60 * 1000
-  ) {
-    year = currentYear + 1;
-  }
-
-  return new Date(year, monthIndex, day);
-}
-
-// Function to find the closest date index
-function getClosestDateIndex(data: any[]): number {
-  if (!data || data.length === 0) return 0;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time to start of day
-
-  let closestFutureIndex = -1;
-  let minFutureDistance = Number.MAX_SAFE_INTEGER;
-  let lastDateIndex = data.length - 1; // Default to last if all dates are past
-
-  for (let i = 0; i < data.length; i++) {
-    const item = data[i];
-    if (!item.fecha) continue;
-
-    // Parse the date string (assuming format like "28 de enero")
-    const dateStr = item.fecha;
-    const eventDate = parseDateString(dateStr);
-
-    if (eventDate) {
-      const distance = eventDate.getTime() - today.getTime();
-
-      // If this date is today or in the future
-      if (distance >= 0 && distance < minFutureDistance) {
-        minFutureDistance = distance;
-        closestFutureIndex = i;
-      }
-    }
-  }
-
-  // If we found a future date, use it; otherwise use the last date
-  return closestFutureIndex >= 0 ? closestFutureIndex : lastDateIndex;
-}
+const isWeb = Platform.OS === 'web';
 
 export default function HorarioScreen() {
   const navigation = useNavigation<Nav>();
@@ -117,20 +49,26 @@ export default function HorarioScreen() {
     return horarioData ? getClosestDateIndex(horarioData) : 0;
   });
 
-  // Update index when horarioData loads
+  // Update index when horarioData loads — abrimos en el día más cercano a hoy.
   useEffect(() => {
     if (horarioData && horarioData.length > 0) {
-      const newIndex = getClosestDateIndex(horarioData);
-      console.log(
-        'Setting horario index to:',
-        newIndex,
-        'out of',
-        horarioData.length,
-        'days',
-      );
-      setIndex(newIndex);
+      setIndex(getClosestDateIndex(horarioData));
     }
   }, [horarioData]);
+
+  // En web ponemos el título "Horario" arriba en el propio header (con el botón
+  // atrás separado del borde) y eliminamos el hero grande de la pantalla, para
+  // que el calendario quede pegado al header. En iOS/Android se mantiene el
+  // hero del contenido.
+  useLayoutEffect(() => {
+    if (isWeb) {
+      navigation.setOptions({
+        headerTitle: () => <Text style={styles.webHeaderTitle}>Horario</Text>,
+        headerTitleAlign: 'left',
+        headerLeftContainerStyle: { paddingLeft: spacing.md },
+      } as any);
+    }
+  }, [navigation, styles.webHeaderTitle]);
 
   // Animation values for last day
   const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -259,7 +197,7 @@ export default function HorarioScreen() {
           backgroundColor: Colors[scheme ?? 'light'].background,
         }}
       >
-        <ScreenHero title="Horario" />
+        {!isWeb && <ScreenHero title="Horario" />}
         {empty ? (
           <ComingSoon accentColor={event.tintColor} />
         ) : (
@@ -285,7 +223,7 @@ export default function HorarioScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHero title="Horario" />
+      {!isWeb && <ScreenHero title="Horario" />}
       <View style={styles.headerSection}>
         <DateSelector
           dates={fechas}
@@ -316,16 +254,19 @@ export default function HorarioScreen() {
               </ThemedText>
             )}
           </Animated.View>
-          {dia.eventos.map(
-            (ev: EventItemData, idx: React.Key | null | undefined) => (
+          <View style={styles.timeline}>
+            {dia.eventos.map((ev: EventItemData, idx: number) => (
               <EventItem
                 key={idx}
                 event={ev}
                 dayIndex={index}
+                accentColor={currentColor}
+                isFirst={idx === 0}
+                isLast={idx === dia.eventos.length - 1}
                 onNavigateToMateriales={handleNavigateToMateriales}
               />
-            ),
-          )}
+            ))}
+          </View>
         </ScrollView>
       </PageContainer>
     </View>
@@ -334,20 +275,27 @@ export default function HorarioScreen() {
 
 const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
   const theme = Colors[scheme ?? 'light'];
+  const isDark = scheme === 'dark';
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: scheme === 'dark' ? theme.background : '#F8F9FA',
+      backgroundColor: isDark ? theme.background : '#F8F9FA',
+    },
+    webHeaderTitle: {
+      fontSize: 22,
+      fontWeight: '800',
+      letterSpacing: -0.4,
+      color: theme.text,
     },
     headerSection: {
       backgroundColor: theme.background,
-      paddingBottom: spacing.md,
+      paddingBottom: spacing.sm,
       shadowColor: theme.shadow,
       shadowOffset: {
         width: 0,
         height: 2,
       },
-      shadowOpacity: 0.1,
+      shadowOpacity: 0.08,
       shadowRadius: 8,
       elevation: 4,
       zIndex: 1,
@@ -355,14 +303,17 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
     titleText: {
       color: colors.white,
       textAlign: 'center',
-      fontWeight: '700',
-      fontSize: 20 * scale,
-      letterSpacing: 0.5,
+      fontWeight: '800',
+      fontSize: 19 * scale,
+      letterSpacing: 0.3,
     },
     sadEmoji: {
       fontSize: 16 * scale,
       textAlign: 'center',
       marginTop: spacing.xs / 2,
+    },
+    timeline: {
+      marginTop: spacing.md,
     },
     eventsContainer: {
       paddingHorizontal: spacing.lg,
@@ -383,19 +334,22 @@ const createDynamicStyles = (
   return StyleSheet.create({
     titleWrapper: {
       backgroundColor: currentColor,
-      marginHorizontal: spacing.lg,
-      marginTop: spacing.md, // Espaciado desde el navegador de días
       padding: spacing.md,
-      borderRadius: 16,
-      marginBottom: spacing.sm,
-      shadowColor: currentColor,
-      shadowOffset: {
-        width: 0,
-        height: 4,
-      },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 6,
+      borderRadius: 18,
+      marginBottom: spacing.xs,
+      ...Platform.select({
+        web: {
+          // @ts-ignore
+          boxShadow: `0 6px 18px ${currentColor}55`,
+        },
+        default: {
+          shadowColor: currentColor,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 6,
+        },
+      }),
       // Add extra styling for last day
       ...(isLastDay && {
         borderWidth: 2,

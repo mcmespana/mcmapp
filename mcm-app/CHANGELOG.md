@@ -13,6 +13,24 @@
 
 ---
 
+## 2026-06-03 — Rediseño de la pantalla de Horario + fix del día por defecto
+
+- **Rediseño visual del Horario** (`app/screens/HorarioScreen.tsx`,
+  `components/EventItem.tsx`, `components/DateSelector.tsx`): nueva línea de
+  tiempo vertical con la **hora como protagonista** (grande, en el color del
+  día), tarjetas con sombra suave, ubicación en formato "pill" con icono, y
+  selector de fechas con chips más legibles (día grande + mes + día de la
+  semana).
+- **Web — header**: el título "Horario" pasa al propio header de navegación
+  (con el botón Atrás separado del borde) y se elimina el `ScreenHero`
+  duplicado; el selector de fechas queda pegado al header y centrado. En
+  iOS/Android se mantiene el `ScreenHero`.
+- **Fix: día por defecto**. La pantalla abría en el último día en vez del más
+  cercano a hoy porque el parser sólo entendía el formato español "6 de junio"
+  y devolvía `null` con fechas tipo ISO ("2026-06-06"), cayendo al último día.
+  Nueva utilidad `utils/dateUtils.ts` (`parseHorarioDate` + `getClosestDateIndex`)
+  que entiende ambos formatos y la comparten el selector y la pantalla.
+
 ## 2026-06-03 — Eliminación de cuenta (requisito App Store 5.1.1(v))
 
 - **Nueva opción "Eliminar cuenta"** en la tarjeta de usuario autenticado de
