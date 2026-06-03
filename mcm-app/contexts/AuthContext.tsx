@@ -5,7 +5,11 @@ import React, {
   useState,
   useCallback,
 } from 'react';
-import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  deleteUser,
+} from 'firebase/auth';
 import { getFirebaseAuth } from '@/utils/firebaseAuth';
 import {
   configureGoogleSignIn,
@@ -13,6 +17,10 @@ import {
   doAppleSignIn,
   doGoogleSignOut,
 } from '@/utils/platformAuth';
+import { deleteUserData } from '@/utils/authHelpers';
+
+/** Resultado de un intento de eliminación de cuenta. */
+export type DeleteAccountResult = 'success' | 'cancelled' | 'error';
 
 export interface AuthUser {
   uid: string;
@@ -30,6 +38,9 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<AuthUser | null>;
   signInWithApple: () => Promise<AuthUser | null>;
   signOut: () => Promise<void>;
+  /** Elimina permanentemente la cuenta del usuario: borra sus datos en RTDB
+   *  (`users/{uid}`) y la cuenta de Firebase Authentication. */
+  deleteAccount: () => Promise<DeleteAccountResult>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -39,6 +50,7 @@ const AuthContext = createContext<AuthContextType>({
   signInWithGoogle: async () => null,
   signInWithApple: async () => null,
   signOut: async () => {},
+  deleteAccount: async () => 'error',
 });
 
 function providerFromFirebase(firebaseUser: {
@@ -156,9 +168,75 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  const deleteAccount = useCallback(async (): Promise<DeleteAccountResult> => {
+    const auth = getFirebaseAuth();
+    const current = auth.currentUser;
+    if (!current) return 'error';
+
+    const provider = user?.provider ?? providerFromFirebase(current);
+
+    // Borra primero el nodo RTDB (mientras la sesión sigue activa y con
+    // permisos) y después la cuenta de Authentication.
+    const runDelete = async () => {
+      const u = auth.currentUser;
+      if (!u) throw new Error('No current user');
+      await deleteUserData(u.uid);
+      await deleteUser(u);
+    };
+
+    try {
+      await runDelete();
+    } catch (err: any) {
+      // Firebase exige un login reciente para borrar la cuenta. Si lo pide,
+      // reautenticamos repitiendo el flujo del proveedor y reintentamos.
+      if (err?.code === 'auth/requires-recent-login') {
+        try {
+          if (provider === 'apple') {
+            await doAppleSignIn(auth);
+          } else {
+            await doGoogleSignIn(auth);
+          }
+        } catch (reauthErr: any) {
+          const cancelled =
+            reauthErr?.code === 'ERR_CANCELED' ||
+            reauthErr?.code === 'auth/popup-closed-by-user' ||
+            reauthErr?.code === 'auth/cancelled-popup-request' ||
+            String(reauthErr?.message ?? '').includes('cancel');
+          return cancelled ? 'cancelled' : 'error';
+        }
+        try {
+          await runDelete();
+        } catch (retryErr) {
+          console.error('[AuthContext] deleteAccount retry:', retryErr);
+          return 'error';
+        }
+      } else {
+        console.error('[AuthContext] deleteAccount:', err);
+        return 'error';
+      }
+    }
+
+    // Limpia la sesión nativa de Google (si la hubiera).
+    try {
+      await doGoogleSignOut();
+    } catch {
+      // Ignorar — la cuenta ya está eliminada.
+    }
+
+    return 'success';
+  }, [user]);
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, configError, signInWithGoogle, signInWithApple, signOut }}
+      value={{
+        user,
+        loading,
+        configError,
+        signInWithGoogle,
+        signInWithApple,
+        signOut,
+        deleteAccount,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -13,6 +13,22 @@
 
 ---
 
+## 2026-06-03 — Eliminación de cuenta (requisito App Store 5.1.1(v))
+
+- **Nueva opción "Eliminar cuenta"** en la tarjeta de usuario autenticado de
+  `components/SocialLoginSection.tsx` (visible en Ajustes, LoginSheet y
+  onboarding). Pide confirmación (Alert en nativo, `window.confirm` en web) y
+  ejecuta un borrado permanente. Cumple Guideline 5.1.1(v): toda app que
+  permite crear cuenta debe permitir eliminarla desde la propia app.
+- **`AuthContext.deleteAccount()`** (`contexts/AuthContext.tsx`): borra el nodo
+  RTDB `users/{uid}` (perfil, delegación y datos de CONTIGO) y después la cuenta
+  de Firebase Authentication con `deleteUser`. Maneja
+  `auth/requires-recent-login` reautenticando con el proveedor (Google/Apple) y
+  reintentando. Devuelve `'success' | 'cancelled' | 'error'`.
+- **`utils/authHelpers.ts`**: nueva función `deleteUserData(uid)` que elimina
+  `users/{uid}` de RTDB.
+- Al eliminar la cuenta se limpia también el nombre guardado localmente.
+
 ## 2026-06-03 — Modo Carismochito: tema verde, cuenta atrás con anillo, haptics y mascota que baila
 
 - **Tema verde "de verdad" al activar** (`utils/heroUIRuntimeTheme.ts` →

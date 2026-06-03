@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
   ActivityIndicator,
+  Alert,
   ViewStyle,
   TextStyle,
 } from 'react-native';
@@ -21,6 +22,34 @@ import { radii } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
 import { writeUserOnLogin } from '@/utils/authHelpers';
 import { useToast } from '@/contexts/AppToastContext';
+
+/** Pide confirmación para eliminar la cuenta. Multiplataforma: usa Alert en
+ *  nativo y window.confirm en web. Devuelve true si el usuario confirma. */
+function confirmDeleteAccount(): Promise<boolean> {
+  const message =
+    'Esta acción es permanente y no se puede deshacer. Se eliminará tu cuenta y todos los datos asociados (perfil, delegación y progreso sincronizado de CONTIGO).';
+  if (Platform.OS === 'web') {
+    const ok =
+      typeof window !== 'undefined' &&
+      window.confirm(`¿Eliminar tu cuenta?\n\n${message}`);
+    return Promise.resolve(!!ok);
+  }
+  return new Promise((resolve) => {
+    Alert.alert(
+      'Eliminar cuenta',
+      message,
+      [
+        { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
+        {
+          text: 'Eliminar cuenta',
+          style: 'destructive',
+          onPress: () => resolve(true),
+        },
+      ],
+      { cancelable: true, onDismiss: () => resolve(false) },
+    );
+  });
+}
 
 function getInitials(name: string | null | undefined): string {
   if (!name) return '?';
@@ -117,13 +146,20 @@ interface Props {
 export default function SocialLoginSection({
   onDarkBackground = false,
 }: Props) {
-  const { user, loading, signInWithGoogle, signInWithApple, signOut } =
-    useAuth();
+  const {
+    user,
+    loading,
+    signInWithGoogle,
+    signInWithApple,
+    signOut,
+    deleteAccount,
+  } = useAuth();
   const { profile, setProfile } = useUserProfile();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
   const { toast } = useToast();
   const [signingIn, setSigningIn] = useState<'google' | 'apple' | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Auto-fill name from auth if local profile name is empty
   useEffect(() => {
@@ -188,6 +224,37 @@ export default function SocialLoginSection({
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleting) return;
+    const confirmed = await confirmDeleteAccount();
+    if (!confirmed) return;
+    setDeleting(true);
+    try {
+      const result = await deleteAccount();
+      if (result === 'success') {
+        // Borra también el nombre guardado localmente (dato personal).
+        setProfile({ name: '' });
+        toast.show({
+          variant: 'success',
+          label: 'Tu cuenta ha sido eliminada',
+        });
+      } else if (result === 'error') {
+        toast.show({
+          variant: 'danger',
+          label: 'No se pudo eliminar la cuenta. Inténtalo de nuevo.',
+        });
+      }
+      // 'cancelled' → el usuario abortó la reautenticación; sin mensaje.
+    } catch {
+      toast.show({
+        variant: 'danger',
+        label: 'No se pudo eliminar la cuenta. Inténtalo de nuevo.',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingRow}>
@@ -201,72 +268,105 @@ export default function SocialLoginSection({
     const providerLabel = user.provider === 'apple' ? 'Apple' : 'Google';
     const initials = getInitials(user.displayName ?? user.email);
     return (
-      <View style={styles.authenticatedCard}>
-        <UserAvatar
-          photoURL={user.photoURL}
-          seed={user.email ?? user.displayName ?? user.uid}
-          initials={initials}
-          size={46}
-        />
-        <View style={{ flex: 1 }}>
-          {user.displayName ? (
+      <View style={styles.authenticatedWrap}>
+        <View style={styles.authenticatedCard}>
+          <UserAvatar
+            photoURL={user.photoURL}
+            seed={user.email ?? user.displayName ?? user.uid}
+            initials={initials}
+            size={46}
+          />
+          <View style={{ flex: 1 }}>
+            {user.displayName ? (
+              <Text
+                style={[
+                  styles.authName,
+                  { color: onDarkBackground ? '#fff' : theme.text },
+                ]}
+                numberOfLines={1}
+              >
+                {user.displayName}
+              </Text>
+            ) : null}
+            {user.email ? (
+              <Text
+                style={[
+                  styles.authEmail,
+                  {
+                    color: onDarkBackground
+                      ? 'rgba(255,255,255,0.65)'
+                      : theme.icon,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {user.email}
+              </Text>
+            ) : null}
             <Text
               style={[
-                styles.authName,
-                { color: onDarkBackground ? '#fff' : theme.text },
-              ]}
-              numberOfLines={1}
-            >
-              {user.displayName}
-            </Text>
-          ) : null}
-          {user.email ? (
-            <Text
-              style={[
-                styles.authEmail,
+                styles.authProvider,
                 {
                   color: onDarkBackground
-                    ? 'rgba(255,255,255,0.65)'
+                    ? 'rgba(255,255,255,0.45)'
                     : theme.icon,
                 },
               ]}
-              numberOfLines={1}
             >
-              {user.email}
+              · via {providerLabel} ·
             </Text>
-          ) : null}
-          <Text
+          </View>
+          <TouchableOpacity
+            onPress={handleSignOut}
             style={[
-              styles.authProvider,
+              styles.signOutBtn,
               {
-                color: onDarkBackground ? 'rgba(255,255,255,0.45)' : theme.icon,
+                borderColor: onDarkBackground
+                  ? 'rgba(255,255,255,0.25)'
+                  : hexAlpha('#E15C62', '50'),
               },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar sesión"
           >
-            · via {providerLabel} ·
-          </Text>
+            <Text
+              style={[
+                styles.signOutLabel,
+                {
+                  color: onDarkBackground ? 'rgba(255,255,255,0.8)' : '#E15C62',
+                },
+              ]}
+            >
+              Salir
+            </Text>
+          </TouchableOpacity>
         </View>
         <TouchableOpacity
-          onPress={handleSignOut}
-          style={[
-            styles.signOutBtn,
-            {
-              borderColor: onDarkBackground
-                ? 'rgba(255,255,255,0.25)'
-                : hexAlpha('#E15C62', '50'),
-            },
-          ]}
+          onPress={handleDeleteAccount}
+          disabled={deleting}
+          style={styles.deleteAccountBtn}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar sesión"
+          accessibilityLabel="Eliminar cuenta"
         >
-          <Text
-            style={[
-              styles.signOutLabel,
-              { color: onDarkBackground ? 'rgba(255,255,255,0.8)' : '#E15C62' },
-            ]}
-          >
-            Salir
-          </Text>
+          {deleting ? (
+            <ActivityIndicator
+              size="small"
+              color={onDarkBackground ? 'rgba(255,255,255,0.7)' : theme.icon}
+            />
+          ) : (
+            <Text
+              style={[
+                styles.deleteAccountLabel,
+                {
+                  color: onDarkBackground
+                    ? 'rgba(255,255,255,0.55)'
+                    : theme.icon,
+                },
+              ]}
+            >
+              Eliminar cuenta
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     );
@@ -446,11 +546,26 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   } as TextStyle,
   // Authenticated state
+  authenticatedWrap: {
+    gap: 10,
+  } as ViewStyle,
   authenticatedCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   } as ViewStyle,
+  deleteAccountBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    minHeight: 24,
+    justifyContent: 'center',
+  } as ViewStyle,
+  deleteAccountLabel: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
+  } as TextStyle,
   authName: {
     fontSize: 14,
     fontWeight: '600',

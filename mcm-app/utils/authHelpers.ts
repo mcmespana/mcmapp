@@ -80,6 +80,15 @@ export async function updateUserMCMData(
   }
 }
 
+/** Elimina por completo el nodo del usuario en RTDB (`users/{uid}`), lo que
+ *  incluye perfil, delegación y todos los datos de CONTIGO (hábitos,
+ *  revisiones, bookmarks). Se usa al eliminar la cuenta. Lanza si falla para
+ *  que el llamador pueda decidir cómo actuar. */
+export async function deleteUserData(uid: string): Promise<void> {
+  const userRef = ref(db(), `users/${uid}`);
+  await remove(userRef);
+}
+
 /** Sincroniza un registro de hábito de CONTIGO con RTDB. */
 export async function syncContigoHabit(
   uid: string,
