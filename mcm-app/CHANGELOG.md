@@ -29,6 +29,25 @@
   `users/{uid}` de RTDB.
 - Al eliminar la cuenta se limpia también el nombre guardado localmente.
 
+## 2026-06-03 — Fix panel secreto del cantoral + menús contextuales en Contactos y Reflexiones
+
+- **Fix: el "Panel Secreto" no aparecía** (`components/ReportBugsModal.tsx`).
+  Al pulsar "Panel Secreto" se cerraba el bottom sheet de reporte y se abría el
+  panel en el mismo tick; como `BottomSheet` usa `Modal` de RN e iOS no permite
+  dos modales simultáneos, el panel nunca se montaba (no se podía introducir la
+  contraseña ni, por tanto, usar el sistema de arreglos `{arr:}`). Ahora la
+  apertura del panel se difiere a `onCloseComplete` (tras el `onDismiss`), como
+  ya hace el resto de la app.
+- **Menús contextuales (long-press) en listas** (nuevo
+  `components/ContextMenuSheet.tsx` + `hooks/useContextMenu`):
+  - **Contactos** (`app/screens/ContactosScreen.tsx`): long-press → Llamar /
+    WhatsApp / Copiar teléfono.
+  - **Reflexiones** (`app/screens/ReflexionesScreen.tsx`): long-press → Copiar /
+    Compartir.
+  - El nuevo `ContextMenuSheet` es reutilizable (lista de acciones con icono,
+    soporte destructivo/disabled) y ejecuta la acción en `onCloseComplete` para
+    no colisionar con Share/otros modales en iOS.
+
 ## 2026-06-03 — Modo Carismochito: tema verde, cuenta atrás con anillo, haptics y mascota que baila
 
 - **Tema verde "de verdad" al activar** (`utils/heroUIRuntimeTheme.ts` →

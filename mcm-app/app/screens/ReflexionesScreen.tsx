@@ -4,15 +4,19 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  Share,
   Text,
   Pressable,
   TextInput,
   Modal,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, RouteProp } from '@react-navigation/native';
-import { Spinner, BottomSheet } from 'heroui-native';
+import { Spinner, BottomSheet, useToast } from 'heroui-native';
+import ContextMenuSheet from '@/components/ContextMenuSheet';
+import { useContextMenu } from '@/hooks/useContextMenu';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -102,6 +106,18 @@ function getInitials(name?: string): string {
     .map((w) => w[0])
     .join('')
     .toUpperCase();
+}
+
+/** Wraps children so a long-press (or right-click on web) fires `onLongPress`. */
+function LongPressable({
+  onLongPress,
+  children,
+}: {
+  onLongPress: () => void;
+  children: React.ReactNode;
+}) {
+  const ctx = useContextMenu(onLongPress);
+  return <Pressable {...ctx}>{children}</Pressable>;
 }
 
 export default function ReflexionesScreen() {
@@ -239,6 +255,26 @@ export default function ReflexionesScreen() {
     [list],
   );
 
+  const { toast } = useToast();
+  const [menuReflexion, setMenuReflexion] = useState<Reflexion | null>(null);
+
+  const reflexionText = (r: Reflexion) => {
+    const lines: string[] = [];
+    if (r.titulo) lines.push(r.titulo);
+    lines.push(r.contenido);
+    const meta = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
+    lines.push(`${formatFecha(r.fecha)}${meta ? ` · ${meta}` : ''}`);
+    return lines.join('\n\n');
+  };
+
+  const copyReflexion = async (r: Reflexion) => {
+    await Clipboard.setStringAsync(reflexionText(r));
+    toast.show({ variant: 'success', label: 'Reflexión copiada' });
+  };
+  const shareReflexion = (r: Reflexion) => {
+    Share.share({ message: reflexionText(r) });
+  };
+
   return (
     <View style={styles.container}>
       <ScreenHero
@@ -275,64 +311,72 @@ export default function ReflexionesScreen() {
               const initials = getInitials(name);
               const onColor = getBrightness(color) > 150 ? '#1a1a1a' : '#fff';
               return (
-                <View
+                <LongPressable
                   key={r.id}
-                  style={[
-                    styles.card,
-                    filled
-                      ? {
-                          backgroundColor:
-                            color + (scheme === 'dark' ? '26' : '1A'),
-                        }
-                      : styles.cardSurface,
-                  ]}
+                  onLongPress={() => setMenuReflexion(r)}
                 >
-                  {!filled && (
-                    <View
-                      style={[styles.accentBar, { backgroundColor: color }]}
-                    />
-                  )}
-                  <MaterialIcons
-                    name="format-quote"
-                    size={66}
-                    color={color + (scheme === 'dark' ? '26' : '1F')}
-                    style={styles.quoteMark}
-                  />
                   <View
                     style={[
-                      styles.cardInner,
-                      !filled && { paddingLeft: spacing.md + 8 },
+                      styles.card,
+                      filled
+                        ? {
+                            backgroundColor:
+                              color + (scheme === 'dark' ? '26' : '1A'),
+                          }
+                        : styles.cardSurface,
                     ]}
                   >
-                    <View style={styles.cardHead}>
-                      <View style={[styles.avatar, { backgroundColor: color }]}>
-                        {initials ? (
-                          <Text style={[styles.avatarText, { color: onColor }]}>
-                            {initials}
+                    {!filled && (
+                      <View
+                        style={[styles.accentBar, { backgroundColor: color }]}
+                      />
+                    )}
+                    <MaterialIcons
+                      name="format-quote"
+                      size={66}
+                      color={color + (scheme === 'dark' ? '26' : '1F')}
+                      style={styles.quoteMark}
+                    />
+                    <View
+                      style={[
+                        styles.cardInner,
+                        !filled && { paddingLeft: spacing.md + 8 },
+                      ]}
+                    >
+                      <View style={styles.cardHead}>
+                        <View
+                          style={[styles.avatar, { backgroundColor: color }]}
+                        >
+                          {initials ? (
+                            <Text
+                              style={[styles.avatarText, { color: onColor }]}
+                            >
+                              {initials}
+                            </Text>
+                          ) : (
+                            <MaterialIcons
+                              name="auto-stories"
+                              size={16}
+                              color={onColor}
+                            />
+                          )}
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.cardAuthor} numberOfLines={1}>
+                            {name || 'Anónimo'}
                           </Text>
-                        ) : (
-                          <MaterialIcons
-                            name="auto-stories"
-                            size={16}
-                            color={onColor}
-                          />
-                        )}
+                          <Text style={styles.cardDate}>
+                            {formatFecha(r.fecha)}
+                          </Text>
+                        </View>
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.cardAuthor} numberOfLines={1}>
-                          {name || 'Anónimo'}
-                        </Text>
-                        <Text style={styles.cardDate}>
-                          {formatFecha(r.fecha)}
-                        </Text>
-                      </View>
+                      {r.titulo ? (
+                        <Text style={styles.cardTitle}>{r.titulo}</Text>
+                      ) : null}
+                      <Text style={styles.cardContent}>{r.contenido}</Text>
                     </View>
-                    {r.titulo ? (
-                      <Text style={styles.cardTitle}>{r.titulo}</Text>
-                    ) : null}
-                    <Text style={styles.cardContent}>{r.contenido}</Text>
                   </View>
-                </View>
+                </LongPressable>
               );
             })
           )}
@@ -499,6 +543,30 @@ export default function ReflexionesScreen() {
           </View>
         </View>
       )}
+
+      <ContextMenuSheet
+        visible={menuReflexion !== null}
+        onClose={() => setMenuReflexion(null)}
+        title={menuReflexion?.titulo || 'Reflexión'}
+        actions={
+          menuReflexion
+            ? [
+                {
+                  key: 'copy',
+                  label: 'Copiar',
+                  icon: 'content-copy',
+                  onPress: () => copyReflexion(menuReflexion),
+                },
+                {
+                  key: 'share',
+                  label: 'Compartir',
+                  icon: 'share',
+                  onPress: () => shareReflexion(menuReflexion),
+                },
+              ]
+            : []
+        }
+      />
     </View>
   );
 }

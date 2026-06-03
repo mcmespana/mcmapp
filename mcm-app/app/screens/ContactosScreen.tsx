@@ -5,11 +5,20 @@ import {
   FlatList,
   Platform,
   Linking,
+  Pressable,
   StyleSheet,
 } from 'react-native';
-import { PressableFeedback, SearchField, Skeleton } from 'heroui-native';
+import * as Clipboard from 'expo-clipboard';
+import {
+  PressableFeedback,
+  SearchField,
+  Skeleton,
+  useToast,
+} from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import PageContainer from '@/components/ui/PageContainer';
+import ContextMenuSheet from '@/components/ContextMenuSheet';
+import { useContextMenu } from '@/hooks/useContextMenu';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
@@ -67,6 +76,7 @@ interface ContactRowProps {
   styles: ReturnType<typeof createStyles>;
   onCall: (tel: string) => void;
   onWhatsapp: (tel: string) => void;
+  onLongPress: (contact: Contacto) => void;
 }
 
 const ContactRow = React.memo(function ContactRow({
@@ -77,10 +87,12 @@ const ContactRow = React.memo(function ContactRow({
   styles,
   onCall,
   onWhatsapp,
+  onLongPress,
 }: ContactRowProps) {
+  const contextMenuProps = useContextMenu(() => onLongPress(contact));
   return (
     <View>
-      <View style={styles.row}>
+      <Pressable style={styles.row} {...contextMenuProps}>
         <View style={[styles.avatar, { backgroundColor: tint.bg }]}>
           <Text style={[styles.avatarText, { color: tint.fg }]}>
             {getInitials(contact.nombre)}
@@ -124,7 +136,7 @@ const ContactRow = React.memo(function ContactRow({
             />
           </PressableFeedback>
         </View>
-      </View>
+      </Pressable>
       {!isLast ? <View style={styles.divider} /> : null}
     </View>
   );
@@ -141,11 +153,17 @@ export default function ContactosScreen() {
   );
   const data = contacts as Contacto[] | undefined;
   const [query, setQuery] = useState('');
+  const [menuContact, setMenuContact] = useState<Contacto | null>(null);
+  const { toast } = useToast();
 
   const call = (tel: string) => Linking.openURL(`tel:${tel}`);
   const whatsapp = (tel: string) => {
     const clean = tel.replace(/[^0-9+]/g, '').replace(/^\+/, '');
     Linking.openURL(`https://wa.me/${clean}`);
+  };
+  const copyPhone = async (tel: string) => {
+    await Clipboard.setStringAsync(tel);
+    toast.show({ variant: 'success', label: 'Teléfono copiado' });
   };
 
   const filtered = useMemo(() => {
@@ -245,6 +263,7 @@ export default function ContactosScreen() {
                   styles={styles}
                   onCall={call}
                   onWhatsapp={whatsapp}
+                  onLongPress={setMenuContact}
                 />
               </View>
             </View>
@@ -266,6 +285,35 @@ export default function ContactosScreen() {
           removeClippedSubviews={Platform.OS !== 'web'}
         />
       </View>
+      <ContextMenuSheet
+        visible={menuContact !== null}
+        onClose={() => setMenuContact(null)}
+        title={menuContact?.nombre}
+        actions={
+          menuContact
+            ? [
+                {
+                  key: 'call',
+                  label: 'Llamar',
+                  icon: 'phone',
+                  onPress: () => call(menuContact.telefono),
+                },
+                {
+                  key: 'whatsapp',
+                  label: 'WhatsApp',
+                  icon: 'chat',
+                  onPress: () => whatsapp(menuContact.telefono),
+                },
+                {
+                  key: 'copy',
+                  label: 'Copiar teléfono',
+                  icon: 'content-copy',
+                  onPress: () => copyPhone(menuContact.telefono),
+                },
+              ]
+            : []
+        }
+      />
     </PageContainer>
   );
 }
