@@ -87,7 +87,7 @@ export type EventStackParamList = {
   Contactos: EventRouteParams | undefined;
   Apps: EventRouteParams | undefined;
   Wordle: EventRouteParams | undefined;
-  Reflexiones: EventRouteParams | undefined;
+  Reflexiones: (EventRouteParams & { openFormNonce?: number }) | undefined;
 };
 
 type EventStackNavigator = ReturnType<

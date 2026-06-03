@@ -32,6 +32,18 @@
 - **Compartiendo: se elimina "Compartir en grupo"** del formulario y se cambia
   el subtítulo del hero a "Comparte aquí una frase, pensamiento o algo que te
   llevas de estos días".
+- **Visita Papa: barra de color superior en toda la sección**
+  (`app/(tabs)/visitapapa.tsx`): franja del color de la sección (#FCD200) arriba
+  del todo, al estilo iOS de Calendario y Fotos, sobre todo el stack del evento.
+- **Compartiendo: el "+" pasa del FAB a la barra superior**
+  (`components/EventActionButtons.tsx`, `ReflexionesScreen.tsx`,
+  `app/(tabs)/visitapapa.tsx`, `app/(tabs)/mas.tsx`): se elimina el FAB flotante;
+  al estar en Compartiendo, la barra de acciones muestra un "+" (junto a
+  Ajustes) que abre el formulario vía renavegación con `openFormNonce`.
+- **Compartiendo: tarjetas rediseñadas** (`ReflexionesScreen.tsx`): cada
+  reflexión tiene un color generado de su id, avatar con iniciales, marca de
+  cita y dos diseños alternos (fondo tintado / tarjeta limpia con barra de
+  color) para dar variedad. Estado vacío amable cuando no hay reflexiones.
 
 ## 2026-06-02 — Eventos (Visita Papa): rediseño de headers, hero, estados vacíos y FABs
 
