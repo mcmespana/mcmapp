@@ -130,10 +130,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         err?.code === 'auth/cancelled-popup-request' ||
         err?.code === 'auth/popup-closed-by-user' ||
         err?.code === 'ERR_CANCELED';
-      if (!cancelled) {
-        console.error('[AuthContext] signInWithGoogle:', err);
-      }
-      return null;
+      if (cancelled) return null;
+      // Error real: propagar para que la UI muestre feedback (toast) en vez
+      // de fallar en silencio.
+      console.error('[AuthContext] signInWithGoogle:', err);
+      throw err;
     }
   }, []);
 
@@ -152,10 +153,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err: any) {
       const cancelled =
         err?.code === 'ERR_CANCELED' || String(err?.message).includes('cancel');
-      if (!cancelled) {
-        console.error('[AuthContext] signInWithApple:', err);
-      }
-      return null;
+      if (cancelled) return null;
+      console.error('[AuthContext] signInWithApple:', err);
+      throw err;
     }
   }, []);
 

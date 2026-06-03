@@ -48,6 +48,26 @@
     soporte destructivo/disabled) y ejecuta la acción en `onCloseComplete` para
     no colisionar con Share/otros modales en iOS.
 
+## [2026-06-03] — Fix: login con Google roto en nativo tras OTA
+
+- **Causa**: las variables `EXPO_PUBLIC_GOOGLE_*` se hornean en el bundle JS, pero
+  los workflows de OTA (`eas update`) solo inyectaban las `EXPO_PUBLIC_FIREBASE_*`.
+  Cada OTA dejaba `GoogleSignin.configure()` con client IDs `undefined`, así que en
+  iOS el diálogo de Google ni se abría (TestFlight funcionaba al instalar el build,
+  que sí los traía vía `eas.json`, y se rompía tras la primera OTA encima). Android
+  además nunca tuvo `webClientId` (obligatorio para el idToken).
+- **Fix**:
+  - `.github/workflows/ota-production.yml` y `ota-preview.yml`: añadidos
+    `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` y `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` al `env`.
+  - `eas.json`: añadido `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` a los 4 perfiles
+    (antes solo estaba el de iOS).
+  - `contexts/AuthContext.tsx`: `signInWithGoogle`/`signInWithApple` ahora
+    re-lanzan los errores reales (no las cancelaciones) para que la UI muestre el
+    toast de error en vez de fallar en silencio.
+- **Nota web**: el `auth/unauthorized-domain` que apareció en `mcm.expo.app` era
+  ajeno al repo — se había quitado el dominio de la lista de "Authorized domains"
+  de Firebase Console; se volvió a añadir y quedó resuelto.
+
 ## 2026-06-03 — Modo Carismochito: tema verde, cuenta atrás con anillo, haptics y mascota que baila
 
 - **Tema verde "de verdad" al activar** (`utils/heroUIRuntimeTheme.ts` →
