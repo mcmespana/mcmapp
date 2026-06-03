@@ -30,6 +30,20 @@
   y devolvía `null` con fechas tipo ISO ("2026-06-06"), cayendo al último día.
   Nueva utilidad `utils/dateUtils.ts` (`parseHorarioDate` + `getClosestDateIndex`)
   que entiende ambos formatos y la comparten el selector y la pantalla.
+## 2026-06-03 — Logo "alzad la mirada" en hero de Visita Papa + mascota carismochito PNG
+
+- **`EventConfig.heroImage`** (`constants/events.ts`): nuevo campo opcional para
+  el logo/emblema del evento. El hub del evento (`EventHomeScreen`) muestra ese
+  logo en el hero si está definido; si no, mantiene el emblema-placeholder.
+- **Visita Papa** usa `assets/alzalamirada.png` como logo del hero.
+- **Mascota carismochito**: `CarismochitoMascot` ahora carga
+  `assets/carismochito.png` (el `require` estaba comentado y apuntaba a una ruta
+  inexistente `assets/images/`). Si se pone a `null` vuelve la versión vectorial.
+- Imágenes optimizadas: `carismochito.png` 2.1 MB → 96 KB y `alzalamirada.png`
+  196 KB → 50 KB (redimensionadas + paleta de 256 colores con transparencia).
+- Archivos: `constants/events.ts`, `app/screens/EventHomeScreen.tsx`,
+  `components/CarismochitoMascot.tsx`, `assets/carismochito.png`,
+  `assets/alzalamirada.png`.
 
 ## 2026-06-03 — Eliminación de cuenta (requisito App Store 5.1.1(v))
 
