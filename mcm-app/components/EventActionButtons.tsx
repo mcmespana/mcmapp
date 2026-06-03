@@ -3,6 +3,7 @@ import { Platform, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import colors from '@/constants/colors';
 import { shadows } from '@/constants/uiStyles';
 import GlassSurface from '@/components/ui/GlassSurface';
 
@@ -16,6 +17,14 @@ interface Props {
    * El de Ajustes se mantiene siempre.
    */
   showCompartiendo?: boolean;
+  /**
+   * Muestra un botón "+" (añadir reflexión) en lugar del de Compartiendo —
+   * se usa cuando YA estamos en la pantalla Compartiendo. Su acción abre el
+   * formulario (ver `onAdd`).
+   */
+  showAdd?: boolean;
+  /** Acción del botón "+" (abre el formulario de nueva reflexión). */
+  onAdd?: () => void;
 }
 
 const H = 38;
@@ -33,6 +42,8 @@ export default function EventActionButtons({
   onSettings,
   onCompartiendo,
   showCompartiendo = true,
+  showAdd = false,
+  onAdd,
 }: Props) {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
@@ -60,6 +71,20 @@ export default function EventActionButtons({
                   hitSlop={6}
                 >
                   <MaterialIcons name="forum" size={20} color={fg} />
+                </Pressable>
+                <View style={[styles.divider, { backgroundColor: divider }]} />
+              </>
+            )}
+            {showAdd && (
+              <>
+                <Pressable
+                  onPress={onAdd}
+                  style={styles.half}
+                  accessibilityRole="button"
+                  accessibilityLabel="Compartir reflexión"
+                  hitSlop={6}
+                >
+                  <MaterialIcons name="add" size={24} color={colors.success} />
                 </Pressable>
                 <View style={[styles.divider, { backgroundColor: divider }]} />
               </>

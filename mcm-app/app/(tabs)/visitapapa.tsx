@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import EventHomeScreen from '../screens/EventHomeScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import EventActionButtons from '@/components/EventActionButtons';
+import { getEvent } from '@/constants/events';
 import {
   EVENT_SUB_ROUTES,
   EventStackParamList,
@@ -36,6 +37,7 @@ export default function VisitaPapaTab() {
   const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
 
   const navigation = useNavigation();
+  const sectionColor = getEvent(EVENT_ID).tintColor;
 
   useEffect(() => {
     const unsubscribeBlur = navigation.addListener('blur' as any, () => {
@@ -107,8 +109,32 @@ export default function VisitaPapaTab() {
             stackNavRef.current?.navigate('Reflexiones', { eventId: EVENT_ID })
           }
           showCompartiendo={activeRoute !== 'Reflexiones'}
+          showAdd={activeRoute === 'Reflexiones'}
+          onAdd={() =>
+            stackNavRef.current?.navigate('Reflexiones', {
+              eventId: EVENT_ID,
+              openFormNonce: Date.now(),
+            })
+          }
         />
       )}
+      {/* Barra de color superior de la sección (estilo iOS de Calendario/Fotos),
+          por encima de todo el stack. */}
+      <View
+        style={[styles.topColorBar, { backgroundColor: sectionColor }]}
+        pointerEvents="none"
+      />
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  topColorBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 8,
+    zIndex: 1001,
+  },
+});

@@ -178,6 +178,13 @@ export default function MasTab() {
             })
           }
           showCompartiendo={activeRoute !== 'Reflexiones'}
+          showAdd={activeRoute === 'Reflexiones'}
+          onAdd={() =>
+            stackNavRef.current?.navigate('Reflexiones', {
+              eventId: activeEventId,
+              openFormNonce: Date.now(),
+            })
+          }
         />
       )}
     </>

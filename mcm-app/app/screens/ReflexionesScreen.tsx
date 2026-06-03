@@ -11,13 +11,16 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Card, Spinner, BottomSheet } from 'heroui-native';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { Spinner, BottomSheet } from 'heroui-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
+import { radii, shadows } from '@/constants/uiStyles';
+import { getBrightness } from '@/components/ui/glass';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -26,9 +29,9 @@ import { getFirebaseApp } from '@/utils/firebaseApp';
 import { h } from '@/utils/haptics';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import GlassFAB from '@/components/ui/GlassFAB';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
+import type { EventStackParamList } from './eventStackScreens';
 
 interface Grupo {
   nombre: string;
@@ -60,11 +63,53 @@ const MONTHS_ES = [
 ];
 const WEEKDAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
+// Paleta para las tarjetas de Compartiendo. Colores de media saturación (el
+// blanco se lee encima y combinan bien como tinte de fondo). Se elige uno de
+// forma DETERMINISTA según el id de cada reflexión, así cada tarjeta tiene
+// "su" color estable entre renders.
+const CARD_PALETTE = [
+  '#E15C62', // rojo MIC
+  '#3478C7', // azul
+  '#7B9A1E', // verde oliva
+  '#9D1E74', // morado
+  '#E0702F', // naranja
+  '#2F8FB3', // azul petróleo
+  '#9C4FB0', // violeta
+  '#D24B7E', // rosa
+  '#4E9A51', // verde
+  '#5C6BC0', // índigo
+  '#3A9188', // turquesa
+  '#C2872B', // ámbar
+];
+
+function hashString(s: string): number {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash << 5) - hash + s.charCodeAt(i);
+    hash |= 0; // a int32
+  }
+  return Math.abs(hash);
+}
+
+function pickCardColor(seed: string): string {
+  return CARD_PALETTE[hashString(seed || 'x') % CARD_PALETTE.length];
+}
+
+function getInitials(name?: string): string {
+  if (!name) return '';
+  const words = name.trim().split(/\s+/).slice(0, 2);
+  return words
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+}
+
 export default function ReflexionesScreen() {
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const theme = Colors[scheme ?? 'light'];
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const route = useRoute<RouteProp<EventStackParamList, 'Reflexiones'>>();
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
 
@@ -114,6 +159,14 @@ export default function ReflexionesScreen() {
   const [autor, setAutor] = useState(getDefaultAuthor());
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // El botón "+" vive ahora en la barra superior (EventActionButtons). Al
+  // pulsarlo, el tab renavega a esta pantalla con un `openFormNonce` nuevo;
+  // ese cambio abre el formulario aquí.
+  const openFormNonce = route.params?.openFormNonce;
+  useEffect(() => {
+    if (openFormNonce) setShowForm(true);
+  }, [openFormNonce]);
 
   const showDatePicker = () => {
     if (Platform.OS === 'android') {
@@ -199,60 +252,92 @@ export default function ReflexionesScreen() {
             { paddingBottom: insets.bottom + 20 },
           ]}
         >
-          {sortedList.map((r) => (
-            <Card
-              key={r.id}
-              style={[styles.card, r.grupal && styles.cardGroup]}
-            >
-              <Card.Body style={{ paddingTop: 8 }}>
-                {r.titulo ? (
-                  <Text
-                    style={[
-                      { fontWeight: '600', fontSize: 16, marginBottom: 4 },
-                      r.grupal
-                        ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
-                        : { color: theme.text },
-                    ]}
-                  >
-                    {r.titulo}
-                  </Text>
-                ) : null}
-                <Text
-                  style={
-                    r.grupal
-                      ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
-                      : { color: theme.text }
-                  }
-                >
-                  {r.contenido}
-                </Text>
-                <Text
+          {sortedList.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialIcons
+                name="auto-stories"
+                size={40}
+                color={colors.success}
+              />
+              <Text style={styles.emptyTitle}>Aún no hay reflexiones</Text>
+              <Text style={styles.emptyText}>
+                Pulsa el botón + de arriba para compartir la primera.
+              </Text>
+            </View>
+          ) : (
+            sortedList.map((r, i) => {
+              const color = pickCardColor(r.id);
+              // Alterna dos diseños para que el muro "fluya": tarjeta con
+              // fondo tintado (par) y tarjeta limpia con barra de color a la
+              // izquierda (impar). Cada una con su color generado del id.
+              const filled = i % 2 === 0;
+              const name = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
+              const initials = getInitials(name);
+              const onColor = getBrightness(color) > 150 ? '#1a1a1a' : '#fff';
+              return (
+                <View
+                  key={r.id}
                   style={[
-                    { marginTop: 4, fontSize: 12 },
-                    r.grupal
-                      ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
-                      : { color: theme.icon },
+                    styles.card,
+                    filled
+                      ? {
+                          backgroundColor:
+                            color + (scheme === 'dark' ? '26' : '1A'),
+                        }
+                      : styles.cardSurface,
                   ]}
                 >
-                  {formatFecha(r.fecha)}
-                  {r.grupal
-                    ? ` - ${getGrupoLabel(r.grupo)}`
-                    : r.autor
-                      ? ` - ${r.autor}`
-                      : ''}
-                </Text>
-              </Card.Body>
-            </Card>
-          ))}
+                  {!filled && (
+                    <View
+                      style={[styles.accentBar, { backgroundColor: color }]}
+                    />
+                  )}
+                  <MaterialIcons
+                    name="format-quote"
+                    size={66}
+                    color={color + (scheme === 'dark' ? '26' : '1F')}
+                    style={styles.quoteMark}
+                  />
+                  <View
+                    style={[
+                      styles.cardInner,
+                      !filled && { paddingLeft: spacing.md + 8 },
+                    ]}
+                  >
+                    <View style={styles.cardHead}>
+                      <View style={[styles.avatar, { backgroundColor: color }]}>
+                        {initials ? (
+                          <Text style={[styles.avatarText, { color: onColor }]}>
+                            {initials}
+                          </Text>
+                        ) : (
+                          <MaterialIcons
+                            name="auto-stories"
+                            size={16}
+                            color={onColor}
+                          />
+                        )}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.cardAuthor} numberOfLines={1}>
+                          {name || 'Anónimo'}
+                        </Text>
+                        <Text style={styles.cardDate}>
+                          {formatFecha(r.fecha)}
+                        </Text>
+                      </View>
+                    </View>
+                    {r.titulo ? (
+                      <Text style={styles.cardTitle}>{r.titulo}</Text>
+                    ) : null}
+                    <Text style={styles.cardContent}>{r.contenido}</Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
         </ScrollView>
       </PageContainer>
-
-      <GlassFAB
-        icon="add"
-        onPress={() => setShowForm(true)}
-        tintColor="#A3BD31"
-        iconColor="#fff"
-      />
 
       {/* Form bottom sheet */}
       <BottomSheet
@@ -430,10 +515,70 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingTop: spacing.sm,
       paddingBottom: spacing.xl,
     },
-    list: { padding: spacing.md },
-    card: { marginBottom: spacing.md },
-    cardGroup: {
-      backgroundColor: scheme === 'dark' ? '#2D3B20' : '#E6F4D7',
+    list: { padding: spacing.md, paddingTop: spacing.sm },
+    card: {
+      marginBottom: spacing.md,
+      borderRadius: radii.xl,
+      overflow: 'hidden',
+      ...(shadows.sm as object),
+    },
+    cardSurface: {
+      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#FFFFFF',
+    },
+    accentBar: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 6,
+    },
+    quoteMark: {
+      position: 'absolute',
+      top: -10,
+      right: 6,
+      transform: [{ scaleX: -1 }],
+    },
+    cardInner: { padding: spacing.md },
+    cardHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: 10,
+    },
+    avatar: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: { fontSize: 14, fontWeight: '800', letterSpacing: 0.3 },
+    cardAuthor: { fontSize: 15, fontWeight: '700', color: theme.text },
+    cardDate: { fontSize: 12, color: theme.icon, marginTop: 1 },
+    cardTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+      marginBottom: 4,
+    },
+    cardContent: { fontSize: 15, lineHeight: 21, color: theme.text },
+    emptyState: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.xl * 2,
+      paddingHorizontal: spacing.lg,
+      gap: 8,
+    },
+    emptyTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: theme.text,
+      marginTop: 4,
+    },
+    emptyText: {
+      fontSize: 14,
+      color: theme.icon,
+      textAlign: 'center',
     },
     modalOverlay: {
       flex: 1,
