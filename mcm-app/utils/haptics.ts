@@ -66,4 +66,39 @@ export const h = {
       250,
     );
   },
+
+  // --- Carismochito (easter egg) ---
+  /** Golpe seco al detectar el agitado del móvil. */
+  shake: () =>
+    isNative &&
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {}),
+
+  /** Secuencia festiva al ACTIVAR el modo carismochito. */
+  carismoOn: () => {
+    if (!isNative) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setTimeout(
+      () =>
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {}),
+      90,
+    );
+    setTimeout(
+      () =>
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {}),
+      220,
+    );
+  },
+
+  /** Doble golpe rígido al DESACTIVAR el modo carismochito. */
+  carismoOff: () => {
+    if (!isNative) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {});
+    setTimeout(
+      () =>
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}),
+      110,
+    );
+  },
 };

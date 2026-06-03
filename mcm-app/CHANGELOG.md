@@ -13,6 +13,44 @@
 
 ---
 
+## 2026-06-03 — Eliminación de cuenta (requisito App Store 5.1.1(v))
+
+- **Nueva opción "Eliminar cuenta"** en la tarjeta de usuario autenticado de
+  `components/SocialLoginSection.tsx` (visible en Ajustes, LoginSheet y
+  onboarding). Pide confirmación (Alert en nativo, `window.confirm` en web) y
+  ejecuta un borrado permanente. Cumple Guideline 5.1.1(v): toda app que
+  permite crear cuenta debe permitir eliminarla desde la propia app.
+- **`AuthContext.deleteAccount()`** (`contexts/AuthContext.tsx`): borra el nodo
+  RTDB `users/{uid}` (perfil, delegación y datos de CONTIGO) y después la cuenta
+  de Firebase Authentication con `deleteUser`. Maneja
+  `auth/requires-recent-login` reautenticando con el proveedor (Google/Apple) y
+  reintentando. Devuelve `'success' | 'cancelled' | 'error'`.
+- **`utils/authHelpers.ts`**: nueva función `deleteUserData(uid)` que elimina
+  `users/{uid}` de RTDB.
+- Al eliminar la cuenta se limpia también el nombre guardado localmente.
+
+## 2026-06-03 — Modo Carismochito: tema verde, cuenta atrás con anillo, haptics y mascota que baila
+
+- **Tema verde "de verdad" al activar** (`utils/heroUIRuntimeTheme.ts` →
+  `setCarismochitoTheme`, `contexts/CarismochitoContext.tsx`): al entrar en el
+  modo se tiñe la capa de componentes heroui-native con varios verdes distintos
+  (accent/success/danger/warning/focus/link) reutilizando el mismo mecanismo de
+  variables CSS que el modo claro/oscuro (toggle reactivo, sin tocar los ~60
+  archivos que usan `colors` estático). Se restaura el tema base al salir o al
+  desmontar. La capa propia (StyleSheet) se cubre con el lavado verde envolvente.
+- **Cuenta atrás rediseñada** (`components/CarismochitoOverlay.tsx`): pasa a 3 s
+  con un **anillo de progreso** SVG que se vacía alrededor de la mascota que
+  baila, con el número dentro. Sustituye al número gigante anterior.
+- **Respuesta háptica** (`utils/haptics.ts`: `shake`, `carismoOn`, `carismoOff`):
+  golpe al agitar el móvil, secuencia festiva al activarse y doble golpe al
+  desactivarse/cancelar.
+- **Mascota carismochito que baila** (`components/CarismochitoMascot.tsx`): nuevo
+  componente con baile (balanceo + salto + escala). Usa un carismochito vectorial
+  de respaldo y admite un **PNG** dejándolo en `assets/images/carismochito.png` y
+  descomentando una línea `require` (interruptor documentado en el archivo).
+- Dependencias ya presentes: `expo-haptics`, `expo-sensors`, `expo-image`,
+  `react-native-svg` (sin paquetes nativos nuevos → no requiere build de tienda).
+
 ## 2026-06-03 — Eventos: fix header transparente, botón Atrás y formulario Compartiendo
 
 - **Header de sub-pantallas realmente transparente**
