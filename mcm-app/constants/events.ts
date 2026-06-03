@@ -22,6 +22,7 @@
  * local o con `hidden: true` en el nodo Firebase queda oculta en el hub.
  */
 import type { ComponentProps } from 'react';
+import type { ImageSourcePropType } from 'react-native';
 import type { MaterialIcons } from '@expo/vector-icons';
 
 export interface EventSection {
@@ -62,6 +63,12 @@ export interface EventConfig {
   title: string;
   /** Color de acento del evento (header, accent bars del hub). */
   tintColor: string;
+  /**
+   * Logo/emblema del evento que se muestra en el hero del hub. Si falta, el
+   * hero usa el emblema-placeholder (icono `auto-awesome`).
+   * Ej.: `require('@/assets/alzalamirada.png')`.
+   */
+  heroImage?: ImageSourcePropType;
   /**
    * Prefijo de Firebase Realtime Database para todas las secciones.
    * · Jubileo: `jubileo` (raíz).
@@ -177,6 +184,7 @@ export const VISITAPAPA: EventConfig = {
   id: 'visitapapa26',
   title: 'Visita Papa León XIV 2026',
   tintColor: '#FCD200',
+  heroImage: require('@/assets/alzalamirada.png'),
   firebasePrefix: 'activities/visitapapa26',
   status: 'active',
   bannerText: 'Horarios, materiales y todo para vivir la visita del Papa',

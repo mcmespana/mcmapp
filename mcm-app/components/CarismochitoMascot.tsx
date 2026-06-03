@@ -8,12 +8,11 @@ import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
 /* -------------------------------------------------------------------------- */
 /*
  * Para usar el carismochito "de verdad" (PNG con fondo transparente):
- *   1. Sube tu imagen a  mcm-app/assets/images/carismochito.png
- *   2. Descomenta la línea `require(...)` de abajo y borra el `null`.
- * Sin hacer nada, se usa el carismochito vectorial de respaldo (también baila).
+ *   1. Sube tu imagen a  mcm-app/assets/carismochito.png
+ *   2. Ajusta la línea `require(...)` de abajo (o ponla a `null` para volver
+ *      al carismochito vectorial de respaldo, que también baila).
  */
-const MASCOT_PNG: number | null = null;
-// const MASCOT_PNG: number | null = require('@/assets/images/carismochito.png');
+const MASCOT_PNG: number | null = require('@/assets/carismochito.png');
 
 /* -------------------------------------------------------------------------- */
 /* Carismochito vectorial (respaldo)                                          */
