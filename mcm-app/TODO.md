@@ -55,7 +55,7 @@
 
 ## Mantenimiento
 
-- [ ] **Ampliar cobertura de tests**: ya hay 7 ficheros en `__tests__/` (`chordNotation`, `filterSongsData`, `formatText`, `resolveProfileConfig`, `songUtils`, `useFirebaseData`, `useNetworkStatus`). Priorizar lo que falta: `useSongProcessor`, `useChoirSession`, `useResolvedProfileConfig`, y al menos una pantalla con render snapshot.
+- [ ] **Ampliar cobertura de tests**: ya hay 10 ficheros en `__tests__/` (`arrangements`, `chordNotation`, `filterSongsData`, `formatText`, `notificationRoutes`, `resolveProfileConfig`, `songUtils`, `useFirebaseData`, `useNetworkStatus`, `youtube`). Priorizar lo que falta: `useSongProcessor`, `useChoirSession`, `useResolvedProfileConfig`, y al menos una pantalla con render snapshot.
 
 ---
 
@@ -132,7 +132,7 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 
 - [ ] **Trocear ficheros enormes**: `SelectedSongsScreen.tsx` (1.750 líneas), `NotificationsBottomSheet.tsx` (908), `WordleScreen.tsx` (776), `SecretPanelModal.tsx` (660). Extraer subcomponentes, hooks y utilidades. Ver MEJORAS.md §2.1.
 - [ ] **`prettier/prettier` a `error`** en `eslint.config.js`. Hoy es warn y deja pasar formato roto. Ver MEJORAS.md §3.1.
-- [ ] **Añadir script `typecheck`** en `package.json`: `"typecheck": "tsc --noEmit"`. Hoy se recomienda en `CLAUDE.md` pero no existe. Ver MEJORAS.md §11.4.
+- [x] **Añadir script `typecheck`** en `package.json`: `"typecheck": "tsc --noEmit"`. ✅ Hecho — existe en `package.json` y lo usa el CI.
 - [ ] **Logger centralizado** (`utils/logger.ts`) que sustituya los 99 `console.*` del código y conecte con Sentry en producción. Ver MEJORAS.md §3.2 y §8.2.
 - [ ] **Agrupar providers afines** en `app/_layout.tsx` (12 anidados). Por ejemplo, combinar `UserProfile` + `ProfileConfig`. Ver MEJORAS.md §2.2.
 
@@ -150,8 +150,8 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 
 ## DX / CI / Build
 
-- [ ] **Workflow de CI en pull requests** (`.github/workflows/ci.yml`) con `lint + typecheck + test`. Hoy solo hay deploy a producción/preview. Ver MEJORAS.md §11.1.
-- [ ] **Extender `lint-staged`** para correr eslint además de prettier en pre-commit. Ver MEJORAS.md §11.2.
+- [x] **Workflow de CI en pull requests** (`.github/workflows/ci.yml`) con `lint + typecheck + test`. ✅ Hecho — corre `typecheck`, `lint` y `test --ci` en PRs a `main`/`production`/`preview`.
+- [x] **Extender `lint-staged`** para correr eslint además de prettier en pre-commit. ✅ Hecho — `lint-staged` en el `package.json` raíz corre `prettier --write` + `eslint --max-warnings=0 --fix`.
 - [ ] **Documentar criterios de promoción OTA preview → production** (quién valida, cómo se hace rollback). Ver MEJORAS.md §12.2.
 
 ---
