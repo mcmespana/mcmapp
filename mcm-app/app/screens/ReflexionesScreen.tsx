@@ -4,9 +4,11 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  Share,
   Text,
   Pressable,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -20,7 +22,10 @@ import {
   Input,
   TextArea,
   Dialog,
+  useToast,
 } from 'heroui-native';
+import ContextMenuSheet from '@/components/ContextMenuSheet';
+import { useContextMenu } from '@/hooks/useContextMenu';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -67,6 +72,18 @@ const MONTHS_ES = [
   'dic',
 ];
 const WEEKDAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+
+/** Wraps children so a long-press (or right-click on web) fires `onLongPress`. */
+function LongPressable({
+  onLongPress,
+  children,
+}: {
+  onLongPress: () => void;
+  children: React.ReactNode;
+}) {
+  const ctx = useContextMenu(onLongPress);
+  return <Pressable {...ctx}>{children}</Pressable>;
+}
 
 export default function ReflexionesScreen() {
   const scheme = useColorScheme();
@@ -198,6 +215,26 @@ export default function ReflexionesScreen() {
     [list],
   );
 
+  const { toast } = useToast();
+  const [menuReflexion, setMenuReflexion] = useState<Reflexion | null>(null);
+
+  const reflexionText = (r: Reflexion) => {
+    const lines: string[] = [];
+    if (r.titulo) lines.push(r.titulo);
+    lines.push(r.contenido);
+    const meta = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
+    lines.push(`${formatFecha(r.fecha)}${meta ? ` · ${meta}` : ''}`);
+    return lines.join('\n\n');
+  };
+
+  const copyReflexion = async (r: Reflexion) => {
+    await Clipboard.setStringAsync(reflexionText(r));
+    toast.show({ variant: 'success', label: 'Reflexión copiada' });
+  };
+  const shareReflexion = (r: Reflexion) => {
+    Share.share({ message: reflexionText(r) });
+  };
+
   return (
     <View style={styles.container}>
       <PageContainer>
@@ -208,49 +245,48 @@ export default function ReflexionesScreen() {
           ]}
         >
           {sortedList.map((r) => (
-            <Card
-              key={r.id}
-              style={[styles.card, r.grupal && styles.cardGroup]}
-            >
-              <Card.Body style={{ paddingTop: 8 }}>
-                {r.titulo ? (
+            <LongPressable key={r.id} onLongPress={() => setMenuReflexion(r)}>
+              <Card style={[styles.card, r.grupal && styles.cardGroup]}>
+                <Card.Body style={{ paddingTop: 8 }}>
+                  {r.titulo ? (
+                    <Text
+                      style={[
+                        { fontWeight: '600', fontSize: 16, marginBottom: 4 },
+                        r.grupal
+                          ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
+                          : { color: theme.text },
+                      ]}
+                    >
+                      {r.titulo}
+                    </Text>
+                  ) : null}
+                  <Text
+                    style={
+                      r.grupal
+                        ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
+                        : { color: theme.text }
+                    }
+                  >
+                    {r.contenido}
+                  </Text>
                   <Text
                     style={[
-                      { fontWeight: '600', fontSize: 16, marginBottom: 4 },
+                      { marginTop: 4, fontSize: 12 },
                       r.grupal
-                        ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
-                        : { color: theme.text },
+                        ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
+                        : { color: theme.icon },
                     ]}
                   >
-                    {r.titulo}
+                    {formatFecha(r.fecha)}
+                    {r.grupal
+                      ? ` - ${getGrupoLabel(r.grupo)}`
+                      : r.autor
+                        ? ` - ${r.autor}`
+                        : ''}
                   </Text>
-                ) : null}
-                <Text
-                  style={
-                    r.grupal
-                      ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
-                      : { color: theme.text }
-                  }
-                >
-                  {r.contenido}
-                </Text>
-                <Text
-                  style={[
-                    { marginTop: 4, fontSize: 12 },
-                    r.grupal
-                      ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
-                      : { color: theme.icon },
-                  ]}
-                >
-                  {formatFecha(r.fecha)}
-                  {r.grupal
-                    ? ` - ${getGrupoLabel(r.grupo)}`
-                    : r.autor
-                      ? ` - ${r.autor}`
-                      : ''}
-                </Text>
-              </Card.Body>
-            </Card>
+                </Card.Body>
+              </Card>
+            </LongPressable>
           ))}
         </ScrollView>
       </PageContainer>
@@ -424,6 +460,30 @@ export default function ReflexionesScreen() {
           </View>
         </View>
       )}
+
+      <ContextMenuSheet
+        visible={menuReflexion !== null}
+        onClose={() => setMenuReflexion(null)}
+        title={menuReflexion?.titulo || 'Reflexión'}
+        actions={
+          menuReflexion
+            ? [
+                {
+                  key: 'copy',
+                  label: 'Copiar',
+                  icon: 'content-copy',
+                  onPress: () => copyReflexion(menuReflexion),
+                },
+                {
+                  key: 'share',
+                  label: 'Compartir',
+                  icon: 'share',
+                  onPress: () => shareReflexion(menuReflexion),
+                },
+              ]
+            : []
+        }
+      />
     </View>
   );
 }
