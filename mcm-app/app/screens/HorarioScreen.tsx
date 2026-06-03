@@ -1,12 +1,5 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Animated,
-  Platform,
-} from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Animated, Platform } from 'react-native';
 import { Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -28,8 +21,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MasStackParamList } from '../(tabs)/mas';
 
 type Nav = NativeStackNavigationProp<MasStackParamList, 'Materiales'>;
-
-const isWeb = Platform.OS === 'web';
 
 export default function HorarioScreen() {
   const navigation = useNavigation<Nav>();
@@ -55,20 +46,6 @@ export default function HorarioScreen() {
       setIndex(getClosestDateIndex(horarioData));
     }
   }, [horarioData]);
-
-  // En web ponemos el título "Horario" arriba en el propio header (con el botón
-  // atrás separado del borde) y eliminamos el hero grande de la pantalla, para
-  // que el calendario quede pegado al header. En iOS/Android se mantiene el
-  // hero del contenido.
-  useLayoutEffect(() => {
-    if (isWeb) {
-      navigation.setOptions({
-        headerTitle: () => <Text style={styles.webHeaderTitle}>Horario</Text>,
-        headerTitleAlign: 'left',
-        headerLeftContainerStyle: { paddingLeft: spacing.md },
-      } as any);
-    }
-  }, [navigation, styles.webHeaderTitle]);
 
   // Animation values for last day
   const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -197,7 +174,7 @@ export default function HorarioScreen() {
           backgroundColor: Colors[scheme ?? 'light'].background,
         }}
       >
-        {!isWeb && <ScreenHero title="Horario" />}
+        <ScreenHero title="Horario" hideOnWeb />
         {empty ? (
           <ComingSoon accentColor={event.tintColor} />
         ) : (
@@ -223,7 +200,7 @@ export default function HorarioScreen() {
 
   return (
     <View style={styles.container}>
-      {!isWeb && <ScreenHero title="Horario" />}
+      <ScreenHero title="Horario" hideOnWeb />
       <View style={styles.headerSection}>
         <DateSelector
           dates={fechas}
@@ -280,12 +257,6 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
     container: {
       flex: 1,
       backgroundColor: isDark ? theme.background : '#F8F9FA',
-    },
-    webHeaderTitle: {
-      fontSize: 22,
-      fontWeight: '800',
-      letterSpacing: -0.4,
-      color: theme.text,
     },
     headerSection: {
       backgroundColor: theme.background,
