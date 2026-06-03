@@ -210,7 +210,7 @@ export const VISITAPAPA: EventConfig = {
       url: 'https://maps.app.goo.gl/7DEtUhW1tfrnY9Sk7',
     },
     {
-      label: 'Visitas',
+      label: 'Sectores Eventos',
       subtitle: 'Salidas y traslados',
       emoji: '🚌',
       materialIcon: 'directions-bus',
