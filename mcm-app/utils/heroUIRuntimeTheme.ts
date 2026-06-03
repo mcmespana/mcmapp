@@ -147,6 +147,55 @@ const darkThemeVars = {
   '--color-border-tertiary': '#7a7a80',
 } as const;
 
+/*
+ * Modo CARISMOCHITO (easter egg): tiñe la familia de colores "de marca" de
+ * heroui-native con varios verdes distintos, reutilizando el mismo mecanismo
+ * de variables CSS que usa el modo claro/oscuro. Se aplica fusionando estos
+ * overrides sobre el mapa base de cada esquema, así no se pierde ninguna
+ * variable. Al salir se restaura el mapa base.
+ */
+const carismochitoOverridesLight = {
+  '--color-accent': '#1b9e4b',
+  '--color-accent-foreground': '#ffffff',
+  '--color-accent-hover': '#16823e',
+  '--color-accent-soft': 'rgba(27, 158, 75, 0.15)',
+  '--color-accent-soft-foreground': '#15823c',
+  '--color-accent-soft-hover': 'rgba(27, 158, 75, 0.22)',
+  '--color-focus': '#1b9e4b',
+  '--color-link': '#1b9e4b',
+  '--color-success': '#7ac943',
+  '--color-success-foreground': '#11321a',
+  '--color-success-hover': '#6bb838',
+  '--color-success-soft': 'rgba(122, 201, 67, 0.2)',
+  '--color-success-soft-foreground': '#3f6110',
+  '--color-danger': '#2bb673',
+  '--color-danger-foreground': '#ffffff',
+  '--color-danger-hover': '#23a165',
+  '--color-danger-soft': 'rgba(43, 182, 115, 0.16)',
+  '--color-danger-soft-foreground': '#1c7a4d',
+  '--color-warning': '#aecf2f',
+  '--color-warning-foreground': '#11321a',
+} as const;
+
+const carismochitoOverridesDark = {
+  '--color-accent': '#27c25c',
+  '--color-accent-foreground': '#06210f',
+  '--color-accent-hover': '#33d268',
+  '--color-accent-soft': 'rgba(39, 194, 92, 0.2)',
+  '--color-accent-soft-foreground': '#8de8a8',
+  '--color-accent-soft-hover': 'rgba(39, 194, 92, 0.26)',
+  '--color-focus': '#27c25c',
+  '--color-link': '#7ee29a',
+  '--color-success': '#8edb52',
+  '--color-success-foreground': '#06210f',
+  '--color-success-hover': '#9fe863',
+  '--color-danger': '#2fd189',
+  '--color-danger-foreground': '#06210f',
+  '--color-danger-hover': '#3fe098',
+  '--color-warning': '#c4e25a',
+  '--color-warning-foreground': '#06210f',
+} as const;
+
 let runtimeThemeRegistered = false;
 
 export function registerHeroUIRuntimeTheme() {
@@ -162,4 +211,25 @@ export function registerHeroUIRuntimeTheme() {
 export function syncHeroUITheme(theme: ThemeScheme) {
   registerHeroUIRuntimeTheme();
   Uniwind.setTheme(theme);
+}
+
+/**
+ * Activa (`true`) o restaura (`false`) la paleta verde del modo carismochito
+ * sobre la capa de componentes heroui-native. Reactivo, sin recargar nada.
+ */
+export function setCarismochitoTheme(active: boolean) {
+  registerHeroUIRuntimeTheme();
+  if (active) {
+    Uniwind.updateCSSVariables('light', {
+      ...lightThemeVars,
+      ...carismochitoOverridesLight,
+    });
+    Uniwind.updateCSSVariables('dark', {
+      ...darkThemeVars,
+      ...carismochitoOverridesDark,
+    });
+  } else {
+    Uniwind.updateCSSVariables('light', lightThemeVars);
+    Uniwind.updateCSSVariables('dark', darkThemeVars);
+  }
 }
