@@ -158,7 +158,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, configError, signInWithGoogle, signInWithApple, signOut }}
+      value={{
+        user,
+        loading,
+        configError,
+        signInWithGoogle,
+        signInWithApple,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>

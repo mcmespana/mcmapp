@@ -48,7 +48,8 @@ export default function GlassSurface({
   // isGlassEffectAPIAvailable() guards against crashes on some iOS 26 beta
   // builds where isLiquidGlassAvailable() returns true but the native API
   // isn't actually safe to use. See: https://github.com/expo/expo/issues/40911
-  const liquidAvailable = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+  const liquidAvailable =
+    isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
   const {
     backgroundColor,
     blurTint: autoTint,

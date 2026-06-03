@@ -60,6 +60,7 @@
   los FAB de Ajustes y Compartiendo dejan de estar abajo-derecha apilados y
   pasan a ser dos botones liquid-glass flotantes arriba a la derecha, alineados
   con la fila del header.
+
 ## 2026-06-02 — Notificaciones: alineación con el contrato del MCM Panel
 
 - **Normalización de rutas + alias** (`utils/notificationRoutes.ts` nuevo,

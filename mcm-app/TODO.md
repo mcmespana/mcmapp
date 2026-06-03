@@ -31,25 +31,25 @@
 > trabajo nuevo y por eso quedaron fuera de la entrega OTA de 2026-06-02.
 
 - [ ] **NSE iOS para imágenes en la notificación del sistema** — hoy `richContent.image`
-  + `mutableContent` NO pintan imagen en iOS (no hay Notification Service Extension);
-  la imagen solo se ve in-app vía `data.imageUrl`. Añadir NSE (Android ya funciona).
-  ⚠️ Código nativo → requiere build de producción y commit con `[skip-ota]`.
+  - `mutableContent` NO pintan imagen en iOS (no hay Notification Service Extension);
+    la imagen solo se ve in-app vía `data.imageUrl`. Añadir NSE (Android ya funciona).
+    ⚠️ Código nativo → requiere build de producción y commit con `[skip-ota]`.
 - [ ] **Deep link a un evento/actividad concreto** — hoy el destino navegable es
-  `/(tabs)/mas`; no hay ruta estable tipo `/(tabs)/mas/evento/<id>`. Registrar una
-  ruta con parámetro `eventId` y propagarla para que una notificación abra el evento
-  directamente (Jubileo, visitapapa26, `activities/<nombre>`).
+      `/(tabs)/mas`; no hay ruta estable tipo `/(tabs)/mas/evento/<id>`. Registrar una
+      ruta con parámetro `eventId` y propagarla para que una notificación abra el evento
+      directamente (Jubileo, visitapapa26, `activities/<nombre>`).
 - [ ] **Channels Android por tipo/prioridad** — hoy solo existe el channel `default`
-  (importancia MAX), así que `priority` no diferencia el display. Crear channels
-  (`urgente`, `eventos`…) para heads-up/sonido diferenciados y permitir que el panel
-  mande `channelId`. ⚠️ Puede requerir build nativo.
+      (importancia MAX), así que `priority` no diferencia el display. Crear channels
+      (`urgente`, `eventos`…) para heads-up/sonido diferenciados y permitir que el panel
+      mande `channelId`. ⚠️ Puede requerir build nativo.
 - [ ] **Usar `data.category` en el centro de notificaciones** — hoy se guarda pero no
-  dispara color/icono/agrupación/filtro. Diseñar el tratamiento visual por categoría
-  y converger el vocabulario con el panel (`eventos` vs `evento`, `cancionero` vs
-  `cantoral`).
+      dispara color/icono/agrupación/filtro. Diseñar el tratamiento visual por categoría
+      y converger el vocabulario con el panel (`eventos` vs `evento`, `cancionero` vs
+      `cantoral`).
 - [ ] **(Panel) Corregir el contrato** — que el MCM Panel use las rutas reales,
-  segmente por `topics`/`profileType`/`delegationId` (no `userType`/`delegacion`) y
-  desacople `categoryId` (solo iOS) de `data.category`. Detalle en
-  `NOTIFICACIONES_CONTRATO.md`.
+      segmente por `topics`/`profileType`/`delegationId` (no `userType`/`delegacion`) y
+      desacople `categoryId` (solo iOS) de `data.category`. Detalle en
+      `NOTIFICACIONES_CONTRATO.md`.
 
 ---
 

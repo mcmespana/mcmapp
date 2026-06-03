@@ -197,6 +197,46 @@ export default function GruposScreen() {
     setMemberFilter('');
   }, []);
 
+  const handleSearchHitPress = useCallback((hit: SearchHit) => {
+    setCategoria(hit.categoria);
+    setGrupo(hit.grupo);
+  }, []);
+
+  // ⚡ Bolt: renderItem functions extracted to useCallback to prevent
+  // recreating closures on every render. This ensures that list items
+  // wrapped in React.memo won't needlessly re-render on keystrokes.
+  const renderMemberItem = useCallback(
+    ({ item }: { item: string }) => (
+      <MemberRow name={item} myName={myName} styles={styles} />
+    ),
+    [myName, styles],
+  );
+
+  const renderGrupoItem = useCallback(
+    ({ item }: { item: Grupo }) => (
+      <GrupoCard
+        grupo={item}
+        myName={myName}
+        styles={styles}
+        onPress={setGrupo}
+      />
+    ),
+    [myName, styles],
+  );
+
+  const renderSearchHitItem = useCallback(
+    ({ item }: { item: SearchHit }) => (
+      <SearchHitRow
+        hit={item}
+        query={search.trim()}
+        myName={myName}
+        styles={styles}
+        onPress={handleSearchHitPress}
+      />
+    ),
+    [search, myName, styles, handleSearchHitPress],
+  );
+
   const findMe = useCallback(() => {
     if (!myName) return;
     h.tap();
@@ -309,9 +349,7 @@ export default function GruposScreen() {
           <FlatList
             data={filteredMiembros}
             keyExtractor={(item, index) => `${item}-${index}`}
-            renderItem={({ item }) => (
-              <MemberRow name={item} myName={myName} styles={styles} />
-            )}
+            renderItem={renderMemberItem}
             ListHeaderComponent={ListHeader}
             contentContainerStyle={
               Platform.OS === 'ios'
@@ -368,14 +406,7 @@ export default function GruposScreen() {
             <FlatList
               data={groupsInCat}
               keyExtractor={(g, idx) => `${g.nombre}-${idx}`}
-              renderItem={({ item }) => (
-                <GrupoCard
-                  grupo={item}
-                  myName={myName}
-                  styles={styles}
-                  onPress={() => setGrupo(item)}
-                />
-              )}
+              renderItem={renderGrupoItem}
               contentContainerStyle={styles.listContent}
               initialNumToRender={12}
               windowSize={9}
@@ -452,18 +483,7 @@ export default function GruposScreen() {
                 </Text>
               </View>
             )}
-            renderItem={({ item }) => (
-              <SearchHitRow
-                hit={item}
-                query={search.trim()}
-                myName={myName}
-                styles={styles}
-                onPress={() => {
-                  setCategoria(item.categoria);
-                  setGrupo(item.grupo);
-                }}
-              />
-            )}
+            renderItem={renderSearchHitItem}
             ListHeaderComponent={headerComponent}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
@@ -586,7 +606,7 @@ interface GrupoCardProps {
   grupo: Grupo;
   myName: string;
   styles: ReturnType<typeof createStyles>;
-  onPress: () => void;
+  onPress: (grupo: Grupo) => void;
 }
 
 const GrupoCard = React.memo(function GrupoCard({
@@ -604,7 +624,7 @@ const GrupoCard = React.memo(function GrupoCard({
   const count = grupo.miembros?.length || 0;
   return (
     <PressableFeedback
-      onPress={onPress}
+      onPress={() => onPress(grupo)}
       style={[styles.grupoCard, meIn && styles.grupoCardMe]}
       accessibilityRole="button"
       accessibilityLabel={`Abrir grupo ${grupo.nombre}`}
@@ -641,7 +661,7 @@ interface SearchHitRowProps {
   query: string;
   myName: string;
   styles: ReturnType<typeof createStyles>;
-  onPress: () => void;
+  onPress: (hit: SearchHit) => void;
 }
 
 const SearchHitRow = React.memo(function SearchHitRow({
@@ -654,7 +674,7 @@ const SearchHitRow = React.memo(function SearchHitRow({
   const me = !!hit.miembro && isMe(hit.miembro, myName);
   return (
     <PressableFeedback
-      onPress={onPress}
+      onPress={() => onPress(hit)}
       style={[styles.hitRow, me && styles.hitRowMe]}
       accessibilityRole="button"
     >

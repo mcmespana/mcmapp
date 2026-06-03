@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -142,11 +142,11 @@ export default function ContactosScreen() {
   const data = contacts as Contacto[] | undefined;
   const [query, setQuery] = useState('');
 
-  const call = (tel: string) => Linking.openURL(`tel:${tel}`);
-  const whatsapp = (tel: string) => {
+  const call = useCallback((tel: string) => Linking.openURL(`tel:${tel}`), []);
+  const whatsapp = useCallback((tel: string) => {
     const clean = tel.replace(/[^0-9+]/g, '').replace(/^\+/, '');
     Linking.openURL(`https://wa.me/${clean}`);
-  };
+  }, []);
 
   const filtered = useMemo(() => {
     if (!data) return [] as Contacto[];
@@ -162,6 +162,69 @@ export default function ContactosScreen() {
   }, [data, query]);
 
   const tints = isDark ? AVATAR_TINTS_DARK : AVATAR_TINTS;
+  const showSearch = data ? data.length > 6 : false;
+  const dataLength = data ? data.length : 0;
+
+  const ListHeader = useMemo(
+    () => (
+      <View>
+        <ScreenHero title="Contactos" />
+        {showSearch ? (
+          <View style={styles.searchContainer}>
+            <SearchField value={query} onChange={setQuery}>
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input
+                  placeholder="Buscar contacto"
+                  autoCorrect={false}
+                  autoCapitalize="words"
+                />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+            {query.trim().length >= 2 ? (
+              <Text style={styles.resultsMeta}>
+                {filtered.length} de {dataLength}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
+    ),
+    [showSearch, styles, query, filtered.length, dataLength],
+  );
+
+  // ⚡ Bolt: renderItem extracted to useCallback to prevent generating new
+  // functions on every keystroke (which would defeat React.memo on ContactRow).
+  const renderItem = useCallback(
+    ({ item, index }: { item: Contacto; index: number }) => (
+      <View style={styles.cardWrapper}>
+        <View
+          style={[
+            styles.card,
+            // The card wraps each row individually so the FlatList can
+            // virtualize. The visual "card grouping" is preserved with
+            // top/bottom corners on first/last and seamless dividers via
+            // negative marginTop on intermediate rows.
+            index === 0 && styles.cardFirst,
+            index === filtered.length - 1 && styles.cardLast,
+            index !== 0 && index !== filtered.length - 1 && styles.cardMiddle,
+          ]}
+        >
+          <ContactRow
+            contact={item}
+            tint={tints[index % tints.length]}
+            isLast={index === filtered.length - 1}
+            isDark={isDark}
+            styles={styles}
+            onCall={call}
+            onWhatsapp={whatsapp}
+          />
+        </View>
+      </View>
+    ),
+    [filtered.length, isDark, styles, tints, call, whatsapp],
+  );
 
   if (!data || data.length === 0) {
     const showSkeleton = loading && !data;
@@ -186,34 +249,6 @@ export default function ContactosScreen() {
     );
   }
 
-  const showSearch = data.length > 6;
-
-  const ListHeader = (
-    <View>
-      <ScreenHero title="Contactos" />
-      {showSearch ? (
-        <View style={styles.searchContainer}>
-          <SearchField value={query} onChange={setQuery}>
-            <SearchField.Group>
-              <SearchField.SearchIcon />
-              <SearchField.Input
-                placeholder="Buscar contacto"
-                autoCorrect={false}
-                autoCapitalize="words"
-              />
-              <SearchField.ClearButton />
-            </SearchField.Group>
-          </SearchField>
-          {query.trim().length >= 2 ? (
-            <Text style={styles.resultsMeta}>
-              {filtered.length} de {data.length}
-            </Text>
-          ) : null}
-        </View>
-      ) : null}
-    </View>
-  );
-
   return (
     <PageContainer>
       <View style={styles.container}>
@@ -221,34 +256,7 @@ export default function ContactosScreen() {
           data={filtered}
           keyExtractor={(c, idx) => `${c.nombre}-${idx}`}
           ListHeaderComponent={ListHeader}
-          renderItem={({ item, index }) => (
-            <View style={styles.cardWrapper}>
-              <View
-                style={[
-                  styles.card,
-                  // The card wraps each row individually so the FlatList can
-                  // virtualize. The visual "card grouping" is preserved with
-                  // top/bottom corners on first/last and seamless dividers via
-                  // negative marginTop on intermediate rows.
-                  index === 0 && styles.cardFirst,
-                  index === filtered.length - 1 && styles.cardLast,
-                  index !== 0 &&
-                    index !== filtered.length - 1 &&
-                    styles.cardMiddle,
-                ]}
-              >
-                <ContactRow
-                  contact={item}
-                  tint={tints[index % tints.length]}
-                  isLast={index === filtered.length - 1}
-                  isDark={isDark}
-                  styles={styles}
-                  onCall={call}
-                  onWhatsapp={whatsapp}
-                />
-              </View>
-            </View>
-          )}
+          renderItem={renderItem}
           ListEmptyComponent={
             query.trim().length >= 2 ? (
               <View style={styles.emptyContainer}>
