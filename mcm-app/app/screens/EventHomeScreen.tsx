@@ -9,6 +9,8 @@ import {
   ScrollView,
   Platform,
   Linking,
+  Image,
+  ImageStyle,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -105,18 +107,27 @@ export default function EventHomeScreen() {
         {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
 
         {/* ── Hero del evento ── */}
-        {/* Rellena el espacio superior con identidad: emblema + título + lema.
-            El emblema es un placeholder discreto; cuando llegue el logo del
-            encuentro basta con sustituir el <MaterialIcons> por un <Image>. */}
+        {/* Rellena el espacio superior con identidad: emblema/logo + título +
+            lema. Si el evento define `heroImage` se muestra su logo; si no, un
+            emblema-placeholder discreto. */}
         <LinearGradient
           colors={[tint, darkenHex(tint, 0.22)]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
-          <View style={[styles.heroEmblem, { backgroundColor: emblemBg }]}>
-            <MaterialIcons name="auto-awesome" size={26} color={heroFg} />
-          </View>
+          {event.heroImage ? (
+            <Image
+              source={event.heroImage}
+              style={styles.heroImage}
+              resizeMode="contain"
+              accessibilityIgnoresInvertColors
+            />
+          ) : (
+            <View style={[styles.heroEmblem, { backgroundColor: emblemBg }]}>
+              <MaterialIcons name="auto-awesome" size={26} color={heroFg} />
+            </View>
+          )}
           <Text style={[styles.heroTitle, { color: heroFg }]}>
             {event.title}
           </Text>
@@ -299,6 +310,7 @@ interface Styles {
   scrollContent: ViewStyle;
   hero: ViewStyle;
   heroEmblem: ViewStyle;
+  heroImage: ImageStyle;
   heroTitle: TextStyle;
   heroSubtitle: TextStyle;
   motto: ViewStyle;
@@ -347,6 +359,12 @@ const createStyles = (isDark: boolean) =>
       borderRadius: 16,
       alignItems: 'center',
       justifyContent: 'center',
+      marginBottom: spacing.md,
+    },
+    heroImage: {
+      width: 132,
+      height: 132,
+      alignSelf: 'flex-start',
       marginBottom: spacing.md,
     },
     heroTitle: {
