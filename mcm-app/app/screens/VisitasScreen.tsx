@@ -8,9 +8,11 @@ import {
   Platform,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  Modal,
   useWindowDimensions,
 } from 'react-native';
-import { Dialog, PressableFeedback, Skeleton } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
@@ -178,83 +180,96 @@ export default function VisitasScreen() {
           ))}
         </ScrollView>
       </PageContainer>
-      <Dialog
-        isOpen={!!selected}
-        onOpenChange={(open) => {
-          if (!open) setSelected(null);
-        }}
+      <Modal
+        visible={!!selected}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setSelected(null)}
       >
-        <Dialog.Portal>
-          <Dialog.Overlay />
-          <Dialog.Content>
-            <Dialog.Close />
-            {selected ? (
-              <ScrollView
-                style={{ maxHeight: windowHeight * 0.7 }}
-                contentContainerStyle={styles.dialogInner}
-                showsVerticalScrollIndicator={false}
-                bounces={false}
-              >
-                {selected.imagen ? (
+        <TouchableWithoutFeedback onPress={() => setSelected(null)}>
+          <View style={styles.modalBackdrop}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalCard}>
+                {selected?.imagen ? (
                   <Image
                     source={{ uri: selected.imagen }}
-                    style={styles.dialogImage}
+                    style={styles.modalImage}
                     resizeMode="cover"
                   />
                 ) : null}
-                <Dialog.Title>{selected.titulo}</Dialog.Title>
-                {selected.subtitulo ? (
-                  <Text style={styles.dialogSubtitle}>
-                    {selected.subtitulo}
-                  </Text>
-                ) : null}
-                {selected.fecha ? (
-                  <View style={styles.dialogDateRow}>
-                    <MaterialIcons
-                      name="calendar-today"
-                      size={15}
-                      color={isDark ? '#A0A0A8' : '#7B7B82'}
-                    />
-                    <Text style={styles.dialogDateText} numberOfLines={1}>
-                      {formatDate(selected.fecha)}
-                    </Text>
+                <TouchableOpacity
+                  style={styles.modalClose}
+                  onPress={() => setSelected(null)}
+                  hitSlop={10}
+                  accessibilityLabel="Cerrar"
+                >
+                  <MaterialIcons name="close" size={22} color="#FFFFFF" />
+                </TouchableOpacity>
+                {selected ? (
+                  <View style={styles.modalBody}>
+                    <Text style={styles.modalTitle}>{selected.titulo}</Text>
+                    {selected.subtitulo ? (
+                      <Text style={styles.modalSubtitle}>
+                        {selected.subtitulo}
+                      </Text>
+                    ) : null}
+                    {selected.fecha ? (
+                      <View style={styles.modalDateRow}>
+                        <MaterialIcons
+                          name="calendar-today"
+                          size={15}
+                          color={isDark ? '#A0A0A8' : '#7B7B82'}
+                        />
+                        <Text style={styles.modalDateText} numberOfLines={1}>
+                          {formatDate(selected.fecha)}
+                        </Text>
+                      </View>
+                    ) : null}
+                    {selected.texto ? (
+                      <ScrollView
+                        style={{ maxHeight: windowHeight * 0.32 }}
+                        contentContainerStyle={{ paddingVertical: 2 }}
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                      >
+                        <Text style={styles.modalText}>{selected.texto}</Text>
+                      </ScrollView>
+                    ) : null}
+                    {selected.mapa ? (
+                      <TouchableOpacity
+                        style={[
+                          styles.dialogMapBtn,
+                          { backgroundColor: isDark ? '#1A2744' : '#E8F0FE' },
+                        ]}
+                        onPress={() => {
+                          const url = selected.mapa;
+                          setSelected(null);
+                          openMap(url);
+                        }}
+                      >
+                        <MaterialIcons
+                          name="map"
+                          size={18}
+                          color={isDark ? '#7AB3FF' : '#2563EB'}
+                        />
+                        <Text
+                          style={[
+                            styles.dialogMapBtnText,
+                            { color: isDark ? '#7AB3FF' : '#2563EB' },
+                          ]}
+                        >
+                          Ver en mapa
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
                 ) : null}
-                {selected.texto ? (
-                  <Text style={styles.dialogText}>{selected.texto}</Text>
-                ) : null}
-                {selected.mapa ? (
-                  <TouchableOpacity
-                    style={[
-                      styles.dialogMapBtn,
-                      { backgroundColor: isDark ? '#1A2744' : '#E8F0FE' },
-                    ]}
-                    onPress={() => {
-                      const url = selected.mapa;
-                      setSelected(null);
-                      openMap(url);
-                    }}
-                  >
-                    <MaterialIcons
-                      name="map"
-                      size={18}
-                      color={isDark ? '#7AB3FF' : '#2563EB'}
-                    />
-                    <Text
-                      style={[
-                        styles.dialogMapBtnText,
-                        { color: isDark ? '#7AB3FF' : '#2563EB' },
-                      ]}
-                    >
-                      Ver en mapa
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
-              </ScrollView>
-            ) : null}
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
@@ -332,35 +347,74 @@ const createStyles = (scheme: 'light' | 'dark') => {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    dialogInner: {
-      gap: 12,
-      paddingTop: 4,
-      paddingBottom: 4,
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
     },
-    dialogImage: {
+    modalCard: {
       width: '100%',
-      height: 150,
-      borderRadius: 14,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      maxWidth: 460,
+      backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+      borderRadius: 20,
+      overflow: 'hidden',
+      ...Platform.select({
+        web: { boxShadow: '0 14px 44px rgba(0,0,0,0.3)' },
+        default: {
+          shadowColor: '#000',
+          shadowOpacity: 0.3,
+          shadowRadius: 24,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 14,
+        },
+      }),
     },
-    dialogSubtitle: {
+    modalImage: {
+      width: '100%',
+      height: 170,
+      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+    },
+    modalClose: {
+      position: 'absolute',
+      top: 12,
+      right: 12,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalBody: {
+      padding: 20,
+      gap: 10,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      letterSpacing: -0.3,
+      color: isDark ? '#F5F5F7' : '#1C1C1E',
+    },
+    modalSubtitle: {
       fontSize: 15,
       color: isDark ? '#C7C7CC' : '#3A3A3C',
       lineHeight: 20,
-      marginTop: -4,
+      marginTop: -2,
     },
-    dialogDateRow: {
+    modalDateRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
     },
-    dialogDateText: {
+    modalDateText: {
       fontSize: 13,
       fontWeight: '600',
       color: isDark ? '#A0A0A8' : '#7B7B82',
       textTransform: 'capitalize',
     },
-    dialogText: {
+    modalText: {
       fontSize: 15,
       lineHeight: 22,
       color: isDark ? '#E5E5EA' : '#2C2C2E',
