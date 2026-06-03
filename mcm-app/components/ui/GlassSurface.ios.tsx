@@ -48,7 +48,8 @@ export default function GlassSurface({
   // isGlassEffectAPIAvailable() guards against crashes on some iOS 26 beta
   // builds where isLiquidGlassAvailable() returns true but the native API
   // isn't actually safe to use. See: https://github.com/expo/expo/issues/40911
-  const liquidAvailable = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+  const liquidAvailable =
+    isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
   const {
     backgroundColor,
     blurTint: autoTint,
@@ -63,21 +64,37 @@ export default function GlassSurface({
   const glassEffectStyle: 'clear' | 'regular' =
     variant === 'clear' ? 'clear' : 'regular';
 
+  // El radio del contenedor debe aplicarse también a la capa nativa de cristal:
+  // sin esto, el `GlassView`/`BlurView` dibuja su propio borde/halo rectangular
+  // que el contenedor recorta a destiempo y se percibe como un segundo cristal
+  // (el efecto "doble capa" del botón Atrás). Igualando el radio, la pieza de
+  // cristal queda perfectamente redondeada en una sola capa.
+  const flat = StyleSheet.flatten(style) as ViewStyle | undefined;
+  const radius =
+    typeof flat?.borderRadius === 'number' ? flat.borderRadius : undefined;
+  const radiusStyle = radius != null ? { borderRadius: radius } : null;
+
   const baseLayer = liquidAvailable ? (
     <>
       {tintColor ? (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor }]} />
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor }, radiusStyle]}
+        />
       ) : null}
       <GlassView
         glassEffectStyle={glassEffectStyle}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, radiusStyle]}
       />
     </>
   ) : (
     <BlurView
       tint={blurTint}
       intensity={blurIntensity}
-      style={[StyleSheet.absoluteFill, tintColor ? { backgroundColor } : null]}
+      style={[
+        StyleSheet.absoluteFill,
+        tintColor ? { backgroundColor } : null,
+        radiusStyle,
+      ]}
     />
   );
 

@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 import GlassBackButton from '@/components/ui/GlassBackButton';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/colors';
 import { getEvent } from '@/constants/events';
 
 import EventHomeScreen from './EventHomeScreen';
@@ -37,9 +39,19 @@ import WordleScreen from './WordleScreen';
  */
 export type EventRouteParams = { eventId?: string };
 
-const styles = StyleSheet.create({
-  transparentHeader: { backgroundColor: 'transparent' },
-});
+/**
+ * Fondo del header flotante: una capa OPACA pintada con el color de fondo de la
+ * pantalla (reactivo al tema claro/oscuro). Sustituye al material translúcido
+ * nativo, que dejaba ver un gris por detrás de la barra y creaba el efecto de
+ * "doble cristal" con el botón Atrás. Al fundirse con el contenido, la barra
+ * resulta visualmente inexistente y el botón "Atrás" glass flota sobre un fondo
+ * plano y limpio.
+ */
+function FloatingHeaderBackground() {
+  const scheme = useColorScheme();
+  const bg = Colors[scheme ?? 'light'].background;
+  return <View style={[StyleSheet.absoluteFill, { backgroundColor: bg }]} />;
+}
 
 /**
  * Rutas de sub-pantalla de evento (todo menos el hub `JubileoHome`). Los tabs
@@ -126,11 +138,12 @@ export const eventScreenOptions =
     const tint = event.tintColor;
     const textColor = getTextColor(tint);
     const isIOS = Platform.OS === 'ios';
-    // "Flotante" = sin header visible: barra TOTALMENTE transparente, sin
-    // título (lo pone el ScreenHero del contenido) + botón "Atrás" glass
-    // flotante a la izquierda. Las acciones glass van arriba a la derecha vía
-    // `EventActionButtons`. Se aplica a todas las sub-pantallas con título
-    // grande propio (`hideHeaderTitle`) en TODAS las plataformas.
+    // "Flotante" = sin header visible: la barra se pinta con el color de fondo
+    // de la pantalla (se funde con el contenido, no es el material gris
+    // translúcido nativo), sin título (lo pone el ScreenHero del contenido) +
+    // botón "Atrás" glass flotante a la izquierda. Las acciones glass van arriba
+    // a la derecha vía `EventActionButtons`. Se aplica a todas las sub-pantallas
+    // con título grande propio (`hideHeaderTitle`) en TODAS las plataformas.
     const useFloating = !!opts?.hideHeaderTitle;
     if (useFloating) {
       return {
@@ -140,9 +153,7 @@ export const eventScreenOptions =
         headerTitle: () => <View />,
         headerStyle: { backgroundColor: 'transparent' },
         headerShadowVisible: false,
-        headerBackground: () => (
-          <View style={[StyleSheet.absoluteFill, styles.transparentHeader]} />
-        ),
+        headerBackground: () => <FloatingHeaderBackground />,
         headerLeft: () => <GlassBackButton />,
       };
     }

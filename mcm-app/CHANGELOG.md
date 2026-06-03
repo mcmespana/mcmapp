@@ -13,6 +13,26 @@
 
 ---
 
+## 2026-06-03 — Eventos: fix header transparente, botón Atrás y formulario Compartiendo
+
+- **Header de sub-pantallas realmente transparente**
+  (`app/screens/eventStackScreens.tsx`): la barra flotante se pinta ahora con el
+  color de fondo de la pantalla (capa opaca) en vez de dejar un `View`
+  transparente que dejaba ver el material gris translúcido nativo por detrás. La
+  barra se funde con el contenido y desaparece el "doble cristal" que se veía
+  bajo el botón Atrás.
+- **Botón Atrás (y demás cristales) bien redondeados**
+  (`components/ui/GlassSurface.ios.tsx`): el radio del contenedor se aplica
+  también a la capa nativa `GlassView`/`BlurView`, evitando el borde rectangular
+  que se percibía como una segunda capa.
+- **Compartiendo: selector de fecha en modal centrado**
+  (`app/screens/ReflexionesScreen.tsx`): se sustituye el `Dialog` de heroui
+  (cuyo spinner nativo se escapaba a la esquina superior al anidarse con el
+  bottom sheet) por un `Modal` nativo centrado con botón "Listo".
+- **Compartiendo: se elimina "Compartir en grupo"** del formulario y se cambia
+  el subtítulo del hero a "Comparte aquí una frase, pensamiento o algo que te
+  llevas de estos días".
+
 ## 2026-06-02 — Eventos (Visita Papa): rediseño de headers, hero, estados vacíos y FABs
 
 - **Sub-pantallas sin header (transparente) en todas las plataformas**

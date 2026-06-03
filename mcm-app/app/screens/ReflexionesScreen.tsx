@@ -7,17 +7,11 @@ import {
   Text,
   Pressable,
   TextInput,
+  Modal,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  Card,
-  Switch,
-  Chip,
-  Spinner,
-  BottomSheet,
-  Dialog,
-} from 'heroui-native';
+import { Card, Spinner, BottomSheet } from 'heroui-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -117,8 +111,6 @@ export default function ReflexionesScreen() {
   const [titulo, setTitulo] = useState('');
   const [contenido, setContenido] = useState('');
   const [fecha, setFecha] = useState(new Date());
-  const [grupal, setGrupal] = useState(false);
-  const [grupo, setGrupo] = useState<string | undefined>(undefined);
   const [autor, setAutor] = useState(getDefaultAuthor());
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -152,8 +144,8 @@ export default function ReflexionesScreen() {
       titulo: titulo.trim(),
       contenido,
       fecha: fecha.toISOString().slice(0, 10),
-      grupal,
-      ...(grupal ? (grupo ? { grupo } : {}) : { autor }),
+      grupal: false,
+      autor,
     };
     try {
       const db = getDatabase(getFirebaseApp());
@@ -172,8 +164,6 @@ export default function ReflexionesScreen() {
     setTitulo('');
     setContenido('');
     setFecha(new Date());
-    setGrupal(false);
-    setGrupo(undefined);
     setAutor(getDefaultAuthor());
     setSaving(false);
   }
@@ -200,7 +190,7 @@ export default function ReflexionesScreen() {
     <View style={styles.container}>
       <ScreenHero
         title="Compartiendo"
-        subtitle="Reflexiones que iluminan a la comunidad"
+        subtitle="Comparte aquí una frase, pensamiento o algo que te llevas de estos días"
       />
       <PageContainer>
         <ScrollView
@@ -342,49 +332,16 @@ export default function ReflexionesScreen() {
                 />
               </Pressable>
 
-              <View style={styles.switchRow}>
-                <MaterialIcons
-                  name="groups"
-                  size={20}
-                  color={grupal ? colors.success : theme.icon}
-                />
-                <Text style={styles.switchLabel}>Compartir en grupo</Text>
-                <Switch
-                  isSelected={grupal}
-                  onSelectedChange={(v) => setGrupal(v)}
+              <View style={styles.field}>
+                <Text style={styles.inputLabel}>Tu nombre (opcional)</Text>
+                <TextInput
+                  value={autor}
+                  onChangeText={setAutor}
+                  placeholder="Cómo quieres firmar"
+                  placeholderTextColor={theme.icon}
+                  style={styles.input}
                 />
               </View>
-
-              {grupal ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.chipRow}
-                  style={styles.chipScroll}
-                >
-                  {grupos.map((g) => (
-                    <Chip
-                      key={g.nombre}
-                      variant={grupo === g.nombre ? 'primary' : 'soft'}
-                      color="success"
-                      onPress={() => setGrupo(g.nombre)}
-                    >
-                      <Chip.Label>{getGrupoLabel(g.nombre)}</Chip.Label>
-                    </Chip>
-                  ))}
-                </ScrollView>
-              ) : (
-                <View style={styles.field}>
-                  <Text style={styles.inputLabel}>Tu nombre (opcional)</Text>
-                  <TextInput
-                    value={autor}
-                    onChangeText={setAutor}
-                    placeholder="Cómo quieres firmar"
-                    placeholderTextColor={theme.icon}
-                    style={styles.input}
-                  />
-                </View>
-              )}
 
               <Pressable
                 onPress={addReflexion}
@@ -403,30 +360,50 @@ export default function ReflexionesScreen() {
         </BottomSheet.Portal>
       </BottomSheet>
 
-      {/* Date selector modal */}
-      <Dialog
-        isOpen={showDateSelector}
-        onOpenChange={(open) => {
-          if (!open) setShowDateSelector(false);
-        }}
+      {/* Date selector — modal centrado que aparece por encima de todo
+          (incluido el bottom sheet). Antes se usaba el Dialog de heroui, que
+          al anidarse con el portal del BottomSheet dejaba escapar el spinner
+          nativo a la esquina superior. Un Modal nativo de RN se presenta de
+          forma fiable centrado sobre el resto de la UI. */}
+      <Modal
+        visible={showDateSelector}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDateSelector(false)}
       >
-        <Dialog.Portal>
-          <Dialog.Overlay />
-          <Dialog.Content>
-            <Dialog.Close />
+        <Pressable
+          style={styles.dateModalOverlay}
+          onPress={() => setShowDateSelector(false)}
+        >
+          {/* Pressable interior que “traga” el toque para no cerrar al
+              interactuar con el selector. */}
+          <Pressable style={styles.dateModalCard} onPress={() => {}}>
+            <Text style={styles.dateModalTitle}>Elige la fecha</Text>
             <DateTimePicker
               value={fecha}
               mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              display="spinner"
               locale="es-ES"
+              themeVariant={scheme === 'dark' ? 'dark' : 'light'}
               onChange={(_, selected) => {
-                setShowDateSelector(false);
                 if (selected) setFecha(selected);
               }}
+              style={styles.datePicker}
             />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog>
+            <Pressable
+              onPress={() => setShowDateSelector(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Confirmar fecha"
+              style={({ pressed }) => [
+                styles.dateDoneBtn,
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={styles.dateDoneLabel}>Listo</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Saving overlay */}
       {saving && (
@@ -523,16 +500,44 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: theme.text,
     },
     dateValue: { fontSize: 15, fontWeight: '600', color: colors.success },
-    switchRow: {
-      flexDirection: 'row',
+    dateModalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      justifyContent: 'center',
       alignItems: 'center',
-      gap: spacing.sm,
-      marginBottom: spacing.md,
-      paddingVertical: 4,
+      padding: spacing.lg,
     },
-    switchLabel: { flex: 1, fontSize: 15, color: theme.text },
-    chipScroll: { marginBottom: spacing.md },
-    chipRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
+    dateModalCard: {
+      width: '100%',
+      maxWidth: 360,
+      backgroundColor: theme.background,
+      borderRadius: 20,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.md,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.2,
+      shadowRadius: 20,
+      elevation: 8,
+    },
+    dateModalTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: theme.text,
+      marginBottom: spacing.sm,
+    },
+    datePicker: { alignSelf: 'stretch' },
+    dateDoneBtn: {
+      alignSelf: 'stretch',
+      backgroundColor: colors.success,
+      borderRadius: 14,
+      paddingVertical: 13,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    dateDoneLabel: { color: '#fff', fontSize: 16, fontWeight: '700' },
     saveBtn: {
       flexDirection: 'row',
       alignItems: 'center',
