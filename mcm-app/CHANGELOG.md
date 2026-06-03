@@ -13,6 +13,28 @@
 
 ---
 
+## 2026-06-03 — Modo Carismochito: tema verde, cuenta atrás con anillo, haptics y mascota que baila
+
+- **Tema verde "de verdad" al activar** (`utils/heroUIRuntimeTheme.ts` →
+  `setCarismochitoTheme`, `contexts/CarismochitoContext.tsx`): al entrar en el
+  modo se tiñe la capa de componentes heroui-native con varios verdes distintos
+  (accent/success/danger/warning/focus/link) reutilizando el mismo mecanismo de
+  variables CSS que el modo claro/oscuro (toggle reactivo, sin tocar los ~60
+  archivos que usan `colors` estático). Se restaura el tema base al salir o al
+  desmontar. La capa propia (StyleSheet) se cubre con el lavado verde envolvente.
+- **Cuenta atrás rediseñada** (`components/CarismochitoOverlay.tsx`): pasa a 3 s
+  con un **anillo de progreso** SVG que se vacía alrededor de la mascota que
+  baila, con el número dentro. Sustituye al número gigante anterior.
+- **Respuesta háptica** (`utils/haptics.ts`: `shake`, `carismoOn`, `carismoOff`):
+  golpe al agitar el móvil, secuencia festiva al activarse y doble golpe al
+  desactivarse/cancelar.
+- **Mascota carismochito que baila** (`components/CarismochitoMascot.tsx`): nuevo
+  componente con baile (balanceo + salto + escala). Usa un carismochito vectorial
+  de respaldo y admite un **PNG** dejándolo en `assets/images/carismochito.png` y
+  descomentando una línea `require` (interruptor documentado en el archivo).
+- Dependencias ya presentes: `expo-haptics`, `expo-sensors`, `expo-image`,
+  `react-native-svg` (sin paquetes nativos nuevos → no requiere build de tienda).
+
 ## 2026-06-02 — Eventos (Visita Papa): rediseño de headers, hero, estados vacíos y FABs
 
 - **Header de sub-pantallas iOS rediseñado** (`app/screens/eventStackScreens.tsx`,

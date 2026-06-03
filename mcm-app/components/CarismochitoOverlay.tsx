@@ -10,72 +10,42 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 import { useCarismochito } from '@/contexts/CarismochitoContext';
 import { useShakeDetector } from '@/hooks/useShakeDetector';
-import { h } from '@/utils/haptics';
+import CarismochitoMascot from '@/components/CarismochitoMascot';
 
-// Verdes deliberadamente exagerados — guiño a la mascota MCM.
-const SLIME = '#7FFF00'; // verde lima eléctrico ("muy feo")
-const SLIME_DEEP = '#5BC700';
-const SLIME_DARK = '#0D2E00';
+/* Verdes del HUD del modo (distintos tonos). */
+const G = '#1B9E4B'; // verde principal
+const G_LIGHT = '#9DE86B'; // verde lima claro
+const G_GLOW = '#5AE08A'; // verde brillo
+const G_DARK = '#06210F'; // verde casi negro
 
-/* -------------------------------------------------------------------------- */
-/* Mascota                                                                    */
-/* -------------------------------------------------------------------------- */
-
-function CarismochitoFace({ size = 140 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 120 120">
-      {/* Aura — anillo translúcido */}
-      <Circle cx="60" cy="62" r="58" fill={SLIME} opacity={0.18} />
-      {/* Cuerpo */}
-      <Path
-        d="M60 10 C32 10 14 36 14 64 C14 90 32 110 60 110 C88 110 106 90 106 64 C106 36 88 10 60 10 Z"
-        fill={SLIME}
-      />
-      {/* Brillo */}
-      <Ellipse cx="42" cy="32" rx="14" ry="7" fill="#E8FFB8" opacity={0.85} />
-      {/* Ojos */}
-      <Circle cx="44" cy="56" r="9" fill={SLIME_DARK} />
-      <Circle cx="76" cy="56" r="9" fill={SLIME_DARK} />
-      <Circle cx="47" cy="53" r="3" fill="#fff" />
-      <Circle cx="79" cy="53" r="3" fill="#fff" />
-      {/* Sonrisa */}
-      <Path
-        d="M40 74 Q60 92 80 74"
-        stroke={SLIME_DARK}
-        strokeWidth={4}
-        strokeLinecap="round"
-        fill="none"
-      />
-      {/* Lengua */}
-      <Path d="M52 82 Q60 90 68 82 Q60 88 52 82 Z" fill="#FF6B9D" />
-      {/* Mejillas */}
-      <Circle cx="26" cy="72" r="6" fill={SLIME_DEEP} opacity={0.55} />
-      <Circle cx="94" cy="72" r="6" fill={SLIME_DEEP} opacity={0.55} />
-    </Svg>
-  );
-}
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 /* -------------------------------------------------------------------------- */
-/* Pantalla de cuenta atrás                                                   */
+/* Cuenta atrás con anillo de progreso                                        */
 /* -------------------------------------------------------------------------- */
+
+const RING_SIZE = 230;
+const RING_STROKE = 12;
+const RING_R = (RING_SIZE - RING_STROKE) / 2;
+const RING_C = 2 * Math.PI * RING_R;
 
 function CountdownScreen({
   countdown,
+  totalSeconds,
   onCancel,
 }: {
   countdown: number;
+  totalSeconds: number;
   onCancel: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  // Pop-in del modal al aparecer
   const enter = useRef(new Animated.Value(0)).current;
-  // Pulso del número en cada tick
   const numberScale = useRef(new Animated.Value(1)).current;
-  // Bobbing de la mascota
-  const bob = useRef(new Animated.Value(0)).current;
+  // Progreso del anillo: 0 (lleno) → 1 (vacío) de forma continua.
+  const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.spring(enter, {
@@ -84,61 +54,46 @@ function CountdownScreen({
       friction: 10,
       useNativeDriver: true,
     }).start();
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bob, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(bob, {
-          toValue: 0,
-          duration: 900,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [enter, bob]);
+    // El anillo se vacía suavemente durante toda la cuenta atrás.
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: totalSeconds * 1000,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start();
+  }, [enter, progress, totalSeconds]);
 
   useEffect(() => {
-    // Pulso en cada cambio del número
-    numberScale.setValue(0.6);
+    numberScale.setValue(0.5);
     Animated.spring(numberScale, {
       toValue: 1,
       tension: 80,
       friction: 6,
       useNativeDriver: true,
     }).start();
-    h.tap();
   }, [countdown, numberScale]);
 
-  const enterOpacity = enter;
   const enterScale = enter.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.92, 1],
+    outputRange: [0.9, 1],
   });
-  const bobY = bob.interpolate({
+  const dashoffset = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -10],
+    outputRange: [0, RING_C],
   });
 
   return (
     <Animated.View
-      style={[styles.countdownRoot, { opacity: enterOpacity }]}
+      style={[styles.countdownRoot, { opacity: enter }]}
       pointerEvents="auto"
     >
-      {/* Fondo en degradado verde-oscuro */}
       <LinearGradient
-        colors={['#001A00', SLIME_DARK, '#0D4400']}
+        colors={['#011A0A', G_DARK, '#0C3D1C']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      {/* Halo de lima */}
+      {/* Halo difuso detrás */}
       <View pointerEvents="none" style={styles.haloOuter}>
         <View style={styles.halo} />
       </View>
@@ -150,28 +105,55 @@ function CountdownScreen({
           { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
         ]}
       >
-        <Animated.View style={{ transform: [{ translateY: bobY }] }}>
-          <CarismochitoFace size={150} />
-        </Animated.View>
-
         <Text style={styles.activatingLabel}>activando modo</Text>
         <Text style={styles.carismoTitle}>CARISMOCHITO</Text>
 
-        <Animated.Text
-          style={[styles.number, { transform: [{ scale: numberScale }] }]}
-        >
-          {countdown}
-        </Animated.Text>
+        {/* Anillo + mascota bailando + número dentro */}
+        <View style={styles.ringBox}>
+          <Svg
+            width={RING_SIZE}
+            height={RING_SIZE}
+            style={StyleSheet.absoluteFill}
+          >
+            <Circle
+              cx={RING_SIZE / 2}
+              cy={RING_SIZE / 2}
+              r={RING_R}
+              stroke="rgba(255,255,255,0.12)"
+              strokeWidth={RING_STROKE}
+              fill="none"
+            />
+            <AnimatedCircle
+              cx={RING_SIZE / 2}
+              cy={RING_SIZE / 2}
+              r={RING_R}
+              stroke={G_GLOW}
+              strokeWidth={RING_STROKE}
+              strokeLinecap="round"
+              fill="none"
+              strokeDasharray={`${RING_C} ${RING_C}`}
+              strokeDashoffset={dashoffset}
+              // Empieza arriba (12 en punto).
+              transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
+            />
+          </Svg>
+
+          <View style={styles.ringInner} pointerEvents="none">
+            <CarismochitoMascot size={132} dance={2} />
+            <Animated.Text
+              style={[styles.number, { transform: [{ scale: numberScale }] }]}
+            >
+              {countdown}
+            </Animated.Text>
+          </View>
+        </View>
 
         <Text style={styles.subtle}>
           Agita otra vez o pulsa Cancelar para cortar
         </Text>
 
         <Pressable
-          onPress={() => {
-            h.remove();
-            onCancel();
-          }}
+          onPress={onCancel}
           style={({ pressed }) => [
             styles.cancelBtn,
             pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] },
@@ -186,7 +168,7 @@ function CountdownScreen({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Tinte + badge flotante mientras está activo                                */
+/* Tinte verde envolvente mientras está activo                                */
 /* -------------------------------------------------------------------------- */
 
 function ActiveTint() {
@@ -195,7 +177,7 @@ function ActiveTint() {
   useEffect(() => {
     Animated.timing(fade, {
       toValue: 1,
-      duration: 700,
+      duration: 600,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
@@ -206,26 +188,28 @@ function ActiveTint() {
       pointerEvents="none"
       style={[StyleSheet.absoluteFill, styles.tintRoot, { opacity: fade }]}
     >
-      {/* Capa verde plana — el "wash" general */}
-      <View style={[StyleSheet.absoluteFill, styles.tintFlat]} />
-      {/* Viñeta superior */}
+      {/* Lavado verde de varios tonos — deja ver el contenido por debajo. */}
       <LinearGradient
-        colors={[`${SLIME}CC`, 'transparent']}
-        style={[StyleSheet.absoluteFill, { height: '40%' }]}
-      />
-      {/* Viñeta inferior */}
-      <LinearGradient
-        colors={['transparent', `${SLIME}CC`]}
-        style={[StyleSheet.absoluteFill, { top: '60%', height: '40%' }]}
+        colors={[
+          'rgba(6, 33, 15, 0.55)',
+          'rgba(27, 158, 75, 0.26)',
+          'rgba(122, 201, 67, 0.30)',
+          'rgba(6, 60, 28, 0.55)',
+        ]}
+        locations={[0, 0.35, 0.7, 1]}
+        style={StyleSheet.absoluteFill}
       />
     </Animated.View>
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* Badge flotante                                                             */
+/* -------------------------------------------------------------------------- */
+
 function FloatingBadge({ onDeactivate }: { onDeactivate: () => void }) {
   const insets = useSafeAreaInsets();
   const enter = useRef(new Animated.Value(0)).current;
-  const bob = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.spring(enter, {
@@ -234,36 +218,12 @@ function FloatingBadge({ onDeactivate }: { onDeactivate: () => void }) {
       friction: 9,
       useNativeDriver: true,
     }).start();
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bob, {
-          toValue: 1,
-          duration: 1100,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(bob, {
-          toValue: 0,
-          duration: 1100,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [enter, bob]);
+  }, [enter]);
 
-  const translateY = Animated.add(
-    enter.interpolate({
-      inputRange: [0, 1],
-      outputRange: [-60, 0],
-    }),
-    bob.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, -4],
-    }),
-  );
+  const translateY = enter.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-60, 0],
+  });
 
   return (
     <Animated.View
@@ -274,17 +234,14 @@ function FloatingBadge({ onDeactivate }: { onDeactivate: () => void }) {
       ]}
     >
       <Pressable
-        onPress={() => {
-          h.toggle();
-          onDeactivate();
-        }}
+        onPress={onDeactivate}
         style={({ pressed }) => [
           styles.badge,
           pressed && { transform: [{ scale: 0.97 }], opacity: 0.92 },
         ]}
         hitSlop={6}
       >
-        <CarismochitoFace size={36} />
+        <CarismochitoMascot size={38} dance={1} />
         <View style={styles.badgeText}>
           <Text style={styles.badgeTitle}>MODO CARISMOCHITO</Text>
           <Text style={styles.badgeSubtitle}>Agita o tócame para salir</Text>
@@ -299,16 +256,17 @@ function FloatingBadge({ onDeactivate }: { onDeactivate: () => void }) {
 /* -------------------------------------------------------------------------- */
 
 export default function CarismochitoOverlay() {
-  const { state, countdown, toggleByShake, cancelCountdown, deactivate } =
-    useCarismochito();
+  const {
+    state,
+    countdown,
+    countdownSeconds,
+    toggleByShake,
+    cancelCountdown,
+    deactivate,
+  } = useCarismochito();
 
   // Listener de shake siempre activo — el contexto decide qué hacer según estado.
   useShakeDetector(toggleByShake);
-
-  // Haptic + log al entrar en activo
-  useEffect(() => {
-    if (state === 'active') h.formSuccess();
-  }, [state]);
 
   return (
     <>
@@ -316,7 +274,11 @@ export default function CarismochitoOverlay() {
       {state === 'active' ? <FloatingBadge onDeactivate={deactivate} /> : null}
       {state === 'countingDown' ? (
         <View style={styles.modalRoot} pointerEvents="auto">
-          <CountdownScreen countdown={countdown} onCancel={cancelCountdown} />
+          <CountdownScreen
+            countdown={countdown}
+            totalSeconds={countdownSeconds}
+            onCancel={cancelCountdown}
+          />
         </View>
       ) : null}
     </>
@@ -333,10 +295,6 @@ const styles = StyleSheet.create({
     zIndex: 50,
     elevation: 50,
   },
-  tintFlat: {
-    backgroundColor: SLIME,
-    opacity: 0.32,
-  },
 
   /* Badge flotante */
   badgeRoot: {
@@ -350,17 +308,17 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: SLIME_DARK,
+    backgroundColor: G_DARK,
     borderRadius: 28,
     paddingVertical: 6,
     paddingLeft: 6,
     paddingRight: 16,
     gap: 10,
     borderWidth: 2,
-    borderColor: SLIME,
+    borderColor: G,
     ...Platform.select({
       ios: {
-        shadowColor: SLIME,
+        shadowColor: G,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.55,
         shadowRadius: 18,
@@ -370,7 +328,7 @@ const styles = StyleSheet.create({
       },
       default: {
         // @ts-ignore - web only
-        boxShadow: `0px 6px 22px ${SLIME}AA`,
+        boxShadow: `0px 6px 22px ${G}AA`,
       },
     }),
   },
@@ -378,7 +336,7 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
   badgeTitle: {
-    color: SLIME,
+    color: G_LIGHT,
     fontWeight: '900',
     fontSize: 12,
     letterSpacing: 1.4,
@@ -412,14 +370,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   halo: {
-    width: 420,
-    height: 420,
-    borderRadius: 210,
-    backgroundColor: SLIME,
-    opacity: 0.18,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    backgroundColor: G,
+    opacity: 0.16,
     ...Platform.select({
       ios: {
-        shadowColor: SLIME,
+        shadowColor: G_GLOW,
         shadowOpacity: 0.7,
         shadowRadius: 80,
         shadowOffset: { width: 0, height: 0 },
@@ -427,17 +385,16 @@ const styles = StyleSheet.create({
       android: { elevation: 0 },
       default: {
         // @ts-ignore - web only
-        boxShadow: `0px 0px 120px ${SLIME}`,
+        boxShadow: `0px 0px 120px ${G_GLOW}`,
       },
     }),
   },
   activatingLabel: {
-    color: SLIME,
+    color: G_LIGHT,
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 4,
     textTransform: 'uppercase',
-    marginTop: 18,
     opacity: 0.85,
   },
   carismoTitle: {
@@ -446,25 +403,37 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 3,
     marginTop: 4,
-    textShadowColor: SLIME,
+    marginBottom: 18,
+    textShadowColor: G_GLOW,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 18,
   },
+  ringBox: {
+    width: RING_SIZE,
+    height: RING_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringInner: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   number: {
-    color: SLIME,
-    fontSize: 140,
+    position: 'absolute',
+    bottom: 6,
+    color: '#ffffff',
+    fontSize: 52,
     fontWeight: '900',
-    marginTop: 8,
-    textShadowColor: SLIME,
+    textShadowColor: G_GLOW,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 24,
+    textShadowRadius: 16,
     includeFontPadding: false,
-    lineHeight: 150,
   },
   subtle: {
     color: '#A3D86E',
     fontSize: 13,
-    marginTop: 4,
+    marginTop: 22,
     marginBottom: 28,
     textAlign: 'center',
     opacity: 0.85,
@@ -475,7 +444,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: '#ffffff',
     borderWidth: 2,
-    borderColor: SLIME,
+    borderColor: G,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -491,7 +460,7 @@ const styles = StyleSheet.create({
     }),
   },
   cancelText: {
-    color: SLIME_DARK,
+    color: G_DARK,
     fontWeight: '800',
     fontSize: 16,
     letterSpacing: 1.2,
