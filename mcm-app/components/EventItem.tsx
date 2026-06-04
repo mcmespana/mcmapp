@@ -68,7 +68,13 @@ const EventItem = React.memo(function EventItem({
       {/* Columna de la HORA — protagonista, grande y en color del día */}
       <View style={styles.timeCol}>
         {showHour ? (
-          <Text style={styles.timeText} selectable allowFontScaling={false}>
+          <Text
+            style={styles.timeText}
+            selectable
+            allowFontScaling={false}
+            numberOfLines={1}
+            ellipsizeMode="clip"
+          >
             {event.hora}
           </Text>
         ) : (
@@ -183,14 +189,14 @@ const createStyles = (
     },
     // —— Columna de la hora ——
     timeCol: {
-      width: 58 * Math.min(scale, 1.3),
+      width: 64 * Math.min(scale, 1.4),
       alignItems: 'flex-end',
       paddingTop: 6,
     },
     timeText: {
-      fontSize: 22 * scale,
+      fontSize: 21 * scale,
       fontWeight: '800',
-      letterSpacing: -0.5,
+      letterSpacing: -0.3,
       color: accentColor,
       fontVariant: ['tabular-nums'],
     },

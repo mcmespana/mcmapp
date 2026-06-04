@@ -211,7 +211,7 @@ export default function GruposScreen() {
     return (
       <PageContainer>
         <View style={styles.container}>
-          <ScreenHero title="Grupos" />
+          <ScreenHero title="Grupos" hideOnWeb />
           <ComingSoon accentColor={event.tintColor} />
         </View>
       </PageContainer>
@@ -393,7 +393,7 @@ export default function GruposScreen() {
 
   const headerComponent = (
     <View>
-      <ScreenHero title="Grupos" />
+      <ScreenHero title="Grupos" hideOnWeb />
       <View style={styles.searchContainer}>
         <SearchField value={search} onChange={setSearch}>
           <SearchField.Group>

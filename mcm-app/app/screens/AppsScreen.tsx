@@ -106,6 +106,7 @@ export default function AppsScreen() {
               <ScreenHero
                 title="Apps"
                 subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el evento."
+                hideOnWeb
               />
               <View style={{ gap: spacing.sm }}>
                 {[0, 1, 2, 3, 4].map((i) => (
@@ -118,7 +119,7 @@ export default function AppsScreen() {
             </ScrollView>
           ) : (
             <View style={{ flex: 1 }}>
-              <ScreenHero title="Apps" />
+              <ScreenHero title="Apps" hideOnWeb />
               <ComingSoon accentColor={event.tintColor} />
             </View>
           )}
@@ -139,6 +140,7 @@ export default function AppsScreen() {
           <ScreenHero
             title="Apps"
             subtitle="Lista de aplicaciones móviles (algunas necesarias 🌟, otras opcionales ℹ️) que necesitaremos durante el Jubileo."
+            hideOnWeb
           />
           <View style={styles.introContainer}>
             <Text style={styles.introSubtext}>
