@@ -18,6 +18,10 @@ interface CarismochitoContextValue {
   /** Duración total de la cuenta atrás (para animar el anillo de progreso). */
   countdownSeconds: number;
   isActive: boolean;
+  /** Sacudidas acumuladas mientras se "carga" el modo (estado idle). */
+  chargeCount: number;
+  /** Sacudidas necesarias para arrancar el countdown. */
+  shakesNeeded: number;
   /** Acción asociada a "agitar el móvil": activa, cancela o desactiva según estado. */
   toggleByShake: () => void;
   /** Cancela la cuenta atrás (botón "Cancelar"). */
@@ -27,6 +31,8 @@ interface CarismochitoContextValue {
 }
 
 const COUNTDOWN_SECONDS = 3;
+const SHAKES_NEEDED = 5;
+const CHARGE_RESET_MS = 2500;
 
 const Ctx = createContext<CarismochitoContextValue | null>(null);
 
@@ -47,7 +53,10 @@ export function CarismochitoProvider({
 }) {
   const [state, setState] = useState<CarismochitoState>('idle');
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
+  const [chargeCount, setChargeCount] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const chargeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chargeRef = useRef(0);
   // Espejo del estado para decidir en `toggleByShake` sin setState anidado.
   const stateRef = useRef<CarismochitoState>(state);
   stateRef.current = state;
@@ -57,6 +66,12 @@ export function CarismochitoProvider({
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+  }, []);
+
+  const resetCharge = useCallback(() => {
+    if (chargeTimerRef.current) clearTimeout(chargeTimerRef.current);
+    chargeRef.current = 0;
+    setChargeCount(0);
   }, []);
 
   const startCountdown = useCallback(() => {
@@ -89,30 +104,47 @@ export function CarismochitoProvider({
 
   const deactivate = useCallback(() => {
     stopTimer();
+    resetCharge();
     setCountdown(COUNTDOWN_SECONDS);
     setState('idle');
     setCarismochitoTheme(false);
     h.carismoOff();
-  }, [stopTimer]);
+  }, [stopTimer, resetCharge]);
 
   const toggleByShake = useCallback(() => {
-    // Cada agitado confirmado da respuesta háptica, decida lo que decida.
-    h.shake();
     const prev = stateRef.current;
+
     if (prev === 'idle') {
-      startCountdown();
+      // Vibrar en cada sacudida individual.
+      h.shake();
+      chargeRef.current += 1;
+      setChargeCount(chargeRef.current);
+
+      // Reiniciar el temporizador de reset de carga.
+      if (chargeTimerRef.current) clearTimeout(chargeTimerRef.current);
+      chargeTimerRef.current = setTimeout(() => {
+        chargeRef.current = 0;
+        setChargeCount(0);
+      }, CHARGE_RESET_MS);
+
+      if (chargeRef.current >= SHAKES_NEEDED) {
+        resetCharge();
+        startCountdown();
+      }
     } else if (prev === 'countingDown') {
+      h.shake();
       cancelCountdown();
     } else {
       // active → desactivar
       deactivate();
     }
-  }, [startCountdown, cancelCountdown, deactivate]);
+  }, [startCountdown, cancelCountdown, deactivate, resetCharge]);
 
-  // Limpieza: parar timer y restaurar el tema si se desmonta en activo.
+  // Limpieza: parar timers y restaurar el tema si se desmonta en activo.
   useEffect(
     () => () => {
       stopTimer();
+      if (chargeTimerRef.current) clearTimeout(chargeTimerRef.current);
       setCarismochitoTheme(false);
     },
     [stopTimer],
@@ -125,6 +157,8 @@ export function CarismochitoProvider({
         countdown,
         countdownSeconds: COUNTDOWN_SECONDS,
         isActive: state === 'active',
+        chargeCount,
+        shakesNeeded: SHAKES_NEEDED,
         toggleByShake,
         cancelCountdown,
         deactivate,

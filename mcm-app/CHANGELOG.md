@@ -13,6 +13,22 @@
 
 ---
 
+## 2026-06-04 — Modo Carismochito: ritual de agitado + rediseño visual
+
+- **Activación por ritual de sacudidas**: ahora hace falta **agitar 5 veces**
+  (dentro de una ventana de 2,5 s) para arrancar la cuenta atrás, en vez de una
+  sola sacudida. **Cada sacudida vibra** (golpe háptico) y aparece una fila de
+  **puntos verdes** que se van iluminando como barra de carga; si dejas de
+  agitar, la carga se reinicia.
+- **Nuevo efecto visual al activar** (sustituye al lavado verde de pantalla
+  completa): **estallido de confeti** de ~4 s que luego deja la pantalla limpia,
+  **barra inferior verde con resplandor pulsante** y el **carismochito bailando**
+  asomado por encima de los iconos de las pestañas. En Android/Web la barra de
+  pestañas real también se tiñe de verde mientras el modo está activo.
+- Archivos: `contexts/CarismochitoContext.tsx`,
+  `components/CarismochitoOverlay.tsx`,
+  `components/CarismochitoChargeDots.tsx` (nuevo), `app/(tabs)/_layout.tsx`.
+
 ## 2026-06-03 — Rediseño de la pantalla de Horario + fix del día por defecto
 
 - **Rediseño visual del Horario** (`app/screens/HorarioScreen.tsx`,

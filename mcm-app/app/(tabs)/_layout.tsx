@@ -23,6 +23,15 @@ import { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import { HapticTab } from '@/components/HapticTab';
 import { TABS_CONFIG, splitTabsForIOS } from '@/constants/tabsCatalog';
+import { useCarismochito } from '@/contexts/CarismochitoContext';
+
+/* Verdes del modo carismochito para teñir la barra de pestañas. */
+const CARISMO_TABBAR_BG = '#06210F';
+const CARISMO_TABBAR_ACTIVE = '#9DE86B';
+const CARISMO_TABBAR_INACTIVE = '#4E8C5F';
+// En iOS el tinte va sobre la barra translúcida/clara (liquid glass): usamos
+// un verde más oscuro para que iconos y texto tengan buen contraste.
+const CARISMO_TABBAR_TINT_IOS = '#1B9E4B';
 
 // ============================================================================
 // iOS NativeTabs Component
@@ -35,9 +44,20 @@ function IOSNativeTabsLayout() {
   const resolved = useResolvedProfileConfig();
   const visibleTabs = new Set(resolved.tabs);
   const { mainTabs } = splitTabsForIOS(visibleTabs);
+  // Modo carismochito: tiñe iconos + labels de verde. NOTA: en iOS sólo
+  // tocamos `tintColor`/`labelStyle` (fiables). El `backgroundColor` de la
+  // barra NO es fiable en iOS 26+ (liquid glass adapta el fondo solo y lo
+  // ignora — bug expo#41360), por eso el efecto de fondo verde lo da el
+  // overlay (resplandor + mascota) en `CarismochitoOverlay`.
+  const { isActive: carismoActive } = useCarismochito();
 
   return (
-    <NativeTabs>
+    <NativeTabs
+      {...(carismoActive && {
+        tintColor: CARISMO_TABBAR_TINT_IOS,
+        labelStyle: { color: CARISMO_TABBAR_TINT_IOS },
+      })}
+    >
       {mainTabs.map((tab) => (
         // disablePopToTop + disableScrollToTop son CRÍTICOS: sin ellos, en
         // iOS el UITabBarController nativo llama popToRootViewController
@@ -73,6 +93,8 @@ function AndroidWebTabsLayout() {
   const webBottomPad = Platform.OS === 'web' ? Math.max(insets.bottom, 12) : 8;
   const resolved = useResolvedProfileConfig();
   const visibleTabs = new Set(resolved.tabs);
+  // Modo carismochito: tiñe la barra de pestañas de verde mientras está activo.
+  const { isActive: carismoActive } = useCarismochito();
 
   return (
     <ThemeProvider value={theme}>
@@ -87,12 +109,20 @@ function AndroidWebTabsLayout() {
           },
           headerTitleAlign: 'center',
           headerStatusBarHeight: webStatusBarHeight,
-          tabBarActiveTintColor: Colors[scheme ?? 'light'].tint,
-          tabBarInactiveTintColor: Colors[scheme ?? 'light'].icon,
+          tabBarActiveTintColor: carismoActive
+            ? CARISMO_TABBAR_ACTIVE
+            : Colors[scheme ?? 'light'].tint,
+          tabBarInactiveTintColor: carismoActive
+            ? CARISMO_TABBAR_INACTIVE
+            : Colors[scheme ?? 'light'].icon,
           tabBarStyle: {
-            backgroundColor: Colors[scheme ?? 'light'].background,
+            backgroundColor: carismoActive
+              ? CARISMO_TABBAR_BG
+              : Colors[scheme ?? 'light'].background,
             borderTopWidth: 1,
-            borderTopColor: hexAlpha(Colors[scheme ?? 'light'].icon, '20'),
+            borderTopColor: carismoActive
+              ? hexAlpha(CARISMO_TABBAR_ACTIVE, '55')
+              : hexAlpha(Colors[scheme ?? 'light'].icon, '20'),
             paddingBottom: webBottomPad,
             paddingTop: 12,
             height:

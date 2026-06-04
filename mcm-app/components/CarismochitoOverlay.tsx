@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -11,15 +11,29 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import { useCarismochito } from '@/contexts/CarismochitoContext';
 import { useShakeDetector } from '@/hooks/useShakeDetector';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
+import ChargeDots from '@/components/CarismochitoChargeDots';
 
 /* Verdes del HUD del modo (distintos tonos). */
 const G = '#1B9E4B'; // verde principal
 const G_LIGHT = '#9DE86B'; // verde lima claro
 const G_GLOW = '#5AE08A'; // verde brillo
 const G_DARK = '#06210F'; // verde casi negro
+
+/* Paleta festiva del confeti (verdes protagonistas + toques de marca). */
+const CONFETTI_COLORS = [
+  '#1B9E4B',
+  '#5AE08A',
+  '#9DE86B',
+  '#A3BD31',
+  '#7AC943',
+  '#FCD200',
+  '#31AADF',
+  '#E15C62',
+];
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -168,38 +182,125 @@ function CountdownScreen({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Tinte verde envolvente mientras está activo                                */
+/* Confeti de celebración (estalla al activar y desaparece)                   */
 /* -------------------------------------------------------------------------- */
 
-function ActiveTint() {
-  const fade = useRef(new Animated.Value(0)).current;
+function CelebrationConfetti() {
+  // Tras el estallido inicial dejamos de renderizar el confeti: la pantalla
+  // queda limpia y sólo permanece el badge + la barra verde.
+  const [showing, setShowing] = useState(true);
 
   useEffect(() => {
-    Animated.timing(fade, {
-      toValue: 1,
-      duration: 600,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [fade]);
+    const t = setTimeout(() => setShowing(false), 4200);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!showing) return null;
 
   return (
-    <Animated.View
+    <View
       pointerEvents="none"
-      style={[StyleSheet.absoluteFill, styles.tintRoot, { opacity: fade }]}
+      style={[StyleSheet.absoluteFill, styles.confettiRoot]}
     >
-      {/* Lavado verde de varios tonos — deja ver el contenido por debajo. */}
-      <LinearGradient
-        colors={[
-          'rgba(6, 33, 15, 0.55)',
-          'rgba(27, 158, 75, 0.26)',
-          'rgba(122, 201, 67, 0.30)',
-          'rgba(6, 60, 28, 0.55)',
-        ]}
-        locations={[0, 0.35, 0.7, 1]}
-        style={StyleSheet.absoluteFill}
+      <ConfettiCannon
+        count={90}
+        origin={{ x: -10, y: -20 }}
+        explosionSpeed={420}
+        fallSpeed={2800}
+        fadeOut
+        autoStart
+        colors={CONFETTI_COLORS}
       />
-    </Animated.View>
+      <ConfettiCannon
+        count={90}
+        origin={{ x: 10, y: -20 }}
+        explosionSpeed={420}
+        fallSpeed={2800}
+        fadeOut
+        autoStart
+        colors={CONFETTI_COLORS}
+      />
+    </View>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Barra verde inferior con el carismochito bailando encima de los tabs       */
+/* -------------------------------------------------------------------------- */
+
+function BottomBarGlow() {
+  const insets = useSafeAreaInsets();
+  const enter = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(enter, {
+      toValue: 1,
+      tension: 70,
+      friction: 11,
+      useNativeDriver: true,
+    }).start();
+    // Latido verde suave y continuo del resplandor inferior.
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 1100,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 1100,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [enter, pulse]);
+
+  const glowOpacity = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.55, 1],
+  });
+  const mascotTranslate = enter.interpolate({
+    inputRange: [0, 1],
+    outputRange: [40, 0],
+  });
+
+  return (
+    <View
+      pointerEvents="none"
+      style={[styles.bottomGlowRoot, { paddingBottom: insets.bottom }]}
+    >
+      {/* Resplandor verde que sube desde la barra de pestañas. */}
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: glowOpacity }]}>
+        <LinearGradient
+          colors={[
+            'rgba(27, 158, 75, 0)',
+            'rgba(27, 158, 75, 0.28)',
+            'rgba(90, 224, 138, 0.42)',
+          ]}
+          locations={[0, 0.55, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      {/* Mascota bailando, asomada justo por encima de los iconos. */}
+      <Animated.View
+        style={[
+          styles.bottomMascot,
+          {
+            opacity: enter,
+            transform: [{ translateY: mascotTranslate }],
+          },
+        ]}
+      >
+        <CarismochitoMascot size={64} dance={2} />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -260,6 +361,8 @@ export default function CarismochitoOverlay() {
     state,
     countdown,
     countdownSeconds,
+    chargeCount,
+    shakesNeeded,
     toggleByShake,
     cancelCountdown,
     deactivate,
@@ -270,8 +373,12 @@ export default function CarismochitoOverlay() {
 
   return (
     <>
-      {state === 'active' ? <ActiveTint /> : null}
+      {state === 'active' ? <BottomBarGlow /> : null}
+      {state === 'active' ? <CelebrationConfetti /> : null}
       {state === 'active' ? <FloatingBadge onDeactivate={deactivate} /> : null}
+      {state === 'idle' && chargeCount > 0 ? (
+        <ChargeDots count={chargeCount} total={shakesNeeded} />
+      ) : null}
       {state === 'countingDown' ? (
         <View style={styles.modalRoot} pointerEvents="auto">
           <CountdownScreen
@@ -290,10 +397,39 @@ export default function CarismochitoOverlay() {
 /* -------------------------------------------------------------------------- */
 
 const styles = StyleSheet.create({
-  /* Tinte activo */
-  tintRoot: {
-    zIndex: 50,
-    elevation: 50,
+  /* Confeti de celebración */
+  confettiRoot: {
+    zIndex: 9600,
+    elevation: 58,
+  },
+
+  /* Barra verde inferior + mascota */
+  bottomGlowRoot: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 150,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    zIndex: 9300,
+    elevation: 52,
+  },
+  bottomMascot: {
+    marginBottom: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: G_GLOW,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.9,
+        shadowRadius: 16,
+      },
+      android: { elevation: 12 },
+      default: {
+        // @ts-ignore - web only
+        boxShadow: `0px 0px 20px ${G_GLOW}`,
+      },
+    }),
   },
 
   /* Badge flotante */
