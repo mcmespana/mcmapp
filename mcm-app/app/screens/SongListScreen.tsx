@@ -26,6 +26,7 @@ import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import SongListItem from '../../components/SongListItem';
 import BottomSheet from '@/components/BottomSheet';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { extractSongMedia, type MediaLink } from '@/types/songMedia';
 
 interface Song {
   title: string;
@@ -35,6 +36,14 @@ interface Song {
   capo?: number;
   info?: string;
   content?: string;
+  // Campos multimedia (viajan desde Firebase para el cajón + indicador de lista).
+  album?: string;
+  liturgicalTime?: string;
+  source?: string;
+  rhythm?: string;
+  videoEmbed?: string;
+  youtubeLinks?: MediaLink[];
+  audioLinks?: MediaLink[];
   originalCategoryKey?: string;
   numericFilenamePart?: string;
   sortTitle?: string;
@@ -280,6 +289,12 @@ export default function SongsListScreen({
     });
   }, [songs, search]);
 
+  // ¿Alguna canción de la lista tiene multimedia? Para mostrar la leyenda.
+  const hasAnyMedia = useMemo(
+    () => songs.some((s) => extractSongMedia(s) !== null),
+    [songs],
+  );
+
   const handleSongLongPress = useCallback((song: Song) => {
     setMenuSong(song);
   }, []);
@@ -324,7 +339,19 @@ export default function SongsListScreen({
         key: song.key,
         capo: song.capo,
         content: song.content || '',
-        navigationList: categoryId === '__ALL__' ? undefined : songs,
+        media: extractSongMedia(song) ?? undefined,
+        navigationList:
+          categoryId === '__ALL__'
+            ? undefined
+            : songs.map((s) => ({
+                title: s.title,
+                filename: s.filename,
+                author: s.author,
+                key: s.key,
+                capo: s.capo,
+                content: s.content,
+                media: extractSongMedia(s) ?? undefined,
+              })),
         currentIndex: categoryId === '__ALL__' ? undefined : index,
         source: categoryId === '__ALL__' ? undefined : 'category',
         firebaseCategory:
@@ -380,6 +407,23 @@ export default function SongsListScreen({
             {filteredSongs.length === 1 ? 'canción' : 'canciones'}
             {search.length > 0 ? ' encontradas' : ''}
           </Text>
+          {hasAnyMedia && (
+            <View style={styles.legend}>
+              <MaterialIcons
+                name="play-arrow"
+                size={13}
+                color={isDark ? '#6C6C70' : '#B0B0B5'}
+              />
+              <Text style={styles.legendText}>vídeo</Text>
+              <Text style={styles.legendDot}>·</Text>
+              <MaterialIcons
+                name="headphones"
+                size={12}
+                color={isDark ? '#6C6C70' : '#B0B0B5'}
+              />
+              <Text style={styles.legendText}>audio</Text>
+            </View>
+          )}
         </View>
       </View>
     ),
@@ -388,6 +432,7 @@ export default function SongsListScreen({
       search,
       isSearchAll,
       filteredSongs.length,
+      hasAnyMedia,
       styles,
       setSearch,
       isDark,
@@ -548,6 +593,9 @@ const createStyles = (
       margin: 0,
     },
     countRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: isWide ? 4 : 20,
       paddingTop: 10,
       paddingBottom: 2,
@@ -556,6 +604,20 @@ const createStyles = (
       fontSize: 12,
       color: isDark ? '#636366' : '#AEAEB2',
       letterSpacing: 0.2,
+    },
+    legend: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+    },
+    legendText: {
+      fontSize: 11,
+      color: isDark ? '#6C6C70' : '#B0B0B5',
+    },
+    legendDot: {
+      fontSize: 11,
+      color: isDark ? '#48484A' : '#D1D1D6',
+      marginHorizontal: 1,
     },
     listContent: {
       paddingHorizontal: isWide ? 20 : 12,

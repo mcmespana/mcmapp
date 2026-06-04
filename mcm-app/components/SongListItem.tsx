@@ -22,6 +22,7 @@ import {
   KeyPillColors,
 } from '@/constants/colors';
 import { durations } from '@/constants/animations';
+import { extractSongMedia, mediaKinds } from '@/types/songMedia';
 
 // Type for song data
 interface Song {
@@ -31,6 +32,13 @@ interface Song {
   key?: string;
   capo?: number;
   info?: string;
+  album?: string;
+  liturgicalTime?: string;
+  source?: string;
+  rhythm?: string;
+  videoEmbed?: string;
+  youtubeLinks?: { label: string; url: string }[];
+  audioLinks?: { label: string; url: string }[];
   originalCategoryKey?: string;
   numericFilenamePart?: string;
 }
@@ -147,6 +155,10 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
 
     const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
 
+    // Indicador sutil de multimedia (▶ vídeo / 🎧 audio) en la fila.
+    const kinds = useMemo(() => mediaKinds(extractSongMedia(song)), [song]);
+    const mediaIconColor = isDark ? '#5A5A5E' : '#B7B7BC';
+
     const contextHandler = useCallback(() => {
       h.tap();
       onLongPress?.(song);
@@ -234,6 +246,24 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
               </View>
             </View>
             <View style={styles.rightSection}>
+              {(kinds.video || kinds.audio) && (
+                <View style={styles.mediaIndicators}>
+                  {kinds.video && (
+                    <MaterialIcons
+                      name="play-arrow"
+                      size={13}
+                      color={mediaIconColor}
+                    />
+                  )}
+                  {kinds.audio && (
+                    <MaterialIcons
+                      name="headphones"
+                      size={12}
+                      color={mediaIconColor}
+                    />
+                  )}
+                </View>
+              )}
               {song.capo && song.capo > 0 ? (
                 <View style={styles.capoPill}>
                   <Text style={styles.capoText}>{`C${song.capo}`}</Text>
@@ -359,6 +389,12 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 5,
+    },
+    mediaIndicators: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      marginRight: 2,
     },
     capoPill: {
       paddingHorizontal: 6,

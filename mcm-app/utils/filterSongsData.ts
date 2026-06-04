@@ -1,3 +1,5 @@
+import type { MediaLink } from '@/types/songMedia';
+
 export interface SongEntry {
   title: string;
   filename?: string;
@@ -7,6 +9,14 @@ export interface SongEntry {
   info?: string;
   content?: string;
   status?: string;
+  // Campos multimedia (rellenados por el admin, mostrados en el cajón multimedia).
+  album?: string;
+  liturgicalTime?: string;
+  source?: string;
+  rhythm?: string;
+  videoEmbed?: string;
+  youtubeLinks?: MediaLink[];
+  audioLinks?: MediaLink[];
 }
 
 export interface SongCategory {
