@@ -30,6 +30,15 @@
   y devolvía `null` con fechas tipo ISO ("2026-06-06"), cayendo al último día.
   Nueva utilidad `utils/dateUtils.ts` (`parseHorarioDate` + `getClosestDateIndex`)
   que entiende ambos formatos y la comparten el selector y la pantalla.
+- **Header web coherente en todas las sub-pantallas de evento** (Horario,
+  Materiales, Visitas, Profundiza, Grupos, Contactos, Apps): el título pasa al
+  propio header de navegación (alineado a la izquierda) y se oculta el hero
+  in-content (`ScreenHero` ahora acepta `hideOnWeb`). El botón "Atrás" se separa
+  del borde izquierdo en web en todas las sub-pantallas. Centralizado en
+  `eventScreenOptions` (`app/screens/eventStackScreens.tsx`) mediante el flag
+  `webHeaderTitle`; el hub y "Compartiendo" no lo activan para no duplicar
+  título. En iOS/Android no cambia nada (sigue el hero del contenido).
+
 ## 2026-06-03 — Logo "alzad la mirada" en hero de Visita Papa + mascota carismochito PNG
 
 - **`EventConfig.heroImage`** (`constants/events.ts`): nuevo campo opcional para

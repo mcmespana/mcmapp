@@ -59,7 +59,7 @@ export default function ProfundizaScreen() {
             }}
             contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
           >
-            <ScreenHero title="Profundiza" />
+            <ScreenHero title="Profundiza" hideOnWeb />
             <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 12 }}>
               {[0, 1, 2, 3].map((i) => (
                 <Skeleton
@@ -80,7 +80,7 @@ export default function ProfundizaScreen() {
             backgroundColor: Colors[scheme ?? 'light'].background,
           }}
         >
-          <ScreenHero title="Profundiza" />
+          <ScreenHero title="Profundiza" hideOnWeb />
           <ComingSoon accentColor={event.tintColor} />
         </View>
       </PageContainer>
@@ -93,7 +93,7 @@ export default function ProfundizaScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
       >
-        <ScreenHero title={data!.titulo || 'Profundiza'} />
+        <ScreenHero title={data!.titulo || 'Profundiza'} hideOnWeb />
         <View style={styles.body}>
           {data!.introduccion ? (
             <FormattedContent text={data!.introduccion} scale={fontScale} />

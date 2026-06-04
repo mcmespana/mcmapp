@@ -1,11 +1,12 @@
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 import GlassBackButton from '@/components/ui/GlassBackButton';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
+import spacing from '@/constants/spacing';
 import { getEvent } from '@/constants/events';
 
 import EventHomeScreen from './EventHomeScreen';
@@ -51,6 +52,30 @@ function FloatingHeaderBackground() {
   const scheme = useColorScheme();
   const bg = Colors[scheme ?? 'light'].background;
   return <View style={[StyleSheet.absoluteFill, { backgroundColor: bg }]} />;
+}
+
+/**
+ * Título grande del header en WEB para las sub-pantallas de evento. En web el
+ * título vive en el propio header (no en un hero in-content), alineado a la
+ * izquierda junto al botón "Atrás" — coherente en Horario, Materiales, Visitas,
+ * Profundiza, Grupos, Contactos, Apps…
+ */
+function WebHeaderTitle({ title }: { title: string }) {
+  const scheme = useColorScheme();
+  const color = Colors[scheme ?? 'light'].text;
+  return (
+    <Text
+      numberOfLines={1}
+      style={{
+        fontSize: 22,
+        fontWeight: '800',
+        letterSpacing: -0.4,
+        color,
+      }}
+    >
+      {title}
+    </Text>
+  );
 }
 
 /**
@@ -132,7 +157,10 @@ export const getTextColor = (_tintColor?: string) => {
  * reusar todas las sub-pantallas para eventos nuevos sin duplicar registros.
  */
 export const eventScreenOptions =
-  (title: string, opts?: { hideHeaderTitle?: boolean }) =>
+  (
+    title: string,
+    opts?: { hideHeaderTitle?: boolean; webHeaderTitle?: boolean },
+  ) =>
   ({ route }: { route: EventScreenRoute }) => {
     const event = getEvent(route.params?.eventId);
     const tint = event.tintColor;
@@ -146,11 +174,26 @@ export const eventScreenOptions =
     // con título grande propio (`hideHeaderTitle`) en TODAS las plataformas.
     const useFloating = !!opts?.hideHeaderTitle;
     if (useFloating) {
+      const isWeb = Platform.OS === 'web';
+      // En WEB, las sub-pantallas con `webHeaderTitle` muestran su título en el
+      // propio header (alineado a la izquierda) y ocultan el hero in-content
+      // (`hideOnWeb`), para que el contenido quede pegado al header. El hub y
+      // pantallas con sub-navegación propia (Compartiendo) NO lo activan, para
+      // no duplicar el título. En iOS/Android el título siempre lo pone el hero
+      // del contenido, así que el header va sin título (`() => <View />` — un
+      // `() => null` no basta: native-stack reaparece el `title`).
+      const showWebTitle = isWeb && !!opts?.webHeaderTitle;
       return {
         title,
-        // `() => <View />` oculta el título de forma fiable (un `() => null`
-        // no basta: native-stack reaparece el `title` por defecto).
-        headerTitle: () => <View />,
+        headerTitle: showWebTitle
+          ? () => <WebHeaderTitle title={title} />
+          : () => <View />,
+        ...(showWebTitle ? { headerTitleAlign: 'left' as const } : {}),
+        // En web separamos el botón "Atrás" del borde izquierdo en todas las
+        // sub-pantallas (mejora inofensiva y coherente).
+        ...(isWeb
+          ? { headerLeftContainerStyle: { paddingLeft: spacing.md } }
+          : {}),
         headerStyle: { backgroundColor: 'transparent' },
         headerShadowVisible: false,
         headerBackground: () => <FloatingHeaderBackground />,
@@ -281,12 +324,18 @@ export function renderEventScreens(
       <Stack.Screen
         name="Horario"
         component={HorarioScreen}
-        options={eventScreenOptions('Horario', { hideHeaderTitle: true })}
+        options={eventScreenOptions('Horario', {
+          hideHeaderTitle: true,
+          webHeaderTitle: true,
+        })}
       />
       <Stack.Screen
         name="Materiales"
         component={MaterialesScreen}
-        options={eventScreenOptions('Materiales', { hideHeaderTitle: true })}
+        options={eventScreenOptions('Materiales', {
+          hideHeaderTitle: true,
+          webHeaderTitle: true,
+        })}
       />
       <Stack.Screen
         name="MaterialPages"
@@ -296,27 +345,42 @@ export function renderEventScreens(
       <Stack.Screen
         name="Visitas"
         component={VisitasScreen}
-        options={eventScreenOptions('Visitas', { hideHeaderTitle: true })}
+        options={eventScreenOptions('Visitas', {
+          hideHeaderTitle: true,
+          webHeaderTitle: true,
+        })}
       />
       <Stack.Screen
         name="Profundiza"
         component={ProfundizaScreen}
-        options={eventScreenOptions('Profundiza', { hideHeaderTitle: true })}
+        options={eventScreenOptions('Profundiza', {
+          hideHeaderTitle: true,
+          webHeaderTitle: true,
+        })}
       />
       <Stack.Screen
         name="Grupos"
         component={GruposScreen}
-        options={eventScreenOptions('Grupos', { hideHeaderTitle: true })}
+        options={eventScreenOptions('Grupos', {
+          hideHeaderTitle: true,
+          webHeaderTitle: true,
+        })}
       />
       <Stack.Screen
         name="Contactos"
         component={ContactosScreen}
-        options={eventScreenOptions('Contactos', { hideHeaderTitle: true })}
+        options={eventScreenOptions('Contactos', {
+          hideHeaderTitle: true,
+          webHeaderTitle: true,
+        })}
       />
       <Stack.Screen
         name="Apps"
         component={AppsScreen}
-        options={eventScreenOptions('Apps', { hideHeaderTitle: true })}
+        options={eventScreenOptions('Apps', {
+          hideHeaderTitle: true,
+          webHeaderTitle: true,
+        })}
       />
       <Stack.Screen
         name="Reflexiones"
