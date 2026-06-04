@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
+import { extractSongMedia } from '@/types/songMedia';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -284,7 +285,16 @@ const SelectedSongsScreen: React.FC = () => {
           capo: completeSong.capo,
         }),
         content: completeSong.content || '',
-        navigationList: flatSelectedSongs,
+        media: extractSongMedia(completeSong) ?? undefined,
+        navigationList: flatSelectedSongs.map((s) => ({
+          title: s.title,
+          filename: s.filename,
+          author: s.author,
+          key: s.key,
+          capo: s.capo,
+          content: s.content,
+          media: extractSongMedia(s) ?? undefined,
+        })),
         currentIndex: index,
         source: 'selection',
         firebaseCategory: completeSong.originalCategoryKey || 'entrada',

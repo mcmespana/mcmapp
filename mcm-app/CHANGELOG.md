@@ -13,6 +13,36 @@
 
 ---
 
+## 2026-06-04 — Cantoral: sistema multimedia y ficha de canción
+
+- **Nuevo sistema multimedia en el detalle de canción**. Los campos que el admin
+  ya rellenaba en Firebase (`album`, `source`, `rhythm`, `videoEmbed`,
+  `youtubeLinks`, `audioLinks`) ahora **se muestran al usuario final** sin
+  estorbar la lectura en directo. El FAB "tune" se queda solo con controles de
+  lectura; toda la multimedia entra por **una sola puerta**.
+- **Botón multimedia** (glass) en la barra superior del detalle, a la izquierda
+  de "añadir", con punto rojo (accent) cuando la canción tiene material. Solo
+  aparece si hay multimedia. Abre el cajón "Multimedia y ficha" con tres
+  secciones: **Vídeos**, **Audios** y **Ficha**.
+- **Reproductor flotante de YouTube** (estilo PiP) arrastrable que se superpone
+  a la letra; botón de pantalla completa. Usa `react-native-webview` en nativo e
+  `<iframe>` en web (sin dependencias nativas nuevas → publicable por OTA).
+- **Audios** (Google Drive) → no se pueden embeber: se abren en el navegador con
+  `expo-web-browser` + toast "Abriendo en el navegador…".
+- **Indicador sutil en la lista** (▶ vídeo / 🎧 audio por fila) + leyenda junto
+  al contador de canciones.
+- **Nuevo campo `liturgicalTime`** (Tiempo litúrgico) en el panel de admin
+  (`SecretPanelModal`) y en la ficha. Se guarda en `songs/data/.../liturgicalTime`.
+- **Data plumbing**: los campos multimedia viajan ahora en los params de
+  navegación a `SongDetail` (offline-friendly, igual que `content/key/capo`).
+- Archivos principales: `types/songMedia.ts` (nuevo),
+  `components/song-media/SongMediaSheet.tsx` (nuevo),
+  `components/song-media/FloatingYouTubePlayer.tsx` (nuevo),
+  `app/screens/SongDetailScreen.tsx`, `app/screens/SongListScreen.tsx`,
+  `app/screens/SelectedSongsScreen.tsx`, `components/SongListItem.tsx`,
+  `app/(tabs)/cancionero.tsx`, `utils/filterSongsData.ts`,
+  `components/SecretPanelModal.tsx`.
+
 ## 2026-06-03 — Rediseño de la pantalla de Horario + fix del día por defecto
 
 - **Rediseño visual del Horario** (`app/screens/HorarioScreen.tsx`,
@@ -30,6 +60,7 @@
   y devolvía `null` con fechas tipo ISO ("2026-06-06"), cayendo al último día.
   Nueva utilidad `utils/dateUtils.ts` (`parseHorarioDate` + `getClosestDateIndex`)
   que entiende ambos formatos y la comparten el selector y la pantalla.
+
 ## 2026-06-03 — Logo "alzad la mirada" en hero de Visita Papa + mascota carismochito PNG
 
 - **`EventConfig.heroImage`** (`constants/events.ts`): nuevo campo opcional para

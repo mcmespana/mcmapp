@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import GlassSurface from '@/components/ui/GlassSurface';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import SongDisplay from '@/components/SongDisplay';
@@ -24,11 +25,16 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import ArrangementInputModal from '@/components/ArrangementInputModal';
 import * as Clipboard from 'expo-clipboard';
-import { Colors } from '@/constants/colors';
+import brandColors, { Colors } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 import { h } from '@/utils/haptics';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
+import { hasSongMedia } from '@/types/songMedia';
+import SongMediaSheet from '@/components/song-media/SongMediaSheet';
+import FloatingYouTubePlayer, {
+  type FloatingVideoSource,
+} from '@/components/song-media/FloatingYouTubePlayer';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
 // add/remove song button. Not part of the MCM brand palette: it's an
@@ -71,6 +77,7 @@ export default function SongDetailScreen({
     key,
     capo,
     content,
+    media: routeMedia,
     navigationList,
     currentIndex,
     source,
@@ -172,6 +179,19 @@ export default function SongDetailScreen({
   });
 
   const isSelected = isSongSelected(filename);
+
+  // ── Multimedia ──
+  const media = useMemo(() => routeMedia ?? null, [routeMedia]);
+  const songHasMedia = hasSongMedia(media);
+  const [showMediaSheet, setShowMediaSheet] = useState(false);
+  const [floatingVideo, setFloatingVideo] =
+    useState<FloatingVideoSource | null>(null);
+
+  // Al cambiar de canción (swipe), cerramos el cajón pero conservamos el
+  // reproductor flotante (sobrevive porque es la misma instancia montada).
+  useEffect(() => {
+    setShowMediaSheet(false);
+  }, [filename]);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -444,6 +464,29 @@ export default function SongDetailScreen({
         {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
         <IconSymbol name="chevron.left" size={20} color={floatIconColor} />
       </TouchableOpacity>
+      {songHasMedia && (
+        <TouchableOpacity
+          style={[
+            styles.floatBtn,
+            { top: btnTop, right: 62 },
+            Platform.OS !== 'ios' && { backgroundColor: floatBtnBg },
+          ]}
+          onPress={() => {
+            h.tap();
+            setShowMediaSheet(true);
+          }}
+          activeOpacity={0.7}
+          accessibilityLabel="Multimedia y ficha"
+        >
+          {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
+          <MaterialIcons
+            name="ondemand-video"
+            size={20}
+            color={isDark ? brandColors.secondary : brandColors.primary}
+          />
+          <View style={styles.mediaDot} />
+        </TouchableOpacity>
+      )}
       <TouchableOpacity
         style={[
           styles.floatBtn,
@@ -546,6 +589,20 @@ export default function SongDetailScreen({
     <View style={{ flex: 1, backgroundColor: screenBg }}>
       {gestureContent}
       {floatingButtons}
+      <SongMediaSheet
+        visible={showMediaSheet}
+        onClose={() => setShowMediaSheet(false)}
+        media={media}
+        songTitle={_navScreenTitle}
+        onPlayVideo={(embedUrl, label) => {
+          setShowMediaSheet(false);
+          setFloatingVideo({ embedUrl, label });
+        }}
+      />
+      <FloatingYouTubePlayer
+        source={floatingVideo}
+        onClose={() => setFloatingVideo(null)}
+      />
       {isAdmin && (
         <ArrangementInputModal
           visible={arrModalVisible}
@@ -588,5 +645,16 @@ const styles = StyleSheet.create({
         elevation: 4,
       },
     }),
+  },
+  mediaDot: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: brandColors.accent,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.9)',
   },
 });

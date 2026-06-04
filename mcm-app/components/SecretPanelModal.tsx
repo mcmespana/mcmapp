@@ -74,6 +74,7 @@ export default function SecretPanelModal({
   const [editAlbum, setEditAlbum] = useState('');
   const [editSource, setEditSource] = useState('');
   const [editRhythm, setEditRhythm] = useState('');
+  const [editLiturgicalTime, setEditLiturgicalTime] = useState('');
   const [editVideoInput, setEditVideoInput] = useState('');
   const [editYoutubeLinks, setEditYoutubeLinks] = useState<MediaLink[]>([]);
   const [editAudioLinks, setEditAudioLinks] = useState<MediaLink[]>([]);
@@ -83,6 +84,7 @@ export default function SecretPanelModal({
     album: string;
     source: string;
     rhythm: string;
+    liturgicalTime: string;
     videoEmbed: string;
     youtubeLinks: MediaLink[];
     audioLinks: MediaLink[];
@@ -90,6 +92,7 @@ export default function SecretPanelModal({
     album: '',
     source: '',
     rhythm: '',
+    liturgicalTime: '',
     videoEmbed: '',
     youtubeLinks: [],
     audioLinks: [],
@@ -151,6 +154,7 @@ export default function SecretPanelModal({
           album: song.album || '',
           source: song.source || '',
           rhythm: song.rhythm || '',
+          liturgicalTime: song.liturgicalTime || '',
           videoEmbed: song.videoEmbed || '',
           youtubeLinks: normalizeLinks(song.youtubeLinks),
           audioLinks: normalizeLinks(song.audioLinks),
@@ -159,6 +163,7 @@ export default function SecretPanelModal({
         setEditAlbum(media.album);
         setEditSource(media.source);
         setEditRhythm(media.rhythm);
+        setEditLiturgicalTime(media.liturgicalTime);
         setEditVideoInput(media.videoEmbed);
         setEditYoutubeLinks(media.youtubeLinks);
         setEditAudioLinks(media.audioLinks);
@@ -269,21 +274,22 @@ export default function SecretPanelModal({
         }
       });
 
-      // ── Campos multimedia (album, source, rhythm, videoEmbed) ──
+      // ── Campos multimedia (album, source, rhythm, liturgicalTime, videoEmbed) ──
       const newMedia = {
         album: editAlbum.trim(),
         source: editSource.trim(),
         rhythm: editRhythm.trim(),
+        liturgicalTime: editLiturgicalTime.trim(),
         videoEmbed: toYouTubeEmbedUrl(editVideoInput),
       };
-      (['album', 'source', 'rhythm', 'videoEmbed'] as const).forEach(
-        (field) => {
-          if ((originalMedia as any)[field] !== (newMedia as any)[field]) {
-            changes[`${field}Old`] = (originalMedia as any)[field];
-            changes[`${field}New`] = (newMedia as any)[field];
-          }
-        },
-      );
+      (
+        ['album', 'source', 'rhythm', 'liturgicalTime', 'videoEmbed'] as const
+      ).forEach((field) => {
+        if ((originalMedia as any)[field] !== (newMedia as any)[field]) {
+          changes[`${field}Old`] = (originalMedia as any)[field];
+          changes[`${field}New`] = (newMedia as any)[field];
+        }
+      });
 
       // ── Enlaces repetibles (youtubeLinks, audioLinks) ──
       const cleanedYoutube = cleanLinks(editYoutubeLinks);
@@ -412,6 +418,7 @@ export default function SecretPanelModal({
             album: 'Álbum',
             source: 'Fuente',
             rhythm: 'Ritmo',
+            liturgicalTime: 'Tiempo litúrgico',
             videoEmbed: 'Vídeo',
             youtubeLinks: 'Enlaces YouTube',
             audioLinks: 'Enlaces de audio',
@@ -707,6 +714,28 @@ export default function SecretPanelModal({
               />
             </View>
           </View>
+
+          {/* Tiempo litúrgico */}
+          <Text style={[styles.label, { color: theme.text }]}>
+            Tiempo litúrgico
+          </Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: inputBg,
+                color: theme.text,
+                borderColor: editLiturgicalTime.trim()
+                  ? '#34C759'
+                  : inputBorder,
+              },
+            ]}
+            placeholder="Ej: Adviento, Cuaresma, Pascua…"
+            placeholderTextColor={theme.icon}
+            value={editLiturgicalTime}
+            onChangeText={setEditLiturgicalTime}
+            editable={!isSubmitting}
+          />
 
           {/* Fuente */}
           <Text style={[styles.label, { color: theme.text }]}>Fuente</Text>

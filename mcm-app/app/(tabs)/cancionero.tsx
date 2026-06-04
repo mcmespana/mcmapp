@@ -14,6 +14,7 @@ import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 import { SettingsProvider } from '../../contexts/SettingsContext';
 import { TabHeaderColors } from '@/constants/colors';
 import { useChoirSession } from '../../contexts/ChoirSessionContext';
+import { extractSongMedia, type SongMedia } from '@/types/songMedia';
 
 export interface SongNavItem {
   title: string;
@@ -22,6 +23,7 @@ export interface SongNavItem {
   key?: string;
   capo?: number;
   content?: string;
+  media?: SongMedia;
 }
 
 export type RootStackParamList = {
@@ -34,6 +36,7 @@ export type RootStackParamList = {
     key?: string;
     capo?: number;
     content: string;
+    media?: SongMedia;
     navigationList?: SongNavItem[];
     currentIndex?: number;
     source?: 'category' | 'selection';
@@ -134,6 +137,7 @@ export default function CancioneroTab() {
       key: remote.songKey,
       capo: remote.capo,
       content: remote.content ?? '',
+      media: extractSongMedia(remote) ?? undefined,
       firebaseCategory: remote.firebaseCategory,
       source: 'selection',
     });
