@@ -22,3 +22,7 @@
 ## 2024-05-30 - [Array Performance] Chained array methods on unbounded sets
 **Learning:** Using chained array methods (like `.entries().filter().sort().forEach()`) to find a limited subset of items (e.g. top N events) forces iteration over the *entire dataset* multiple times, bypassing the possibility of an early exit.
 **Action:** When a function only needs to extract a limited number of items from a large list or dictionary, replace array chains with a native `for...of` or `for...in` loop that includes an explicit `if (condition) break;` or `return` statement to stop processing as soon as the limit is met.
+
+## 2026-06-04 - [Optimize Search with Schwartzian Transform]
+**Learning:** Running `.toLowerCase()`, `.normalize('NFD')`, and Regex replacement (`s.replace(/[̀-ͯ]/g, '')`) *inside* a `.filter()` function during live user typing creates significant UI lag for lists of >100 items because it results in O(N * M) complex string operations per keystroke.
+**Action:** When performing live search filtering against large datasets, apply the "Schwartzian Transform" pattern: precalculate the normalized search strings once using `useMemo` when the data loads, storing them alongside the original data. Then the live `.filter()` only performs fast `.includes()` operations.

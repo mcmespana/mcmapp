@@ -166,18 +166,28 @@ export default function ContactosScreen() {
     toast.show({ variant: 'success', label: 'Teléfono copiado' });
   };
 
+  // ⚡ Bolt Optimization: Precompute normalized strings to avoid running expensive operations
+  // on every keystroke during live search, changing an O(N * M) complex operation into a fast lookup.
+  const normalizedData = useMemo(() => {
+    if (!data) return [];
+    return data.map((c) => ({
+      ...c,
+      _nNombre: c.nombre ? normalize(c.nombre) : '',
+      _nResp: c.responsabilidad ? normalize(c.responsabilidad) : '',
+      _nTel: c.telefono ? c.telefono.replace(/\s/g, '') : '',
+    }));
+  }, [data]);
+
   const filtered = useMemo(() => {
-    if (!data) return [] as Contacto[];
+    if (!normalizedData || normalizedData.length === 0) return [];
     const q = query.trim();
-    if (q.length < 2) return data;
+    if (q.length < 2) return normalizedData;
     const nq = normalize(q);
-    return data.filter(
+    return normalizedData.filter(
       (c) =>
-        (c.nombre && normalize(c.nombre).includes(nq)) ||
-        (c.responsabilidad && normalize(c.responsabilidad).includes(nq)) ||
-        (c.telefono && c.telefono.replace(/\s/g, '').includes(q)),
+        c._nNombre.includes(nq) || c._nResp.includes(nq) || c._nTel.includes(q),
     );
-  }, [data, query]);
+  }, [normalizedData, query]);
 
   const tints = isDark ? AVATAR_TINTS_DARK : AVATAR_TINTS;
 
