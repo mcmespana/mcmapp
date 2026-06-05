@@ -225,80 +225,106 @@ function CelebrationConfetti() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Barra verde inferior con el carismochito bailando encima de los tabs       */
+/* Mascota que se asoma girada 90° desde un lateral, de vez en cuando          */
 /* -------------------------------------------------------------------------- */
 
-function BottomBarGlow() {
-  const insets = useSafeAreaInsets();
-  const enter = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(0)).current;
+const PEEK_SIZE = 96;
+/** Cuánto del cuerpo queda dentro de la pantalla cuando asoma. */
+const PEEK_REVEAL = 58;
+/** Tiempo visible asomándose antes de retirarse. */
+const PEEK_HOLD_MS = 2200;
+/** Rango aleatorio entre asomadas (raro: un guiño de vez en cuando). */
+const PEEK_MIN_GAP_MS = 45000;
+const PEEK_MAX_GAP_MS = 90000;
+
+function randomGap() {
+  return PEEK_MIN_GAP_MS + Math.random() * (PEEK_MAX_GAP_MS - PEEK_MIN_GAP_MS);
+}
+
+function SidePeekMascot() {
+  // 'left' | 'right' alternando; posición vertical algo aleatoria por asomada.
+  const [peek, setPeek] = useState<{
+    side: 'left' | 'right';
+    topPct: number;
+  } | null>(null);
+  const slide = useRef(new Animated.Value(0)).current;
+  const sideRef = useRef<'left' | 'right'>('right');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    Animated.spring(enter, {
-      toValue: 1,
-      tension: 70,
-      friction: 11,
-      useNativeDriver: true,
-    }).start();
-    // Latido verde suave y continuo del resplandor inferior.
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 1100,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 0,
-          duration: 1100,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [enter, pulse]);
+    let cancelled = false;
 
-  const glowOpacity = pulse.interpolate({
+    const scheduleNext = (delay: number) => {
+      timerRef.current = setTimeout(() => {
+        if (cancelled) return;
+        // Alterna de lado y elige una altura aleatoria (entre 25% y 60%).
+        sideRef.current = sideRef.current === 'right' ? 'left' : 'right';
+        setPeek({
+          side: sideRef.current,
+          topPct: 0.25 + Math.random() * 0.35,
+        });
+        slide.setValue(0);
+        Animated.sequence([
+          Animated.spring(slide, {
+            toValue: 1,
+            tension: 70,
+            friction: 9,
+            useNativeDriver: true,
+          }),
+          Animated.delay(PEEK_HOLD_MS),
+          Animated.timing(slide, {
+            toValue: 0,
+            duration: 380,
+            easing: Easing.in(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          if (cancelled) return;
+          setPeek(null);
+          scheduleNext(randomGap());
+        });
+      }, delay);
+    };
+
+    // Primera asomada relativamente pronto para dar señal de vida del modo.
+    scheduleNext(6000 + Math.random() * 6000);
+
+    return () => {
+      cancelled = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      slide.stopAnimation();
+    };
+  }, [slide]);
+
+  if (!peek) return null;
+
+  const isRight = peek.side === 'right';
+  // Oculta fuera de pantalla → asoma dejando PEEK_REVEAL px dentro.
+  const hiddenX = isRight ? PEEK_SIZE : -PEEK_SIZE;
+  const shownX = isRight ? PEEK_SIZE - PEEK_REVEAL : -(PEEK_SIZE - PEEK_REVEAL);
+  const translateX = slide.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.55, 1],
-  });
-  const mascotTranslate = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [40, 0],
+    outputRange: [hiddenX, shownX],
   });
 
   return (
-    <View
-      pointerEvents="none"
-      style={[styles.bottomGlowRoot, { paddingBottom: insets.bottom }]}
-    >
-      {/* Resplandor verde que sube desde la barra de pestañas. */}
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: glowOpacity }]}>
-        <LinearGradient
-          colors={[
-            'rgba(27, 158, 75, 0)',
-            'rgba(27, 158, 75, 0.28)',
-            'rgba(90, 224, 138, 0.42)',
-          ]}
-          locations={[0, 0.55, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-
-      {/* Mascota bailando, asomada justo por encima de los iconos. */}
+    <View pointerEvents="none" style={styles.peekRoot}>
       <Animated.View
         style={[
-          styles.bottomMascot,
+          styles.peekMascot,
+          isRight ? { right: 0 } : { left: 0 },
           {
-            opacity: enter,
-            transform: [{ translateY: mascotTranslate }],
+            top: `${peek.topPct * 100}%`,
+            opacity: slide,
+            transform: [
+              { translateX },
+              // Girada 90°: asoma tumbada de lado desde el borde.
+              { rotate: isRight ? '-90deg' : '90deg' },
+            ],
           },
         ]}
       >
-        <CarismochitoMascot size={64} dance={2} />
+        <CarismochitoMascot size={PEEK_SIZE} dance={1} />
       </Animated.View>
     </View>
   );
@@ -308,9 +334,13 @@ function BottomBarGlow() {
 /* Badge flotante                                                             */
 /* -------------------------------------------------------------------------- */
 
+/** Tiempo que el badge superior permanece visible antes de retirarse solo. */
+const BADGE_VISIBLE_MS = 3800;
+
 function FloatingBadge({ onDeactivate }: { onDeactivate: () => void }) {
   const insets = useSafeAreaInsets();
   const enter = useRef(new Animated.Value(0)).current;
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     Animated.spring(enter, {
@@ -319,12 +349,26 @@ function FloatingBadge({ onDeactivate }: { onDeactivate: () => void }) {
       friction: 9,
       useNativeDriver: true,
     }).start();
+
+    // Se asoma para anunciar el modo y, pasados unos segundos, se desliza
+    // hacia arriba y se desmonta para no estorbar (se sigue saliendo agitando).
+    const t = setTimeout(() => {
+      Animated.timing(enter, {
+        toValue: 0,
+        duration: 420,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }).start(() => setHidden(true));
+    }, BADGE_VISIBLE_MS);
+    return () => clearTimeout(t);
   }, [enter]);
 
   const translateY = enter.interpolate({
     inputRange: [0, 1],
     outputRange: [-60, 0],
   });
+
+  if (hidden) return null;
 
   return (
     <Animated.View
@@ -361,6 +405,7 @@ export default function CarismochitoOverlay() {
     state,
     countdown,
     countdownSeconds,
+    freshlyActivated,
     chargeCount,
     shakesNeeded,
     toggleByShake,
@@ -373,9 +418,13 @@ export default function CarismochitoOverlay() {
 
   return (
     <>
-      {state === 'active' ? <BottomBarGlow /> : null}
-      {state === 'active' ? <CelebrationConfetti /> : null}
-      {state === 'active' ? <FloatingBadge onDeactivate={deactivate} /> : null}
+      {state === 'active' ? <SidePeekMascot /> : null}
+      {/* Celebración (confeti + badge) sólo en activación nueva, no al
+          restaurar el modo al reabrir la app. */}
+      {state === 'active' && freshlyActivated ? <CelebrationConfetti /> : null}
+      {state === 'active' && freshlyActivated ? (
+        <FloatingBadge onDeactivate={deactivate} />
+      ) : null}
       {state === 'idle' && chargeCount > 0 ? (
         <ChargeDots count={chargeCount} total={shakesNeeded} />
       ) : null}
@@ -403,31 +452,25 @@ const styles = StyleSheet.create({
     elevation: 58,
   },
 
-  /* Barra verde inferior + mascota */
-  bottomGlowRoot: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 150,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+  /* Mascota asomándose girada 90° desde un lateral */
+  peekRoot: {
+    ...StyleSheet.absoluteFillObject,
     zIndex: 9300,
     elevation: 52,
   },
-  bottomMascot: {
-    marginBottom: 4,
+  peekMascot: {
+    position: 'absolute',
     ...Platform.select({
       ios: {
         shadowColor: G_GLOW,
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.9,
-        shadowRadius: 16,
+        shadowOpacity: 0.7,
+        shadowRadius: 14,
       },
       android: { elevation: 12 },
       default: {
         // @ts-ignore - web only
-        boxShadow: `0px 0px 20px ${G_GLOW}`,
+        boxShadow: `0px 0px 18px ${G_GLOW}`,
       },
     }),
   },
