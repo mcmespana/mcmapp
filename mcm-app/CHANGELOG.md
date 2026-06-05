@@ -13,6 +13,31 @@
 
 ---
 
+## 2026-06-05 — Fixes de calendario y notificaciones (Home + deep-link)
+
+- **Botones de calendario de la Home arreglados en iOS**: las tarjetas de
+  "Próximos eventos", el botón "Ver calendario" y el CTA de "Ir al calendario"
+  no hacían nada en iOS. Causa: en iOS `calendario` (y `fotos`) son tabs
+  _overflow_ sin trigger nativo (solo caben 5 en la barra), así que
+  `router.push('/calendario')` no navegaba. Ahora la Home los alcanza vía el
+  stack de "Más" (igual que el acceso de Fotos); en Android/Web siguen yendo al
+  tab directo. El salto a fecha concreta también funciona en iOS.
+- **La tarjeta de Novedades abre la última notificación "en grande"**: al tocar
+  la tarjeta de la Home se abre directamente el detalle de la última
+  notificación, en vez de la lista completa. La campana del header sigue
+  abriendo la lista.
+- **Sin título duplicado en el detalle**: el bottom sheet de notificaciones ya
+  no repite el título de la notificación en su cabecera cuando se ve el detalle
+  (solo queda la flecha de volver).
+- **Deep-link de push → detalle de la notificación**: al tocar una notificación
+  desde la bandeja del sistema, la app abre el centro de notificaciones y
+  despliega esa notificación concreta (`/notifications?openId=<id>`). Si la
+  notificación trae `internalRoute`, se respeta ese destino.
+- Archivos: `app/(tabs)/index.tsx`, `app/(tabs)/calendario.tsx`,
+  `app/notifications.tsx`, `components/NotificationsBottomSheet.tsx`,
+  `notifications/usePushNotifications.ts`, `utils/masNavigation.ts`,
+  `app/screens/MasHomeScreen.tsx`.
+
 ## 2026-06-05 — Fixes onboarding Android: login, botón "saltar" y toasts
 
 - **Login con Google en Android ya no muestra error al cancelar**: al cerrar el

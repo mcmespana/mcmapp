@@ -56,6 +56,7 @@ import {
   getLocalNotificationsHistory,
   isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
+import { NotificationData } from '@/types/notifications';
 import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import { useOTAContext } from '@/contexts/OTAContext';
 import { h } from '@/utils/haptics';
@@ -186,6 +187,10 @@ export default function Home() {
   const [settingsVisible, setSettingsVisibleRaw] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [notifSheetOpen, setNotifSheetOpenRaw] = useState(false);
+  // Cuando se abre desde la tarjeta de Novedades queremos mostrar el detalle de
+  // la última notificación "en grande"; desde la campana, la lista completa.
+  const [notifSheetInitial, setNotifSheetInitial] =
+    useState<NotificationData | null>(null);
 
   // Settings and notifications panels must be mutually exclusive: opening
   // one auto-closes the other. Otherwise both panels stack visually and
@@ -447,6 +452,23 @@ export default function Home() {
     }
   };
 
+  // Navega al calendario (opcionalmente saltando a una fecha concreta).
+  // En iOS `calendario` es un tab "overflow" SIN trigger nativo (solo caben 5
+  // en la barra), por lo que `router.push('/calendario')` no funciona: hay que
+  // alcanzarlo a través del stack de "Más" igual que hace el acceso de Fotos.
+  // En Android/Web `calendario` es un tab real, así que navegamos directo.
+  const navigateToCalendar = (date?: string) => {
+    h.tap();
+    if (Platform.OS === 'ios') {
+      setPendingMasScreen('Calendario', date ? { date } : undefined);
+      router.push('/mas');
+    } else if (date) {
+      router.push({ pathname: '/calendario', params: { date } } as any);
+    } else {
+      router.push('/calendario');
+    }
+  };
+
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }]}
@@ -471,6 +493,7 @@ export default function Home() {
       <NotificationsBottomSheet
         visible={notifSheetOpen}
         onClose={() => setNotifSheetOpen(false)}
+        initialNotification={notifSheetInitial}
       />
 
       {/* ── App-bar header (ScreenHero in compact mode) ── */}
@@ -540,7 +563,10 @@ export default function Home() {
                           : 'rgba(0,0,0,0.08)',
                     },
                   ]}
-                  onPress={() => setNotifSheetOpen(true)}
+                  onPress={() => {
+                    setNotifSheetInitial(null);
+                    setNotifSheetOpen(true);
+                  }}
                   accessibilityLabel={
                     unreadCount > 0
                       ? `Notificaciones, ${unreadCount} sin leer`
@@ -640,8 +666,8 @@ export default function Home() {
                     style={[styles.onboardingBannerBody, { color: theme.icon }]}
                     numberOfLines={2}
                   >
-                    Dinos a qué localidad perteneces y te
-                    mostraremos las secciones más importantes.
+                    Dinos a qué localidad perteneces y te mostraremos las
+                    secciones más importantes.
                   </Text>
                 </View>
                 <MaterialIcons
@@ -728,7 +754,12 @@ export default function Home() {
                         : 'rgba(0,0,0,0.07)',
                   },
                 ])}
-                onPress={() => setNotifSheetOpen(true)}
+                onPress={() => {
+                  // Abre directamente el detalle de la última notificación
+                  // (vista en grande), no la lista completa.
+                  setNotifSheetInitial(latestNotification);
+                  setNotifSheetOpen(true);
+                }}
                 activeOpacity={0.78}
                 accessibilityLabel={`${notifTitle}. Toca para leer`}
                 accessibilityRole="button"
@@ -951,7 +982,7 @@ export default function Home() {
                   title="Activa algún calendario"
                   subtitle="Selecciona un calendario para ver los próximos eventos aquí."
                   actionLabel="Ir al calendario"
-                  onAction={() => router.push('/calendario')}
+                  onAction={() => navigateToCalendar()}
                   accentColor={accentColor}
                 />
               ) : eventsLoading && !hasUpcomingEvents ? (
@@ -995,12 +1026,7 @@ export default function Home() {
                               borderLeftColor: calColor,
                             },
                           ])}
-                          onPress={() =>
-                            router.push({
-                              pathname: '/calendario',
-                              params: { date: evt.startDate },
-                            } as any)
-                          }
+                          onPress={() => navigateToCalendar(evt.startDate)}
                           accessibilityRole="button"
                           accessibilityLabel={`Evento: ${evt.title}`}
                         >
@@ -1101,7 +1127,7 @@ export default function Home() {
                   styles.calendarButton,
                   { borderColor: hexAlpha(accentColor, '30') },
                 ])}
-                onPress={() => router.push('/calendario')}
+                onPress={() => navigateToCalendar()}
                 accessibilityRole="button"
               >
                 <Text

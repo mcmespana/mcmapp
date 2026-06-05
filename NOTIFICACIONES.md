@@ -145,6 +145,28 @@ Una notificación puede tener los dos:
 
 Si no hay `internalRoute` ni `actionButton`, la notificación solo muestra título, cuerpo y fecha. El modal sigue siendo accesible tocando la tarjeta.
 
+Al tocar la push desde la bandeja del sistema, la app abre el centro de
+notificaciones y **despliega automáticamente esa notificación en grande**
+(deep-link interno `/notifications?openId=<id>`). Para que el `openId` haga
+match con la notificación correcta, el panel **debe** enviar `data.id` con el
+mismo ID que la notificación tiene en Firebase (ver "Abrir la notificación en
+grande" más abajo).
+
+### Abrir la notificación en grande (deep-link al detalle)
+
+Para que al pulsar una push se abra directamente esa notificación en su vista
+de detalle dentro de la app:
+
+1. **Envía siempre `data.id`** con el ID de la notificación en Firebase
+   (`notifications/<id>`). La app lo usa como identificador estable y como
+   `openId` del deep-link.
+2. **No pongas `internalRoute`** (o ponlo a `/notifications`) si lo que quieres
+   es que la notificación se abra "en grande" en el centro de notificaciones.
+   Si pones otra `internalRoute`, la app navegará a esa sección en su lugar.
+
+Con esto, tocar la notificación abre `/notifications?openId=<id>` y la app
+despliega el detalle de esa notificación automáticamente.
+
 ---
 
 ### Flujo completo de interacción
@@ -152,8 +174,10 @@ Si no hay `internalRoute` ni `actionButton`, la notificación solo muestra títu
 ```
 Usuario recibe push notification
 └── Toca desde bandeja del sistema
-    ├── Tiene internalRoute → navega directamente a esa sección
-    └── Sin internalRoute → abre la app en la pantalla de notificaciones
+    ├── Tiene internalRoute (≠ /notifications) → navega directamente a esa sección
+    └── Sin internalRoute (o internalRoute = /notifications)
+        → abre el centro de notificaciones Y despliega esa notificación
+          concreta en grande (deep-link /notifications?openId=<id>)
 
 Usuario abre pantalla de notificaciones
 └── Ve lista de tarjetas
