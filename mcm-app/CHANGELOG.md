@@ -13,6 +13,17 @@
 
 ---
 
+## 2026-06-05 — Fix: cancelar el login de Google ya no muestra error (Android)
+
+- En `@react-native-google-signin` v13+ cuando el usuario **cancela** el selector
+  de cuentas, `signIn()` NO lanza excepción: resuelve con
+  `{ type: 'cancelled', data: null }`. El código antiguo lo interpretaba como
+  "no se recibió idToken" y lanzaba un error genérico → la UI mostraba un toast
+  rojo "No se pudo iniciar sesión" tanto en el menú "Más" como en el onboarding.
+- Ahora se detecta `response.type === 'cancelled'` y se traduce a un error con
+  `code: 'ERR_CANCELED'`, que `AuthContext` ya trata como cancelación silenciosa.
+- Archivos: `utils/platformAuth.native.ts`.
+
 ## 2026-06-05 — Modo Carismochito: persistente y menos intrusivo
 
 - **Persiste al cerrar y reabrir la app**: si el modo queda activo, se recuerda
