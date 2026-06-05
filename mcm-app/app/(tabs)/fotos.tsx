@@ -119,11 +119,11 @@ export default function FotosScreen() {
         await Linking.openURL(albumUrl);
       } catch (error) {
         console.error('Failed to open URL:', error);
-        Alert.alert('Error', 'Could not open the album link.');
+        Alert.alert('Error', 'No seh a podido abrir el link que pena más grande');
       }
     } else {
       console.warn(`Don't know how to open this URL: ${albumUrl}`);
-      Alert.alert('Invalid Link', `Cannot open this URL: ${albumUrl}`);
+      Alert.alert('Invalid Link', `Esta URL es un poco raruna: ${albumUrl}`);
     }
   };
 
@@ -147,7 +147,7 @@ export default function FotosScreen() {
         isDisabled={isLoadingMore}
         style={styles.loadMoreButton}
       >
-        <Button.Label>Cargar Más</Button.Label>
+        <Button.Label>Cargar más...</Button.Label>
       </Button>
     );
   };

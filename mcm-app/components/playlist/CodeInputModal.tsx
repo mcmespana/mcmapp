@@ -191,7 +191,7 @@ const CodeInputModal: React.FC<Props> = ({
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Ej. Cantos domingo"
+              placeholder="Ej. Eucaristía domingo 7 abril 2031"
               placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
               style={styles.nameInput}
               editable={!submitting}

@@ -377,7 +377,7 @@ export default function SongsListScreen({
               />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Título, autor..."
+                placeholder="Busca por título, autor..."
                 placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
                 value={search}
                 onChangeText={setSearch}
@@ -464,7 +464,7 @@ export default function SongsListScreen({
   );
 
   if ((isLoading || loadingSongs) && songs.length === 0) {
-    return <ProgressWithMessage message="Cargando canciones..." />;
+    return <ProgressWithMessage message="Cargando canciones un momentito porfi..." />;
   }
 
   if (error) {

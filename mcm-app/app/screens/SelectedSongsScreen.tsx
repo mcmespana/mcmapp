@@ -548,10 +548,10 @@ const SelectedSongsScreen: React.FC = () => {
           });
         }
         setShowExportPdfModal(false);
-        toast.show({ label: 'PDF generado' });
+        toast.show({ label: 'Tenemos tu PDF recién sacado del orno' });
       } catch (err) {
         console.error('Error exportando PDF', err);
-        toast.show({ label: 'Error al generar el PDF' });
+        toast.show({ label: 'Error al generar el PDF, sorry, lo arreglaremos' });
       }
     },
     [flatSelectedSongs, settings.notation, toast],
@@ -974,7 +974,7 @@ const SelectedSongsScreen: React.FC = () => {
           Platform.OS === 'macos'
             ? 'Copiar lista al portapapeles'
             : 'Compartir mensaje con las canciones',
-        description: 'Texto con canción, tono y número',
+        description: 'Texto para Whatsapp con canción, tono y número',
         onPress: handleShareText,
       },
       {
@@ -1006,14 +1006,14 @@ const SelectedSongsScreen: React.FC = () => {
       {
         id: 'export-file',
         icon: 'file-upload',
-        label: 'Exportar a archivo (.mcm)',
+        label: 'Exportar playlist como archivo (.mcm)',
         // description: 'Incluye el tono cambiado y el orden personalizado',
         onPress: handleStartExportFile,
       },
       {
         id: 'import-file',
         icon: 'file-download',
-        label: 'Importar desde archivo',
+        label: 'Importar archivo de playlist (.mcm)',
         onPress: handleImportFile,
       },
     ];

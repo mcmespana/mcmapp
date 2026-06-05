@@ -86,7 +86,7 @@ function getWeekLabel(date: Date, today: Date): string | null {
   const diffTime = date.getTime() - today.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return 'Pasado';
+  if (diffDays < 0) return 'Ya pasó';
   if (diffDays === 0) return 'Hoy';
   if (diffDays === 1) return 'Mañana';
   if (diffDays < 7) return 'Esta semana';
@@ -375,10 +375,10 @@ export default function Home() {
   // Notification card content
   const notifTitle = latestNotification
     ? latestNotification.title
-    : 'Bienvenido a MCM App';
+    : 'Te damos la bienvenida a MCM App';
   const notifBody = latestNotification
     ? latestNotification.body
-    : 'Mantente al día con las novedades de la comunidad.';
+    : 'En esta sección te mostraremos las últimas notificaciones';
 
   const normalizeRoute = (route: string): string => {
     if (!route) return '';
@@ -462,7 +462,7 @@ export default function Home() {
         onSuccess={() =>
           toast.show({
             variant: 'success',
-            label: '¡Gracias! Tu comentario ha sido enviado correctamente 🙌',
+            label: '¡Gracias! Hemos recibido tu comentario 🙌',
             actionLabel: 'Cerrar',
             onActionPress: ({ hide }) => hide(),
           })
@@ -506,7 +506,7 @@ export default function Home() {
                       borderColor: colors.success,
                     },
                   ]}
-                  accessibilityLabel="Actualización disponible. Toca para reiniciar"
+                  accessibilityLabel="Actualización disponible. Toca y actualiza en menos de 5 segundos"
                   accessibilityRole="button"
                 >
                   {Platform.OS === 'ios' && (
@@ -634,14 +634,14 @@ export default function Home() {
                       { color: theme.text },
                     ]}
                   >
-                    Personaliza tu experiencia
+                    En solo 1 minuto
                   </Text>
                   <Text
                     style={[styles.onboardingBannerBody, { color: theme.icon }]}
                     numberOfLines={2}
                   >
-                    Dinos quién eres y de qué delegación para ver lo que más te
-                    interesa.
+                    Dinos a qué localidad perteneces y te
+                    mostraremos las secciones más importantes.
                   </Text>
                 </View>
                 <MaterialIcons
@@ -941,7 +941,7 @@ export default function Home() {
                   },
                 ]}
               >
-                PRÓXIMOS EVENTOSSS
+                PRÓXIMOS EVENTOS
               </Text>
 
               {!hasAnyVisibleCalendar && calendarConfigs.length > 0 ? (
@@ -1091,7 +1091,7 @@ export default function Home() {
                 /* No upcoming events */
                 <EmptyState
                   icon="event-busy"
-                  title="Sin eventos próximos"
+                  title="Sin próximos eventos"
                   accentColor={accentColor}
                 />
               )}
