@@ -6,38 +6,114 @@
     "showChangeNameButton": false,
     "maintenanceMode": false,
     "maintenanceMessage": "",
-    "minAppVersion": "0.0.0"
+    "minAppVersion": "0.0.0",
+    "appReviewMode": false
   },
   "profiles": {
     "familia": {
       "label": "Familia",
       "description": "de miembros del MIC y COM",
-      "tabs": ["index", "contigo", "calendario", "fotos"],
-      "homeButtons": ["fotos", "evangelio"],
-      "masItems": ["eventos-pasados"],
-      "defaultCalendars": ["mcm-europa"],
-      "albumTags": ["all"],
-      "notificationTopics": ["general", "eventos", "familias"]
+      "tabs": [
+        "index",
+        "contigo",
+        "calendario",
+        "fotos",
+        "cancionero",
+        "mas",
+        "visitapapa"
+      ],
+      "homeButtons": [
+        "fotos",
+        "evangelio",
+        "cancionero",
+        "visitapapa"
+      ],
+      "masItems": [
+        "comunica",
+        "eventos-pasados"
+      ],
+      "defaultCalendars": [
+        "mcm-europa"
+      ],
+      "albumTags": [
+        "all"
+      ],
+      "notificationTopics": [
+        "general",
+        "eventos",
+        "familias"
+      ]
     },
     "monitor": {
       "label": "Monitor/a",
       "description": "de grupos del MIC y COM",
-      "tabs": ["index", "contigo", "visitapapa", "calendario", "fotos"],
-      "homeButtons": ["fotos", "evangelio", "visitapapa"],
-      "masItems": ["eventos-pasados"],
-      "defaultCalendars": ["mcm-europa"],
-      "albumTags": ["all"],
-      "notificationTopics": ["general", "eventos", "monitores"]
+      "tabs": [
+        "index",
+        "contigo",
+        "calendario",
+        "fotos",
+        "cancionero",
+        "mas",
+        "visitapapa"
+      ],
+      "homeButtons": [
+        "fotos",
+        "evangelio",
+        "comunica",
+        "cancionero",
+        "visitapapa"
+      ],
+      "masItems": [
+        "comunica",
+        "comunica-gestion",
+        "eventos-pasados"
+      ],
+      "defaultCalendars": [
+        "mcm-europa"
+      ],
+      "albumTags": [
+        "all"
+      ],
+      "notificationTopics": [
+        "general",
+        "eventos",
+        "monitores"
+      ]
     },
     "miembro": {
       "label": "Miembro MCM",
-      "description": "de cualquier etapa",
-      "tabs": ["index", "contigo", "visitapapa", "calendario", "fotos"],
-      "homeButtons": ["fotos", "evangelio", "visitapapa"],
-      "masItems": ["eventos-pasados"],
-      "defaultCalendars": ["mcm-europa"],
-      "albumTags": ["all"],
-      "notificationTopics": ["general", "eventos", "miembros"]
+      "description": "de cualquier etapa (no monitor/a)",
+      "tabs": [
+        "index",
+        "contigo",
+        "calendario",
+        "fotos",
+        "cancionero",
+        "mas",
+        "visitapapa"
+      ],
+      "homeButtons": [
+        "fotos",
+        "evangelio",
+        "cancionero",
+        "visitapapa"
+      ],
+      "masItems": [
+        "comunica",
+        "comunica-gestion",
+        "eventos-pasados"
+      ],
+      "defaultCalendars": [
+        "mcm-europa"
+      ],
+      "albumTags": [
+        "all"
+      ],
+      "notificationTopics": [
+        "general",
+        "eventos",
+        "miembros"
+      ]
     }
   },
   "delegations": {
@@ -57,7 +133,9 @@
       "label": "MCM Caravaca"
     },
     "mcm-castellon": {
-      "extraCalendars": ["mcm-castellon"],
+      "extraCalendars": [
+        "mcm-castellon"
+      ],
       "label": "MCM Castellón",
       "notificationTopic": "mcm-castellon"
     },
@@ -74,7 +152,9 @@
       "label": "MCM l'Alcora"
     },
     "mcm-madrid": {
-      "extraCalendars": ["mcm-madrid"],
+      "extraCalendars": [
+        "mcm-madrid"
+      ],
       "label": "MCM Madrid",
       "notificationTopic": "mcm-madrid"
     },

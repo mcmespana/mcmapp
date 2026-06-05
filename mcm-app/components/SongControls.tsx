@@ -155,7 +155,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   const handleReportSuccess = () => {
     toast.show({
       variant: 'success',
-      label: '¡Gracias por tu reporte!',
+      label: '¡Gracias por tu aviso! Lo revisaremos pronto',
       actionLabel: 'OK',
       onActionPress: ({ hide }) => hide(),
     });
@@ -164,7 +164,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   const handleSecretPanelSuccess = () => {
     toast.show({
       variant: 'success',
-      label: '¡Gracias por tu reporte!',
+      label: '¡Gracias por tu aviso totalmente secreto! Cada 48 horas se sincronizan estos cambios',
       actionLabel: 'OK',
       onActionPress: ({ hide }) => hide(),
     });

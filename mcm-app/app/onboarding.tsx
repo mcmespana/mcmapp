@@ -52,7 +52,7 @@ const OTROS_DELEGATION_ID = '__otros__' as const;
 const OTROS_PROFILE_DESCRIPTION =
   'Si no te identificas con ninguno de los anteriores o simplemente quieres probar la app';
 const OTROS_DELEGATION_DESCRIPTION =
-  'Si no perteneces a ninguna o solo quieres probar la app';
+  'Si quieres probar la app rápidamente o no perteneces a un grupo local';
 const OTROS_FALLBACK_PROFILE: ProfileType = 'miembro';
 const OTROS_FALLBACK_DELEGATION = 'mcm-espana';
 
@@ -515,7 +515,7 @@ function WelcomeScreen({
             entering={FadeInUp.delay(120).duration(420)}
             style={welcomeStyles.title}
           >
-            ¡Hola!{'\n'}Bienvenido/a a MCM
+            ¡Hola! 👋{'\n'}Te damos la bienvenida a MCM App
           </Animated.Text>
 
           <Animated.Text
@@ -529,8 +529,8 @@ function WelcomeScreen({
             entering={FadeInUp.delay(280).duration(420)}
             style={welcomeStyles.body}
           >
-            Tu comunidad en el bolsillo: calendario, cantoral, fotos,
-            reflexiones y mucho más. ¿Vamos?
+            Una sencilla app para cuidar la Vida del MCM:
+            calendario, cantoral, un espacio para tus momentos de oración...
           </Animated.Text>
         </View>
 
@@ -694,10 +694,10 @@ function ProfileScreen({
           <MaterialIcons name="person-search" size={28} color={TT.tint} />
         </View>
         <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
-          ¿Quién eres?
+          ¿Quién eres? (1 minuto)
         </Text>
         <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
-          Dinos quién eres y te mostraremos lo que más te interesa.
+          Según tu perfil te mostraremos lo más adecuado. Puedes cambiarlo después.
         </Text>
       </Animated.View>
 
@@ -845,10 +845,10 @@ function DelegationScreen({
           <MaterialIcons name="location-on" size={28} color={TT.tint} />
         </View>
         <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
-          ¿De qué delegación?
+          ¿De qué localidad?
         </Text>
         <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
-          Recibirás las notificaciones y el calendario de tu delegación.
+          En el futuro, recibirás  notificaciones y calendario de tu MCM Local.
         </Text>
       </Animated.View>
 
@@ -1012,7 +1012,7 @@ function SuccessScreen({
         entering={FadeInDown.delay(180).duration(380)}
         style={[successStyles.sub, { color: TT.muted }]}
       >
-        Tu comunidad te espera. ¡A disfrutarla!
+        Te damos la bienvenida a MCM App
       </Animated.Text>
 
       {(profile || delegation) && (
@@ -1057,7 +1057,7 @@ function SuccessScreen({
         entering={FadeInUp.delay(340).duration(380)}
         style={successStyles.cta}
       >
-        <PrimaryButton label="Ir a la app" onPress={onContinue} />
+        <PrimaryButton label="Eeeentramos!" onPress={onContinue} />
       </Animated.View>
     </Animated.View>
   );
@@ -1403,7 +1403,7 @@ function LoginOnboardingScreen({
           entering={FadeInUp.delay(120).duration(400)}
           style={loginOnbStyles.title}
         >
-          {user ? '¡Todo listo!' : 'Guarda tu progreso'}
+          {user ? '¡Todo listo!' : 'Guarda tus datos en la nube'}
         </Animated.Text>
 
         <Animated.Text
@@ -1411,8 +1411,8 @@ function LoginOnboardingScreen({
           style={loginOnbStyles.body}
         >
           {user
-            ? 'Tu sesión está activa y tu progreso se sincronizará entre dispositivos. ¡A disfrutar de tu comunidad!'
-            : 'Sincroniza tus hábitos de oración, evangelios guardados y reflexiones entre todos tus dispositivos.'}
+            ? 'Tienes la sesión iniciada, de forma que si cambias de dispositivo guardaremos la información'
+            : 'Si quieres, puedes iniciar sesión para guardar tus reflexiones, momentos de oración y canciones, así no perderás nada (1 minuto más!)'}
         </Animated.Text>
 
         {/* Login buttons / authenticated card */}
@@ -1454,7 +1454,7 @@ function LoginOnboardingScreen({
               </View>
             )}
             <PrimaryButton
-              label="Ir a la app"
+              label="Entrar en la app"
               onPress={onFinish}
               color="#ffffff"
               textColor={T.primary}
@@ -1478,7 +1478,7 @@ function LoginOnboardingScreen({
             accessibilityLabel="Continuar sin cuenta"
             style={({ pressed }) => [pressed && { opacity: 0.65 }]}
           >
-            <Text style={loginOnbStyles.skipText}>Continuar sin cuenta →</Text>
+            <Text style={loginOnbStyles.skipText}>Entrar en la app sin iniciar sesión →</Text>
           </Pressable>
         </Animated.View>
       )}
@@ -1637,7 +1637,7 @@ export default function OnboardingScreen() {
     { id: string; label: string; description?: string }[]
   >(
     () => [
-      { id: DEFAULT_DELEGATION_ID, label: 'Sin delegación / General' },
+      { id: DEFAULT_DELEGATION_ID, label: 'Sin MCM Local / General' },
       {
         id: OTROS_DELEGATION_ID,
         label: 'Otros',
