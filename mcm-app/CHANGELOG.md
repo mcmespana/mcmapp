@@ -26,16 +26,48 @@
   que ya tuvieran sesión iniciada siguen viendo su cuenta (y pueden cerrar sesión).
 - Archivos: `app/onboarding.tsx` (`needsLoginStep`), `components/SocialLoginSection.tsx`.
 
-## 2026-06-05 — Fix: cancelar el login de Google ya no muestra error (Android)
+## 2026-06-05 — Fixes de calendario y notificaciones (Home + deep-link)
 
-- En `@react-native-google-signin` v13+ cuando el usuario **cancela** el selector
-  de cuentas, `signIn()` NO lanza excepción: resuelve con
-  `{ type: 'cancelled', data: null }`. El código antiguo lo interpretaba como
-  "no se recibió idToken" y lanzaba un error genérico → la UI mostraba un toast
-  rojo "No se pudo iniciar sesión" tanto en el menú "Más" como en el onboarding.
-- Ahora se detecta `response.type === 'cancelled'` y se traduce a un error con
-  `code: 'ERR_CANCELED'`, que `AuthContext` ya trata como cancelación silenciosa.
-- Archivos: `utils/platformAuth.native.ts`.
+- **Botones de calendario de la Home arreglados en iOS**: las tarjetas de
+  "Próximos eventos", el botón "Ver calendario" y el CTA de "Ir al calendario"
+  no hacían nada en iOS. Causa: en iOS `calendario` (y `fotos`) son tabs
+  _overflow_ sin trigger nativo (solo caben 5 en la barra), así que
+  `router.push('/calendario')` no navegaba. Ahora la Home los alcanza vía el
+  stack de "Más" (igual que el acceso de Fotos); en Android/Web siguen yendo al
+  tab directo. El salto a fecha concreta también funciona en iOS.
+- **La tarjeta de Novedades abre la última notificación "en grande"**: al tocar
+  la tarjeta de la Home se abre directamente el detalle de la última
+  notificación, en vez de la lista completa. La campana del header sigue
+  abriendo la lista.
+- **Sin título duplicado en el detalle**: el bottom sheet de notificaciones ya
+  no repite el título de la notificación en su cabecera cuando se ve el detalle
+  (solo queda la flecha de volver).
+- **Deep-link de push → detalle de la notificación**: al tocar una notificación
+  desde la bandeja del sistema, la app abre el centro de notificaciones y
+  despliega esa notificación concreta (`/notifications?openId=<id>`). Si la
+  notificación trae `internalRoute`, se respeta ese destino.
+- Archivos: `app/(tabs)/index.tsx`, `app/(tabs)/calendario.tsx`,
+  `app/notifications.tsx`, `components/NotificationsBottomSheet.tsx`,
+  `notifications/usePushNotifications.ts`, `utils/masNavigation.ts`,
+  `app/screens/MasHomeScreen.tsx`.
+
+## 2026-06-05 — Fixes onboarding Android: login, botón "saltar" y toasts
+
+- **Login con Google en Android ya no muestra error al cancelar**: al cerrar el
+  selector de cuenta, `@react-native-google-signin` v13+ devuelve
+  `{ type: 'cancelled' }` (o lanza `SIGN_IN_CANCELLED`). Antes se trataba como
+  un fallo real y aparecía el toast "No se pudo iniciar sesión". Ahora se
+  normaliza a `ERR_CANCELED` y se ignora como una cancelación normal.
+  Archivo: `utils/platformAuth.native.ts`.
+- **Botón "Entrar sin iniciar sesión" reubicado en zona segura**: en el paso de
+  login del onboarding el enlace inferior quedaba bajo la barra de navegación de
+  3 botones de Android y no se podía pulsar. Ahora respeta el safe-area inferior
+  (`insets.bottom`) y se presenta como botón tipo píldora, más visible y con
+  mayor área de toque. Archivo: `app/onboarding.tsx`.
+- **Toasts ya no quedan ocultos bajo la barra de 3 botones en Android**: se sube
+  el margen inferior mínimo del toast para garantizar que despeja la barra de
+  navegación aunque el inset reportado sea 0. Archivo:
+  `contexts/AppToastContext.tsx`.
 
 ## 2026-06-05 — Modo Carismochito: persistente y menos intrusivo
 
