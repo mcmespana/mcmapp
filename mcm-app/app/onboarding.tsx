@@ -1685,9 +1685,11 @@ export default function OnboardingScreen() {
     go('delegation');
   };
 
-  // Monitor y miembro van al paso de login antes del éxito
+  // Monitor y miembro van al paso de login antes del éxito.
+  // En Android el login está temporalmente deshabilitado (proveedores nativos
+  // en reparación), así que saltamos este paso por completo.
   const needsLoginStep = (p: OnboardingProfileId | null) =>
-    p === 'monitor' || p === 'miembro';
+    Platform.OS !== 'android' && (p === 'monitor' || p === 'miembro');
 
   const handleFinishToSuccess = () => {
     if (needsLoginStep(profileType)) {

@@ -13,6 +13,19 @@
 
 ---
 
+## 2026-06-05 — Login deshabilitado temporalmente en Android ("próximamente")
+
+- El inicio de sesión en Android queda **temporalmente desactivado** mientras se
+  reparan los proveedores nativos. En su lugar se muestra un aviso
+  **"Inicio de sesión próximamente"**.
+- **Onboarding**: el paso de login se **salta por completo** en Android. Los
+  perfiles `monitor`/`miembro` van directos al resumen final (en iOS/web sigue
+  igual). El indicador de pasos se ajusta automáticamente.
+- **Menú "Más" / hoja de cuenta**: `SocialLoginSection` muestra el aviso de
+  "próximamente" en lugar de los botones de Google/Apple en Android. Los usuarios
+  que ya tuvieran sesión iniciada siguen viendo su cuenta (y pueden cerrar sesión).
+- Archivos: `app/onboarding.tsx` (`needsLoginStep`), `components/SocialLoginSection.tsx`.
+
 ## 2026-06-05 — Fix: cancelar el login de Google ya no muestra error (Android)
 
 - En `@react-native-google-signin` v13+ cuando el usuario **cancela** el selector
