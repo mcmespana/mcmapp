@@ -135,20 +135,48 @@ export default function GruposScreen() {
     if (url) Linking.openURL(url);
   };
 
-  // Build search sections (FlatList-friendly SectionList sections grouped by category)
-  const searchSections = useMemo(() => {
-    if (!data || !isSearching) return [];
-    const q = normalize(search.trim());
-    const byCat: Record<string, SearchHit[]> = {};
+  // ⚡ Bolt Optimization: Precompute normalized strings for all groups and members
+  // to avoid running expensive normalize() operations on every keystroke during live search.
+  const normalizedData = useMemo(() => {
+    if (!data) return {};
+    const result: Record<
+      string,
+      (Grupo & {
+        _nNombre: string;
+        _nResponsable: string;
+        _nMiembros: string[];
+      })[]
+    > = {};
+
     Object.entries(data).forEach(([cat, grupos]) => {
       if (!Array.isArray(grupos)) return;
+      result[cat] = grupos.map((g) => ({
+        ...g,
+        _nNombre: g?.nombre ? normalize(g.nombre) : '',
+        _nResponsable: g?.responsable ? normalize(g.responsable) : '',
+        _nMiembros: Array.isArray(g?.miembros)
+          ? g.miembros.map((m) =>
+              m && typeof m === 'string' ? normalize(m) : '',
+            )
+          : [],
+      }));
+    });
+    return result;
+  }, [data]);
+
+  // Build search sections (FlatList-friendly SectionList sections grouped by category)
+  const searchSections = useMemo(() => {
+    if (!normalizedData || !isSearching) return [];
+    const q = normalize(search.trim());
+    const byCat: Record<string, SearchHit[]> = {};
+    Object.entries(normalizedData).forEach(([cat, grupos]) => {
       grupos.forEach((g) => {
         if (!g) return;
         const hits: SearchHit[] = [];
-        if (g.nombre && normalize(g.nombre).includes(q)) {
+        if (g._nNombre.includes(q)) {
           hits.push({ categoria: cat, grupo: g, isGroupName: true });
         }
-        if (g.responsable && normalize(g.responsable).includes(q)) {
+        if (g._nResponsable.includes(q)) {
           hits.push({
             categoria: cat,
             grupo: g,
@@ -156,10 +184,14 @@ export default function GruposScreen() {
             isResponsable: true,
           });
         }
-        if (Array.isArray(g.miembros)) {
-          g.miembros.forEach((m) => {
-            if (m && typeof m === 'string' && normalize(m).includes(q)) {
-              hits.push({ categoria: cat, grupo: g, miembro: m });
+        if (Array.isArray(g._nMiembros)) {
+          g._nMiembros.forEach((nm, idx) => {
+            if (nm.includes(q)) {
+              hits.push({
+                categoria: cat,
+                grupo: g,
+                miembro: g.miembros?.[idx],
+              });
             }
           });
         }
@@ -173,7 +205,7 @@ export default function GruposScreen() {
       title,
       data: items,
     }));
-  }, [search, data, isSearching]);
+  }, [search, normalizedData, isSearching]);
 
   const totalSearchHits = useMemo(
     () => searchSections.reduce((acc, s) => acc + s.data.length, 0),
@@ -181,16 +213,22 @@ export default function GruposScreen() {
   );
 
   // ─── Filtered members for group detail view ───
-  const filteredMiembros = useMemo(() => {
+  const normalizedGroupMembers = useMemo(() => {
     if (!grupo?.miembros) return [];
-    const list = grupo.miembros.filter(
-      (m): m is string => typeof m === 'string' && m.length > 0,
-    );
+    return grupo.miembros
+      .filter((m): m is string => typeof m === 'string' && m.length > 0)
+      .map((m) => ({ original: m, normalized: normalize(m) }));
+  }, [grupo]);
+
+  const filteredMiembros = useMemo(() => {
+    if (!normalizedGroupMembers.length) return [];
     const q = memberFilter.trim();
-    if (q.length === 0) return list;
+    if (q.length === 0) return normalizedGroupMembers.map((m) => m.original);
     const nq = normalize(q);
-    return list.filter((m) => normalize(m).includes(nq));
-  }, [grupo, memberFilter]);
+    return normalizedGroupMembers
+      .filter((m) => m.normalized.includes(nq))
+      .map((m) => m.original);
+  }, [normalizedGroupMembers, memberFilter]);
 
   const goBackFromGroup = useCallback(() => {
     setGrupo(null);
