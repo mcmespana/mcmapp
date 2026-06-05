@@ -13,6 +13,24 @@
 
 ---
 
+## 2026-06-05 — Fixes onboarding Android: login, botón "saltar" y toasts
+
+- **Login con Google en Android ya no muestra error al cancelar**: al cerrar el
+  selector de cuenta, `@react-native-google-signin` v13+ devuelve
+  `{ type: 'cancelled' }` (o lanza `SIGN_IN_CANCELLED`). Antes se trataba como
+  un fallo real y aparecía el toast "No se pudo iniciar sesión". Ahora se
+  normaliza a `ERR_CANCELED` y se ignora como una cancelación normal.
+  Archivo: `utils/platformAuth.native.ts`.
+- **Botón "Entrar sin iniciar sesión" reubicado en zona segura**: en el paso de
+  login del onboarding el enlace inferior quedaba bajo la barra de navegación de
+  3 botones de Android y no se podía pulsar. Ahora respeta el safe-area inferior
+  (`insets.bottom`) y se presenta como botón tipo píldora, más visible y con
+  mayor área de toque. Archivo: `app/onboarding.tsx`.
+- **Toasts ya no quedan ocultos bajo la barra de 3 botones en Android**: se sube
+  el margen inferior mínimo del toast para garantizar que despeja la barra de
+  navegación aunque el inset reportado sea 0. Archivo:
+  `contexts/AppToastContext.tsx`.
+
 ## 2026-06-05 — Modo Carismochito: persistente y menos intrusivo
 
 - **Persiste al cerrar y reabrir la app**: si el modo queda activo, se recuerda
