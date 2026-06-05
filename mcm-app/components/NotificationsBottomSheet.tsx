@@ -109,9 +109,19 @@ function formatDate(date: Date): string {
 interface Props {
   visible: boolean;
   onClose: () => void;
+  /**
+   * Si se pasa, al abrir el sheet se muestra directamente el detalle de esta
+   * notificación (vista "en grande") en lugar de la lista. Lo usa la tarjeta de
+   * Novedades de la Home para abrir la última notificación concreta.
+   */
+  initialNotification?: (NotificationData | ReceivedNotification) | null;
 }
 
-export default function NotificationsBottomSheet({ visible, onClose }: Props) {
+export default function NotificationsBottomSheet({
+  visible,
+  onClose,
+  initialNotification = null,
+}: Props) {
   const scheme = useColorScheme() ?? 'light';
   const isDark = scheme === 'dark';
   const theme = Colors[scheme];
@@ -128,10 +138,23 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
     (NotificationData | ReceivedNotification) | null
   >(null);
 
-  // Reset detail view when sheet closes
+  // Al abrir: si viene una notificación inicial, mostramos su detalle en grande
+  // (y la marcamos como leída). Al cerrar: reseteamos la vista de detalle.
   useEffect(() => {
-    if (!visible) setSelectedNotification(null);
-  }, [visible]);
+    if (visible) {
+      setSelectedNotification(initialNotification ?? null);
+      if (initialNotification) {
+        markNotificationAsRead(initialNotification.id)
+          .then(() => {
+            loadLocalData();
+            refreshCount();
+          })
+          .catch(() => {});
+      }
+    } else {
+      setSelectedNotification(null);
+    }
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (visible) {
@@ -444,9 +467,10 @@ export default function NotificationsBottomSheet({ visible, onClose }: Props) {
       </TouchableOpacity>
     ) : undefined;
 
-  const sheetTitle = selectedNotification
-    ? selectedNotification.title
-    : 'Notificaciones';
+  // En el detalle NO repetimos el título en el header del sheet: la vista de
+  // detalle ya muestra el título en grande, así que duplicarlo arriba sobra
+  // (solo dejamos la flecha de volver). En la lista mostramos "Notificaciones".
+  const sheetTitle = selectedNotification ? undefined : 'Notificaciones';
 
   return (
     <BottomSheet

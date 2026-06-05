@@ -18,7 +18,7 @@ import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import colors, { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -92,6 +92,10 @@ export default function NotificationsScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { firebaseNotifications, refreshCount } = useNotifications();
+  // Deep-link: al tocar una notificación push (desde la bandeja del sistema) la
+  // app abre esta pantalla con `openId` para mostrar esa notificación en grande.
+  const { openId } = useLocalSearchParams<{ openId?: string }>();
+  const autoOpenedIdRef = React.useRef<string | null>(null);
 
   const [localNotifications, setLocalNotifications] = useState<
     ReceivedNotification[]
@@ -405,6 +409,19 @@ export default function NotificationsScreen() {
   }, [localNotifications, firebaseNotifications]);
 
   const hasUnread = allNotifications.some((n) => !isNotificationRead(n));
+
+  // Auto-abrir el detalle de la notificación indicada por `openId` (deep-link
+  // desde una push). Esperamos a que la lista esté cargada para que la
+  // notificación recién recibida ya esté disponible y haga match por id.
+  useEffect(() => {
+    if (!openId || loading) return;
+    if (autoOpenedIdRef.current === openId) return;
+    const match = allNotifications.find((n) => n.id === openId);
+    if (match) {
+      autoOpenedIdRef.current = openId;
+      handleNotificationPress(match);
+    }
+  }, [openId, loading, allNotifications, handleNotificationPress]);
 
   return (
     <SafeAreaView

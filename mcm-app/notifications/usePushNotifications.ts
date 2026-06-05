@@ -172,6 +172,12 @@ export default function usePushNotifications() {
         const data = response.notification.request.content.data;
         const actionIdentifier = response.actionIdentifier;
 
+        // ID estable de la notificación (lo necesitamos también para el
+        // deep-link al centro de notificaciones).
+        const notificationId = getStableNotificationId(
+          response.notification.request.content,
+        );
+
         // Determinar ruta de navegación
         let targetRoute: string | undefined;
 
@@ -187,17 +193,27 @@ export default function usePushNotifications() {
           targetRoute = data.internalRoute as string;
         }
 
-        if (targetRoute) {
-          const normalized = normalizeNotificationRoute(targetRoute);
-          try {
-            router.navigate(normalized as any);
-          } catch {}
+        // 3. Por defecto (sin ruta específica): abrir el centro de
+        //    notificaciones mostrando esta notificación en grande.
+        if (!targetRoute) {
+          targetRoute = '/notifications';
         }
 
+        const normalized = normalizeNotificationRoute(targetRoute);
+        try {
+          // Si vamos al centro de notificaciones, hacemos deep-link a ESTA
+          // notificación concreta para abrir su detalle (vista "en grande").
+          if (normalized === '/notifications') {
+            router.navigate({
+              pathname: '/notifications',
+              params: { openId: notificationId },
+            } as any);
+          } else {
+            router.navigate(normalized as any);
+          }
+        } catch {}
+
         // Guardar y marcar como leída
-        const notificationId = getStableNotificationId(
-          response.notification.request.content,
-        );
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: response.notification.request.content.title || 'Notificación',

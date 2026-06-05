@@ -26,6 +26,7 @@ import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useLocalSearchParams } from 'expo-router';
+import { useRoute } from '@react-navigation/native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
@@ -80,6 +81,13 @@ export default function Calendario() {
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const isDark = scheme === 'dark';
   const params = useLocalSearchParams<{ date?: string }>();
+  // En iOS, `calendario` es un tab "overflow" sin trigger nativo: se navega
+  // desde el stack de Más (React Navigation), cuyos params NO llegan a
+  // `useLocalSearchParams` (que sólo lee la URL de expo-router). Leemos también
+  // los params de React Navigation para soportar el salto a fecha desde Home.
+  const navRoute = useRoute();
+  const navParamDate = (navRoute.params as { date?: string } | undefined)?.date;
+  const dateParam = params.date ?? navParamDate;
 
   const {
     calendarConfigs,
@@ -97,10 +105,10 @@ export default function Calendario() {
   const [detailsEvent, setDetailsEvent] = useState<CalendarEvent | null>(null);
 
   useEffect(() => {
-    if (params.date && typeof params.date === 'string') {
-      setSelectedDate(params.date);
+    if (dateParam && typeof dateParam === 'string') {
+      setSelectedDate(dateParam);
     }
-  }, [params.date]);
+  }, [dateParam]);
 
   const { eventsByDate, loading: eventsLoading } =
     useCalendarEvents(calendarConfigs);
