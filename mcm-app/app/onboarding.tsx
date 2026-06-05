@@ -1464,21 +1464,36 @@ function LoginOnboardingScreen({
         )}
       </View>
 
-      {/* Cuando NO hay sesión, enlace inferior para continuar sin cuenta
-          (lleva al resumen final). */}
+      {/* Cuando NO hay sesión, botón inferior para continuar sin cuenta
+          (lleva al resumen final). Respetamos el safe-area inferior para que
+          en Android no quede bajo la barra de navegación de 3 botones y se
+          pueda pulsar sin problema. */}
       {!user && (
         <Animated.View
           entering={FadeInUp.delay(320).duration(380)}
-          style={loginOnbStyles.skipWrap}
+          style={[
+            loginOnbStyles.skipWrap,
+            { paddingBottom: Math.max(insets.bottom + 12, 20) },
+          ]}
         >
           <Pressable
             onPress={onSkip}
-            hitSlop={10}
+            hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
             accessibilityRole="button"
             accessibilityLabel="Continuar sin cuenta"
-            style={({ pressed }) => [pressed && { opacity: 0.65 }]}
+            style={({ pressed }) => [
+              loginOnbStyles.skipBtn,
+              pressed && { opacity: 0.6 },
+            ]}
           >
-            <Text style={loginOnbStyles.skipText}>Entrar en la app sin iniciar sesión →</Text>
+            <Text style={loginOnbStyles.skipText}>
+              Entrar sin iniciar sesión
+            </Text>
+            <MaterialIcons
+              name="arrow-forward"
+              size={16}
+              color="rgba(255,255,255,0.9)"
+            />
           </Pressable>
         </Animated.View>
       )}
@@ -1579,13 +1594,27 @@ const loginOnbStyles = StyleSheet.create({
     fontWeight: '600',
   } as TextStyle,
   skipWrap: {
-    paddingBottom: Platform.OS === 'ios' ? 32 : 24,
+    paddingTop: 8,
+    paddingHorizontal: 24,
     alignItems: 'center',
   } as ViewStyle,
+  skipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+  } as ViewStyle,
   skipText: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 13,
-    fontWeight: '500',
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   } as TextStyle,
 });
 
