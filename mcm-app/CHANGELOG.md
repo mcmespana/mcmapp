@@ -13,6 +13,23 @@
 
 ---
 
+## 2026-06-05 — Modo Carismochito: persistente y menos intrusivo
+
+- **Persiste al cerrar y reabrir la app**: si el modo queda activo, se recuerda
+  en AsyncStorage (`@carismochito_active`) y al volver a abrir se restaura
+  **en silencio** (sin cuenta atrás, sin confeti, sin háptica). El confeti y el
+  badge superior sólo aparecen en una **activación nueva** (flag
+  `freshlyActivated`).
+- **Badge superior efímero**: el rótulo "MODO CARISMOCHITO" se asoma unos
+  segundos (~3,8 s) y se retira solo para no estorbar. Se sigue saliendo del
+  modo agitando el móvil.
+- **Adiós al resplandor verde inferior + mascota bailando siempre**. En su lugar,
+  el carismochito **se asoma girado 90° desde un lateral** de forma esporádica
+  (cada ~45–90 s, alternando lados y altura) y vuelve a esconderse. El tinte
+  verde sutil de componentes heroui y barra de pestañas se mantiene.
+- Archivos: `contexts/CarismochitoContext.tsx`,
+  `components/CarismochitoOverlay.tsx`.
+
 ## 2026-06-04 — Modo Carismochito: ritual de agitado + rediseño visual
 
 - **Activación por ritual de sacudidas**: ahora hace falta **agitar 5 veces**
