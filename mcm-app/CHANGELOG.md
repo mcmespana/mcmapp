@@ -29,6 +29,7 @@
   `components/CarismochitoOverlay.tsx`,
   `components/CarismochitoChargeDots.tsx` (nuevo), `app/(tabs)/_layout.tsx`.
 
+<<<<<<< HEAD
 ## 2026-06-04 — Cantoral: sistema multimedia y ficha de canción
 
 - **Nuevo sistema multimedia en el detalle de canción**. Los campos que el admin
@@ -59,6 +60,8 @@
   `app/(tabs)/cancionero.tsx`, `utils/filterSongsData.ts`,
   `components/SecretPanelModal.tsx`.
 
+=======
+>>>>>>> 49023190e34c9588c92360efde14a398ba72399a
 ## 2026-06-03 — Rediseño de la pantalla de Horario + fix del día por defecto
 
 - **Rediseño visual del Horario** (`app/screens/HorarioScreen.tsx`,
