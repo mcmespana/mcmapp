@@ -79,7 +79,7 @@ const EMOTIONS = [
   },
   {
     id: 'anger',
-    label: 'Enojo',
+    label: 'Enfado',
     icon: 'sentiment-very-dissatisfied',
     color: '#FECACA',
     iconColor: '#B91C1C',
