@@ -172,11 +172,13 @@ export default function MaterialesScreen() {
   return (
     <View style={styles.container}>
       <ScreenHero title="Materiales" hideOnWeb />
-      <DateSelector
-        dates={fechas}
-        selectedDate={dia.fecha}
-        onSelectDate={(_, i) => setIndex(i)}
-      />
+      <View style={styles.headerSection}>
+        <DateSelector
+          dates={fechas}
+          selectedDate={dia.fecha}
+          onSelectDate={(_, i) => setIndex(i)}
+        />
+      </View>
       <PageContainer>
         <ScrollView contentContainerStyle={styles.list}>
           {dia.actividades.map((act: Actividad, idx: number) => (
@@ -213,6 +215,10 @@ const createStyles = (scheme: 'light' | 'dark', scale: number) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
+    // El DateSelector es un FlatList horizontal: si va suelto como hijo directo
+    // de un contenedor flex en columna, crece en vertical y empuja las tarjetas
+    // hacia abajo. Envolverlo en una View lo limita a su altura natural.
+    headerSection: { backgroundColor: theme.background },
     list: {
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.md,

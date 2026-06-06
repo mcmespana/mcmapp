@@ -13,6 +13,15 @@
 
 ---
 
+## 2026-06-06 — Fix layout de Materiales
+
+- **Materiales · tarjetas empujadas abajo / hueco enorme**: el `DateSelector`
+  (un `FlatList` horizontal) iba suelto como hijo directo del contenedor flex en
+  columna, así que crecía en vertical y empujaba el `ScrollView` de tarjetas al
+  fondo (cortándolas). Se envuelve en una `View` (mismo patrón que
+  `HorarioScreen`) para limitarlo a su altura natural. Archivo:
+  `app/screens/MaterialesScreen.tsx`.
+
 ## 2026-06-06 — Tab bar iOS visible + icono verde en carismochito
 
 - **Tab bar inferior translúcida/ilegible en iOS ≤18**: la barra nativa
