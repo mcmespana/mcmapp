@@ -59,6 +59,7 @@ import {
 import { NotificationData } from '@/types/notifications';
 import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import { useOTAContext } from '@/contexts/OTAContext';
+import { useCarismochito } from '@/contexts/CarismochitoContext';
 import { h } from '@/utils/haptics';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -184,6 +185,8 @@ export default function Home() {
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 700;
   const { toast } = useToast();
+  // Modo carismochito: tiñe de verde el icono de la app del header.
+  const { isActive: carismoActive } = useCarismochito();
   const [settingsVisible, setSettingsVisibleRaw] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [notifSheetOpen, setNotifSheetOpenRaw] = useState(false);
@@ -508,7 +511,12 @@ export default function Home() {
           title="MCM App"
           titleStyle={styles.logoText}
           left={
-            <View style={styles.logoBox}>
+            <View
+              style={[
+                styles.logoBox,
+                carismoActive && { backgroundColor: '#1B9E4B' },
+              ]}
+            >
               <MaterialIcons name="device-hub" size={20} color="white" />
             </View>
           }
