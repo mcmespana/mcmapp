@@ -245,12 +245,24 @@ export default function GruposScreen() {
     setMemberFilter('');
   }, []);
 
-  const findMe = useCallback(() => {
-    if (!myName) return;
-    h.tap();
-    setSearch(myName);
-    // Open search field if collapsed (no-op here since search is always visible)
+  // "Encuéntrame": búsqueda amplia = nombre + las 2 primeras letras del
+  // apellido. Así encuentra entradas abreviadas tipo "David Sol. (Castellón)"
+  // aunque el perfil guarde "David Soler". El matcher usa includes contiguo,
+  // por lo que "david so" casa con "david sol. (castellon)".
+  const findMeQuery = useMemo(() => {
+    if (!myName) return '';
+    const parts = myName.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '';
+    const first = parts[0];
+    const surnameStart = parts[1] ? parts[1].slice(0, 2) : '';
+    return surnameStart ? `${first} ${surnameStart}` : first;
   }, [myName]);
+
+  const findMe = useCallback(() => {
+    if (!findMeQuery) return;
+    h.tap();
+    setSearch(findMeQuery);
+  }, [findMeQuery]);
 
   // ──────────────────────────────────────────────────────────
   // 0) EMPTY STATE — sin grupos en Firebase (y ya no estamos cargando)
@@ -361,6 +373,7 @@ export default function GruposScreen() {
               <MemberRow name={item} myName={myName} styles={styles} />
             )}
             ListHeaderComponent={ListHeader}
+            keyboardShouldPersistTaps="handled"
             contentContainerStyle={
               Platform.OS === 'ios'
                 ? { paddingBottom: 100 }
@@ -439,7 +452,11 @@ export default function GruposScreen() {
   // 3) MAIN VIEW: categories + search (with optional results)
   // ──────────────────────────────────────────────────────────
 
-  const headerComponent = (
+  // Persistent top bar — stays mounted whether or not we're searching, so the
+  // search input never unmounts (which previously dropped focus / dismissed the
+  // keyboard when crossing the 2-char search threshold). Only the content area
+  // below swaps between the categories grid and the results list.
+  const topBar = (
     <View>
       <ScreenHero title="Grupos" hideOnWeb />
       <View style={styles.searchContainer}>
@@ -477,16 +494,19 @@ export default function GruposScreen() {
     </View>
   );
 
-  // Search mode — render SectionList of hits
-  if (isSearching) {
-    return (
-      <PageContainer>
-        <View style={styles.container}>
+  return (
+    <PageContainer>
+      <View style={styles.container}>
+        {topBar}
+        {isSearching ? (
           <SectionList<SearchHit>
+            style={styles.flexList}
             sections={searchSections}
             keyExtractor={(item, idx) =>
               `${item.categoria}-${item.grupo.nombre}-${item.miembro ?? '__name__'}-${idx}`
             }
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="none"
             renderSectionHeader={({ section }) => (
               <View style={styles.searchSectionHeader}>
                 <Text style={styles.searchSectionHeaderText}>
@@ -509,7 +529,6 @@ export default function GruposScreen() {
                 }}
               />
             )}
-            ListHeaderComponent={headerComponent}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <MaterialIcons name="search-off" size={48} color="#999" />
@@ -531,30 +550,22 @@ export default function GruposScreen() {
             windowSize={11}
             removeClippedSubviews={Platform.OS !== 'web'}
           />
-        </View>
-      </PageContainer>
-    );
-  }
-
-  // Default: categories grid
-  return (
-    <PageContainer>
-      <View style={styles.container}>
-        <ScrollView
-          contentContainerStyle={styles.catScrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {headerComponent}
-          {!data ? (
-            <View style={{ paddingHorizontal: 16, gap: spacing.md }}>
-              {[0, 1, 2, 3].map((i) => (
-                <Skeleton
-                  key={i}
-                  style={{ height: 120, borderRadius: radii.lg }}
-                />
-              ))}
-            </View>
-          ) : (
+        ) : !data ? (
+          <View style={{ paddingHorizontal: 16, gap: spacing.md }}>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton
+                key={i}
+                style={{ height: 120, borderRadius: radii.lg }}
+              />
+            ))}
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.flexList}
+            contentContainerStyle={styles.catScrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.catList}>
               {categorias.map((c) => (
                 <PressableFeedback
@@ -580,8 +591,8 @@ export default function GruposScreen() {
                 </PressableFeedback>
               ))}
             </View>
-          )}
-        </ScrollView>
+          </ScrollView>
+        )}
       </View>
     </PageContainer>
   );
@@ -605,6 +616,9 @@ interface SearchBarProps {
   autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
 }
 
+// Barra de búsqueda propia (TextInput) en vez del SearchField de heroui:
+// garantiza texto blanco legible en modo oscuro y un alto cómodo idéntico en
+// iOS y Android.
 function SearchBar({
   value,
   onChangeText,
@@ -836,7 +850,8 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     searchContainer: {
       marginHorizontal: 16,
-      marginVertical: 12,
+      marginTop: 8,
+      marginBottom: 12,
       gap: 10,
     },
     searchBar: {
@@ -855,6 +870,9 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontSize: 16,
       color: theme.text,
       paddingVertical: Platform.OS === 'ios' ? 14 : 10,
+    },
+    flexList: {
+      flex: 1,
     },
     findMeBtn: {
       alignSelf: 'flex-start',
