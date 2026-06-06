@@ -33,7 +33,11 @@ import {
   initializeNewUserReadStatus,
   isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
-import { NotificationData, ReceivedNotification } from '@/types/notifications';
+import {
+  NotificationData,
+  NotificationActionButtonData,
+  ReceivedNotification,
+} from '@/types/notifications';
 import { normalizeNotificationRoute } from '@/utils/notificationRoutes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
@@ -85,6 +89,18 @@ const normalizeRoute = normalizeNotificationRoute;
 function getRouteLabel(route: string): { label: string; icon: string } | null {
   const norm = normalizeRoute(route);
   return ROUTE_LABELS[norm] ?? ROUTE_LABELS[route] ?? null;
+}
+
+// Devuelve los botones de acción de una notificación (hasta 3). Soporta tanto
+// el array `actionButtons` (formato actual) como el `actionButton` único
+// (legacy / notificaciones cacheadas antiguas).
+function getActionButtons(
+  notification: NotificationData | ReceivedNotification,
+): NotificationActionButtonData[] {
+  if (notification.actionButtons && notification.actionButtons.length > 0) {
+    return notification.actionButtons;
+  }
+  return notification.actionButton ? [notification.actionButton] : [];
 }
 
 export default function NotificationsScreen() {
@@ -205,7 +221,11 @@ export default function NotificationsScreen() {
   }, []);
 
   const handleActionButtonPress = useCallback(
-    (notification: NotificationData | ReceivedNotification, e: any) => {
+    (
+      notification: NotificationData | ReceivedNotification,
+      button: NotificationActionButtonData,
+      e: any,
+    ) => {
       // Prevenir que el tap llegue al card padre
       if (e?.stopPropagation) e.stopPropagation();
       if (!isNotificationRead(notification)) {
@@ -213,11 +233,11 @@ export default function NotificationsScreen() {
           console.error('Error marcando como leída:', err),
         );
       }
-      if (!notification.actionButton) return;
-      if (notification.actionButton.isInternal) {
-        safePushRoute(notification.actionButton.url);
+      if (!button) return;
+      if (button.isInternal) {
+        safePushRoute(button.url);
       } else {
-        Linking.openURL(notification.actionButton.url).catch((err) =>
+        Linking.openURL(button.url).catch((err) =>
           console.error('Error abriendo URL:', err),
         );
       }
@@ -268,6 +288,7 @@ export default function NotificationsScreen() {
     const routeInfo = notification.internalRoute
       ? getRouteLabel(notification.internalRoute)
       : null;
+    const actionButtons = getActionButtons(notification);
 
     return (
       <View style={{ marginBottom: spacing.md }}>
@@ -346,29 +367,31 @@ export default function NotificationsScreen() {
                       </Text>
                     </View>
                   )}
-                  {/* Chip de botón de acción — Pressable para evitar <button> anidado en web */}
-                  {notification.actionButton && (
+                  {/* Chips de botones de acción (hasta 3) — Pressable para
+                      evitar <button> anidado en web */}
+                  {actionButtons.map((button, idx) => (
                     <Pressable
+                      key={`${button.url}-${idx}`}
                       style={styles.actionChip}
-                      onPress={(e?) => handleActionButtonPress(notification, e)}
-                      accessibilityLabel={notification.actionButton.text}
+                      onPress={(e?) =>
+                        handleActionButtonPress(notification, button, e)
+                      }
+                      accessibilityLabel={button.text}
                       accessibilityRole="button"
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
                       <Text style={styles.actionChipText} numberOfLines={1}>
-                        {notification.actionButton.text}
+                        {button.text}
                       </Text>
                       <MaterialIcons
                         name={
-                          notification.actionButton.isInternal
-                            ? 'arrow-forward'
-                            : 'open-in-new'
+                          button.isInternal ? 'arrow-forward' : 'open-in-new'
                         }
                         size={11}
                         color="#fff"
                       />
                     </Pressable>
-                  )}
+                  ))}
                 </View>
               </View>
             </View>
@@ -543,19 +566,21 @@ function NotificationDetailModal({
     }
   };
 
+  const actionButtons = notification ? getActionButtons(notification) : [];
+
   const handleInternalRoute = () => {
     if (!notification) return;
     onClose();
     safePushRoute(notification.internalRoute ?? '');
   };
 
-  const handleActionButton = () => {
-    if (!notification?.actionButton) return;
-    if (notification.actionButton.isInternal) {
+  const handleActionButton = (button: NotificationActionButtonData) => {
+    if (!button) return;
+    if (button.isInternal) {
       onClose();
-      safePushRoute(notification.actionButton.url);
+      safePushRoute(button.url);
     } else {
-      Linking.openURL(notification.actionButton.url).catch((err) =>
+      Linking.openURL(button.url).catch((err) =>
         console.error('Error abriendo URL:', err),
       );
     }
@@ -619,7 +644,7 @@ function NotificationDetailModal({
                 </Text>
 
                 {/* Separador si hay acciones */}
-                {(notification.internalRoute || notification.actionButton) && (
+                {(notification.internalRoute || actionButtons.length > 0) && (
                   <View
                     style={[
                       dStyles.divider,
@@ -654,27 +679,34 @@ function NotificationDetailModal({
                   </Button>
                 )}
 
-                {/* Botón de acción CTA */}
-                {notification.actionButton && (
+                {/* Botones de acción CTA (hasta 3). El primero destaca como
+                    primario; los siguientes van en estilo secundario. */}
+                {actionButtons.map((button, idx) => (
                   <Button
-                    variant="primary"
-                    onPress={handleActionButton}
-                    style={dStyles.actionButton}
+                    key={`${button.url}-${idx}`}
+                    variant={idx === 0 ? 'primary' : 'secondary'}
+                    onPress={() => handleActionButton(button)}
+                    style={[
+                      dStyles.actionButton,
+                      idx > 0 && dStyles.actionButtonSecondary,
+                    ]}
                   >
-                    <Button.Label style={dStyles.actionButtonText}>
-                      {notification.actionButton.text}
+                    <Button.Label
+                      style={
+                        idx === 0
+                          ? dStyles.actionButtonText
+                          : dStyles.actionButtonTextSecondary
+                      }
+                    >
+                      {button.text}
                     </Button.Label>
                     <MaterialIcons
-                      name={
-                        notification.actionButton.isInternal
-                          ? 'arrow-forward'
-                          : 'open-in-new'
-                      }
+                      name={button.isInternal ? 'arrow-forward' : 'open-in-new'}
                       size={18}
-                      color="#fff"
+                      color={idx === 0 ? '#fff' : colors.primary}
                     />
                   </Button>
-                )}
+                ))}
               </>
             )}
           </ScrollView>
@@ -734,10 +766,23 @@ const dStyles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: radii.lg,
     gap: 10,
+    marginBottom: spacing.md,
     ...shadows.lg,
     shadowColor: colors.primary,
   },
   actionButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  actionButtonSecondary: {
+    backgroundColor: hexAlpha(colors.primary, '12'),
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    ...shadows.sm,
+    shadowColor: colors.primary,
+  },
+  actionButtonTextSecondary: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });
 
 // ============================================================================

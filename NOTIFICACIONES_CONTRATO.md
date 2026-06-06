@@ -22,9 +22,10 @@
    (`joven`/`responsable`/`"Castellón"`) que **no existen**. Los campos reales son
    `profileType`, `delegationId` y, sobre todo, **`topics[]`** (la clave de
    segmentación). Detalle y valores válidos abajo.
-3. **Botón de acción**: el contrato manda `data.actionButtons` (array). La app usa
-   `actionButton` (objeto con `isInternal`). La app ya **acepta ambos**, pero el
-   formato canónico recomendado es el objeto singular con `isInternal`.
+3. **Botones de acción**: la app ahora soporta **hasta 3 botones** (`data.actionButtons`,
+   array). Sigue aceptando el objeto único `data.actionButton` (legacy) por
+   compatibilidad. **Formato canónico recomendado: `actionButtons` (array)**, cada
+   elemento `{ text, url, isInternal }`. Ver §3.
 4. **`categoryId`**: la app solo registra categorías iOS `general`, `eventos`,
    `fotos`. Mandar `evento`/`actividad`/`cantoral`/`jubileo`/`urgente` como
    `categoryId` no aporta botones (se ignora). Conviene **desacoplar** `categoryId`
@@ -127,26 +128,45 @@ acción del sistema iOS**. No lo igualéis a la categoría de negocio. Mandad:
 > Nota: el contrato manda `evento` (singular); la categoría iOS registrada es
 > `eventos` (plural). Si queréis el botón "Ver Evento", usad `eventos`.
 
-### `actionButtons` vs `actionButton`
+### `actionButtons` — varios botones (hasta 3)
 
-La app trabaja con un **único** `actionButton`:
+La app soporta **hasta 3 botones de acción** por notificación. El formato canónico
+recomendado es el array `data.actionButtons`:
 
 ```jsonc
 "data": {
-  "actionButton": {
-    "text": "Ver novedades",
-    "url": "https://mcmespana.com/x",   // o ruta interna: "/(tabs)/fotos"
-    "isInternal": false                  // true = navega dentro de la app
-  }
+  "actionButtons": [
+    {
+      "text": "Apuntarme",
+      "url": "https://mcmespana.com/inscripcion", // o ruta interna: "/(tabs)/fotos"
+      "isInternal": false                          // true = navega dentro de la app
+    },
+    { "text": "Ver fechas", "url": "/(tabs)/calendario", "isInternal": true }
+  ]
 }
 ```
 
-La app **ya acepta también** `data.actionButtons: [{ text, url }]` (usa el primer
-elemento) e infiere `isInternal` (interno si la `url` no empieza por `http`). Aun así,
-**el formato canónico recomendado es el objeto singular con `isInternal` explícito.**
+Reglas que aplica la app (`utils/notificationRoutes.ts` → `extractActionButtons`):
 
-`internalRoute` (sección asociada) y `actionButton` (CTA explícito) son
+- **Máximo 3** botones (`MAX_ACTION_BUTTONS`). Si mandáis más, se usan los 3 primeros.
+- Cada botón necesita **`url`** (los que no la tengan se descartan).
+- `text` por defecto `"Ver"` si falta. `isInternal` se **infiere** si no viene:
+  interno cuando la `url` NO empieza por `http(s)://`.
+- **Render**: en la tarjeta, un chip por botón; en el modal, botones apilados (el
+  1.º primario, los siguientes secundarios).
+
+**Compatibilidad (legacy):** sigue aceptándose el objeto único `data.actionButton`
+(equivale a un array de uno). Si llegan **ambos**, se combinan y se deduplica por
+`url|text`. Para envíos nuevos, **usad siempre `actionButtons` (array)**, aunque sea
+de un solo botón.
+
+`internalRoute` (sección asociada) y `actionButtons` (CTA explícitos) son
 complementarios — ver `NOTIFICACIONES.md` §"Arquitectura de botones y navegación".
+
+> ⚠️ Estos botones son **in-app** (tarjeta + modal del centro de notificaciones).
+> Los botones de la notificación del **sistema iOS** dependen de las *categorías*
+> pre-registradas (`categoryId`, ver tabla arriba) y NO se pueden generar
+> dinámicamente desde el payload.
 
 ## 4. Imagen
 
@@ -271,8 +291,8 @@ para la **velocidad de entrega** (FCM). Para diferenciar visualmente `high` vs
 | `mutableContent`         | 🟡 | iOS lo ignora en la práctica (sin NSE) |
 | `data.id`                | ✅ | **Crítico**: dedup / marca leído |
 | `data.internalRoute`     | ✅ | Navegación (con normalización + alias) |
-| `data.actionButton`      | ✅ | CTA en tarjeta + modal |
-| `data.actionButtons[]`   | ✅ | Aceptado (usa el primero) → mapeado a `actionButton` |
+| `data.actionButtons[]`   | ✅ | **Hasta 3** CTA en tarjeta + modal (formato recomendado) |
+| `data.actionButton`      | ✅ | Legacy (un botón) → se trata como array de uno |
 | `data.imageUrl`          | ✅ | Imagen en el modal de detalle in-app |
 | `data.icon`              | ✅ | Miniatura en la tarjeta in-app |
 | `data.category`          | 🟡 | Se guarda; sin efecto visual todavía |
