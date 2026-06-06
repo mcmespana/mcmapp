@@ -245,16 +245,14 @@ export default function GruposScreen() {
     setMemberFilter('');
   }, []);
 
-  // "Encuéntrame": búsqueda amplia = nombre + las 2 primeras letras del
-  // apellido. Así encuentra entradas abreviadas tipo "David Sol. (Castellón)"
-  // aunque el perfil guarde "David Soler". El matcher usa includes contiguo,
-  // por lo que "david so" casa con "david sol. (castellon)".
+  // "Encuéntrame": búsqueda amplia = nombre + la 1ª letra del apellido.
+  // Así "Izan Rivera" → "Izan R", que casa con "Izan Riv.", "Izan Ri.", etc.
   const findMeQuery = useMemo(() => {
     if (!myName) return '';
     const parts = myName.split(/\s+/).filter(Boolean);
     if (parts.length === 0) return '';
     const first = parts[0];
-    const surnameStart = parts[1] ? parts[1].slice(0, 2) : '';
+    const surnameStart = parts[1] ? parts[1].slice(0, 1) : '';
     return surnameStart ? `${first} ${surnameStart}` : first;
   }, [myName]);
 
