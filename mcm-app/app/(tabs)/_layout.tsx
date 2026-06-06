@@ -90,7 +90,13 @@ function AndroidWebTabsLayout() {
   // del sistema usando el safe-area-inset top. En navegador normal este valor es 0.
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
-  const webBottomPad = Platform.OS === 'web' ? Math.max(insets.bottom, 12) : 8;
+  // En Android (Expo 55 va edge-to-edge: la app dibuja DETRÁS de la barra de
+  // navegación del sistema), hay que reservar `insets.bottom` para que la tab
+  // bar no quede tapada por la barra de gestos/3 botones. En móviles que la
+  // ocultan, `insets.bottom` es 0 y no cambia nada; en los que no, vale ~24-48px.
+  const bottomInset = insets.bottom;
+  const bottomPad =
+    Platform.OS === 'web' ? Math.max(bottomInset, 12) : 8 + bottomInset;
   const resolved = useResolvedProfileConfig();
   const visibleTabs = new Set(resolved.tabs);
   // Modo carismochito: tiñe la barra de pestañas de verde mientras está activo.
@@ -123,12 +129,12 @@ function AndroidWebTabsLayout() {
             borderTopColor: carismoActive
               ? hexAlpha(CARISMO_TABBAR_ACTIVE, '55')
               : hexAlpha(Colors[scheme ?? 'light'].icon, '20'),
-            paddingBottom: webBottomPad,
+            paddingBottom: bottomPad,
             paddingTop: 12,
             height:
               Platform.OS === 'web'
                 ? 60 + (insets.bottom > 0 ? insets.bottom : 0)
-                : 80,
+                : 80 + bottomInset,
             elevation: 8,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: -2 },
