@@ -61,6 +61,16 @@
 
 ## Prioridad baja
 
+- [ ] **Modo carismochito — cambiar el icono del launcher (icono "de fuera") a verde**:
+      hoy el modo solo tiñe la UI dentro de la app (incluido el cuadro-logo del
+      header de la Home). Cambiar el icono del móvil requiere **iconos
+      alternativos**: iOS `setAlternateIconName`, Android `activity-alias`
+      (vía `expo-dynamic-app-icon` o similar). Peros a valorar antes de hacerlo:
+      ⚠️ es **código nativo** → build de tienda, no OTA, y los iconos deben ir
+      empaquetados en el build; ⚠️ el cambio **persiste fuera de la app** (hay que
+      revertirlo al desactivar el modo); ⚠️ en Android el swap es tosco (ocurre al
+      pasar a segundo plano y puede reiniciar atajos). Encaja regular con un modo
+      efímero por agitado — decidir si compensa.
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales. Falta auditar Fotos (`AlbumListScreen`), Materiales, Horario, Comida, MasHome y los componentes `AlbumCard`/`EventItem`.
 
 ---
