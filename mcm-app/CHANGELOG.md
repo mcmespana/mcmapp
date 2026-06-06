@@ -18,9 +18,10 @@
 - **Tab bar inferior translúcida/ilegible en iOS ≤18**: la barra nativa
   (`NativeTabs`) se vuelve transparente al llegar al final del scroll o cuando
   el contenido es una `View` estática, dejando los iconos flotando sobre el
-  contenido. Se añade `blurEffect="systemChromeMaterial"` para que recupere un
-  fondo de material adaptado al tema. En iOS 26+ el sistema usa liquid glass y
-  el valor se ignora (allí ya se veía bien). Archivo: `app/(tabs)/_layout.tsx`.
+  contenido. Se añade `disableTransparentOnScrollEdge` (mantiene el fondo en el
+  borde del scroll) + `blurEffect="systemChromeMaterial"` (material adaptado al
+  tema). En iOS 26+ el sistema usa liquid glass y ambos se ignoran (allí ya se
+  veía bien). Archivo: `app/(tabs)/_layout.tsx`.
 - **Modo carismochito · icono de la app en verde**: el cuadro-logo del header de
   la Home se tiñe de verde mientras el modo está activo. Archivo:
   `app/(tabs)/index.tsx`.

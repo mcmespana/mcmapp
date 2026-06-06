@@ -52,13 +52,16 @@ function IOSNativeTabsLayout() {
   const { isActive: carismoActive } = useCarismochito();
 
   return (
-    // `blurEffect="systemChromeMaterial"`: en iOS ≤18 la barra nativa se vuelve
-    // TRANSPARENTE al llegar al final del scroll o cuando el contenido es una
-    // View estática (no scrollea por debajo). Eso dejaba los iconos flotando
-    // sobre el contenido y casi ilegibles. Con este material la barra recupera
-    // un fondo translúcido que se adapta al tema. En iOS 26+ el sistema usa
-    // liquid glass y este valor se ignora (ahí ya se veía bien).
+    // En iOS ≤18 la barra nativa se vuelve TRANSPARENTE al llegar al final del
+    // scroll o cuando el contenido es una View estática (no scrollea por
+    // debajo). Eso dejaba los iconos flotando sobre el contenido y casi
+    // ilegibles. `disableTransparentOnScrollEdge` desactiva ese comportamiento
+    // (mantiene el fondo en el borde) y `blurEffect="systemChromeMaterial"` le
+    // da el material translúcido del tab bar nativo, adaptado al tema. En
+    // iOS 26+ el sistema usa liquid glass y ambos se ignoran (ahí ya se veía
+    // bien).
     <NativeTabs
+      disableTransparentOnScrollEdge
       blurEffect="systemChromeMaterial"
       {...(carismoActive && {
         tintColor: CARISMO_TABBAR_TINT_IOS,
