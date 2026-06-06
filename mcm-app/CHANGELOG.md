@@ -13,6 +13,23 @@
 
 ---
 
+## 2026-06-06 — Fixes Android (tab bar) y mejoras en Grupos
+
+- **Tab bar inferior tapada por la barra de navegación de Android**: en Expo 55
+  Android va edge-to-edge (la app dibuja detrás de la barra del sistema). La tab
+  bar tenía altura fija de 80 sin contar `insets.bottom`, por lo que en móviles
+  con barra de gestos/3 botones visible quedaba parcialmente tapada. Ahora se
+  suma el safe-area inferior a la altura y al padding. Archivo:
+  `app/(tabs)/_layout.tsx`.
+- **Grupos · barra de búsqueda rediseñada**: se sustituye el `SearchField` de
+  heroui-native (se veía comprimido y con el texto poco legible en modo oscuro)
+  por una barra propia más grande y con texto en blanco garantizado en oscuro.
+  Botón "Encuéntrame" más prominente. Archivo: `app/screens/GruposScreen.tsx`.
+- **Grupos · categorías ocultas por evento**: nueva propiedad
+  `hiddenGroupCategories` en `EventConfig`. La Visita del Papa oculta la
+  categoría **Alojamiento** (en la cuadrícula y en la búsqueda). Archivos:
+  `constants/events.ts`, `app/screens/GruposScreen.tsx`.
+
 ## 2026-06-05 — Login deshabilitado temporalmente en Android ("próximamente")
 
 - El inicio de sesión en Android queda **temporalmente desactivado** mientras se
