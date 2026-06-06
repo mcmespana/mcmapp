@@ -13,6 +13,21 @@
 
 ---
 
+## 2026-06-06 — Grupos: arreglo del buscador + "Encuéntrame" con búsqueda amplia
+
+- **Bug del buscador (teclado que se escondía al escribir):** al cruzar el umbral
+  de 2 caracteres, la pantalla cambiaba todo su árbol de `ScrollView` (categorías)
+  a `SectionList` (resultados). El `SearchField` vivía dentro del header de la
+  lista, por lo que React lo **desmontaba y remontaba** → se perdía el foco y se
+  cerraba el teclado, impidiendo seguir escribiendo. Ahora el `SearchField` está
+  en una barra superior **siempre montada**; solo cambia el contenido inferior.
+- **"Encuéntrame": búsqueda amplia.** En vez de buscar el nombre completo del
+  perfil, ahora busca `nombre + 2 primeras letras del apellido` (ej. "David So"),
+  de modo que encuentra entradas abreviadas como "David Sol. (Castellón)".
+- **Diseño del input:** input más alto (h-14) y con texto mayor; botón
+  "Encuéntrame" más grande y con sombra. Se añadió `keyboardShouldPersistTaps`.
+- Archivos: `app/screens/GruposScreen.tsx`.
+
 ## 2026-06-05 — Login deshabilitado temporalmente en Android ("próximamente")
 
 - El inicio de sesión en Android queda **temporalmente desactivado** mientras se
