@@ -87,6 +87,12 @@ export interface EventConfig {
   /** Subtítulo del banner destacado de la Home (modo evento). */
   bannerText?: string;
   /**
+   * Categorías de la pantalla de Grupos que se ocultan en este evento
+   * (ej. `['Alojamiento']`). La comparación ignora mayúsculas y acentos.
+   * Si falta, se muestran todas las categorías.
+   */
+  hiddenGroupCategories?: string[];
+  /**
    * Nombre del tab de expo-router que representa este evento (ej.
    * `'visitapapa'`). Lo usa el banner de la Home para el gating de visibilidad
    * (solo se muestra si el perfil tiene acceso al tab o al botón Home).
@@ -189,6 +195,7 @@ export const VISITAPAPA: EventConfig = {
   status: 'active',
   bannerText: 'Horarios, materiales y todo para vivir un momento histórico',
   tabId: 'visitapapa',
+  hiddenGroupCategories: ['Alojamiento'],
   sections: [
     {
       label: 'Horario',

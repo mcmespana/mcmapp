@@ -13,20 +13,31 @@
 
 ---
 
-## 2026-06-06 — Grupos: arreglo del buscador + "Encuéntrame" con búsqueda amplia
+## 2026-06-06 — Fixes Android (tab bar) y mejoras en Grupos
 
-- **Bug del buscador (teclado que se escondía al escribir):** al cruzar el umbral
-  de 2 caracteres, la pantalla cambiaba todo su árbol de `ScrollView` (categorías)
-  a `SectionList` (resultados). El `SearchField` vivía dentro del header de la
-  lista, por lo que React lo **desmontaba y remontaba** → se perdía el foco y se
-  cerraba el teclado, impidiendo seguir escribiendo. Ahora el `SearchField` está
-  en una barra superior **siempre montada**; solo cambia el contenido inferior.
-- **"Encuéntrame": búsqueda amplia.** En vez de buscar el nombre completo del
-  perfil, ahora busca `nombre + 2 primeras letras del apellido` (ej. "David So"),
-  de modo que encuentra entradas abreviadas como "David Sol. (Castellón)".
-- **Diseño del input:** input más alto (h-14) y con texto mayor; botón
-  "Encuéntrame" más grande y con sombra. Se añadió `keyboardShouldPersistTaps`.
-- Archivos: `app/screens/GruposScreen.tsx`.
+- **Tab bar inferior tapada por la barra de navegación de Android**: en Expo 55
+  Android va edge-to-edge (la app dibuja detrás de la barra del sistema). La tab
+  bar tenía altura fija de 80 sin contar `insets.bottom`, por lo que en móviles
+  con barra de gestos/3 botones visible quedaba parcialmente tapada. Ahora se
+  suma el safe-area inferior a la altura y al padding. Archivo:
+  `app/(tabs)/_layout.tsx`.
+- **Grupos · bug del buscador (teclado que se escondía al escribir):** al cruzar
+  el umbral de 2 caracteres la pantalla cambiaba todo su árbol de `ScrollView`
+  (categorías) a `SectionList` (resultados), por lo que el buscador se
+  desmontaba/remontaba y perdía el foco. Ahora vive en una barra superior
+  **siempre montada**; solo cambia el contenido inferior. Se añadió
+  `keyboardShouldPersistTaps`.
+- **Grupos · barra de búsqueda rediseñada**: se sustituye el `SearchField` de
+  heroui-native (se veía comprimido y con el texto poco legible en modo oscuro)
+  por una barra propia (`TextInput`) más grande, idéntica en iOS/Android y con
+  **texto blanco garantizado en oscuro**. Botón "Encuéntrame" más prominente.
+- **Grupos · "Encuéntrame" con búsqueda amplia:** busca `nombre + 2 primeras
+  letras del apellido` (ej. "David So"), de modo que encuentra entradas
+  abreviadas como "David Sol. (Castellón)".
+- **Grupos · categorías ocultas por evento**: nueva propiedad
+  `hiddenGroupCategories` en `EventConfig`. La Visita del Papa oculta la
+  categoría **Alojamiento** (en la cuadrícula y en la búsqueda). Archivos:
+  `constants/events.ts`, `app/screens/GruposScreen.tsx`.
 
 ## 2026-06-05 — Login deshabilitado temporalmente en Android ("próximamente")
 

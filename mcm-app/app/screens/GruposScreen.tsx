@@ -5,17 +5,13 @@ import {
   Linking,
   Platform,
   Text,
+  TextInput,
   Pressable,
   SectionList,
   FlatList,
   ScrollView,
 } from 'react-native';
-import {
-  SearchField,
-  Button,
-  PressableFeedback,
-  Skeleton,
-} from 'heroui-native';
+import { Button, PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -89,6 +85,7 @@ function highlightText(
 
 export default function GruposScreen() {
   const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const event = useCurrentEvent();
   const { profile } = useUserProfile();
@@ -102,16 +99,28 @@ export default function GruposScreen() {
     !!data &&
     Object.values(data).some((arr) => Array.isArray(arr) && arr.length > 0);
 
+  // Categorías ocultas para este evento (ej. Visita Papa esconde "Alojamiento").
+  const hiddenCats = useMemo(
+    () => new Set((event.hiddenGroupCategories ?? []).map(normalize)),
+    [event],
+  );
+  const isHiddenCat = useCallback(
+    (cat: string) => hiddenCats.has(normalize(cat)),
+    [hiddenCats],
+  );
+
   const categorias = useMemo(() => {
-    const base = Object.keys(CATEGORY_CONFIG).map((name) => ({
-      name,
-      icon: CATEGORY_CONFIG[name].icon,
-      color: CATEGORY_CONFIG[name].color,
-      count: data?.[name]?.length ?? 0,
-    }));
+    const base = Object.keys(CATEGORY_CONFIG)
+      .filter((name) => !hiddenCats.has(normalize(name)))
+      .map((name) => ({
+        name,
+        icon: CATEGORY_CONFIG[name].icon,
+        color: CATEGORY_CONFIG[name].color,
+        count: data?.[name]?.length ?? 0,
+      }));
     if (data) {
       Object.keys(data).forEach((cat) => {
-        if (!CATEGORY_CONFIG[cat]) {
+        if (!CATEGORY_CONFIG[cat] && !hiddenCats.has(normalize(cat))) {
           base.push({
             name: cat,
             icon: 'group' as MaterialIconName,
@@ -122,7 +131,7 @@ export default function GruposScreen() {
       });
     }
     return base;
-  }, [data]);
+  }, [data, hiddenCats]);
 
   const [categoria, setCategoria] = useState<string | null>(null);
   const [grupo, setGrupo] = useState<Grupo | null>(null);
@@ -150,6 +159,7 @@ export default function GruposScreen() {
 
     Object.entries(data).forEach(([cat, grupos]) => {
       if (!Array.isArray(grupos)) return;
+      if (isHiddenCat(cat)) return;
       result[cat] = grupos.map((g) => ({
         ...g,
         _nNombre: g?.nombre ? normalize(g.nombre) : '',
@@ -162,7 +172,7 @@ export default function GruposScreen() {
       }));
     });
     return result;
-  }, [data]);
+  }, [data, isHiddenCat]);
 
   // Build search sections (FlatList-friendly SectionList sections grouped by category)
   const searchSections = useMemo(() => {
@@ -322,13 +332,13 @@ export default function GruposScreen() {
 
         {grupo.miembros && grupo.miembros.length > 8 ? (
           <View style={styles.inlineSearch}>
-            <SearchField value={memberFilter} onChange={setMemberFilter}>
-              <SearchField.Group>
-                <SearchField.SearchIcon />
-                <SearchField.Input placeholder="Filtrar en este grupo" />
-                <SearchField.ClearButton />
-              </SearchField.Group>
-            </SearchField>
+            <SearchBar
+              value={memberFilter}
+              onChangeText={setMemberFilter}
+              placeholder="Filtrar en este grupo"
+              styles={styles}
+              isDark={isDark}
+            />
             {memberFilter.length > 0 ? (
               <Text style={styles.filterCount}>
                 {filteredMiembros.length} de {grupo.miembros.length}
@@ -363,6 +373,7 @@ export default function GruposScreen() {
               <MemberRow name={item} myName={myName} styles={styles} />
             )}
             ListHeaderComponent={ListHeader}
+            keyboardShouldPersistTaps="handled"
             contentContainerStyle={
               Platform.OS === 'ios'
                 ? { paddingBottom: 100 }
@@ -442,28 +453,21 @@ export default function GruposScreen() {
   // ──────────────────────────────────────────────────────────
 
   // Persistent top bar — stays mounted whether or not we're searching, so the
-  // SearchField never unmounts (which previously dropped focus / dismissed the
+  // search input never unmounts (which previously dropped focus / dismissed the
   // keyboard when crossing the 2-char search threshold). Only the content area
   // below swaps between the categories grid and the results list.
   const topBar = (
     <View>
       <ScreenHero title="Grupos" hideOnWeb />
       <View style={styles.searchContainer}>
-        <View style={styles.searchField}>
-          <SearchField value={search} onChange={setSearch}>
-            <SearchField.Group className="h-14 px-2">
-              <SearchField.SearchIcon />
-              <SearchField.Input
-                className="text-base"
-                placeholder="Buscar grupo o persona"
-                autoCorrect={false}
-                autoCapitalize="words"
-                returnKeyType="search"
-              />
-              <SearchField.ClearButton />
-            </SearchField.Group>
-          </SearchField>
-        </View>
+        <SearchBar
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Buscar grupo o persona"
+          styles={styles}
+          isDark={isDark}
+          autoCapitalize="words"
+        />
         {myName ? (
           <Pressable
             onPress={findMe}
@@ -601,6 +605,56 @@ export default function GruposScreen() {
 function isMe(name: string | undefined | null, myName: string) {
   if (!name || !myName) return false;
   return normalize(name).includes(normalize(myName));
+}
+
+interface SearchBarProps {
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  styles: ReturnType<typeof createStyles>;
+  isDark: boolean;
+  autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
+}
+
+// Barra de búsqueda propia (TextInput) en vez del SearchField de heroui:
+// garantiza texto blanco legible en modo oscuro y un alto cómodo idéntico en
+// iOS y Android.
+function SearchBar({
+  value,
+  onChangeText,
+  placeholder,
+  styles,
+  isDark,
+  autoCapitalize = 'none',
+}: SearchBarProps) {
+  const iconColor = isDark ? '#C5C5C7' : '#8E8E93';
+  return (
+    <View style={styles.searchBar}>
+      <MaterialIcons name="search" size={22} color={iconColor} />
+      <TextInput
+        style={styles.searchInput}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={isDark ? '#8E8E93' : '#A0A0A8'}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={false}
+        returnKeyType="search"
+        clearButtonMode="never"
+        underlineColorAndroid="transparent"
+      />
+      {value.length > 0 ? (
+        <Pressable
+          onPress={() => onChangeText('')}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Borrar búsqueda"
+        >
+          <MaterialIcons name="cancel" size={20} color={iconColor} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
 }
 
 interface MemberRowProps {
@@ -800,8 +854,22 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: 12,
       gap: 10,
     },
-    searchField: {
-      width: '100%',
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      minHeight: 52,
+      paddingHorizontal: 16,
+      borderRadius: radii.pill,
+      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: isDark ? '#48484A' : '#E0E0E5',
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 16,
+      color: theme.text,
+      paddingVertical: Platform.OS === 'ios' ? 14 : 10,
     },
     flexList: {
       flex: 1,
@@ -812,19 +880,17 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       gap: 8,
       backgroundColor: colors.primary,
-      paddingHorizontal: 16,
-      paddingVertical: 10,
+      paddingHorizontal: 18,
+      paddingVertical: 12,
       borderRadius: radii.pill,
       ...Platform.select({
-        web: {
-          boxShadow: '0 2px 6px rgba(37,56,131,0.25)',
-        },
+        web: { boxShadow: '0 2px 8px rgba(37,56,131,0.35)' },
         default: {
           shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25,
-          shadowRadius: 4,
-          elevation: 2,
+          shadowOpacity: 0.3,
+          shadowRadius: 5,
+          elevation: 3,
         },
       }),
     },
