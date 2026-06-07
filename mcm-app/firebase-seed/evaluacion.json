@@ -1,0 +1,68 @@
+{
+  "updatedAt": "1717200000000",
+  "hidden": false,
+  "data": {
+    "evaluationOpen": false,
+    "title": "Evalúa la actividad",
+    "intro": "Tu opinión nos ayuda a mejorar los próximos encuentros. Te llevará un par de minutos 🙏",
+    "questions": [
+      {
+        "id": "general",
+        "type": "stars",
+        "label": "¿Qué tal ha ido la actividad en general?"
+      },
+      {
+        "id": "organizacion",
+        "type": "stars",
+        "label": "Organización y horarios",
+        "optional": true
+      },
+      {
+        "id": "contenido",
+        "type": "stars",
+        "label": "Contenido y espiritualidad",
+        "optional": true
+      },
+      {
+        "id": "convivencia",
+        "type": "stars",
+        "label": "Convivencia y ambiente",
+        "optional": true
+      },
+      {
+        "id": "gustado",
+        "type": "text",
+        "label": "¿Qué es lo que más te ha gustado?",
+        "placeholder": "Eso que te llevas de estos días…",
+        "optional": true
+      },
+      {
+        "id": "palabras_papa",
+        "type": "text",
+        "label": "¿Con qué palabras del Papa o qué mensaje te quedas?",
+        "placeholder": "Una frase, una idea que te ha tocado…",
+        "optional": true
+      },
+      {
+        "id": "momento",
+        "type": "text",
+        "label": "¿Qué momento no vas a olvidar?",
+        "placeholder": "Ese instante especial…",
+        "optional": true
+      },
+      {
+        "id": "mejorar",
+        "type": "text",
+        "label": "¿Qué cambiarías o mejorarías para próximas veces?",
+        "placeholder": "Tus sugerencias, con cariño…",
+        "optional": true
+      },
+      {
+        "id": "recomendarias",
+        "type": "yesno",
+        "label": "¿Recomendarías vivir algo así?",
+        "optional": true
+      }
+    ]
+  }
+}

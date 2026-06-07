@@ -13,6 +13,34 @@
 
 ---
 
+## 2026-06-07 — Sección de Evaluación (evento + app)
+
+- **Nueva sección "Evalúa"**: dos pantallas nuevas para recoger feedback al
+  terminar un evento:
+  - **Evalúa la actividad** (`EvaluacionScreen`): valoración por estrellas +
+    preguntas abiertas (lo que más gustó, palabras del Papa, momento
+    inolvidable, mejoras…). Las preguntas se leen de Firebase
+    (`activities/<evento>/evaluacion/data`) con _fallback_ en código; las
+    respuestas se escriben en `activities/<evento>/evaluacion/respuestas`.
+  - **Evalúa la app** (`EvaluacionAppScreen`): valoración de la app + errores,
+    utilidad e ideas. Respuestas en `app/evaluations`.
+- **Banner en la Home** "Evalúa la actividad": aparece cuando el panel enciende
+  `evaluationOpen` en el nodo de evaluación del evento activo y el usuario aún
+  no ha evaluado (flag local en AsyncStorage). Mismo gating de perfil que el
+  banner de evento.
+- **Tarjetas en el hub del evento** (Visita Papa): "Evalúa la actividad" (⭐) y
+  "Evalúa la app" (📝).
+- **Anti-duplicado**: tras enviar, se guarda `evaluacion_done_<scope>` en
+  AsyncStorage; el formulario muestra un estado de agradecimiento con opción a
+  reenviar y el banner se oculta.
+- **Seed Firebase**: `firebase-seed/evaluacion.json` listo para importar en
+  `activities/visitapapa26/evaluacion` (incluye `evaluationOpen` y preguntas).
+- Componentes nuevos: `components/StarRating.tsx`, `components/EvaluationForm.tsx`.
+  Config/tipos en `constants/evaluation.ts`. Deep-link al stack de evento vía
+  `utils/eventNavigation.ts`. Archivos tocados: `constants/events.ts`,
+  `app/screens/eventStackScreens.tsx`, `app/(tabs)/visitapapa.tsx`,
+  `app/(tabs)/index.tsx`.
+
 ## 2026-06-06 — Fix layout de Materiales
 
 - **Materiales · tarjetas empujadas abajo / hueco enorme**: el `DateSelector`

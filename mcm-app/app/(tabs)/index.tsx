@@ -1,6 +1,7 @@
 import React, {
   useLayoutEffect,
   ComponentProps,
+  useCallback,
   useEffect,
   useState,
   useMemo,
@@ -28,7 +29,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
@@ -51,6 +53,9 @@ import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
 import GlassSurface from '@/components/ui/GlassSurface';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { setPendingEventScreen } from '@/utils/eventNavigation';
+import { EvaluationConfig, evaluationDoneKey } from '@/constants/evaluation';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
@@ -216,10 +221,34 @@ export default function Home() {
   // valor hardcoded en `constants/events.ts`.
   const { activeEvent } = useActiveMeta();
   const activeTabId = activeEvent.tabId ?? '';
-  const showEventBanner =
+  const hasEventAccess =
     activeTabId !== '' &&
     (resolved.tabs.includes(activeTabId) ||
       resolved.homeButtons.includes(activeTabId));
+  const showEventBanner = hasEventAccess;
+
+  // Banner "Evalúa la actividad": se muestra cuando el panel enciende
+  // `evaluationOpen` en el nodo de evaluación del evento y el usuario aún no
+  // ha evaluado (flag local). Mismo gating de visibilidad que el evento.
+  const { data: evalConfig, hidden: evalHidden } =
+    useFirebaseData<EvaluationConfig>(
+      `${activeEvent.firebasePrefix}/evaluacion`,
+      `${activeEvent.id}_evaluacion`,
+    );
+  const [evalDone, setEvalDone] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      AsyncStorage.getItem(evaluationDoneKey(activeEvent.id)).then((v) => {
+        if (active) setEvalDone(v === '1');
+      });
+      return () => {
+        active = false;
+      };
+    }, [activeEvent.id]),
+  );
+  const showEvalBanner =
+    hasEventAccess && !!evalConfig?.evaluationOpen && !evalHidden && !evalDone;
 
   // OTA update badge (show in header after user dismisses the modal)
   const {
@@ -740,6 +769,60 @@ export default function Home() {
                       {activeEvent.bannerText}
                     </Text>
                   )}
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={22}
+                  color={theme.icon}
+                />
+              </TouchableOpacity>
+            )}
+
+            {/* ── Banner "Evalúa la actividad" ── */}
+            {showEvalBanner && (
+              <TouchableOpacity
+                style={[
+                  styles.eventBanner,
+                  {
+                    backgroundColor: hexAlpha(colors.accent, '18'),
+                    borderColor: hexAlpha(colors.accent, '50'),
+                  },
+                ]}
+                onPress={() => {
+                  h.tap();
+                  setPendingEventScreen('Evaluacion', {
+                    eventId: activeEvent.id,
+                  });
+                  router.push(`/${activeTabId}` as any);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Evalúa la actividad"
+              >
+                <View
+                  style={[
+                    styles.eventBannerIcon,
+                    { backgroundColor: hexAlpha(colors.accent, '30') },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="star-rate"
+                    size={22}
+                    color={colors.accent}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[styles.eventBannerTitle, { color: theme.text }]}
+                    numberOfLines={1}
+                  >
+                    {evalConfig?.title || 'Evalúa la actividad'}
+                  </Text>
+                  <Text
+                    style={[styles.eventBannerBody, { color: theme.icon }]}
+                    numberOfLines={2}
+                  >
+                    ¿Qué tal ha ido? Cuéntanoslo, solo te llevará 2 minutos.
+                  </Text>
                 </View>
                 <MaterialIcons
                   name="chevron-right"
