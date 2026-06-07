@@ -278,16 +278,6 @@ export const VISITAPAPA: EventConfig = {
       tintColor: '#FCD200',
       firebaseKey: 'evaluacion',
     },
-    {
-      // Evaluación de la app: no es del evento (sin firebaseKey), pero se
-      // ofrece aquí como tarjeta aparte.
-      label: 'Evalúa la app',
-      subtitle: 'Errores, utilidad e ideas',
-      emoji: '📝',
-      materialIcon: 'rate-review',
-      target: 'EvaluacionApp',
-      tintColor: '#31AADF',
-    },
   ],
 };
 

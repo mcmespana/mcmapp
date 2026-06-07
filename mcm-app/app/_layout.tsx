@@ -248,6 +248,13 @@ function InnerLayout() {
           }}
         />
         <Stack.Screen
+          name="evaluacion-app"
+          options={{
+            headerShown: true,
+            title: 'Evalúa la app',
+          }}
+        />
+        <Stack.Screen
           name="playlist"
           options={{
             headerShown: false,

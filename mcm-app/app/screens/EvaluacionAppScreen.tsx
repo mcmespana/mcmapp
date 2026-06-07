@@ -2,7 +2,6 @@ import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { getDatabase, push, ref, set } from 'firebase/database';
 
-import ScreenHero from '@/components/ui/ScreenHero';
 import PageContainer from '@/components/ui/PageContainer';
 import EvaluationForm, { EvaluationAnswers } from '@/components/EvaluationForm';
 import colors, { Colors } from '@/constants/colors';
@@ -16,8 +15,9 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 
 /**
- * Evaluación de la app (no ligada al evento). Preguntas fijas en código;
- * escribe las respuestas en `app/evaluations` (junto al feedback existente).
+ * Evaluación de la app (no ligada al evento). Se abre desde Ajustes como
+ * pantalla raíz (`app/evaluacion-app.tsx`). Preguntas fijas en código; escribe
+ * las respuestas en `app/evaluations` (junto al feedback existente).
  */
 export default function EvaluacionAppScreen() {
   const scheme = useColorScheme();
@@ -44,12 +44,6 @@ export default function EvaluacionAppScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScreenHero
-        title="Evalúa la app"
-        subtitle="Errores, utilidad e ideas"
-        accentColor={accent}
-        hideOnWeb
-      />
       <PageContainer>
         <EvaluationForm
           config={DEFAULT_APP_EVALUATION}

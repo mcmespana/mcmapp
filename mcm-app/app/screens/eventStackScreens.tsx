@@ -20,7 +20,6 @@ import ContactosScreen from './ContactosScreen';
 import AppsScreen from './AppsScreen';
 import ReflexionesScreen from './ReflexionesScreen';
 import EvaluacionScreen from './EvaluacionScreen';
-import EvaluacionAppScreen from './EvaluacionAppScreen';
 import ComidaScreen from './ComidaScreen';
 import ComidaWebScreen from './ComidaWebScreen';
 import WordleScreen from './WordleScreen';
@@ -116,7 +115,6 @@ export type EventStackParamList = {
   Wordle: EventRouteParams | undefined;
   Reflexiones: (EventRouteParams & { openFormNonce?: number }) | undefined;
   Evaluacion: EventRouteParams | undefined;
-  EvaluacionApp: EventRouteParams | undefined;
 };
 
 type EventStackNavigator = ReturnType<
@@ -395,14 +393,6 @@ export function renderEventScreens(
         name="Evaluacion"
         component={EvaluacionScreen}
         options={eventScreenOptions('Evalúa la actividad', {
-          hideHeaderTitle: true,
-          webHeaderTitle: true,
-        })}
-      />
-      <Stack.Screen
-        name="EvaluacionApp"
-        component={EvaluacionAppScreen}
-        options={eventScreenOptions('Evalúa la app', {
           hideHeaderTitle: true,
           webHeaderTitle: true,
         })}

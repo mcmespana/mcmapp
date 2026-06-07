@@ -53,9 +53,11 @@ import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
 import GlassSurface from '@/components/ui/GlassSurface';
-import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { setPendingEventScreen } from '@/utils/eventNavigation';
-import { EvaluationConfig, evaluationDoneKey } from '@/constants/evaluation';
+import {
+  DEFAULT_EVENT_EVALUATION,
+  evaluationDoneKey,
+} from '@/constants/evaluation';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
@@ -227,14 +229,9 @@ export default function Home() {
       resolved.homeButtons.includes(activeTabId));
   const showEventBanner = hasEventAccess;
 
-  // Banner "Evalúa la actividad": se muestra cuando el panel enciende
-  // `evaluationOpen` en el nodo de evaluación del evento y el usuario aún no
-  // ha evaluado (flag local). Mismo gating de visibilidad que el evento.
-  const { data: evalConfig, hidden: evalHidden } =
-    useFirebaseData<EvaluationConfig>(
-      `${activeEvent.firebasePrefix}/evaluacion`,
-      `${activeEvent.id}_evaluacion`,
-    );
+  // CTA "Evalúa la actividad": flag en código (DEFAULT_EVENT_EVALUATION). Se
+  // muestra si está abierto y el usuario aún no ha evaluado (flag local). Mismo
+  // gating de visibilidad que el evento.
   const [evalDone, setEvalDone] = useState(false);
   useFocusEffect(
     useCallback(() => {
@@ -248,29 +245,7 @@ export default function Home() {
     }, [activeEvent.id]),
   );
   const showEvalBanner =
-    hasEventAccess && !!evalConfig?.evaluationOpen && !evalHidden && !evalDone;
-
-  // Banner "Evalúa la app": mismo patrón, leyendo el nodo global
-  // `app/evaluation`. Solo aparece si está abierto y el usuario no ha evaluado.
-  const { data: appEvalConfig, hidden: appEvalHidden } =
-    useFirebaseData<EvaluationConfig>('app/evaluation', 'app_evaluation');
-  const [appEvalDone, setAppEvalDone] = useState(false);
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      AsyncStorage.getItem(evaluationDoneKey('app')).then((v) => {
-        if (active) setAppEvalDone(v === '1');
-      });
-      return () => {
-        active = false;
-      };
-    }, []),
-  );
-  const showAppEvalBanner =
-    hasEventAccess &&
-    !!appEvalConfig?.evaluationOpen &&
-    !appEvalHidden &&
-    !appEvalDone;
+    hasEventAccess && !!DEFAULT_EVENT_EVALUATION.evaluationOpen && !evalDone;
 
   // OTA update badge (show in header after user dismisses the modal)
   const {
@@ -820,7 +795,7 @@ export default function Home() {
                 </View>
                 <View style={styles.evalCtaTextWrap}>
                   <Text style={styles.evalCtaTitle} numberOfLines={1}>
-                    {evalConfig?.title || 'Evalúa la actividad'}
+                    {DEFAULT_EVENT_EVALUATION.title || 'Evalúa la actividad'}
                   </Text>
                   <Text style={styles.evalCtaBody} numberOfLines={2}>
                     ¿Qué tal ha ido? Tu opinión nos ayuda — solo 2 minutos.
@@ -838,60 +813,6 @@ export default function Home() {
                     color={colors.accent}
                   />
                 </View>
-              </TouchableOpacity>
-            )}
-
-            {/* ── Banner "Evalúa la app" ── */}
-            {showAppEvalBanner && (
-              <TouchableOpacity
-                style={[
-                  styles.eventBanner,
-                  {
-                    backgroundColor: hexAlpha(colors.info, '18'),
-                    borderColor: hexAlpha(colors.info, '50'),
-                  },
-                ]}
-                onPress={() => {
-                  h.tap();
-                  setPendingEventScreen('EvaluacionApp', {
-                    eventId: activeEvent.id,
-                  });
-                  router.push(`/${activeTabId}` as any);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Evalúa la app"
-              >
-                <View
-                  style={[
-                    styles.eventBannerIcon,
-                    { backgroundColor: hexAlpha(colors.info, '30') },
-                  ]}
-                >
-                  <MaterialIcons
-                    name="rate-review"
-                    size={22}
-                    color={colors.info}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[styles.eventBannerTitle, { color: theme.text }]}
-                    numberOfLines={1}
-                  >
-                    {appEvalConfig?.title || 'Evalúa la app'}
-                  </Text>
-                  <Text
-                    style={[styles.eventBannerBody, { color: theme.icon }]}
-                    numberOfLines={2}
-                  >
-                    Errores, utilidad e ideas para mejorar la app.
-                  </Text>
-                </View>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={22}
-                  color={theme.icon}
-                />
               </TouchableOpacity>
             )}
 

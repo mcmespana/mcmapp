@@ -1,19 +1,11 @@
 /**
  * Configuración de las evaluaciones (del evento y de la app).
  *
- * Las preguntas viven aquí como *fallback* y, en el caso del evento, pueden
- * sobreescribirse desde Firebase para editarlas sin desplegar (patrón habitual
- * de la app). El nodo Firebase esperado para el evento es:
+ * TODO (preguntas, títulos y el flag `evaluationOpen` del CTA de la Home) se
+ * define aquí en código. No se lee nada de Firebase para la configuración: para
+ * cambiar preguntas o apagar el CTA se edita este archivo y se publica una OTA.
  *
- *   activities/<evento>/evaluacion
- *   ├── updatedAt: <timestamp>
- *   ├── hidden?:   boolean            (oculta la tarjeta en el hub)
- *   └── data:                          ← EvaluationConfig
- *       ├── evaluationOpen: boolean    (enciende el banner de la Home)
- *       ├── title / intro
- *       └── questions: EvalQuestion[]
- *
- * Las RESPUESTAS las escribe la propia app bajo:
+ * Las RESPUESTAS sí se guardan en Firebase:
  *   activities/<evento>/evaluacion/respuestas/<pushId>   (evaluación del evento)
  *   app/evaluations/<pushId>                              (evaluación de la app)
  */
@@ -46,9 +38,11 @@ export interface EvaluationConfig {
  * si en el futuro se quiere mapear). */
 export type MaterialIconName = ComponentProps<typeof MaterialIcons>['name'];
 
-// ─── Evaluación del EVENTO (fallback) ────────────────────────────────
+// ─── Evaluación del EVENTO ───────────────────────────────────────────
+// `evaluationOpen` enciende el CTA "Evalúa la actividad" en la Home (config
+// en código, no en Firebase). Pon `false` para ocultarlo.
 export const DEFAULT_EVENT_EVALUATION: EvaluationConfig = {
-  evaluationOpen: false,
+  evaluationOpen: true,
   title: 'Evalúa la actividad',
   intro:
     'Tu opinión nos ayuda a mejorar los próximos encuentros. Te llevará un par de minutos 🙏',
