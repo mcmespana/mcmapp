@@ -94,8 +94,10 @@ export const DEFAULT_EVENT_EVALUATION: EvaluationConfig = {
   ],
 };
 
-// ─── Evaluación de la APP (fallback) ─────────────────────────────────
+// ─── Evaluación de la APP ────────────────────────────────────────────
+// `evaluationOpen` enciende el CTA "Evalúa la app" en la Home.
 export const DEFAULT_APP_EVALUATION: EvaluationConfig = {
+  evaluationOpen: true,
   title: 'Evalúa la app',
   intro: 'Cuéntanos cómo te ha funcionado la app durante el evento.',
   questions: [

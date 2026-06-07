@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -43,9 +44,14 @@ interface EvaluationWizardProps {
   config: EvaluationConfig;
   /** Color de acento del evento (se usa para estrellas y detalles). */
   accentColor: string;
-  /** Clave de AsyncStorage anti-duplicado. */
+  /** Clave de AsyncStorage anti-duplicado (cache local rápida). */
   doneKey: string;
   onSubmit: (answers: EvaluationAnswers) => Promise<void>;
+  /**
+   * Comprueba en Firebase si este dispositivo ya envió la evaluación. Si
+   * devuelve true, se bloquea el reenvío. Debe ser estable (useCallback).
+   */
+  checkSubmitted?: () => Promise<boolean>;
 }
 
 /**
@@ -58,6 +64,7 @@ export default function EvaluationWizard({
   accentColor,
   doneKey,
   onSubmit,
+  checkSubmitted,
 }: EvaluationWizardProps) {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -87,11 +94,29 @@ export default function EvaluationWizard({
   const [done, setDone] = useState(false);
   const [alreadyDone, setAlreadyDone] = useState<boolean | null>(null);
 
+  // Comprobación anti-reenvío: primero la cache local (rápida) y, si no, se
+  // consulta Firebase (por deviceId). Así una persona no puede volver a enviar
+  // la evaluación aunque no haya iniciado sesión.
   useEffect(() => {
-    AsyncStorage.getItem(doneKey)
-      .then((v) => setAlreadyDone(v === '1'))
-      .catch(() => setAlreadyDone(false));
-  }, [doneKey]);
+    let active = true;
+    (async () => {
+      try {
+        const local = (await AsyncStorage.getItem(doneKey)) === '1';
+        if (local) {
+          if (active) setAlreadyDone(true);
+          return;
+        }
+        const remote = checkSubmitted ? await checkSubmitted() : false;
+        if (remote) await AsyncStorage.setItem(doneKey, '1');
+        if (active) setAlreadyDone(remote);
+      } catch {
+        if (active) setAlreadyDone(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [doneKey, checkSubmitted]);
 
   // Barra de progreso animada (0..1).
   const progress = useSharedValue(0);
@@ -161,23 +186,32 @@ export default function EvaluationWizard({
   const Entering = dir === 'back' ? SlideInLeft : SlideInRight;
   const styles = createStyles(isDark);
 
+  // Mientras comprobamos si ya evaluó (cache local + Firebase) mostramos un
+  // loader breve para no enseñar la bienvenida y saltar a "ya evaluado".
+  if (!done && alreadyDone === null) {
+    return (
+      <View
+        style={[
+          styles.root,
+          styles.loadingWrap,
+          { backgroundColor: theme.background },
+        ]}
+      >
+        <ActivityIndicator size="large" color={accentReadable} />
+      </View>
+    );
+  }
+
   // ── Pantalla de agradecimiento (envío hecho o ya evaluado antes) ──
+  // No hay opción de reenviar: una persona solo puede evaluar una vez.
   if (done || alreadyDone) {
     return (
       <SuccessPhase
         accent={accentReadable}
         theme={theme}
-        isDark={isDark}
         insets={insets}
         justSubmitted={done}
         onDone={exit}
-        onRedo={() => {
-          setAnswers({});
-          setStep(-1);
-          setDir('forward');
-          setDone(false);
-          setAlreadyDone(false);
-        }}
       />
     );
   }
@@ -201,17 +235,19 @@ export default function EvaluationWizard({
           <View style={{ width: 60 }} />
         )}
 
-        {step >= 0 && (
-          <View style={styles.progressTrack}>
-            <Animated.View
-              style={[
-                styles.progressFill,
-                { backgroundColor: accentReadable },
-                progressStyle,
-              ]}
-            />
-          </View>
-        )}
+        <View style={styles.progressArea}>
+          {step >= 0 && (
+            <View style={styles.progressTrack}>
+              <Animated.View
+                style={[
+                  styles.progressFill,
+                  { backgroundColor: accentReadable },
+                  progressStyle,
+                ]}
+              />
+            </View>
+          )}
+        </View>
 
         <Pressable
           onPress={exit}
@@ -453,19 +489,15 @@ function WizardButton({
 function SuccessPhase({
   accent,
   theme,
-  isDark,
   insets,
   justSubmitted,
   onDone,
-  onRedo,
 }: {
   accent: string;
   theme: (typeof Colors)['light'];
-  isDark: boolean;
   insets: { top: number; bottom: number };
   justSubmitted: boolean;
   onDone: () => void;
-  onRedo: () => void;
 }) {
   const scale = useSharedValue(0);
   const ripple = useSharedValue(0);
@@ -530,7 +562,7 @@ function SuccessPhase({
       >
         {justSubmitted
           ? 'Hemos recibido tu evaluación. Nos ayuda muchísimo a mejorar 🙌'
-          : 'Ya tenemos tu evaluación. Si quieres, puedes volver a enviarla.'}
+          : 'Ya enviaste tu evaluación. ¡Gracias por tu ayuda!'}
       </Animated.Text>
 
       <Animated.View
@@ -538,15 +570,6 @@ function SuccessPhase({
         style={successStyles.cta}
       >
         <WizardButton label="Hecho" color={accent} onPress={onDone} />
-        <Pressable
-          onPress={onRedo}
-          style={successStyles.redoBtn}
-          accessibilityRole="button"
-        >
-          <Text style={[successStyles.redoText, { color: theme.icon }]}>
-            {justSubmitted ? 'Editar mi respuesta' : 'Volver a evaluar'}
-          </Text>
-        </Pressable>
       </Animated.View>
     </View>
   );
@@ -555,6 +578,10 @@ function SuccessPhase({
 const createStyles = (isDark: boolean) =>
   StyleSheet.create({
     root: { flex: 1 } as ViewStyle,
+    loadingWrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    } as ViewStyle,
     topBar: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -570,8 +597,8 @@ const createStyles = (isDark: boolean) =>
     },
     backLabel: { fontSize: 14, fontWeight: '600' },
     closeBtn: { width: 32, alignItems: 'flex-end' },
+    progressArea: { flex: 1, justifyContent: 'center' },
     progressTrack: {
-      flex: 1,
       height: 6,
       borderRadius: 3,
       overflow: 'hidden',
@@ -723,6 +750,4 @@ const successStyles = StyleSheet.create({
     marginBottom: 32,
   },
   cta: { width: '100%', maxWidth: 360, gap: 6 },
-  redoBtn: { alignItems: 'center', paddingVertical: 12 },
-  redoText: { fontSize: 14, fontWeight: '600' },
 });

@@ -55,6 +55,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import GlassSurface from '@/components/ui/GlassSurface';
 import { setPendingEventScreen } from '@/utils/eventNavigation';
 import {
+  DEFAULT_APP_EVALUATION,
   DEFAULT_EVENT_EVALUATION,
   evaluationDoneKey,
 } from '@/constants/evaluation';
@@ -246,6 +247,23 @@ export default function Home() {
   );
   const showEvalBanner =
     hasEventAccess && !!DEFAULT_EVENT_EVALUATION.evaluationOpen && !evalDone;
+
+  // CTA "Evalúa la app": flag en código (DEFAULT_APP_EVALUATION). No depende del
+  // evento (la app se evalúa siempre). Abre la pantalla raíz de Ajustes.
+  const [appEvalDone, setAppEvalDone] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      AsyncStorage.getItem(evaluationDoneKey('app')).then((v) => {
+        if (active) setAppEvalDone(v === '1');
+      });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+  const showAppEvalBanner =
+    !!DEFAULT_APP_EVALUATION.evaluationOpen && !appEvalDone;
 
   // OTA update badge (show in header after user dismisses the modal)
   const {
@@ -811,6 +829,42 @@ export default function Home() {
                     name="arrow-forward"
                     size={15}
                     color={colors.accent}
+                  />
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* ── CTA "Evalúa la app" ── */}
+            {showAppEvalBanner && (
+              <TouchableOpacity
+                style={[styles.evalCta, { backgroundColor: colors.info }]}
+                onPress={() => {
+                  h.tap();
+                  router.push('/evaluacion-app');
+                }}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel="Evalúa la app"
+              >
+                <View style={styles.evalCtaIcon}>
+                  <MaterialIcons name="rate-review" size={26} color="#fff" />
+                </View>
+                <View style={styles.evalCtaTextWrap}>
+                  <Text style={styles.evalCtaTitle} numberOfLines={1}>
+                    {DEFAULT_APP_EVALUATION.title || 'Evalúa la app'}
+                  </Text>
+                  <Text style={styles.evalCtaBody} numberOfLines={2}>
+                    ¿Errores o ideas? Ayúdanos a mejorar la app.
+                  </Text>
+                </View>
+                <View style={styles.evalCtaBtn}>
+                  <Text style={[styles.evalCtaBtnText, { color: colors.info }]}>
+                    Evaluar
+                  </Text>
+                  <MaterialIcons
+                    name="arrow-forward"
+                    size={15}
+                    color={colors.info}
                   />
                 </View>
               </TouchableOpacity>
