@@ -800,16 +800,10 @@ export default function Home() {
               </TouchableOpacity>
             )}
 
-            {/* ── Banner "Evalúa la actividad" ── */}
+            {/* ── CTA "Evalúa la actividad" — destacado y directo ── */}
             {showEvalBanner && (
               <TouchableOpacity
-                style={[
-                  styles.eventBanner,
-                  {
-                    backgroundColor: hexAlpha(colors.accent, '18'),
-                    borderColor: hexAlpha(colors.accent, '50'),
-                  },
-                ]}
+                style={[styles.evalCta, { backgroundColor: colors.accent }]}
                 onPress={() => {
                   h.tap();
                   setPendingEventScreen('Evaluacion', {
@@ -817,40 +811,33 @@ export default function Home() {
                   });
                   router.push(`/${activeTabId}` as any);
                 }}
+                activeOpacity={0.9}
                 accessibilityRole="button"
-                accessibilityLabel="Evalúa la actividad"
+                accessibilityLabel="Evalúa la actividad ahora"
               >
-                <View
-                  style={[
-                    styles.eventBannerIcon,
-                    { backgroundColor: hexAlpha(colors.accent, '30') },
-                  ]}
-                >
+                <View style={styles.evalCtaIcon}>
+                  <MaterialIcons name="star-rate" size={26} color="#fff" />
+                </View>
+                <View style={styles.evalCtaTextWrap}>
+                  <Text style={styles.evalCtaTitle} numberOfLines={1}>
+                    {evalConfig?.title || 'Evalúa la actividad'}
+                  </Text>
+                  <Text style={styles.evalCtaBody} numberOfLines={2}>
+                    ¿Qué tal ha ido? Tu opinión nos ayuda — solo 2 minutos.
+                  </Text>
+                </View>
+                <View style={styles.evalCtaBtn}>
+                  <Text
+                    style={[styles.evalCtaBtnText, { color: colors.accent }]}
+                  >
+                    Evaluar
+                  </Text>
                   <MaterialIcons
-                    name="star-rate"
-                    size={22}
+                    name="arrow-forward"
+                    size={15}
                     color={colors.accent}
                   />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[styles.eventBannerTitle, { color: theme.text }]}
-                    numberOfLines={1}
-                  >
-                    {evalConfig?.title || 'Evalúa la actividad'}
-                  </Text>
-                  <Text
-                    style={[styles.eventBannerBody, { color: theme.icon }]}
-                    numberOfLines={2}
-                  >
-                    ¿Qué tal ha ido? Cuéntanoslo, solo te llevará 2 minutos.
-                  </Text>
-                </View>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={22}
-                  color={theme.icon}
-                />
               </TouchableOpacity>
             )}
 
@@ -1631,6 +1618,53 @@ const styles = StyleSheet.create({
     marginTop: 2,
     lineHeight: 15,
     opacity: 0.8,
+  } as TextStyle,
+
+  // ── CTA "Evalúa la actividad" (destacado) ──
+  evalCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    padding: spacing.md,
+    borderRadius: radii.xl,
+    marginBottom: spacing.md,
+    ...shadows.md,
+  } as ViewStyle,
+  evalCtaIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    flexShrink: 0,
+  } as ViewStyle,
+  evalCtaTextWrap: { flex: 1 } as ViewStyle,
+  evalCtaTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: -0.2,
+  } as TextStyle,
+  evalCtaBody: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+    color: 'rgba(255,255,255,0.9)',
+  } as TextStyle,
+  evalCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fff',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: radii.pill,
+    flexShrink: 0,
+  } as ViewStyle,
+  evalCtaBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
   } as TextStyle,
 
   // ── Banner del evento activo (modo evento) ──
