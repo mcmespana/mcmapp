@@ -1,5 +1,5 @@
 // app/(tabs)/fotos.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -112,20 +112,41 @@ export default function FotosScreen() {
     setIsLoadingMore(false);
   };
 
-  const handleAlbumPress = async (albumUrl: string) => {
+  const handleAlbumPress = useCallback(async (albumUrl: string) => {
     const supported = await Linking.canOpenURL(albumUrl);
     if (supported) {
       try {
         await Linking.openURL(albumUrl);
       } catch (error) {
         console.error('Failed to open URL:', error);
-        Alert.alert('Error', 'No seh a podido abrir el link que pena más grande');
+        Alert.alert(
+          'Error',
+          'No seh a podido abrir el link que pena más grande',
+        );
       }
     } else {
       console.warn(`Don't know how to open this URL: ${albumUrl}`);
       Alert.alert('Invalid Link', `Esta URL es un poco raruna: ${albumUrl}`);
     }
-  };
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Album }) => (
+      <View
+        style={
+          width > 600
+            ? styles.albumCardContainerTwoColumns
+            : styles.albumCardContainerOneColumn
+        }
+      >
+        <AlbumCard
+          album={item}
+          onPress={() => handleAlbumPress(item.albumUrl)}
+        />
+      </View>
+    ),
+    [width, styles, handleAlbumPress],
+  );
 
   const renderFooter = () => {
     if (isLoadingMore) {
@@ -161,20 +182,10 @@ export default function FotosScreen() {
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
       <FlatList
         data={displayedAlbums}
-        renderItem={({ item }) => (
-          <View
-            style={
-              width > 600
-                ? styles.albumCardContainerTwoColumns
-                : styles.albumCardContainerOneColumn
-            }
-          >
-            <AlbumCard
-              album={item}
-              onPress={() => handleAlbumPress(item.albumUrl)}
-            />
-          </View>
-        )}
+        renderItem={renderItem}
+        initialNumToRender={4}
+        maxToRenderPerBatch={6}
+        windowSize={5}
         keyExtractor={(item) => item.id}
         numColumns={width > 600 ? 2 : 1}
         key={width > 600 ? 'TWO_COLUMNS' : 'ONE_COLUMN'} // Important for re-render on column change
