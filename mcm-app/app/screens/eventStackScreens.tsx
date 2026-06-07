@@ -392,10 +392,7 @@ export function renderEventScreens(
       <Stack.Screen
         name="Evaluacion"
         component={EvaluacionScreen}
-        options={eventScreenOptions('Evalúa la actividad', {
-          hideHeaderTitle: true,
-          webHeaderTitle: true,
-        })}
+        options={{ headerShown: false }}
       />
       {includeExtras && (
         <>

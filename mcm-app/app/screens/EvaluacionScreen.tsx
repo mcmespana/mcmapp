@@ -1,12 +1,10 @@
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform } from 'react-native';
 import { getDatabase, push, ref, set } from 'firebase/database';
 
-import ScreenHero from '@/components/ui/ScreenHero';
-import PageContainer from '@/components/ui/PageContainer';
-import EvaluationForm, { EvaluationAnswers } from '@/components/EvaluationForm';
-import { Colors } from '@/constants/colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import EvaluationWizard, {
+  EvaluationAnswers,
+} from '@/components/EvaluationWizard';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventFirebasePath } from '@/constants/events';
 import {
@@ -18,20 +16,16 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 
 /**
- * Evaluación del evento activo. Las preguntas viven en código
- * (`DEFAULT_EVENT_EVALUATION`); las respuestas se escriben en
- * `<evento>/evaluacion/respuestas`.
+ * Evaluación del evento activo, tipo onboarding (una fase por pregunta).
+ * Las preguntas viven en código (`DEFAULT_EVENT_EVALUATION`); las respuestas se
+ * escriben en `<evento>/evaluacion/respuestas`.
  */
 export default function EvaluacionScreen() {
-  const scheme = useColorScheme();
-  const theme = Colors[scheme ?? 'light'];
   const event = useCurrentEvent();
-  const config = DEFAULT_EVENT_EVALUATION;
-
-  const path = getEventFirebasePath(event, 'evaluacion');
-
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
+
+  const path = getEventFirebasePath(event, 'evaluacion');
 
   const handleSubmit = async (answers: EvaluationAnswers) => {
     const db = getDatabase(getFirebaseApp());
@@ -51,26 +45,11 @@ export default function EvaluacionScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScreenHero
-        title={config.title || 'Evalúa la actividad'}
-        subtitle="Cuéntanos qué tal ha ido"
-        accentColor={event.tintColor}
-        hideOnWeb
-      />
-      <PageContainer>
-        <EvaluationForm
-          config={config}
-          accentColor={event.tintColor}
-          doneKey={evaluationDoneKey(event.id)}
-          onSubmit={handleSubmit}
-          submitLabel="Enviar evaluación"
-        />
-      </PageContainer>
-    </View>
+    <EvaluationWizard
+      config={DEFAULT_EVENT_EVALUATION}
+      accentColor={event.tintColor}
+      doneKey={evaluationDoneKey(event.id)}
+      onSubmit={handleSubmit}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-});

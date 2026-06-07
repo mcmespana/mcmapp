@@ -13,6 +13,20 @@
 
 ---
 
+## 2026-06-07 — Evaluación: wizard tipo onboarding + ajustes de ubicación
+
+- **Evalúa la actividad → wizard animado** (`EvaluationWizard`): una fase por
+  pregunta, barra de progreso, transiciones (Reanimated, sin nuevas deps),
+  bienvenida y pantalla final de agradecimiento con animación. Sustituye al
+  formulario de scroll. La pantalla `Evaluacion` pasa a `headerShown: false`.
+- **Preguntas en código** (`DEFAULT_EVENT_EVALUATION`): General, Organización
+  MCM, Organización Visita del Papa, Convivencia, Más gustado, Mejorar,
+  Comentarios. Respuestas a Firebase (`<evento>/evaluacion/respuestas`).
+- **CTA "Evalúa la actividad" en la Home** encendido por código
+  (`evaluationOpen`), sin depender de Firebase.
+- **Evalúa la app → Ajustes**: deja de estar en el hub del evento y en la Home;
+  se abre desde el panel de Ajustes como pantalla raíz (`app/evaluacion-app.tsx`).
+
 ## 2026-06-07 — Sección de Evaluación (evento + app)
 
 - **Nueva sección "Evalúa"**: dos pantallas nuevas para recoger feedback al
