@@ -7,12 +7,10 @@ import PageContainer from '@/components/ui/PageContainer';
 import EvaluationForm, { EvaluationAnswers } from '@/components/EvaluationForm';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import { getEventFirebasePath } from '@/constants/events';
 import {
   DEFAULT_EVENT_EVALUATION,
-  EvaluationConfig,
   evaluationDoneKey,
 } from '@/constants/evaluation';
 import { getFirebaseApp } from '@/utils/firebaseApp';
@@ -20,29 +18,17 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 
 /**
- * Evaluación del evento activo. Lee las preguntas de Firebase
- * (`<evento>/evaluacion/data`) con fallback al set por defecto en código, y
- * escribe las respuestas en `<evento>/evaluacion/respuestas`.
+ * Evaluación del evento activo. Las preguntas viven en código
+ * (`DEFAULT_EVENT_EVALUATION`); las respuestas se escriben en
+ * `<evento>/evaluacion/respuestas`.
  */
 export default function EvaluacionScreen() {
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
   const event = useCurrentEvent();
+  const config = DEFAULT_EVENT_EVALUATION;
 
   const path = getEventFirebasePath(event, 'evaluacion');
-  const { data: remoteConfig } = useFirebaseData<EvaluationConfig>(
-    path,
-    getEventCacheKey(event, 'evaluacion'),
-  );
-
-  // Si Firebase trae preguntas, mandan ellas; si no, el fallback de código.
-  const config: EvaluationConfig = remoteConfig?.questions?.length
-    ? remoteConfig
-    : {
-        ...DEFAULT_EVENT_EVALUATION,
-        ...(remoteConfig ?? {}),
-        questions: DEFAULT_EVENT_EVALUATION.questions,
-      };
 
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
