@@ -250,6 +250,28 @@ export default function Home() {
   const showEvalBanner =
     hasEventAccess && !!evalConfig?.evaluationOpen && !evalHidden && !evalDone;
 
+  // Banner "Evalúa la app": mismo patrón, leyendo el nodo global
+  // `app/evaluation`. Solo aparece si está abierto y el usuario no ha evaluado.
+  const { data: appEvalConfig, hidden: appEvalHidden } =
+    useFirebaseData<EvaluationConfig>('app/evaluation', 'app_evaluation');
+  const [appEvalDone, setAppEvalDone] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      AsyncStorage.getItem(evaluationDoneKey('app')).then((v) => {
+        if (active) setAppEvalDone(v === '1');
+      });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+  const showAppEvalBanner =
+    hasEventAccess &&
+    !!appEvalConfig?.evaluationOpen &&
+    !appEvalHidden &&
+    !appEvalDone;
+
   // OTA update badge (show in header after user dismisses the modal)
   const {
     isReady: otaReady,
@@ -822,6 +844,60 @@ export default function Home() {
                     numberOfLines={2}
                   >
                     ¿Qué tal ha ido? Cuéntanoslo, solo te llevará 2 minutos.
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={22}
+                  color={theme.icon}
+                />
+              </TouchableOpacity>
+            )}
+
+            {/* ── Banner "Evalúa la app" ── */}
+            {showAppEvalBanner && (
+              <TouchableOpacity
+                style={[
+                  styles.eventBanner,
+                  {
+                    backgroundColor: hexAlpha(colors.info, '18'),
+                    borderColor: hexAlpha(colors.info, '50'),
+                  },
+                ]}
+                onPress={() => {
+                  h.tap();
+                  setPendingEventScreen('EvaluacionApp', {
+                    eventId: activeEvent.id,
+                  });
+                  router.push(`/${activeTabId}` as any);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Evalúa la app"
+              >
+                <View
+                  style={[
+                    styles.eventBannerIcon,
+                    { backgroundColor: hexAlpha(colors.info, '30') },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="rate-review"
+                    size={22}
+                    color={colors.info}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[styles.eventBannerTitle, { color: theme.text }]}
+                    numberOfLines={1}
+                  >
+                    {appEvalConfig?.title || 'Evalúa la app'}
+                  </Text>
+                  <Text
+                    style={[styles.eventBannerBody, { color: theme.icon }]}
+                    numberOfLines={2}
+                  >
+                    Errores, utilidad e ideas para mejorar la app.
                   </Text>
                 </View>
                 <MaterialIcons
