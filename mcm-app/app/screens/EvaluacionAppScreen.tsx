@@ -1,11 +1,11 @@
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform } from 'react-native';
 import { getDatabase, push, ref, set } from 'firebase/database';
 
-import PageContainer from '@/components/ui/PageContainer';
-import EvaluationForm, { EvaluationAnswers } from '@/components/EvaluationForm';
-import colors, { Colors } from '@/constants/colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import EvaluationWizard, {
+  EvaluationAnswers,
+} from '@/components/EvaluationWizard';
+import colors from '@/constants/colors';
 import {
   DEFAULT_APP_EVALUATION,
   evaluationDoneKey,
@@ -15,17 +15,13 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 
 /**
- * Evaluación de la app (no ligada al evento). Se abre desde Ajustes como
- * pantalla raíz (`app/evaluacion-app.tsx`). Preguntas fijas en código; escribe
- * las respuestas en `app/evaluations` (junto al feedback existente).
+ * Evaluación de la app (no ligada al evento), wizard tipo onboarding. Se abre
+ * desde Ajustes como pantalla raíz (`app/evaluacion-app.tsx`). Preguntas en
+ * código; respuestas en `app/evaluations`.
  */
 export default function EvaluacionAppScreen() {
-  const scheme = useColorScheme();
-  const theme = Colors[scheme ?? 'light'];
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
-
-  const accent = colors.info;
 
   const handleSubmit = async (answers: EvaluationAnswers) => {
     const db = getDatabase(getFirebaseApp());
@@ -43,20 +39,11 @@ export default function EvaluacionAppScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <PageContainer>
-        <EvaluationForm
-          config={DEFAULT_APP_EVALUATION}
-          accentColor={accent}
-          doneKey={evaluationDoneKey('app')}
-          onSubmit={handleSubmit}
-          submitLabel="Enviar evaluación"
-        />
-      </PageContainer>
-    </View>
+    <EvaluationWizard
+      config={DEFAULT_APP_EVALUATION}
+      accentColor={colors.info}
+      doneKey={evaluationDoneKey('app')}
+      onSubmit={handleSubmit}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-});
