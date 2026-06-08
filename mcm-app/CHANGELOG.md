@@ -13,6 +13,26 @@
 
 ---
 
+## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
+
+- **Antes** una notificación solo mostraba **un** botón de acción (`actionButton`);
+  el array `actionButtons` del panel se aceptaba pero solo se usaba el primer
+  elemento. **Ahora** se soportan **hasta 3 botones** por notificación, tanto en la
+  tarjeta del centro de notificaciones (un chip por botón) como en el modal de
+  detalle (botones apilados: el 1.º primario, los siguientes secundarios).
+- Nuevo `extractActionButtons()` en `utils/notificationRoutes.ts` (límite
+  `MAX_ACTION_BUTTONS = 3`): acepta el array `actionButtons` y el objeto único
+  `actionButton` (legacy), los combina y deduplica por `url|text`. Se conserva
+  `extractActionButton()` como atajo al primer botón.
+- Tipos: `NotificationActionButtonData` + campo `actionButtons[]` en
+  `NotificationData` y `ReceivedNotification` (`actionButton` se mantiene por
+  compatibilidad).
+- Archivos: `utils/notificationRoutes.ts`, `types/notifications.ts`,
+  `app/notifications.tsx`, `services/pushNotificationService.ts`,
+  `notifications/usePushNotifications.ts`, `__tests__/notificationRoutes.test.ts`.
+- Compatible con OTA (JS puro, sin código nativo). El MCM Panel debe enviar
+  `data.actionButtons` (array) — ver `NOTIFICACIONES_CONTRATO.md` §3.
+
 ## 2026-06-07 — Evaluación: wizard tipo onboarding + ajustes de ubicación
 
 - **Evalúa la actividad → wizard animado** (`EvaluationWizard`): una fase por

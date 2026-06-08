@@ -17,22 +17,25 @@ import {
   NotificationData,
   ReceivedNotification,
 } from '@/types/notifications';
-import { extractActionButton } from '@/utils/notificationRoutes';
+import { extractActionButtons } from '@/utils/notificationRoutes';
 
 /**
  * Normaliza un registro de notificación de Firebase a la forma canónica que usa
- * la app. En particular convierte `actionButtons` (array, formato del contrato
- * del panel) al `actionButton` único que renderiza la pantalla.
+ * la app. Unifica el botón único (`actionButton`, legacy) y el array
+ * (`actionButtons`, hasta 3) en el array `actionButtons` que renderiza la
+ * pantalla. Se conserva `actionButton` (= primer botón) por compatibilidad.
  */
 const normalizeNotificationRecord = (
   key: string,
   val: any,
 ): NotificationData => {
-  const actionButton = extractActionButton(val);
+  const actionButtons = extractActionButtons(val);
   return {
     ...val,
     id: val.id || key,
-    ...(actionButton ? { actionButton } : {}),
+    ...(actionButtons.length > 0
+      ? { actionButtons, actionButton: actionButtons[0] }
+      : {}),
   };
 };
 
