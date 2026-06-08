@@ -1,10 +1,11 @@
-# Prompt para el agente de **mcmpanel** — Varios botones de acción en notificaciones
+# Prompt para el agente de **mcmpanel** — Botones de acción + descripción extendida en notificaciones
 
 > Contexto: en la app MCM (repo `mcmapp`, carpeta `mcm-app/`) las notificaciones
-> push ahora soportan **hasta 3 botones de acción** por notificación (antes solo
-> uno). El panel `mcmpanel` debe poder componer esos botones en el formulario de
-> envío y mandarlos en el payload con el formato correcto. Este documento describe
-> qué cambió en la app y qué implementar en el panel.
+> push ahora soportan **(A) hasta 3 botones de acción** por notificación (antes solo
+> uno) y **(B) una descripción extendida `bodyLong`** que se ve en el detalle. El
+> panel `mcmpanel` debe poder componer ambas cosas en el formulario de envío y
+> mandarlas en el payload con el formato correcto. Este documento describe qué
+> cambió en la app y qué implementar en el panel.
 
 ---
 
@@ -61,6 +62,48 @@ En el `data` del mensaje de Expo Push (y en el registro de Firebase
 - Si el panel manda **ambos** (`actionButton` + `actionButtons`), la app los combina
   y deduplica por `url|text`. Para evitar confusión, mandad **solo `actionButtons`**.
 
+## 2.bis. Descripción extendida (`bodyLong`)
+
+La app ahora distingue dos textos de cuerpo:
+
+| Campo      | Dónde se ve                              | Límite                |
+| ---------- | ---------------------------------------- | --------------------- |
+| `body`     | Push del sistema + tarjeta (2 líneas)    | 200 chars (como hoy)  |
+| `bodyLong` | Solo el **modal de detalle** (scrollable) | ~2000 chars (blando) |
+
+- En el detalle, la app muestra **`bodyLong` si existe; si no, `body`** (fallback).
+- La **tarjeta** sigue mostrando siempre `body`. `bodyLong` nunca va en la push del
+  sistema ni en la tarjeta.
+- `bodyLong` es **texto plano** y respeta saltos de línea (`\n`). No se renderiza
+  HTML/Markdown/BBCode.
+
+Formato en el payload / Firebase:
+
+```jsonc
+"data": {
+  "id": "uuid-de-firebase",
+  "bodyLong": "Texto largo con detalles...\n\nMás párrafos, horarios, etc."
+}
+```
+
+- **Recomendado**: incluid `bodyLong` en `data.bodyLong` **y** en el registro de
+  Firebase `/notifications/{id}`.
+- Si el texto fuese tan largo que se acerca a reventar el payload (~4 KB de APNs/FCM),
+  mandadlo **solo a Firebase** y omitidlo del `data` de la push: la app lo recupera
+  igual del registro de Firebase al abrir la notificación. El `body` corto sí debe ir
+  **siempre** en la push.
+
+### UX sugerida en el panel (lo que pediste)
+
+- En el formulario, **dos campos**: `body` ("Descripción", 200 chars) y `bodyLong`
+  ("Descripción detallada").
+- Un **checkbox "Añadir descripción detallada"**: si está **desmarcado**, NO mandéis
+  `bodyLong` (la app usará `body` como fallback automáticamente — más limpio que
+  duplicar el texto). Si está **marcado**, se muestra el textarea y se envía
+  `bodyLong`.
+- Evitad mandar `bodyLong` igual a `body`: no aporta nada y desperdicia payload. Mejor
+  omitirlo y dejar que actúe el fallback.
+
 ## 3. Cambios en la UI del panel (formulario de envío)
 
 1. Sustituir el bloque de "botón de acción" único por una **lista dinámica de botones**
@@ -75,6 +118,8 @@ En el `data` del mensaje de Expo Push (y en el registro de Firebase
    - **Importante**: no enviéis claves `undefined`/vacías dentro de los objetos del
      array; Firebase RTDB no admite `undefined`. Omitid el campo o usad `null` según
      vuestra convención (mejor omitir).
+5. Añadir el campo **`bodyLong`** (textarea) con el checkbox descrito en §2.bis. No
+   enviar la clave si está vacía (Firebase RTDB no admite `undefined`).
 
 ## 4. Notas / límites
 
@@ -85,12 +130,17 @@ En el `data` del mensaje de Expo Push (y en el registro de Firebase
 - En Android la notificación del sistema tampoco pinta estos botones dinámicos; son
   para dentro de la app.
 - El cambio en la app es **OTA** (JS puro), así que no requiere build de tienda: en
-  cuanto la OTA esté publicada, los dispositivos verán varios botones.
+  cuanto la OTA esté publicada, los dispositivos verán varios botones y la descripción
+  extendida.
+- `bodyLong` también es solo in-app (modal de detalle). No cambia nada de la push del
+  sistema.
 
 ## 5. Referencias en el repo de la app
 
-- Contrato completo: `NOTIFICACIONES_CONTRATO.md` (§3 botones de acción, §2 rutas).
-- Guía funcional: `NOTIFICACIONES.md` (§"Arquitectura de botones y navegación").
+- Contrato completo: `NOTIFICACIONES_CONTRATO.md` (§3 botones, §3.bis `bodyLong`, §2 rutas).
+- Guía funcional: `NOTIFICACIONES.md` (§"Contenido de texto: body y bodyLong" y
+  §"Arquitectura de botones y navegación").
 - Implementación: `mcm-app/utils/notificationRoutes.ts`
   (`extractActionButtons`, `MAX_ACTION_BUTTONS`), `mcm-app/types/notifications.ts`
-  (`NotificationActionButtonData`), `mcm-app/app/notifications.tsx` (render).
+  (`NotificationActionButtonData`, campo `bodyLong`), `mcm-app/app/notifications.tsx`
+  (render del detalle con fallback `bodyLong || body`).
