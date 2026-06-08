@@ -26,6 +26,9 @@
    array). Sigue aceptando el objeto único `data.actionButton` (legacy) por
    compatibilidad. **Formato canónico recomendado: `actionButtons` (array)**, cada
    elemento `{ text, url, isInternal }`. Ver §3.
+   **Descripción extendida (`data.bodyLong`)**: NUEVO campo opcional de texto largo
+   que la app muestra en el modal de detalle (scrollable); si no viene, usa `body`
+   como fallback. Recomendado ≤2000 chars. Ver §3.bis.
 4. **`categoryId`**: la app solo registra categorías iOS `general`, `eventos`,
    `fotos`. Mandar `evento`/`actividad`/`cantoral`/`jubileo`/`urgente` como
    `categoryId` no aporta botones (se ignora). Conviene **desacoplar** `categoryId`
@@ -168,6 +171,37 @@ complementarios — ver `NOTIFICACIONES.md` §"Arquitectura de botones y navegac
 > pre-registradas (`categoryId`, ver tabla arriba) y NO se pueden generar
 > dinámicamente desde el payload.
 
+## 3.bis. Texto del cuerpo: `body` y `bodyLong` (descripción extendida)
+
+La app maneja dos campos de texto para el cuerpo:
+
+| Campo          | Dónde se ve                          | Límite recomendado |
+| -------------- | ------------------------------------ | ------------------ |
+| `body`         | Push + tarjeta (recortada a 2 líneas) | 200 chars (como hoy) |
+| `bodyLong`     | Solo modal de detalle (scrollable)   | ~2000 chars (blando) |
+
+Comportamiento en la app (`app/notifications.tsx`):
+
+- El modal de detalle muestra **`bodyLong` si existe; si no, `body`** (fallback).
+- La **tarjeta** sigue mostrando siempre `body` (corto). `bodyLong` NUNCA se usa en
+  la tarjeta ni en la push del sistema.
+- `bodyLong` respeta saltos de línea (`\n`). No se renderiza HTML/BBCode (texto plano).
+
+Dónde mandarlo:
+
+- **Recomendado**: incluid `bodyLong` en `data.bodyLong` **y** en el registro de
+  Firebase `/notifications/{id}`. Así está disponible tanto en foreground (desde la
+  push) como al abrir desde Firebase.
+- **Si el texto fuese muy largo** (cerca de reventar el payload ~4 KB de APNs/FCM):
+  podéis mandar `bodyLong` **solo en Firebase** y omitirlo del `data` de la push. La
+  app lo recupera igualmente del registro de Firebase (la deduplicación rellena
+  `bodyLong` desde ahí aunque no viniera en la push). El `body` corto sí debe ir
+  siempre en la push.
+
+> ¿Por qué un tope blando de ~2000 y no "ilimitado"? Porque `data` cuenta contra el
+> límite de ~4 KB del payload de la push. 2000 chars deja margen de sobra. En la UI
+> no hay tope (es scroll), y Firebase admite strings enormes.
+
 ## 4. Imagen
 
 - **Android**: la imagen de `richContent.image` se muestra en la notificación del
@@ -283,7 +317,8 @@ para la **velocidad de entrega** (FCM). Para diferenciar visualmente `high` vs
 
 | Campo del payload        | ¿Se procesa? | Cómo |
 | ------------------------ | ------------ | ---- |
-| `title` / `body`         | ✅ | Notificación + tarjeta |
+| `title` / `body`         | ✅ | Notificación + tarjeta (body recortado a 2 líneas) |
+| `data.bodyLong`          | ✅ | Descripción extendida en el modal de detalle (scroll); fallback a `body` |
 | `sound`                  | ✅ | Sonido (foreground y SO) |
 | `priority` (top-level)   | 🟡 | Solo entrega (FCM). Display fijo por channel MAX |
 | `categoryId`             | 🟡 | Solo iOS, ids `general`/`eventos`/`fotos`; resto ignorado |
