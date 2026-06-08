@@ -33,6 +33,57 @@
 - Compatible con OTA (JS puro, sin código nativo). El MCM Panel debe enviar
   `data.actionButtons` (array) — ver `NOTIFICACIONES_CONTRATO.md` §3.
 
+## 2026-06-07 — Evaluación: wizard tipo onboarding + ajustes de ubicación
+
+- **Evalúa la actividad → wizard animado** (`EvaluationWizard`): una fase por
+  pregunta, barra de progreso, transiciones (Reanimated, sin nuevas deps),
+  bienvenida y pantalla final de agradecimiento con animación. Sustituye al
+  formulario de scroll. La pantalla `Evaluacion` pasa a `headerShown: false`.
+- **Preguntas en código** (`DEFAULT_EVENT_EVALUATION`): General, Organización
+  MCM, Organización Visita del Papa, Convivencia, Más gustado, Mejorar,
+  Comentarios. Respuestas a Firebase (`<evento>/evaluacion/respuestas`).
+- **CTA "Evalúa la actividad" en la Home** encendido por código
+  (`evaluationOpen`), sin depender de Firebase.
+- **Evalúa la app → Ajustes**: deja de estar en el hub del evento y en la Home;
+  se abre desde el panel de Ajustes como pantalla raíz (`app/evaluacion-app.tsx`).
+
+## 2026-06-07 — Sección de Evaluación (evento + app)
+
+- **Nueva sección "Evalúa"**: dos pantallas nuevas para recoger feedback al
+  terminar un evento:
+  - **Evalúa la actividad** (`EvaluacionScreen`): valoración por estrellas +
+    preguntas abiertas (lo que más gustó, palabras del Papa, momento
+    inolvidable, mejoras…). Las preguntas se leen de Firebase
+    (`activities/<evento>/evaluacion/data`) con _fallback_ en código; las
+    respuestas se escriben en `activities/<evento>/evaluacion/respuestas`.
+  - **Evalúa la app** (`EvaluacionAppScreen`): valoración de la app + errores,
+    utilidad e ideas. Respuestas en `app/evaluations`.
+- **Banner en la Home** "Evalúa la actividad": aparece cuando el panel enciende
+  `evaluationOpen` en el nodo de evaluación del evento activo y el usuario aún
+  no ha evaluado (flag local en AsyncStorage). Mismo gating de perfil que el
+  banner de evento.
+- **Tarjetas en el hub del evento** (Visita Papa): "Evalúa la actividad" (⭐) y
+  "Evalúa la app" (📝).
+- **Anti-duplicado**: tras enviar, se guarda `evaluacion_done_<scope>` en
+  AsyncStorage; el formulario muestra un estado de agradecimiento con opción a
+  reenviar y el banner se oculta.
+- **Seed Firebase**: `firebase-seed/evaluacion.json` listo para importar en
+  `activities/visitapapa26/evaluacion` (incluye `evaluationOpen` y preguntas).
+- Componentes nuevos: `components/StarRating.tsx`, `components/EvaluationForm.tsx`.
+  Config/tipos en `constants/evaluation.ts`. Deep-link al stack de evento vía
+  `utils/eventNavigation.ts`. Archivos tocados: `constants/events.ts`,
+  `app/screens/eventStackScreens.tsx`, `app/(tabs)/visitapapa.tsx`,
+  `app/(tabs)/index.tsx`.
+
+## 2026-06-06 — Fix layout de Materiales
+
+- **Materiales · tarjetas empujadas abajo / hueco enorme**: el `DateSelector`
+  (un `FlatList` horizontal) iba suelto como hijo directo del contenedor flex en
+  columna, así que crecía en vertical y empujaba el `ScrollView` de tarjetas al
+  fondo (cortándolas). Se envuelve en una `View` (mismo patrón que
+  `HorarioScreen`) para limitarlo a su altura natural. Archivo:
+  `app/screens/MaterialesScreen.tsx`.
+
 ## 2026-06-06 — Tab bar iOS visible + icono verde en carismochito
 
 - **Tab bar inferior translúcida/ilegible en iOS ≤18**: la barra nativa

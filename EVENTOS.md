@@ -137,6 +137,46 @@ Dos formas, ambas respetadas por el hub:
 
 Ambas tienen el mismo efecto visual: la tarjeta no aparece y el espacio se reacomoda.
 
+## Evaluación del evento y de la app
+
+Cada evento puede ofrecer una sección de **evaluación** (valorar la actividad con
+estrellas + preguntas abiertas) y, aparte, una **evaluación de la app**.
+
+### Nodo Firebase (config + respuestas)
+
+```
+activities/<evento>/evaluacion
+├── updatedAt: <timestamp>
+├── hidden?:   boolean              (oculta la tarjeta en el hub)
+├── data:                           ← configuración (editable sin desplegar)
+│   ├── evaluationOpen: boolean     (true = enciende el banner de la Home)
+│   ├── title / intro
+│   └── questions: [ { id, type:'stars'|'text'|'yesno', label, optional?, placeholder? } ]
+└── respuestas/<pushId>             ← las escribe la app sola
+    └── { answers, userName, userProfileType, userDelegation, platform, timestamp }
+```
+
+- Si `data.questions` está vacío o no existe, la app usa el set por defecto de
+  `constants/evaluation.ts` (`DEFAULT_EVENT_EVALUATION`).
+- La **evaluación de la app** no es del evento: usa preguntas fijas
+  (`DEFAULT_APP_EVALUATION`) y escribe en `app/evaluations/<pushId>`.
+
+### Pasos para activarla
+
+1. **Importar el seed** `mcm-app/firebase-seed/evaluacion.json` en el nodo
+   `activities/<evento>/evaluacion` (consola de Firebase → Realtime Database →
+   ⋮ → _Importar JSON_). ⚠️ Importar **reemplaza** el nodo; hazlo antes de que
+   haya respuestas.
+2. Añadir las secciones al hub en `constants/events.ts` (ya hechas para Visita
+   Papa): tarjeta `Evaluacion` (con `firebaseKey: 'evaluacion'`) y `EvaluacionApp`.
+3. Cuando quieras pedir la evaluación (típicamente al terminar el evento), pon
+   `data.evaluationOpen = true`. Aparecerá el banner **"Evalúa la actividad"** en
+   la Home a quien tenga acceso al evento. Se oculta solo cuando esa persona ya
+   ha evaluado.
+
+> El anti-duplicado es local (AsyncStorage `evaluacion_done_<id>`): el banner
+> desaparece tras evaluar, pero el formulario permite reenviar.
+
 ## Cómo navega la app
 
 ```

@@ -269,6 +269,15 @@ export const VISITAPAPA: EventConfig = {
       tintColor: '#FFB74D',
       firebaseKey: 'apps',
     },
+    {
+      label: 'Evalúa la actividad',
+      subtitle: 'Cuéntanos qué tal ha ido',
+      emoji: '⭐',
+      materialIcon: 'star-rate',
+      target: 'Evaluacion',
+      tintColor: '#FCD200',
+      firebaseKey: 'evaluacion',
+    },
   ],
 };
 

@@ -1,0 +1,55 @@
+{
+  "updatedAt": "1",
+  "hidden": false,
+  "data": {
+    "evaluationOpen": true,
+    "title": "Evalúa la actividad",
+    "intro": "Tu opinión nos ayuda a mejorar los próximos encuentros. Te llevará un par de minutos 🙏",
+    "questions": [
+      {
+        "id": "general",
+        "type": "stars",
+        "label": "Valoración general"
+      },
+      {
+        "id": "organizacion_mcm",
+        "type": "stars",
+        "label": "Organización MCM",
+        "optional": true
+      },
+      {
+        "id": "organizacion_papa",
+        "type": "stars",
+        "label": "Organización Visita del Papa (general)",
+        "optional": true
+      },
+      {
+        "id": "convivencia",
+        "type": "stars",
+        "label": "Convivencia",
+        "optional": true
+      },
+      {
+        "id": "gustado",
+        "type": "text",
+        "label": "¿Qué es lo que más te ha gustado?",
+        "placeholder": "Eso que te llevas de estos días…",
+        "optional": true
+      },
+      {
+        "id": "mejorar",
+        "type": "text",
+        "label": "¿Qué mejorarías?",
+        "placeholder": "Tus sugerencias, con cariño…",
+        "optional": true
+      },
+      {
+        "id": "comentarios",
+        "type": "text",
+        "label": "Comentarios",
+        "placeholder": "Cualquier otra cosa que quieras contarnos…",
+        "optional": true
+      }
+    ]
+  }
+}
