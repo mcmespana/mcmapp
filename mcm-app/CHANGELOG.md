@@ -13,6 +13,16 @@
 
 ---
 
+## 2026-06-09 — Menú de acciones de la playlist reorganizado por secciones
+
+- El bottom-sheet de acciones de la playlist (`PlaylistActionsBottomSheet`)
+  pasa de una lista plana (~12 items con separadores sueltos) a **secciones con
+  cabecera**: Exportar y compartir · Playlist en la nube · Archivo · Modo coro ·
+  zona de peligro (Vaciar) al final. API del componente: prop `sections`
+  (`PlaylistActionSection[]`) en lugar de `actions`.
+- Etiquetas más cortas al apoyarse en la cabecera de sección ("Subir playlist
+  (compartir código)", "Exportar archivo (.mcm)"…).
+
 ## 2026-06-09 — Export PDF de playlists: toggles arreglados, márgenes iOS, fecha editable y pie de página
 
 - **Fix: los toggles del modal de export ("Una canción por página" y "Mostrar

@@ -46,6 +46,7 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 import PlaylistRow from '@/components/playlist/PlaylistRow';
 import PlaylistActionsBottomSheet, {
   PlaylistAction,
+  PlaylistActionSection,
 } from '@/components/playlist/PlaylistActionsBottomSheet';
 import ExportPdfModal, {
   PdfExportConfig,
@@ -973,8 +974,8 @@ const SelectedSongsScreen: React.FC = () => {
 
   // --- Acciones del sheet ---------------------------------------------------
 
-  const sheetActions = useMemo<PlaylistAction[]>(() => {
-    const actions: PlaylistAction[] = [
+  const sheetSections = useMemo<PlaylistActionSection[]>(() => {
+    const exportar: PlaylistAction[] = [
       {
         id: 'share-text',
         icon: 'share',
@@ -988,48 +989,34 @@ const SelectedSongsScreen: React.FC = () => {
         onPress: handleShareText,
       },
       {
-        id: 'upload-cloud',
-        icon: 'cloud-upload',
-        label: 'Compartir Playlist (código 4 dígitos)',
-        description: lastUploadCode
-          ? `Código actual: ${lastUploadCode}`
-          : 'Cualquiera con el código podrá importarla',
-        onPress: () => setCodeDialog({ variant: 'cloud-upload' }),
-        separator: true,
-      },
-      {
-        id: 'download-cloud',
-        icon: 'cloud-download',
-        label: 'Importar Playlist',
-        description: 'Introduce el código de 4 dígitos que te han pasado',
-
-        onPress: () => setCodeDialog({ variant: 'cloud-download' }),
-      },
-      {
         id: 'export-pdf',
         icon: 'picture-as-pdf',
         label: 'Exportar a PDF',
         description: 'Letra y acordes con un formato bonito',
         onPress: handleStartExportPdf,
-        separator: true,
-      },
-      {
-        id: 'export-file',
-        icon: 'file-upload',
-        label: 'Exportar playlist como archivo (.mcm)',
-        // description: 'Incluye el tono cambiado y el orden personalizado',
-        onPress: handleStartExportFile,
-      },
-      {
-        id: 'import-file',
-        icon: 'file-download',
-        label: 'Importar archivo de playlist (.mcm)',
-        onPress: handleImportFile,
       },
     ];
 
+    const nube: PlaylistAction[] = [
+      {
+        id: 'upload-cloud',
+        icon: 'cloud-upload',
+        label: 'Subir playlist (compartir código)',
+        description: lastUploadCode
+          ? `Código actual: ${lastUploadCode}`
+          : 'Cualquiera con el código podrá importarla',
+        onPress: () => setCodeDialog({ variant: 'cloud-upload' }),
+      },
+      {
+        id: 'download-cloud',
+        icon: 'cloud-download',
+        label: 'Importar playlist con código',
+        description: 'Introduce el código de 4 dígitos que te han pasado',
+        onPress: () => setCodeDialog({ variant: 'cloud-download' }),
+      },
+    ];
     if (lastUploadCode) {
-      actions.push(
+      nube.push(
         {
           id: 'change-cloud-code',
           icon: 'edit',
@@ -1051,83 +1038,104 @@ const SelectedSongsScreen: React.FC = () => {
       );
     }
 
-    if (choir.mode === 'off') {
-      actions.push(
-        {
-          id: 'choir-start',
-          icon: 'campaign',
-          label: 'Iniciar sesión de coro (ser líder)',
-          description:
-            'Otros dispositivos te siguen con un código de 4 dígitos',
-          onPress: () => setCodeDialog({ variant: 'choir-start' }),
-          separator: true,
-        },
-        {
-          id: 'choir-join',
-          icon: 'headphones',
-          label: 'Unirse a sesión de coro',
-          description: 'Introduces un código y sigues las canciones del líder',
-          onPress: () => setCodeDialog({ variant: 'choir-join' }),
-        },
-      );
-    } else {
-      actions.push(
-        {
-          id: 'choir-change-code',
-          icon: 'edit',
-          label: 'Cambiar código del coro',
-          description: `Actual: ${choir.code}${choir.mode === 'slave' ? ' (solo el líder puede cambiarlo)' : ''}`,
-          onPress: () =>
-            setCodeDialog({
-              variant: 'change-code',
-              initial: choir.code ?? undefined,
-            }),
-          separator: true,
-          disabled: choir.mode !== 'master',
-        },
-        {
-          id: 'choir-leave',
-          icon: 'logout',
-          label:
-            choir.mode === 'master'
-              ? 'Cerrar sesión de coro'
-              : 'Salir del coro',
-          variant: 'danger',
-          onPress: () => choir.leave(),
-        },
-      );
-    }
-
-    actions.push({
-      id: 'clear',
-      icon: 'delete-outline',
-      label: 'Vaciar playlist',
-      variant: 'danger',
-      separator: true,
-      onPress: () => {
-        setConfirmDialog({
-          title: '¿Vaciar la playlist?',
-          description: 'Se quitarán todas las canciones seleccionadas.',
-          actions: [
-            {
-              label: 'Vaciar',
-              variant: 'danger',
-              onPress: () => {
-                clearSelection();
-                setConfirmDialog(null);
-              },
-            },
-            {
-              label: 'Cancelar',
-              variant: 'secondary',
-              onPress: () => setConfirmDialog(null),
-            },
-          ],
-        });
+    const archivo: PlaylistAction[] = [
+      {
+        id: 'export-file',
+        icon: 'file-upload',
+        label: 'Exportar archivo (.mcm)',
+        description: 'Incluye tonos cambiados y orden personalizado',
+        onPress: handleStartExportFile,
       },
-    });
+      {
+        id: 'import-file',
+        icon: 'file-download',
+        label: 'Importar archivo (.mcm)',
+        onPress: handleImportFile,
+      },
+    ];
 
-    return actions;
+    const coro: PlaylistAction[] =
+      choir.mode === 'off'
+        ? [
+            {
+              id: 'choir-start',
+              icon: 'campaign',
+              label: 'Iniciar sesión de coro (ser líder)',
+              description:
+                'Otros dispositivos te siguen con un código de 4 dígitos',
+              onPress: () => setCodeDialog({ variant: 'choir-start' }),
+            },
+            {
+              id: 'choir-join',
+              icon: 'headphones',
+              label: 'Unirse a sesión de coro',
+              description:
+                'Introduces un código y sigues las canciones del líder',
+              onPress: () => setCodeDialog({ variant: 'choir-join' }),
+            },
+          ]
+        : [
+            {
+              id: 'choir-change-code',
+              icon: 'edit',
+              label: 'Cambiar código del coro',
+              description: `Actual: ${choir.code}${choir.mode === 'slave' ? ' (solo el líder puede cambiarlo)' : ''}`,
+              onPress: () =>
+                setCodeDialog({
+                  variant: 'change-code',
+                  initial: choir.code ?? undefined,
+                }),
+              disabled: choir.mode !== 'master',
+            },
+            {
+              id: 'choir-leave',
+              icon: 'logout',
+              label:
+                choir.mode === 'master'
+                  ? 'Cerrar sesión de coro'
+                  : 'Salir del coro',
+              variant: 'danger',
+              onPress: () => choir.leave(),
+            },
+          ];
+
+    const peligro: PlaylistAction[] = [
+      {
+        id: 'clear',
+        icon: 'delete-outline',
+        label: 'Vaciar playlist',
+        variant: 'danger',
+        onPress: () => {
+          setConfirmDialog({
+            title: '¿Vaciar la playlist?',
+            description: 'Se quitarán todas las canciones seleccionadas.',
+            actions: [
+              {
+                label: 'Vaciar',
+                variant: 'danger',
+                onPress: () => {
+                  clearSelection();
+                  setConfirmDialog(null);
+                },
+              },
+              {
+                label: 'Cancelar',
+                variant: 'secondary',
+                onPress: () => setConfirmDialog(null),
+              },
+            ],
+          });
+        },
+      },
+    ];
+
+    return [
+      { title: 'Exportar y compartir', actions: exportar },
+      { title: 'Playlist en la nube', actions: nube },
+      { title: 'Archivo', actions: archivo },
+      { title: 'Modo coro', actions: coro },
+      { actions: peligro },
+    ];
   }, [
     handleShareText,
     handleStartExportFile,
@@ -1389,7 +1397,7 @@ const SelectedSongsScreen: React.FC = () => {
 
       <PlaylistActionsBottomSheet
         visible={showActions}
-        actions={sheetActions}
+        sections={sheetSections}
         onClose={() => setShowActions(false)}
         title={
           choir.mode !== 'off'

@@ -18,21 +18,25 @@ export interface PlaylistAction {
   description?: string;
   onPress: () => void;
   variant?: 'normal' | 'danger';
-  /** Si true, se renderiza un separador visual ANTES de este item. */
-  separator?: boolean;
   disabled?: boolean;
+}
+
+export interface PlaylistActionSection {
+  /** Cabecera de la sección. Sin título = solo separador (p.ej. zona peligro). */
+  title?: string;
+  actions: PlaylistAction[];
 }
 
 interface Props {
   visible: boolean;
-  actions: PlaylistAction[];
+  sections: PlaylistActionSection[];
   onClose: () => void;
   title?: string;
 }
 
 const PlaylistActionsBottomSheet: React.FC<Props> = ({
   visible,
-  actions,
+  sections,
   onClose,
   title = 'Acciones',
 }) => {
@@ -63,55 +67,65 @@ const PlaylistActionsBottomSheet: React.FC<Props> = ({
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
-        {actions.map((a, i) => (
-          <React.Fragment key={a.id}>
-            {a.separator && i > 0 ? <View style={styles.separator} /> : null}
-            <TouchableOpacity
-              style={[styles.item, a.disabled && styles.itemDisabled]}
-              onPress={() => {
-                if (a.disabled) return;
-                // Store the action so handleCloseComplete fires it after
-                // the sheet Modal is fully dismissed. iOS cannot present a
-                // second Modal while the first one is still mounted.
-                pendingActionRef.current = a;
-                onClose();
-              }}
-              disabled={a.disabled}
-            >
-              <View
-                style={[
-                  styles.iconWrap,
-                  a.variant === 'danger' && styles.iconWrapDanger,
-                ]}
-              >
-                <MaterialIcons
-                  name={a.icon}
-                  size={22}
-                  color={
-                    a.variant === 'danger'
-                      ? '#FF453A'
-                      : isDark
-                        ? '#7AB3FF'
-                        : '#253883'
-                  }
-                />
-              </View>
-              <View style={styles.itemText}>
-                <Text
-                  style={[
-                    styles.itemLabel,
-                    a.variant === 'danger' && styles.itemLabelDanger,
-                  ]}
+        {sections
+          .filter((s) => s.actions.length > 0)
+          .map((section, sIdx) => (
+            <React.Fragment key={section.title ?? `section-${sIdx}`}>
+              {sIdx > 0 ? <View style={styles.separator} /> : null}
+              {section.title ? (
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+              ) : null}
+              {section.actions.map((a) => (
+                <TouchableOpacity
+                  key={a.id}
+                  style={[styles.item, a.disabled && styles.itemDisabled]}
+                  onPress={() => {
+                    if (a.disabled) return;
+                    // Store the action so handleCloseComplete fires it after
+                    // the sheet Modal is fully dismissed. iOS cannot present a
+                    // second Modal while the first one is still mounted.
+                    pendingActionRef.current = a;
+                    onClose();
+                  }}
+                  disabled={a.disabled}
                 >
-                  {a.label}
-                </Text>
-                {a.description ? (
-                  <Text style={styles.itemDescription}>{a.description}</Text>
-                ) : null}
-              </View>
-            </TouchableOpacity>
-          </React.Fragment>
-        ))}
+                  <View
+                    style={[
+                      styles.iconWrap,
+                      a.variant === 'danger' && styles.iconWrapDanger,
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={a.icon}
+                      size={22}
+                      color={
+                        a.variant === 'danger'
+                          ? '#FF453A'
+                          : isDark
+                            ? '#7AB3FF'
+                            : '#253883'
+                      }
+                    />
+                  </View>
+                  <View style={styles.itemText}>
+                    <Text
+                      style={[
+                        styles.itemLabel,
+                        a.variant === 'danger' && styles.itemLabelDanger,
+                      ]}
+                    >
+                      {a.label}
+                    </Text>
+                    {a.description ? (
+                      <Text style={styles.itemDescription}>
+                        {a.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </React.Fragment>
+          ))}
       </ScrollView>
     </BottomSheet>
   );
@@ -166,6 +180,16 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
       marginVertical: 6,
       marginHorizontal: 20,
+    },
+    sectionTitle: {
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
+      color: isDark ? '#8E8E93' : '#6B6B70',
+      paddingHorizontal: 12,
+      paddingTop: 8,
+      paddingBottom: 4,
     },
   });
 

@@ -9,7 +9,7 @@
 
 - [ ] Drag & drop para mover canciones de orden ajustado en las playlist ya hechas. Que por defecto siempre salga orden ajustado y te permita hacer el drag & drop para mover canciones. 
 - [ ] Sistema de QRs para el modo coro y el modo playlist que escanees y te abra la app DIRECTAMENTE ya en la playlist o dentro del modo coro para que sea muuuuuy rapido
-- [ ] Repensar el menu de abajo de la seccon playlist 
+- [x] **Repensar el menú de acciones de la playlist**: ✅ hecho. El bottom-sheet ahora va por secciones con cabecera (Exportar y compartir · Playlist en la nube · Archivo · Modo coro · zona peligro al final) en vez de ~12 items planos. `PlaylistActionsBottomSheet` acepta `sections` (`PlaylistActionSection[]`).
 - [ ] Si me bajo una playlist que no he creado yo puedo darle a subir tambien (ahora creo que no se podia) y me pide contraseña "coco" para variar para machacar lo que hay si he hecho cambios (a veces creo playlist en un dispositivo y lo uso en otro)
 - [x] **PDF — toggles "una canción por página" / "mostrar acordes"**: ✅ arreglado. Los toggles existían pero el `Switch` de heroui-native se pintaba invisible dentro del Modal; sustituidos por toggle propio con StyleSheet (`components/playlist/ExportPdfModal.tsx`).
 - [x] **PDF — márgenes en iOS**: ✅ arreglado. iOS ignora el `margin` de `@page`; ahora se pasan tamaño A4 + `margins` nativos a `printToFileAsync` (solo los aplica iOS; Android sigue con el CSS). Validar en dispositivo.
