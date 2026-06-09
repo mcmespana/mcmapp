@@ -31,6 +31,12 @@ import { getDeviceId } from '@/services/pushNotificationService';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  buildIdentityFields,
+  hasUserAnswered,
+  markUserAnswered,
+} from '@/utils/surveyIdentity';
 
 /**
  * Pantalla genérica de encuesta (`/surveys/<id>`). La config (preguntas,
@@ -45,8 +51,10 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 export default function SurveyScreen({ surveyId }: { surveyId: string }) {
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
+  const { user } = useAuth();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
+  const scope = surveyDoneKey(surveyId);
 
   const { data: remoteConfig, loading } = useFirebaseData<
     Partial<SurveyConfig>
@@ -62,29 +70,32 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
     async (answers: EvaluationAnswers) => {
       const deviceId = await getDeviceId();
       const db = getDatabase(getFirebaseApp());
-      const base = {
+      // Anónima → sin datos de perfil ni userId. Si no, se ata el userId.
+      await set(ref(db, surveyAnswerPath(surveyId, deviceId)), {
         answers,
         deviceId,
         surveyId,
         timestamp: Date.now(),
         reportedAt: new Date().toISOString(),
         platform: Platform.OS,
-      };
-      // Si la encuesta es anónima no adjuntamos datos de perfil.
-      const payload = config.anonymous
-        ? base
-        : {
-            ...base,
-            userName: profile.name || 'Anónimo',
-            userProfileType: profile.profileType ?? 'sin-perfil',
-            userDelegation: resolved.delegationLabel || 'Sin delegación',
-          };
-      await set(ref(db, surveyAnswerPath(surveyId, deviceId)), payload);
+        ...buildIdentityFields({
+          anonymous: config.anonymous,
+          authUid: user?.uid,
+          name: profile.name,
+          profileType: profile.profileType,
+          delegationLabel: resolved.delegationLabel,
+        }),
+      });
       await set(ref(db, `${surveyPath(surveyId)}/updatedAt`), Date.now());
+      // Dedup entre dispositivos solo si hay sesión y no es anónima.
+      if (user?.uid && !config.anonymous)
+        await markUserAnswered(user.uid, scope, surveyId);
     },
     [
       surveyId,
+      scope,
       config.anonymous,
+      user?.uid,
       profile.name,
       profile.profileType,
       resolved.delegationLabel,
@@ -93,6 +104,12 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
 
   const checkSubmitted = useCallback(async () => {
     try {
+      if (
+        user?.uid &&
+        !config.anonymous &&
+        (await hasUserAnswered(user.uid, scope))
+      )
+        return true;
       const deviceId = await getDeviceId();
       const db = getDatabase(getFirebaseApp());
       const snap = await get(ref(db, surveyAnswerPath(surveyId, deviceId)));
@@ -100,7 +117,7 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
     } catch {
       return false;
     }
-  }, [surveyId]);
+  }, [surveyId, scope, config.anonymous, user?.uid]);
 
   // ── Estados que no muestran el formulario ──
   if (loading && !remoteConfig) {

@@ -74,12 +74,15 @@ Efecto: las evaluaciones fijas muestran/ocultan su **banner** en la Home; las
 genéricas muestran el formulario o un mensaje de **cerrada** (`closedTitle`/
 `closedBody`).
 
-## 5. Anti-duplicado (por dispositivo)
+## 5. Anti-duplicado e identidad
 
-Una respuesta por `deviceId`: caché local (`AsyncStorage`) + comprobación en
-Firebase antes de mostrar el formulario. **No hay login**: es por dispositivo, no
-por persona. Implicaciones para la analítica del panel en
-`ENCUESTAS_CONTRATO.md` §6.
+- **Sin sesión**: una respuesta por `deviceId` (caché local `AsyncStorage` +
+  comprobación en Firebase antes de mostrar el formulario).
+- **Con sesión** (Google/Apple): la respuesta añade `userId` (uid) y se escribe un
+  marcador `users/<uid>/surveysAnswered/<scope>` → **dedup entre dispositivos** (la
+  misma persona no puede responder dos veces aunque cambie de móvil). Encuestas
+  anónimas no guardan ni `userId` ni marcador. Ver `utils/surveyIdentity.ts` y
+  `ENCUESTAS_CONTRATO.md` §6.
 
 ## 6. Cómo se llega a cada encuesta
 
@@ -87,8 +90,10 @@ por persona. Implicaciones para la analítica del panel en
   y estado abierto) → `EvaluacionScreen`. También como tarjeta en el hub del
   evento (`events.ts`, sección con `target: 'Evaluacion'`).
 - **App**: banner "Evalúa la app" en la Home + botón en Ajustes → `/evaluacion-app`.
-- **Genérica**: notificación push con `internalRoute: "/encuesta/<id>"` →
-  `app/encuesta/[id].tsx` → `SurveyScreen`. (Ruta raíz registrada en `_layout.tsx`.)
+- **Genérica**: por **banner automático** (según `placement` + `audience`, leyendo
+  el índice `surveys/_index`) en la Home, el hub del evento o Ajustes; y/o por
+  **notificación push** con `internalRoute: "/encuesta/<id>"`. Ambas llevan a
+  `app/encuesta/[id].tsx` → `SurveyScreen` (ruta raíz en `_layout.tsx`).
 
 ## 7. Activar la evaluación de un evento (paso a paso)
 
@@ -126,8 +131,11 @@ por persona. Implicaciones para la analítica del panel en
 | `app/screens/EvaluacionScreen.tsx`             | Evaluación del evento (config desde Firebase) |
 | `app/screens/EvaluacionAppScreen.tsx`          | Evaluación de la app (config desde Firebase) |
 | `app/screens/SurveyScreen.tsx`                 | Encuesta genérica (config, audiencia, cerrada, anónima) |
-| `app/encuesta/[id].tsx`                        | Ruta raíz `/encuesta/<id>` (deep link / push) |
-| `app/(tabs)/index.tsx`                         | Banners de la Home (estado desde Firebase) |
+| `app/encuesta/[id].tsx`                        | Ruta raíz `/encuesta/<id>` (deep link / push / banner) |
+| `hooks/useActiveSurveys.ts`                    | Lee `surveys/_index` y filtra encuestas activas por placement/audiencia |
+| `components/SurveyBanner.tsx`                  | Banner/fila reutilizable de una encuesta activa |
+| `utils/surveyIdentity.ts`                      | `userId` + dedup entre dispositivos (`users/<uid>/surveysAnswered`) |
+| `app/(tabs)/index.tsx` · `EventHomeScreen.tsx` · `SettingsBottomSheet.tsx` | Renderizan los banners de encuestas activas |
 | `database.rules.json`                          | Reglas RTDB de config/respuestas |
 | `firebase-seed/{evaluacion,app-evaluation-config,surveys}.json` | Seeds importables |
 | `__tests__/surveys.test.ts`                    | Tests de los helpers |
@@ -144,22 +152,23 @@ Cambios JS (compatibles con **OTA**, sin código nativo):
    por perfil, ventana de apertura, modo anónimo, textos de agradecimiento y de
    cierre configurables.
 4. **Textos configurables** de agradecimiento (`thanksTitle`/`thanksBody`).
-5. Reglas de seguridad y seeds para los nuevos nodos. Tests de los helpers.
+5. **Banners automáticos** de encuestas genéricas (antes mejora 11.1) según
+   `placement` (`home-banner`, `event-banner`, `app-settings`) y `audience`, sin
+   depender de push. La app lee un índice ligero `surveys/_index` (no toda la
+   colección). Componente `SurveyBanner` + hook `useActiveSurveys`.
+6. **Identidad real** (antes mejora 11.6): respuestas con `userId` cuando hay
+   sesión + dedup entre dispositivos vía `users/<uid>/surveysAnswered`.
+7. Reglas de seguridad y seeds para los nuevos nodos. Tests de los helpers.
 
 ## 11. Mejoras futuras sugeridas (no incluidas aún)
 
 Requieren más trabajo en la app (siguen siendo OTA salvo que se indique):
 
-1. **Banners automáticos de encuestas genéricas** según `placement`
-   (`home-banner`, `event-banner`, `app-settings`) y `audience`, sin depender de
-   push. Implica un índice de "encuestas activas" que la Home consulte.
-2. **Listado de encuestas en la app** (p. ej. en "Más" o "Contigo"): un sitio
+1. **Listado de encuestas en la app** (p. ej. en "Más" o "Contigo"): un sitio
    donde el usuario vea las encuestas abiertas para su perfil.
-3. **Editar/reenviar** la propia respuesta dentro de una ventana (hoy es envío
-   único e inmutable por dispositivo).
-4. **Lógica condicional** (saltar preguntas según respuestas previas) y secciones.
-5. **Validación de email/número** como tipos propios (hoy se haría con `text`).
-6. **Identidad real** (atar respuestas al usuario autenticado) para analítica por
-   persona y evitar duplicados multi-dispositivo. Requiere login en el flujo.
-7. **Cierre/aviso en vivo** (forzar refresco si una encuesta se cierra mientras la
+2. **Editar/reenviar** la propia respuesta dentro de una ventana (hoy es envío
+   único e inmutable por dispositivo/persona).
+3. **Lógica condicional** (saltar preguntas según respuestas previas) y secciones.
+4. **Validación de email/número** como tipos propios (hoy se haría con `text`).
+5. **Cierre/aviso en vivo** (forzar refresco si una encuesta se cierra mientras la
    app está abierta). Hoy el estado se evalúa al entrar en la pantalla.

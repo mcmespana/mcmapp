@@ -42,9 +42,20 @@ Tres clases de encuesta, **mismo editor**:
 | Evaluación de la app | `app/evaluationConfig/data`         | `app/evaluations/<deviceId>`              |
 | Encuesta genérica    | `surveys/<id>/data`                 | `surveys/<id>/respuestas/<deviceId>`      |
 
+> Para banners automáticos, mantén además el índice ligero `surveys/_index/data`
+> (array de `SurveyIndexEntry`). La app lo usa para pintar banners sin leer toda la
+> colección.
+
 `data` = objeto **`SurveyConfig`**. Al guardar **siempre** actualiza el
 `updatedAt` hermano (epoch ms o ISO). Nunca escribas `undefined` (RTDB lo
 rechaza); omite el campo.
+
+**Índice para banners** — si una encuesta genérica debe aparecer como banner en
+la app (placement `home-banner`/`event-banner`/`app-settings`), el panel **debe
+mantener** `surveys/_index/data` (array de `SurveyIndexEntry` ligeros: id, título,
+intro, emoji, color, status, ventana, placement, audience) + su `updatedAt`. La app
+lee solo ese nodo para pintar banners (no la colección entera). Actualízalo al
+crear/editar/abrir/cerrar. Ver `ENCUESTAS_CONTRATO.md` §4 y §4.bis.
 
 ### `SurveyConfig` (lo que el editor produce)
 
@@ -111,11 +122,14 @@ Reglas del editor:
   `anonymous`, `placement`, y el editor de preguntas (§2).
 - Al guardar: escribe `data` + `updatedAt`. Para genéricas, el `id` del nodo se
   fija al crear (slug) y no cambia.
-- **Botón "Lanzar"**: para genéricas, además de poner `status: "open"`, ofrece
-  enviar la **notificación push** que la abre (reutiliza el módulo de
-  notificaciones existente) con `internalRoute: "/encuesta/<id>"` y un
-  `actionButton` "Responder" interno a esa misma ruta. Permite elegir el segmento
-  (idealmente el mismo que `audience`).
+- **Botón "Lanzar"**: para genéricas, al poner `status: "open"`:
+  - Si la encuesta tiene **banner** (`placement` ≠ `link-only`), **escribe/actualiza
+    su entrada en `surveys/_index/data`** (y `updatedAt`). Al cerrarla, quítala del
+    índice o pon `status: "closed"`.
+  - Ofrece además enviar la **notificación push** que la abre (reutiliza el módulo
+    de notificaciones) con `internalRoute: "/encuesta/<id>"` y un `actionButton`
+    "Responder" interno a esa ruta. Elige el segmento (idealmente igual a `audience`).
+  - Banner y push no son excluyentes: puedes usar solo banner, solo push, o ambos.
 
 ### 3.3. Respuestas — vista individual ("bonita")
 
@@ -167,9 +181,11 @@ todas las tarjetas se recalculan. (Ej.: "ver solo monitores de Madrid".)
 
 ## 4. Análisis de respuestas — detalles que importan
 
-- **Una respuesta = un dispositivo** (no un usuario, no hay login). No presentes
-  los números como "X personas" sino "X respuestas/dispositivos". Documenta este
-  matiz en la UI del dashboard (tooltip).
+- **Dedup por persona cuando hay login**: si la respuesta trae **`userId`** (uid de
+  Firebase Auth), atribúyela a esa persona y dedup por `userId` (la app ya impide
+  duplicados entre dispositivos del mismo usuario). Las respuestas **sin `userId`**
+  son de dispositivos sin sesión: cuéntalas por `deviceId`. En el dashboard,
+  distingue "personas" (con `userId`) de "dispositivos" (sin login) en un tooltip.
 - `userDelegation` es la **etiqueta** legible (`"Madrid"`), no el slug. Agrupa por
   ese string tal cual.
 - Valores faltantes: una pregunta opcional sin contestar **no aparece** en

@@ -17,7 +17,12 @@
  *       ├── data: SurveyConfig
  *       └── respuestas/<deviceId>: SurveyResponse
  */
-import type { EvalQuestion, EvaluationConfig } from '@/constants/evaluation';
+import {
+  isEvaluationOpen,
+  type EvalQuestion,
+  type EvaluationConfig,
+  type SurveyStatus,
+} from '@/constants/evaluation';
 
 /** Dónde se ofrece la encuesta al usuario. */
 export type SurveyPlacementType =
@@ -117,6 +122,84 @@ export function matchesAudience(
       return false;
   }
   return true;
+}
+
+// ─── Índice de encuestas activas (banners automáticos) ──────────────────────
+//
+// Leer toda la colección `/surveys` sería caro (arrastra todas las respuestas).
+// En su lugar el panel mantiene un nodo LIGERO `surveys/_index/data` con solo los
+// metadatos de cada encuesta (sin preguntas ni respuestas). La app lo lee para
+// decidir qué banners mostrar (Home, hub de evento, Ajustes) según `placement`,
+// `audience` y estado abierto/cerrado, sin depender de notificaciones push.
+
+export const SURVEYS_INDEX_PATH = `${SURVEYS_PATH}/_index`;
+
+/** Entrada del índice: metadatos mínimos para pintar un banner. */
+export interface SurveyIndexEntry {
+  id: string;
+  title: string;
+  intro?: string;
+  emoji?: string;
+  accentColor?: string;
+  status?: SurveyStatus;
+  evaluationOpen?: boolean;
+  opensAt?: number;
+  closesAt?: number;
+  placement?: SurveyPlacement;
+  audience?: SurveyAudience;
+  anonymous?: boolean;
+}
+
+/**
+ * Normaliza el `data` del índice (la app lo puede recibir como array o como
+ * objeto/mapa según cómo lo guarde el panel/RTDB) a un array de entradas.
+ */
+export function normalizeSurveyIndex(
+  data:
+    | SurveyIndexEntry[]
+    | Record<string, SurveyIndexEntry>
+    | null
+    | undefined,
+): SurveyIndexEntry[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data.filter(Boolean);
+  return Object.values(data).filter(Boolean);
+}
+
+/**
+ * Filtra el índice a las encuestas que deben mostrarse AHORA en un sitio
+ * concreto: por `placement` (y `eventId` para `event-banner`), abiertas (estado +
+ * ventana), dentro de la audiencia del usuario, y que no haya respondido ya.
+ */
+export function filterActiveSurveys(
+  entries: SurveyIndexEntry[],
+  opts: {
+    placementType: SurveyPlacementType;
+    eventId?: string;
+    now?: number;
+    user: {
+      topics?: string[];
+      profileType?: string | null;
+      delegationId?: string | null;
+    };
+    doneIds?: string[];
+  },
+): SurveyIndexEntry[] {
+  const now = opts.now ?? Date.now();
+  const done = new Set(opts.doneIds ?? []);
+  return entries.filter((e) => {
+    if (!e || !e.id) return false;
+    if ((e.placement?.type ?? 'link-only') !== opts.placementType) return false;
+    if (
+      opts.placementType === 'event-banner' &&
+      e.placement?.eventId !== opts.eventId
+    )
+      return false;
+    if (!isEvaluationOpen(e, now)) return false;
+    if (!matchesAudience(e.audience, opts.user)) return false;
+    if (done.has(e.id)) return false;
+    return true;
+  });
 }
 
 export type { EvalQuestion };

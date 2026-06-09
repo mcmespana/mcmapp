@@ -18,21 +18,29 @@ import { getFirebaseApp } from '@/utils/firebaseApp';
 import { getDeviceId } from '@/services/pushNotificationService';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  buildIdentityFields,
+  hasUserAnswered,
+  markUserAnswered,
+} from '@/utils/surveyIdentity';
 
 /**
  * Evaluación del evento activo, tipo onboarding (una fase por pregunta).
- * Preguntas en código. Las respuestas se guardan en
- * `<evento>/evaluacion/respuestas/<deviceId>` — una por dispositivo, de modo
- * que una persona no puede enviarla dos veces (se detecta en Firebase aunque
- * no haya iniciado sesión).
+ * Config desde Firebase (fallback a código). Las respuestas se guardan en
+ * `<evento>/evaluacion/respuestas/<deviceId>` — una por dispositivo. Si el
+ * usuario ha iniciado sesión, además se ata su `userId` y se deduplica entre
+ * dispositivos (marcador en `users/<uid>`).
  */
 export default function EvaluacionScreen() {
   const event = useCurrentEvent();
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
+  const { user } = useAuth();
 
   const path = getEventFirebasePath(event, 'evaluacion');
   const cacheKey = getEventCacheKey(event, 'evaluacion');
+  const scope = evaluationDoneKey(event.id);
 
   // Config (preguntas, título, estado abierto/cerrado) desde Firebase con
   // fallback al set en código. Así el panel edita la encuesta sin OTA.
@@ -53,15 +61,21 @@ export default function EvaluacionScreen() {
         reportedAt: new Date().toISOString(),
         platform: Platform.OS,
         eventId: event.id,
-        userName: profile.name || 'Anónimo',
-        userProfileType: profile.profileType ?? 'sin-perfil',
-        userDelegation: resolved.delegationLabel || 'Sin delegación',
+        ...buildIdentityFields({
+          authUid: user?.uid,
+          name: profile.name,
+          profileType: profile.profileType,
+          delegationLabel: resolved.delegationLabel,
+        }),
       });
       await set(ref(db, `${path}/updatedAt`), Date.now().toString());
+      if (user?.uid) await markUserAnswered(user.uid, scope);
     },
     [
       path,
       event.id,
+      scope,
+      user?.uid,
       profile.name,
       profile.profileType,
       resolved.delegationLabel,
@@ -70,6 +84,7 @@ export default function EvaluacionScreen() {
 
   const checkSubmitted = useCallback(async () => {
     try {
+      if (user?.uid && (await hasUserAnswered(user.uid, scope))) return true;
       const deviceId = await getDeviceId();
       const db = getDatabase(getFirebaseApp());
       const snap = await get(ref(db, `${path}/respuestas/${deviceId}`));
@@ -77,7 +92,7 @@ export default function EvaluacionScreen() {
     } catch {
       return false;
     }
-  }, [path]);
+  }, [path, scope, user?.uid]);
 
   return (
     <EvaluationWizard

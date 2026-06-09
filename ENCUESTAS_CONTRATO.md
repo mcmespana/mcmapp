@@ -66,6 +66,9 @@ app/
 ```
 surveys
 ├── updatedAt: <ms|string>          ← (opcional) marca global de la colección
+├── _index/                         ← índice ligero para banners (ver §4.bis)
+│   ├── updatedAt: <ms|string>
+│   └── data: SurveyIndexEntry[]
 └── <id>/                           ← id estable, slug. p.ej. "encuesta-monitores-2026"
     ├── updatedAt: <ms|string>
     ├── data: SurveyConfig          ← config completa (panel)
@@ -206,24 +209,59 @@ filtra por ese criterio.
 - Las **dos evaluaciones fijas** (evento/app) **no** usan `audience`: el evento se
   gatea por acceso al evento (perfil), y la de la app se ofrece a todos.
 
-### `placement` — dónde aparece
+### `placement` — dónde aparece (banners automáticos)
 
 ```jsonc
-"placement": { "type": "link-only", "eventId": "visitapapa26", "ctaLabel": "Responder" }
+"placement": { "type": "home-banner", "eventId": "visitapapa26", "ctaLabel": "Responder" }
 ```
 
-| `type`         | Significado |
-| -------------- | ----------- |
-| `link-only`    | Solo por deep link / push (`/encuesta/<id>`). **← lo soportado hoy en app.** |
-| `home-banner`  | (Reservado) banner en la Home. Hoy **no** se auto-renderiza; usa push. |
-| `event-banner` | (Reservado) banner en el hub del evento (`eventId`). Hoy no auto-renderiza. |
-| `app-settings` | (Reservado) botón en Ajustes. Hoy no auto-renderiza. |
+| `type`         | La app la muestra como… |
+| -------------- | ----------------------- |
+| `link-only`    | Solo por deep link / push (`/encuesta/<id>`). Sin banner. |
+| `home-banner`  | **Banner en la Home** (debajo de las CTA de evaluación). |
+| `event-banner` | **Banner en el hub del evento** indicado en `eventId`. |
+| `app-settings` | **Fila en Ajustes** ("Sobre la app"). |
 
-> **Estado real hoy**: la app surfacea las encuestas genéricas **por notificación
-> push** con `internalRoute: "/encuesta/<id>"`. El campo `placement` se guarda para
-> uso del panel y para una futura iteración que renderice banners automáticos (ver
-> §"Mejoras" en `ENCUESTAS.md`). Las dos evaluaciones fijas **sí** tienen sus
-> banners (Home/Ajustes), ahora controlados por `status` desde Firebase.
+La app **renderiza estos banners automáticamente** leyendo el índice
+`surveys/_index` (ver §4.bis), sin necesidad de push. Un banner solo aparece si la
+encuesta está **abierta** (`status`/ventana), el usuario entra en `audience` y **no
+la ha respondido** aún (flag local por dispositivo). Al pulsar abre `/encuesta/<id>`.
+
+> Push y banner son **complementarios**: puedes usar `link-only` + push para un
+> envío puntual, o un `placement` con banner para que aparezca solo, o ambos.
+
+### 4.bis. Índice de encuestas activas — `surveys/_index` (OBLIGATORIO para banners)
+
+Para no leer toda la colección `/surveys` (que arrastraría todas las respuestas),
+la app lee un nodo **ligero** que el panel mantiene:
+
+```
+surveys/_index
+├── updatedAt: <ms|string>
+└── data: SurveyIndexEntry[]      ← array (o mapa) de metadatos mínimos
+```
+
+```jsonc
+// SurveyIndexEntry — SOLO metadatos para el banner (sin preguntas ni respuestas)
+{
+  "id": "encuesta-monitores-2026",
+  "title": "Encuesta a monitores 2026",
+  "intro": "Queremos preparar el próximo curso…",
+  "emoji": "📋",
+  "accentColor": "#31AADF",
+  "status": "open",
+  "opensAt": 1717000000000,   // opcional
+  "closesAt": 1717600000000,  // opcional
+  "placement": { "type": "home-banner", "eventId": "...", "ctaLabel": "Responder" },
+  "audience": { "profileTypes": ["monitor"] }
+}
+```
+
+**El panel debe mantener `surveys/_index/data` sincronizado** cada vez que cree,
+edite, abra o cierre una encuesta genérica (y tocar `surveys/_index/updatedAt`).
+Si una encuesta no debe salir en banners, ponla con `placement.type: "link-only"`
+o no la incluyas en el índice. La app filtra de todos modos por `status`/ventana y
+`audience`, pero el índice debe contener al menos las encuestas con banner activas.
 
 ---
 
@@ -264,19 +302,33 @@ alias). No hace falta nada más en la app.
   "status": "pending",                       // solo evaluación de app (triaje del panel)
   "userName": "Juan García",                 // ausente si anonymous:true
   "userProfileType": "monitor",              // ausente si anonymous:true
-  "userDelegation": "Madrid"                 // ausente si anonymous:true
+  "userDelegation": "Madrid",                // ausente si anonymous:true
+  "userId": "<uid de Firebase Auth>"         // presente solo si hay sesión (y no anónima)
 }
 ```
 
+### Identidad real y dedup entre dispositivos (mejora 11.6)
+
+- Si el usuario **ha iniciado sesión** (Google/Apple), la respuesta incluye
+  **`userId`** (uid). Permite atribuir respuestas a una persona en la analítica.
+- Además, la app escribe un **marcador** en el nodo del propio usuario:
+  `users/<uid>/surveysAnswered/<scope>` (donde `scope` es la clave única de la
+  encuesta, p. ej. `survey_done_<id>`, `evaluacion_done_app`). Con él, **la misma
+  persona no puede responder dos veces aunque cambie de dispositivo**.
+- El panel **no** necesita leer ese marcador (es privado del usuario, regla
+  `users/$uid` solo-dueño); le basta con deduplicar por `userId` en las respuestas.
+- Encuestas **anónimas** (`anonymous:true`): no se escribe `userId` ni marcador.
+
 ### Implicaciones para la analítica del panel (IMPORTANTE)
 
-- **Una respuesta por `deviceId`**, no por persona. La app bloquea reenvíos por
-  dispositivo (caché local + comprobación en Firebase). Un mismo usuario en dos
-  dispositivos cuenta dos veces; varias personas en un dispositivo compartido,
+- **Sin sesión**: una respuesta por `deviceId`, no por persona. Un mismo usuario en
+  dos dispositivos cuenta dos veces; varias personas en un dispositivo compartido,
   una sola.
-- **No hay autenticación**: `userName`/`userProfileType`/`userDelegation` salen del
-  perfil local (onboarding), no de una cuenta. Pueden ser `"Anónimo"` /
-  `"sin-perfil"` / `"Sin delegación"` si el usuario no completó onboarding.
+- **Con sesión**: hay `userId` y la app impide el duplicado entre dispositivos.
+  Para contar "personas", deduplica por `userId` (las respuestas sin `userId` son
+  de dispositivos sin login: cuéntalas por `deviceId`).
+- `userName`/`userProfileType`/`userDelegation` salen del perfil local (onboarding).
+  Pueden ser `"Anónimo"` / `"sin-perfil"` / `"Sin delegación"` si no se completó.
 - `userDelegation` es la **etiqueta legible** (p. ej. `"Madrid"`), no el slug.
 - La app **toca `updatedAt`** del nodo de la encuesta tras escribir una respuesta
   (evento y genéricas). No te bases en `updatedAt` para detectar "config editada":
@@ -293,10 +345,13 @@ alias). No hace falta nada más en la app.
 - `activities/<evento>/evaluacion/respuestas/<deviceId>` → **write público**.
 - `app/evaluationConfig` → **read público** (config).
 - `app/evaluations/<deviceId>` → **read+write público**.
-- `surveys` → **read público**; `surveys/<id>/respuestas/<deviceId>` → **write
-  público**; `surveys/<id>/updatedAt` → write público (la app lo toca al enviar).
-- La `data` de config de cualquier encuesta **NO** es escribible por la app: solo
-  el panel (Admin SDK) la escribe. Lectura pública para que la app la consuma.
+- `surveys` → **read público** (incluye `surveys/_index`); `surveys/<id>/respuestas/<deviceId>`
+  → **write público**; `surveys/<id>/updatedAt` → write público (la app lo toca al enviar).
+- La `data` de config y `surveys/_index/data` **NO** son escribibles por la app:
+  solo el panel (Admin SDK). Lectura pública para que la app las consuma.
+- `users/<uid>` (incluido `surveysAnswered`) → **solo el dueño autenticado**
+  (`auth.uid === uid`) lee/escribe. El panel no necesita tocarlo. (Ya cubierto por
+  la regla `users/$uid` existente — sin cambios en `database.rules.json`.)
 
 > Si añades un tipo de encuesta o mueves un path, actualiza `database.rules.json`
 > y `SEGURIDAD.md`.
@@ -310,10 +365,13 @@ alias). No hace falta nada más en la app.
 3. No mandar `undefined` en RTDB (omitir el campo). `null` borra el campo.
 4. `questions[].id` estables; no reciclar ids entre preguntas distintas.
 5. `single`/`multi` siempre con `options` no vacío.
-6. Para lanzar una encuesta genérica: además, **enviar push** con
+6. Si la encuesta lleva banner (`placement` ≠ `link-only`): **actualizar
+   `surveys/_index/data`** (añadir/quitar su `SurveyIndexEntry`) y su `updatedAt`.
+7. Para lanzar por push (opcional o además del banner): **enviar push** con
    `internalRoute: "/encuesta/<id>"`.
-7. Para cerrar: `status: "closed"` (o pasar `closesAt`). El histórico de
-   respuestas se conserva.
+8. Para cerrar: `status: "closed"` (o pasar `closesAt`) **y** quitarla del índice
+   (o dejar que la app la filtre por estado). El histórico de respuestas se
+   conserva. Deduplica la analítica por `userId` cuando exista.
 
 ---
 
@@ -329,9 +387,10 @@ alias). No hace falta nada más en la app.
 | `accentColor`          | ✅ | Color de acento del wizard. |
 | `questions[]`          | ✅ | Render del formulario. |
 | `anonymous`            | ✅ | Genéricas: omite datos de perfil en la respuesta. |
-| `audience`             | ✅ | Genéricas: filtra por perfil. |
-| `placement`            | 🟡 | Se guarda; hoy solo `link-only` se materializa (vía push). |
-| `emoji`                | 🟡 | Reservado para banners (no se pinta aún). |
+| `audience`             | ✅ | Genéricas: filtra por perfil (config y banners). |
+| `placement`            | ✅ | Banner automático en Home/evento/Ajustes (vía `surveys/_index`). |
+| `emoji`                | ✅ | Icono del banner. |
+| `surveys/_index`       | ✅ | Índice que alimenta los banners (lo mantiene el panel). |
 | `hidden`               | ✅ | Evento: oculta la tarjeta en el hub. |
 
 ✅ procesa · 🟡 guardado/parcial · ❌ ignora

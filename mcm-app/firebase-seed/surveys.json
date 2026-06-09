@@ -1,5 +1,20 @@
 {
   "updatedAt": "1",
+  "_index": {
+    "updatedAt": "1",
+    "data": [
+      {
+        "id": "encuesta-monitores-2026",
+        "title": "Encuesta a monitores 2026",
+        "intro": "Queremos preparar mejor el próximo curso. ¿Nos ayudas?",
+        "emoji": "📋",
+        "accentColor": "#31AADF",
+        "status": "open",
+        "placement": { "type": "home-banner", "ctaLabel": "Responder" },
+        "audience": { "profileTypes": ["monitor"] }
+      }
+    ]
+  },
   "encuesta-monitores-2026": {
     "updatedAt": "1",
     "data": {
@@ -15,7 +30,8 @@
       "closedTitle": "Encuesta cerrada",
       "closedBody": "Esta encuesta ya no admite respuestas. ¡Gracias!",
       "placement": {
-        "type": "link-only"
+        "type": "home-banner",
+        "ctaLabel": "Responder"
       },
       "audience": {
         "profileTypes": ["monitor"],

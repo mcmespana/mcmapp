@@ -58,7 +58,7 @@ en la raíz del monorepo). Todos siguen la forma `{ updatedAt, data }`.
 | --------------------------- | ---------------------------------------- | ------ |
 | `evaluacion.json`           | `activities/<evento>/evaluacion`         | Config de la evaluación de un evento (preguntas + estado). |
 | `app-evaluation-config.json`| `app/evaluationConfig`                   | Config de la evaluación de la app (incluye ejemplos de `scale`/`multi`). |
-| `surveys.json`              | `surveys`                                | Colección de encuestas genéricas (ejemplo: `encuesta-monitores-2026`). |
+| `surveys.json`              | `surveys`                                | Encuestas genéricas: índice `_index` (banners) + ejemplo `encuesta-monitores-2026`. |
 
 > ⚠️ Importar **reemplaza** el nodo destino. Hazlo antes de que haya respuestas
 > (las respuestas viven en `respuestas/<deviceId>` dentro del mismo nodo, o en

@@ -13,6 +13,27 @@
 
 ---
 
+## 2026-06-09 — Encuestas: banners automáticos + identidad real (auth)
+
+- **Banners automáticos** de encuestas genéricas sin depender de push. La app lee
+  un índice ligero `surveys/_index/data` (solo metadatos, no toda la colección) y
+  pinta banners en la **Home** (`home-banner`), el **hub del evento**
+  (`event-banner`) y **Ajustes** (`app-settings`), filtrando por `audience`, estado
+  abierto/cerrado y "ya respondida". Nuevos: `hooks/useActiveSurveys.ts`,
+  `components/SurveyBanner.tsx`, helpers `SurveyIndexEntry`/`normalizeSurveyIndex`/
+  `filterActiveSurveys` en `constants/surveys.ts`.
+- **Identidad real**: cuando el usuario tiene sesión (Google/Apple), las respuestas
+  incluyen `userId` (uid) y se escribe un marcador
+  `users/<uid>/surveysAnswered/<scope>` para **deduplicar entre dispositivos** (la
+  misma persona no responde dos veces). Encuestas anónimas no guardan identidad.
+  Nuevo `utils/surveyIdentity.ts`; integrado en las tres pantallas. Sin cambios de
+  reglas (la regla `users/$uid` ya cubre el marcador).
+- Integración en `app/(tabs)/index.tsx`, `app/screens/EventHomeScreen.tsx`,
+  `components/SettingsBottomSheet.tsx`. Seeds: `surveys.json` ahora incluye
+  `_index`. Tests ampliados (`__tests__/surveys.test.ts`). Docs actualizadas
+  (`ENCUESTAS.md`, `ENCUESTAS_CONTRATO.md`, `PROMPT_MCMPANEL_ENCUESTAS.md`).
+- **OTA-safe** (solo JS).
+
 ## 2026-06-09 — Sistema de encuestas: config desde Firebase + tipos nuevos + encuestas genéricas
 
 - **Config de encuestas/evaluaciones desde Firebase** (con fallback a código). La

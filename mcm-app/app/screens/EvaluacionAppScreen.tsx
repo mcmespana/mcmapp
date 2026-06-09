@@ -17,15 +17,24 @@ import { getFirebaseApp } from '@/utils/firebaseApp';
 import { getDeviceId } from '@/services/pushNotificationService';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  buildIdentityFields,
+  hasUserAnswered,
+  markUserAnswered,
+} from '@/utils/surveyIdentity';
 
 /**
  * Evaluación de la app (no ligada al evento), wizard tipo onboarding. Se abre
  * desde Ajustes como pantalla raíz. Las respuestas se guardan en
- * `app/evaluations/<deviceId>` — una por dispositivo (no se puede reenviar).
+ * `app/evaluations/<deviceId>` — una por dispositivo. Si hay sesión, se ata el
+ * `userId` y se deduplica entre dispositivos (marcador en `users/<uid>`).
  */
 export default function EvaluacionAppScreen() {
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
+  const { user } = useAuth();
+  const scope = evaluationDoneKey('app');
 
   // Config desde Firebase (`app/evaluationConfig/data`) con fallback al código.
   const { data: remoteConfig } = useFirebaseData<Partial<EvaluationConfig>>(
@@ -45,16 +54,27 @@ export default function EvaluacionAppScreen() {
         reportedAt: new Date().toISOString(),
         platform: Platform.OS,
         status: 'pending',
-        userName: profile.name || 'Anónimo',
-        userProfileType: profile.profileType ?? 'sin-perfil',
-        userDelegation: resolved.delegationLabel || 'Sin delegación',
+        ...buildIdentityFields({
+          authUid: user?.uid,
+          name: profile.name,
+          profileType: profile.profileType,
+          delegationLabel: resolved.delegationLabel,
+        }),
       });
+      if (user?.uid) await markUserAnswered(user.uid, scope);
     },
-    [profile.name, profile.profileType, resolved.delegationLabel],
+    [
+      scope,
+      user?.uid,
+      profile.name,
+      profile.profileType,
+      resolved.delegationLabel,
+    ],
   );
 
   const checkSubmitted = useCallback(async () => {
     try {
+      if (user?.uid && (await hasUserAnswered(user.uid, scope))) return true;
       const deviceId = await getDeviceId();
       const db = getDatabase(getFirebaseApp());
       const snap = await get(ref(db, `app/evaluations/${deviceId}`));
@@ -62,7 +82,7 @@ export default function EvaluacionAppScreen() {
     } catch {
       return false;
     }
-  }, []);
+  }, [scope, user?.uid]);
 
   return (
     <EvaluationWizard

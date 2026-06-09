@@ -63,6 +63,8 @@ import {
   mergeEvaluationConfig,
 } from '@/constants/evaluation';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useActiveSurveys } from '@/hooks/useActiveSurveys';
+import SurveyBanner from '@/components/SurveyBanner';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
@@ -282,6 +284,9 @@ export default function Home() {
     }, []),
   );
   const showAppEvalBanner = appEvalOpen && !appEvalDone;
+
+  // Encuestas genéricas con placement "home-banner" para el perfil actual.
+  const homeSurveys = useActiveSurveys('home-banner');
 
   // OTA update badge (show in header after user dismisses the modal)
   const {
@@ -887,6 +892,11 @@ export default function Home() {
                 </View>
               </TouchableOpacity>
             )}
+
+            {/* ── Encuestas activas (banner automático por placement) ── */}
+            {homeSurveys.map((s) => (
+              <SurveyBanner key={s.id} entry={s} />
+            ))}
 
             {/* ── Novedades ── */}
             <View style={styles.section}>

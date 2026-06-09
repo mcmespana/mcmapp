@@ -3,7 +3,12 @@ import {
   mergeEvaluationConfig,
   type EvaluationConfig,
 } from '@/constants/evaluation';
-import { matchesAudience } from '@/constants/surveys';
+import {
+  filterActiveSurveys,
+  matchesAudience,
+  normalizeSurveyIndex,
+  type SurveyIndexEntry,
+} from '@/constants/surveys';
 
 const base: EvaluationConfig = {
   title: 'Test',
@@ -103,5 +108,112 @@ describe('matchesAudience', () => {
         user,
       ),
     ).toBe(false);
+  });
+});
+
+describe('normalizeSurveyIndex', () => {
+  const e = (id: string): SurveyIndexEntry => ({ id, title: id });
+
+  it('null/undefined → []', () => {
+    expect(normalizeSurveyIndex(null)).toEqual([]);
+    expect(normalizeSurveyIndex(undefined)).toEqual([]);
+  });
+
+  it('array se mantiene (sin huecos)', () => {
+    expect(normalizeSurveyIndex([e('a'), e('b')]).map((x) => x.id)).toEqual([
+      'a',
+      'b',
+    ]);
+  });
+
+  it('mapa → array de valores', () => {
+    expect(
+      normalizeSurveyIndex({ a: e('a'), b: e('b') })
+        .map((x) => x.id)
+        .sort(),
+    ).toEqual(['a', 'b']);
+  });
+});
+
+describe('filterActiveSurveys', () => {
+  const NOW = 1_000_000;
+  const user = {
+    topics: ['general', 'monitores'],
+    profileType: 'monitor',
+    delegationId: 'mcm-madrid',
+  };
+  const entries: SurveyIndexEntry[] = [
+    {
+      id: 'home-open',
+      title: 'Home abierta',
+      status: 'open',
+      placement: { type: 'home-banner' },
+    },
+    {
+      id: 'home-closed',
+      title: 'Home cerrada',
+      status: 'closed',
+      placement: { type: 'home-banner' },
+    },
+    {
+      id: 'evt',
+      title: 'Evento A',
+      status: 'open',
+      placement: { type: 'event-banner', eventId: 'visitapapa26' },
+    },
+    {
+      id: 'solo-familias',
+      title: 'Familias',
+      status: 'open',
+      placement: { type: 'home-banner' },
+      audience: { profileTypes: ['familia'] },
+    },
+  ];
+
+  it('home-banner: solo abiertas, audiencia y no respondidas', () => {
+    const r = filterActiveSurveys(entries, {
+      placementType: 'home-banner',
+      now: NOW,
+      user,
+    });
+    expect(r.map((x) => x.id)).toEqual(['home-open']);
+  });
+
+  it('excluye las ya respondidas', () => {
+    const r = filterActiveSurveys(entries, {
+      placementType: 'home-banner',
+      now: NOW,
+      user,
+      doneIds: ['home-open'],
+    });
+    expect(r).toEqual([]);
+  });
+
+  it('event-banner filtra por eventId', () => {
+    expect(
+      filterActiveSurveys(entries, {
+        placementType: 'event-banner',
+        eventId: 'visitapapa26',
+        now: NOW,
+        user,
+      }).map((x) => x.id),
+    ).toEqual(['evt']);
+    expect(
+      filterActiveSurveys(entries, {
+        placementType: 'event-banner',
+        eventId: 'otro',
+        now: NOW,
+        user,
+      }),
+    ).toEqual([]);
+  });
+
+  it('sin placement explícito = link-only (no aparece en banners)', () => {
+    const r = filterActiveSurveys([{ id: 'x', title: 'X', status: 'open' }], {
+      placementType: 'home-banner',
+      now: NOW,
+      user,
+    });
+    expect(r).toEqual([]);
   });
 });
