@@ -13,6 +13,25 @@
 
 ---
 
+## 2026-06-09 — Playlist: QR para compartir/coro + contraseña al sobrescribir en la nube
+
+- **QR de compartir**: al subir una playlist o iniciar un coro, el diálogo de
+  éxito es ahora un modal con **QR del enlace universal**
+  (`https://mcm.expo.app/playlist?p=XXXX` / `/coro?c=XXXX`), el código en
+  grande y botones de copiar. Escaneado con la cámara del móvil abre la app
+  directamente (deep links ya existentes). También hay "Ver QR" en el menú de
+  acciones (sección nube si hay código subido; sección coro si hay sesión).
+  Nuevo `components/playlist/ShareQrModal.tsx`.
+- **Nueva dependencia** `react-native-qrcode-svg` (JS puro sobre
+  `react-native-svg`, ya presente) → **compatible con OTA**, no requiere build.
+- **Contraseña al sobrescribir**: subir a un código que ya existe en la nube
+  pide la contraseña ("coco") antes de machacar el contenido — cubre el caso
+  de re-subir una playlist descargada de otro dispositivo. Nuevo
+  `components/playlist/PasswordPromptModal.tsx` (genérico).
+- **Fix**: el nombre de la playlist nunca llegaba a Firebase al subirla — el
+  wrapper de `onSubmit` en `SelectedSongsScreen` descartaba el `name` que
+  emite `CodeInputModal`.
+
 ## 2026-06-09 — Menú de acciones de la playlist reorganizado por secciones
 
 - El bottom-sheet de acciones de la playlist (`PlaylistActionsBottomSheet`)

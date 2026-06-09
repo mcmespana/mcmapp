@@ -56,6 +56,8 @@ import CodeInputModal, {
   CodeDialogVariant,
 } from '@/components/playlist/CodeInputModal';
 import ConfirmChoiceModal from '@/components/playlist/ConfirmChoiceModal';
+import ShareQrModal from '@/components/playlist/ShareQrModal';
+import PasswordPromptModal from '@/components/playlist/PasswordPromptModal';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 
 import {
@@ -100,6 +102,9 @@ type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const WEB_BASE_URL = 'https://mcm.expo.app';
+
+/** Contraseña para sobrescribir una playlist en la nube que ya existe. */
+const OVERWRITE_PASSWORD = 'coco';
 
 type ViewMode = 'category' | 'manual';
 
@@ -154,6 +159,19 @@ const SelectedSongsScreen: React.FC = () => {
       onPress: () => void;
       variant?: 'primary' | 'secondary' | 'danger';
     }[];
+  } | null>(null);
+
+  // Modal de QR (tras subir playlist / iniciar coro, o desde el menú).
+  const [qrModal, setQrModal] = useState<{
+    title: string;
+    url: string;
+    code: string;
+  } | null>(null);
+
+  // Subida pendiente de contraseña (el código ya existe en la nube).
+  const [pendingOverwrite, setPendingOverwrite] = useState<{
+    code: string;
+    name?: string;
   } | null>(null);
 
   // Código de la última subida a la nube (para "cambiar código" / "borrar").
@@ -702,25 +720,20 @@ const SelectedSongsScreen: React.FC = () => {
     async (code: string, name?: string) => {
       const exists = await cloudPlaylistExists(code);
       if (exists) {
-        // Pedimos confirmación: sobrescribir / cambiar código / cancelar.
-        // Cerramos diálogo de código temporalmente para evitar dos modales.
+        // El código ya tiene contenido (tuyo o de otra persona). Para
+        // machacarlo pedimos la contraseña; también se puede elegir otro
+        // código. Cerramos el diálogo de código para no apilar modales.
         setCodeDialog(null);
         setConfirmDialog({
           title: 'Código ocupado',
-          description: `Ya hay una playlist subida con el código ${code}. ¿Quieres sobrescribirla?`,
+          description: `Ya hay una playlist subida con el código ${code}. Para sobrescribirla necesitas la contraseña.`,
           actions: [
             {
-              label: 'Sobrescribir',
+              label: 'Sobrescribir…',
               variant: 'danger',
-              onPress: async () => {
+              onPress: () => {
                 setConfirmDialog(null);
-                try {
-                  await uploadCloudPlaylist(code, selectedSongs, { name });
-                  setLastUploadCode(code);
-                  showUploadSuccess(code, name);
-                } catch (e: any) {
-                  toast.show({ label: e?.message ?? 'Error al subir' });
-                }
+                setPendingOverwrite({ code, name });
               },
             },
             {
@@ -750,79 +763,40 @@ const SelectedSongsScreen: React.FC = () => {
     [selectedSongs],
   );
 
-  const showUploadSuccess = useCallback(
-    (code: string, name?: string) => {
-      const url = `${WEB_BASE_URL}/playlist?p=${code}`;
-      setConfirmDialog({
-        title: name
-          ? `¡${name} subida! Código ${code}`
-          : `¡Subida! Código ${code}`,
-        description: `Compártelo o copia el enlace:\n${url}`,
-        actions: [
-          {
-            label: 'Copiar enlace',
-            variant: 'primary',
-            onPress: () => {
-              void Clipboard.setStringAsync(url);
-              toast.show({ label: 'Enlace copiado' });
-              setConfirmDialog(null);
-            },
-          },
-          {
-            label: 'Copiar solo el código',
-            variant: 'secondary',
-            onPress: () => {
-              void Clipboard.setStringAsync(code);
-              toast.show({ label: 'Código copiado' });
-              setConfirmDialog(null);
-            },
-          },
-          {
-            label: 'Cerrar',
-            variant: 'secondary',
-            onPress: () => setConfirmDialog(null),
-          },
-        ],
+  /** Subida tras validar la contraseña de sobrescritura. */
+  const handleConfirmOverwrite = useCallback(async () => {
+    const pending = pendingOverwrite;
+    setPendingOverwrite(null);
+    if (!pending) return;
+    try {
+      await uploadCloudPlaylist(pending.code, selectedSongs, {
+        name: pending.name,
       });
-    },
-    [toast],
-  );
+      setLastUploadCode(pending.code);
+      showUploadSuccess(pending.code, pending.name);
+    } catch (e: any) {
+      toast.show({ label: e?.message ?? 'Error al subir' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingOverwrite, selectedSongs]);
 
-  const showChoirSuccess = useCallback(
-    (code: string) => {
-      const url = `${WEB_BASE_URL}/coro?c=${code}`;
-      setConfirmDialog({
-        title: `¡Coro iniciado! Código ${code}`,
-        description: `Compártelo o copia el enlace:\n${url}`,
-        actions: [
-          {
-            label: 'Copiar enlace',
-            variant: 'primary',
-            onPress: () => {
-              void Clipboard.setStringAsync(url);
-              toast.show({ label: 'Enlace copiado' });
-              setConfirmDialog(null);
-            },
-          },
-          {
-            label: 'Copiar solo el código',
-            variant: 'secondary',
-            onPress: () => {
-              void Clipboard.setStringAsync(code);
-              toast.show({ label: 'Código copiado' });
-              setConfirmDialog(null);
-            },
-          },
-          {
-            label: 'Cerrar',
-            variant: 'secondary',
-            onPress: () => setConfirmDialog(null),
-          },
-        ],
-      });
-    },
-    [toast],
-  );
+  const showUploadSuccess = useCallback((code: string, name?: string) => {
+    setQrModal({
+      title: name
+        ? `¡${name} subida! Código ${code}`
+        : `¡Subida! Código ${code}`,
+      url: `${WEB_BASE_URL}/playlist?p=${code}`,
+      code,
+    });
+  }, []);
+
+  const showChoirSuccess = useCallback((code: string) => {
+    setQrModal({
+      title: `¡Coro iniciado! Código ${code}`,
+      url: `${WEB_BASE_URL}/coro?c=${code}`,
+      code,
+    });
+  }, []);
 
   const handleDownloadFromCloud = useCallback(
     async (code: string) => {
@@ -1018,6 +992,18 @@ const SelectedSongsScreen: React.FC = () => {
     if (lastUploadCode) {
       nube.push(
         {
+          id: 'show-qr-cloud',
+          icon: 'qr-code-2',
+          label: 'Ver QR de la playlist',
+          description: 'Quien lo escanee abre la playlist directamente',
+          onPress: () =>
+            setQrModal({
+              title: `Playlist · Código ${lastUploadCode}`,
+              url: `${WEB_BASE_URL}/playlist?p=${lastUploadCode}`,
+              code: lastUploadCode,
+            }),
+        },
+        {
           id: 'change-cloud-code',
           icon: 'edit',
           label: 'Cambiar código de la playlist',
@@ -1075,6 +1061,18 @@ const SelectedSongsScreen: React.FC = () => {
             },
           ]
         : [
+            {
+              id: 'show-qr-choir',
+              icon: 'qr-code-2',
+              label: 'Ver QR del coro',
+              description: 'Quien lo escanee se une al coro directamente',
+              onPress: () =>
+                setQrModal({
+                  title: `Coro · Código ${choir.code}`,
+                  url: `${WEB_BASE_URL}/coro?c=${choir.code}`,
+                  code: choir.code ?? '',
+                }),
+            },
             {
               id: 'choir-change-code',
               icon: 'edit',
@@ -1183,7 +1181,9 @@ const SelectedSongsScreen: React.FC = () => {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
 
-  const submitForVariant = (variant: CodeDialogVariant) => {
+  const submitForVariant = (
+    variant: CodeDialogVariant,
+  ): ((code: string, name?: string) => Promise<void>) => {
     switch (variant) {
       case 'cloud-upload':
         return handleUploadToCloud;
@@ -1412,10 +1412,10 @@ const SelectedSongsScreen: React.FC = () => {
           variant={codeDialog.variant}
           initialCode={codeDialog.initial}
           onClose={() => setCodeDialog(null)}
-          onSubmit={async (code) => {
+          onSubmit={async (code, name) => {
             const fn = submitForVariant(codeDialog.variant);
             try {
-              await fn(code);
+              await fn(code, name);
             } catch (e: any) {
               if (e?.message === '__handled__') return;
               throw e;
@@ -1431,6 +1431,28 @@ const SelectedSongsScreen: React.FC = () => {
           description={confirmDialog.description}
           actions={confirmDialog.actions}
           onClose={() => setConfirmDialog(null)}
+        />
+      ) : null}
+
+      {qrModal ? (
+        <ShareQrModal
+          visible
+          title={qrModal.title}
+          url={qrModal.url}
+          code={qrModal.code}
+          onClose={() => setQrModal(null)}
+        />
+      ) : null}
+
+      {pendingOverwrite ? (
+        <PasswordPromptModal
+          visible
+          title="Sobrescribir playlist"
+          description={`Vas a machacar la playlist con código ${pendingOverwrite.code}. Escribe la contraseña para confirmar.`}
+          expectedPassword={OVERWRITE_PASSWORD}
+          confirmLabel="Sobrescribir"
+          onSuccess={() => void handleConfirmOverwrite()}
+          onClose={() => setPendingOverwrite(null)}
         />
       ) : null}
 
