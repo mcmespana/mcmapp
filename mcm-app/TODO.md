@@ -7,6 +7,14 @@
 
 ## Prioridad alta
 
+- [ ] Drag & drop para mover canciones de orden ajustado en las playlist ya hechas. Que por defecto siempre salga orden ajustado y te permita hacer el drag & drop para mover canciones. 
+- [ ] Sistema de QRs para el modo coro y el modo playlist que escanees y te abra la app DIRECTAMENTE ya en la playlist o dentro del modo coro para que sea muuuuuy rapido
+- [ ] Repensar el menu de abajo de la seccon playlist 
+- [ ] Si me bajo una playlist que no he creado yo puedo darle a subir tambien (ahora creo que no se podia) y me pide contraseña "coco" para variar para machacar lo que hay si he hecho cambios (a veces creo playlist en un dispositivo y lo uso en otro)
+- [ ] Modo playlist de PDF: Una caicon por pagina y mostrar acordes no tienn toggle para activar o desactivar. revisar. 
+- [ ] PDFs en iOS parece que no hacía margenes, habria que revisarlo
+- [ ] PDFs con numero de pagina y cuando una canción ocupa varias paginas poner un pie de pagina indicando el nombre de la cancon (eso se podria tener en todas) y 1 de 3 o así para que se vea más claro 
+- [ ] PDFs que permita ajustar la fecha que sale impresa 
 - [x] **Cantoral — arreglos `{arr:}` por long-press en vivo (admin)**: ✅ hecho. Cuando `isAdmin`, long-press sobre una línea del visor abre una hoja para escribir el arreglo; se inserta `{arr: ...}` encima de esa línea, se ve al instante (render en vivo) y se propone a `songs/ediciones` (contentOld/contentNew). JS inyectado en el WebView (`hooks/useSongProcessor.ts`) que manda el índice de la línea original a RN vía `postMessage`/`onMessage` (`components/SongDisplay.tsx`). El mapeo fila↔línea es transpose-invariante (`injectRowLineIndices`/`renderableRowLineIndices` en `utils/arrangements.ts`, con tests). UI: `components/ArrangementInputModal.tsx`.
 - [x] **Cantoral — mostrar campos multimedia al usuario final**: hecho. Botón glass de multimedia en la barra superior del detalle (con punto rojo cuando hay material) → cajón "Multimedia y ficha" con Vídeos (reproductor flotante de YouTube arrastrable), Audios (abren en el navegador) y Ficha (ritmo, álbum, tiempo litúrgico, comentario, fuente). Indicadores ▶/🎧 en la lista. Nuevo campo `liturgicalTime` en el admin. Ver `types/songMedia.ts` y `components/song-media/`.
 - [ ] Revisar diseño en iPads y arreglarlo
