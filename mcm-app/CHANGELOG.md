@@ -13,6 +13,21 @@
 
 ---
 
+## 2026-06-09 — Playlist: drag & drop para reordenar + "Orden ajustado" por defecto
+
+- La pantalla de playlist abre ahora **por defecto en "Orden ajustado"** (antes
+  "Por categoría"); el toggle entre vistas sigue disponible.
+- **Drag & drop** en nativo: long-press sobre una fila inicia el arrastre para
+  reordenar (`ReorderableList`); al soltar se llama a `moveSong` del contexto
+  (renumera `order` y persiste). Las flechas ↑/↓ se mantienen como alternativa
+  y son el único método en web (la lista reordenable usa gestos nativos).
+- **Nueva dependencia** `react-native-reorderable-list` (JS puro sobre
+  `react-native-reanimated` + `react-native-gesture-handler`, ya presentes) →
+  **compatible con OTA**, no requiere build.
+- Cambios: `app/screens/SelectedSongsScreen.tsx` (lista reordenable +
+  `DraggableManualRow`), `components/playlist/PlaylistRow.tsx` (prop
+  `onLongPress`).
+
 ## 2026-06-09 — Playlist: QR para compartir/coro + contraseña al sobrescribir en la nube
 
 - **QR de compartir**: al subir una playlist o iniciar un coro, el diálogo de

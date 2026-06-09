@@ -43,7 +43,12 @@ import { radii } from '@/constants/uiStyles';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 
+import { h } from '@/utils/haptics';
 import PlaylistRow from '@/components/playlist/PlaylistRow';
+import ReorderableList, {
+  ReorderableListReorderEvent,
+  useReorderableDrag,
+} from 'react-native-reorderable-list';
 import PlaylistActionsBottomSheet, {
   PlaylistAction,
   PlaylistActionSection,
@@ -108,6 +113,18 @@ const OVERWRITE_PASSWORD = 'coco';
 
 type ViewMode = 'category' | 'manual';
 
+/**
+ * Fila del modo "Orden ajustado" dentro de `ReorderableList` (nativo):
+ * long-press sobre la fila inicia el arrastre. `useReorderableDrag` solo
+ * puede usarse dentro de una celda de la lista, por eso este wrapper.
+ */
+const DraggableManualRow: React.FC<React.ComponentProps<typeof PlaylistRow>> = (
+  props,
+) => {
+  const drag = useReorderableDrag();
+  return <PlaylistRow {...props} onLongPress={drag} />;
+};
+
 const SelectedSongsScreen: React.FC = () => {
   const {
     selectedSongs,
@@ -135,7 +152,8 @@ const SelectedSongsScreen: React.FC = () => {
   >('songs', 'songs');
   const { toast } = useToast();
 
-  const [viewMode, setViewMode] = useState<ViewMode>('category');
+  // Por defecto "Orden ajustado": es donde se reordena con drag & drop.
+  const [viewMode, setViewMode] = useState<ViewMode>('manual');
 
   // Modales / sheets
   const [showActions, setShowActions] = useState(false);
@@ -1338,30 +1356,45 @@ const SelectedSongsScreen: React.FC = () => {
     </View>
   );
 
+  const manualRowProps = (
+    item: (typeof flatSelectedSongs)[number],
+    index: number,
+  ): React.ComponentProps<typeof PlaylistRow> => ({
+    song: item,
+    transpose: item.transpose,
+    capoOverride: item.capoOverride,
+    position: index + 1,
+    showReorderControls: true,
+    canMoveUp: index > 0,
+    canMoveDown: index < flatSelectedSongs.length - 1,
+    onMoveUp: () => handleMoveUp(item.filename),
+    onMoveDown: () => handleMoveDown(item.filename),
+    isNowPlaying: choir.session?.current?.filename === item.filename,
+    onPress: () => handleSongPress(item),
+    onRemove: () => removeSong(item.filename),
+  });
+
   const renderManualItem = ({
     item,
     index,
   }: {
     item: (typeof flatSelectedSongs)[number];
     index: number;
-  }) => {
-    const isNow = choir.session?.current?.filename === item.filename;
-    return (
-      <PlaylistRow
-        song={item}
-        transpose={item.transpose}
-        capoOverride={item.capoOverride}
-        position={index + 1}
-        showReorderControls
-        canMoveUp={index > 0}
-        canMoveDown={index < flatSelectedSongs.length - 1}
-        onMoveUp={() => handleMoveUp(item.filename)}
-        onMoveDown={() => handleMoveDown(item.filename)}
-        isNowPlaying={isNow}
-        onPress={() => handleSongPress(item)}
-        onRemove={() => removeSong(item.filename)}
-      />
-    );
+  }) => <PlaylistRow {...manualRowProps(item, index)} />;
+
+  const renderDraggableManualItem = ({
+    item,
+    index,
+  }: {
+    item: (typeof flatSelectedSongs)[number];
+    index: number;
+  }) => <DraggableManualRow {...manualRowProps(item, index)} />;
+
+  const handleReorder = ({ from, to }: ReorderableListReorderEvent) => {
+    const song = flatSelectedSongs[from];
+    if (!song || from === to) return;
+    h.select();
+    moveSong(song.filename, to);
   };
 
   const isEmpty = selectedSongs.length === 0;
@@ -1374,15 +1407,30 @@ const SelectedSongsScreen: React.FC = () => {
           {renderEmptyState()}
         </>
       ) : viewMode === 'manual' ? (
-        <FlatList
-          data={flatSelectedSongs}
-          renderItem={renderManualItem}
-          keyExtractor={(it) => it.filename}
-          ListHeaderComponent={renderHeaderBar()}
-          contentContainerStyle={styles.listContentContainer}
-          contentInsetAdjustmentBehavior="automatic"
-          showsVerticalScrollIndicator={false}
-        />
+        Platform.OS === 'web' ? (
+          // En web no hay drag & drop (la lista reordenable usa gestos
+          // nativos); se reordena con las flechas ↑/↓ de cada fila.
+          <FlatList
+            data={flatSelectedSongs}
+            renderItem={renderManualItem}
+            keyExtractor={(it) => it.filename}
+            ListHeaderComponent={renderHeaderBar()}
+            contentContainerStyle={styles.listContentContainer}
+            contentInsetAdjustmentBehavior="automatic"
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <ReorderableList
+            data={flatSelectedSongs}
+            onReorder={handleReorder}
+            renderItem={renderDraggableManualItem}
+            keyExtractor={(it) => it.filename}
+            ListHeaderComponent={renderHeaderBar()}
+            contentContainerStyle={styles.listContentContainer}
+            contentInsetAdjustmentBehavior="automatic"
+            showsVerticalScrollIndicator={false}
+          />
+        )
       ) : (
         <FlatList
           data={categorized}
