@@ -1,0 +1,78 @@
+# .github/workflows/deploy-firebase-rules.yml
+#
+# Despliega las reglas de seguridad de la Realtime Database
+# (mcm-app/database.rules.json) cuando se mergea a `production`.
+#
+# Solo corre si el fichero de reglas (o firebase.json) cambió, para no
+# redeplegar en cada merge. También se puede lanzar a mano (workflow_dispatch).
+#
+# REQUISITO: configurar el secret `FIREBASE_SERVICE_ACCOUNT_MCMAPP` en el repo
+# con el JSON de una cuenta de servicio del proyecto mcmapp-39b71 que tenga el
+# rol "Firebase Realtime Database Admin" (o "Editor"). Mientras no exista el
+# secret, el workflow avisa y termina sin error (no bloquea otros despliegues).
+# Ver ../../SEGURIDAD.md → "Automatizar el despliegue de las reglas".
+name: Deploy Firebase Rules
+
+on:
+  push:
+    branches: [production]
+    paths:
+      - 'mcm-app/database.rules.json'
+      - 'mcm-app/firebase.json'
+      - '.github/workflows/deploy-firebase-rules.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-firebase-rules
+  cancel-in-progress: false
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Comprobar que el secret existe
+        id: guard
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MCMAPP }}
+        run: |
+          if [ -z "${SA}" ]; then
+            echo "::warning::FIREBASE_SERVICE_ACCOUNT_MCMAPP no está configurado. Se omite el despliegue de reglas."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        if: steps.guard.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Firebase CLI
+        if: steps.guard.outputs.skip == 'false'
+        run: npm install -g firebase-tools@latest
+
+      - name: Escribir credenciales de la cuenta de servicio
+        if: steps.guard.outputs.skip == 'false'
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MCMAPP }}
+        run: |
+          printf '%s' "${SA}" > "${RUNNER_TEMP}/firebase-sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${RUNNER_TEMP}/firebase-sa.json" >> "$GITHUB_ENV"
+
+      - name: Desplegar reglas de la Realtime Database
+        if: steps.guard.outputs.skip == 'false'
+        working-directory: ./mcm-app
+        run: |
+          firebase deploy \
+            --only database \
+            --project mcmapp-pro \
+            --non-interactive \
+            --force
+
+      - name: Limpiar credenciales
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/firebase-sa.json"

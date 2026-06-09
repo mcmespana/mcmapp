@@ -10,6 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
@@ -433,6 +434,53 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                   </PressableFeedback>
                 </View>
               </View>
+
+              {/* ── Sección: Sobre la app ── */}
+              <Text
+                style={[
+                  styles.sectionLabel,
+                  { color: theme.icon, marginTop: spacing.md },
+                ]}
+              >
+                SOBRE LA APP
+              </Text>
+
+              <PressableFeedback
+                style={[
+                  styles.surface,
+                  styles.surfaceClickable,
+                  { backgroundColor: surfaceBg },
+                ]}
+                onPress={() => {
+                  handleClose();
+                  router.push('/evaluacion-app');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Evalúa la app"
+              >
+                <PressableFeedback.Highlight />
+                <View style={[styles.surfaceRow, { flex: 1 }]}>
+                  <MaterialIcons
+                    name="rate-review"
+                    size={20}
+                    color={theme.icon}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+                      Evalúa la app
+                    </Text>
+                    <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                      Errores, utilidad e ideas
+                    </Text>
+                  </View>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={theme.icon}
+                  style={{ opacity: 0.4 }}
+                />
+              </PressableFeedback>
             </>
           )}
         </ScrollView>

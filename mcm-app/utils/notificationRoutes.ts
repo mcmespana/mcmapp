@@ -11,10 +11,11 @@
 //      `jubileo`, `albums`, `wordle`). Así un error de configuración del panel
 //      no deja al usuario en una pantalla 404.
 //
-//   2. extractActionButton(): normaliza el botón de acción. El contrato del panel
-//      define `data.actionButtons` (array) pero la app trabaja con un único
-//      `actionButton` (objeto con `isInternal`). Esta función acepta ambos
-//      formatos y devuelve siempre la forma canónica.
+//   2. extractActionButtons(): normaliza los botones de acción. Una notificación
+//      puede llevar hasta 3 botones. Acepta tanto `data.actionButtons` (array)
+//      como `data.actionButton` (objeto único, legacy) y devuelve siempre un
+//      array canónico (máx. 3). `extractActionButton()` se conserva como atajo
+//      al primer botón para compatibilidad hacia atrás.
 
 /**
  * Rutas que el panel puede enviar pero que NO existen como ruta propia en el
@@ -88,23 +89,17 @@ export interface NotificationActionButton {
   isInternal: boolean;
 }
 
+/** Máximo de botones de acción que la app renderiza por notificación. */
+export const MAX_ACTION_BUTTONS = 3;
+
 /**
- * Extrae el botón de acción de los datos de una notificación, aceptando tanto
- * el formato canónico de la app (`actionButton`, objeto) como el del contrato
- * del panel (`actionButtons`, array — se usa el primer elemento).
+ * Normaliza un objeto crudo de botón (`{ text, url, isInternal? }`) a la forma
+ * canónica. Devuelve `undefined` si no es válido (sin `url`).
  *
  * Si `isInternal` no viene explícito, se infiere: una ruta interna NO empieza
  * por `http(s)://`.
  */
-export function extractActionButton(
-  data: Record<string, any> | null | undefined,
-): NotificationActionButton | undefined {
-  if (!data) return undefined;
-
-  const raw =
-    data.actionButton ??
-    (Array.isArray(data.actionButtons) ? data.actionButtons[0] : undefined);
-
+function normalizeButton(raw: any): NotificationActionButton | undefined {
   if (!raw || typeof raw !== 'object' || !raw.url) return undefined;
 
   const url = String(raw.url);
@@ -114,4 +109,44 @@ export function extractActionButton(
       : !/^https?:\/\//i.test(url);
 
   return { text: String(raw.text ?? 'Ver'), url, isInternal };
+}
+
+/**
+ * Extrae TODOS los botones de acción de los datos de una notificación (máx. 3),
+ * aceptando tanto el formato con múltiples botones (`actionButtons`, array) como
+ * el legacy de un único botón (`actionButton`, objeto). Si vienen ambos, se
+ * combinan: primero el objeto único y después el array (deduplicando por
+ * `url|text`). El resultado siempre es un array canónico (puede estar vacío).
+ */
+export function extractActionButtons(
+  data: Record<string, any> | null | undefined,
+): NotificationActionButton[] {
+  if (!data) return [];
+
+  const candidates: any[] = [];
+  if (data.actionButton) candidates.push(data.actionButton);
+  if (Array.isArray(data.actionButtons)) candidates.push(...data.actionButtons);
+
+  const seen = new Set<string>();
+  const buttons: NotificationActionButton[] = [];
+  for (const candidate of candidates) {
+    const button = normalizeButton(candidate);
+    if (!button) continue;
+    const key = `${button.url}|${button.text}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    buttons.push(button);
+    if (buttons.length >= MAX_ACTION_BUTTONS) break;
+  }
+  return buttons;
+}
+
+/**
+ * Atajo: devuelve el primer botón de acción (o `undefined`). Se conserva para
+ * los puntos del código que solo necesitan un botón y para compatibilidad.
+ */
+export function extractActionButton(
+  data: Record<string, any> | null | undefined,
+): NotificationActionButton | undefined {
+  return extractActionButtons(data)[0];
 }

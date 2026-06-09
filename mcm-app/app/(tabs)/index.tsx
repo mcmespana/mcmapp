@@ -1,6 +1,7 @@
 import React, {
   useLayoutEffect,
   ComponentProps,
+  useCallback,
   useEffect,
   useState,
   useMemo,
@@ -28,7 +29,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
@@ -51,6 +53,12 @@ import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
 import GlassSurface from '@/components/ui/GlassSurface';
+import { setPendingEventScreen } from '@/utils/eventNavigation';
+import {
+  DEFAULT_APP_EVALUATION,
+  DEFAULT_EVENT_EVALUATION,
+  evaluationDoneKey,
+} from '@/constants/evaluation';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
@@ -59,6 +67,7 @@ import {
 import { NotificationData } from '@/types/notifications';
 import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import { useOTAContext } from '@/contexts/OTAContext';
+import { useCarismochito } from '@/contexts/CarismochitoContext';
 import { h } from '@/utils/haptics';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -184,6 +193,8 @@ export default function Home() {
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 700;
   const { toast } = useToast();
+  // Modo carismochito: tiñe de verde el icono de la app del header.
+  const { isActive: carismoActive } = useCarismochito();
   const [settingsVisible, setSettingsVisibleRaw] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [notifSheetOpen, setNotifSheetOpenRaw] = useState(false);
@@ -213,10 +224,46 @@ export default function Home() {
   // valor hardcoded en `constants/events.ts`.
   const { activeEvent } = useActiveMeta();
   const activeTabId = activeEvent.tabId ?? '';
-  const showEventBanner =
+  const hasEventAccess =
     activeTabId !== '' &&
     (resolved.tabs.includes(activeTabId) ||
       resolved.homeButtons.includes(activeTabId));
+  const showEventBanner = hasEventAccess;
+
+  // CTA "Evalúa la actividad": flag en código (DEFAULT_EVENT_EVALUATION). Se
+  // muestra si está abierto y el usuario aún no ha evaluado (flag local). Mismo
+  // gating de visibilidad que el evento.
+  const [evalDone, setEvalDone] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      AsyncStorage.getItem(evaluationDoneKey(activeEvent.id)).then((v) => {
+        if (active) setEvalDone(v === '1');
+      });
+      return () => {
+        active = false;
+      };
+    }, [activeEvent.id]),
+  );
+  const showEvalBanner =
+    hasEventAccess && !!DEFAULT_EVENT_EVALUATION.evaluationOpen && !evalDone;
+
+  // CTA "Evalúa la app": flag en código (DEFAULT_APP_EVALUATION). No depende del
+  // evento (la app se evalúa siempre). Abre la pantalla raíz de Ajustes.
+  const [appEvalDone, setAppEvalDone] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      AsyncStorage.getItem(evaluationDoneKey('app')).then((v) => {
+        if (active) setAppEvalDone(v === '1');
+      });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+  const showAppEvalBanner =
+    !!DEFAULT_APP_EVALUATION.evaluationOpen && !appEvalDone;
 
   // OTA update badge (show in header after user dismisses the modal)
   const {
@@ -508,7 +555,12 @@ export default function Home() {
           title="MCM App"
           titleStyle={styles.logoText}
           left={
-            <View style={styles.logoBox}>
+            <View
+              style={[
+                styles.logoBox,
+                carismoActive && { backgroundColor: '#1B9E4B' },
+              ]}
+            >
               <MaterialIcons name="device-hub" size={20} color="white" />
             </View>
           }
@@ -738,6 +790,83 @@ export default function Home() {
                   size={22}
                   color={theme.icon}
                 />
+              </TouchableOpacity>
+            )}
+
+            {/* ── CTA "Evalúa la actividad" — destacado y directo ── */}
+            {showEvalBanner && (
+              <TouchableOpacity
+                style={[styles.evalCta, { backgroundColor: colors.accent }]}
+                onPress={() => {
+                  h.tap();
+                  setPendingEventScreen('Evaluacion', {
+                    eventId: activeEvent.id,
+                  });
+                  router.push(`/${activeTabId}` as any);
+                }}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel="Evalúa la actividad ahora"
+              >
+                <View style={styles.evalCtaIcon}>
+                  <MaterialIcons name="star-rate" size={26} color="#fff" />
+                </View>
+                <View style={styles.evalCtaTextWrap}>
+                  <Text style={styles.evalCtaTitle} numberOfLines={1}>
+                    {DEFAULT_EVENT_EVALUATION.title || 'Evalúa la actividad'}
+                  </Text>
+                  <Text style={styles.evalCtaBody} numberOfLines={2}>
+                    ¿Qué tal ha ido? Tu opinión nos ayuda — solo 2 minutos.
+                  </Text>
+                </View>
+                <View style={styles.evalCtaBtn}>
+                  <Text
+                    style={[styles.evalCtaBtnText, { color: colors.accent }]}
+                  >
+                    Evaluar
+                  </Text>
+                  <MaterialIcons
+                    name="arrow-forward"
+                    size={15}
+                    color={colors.accent}
+                  />
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* ── CTA "Evalúa la app" ── */}
+            {showAppEvalBanner && (
+              <TouchableOpacity
+                style={[styles.evalCta, { backgroundColor: colors.info }]}
+                onPress={() => {
+                  h.tap();
+                  router.push('/evaluacion-app');
+                }}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel="Evalúa la app"
+              >
+                <View style={styles.evalCtaIcon}>
+                  <MaterialIcons name="rate-review" size={26} color="#fff" />
+                </View>
+                <View style={styles.evalCtaTextWrap}>
+                  <Text style={styles.evalCtaTitle} numberOfLines={1}>
+                    {DEFAULT_APP_EVALUATION.title || 'Evalúa la app'}
+                  </Text>
+                  <Text style={styles.evalCtaBody} numberOfLines={2}>
+                    ¿Errores o ideas? Ayúdanos a mejorar la app.
+                  </Text>
+                </View>
+                <View style={styles.evalCtaBtn}>
+                  <Text style={[styles.evalCtaBtnText, { color: colors.info }]}>
+                    Evaluar
+                  </Text>
+                  <MaterialIcons
+                    name="arrow-forward"
+                    size={15}
+                    color={colors.info}
+                  />
+                </View>
               </TouchableOpacity>
             )}
 
@@ -1464,6 +1593,53 @@ const styles = StyleSheet.create({
     marginTop: 2,
     lineHeight: 15,
     opacity: 0.8,
+  } as TextStyle,
+
+  // ── CTA "Evalúa la actividad" (destacado) ──
+  evalCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    padding: spacing.md,
+    borderRadius: radii.xl,
+    marginBottom: spacing.md,
+    ...shadows.md,
+  } as ViewStyle,
+  evalCtaIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    flexShrink: 0,
+  } as ViewStyle,
+  evalCtaTextWrap: { flex: 1 } as ViewStyle,
+  evalCtaTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: -0.2,
+  } as TextStyle,
+  evalCtaBody: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+    color: 'rgba(255,255,255,0.9)',
+  } as TextStyle,
+  evalCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fff',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: radii.pill,
+    flexShrink: 0,
+  } as ViewStyle,
+  evalCtaBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
   } as TextStyle,
 
   // ── Banner del evento activo (modo evento) ──

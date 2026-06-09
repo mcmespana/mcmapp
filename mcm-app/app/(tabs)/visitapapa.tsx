@@ -8,6 +8,7 @@ import EventHomeScreen from '../screens/EventHomeScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import EventActionButtons from '@/components/EventActionButtons';
 import { getEvent } from '@/constants/events';
+import { takePendingEventScreen } from '@/utils/eventNavigation';
 import {
   EVENT_SUB_ROUTES,
   EventStackParamList,
@@ -44,8 +45,21 @@ export default function VisitaPapaTab() {
       wasBlurredRef.current = true;
     });
 
-    // Cross-tab return (blur → focus): pop to root from JS.
+    // Cross-tab return (blur → focus): pop to root from JS. Pero si hay un
+    // destino pendiente (p.ej. el banner "Evalúa" de la Home), navegamos a él
+    // en vez de hacer popToTop.
     const unsubscribeFocus = navigation.addListener('focus' as any, () => {
+      const pendingScreen = takePendingEventScreen();
+      if (pendingScreen) {
+        wasBlurredRef.current = false;
+        setTimeout(() => {
+          stackNavRef.current?.navigate(
+            pendingScreen.screen,
+            pendingScreen.params,
+          );
+        }, 0);
+        return;
+      }
       if (!wasBlurredRef.current) return;
       wasBlurredRef.current = false;
       setTimeout(() => {

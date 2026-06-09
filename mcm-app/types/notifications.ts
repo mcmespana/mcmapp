@@ -1,22 +1,34 @@
 // types/notifications.ts
 
 /**
+ * Botón de acción de una notificación: un call-to-action con texto propio que
+ * abre una URL externa o navega a una ruta interna de la app.
+ */
+export interface NotificationActionButtonData {
+  text: string; // Texto del botón, ej: "Ver más", "Abrir", "Ir a calendario"
+  url: string; // URL de destino (externa) o ruta interna
+  isInternal: boolean; // true = navegación interna, false = abrir navegador
+}
+
+/**
  * Estructura de una notificación completa en Firebase
  * Esta es la estructura que el panel de administración creará
  */
 export interface NotificationData {
   id: string; // UUID generado por el panel
   title: string; // Título de la notificación
-  body: string; // Descripción/mensaje de la notificación
+  body: string; // Descripción/mensaje corto (≤200 chars). Se ve en la tarjeta + push
+  bodyLong?: string; // Descripción extendida opcional (scrollable en el modal de
+  // detalle). Si no viene, el detalle usa `body` como fallback.
   icon?: string; // URL de la imagen del icono (PNG/JPG, debe ser accesible públicamente)
   imageUrl?: string; // URL de imagen grande opcional (para notificaciones ricas)
 
-  // Configuración del botón de acción (opcional)
-  actionButton?: {
-    text: string; // Texto del botón, ej: "Ver más", "Abrir", "Ir a calendario"
-    url: string; // URL de destino
-    isInternal: boolean; // true = navegación interna, false = abrir navegador
-  };
+  // Configuración del botón de acción único (legacy — usar actionButtons)
+  actionButton?: NotificationActionButtonData;
+
+  // Botones de acción (hasta 3). Es el formato recomendado; `actionButton`
+  // (singular) se mantiene por compatibilidad y equivale a un array de uno.
+  actionButtons?: NotificationActionButtonData[];
 
   // Metadata
   createdAt: string; // ISO timestamp de cuándo se creó
@@ -70,13 +82,11 @@ export interface ReceivedNotification {
   id: string;
   title: string;
   body: string;
+  bodyLong?: string; // Descripción extendida opcional (ver NotificationData)
   icon?: string;
   imageUrl?: string;
-  actionButton?: {
-    text: string;
-    url: string;
-    isInternal: boolean;
-  };
+  actionButton?: NotificationActionButtonData; // legacy (un botón)
+  actionButtons?: NotificationActionButtonData[]; // hasta 3 botones
   receivedAt: string; // ISO timestamp
   isRead: boolean;
   category?: NotificationCategory;

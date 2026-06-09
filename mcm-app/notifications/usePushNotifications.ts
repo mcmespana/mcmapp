@@ -26,6 +26,7 @@ import { ReceivedNotification } from '@/types/notifications';
 import {
   normalizeNotificationRoute,
   extractActionButton,
+  extractActionButtons,
 } from '@/utils/notificationRoutes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -144,11 +145,17 @@ export default function usePushNotifications() {
           id: notificationId,
           title: notification.request.content.title || 'Notificación',
           body: notification.request.content.body || '',
+          bodyLong: notification.request.content.data?.bodyLong as
+            | string
+            | undefined,
           icon: notification.request.content.data?.icon as string | undefined,
           imageUrl: notification.request.content.data?.imageUrl as
             | string
             | undefined,
           actionButton: extractActionButton(notification.request.content.data),
+          actionButtons: extractActionButtons(
+            notification.request.content.data,
+          ),
           receivedAt: new Date().toISOString(),
           isRead: false,
           category: notification.request.content.data?.category as any,
@@ -218,9 +225,11 @@ export default function usePushNotifications() {
           id: notificationId,
           title: response.notification.request.content.title || 'Notificación',
           body: response.notification.request.content.body || '',
+          bodyLong: data?.bodyLong as string | undefined,
           icon: data?.icon as string | undefined,
           imageUrl: data?.imageUrl as string | undefined,
           actionButton: extractActionButton(data),
+          actionButtons: extractActionButtons(data),
           receivedAt: new Date().toISOString(),
           isRead: false,
           category: data?.category as any,

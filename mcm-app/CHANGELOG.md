@@ -13,6 +13,151 @@
 
 ---
 
+## 2026-06-09 — Reglas de seguridad de Firebase RTDB + despliegue automático
+
+- Reescritas las reglas de la Realtime Database (`mcm-app/database.rules.json`)
+  con cobertura completa de todos los nodos que usa la app, **separadas por
+  sección y comentadas** para poder activar/desactivar partes sin romper el
+  resto. Política: denegado por defecto, lectura pública solo del contenido
+  público, escritura pública solo en los nodos concretos (reportes, reflexiones,
+  `pushTokens`, evaluaciones, wordle, playlists/coros), `/users/$uid` solo para
+  el dueño autenticado, y `notifications` solo-lectura (lo escribe el Admin SDK).
+- `firebase.json` ahora incluye la clave `database` → las reglas se despliegan
+  con `firebase deploy --only database`. (Antes el fichero de reglas no se
+  desplegaba.)
+- Nuevo workflow `.github/workflows/deploy-firebase-rules.yml`: despliega las
+  reglas al mergear a `production` (solo si cambiaron), usando el secret
+  `FIREBASE_SERVICE_ACCOUNT_MCMAPP`. Inerte hasta configurar el secret.
+- Nueva documentación `SEGURIDAD.md` (raíz): mapa de paths, riesgos (el panel
+  secreto `coco` es el punto débil), cómo desplegar y qué falta (App Check,
+  migrar admin a Auth, backups…).
+- Eliminado `database.rules.proposed.json` (borrador superseded; además dejaba
+  `songs/data` solo-lectura, lo que habría roto el panel de edición).
+
+## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
+
+- Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
+  muestra en el **modal de detalle** (scrollable, respeta saltos de línea). La
+  **tarjeta** sigue usando el `body` corto. El detalle muestra `bodyLong` si existe;
+  si no, cae a `body` (fallback).
+- La deduplicación de la lista ahora **fusiona** `bodyLong` entre la copia local (push)
+  y la de Firebase, de modo que el texto largo aparece aunque solo venga por uno de los
+  dos orígenes (p. ej. si el panel lo manda solo a Firebase para no inflar el payload).
+- Tipos: campo `bodyLong?` en `NotificationData` y `ReceivedNotification`.
+- Archivos: `types/notifications.ts`, `app/notifications.tsx`,
+  `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
+  debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
+
+## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
+
+- **Antes** una notificación solo mostraba **un** botón de acción (`actionButton`);
+  el array `actionButtons` del panel se aceptaba pero solo se usaba el primer
+  elemento. **Ahora** se soportan **hasta 3 botones** por notificación, tanto en la
+  tarjeta del centro de notificaciones (un chip por botón) como en el modal de
+  detalle (botones apilados: el 1.º primario, los siguientes secundarios).
+- Nuevo `extractActionButtons()` en `utils/notificationRoutes.ts` (límite
+  `MAX_ACTION_BUTTONS = 3`): acepta el array `actionButtons` y el objeto único
+  `actionButton` (legacy), los combina y deduplica por `url|text`. Se conserva
+  `extractActionButton()` como atajo al primer botón.
+- Tipos: `NotificationActionButtonData` + campo `actionButtons[]` en
+  `NotificationData` y `ReceivedNotification` (`actionButton` se mantiene por
+  compatibilidad).
+- Archivos: `utils/notificationRoutes.ts`, `types/notifications.ts`,
+  `app/notifications.tsx`, `services/pushNotificationService.ts`,
+  `notifications/usePushNotifications.ts`, `__tests__/notificationRoutes.test.ts`.
+- Compatible con OTA (JS puro, sin código nativo). El MCM Panel debe enviar
+  `data.actionButtons` (array) — ver `NOTIFICACIONES_CONTRATO.md` §3.
+
+## 2026-06-07 — Evaluación: wizard tipo onboarding + ajustes de ubicación
+
+- **Evalúa la actividad → wizard animado** (`EvaluationWizard`): una fase por
+  pregunta, barra de progreso, transiciones (Reanimated, sin nuevas deps),
+  bienvenida y pantalla final de agradecimiento con animación. Sustituye al
+  formulario de scroll. La pantalla `Evaluacion` pasa a `headerShown: false`.
+- **Preguntas en código** (`DEFAULT_EVENT_EVALUATION`): General, Organización
+  MCM, Organización Visita del Papa, Convivencia, Más gustado, Mejorar,
+  Comentarios. Respuestas a Firebase (`<evento>/evaluacion/respuestas`).
+- **CTA "Evalúa la actividad" en la Home** encendido por código
+  (`evaluationOpen`), sin depender de Firebase.
+- **Evalúa la app → Ajustes**: deja de estar en el hub del evento y en la Home;
+  se abre desde el panel de Ajustes como pantalla raíz (`app/evaluacion-app.tsx`).
+
+## 2026-06-07 — Sección de Evaluación (evento + app)
+
+- **Nueva sección "Evalúa"**: dos pantallas nuevas para recoger feedback al
+  terminar un evento:
+  - **Evalúa la actividad** (`EvaluacionScreen`): valoración por estrellas +
+    preguntas abiertas (lo que más gustó, palabras del Papa, momento
+    inolvidable, mejoras…). Las preguntas se leen de Firebase
+    (`activities/<evento>/evaluacion/data`) con _fallback_ en código; las
+    respuestas se escriben en `activities/<evento>/evaluacion/respuestas`.
+  - **Evalúa la app** (`EvaluacionAppScreen`): valoración de la app + errores,
+    utilidad e ideas. Respuestas en `app/evaluations`.
+- **Banner en la Home** "Evalúa la actividad": aparece cuando el panel enciende
+  `evaluationOpen` en el nodo de evaluación del evento activo y el usuario aún
+  no ha evaluado (flag local en AsyncStorage). Mismo gating de perfil que el
+  banner de evento.
+- **Tarjetas en el hub del evento** (Visita Papa): "Evalúa la actividad" (⭐) y
+  "Evalúa la app" (📝).
+- **Anti-duplicado**: tras enviar, se guarda `evaluacion_done_<scope>` en
+  AsyncStorage; el formulario muestra un estado de agradecimiento con opción a
+  reenviar y el banner se oculta.
+- **Seed Firebase**: `firebase-seed/evaluacion.json` listo para importar en
+  `activities/visitapapa26/evaluacion` (incluye `evaluationOpen` y preguntas).
+- Componentes nuevos: `components/StarRating.tsx`, `components/EvaluationForm.tsx`.
+  Config/tipos en `constants/evaluation.ts`. Deep-link al stack de evento vía
+  `utils/eventNavigation.ts`. Archivos tocados: `constants/events.ts`,
+  `app/screens/eventStackScreens.tsx`, `app/(tabs)/visitapapa.tsx`,
+  `app/(tabs)/index.tsx`.
+
+## 2026-06-06 — Fix layout de Materiales
+
+- **Materiales · tarjetas empujadas abajo / hueco enorme**: el `DateSelector`
+  (un `FlatList` horizontal) iba suelto como hijo directo del contenedor flex en
+  columna, así que crecía en vertical y empujaba el `ScrollView` de tarjetas al
+  fondo (cortándolas). Se envuelve en una `View` (mismo patrón que
+  `HorarioScreen`) para limitarlo a su altura natural. Archivo:
+  `app/screens/MaterialesScreen.tsx`.
+
+## 2026-06-06 — Tab bar iOS visible + icono verde en carismochito
+
+- **Tab bar inferior translúcida/ilegible en iOS ≤18**: la barra nativa
+  (`NativeTabs`) se vuelve transparente al llegar al final del scroll o cuando
+  el contenido es una `View` estática, dejando los iconos flotando sobre el
+  contenido. Se añade `disableTransparentOnScrollEdge` (mantiene el fondo en el
+  borde del scroll) + `blurEffect="systemChromeMaterial"` (material adaptado al
+  tema). En iOS 26+ el sistema usa liquid glass y ambos se ignoran (allí ya se
+  veía bien). Archivo: `app/(tabs)/_layout.tsx`.
+- **Modo carismochito · icono de la app en verde**: el cuadro-logo del header de
+  la Home se tiñe de verde mientras el modo está activo. Archivo:
+  `app/(tabs)/index.tsx`.
+
+## 2026-06-06 — Fixes Android (tab bar) y mejoras en Grupos
+
+- **Tab bar inferior tapada por la barra de navegación de Android**: en Expo 55
+  Android va edge-to-edge (la app dibuja detrás de la barra del sistema). La tab
+  bar tenía altura fija de 80 sin contar `insets.bottom`, por lo que en móviles
+  con barra de gestos/3 botones visible quedaba parcialmente tapada. Ahora se
+  suma el safe-area inferior a la altura y al padding. Archivo:
+  `app/(tabs)/_layout.tsx`.
+- **Grupos · bug del buscador (teclado que se escondía al escribir):** al cruzar
+  el umbral de 2 caracteres la pantalla cambiaba todo su árbol de `ScrollView`
+  (categorías) a `SectionList` (resultados), por lo que el buscador se
+  desmontaba/remontaba y perdía el foco. Ahora vive en una barra superior
+  **siempre montada**; solo cambia el contenido inferior. Se añadió
+  `keyboardShouldPersistTaps`.
+- **Grupos · barra de búsqueda rediseñada**: se sustituye el `SearchField` de
+  heroui-native (se veía comprimido y con el texto poco legible en modo oscuro)
+  por una barra propia (`TextInput`) más grande, idéntica en iOS/Android y con
+  **texto blanco garantizado en oscuro**. Botón "Encuéntrame" más prominente.
+- **Grupos · "Encuéntrame" con búsqueda amplia:** busca `nombre + 2 primeras
+  letras del apellido` (ej. "David So"), de modo que encuentra entradas
+  abreviadas como "David Sol. (Castellón)".
+- **Grupos · categorías ocultas por evento**: nueva propiedad
+  `hiddenGroupCategories` en `EventConfig`. La Visita del Papa oculta la
+  categoría **Alojamiento** (en la cuadrícula y en la búsqueda). Archivos:
+  `constants/events.ts`, `app/screens/GruposScreen.tsx`.
+
 ## 2026-06-05 — Login deshabilitado temporalmente en Android ("próximamente")
 
 - El inicio de sesión en Android queda **temporalmente desactivado** mientras se

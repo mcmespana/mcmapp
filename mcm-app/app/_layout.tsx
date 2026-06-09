@@ -247,6 +247,7 @@ function InnerLayout() {
             title: 'Wordle Jubileo',
           }}
         />
+        <Stack.Screen name="evaluacion-app" options={{ headerShown: false }} />
         <Stack.Screen
           name="playlist"
           options={{

@@ -187,12 +187,12 @@ export default function OTAUpdatePrompt({
             </View>
 
             <Text style={[styles.title, { color: theme.text }]}>
-              Nueva versión disponible
+              ¡Tenemos novedades!
             </Text>
             <Text style={[styles.subtitle, { color: subtleText }]}>
               {isDownloading
                 ? 'Estamos descargando las novedades. Tardará solo unos segundos…'
-                : 'Hemos preparado mejoras y correcciones nuevas. Reinicia la app para empezar a usarlas — solo tarda un par de segundos.'}
+                : 'Hemos preparado mejoras y correcciones nuevas. Tan solo te llevará un par de segundos.'}
             </Text>
 
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
@@ -216,7 +216,7 @@ export default function OTAUpdatePrompt({
                   style={styles.primaryIcon}
                 />
                 <Text style={styles.primaryLabel}>
-                  {isDownloading ? 'Preparando…' : 'Reiniciar ahora'}
+                  {isDownloading ? 'Preparando…' : 'Me actualizo (2 seg)'}
                 </Text>
               </TouchableOpacity>
 
@@ -228,7 +228,7 @@ export default function OTAUpdatePrompt({
                 accessibilityLabel="Aplicar más tarde"
               >
                 <Text style={[styles.secondaryLabel, { color: subtleText }]}>
-                  Más tarde
+                  Después (no recomendado)
                 </Text>
               </TouchableOpacity>
             </View>
