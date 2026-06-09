@@ -175,10 +175,34 @@
       "feedback": {
         ".write": true
       },
+      "evaluationConfig": {
+        ".read": true
+      },
       "evaluations": {
         "$deviceId": {
           ".read": true,
           ".write": true
+        }
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  ENCUESTAS GENÉRICAS  (/surveys/<id>)
+     *  Config (preguntas, estado, audiencia) la escribe el panel (Admin SDK).
+     *  Lectura pública de la config. La app solo escribe su propia respuesta
+     *  en <id>/respuestas/<deviceId> (una por dispositivo) y toca updatedAt.
+     * ------------------------------------------------------------------ */
+    "surveys": {
+      ".read": true,
+      "$surveyId": {
+        "updatedAt": {
+          ".write": true,
+          ".validate": "newData.isString() || newData.isNumber()"
+        },
+        "respuestas": {
+          "$deviceId": {
+            ".write": true
+          }
         }
       }
     },

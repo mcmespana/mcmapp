@@ -57,8 +57,13 @@ import { setPendingEventScreen } from '@/utils/eventNavigation';
 import {
   DEFAULT_APP_EVALUATION,
   DEFAULT_EVENT_EVALUATION,
+  EvaluationConfig,
   evaluationDoneKey,
+  isEvaluationOpen,
+  mergeEvaluationConfig,
 } from '@/constants/evaluation';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
@@ -230,9 +235,24 @@ export default function Home() {
       resolved.homeButtons.includes(activeTabId));
   const showEventBanner = hasEventAccess;
 
-  // CTA "Evalúa la actividad": flag en código (DEFAULT_EVENT_EVALUATION). Se
-  // muestra si está abierto y el usuario aún no ha evaluado (flag local). Mismo
-  // gating de visibilidad que el evento.
+  // CTA "Evalúa la actividad": el estado abierto/cerrado se lee de Firebase
+  // (config en `activities/<evento>/evaluacion/data`) con fallback al código,
+  // así el panel abre/cierra la encuesta sin OTA. Se muestra si está abierta y
+  // el usuario aún no ha evaluado (flag local). Mismo gating que el evento.
+  const { data: eventEvalConfig } = useFirebaseData<Partial<EvaluationConfig>>(
+    getEventFirebasePath(activeEvent, 'evaluacion'),
+    getEventCacheKey(activeEvent, 'evaluacion'),
+  );
+  const eventEvalOpen = isEvaluationOpen(
+    mergeEvaluationConfig(DEFAULT_EVENT_EVALUATION, eventEvalConfig),
+  );
+  const { data: appEvalConfig } = useFirebaseData<Partial<EvaluationConfig>>(
+    'app/evaluationConfig',
+    'app_evaluation_config',
+  );
+  const appEvalOpen = isEvaluationOpen(
+    mergeEvaluationConfig(DEFAULT_APP_EVALUATION, appEvalConfig),
+  );
   const [evalDone, setEvalDone] = useState(false);
   useFocusEffect(
     useCallback(() => {
@@ -245,8 +265,7 @@ export default function Home() {
       };
     }, [activeEvent.id]),
   );
-  const showEvalBanner =
-    hasEventAccess && !!DEFAULT_EVENT_EVALUATION.evaluationOpen && !evalDone;
+  const showEvalBanner = hasEventAccess && eventEvalOpen && !evalDone;
 
   // CTA "Evalúa la app": flag en código (DEFAULT_APP_EVALUATION). No depende del
   // evento (la app se evalúa siempre). Abre la pantalla raíz de Ajustes.
@@ -262,8 +281,7 @@ export default function Home() {
       };
     }, []),
   );
-  const showAppEvalBanner =
-    !!DEFAULT_APP_EVALUATION.evaluationOpen && !appEvalDone;
+  const showAppEvalBanner = appEvalOpen && !appEvalDone;
 
   // OTA update badge (show in header after user dismisses the modal)
   const {

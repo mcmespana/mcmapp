@@ -38,7 +38,10 @@ import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import type { EvaluationConfig } from '@/constants/evaluation';
 
-export type EvaluationAnswers = Record<string, number | string | boolean>;
+export type EvaluationAnswers = Record<
+  string,
+  number | string | boolean | string[]
+>;
 
 interface EvaluationWizardProps {
   config: EvaluationConfig;
@@ -131,8 +134,18 @@ export default function EvaluationWizard({
     width: `${progress.value * 100}%`,
   }));
 
-  const setAnswer = (id: string, value: number | string | boolean) =>
+  const setAnswer = (id: string, value: number | string | boolean | string[]) =>
     setAnswers((prev) => ({ ...prev, [id]: value }));
+
+  /** Alterna una opción en una pregunta `multi` (respuesta = array). */
+  const toggleMulti = (id: string, optionValue: string) =>
+    setAnswers((prev) => {
+      const current = Array.isArray(prev[id]) ? (prev[id] as string[]) : [];
+      const next = current.includes(optionValue)
+        ? current.filter((v) => v !== optionValue)
+        : [...current, optionValue];
+      return { ...prev, [id]: next };
+    });
 
   const goNext = () => {
     h.select();
@@ -156,6 +169,9 @@ export default function EvaluationWizard({
         if (q.type === 'text') {
           const t = String(v ?? '').trim();
           if (t) cleaned[q.id] = t;
+        } else if (q.type === 'multi') {
+          // Solo guardamos el array si tiene alguna opción marcada.
+          if (Array.isArray(v) && v.length > 0) cleaned[q.id] = v;
         } else if (v !== undefined) {
           cleaned[q.id] = v;
         }
@@ -177,9 +193,13 @@ export default function EvaluationWizard({
   const currentAnswered =
     currentQ?.type === 'stars'
       ? typeof currentVal === 'number' && currentVal > 0
-      : currentQ?.type === 'text'
-        ? !!String(currentVal ?? '').trim()
-        : currentVal !== undefined;
+      : currentQ?.type === 'scale'
+        ? typeof currentVal === 'number' // 0 es respuesta válida (p. ej. NPS)
+        : currentQ?.type === 'text'
+          ? !!String(currentVal ?? '').trim()
+          : currentQ?.type === 'multi'
+            ? Array.isArray(currentVal) && currentVal.length > 0
+            : currentVal !== undefined;
   const canContinue = !currentQ || currentQ.optional || currentAnswered;
   const isLast = step === total - 1;
 
@@ -211,6 +231,8 @@ export default function EvaluationWizard({
         theme={theme}
         insets={insets}
         justSubmitted={done}
+        thanksTitle={config.thanksTitle}
+        thanksBody={config.thanksBody}
         onDone={exit}
       />
     );
@@ -407,6 +429,96 @@ export default function EvaluationWizard({
                   })}
                 </View>
               )}
+
+              {currentQ!.type === 'scale' && (
+                <ScaleInput
+                  min={currentQ!.min ?? 0}
+                  max={currentQ!.max ?? 10}
+                  minLabel={currentQ!.minLabel}
+                  maxLabel={currentQ!.maxLabel}
+                  value={typeof currentVal === 'number' ? currentVal : null}
+                  onChange={(n) => setAnswer(currentQ!.id, n)}
+                  accent={accentReadable}
+                  theme={theme}
+                />
+              )}
+
+              {currentQ!.type === 'single' &&
+                (currentQ!.options ?? []).map((opt) => {
+                  const selected = currentVal === opt.value;
+                  return (
+                    <Pressable
+                      key={opt.value}
+                      onPress={() => {
+                        h.select();
+                        setAnswer(currentQ!.id, opt.value);
+                      }}
+                      style={[
+                        styles.optionRow,
+                        {
+                          borderColor: selected
+                            ? accentReadable
+                            : hexAlpha(theme.icon, '30'),
+                          backgroundColor: selected
+                            ? hexAlpha(accentReadable, '12')
+                            : 'transparent',
+                        },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={
+                          selected
+                            ? 'radio-button-checked'
+                            : 'radio-button-unchecked'
+                        }
+                        size={22}
+                        color={selected ? accentReadable : theme.icon}
+                      />
+                      <Text style={[styles.optionLabel, { color: theme.text }]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+
+              {currentQ!.type === 'multi' &&
+                (currentQ!.options ?? []).map((opt) => {
+                  const arr = Array.isArray(currentVal)
+                    ? (currentVal as string[])
+                    : [];
+                  const selected = arr.includes(opt.value);
+                  return (
+                    <Pressable
+                      key={opt.value}
+                      onPress={() => {
+                        h.select();
+                        toggleMulti(currentQ!.id, opt.value);
+                      }}
+                      style={[
+                        styles.optionRow,
+                        {
+                          borderColor: selected
+                            ? accentReadable
+                            : hexAlpha(theme.icon, '30'),
+                          backgroundColor: selected
+                            ? hexAlpha(accentReadable, '12')
+                            : 'transparent',
+                        },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={
+                          selected ? 'check-box' : 'check-box-outline-blank'
+                        }
+                        size={22}
+                        color={selected ? accentReadable : theme.icon}
+                      />
+                      <Text style={[styles.optionLabel, { color: theme.text }]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -485,18 +597,92 @@ function WizardButton({
   );
 }
 
+// ─── Escala numérica (p. ej. NPS 0..10) ──────────────────────────────
+function ScaleInput({
+  min,
+  max,
+  minLabel,
+  maxLabel,
+  value,
+  onChange,
+  accent,
+  theme,
+}: {
+  min: number;
+  max: number;
+  minLabel?: string;
+  maxLabel?: string;
+  value: number | null;
+  onChange: (n: number) => void;
+  accent: string;
+  theme: (typeof Colors)['light'];
+}) {
+  const steps = [];
+  for (let i = min; i <= max; i++) steps.push(i);
+  return (
+    <View>
+      <View style={scaleStyles.row}>
+        {steps.map((n) => {
+          const selected = value === n;
+          return (
+            <Pressable
+              key={n}
+              onPress={() => {
+                h.select();
+                onChange(n);
+              }}
+              style={[
+                scaleStyles.cell,
+                {
+                  borderColor: selected ? accent : hexAlpha(theme.icon, '30'),
+                  backgroundColor: selected ? accent : 'transparent',
+                },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`${n}`}
+            >
+              <Text
+                style={[
+                  scaleStyles.cellText,
+                  { color: selected ? '#fff' : theme.text },
+                ]}
+              >
+                {n}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {(minLabel || maxLabel) && (
+        <View style={scaleStyles.labels}>
+          <Text style={[scaleStyles.labelText, { color: theme.icon }]}>
+            {minLabel ?? ''}
+          </Text>
+          <Text style={[scaleStyles.labelText, { color: theme.icon }]}>
+            {maxLabel ?? ''}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 // ─── Pantalla de agradecimiento ──────────────────────────────────────
 function SuccessPhase({
   accent,
   theme,
   insets,
   justSubmitted,
+  thanksTitle,
+  thanksBody,
   onDone,
 }: {
   accent: string;
   theme: (typeof Colors)['light'];
   insets: { top: number; bottom: number };
   justSubmitted: boolean;
+  thanksTitle?: string;
+  thanksBody?: string;
   onDone: () => void;
 }) {
   const scale = useSharedValue(0);
@@ -554,14 +740,17 @@ function SuccessPhase({
         entering={FadeInDown.delay(150).duration(420)}
         style={[successStyles.title, { color: theme.text }]}
       >
-        {justSubmitted ? '¡Gracias de corazón!' : '¡Ya nos lo has contado!'}
+        {justSubmitted
+          ? (thanksTitle ?? '¡Gracias de corazón!')
+          : '¡Ya nos lo has contado!'}
       </Animated.Text>
       <Animated.Text
         entering={FadeInDown.delay(220).duration(420)}
         style={[successStyles.sub, { color: theme.icon }]}
       >
         {justSubmitted
-          ? 'Hemos recibido tu evaluación. Nos ayuda muchísimo a mejorar 🙌'
+          ? (thanksBody ??
+            'Hemos recibido tu evaluación. Nos ayuda muchísimo a mejorar 🙌')
           : 'Ya enviaste tu evaluación. ¡Gracias por tu ayuda!'}
       </Animated.Text>
 
@@ -680,6 +869,18 @@ const createStyles = (isDark: boolean) =>
       borderWidth: 1.5,
     },
     yesnoText: { fontSize: 16, fontWeight: '700' },
+    // Opciones (single / multi)
+    optionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      marginBottom: 10,
+    },
+    optionLabel: { flex: 1, fontSize: 16, fontWeight: '600' },
     // Footer
     footer: {
       paddingHorizontal: 24,
@@ -706,6 +907,26 @@ const btnStyles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.2,
   },
+});
+
+const scaleStyles = StyleSheet.create({
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  cell: {
+    minWidth: 44,
+    height: 44,
+    paddingHorizontal: 6,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cellText: { fontSize: 16, fontWeight: '700' },
+  labels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  labelText: { fontSize: 12, fontWeight: '600', maxWidth: '45%' },
 });
 
 const successStyles = StyleSheet.create({

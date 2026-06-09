@@ -6,11 +6,14 @@ import EvaluationWizard, {
   EvaluationAnswers,
 } from '@/components/EvaluationWizard';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
-import { getEventFirebasePath } from '@/constants/events';
+import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import {
   DEFAULT_EVENT_EVALUATION,
+  EvaluationConfig,
   evaluationDoneKey,
+  mergeEvaluationConfig,
 } from '@/constants/evaluation';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { getDeviceId } from '@/services/pushNotificationService';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -29,6 +32,15 @@ export default function EvaluacionScreen() {
   const resolved = useResolvedProfileConfig();
 
   const path = getEventFirebasePath(event, 'evaluacion');
+  const cacheKey = getEventCacheKey(event, 'evaluacion');
+
+  // Config (preguntas, título, estado abierto/cerrado) desde Firebase con
+  // fallback al set en código. Así el panel edita la encuesta sin OTA.
+  const { data: remoteConfig } = useFirebaseData<Partial<EvaluationConfig>>(
+    path,
+    cacheKey,
+  );
+  const config = mergeEvaluationConfig(DEFAULT_EVENT_EVALUATION, remoteConfig);
 
   const handleSubmit = useCallback(
     async (answers: EvaluationAnswers) => {
@@ -69,8 +81,8 @@ export default function EvaluacionScreen() {
 
   return (
     <EvaluationWizard
-      config={DEFAULT_EVENT_EVALUATION}
-      accentColor={event.tintColor}
+      config={config}
+      accentColor={config.accentColor || event.tintColor}
       doneKey={evaluationDoneKey(event.id)}
       onSubmit={handleSubmit}
       checkSubmitted={checkSubmitted}

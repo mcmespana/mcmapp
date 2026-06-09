@@ -1,0 +1,52 @@
+{
+  "updatedAt": "1",
+  "data": {
+    "status": "open",
+    "title": "Evalúa la app",
+    "intro": "Cuéntanos cómo te ha funcionado la app durante el evento.",
+    "thanksTitle": "¡Gracias!",
+    "thanksBody": "Tu opinión nos ayuda a mejorar la app para todos 🙌",
+    "questions": [
+      {
+        "id": "general",
+        "type": "stars",
+        "label": "¿Cómo valoras la app en general?"
+      },
+      {
+        "id": "nps",
+        "type": "scale",
+        "label": "¿Qué probabilidad hay de que recomiendes la app?",
+        "min": 0,
+        "max": 10,
+        "minLabel": "Nada probable",
+        "maxLabel": "Muy probable",
+        "optional": true
+      },
+      {
+        "id": "secciones",
+        "type": "multi",
+        "label": "¿Qué secciones usas más?",
+        "optional": true,
+        "options": [
+          { "value": "cantoral", "label": "Cantoral" },
+          { "value": "calendario", "label": "Calendario" },
+          { "value": "fotos", "label": "Fotos" },
+          { "value": "materiales", "label": "Materiales" }
+        ]
+      },
+      {
+        "id": "errores",
+        "type": "text",
+        "label": "¿Has encontrado algún error o fallo?",
+        "placeholder": "Pantalla o función que no iba bien…",
+        "optional": true
+      },
+      {
+        "id": "recomendarias",
+        "type": "yesno",
+        "label": "¿Recomendarías la app?",
+        "optional": true
+      }
+    ]
+  }
+}

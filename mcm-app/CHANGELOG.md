@@ -13,6 +13,37 @@
 
 ---
 
+## 2026-06-09 — Sistema de encuestas: config desde Firebase + tipos nuevos + encuestas genéricas
+
+- **Config de encuestas/evaluaciones desde Firebase** (con fallback a código). La
+  app vuelve a leer preguntas, título y estado (abierto/cerrado) de Firebase, así
+  el panel crea/edita encuestas y las abre/cierra **sin OTA**. Antes (commit
+  `2c6db4c`) estaba solo en código.
+  - Evaluación de evento: `activities/<evento>/evaluacion/data`.
+  - Evaluación de la app: nuevo nodo `app/evaluationConfig/data` (separado de las
+    respuestas en `app/evaluations`).
+- **Nuevos tipos de pregunta** en el wizard: `scale` (escala/NPS), `single`
+  (opción única/radio), `multi` (opción múltiple/checkbox), además de
+  `stars`/`text`/`yesno`. Respuesta de `multi` es `string[]`.
+- **Encuestas genéricas** `/surveys/<id>`: nueva pantalla `SurveyScreen` + ruta
+  raíz `app/encuesta/[id].tsx` (deep link/push `/encuesta/<id>`). Soportan
+  audiencia por perfil (`matchesAudience`), ventana de apertura (`status` +
+  `opensAt`/`closesAt`), modo anónimo y textos de cierre/agradecimiento.
+- **Estado y helpers** en `constants/evaluation.ts` (`status`, `isEvaluationOpen`,
+  `mergeEvaluationConfig`, campos `thanksTitle`/`thanksBody`/`closedTitle`/…) y
+  modelo genérico en `constants/surveys.ts`.
+- **Reglas RTDB**: `surveys` (lectura pública, escritura solo en
+  `respuestas/<deviceId>` + `updatedAt`) y `app/evaluationConfig` (lectura).
+- **Seeds**: `firebase-seed/{app-evaluation-config,surveys}.json`. **Tests**:
+  `__tests__/surveys.test.ts`.
+- Archivos: `constants/evaluation.ts`, `constants/surveys.ts`,
+  `components/EvaluationWizard.tsx`, `app/screens/{EvaluacionScreen,EvaluacionAppScreen,SurveyScreen}.tsx`,
+  `app/encuesta/[id].tsx`, `app/_layout.tsx`, `app/(tabs)/index.tsx`,
+  `database.rules.json`.
+- Docs: `ENCUESTAS.md`, `ENCUESTAS_CONTRATO.md`, `PROMPT_MCMPANEL_ENCUESTAS.md`
+  (raíz del monorepo); actualizado `EVENTOS.md`.
+- **OTA-safe** (solo JS, sin dependencias nativas).
+
 ## 2026-06-09 — Reglas de seguridad de Firebase RTDB + despliegue automático
 
 - Reescritas las reglas de la Realtime Database (`mcm-app/database.rules.json`)

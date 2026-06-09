@@ -8,8 +8,11 @@ import EvaluationWizard, {
 import colors from '@/constants/colors';
 import {
   DEFAULT_APP_EVALUATION,
+  EvaluationConfig,
   evaluationDoneKey,
+  mergeEvaluationConfig,
 } from '@/constants/evaluation';
+import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { getDeviceId } from '@/services/pushNotificationService';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -23,6 +26,13 @@ import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 export default function EvaluacionAppScreen() {
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
+
+  // Config desde Firebase (`app/evaluationConfig/data`) con fallback al código.
+  const { data: remoteConfig } = useFirebaseData<Partial<EvaluationConfig>>(
+    'app/evaluationConfig',
+    'app_evaluation_config',
+  );
+  const config = mergeEvaluationConfig(DEFAULT_APP_EVALUATION, remoteConfig);
 
   const handleSubmit = useCallback(
     async (answers: EvaluationAnswers) => {
@@ -56,8 +66,8 @@ export default function EvaluacionAppScreen() {
 
   return (
     <EvaluationWizard
-      config={DEFAULT_APP_EVALUATION}
-      accentColor={colors.info}
+      config={config}
+      accentColor={config.accentColor || colors.info}
       doneKey={evaluationDoneKey('app')}
       onSubmit={handleSubmit}
       checkSubmitted={checkSubmitted}
