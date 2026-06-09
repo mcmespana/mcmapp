@@ -1,11 +1,227 @@
 {
+  /*
+   * ============================================================================
+   *  REGLAS DE SEGURIDAD — Firebase Realtime Database (proyecto mcmapp-39b71)
+   * ============================================================================
+   *
+   *  Documentación completa, riesgos y guía para activar/desactivar secciones:
+   *      ../SEGURIDAD.md   (raíz del monorepo)
+   *
+   *  PRINCIPIOS
+   *  ----------
+   *  1. Denegado por defecto: en la raíz `.read` y `.write` son `false`.
+   *     Cualquier path que NO esté listado aquí queda BLOQUEADO.
+   *  2. Cada sección de la app está separada con su propio bloque comentado.
+   *     Para DESACTIVAR una sección (p.ej. cortar escrituras a `compartiendo`)
+   *     pon su `.read`/`.write` a `false` o bórralo. El resto sigue funcionando.
+   *  3. Lectura pública SOLO para contenido público (cantoral, eventos, etc.).
+   *  4. Escritura pública SOLO en los nodos donde la app escribe sin login
+   *     (reportes, reflexiones, tokens push, evaluaciones, juego). Todo lo
+   *     demás se escribe desde el panel/Admin SDK, que IGNORA estas reglas.
+   *  5. Datos personales (`/users/$uid`) requieren estar autenticado y ser
+   *     el dueño (`auth.uid === $uid`).
+   *
+   *  NOTA: este archivo usa comentarios estilo JS, permitidos por las reglas
+   *  de Firebase RTDB. No es JSON estricto (no lo proceses con `jq`).
+   * ============================================================================
+   */
   "rules": {
     ".read": false,
     ".write": false,
+
+    /* ------------------------------------------------------------------ *
+     *  CANTORAL  (/songs)
+     *  - data:        catálogo de canciones (ChordPro).  Lectura pública.
+     *                 Escritura = panel secreto (contraseña 'coco', NO Auth).
+     *                 ⚠️ PUNTO MÁS DÉBIL: escritura pública. Ver SEGURIDAD.md
+     *                 sección "Endurecer el panel secreto".
+     *  - updatedAt:   timestamp para invalidar caché. Lo escribe el panel.
+     *  - ediciones / solicitudes / fallitos: colas de reportes de usuarios.
+     * ------------------------------------------------------------------ */
+    "songs": {
+      "data": {
+        ".read": true,
+        ".write": true
+      },
+      "updatedAt": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.isString() || newData.isNumber()"
+      },
+      "ediciones": {
+        ".read": true,
+        ".write": true
+      },
+      "solicitudes": {
+        ".read": true,
+        ".write": true
+      },
+      "fallitos": {
+        ".read": true,
+        ".write": true
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  ÁLBUMES / FOTOS  (/albums)   — solo lectura pública.
+     * ------------------------------------------------------------------ */
+    "albums": {
+      ".read": true
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  EVENTO JUBILEO  (/jubileo)
+     *  Todo el evento es de lectura pública. La única escritura desde la
+     *  app son las reflexiones de "Compartiendo".
+     * ------------------------------------------------------------------ */
+    "jubileo": {
+      ".read": true,
+      "compartiendo": {
+        "data": { ".write": true },
+        "updatedAt": { ".write": true }
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  EVENTOS NUEVOS  (/activities/<evento>)   p.ej. visitapapa26, _meta
+     *  Lectura pública de todo. Escritura pública SOLO en:
+     *    - <evento>/compartiendo (reflexiones)
+     *    - <evento>/evaluacion/respuestas/<deviceId> (encuesta del evento)
+     * ------------------------------------------------------------------ */
+    "activities": {
+      ".read": true,
+      "$event": {
+        "compartiendo": {
+          "data": { ".write": true },
+          "updatedAt": { ".write": true }
+        },
+        "evaluacion": {
+          "respuestas": {
+            "$deviceId": { ".write": true }
+          }
+        }
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  CONFIGURACIÓN DE PERFILES  (/profileConfig)  — solo lectura.
+     *  Visibilidad de tabs/botones/mantenimiento. Se edita desde mcmpanel.
+     * ------------------------------------------------------------------ */
+    "profileConfig": {
+      ".read": true
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  CALENDARIOS ICS  (/calendars)  — solo lectura (URLs de .ics).
+     * ------------------------------------------------------------------ */
+    "calendars": {
+      ".read": true
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  LECTURAS / ORACIÓN  (/seccion_oracion)
+     *  Lectura pública. Lo escribe el scraper (scrapping-lecturas) con el
+     *  Admin SDK → no necesita regla de escritura aquí.
+     * ------------------------------------------------------------------ */
+    "seccion_oracion": {
+      ".read": true
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  NOTIFICACIONES  (/notifications)
+     *  Lectura pública (historial in-app). La ESCRITURA queda denegada:
+     *  solo el backend/panel (Admin SDK) crea notificaciones.
+     * ------------------------------------------------------------------ */
+    "notifications": {
+      ".read": true,
+      ".write": false
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  TOKENS PUSH  (/pushTokens/<tokenId>)
+     *  La raíz NO es enumerable (no se puede listar todos los tokens).
+     *  Cada dispositivo escribe/lee su propio nodo (registro + heartbeat).
+     *  El backend los lee con Admin SDK para enviar notificaciones.
+     * ------------------------------------------------------------------ */
+    "pushTokens": {
+      ".read": false,
+      ".write": false,
+      "$tokenId": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren()"
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  JUEGO WORDLE  (/wordle)   (actualmente dormido)
+     *  Lectura pública. Escritura pública en stats, users y partidas del día.
+     *  daily-words es solo lectura (lo genera el backend).
+     * ------------------------------------------------------------------ */
+    "wordle": {
+      ".read": true,
+      "daily-words": { ".write": false },
+      "stats": { ".write": true },
+      "users": { ".write": true },
+      "$date": { ".write": true }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  FEEDBACK Y EVALUACIÓN DE LA APP  (/app)
+     *  - feedback/<categoria>:  reportes de bugs (solo escritura).
+     *  - evaluations/<deviceId>: respuestas a la encuesta de la app.
+     * ------------------------------------------------------------------ */
+    "app": {
+      "feedback": {
+        ".write": true
+      },
+      "evaluations": {
+        "$deviceId": {
+          ".read": true,
+          ".write": true
+        }
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  PLAYLISTS COMPARTIDAS  (/playlistShares/<code>)
+     *  Se comparten por código corto. La raíz no es enumerable.
+     *  Quien tiene el código puede leer y escribir su entrada.
+     *  La Cloud Function `purgeExpiredShares` borra las caducadas.
+     * ------------------------------------------------------------------ */
+    "playlistShares": {
+      ".read": false,
+      ".write": false,
+      "$code": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChild('expiresAt') && newData.child('expiresAt').isNumber()"
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  SESIONES DE CORO EN VIVO  (/choirSessions/<code>)
+     *  Misma lógica que playlistShares (sincronización en tiempo real).
+     * ------------------------------------------------------------------ */
+    "choirSessions": {
+      ".read": false,
+      ".write": false,
+      "$code": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChild('expiresAt') && newData.child('expiresAt').isNumber()"
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  DATOS DE USUARIO AUTENTICADO  (/users/<uid>)
+     *  Perfil + sección "Contigo" (hábitos, bookmarks, revisiones).
+     *  REQUIERE login (Google/Apple) y solo el dueño accede a su nodo.
+     * ------------------------------------------------------------------ */
     "users": {
       "$uid": {
-        ".read": "$uid === auth.uid",
-        ".write": "$uid === auth.uid"
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
       }
     }
   }
