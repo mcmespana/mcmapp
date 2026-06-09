@@ -13,6 +13,27 @@
 
 ---
 
+## 2026-06-09 — Reglas de seguridad de Firebase RTDB + despliegue automático
+
+- Reescritas las reglas de la Realtime Database (`mcm-app/database.rules.json`)
+  con cobertura completa de todos los nodos que usa la app, **separadas por
+  sección y comentadas** para poder activar/desactivar partes sin romper el
+  resto. Política: denegado por defecto, lectura pública solo del contenido
+  público, escritura pública solo en los nodos concretos (reportes, reflexiones,
+  `pushTokens`, evaluaciones, wordle, playlists/coros), `/users/$uid` solo para
+  el dueño autenticado, y `notifications` solo-lectura (lo escribe el Admin SDK).
+- `firebase.json` ahora incluye la clave `database` → las reglas se despliegan
+  con `firebase deploy --only database`. (Antes el fichero de reglas no se
+  desplegaba.)
+- Nuevo workflow `.github/workflows/deploy-firebase-rules.yml`: despliega las
+  reglas al mergear a `production` (solo si cambiaron), usando el secret
+  `FIREBASE_SERVICE_ACCOUNT_MCMAPP`. Inerte hasta configurar el secret.
+- Nueva documentación `SEGURIDAD.md` (raíz): mapa de paths, riesgos (el panel
+  secreto `coco` es el punto débil), cómo desplegar y qué falta (App Check,
+  migrar admin a Auth, backups…).
+- Eliminado `database.rules.proposed.json` (borrador superseded; además dejaba
+  `songs/data` solo-lectura, lo que habría roto el panel de edición).
+
 ## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
 
 - Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
