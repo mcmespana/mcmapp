@@ -3,6 +3,7 @@
  *
  * El usuario decide:
  *   - Nombre de la playlist (cabecera del PDF)
+ *   - La fecha que sale impresa en la portada (texto libre; vacío = sin fecha)
  *   - Si quiere una canción por página (page-break-after)
  *   - Si quiere mostrar los acordes o sólo la letra
  *   - Tamaño base de la letra
@@ -11,6 +12,10 @@
  * `break-inside: avoid` a cada canción, así que si caben enteras en una
  * página no se parten; si una canción es más larga que A4, el motor de
  * impresión la parte por filas (sin perder cabecera).
+ *
+ * Los toggles son un componente propio (track+thumb con StyleSheet): el
+ * Switch de heroui-native se pintaba invisible dentro de este Modal RN
+ * (pista clara sobre tarjeta blanca / estilos Tailwind sin resolver).
  */
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -24,12 +29,14 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { Switch } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { h } from '@/utils/haptics';
 
 export interface PdfExportConfig {
   playlistName: string;
+  /** Texto de fecha que se imprime en la portada. Vacío = no imprimir. */
+  printedDate: string;
   pageBreakPerSong: boolean;
   showChords: boolean;
   lyricsFontPt: number;
@@ -45,6 +52,71 @@ interface Props {
 
 const FONT_SIZES = [11, 12, 13, 14, 15];
 
+const todayPrintedDate = () =>
+  new Date().toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+/**
+ * Toggle propio con tamaño y colores explícitos (no depende de Tailwind
+ * ni de los colores de tema de heroui-native, que dentro de este Modal
+ * dejaban el switch invisible).
+ */
+const ToggleSwitch: React.FC<{
+  value: boolean;
+  onToggle: (v: boolean) => void;
+  isDark: boolean;
+  accessibilityLabel: string;
+}> = ({ value, onToggle, isDark, accessibilityLabel }) => (
+  <TouchableOpacity
+    accessibilityRole="switch"
+    accessibilityState={{ checked: value }}
+    accessibilityLabel={accessibilityLabel}
+    activeOpacity={0.85}
+    onPress={() => {
+      h.toggle();
+      onToggle(!value);
+    }}
+    style={[
+      toggleStyles.track,
+      {
+        backgroundColor: value ? '#0055A4' : isDark ? '#48484A' : '#D1D1D6',
+        alignItems: value ? 'flex-end' : 'flex-start',
+      },
+    ]}
+  >
+    <View style={toggleStyles.thumb} />
+  </TouchableOpacity>
+);
+
+const toggleStyles = StyleSheet.create({
+  track: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  thumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      web: { boxShadow: '0 1px 3px rgba(0,0,0,0.25)' },
+      default: {
+        shadowColor: '#000',
+        shadowOpacity: 0.25,
+        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 1 },
+        elevation: 2,
+      },
+    }),
+  },
+});
+
 const ExportPdfModal: React.FC<Props> = ({
   visible,
   initialName,
@@ -57,6 +129,7 @@ const ExportPdfModal: React.FC<Props> = ({
   const styles = useMemo(() => createStyles(isDark), [isDark]);
 
   const [name, setName] = useState(initialName);
+  const [printedDate, setPrintedDate] = useState(todayPrintedDate);
   const [pageBreakPerSong, setPageBreakPerSong] = useState(false);
   const [showChords, setShowChords] = useState(true);
   const [lyricsFontPt, setLyricsFontPt] = useState(13);
@@ -65,6 +138,7 @@ const ExportPdfModal: React.FC<Props> = ({
   useEffect(() => {
     if (visible) {
       setName(initialName);
+      setPrintedDate(todayPrintedDate());
       setSubmitting(false);
     }
   }, [visible, initialName]);
@@ -75,6 +149,7 @@ const ExportPdfModal: React.FC<Props> = ({
     try {
       await onSubmit({
         playlistName: name.trim(),
+        printedDate: printedDate.trim(),
         pageBreakPerSong,
         showChords,
         lyricsFontPt,
@@ -119,17 +194,30 @@ const ExportPdfModal: React.FC<Props> = ({
                 returnKeyType="done"
               />
 
+              <Text style={styles.label}>Fecha en la portada</Text>
+              <TextInput
+                value={printedDate}
+                onChangeText={setPrintedDate}
+                placeholder="Déjalo vacío para no imprimir fecha"
+                placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
+                style={styles.input}
+                selectTextOnFocus
+                returnKeyType="done"
+              />
+
               <View style={styles.row}>
                 <View style={styles.rowText}>
                   <Text style={styles.rowTitle}>Una canción por página</Text>
                   <Text style={styles.rowDesc}>
-                    Si lo desactivas, el PDF ocupará menos páginas
-                    pero quizá se parte alguna canción
+                    Si lo desactivas, el PDF ocupará menos páginas pero quizá se
+                    parte alguna canción
                   </Text>
                 </View>
-                <Switch
-                  isSelected={pageBreakPerSong}
-                  onSelectedChange={setPageBreakPerSong}
+                <ToggleSwitch
+                  value={pageBreakPerSong}
+                  onToggle={setPageBreakPerSong}
+                  isDark={isDark}
+                  accessibilityLabel="Una canción por página"
                 />
               </View>
 
@@ -140,9 +228,11 @@ const ExportPdfModal: React.FC<Props> = ({
                     Desactívalo para ver sólo la letra, sin acordes
                   </Text>
                 </View>
-                <Switch
-                  isSelected={showChords}
-                  onSelectedChange={setShowChords}
+                <ToggleSwitch
+                  value={showChords}
+                  onToggle={setShowChords}
+                  isDark={isDark}
+                  accessibilityLabel="Mostrar acordes"
                 />
               </View>
 

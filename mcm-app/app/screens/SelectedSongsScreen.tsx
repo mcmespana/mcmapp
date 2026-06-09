@@ -500,6 +500,7 @@ const SelectedSongsScreen: React.FC = () => {
           pageBreakPerSong: cfg.pageBreakPerSong,
           showChords: cfg.showChords,
           lyricsFontPt: cfg.lyricsFontPt,
+          printedDate: cfg.printedDate,
         });
 
         if (Platform.OS === 'web') {
@@ -526,6 +527,13 @@ const SelectedSongsScreen: React.FC = () => {
           const { uri } = await Print.printToFileAsync({
             html,
             base64: false,
+            // A4 en puntos (72 PPI); sin esto expo-print asume US Letter.
+            width: 595,
+            height: 842,
+            // iOS ignora el `margin` de @page del CSS, así que ahí los
+            // márgenes van por opción nativa (expo-print solo la aplica en
+            // iOS; Android sí respeta el @page del HTML).
+            margins: { top: 51, bottom: 51, left: 45, right: 45 },
           });
           const safeName =
             cfg.playlistName
@@ -551,7 +559,9 @@ const SelectedSongsScreen: React.FC = () => {
         toast.show({ label: 'Tenemos tu PDF recién sacado del orno' });
       } catch (err) {
         console.error('Error exportando PDF', err);
-        toast.show({ label: 'Error al generar el PDF, sorry, lo arreglaremos' });
+        toast.show({
+          label: 'Error al generar el PDF, sorry, lo arreglaremos',
+        });
       }
     },
     [flatSelectedSongs, settings.notation, toast],

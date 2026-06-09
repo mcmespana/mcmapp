@@ -13,6 +13,30 @@
 
 ---
 
+## 2026-06-09 — Export PDF de playlists: toggles arreglados, márgenes iOS, fecha editable y pie de página
+
+- **Fix: los toggles del modal de export ("Una canción por página" y "Mostrar
+  acordes") no se veían** — el `Switch` de heroui-native se pintaba invisible
+  dentro del Modal RN. Sustituidos por un toggle propio (track+thumb con
+  `StyleSheet`, tamaño y colores explícitos, accesible y con háptica `h.toggle`).
+  `components/playlist/ExportPdfModal.tsx`.
+- **Fix márgenes en iOS**: el motor de impresión de iOS ignora el `margin` de
+  `@page`; ahora `printToFileAsync` recibe tamaño A4 (595×842 pt) y `margins`
+  nativos (51/45 pt ≈ 18/16 mm) — opción que expo-print solo aplica en iOS;
+  Android sigue usando el `@page` del HTML. `app/screens/SelectedSongsScreen.tsx`.
+- **Fecha de portada editable**: nuevo campo "Fecha en la portada" en el modal
+  (texto libre, prefijado con hoy; vacío = no imprimir fecha). `printedDate`
+  viaja por `PdfExportConfig` → `buildPlaylistPdfHtml`.
+- **Pie de página**: nombre de la playlist (abajo-izda) y "Página N"
+  (abajo-dcha) vía margin boxes de `@page`, sin pie en la portada. Soportado en
+  web (Chrome ≥131) y WebView de Android; **pendiente validar en iOS** (WebKit
+  no soporta margin boxes — probablemente no salga ahí). El "1 de 3" por
+  canción multipágina no es viable con CSS de impresión; queda anotado en
+  TODO.md. `utils/playlistPdfHtml.ts`.
+- Tests nuevos: `__tests__/playlistPdfHtml.test.ts` (fecha y pie). Jest ahora
+  transforma `chordsheetjs` y mockea `jspdf`/`html2canvas` igual que Metro
+  (`jest.config.js`).
+
 ## 2026-06-09 — Reglas de seguridad de Firebase RTDB + despliegue automático
 
 - Reescritas las reglas de la Realtime Database (`mcm-app/database.rules.json`)
