@@ -13,6 +13,74 @@
 
 ---
 
+## 2026-06-09 — Playlist: drag & drop para reordenar + "Orden ajustado" por defecto
+
+- La pantalla de playlist abre ahora **por defecto en "Orden ajustado"** (antes
+  "Por categoría"); el toggle entre vistas sigue disponible.
+- **Drag & drop** en nativo: long-press sobre una fila inicia el arrastre para
+  reordenar (`ReorderableList`); al soltar se llama a `moveSong` del contexto
+  (renumera `order` y persiste). Las flechas ↑/↓ se mantienen como alternativa
+  y son el único método en web (la lista reordenable usa gestos nativos).
+- **Nueva dependencia** `react-native-reorderable-list` (JS puro sobre
+  `react-native-reanimated` + `react-native-gesture-handler`, ya presentes) →
+  **compatible con OTA**, no requiere build.
+- Cambios: `app/screens/SelectedSongsScreen.tsx` (lista reordenable +
+  `DraggableManualRow`), `components/playlist/PlaylistRow.tsx` (prop
+  `onLongPress`).
+
+## 2026-06-09 — Playlist: QR para compartir/coro + contraseña al sobrescribir en la nube
+
+- **QR de compartir**: al subir una playlist o iniciar un coro, el diálogo de
+  éxito es ahora un modal con **QR del enlace universal**
+  (`https://mcm.expo.app/playlist?p=XXXX` / `/coro?c=XXXX`), el código en
+  grande y botones de copiar. Escaneado con la cámara del móvil abre la app
+  directamente (deep links ya existentes). También hay "Ver QR" en el menú de
+  acciones (sección nube si hay código subido; sección coro si hay sesión).
+  Nuevo `components/playlist/ShareQrModal.tsx`.
+- **Nueva dependencia** `react-native-qrcode-svg` (JS puro sobre
+  `react-native-svg`, ya presente) → **compatible con OTA**, no requiere build.
+- **Contraseña al sobrescribir**: subir a un código que ya existe en la nube
+  pide la contraseña ("coco") antes de machacar el contenido — cubre el caso
+  de re-subir una playlist descargada de otro dispositivo. Nuevo
+  `components/playlist/PasswordPromptModal.tsx` (genérico).
+- **Fix**: el nombre de la playlist nunca llegaba a Firebase al subirla — el
+  wrapper de `onSubmit` en `SelectedSongsScreen` descartaba el `name` que
+  emite `CodeInputModal`.
+
+## 2026-06-09 — Menú de acciones de la playlist reorganizado por secciones
+
+- El bottom-sheet de acciones de la playlist (`PlaylistActionsBottomSheet`)
+  pasa de una lista plana (~12 items con separadores sueltos) a **secciones con
+  cabecera**: Exportar y compartir · Playlist en la nube · Archivo · Modo coro ·
+  zona de peligro (Vaciar) al final. API del componente: prop `sections`
+  (`PlaylistActionSection[]`) en lugar de `actions`.
+- Etiquetas más cortas al apoyarse en la cabecera de sección ("Subir playlist
+  (compartir código)", "Exportar archivo (.mcm)"…).
+
+## 2026-06-09 — Export PDF de playlists: toggles arreglados, márgenes iOS, fecha editable y pie de página
+
+- **Fix: los toggles del modal de export ("Una canción por página" y "Mostrar
+  acordes") no se veían** — el `Switch` de heroui-native se pintaba invisible
+  dentro del Modal RN. Sustituidos por un toggle propio (track+thumb con
+  `StyleSheet`, tamaño y colores explícitos, accesible y con háptica `h.toggle`).
+  `components/playlist/ExportPdfModal.tsx`.
+- **Fix márgenes en iOS**: el motor de impresión de iOS ignora el `margin` de
+  `@page`; ahora `printToFileAsync` recibe tamaño A4 (595×842 pt) y `margins`
+  nativos (51/45 pt ≈ 18/16 mm) — opción que expo-print solo aplica en iOS;
+  Android sigue usando el `@page` del HTML. `app/screens/SelectedSongsScreen.tsx`.
+- **Fecha de portada editable**: nuevo campo "Fecha en la portada" en el modal
+  (texto libre, prefijado con hoy; vacío = no imprimir fecha). `printedDate`
+  viaja por `PdfExportConfig` → `buildPlaylistPdfHtml`.
+- **Pie de página**: nombre de la playlist (abajo-izda) y "Página N"
+  (abajo-dcha) vía margin boxes de `@page`, sin pie en la portada. Soportado en
+  web (Chrome ≥131) y WebView de Android; **pendiente validar en iOS** (WebKit
+  no soporta margin boxes — probablemente no salga ahí). El "1 de 3" por
+  canción multipágina no es viable con CSS de impresión; queda anotado en
+  TODO.md. `utils/playlistPdfHtml.ts`.
+- Tests nuevos: `__tests__/playlistPdfHtml.test.ts` (fecha y pie). Jest ahora
+  transforma `chordsheetjs` y mockea `jspdf`/`html2canvas` igual que Metro
+  (`jest.config.js`).
+
 ## 2026-06-09 — Reglas de seguridad de Firebase RTDB + despliegue automático
 
 - Reescritas las reglas de la Realtime Database (`mcm-app/database.rules.json`)
