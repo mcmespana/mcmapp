@@ -13,6 +13,24 @@
 
 ---
 
+## 2026-06-10 — Revisión de diseño/modo oscuro + fixes de robustez
+
+- **`useFirebaseData` tolera caché corrupta**: antes, un `JSON.parse` fallido del
+  caché local abortaba también el fetch remoto (pantalla vacía permanente hasta
+  borrar datos). Ahora se descarta la entrada corrupta y se continúa con la
+  descarga completa. (`hooks/useFirebaseData.ts`)
+- **Fix memory leak en `HorarioScreen`**: la animación del último día (fade
+  recursivo vía `setTimeout` + shake inicial) seguía ejecutándose para siempre
+  tras salir de la pantalla; ahora se cancelan todos los timers en el cleanup.
+- **Splash de bienvenida respeta el modo oscuro**: el contenedor de la animación
+  inicial tenía fondo blanco fijo y provocaba un flash blanco al abrir la app en
+  oscuro. (`app/_layout.tsx`)
+- **Fix error de tipos en `SocialLoginSection`**: guard `Platform.OS !== 'android'`
+  redundante (Android ya hace early-return antes) que hacía fallar `tsc --noEmit`.
+- Lint a cero: corregidos los 2 errores de `react/no-unescaped-entities` en
+  `contigo/revision.tsx` y los avisos de Prettier pendientes (`--fix`).
+- **OTA-safe** (solo JS).
+
 ## 2026-06-09 — Encuestas: banners automáticos + identidad real (auth)
 
 - **Banners automáticos** de encuestas genéricas sin depender de push. La app lee

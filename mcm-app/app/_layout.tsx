@@ -196,7 +196,12 @@ function InnerLayout() {
 
   if (showAnimation) {
     return (
-      <View style={styles.animationContainer}>
+      <View
+        style={[
+          styles.animationContainer,
+          scheme === 'dark' && styles.animationContainerDark,
+        ]}
+      >
         <HelloWave />
       </View>
     );
@@ -277,5 +282,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+  },
+  animationContainerDark: {
+    backgroundColor: '#2C2C2E',
   },
 });
