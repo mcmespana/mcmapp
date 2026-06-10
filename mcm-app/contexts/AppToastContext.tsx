@@ -187,10 +187,12 @@ function ToastItem({
   const v = VARIANT_STYLES[t.variant ?? 'default'];
   // Extra breathing room above the tab bar / home indicator — much more
   // than the previous build, which felt glued to the edge on iOS.
+  // En Android el mínimo es más alto para que el toast nunca quede oculto bajo
+  // la barra de navegación de 3 botones (≈48dp) cuando el inset reportado es 0.
   const bottomOffset =
     Platform.OS === 'ios'
       ? Math.max(insets.bottom + 18, 36)
-      : Math.max(insets.bottom + 12, 24);
+      : Math.max(insets.bottom + 16, 56);
 
   const useBlur = Platform.OS === 'ios';
 

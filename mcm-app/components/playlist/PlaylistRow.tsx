@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { h } from '@/utils/haptics';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -106,6 +107,7 @@ const PlaylistRow: React.FC<Props> = ({
       renderLeftActions={renderLeftActions}
       onSwipeableOpen={(direction, swipeable) => {
         if (direction === 'left') {
+          h.remove();
           swipeable.close();
           onRemove();
         }
@@ -211,7 +213,10 @@ const PlaylistRow: React.FC<Props> = ({
                 styles.reorderBtn,
                 !canMoveUp && styles.reorderBtnDisabled,
               ]}
-              onPress={onMoveUp}
+              onPress={() => {
+                h.select();
+                onMoveUp?.();
+              }}
               disabled={!canMoveUp}
               hitSlop={6}
             >
@@ -234,7 +239,10 @@ const PlaylistRow: React.FC<Props> = ({
                 styles.reorderBtn,
                 !canMoveDown && styles.reorderBtnDisabled,
               ]}
-              onPress={onMoveDown}
+              onPress={() => {
+                h.select();
+                onMoveDown?.();
+              }}
               disabled={!canMoveDown}
               hitSlop={6}
             >

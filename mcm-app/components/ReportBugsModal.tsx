@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -54,6 +54,10 @@ export default function ReportBugsModal({
   const resolved = useResolvedProfileConfig();
   const [bugDescription, setBugDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // iOS no puede mostrar dos Modal a la vez: si abrimos el panel secreto en el
+  // mismo tick que cerramos este sheet, el secreto nunca se monta. Marcamos la
+  // intención y la disparamos en onCloseComplete (tras el onDismiss del Modal).
+  const openSecretAfterClose = useRef(false);
 
   const handleSubmit = async () => {
     if (!bugDescription.trim()) return;
@@ -99,6 +103,12 @@ export default function ReportBugsModal({
     <BottomSheet
       visible={visible}
       onClose={handleClose}
+      onCloseComplete={() => {
+        if (openSecretAfterClose.current) {
+          openSecretAfterClose.current = false;
+          onOpenSecretPanel?.();
+        }
+      }}
       title="Reportar fallitos 🐛"
       paddingHorizontal={0}
     >
@@ -216,8 +226,8 @@ export default function ReportBugsModal({
             { borderColor: isDark ? '#3A3A3C' : '#E5E5EA' },
           ]}
           onPress={() => {
+            openSecretAfterClose.current = true;
             handleClose();
-            if (onOpenSecretPanel) onOpenSecretPanel();
           }}
           activeOpacity={0.7}
         >

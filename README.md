@@ -59,6 +59,67 @@ eas update --branch preview --message "Descripción"
 eas update --branch production --message "Descripción"
 ```
 
+> En la práctica no se ejecutan a mano: GitHub Actions los dispara solos al pushear a las ramas `preview` y `production`. Ver sección "Sacar una versión nueva" más abajo.
+
+## Sacar una versión nueva
+
+Hay **dos tipos de release** y conviene saber cuál toca cada vez:
+
+### 1) Release por OTA (segundos · sin tiendas)
+
+Sirve para **cualquier cambio sólo de JS / assets / estilos**: nuevas pantallas y componentes en React, ajustes de lógica, textos, imágenes, BBCode, etc. No vale para cambios nativos (ver más abajo).
+
+Flujo:
+
+```
+main              ← PRs se mergean aquí (rama de desarrollo)
+  └─ merge →  preview         ← GH Action ota-preview.yml dispara `eas update --branch preview`
+                └─ tras 1-2 días testeando →  production
+                                                ← GH Action ota-production.yml dispara `eas update --branch production`
+```
+
+Pasos concretos:
+
+1. Tu PR se mergea a `main`.
+2. Cuando esté listo para probadores: `git checkout preview && git merge main && git push`. El workflow publica el OTA al canal `preview` en ~2 min. Los dispositivos suscritos (ver toggle escondido "Laboratorio Alpha") lo reciben en el siguiente check.
+3. Cuando esté validado: `git checkout production && git merge main && git push`. El workflow publica al canal `production`. Todos los usuarios lo reciben en el siguiente arranque o cada 15 min con la app abierta.
+4. Rollback rápido si algo va mal: `eas update:republish --branch production --group <id-anterior>` (lo puedes ejecutar con `workflow_dispatch` desde la pestaña Actions).
+
+### 2) Release de binario (sube a App Store / Play Store)
+
+Hace falta cuando el OTA **no es suficiente**:
+
+- Cambias o añades una **librería con código nativo** (cualquier `expo-*` que requiera prebuild, módulos de React Native con `.podspec`, etc.).
+- Subes la **versión de Expo SDK** (major).
+- Cambias **permisos** (`Info.plist`, `AndroidManifest`), icono, splash, Bundle ID o entitlements.
+- Bumpeas la **`runtimeVersion`** en `app.json` — eso rompe la compatibilidad OTA a propósito.
+- Quieres marcar un hito visible en stores ("v1.1.0" con notas de release).
+
+Pasos:
+
+1. **Bumpear versiones en `mcm-app/app.json`**:
+   - `expo.version` ← versión visible al usuario (ej. `1.0.1` → `1.0.2` para parches, `1.1.0` para nuevas funcionalidades, `2.0.0` para cambios mayores).
+   - `expo.runtimeVersion` ← **sólo si** hay cambios nativos / cambio de SDK. Si no, déjala igual para no romper la cadena de OTAs antiguos. (`eas.json` ya tiene `appVersionSource: remote` y `autoIncrement: true`, así que el build number se gestiona solo.)
+2. **Construir** desde `mcm-app/`:
+   ```
+   npm run eas:build:ios -- --profile production
+   npm run eas:build:android -- --profile production
+   ```
+   Usar siempre estos scripts npm, **nunca `npx eas-cli build` directamente** — limpian los symlinks de Claude Code antes de comprimir y evitan el `EPERM` en Windows.
+3. **Subir a stores**:
+   ```
+   eas submit -p ios --latest         # TestFlight → App Store Review
+   eas submit -p android --latest     # Play Console → Producción / track interno
+   ```
+4. **Revisión**: Apple suele tardar 24-48h; Google a veces minutos, a veces horas. Mientras tanto, en TestFlight / Play Internal puedes probar la versión candidata.
+5. Una vez publicada en stores, **commit del bump de versión a `main`** (`git add app.json && git commit -m "chore: bump to v1.0.2"`) y mergea por la cadena habitual.
+
+### Reglas rápidas
+
+- **¿Es sólo JS?** → OTA. Merge a `preview`, tests, merge a `production`. Fin.
+- **¿Toca código nativo o sube SDK?** → Binario nuevo + bump de `version` y probablemente `runtimeVersion`.
+- **¿Cambio de feature flags / textos / datos remotos?** → Ni siquiera OTA: edita `/profileConfig/data/*` en Firebase RTDB desde `mcmpanel` y los clientes lo cogen al abrir.
+
 ## Estructura del proyecto
 
 ```

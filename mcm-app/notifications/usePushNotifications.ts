@@ -11,7 +11,7 @@
 //      b. notificationResponse — usuario toca la notificación: navega a la ruta correspondiente y marca como leída
 //
 import { useEffect, useMemo, useRef } from 'react';
-import { Platform } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import {
@@ -23,6 +23,11 @@ import {
   type TokenProfileMetadata,
 } from '@/services/pushNotificationService';
 import { ReceivedNotification } from '@/types/notifications';
+import {
+  normalizeNotificationRoute,
+  extractActionButton,
+  extractActionButtons,
+} from '@/utils/notificationRoutes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -58,12 +63,34 @@ function getStableNotificationId(
   return `local_${Math.abs(hash).toString(36)}`;
 }
 
-// Mapeo de actionIdentifier de iOS a rutas internas
+// Mapeo de actionIdentifier de iOS a rutas internas.
+// Los valores se pasan por `normalizeNotificationRoute` antes de navegar, así
+// que basta con que apunten a una ruta real (p. ej. el centro de notificaciones
+// es `/notifications`, no `/(tabs)/notifications`).
 const ACTION_ROUTES: Record<string, string> = {
-  view: '/(tabs)/notifications',
+  view: '/notifications',
   view_event: '/(tabs)/calendario',
   view_photos: '/(tabs)/fotos',
 };
+
+// Metadata más reciente conocida del perfil. Se mantiene a nivel de módulo
+// para que `tryRegisterPushToken()` (invocado desde el banner de permisos)
+// pueda registrar el token con los topics correctos sin tener que pasar
+// la metadata como argumento.
+let latestMetadata: TokenProfileMetadata | null = null;
+
+/**
+ * Intenta registrar el token push usando la metadata de perfil más reciente
+ * conocida por el hook. Es idempotente y seguro de llamar desde cualquier
+ * punto: si los permisos no están concedidos, devuelve sin error.
+ *
+ * Pensado para el flujo del banner de permisos: tras conceder los permisos
+ * (in-app prompt o vuelta desde Ajustes), se llama esta función para que el
+ * token quede registrado sin esperar al siguiente arranque de la app.
+ */
+export async function tryRegisterPushToken(): Promise<void> {
+  await registerAndSaveToken(latestMetadata);
+}
 
 export default function usePushNotifications() {
   const notificationListener = useRef<any>(null);
@@ -90,6 +117,8 @@ export default function usePushNotifications() {
   const metadataRef = useRef(profileMetadata);
   useEffect(() => {
     metadataRef.current = profileMetadata;
+    // Espejo a nivel de módulo para `tryRegisterPushToken()`.
+    latestMetadata = profileMetadata;
   }, [profileMetadata]);
 
   useEffect(() => {
@@ -120,7 +149,10 @@ export default function usePushNotifications() {
           imageUrl: notification.request.content.data?.imageUrl as
             | string
             | undefined,
-          actionButton: notification.request.content.data?.actionButton as any,
+          actionButton: extractActionButton(notification.request.content.data),
+          actionButtons: extractActionButtons(
+            notification.request.content.data,
+          ),
           receivedAt: new Date().toISOString(),
           isRead: false,
           category: notification.request.content.data?.category as any,
@@ -144,6 +176,12 @@ export default function usePushNotifications() {
         const data = response.notification.request.content.data;
         const actionIdentifier = response.actionIdentifier;
 
+        // ID estable de la notificación (lo necesitamos también para el
+        // deep-link al centro de notificaciones).
+        const notificationId = getStableNotificationId(
+          response.notification.request.content,
+        );
+
         // Determinar ruta de navegación
         let targetRoute: string | undefined;
 
@@ -159,23 +197,35 @@ export default function usePushNotifications() {
           targetRoute = data.internalRoute as string;
         }
 
-        if (targetRoute) {
-          try {
-            router.navigate(targetRoute as any);
-          } catch {}
+        // 3. Por defecto (sin ruta específica): abrir el centro de
+        //    notificaciones mostrando esta notificación en grande.
+        if (!targetRoute) {
+          targetRoute = '/notifications';
         }
 
+        const normalized = normalizeNotificationRoute(targetRoute);
+        try {
+          // Si vamos al centro de notificaciones, hacemos deep-link a ESTA
+          // notificación concreta para abrir su detalle (vista "en grande").
+          if (normalized === '/notifications') {
+            router.navigate({
+              pathname: '/notifications',
+              params: { openId: notificationId },
+            } as any);
+          } else {
+            router.navigate(normalized as any);
+          }
+        } catch {}
+
         // Guardar y marcar como leída
-        const notificationId = getStableNotificationId(
-          response.notification.request.content,
-        );
         const receivedNotification: ReceivedNotification = {
           id: notificationId,
           title: response.notification.request.content.title || 'Notificación',
           body: response.notification.request.content.body || '',
           icon: data?.icon as string | undefined,
           imageUrl: data?.imageUrl as string | undefined,
-          actionButton: data?.actionButton as any,
+          actionButton: extractActionButton(data),
+          actionButtons: extractActionButtons(data),
           receivedAt: new Date().toISOString(),
           isRead: false,
           category: data?.category as any,
@@ -207,13 +257,28 @@ export default function usePushNotifications() {
   useEffect(() => {
     updateLastActive(profileMetadata).catch(() => {});
   }, [profileMetadata]);
+
+  // Al volver al foreground, reintenta el registro. Cubre el caso de
+  // "vuelvo de Ajustes tras conceder permisos": `registerAndSaveToken`
+  // es idempotente (no-op si los permisos siguen denegados, refresca
+  // token y guarda en Firebase si pasaron a granted).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      if (next === 'active') {
+        registerAndSaveToken(metadataRef.current).catch(() => {});
+      }
+    });
+    return () => sub.remove();
+  }, []);
 }
 
 /**
  * Flujo completo: permisos → token → guardar en Firebase
  * Con logging detallado para diagnosticar problemas
  */
-async function registerAndSaveToken(profileMetadata: TokenProfileMetadata) {
+async function registerAndSaveToken(
+  profileMetadata: TokenProfileMetadata | null,
+) {
   if (Platform.OS === 'web') return;
 
   try {
@@ -261,6 +326,6 @@ async function registerAndSaveToken(profileMetadata: TokenProfileMetadata) {
     await cachePushToken(token);
 
     // 5. Guardar en Firebase
-    await saveTokenToFirebase(token, profileMetadata);
+    await saveTokenToFirebase(token, profileMetadata ?? undefined);
   } catch {}
 }

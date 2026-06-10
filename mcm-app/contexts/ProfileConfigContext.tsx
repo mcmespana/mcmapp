@@ -78,7 +78,6 @@ export const ProfileConfigProvider = ({
   const rawConfig = useMemo<ProfileConfigData>(() => {
     if (isValidProfileConfig(data)) return withDerivedDelegationList(data);
     if (data != null && typeof __DEV__ !== 'undefined' && __DEV__) {
-      // eslint-disable-next-line no-console
       console.warn(
         '[profileConfig] Documento remoto inválido. Usando fallback hardcoded.',
       );

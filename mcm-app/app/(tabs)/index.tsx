@@ -1,6 +1,7 @@
 import React, {
   useLayoutEffect,
   ComponentProps,
+  useCallback,
   useEffect,
   useState,
   useMemo,
@@ -28,9 +29,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
+import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -40,7 +43,9 @@ import { useToast } from '@/contexts/AppToastContext';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import NotificationsBottomSheet from '@/components/NotificationsBottomSheet';
+import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import { VersionDisplay } from '@/components/VersionDisplay';
+import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
@@ -48,13 +53,22 @@ import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
 import GlassSurface from '@/components/ui/GlassSurface';
+import { setPendingEventScreen } from '@/utils/eventNavigation';
+import {
+  DEFAULT_APP_EVALUATION,
+  DEFAULT_EVENT_EVALUATION,
+  evaluationDoneKey,
+} from '@/constants/evaluation';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
   isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
+import { NotificationData } from '@/types/notifications';
 import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import { useOTAContext } from '@/contexts/OTAContext';
+import { useCarismochito } from '@/contexts/CarismochitoContext';
+import { h } from '@/utils/haptics';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
@@ -78,11 +92,11 @@ function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
-function getWeekLabel(date: Date, today: Date): string {
+function getWeekLabel(date: Date, today: Date): string | null {
   const diffTime = date.getTime() - today.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return 'Pasado';
+  if (diffDays < 0) return 'Ya pasó';
   if (diffDays === 0) return 'Hoy';
   if (diffDays === 1) return 'Mañana';
   if (diffDays < 7) return 'Esta semana';
@@ -109,26 +123,36 @@ function getUpcomingEventsByWeek(
   const seen = new Set<string>();
   const eventsByWeek: Map<string, CalendarEvent[]> = new Map();
 
-  Object.entries(eventsByDate)
-    .filter(([date]) => date >= todayStr)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .forEach(([dateStr, evts]) => {
-      evts.forEach((evt) => {
-        if (visibleCalendars[evt.calendarIndex] === false) return;
-        const key = `${evt.title}|${evt.startDate}`;
-        if (!seen.has(key) && seen.size < maxEvents) {
-          const eventDate = parseLocalDate(dateStr);
-          const label = getWeekLabel(eventDate, today);
-          if (label === null) return; // beyond 4 weeks — skip
-          seen.add(key);
+  // ⚡ Bolt Optimization: Replaced chained .entries().filter().sort().forEach() with native for-of loops.
+  // This allows early exits (break) when we reach maxEvents, avoiding processing
+  // the entire calendar dataset unnecessarily when we only need the first few upcoming events.
+  const sortedDates = Object.keys(eventsByDate)
+    .filter((date) => date >= todayStr)
+    .sort();
 
-          if (!eventsByWeek.has(label)) {
-            eventsByWeek.set(label, []);
-          }
-          eventsByWeek.get(label)!.push(evt);
+  for (const dateStr of sortedDates) {
+    if (seen.size >= maxEvents) break;
+
+    const evts = eventsByDate[dateStr];
+    for (const evt of evts) {
+      if (seen.size >= maxEvents) break;
+      if (visibleCalendars[evt.calendarIndex] === false) continue;
+
+      const key = `${evt.title}|${evt.startDate}`;
+      if (!seen.has(key)) {
+        const eventDate = parseLocalDate(dateStr);
+        const label = getWeekLabel(eventDate, today);
+        if (label === null) continue; // beyond 4 weeks — skip
+
+        seen.add(key);
+
+        if (!eventsByWeek.has(label)) {
+          eventsByWeek.set(label, []);
         }
-      });
-    });
+        eventsByWeek.get(label)!.push(evt);
+      }
+    }
+  }
 
   // Preserve order: Hoy → Mañana → Esta semana → Próxima semana → Este mes
   const order = ['Hoy', 'Mañana', 'Esta semana', 'Próxima semana', 'Este mes'];
@@ -169,9 +193,15 @@ export default function Home() {
   const { width: windowWidth } = useWindowDimensions();
   const isWide = windowWidth >= 700;
   const { toast } = useToast();
+  // Modo carismochito: tiñe de verde el icono de la app del header.
+  const { isActive: carismoActive } = useCarismochito();
   const [settingsVisible, setSettingsVisibleRaw] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [notifSheetOpen, setNotifSheetOpenRaw] = useState(false);
+  // Cuando se abre desde la tarjeta de Novedades queremos mostrar el detalle de
+  // la última notificación "en grande"; desde la campana, la lista completa.
+  const [notifSheetInitial, setNotifSheetInitial] =
+    useState<NotificationData | null>(null);
 
   // Settings and notifications panels must be mutually exclusive: opening
   // one auto-closes the other. Otherwise both panels stack visually and
@@ -187,6 +217,53 @@ export default function Home() {
 
   // Primary color readable on both light and dark backgrounds
   const accentColor = scheme === 'dark' ? colors.info : colors.primary;
+
+  // Banner "modo evento": destaca el evento activo en la Home. Solo se muestra
+  // a los perfiles que tienen acceso al evento (tab o botón Home).
+  // El evento activo se lee de Firebase (`activities/_meta`) con fallback al
+  // valor hardcoded en `constants/events.ts`.
+  const { activeEvent } = useActiveMeta();
+  const activeTabId = activeEvent.tabId ?? '';
+  const hasEventAccess =
+    activeTabId !== '' &&
+    (resolved.tabs.includes(activeTabId) ||
+      resolved.homeButtons.includes(activeTabId));
+  const showEventBanner = hasEventAccess;
+
+  // CTA "Evalúa la actividad": flag en código (DEFAULT_EVENT_EVALUATION). Se
+  // muestra si está abierto y el usuario aún no ha evaluado (flag local). Mismo
+  // gating de visibilidad que el evento.
+  const [evalDone, setEvalDone] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      AsyncStorage.getItem(evaluationDoneKey(activeEvent.id)).then((v) => {
+        if (active) setEvalDone(v === '1');
+      });
+      return () => {
+        active = false;
+      };
+    }, [activeEvent.id]),
+  );
+  const showEvalBanner =
+    hasEventAccess && !!DEFAULT_EVENT_EVALUATION.evaluationOpen && !evalDone;
+
+  // CTA "Evalúa la app": flag en código (DEFAULT_APP_EVALUATION). No depende del
+  // evento (la app se evalúa siempre). Abre la pantalla raíz de Ajustes.
+  const [appEvalDone, setAppEvalDone] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      AsyncStorage.getItem(evaluationDoneKey('app')).then((v) => {
+        if (active) setAppEvalDone(v === '1');
+      });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+  const showAppEvalBanner =
+    !!DEFAULT_APP_EVALUATION.evaluationOpen && !appEvalDone;
 
   // OTA update badge (show in header after user dismisses the modal)
   const {
@@ -279,7 +356,9 @@ export default function Home() {
 
   const hasAnyVisibleCalendar =
     calendarConfigs.length > 0 && visibleCalendars.some(Boolean);
-  const hasUpcomingEvents = upcomingEventGroups.some(g => g.events.length > 0);
+  const hasUpcomingEvents = upcomingEventGroups.some(
+    (g) => g.events.length > 0,
+  );
 
   // Quick grid items — filtrados por la config del perfil resuelto
   const quickItems = useMemo<QuickItem[]>(() => {
@@ -300,6 +379,14 @@ export default function Home() {
         iconBg: scheme === 'dark' ? '#1A1A3A' : '#E8E0FF',
         iconColor: '#6366F1',
         href: '/cancionero',
+      },
+      visitapapa: {
+        key: 'visitapapa',
+        label: 'Visita Papa',
+        icon: 'church',
+        iconBg: scheme === 'dark' ? '#332B00' : '#FFF8D6',
+        iconColor: '#C9A800',
+        href: '/visitapapa',
       },
       fotos: {
         key: 'fotos',
@@ -340,10 +427,10 @@ export default function Home() {
   // Notification card content
   const notifTitle = latestNotification
     ? latestNotification.title
-    : 'Bienvenido a MCM App';
+    : 'Te damos la bienvenida a MCM App';
   const notifBody = latestNotification
     ? latestNotification.body
-    : 'Mantente al día con las novedades de la comunidad.';
+    : 'En esta sección te mostraremos las últimas notificaciones';
 
   const normalizeRoute = (route: string): string => {
     if (!route) return '';
@@ -368,7 +455,9 @@ export default function Home() {
       'contigo',
     ];
 
-    const isTab = tabPaths.some(p => naked === p || naked.startsWith(p + '/'));
+    const isTab = tabPaths.some(
+      (p) => naked === p || naked.startsWith(p + '/'),
+    );
     if (isTab) {
       return '/(tabs)/' + naked;
     }
@@ -394,7 +483,9 @@ export default function Home() {
     '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
   };
   const internalRouteInfo = latestNotification?.internalRoute
-    ? (ROUTE_LABELS[normalizeRoute(latestNotification.internalRoute)] ?? ROUTE_LABELS[latestNotification.internalRoute] ?? null)
+    ? (ROUTE_LABELS[normalizeRoute(latestNotification.internalRoute)] ??
+      ROUTE_LABELS[latestNotification.internalRoute] ??
+      null)
     : null;
   const internalRouteLabel = internalRouteInfo?.label ?? null;
 
@@ -405,6 +496,23 @@ export default function Home() {
       router.push(normalizeRoute(btn.url) as any);
     } else {
       Linking.openURL(btn.url).catch((e) => console.error(e));
+    }
+  };
+
+  // Navega al calendario (opcionalmente saltando a una fecha concreta).
+  // En iOS `calendario` es un tab "overflow" SIN trigger nativo (solo caben 5
+  // en la barra), por lo que `router.push('/calendario')` no funciona: hay que
+  // alcanzarlo a través del stack de "Más" igual que hace el acceso de Fotos.
+  // En Android/Web `calendario` es un tab real, así que navegamos directo.
+  const navigateToCalendar = (date?: string) => {
+    h.tap();
+    if (Platform.OS === 'ios') {
+      setPendingMasScreen('Calendario', date ? { date } : undefined);
+      router.push('/mas');
+    } else if (date) {
+      router.push({ pathname: '/calendario', params: { date } } as any);
+    } else {
+      router.push('/calendario');
     }
   };
 
@@ -423,7 +531,7 @@ export default function Home() {
         onSuccess={() =>
           toast.show({
             variant: 'success',
-            label: '¡Gracias! Tu comentario ha sido enviado correctamente 🙌',
+            label: '¡Gracias! Hemos recibido tu comentario 🙌',
             actionLabel: 'Cerrar',
             onActionPress: ({ hide }) => hide(),
           })
@@ -432,6 +540,7 @@ export default function Home() {
       <NotificationsBottomSheet
         visible={notifSheetOpen}
         onClose={() => setNotifSheetOpen(false)}
+        initialNotification={notifSheetInitial}
       />
 
       {/* ── App-bar header (ScreenHero in compact mode) ── */}
@@ -446,7 +555,12 @@ export default function Home() {
           title="MCM App"
           titleStyle={styles.logoText}
           left={
-            <View style={styles.logoBox}>
+            <View
+              style={[
+                styles.logoBox,
+                carismoActive && { backgroundColor: '#1B9E4B' },
+              ]}
+            >
               <MaterialIcons name="device-hub" size={20} color="white" />
             </View>
           }
@@ -458,11 +572,16 @@ export default function Home() {
                   style={[
                     styles.headerBtn,
                     {
-                      backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(163,189,49,0.15)' : 'rgba(163,189,49,0.12)'),
+                      backgroundColor:
+                        Platform.OS === 'ios'
+                          ? 'transparent'
+                          : scheme === 'dark'
+                            ? 'rgba(163,189,49,0.15)'
+                            : 'rgba(163,189,49,0.12)',
                       borderColor: colors.success,
                     },
                   ]}
-                  accessibilityLabel="Actualización disponible. Toca para reiniciar"
+                  accessibilityLabel="Actualización disponible. Toca y actualiza en menos de 5 segundos"
                   accessibilityRole="button"
                 >
                   {Platform.OS === 'ios' && (
@@ -484,11 +603,22 @@ export default function Home() {
                   style={[
                     styles.headerBtn,
                     {
-                      backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
-                      borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                      backgroundColor:
+                        Platform.OS === 'ios'
+                          ? 'transparent'
+                          : scheme === 'dark'
+                            ? 'rgba(255,255,255,0.07)'
+                            : 'rgba(0,0,0,0.05)',
+                      borderColor:
+                        scheme === 'dark'
+                          ? 'rgba(255,255,255,0.12)'
+                          : 'rgba(0,0,0,0.08)',
                     },
                   ]}
-                  onPress={() => setNotifSheetOpen(true)}
+                  onPress={() => {
+                    setNotifSheetInitial(null);
+                    setNotifSheetOpen(true);
+                  }}
                   accessibilityLabel={
                     unreadCount > 0
                       ? `Notificaciones, ${unreadCount} sin leer`
@@ -496,9 +626,7 @@ export default function Home() {
                   }
                   accessibilityRole="button"
                 >
-                  {Platform.OS === 'ios' && (
-                    <GlassSurface variant="regular" />
-                  )}
+                  {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
                   <View style={styles.bellWrap}>
                     <MaterialIcons
                       name="notifications"
@@ -522,16 +650,22 @@ export default function Home() {
                 style={[
                   styles.headerBtn,
                   {
-                    backgroundColor: Platform.OS === 'ios' ? 'transparent' : (scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
-                    borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                    backgroundColor:
+                      Platform.OS === 'ios'
+                        ? 'transparent'
+                        : scheme === 'dark'
+                          ? 'rgba(255,255,255,0.07)'
+                          : 'rgba(0,0,0,0.05)',
+                    borderColor:
+                      scheme === 'dark'
+                        ? 'rgba(255,255,255,0.12)'
+                        : 'rgba(0,0,0,0.08)',
                   },
                 ]}
                 accessibilityLabel="Perfil y ajustes"
                 accessibilityRole="button"
               >
-                {Platform.OS === 'ios' && (
-                  <GlassSurface variant="regular" />
-                )}
+                {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
                 <MaterialIcons
                   name="account-circle"
                   size={22}
@@ -578,14 +712,14 @@ export default function Home() {
                       { color: theme.text },
                     ]}
                   >
-                    Personaliza tu experiencia
+                    En solo 1 minuto
                   </Text>
                   <Text
                     style={[styles.onboardingBannerBody, { color: theme.icon }]}
                     numberOfLines={2}
                   >
-                    Dinos quién eres y de qué delegación para ver lo que más te
-                    interesa.
+                    Dinos a qué localidad perteneces y te mostraremos las
+                    secciones más importantes.
                   </Text>
                 </View>
                 <MaterialIcons
@@ -593,6 +727,146 @@ export default function Home() {
                   size={20}
                   color={accentColor}
                 />
+              </TouchableOpacity>
+            )}
+
+            {/* ── Banner de permisos de notificaciones (denied / undetermined) ── */}
+            <NotificationPermissionBanner placement="home" />
+
+            {/* ── Banner del evento activo (modo evento) ── */}
+            {showEventBanner && (
+              <TouchableOpacity
+                style={[
+                  styles.eventBanner,
+                  {
+                    backgroundColor: hexAlpha(activeEvent.tintColor, '20'),
+                    borderColor: hexAlpha(activeEvent.tintColor, '50'),
+                  },
+                ]}
+                onPress={() => {
+                  h.tap();
+                  router.push('/visitapapa');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={activeEvent.title}
+              >
+                <View
+                  style={[
+                    styles.eventBannerIcon,
+                    {
+                      backgroundColor: hexAlpha(
+                        activeEvent.tintColor,
+                        scheme === 'dark' ? '45' : '35',
+                      ),
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="church"
+                    size={22}
+                    color={
+                      scheme === 'dark' ? activeEvent.tintColor : '#8A6D00'
+                    }
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[styles.eventBannerTitle, { color: theme.text }]}
+                    numberOfLines={1}
+                  >
+                    {activeEvent.title}
+                  </Text>
+                  {activeEvent.bannerText && (
+                    <Text
+                      style={[styles.eventBannerBody, { color: theme.icon }]}
+                      numberOfLines={2}
+                    >
+                      {activeEvent.bannerText}
+                    </Text>
+                  )}
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={22}
+                  color={theme.icon}
+                />
+              </TouchableOpacity>
+            )}
+
+            {/* ── CTA "Evalúa la actividad" — destacado y directo ── */}
+            {showEvalBanner && (
+              <TouchableOpacity
+                style={[styles.evalCta, { backgroundColor: colors.accent }]}
+                onPress={() => {
+                  h.tap();
+                  setPendingEventScreen('Evaluacion', {
+                    eventId: activeEvent.id,
+                  });
+                  router.push(`/${activeTabId}` as any);
+                }}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel="Evalúa la actividad ahora"
+              >
+                <View style={styles.evalCtaIcon}>
+                  <MaterialIcons name="star-rate" size={26} color="#fff" />
+                </View>
+                <View style={styles.evalCtaTextWrap}>
+                  <Text style={styles.evalCtaTitle} numberOfLines={1}>
+                    {DEFAULT_EVENT_EVALUATION.title || 'Evalúa la actividad'}
+                  </Text>
+                  <Text style={styles.evalCtaBody} numberOfLines={2}>
+                    ¿Qué tal ha ido? Tu opinión nos ayuda — solo 2 minutos.
+                  </Text>
+                </View>
+                <View style={styles.evalCtaBtn}>
+                  <Text
+                    style={[styles.evalCtaBtnText, { color: colors.accent }]}
+                  >
+                    Evaluar
+                  </Text>
+                  <MaterialIcons
+                    name="arrow-forward"
+                    size={15}
+                    color={colors.accent}
+                  />
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* ── CTA "Evalúa la app" ── */}
+            {showAppEvalBanner && (
+              <TouchableOpacity
+                style={[styles.evalCta, { backgroundColor: colors.info }]}
+                onPress={() => {
+                  h.tap();
+                  router.push('/evaluacion-app');
+                }}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel="Evalúa la app"
+              >
+                <View style={styles.evalCtaIcon}>
+                  <MaterialIcons name="rate-review" size={26} color="#fff" />
+                </View>
+                <View style={styles.evalCtaTextWrap}>
+                  <Text style={styles.evalCtaTitle} numberOfLines={1}>
+                    {DEFAULT_APP_EVALUATION.title || 'Evalúa la app'}
+                  </Text>
+                  <Text style={styles.evalCtaBody} numberOfLines={2}>
+                    ¿Errores o ideas? Ayúdanos a mejorar la app.
+                  </Text>
+                </View>
+                <View style={styles.evalCtaBtn}>
+                  <Text style={[styles.evalCtaBtnText, { color: colors.info }]}>
+                    Evaluar
+                  </Text>
+                  <MaterialIcons
+                    name="arrow-forward"
+                    size={15}
+                    color={colors.info}
+                  />
+                </View>
               </TouchableOpacity>
             )}
 
@@ -609,7 +883,12 @@ export default function Home() {
                         : 'rgba(0,0,0,0.07)',
                   },
                 ])}
-                onPress={() => setNotifSheetOpen(true)}
+                onPress={() => {
+                  // Abre directamente el detalle de la última notificación
+                  // (vista en grande), no la lista completa.
+                  setNotifSheetInitial(latestNotification);
+                  setNotifSheetOpen(true);
+                }}
                 activeOpacity={0.78}
                 accessibilityLabel={`${notifTitle}. Toca para leer`}
                 accessibilityRole="button"
@@ -761,6 +1040,7 @@ export default function Home() {
                     accessibilityLabel={item.label}
                     accessibilityRole="button"
                     onPress={() => {
+                      h.tap();
                       if (item.key === 'comunica') {
                         setPendingMasScreen('Comunica');
                       } else if (item.key === 'fotos') {
@@ -831,7 +1111,7 @@ export default function Home() {
                   title="Activa algún calendario"
                   subtitle="Selecciona un calendario para ver los próximos eventos aquí."
                   actionLabel="Ir al calendario"
-                  onAction={() => router.push('/calendario')}
+                  onAction={() => navigateToCalendar()}
                   accentColor={accentColor}
                 />
               ) : eventsLoading && !hasUpcomingEvents ? (
@@ -849,7 +1129,9 @@ export default function Home() {
                       calendarConfigs[evt.calendarIndex]?.color ?? accentColor;
                     const calName = calendarConfigs[evt.calendarIndex]?.name;
                     return (
-                      <React.Fragment key={`${group.label}|${evt.title}|${evt.startDate}|${idx}`}>
+                      <React.Fragment
+                        key={`${group.label}|${evt.title}|${evt.startDate}|${idx}`}
+                      >
                         {isFirstInGroup && (
                           <Text
                             style={[
@@ -873,12 +1155,7 @@ export default function Home() {
                               borderLeftColor: calColor,
                             },
                           ])}
-                          onPress={() =>
-                            router.push({
-                              pathname: '/calendario',
-                              params: { date: evt.startDate },
-                            } as any)
-                          }
+                          onPress={() => navigateToCalendar(evt.startDate)}
                           accessibilityRole="button"
                           accessibilityLabel={`Evento: ${evt.title}`}
                         >
@@ -888,10 +1165,14 @@ export default function Home() {
                               { backgroundColor: hexAlpha(calColor, '18') },
                             ]}
                           >
-                            <Text style={[styles.eventMonth, { color: calColor }]}>
+                            <Text
+                              style={[styles.eventMonth, { color: calColor }]}
+                            >
                               {MONTHS_SHORT[evtDate.getMonth()].toUpperCase()}
                             </Text>
-                            <Text style={[styles.eventDay, { color: calColor }]}>
+                            <Text
+                              style={[styles.eventDay, { color: calColor }]}
+                            >
                               {evtDate.getDate()}
                             </Text>
                           </View>
@@ -917,7 +1198,10 @@ export default function Home() {
                                 ]}
                               >
                                 <Text
-                                  style={[styles.calBadgeText, { color: calColor }]}
+                                  style={[
+                                    styles.calBadgeText,
+                                    { color: calColor },
+                                  ]}
                                   numberOfLines={1}
                                 >
                                   {calName}
@@ -962,7 +1246,7 @@ export default function Home() {
                 /* No upcoming events */
                 <EmptyState
                   icon="event-busy"
-                  title="Sin eventos próximos"
+                  title="Sin próximos eventos"
                   accentColor={accentColor}
                 />
               )}
@@ -972,7 +1256,7 @@ export default function Home() {
                   styles.calendarButton,
                   { borderColor: hexAlpha(accentColor, '30') },
                 ])}
-                onPress={() => router.push('/calendario')}
+                onPress={() => navigateToCalendar()}
                 accessibilityRole="button"
               >
                 <Text
@@ -1001,9 +1285,11 @@ export default function Home() {
               ¿Algún fallo? Cuéntanoslo
             </Text>
           </TouchableOpacity>
-          <Text style={[styles.tagline, { color: theme.icon }]}>
-            Movimiento Consolación para el Mundo
-          </Text>
+          <SecretMenuTrigger>
+            <Text style={[styles.tagline, { color: theme.icon }]}>
+              Movimiento Consolación para el Mundo
+            </Text>
+          </SecretMenuTrigger>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -1303,6 +1589,82 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   } as TextStyle,
   onboardingBannerBody: {
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+    opacity: 0.8,
+  } as TextStyle,
+
+  // ── CTA "Evalúa la actividad" (destacado) ──
+  evalCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    padding: spacing.md,
+    borderRadius: radii.xl,
+    marginBottom: spacing.md,
+    ...shadows.md,
+  } as ViewStyle,
+  evalCtaIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    flexShrink: 0,
+  } as ViewStyle,
+  evalCtaTextWrap: { flex: 1 } as ViewStyle,
+  evalCtaTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: -0.2,
+  } as TextStyle,
+  evalCtaBody: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+    color: 'rgba(255,255,255,0.9)',
+  } as TextStyle,
+  evalCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fff',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: radii.pill,
+    flexShrink: 0,
+  } as ViewStyle,
+  evalCtaBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+  } as TextStyle,
+
+  // ── Banner del evento activo (modo evento) ──
+  eventBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm + 4,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+  } as ViewStyle,
+  eventBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  eventBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  } as TextStyle,
+  eventBannerBody: {
     fontSize: 11,
     marginTop: 2,
     lineHeight: 15,

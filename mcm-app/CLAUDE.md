@@ -18,9 +18,26 @@ npm run android        # App en Android
 npm run ios            # App en iOS
 npm run lint           # ESLint
 npm run format         # Prettier
-npm test               # Jest (sin tests escritos aún)
+npm test               # Jest (10 ficheros en __tests__/)
 npx tsc --noEmit       # Verificar tipos TypeScript
 ```
+
+## OTA vs Build de tienda
+
+Los OTA updates (EAS Update) solo envían el **bundle JS** — no incluyen código nativo. Si añades un paquete con módulos nativos (`expo-*`, `react-native-*` con carpeta `ios/` o `android/`) y haces OTA, **la app crashea** porque el binario instalado no tiene ese módulo.
+
+Cuando añadas un paquete nativo:
+
+1. Añade `[skip-ota]` al mensaje del commit → el workflow `ota-production.yml` se salta automáticamente
+2. Avisa al usuario de que necesita un **build de producción** antes de mergear a `production`:
+   ```
+   ⚠️ Este cambio incluye paquetes nativos ([lista]). Requiere build de tienda antes del merge a production. El commit lleva [skip-ota] para no lanzar la OTA.
+   ```
+3. Comando para el build: `npm run eas:build -- --profile production`
+
+En `workflow_dispatch` manual la OTA siempre corre independientemente del flag.
+
+---
 
 ### Builds EAS (IMPORTANTE)
 
@@ -319,24 +336,24 @@ Documentar NO:
 
 ## Archivos clave (referencia rápida)
 
-| Qué necesitas                | Archivo                                                  |
-| ---------------------------- | -------------------------------------------------------- |
-| Entry point                  | `app/_layout.tsx`                                        |
-| Configuración de tabs        | `app/(tabs)/_layout.tsx`                                 |
-| Home screen                  | `app/(tabs)/index.tsx`                                   |
-| Fallback de perfiles         | `constants/defaultProfileConfig.ts`                      |
-| Catálogo de IDs conocidos    | `constants/profileCatalog.ts`                            |
-| Resolver de perfil           | `utils/resolveProfileConfig.ts`                          |
-| Seed JSON de Firebase        | `firebase-seed/profileConfig.json`                       |
-| Colores                      | `constants/colors.ts`                                    |
-| Firebase config              | `constants/firebase.ts`                                  |
-| Firebase app singleton       | `utils/firebaseApp.ts`                                   |
-| Fetch de datos               | `hooks/useFirebaseData.ts`                               |
-| Procesador de canciones      | `hooks/useSongProcessor.ts`                              |
-| Parser de calendario         | `hooks/useCalendarEvents.ts`                             |
-| BBCode → HTML                | `utils/formatText.ts`                                    |
-| Notificaciones               | `notifications/` + `services/pushNotificationService.ts` |
-| Env vars template            | `.env.example`                                           |
+| Qué necesitas             | Archivo                                                  |
+| ------------------------- | -------------------------------------------------------- |
+| Entry point               | `app/_layout.tsx`                                        |
+| Configuración de tabs     | `app/(tabs)/_layout.tsx`                                 |
+| Home screen               | `app/(tabs)/index.tsx`                                   |
+| Fallback de perfiles      | `constants/defaultProfileConfig.ts`                      |
+| Catálogo de IDs conocidos | `constants/profileCatalog.ts`                            |
+| Resolver de perfil        | `utils/resolveProfileConfig.ts`                          |
+| Seed JSON de Firebase     | `firebase-seed/profileConfig.json`                       |
+| Colores                   | `constants/colors.ts`                                    |
+| Firebase config           | `constants/firebase.ts`                                  |
+| Firebase app singleton    | `utils/firebaseApp.ts`                                   |
+| Fetch de datos            | `hooks/useFirebaseData.ts`                               |
+| Procesador de canciones   | `hooks/useSongProcessor.ts`                              |
+| Parser de calendario      | `hooks/useCalendarEvents.ts`                             |
+| BBCode → HTML             | `utils/formatText.ts`                                    |
+| Notificaciones            | `notifications/` + `services/pushNotificationService.ts` |
+| Env vars template         | `.env.example`                                           |
 
 ## Identificadores de la app
 
@@ -344,8 +361,8 @@ Documentar NO:
 - **Android Package**: `com.mcmespana.mcmapp`
 - **Apple Team ID**: `5P53S6QB23`
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
-- **App version**: 1.0.1
-- **Runtime version**: 1.0.1
+- **App version**: 2.0.0
+- **Runtime version**: 2.0.0
 
 ## HeroUI Native — UI Library
 
@@ -516,3 +533,6 @@ npx heroui-cli@latest agents-md --native --output AGENTS.md
 - Splash screen: HelloWave con 3 repeticiones (900ms total)
 - Sistema de Perfiles: reemplaza al viejo `featureFlags.ts`. Ver `types/profileConfig.ts` + `utils/resolveProfileConfig.ts`
 - Sistema de notificaciones push: ver `NOTIFICACIONES.md` en la raíz del monorepo
+- **Wordle:** `app/screens/WordleScreen.tsx` y `app/wordle.tsx` son código histórico sin uso activo. Nadie accede a él actualmente. No tocar ni añadirle funcionalidades hasta que se decida reactivarlo.
+- **Haptics:** `utils/haptics.ts` centraliza todo el feedback háptico. Usar las funciones semánticas de `h` (h.tap, h.add, h.remove, h.select, h.toggle, h.formSuccess…) en lugar de llamar a expo-haptics directamente.
+- **Arreglos del cantoral:** directiva custom `{arr: texto}` para anotaciones de arreglo (render sutil alineado a la derecha, toggle ON-por-canción). Lógica en `utils/arrangements.ts`; ver `ARREGLOS.md` para sintaxis, comportamiento y el prompt del generador de ChordPro.

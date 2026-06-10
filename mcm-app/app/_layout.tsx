@@ -4,6 +4,7 @@ import '../notifications/NotificationHandler'; // Inicializa el handler de notif
 import usePushNotifications from '../notifications/usePushNotifications'; // Hook para notificaciones push
 
 import React, { useState, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet, Platform } from 'react-native';
 import Constants from 'expo-constants';
@@ -45,6 +46,14 @@ import { HeroUINativeProvider } from 'heroui-native';
 import { AppToastProvider, useToast } from '@/contexts/AppToastContext';
 import OTAUpdatePrompt from '@/components/OTAUpdatePrompt';
 import { OTAProvider, useOTAContext } from '@/contexts/OTAContext';
+import { PreviewChannelProvider } from '@/contexts/PreviewChannelContext';
+import { PreviewChannelModal } from '@/components/PreviewChannelModal';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { updateUserMCMData } from '@/utils/authHelpers';
+import FirebaseConfigErrorScreen from '@/components/FirebaseConfigErrorScreen';
+import { CarismochitoProvider } from '@/contexts/CarismochitoContext';
+import CarismochitoOverlay from '@/components/CarismochitoOverlay';
+import { ActiveEventProvider } from '@/contexts/ActiveEventContext';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 
@@ -53,24 +62,34 @@ export default function RootLayout() {
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <HeroUINativeProvider>
+          <HeroUINativeProvider
+            config={{ devInfo: { stylingPrinciples: false } }}
+          >
             <AppToastProvider>
               <OverlayStackProvider>
                 <ProfileConfigProvider>
                   <AppSettingsProvider>
                     <UniwindThemeBridge />
                     <UserProfileProvider>
-                      <SelectedSongsProvider>
-                        <ChoirSessionProvider>
-                          <NotificationsProvider>
-                            <CalendarConfigProvider>
-                              <OTAProvider>
-                                <InnerLayout />
-                              </OTAProvider>
-                            </CalendarConfigProvider>
-                          </NotificationsProvider>
-                        </ChoirSessionProvider>
-                      </SelectedSongsProvider>
+                      <AuthProvider>
+                        <SelectedSongsProvider>
+                          <ChoirSessionProvider>
+                            <NotificationsProvider>
+                              <CalendarConfigProvider>
+                                <PreviewChannelProvider>
+                                  <OTAProvider>
+                                    <CarismochitoProvider>
+                                      <ActiveEventProvider>
+                                        <InnerLayout />
+                                      </ActiveEventProvider>
+                                    </CarismochitoProvider>
+                                  </OTAProvider>
+                                </PreviewChannelProvider>
+                              </CalendarConfigProvider>
+                            </NotificationsProvider>
+                          </ChoirSessionProvider>
+                        </SelectedSongsProvider>
+                      </AuthProvider>
                     </UserProfileProvider>
                   </AppSettingsProvider>
                 </ProfileConfigProvider>
@@ -91,7 +110,23 @@ function InnerLayout() {
   const pathname = usePathname();
   const segments = useSegments();
   const { profile, loading: profileLoading } = useUserProfile();
+  const { user: authUser, configError: firebaseConfigError } = useAuth();
   const resolved = useResolvedProfileConfig();
+
+  // Sync MCM profile data to RTDB whenever user is logged in and profile changes
+  useEffect(() => {
+    if (!authUser) return;
+    updateUserMCMData(authUser.uid, {
+      profileType: profile.profileType,
+      delegationId: profile.delegationId,
+      onboardingCompleted: profile.onboardingCompleted,
+    });
+  }, [
+    authUser,
+    profile.profileType,
+    profile.delegationId,
+    profile.onboardingCompleted,
+  ]);
   const { addSong } = useSelectedSongs();
   const { toast } = useToast();
 
@@ -114,9 +149,19 @@ function InnerLayout() {
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowAnimation(false);
-    }, 900);
+    let timer: ReturnType<typeof setTimeout>;
+    AsyncStorage.getItem('seenWelcomeOnce')
+      .then((seen) => {
+        if (seen) {
+          setShowAnimation(false);
+          return;
+        }
+        AsyncStorage.setItem('seenWelcomeOnce', '1').catch(() => {});
+        timer = setTimeout(() => setShowAnimation(false), 600);
+      })
+      .catch(() => {
+        timer = setTimeout(() => setShowAnimation(false), 600);
+      });
     return () => clearTimeout(timer);
   }, []);
 
@@ -157,6 +202,11 @@ function InnerLayout() {
     );
   }
 
+  // Firebase mal configurado — pantalla de diagnóstico para el desarrollador
+  if (firebaseConfigError) {
+    return <FirebaseConfigErrorScreen error={firebaseConfigError} />;
+  }
+
   // Kill switches remotos: mantenimiento + versión mínima
   if (resolved.maintenanceMode) {
     return (
@@ -184,7 +234,11 @@ function InnerLayout() {
         <Stack.Screen name="notifications" options={{ headerShown: false }} />
         <Stack.Screen
           name="onboarding"
-          options={{ headerShown: false, presentation: 'modal' }}
+          options={{
+            headerShown: false,
+            presentation: 'fullScreenModal',
+            contentStyle: { backgroundColor: '#253883' },
+          }}
         />
         <Stack.Screen
           name="wordle"
@@ -193,6 +247,7 @@ function InnerLayout() {
             title: 'Wordle Jubileo',
           }}
         />
+        <Stack.Screen name="evaluacion-app" options={{ headerShown: false }} />
         <Stack.Screen
           name="playlist"
           options={{
@@ -209,6 +264,8 @@ function InnerLayout() {
         onApply={applyUpdate}
         onLater={() => setDismissed(true)}
       />
+      <PreviewChannelModal />
+      <CarismochitoOverlay />
     </NavThemeProvider>
   );
 }

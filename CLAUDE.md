@@ -11,7 +11,8 @@
 ├── README.md              ← Guía rápida para humanos
 ├── AGENTS.md              ← Definición de agentes especializados
 ├── NOTIFICACIONES.md      ← Documentación completa del sistema de notificaciones push
-└── EVENTOS.md             ← Cómo crear eventos (Jubileo, encuentros, retiros…) y estructura Firebase
+├── EVENTOS.md             ← Cómo crear eventos (Jubileo, encuentros, retiros…) y estructura Firebase
+└── MEJORAS.md             ← Análisis técnico transversal (rendimiento, arquitectura, seguridad, observabilidad, DX, CI…) + plan priorizado (referenciado desde mcm-app/TODO.md)
 ```
 
 ## Reglas para agentes
@@ -21,6 +22,7 @@
 3. **Documenta cambios importantes en `mcm-app/CHANGELOG.md`** — NO documentes cambios cosméticos (colores, padding, etc.), SÍ documenta: nuevas pantallas, cambios de navegación, cambios de lógica de datos, cambios en feature flags, nuevas dependencias, cambios en Firebase
 4. **Consulta `mcm-app/TODO.md`** para ver la lista de tareas pendientes de mantenimiento y mejora
 5. **No toques archivos `.env.local`** — contienen credenciales de Firebase
+6. **Si añades paquetes con código nativo → añade `[skip-ota]` al commit y avisa al usuario** (ver OTA en `mcm-app/CLAUDE.md`)
 
 ## Comandos rápidos (desde mcm-app/)
 

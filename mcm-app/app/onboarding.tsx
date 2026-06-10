@@ -11,8 +11,9 @@ import {
   TextStyle,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, {
   Easing,
@@ -33,13 +34,15 @@ import colors from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useAuth } from '@/contexts/AuthContext';
+import SocialLoginSection from '@/components/SocialLoginSection';
 import {
   DEFAULT_DELEGATION_ID,
   DEFAULT_PROFILE_TYPE,
 } from '@/constants/defaultProfileConfig';
 import type { ProfileType } from '@/types/profileConfig';
 
-type Step = 'welcome' | 'profile' | 'delegation' | 'success';
+type Step = 'welcome' | 'profile' | 'delegation' | 'login' | 'success';
 
 // "Otros" es un atajo visual del onboarding. Internamente mapea a
 // `miembro` + `mcm-espana`, así cubre a quien no se identifica con ningún
@@ -49,7 +52,7 @@ const OTROS_DELEGATION_ID = '__otros__' as const;
 const OTROS_PROFILE_DESCRIPTION =
   'Si no te identificas con ninguno de los anteriores o simplemente quieres probar la app';
 const OTROS_DELEGATION_DESCRIPTION =
-  'Si no perteneces a ninguna o solo quieres probar la app';
+  'Si quieres probar la app rápidamente o no perteneces a un grupo local';
 const OTROS_FALLBACK_PROFILE: ProfileType = 'miembro';
 const OTROS_FALLBACK_DELEGATION = 'mcm-espana';
 
@@ -106,6 +109,15 @@ function useThemeT() {
     bg: isDark ? '#1C1C1E' : '#ffffff',
     card: isDark ? '#2C2C2E' : '#ffffff',
     border: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)',
+    // Accent used for on-surface interactive elements (icons, selected text,
+    // checks, links). In dark mode the deep primary blue is too low-contrast
+    // over the dark background, so we switch to the lighter secondary blue.
+    tint: isDark ? colors.secondary : colors.primary,
+    // Tinted backgrounds for icon circles / selected cards / summary pills.
+    iconBg: isDark ? 'rgba(149,210,242,0.14)' : 'rgba(37,56,131,0.09)',
+    selectedBg: isDark ? 'rgba(149,210,242,0.12)' : 'rgba(37,56,131,0.055)',
+    chipBg: isDark ? 'rgba(149,210,242,0.12)' : 'rgba(37,56,131,0.06)',
+    chipBorder: isDark ? 'rgba(149,210,242,0.22)' : 'rgba(37,56,131,0.10)',
     isDark,
   };
 }
@@ -116,12 +128,32 @@ const MAX_CONTENT_W = 520;
    Reusable bits
 ─────────────────────────────────────── */
 
-function ProgressDots({ current, total }: { current: number; total: number }) {
+function ProgressDots({
+  current,
+  total,
+  onDark,
+}: {
+  current: number;
+  total: number;
+  onDark?: boolean;
+}) {
   const TT = useThemeT();
+  const activeColor = onDark ? '#ffffff' : TT.tint;
+  const doneColor = onDark ? 'rgba(255,255,255,0.7)' : TT.tint;
+  const inactiveColor = onDark
+    ? 'rgba(255,255,255,0.28)'
+    : TT.isDark
+      ? 'rgba(255,255,255,0.22)'
+      : 'rgba(37,56,131,0.18)';
   return (
-    <View style={dotsStyles.row}>
+    <View
+      style={dotsStyles.row}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 1, max: total, now: current + 1 }}
+    >
       {Array.from({ length: total }, (_, i) => {
         const active = i === current;
+        const done = i < current;
         return (
           <View
             key={i}
@@ -129,7 +161,11 @@ function ProgressDots({ current, total }: { current: number; total: number }) {
               dotsStyles.dot,
               {
                 width: active ? 22 : 6,
-                backgroundColor: active ? TT.primary : 'rgba(37,56,131,0.18)',
+                backgroundColor: active
+                  ? activeColor
+                  : done
+                    ? doneColor
+                    : inactiveColor,
               },
             ]}
           />
@@ -168,8 +204,11 @@ function PrimaryButton({
   shimmer?: boolean;
   textColor?: string;
 }) {
-  const bg = disabled ? 'rgba(37,56,131,0.13)' : color || T.primary;
-  const fg = disabled ? 'rgba(37,56,131,0.35)' : textColor || '#fff';
+  const { isDark } = useThemeT();
+  const disabledBg = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(37,56,131,0.13)';
+  const disabledFg = isDark ? 'rgba(255,255,255,0.32)' : 'rgba(37,56,131,0.35)';
+  const bg = disabled ? disabledBg : color || T.primary;
+  const fg = disabled ? disabledFg : textColor || '#fff';
 
   const scale = useSharedValue(1);
   const aStyle = useAnimatedStyle(() => ({
@@ -275,11 +314,19 @@ function SkipButton({ onPress }: { onPress: () => void }) {
       accessibilityLabel="Saltar configuración"
       style={({ pressed }) => [
         skipBtnStyles.pill,
+        {
+          borderColor: TT.isDark
+            ? 'rgba(149,210,242,0.30)'
+            : 'rgba(37,56,131,0.28)',
+          backgroundColor: TT.isDark
+            ? 'rgba(149,210,242,0.10)'
+            : 'rgba(37,56,131,0.06)',
+        },
         pressed && { opacity: 0.65 },
       ]}
     >
-      <Text style={[skipBtnStyles.text, { color: TT.primary }]}>Saltar</Text>
-      <MaterialIcons name="arrow-forward" size={13} color={TT.primary} />
+      <Text style={[skipBtnStyles.text, { color: TT.tint }]}>Saltar</Text>
+      <MaterialIcons name="arrow-forward" size={13} color={TT.tint} />
     </Pressable>
   );
 }
@@ -308,9 +355,17 @@ const skipBtnStyles = StyleSheet.create({
    Welcome screen
 ─────────────────────────────────────── */
 
-function WelcomeScreen({ onStart }: { onStart: () => void }) {
+function WelcomeScreen({
+  onStart,
+  applySafeArea,
+}: {
+  onStart: () => void;
+  applySafeArea: boolean;
+}) {
+  const insets = useSafeAreaInsets();
   const ripple1 = useSharedValue(0);
   const ripple2 = useSharedValue(0);
+  const float = useSharedValue(0);
 
   useEffect(() => {
     ripple1.value = withDelay(
@@ -329,7 +384,21 @@ function WelcomeScreen({ onStart }: { onStart: () => void }) {
         false,
       ),
     );
-  }, [ripple1, ripple2]);
+    float.value = withRepeat(
+      withSequence(
+        withTiming(1, {
+          duration: 2200,
+          easing: Easing.inOut(Easing.quad),
+        }),
+        withTiming(0, {
+          duration: 2200,
+          easing: Easing.inOut(Easing.quad),
+        }),
+      ),
+      -1,
+      false,
+    );
+  }, [ripple1, ripple2, float]);
 
   const ripple1Style = useAnimatedStyle(() => ({
     opacity: 0.35 * (1 - ripple1.value),
@@ -339,13 +408,20 @@ function WelcomeScreen({ onStart }: { onStart: () => void }) {
     opacity: 0.28 * (1 - ripple2.value),
     transform: [{ scale: 1 + ripple2.value * 1.4 }],
   }));
+  const floatStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -6 * float.value }],
+  }));
+
+  const padTop = applySafeArea ? insets.top : 0;
+  const padBottom = applySafeArea ? insets.bottom : 0;
 
   return (
     <Animated.View
       style={[welcomeStyles.root, { backgroundColor: T.primary }]}
       entering={FadeIn.duration(420)}
     >
-      {/* decorative circles */}
+      <StatusBar style="light" animated />
+      {/* decorative circles — pueden invadir el notch sin problema */}
       <View
         style={[
           welcomeStyles.deco,
@@ -395,72 +471,108 @@ function WelcomeScreen({ onStart }: { onStart: () => void }) {
         ]}
       />
 
-      <View style={welcomeStyles.center}>
-        <Animated.View
-          entering={FadeIn.duration(550).easing(
-            Easing.bezier(0.34, 1.56, 0.64, 1),
-          )}
-          style={welcomeStyles.logoWrap}
-        >
-          <Animated.View style={[welcomeStyles.ripple, ripple1Style]} />
-          <Animated.View
-            style={[
-              welcomeStyles.ripple,
-              ripple2Style,
-              { top: 10, left: 10, right: 10, bottom: 10 },
-            ]}
-          />
-          <View style={welcomeStyles.logoCircle}>
-            <Image
-              source={require('@/assets/images/icon.png')}
-              style={welcomeStyles.logoImg}
-              resizeMode="contain"
-            />
-          </View>
-        </Animated.View>
-
-        <Animated.Text
-          entering={FadeInUp.delay(80).duration(420)}
-          style={welcomeStyles.title}
-        >
-          Bienvenido/a a{'\n'}MCM App
-        </Animated.Text>
-
-        <Animated.Text
-          entering={FadeInUp.delay(160).duration(420)}
-          style={welcomeStyles.tagline}
-        >
-          Movimiento Consolación para el Mundo
-        </Animated.Text>
-
-        <Animated.Text
-          entering={FadeInUp.delay(240).duration(420)}
-          style={welcomeStyles.body}
-        >
-          Mantente al día con las novedades. Revisa el calendario, accede a la
-          Plataforma Comunica, mira fotos o sigue las actividades.
-        </Animated.Text>
-      </View>
-
-      <Animated.View
-        entering={FadeInUp.delay(340).duration(420)}
-        style={welcomeStyles.cta}
+      <View
+        style={[
+          welcomeStyles.safeContent,
+          { paddingTop: padTop, paddingBottom: padBottom },
+        ]}
       >
-        <PrimaryButton
-          label="Comenzar"
-          onPress={onStart}
-          color="#ffffff"
-          textColor={T.primary}
-          shimmer
-        />
-      </Animated.View>
+        <View style={welcomeStyles.center}>
+          <Animated.View
+            entering={FadeInDown.delay(60)
+              .duration(420)
+              .easing(Easing.bezier(0.22, 1, 0.36, 1))}
+            style={welcomeStyles.badge}
+          >
+            <MaterialIcons name="favorite" size={12} color="#FCD200" />
+            <Text style={welcomeStyles.badgeText}>Te damos la bienvenida</Text>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeIn.duration(550).easing(
+              Easing.bezier(0.34, 1.56, 0.64, 1),
+            )}
+            style={[welcomeStyles.logoWrap, floatStyle]}
+          >
+            <Animated.View style={[welcomeStyles.ripple, ripple1Style]} />
+            <Animated.View
+              style={[
+                welcomeStyles.ripple,
+                ripple2Style,
+                { top: 10, left: 10, right: 10, bottom: 10 },
+              ]}
+            />
+            <View style={welcomeStyles.logoCircle}>
+              <Image
+                source={require('@/assets/images/icon.png')}
+                style={welcomeStyles.logoImg}
+                resizeMode="contain"
+              />
+            </View>
+          </Animated.View>
+
+          <Animated.Text
+            entering={FadeInUp.delay(120).duration(420)}
+            style={welcomeStyles.title}
+          >
+            ¡Hola! 👋{'\n'}Te damos la bienvenida a MCM App
+          </Animated.Text>
+
+          <Animated.Text
+            entering={FadeInUp.delay(200).duration(420)}
+            style={welcomeStyles.tagline}
+          >
+            Movimiento Consolación para el Mundo
+          </Animated.Text>
+
+          <Animated.Text
+            entering={FadeInUp.delay(280).duration(420)}
+            style={welcomeStyles.body}
+          >
+            Una sencilla app para cuidar la Vida del MCM:
+            calendario, cantoral, un espacio para tus momentos de oración...
+          </Animated.Text>
+        </View>
+
+        <Animated.View
+          entering={FadeInUp.delay(360).duration(420)}
+          style={welcomeStyles.cta}
+        >
+          <PrimaryButton
+            label="¡Vamos allá!"
+            onPress={onStart}
+            color="#ffffff"
+            textColor={T.primary}
+            shimmer
+          />
+        </Animated.View>
+      </View>
     </Animated.View>
   );
 }
 
 const welcomeStyles = StyleSheet.create({
   root: { flex: 1, position: 'relative', overflow: 'hidden' } as ViewStyle,
+  safeContent: { flex: 1 } as ViewStyle,
   deco: { position: 'absolute', borderRadius: 999 } as ViewStyle,
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    marginBottom: 18,
+  } as ViewStyle,
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  } as TextStyle,
   center: {
     flex: 1,
     alignItems: 'center',
@@ -528,7 +640,7 @@ const welcomeStyles = StyleSheet.create({
   cta: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 36,
+    paddingBottom: 24,
   } as ViewStyle,
 });
 
@@ -543,6 +655,8 @@ function ProfileScreen({
   onContinue,
   onSkip,
   animDir,
+  applySafeArea,
+  totalSteps,
 }: {
   profiles: { id: OnboardingProfileId; label: string; description: string }[];
   selected: OnboardingProfileId | null;
@@ -550,33 +664,40 @@ function ProfileScreen({
   onContinue: () => void;
   onSkip: () => void;
   animDir: 'forward' | 'back';
+  applySafeArea: boolean;
+  totalSteps: number;
 }) {
   const TT = useThemeT();
+  const insets = useSafeAreaInsets();
   const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
+  const topPad = (applySafeArea ? insets.top : 0) + 8;
+  const bottomPad =
+    (applySafeArea ? insets.bottom : 0) + (Platform.OS === 'ios' ? 12 : 24);
 
   return (
     <Animated.View
       entering={Entering.duration(320).easing(Easing.bezier(0.22, 1, 0.36, 1))}
       style={[stepStyles.root, { backgroundColor: TT.bg }]}
     >
-      <View style={stepStyles.topBar}>
+      <StatusBar style={TT.isDark ? 'light' : 'dark'} animated />
+      <View style={[stepStyles.topBar, { paddingTop: topPad }]}>
         <View />
         <SkipButton onPress={onSkip} />
       </View>
 
       <View style={stepStyles.dotsWrap}>
-        <ProgressDots current={0} total={2} />
+        <ProgressDots current={0} total={totalSteps} />
       </View>
 
       <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
-        <View style={stepStyles.heroIcon}>
-          <MaterialIcons name="person-search" size={28} color={TT.primary} />
+        <View style={[stepStyles.heroIcon, { backgroundColor: TT.iconBg }]}>
+          <MaterialIcons name="person-search" size={28} color={TT.tint} />
         </View>
         <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
-          ¿Quién eres?
+          ¿Quién eres? (1 minuto)
         </Text>
         <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
-          Dinos quién eres y te mostraremos lo que más te interesa.
+          Según tu perfil te mostraremos lo más adecuado. Puedes cambiarlo después.
         </Text>
       </Animated.View>
 
@@ -600,31 +721,40 @@ function ProfileScreen({
                   cardStyles.card,
                   { backgroundColor: TT.card, borderColor: TT.border },
                   sel && cardStyles.cardSelected,
+                  sel && {
+                    borderColor: TT.tint,
+                    backgroundColor: TT.selectedBg,
+                  },
                   pressed && { transform: [{ scale: 0.97 }] },
                 ]}
               >
                 <View
                   style={[
                     cardStyles.iconCircle,
+                    { backgroundColor: TT.iconBg },
                     sel && cardStyles.iconCircleSelected,
+                    sel && { backgroundColor: TT.tint },
                   ]}
                 >
                   <MaterialIcons
                     name={PROFILE_ICONS[p.id]}
                     size={24}
-                    color={sel ? '#fff' : TT.primary}
+                    color={sel ? (TT.isDark ? '#1C1C1E' : '#fff') : TT.tint}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={[
                       cardStyles.cardTitle,
-                      { color: sel ? TT.primary : TT.text },
+                      { color: sel ? TT.tint : TT.text },
                     ]}
                   >
                     {p.label}
                   </Text>
-                  <Text style={[cardStyles.cardDesc, { color: TT.muted }]} numberOfLines={3}>
+                  <Text
+                    style={[cardStyles.cardDesc, { color: TT.muted }]}
+                    numberOfLines={3}
+                  >
                     {p.description}
                   </Text>
                 </View>
@@ -632,7 +762,7 @@ function ProfileScreen({
                   <MaterialIcons
                     name="check-circle"
                     size={22}
-                    color={TT.primary}
+                    color={TT.tint}
                   />
                 )}
               </Pressable>
@@ -641,7 +771,12 @@ function ProfileScreen({
         })}
       </ScrollView>
 
-      <View style={stepStyles.footer}>
+      <View
+        style={[
+          stepStyles.footer,
+          { paddingBottom: bottomPad, borderTopColor: TT.border },
+        ]}
+      >
         <PrimaryButton
           label="Continuar"
           onPress={onContinue}
@@ -663,6 +798,10 @@ function DelegationScreen({
   onFinish,
   onBack,
   onSkip,
+  applySafeArea,
+  stepIndex,
+  totalSteps,
+  finishLabel,
 }: {
   delegations: { id: string; label: string; description?: string }[];
   selected: string | null;
@@ -670,8 +809,17 @@ function DelegationScreen({
   onFinish: () => void;
   onBack: () => void;
   onSkip: () => void;
+  applySafeArea: boolean;
+  stepIndex: number;
+  totalSteps: number;
+  finishLabel: string;
 }) {
   const TT = useThemeT();
+  const insets = useSafeAreaInsets();
+  const topPad = (applySafeArea ? insets.top : 0) + 8;
+  const bottomPad =
+    (applySafeArea ? insets.bottom : 0) + (Platform.OS === 'ios' ? 12 : 24);
+
   return (
     <Animated.View
       entering={SlideInRight.duration(320).easing(
@@ -679,29 +827,28 @@ function DelegationScreen({
       )}
       style={[stepStyles.root, { backgroundColor: TT.bg }]}
     >
-      <View style={stepStyles.topBar}>
+      <StatusBar style={TT.isDark ? 'light' : 'dark'} animated />
+      <View style={[stepStyles.topBar, { paddingTop: topPad }]}>
         <Pressable onPress={onBack} hitSlop={12} style={stepStyles.backBtn}>
-          <MaterialIcons name="arrow-back-ios" size={16} color={TT.primary} />
-          <Text style={[stepStyles.backLabel, { color: TT.primary }]}>
-            Atrás
-          </Text>
+          <MaterialIcons name="arrow-back-ios" size={16} color={TT.tint} />
+          <Text style={[stepStyles.backLabel, { color: TT.tint }]}>Atrás</Text>
         </Pressable>
         <SkipButton onPress={onSkip} />
       </View>
 
       <View style={stepStyles.dotsWrap}>
-        <ProgressDots current={1} total={2} />
+        <ProgressDots current={stepIndex} total={totalSteps} />
       </View>
 
       <Animated.View entering={FadeInUp.duration(420)} style={stepStyles.hero}>
-        <View style={stepStyles.heroIcon}>
-          <MaterialIcons name="location-on" size={28} color={TT.primary} />
+        <View style={[stepStyles.heroIcon, { backgroundColor: TT.iconBg }]}>
+          <MaterialIcons name="location-on" size={28} color={TT.tint} />
         </View>
         <Text style={[stepStyles.heroTitle, { color: TT.text }]}>
-          ¿De qué delegación?
+          ¿De qué localidad?
         </Text>
         <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
-          Recibirás las notificaciones y el calendario de tu delegación.
+          En el futuro, recibirás  notificaciones y calendario de tu MCM Local.
         </Text>
       </Animated.View>
 
@@ -725,6 +872,10 @@ function DelegationScreen({
                   delegStyles.row,
                   { borderColor: TT.border, backgroundColor: TT.card },
                   sel && delegStyles.rowSelected,
+                  sel && {
+                    borderColor: TT.tint,
+                    backgroundColor: TT.selectedBg,
+                  },
                   pressed && { transform: [{ scale: 0.98 }] },
                 ]}
               >
@@ -733,7 +884,7 @@ function DelegationScreen({
                     style={[
                       delegStyles.label,
                       {
-                        color: sel ? TT.primary : TT.text,
+                        color: sel ? TT.tint : TT.text,
                         fontWeight: sel ? '700' : '500',
                       },
                     ]}
@@ -753,7 +904,7 @@ function DelegationScreen({
                   <MaterialIcons
                     name="check-circle"
                     size={20}
-                    color={TT.primary}
+                    color={TT.tint}
                   />
                 )}
               </Pressable>
@@ -762,9 +913,14 @@ function DelegationScreen({
         })}
       </ScrollView>
 
-      <View style={[stepStyles.footer, { borderTopColor: TT.border }]}>
+      <View
+        style={[
+          stepStyles.footer,
+          { paddingBottom: bottomPad, borderTopColor: TT.border },
+        ]}
+      >
         <PrimaryButton
-          label="¡Empezar!"
+          label={finishLabel}
           onPress={onFinish}
           disabled={!selected}
           color={TT.accent}
@@ -782,13 +938,17 @@ function SuccessScreen({
   profile,
   delegation,
   onContinue,
+  applySafeArea,
 }: {
   profile: { id: OnboardingProfileId; label: string } | null;
   delegation: { id: string; label: string } | null;
   onContinue: () => void;
+  applySafeArea: boolean;
 }) {
   const TT = useThemeT();
+  const insets = useSafeAreaInsets();
   const ripple = useSharedValue(0);
+  const wiggle = useSharedValue(0);
   useEffect(() => {
     ripple.value = withDelay(
       300,
@@ -798,26 +958,47 @@ function SuccessScreen({
         false,
       ),
     );
-  }, [ripple]);
+    wiggle.value = withSequence(
+      withDelay(
+        120,
+        withTiming(1, { duration: 220, easing: Easing.out(Easing.back(2)) }),
+      ),
+      withTiming(0, { duration: 260, easing: Easing.inOut(Easing.quad) }),
+    );
+  }, [ripple, wiggle]);
   const rippleStyle = useAnimatedStyle(() => ({
     opacity: 0.4 * (1 - ripple.value),
     transform: [{ scale: 1 + ripple.value * 1.6 }],
   }));
+  const wiggleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + wiggle.value * 0.08 }],
+  }));
+
+  const padTop = applySafeArea ? insets.top : 0;
+  const padBottom = applySafeArea ? insets.bottom : 0;
 
   return (
     <Animated.View
       entering={FadeIn.duration(380)}
-      style={[successStyles.root, { backgroundColor: TT.bg }]}
+      style={[
+        successStyles.root,
+        {
+          backgroundColor: TT.bg,
+          paddingTop: padTop + 28,
+          paddingBottom: padBottom + 28,
+        },
+      ]}
     >
+      <StatusBar style={TT.isDark ? 'light' : 'dark'} animated />
       <Animated.View
         entering={FadeIn.duration(550).easing(
           Easing.bezier(0.34, 1.56, 0.64, 1),
         )}
-        style={successStyles.iconWrap}
+        style={[successStyles.iconWrap, wiggleStyle]}
       >
         <Animated.View style={[successStyles.iconRipple, rippleStyle]} />
         <View style={successStyles.iconCircle}>
-          <MaterialIcons name="check-circle" size={48} color={TT.success} />
+          <MaterialIcons name="celebration" size={48} color={TT.success} />
         </View>
       </Animated.View>
 
@@ -831,7 +1012,7 @@ function SuccessScreen({
         entering={FadeInDown.delay(180).duration(380)}
         style={[successStyles.sub, { color: TT.muted }]}
       >
-        ¡Gracias! Tu comunidad te espera.
+        Te damos la bienvenida a MCM App
       </Animated.Text>
 
       {(profile || delegation) && (
@@ -840,21 +1021,31 @@ function SuccessScreen({
           style={successStyles.pills}
         >
           {profile && (
-            <View style={successStyles.pill}>
+            <View
+              style={[
+                successStyles.pill,
+                { backgroundColor: TT.chipBg, borderColor: TT.chipBorder },
+              ]}
+            >
               <MaterialIcons
                 name={PROFILE_ICONS[profile.id]}
                 size={20}
-                color={TT.primary}
+                color={TT.tint}
               />
-              <Text style={[successStyles.pillText, { color: TT.primary }]}>
+              <Text style={[successStyles.pillText, { color: TT.tint }]}>
                 {profile.label}
               </Text>
             </View>
           )}
           {delegation && (
-            <View style={successStyles.pill}>
-              <MaterialIcons name="location-on" size={20} color={TT.primary} />
-              <Text style={[successStyles.pillText, { color: TT.primary }]}>
+            <View
+              style={[
+                successStyles.pill,
+                { backgroundColor: TT.chipBg, borderColor: TT.chipBorder },
+              ]}
+            >
+              <MaterialIcons name="location-on" size={20} color={TT.tint} />
+              <Text style={[successStyles.pillText, { color: TT.tint }]}>
                 {delegation.label}
               </Text>
             </View>
@@ -866,7 +1057,7 @@ function SuccessScreen({
         entering={FadeInUp.delay(340).duration(380)}
         style={successStyles.cta}
       >
-        <PrimaryButton label="Ir a la app" onPress={onContinue} />
+        <PrimaryButton label="Eeeentramos!" onPress={onContinue} />
       </Animated.View>
     </Animated.View>
   );
@@ -1099,6 +1290,335 @@ const delegStyles = StyleSheet.create({
 });
 
 /* ─────────────────────────────────────
+   Login screen (onboarding step)
+─────────────────────────────────────── */
+
+function LoginOnboardingScreen({
+  onFinish,
+  onSkip,
+  onBack,
+  animDir,
+  profile,
+  delegation,
+  stepIndex,
+  totalSteps,
+}: {
+  onFinish: () => void;
+  onSkip: () => void;
+  onBack: () => void;
+  animDir: 'forward' | 'back';
+  profile: { id: OnboardingProfileId; label: string } | null;
+  delegation: { id: string; label: string } | null;
+  stepIndex: number;
+  totalSteps: number;
+}) {
+  const Entering = animDir === 'back' ? SlideInLeft : SlideInRight;
+  const { width: screenW } = useWindowDimensions();
+  const isWide = screenW >= 640;
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Animated.View
+      entering={Entering.duration(320).easing(Easing.bezier(0.22, 1, 0.36, 1))}
+      style={loginOnbStyles.root}
+    >
+      {/* Decorative background circles */}
+      <View
+        style={[
+          loginOnbStyles.deco,
+          {
+            top: -80,
+            right: -60,
+            width: 220,
+            height: 220,
+            backgroundColor: 'rgba(149,210,242,0.10)',
+          },
+        ]}
+      />
+      <View
+        style={[
+          loginOnbStyles.deco,
+          {
+            bottom: 120,
+            left: -60,
+            width: 180,
+            height: 180,
+            backgroundColor: 'rgba(149,210,242,0.07)',
+          },
+        ]}
+      />
+      <View
+        style={[
+          loginOnbStyles.deco,
+          {
+            bottom: -30,
+            right: 10,
+            width: 120,
+            height: 120,
+            backgroundColor: 'rgba(255,255,255,0.04)',
+          },
+        ]}
+      />
+
+      {/* Back button */}
+      <Pressable
+        onPress={onBack}
+        style={[loginOnbStyles.backBtn, { top: insets.top + 4 }]}
+        accessibilityRole="button"
+        accessibilityLabel="Volver"
+      >
+        <MaterialIcons
+          name="arrow-back"
+          size={22}
+          color="rgba(255,255,255,0.75)"
+        />
+      </Pressable>
+
+      {/* Step indicator */}
+      <View style={[loginOnbStyles.dotsTop, { top: insets.top + 14 }]}>
+        <ProgressDots current={stepIndex} total={totalSteps} onDark />
+      </View>
+
+      {/* Content — al iniciar sesión esta pantalla pasa a ser el resumen
+          final del onboarding, con el CTA centrado verticalmente. */}
+      <View
+        style={[loginOnbStyles.center, isWide && { paddingHorizontal: 48 }]}
+      >
+        {/* Logo */}
+        <Animated.View
+          entering={FadeIn.delay(80).duration(500)}
+          style={loginOnbStyles.logoWrap}
+        >
+          <View style={loginOnbStyles.logoCircle}>
+            <Image
+              source={require('@/assets/images/icon.png')}
+              style={loginOnbStyles.logoImg}
+              resizeMode="contain"
+            />
+          </View>
+        </Animated.View>
+
+        <Animated.Text
+          entering={FadeInUp.delay(120).duration(400)}
+          style={loginOnbStyles.title}
+        >
+          {user ? '¡Todo listo!' : 'Guarda tus datos en la nube'}
+        </Animated.Text>
+
+        <Animated.Text
+          entering={FadeInUp.delay(180).duration(400)}
+          style={loginOnbStyles.body}
+        >
+          {user
+            ? 'Tienes la sesión iniciada, de forma que si cambias de dispositivo guardaremos la información'
+            : 'Si quieres, puedes iniciar sesión para guardar tus reflexiones, momentos de oración y canciones, así no perderás nada (1 minuto más!)'}
+        </Animated.Text>
+
+        {/* Login buttons / authenticated card */}
+        <Animated.View
+          entering={FadeInUp.delay(240).duration(400)}
+          style={loginOnbStyles.buttonsWrap}
+        >
+          <SocialLoginSection onDarkBackground />
+        </Animated.View>
+
+        {/* Resumen + CTA cuando hay sesión (centrado verticalmente) */}
+        {user && (
+          <Animated.View
+            entering={FadeInUp.delay(300).duration(400)}
+            style={loginOnbStyles.summaryWrap}
+          >
+            {(profile || delegation) && (
+              <View style={loginOnbStyles.summaryPills}>
+                {profile && (
+                  <View style={loginOnbStyles.summaryPill}>
+                    <MaterialIcons
+                      name={PROFILE_ICONS[profile.id]}
+                      size={16}
+                      color="#fff"
+                    />
+                    <Text style={loginOnbStyles.summaryPillText}>
+                      {profile.label}
+                    </Text>
+                  </View>
+                )}
+                {delegation && (
+                  <View style={loginOnbStyles.summaryPill}>
+                    <MaterialIcons name="location-on" size={16} color="#fff" />
+                    <Text style={loginOnbStyles.summaryPillText}>
+                      {delegation.label}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+            <PrimaryButton
+              label="Entrar en la app"
+              onPress={onFinish}
+              color="#ffffff"
+              textColor={T.primary}
+              shimmer
+            />
+          </Animated.View>
+        )}
+      </View>
+
+      {/* Cuando NO hay sesión, botón inferior para continuar sin cuenta
+          (lleva al resumen final). Respetamos el safe-area inferior para que
+          en Android no quede bajo la barra de navegación de 3 botones y se
+          pueda pulsar sin problema. */}
+      {!user && (
+        <Animated.View
+          entering={FadeInUp.delay(320).duration(380)}
+          style={[
+            loginOnbStyles.skipWrap,
+            { paddingBottom: Math.max(insets.bottom + 12, 20) },
+          ]}
+        >
+          <Pressable
+            onPress={onSkip}
+            hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+            accessibilityRole="button"
+            accessibilityLabel="Continuar sin cuenta"
+            style={({ pressed }) => [
+              loginOnbStyles.skipBtn,
+              pressed && { opacity: 0.6 },
+            ]}
+          >
+            <Text style={loginOnbStyles.skipText}>
+              Entrar sin iniciar sesión
+            </Text>
+            <MaterialIcons
+              name="arrow-forward"
+              size={16}
+              color="rgba(255,255,255,0.9)"
+            />
+          </Pressable>
+        </Animated.View>
+      )}
+    </Animated.View>
+  );
+}
+
+const loginOnbStyles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: T.primary,
+    position: 'relative',
+    overflow: 'hidden',
+  } as ViewStyle,
+  deco: { position: 'absolute', borderRadius: 999 } as ViewStyle,
+  backBtn: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 10,
+    padding: 8,
+  } as ViewStyle,
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 40,
+    gap: 0,
+  } as ViewStyle,
+  logoWrap: {
+    marginBottom: 28,
+  } as ViewStyle,
+  logoCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  logoImg: { width: 60, height: 60 } as any,
+  title: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    textAlign: 'center',
+    marginBottom: 12,
+  } as TextStyle,
+  body: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+    maxWidth: 280,
+    marginBottom: 32,
+  } as TextStyle,
+  buttonsWrap: {
+    width: '100%',
+    maxWidth: 320,
+  } as ViewStyle,
+  dotsTop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 5,
+  } as ViewStyle,
+  summaryWrap: {
+    width: '100%',
+    maxWidth: 320,
+    marginTop: 24,
+    gap: 16,
+  } as ViewStyle,
+  summaryPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  } as ViewStyle,
+  summaryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.24)',
+  } as ViewStyle,
+  summaryPillText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  } as TextStyle,
+  skipWrap: {
+    paddingTop: 8,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  } as ViewStyle,
+  skipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+  } as ViewStyle,
+  skipText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  } as TextStyle,
+});
+
+/* ─────────────────────────────────────
    Coordinator
 ─────────────────────────────────────── */
 
@@ -1146,7 +1666,7 @@ export default function OnboardingScreen() {
     { id: string; label: string; description?: string }[]
   >(
     () => [
-      { id: DEFAULT_DELEGATION_ID, label: 'Sin delegación / General' },
+      { id: DEFAULT_DELEGATION_ID, label: 'Sin MCM Local / General' },
       {
         id: OTROS_DELEGATION_ID,
         label: 'Otros',
@@ -1194,9 +1714,38 @@ export default function OnboardingScreen() {
     go('delegation');
   };
 
+  // Monitor y miembro van al paso de login antes del éxito.
+  // En Android el login está temporalmente deshabilitado (proveedores nativos
+  // en reparación), así que saltamos este paso por completo.
+  const needsLoginStep = (p: OnboardingProfileId | null) =>
+    Platform.OS !== 'android' && (p === 'monitor' || p === 'miembro');
+
   const handleFinishToSuccess = () => {
-    go('success');
+    if (needsLoginStep(profileType)) {
+      go('login');
+    } else {
+      go('success');
+    }
   };
+
+  // Al iniciar sesión, la pantalla de login pasa a ser el resumen final: el
+  // botón "Ir a la app" cierra el onboarding directamente (sin pantalla
+  // `success` extra).
+  const handleLoginFinish = () => {
+    const resolved = resolveOnboardingValues(profileType, delegationId);
+    persistAndExit({
+      profileType: resolved.profileType,
+      delegationId: resolved.delegationId,
+      onboardingCompleted: true,
+    });
+  };
+
+  // Indicador de pasos: el total depende del perfil elegido (otros → 1,
+  // familia → 2, monitor/miembro → 3). Bienvenida y resumen no cuentan.
+  const needsDelegation = profileType !== OTROS_PROFILE_ID;
+  const totalSteps =
+    1 + (needsDelegation ? 1 : 0) + (needsLoginStep(profileType) ? 1 : 0);
+  const loginStepIndex = needsDelegation ? 2 : 1;
 
   const profile = useMemo(() => {
     if (!profileType) return null;
@@ -1218,14 +1767,29 @@ export default function OnboardingScreen() {
     : ('100%' as const);
   const frameHeight = isWide ? Math.min(screenH * 0.88, 740) : undefined;
 
+  // El shell se pinta del color del paso actual para que el safe-area
+  // (notch / status bar / home indicator) quede del mismo color que el
+  // contenido. Cuando estamos en modo "wide" (tableta/desktop) la pantalla
+  // se muestra como tarjeta centrada y el fondo del shell es la moqueta gris.
+  const shellBg = isWide
+    ? TT.isDark
+      ? '#0F1320'
+      : '#EBEEf6'
+    : step === 'welcome'
+      ? T.primary
+      : TT.bg;
+
+  // En "wide" la tarjeta es de ancho fijo y NO está pegada a los bordes, así
+  // que no necesitamos aplicar safe-area dentro de cada paso.
+  const applySafeArea = !isWide;
+
   return (
-    <SafeAreaView
+    <View
       style={[
         shellStyles.safe,
-        { backgroundColor: TT.bg },
         isWide && shellStyles.safeWide,
+        { backgroundColor: shellBg },
       ]}
-      edges={['top', 'bottom']}
     >
       <View
         style={[
@@ -1235,7 +1799,12 @@ export default function OnboardingScreen() {
           isWide && frameHeight ? { height: frameHeight } : undefined,
         ]}
       >
-        {step === 'welcome' && <WelcomeScreen onStart={() => go('profile')} />}
+        {step === 'welcome' && (
+          <WelcomeScreen
+            onStart={() => go('profile')}
+            applySafeArea={applySafeArea}
+          />
+        )}
         {step === 'profile' && (
           <ProfileScreen
             profiles={profileEntries}
@@ -1244,6 +1813,8 @@ export default function OnboardingScreen() {
             animDir={animDir}
             onContinue={handleProfileContinue}
             onSkip={handleSkip}
+            applySafeArea={applySafeArea}
+            totalSteps={totalSteps}
           />
         )}
         {step === 'delegation' && (
@@ -1254,12 +1825,31 @@ export default function OnboardingScreen() {
             onFinish={handleFinishToSuccess}
             onBack={() => go('profile', 'back')}
             onSkip={handleSkip}
+            applySafeArea={applySafeArea}
+            stepIndex={1}
+            totalSteps={totalSteps}
+            finishLabel={
+              needsLoginStep(profileType) ? 'Continuar' : '¡Empezar!'
+            }
+          />
+        )}
+        {step === 'login' && (
+          <LoginOnboardingScreen
+            onFinish={handleLoginFinish}
+            onSkip={() => go('success')}
+            onBack={() => go('delegation', 'back')}
+            animDir={animDir}
+            profile={profile}
+            delegation={delegation}
+            stepIndex={loginStepIndex}
+            totalSteps={totalSteps}
           />
         )}
         {step === 'success' && (
           <SuccessScreen
             profile={profile}
             delegation={delegation}
+            applySafeArea={applySafeArea}
             onContinue={() => {
               const resolved = resolveOnboardingValues(
                 profileType,
@@ -1274,7 +1864,7 @@ export default function OnboardingScreen() {
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

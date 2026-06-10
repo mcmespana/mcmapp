@@ -13,6 +13,757 @@
 
 ---
 
+## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
+
+- **Antes** una notificación solo mostraba **un** botón de acción (`actionButton`);
+  el array `actionButtons` del panel se aceptaba pero solo se usaba el primer
+  elemento. **Ahora** se soportan **hasta 3 botones** por notificación, tanto en la
+  tarjeta del centro de notificaciones (un chip por botón) como en el modal de
+  detalle (botones apilados: el 1.º primario, los siguientes secundarios).
+- Nuevo `extractActionButtons()` en `utils/notificationRoutes.ts` (límite
+  `MAX_ACTION_BUTTONS = 3`): acepta el array `actionButtons` y el objeto único
+  `actionButton` (legacy), los combina y deduplica por `url|text`. Se conserva
+  `extractActionButton()` como atajo al primer botón.
+- Tipos: `NotificationActionButtonData` + campo `actionButtons[]` en
+  `NotificationData` y `ReceivedNotification` (`actionButton` se mantiene por
+  compatibilidad).
+- Archivos: `utils/notificationRoutes.ts`, `types/notifications.ts`,
+  `app/notifications.tsx`, `services/pushNotificationService.ts`,
+  `notifications/usePushNotifications.ts`, `__tests__/notificationRoutes.test.ts`.
+- Compatible con OTA (JS puro, sin código nativo). El MCM Panel debe enviar
+  `data.actionButtons` (array) — ver `NOTIFICACIONES_CONTRATO.md` §3.
+
+## 2026-06-07 — Evaluación: wizard tipo onboarding + ajustes de ubicación
+
+- **Evalúa la actividad → wizard animado** (`EvaluationWizard`): una fase por
+  pregunta, barra de progreso, transiciones (Reanimated, sin nuevas deps),
+  bienvenida y pantalla final de agradecimiento con animación. Sustituye al
+  formulario de scroll. La pantalla `Evaluacion` pasa a `headerShown: false`.
+- **Preguntas en código** (`DEFAULT_EVENT_EVALUATION`): General, Organización
+  MCM, Organización Visita del Papa, Convivencia, Más gustado, Mejorar,
+  Comentarios. Respuestas a Firebase (`<evento>/evaluacion/respuestas`).
+- **CTA "Evalúa la actividad" en la Home** encendido por código
+  (`evaluationOpen`), sin depender de Firebase.
+- **Evalúa la app → Ajustes**: deja de estar en el hub del evento y en la Home;
+  se abre desde el panel de Ajustes como pantalla raíz (`app/evaluacion-app.tsx`).
+
+## 2026-06-07 — Sección de Evaluación (evento + app)
+
+- **Nueva sección "Evalúa"**: dos pantallas nuevas para recoger feedback al
+  terminar un evento:
+  - **Evalúa la actividad** (`EvaluacionScreen`): valoración por estrellas +
+    preguntas abiertas (lo que más gustó, palabras del Papa, momento
+    inolvidable, mejoras…). Las preguntas se leen de Firebase
+    (`activities/<evento>/evaluacion/data`) con _fallback_ en código; las
+    respuestas se escriben en `activities/<evento>/evaluacion/respuestas`.
+  - **Evalúa la app** (`EvaluacionAppScreen`): valoración de la app + errores,
+    utilidad e ideas. Respuestas en `app/evaluations`.
+- **Banner en la Home** "Evalúa la actividad": aparece cuando el panel enciende
+  `evaluationOpen` en el nodo de evaluación del evento activo y el usuario aún
+  no ha evaluado (flag local en AsyncStorage). Mismo gating de perfil que el
+  banner de evento.
+- **Tarjetas en el hub del evento** (Visita Papa): "Evalúa la actividad" (⭐) y
+  "Evalúa la app" (📝).
+- **Anti-duplicado**: tras enviar, se guarda `evaluacion_done_<scope>` en
+  AsyncStorage; el formulario muestra un estado de agradecimiento con opción a
+  reenviar y el banner se oculta.
+- **Seed Firebase**: `firebase-seed/evaluacion.json` listo para importar en
+  `activities/visitapapa26/evaluacion` (incluye `evaluationOpen` y preguntas).
+- Componentes nuevos: `components/StarRating.tsx`, `components/EvaluationForm.tsx`.
+  Config/tipos en `constants/evaluation.ts`. Deep-link al stack de evento vía
+  `utils/eventNavigation.ts`. Archivos tocados: `constants/events.ts`,
+  `app/screens/eventStackScreens.tsx`, `app/(tabs)/visitapapa.tsx`,
+  `app/(tabs)/index.tsx`.
+
+## 2026-06-06 — Fix layout de Materiales
+
+- **Materiales · tarjetas empujadas abajo / hueco enorme**: el `DateSelector`
+  (un `FlatList` horizontal) iba suelto como hijo directo del contenedor flex en
+  columna, así que crecía en vertical y empujaba el `ScrollView` de tarjetas al
+  fondo (cortándolas). Se envuelve en una `View` (mismo patrón que
+  `HorarioScreen`) para limitarlo a su altura natural. Archivo:
+  `app/screens/MaterialesScreen.tsx`.
+
+## 2026-06-06 — Tab bar iOS visible + icono verde en carismochito
+
+- **Tab bar inferior translúcida/ilegible en iOS ≤18**: la barra nativa
+  (`NativeTabs`) se vuelve transparente al llegar al final del scroll o cuando
+  el contenido es una `View` estática, dejando los iconos flotando sobre el
+  contenido. Se añade `disableTransparentOnScrollEdge` (mantiene el fondo en el
+  borde del scroll) + `blurEffect="systemChromeMaterial"` (material adaptado al
+  tema). En iOS 26+ el sistema usa liquid glass y ambos se ignoran (allí ya se
+  veía bien). Archivo: `app/(tabs)/_layout.tsx`.
+- **Modo carismochito · icono de la app en verde**: el cuadro-logo del header de
+  la Home se tiñe de verde mientras el modo está activo. Archivo:
+  `app/(tabs)/index.tsx`.
+
+## 2026-06-06 — Fixes Android (tab bar) y mejoras en Grupos
+
+- **Tab bar inferior tapada por la barra de navegación de Android**: en Expo 55
+  Android va edge-to-edge (la app dibuja detrás de la barra del sistema). La tab
+  bar tenía altura fija de 80 sin contar `insets.bottom`, por lo que en móviles
+  con barra de gestos/3 botones visible quedaba parcialmente tapada. Ahora se
+  suma el safe-area inferior a la altura y al padding. Archivo:
+  `app/(tabs)/_layout.tsx`.
+- **Grupos · bug del buscador (teclado que se escondía al escribir):** al cruzar
+  el umbral de 2 caracteres la pantalla cambiaba todo su árbol de `ScrollView`
+  (categorías) a `SectionList` (resultados), por lo que el buscador se
+  desmontaba/remontaba y perdía el foco. Ahora vive en una barra superior
+  **siempre montada**; solo cambia el contenido inferior. Se añadió
+  `keyboardShouldPersistTaps`.
+- **Grupos · barra de búsqueda rediseñada**: se sustituye el `SearchField` de
+  heroui-native (se veía comprimido y con el texto poco legible en modo oscuro)
+  por una barra propia (`TextInput`) más grande, idéntica en iOS/Android y con
+  **texto blanco garantizado en oscuro**. Botón "Encuéntrame" más prominente.
+- **Grupos · "Encuéntrame" con búsqueda amplia:** busca `nombre + 2 primeras
+  letras del apellido` (ej. "David So"), de modo que encuentra entradas
+  abreviadas como "David Sol. (Castellón)".
+- **Grupos · categorías ocultas por evento**: nueva propiedad
+  `hiddenGroupCategories` en `EventConfig`. La Visita del Papa oculta la
+  categoría **Alojamiento** (en la cuadrícula y en la búsqueda). Archivos:
+  `constants/events.ts`, `app/screens/GruposScreen.tsx`.
+
+## 2026-06-05 — Login deshabilitado temporalmente en Android ("próximamente")
+
+- El inicio de sesión en Android queda **temporalmente desactivado** mientras se
+  reparan los proveedores nativos. En su lugar se muestra un aviso
+  **"Inicio de sesión próximamente"**.
+- **Onboarding**: el paso de login se **salta por completo** en Android. Los
+  perfiles `monitor`/`miembro` van directos al resumen final (en iOS/web sigue
+  igual). El indicador de pasos se ajusta automáticamente.
+- **Menú "Más" / hoja de cuenta**: `SocialLoginSection` muestra el aviso de
+  "próximamente" en lugar de los botones de Google/Apple en Android. Los usuarios
+  que ya tuvieran sesión iniciada siguen viendo su cuenta (y pueden cerrar sesión).
+- Archivos: `app/onboarding.tsx` (`needsLoginStep`), `components/SocialLoginSection.tsx`.
+
+## 2026-06-05 — Fixes de calendario y notificaciones (Home + deep-link)
+
+- **Botones de calendario de la Home arreglados en iOS**: las tarjetas de
+  "Próximos eventos", el botón "Ver calendario" y el CTA de "Ir al calendario"
+  no hacían nada en iOS. Causa: en iOS `calendario` (y `fotos`) son tabs
+  _overflow_ sin trigger nativo (solo caben 5 en la barra), así que
+  `router.push('/calendario')` no navegaba. Ahora la Home los alcanza vía el
+  stack de "Más" (igual que el acceso de Fotos); en Android/Web siguen yendo al
+  tab directo. El salto a fecha concreta también funciona en iOS.
+- **La tarjeta de Novedades abre la última notificación "en grande"**: al tocar
+  la tarjeta de la Home se abre directamente el detalle de la última
+  notificación, en vez de la lista completa. La campana del header sigue
+  abriendo la lista.
+- **Sin título duplicado en el detalle**: el bottom sheet de notificaciones ya
+  no repite el título de la notificación en su cabecera cuando se ve el detalle
+  (solo queda la flecha de volver).
+- **Deep-link de push → detalle de la notificación**: al tocar una notificación
+  desde la bandeja del sistema, la app abre el centro de notificaciones y
+  despliega esa notificación concreta (`/notifications?openId=<id>`). Si la
+  notificación trae `internalRoute`, se respeta ese destino.
+- Archivos: `app/(tabs)/index.tsx`, `app/(tabs)/calendario.tsx`,
+  `app/notifications.tsx`, `components/NotificationsBottomSheet.tsx`,
+  `notifications/usePushNotifications.ts`, `utils/masNavigation.ts`,
+  `app/screens/MasHomeScreen.tsx`.
+
+## 2026-06-05 — Fixes onboarding Android: login, botón "saltar" y toasts
+
+- **Login con Google en Android ya no muestra error al cancelar**: al cerrar el
+  selector de cuenta, `@react-native-google-signin` v13+ devuelve
+  `{ type: 'cancelled' }` (o lanza `SIGN_IN_CANCELLED`). Antes se trataba como
+  un fallo real y aparecía el toast "No se pudo iniciar sesión". Ahora se
+  normaliza a `ERR_CANCELED` y se ignora como una cancelación normal.
+  Archivo: `utils/platformAuth.native.ts`.
+- **Botón "Entrar sin iniciar sesión" reubicado en zona segura**: en el paso de
+  login del onboarding el enlace inferior quedaba bajo la barra de navegación de
+  3 botones de Android y no se podía pulsar. Ahora respeta el safe-area inferior
+  (`insets.bottom`) y se presenta como botón tipo píldora, más visible y con
+  mayor área de toque. Archivo: `app/onboarding.tsx`.
+- **Toasts ya no quedan ocultos bajo la barra de 3 botones en Android**: se sube
+  el margen inferior mínimo del toast para garantizar que despeja la barra de
+  navegación aunque el inset reportado sea 0. Archivo:
+  `contexts/AppToastContext.tsx`.
+
+## 2026-06-05 — Modo Carismochito: persistente y menos intrusivo
+
+- **Persiste al cerrar y reabrir la app**: si el modo queda activo, se recuerda
+  en AsyncStorage (`@carismochito_active`) y al volver a abrir se restaura
+  **en silencio** (sin cuenta atrás, sin confeti, sin háptica). El confeti y el
+  badge superior sólo aparecen en una **activación nueva** (flag
+  `freshlyActivated`).
+- **Badge superior efímero**: el rótulo "MODO CARISMOCHITO" se asoma unos
+  segundos (~3,8 s) y se retira solo para no estorbar. Se sigue saliendo del
+  modo agitando el móvil.
+- **Adiós al resplandor verde inferior + mascota bailando siempre**. En su lugar,
+  el carismochito **se asoma girado 90° desde un lateral** de forma esporádica
+  (cada ~45–90 s, alternando lados y altura) y vuelve a esconderse. El tinte
+  verde sutil de componentes heroui y barra de pestañas se mantiene.
+- Archivos: `contexts/CarismochitoContext.tsx`,
+  `components/CarismochitoOverlay.tsx`.
+
+## 2026-06-04 — Modo Carismochito: ritual de agitado + rediseño visual
+
+- **Activación por ritual de sacudidas**: ahora hace falta **agitar 5 veces**
+  (dentro de una ventana de 2,5 s) para arrancar la cuenta atrás, en vez de una
+  sola sacudida. **Cada sacudida vibra** (golpe háptico) y aparece una fila de
+  **puntos verdes** que se van iluminando como barra de carga; si dejas de
+  agitar, la carga se reinicia.
+- **Nuevo efecto visual al activar** (sustituye al lavado verde de pantalla
+  completa): **estallido de confeti** de ~4 s que luego deja la pantalla limpia,
+  **barra inferior verde con resplandor pulsante** y el **carismochito bailando**
+  asomado por encima de los iconos de las pestañas. En Android/Web la barra de
+  pestañas real también se tiñe de verde mientras el modo está activo.
+- Archivos: `contexts/CarismochitoContext.tsx`,
+  `components/CarismochitoOverlay.tsx`,
+  `components/CarismochitoChargeDots.tsx` (nuevo), `app/(tabs)/_layout.tsx`.
+
+## 2026-06-04 — Cantoral: sistema multimedia y ficha de canción
+
+- **Nuevo sistema multimedia en el detalle de canción**. Los campos que el admin
+  ya rellenaba en Firebase (`album`, `source`, `rhythm`, `videoEmbed`,
+  `youtubeLinks`, `audioLinks`) ahora **se muestran al usuario final** sin
+  estorbar la lectura en directo. El FAB "tune" se queda solo con controles de
+  lectura; toda la multimedia entra por **una sola puerta**.
+- **Botón multimedia** (glass) en la barra superior del detalle, a la izquierda
+  de "añadir", con punto rojo (accent) cuando la canción tiene material. Solo
+  aparece si hay multimedia. Abre el cajón "Multimedia y ficha" con tres
+  secciones: **Vídeos**, **Audios** y **Ficha**.
+- **Reproductor flotante de YouTube** (estilo PiP) arrastrable que se superpone
+  a la letra; botón de pantalla completa. Usa `react-native-webview` en nativo e
+  `<iframe>` en web (sin dependencias nativas nuevas → publicable por OTA).
+- **Audios** (Google Drive) → no se pueden embeber: se abren en el navegador con
+  `expo-web-browser` + toast "Abriendo en el navegador…".
+- **Indicador sutil en la lista** (▶ vídeo / 🎧 audio por fila) + leyenda junto
+  al contador de canciones.
+- **Nuevo campo `liturgicalTime`** (Tiempo litúrgico) en el panel de admin
+  (`SecretPanelModal`) y en la ficha. Se guarda en `songs/data/.../liturgicalTime`.
+- **Data plumbing**: los campos multimedia viajan ahora en los params de
+  navegación a `SongDetail` (offline-friendly, igual que `content/key/capo`).
+- Archivos principales: `types/songMedia.ts` (nuevo),
+  `components/song-media/SongMediaSheet.tsx` (nuevo),
+  `components/song-media/FloatingYouTubePlayer.tsx` (nuevo),
+  `app/screens/SongDetailScreen.tsx`, `app/screens/SongListScreen.tsx`,
+  `app/screens/SelectedSongsScreen.tsx`, `components/SongListItem.tsx`,
+  `app/(tabs)/cancionero.tsx`, `utils/filterSongsData.ts`,
+  `components/SecretPanelModal.tsx`.
+
+## 2026-06-03 — Rediseño de la pantalla de Horario + fix del día por defecto
+
+- **Rediseño visual del Horario** (`app/screens/HorarioScreen.tsx`,
+  `components/EventItem.tsx`, `components/DateSelector.tsx`): nueva línea de
+  tiempo vertical con la **hora como protagonista** (grande, en el color del
+  día), tarjetas con sombra suave, ubicación en formato "pill" con icono, y
+  selector de fechas con chips más legibles (día grande + mes + día de la
+  semana).
+- **Web — header**: el título "Horario" pasa al propio header de navegación
+  (con el botón Atrás separado del borde) y se elimina el `ScreenHero`
+  duplicado; el selector de fechas queda pegado al header y centrado. En
+  iOS/Android se mantiene el `ScreenHero`.
+- **Fix: día por defecto**. La pantalla abría en el último día en vez del más
+  cercano a hoy porque el parser sólo entendía el formato español "6 de junio"
+  y devolvía `null` con fechas tipo ISO ("2026-06-06"), cayendo al último día.
+  Nueva utilidad `utils/dateUtils.ts` (`parseHorarioDate` + `getClosestDateIndex`)
+  que entiende ambos formatos y la comparten el selector y la pantalla.
+- **Header web coherente en todas las sub-pantallas de evento** (Horario,
+  Materiales, Visitas, Profundiza, Grupos, Contactos, Apps): el título pasa al
+  propio header de navegación (alineado a la izquierda) y se oculta el hero
+  in-content (`ScreenHero` ahora acepta `hideOnWeb`). El botón "Atrás" se separa
+  del borde izquierdo en web en todas las sub-pantallas. Centralizado en
+  `eventScreenOptions` (`app/screens/eventStackScreens.tsx`) mediante el flag
+  `webHeaderTitle`; el hub y "Compartiendo" no lo activan para no duplicar
+  título. En iOS/Android no cambia nada (sigue el hero del contenido).
+
+## 2026-06-03 — Logo "alzad la mirada" en hero de Visita Papa + mascota carismochito PNG
+
+- **`EventConfig.heroImage`** (`constants/events.ts`): nuevo campo opcional para
+  el logo/emblema del evento. El hub del evento (`EventHomeScreen`) muestra ese
+  logo en el hero si está definido; si no, mantiene el emblema-placeholder.
+- **Visita Papa** usa `assets/alzalamirada.png` como logo del hero.
+- **Mascota carismochito**: `CarismochitoMascot` ahora carga
+  `assets/carismochito.png` (el `require` estaba comentado y apuntaba a una ruta
+  inexistente `assets/images/`). Si se pone a `null` vuelve la versión vectorial.
+- Imágenes optimizadas: `carismochito.png` 2.1 MB → 96 KB y `alzalamirada.png`
+  196 KB → 50 KB (redimensionadas + paleta de 256 colores con transparencia).
+- Archivos: `constants/events.ts`, `app/screens/EventHomeScreen.tsx`,
+  `components/CarismochitoMascot.tsx`, `assets/carismochito.png`,
+  `assets/alzalamirada.png`.
+
+## 2026-06-03 — Eliminación de cuenta (requisito App Store 5.1.1(v))
+
+- **Nueva opción "Eliminar cuenta"** en la tarjeta de usuario autenticado de
+  `components/SocialLoginSection.tsx` (visible en Ajustes, LoginSheet y
+  onboarding). Pide confirmación (Alert en nativo, `window.confirm` en web) y
+  ejecuta un borrado permanente. Cumple Guideline 5.1.1(v): toda app que
+  permite crear cuenta debe permitir eliminarla desde la propia app.
+- **`AuthContext.deleteAccount()`** (`contexts/AuthContext.tsx`): borra el nodo
+  RTDB `users/{uid}` (perfil, delegación y datos de CONTIGO) y después la cuenta
+  de Firebase Authentication con `deleteUser`. Maneja
+  `auth/requires-recent-login` reautenticando con el proveedor (Google/Apple) y
+  reintentando. Devuelve `'success' | 'cancelled' | 'error'`.
+- **`utils/authHelpers.ts`**: nueva función `deleteUserData(uid)` que elimina
+  `users/{uid}` de RTDB.
+- Al eliminar la cuenta se limpia también el nombre guardado localmente.
+
+## 2026-06-03 — Fix panel secreto del cantoral + menús contextuales en Contactos y Reflexiones
+
+- **Fix: el "Panel Secreto" no aparecía** (`components/ReportBugsModal.tsx`).
+  Al pulsar "Panel Secreto" se cerraba el bottom sheet de reporte y se abría el
+  panel en el mismo tick; como `BottomSheet` usa `Modal` de RN e iOS no permite
+  dos modales simultáneos, el panel nunca se montaba (no se podía introducir la
+  contraseña ni, por tanto, usar el sistema de arreglos `{arr:}`). Ahora la
+  apertura del panel se difiere a `onCloseComplete` (tras el `onDismiss`), como
+  ya hace el resto de la app.
+- **Menús contextuales (long-press) en listas** (nuevo
+  `components/ContextMenuSheet.tsx` + `hooks/useContextMenu`):
+  - **Contactos** (`app/screens/ContactosScreen.tsx`): long-press → Llamar /
+    WhatsApp / Copiar teléfono.
+  - **Reflexiones** (`app/screens/ReflexionesScreen.tsx`): long-press → Copiar /
+    Compartir.
+  - El nuevo `ContextMenuSheet` es reutilizable (lista de acciones con icono,
+    soporte destructivo/disabled) y ejecuta la acción en `onCloseComplete` para
+    no colisionar con Share/otros modales en iOS.
+
+## [2026-06-03] — Fix: login con Google roto en nativo tras OTA
+
+- **Causa**: las variables `EXPO_PUBLIC_GOOGLE_*` se hornean en el bundle JS, pero
+  los workflows de OTA (`eas update`) solo inyectaban las `EXPO_PUBLIC_FIREBASE_*`.
+  Cada OTA dejaba `GoogleSignin.configure()` con client IDs `undefined`, así que en
+  iOS el diálogo de Google ni se abría (TestFlight funcionaba al instalar el build,
+  que sí los traía vía `eas.json`, y se rompía tras la primera OTA encima). Android
+  además nunca tuvo `webClientId` (obligatorio para el idToken).
+- **Fix**:
+  - `.github/workflows/ota-production.yml` y `ota-preview.yml`: añadidos
+    `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` y `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` al `env`.
+  - `eas.json`: añadido `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` a los 4 perfiles
+    (antes solo estaba el de iOS).
+  - `contexts/AuthContext.tsx`: `signInWithGoogle`/`signInWithApple` ahora
+    re-lanzan los errores reales (no las cancelaciones) para que la UI muestre el
+    toast de error en vez de fallar en silencio.
+- **Nota web**: el `auth/unauthorized-domain` que apareció en `mcm.expo.app` era
+  ajeno al repo — se había quitado el dominio de la lista de "Authorized domains"
+  de Firebase Console; se volvió a añadir y quedó resuelto.
+
+## 2026-06-03 — Modo Carismochito: tema verde, cuenta atrás con anillo, haptics y mascota que baila
+
+- **Tema verde "de verdad" al activar** (`utils/heroUIRuntimeTheme.ts` →
+  `setCarismochitoTheme`, `contexts/CarismochitoContext.tsx`): al entrar en el
+  modo se tiñe la capa de componentes heroui-native con varios verdes distintos
+  (accent/success/danger/warning/focus/link) reutilizando el mismo mecanismo de
+  variables CSS que el modo claro/oscuro (toggle reactivo, sin tocar los ~60
+  archivos que usan `colors` estático). Se restaura el tema base al salir o al
+  desmontar. La capa propia (StyleSheet) se cubre con el lavado verde envolvente.
+- **Cuenta atrás rediseñada** (`components/CarismochitoOverlay.tsx`): pasa a 3 s
+  con un **anillo de progreso** SVG que se vacía alrededor de la mascota que
+  baila, con el número dentro. Sustituye al número gigante anterior.
+- **Respuesta háptica** (`utils/haptics.ts`: `shake`, `carismoOn`, `carismoOff`):
+  golpe al agitar el móvil, secuencia festiva al activarse y doble golpe al
+  desactivarse/cancelar.
+- **Mascota carismochito que baila** (`components/CarismochitoMascot.tsx`): nuevo
+  componente con baile (balanceo + salto + escala). Usa un carismochito vectorial
+  de respaldo y admite un **PNG** dejándolo en `assets/images/carismochito.png` y
+  descomentando una línea `require` (interruptor documentado en el archivo).
+- Dependencias ya presentes: `expo-haptics`, `expo-sensors`, `expo-image`,
+  `react-native-svg` (sin paquetes nativos nuevos → no requiere build de tienda).
+
+## 2026-06-03 — Eventos: fix header transparente, botón Atrás y formulario Compartiendo
+
+- **Header de sub-pantallas realmente transparente**
+  (`app/screens/eventStackScreens.tsx`): la barra flotante se pinta ahora con el
+  color de fondo de la pantalla (capa opaca) en vez de dejar un `View`
+  transparente que dejaba ver el material gris translúcido nativo por detrás. La
+  barra se funde con el contenido y desaparece el "doble cristal" que se veía
+  bajo el botón Atrás.
+- **Botón Atrás (y demás cristales) bien redondeados**
+  (`components/ui/GlassSurface.ios.tsx`): el radio del contenedor se aplica
+  también a la capa nativa `GlassView`/`BlurView`, evitando el borde rectangular
+  que se percibía como una segunda capa.
+- **Compartiendo: selector de fecha en modal centrado**
+  (`app/screens/ReflexionesScreen.tsx`): se sustituye el `Dialog` de heroui
+  (cuyo spinner nativo se escapaba a la esquina superior al anidarse con el
+  bottom sheet) por un `Modal` nativo centrado con botón "Listo".
+- **Compartiendo: se elimina "Compartir en grupo"** del formulario y se cambia
+  el subtítulo del hero a "Comparte aquí una frase, pensamiento o algo que te
+  llevas de estos días".
+- **Visita Papa: barra de color superior en toda la sección**
+  (`app/(tabs)/visitapapa.tsx`): franja del color de la sección (#FCD200) arriba
+  del todo, al estilo iOS de Calendario y Fotos, sobre todo el stack del evento.
+- **Compartiendo: el "+" pasa del FAB a la barra superior**
+  (`components/EventActionButtons.tsx`, `ReflexionesScreen.tsx`,
+  `app/(tabs)/visitapapa.tsx`, `app/(tabs)/mas.tsx`): se elimina el FAB flotante;
+  al estar en Compartiendo, la barra de acciones muestra un "+" (junto a
+  Ajustes) que abre el formulario vía renavegación con `openFormNonce`.
+- **Compartiendo: tarjetas rediseñadas** (`ReflexionesScreen.tsx`): cada
+  reflexión tiene un color generado de su id, avatar con iniciales, marca de
+  cita y dos diseños alternos (fondo tintado / tarjeta limpia con barra de
+  color) para dar variedad. Estado vacío amable cuando no hay reflexiones.
+
+## 2026-06-03 — Modo Carismochito: tema verde, cuenta atrás con anillo, haptics y mascota que baila
+
+- **Tema verde "de verdad" al activar** (`utils/heroUIRuntimeTheme.ts` →
+  `setCarismochitoTheme`, `contexts/CarismochitoContext.tsx`): al entrar en el
+  modo se tiñe la capa de componentes heroui-native con varios verdes distintos
+  (accent/success/danger/warning/focus/link) reutilizando el mismo mecanismo de
+  variables CSS que el modo claro/oscuro (toggle reactivo, sin tocar los ~60
+  archivos que usan `colors` estático). Se restaura el tema base al salir o al
+  desmontar. La capa propia (StyleSheet) se cubre con el lavado verde envolvente.
+- **Cuenta atrás rediseñada** (`components/CarismochitoOverlay.tsx`): pasa a 3 s
+  con un **anillo de progreso** SVG que se vacía alrededor de la mascota que
+  baila, con el número dentro. Sustituye al número gigante anterior.
+- **Respuesta háptica** (`utils/haptics.ts`: `shake`, `carismoOn`, `carismoOff`):
+  golpe al agitar el móvil, secuencia festiva al activarse y doble golpe al
+  desactivarse/cancelar.
+- **Mascota carismochito que baila** (`components/CarismochitoMascot.tsx`): nuevo
+  componente con baile (balanceo + salto + escala). Usa un carismochito vectorial
+  de respaldo y admite un **PNG** dejándolo en `assets/images/carismochito.png` y
+  descomentando una línea `require` (interruptor documentado en el archivo).
+- Dependencias ya presentes: `expo-haptics`, `expo-sensors`, `expo-image`,
+  `react-native-svg` (sin paquetes nativos nuevos → no requiere build de tienda).
+
+## 2026-06-02 — Eventos (Visita Papa): rediseño de headers, hero, estados vacíos y FABs
+
+- **Sub-pantallas sin header (transparente) en todas las plataformas**
+  (`app/screens/eventStackScreens.tsx`, `components/ui/GlassBackButton.tsx`):
+  las sub-pantallas con título grande propio (Horario, Materiales, Visitas,
+  Profundiza, Grupos, Contactos, Apps y Compartiendo) ya no tienen barra de
+  header; es totalmente transparente. El título del header se oculta de forma
+  fiable y "Atrás" pasa a ser solo un chevron liquid-glass flotante (sin texto).
+  Se corrige el doble safe-area top (hueco blanco) en `HorarioScreen`.
+- **Acciones de evento como grupo segmentado glass arriba a la derecha**
+  (`components/EventActionButtons.tsx`): Compartiendo + Ajustes pasan de FABs
+  apilados abajo a un único grupo liquid-glass **juntos**, neutro (sin el verde),
+  alineado con la fila del header — coherente con los controles del cantoral.
+- **Hub del evento con hero** (`app/screens/EventHomeScreen.tsx`): hero con
+  degradado del color del evento (emblema + título + subtítulo) que rellena el
+  espacio superior, lema **"Alzad la mirada"** al pie. El header nativo se oculta
+  cuando el hub es la raíz de la tab (sin hueco blanco) y solo aparece, con el
+  chevron flotante, al abrirlo desde "Más". El emblema es un placeholder fácil
+  de sustituir por el logo del encuentro.
+- **Estados vacíos "Próximamente"** (`components/ui/ComingSoon.tsx` + Horario,
+  Materiales, Visitas, Profundiza, Grupos, Contactos, Apps): cuando una sección
+  no tiene datos en Firebase (o llegan vacíos/mal formados) se muestra un estado
+  vacío elegante en vez de un esqueleto infinito. **Fix de crash en
+  `ProfundizaScreen`** (`data.paginas.map` reventaba si faltaba `paginas`).
+- **Compartiendo (Reflexiones)** (`app/screens/ReflexionesScreen.tsx`): título de
+  pantalla propio (`ScreenHero`) al ocultarse el del header, y se corrige el
+  recorte por la izquierda del formulario del bottom sheet (padding horizontal).
+
+---
+
+## 2026-06-02 — Notificaciones: alineación con el contrato del MCM Panel
+
+- **Normalización de rutas + alias** (`utils/notificationRoutes.ts` nuevo,
+  `notifications/usePushNotifications.ts`, `app/notifications.tsx`): el `internalRoute`
+  que manda el panel se normaliza antes de navegar, con un mapa de alias para rutas
+  heredadas/incorrectas (`/(tabs)/actividades`/`jubileo` → `/(tabs)/mas`,
+  `/(tabs)/albums` → `/(tabs)/fotos`, `/(tabs)/wordle` → `/wordle`). **Fix**: el botón
+  iOS `view` apuntaba a `/(tabs)/notifications` (ruta inexistente) → `/notifications`.
+- **Botón de acción tolerante a ambos formatos** (`utils/notificationRoutes.ts`,
+  `services/pushNotificationService.ts`): se acepta tanto `data.actionButton` (objeto
+  canónico) como `data.actionButtons` (array del contrato del panel, se usa el primer
+  elemento), infiriendo `isInternal` si no viene. Aplica al push y al historial de
+  Firebase.
+- **Tests** (`__tests__/notificationRoutes.test.ts`).
+- **Contrato revisado** (`NOTIFICACIONES_CONTRATO.md` en raíz del monorepo): respuesta
+  a las 9 preguntas del panel + correcciones (rutas reales, `/pushTokens` usa
+  `profileType`/`delegationId`/`topics` —no `userType`/`delegacion`—, segmentación por
+  `topics`, iOS sin NSE, channel único `default`). Sin código nativo → compatible OTA.
+
+---
+
+## 2026-05-29 — UI fixes: onboarding, eventos (Liquid Glass), modo oscuro login
+
+- **Onboarding — paso de login como pantalla final/resumen** (`app/onboarding.tsx`): para perfiles con login (monitor/miembro), al iniciar sesión la pantalla de login pasa a ser el último paso y muestra el resumen (perfil + delegación) con el botón "Ir a la app" centrado verticalmente; ya no hay pantalla `success` extra en ese flujo. Quien continúa sin cuenta sigue viendo la pantalla de resumen `success`.
+- **Onboarding — indicador de pasos**: el indicador de puntos (`ProgressDots`) ahora aparece en perfil, delegación y login, con un total dinámico según el perfil elegido (otros → 1, familia → 2, monitor/miembro → 3).
+- **Eventos — Liquid Glass en sub-pantallas** (`app/screens/eventStackScreens.tsx`, `components/EventActionButtons.tsx`, `app/(tabs)/visitapapa.tsx`, `app/(tabs)/mas.tsx`): las sub-pantallas con `ScreenHero` (Horario, Materiales, Visitas, Profundiza, Grupos, Contactos, Apps) ocultan el título duplicado del header (queda solo la barra glass + volver). Las acciones de Ajustes y Compartiendo salen del header y se muestran como FAB glass flotantes (`EventActionButtons`) que el tab renderiza por encima del navigator.
+- **Modo oscuro del login** (`components/SocialLoginSection.tsx`): el botón de Google ya no usa texto oscuro fijo (era ilegible sobre tarjeta oscura); colores de texto/borde adaptados al esquema oscuro.
+
+---
+
+## 2026-05-30 — Cantoral: arreglos `{arr:}` por long-press en vivo (admin)
+
+- **Long-press para añadir arreglos** (`app/screens/SongDetailScreen.tsx`,
+  `components/ArrangementInputModal.tsx`): si el usuario es admin (`isAdmin`),
+  mantener pulsada una línea de la canción abre una hoja para escribir un
+  arreglo. Se inserta `{arr: ...}` **encima** de esa línea, se **renderiza al
+  instante** en el dispositivo y se propone a `songs/ediciones`
+  (`contentOld`/`contentNew` + filename + category + timestamp,
+  `status: 'arrangement'`).
+- **Mapeo fila↔línea robusto y transpose-invariante** (`utils/arrangements.ts`):
+  `HtmlDivFormatter` emite una `<div class="row">` por línea renderable (letra y
+  comentarios/arreglos) en orden de fuente. `injectRowLineIndices` etiqueta cada
+  fila con `data-line` = índice de su línea en el ChordPro original (con guarda:
+  si los conteos no cuadran, no toca nada). La transposición no altera el número
+  ni el orden de filas, así que el índice es estable. Helpers nuevos:
+  `renderableRowLineIndices`, `injectRowLineIndices`, `insertArrangementAtLine`,
+  con tests en `__tests__/arrangements.test.ts`.
+- **WebView** (`hooks/useSongProcessor.ts`, `components/SongDisplay.tsx`): nuevo
+  prop `adminMode` inyecta JS que captura el long-press por fila (touch + ratón,
+  con cancelación al hacer scroll) y manda `{ type: 'arr-longpress', line }` a RN
+  vía `postMessage`. `SongDisplay` gana un prop `onMessage` (WebView nativo +
+  iframe web). Sin `adminMode` el comportamiento es idéntico al anterior; el modo
+  presentación (fullscreen) usa su propio WebView y no se ve afectado.
+
+---
+
+## 2026-05-30 — Cantoral: panel admin persistente + campos multimedia
+
+- **Modo admin persistente** (`contexts/SettingsContext.tsx`): al introducir la
+  contraseña del panel secreto (`coco`), se guarda un flag `isAdmin` en
+  AsyncStorage. Mientras esté activo, el panel de edición se abre sin volver a
+  pedir la contraseña. Nuevo par `isAdmin` / `setIsAdmin` en el contexto.
+- **Panel secreto ampliado** (`components/SecretPanelModal.tsx`): además de
+  título/autor/key/capo/info/contenido, el admin puede editar **álbum**,
+  **fuente**, **ritmo**, **vídeo de YouTube** (pega una URL normal y se convierte
+  automáticamente a URL de _embed_) y listas repetibles de **enlaces de YouTube**
+  y **enlaces de audio** (`{label, url}`). Estos campos se cargan desde
+  `songs/data` al abrir el panel y se proponen a `songs/ediciones` con pares
+  `*Old`/`*New` (los enlaces como arrays de `{label,url}`, descartando filas
+  vacías). **Aún NO se muestran al usuario final** — solo edición de admin.
+- **Helper** `utils/youtube.ts` (`extractYouTubeId`, `toYouTubeEmbedUrl`):
+  reconoce `watch?v=`, `youtu.be`, `/embed/`, `/shorts/`, `/live/` y el ID a
+  secas; idempotente sobre URLs de embed. Con tests en `__tests__/youtube.test.ts`.
+- **Render de arreglos `{arr:}`**: ahora con prefijo `"| "` delante y un punto
+  más pequeños (app `0.82 → 0.78`, PDF `0.88 → 0.84`). `utils/arrangements.ts`,
+  `hooks/useSongProcessor.ts`, `utils/playlistPdfHtml.ts`.
+- Pendiente (2ª iteración): añadir arreglos `{arr:}` con long-press sobre la
+  línea en el visor (JS inyectado en el WebView) con render en vivo. Ver `TODO.md`.
+
+---
+
+## 2026-05-30 — Cantoral: anotaciones de arreglo `{arr: ...}`
+
+- **Nueva directiva ChordPro `{arr: texto}`** para anotaciones de arreglo (quién canta una
+  parte, qué instrumento entra, dinámicas…). Se renderiza de forma sutil y **alineada a la
+  derecha** (cursiva, color de acento, tamaño menor), complementando la letra sin competir.
+- **Toggle ON por canción (efímero):** las canciones con arreglos los muestran activados por
+  defecto; se pueden ocultar desde el botón flotante (acción "Arreglos ON/OFF") pero no se
+  persiste. La acción solo aparece si la canción tiene arreglos, y el FAB muestra un indicador
+  de acento cuando hay arreglos disponibles. El toggle es en vivo (clase `arr-hidden`).
+- **Alcance:** detalle de canción, pantalla completa y exportación PDF de playlists.
+- Archivos nuevos: `utils/arrangements.ts`, `ARREGLOS.md` (doc + prompt para el generador de
+  ChordPro). Modificados: `hooks/useSongProcessor.ts`, `app/screens/SongDetailScreen.tsx`,
+  `components/SongControls.tsx`, `app/screens/SongFullscreenScreen.tsx`, `utils/playlistPdfHtml.ts`.
+
+---
+
+## 2026-05-29 — Visita Papa León XIV 2026: evento activo + eventos pasados
+
+- **Nueva tab "Visita Papa"** (`app/(tabs)/visitapapa.tsx`): el evento `visitapapa26` (Firebase `activities/visitapapa26`) tiene su propia pestaña antes de Calendario, con su hub y sub-pantallas (Horario, Materiales, Visitas, Profundiza, Grupos, Contactos, Apps, Reflexiones). Color de marca `#FCD200`.
+- **Modo evento**: `visitapapa26` es el evento activo/destacado (`ACTIVE_EVENT_ID` y evento por defecto en `constants/events.ts`). Se anuncia con un banner en la Home (`app/(tabs)/index.tsx`) y un botón de acceso rápido, ambos visibles solo para perfiles con acceso al evento.
+- **Sección-enlace "Comida de Domingo"**: nuevo campo `url` en `EventSection`. Si está presente, la tarjeta abre un enlace externo (Google Maps) con `Linking.openURL` en vez de navegar a una pantalla (`app/screens/EventHomeScreen.tsx`). El evento no usa las pantallas Comida/ComidaWeb.
+- **Eventos pasados**: nuevo flag `status: 'active' | 'archived'` por evento y pantalla `app/screens/EventosPasadosScreen.tsx` accesible desde "Más > Eventos pasados" (item `eventos-pasados`). Jubileo pasa a `archived` y se accede desde ahí (ya no como item suelto de "Más").
+- **Refactor**: las sub-pantallas de evento y el plumbing del header se extraen a `app/screens/eventStackScreens.tsx`, compartido por el tab "Más" y la tab de evento (alta de futuras actividades-tab = un archivo fino + 1 entrada en `events.ts`).
+- **Perfiles** (`firebase-seed/profileConfig.json`): monitor y miembro reciben la tab y el botón Home de Visita Papa; todos los perfiles cambian el item `jubileo` por `eventos-pasados`. Recuerda replicar en `/profileConfig` de Firebase para el gating en runtime.
+- Catálogos: `tabsCatalog.ts`, `colors.ts`, `profileCatalog.ts`, `MasHomeScreen.tsx`.
+- **Pendiente** (`PROMPT_MCMPANEL_VISITAPAPA.md`): gestionar el evento activo/archivado desde mcmpanel (nodo `activities/` en Firebase) en vez de en código.
+
+---
+
+## 2026-05-28 — Calendario: detalles de evento + parser ICS enriquecido
+
+- **Detalles de evento al hacer tap**: cada tarjeta de evento ahora abre un `EventDetailsBottomSheet` (nuevo componente) con fecha y hora, ubicación con botón "Abrir en Mapas/Maps", videollamada destacada (Meet/Zoom/Teams/Webex/Jitsi), descripción con saltos de línea y URLs tappables, y enlace "Abrir en Google Calendar" si el evento trae `URL`.
+- **Parser ICS enriquecido** (`hooks/useCalendarEvents.ts`): el tipo `CalendarEvent` añade `startTime`, `endTime` y `conferenceUrl`. `DTSTART`/`DTEND` ahora extraen también la hora (`HH:MM`). Se detectan videollamadas vía `X-GOOGLE-CONFERENCE` y, como fallback, regex sobre `DESCRIPTION` (Meet, Zoom, Teams, Webex, GoToMeeting, Whereby, Jitsi). `DESCRIPTION` conserva los saltos de línea originales.
+- **FAB "Hoy" rediseñado**: sustituido el `GlassFAB` flotante por una píldora compacta "Volver a hoy" en el header de la sección de eventos (modo Mes) y sobre la lista (modo Agenda). Aparece solo cuando la fecha/mes seleccionado no es el actual.
+- **Hora en la tarjeta del día**: si el evento tiene `startTime`, se muestra `HH:MM – HH:MM` con icono de reloj en la tarjeta de la lista del día.
+- Archivos nuevos: `components/EventDetailsBottomSheet.tsx`.
+- Archivos modificados: `hooks/useCalendarEvents.ts`, `app/(tabs)/calendario.tsx`.
+
+---
+
+## 2026-05-27 — Onboarding edge-to-edge
+
+- El onboarding ahora ocupa la pantalla completa, incluida la zona del notch / status bar / home indicator. El fondo del paso actual (azul marca en la bienvenida, blanco en los siguientes) cubre todo el shell sin recortes blancos arriba.
+- `app/_layout.tsx`: la pantalla `onboarding` pasa de `presentation: 'modal'` a `presentation: 'fullScreenModal'` y se le fija `contentStyle.backgroundColor` al azul de marca para evitar parpadeos blancos al abrir.
+- `app/onboarding.tsx`: sustituido el `SafeAreaView` exterior por un `View` con fondo dinámico por paso; cada step gestiona sus propios `insets` vía `useSafeAreaInsets`. La status bar se conmuta a `light` durante la bienvenida.
+- Pequeños retoques de diseño (no funcionales): badge "Te damos la bienvenida", logo con flotación suave, copy más cálido ("¡Vamos allá!"), icono `celebration` y pequeño pop en la pantalla de éxito.
+
+---
+
+## 2026-05-26 — Limpieza de warnings iOS 26
+
+- Silenciado el log informativo `HeroUI Native Styling Principles` en arranque: `HeroUINativeProvider` ahora recibe `config={{ devInfo: { stylingPrinciples: false } }}` en `app/_layout.tsx`.
+- Resuelto warning `[RNScreens] Using both blurEffect and scrollEdgeEffects simultaneously` en el stack del Cantoral: `headerBlurEffect` se aplica solo en iOS < 26 (en iOS 26+ el sistema ya pinta el efecto glass vía `scrollEdgeEffects` por defecto). Archivo: `app/(tabs)/cancionero.tsx`.
+
+---
+
+## 2026-05-25 — Modo Carismochito (easter egg por shake)
+
+Easter egg: al agitar el móvil aparece una cuenta atrás de 5 segundos que, si no se cancela, activa el "Modo Carismochito" — un guiño a la mascota del MCM tintando toda la app de un verde lima deliberadamente exagerado. Se desactiva agitando otra vez o tocando el badge flotante.
+
+- **Detección de shake**: nuevo `hooks/useShakeDetector.ts` basado en `expo-sensors` (carga perezosa para no romper en web). Umbral configurable (~3 picos > 1.9g en 700ms, cooldown 1.2s).
+- **Estado global**: `contexts/CarismochitoContext.tsx` con tres estados (`idle`, `countingDown`, `active`); una sola acción de "shake" se interpreta como activar / cancelar / desactivar según el estado actual.
+- **UI**: `components/CarismochitoOverlay.tsx` renderiza:
+  - Pantalla de cuenta atrás con la mascota SVG (verde slime con ojos negros, lengua rosa), número pulsante, halo verde y botón "Cancelar".
+  - Cuando está activo: tinte verde lima (`#7FFF00`) sobre toda la app con viñeta superior/inferior + badge flotante "MODO CARISMOCHITO" que también permite desactivar al tocarlo.
+- **Wiring**: `CarismochitoProvider` añadido al árbol de providers y `<CarismochitoOverlay />` al final de `InnerLayout` (encima de tabs, debajo del toast).
+- **Nueva dependencia nativa**: `expo-sensors ~55.0.8` — **requiere un nuevo build EAS** para que funcione en dispositivo (en web queda inerte).
+- Archivos nuevos: `hooks/useShakeDetector.ts`, `contexts/CarismochitoContext.tsx`, `components/CarismochitoOverlay.tsx`.
+- Archivos modificados: `app/_layout.tsx`, `package.json`.
+
+---
+
+## 2026-05-27 — Onboarding edge-to-edge
+
+- El onboarding ahora ocupa la pantalla completa, incluida la zona del notch / status bar / home indicator. El fondo del paso actual (azul marca en la bienvenida, blanco en los siguientes) cubre todo el shell sin recortes blancos arriba.
+- `app/_layout.tsx`: la pantalla `onboarding` pasa de `presentation: 'modal'` a `presentation: 'fullScreenModal'` y se le fija `contentStyle.backgroundColor` al azul de marca para evitar parpadeos blancos al abrir.
+- `app/onboarding.tsx`: sustituido el `SafeAreaView` exterior por un `View` con fondo dinámico por paso; cada step gestiona sus propios `insets` vía `useSafeAreaInsets`. La status bar se conmuta a `light` durante la bienvenida.
+- Pequeños retoques de diseño (no funcionales): badge "Te damos la bienvenida", logo con flotación suave, copy más cálido ("¡Vamos allá!"), icono `celebration` y pequeño pop en la pantalla de éxito.
+
+---
+
+## 2026-05-26 — Limpieza de warnings iOS 26
+
+- Silenciado el log informativo `HeroUI Native Styling Principles` en arranque: `HeroUINativeProvider` ahora recibe `config={{ devInfo: { stylingPrinciples: false } }}` en `app/_layout.tsx`.
+- Resuelto warning `[RNScreens] Using both blurEffect and scrollEdgeEffects simultaneously` en el stack del Cantoral: `headerBlurEffect` se aplica solo en iOS < 26 (en iOS 26+ el sistema ya pinta el efecto glass vía `scrollEdgeEffects` por defecto). Archivo: `app/(tabs)/cancionero.tsx`.
+
+---
+
+## 2026-05-25 — Modo Carismochito (easter egg por shake)
+
+Easter egg: al agitar el móvil aparece una cuenta atrás de 5 segundos que, si no se cancela, activa el "Modo Carismochito" — un guiño a la mascota del MCM tintando toda la app de un verde lima deliberadamente exagerado. Se desactiva agitando otra vez o tocando el badge flotante.
+
+- **Detección de shake**: nuevo `hooks/useShakeDetector.ts` basado en `expo-sensors` (carga perezosa para no romper en web). Umbral configurable (~3 picos > 1.9g en 700ms, cooldown 1.2s).
+- **Estado global**: `contexts/CarismochitoContext.tsx` con tres estados (`idle`, `countingDown`, `active`); una sola acción de "shake" se interpreta como activar / cancelar / desactivar según el estado actual.
+- **UI**: `components/CarismochitoOverlay.tsx` renderiza:
+  - Pantalla de cuenta atrás con la mascota SVG (verde slime con ojos negros, lengua rosa), número pulsante, halo verde y botón "Cancelar".
+  - Cuando está activo: tinte verde lima (`#7FFF00`) sobre toda la app con viñeta superior/inferior + badge flotante "MODO CARISMOCHITO" que también permite desactivar al tocarlo.
+- **Wiring**: `CarismochitoProvider` añadido al árbol de providers y `<CarismochitoOverlay />` al final de `InnerLayout` (encima de tabs, debajo del toast).
+- **Nueva dependencia nativa**: `expo-sensors ~55.0.8` — **requiere un nuevo build EAS** para que funcione en dispositivo (en web queda inerte).
+- Archivos nuevos: `hooks/useShakeDetector.ts`, `contexts/CarismochitoContext.tsx`, `components/CarismochitoOverlay.tsx`.
+- Archivos modificados: `app/_layout.tsx`, `package.json`.
+
+---
+
+## 2026-05-25 — Activación de React Compiler
+
+- **Qué cambia**: se activa `babel-plugin-react-compiler` (React 19 + Babel 7.25). El compilador memoiza automáticamente componentes y valores derivados, eliminando re-renders innecesarios sin necesidad de `useMemo`/`useCallback`/`React.memo` manuales.
+- **Cómo se activa en Expo SDK 55**: requiere DOS cosas (no basta sólo con el preset):
+  1. `experiments.reactCompiler: true` en `app.json` → hace que Metro pase `supportsReactCompiler: true` al caller de Babel.
+  2. `babel-plugin-react-compiler` instalado + opciones opcionales vía `babel-preset-expo` (`['babel-preset-expo', { 'react-compiler': {} }]`).
+- **Orden con Reanimated**: el preset de Expo se encarga de inyectar el compilador como primer plugin y el plugin de worklets después, así que no hay conflicto manual.
+- **Verificación**: transformando un componente con `caller.supportsReactCompiler = true` aparece el import `react/compiler-runtime` y el `c(N)` de memo cache → confirma que el compilador procesa el código.
+- **Archivos afectados**:
+  - `babel.config.js`: preset pasa de `'babel-preset-expo'` a `['babel-preset-expo', { 'react-compiler': {} }]`.
+  - `app.json`: añadido `experiments.reactCompiler: true`.
+  - `package.json`: nueva devDependency `babel-plugin-react-compiler@^1.0.0`.
+
+---
+
+## 2026-05-25 — Suscripción a calendarios públicos desde la pestaña Calendario
+
+Nueva funcionalidad que permite al usuario suscribirse a los calendarios ICS configurados en Firebase directamente desde su app de calendario nativa.
+
+- **Punto de entrada**: icono `bookmark-add` en el header de la pestaña Calendario, a la derecha del selector Mes/Agenda. Solo visible cuando hay al menos un calendario configurado.
+- **iOS**: botón "Apple Calendario" abre el URL `webcal://...` → diálogo nativo de suscripción de Apple Calendar. Botón "Google Calendar" abre `calendar.google.com/r?cid=...`.
+- **Android / Web**: solo botón "Google Calendar" (Android no tiene handler nativo para `webcal://`). Abre Google Calendar web con prompt de suscripción; los eventos sincronizan automáticamente con la app Android.
+- **Copiar enlace**: copia la URL ICS al portapapeles + toast confirmación.
+- **Acordeón de ayuda**: instrucciones por plataforma (Apple Calendar, Google Calendar, Outlook, Otra app).
+- Archivos nuevos: `utils/calendarSubscription.ts`, `components/CalendarSubscribeBottomSheet.tsx`.
+- Archivos modificados: `app/(tabs)/calendario.tsx`, `app.json` (añadido `LSApplicationQueriesSchemes: ["webcal"]` — requiere nuevo build EAS para aplicar en iOS).
+
+---
+
+## 2026-05-24 — Virtualización de listas, WebView estable y rediseño de Grupos
+
+Tres cambios de rendimiento + UX descritos en `MEJORAS.md` §1.2, §1.3 y §1.4.
+
+### `GruposScreen` — rediseño completo + `SectionList`
+
+- **Buscador siempre visible** en la vista principal con resultados agrupados por categoría (`SectionList` con sticky section headers y resaltado del texto coincidente).
+- **Botón "Encuéntrame"** que pre-rellena la búsqueda con el nombre del `UserProfile` cuando está disponible. Las filas y tarjetas de grupo donde aparece el usuario muestran un badge "tú" y borde de acento.
+- **Filtro interno en la vista de grupo** (`FlatList` virtualizada de miembros) que aparece sólo cuando hay más de 8 miembros — clave para grupos grandes.
+- **Búsqueda con normalización** (case + diacríticos) y umbral de 2 caracteres (antes 3) para que cosas como "ana" funcionen.
+- **`GrupoCard` y `MemberRow`** extraídos como `React.memo` para que la virtualización no re-renderice todo al cambiar el filtro.
+- **`ScrollView+.map()` anidados** eliminados — todas las listas largas son ahora `SectionList`/`FlatList` con `initialNumToRender`, `windowSize` y `removeClippedSubviews`.
+
+### `ContactosScreen` → `FlatList`
+
+- Sustituye el `ScrollView+.map()` por `FlatList` virtualizada (clave para crecimientos futuros del listado).
+- Buscador integrado en el header (visible cuando hay >6 contactos) que filtra por nombre, responsabilidad o teléfono con normalización de diacríticos.
+- `ContactRow` extraído como `React.memo`.
+
+### WebView estable con `postMessage` (§1.2)
+
+- `useSongProcessor` ahora separa entradas **estructurales** (`originalChordPro`, `currentTranspose`, `notation`, `title`, `author`, `key`, `capo`, `isFullscreen`) de entradas **de estilo** (`fontSize`, `fontFamily`, `isDark`, `chordsVisible`, `topPadding`, `bottomPadding`). Sólo las primeras regeneran el HTML.
+- Devuelve `{ songHtml, isLoadingSong, styleState }`. El HTML inyectado expone `window.__SONG_BRIDGE__.apply(s)` que aplica los cambios vía CSS variables y clases (`.theme-dark`, `.chords-hidden`) sin recargar.
+- `SongDisplay` (móvil) usa `WebView.injectJavaScript(...)` cuando cambia `styleState`. En web envía `postMessage` al `<iframe>`. `SongFullscreenScreen` hace lo mismo sobre su WebView/`<div>` propio.
+- **Efecto visible**: cambiar tamaño de letra, fuente, tema o visibilidad de acordes desde el bottom sheet es ahora instantáneo, sin parpadeo de 200–500 ms.
+
+### Caché de parser ChordPro a nivel de módulo (§1.3, adaptado)
+
+- `useSongProcessor.ts` cachea los objetos `Song` parseados en un `Map` FIFO de hasta 64 entradas (claveado por el contenido ChordPro completo). Abrir, cerrar y reabrir una canción ya no reparsea.
+- Nota: el plan original de un Metro Transformer no aplica porque las canciones no viven en el bundle (vienen de Firebase). El caché en runtime es la alternativa equivalente.
+
+### Archivos modificados
+
+- `app/screens/GruposScreen.tsx` — rewrite completo.
+- `app/screens/ContactosScreen.tsx` — rewrite a `FlatList` + búsqueda.
+- `app/screens/SongDetailScreen.tsx` — propaga `styleState` a `SongDisplay`.
+- `app/screens/SongFullscreenScreen.tsx` — inyecta `styleState` en su WebView/iframe.
+- `hooks/useSongProcessor.ts` — split estructural/estilo + caché de parser + bootstrap script.
+- `components/SongDisplay.tsx` — refs a WebView/iframe y bridge de `postMessage`.
+
+---
+
+## 2026-05-25 — Activación de React Compiler
+
+- **Qué cambia**: se activa `babel-plugin-react-compiler` (React 19 + Babel 7.25). El compilador memoiza automáticamente componentes y valores derivados, eliminando re-renders innecesarios sin necesidad de `useMemo`/`useCallback`/`React.memo` manuales.
+- **Cómo se activa en Expo SDK 55**: requiere DOS cosas (no basta sólo con el preset):
+  1. `experiments.reactCompiler: true` en `app.json` → hace que Metro pase `supportsReactCompiler: true` al caller de Babel.
+  2. `babel-plugin-react-compiler` instalado + opciones opcionales vía `babel-preset-expo` (`['babel-preset-expo', { 'react-compiler': {} }]`).
+- **Orden con Reanimated**: el preset de Expo se encarga de inyectar el compilador como primer plugin y el plugin de worklets después, así que no hay conflicto manual.
+- **Verificación**: transformando un componente con `caller.supportsReactCompiler = true` aparece el import `react/compiler-runtime` y el `c(N)` de memo cache → confirma que el compilador procesa el código.
+- **Archivos afectados**:
+  - `babel.config.js`: preset pasa de `'babel-preset-expo'` a `['babel-preset-expo', { 'react-compiler': {} }]`.
+  - `app.json`: añadido `experiments.reactCompiler: true`.
+  - `package.json`: nueva devDependency `babel-plugin-react-compiler@^1.0.0`.
+
+---
+
+## 2026-05-24 — Banner de permisos de notificaciones
+
+- **Qué hace**: cuando el usuario aún no ha concedido permisos de notificaciones, aparece un banner en Home y en la pantalla de Notificaciones invitando a activarlas. Se descarta durante 7 días al pulsar la X.
+- **Estados manejados**: se muestra en `undetermined` (CTA "Activar" dispara el prompt nativo del sistema) y en `denied` (CTA "Abrir Ajustes" abre los Ajustes de la app con `Linking.openSettings()`). Se oculta en `granted` y `provisional`. En web no se muestra nunca.
+- **Persistencia**: timestamp de descarte en AsyncStorage (`@mcm_notif_permission_banner_dismissed_at`). El banner reaparece pasados 7 días.
+- **Reconsulta**: el banner vuelve a comprobar el estado de permisos cuando la app vuelve al foreground (`AppState 'active'`), de modo que se oculta automáticamente al volver de Ajustes tras conceder los permisos.
+- **Registro inmediato del token**: `usePushNotifications` ahora expone `tryRegisterPushToken()` y registra un listener de `AppState` que reintenta `registerAndSaveToken` al volver al foreground. Resultado: al conceder permisos (en-app o vía Ajustes), el token Expo Push se registra en Firebase sin esperar al siguiente arranque.
+- **Archivos nuevos**:
+  - `components/NotificationPermissionBanner.tsx`: componente reutilizable con prop `placement: 'home' | 'notifications'`.
+- **Archivos modificados**:
+  - `notifications/usePushNotifications.ts`: nuevo export `tryRegisterPushToken()`, espejo de metadata a nivel de módulo, listener de `AppState` para re-registro idempotente al foregroundear.
+  - `app/(tabs)/index.tsx`: inserta el banner en la columna izquierda, justo antes de la tarjeta de Novedades.
+  - `app/notifications.tsx`: inserta el banner justo debajo del header.
+
+---
+
+## 2026-05-22 — Canal "preview" en caliente: modo Laboratorio Alpha (7 taps)
+
+- **Qué hace**: permite a un dispositivo suscribirse al canal `preview` de EAS Update desde dentro de la app instalada en stores, sin necesidad de un binario aparte. Mientras esté activo, los OTAs vienen de la rama `preview` (que ya publica `/.github/workflows/ota-preview.yml`); al desactivarlo, en el siguiente arranque vuelve al canal `production`.
+- **Cómo se descubre**: 7 taps rápidos sobre el número de versión (`VersionDisplay`) o sobre el tagline "Movimiento Consolación para el Mundo" del pie de Home y de Más. Haptic creciente desde el 4º tap como pista. Reversible.
+- **UX del modal**: deliberadamente exagerada y festiva (rompiendo el minimalismo del resto de la app). Gradiente que muta entre tres paletas, 14 emojis flotando con rotación/escala, título "🧪 LABORATORIO ALPHA 🧪" con wobble, palanca gigante MUNDANO ↔ ALPHA, frases rotatorias, pergamino con la explicación técnica del pacto, burst de confeti al activar y "puff" al desactivar.
+- **Mecánica técnica**: `Updates.setUpdateURLAndRequestHeadersOverride({ updateUrl, requestHeaders: { 'expo-channel-name': 'preview' } })`. Persistido en `AsyncStorage`. Se aplica al hidratar el provider antes de que `useOTAUpdate` haga su primer `checkForUpdateAsync`. Inocuo si la `runtimeVersion` del binario no coincide con la del bundle preview.
+- **Archivos nuevos**:
+  - `hooks/useSecretTap.ts`: contador de taps con ventana de 1.5s y haptic ramp.
+  - `contexts/PreviewChannelContext.tsx`: flag persistido + override de canal + estado del modal.
+  - `components/SecretMenuTrigger.tsx`: wrapper Pressable transparente que añade el gesto sin afectar al layout.
+  - `components/PreviewChannelModal.tsx`: el modal "Laboratorio Alpha" con Reanimated + LinearGradient.
+- **Archivos modificados**: `app/_layout.tsx` (provider + montaje del modal), `components/VersionDisplay.tsx` (envuelto + indicador "· alpha" cuando está activo), `app/(tabs)/index.tsx` y `app/screens/MasHomeScreen.tsx` (tagline envuelto).
+
+---
+
+## 2026-05-21 — Auto-scroll del cantoral en pantalla completa, reescrito
+
+- **Problema**: el desplazador automático del modo pantalla completa era frágil. Slider vertical con gestos en conflicto con `PressableFeedback`, bucle frame-based (la velocidad cambiaba según refresh rate), sin persistencia entre sesiones, sin auto-pausa al final del documento ni cuando el usuario tocaba la pantalla, y dos bucles distintos en lados opuestos del puente nativo.
+- **Solución**: nuevo hook `hooks/useAutoScroller.ts` que aísla toda la lógica del desplazamiento y expone una API limpia (`isPlaying`, `speedIndex`, `setSpeedIndex`, `play/pause/toggle`, handlers de WebView). En la pantalla, el slider vertical se sustituye por un selector segmentado horizontal de 5 niveles ("Muy lento" … "Muy rápido").
+- **Mejoras técnicas**:
+  - **Time-based (px/s)** en lugar de frame-based: misma velocidad real en pantallas a 60Hz, 90Hz o 120Hz.
+  - **Acumulación sub-píxel** + **rampa de aceleración/frenado**: el inicio/parada es suave y los niveles bajos producen un movimiento continuo, no a saltos.
+  - **Bucle en la WebView**: en iOS/Android el rAF vive dentro de la propia WebView (cero overhead del puente). El lado React sólo envía la velocidad objetivo cuando cambia. Para web, rAF en lado React sobre el `div` scrollable.
+  - **Auto-pausa**: cuando el usuario interactúa manualmente (touch/wheel/mousedown/keydown) o al llegar al final del documento; en nativo el controlador postea un mensaje (`postMessage`) y React sincroniza estado.
+  - **Persistencia**: nivel de velocidad guardado en AsyncStorage (`@mcm_song_autoscroll_speed_index`); el usuario recupera su preferencia al volver a entrar.
+  - **Resiliencia**: `__mcmScrollInstalled` guard evita doble inyección; `onLoadEnd` reinyecta la velocidad si la WebView recarga con la reproducción activa.
+- **UX**: indicador discreto del nivel actual encima del play, panel de velocidades que aparece al pulsar y se oculta a los 3.2s, haptics (`Medium` en play/pause, `Light` al cambiar de nivel), atajos de teclado en web (`Espacio` play/pause, `↑/↓` subir/bajar velocidad), accesibilidad (`accessibilityState`, etiquetas).
+- **Archivos**:
+  - Nuevo: `hooks/useAutoScroller.ts`.
+  - Reescrito: `app/screens/SongFullscreenScreen.tsx` (eliminados `VerticalSlider`, `SCROLL_CONTROLLER_JS`, estado/refs/efectos del scroll inline).
+
+---
+
 ## 2026-05-20 — Atajos de teclado en web: Cmd+K, Esc y cantoral
 
 - **Cmd/Ctrl+K**: nuevo Command Palette global (web-only) montado en `app/_layout.tsx`. Lista las pantallas top-level del expo-router con sinónimos en castellano e inglés para búsqueda rápida.

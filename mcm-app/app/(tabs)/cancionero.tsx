@@ -14,6 +14,7 @@ import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 import { SettingsProvider } from '../../contexts/SettingsContext';
 import { TabHeaderColors } from '@/constants/colors';
 import { useChoirSession } from '../../contexts/ChoirSessionContext';
+import { extractSongMedia, type SongMedia } from '@/types/songMedia';
 
 export interface SongNavItem {
   title: string;
@@ -22,6 +23,7 @@ export interface SongNavItem {
   key?: string;
   capo?: number;
   content?: string;
+  media?: SongMedia;
 }
 
 export type RootStackParamList = {
@@ -34,6 +36,7 @@ export type RootStackParamList = {
     key?: string;
     capo?: number;
     content: string;
+    media?: SongMedia;
     navigationList?: SongNavItem[];
     currentIndex?: number;
     source?: 'category' | 'selection';
@@ -57,6 +60,11 @@ const isWeb = Platform.OS === 'web';
 
 export default function CancioneroTab() {
   const stackNavRef = useRef<any>(null);
+  // Tracks whether we left this tab (blur) so focus knows to pop to root.
+  // We only pop when returning FROM another tab, never on same-tab re-tap.
+  // On iOS, NativeTabs (UITabBarController) handles same-tab press natively;
+  // our JS handler would conflict with that native behavior and freeze the tab.
+  const wasBlurredRef = useRef(false);
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = isWeb ? insets.top : undefined;
   const scheme = useColorScheme();
@@ -65,28 +73,36 @@ export default function CancioneroTab() {
   const choir = useChoirSession();
 
   useEffect(() => {
-    // When this tab gains focus coming from another tab, reset the stack.
-    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
-      if (stackNavRef.current?.canGoBack()) {
-        stackNavRef.current.popToTop();
-      }
+    const unsubscribeBlur = navigation.addListener('blur' as any, () => {
+      wasBlurredRef.current = true;
     });
 
-    // When the user taps this tab while already on it, prevent the default
-    // scroll-to-top behavior and pop to root instead.
+    // Cross-tab return (blur → focus): pop to root from JS.
+    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
+      if (!wasBlurredRef.current) return;
+      wasBlurredRef.current = false;
+      setTimeout(() => {
+        if (stackNavRef.current?.canGoBack()) {
+          stackNavRef.current.popToTop();
+        }
+      }, 0);
+    });
+
+    // Same-tab re-tap: ahora SEGURO porque `disablePopToTop` (en _layout.tsx)
+    // bloquea el popToRootViewController nativo que antes desincronizaba JS
+    // y nativo. Hacemos el pop manualmente desde JS para preservar la UX iOS
+    // de "tap tab activo → vuelve a la raíz".
     const unsubscribeTabPress = navigation
       .getParent()
-      ?.addListener('tabPress' as any, (e: any) => {
-        if (
-          (navigation as any).isFocused?.() &&
-          stackNavRef.current?.canGoBack()
-        ) {
-          e.preventDefault?.();
+      ?.addListener('tabPress' as any, () => {
+        if (!(navigation as any).isFocused?.()) return;
+        if (stackNavRef.current?.canGoBack()) {
           stackNavRef.current.popToTop();
         }
       });
 
     return () => {
+      unsubscribeBlur();
       unsubscribeFocus();
       unsubscribeTabPress?.();
     };
@@ -121,6 +137,7 @@ export default function CancioneroTab() {
       key: remote.songKey,
       capo: remote.capo,
       content: remote.content ?? '',
+      media: extractSongMedia(remote) ?? undefined,
       firebaseCategory: remote.firebaseCategory,
       source: 'selection',
     });
@@ -141,6 +158,9 @@ export default function CancioneroTab() {
         screenOptions={({ navigation }) => {
           stackNavRef.current = navigation;
           return {
+            // Congela las pantallas que no están visibles al cambiar de tab:
+            // libera CPU/memoria (especialmente del WebView del detalle).
+            freezeOnBlur: true,
             headerStyle: isIOS
               ? { backgroundColor: 'transparent' }
               : isWeb
@@ -168,7 +188,12 @@ export default function CancioneroTab() {
             ...(isWeb &&
               ({ headerStatusBarHeight: webStatusBarHeight } as any)),
             headerTransparent: isIOS,
-            headerBlurEffect: isIOS ? 'systemChromeMaterial' : undefined,
+            // iOS 26+ aplica su propio efecto glass via scrollEdgeEffects;
+            // combinarlo con headerBlurEffect provoca solape (warning RNScreens).
+            headerBlurEffect:
+              isIOS && parseInt(String(Platform.Version), 10) < 26
+                ? 'systemChromeMaterial'
+                : undefined,
             headerShadowVisible: false,
             headerBackButtonDisplayMode: 'minimal' as const,
             // Prevents screens from appearing transparent during swipe-back

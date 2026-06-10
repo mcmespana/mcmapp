@@ -1,5 +1,9 @@
-// Este archivo asegura que Expo incluya los iconos en el build
-// Solo necesita estar importado una vez para que funcione
+// Este archivo asegura que Expo incluya los iconos en el bundle web (PWA).
+// Solo necesita estar importado una vez para que funcione.
+//
+// IMPORTANTE: NO borrar assets/images/icon-*.png ni assets/images/favicon.png.
+// Los require() de abajo referencian esa carpeta (assets para bundler nativo/Metro),
+// que es distinta de public/icons/ (servicio estático web). Ambas deben existir.
 
 // Requerir todos los iconos para que Expo los incluya en el bundle
 const icon120 = require('../assets/images/icon-120.png');

@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
+import { extractSongMedia } from '@/types/songMedia';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -284,7 +285,16 @@ const SelectedSongsScreen: React.FC = () => {
           capo: completeSong.capo,
         }),
         content: completeSong.content || '',
-        navigationList: flatSelectedSongs,
+        media: extractSongMedia(completeSong) ?? undefined,
+        navigationList: flatSelectedSongs.map((s) => ({
+          title: s.title,
+          filename: s.filename,
+          author: s.author,
+          key: s.key,
+          capo: s.capo,
+          content: s.content,
+          media: extractSongMedia(s) ?? undefined,
+        })),
         currentIndex: index,
         source: 'selection',
         firebaseCategory: completeSong.originalCategoryKey || 'entrada',
@@ -538,10 +548,10 @@ const SelectedSongsScreen: React.FC = () => {
           });
         }
         setShowExportPdfModal(false);
-        toast.show({ label: 'PDF generado' });
+        toast.show({ label: 'Tenemos tu PDF recién sacado del orno' });
       } catch (err) {
         console.error('Error exportando PDF', err);
-        toast.show({ label: 'Error al generar el PDF' });
+        toast.show({ label: 'Error al generar el PDF, sorry, lo arreglaremos' });
       }
     },
     [flatSelectedSongs, settings.notation, toast],
@@ -964,7 +974,7 @@ const SelectedSongsScreen: React.FC = () => {
           Platform.OS === 'macos'
             ? 'Copiar lista al portapapeles'
             : 'Compartir mensaje con las canciones',
-        description: 'Texto con canción, tono y número',
+        description: 'Texto para Whatsapp con canción, tono y número',
         onPress: handleShareText,
       },
       {
@@ -996,14 +1006,14 @@ const SelectedSongsScreen: React.FC = () => {
       {
         id: 'export-file',
         icon: 'file-upload',
-        label: 'Exportar a archivo (.mcm)',
+        label: 'Exportar playlist como archivo (.mcm)',
         // description: 'Incluye el tono cambiado y el orden personalizado',
         onPress: handleStartExportFile,
       },
       {
         id: 'import-file',
         icon: 'file-download',
-        label: 'Importar desde archivo',
+        label: 'Importar archivo de playlist (.mcm)',
         onPress: handleImportFile,
       },
     ];
@@ -1234,15 +1244,6 @@ const SelectedSongsScreen: React.FC = () => {
   );
 
   const renderHeaderBar = () => {
-    const transposedCount = selectedSongs.filter(
-      (s) => s.transpose !== 0,
-    ).length;
-    /* Eliminado este trozo
-                  {transposedCount > 0
-                ? ` · ${transposedCount} con tono cambiado`
-                : ''} 
-                
-                */
     return (
       <View>
         <ChoirSessionBanner />

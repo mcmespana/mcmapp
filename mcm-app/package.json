@@ -9,10 +9,11 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,md}'",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
-    "eas:build": "rm -rf .agent .agents && npx eas-cli@latest build",
-    "eas:build:ios": "rm -rf .agent .agents && npx eas-cli@latest build -p ios",
-    "eas:build:android": "rm -rf .agent .agents && npx eas-cli@latest build -p android"
+    "eas:build": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build",
+    "eas:build:ios": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build -p ios",
+    "eas:build:android": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build -p android"
   },
   "dependencies": {
     "@expo/config": "^55.0.7",
@@ -21,6 +22,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.6.0",
     "@react-native-community/slider": "5.1.2",
+    "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-native-picker/picker": "2.11.4",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
@@ -28,6 +30,7 @@
     "@react-navigation/native-stack": "^7.3.10",
     "chordsheetjs": "^14.0.0",
     "expo": "^55.0.5",
+    "expo-apple-authentication": "~55.0.13",
     "expo-asset": "~55.0.8",
     "expo-blur": "~55.0.8",
     "expo-build-properties": "~55.0.9",
@@ -47,6 +50,7 @@
     "expo-notifications": "~55.0.11",
     "expo-print": "~55.0.15",
     "expo-router": "~55.0.4",
+    "expo-sensors": "~55.0.8",
     "expo-sharing": "~55.0.11",
     "expo-splash-screen": "~55.0.10",
     "expo-status-bar": "~55.0.4",
@@ -57,7 +61,6 @@
     "firebase": "^12.10.0",
     "heroui-native": "^1.0.0",
     "jest": "~29.7.0",
-    "lodash": "^4.17.21",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.6",
@@ -85,7 +88,10 @@
     "@types/jest": "^29.5.14",
     "@types/node": "^22.16.5",
     "@types/react": "~19.2.10",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "babel-preset-expo": "~55.0.22",
     "copy-webpack-plugin": "^14.0.0",
+    "cross-env": "^7.0.3",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~55.0.0",
     "eslint-config-prettier": "^9.1.2",
@@ -101,7 +107,8 @@
     "react-native-calendars": {
       "react-native-safe-area-context": "~5.6.0"
     },
-    "react-test-renderer": "19.2.0"
+    "react-test-renderer": "19.2.0",
+    "unrs-resolver": "1.11.1"
   },
   "expo": {
     "doctor": {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   FlatList,
@@ -9,13 +9,13 @@ import {
   Platform,
 } from 'react-native';
 import { Button, Spinner } from 'heroui-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import { Colors as ThemeColors } from '@/constants/colors';
+import { Colors as ThemeColors, TabHeaderColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const ALBUMS_PER_PAGE = 4;
@@ -50,9 +50,12 @@ export default function AlbumListScreen() {
   } = useFirebaseData<Album[]>('albums', 'albums');
   const resolved = useResolvedProfileConfig();
   const sortedAlbums = React.useMemo(() => {
-    const visible = (allAlbumsData ?? []).filter((album) =>
-      isAlbumVisibleForProfile(album, resolved.albumTags),
-    );
+    const seen = new Set<string>();
+    const visible = (allAlbumsData ?? []).filter((album) => {
+      if (seen.has(album.id)) return false;
+      seen.add(album.id);
+      return isAlbumVisibleForProfile(album, resolved.albumTags);
+    });
     return visible.sort((a, b) => b.id.localeCompare(a.id));
   }, [allAlbumsData, resolved.albumTags]);
   const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
@@ -70,12 +73,15 @@ export default function AlbumListScreen() {
     );
   }, [sortedAlbums]);
 
-  const loadMoreAlbums = () => {
+  const loadMoreAlbums = useCallback(() => {
     if (allAlbumsLoaded || isLoadingMore) return;
     setIsLoadingMore(true);
     const nextPage = currentPage + 1;
     const startIndex = nextPage * ALBUMS_PER_PAGE;
-    const newAlbums = sortedAlbums.slice(startIndex, startIndex + ALBUMS_PER_PAGE);
+    const newAlbums = sortedAlbums.slice(
+      startIndex,
+      startIndex + ALBUMS_PER_PAGE,
+    );
     if (newAlbums.length > 0) {
       setDisplayedAlbums((prev) => [...prev, ...newAlbums]);
       setCurrentPage(nextPage);
@@ -89,9 +95,15 @@ export default function AlbumListScreen() {
       setAllAlbumsLoaded(true);
     }
     setIsLoadingMore(false);
-  };
+  }, [
+    allAlbumsLoaded,
+    isLoadingMore,
+    currentPage,
+    sortedAlbums,
+    displayedAlbums.length,
+  ]);
 
-  const handleAlbumPress = async (albumUrl: string) => {
+  const handleAlbumPress = useCallback(async (albumUrl: string) => {
     const supported = await Linking.canOpenURL(albumUrl);
     if (supported) {
       try {
@@ -102,9 +114,9 @@ export default function AlbumListScreen() {
     } else {
       Alert.alert('Enlace inválido', `No se puede abrir: ${albumUrl}`);
     }
-  };
+  }, []);
 
-  const renderFooter = () => {
+  const listFooterComponent = useMemo(() => {
     if (isLoadingMore) {
       return (
         <Spinner
@@ -125,48 +137,53 @@ export default function AlbumListScreen() {
         <Button.Label>Cargar Más</Button.Label>
       </Button>
     );
-  };
+  }, [isLoadingMore, allAlbumsLoaded, scheme, loadMoreAlbums]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Album }) => (
+      <View style={width > 600 ? styles.cardTwoColumns : styles.cardOneColumn}>
+        <AlbumCard
+          album={item}
+          onPress={() => handleAlbumPress(item.albumUrl)}
+        />
+      </View>
+    ),
+    [width, handleAlbumPress],
+  );
 
   if (loading && displayedAlbums.length === 0) {
     return <ProgressWithMessage message="Cargando álbumes..." />;
   }
 
   return (
-    <SafeAreaView
+    <TabScreenWrapper
       style={[
         styles.container,
         { backgroundColor: ThemeColors[scheme ?? 'light'].background },
       ]}
-      edges={['bottom']}
+      edges={['top']}
+      tintColor={TabHeaderColors.fotos}
     >
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
       <FlatList
         data={displayedAlbums}
-        renderItem={({ item }) => (
-          <View
-            style={
-              width > 600 ? styles.cardTwoColumns : styles.cardOneColumn
-            }
-          >
-            <AlbumCard
-              album={item}
-              onPress={() => handleAlbumPress(item.albumUrl)}
-            />
-          </View>
-        )}
+        renderItem={renderItem}
         keyExtractor={(item) => item.id}
         numColumns={width > 600 ? 2 : 1}
         key={width > 600 ? 'TWO_COLUMNS' : 'ONE_COLUMN'}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={5}
         contentContainerStyle={[
           styles.listContent,
           { maxWidth: width > 1200 ? 1600 : 1200, alignSelf: 'center' },
-          Platform.OS === 'ios' && { paddingBottom: 20 },
+          Platform.OS === 'ios' && { paddingBottom: 100 },
         ]}
         onEndReached={loadMoreAlbums}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
+        ListFooterComponent={listFooterComponent}
       />
-    </SafeAreaView>
+    </TabScreenWrapper>
   );
 }
 

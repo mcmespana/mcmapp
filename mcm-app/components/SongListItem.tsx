@@ -7,7 +7,7 @@ import {
   Animated,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { useSelectedSongs } from '../contexts/SelectedSongsContext';
+import { h } from '@/utils/haptics';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContextMenu } from '@/hooks/useContextMenu';
@@ -22,6 +22,7 @@ import {
   KeyPillColors,
 } from '@/constants/colors';
 import { durations } from '@/constants/animations';
+import { extractSongMedia, mediaKinds } from '@/types/songMedia';
 
 // Type for song data
 interface Song {
@@ -31,6 +32,13 @@ interface Song {
   key?: string;
   capo?: number;
   info?: string;
+  album?: string;
+  liturgicalTime?: string;
+  source?: string;
+  rhythm?: string;
+  videoEmbed?: string;
+  youtubeLinks?: { label: string; url: string }[];
+  audioLinks?: { label: string; url: string }[];
   originalCategoryKey?: string;
   numericFilenamePart?: string;
 }
@@ -40,6 +48,10 @@ interface SongListItemProps {
   onPress: (song: Song) => void;
   onLongPress?: (song: Song) => void;
   isSearchAllMode?: boolean;
+  isSelected: boolean;
+  selectedTranspose: number;
+  onAddSong: (filename: string) => void;
+  onRemoveSong: (filename: string) => void;
 }
 
 const SongListItem: React.FC<SongListItemProps> = React.memo(
@@ -48,20 +60,17 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
     onPress,
     onLongPress,
     isSearchAllMode = false,
+    isSelected,
+    selectedTranspose,
+    onAddSong,
+    onRemoveSong,
   }) {
-    const { addSong, removeSong, isSongSelected, getSelectedSong } =
-      useSelectedSongs();
     const { settings } = useSettings();
     const { notation } = settings;
     const scheme = useColorScheme();
     const styles = useMemo(() => createStyles(scheme || 'light'), [scheme]);
     const isDark = scheme === 'dark';
     const swipeableRow = useRef<Swipeable>(null);
-    const isSelected = isSongSelected(song.filename);
-    const selectedMeta = isSelected
-      ? getSelectedSong(song.filename)
-      : undefined;
-    const selectedTranspose = selectedMeta?.transpose ?? 0;
     const backgroundColorAnim = useRef(
       new Animated.Value(isSelected ? 1 : 0),
     ).current;
@@ -97,7 +106,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         <TouchableOpacity
           style={styles.rightAction}
           onPress={() => {
-            addSong(song.filename);
+            onAddSong(song.filename);
             swipeableRow.current?.close();
           }}
         >
@@ -127,7 +136,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         <TouchableOpacity
           style={styles.leftAction}
           onPress={() => {
-            removeSong(song.filename);
+            onRemoveSong(song.filename);
             swipeableRow.current?.close();
           }}
         >
@@ -146,10 +155,14 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
 
     const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
 
-    const contextHandler = useCallback(
-      () => onLongPress?.(song),
-      [onLongPress, song],
-    );
+    // Indicador sutil de multimedia (▶ vídeo / 🎧 audio) en la fila.
+    const kinds = useMemo(() => mediaKinds(extractSongMedia(song)), [song]);
+    const mediaIconColor = isDark ? '#5A5A5E' : '#B7B7BC';
+
+    const contextHandler = useCallback(() => {
+      h.tap();
+      onLongPress?.(song);
+    }, [onLongPress, song]);
     const contextMenuProps = useContextMenu(
       onLongPress ? contextHandler : undefined,
     );
@@ -161,10 +174,12 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
         renderLeftActions={isSelected ? renderLeftActions : undefined}
         onSwipeableOpen={(direction) => {
           if (direction === 'right' && !isSelected) {
-            addSong(song.filename);
+            h.add();
+            onAddSong(song.filename);
             swipeableRow.current?.close();
           } else if (direction === 'left' && isSelected) {
-            removeSong(song.filename);
+            h.remove();
+            onRemoveSong(song.filename);
             swipeableRow.current?.close();
           }
         }}
@@ -231,6 +246,24 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
               </View>
             </View>
             <View style={styles.rightSection}>
+              {(kinds.video || kinds.audio) && (
+                <View style={styles.mediaIndicators}>
+                  {kinds.video && (
+                    <MaterialIcons
+                      name="play-arrow"
+                      size={13}
+                      color={mediaIconColor}
+                    />
+                  )}
+                  {kinds.audio && (
+                    <MaterialIcons
+                      name="headphones"
+                      size={12}
+                      color={mediaIconColor}
+                    />
+                  )}
+                </View>
+              )}
               {song.capo && song.capo > 0 ? (
                 <View style={styles.capoPill}>
                   <Text style={styles.capoText}>{`C${song.capo}`}</Text>
@@ -356,6 +389,12 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 5,
+    },
+    mediaIndicators: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      marginRight: 2,
     },
     capoPill: {
       paddingHorizontal: 6,

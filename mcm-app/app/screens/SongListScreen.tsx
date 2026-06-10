@@ -17,7 +17,6 @@ import {
   TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
@@ -27,6 +26,7 @@ import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import SongListItem from '../../components/SongListItem';
 import BottomSheet from '@/components/BottomSheet';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { extractSongMedia, type MediaLink } from '@/types/songMedia';
 
 interface Song {
   title: string;
@@ -36,6 +36,14 @@ interface Song {
   capo?: number;
   info?: string;
   content?: string;
+  // Campos multimedia (viajan desde Firebase para el cajón + indicador de lista).
+  album?: string;
+  liturgicalTime?: string;
+  source?: string;
+  rhythm?: string;
+  videoEmbed?: string;
+  youtubeLinks?: MediaLink[];
+  audioLinks?: MediaLink[];
   originalCategoryKey?: string;
   numericFilenamePart?: string;
   sortTitle?: string;
@@ -100,7 +108,8 @@ export default function SongsListScreen({
     [scheme, insets.bottom, layout.isWide, layout.readableMaxWidth],
   );
   const isDark = scheme === 'dark';
-  const { addSong, removeSong, isSongSelected } = useSelectedSongs();
+  const { addSong, removeSong, isSongSelected, getSelectedSong } =
+    useSelectedSongs();
   const [search, setSearch] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
   const [songs, setSongs] = useState<Song[]>([]);
@@ -144,7 +153,13 @@ export default function SongsListScreen({
             </TouchableOpacity>
           ),
     });
-  }, [navigation, categoryName, isSearchAll, searchVisible]);
+  }, [
+    navigation,
+    categoryName,
+    isSearchAll,
+    searchVisible,
+    styles.headerButton,
+  ]);
 
   useEffect(() => {
     if (!songsData) return;
@@ -198,7 +213,7 @@ export default function SongsListScreen({
                   searchableText,
                 };
               });
-              allSongs = allSongs.concat(songsWithMetadata);
+              allSongs.push(...songsWithMetadata);
             }
           }
           allSongs.sort((a, b) => {
@@ -274,6 +289,12 @@ export default function SongsListScreen({
     });
   }, [songs, search]);
 
+  // ¿Alguna canción de la lista tiene multimedia? Para mostrar la leyenda.
+  const hasAnyMedia = useMemo(
+    () => songs.some((s) => extractSongMedia(s) !== null),
+    [songs],
+  );
+
   const handleSongLongPress = useCallback((song: Song) => {
     setMenuSong(song);
   }, []);
@@ -318,7 +339,19 @@ export default function SongsListScreen({
         key: song.key,
         capo: song.capo,
         content: song.content || '',
-        navigationList: categoryId === '__ALL__' ? undefined : songs,
+        media: extractSongMedia(song) ?? undefined,
+        navigationList:
+          categoryId === '__ALL__'
+            ? undefined
+            : songs.map((s) => ({
+                title: s.title,
+                filename: s.filename,
+                author: s.author,
+                key: s.key,
+                capo: s.capo,
+                content: s.content,
+                media: extractSongMedia(s) ?? undefined,
+              })),
         currentIndex: categoryId === '__ALL__' ? undefined : index,
         source: categoryId === '__ALL__' ? undefined : 'category',
         firebaseCategory:
@@ -344,7 +377,7 @@ export default function SongsListScreen({
               />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Título, autor..."
+                placeholder="Busca por título, autor..."
                 placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
                 value={search}
                 onChangeText={setSearch}
@@ -374,6 +407,23 @@ export default function SongsListScreen({
             {filteredSongs.length === 1 ? 'canción' : 'canciones'}
             {search.length > 0 ? ' encontradas' : ''}
           </Text>
+          {hasAnyMedia && (
+            <View style={styles.legend}>
+              <MaterialIcons
+                name="play-arrow"
+                size={13}
+                color={isDark ? '#6C6C70' : '#B0B0B5'}
+              />
+              <Text style={styles.legendText}>vídeo</Text>
+              <Text style={styles.legendDot}>·</Text>
+              <MaterialIcons
+                name="headphones"
+                size={12}
+                color={isDark ? '#6C6C70' : '#B0B0B5'}
+              />
+              <Text style={styles.legendText}>audio</Text>
+            </View>
+          )}
         </View>
       </View>
     ),
@@ -382,8 +432,10 @@ export default function SongsListScreen({
       search,
       isSearchAll,
       filteredSongs.length,
+      hasAnyMedia,
       styles,
       setSearch,
+      isDark,
     ],
   );
 
@@ -394,13 +446,25 @@ export default function SongsListScreen({
         onPress={handleSongPress}
         onLongPress={handleSongLongPress}
         isSearchAllMode={isSearchAll}
+        isSelected={isSongSelected(item.filename)}
+        selectedTranspose={getSelectedSong(item.filename)?.transpose ?? 0}
+        onAddSong={addSong}
+        onRemoveSong={removeSong}
       />
     ),
-    [handleSongPress, handleSongLongPress, isSearchAll],
+    [
+      handleSongPress,
+      handleSongLongPress,
+      isSearchAll,
+      isSongSelected,
+      getSelectedSong,
+      addSong,
+      removeSong,
+    ],
   );
 
   if ((isLoading || loadingSongs) && songs.length === 0) {
-    return <ProgressWithMessage message="Cargando canciones..." />;
+    return <ProgressWithMessage message="Cargando canciones un momentito porfi..." />;
   }
 
   if (error) {
@@ -415,9 +479,7 @@ export default function SongsListScreen({
     );
   }
 
-  const menuSongClean = menuSong
-    ? menuSong.title.replace(/^\d+\.\s*/, '')
-    : '';
+  const menuSongClean = menuSong ? menuSong.title.replace(/^\d+\.\s*/, '') : '';
   const menuSongSelected = menuSong ? isSongSelected(menuSong.filename) : false;
 
   return (
@@ -438,20 +500,27 @@ export default function SongsListScreen({
               size={22}
               color={isDark ? '#7AB3FF' : '#253883'}
             />
-            <Text style={[styles.menuActionText, { color: isDark ? '#F5F5F7' : '#1C1C1E' }]}>
+            <Text
+              style={[
+                styles.menuActionText,
+                { color: isDark ? '#F5F5F7' : '#1C1C1E' },
+              ]}
+            >
               {menuSongSelected ? 'Quitar de la lista' : 'Añadir a la lista'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.menuAction}
-            onPress={handleMenuShare}
-          >
+          <TouchableOpacity style={styles.menuAction} onPress={handleMenuShare}>
             <MaterialIcons
               name="share"
               size={22}
               color={isDark ? '#7AB3FF' : '#253883'}
             />
-            <Text style={[styles.menuActionText, { color: isDark ? '#F5F5F7' : '#1C1C1E' }]}>
+            <Text
+              style={[
+                styles.menuActionText,
+                { color: isDark ? '#F5F5F7' : '#1C1C1E' },
+              ]}
+            >
               Compartir
             </Text>
           </TouchableOpacity>
@@ -524,6 +593,9 @@ const createStyles = (
       margin: 0,
     },
     countRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: isWide ? 4 : 20,
       paddingTop: 10,
       paddingBottom: 2,
@@ -532,6 +604,20 @@ const createStyles = (
       fontSize: 12,
       color: isDark ? '#636366' : '#AEAEB2',
       letterSpacing: 0.2,
+    },
+    legend: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+    },
+    legendText: {
+      fontSize: 11,
+      color: isDark ? '#6C6C70' : '#B0B0B5',
+    },
+    legendDot: {
+      fontSize: 11,
+      color: isDark ? '#48484A' : '#D1D1D6',
+      marginHorizontal: 1,
     },
     listContent: {
       paddingHorizontal: isWide ? 20 : 12,

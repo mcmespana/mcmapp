@@ -15,12 +15,16 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useSettings } from '@/contexts/SettingsContext';
+import { toYouTubeEmbedUrl } from '@/utils/youtube';
 import { getDatabase, ref, set, push, get } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
-import {
-  getCategoryFromFirebaseCategory,
-  cleanSongTitle,
-} from '@/utils/songUtils';
+
+/** Enlace multimedia (YouTube o audio) editable en el panel. */
+interface MediaLink {
+  label: string;
+  url: string;
+}
 
 interface SecretPanelModalProps {
   visible: boolean;
@@ -51,18 +55,51 @@ export default function SecretPanelModal({
 }: SecretPanelModalProps) {
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
+  const { isAdmin, setIsAdmin } = useSettings();
 
+  // Si ya es admin (introdujo la contraseña antes), saltamos el paso de login.
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Campos editables
+  // Campos editables (texto/contenido)
   const [editTitle, setEditTitle] = useState('');
   const [editAuthor, setEditAuthor] = useState('');
   const [editKey, setEditKey] = useState('');
   const [editCapo, setEditCapo] = useState('');
   const [editInfo, setEditInfo] = useState('');
   const [editContent, setEditContent] = useState('');
+
+  // Campos multimedia (solo admin; aún no se muestran al usuario final).
+  const [editAlbum, setEditAlbum] = useState('');
+  const [editSource, setEditSource] = useState('');
+  const [editRhythm, setEditRhythm] = useState('');
+  const [editLiturgicalTime, setEditLiturgicalTime] = useState('');
+  const [editVideoInput, setEditVideoInput] = useState('');
+  const [editYoutubeLinks, setEditYoutubeLinks] = useState<MediaLink[]>([]);
+  const [editAudioLinks, setEditAudioLinks] = useState<MediaLink[]>([]);
+
+  // Valores originales de multimedia (para detectar cambios al guardar).
+  const [originalMedia, setOriginalMedia] = useState<{
+    album: string;
+    source: string;
+    rhythm: string;
+    liturgicalTime: string;
+    videoEmbed: string;
+    youtubeLinks: MediaLink[];
+    audioLinks: MediaLink[];
+  }>({
+    album: '',
+    source: '',
+    rhythm: '',
+    liturgicalTime: '',
+    videoEmbed: '',
+    youtubeLinks: [],
+    audioLinks: [],
+  });
+
+  // URL de embed resultante de lo que el admin escribe (preview en vivo).
+  const videoEmbedUrl = toYouTubeEmbedUrl(editVideoInput);
 
   // Cargar datos iniciales cuando se abre el modal
   useEffect(() => {
@@ -73,11 +110,13 @@ export default function SecretPanelModal({
       setEditCapo(songCapo?.toString() || '0');
       setEditInfo(songInfo || '');
       setEditContent(songContent || '');
-      setIsAuthenticated(false);
+      // Si ya es admin, no pedimos contraseña otra vez.
+      setIsAuthenticated(isAdmin);
       setPassword('');
     }
   }, [
     visible,
+    isAdmin,
     songTitle,
     songAuthor,
     songKey,
@@ -86,9 +125,63 @@ export default function SecretPanelModal({
     songContent,
   ]);
 
+  // Cargar los campos multimedia desde Firebase (no viajan en los params de
+  // navegación). Se prefijan en el formulario para que el admin los edite.
+  useEffect(() => {
+    if (!visible || !firebaseCategory || !songFilename) return;
+    let cancelled = false;
+
+    const normalizeLinks = (raw: any): MediaLink[] => {
+      if (!Array.isArray(raw)) return [];
+      return raw
+        .filter((x) => x && (x.url || x.label))
+        .map((x) => ({ label: x.label || '', url: x.url || '' }));
+    };
+
+    const loadMedia = async () => {
+      try {
+        const db = getDatabase(getFirebaseApp());
+        const songsRef = ref(db, `songs/data/${firebaseCategory}/songs`);
+        const snapshot = await get(songsRef);
+        if (cancelled || !snapshot.exists()) return;
+        const songs = snapshot.val();
+        const song = Array.isArray(songs)
+          ? songs.find((s: any) => s && s.filename === songFilename)
+          : undefined;
+        if (cancelled || !song) return;
+
+        const media = {
+          album: song.album || '',
+          source: song.source || '',
+          rhythm: song.rhythm || '',
+          liturgicalTime: song.liturgicalTime || '',
+          videoEmbed: song.videoEmbed || '',
+          youtubeLinks: normalizeLinks(song.youtubeLinks),
+          audioLinks: normalizeLinks(song.audioLinks),
+        };
+        setOriginalMedia(media);
+        setEditAlbum(media.album);
+        setEditSource(media.source);
+        setEditRhythm(media.rhythm);
+        setEditLiturgicalTime(media.liturgicalTime);
+        setEditVideoInput(media.videoEmbed);
+        setEditYoutubeLinks(media.youtubeLinks);
+        setEditAudioLinks(media.audioLinks);
+      } catch (error) {
+        console.error('Error cargando multimedia de la canción:', error);
+      }
+    };
+
+    loadMedia();
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, firebaseCategory, songFilename]);
+
   const handlePasswordSubmit = () => {
     if (password.toLowerCase() === 'coco') {
       setIsAuthenticated(true);
+      setIsAdmin(true); // Persistimos el modo admin en el dispositivo.
       setPassword('');
     } else {
       Alert.alert(
@@ -98,6 +191,34 @@ export default function SecretPanelModal({
       setPassword('');
     }
   };
+
+  // Helpers de listas de enlaces (YouTube / audio).
+  const addLink = (setter: React.Dispatch<React.SetStateAction<MediaLink[]>>) =>
+    setter((prev) => [...prev, { label: '', url: '' }]);
+
+  const removeLink = (
+    setter: React.Dispatch<React.SetStateAction<MediaLink[]>>,
+    index: number,
+  ) => setter((prev) => prev.filter((_, i) => i !== index));
+
+  const updateLink = (
+    setter: React.Dispatch<React.SetStateAction<MediaLink[]>>,
+    index: number,
+    field: keyof MediaLink,
+    value: string,
+  ) =>
+    setter((prev) =>
+      prev.map((link, i) => (i === index ? { ...link, [field]: value } : link)),
+    );
+
+  // Limpia enlaces vacíos antes de comparar/guardar.
+  const cleanLinks = (links: MediaLink[]): MediaLink[] =>
+    links
+      .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
+      .filter((l) => l.url.length > 0);
+
+  const linksEqual = (a: MediaLink[], b: MediaLink[]): boolean =>
+    JSON.stringify(a) === JSON.stringify(b);
 
   const handleSaveChanges = async () => {
     if (!editTitle.trim()) {
@@ -153,6 +274,43 @@ export default function SecretPanelModal({
         }
       });
 
+      // ── Campos multimedia (album, source, rhythm, liturgicalTime, videoEmbed) ──
+      const newMedia = {
+        album: editAlbum.trim(),
+        source: editSource.trim(),
+        rhythm: editRhythm.trim(),
+        liturgicalTime: editLiturgicalTime.trim(),
+        videoEmbed: toYouTubeEmbedUrl(editVideoInput),
+      };
+      (
+        ['album', 'source', 'rhythm', 'liturgicalTime', 'videoEmbed'] as const
+      ).forEach((field) => {
+        if ((originalMedia as any)[field] !== (newMedia as any)[field]) {
+          changes[`${field}Old`] = (originalMedia as any)[field];
+          changes[`${field}New`] = (newMedia as any)[field];
+        }
+      });
+
+      // ── Enlaces repetibles (youtubeLinks, audioLinks) ──
+      const cleanedYoutube = cleanLinks(editYoutubeLinks);
+      const cleanedAudio = cleanLinks(editAudioLinks);
+      if (!linksEqual(cleanedYoutube, cleanLinks(originalMedia.youtubeLinks))) {
+        changes.youtubeLinksOld = cleanLinks(originalMedia.youtubeLinks);
+        changes.youtubeLinksNew = cleanedYoutube;
+      }
+      if (!linksEqual(cleanedAudio, cleanLinks(originalMedia.audioLinks))) {
+        changes.audioLinksOld = cleanLinks(originalMedia.audioLinks);
+        changes.audioLinksNew = cleanedAudio;
+      }
+
+      // Mapa de valores nuevos para aplicar al árbol songs/data.
+      const newValuesForApply: Record<string, any> = {
+        ...newValues,
+        ...newMedia,
+        youtubeLinks: cleanedYoutube,
+        audioLinks: cleanedAudio,
+      };
+
       // Si no hay cambios, no hacer nada
       if (Object.keys(changes).length === 0) {
         Alert.alert(
@@ -196,17 +354,12 @@ export default function SecretPanelModal({
       }
 
       // 2. Actualizar solo los campos que cambiaron en Firebase
-      const songUpdateRef = ref(
-        db,
-        `songs/data/${category}/songs/${songIndex}`,
-      );
-
       // Crear objeto con solo los campos que cambiaron
       const fieldsToUpdate: Record<string, any> = {};
       Object.keys(changes).forEach((key) => {
         if (key.endsWith('New')) {
           const fieldName = key.replace('New', '');
-          fieldsToUpdate[fieldName] = (newValues as any)[fieldName];
+          fieldsToUpdate[fieldName] = newValuesForApply[fieldName];
         }
       });
 
@@ -262,6 +415,13 @@ export default function SecretPanelModal({
             capo: 'Capo',
             info: 'Info',
             content: 'Contenido',
+            album: 'Álbum',
+            source: 'Fuente',
+            rhythm: 'Ritmo',
+            liturgicalTime: 'Tiempo litúrgico',
+            videoEmbed: 'Vídeo',
+            youtubeLinks: 'Enlaces YouTube',
+            audioLinks: 'Enlaces de audio',
           };
           return (
             (fieldLabels as Record<string, string>)[fieldName] || fieldName
@@ -366,7 +526,7 @@ export default function SecretPanelModal({
       visible={visible}
       onClose={handleClose}
       title="🛠️ Editor Avanzado"
-      height={Dimensions.get('window').height * 0.90}
+      height={Dimensions.get('window').height * 0.9}
     >
       <View style={styles.fullContainer}>
         {songTitle && (
@@ -504,6 +664,251 @@ export default function SecretPanelModal({
             scrollEnabled={true}
             editable={!isSubmitting}
           />
+
+          {/* ── Sección multimedia (solo admin; no visible aún al usuario) ── */}
+          <View style={styles.sectionDivider} />
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            🎬 Multimedia
+          </Text>
+          <Text style={[styles.sectionHint, { color: theme.icon }]}>
+            Estos campos aún no se muestran al usuario final. Sirven para que el
+            administrador los vaya rellenando.
+          </Text>
+
+          {/* Álbum y Ritmo en fila */}
+          <View style={styles.row}>
+            <View style={styles.halfWidth}>
+              <Text style={[styles.label, { color: theme.text }]}>Álbum</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: inputBg,
+                    color: theme.text,
+                    borderColor: editAlbum.trim() ? '#34C759' : inputBorder,
+                  },
+                ]}
+                placeholder="Ej: ¡Alégrate!, 2004"
+                placeholderTextColor={theme.icon}
+                value={editAlbum}
+                onChangeText={setEditAlbum}
+                editable={!isSubmitting}
+              />
+            </View>
+            <View style={styles.halfWidth}>
+              <Text style={[styles.label, { color: theme.text }]}>Ritmo</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: inputBg,
+                    color: theme.text,
+                    borderColor: editRhythm.trim() ? '#34C759' : inputBorder,
+                  },
+                ]}
+                placeholder="Ej: 4x4"
+                placeholderTextColor={theme.icon}
+                value={editRhythm}
+                onChangeText={setEditRhythm}
+                editable={!isSubmitting}
+              />
+            </View>
+          </View>
+
+          {/* Tiempo litúrgico */}
+          <Text style={[styles.label, { color: theme.text }]}>
+            Tiempo litúrgico
+          </Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: inputBg,
+                color: theme.text,
+                borderColor: editLiturgicalTime.trim()
+                  ? '#34C759'
+                  : inputBorder,
+              },
+            ]}
+            placeholder="Ej: Adviento, Cuaresma, Pascua…"
+            placeholderTextColor={theme.icon}
+            value={editLiturgicalTime}
+            onChangeText={setEditLiturgicalTime}
+            editable={!isSubmitting}
+          />
+
+          {/* Fuente */}
+          <Text style={[styles.label, { color: theme.text }]}>Fuente</Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: inputBg,
+                color: theme.text,
+                borderColor: editSource.trim() ? '#34C759' : inputBorder,
+              },
+            ]}
+            placeholder="Ej: doceacordes.es"
+            placeholderTextColor={theme.icon}
+            value={editSource}
+            onChangeText={setEditSource}
+            editable={!isSubmitting}
+          />
+
+          {/* Vídeo embebido */}
+          <Text style={[styles.label, { color: theme.text }]}>
+            Vídeo de YouTube
+          </Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: inputBg,
+                color: theme.text,
+                borderColor: editVideoInput.trim() ? '#34C759' : inputBorder,
+              },
+            ]}
+            placeholder="Pega una URL normal de YouTube"
+            placeholderTextColor={theme.icon}
+            value={editVideoInput}
+            onChangeText={setEditVideoInput}
+            autoCapitalize="none"
+            keyboardType="url"
+            editable={!isSubmitting}
+          />
+          {editVideoInput.trim() ? (
+            <Text style={[styles.embedPreview, { color: theme.icon }]}>
+              Se guardará como: {videoEmbedUrl}
+            </Text>
+          ) : null}
+
+          {/* Enlaces de YouTube (repetibles) */}
+          <Text style={[styles.label, { color: theme.text }]}>
+            Enlaces de YouTube
+          </Text>
+          {editYoutubeLinks.map((link, index) => (
+            <View key={`yt-${index}`} style={styles.linkRow}>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  styles.linkLabelInput,
+                  {
+                    backgroundColor: inputBg,
+                    color: theme.text,
+                    borderColor: inputBorder,
+                  },
+                ]}
+                placeholder="Etiqueta (opcional)"
+                placeholderTextColor={theme.icon}
+                value={link.label}
+                onChangeText={(t) =>
+                  updateLink(setEditYoutubeLinks, index, 'label', t)
+                }
+                editable={!isSubmitting}
+              />
+              <TextInput
+                style={[
+                  styles.textInput,
+                  styles.linkUrlInput,
+                  {
+                    backgroundColor: inputBg,
+                    color: theme.text,
+                    borderColor: link.url.trim() ? '#34C759' : inputBorder,
+                  },
+                ]}
+                placeholder="URL"
+                placeholderTextColor={theme.icon}
+                value={link.url}
+                onChangeText={(t) =>
+                  updateLink(setEditYoutubeLinks, index, 'url', t)
+                }
+                autoCapitalize="none"
+                keyboardType="url"
+                editable={!isSubmitting}
+              />
+              <TouchableOpacity
+                style={styles.linkRemoveBtn}
+                onPress={() => removeLink(setEditYoutubeLinks, index)}
+                disabled={isSubmitting}
+              >
+                <MaterialIcons name="close" size={20} color={theme.icon} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          <TouchableOpacity
+            style={[styles.addLinkBtn, { borderColor: inputBorder }]}
+            onPress={() => addLink(setEditYoutubeLinks)}
+            disabled={isSubmitting}
+          >
+            <MaterialIcons name="add" size={18} color={theme.text} />
+            <Text style={[styles.addLinkText, { color: theme.text }]}>
+              Añadir enlace de YouTube
+            </Text>
+          </TouchableOpacity>
+
+          {/* Enlaces de audio (repetibles) */}
+          <Text style={[styles.label, { color: theme.text }]}>
+            Enlaces de audio
+          </Text>
+          {editAudioLinks.map((link, index) => (
+            <View key={`au-${index}`} style={styles.linkRow}>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  styles.linkLabelInput,
+                  {
+                    backgroundColor: inputBg,
+                    color: theme.text,
+                    borderColor: inputBorder,
+                  },
+                ]}
+                placeholder="Etiqueta (opcional)"
+                placeholderTextColor={theme.icon}
+                value={link.label}
+                onChangeText={(t) =>
+                  updateLink(setEditAudioLinks, index, 'label', t)
+                }
+                editable={!isSubmitting}
+              />
+              <TextInput
+                style={[
+                  styles.textInput,
+                  styles.linkUrlInput,
+                  {
+                    backgroundColor: inputBg,
+                    color: theme.text,
+                    borderColor: link.url.trim() ? '#34C759' : inputBorder,
+                  },
+                ]}
+                placeholder="URL"
+                placeholderTextColor={theme.icon}
+                value={link.url}
+                onChangeText={(t) =>
+                  updateLink(setEditAudioLinks, index, 'url', t)
+                }
+                autoCapitalize="none"
+                keyboardType="url"
+                editable={!isSubmitting}
+              />
+              <TouchableOpacity
+                style={styles.linkRemoveBtn}
+                onPress={() => removeLink(setEditAudioLinks, index)}
+                disabled={isSubmitting}
+              >
+                <MaterialIcons name="close" size={20} color={theme.icon} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          <TouchableOpacity
+            style={[styles.addLinkBtn, { borderColor: inputBorder }]}
+            onPress={() => addLink(setEditAudioLinks)}
+            disabled={isSubmitting}
+          >
+            <MaterialIcons name="add" size={18} color={theme.text} />
+            <Text style={[styles.addLinkText, { color: theme.text }]}>
+              Añadir enlace de audio
+            </Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[
@@ -656,5 +1061,61 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlign: 'center',
     marginBottom: 20,
+  },
+  sectionDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#8E8E93',
+    opacity: 0.4,
+    marginTop: 24,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginTop: 12,
+  },
+  sectionHint: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  embedPreview: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: -4,
+    marginBottom: 8,
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  linkLabelInput: {
+    flex: 0.9,
+    marginBottom: 0,
+  },
+  linkUrlInput: {
+    flex: 1.4,
+    marginBottom: 0,
+  },
+  linkRemoveBtn: {
+    padding: 6,
+  },
+  addLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    marginTop: 4,
+  },
+  addLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
   },
 });

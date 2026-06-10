@@ -191,7 +191,7 @@ const CodeInputModal: React.FC<Props> = ({
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Ej. Cantos domingo"
+              placeholder="Ej. Eucaristía domingo 7 abril 2031"
               placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
               style={styles.nameInput}
               editable={!submitting}
@@ -199,12 +199,7 @@ const CodeInputModal: React.FC<Props> = ({
           </View>
         )}
 
-        <Text
-          style={[
-            styles.inputLabel,
-            copy.askForName && { marginTop: 12 },
-          ]}
-        >
+        <Text style={[styles.inputLabel, copy.askForName && { marginTop: 12 }]}>
           Código (4 dígitos)
         </Text>
         <View style={styles.codeRow}>
@@ -295,9 +290,7 @@ const CodeInputModal: React.FC<Props> = ({
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.btnPrimaryText}>
-                {copy.primaryLabel}
-              </Text>
+              <Text style={styles.btnPrimaryText}>{copy.primaryLabel}</Text>
             )}
           </TouchableOpacity>
         </View>

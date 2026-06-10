@@ -1,34 +1,41 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, Platform, Text } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Card,
-  Switch,
-  Chip,
-  Button,
-  Spinner,
-  BottomSheet,
-  PressableFeedback,
-  TextField,
-  Input,
-  TextArea,
-  Dialog,
-} from 'heroui-native';
+  View,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  Share,
+  Text,
+  Pressable,
+  TextInput,
+  Modal,
+} from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { Spinner, BottomSheet, useToast } from 'heroui-native';
+import ContextMenuSheet from '@/components/ContextMenuSheet';
+import { useContextMenu } from '@/hooks/useContextMenu';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
+import { radii, shadows } from '@/constants/uiStyles';
+import { getBrightness } from '@/components/ui/glass';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
+import { h } from '@/utils/haptics';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import GlassFAB from '@/components/ui/GlassFAB';
 import PageContainer from '@/components/ui/PageContainer';
+import ScreenHero from '@/components/ui/ScreenHero';
+import type { EventStackParamList } from './eventStackScreens';
 
 interface Grupo {
   nombre: string;
@@ -60,11 +67,65 @@ const MONTHS_ES = [
 ];
 const WEEKDAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
+// Paleta para las tarjetas de Compartiendo. Colores de media saturación (el
+// blanco se lee encima y combinan bien como tinte de fondo). Se elige uno de
+// forma DETERMINISTA según el id de cada reflexión, así cada tarjeta tiene
+// "su" color estable entre renders.
+const CARD_PALETTE = [
+  '#E15C62', // rojo MIC
+  '#3478C7', // azul
+  '#7B9A1E', // verde oliva
+  '#9D1E74', // morado
+  '#E0702F', // naranja
+  '#2F8FB3', // azul petróleo
+  '#9C4FB0', // violeta
+  '#D24B7E', // rosa
+  '#4E9A51', // verde
+  '#5C6BC0', // índigo
+  '#3A9188', // turquesa
+  '#C2872B', // ámbar
+];
+
+function hashString(s: string): number {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash << 5) - hash + s.charCodeAt(i);
+    hash |= 0; // a int32
+  }
+  return Math.abs(hash);
+}
+
+function pickCardColor(seed: string): string {
+  return CARD_PALETTE[hashString(seed || 'x') % CARD_PALETTE.length];
+}
+
+function getInitials(name?: string): string {
+  if (!name) return '';
+  const words = name.trim().split(/\s+/).slice(0, 2);
+  return words
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+}
+
+/** Wraps children so a long-press (or right-click on web) fires `onLongPress`. */
+function LongPressable({
+  onLongPress,
+  children,
+}: {
+  onLongPress: () => void;
+  children: React.ReactNode;
+}) {
+  const ctx = useContextMenu(onLongPress);
+  return <Pressable {...ctx}>{children}</Pressable>;
+}
+
 export default function ReflexionesScreen() {
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const theme = Colors[scheme ?? 'light'];
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
+  const route = useRoute<RouteProp<EventStackParamList, 'Reflexiones'>>();
   const { profile } = useUserProfile();
   const resolved = useResolvedProfileConfig();
 
@@ -111,11 +172,17 @@ export default function ReflexionesScreen() {
   const [titulo, setTitulo] = useState('');
   const [contenido, setContenido] = useState('');
   const [fecha, setFecha] = useState(new Date());
-  const [grupal, setGrupal] = useState(false);
-  const [grupo, setGrupo] = useState<string | undefined>(undefined);
   const [autor, setAutor] = useState(getDefaultAuthor());
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // El botón "+" vive ahora en la barra superior (EventActionButtons). Al
+  // pulsarlo, el tab renavega a esta pantalla con un `openFormNonce` nuevo;
+  // ese cambio abre el formulario aquí.
+  const openFormNonce = route.params?.openFormNonce;
+  useEffect(() => {
+    if (openFormNonce) setShowForm(true);
+  }, [openFormNonce]);
 
   const showDatePicker = () => {
     if (Platform.OS === 'android') {
@@ -139,14 +206,15 @@ export default function ReflexionesScreen() {
 
   async function addReflexion() {
     if (!fecha) return;
+    h.tap();
     setSaving(true);
     const nuevo: Reflexion = {
       id: Date.now().toString(),
       titulo: titulo.trim(),
       contenido,
       fecha: fecha.toISOString().slice(0, 10),
-      grupal,
-      ...(grupal ? (grupo ? { grupo } : {}) : { autor }),
+      grupal: false,
+      autor,
     };
     try {
       const db = getDatabase(getFirebaseApp());
@@ -157,6 +225,7 @@ export default function ReflexionesScreen() {
         Date.now().toString(),
       );
       setList([nuevo, ...list]);
+      h.formSuccess();
     } catch (e) {
       console.error('Error adding post', e);
     }
@@ -164,8 +233,6 @@ export default function ReflexionesScreen() {
     setTitulo('');
     setContenido('');
     setFecha(new Date());
-    setGrupal(false);
-    setGrupo(undefined);
     setAutor(getDefaultAuthor());
     setSaving(false);
   }
@@ -188,8 +255,32 @@ export default function ReflexionesScreen() {
     [list],
   );
 
+  const { toast } = useToast();
+  const [menuReflexion, setMenuReflexion] = useState<Reflexion | null>(null);
+
+  const reflexionText = (r: Reflexion) => {
+    const lines: string[] = [];
+    if (r.titulo) lines.push(r.titulo);
+    lines.push(r.contenido);
+    const meta = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
+    lines.push(`${formatFecha(r.fecha)}${meta ? ` · ${meta}` : ''}`);
+    return lines.join('\n\n');
+  };
+
+  const copyReflexion = async (r: Reflexion) => {
+    await Clipboard.setStringAsync(reflexionText(r));
+    toast.show({ variant: 'success', label: 'Reflexión copiada' });
+  };
+  const shareReflexion = (r: Reflexion) => {
+    Share.share({ message: reflexionText(r) });
+  };
+
   return (
     <View style={styles.container}>
+      <ScreenHero
+        title="Compartiendo"
+        subtitle="Comparte aquí una frase, pensamiento o algo que te llevas de estos días"
+      />
       <PageContainer>
         <ScrollView
           contentContainerStyle={[
@@ -197,60 +288,100 @@ export default function ReflexionesScreen() {
             { paddingBottom: insets.bottom + 20 },
           ]}
         >
-          {sortedList.map((r) => (
-            <Card
-              key={r.id}
-              style={[styles.card, r.grupal && styles.cardGroup]}
-            >
-              <Card.Body style={{ paddingTop: 8 }}>
-                {r.titulo ? (
-                  <Text
+          {sortedList.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialIcons
+                name="auto-stories"
+                size={40}
+                color={colors.success}
+              />
+              <Text style={styles.emptyTitle}>Aún no hay reflexiones</Text>
+              <Text style={styles.emptyText}>
+                Pulsa el botón + de arriba para compartir la primera.
+              </Text>
+            </View>
+          ) : (
+            sortedList.map((r, i) => {
+              const color = pickCardColor(r.id);
+              // Alterna dos diseños para que el muro "fluya": tarjeta con
+              // fondo tintado (par) y tarjeta limpia con barra de color a la
+              // izquierda (impar). Cada una con su color generado del id.
+              const filled = i % 2 === 0;
+              const name = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
+              const initials = getInitials(name);
+              const onColor = getBrightness(color) > 150 ? '#1a1a1a' : '#fff';
+              return (
+                <LongPressable
+                  key={r.id}
+                  onLongPress={() => setMenuReflexion(r)}
+                >
+                  <View
                     style={[
-                      { fontWeight: '600', fontSize: 16, marginBottom: 4 },
-                      r.grupal
-                        ? { color: scheme === 'dark' ? '#d4e8c0' : '#1a3000' }
-                        : { color: theme.text },
+                      styles.card,
+                      filled
+                        ? {
+                            backgroundColor:
+                              color + (scheme === 'dark' ? '26' : '1A'),
+                          }
+                        : styles.cardSurface,
                     ]}
                   >
-                    {r.titulo}
-                  </Text>
-                ) : null}
-                <Text
-                  style={
-                    r.grupal
-                      ? { color: scheme === 'dark' ? '#c0d8a8' : '#333' }
-                      : { color: theme.text }
-                  }
-                >
-                  {r.contenido}
-                </Text>
-                <Text
-                  style={[
-                    { marginTop: 4, fontSize: 12 },
-                    r.grupal
-                      ? { color: scheme === 'dark' ? '#a0b888' : '#555' }
-                      : { color: theme.icon },
-                  ]}
-                >
-                  {formatFecha(r.fecha)}
-                  {r.grupal
-                    ? ` - ${getGrupoLabel(r.grupo)}`
-                    : r.autor
-                      ? ` - ${r.autor}`
-                      : ''}
-                </Text>
-              </Card.Body>
-            </Card>
-          ))}
+                    {!filled && (
+                      <View
+                        style={[styles.accentBar, { backgroundColor: color }]}
+                      />
+                    )}
+                    <MaterialIcons
+                      name="format-quote"
+                      size={66}
+                      color={color + (scheme === 'dark' ? '26' : '1F')}
+                      style={styles.quoteMark}
+                    />
+                    <View
+                      style={[
+                        styles.cardInner,
+                        !filled && { paddingLeft: spacing.md + 8 },
+                      ]}
+                    >
+                      <View style={styles.cardHead}>
+                        <View
+                          style={[styles.avatar, { backgroundColor: color }]}
+                        >
+                          {initials ? (
+                            <Text
+                              style={[styles.avatarText, { color: onColor }]}
+                            >
+                              {initials}
+                            </Text>
+                          ) : (
+                            <MaterialIcons
+                              name="auto-stories"
+                              size={16}
+                              color={onColor}
+                            />
+                          )}
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.cardAuthor} numberOfLines={1}>
+                            {name || 'Anónimo'}
+                          </Text>
+                          <Text style={styles.cardDate}>
+                            {formatFecha(r.fecha)}
+                          </Text>
+                        </View>
+                      </View>
+                      {r.titulo ? (
+                        <Text style={styles.cardTitle}>{r.titulo}</Text>
+                      ) : null}
+                      <Text style={styles.cardContent}>{r.contenido}</Text>
+                    </View>
+                  </View>
+                </LongPressable>
+              );
+            })
+          )}
         </ScrollView>
       </PageContainer>
-
-      <GlassFAB
-        icon="add"
-        onPress={() => setShowForm(true)}
-        tintColor="#A3BD31"
-        iconColor="#fff"
-      />
 
       {/* Form bottom sheet */}
       <BottomSheet
@@ -262,115 +393,146 @@ export default function ReflexionesScreen() {
         <BottomSheet.Portal>
           <BottomSheet.Overlay />
           <BottomSheet.Content>
-            <BottomSheet.Title className="mb-2">
-              Compartir reflexión
-            </BottomSheet.Title>
-            <ScrollView>
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>Título (opcional)</Text>
-                <TextField>
-                  <Input
-                    value={titulo}
-                    onChangeText={setTitulo}
-                    style={styles.input}
+            {/* Todo el contenido vive dentro de un único ScrollView con
+                padding en contentContainerStyle — patrón que sí funciona con
+                el BottomSheet de heroui (ver app/notifications.tsx). El
+                BottomSheet.Content no aplica padding propio. */}
+            <ScrollView
+              contentContainerStyle={styles.sheetScroll}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.sheetHeader}>
+                <View style={styles.sheetIcon}>
+                  <MaterialIcons
+                    name="auto-stories"
+                    size={20}
+                    color={colors.success}
                   />
-                </TextField>
-              </View>
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>Compartiendo...</Text>
-                <TextField>
-                  <TextArea
-                    value={contenido}
-                    onChangeText={setContenido}
-                    numberOfLines={4}
-                    style={[styles.input, { minHeight: 100 }]}
-                  />
-                </TextField>
-              </View>
-              <PressableFeedback
-                onPress={showDatePicker}
-                style={styles.dateField}
-              >
-                <PressableFeedback.Highlight />
-                <Text style={styles.inputLabel}>Fecha</Text>
-                <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
-              </PressableFeedback>
-              <View style={styles.row}>
-                <Switch
-                  isSelected={grupal}
-                  onSelectedChange={(v) => setGrupal(v)}
-                />
-                <Text style={styles.switchLabel}>Compartiendo en grupo</Text>
-              </View>
-              {grupal ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ marginBottom: 12 }}
-                >
-                  <View
-                    style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}
-                  >
-                    {grupos.map((g) => (
-                      <Chip
-                        key={g.nombre}
-                        variant={grupo === g.nombre ? 'primary' : 'soft'}
-                        color="success"
-                        onPress={() => setGrupo(g.nombre)}
-                      >
-                        <Chip.Label>{getGrupoLabel(g.nombre)}</Chip.Label>
-                      </Chip>
-                    ))}
-                  </View>
-                </ScrollView>
-              ) : (
-                <View style={styles.inputWrapper}>
-                  <Text style={styles.inputLabel}>Tu nombre (opcional)</Text>
-                  <TextField>
-                    <Input
-                      value={autor}
-                      onChangeText={setAutor}
-                      style={styles.input}
-                    />
-                  </TextField>
                 </View>
-              )}
-              <Button
-                variant="primary"
-                onPress={addReflexion}
-                className="mt-4 mb-6"
+                <View style={{ flex: 1 }}>
+                  <BottomSheet.Title>Compartir reflexión</BottomSheet.Title>
+                  <Text style={styles.sheetSubtitle}>
+                    La tuya o la de tu grupo
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.field}>
+                <Text style={styles.inputLabel}>Título (opcional)</Text>
+                <TextInput
+                  value={titulo}
+                  onChangeText={setTitulo}
+                  placeholder="Un título breve"
+                  placeholderTextColor={theme.icon}
+                  style={styles.input}
+                />
+              </View>
+
+              <View style={styles.field}>
+                <Text style={styles.inputLabel}>Compartiendo…</Text>
+                <TextInput
+                  value={contenido}
+                  onChangeText={setContenido}
+                  placeholder="Escribe aquí lo que quieras"
+                  placeholderTextColor={theme.icon}
+                  multiline
+                  textAlignVertical="top"
+                  style={[styles.input, styles.textArea]}
+                />
+              </View>
+
+              <Pressable
+                onPress={showDatePicker}
+                style={({ pressed }) => [
+                  styles.dateField,
+                  pressed && styles.pressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Elegir fecha"
               >
-                <Button.Label>Guardar reflexión</Button.Label>
-              </Button>
+                <MaterialIcons name="event" size={20} color={colors.success} />
+                <Text style={styles.dateFieldLabel}>Fecha</Text>
+                <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={theme.icon}
+                />
+              </Pressable>
+
+              <View style={styles.field}>
+                <Text style={styles.inputLabel}>¿Quién la envía? (opcional)</Text>
+                <TextInput
+                  value={autor}
+                  onChangeText={setAutor}
+                  placeholder="Cómo quieres firmar"
+                  placeholderTextColor={theme.icon}
+                  style={styles.input}
+                />
+              </View>
+
+              <Pressable
+                onPress={addReflexion}
+                accessibilityRole="button"
+                accessibilityLabel="Guardar reflexión"
+                style={({ pressed }) => [
+                  styles.saveBtn,
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <MaterialIcons name="send" size={18} color="#fff" />
+                <Text style={styles.saveBtnLabel}>Compartir</Text>
+              </Pressable>
             </ScrollView>
           </BottomSheet.Content>
         </BottomSheet.Portal>
       </BottomSheet>
 
-      {/* Date selector modal */}
-      <Dialog
-        isOpen={showDateSelector}
-        onOpenChange={(open) => {
-          if (!open) setShowDateSelector(false);
-        }}
+      {/* Date selector — modal centrado que aparece por encima de todo
+          (incluido el bottom sheet). Antes se usaba el Dialog de heroui, que
+          al anidarse con el portal del BottomSheet dejaba escapar el spinner
+          nativo a la esquina superior. Un Modal nativo de RN se presenta de
+          forma fiable centrado sobre el resto de la UI. */}
+      <Modal
+        visible={showDateSelector}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDateSelector(false)}
       >
-        <Dialog.Portal>
-          <Dialog.Overlay />
-          <Dialog.Content>
-            <Dialog.Close />
+        <Pressable
+          style={styles.dateModalOverlay}
+          onPress={() => setShowDateSelector(false)}
+        >
+          {/* Pressable interior que “traga” el toque para no cerrar al
+              interactuar con el selector. */}
+          <Pressable style={styles.dateModalCard} onPress={() => {}}>
+            <Text style={styles.dateModalTitle}>Elige la fecha</Text>
             <DateTimePicker
               value={fecha}
               mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              display="spinner"
               locale="es-ES"
+              themeVariant={scheme === 'dark' ? 'dark' : 'light'}
               onChange={(_, selected) => {
-                setShowDateSelector(false);
                 if (selected) setFecha(selected);
               }}
+              style={styles.datePicker}
             />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog>
+            <Pressable
+              onPress={() => setShowDateSelector(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Confirmar fecha"
+              style={({ pressed }) => [
+                styles.dateDoneBtn,
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={styles.dateDoneLabel}>Listo</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Saving overlay */}
       {saving && (
@@ -381,6 +543,30 @@ export default function ReflexionesScreen() {
           </View>
         </View>
       )}
+
+      <ContextMenuSheet
+        visible={menuReflexion !== null}
+        onClose={() => setMenuReflexion(null)}
+        title={menuReflexion?.titulo || 'Reflexión'}
+        actions={
+          menuReflexion
+            ? [
+                {
+                  key: 'copy',
+                  label: 'Copiar',
+                  icon: 'content-copy',
+                  onPress: () => copyReflexion(menuReflexion),
+                },
+                {
+                  key: 'share',
+                  label: 'Compartir',
+                  icon: 'share',
+                  onPress: () => shareReflexion(menuReflexion),
+                },
+              ]
+            : []
+        }
+      />
     </View>
   );
 }
@@ -389,10 +575,78 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
   const theme = Colors[scheme ?? 'light'];
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    list: { padding: spacing.md },
-    card: { marginBottom: spacing.md },
-    cardGroup: {
-      backgroundColor: scheme === 'dark' ? '#2D3B20' : '#E6F4D7',
+    // El padding del contenido del bottom sheet va aquí (en el ScrollView),
+    // no en BottomSheet.Content — que no aplica padding propio. Sin esto las
+    // etiquetas se recortaban por la izquierda.
+    sheetScroll: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xl,
+    },
+    list: { padding: spacing.md, paddingTop: spacing.sm },
+    card: {
+      marginBottom: spacing.md,
+      borderRadius: radii.xl,
+      overflow: 'hidden',
+      ...(shadows.sm as object),
+    },
+    cardSurface: {
+      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#FFFFFF',
+    },
+    accentBar: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 6,
+    },
+    quoteMark: {
+      position: 'absolute',
+      top: -10,
+      right: 6,
+      transform: [{ scaleX: -1 }],
+    },
+    cardInner: { padding: spacing.md },
+    cardHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: 10,
+    },
+    avatar: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: { fontSize: 14, fontWeight: '800', letterSpacing: 0.3 },
+    cardAuthor: { fontSize: 15, fontWeight: '700', color: theme.text },
+    cardDate: { fontSize: 12, color: theme.icon, marginTop: 1 },
+    cardTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+      marginBottom: 4,
+    },
+    cardContent: { fontSize: 15, lineHeight: 21, color: theme.text },
+    emptyState: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.xl * 2,
+      paddingHorizontal: spacing.lg,
+      gap: 8,
+    },
+    emptyTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: theme.text,
+      marginTop: 4,
+    },
+    emptyText: {
+      fontSize: 14,
+      color: theme.icon,
+      textAlign: 'center',
     },
     modalOverlay: {
       flex: 1,
@@ -400,38 +654,120 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       justifyContent: 'center',
       alignItems: 'center',
     },
-    inputWrapper: { marginBottom: spacing.md },
+    sheetHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    sheetIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor:
+        scheme === 'dark' ? 'rgba(163,189,49,0.18)' : 'rgba(163,189,49,0.12)',
+    },
+    sheetSubtitle: {
+      fontSize: 13,
+      color: theme.icon,
+      marginTop: 2,
+    },
+    field: { marginBottom: spacing.md },
     inputLabel: {
       fontSize: 12,
       color: colors.success,
-      fontWeight: '600',
-      marginBottom: 4,
+      fontWeight: '700',
+      letterSpacing: 0.2,
+      marginBottom: 6,
     },
     input: {
       borderWidth: 1,
-      borderColor: scheme === 'dark' ? '#555' : '#ccc',
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
+      borderColor: scheme === 'dark' ? '#48484A' : '#D8DCC8',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
       fontSize: 16,
       color: theme.text,
       backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
     },
+    textArea: { minHeight: 120, paddingTop: 12 },
     dateField: {
-      marginBottom: spacing.md,
-      borderWidth: 1,
-      borderColor: scheme === 'dark' ? '#555' : '#ccc',
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-    },
-    dateValue: { fontSize: 16, color: theme.text },
-    row: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: spacing.sm,
       marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: scheme === 'dark' ? '#48484A' : '#D8DCC8',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 13,
+      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
     },
-    switchLabel: { marginLeft: spacing.sm, color: theme.text },
+    pressed: { opacity: 0.7 },
+    dateFieldLabel: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '500',
+      color: theme.text,
+    },
+    dateValue: { fontSize: 15, fontWeight: '600', color: colors.success },
+    dateModalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing.lg,
+    },
+    dateModalCard: {
+      width: '100%',
+      maxWidth: 360,
+      backgroundColor: theme.background,
+      borderRadius: 20,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.md,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.2,
+      shadowRadius: 20,
+      elevation: 8,
+    },
+    dateModalTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: theme.text,
+      marginBottom: spacing.sm,
+    },
+    datePicker: { alignSelf: 'stretch' },
+    dateDoneBtn: {
+      alignSelf: 'stretch',
+      backgroundColor: colors.success,
+      borderRadius: 14,
+      paddingVertical: 13,
+      alignItems: 'center',
+      marginTop: spacing.sm,
+    },
+    dateDoneLabel: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    saveBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      backgroundColor: colors.success,
+      borderRadius: 14,
+      paddingVertical: 15,
+      marginTop: spacing.md,
+      marginBottom: spacing.lg,
+    },
+    saveBtnLabel: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: 0.2,
+    },
     savingModal: {
       backgroundColor: theme.background,
       padding: spacing.lg,

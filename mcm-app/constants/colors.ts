@@ -62,6 +62,7 @@ export const UIColors = {
 // Colores de tabs (cabecera)
 export const TabHeaderColors = {
   cancionero: '#f4c11e', // Amarillo Cantoral
+  visitapapa: '#FCD200', // Amarillo Vaticano — Visita Papa
   calendario: '#31AADF', // Celeste
   fotos: '#E15C62', // Rojo MIC
   comunica: 'rgba(157, 30, 116, 0.87)', // Morado LC con transparencia
@@ -89,7 +90,7 @@ export const StateColors = {
 
 // Swipe action colors en SongListItem — Apple system colors
 export const SwipeColors = {
-  add: '#34C759',    // Apple system green — swipe derecho "Seleccionar"
+  add: '#34C759', // Apple system green — swipe derecho "Seleccionar"
   remove: '#FF453A', // Apple system red — swipe izquierdo "Quitar"
 } as const;
 

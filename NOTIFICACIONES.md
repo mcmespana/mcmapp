@@ -95,25 +95,52 @@ El campo `internalRoute` representa **la sección de la app a la que va asociada
 
 ---
 
-### `actionButton` — Botón de acción explícito
+### `actionButtons` — Botones de acción explícitos (hasta 3)
 
-El campo `actionButton` es un **call-to-action explícito** con texto personalizado que puede llevar a:
+El campo `actionButtons` es un **array de call-to-actions explícitos** (de 1 a 3),
+cada uno con texto personalizado que puede llevar a:
 - Una URL externa (se abre en el navegador)
 - Una ruta interna de la app
 
 ```json
-"actionButton": {
-  "text": "Ver artículo",
-  "url": "https://ejemplo.com/articulo",
-  "isInternal": false
-}
+"actionButtons": [
+  { "text": "Apuntarme", "url": "https://mcmespana.com/inscripcion", "isInternal": false },
+  { "text": "Ver fechas", "url": "/(tabs)/calendario", "isInternal": true }
+]
 ```
 
 **Comportamiento:**
-- **En la tarjeta de la lista**: se muestra como un chip azul pequeño (tappable). Al pulsarlo navega directamente a la URL/ruta sin abrir el modal.
-- **En el modal de detalle**: se muestra como un botón CTA grande en la parte inferior.
+- **En la tarjeta de la lista**: cada botón se muestra como un chip azul pequeño
+  (tappable). Al pulsarlo navega directamente a la URL/ruta sin abrir el modal.
+- **En el modal de detalle**: se apilan como botones CTA. El **primero** destaca en
+  estilo primario (relleno); los siguientes van en estilo secundario (borde).
 
-**Cuándo usarlo:** Cuando la notificación tiene una acción específica nombrada, distinta de simplemente "ir a una sección". Ej: "Ver más", "Leer artículo", "Ver evento".
+**Máximo:** 3 botones (`MAX_ACTION_BUTTONS` en `utils/notificationRoutes.ts`). Si el
+panel manda más, la app usa los 3 primeros e ignora el resto.
+
+**Cuándo usarlo:** Cuando la notificación tiene una o varias acciones específicas
+nombradas, distintas de simplemente "ir a una sección". Ej: "Apuntarme" + "Ver fechas",
+"Sí asistiré" + "No puedo", "Leer artículo".
+
+#### Compatibilidad: `actionButton` (singular, legacy)
+
+El formato antiguo de **un solo botón** sigue soportado:
+
+```json
+"actionButton": { "text": "Ver artículo", "url": "https://ejemplo.com/articulo", "isInternal": false }
+```
+
+La app lo trata como un array de un elemento. Si llegan **ambos** (`actionButton` +
+`actionButtons`), se combinan y se deduplica por `url|text`. El formato recomendado
+para nuevos envíos es **`actionButtons` (array)**, aunque sea de un solo botón.
+
+> ⚠️ **iOS / Android — botones en la notificación del sistema:** estos botones se
+> renderizan **dentro de la app** (tarjeta + modal del centro de notificaciones).
+> Los botones en la propia notificación del sistema iOS dependen de *categorías*
+> pre-registradas (`categoryId` → `general`/`eventos`/`fotos`, 1 botón cada una) y
+> NO se pueden definir dinámicamente desde el payload. Para varios botones nativos
+> haría falta registrar nuevas categorías en la app (build nativo). Ver §3 del
+> contrato.
 
 ---
 
@@ -121,7 +148,7 @@ El campo `actionButton` es un **call-to-action explícito** con texto personaliz
 
 Una notificación puede tener los dos:
 - `internalRoute` indica la sección asociada (botón "Ir a X" en el modal)
-- `actionButton` tiene el CTA explícito (chip en tarjeta + botón CTA en modal)
+- `actionButtons` tiene los CTA explícitos (chips en tarjeta + botones CTA en modal)
 
 **Ejemplo:**
 ```json
@@ -129,21 +156,42 @@ Una notificación puede tener los dos:
   "title": "¡Nuevas canciones en el cantoral!",
   "body": "Hemos añadido 5 canciones nuevas de Adviento.",
   "internalRoute": "/(tabs)/cancionero",
-  "actionButton": {
-    "text": "Ver novedades",
-    "url": "https://mcmespana.com/novedades",
-    "isInternal": false
-  }
+  "actionButtons": [
+    { "text": "Ver novedades", "url": "https://mcmespana.com/novedades", "isInternal": false },
+    { "text": "Escuchar", "url": "https://open.spotify.com/...", "isInternal": false }
+  ]
 }
 ```
-→ En la tarjeta: chip "Cantoral" + chip tappable "Ver novedades"
-→ En el modal: botón "Ir a Cantoral" + botón CTA "Ver novedades"
+→ En la tarjeta: chip "Cantoral" + chips tappables "Ver novedades" y "Escuchar"
+→ En el modal: botón "Ir a Cantoral" + botón CTA "Ver novedades" (primario) + "Escuchar" (secundario)
 
 ---
 
 ### Sin ninguno de los dos
 
-Si no hay `internalRoute` ni `actionButton`, la notificación solo muestra título, cuerpo y fecha. El modal sigue siendo accesible tocando la tarjeta.
+Si no hay `internalRoute` ni `actionButtons`, la notificación solo muestra título, cuerpo y fecha. El modal sigue siendo accesible tocando la tarjeta.
+
+Al tocar la push desde la bandeja del sistema, la app abre el centro de
+notificaciones y **despliega automáticamente esa notificación en grande**
+(deep-link interno `/notifications?openId=<id>`). Para que el `openId` haga
+match con la notificación correcta, el panel **debe** enviar `data.id` con el
+mismo ID que la notificación tiene en Firebase (ver "Abrir la notificación en
+grande" más abajo).
+
+### Abrir la notificación en grande (deep-link al detalle)
+
+Para que al pulsar una push se abra directamente esa notificación en su vista
+de detalle dentro de la app:
+
+1. **Envía siempre `data.id`** con el ID de la notificación en Firebase
+   (`notifications/<id>`). La app lo usa como identificador estable y como
+   `openId` del deep-link.
+2. **No pongas `internalRoute`** (o ponlo a `/notifications`) si lo que quieres
+   es que la notificación se abra "en grande" en el centro de notificaciones.
+   Si pones otra `internalRoute`, la app navegará a esa sección en su lugar.
+
+Con esto, tocar la notificación abre `/notifications?openId=<id>` y la app
+despliega el detalle de esa notificación automáticamente.
 
 ---
 
@@ -152,16 +200,18 @@ Si no hay `internalRoute` ni `actionButton`, la notificación solo muestra títu
 ```
 Usuario recibe push notification
 └── Toca desde bandeja del sistema
-    ├── Tiene internalRoute → navega directamente a esa sección
-    └── Sin internalRoute → abre la app en la pantalla de notificaciones
+    ├── Tiene internalRoute (≠ /notifications) → navega directamente a esa sección
+    └── Sin internalRoute (o internalRoute = /notifications)
+        → abre el centro de notificaciones Y despliega esa notificación
+          concreta en grande (deep-link /notifications?openId=<id>)
 
 Usuario abre pantalla de notificaciones
 └── Ve lista de tarjetas
     ├── Toca tarjeta → abre modal de detalle (siempre)
     │   ├── Modal muestra body completo + imagen (si hay)
     │   ├── Botón "Ir a [Sección]" (si hay internalRoute)
-    │   └── Botón CTA grande (si hay actionButton)
-    ├── Toca chip actionButton en tarjeta → navega directamente (sin modal)
+    │   └── Botones CTA apilados, hasta 3 (si hay actionButtons)
+    ├── Toca chip de actionButton en tarjeta → navega directamente (sin modal)
     ├── Toca ✓ en tarjeta → marca como leída sin abrir modal
     └── Swipe derecha → marca como leída sin abrir modal
 ```
@@ -222,7 +272,10 @@ El backend debe:
     "internalRoute": "/(tabs)/cancionero",
     "icon": "https://...",
     "imageUrl": "https://...",
-    "actionButton": { "text": "Ver más", "url": "https://..." }
+    "actionButtons": [
+      { "text": "Ver más", "url": "https://...", "isInternal": false },
+      { "text": "Calendario", "url": "/(tabs)/calendario", "isInternal": true }
+    ]
   },
   "categoryId": "general",
   "priority": "default",
@@ -238,7 +291,7 @@ El backend debe:
 
 #### UI del panel
 - Dashboard con estadísticas
-- Formulario: título (50 chars max), body (200 chars), categoría, prioridad, icono URL, imagen URL, ruta interna, botón de acción
+- Formulario: título (50 chars max), body (200 chars), categoría, prioridad, icono URL, imagen URL, ruta interna, **hasta 3 botones de acción** (texto + URL/ruta + interno/externo cada uno)
 - Autenticación simple (usuario/contraseña via env vars)
 - Historial de notificaciones enviadas
 
@@ -254,16 +307,32 @@ El backend debe:
 ## Rutas internas disponibles para deep linking
 
 ```
-/(tabs)/index          Inicio
-/(tabs)/cancionero     Cantoral (activar feature flag primero)
-/(tabs)/calendario     Calendario
-/(tabs)/fotos          Galería de fotos
-/(tabs)/mas            Más opciones
-/notifications         Pantalla de notificaciones
-/wordle                Juego Wordle
+/(tabs)/index               Inicio
+/(tabs)/cancionero          Cantoral (según perfil)
+/(tabs)/calendario          Calendario
+/(tabs)/fotos               Galería de fotos (NO "albums")
+/(tabs)/mas                 Más opciones (hub de eventos: Jubileo, etc.)
+/(tabs)/contigo             Contigo (según perfil)
+/(tabs)/contigo/evangelio   Evangelio del día
+/(tabs)/contigo/oracion     Oración
+/(tabs)/contigo/revision    Revisión
+/(tabs)/contigo/bookmarks   Favoritos
+/(tabs)/visitapapa          Visita del Papa (según perfil)
+/notifications              Pantalla de notificaciones (raíz, NO bajo tabs)
+/wordle                     Juego Wordle (dormido, no usar)
 ```
 
-Nota: `/(tabs)/comunica` está desactivada actualmente.
+Notas:
+
+- `jubileo`, `actividades` y `albums` **NO** son rutas propias. Jubileo y las
+  actividades viven dentro de `/(tabs)/mas` (`EventHomeScreen`); la galería es
+  `/(tabs)/fotos`. La app aplica **alias automáticos** para estos casos — ver
+  `utils/notificationRoutes.ts`.
+- La visibilidad de algunas tabs depende del **perfil** (`/profileConfig`). Para
+  destinos universales usa `index`, `calendario`, `fotos` o `mas`.
+- **Contrato completo con el MCM Panel** (campos del payload, `/pushTokens`,
+  segmentación, correcciones): ver `NOTIFICACIONES_CONTRATO.md` en la raíz del
+  monorepo.
 
 ---
 

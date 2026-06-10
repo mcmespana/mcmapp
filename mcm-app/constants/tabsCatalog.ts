@@ -65,6 +65,17 @@ export const TABS_CONFIG: TabConfig[] = [
     headerShown: false,
   },
   {
+    name: 'visitapapa',
+    label: 'Visita Papa',
+    subtitle: 'Visita del Papa León XIV 2026',
+    emoji: '🕊️',
+    iosIcon: { default: 'building.columns', selected: 'building.columns.fill' },
+    androidIcon: 'church',
+    tintColor: TabHeaderColors.visitapapa,
+    headerColor: TabHeaderColors.visitapapa,
+    headerShown: false, // Tab con su propio StackNavigator header
+  },
+  {
     name: 'calendario',
     label: 'Calendario',
     subtitle: 'Eventos y celebraciones',

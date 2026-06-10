@@ -1,5 +1,12 @@
 import React from 'react';
-import { StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
+} from 'react-native';
 import typography from '@/constants/typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
@@ -30,6 +37,12 @@ interface ScreenHeroProps {
   titleStyle?: TextStyle;
   /** Extra style for the wrapper. */
   style?: ViewStyle;
+  /**
+   * On web, render nothing. Used by the event sub-screens (Horario,
+   * Materiales, Visitas, …) where the screen title lives in the navigation
+   * header instead of a big in-content hero. Native keeps the hero.
+   */
+  hideOnWeb?: boolean;
 }
 
 /**
@@ -52,7 +65,38 @@ export default function ScreenHero({
   compact = false,
   titleStyle,
   style,
+  hideOnWeb = false,
 }: ScreenHeroProps) {
+  // En web el título de las sub-pantallas de evento vive en el header de
+  // navegación, así que el hero in-content no se renderiza.
+  if (hideOnWeb && Platform.OS === 'web') return null;
+
+  return (
+    <ScreenHeroInner
+      title={title}
+      subtitle={subtitle}
+      accentColor={accentColor}
+      kicker={kicker}
+      left={left}
+      right={right}
+      compact={compact}
+      titleStyle={titleStyle}
+      style={style}
+    />
+  );
+}
+
+function ScreenHeroInner({
+  title,
+  subtitle,
+  accentColor,
+  kicker,
+  left,
+  right,
+  compact = false,
+  titleStyle,
+  style,
+}: Omit<ScreenHeroProps, 'hideOnWeb'>) {
   const textColor = useThemeColor({}, 'text');
   const mutedColor = useThemeColor({}, 'icon');
   const kickerColor = accentColor ?? mutedColor;

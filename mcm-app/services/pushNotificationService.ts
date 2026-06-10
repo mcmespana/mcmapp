@@ -17,6 +17,27 @@ import {
   NotificationData,
   ReceivedNotification,
 } from '@/types/notifications';
+import { extractActionButtons } from '@/utils/notificationRoutes';
+
+/**
+ * Normaliza un registro de notificación de Firebase a la forma canónica que usa
+ * la app. Unifica el botón único (`actionButton`, legacy) y el array
+ * (`actionButtons`, hasta 3) en el array `actionButtons` que renderiza la
+ * pantalla. Se conserva `actionButton` (= primer botón) por compatibilidad.
+ */
+const normalizeNotificationRecord = (
+  key: string,
+  val: any,
+): NotificationData => {
+  const actionButtons = extractActionButtons(val);
+  return {
+    ...val,
+    id: val.id || key,
+    ...(actionButtons.length > 0
+      ? { actionButtons, actionButton: actionButtons[0] }
+      : {}),
+  };
+};
 
 const DEVICE_ID_KEY = '@mcm_device_id';
 const PUSH_TOKEN_KEY = '@mcm_push_token';
@@ -235,12 +256,9 @@ export const getNotificationsHistory = async (): Promise<
     }
 
     const notificationsData = snapshot.val();
-    const notifications: NotificationData[] = Object.entries(notificationsData).map(
-      ([key, val]: [string, any]) => ({
-        ...val,
-        id: val.id || key,
-      }),
-    );
+    const notifications: NotificationData[] = Object.entries(
+      notificationsData,
+    ).map(([key, val]: [string, any]) => normalizeNotificationRecord(key, val));
 
     // Ordenar por fecha de creación (más recientes primero)
     return notifications.sort(
@@ -266,11 +284,10 @@ export const subscribeToNotifications = (
     const unsubscribe = onValue(notificationsRef, (snapshot) => {
       if (snapshot.exists()) {
         const notificationsData = snapshot.val();
-        const notifications: NotificationData[] = Object.entries(notificationsData).map(
-          ([key, val]: [string, any]) => ({
-            ...val,
-            id: val.id || key,
-          }),
+        const notifications: NotificationData[] = Object.entries(
+          notificationsData,
+        ).map(([key, val]: [string, any]) =>
+          normalizeNotificationRecord(key, val),
         );
 
         // Ordenar por fecha

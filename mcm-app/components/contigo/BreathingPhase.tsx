@@ -68,7 +68,7 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
         <View style={styles.touch}>
           <View style={styles.headWrap}>
             <Text style={styles.title}>Para un momento...</Text>
-            <Text style={styles.subtitle}>Respira antes de revisar tu día</Text>
+            <Text style={styles.subtitle}>Haz un STOP antes de revisar tu día</Text>
           </View>
           <View style={styles.ringStack}>
             <Animated.View
@@ -85,7 +85,7 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
               ]}
             >
               <Text style={styles.phaseText}>
-                {phaseLabel === 'inhale' ? 'Inhala...' : 'Exhala...'}
+                {phaseLabel === 'inhale' ? 'Respira...' : 'Inspira...'}
               </Text>
             </Animated.View>
           </View>

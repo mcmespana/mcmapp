@@ -33,7 +33,7 @@ export function useFirebaseData<T>(
             AsyncStorage.getItem(`${storageKey}_hidden`),
           ]);
 
-        if (localDataStr) {
+        if (localDataStr && localDataStr !== 'undefined') {
           const parsed = JSON.parse(localDataStr);
           const transformed = transform ? transform(parsed) : (parsed as T);
           if (isMounted) setData(transformed);
@@ -42,6 +42,54 @@ export function useFirebaseData<T>(
         }
 
         const db = getDatabase(getFirebaseApp());
+
+        // Si ya tengo caché válido (data + updatedAt), primero compruebo
+        // sólo el metadato (pocos bytes) y descargo `data` únicamente si
+        // ha cambiado. Esto evita bajar megas de `songs`/`albums` en cada
+        // arranque cuando el contenido remoto no se ha tocado.
+        const hasLocalCache = !!localDataStr && localDataStr !== 'undefined';
+
+        if (hasLocalCache && localUpdatedAt) {
+          const [metaSnap, hiddenSnap] = await Promise.all([
+            get(ref(db, `${path}/updatedAt`)),
+            get(ref(db, `${path}/hidden`)),
+          ]);
+          if (!metaSnap.exists()) return;
+
+          const remoteUpdatedAt = String(metaSnap.val() ?? '0');
+          const remoteHidden = hiddenSnap.exists() && hiddenSnap.val() === true;
+          if (isMounted) setHidden(remoteHidden);
+          await AsyncStorage.setItem(
+            `${storageKey}_hidden`,
+            remoteHidden ? 'true' : 'false',
+          );
+
+          if (localUpdatedAt === remoteUpdatedAt) {
+            return; // sin cambios remotos: no descargamos `data`
+          }
+
+          if (isMounted) setLoading(true); // show loader for update
+          const dataSnap = await get(ref(db, `${path}/data`));
+          if (!dataSnap.exists()) return;
+          const rawData = dataSnap.val();
+          const remoteData = transform ? transform(rawData) : (rawData as T);
+          // No persistir `undefined`: en web AsyncStorage lo guarda como el
+          // string "undefined" y luego JSON.parse revienta.
+          if (remoteData !== undefined) {
+            await AsyncStorage.setItem(
+              `${storageKey}_data`,
+              JSON.stringify(remoteData),
+            );
+            await AsyncStorage.setItem(
+              `${storageKey}_updatedAt`,
+              remoteUpdatedAt,
+            );
+          }
+          if (isMounted) setData(remoteData);
+          return;
+        }
+
+        // Sin caché local: descarga completa del nodo en una sola llamada.
         const snapshot = await get(ref(db, path));
         if (snapshot.exists()) {
           const val = snapshot.val();
@@ -52,11 +100,10 @@ export function useFirebaseData<T>(
             `${storageKey}_hidden`,
             remoteHidden ? 'true' : 'false',
           );
-          if (!localUpdatedAt || localUpdatedAt !== remoteUpdatedAt) {
-            if (localDataStr) setLoading(true); // show loader for update
-            const remoteData = transform
-              ? transform(val.data)
-              : (val.data as T);
+          const remoteData = transform ? transform(val.data) : (val.data as T);
+          // No persistir `undefined` (nodo sin `data`): evita guardar el
+          // string "undefined" que rompería el JSON.parse del próximo arranque.
+          if (remoteData !== undefined) {
             await AsyncStorage.setItem(
               `${storageKey}_data`,
               JSON.stringify(remoteData),
@@ -65,8 +112,8 @@ export function useFirebaseData<T>(
               `${storageKey}_updatedAt`,
               remoteUpdatedAt,
             );
-            if (isMounted) setData(remoteData);
           }
+          if (isMounted) setData(remoteData);
         }
       } catch (e) {
         console.error('Error loading firebase data', e);

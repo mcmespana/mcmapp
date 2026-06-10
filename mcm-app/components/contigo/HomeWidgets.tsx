@@ -92,9 +92,9 @@ export function HeroCard({
   isDark: boolean;
 }) {
   const motivs = [
-    'Empieza el día con Dios',
-    'Sigue, lo estás haciendo genial',
-    '¡Casi lo tienes!',
+    '¿Cuándo empeazmos?',
+    '¿Buscamos un ratito más?',
+    '¡Casi un día completo!',
     '¡Día completo! 🎉',
   ];
   const motiv = motivs[Math.min(doneCount, motivs.length - 1)];
@@ -127,17 +127,13 @@ export function HeroCard({
               <Text style={styles.heroTitle}>{motiv}</Text>
               <Text style={styles.heroSubtitle}>
                 {doneCount < 3
-                  ? `${3 - doneCount} práctica${3 - doneCount > 1 ? 's' : ''} por completar`
+                  ? `${3 - doneCount} momento${3 - doneCount > 1 ? 's' : ''} que puedes hacer`
                   : '¡Todo completado por hoy!'}
               </Text>
               <View style={styles.heroChips}>
                 <View style={styles.heroChip}>
                   <Text style={styles.heroChipEmoji}>🔥</Text>
                   <Text style={styles.heroChipText}>{prayStreak} días</Text>
-                </View>
-                <View style={styles.heroChip}>
-                  <Text style={styles.heroChipEmoji}>⏱</Text>
-                  <Text style={styles.heroChipText}>{totalMins} min</Text>
                 </View>
               </View>
             </View>
@@ -149,6 +145,11 @@ export function HeroCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//            Eliminado un trocito 
+//               <View style={styles.heroChip}>
+//                  <Text style={styles.heroChipEmoji}>⏱</Text>
+//                  <Text style={styles.heroChipText}>{totalMins} min</Text>
+//                </View>
 // HabitTile — three coloured tiles for evangelio · oración · revisión
 // ─────────────────────────────────────────────────────────────────────────────
 export function HabitTile({

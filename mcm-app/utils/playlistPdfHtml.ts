@@ -29,6 +29,10 @@ import {
 } from 'chordsheetjs';
 import { convertHtmlChords, convertChord, Notation } from './chordNotation';
 import { transposeKey } from './transposeKey';
+import {
+  preprocessArrangements,
+  postProcessArrangementsHtml,
+} from './arrangements';
 
 export interface PdfSongInput {
   title: string;
@@ -64,7 +68,7 @@ const cleanTitle = (t: string) => t.replace(/^\d+\.\s*/, '').trim();
 
 /** Renderiza una canción a HTML usando ChordSheetJS, con transpose aplicado. */
 function renderSongBody(content: string, transpose: number): string {
-  let chordPro = content
+  let chordPro = preprocessArrangements(content)
     .replace(/\{sov\}/gi, '{start_of_verse}')
     .replace(/\{eov\}/gi, '{end_of_verse}')
     .replace(/\{soc\}/gi, '{start_of_chorus}')
@@ -81,7 +85,7 @@ function renderSongBody(content: string, transpose: number): string {
   const parser = new ChordProParser();
   const parsed: ChordSong = parser.parse(chordPro);
   const formatter = new HtmlDivFormatter();
-  let html = formatter.format(parsed);
+  let html = postProcessArrangementsHtml(formatter.format(parsed));
   // El formatter mete un <h1> con el título de la canción si está en el
   // ChordPro; lo quitamos porque ya pintamos cabecera propia.
   html = html.replace(/<h1[^>]*>[\s\S]*?<\/h1>/i, '');
@@ -393,6 +397,16 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
       font-style: italic;
       font-size: ${(lyricsPt * 0.92).toFixed(1)}pt;
       margin: 4pt 0;
+    }
+    /* Anotaciones de arreglo {arr:} — sutiles, alineadas a la derecha. */
+    .arrangement {
+      display: block;
+      text-align: right;
+      color: #E15C62;
+      font-style: italic;
+      font-weight: 500;
+      font-size: ${(lyricsPt * 0.84).toFixed(1)}pt;
+      margin: 3pt 0 5pt;
     }
     .no-chords .chord {
       display: none !important;

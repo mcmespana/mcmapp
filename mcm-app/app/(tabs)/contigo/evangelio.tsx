@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   View,
@@ -7,20 +7,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Linking,
-  Animated,
-  Easing,
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
-import { Card, Tabs, PressableFeedback } from 'heroui-native';
+import { Card } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -38,6 +33,8 @@ import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
+import { useAuth } from '@/contexts/AuthContext';
+import { syncContigoBookmark } from '@/utils/authHelpers';
 
 // ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
@@ -118,6 +115,7 @@ export default function EvangelioScreen() {
       }
     : undefined;
 
+  const { user: authUser } = useAuth();
   const { todayStr, getRecord, setReadingDone } = useContigoHabits();
   const params = useLocalSearchParams<{ date?: string }>();
   const initialDate =
@@ -171,7 +169,20 @@ export default function EvangelioScreen() {
         '@contigo_bookmarks',
         JSON.stringify(bookmarks),
       );
-      setIsBookmarked(!isBookmarked);
+      const nowBookmarked = !isBookmarked;
+      setIsBookmarked(nowBookmarked);
+      // Sync solo metadatos (sin texto completo) a RTDB si hay sesión
+      if (authUser) {
+        if (nowBookmarked && readings?.evangelio) {
+          syncContigoBookmark(authUser.uid, selectedDate, {
+            bookmarkedAt: Date.now(),
+            cita: readings.evangelio.cita ?? '',
+            diaLiturgico: readings.info?.diaLiturgico,
+          });
+        } else {
+          syncContigoBookmark(authUser.uid, selectedDate, null);
+        }
+      }
     } catch (e) {
       console.error('Failed to save bookmark', e);
     }
@@ -181,7 +192,6 @@ export default function EvangelioScreen() {
   const isDone = record?.readingDone || false;
 
   const liturgicalInfo = getLiturgicalInfo(selectedDate);
-  const isToday = selectedDate === todayStr;
 
   const goBack = () => router.back();
 

@@ -1,3 +1,4 @@
+import React from 'react';
 import { SearchField } from 'heroui-native';
 
 interface SongSearchProps {
@@ -5,7 +6,7 @@ interface SongSearchProps {
   setSearchText: (text: string) => void;
 }
 
-export default function SongSearch({
+const SongSearch = React.memo(function SongSearch({
   searchText,
   setSearchText,
 }: SongSearchProps) {
@@ -18,4 +19,6 @@ export default function SongSearch({
       </SearchField.Group>
     </SearchField>
   );
-}
+});
+
+export default SongSearch;

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@/contexts/AuthContext';
+import { syncContigoHabit } from '@/utils/authHelpers';
 
 export type PrayerDuration =
   | 'less_than_1'
@@ -27,6 +29,7 @@ const STORAGE_KEY = '@contigo_habits';
 export function useContigoHabits() {
   const [records, setRecords] = useState<Record<string, DayRecord>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const { user: authUser } = useAuth();
 
   const load = async () => {
     try {
@@ -48,11 +51,17 @@ export function useContigoHabits() {
 
   const reloadRecords = () => load();
 
-  // Save changes
-  const saveRecords = async (newRecords: Record<string, DayRecord>) => {
+  // Save changes (local + RTDB sync si el usuario está autenticado)
+  const saveRecords = async (
+    newRecords: Record<string, DayRecord>,
+    changedDate?: string,
+  ) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newRecords));
       setRecords(newRecords);
+      if (authUser && changedDate && newRecords[changedDate]) {
+        syncContigoHabit(authUser.uid, changedDate, newRecords[changedDate]);
+      }
     } catch (err) {
       console.error('Failed to save contigo habits:', err);
     }
@@ -79,7 +88,7 @@ export function useContigoHabits() {
       ...records,
       [date]: { ...record, readingDone: done, timestamp: Date.now() },
     };
-    await saveRecords(newRecords);
+    await saveRecords(newRecords, date);
   };
 
   const setPrayerDone = async (
@@ -100,7 +109,7 @@ export function useContigoHabits() {
         timestamp: Date.now(),
       },
     };
-    await saveRecords(newRecords);
+    await saveRecords(newRecords, date);
   };
 
   const setRevisionDone = async (date: string, done: boolean) => {
@@ -109,7 +118,7 @@ export function useContigoHabits() {
       ...records,
       [date]: { ...record, revisionDone: done, timestamp: Date.now() },
     };
-    await saveRecords(newRecords);
+    await saveRecords(newRecords, date);
   };
 
   const isRevisionDone = (date: string): boolean =>

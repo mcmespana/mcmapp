@@ -105,10 +105,10 @@ const ExportPdfModal: React.FC<Props> = ({
               </View>
               <Text style={styles.subtitle}>
                 {songCount} {songCount === 1 ? 'canción' : 'canciones'}
-                {'  ·  '}Letra y acordes formateados
+                {'  ·  '}Letra y acordes con un formato fantástico
               </Text>
 
-              <Text style={styles.label}>Nombre de la playlist</Text>
+              <Text style={styles.label}>Título del PDF</Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
@@ -123,8 +123,8 @@ const ExportPdfModal: React.FC<Props> = ({
                 <View style={styles.rowText}>
                   <Text style={styles.rowTitle}>Una canción por página</Text>
                   <Text style={styles.rowDesc}>
-                    Si lo desactivas, se evita partir cada canción entre páginas
-                    siempre que sea posible.
+                    Si lo desactivas, el PDF ocupará menos páginas
+                    pero quizá se parte alguna canción
                   </Text>
                 </View>
                 <Switch
@@ -137,7 +137,7 @@ const ExportPdfModal: React.FC<Props> = ({
                 <View style={styles.rowText}>
                   <Text style={styles.rowTitle}>Mostrar acordes</Text>
                   <Text style={styles.rowDesc}>
-                    Desactívalo para imprimir sólo la letra.
+                    Desactívalo para ver sólo la letra, sin acordes
                   </Text>
                 </View>
                 <Switch
