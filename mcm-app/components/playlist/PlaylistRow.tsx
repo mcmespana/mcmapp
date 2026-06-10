@@ -48,6 +48,11 @@ interface Props {
   onMoveDown?: () => void;
   onPress: () => void;
   onRemove: () => void;
+  /**
+   * Long-press sobre la fila (modo "Orden ajustado": inicia el arrastre
+   * de la lista reordenable).
+   */
+  onLongPress?: () => void;
   /** Marca esta canción como la actual en una sesión de coro. */
   isNowPlaying?: boolean;
 }
@@ -64,6 +69,7 @@ const PlaylistRow: React.FC<Props> = ({
   onMoveDown,
   onPress,
   onRemove,
+  onLongPress,
   isNowPlaying,
 }) => {
   const scheme = useColorScheme();
@@ -116,6 +122,15 @@ const PlaylistRow: React.FC<Props> = ({
       <View style={[styles.outer, isNowPlaying && styles.outerNowPlaying]}>
         <TouchableOpacity
           onPress={onPress}
+          onLongPress={
+            onLongPress
+              ? () => {
+                  h.select();
+                  onLongPress();
+                }
+              : undefined
+          }
+          delayLongPress={250}
           style={styles.inner}
           activeOpacity={0.6}
         >
