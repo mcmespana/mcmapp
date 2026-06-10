@@ -462,7 +462,9 @@ export default function ReflexionesScreen() {
               </Pressable>
 
               <View style={styles.field}>
-                <Text style={styles.inputLabel}>¿Quién la envía? (opcional)</Text>
+                <Text style={styles.inputLabel}>
+                  ¿Quién la envía? (opcional)
+                </Text>
                 <TextInput
                   value={autor}
                   onChangeText={setAutor}

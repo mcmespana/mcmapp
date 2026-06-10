@@ -84,6 +84,8 @@ export default function HorarioScreen() {
   // Trigger animations for last day
   useEffect(() => {
     if (isLastDay) {
+      let cancelled = false;
+      let fadeTimeout: ReturnType<typeof setTimeout> | undefined;
       // Subtle shake animation
       const shake = () => {
         Animated.sequence([
@@ -125,18 +127,24 @@ export default function HorarioScreen() {
           }),
         ]).start(() => {
           // Repeat fade animation
-          setTimeout(fade, 2000);
+          if (cancelled) return;
+          fadeTimeout = setTimeout(fade, 2000);
         });
       };
 
       // Start animations with delays
-      setTimeout(shake, 1000);
+      const shakeTimeout = setTimeout(shake, 1000);
       fade();
 
       // Repeat shake every 8 seconds
       const shakeInterval = setInterval(shake, 8000);
 
-      return () => clearInterval(shakeInterval);
+      return () => {
+        cancelled = true;
+        clearTimeout(shakeTimeout);
+        if (fadeTimeout) clearTimeout(fadeTimeout);
+        clearInterval(shakeInterval);
+      };
     }
   }, [isLastDay, shakeAnim, fadeAnim]);
 

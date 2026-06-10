@@ -529,8 +529,8 @@ function WelcomeScreen({
             entering={FadeInUp.delay(280).duration(420)}
             style={welcomeStyles.body}
           >
-            Una sencilla app para cuidar la Vida del MCM:
-            calendario, cantoral, un espacio para tus momentos de oración...
+            Una sencilla app para cuidar la Vida del MCM: calendario, cantoral,
+            un espacio para tus momentos de oración...
           </Animated.Text>
         </View>
 
@@ -697,7 +697,8 @@ function ProfileScreen({
           ¿Quién eres? (1 minuto)
         </Text>
         <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
-          Según tu perfil te mostraremos lo más adecuado. Puedes cambiarlo después.
+          Según tu perfil te mostraremos lo más adecuado. Puedes cambiarlo
+          después.
         </Text>
       </Animated.View>
 
@@ -848,7 +849,7 @@ function DelegationScreen({
           ¿De qué localidad?
         </Text>
         <Text style={[stepStyles.heroSub, { color: TT.muted }]}>
-          En el futuro, recibirás  notificaciones y calendario de tu MCM Local.
+          En el futuro, recibirás notificaciones y calendario de tu MCM Local.
         </Text>
       </Animated.View>
 

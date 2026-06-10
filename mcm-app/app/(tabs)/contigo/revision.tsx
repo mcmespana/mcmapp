@@ -275,7 +275,7 @@ export default function RevisionScreen() {
             style={[styles.pillText, { color: purple }]}
             accessibilityLabel="Revisión: agradecer y revisar"
           >
-            ✦ EXAMEN ESTILO 'AGRADECER Y REVISAR'
+            ✦ EXAMEN ESTILO &apos;AGRADECER Y REVISAR&apos;
           </Text>
         </View>
       </View>
