@@ -13,6 +13,16 @@
 
 ---
 
+## 2026-06-11 — Sección MCM Panel en Más (solo administradores Firebase)
+
+- **Nueva pantalla `McmPanelScreen`**: WebView que abre `mcmpanel.vercel.app`, notch violeta oscuro (`#4C1D95`) para distinguirlo visualmente del resto de pantallas.
+- **Nuevo hook `useAdminStatus`**: lee `users/{uid}/isAdmin` de Firebase RTDB en tiempo real. Devuelve `true` solo si el usuario está autenticado Y tiene ese campo a `true` en la base de datos. Completamente independiente del `isAdmin` local de `SettingsContext` (ese es para editar arreglos del cantoral).
+- **`MasHomeScreen`**: añade la tarjeta "MCM Panel" (violeta, icono `tune`, emoji 🎛️) al final de la lista. Solo aparece cuando `useAdminStatus().isAdmin === true` — nunca visible a usuarios no conectados o sin el flag en Firebase.
+- **`mas.tsx`**: añadida ruta `McmPanel` al stack de navegación.
+- Archivos: `hooks/useAdminStatus.ts` (nuevo), `app/screens/McmPanelScreen.tsx` (nuevo), `app/(tabs)/mas.tsx`, `app/screens/MasHomeScreen.tsx`
+
+---
+
 ## 2026-06-10 — Revisión de diseño/modo oscuro + fixes de robustez
 
 - **`useFirebaseData` tolera caché corrupta**: antes, un `JSON.parse` fallido del
