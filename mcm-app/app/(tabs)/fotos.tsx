@@ -119,7 +119,10 @@ export default function FotosScreen() {
         await Linking.openURL(albumUrl);
       } catch (error) {
         console.error('Failed to open URL:', error);
-        Alert.alert('Error', 'No seh a podido abrir el link que pena más grande');
+        Alert.alert(
+          'Error',
+          'No se ha podido abrir el link, qué pena más grande',
+        );
       }
     } else {
       console.warn(`Don't know how to open this URL: ${albumUrl}`);

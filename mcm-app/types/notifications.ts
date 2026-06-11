@@ -17,7 +17,9 @@ export interface NotificationActionButtonData {
 export interface NotificationData {
   id: string; // UUID generado por el panel
   title: string; // Título de la notificación
-  body: string; // Descripción/mensaje de la notificación
+  body: string; // Descripción/mensaje corto (≤200 chars). Se ve en la tarjeta + push
+  bodyLong?: string; // Descripción extendida opcional (scrollable en el modal de
+  // detalle). Si no viene, el detalle usa `body` como fallback.
   icon?: string; // URL de la imagen del icono (PNG/JPG, debe ser accesible públicamente)
   imageUrl?: string; // URL de imagen grande opcional (para notificaciones ricas)
 
@@ -80,6 +82,7 @@ export interface ReceivedNotification {
   id: string;
   title: string;
   body: string;
+  bodyLong?: string; // Descripción extendida opcional (ver NotificationData)
   icon?: string;
   imageUrl?: string;
   actionButton?: NotificationActionButtonData; // legacy (un botón)

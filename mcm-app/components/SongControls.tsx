@@ -164,7 +164,8 @@ const SongControls: React.FC<SongControlsProps> = ({
   const handleSecretPanelSuccess = () => {
     toast.show({
       variant: 'success',
-      label: '¡Gracias por tu aviso totalmente secreto! Cada 48 horas se sincronizan estos cambios',
+      label:
+        '¡Gracias por tu aviso totalmente secreto! Cada 48 horas se sincronizan estos cambios',
       actionLabel: 'OK',
       onActionPress: ({ hide }) => hide(),
     });

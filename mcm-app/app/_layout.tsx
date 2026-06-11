@@ -196,7 +196,12 @@ function InnerLayout() {
 
   if (showAnimation) {
     return (
-      <View style={styles.animationContainer}>
+      <View
+        style={[
+          styles.animationContainer,
+          scheme === 'dark' && styles.animationContainerDark,
+        ]}
+      >
         <HelloWave />
       </View>
     );
@@ -248,6 +253,7 @@ function InnerLayout() {
           }}
         />
         <Stack.Screen name="evaluacion-app" options={{ headerShown: false }} />
+        <Stack.Screen name="encuesta/[id]" options={{ headerShown: false }} />
         <Stack.Screen
           name="playlist"
           options={{
@@ -276,5 +282,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+  },
+  animationContainerDark: {
+    backgroundColor: '#2C2C2E',
   },
 });

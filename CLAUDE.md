@@ -12,7 +12,11 @@
 ├── AGENTS.md              ← Definición de agentes especializados
 ├── NOTIFICACIONES.md      ← Documentación completa del sistema de notificaciones push
 ├── EVENTOS.md             ← Cómo crear eventos (Jubileo, encuentros, retiros…) y estructura Firebase
-└── MEJORAS.md             ← Análisis técnico transversal (rendimiento, arquitectura, seguridad, observabilidad, DX, CI…) + plan priorizado (referenciado desde mcm-app/TODO.md)
+├── ENCUESTAS.md           ← Sistema de encuestas/evaluaciones (guía funcional)
+├── ENCUESTAS_CONTRATO.md  ← Contrato de datos de encuestas Panel ↔ App
+├── PROMPT_MCMPANEL_ENCUESTAS.md ← Encargo para el panel: crear/gestionar/analizar encuestas
+├── MEJORAS.md             ← Análisis técnico transversal (rendimiento, arquitectura, seguridad, observabilidad, DX, CI…) + plan priorizado (referenciado desde mcm-app/TODO.md)
+└── PLAN_CALIDAD.md        ← Plan de saneamiento de código por fases (archivos gigantes, carpetas/nombres, contexts, tipos, tests, observabilidad)
 ```
 
 ## Reglas para agentes

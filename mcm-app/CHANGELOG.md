@@ -13,6 +13,179 @@
 
 ---
 
+## 2026-06-10 — Revisión de diseño/modo oscuro + fixes de robustez
+
+- **`useFirebaseData` tolera caché corrupta**: antes, un `JSON.parse` fallido del
+  caché local abortaba también el fetch remoto (pantalla vacía permanente hasta
+  borrar datos). Ahora se descarta la entrada corrupta y se continúa con la
+  descarga completa. (`hooks/useFirebaseData.ts`)
+- **Fix memory leak en `HorarioScreen`**: la animación del último día (fade
+  recursivo vía `setTimeout` + shake inicial) seguía ejecutándose para siempre
+  tras salir de la pantalla; ahora se cancelan todos los timers en el cleanup.
+- **Splash de bienvenida respeta el modo oscuro**: el contenedor de la animación
+  inicial tenía fondo blanco fijo y provocaba un flash blanco al abrir la app en
+  oscuro. (`app/_layout.tsx`)
+- **Fix error de tipos en `SocialLoginSection`**: guard `Platform.OS !== 'android'`
+  redundante (Android ya hace early-return antes) que hacía fallar `tsc --noEmit`.
+- Lint a cero: corregidos los 2 errores de `react/no-unescaped-entities` en
+  `contigo/revision.tsx` y los avisos de Prettier pendientes (`--fix`).
+- **OTA-safe** (solo JS).
+
+## 2026-06-09 — Encuestas: banners automáticos + identidad real (auth)
+
+- **Banners automáticos** de encuestas genéricas sin depender de push. La app lee
+  un índice ligero `surveys/_index/data` (solo metadatos, no toda la colección) y
+  pinta banners en la **Home** (`home-banner`), el **hub del evento**
+  (`event-banner`) y **Ajustes** (`app-settings`), filtrando por `audience`, estado
+  abierto/cerrado y "ya respondida". Nuevos: `hooks/useActiveSurveys.ts`,
+  `components/SurveyBanner.tsx`, helpers `SurveyIndexEntry`/`normalizeSurveyIndex`/
+  `filterActiveSurveys` en `constants/surveys.ts`.
+- **Identidad real**: cuando el usuario tiene sesión (Google/Apple), las respuestas
+  incluyen `userId` (uid) y se escribe un marcador
+  `users/<uid>/surveysAnswered/<scope>` para **deduplicar entre dispositivos** (la
+  misma persona no responde dos veces). Encuestas anónimas no guardan identidad.
+  Nuevo `utils/surveyIdentity.ts`; integrado en las tres pantallas. Sin cambios de
+  reglas (la regla `users/$uid` ya cubre el marcador).
+- Integración en `app/(tabs)/index.tsx`, `app/screens/EventHomeScreen.tsx`,
+  `components/SettingsBottomSheet.tsx`. Seeds: `surveys.json` ahora incluye
+  `_index`. Tests ampliados (`__tests__/surveys.test.ts`). Docs actualizadas
+  (`ENCUESTAS.md`, `ENCUESTAS_CONTRATO.md`, `PROMPT_MCMPANEL_ENCUESTAS.md`).
+- **OTA-safe** (solo JS).
+
+## 2026-06-09 — Sistema de encuestas: config desde Firebase + tipos nuevos + encuestas genéricas
+
+- **Config de encuestas/evaluaciones desde Firebase** (con fallback a código). La
+  app vuelve a leer preguntas, título y estado (abierto/cerrado) de Firebase, así
+  el panel crea/edita encuestas y las abre/cierra **sin OTA**. Antes (commit
+  `2c6db4c`) estaba solo en código.
+  - Evaluación de evento: `activities/<evento>/evaluacion/data`.
+  - Evaluación de la app: nuevo nodo `app/evaluationConfig/data` (separado de las
+    respuestas en `app/evaluations`).
+- **Nuevos tipos de pregunta** en el wizard: `scale` (escala/NPS), `single`
+  (opción única/radio), `multi` (opción múltiple/checkbox), además de
+  `stars`/`text`/`yesno`. Respuesta de `multi` es `string[]`.
+- **Encuestas genéricas** `/surveys/<id>`: nueva pantalla `SurveyScreen` + ruta
+  raíz `app/encuesta/[id].tsx` (deep link/push `/encuesta/<id>`). Soportan
+  audiencia por perfil (`matchesAudience`), ventana de apertura (`status` +
+  `opensAt`/`closesAt`), modo anónimo y textos de cierre/agradecimiento.
+- **Estado y helpers** en `constants/evaluation.ts` (`status`, `isEvaluationOpen`,
+  `mergeEvaluationConfig`, campos `thanksTitle`/`thanksBody`/`closedTitle`/…) y
+  modelo genérico en `constants/surveys.ts`.
+- **Reglas RTDB**: `surveys` (lectura pública, escritura solo en
+  `respuestas/<deviceId>` + `updatedAt`) y `app/evaluationConfig` (lectura).
+- **Seeds**: `firebase-seed/{app-evaluation-config,surveys}.json`. **Tests**:
+  `__tests__/surveys.test.ts`.
+- Archivos: `constants/evaluation.ts`, `constants/surveys.ts`,
+  `components/EvaluationWizard.tsx`, `app/screens/{EvaluacionScreen,EvaluacionAppScreen,SurveyScreen}.tsx`,
+  `app/encuesta/[id].tsx`, `app/_layout.tsx`, `app/(tabs)/index.tsx`,
+  `database.rules.json`.
+- Docs: `ENCUESTAS.md`, `ENCUESTAS_CONTRATO.md`, `PROMPT_MCMPANEL_ENCUESTAS.md`
+  (raíz del monorepo); actualizado `EVENTOS.md`.
+- **OTA-safe** (solo JS, sin dependencias nativas).
+
+## 2026-06-09 — Playlist: drag & drop para reordenar + "Orden ajustado" por defecto
+
+- La pantalla de playlist abre ahora **por defecto en "Orden ajustado"** (antes
+  "Por categoría"); el toggle entre vistas sigue disponible.
+- **Drag & drop** en nativo: long-press sobre una fila inicia el arrastre para
+  reordenar (`ReorderableList`); al soltar se llama a `moveSong` del contexto
+  (renumera `order` y persiste). Las flechas ↑/↓ se mantienen como alternativa
+  y son el único método en web (la lista reordenable usa gestos nativos).
+- **Nueva dependencia** `react-native-reorderable-list` (JS puro sobre
+  `react-native-reanimated` + `react-native-gesture-handler`, ya presentes) →
+  **compatible con OTA**, no requiere build.
+- Cambios: `app/screens/SelectedSongsScreen.tsx` (lista reordenable +
+  `DraggableManualRow`), `components/playlist/PlaylistRow.tsx` (prop
+  `onLongPress`).
+
+## 2026-06-09 — Playlist: QR para compartir/coro + contraseña al sobrescribir en la nube
+
+- **QR de compartir**: al subir una playlist o iniciar un coro, el diálogo de
+  éxito es ahora un modal con **QR del enlace universal**
+  (`https://mcm.expo.app/playlist?p=XXXX` / `/coro?c=XXXX`), el código en
+  grande y botones de copiar. Escaneado con la cámara del móvil abre la app
+  directamente (deep links ya existentes). También hay "Ver QR" en el menú de
+  acciones (sección nube si hay código subido; sección coro si hay sesión).
+  Nuevo `components/playlist/ShareQrModal.tsx`.
+- **Nueva dependencia** `react-native-qrcode-svg` (JS puro sobre
+  `react-native-svg`, ya presente) → **compatible con OTA**, no requiere build.
+- **Contraseña al sobrescribir**: subir a un código que ya existe en la nube
+  pide la contraseña ("coco") antes de machacar el contenido — cubre el caso
+  de re-subir una playlist descargada de otro dispositivo. Nuevo
+  `components/playlist/PasswordPromptModal.tsx` (genérico).
+- **Fix**: el nombre de la playlist nunca llegaba a Firebase al subirla — el
+  wrapper de `onSubmit` en `SelectedSongsScreen` descartaba el `name` que
+  emite `CodeInputModal`.
+
+## 2026-06-09 — Menú de acciones de la playlist reorganizado por secciones
+
+- El bottom-sheet de acciones de la playlist (`PlaylistActionsBottomSheet`)
+  pasa de una lista plana (~12 items con separadores sueltos) a **secciones con
+  cabecera**: Exportar y compartir · Playlist en la nube · Archivo · Modo coro ·
+  zona de peligro (Vaciar) al final. API del componente: prop `sections`
+  (`PlaylistActionSection[]`) en lugar de `actions`.
+- Etiquetas más cortas al apoyarse en la cabecera de sección ("Subir playlist
+  (compartir código)", "Exportar archivo (.mcm)"…).
+
+## 2026-06-09 — Export PDF de playlists: toggles arreglados, márgenes iOS, fecha editable y pie de página
+
+- **Fix: los toggles del modal de export ("Una canción por página" y "Mostrar
+  acordes") no se veían** — el `Switch` de heroui-native se pintaba invisible
+  dentro del Modal RN. Sustituidos por un toggle propio (track+thumb con
+  `StyleSheet`, tamaño y colores explícitos, accesible y con háptica `h.toggle`).
+  `components/playlist/ExportPdfModal.tsx`.
+- **Fix márgenes en iOS**: el motor de impresión de iOS ignora el `margin` de
+  `@page`; ahora `printToFileAsync` recibe tamaño A4 (595×842 pt) y `margins`
+  nativos (51/45 pt ≈ 18/16 mm) — opción que expo-print solo aplica en iOS;
+  Android sigue usando el `@page` del HTML. `app/screens/SelectedSongsScreen.tsx`.
+- **Fecha de portada editable**: nuevo campo "Fecha en la portada" en el modal
+  (texto libre, prefijado con hoy; vacío = no imprimir fecha). `printedDate`
+  viaja por `PdfExportConfig` → `buildPlaylistPdfHtml`.
+- **Pie de página**: nombre de la playlist (abajo-izda) y "Página N"
+  (abajo-dcha) vía margin boxes de `@page`, sin pie en la portada. Soportado en
+  web (Chrome ≥131) y WebView de Android; **pendiente validar en iOS** (WebKit
+  no soporta margin boxes — probablemente no salga ahí). El "1 de 3" por
+  canción multipágina no es viable con CSS de impresión; queda anotado en
+  TODO.md. `utils/playlistPdfHtml.ts`.
+- Tests nuevos: `__tests__/playlistPdfHtml.test.ts` (fecha y pie). Jest ahora
+  transforma `chordsheetjs` y mockea `jspdf`/`html2canvas` igual que Metro
+  (`jest.config.js`).
+
+## 2026-06-09 — Reglas de seguridad de Firebase RTDB + despliegue automático
+
+- Reescritas las reglas de la Realtime Database (`mcm-app/database.rules.json`)
+  con cobertura completa de todos los nodos que usa la app, **separadas por
+  sección y comentadas** para poder activar/desactivar partes sin romper el
+  resto. Política: denegado por defecto, lectura pública solo del contenido
+  público, escritura pública solo en los nodos concretos (reportes, reflexiones,
+  `pushTokens`, evaluaciones, wordle, playlists/coros), `/users/$uid` solo para
+  el dueño autenticado, y `notifications` solo-lectura (lo escribe el Admin SDK).
+- `firebase.json` ahora incluye la clave `database` → las reglas se despliegan
+  con `firebase deploy --only database`. (Antes el fichero de reglas no se
+  desplegaba.)
+- Nuevo workflow `.github/workflows/deploy-firebase-rules.yml`: despliega las
+  reglas al mergear a `production` (solo si cambiaron), usando el secret
+  `FIREBASE_SERVICE_ACCOUNT_MCMAPP`. Inerte hasta configurar el secret.
+- Nueva documentación `SEGURIDAD.md` (raíz): mapa de paths, riesgos (el panel
+  secreto `coco` es el punto débil), cómo desplegar y qué falta (App Check,
+  migrar admin a Auth, backups…).
+- Eliminado `database.rules.proposed.json` (borrador superseded; además dejaba
+  `songs/data` solo-lectura, lo que habría roto el panel de edición).
+
+## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
+
+- Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
+  muestra en el **modal de detalle** (scrollable, respeta saltos de línea). La
+  **tarjeta** sigue usando el `body` corto. El detalle muestra `bodyLong` si existe;
+  si no, cae a `body` (fallback).
+- La deduplicación de la lista ahora **fusiona** `bodyLong` entre la copia local (push)
+  y la de Firebase, de modo que el texto largo aparece aunque solo venga por uno de los
+  dos orígenes (p. ej. si el panel lo manda solo a Firebase para no inflar el payload).
+- Tipos: campo `bodyLong?` en `NotificationData` y `ReceivedNotification`.
+- Archivos: `types/notifications.ts`, `app/notifications.tsx`,
+  `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
+  debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
+
 ## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
 
 - **Antes** una notificación solo mostraba **un** botón de acción (`actionButton`);

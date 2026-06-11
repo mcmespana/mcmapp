@@ -145,7 +145,7 @@ export function HeroCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//            Eliminado un trocito 
+//            Eliminado un trocito
 //               <View style={styles.heroChip}>
 //                  <Text style={styles.heroChipEmoji}>⏱</Text>
 //                  <Text style={styles.heroChipText}>{totalMins} min</Text>

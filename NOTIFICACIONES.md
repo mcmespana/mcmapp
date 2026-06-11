@@ -70,6 +70,39 @@ Todo implementado:
 
 ---
 
+## Contenido de texto: `body` y `bodyLong`
+
+Una notificación tiene dos campos de texto para el cuerpo:
+
+- **`body`** (obligatorio, corto): es lo que viaja en la push y lo que se ve en la
+  **tarjeta** del centro de notificaciones (recortado a 2 líneas). El MCM Panel lo
+  limita a **200 caracteres**.
+- **`bodyLong`** (opcional, largo): descripción **extendida** que se muestra en el
+  **modal de detalle** al abrir la notificación. El modal es **scrollable**, así que
+  admite texto largo (respeta saltos de línea `\n`).
+
+**Fallback:** el modal muestra `bodyLong` si existe; si no, usa `body`. Es decir, una
+notificación sin `bodyLong` se comporta como siempre.
+
+**Límites:** en la app no hay límite duro (scroll). En el panel se recomienda un tope
+blando de **~2000 caracteres** para `bodyLong`. Motivo: el payload de una push
+(APNs/FCM) está limitado a ~4 KB y `data` cuenta contra ese límite. Como la app
+**también lee la notificación completa desde Firebase** (`/notifications/{id}`), el
+texto largo puede ir solo a Firebase si en algún caso superase ese tope; la app lo
+mostrará igualmente al abrir (la deduplicación rellena `bodyLong` desde el registro
+de Firebase aunque no viniera en la push).
+
+```json
+{
+  "title": "Convivencia de fin de curso",
+  "body": "Apúntate antes del viernes. Plazas limitadas.",
+  "bodyLong": "Este año la convivencia será en la casa de espiritualidad de...\n\nHorario:\n- 10:00 Llegada\n- 11:00 Oración\n...\n\nQué llevar: saco, ropa cómoda...",
+  "internalRoute": "/(tabs)/calendario"
+}
+```
+
+---
+
 ## Arquitectura de botones y navegación
 
 ### `internalRoute` — Destino de la notificación
@@ -270,6 +303,7 @@ El backend debe:
     "category": "general",
     "priority": "normal",
     "internalRoute": "/(tabs)/cancionero",
+    "bodyLong": "Descripción extendida opcional (se ve scrollable en el detalle)...",
     "icon": "https://...",
     "imageUrl": "https://...",
     "actionButtons": [
@@ -291,7 +325,7 @@ El backend debe:
 
 #### UI del panel
 - Dashboard con estadísticas
-- Formulario: título (50 chars max), body (200 chars), categoría, prioridad, icono URL, imagen URL, ruta interna, **hasta 3 botones de acción** (texto + URL/ruta + interno/externo cada uno)
+- Formulario: título (80 chars max), body (200 chars), **descripción detallada opcional `bodyLong` (~2000 chars, scrollable en la app)**, categoría, prioridad, icono URL, imagen URL, ruta interna, **hasta 3 botones de acción** (texto + URL/ruta + interno/externo cada uno)
 - Autenticación simple (usuario/contraseña via env vars)
 - Historial de notificaciones enviadas
 
