@@ -15,11 +15,9 @@
 │   ├── funcionalidades/    Notificaciones push, eventos, encuestas
 │   ├── contratos/          Contratos de datos App ↔ MCM Panel (notificaciones, encuestas, perfiles)
 │   ├── planes/             MEJORAS.md (análisis técnico) y PLAN_CALIDAD.md (saneamiento por fases)
-│   ├── encargos-panel/     Briefs históricos para el repo mcmpanel
 │   └── SEGURIDAD.md        Reglas Firebase RTDB y gestión de credenciales
-├── scrapping-lecturas/     ← Scraper Python de lecturas litúrgicas (corre vía GitHub Action)
+├── scraper-lecturas/       ← Scraper Python de lecturas litúrgicas (corre vía GitHub Action)
 ├── portadas-albumes/       ← Assets de portadas de álbumes (imágenes)
-├── referencias/            ← Material de referencia: capturas de la app, cantoral antiguo (.cho)
 └── README.md               ← Guía rápida para humanos (setup, builds, releases)
 ```
 

@@ -4,8 +4,7 @@
 >
 > Este documento define **cómo el panel crea/edita encuestas y lee respuestas**,
 > y **qué procesa exactamente la app**. Es el contrato que el agente del panel
-> (`mcmpanel`) debe respetar. Para la guía funcional ver `ENCUESTAS.md`; para el
-> prompt de implementación del panel ver `PROMPT_MCMPANEL_ENCUESTAS.md`.
+> (`mcmpanel`) debe respetar. Para la guía funcional ver `ENCUESTAS.md`.
 
 ---
 

@@ -40,16 +40,6 @@ Las tareas accionables derivadas de estos planes están en
 | --------- | --------- |
 | [SEGURIDAD.md](SEGURIDAD.md) | Reglas de Firebase RTDB, despliegue de reglas, gestión de credenciales |
 
-## Encargos al panel (histórico)
-
-Briefs puntuales escritos para implementar funcionalidades en el repo
-`mcmpanel`. Se conservan como referencia; una vez implementados en el panel
-pueden eliminarse.
-
-- [PROMPT_MCMPANEL_ENCUESTAS.md](encargos-panel/PROMPT_MCMPANEL_ENCUESTAS.md) — crear/gestionar/analizar encuestas
-- [PROMPT_MCMPANEL_NOTIS_BOTONES.md](encargos-panel/PROMPT_MCMPANEL_NOTIS_BOTONES.md) — botones de acción en notificaciones
-- [PROMPT_MCMPANEL_VISITAPAPA.md](encargos-panel/PROMPT_MCMPANEL_VISITAPAPA.md) — sección Visita del Papa
-
 ## Documentación dentro de `mcm-app/`
 
 | Documento | Qué cubre |
@@ -65,4 +55,3 @@ pueden eliminarse.
 ## Datos de referencia
 
 - [`mcm-app/firebase-seed/`](../mcm-app/firebase-seed/) — JSONs que reflejan la estructura real de los nodos de Firebase (perfiles, encuestas, eventos como el Jubileo 2025 o la Visita del Papa). Útiles como plantilla para crear contenido nuevo sin acceso a Firebase.
-- [`referencias/`](../referencias/) — capturas de pantalla de la app y material histórico de referencia.

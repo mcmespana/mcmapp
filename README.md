@@ -136,9 +136,8 @@ mcmapp/
 │   ├── services/             Servicio de push notifications
 │   └── firebase-seed/        JSONs de seed/plantilla para Firebase (perfiles, encuestas, eventos)
 ├── docs/                     Documentación (funcionalidades, contratos, planes) — ver docs/README.md
-├── scrapping-lecturas/       Scraper de lecturas litúrgicas (GitHub Action)
+├── scraper-lecturas/         Scraper de lecturas litúrgicas (GitHub Action)
 ├── portadas-albumes/         Imágenes de portadas
-├── referencias/              Capturas de la app y material histórico
 └── CLAUDE.md                 Guía para agentes IA (raíz)
 ```
 

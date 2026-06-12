@@ -4,7 +4,6 @@
 > se configura desde Firebase/panel y qué se puede mejorar.
 >
 > - **Contrato de datos Panel ↔ App**: `ENCUESTAS_CONTRATO.md`.
-> - **Encargo para el panel** (crear/gestionar/analizar): `PROMPT_MCMPANEL_ENCUESTAS.md`.
 > - **Eventos** (dónde encaja la evaluación del evento): `EVENTOS.md`.
 
 ---
@@ -119,7 +118,7 @@ genéricas muestran el formulario o un mensaje de **cerrada** (`closedTitle`/
    respuestas).
 
 > Todo esto lo hará el **módulo de Encuestas del panel** (ver
-> `PROMPT_MCMPANEL_ENCUESTAS.md`). A mano es posible pero tedioso.
+> el contrato `ENCUESTAS_CONTRATO.md`). A mano es posible pero tedioso.
 
 ## 9. Archivos clave (app)
 

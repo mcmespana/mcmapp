@@ -120,7 +120,7 @@
 
     /* ------------------------------------------------------------------ *
      *  LECTURAS / ORACIÓN  (/seccion_oracion)
-     *  Lectura pública. Lo escribe el scraper (scrapping-lecturas) con el
+     *  Lectura pública. Lo escribe el scraper (scraper-lecturas) con el
      *  Admin SDK → no necesita regla de escritura aquí.
      * ------------------------------------------------------------------ */
     "seccion_oracion": {
