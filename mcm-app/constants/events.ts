@@ -1,7 +1,7 @@
 /**
  * Registry de eventos (Jubileo, encuentros, retiros, etc.).
  *
- * Documentación completa: /EVENTOS.md en la raíz del monorepo.
+ * Documentación completa: /docs/funcionalidades/EVENTOS.md en la raíz del monorepo.
  *
  * ── Resumen para añadir un evento nuevo ──
  * 1. Duplica JUBILEO más abajo y cámbiale `id`, `title`, `tintColor`,

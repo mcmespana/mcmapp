@@ -1,5 +1,5 @@
 // Tipos del sistema de perfiles de usuario (profileConfig).
-// Ver docs: mcm-app/TODO_SISTEMA_PERFILES.md
+// Ver docs: docs/contratos/PANEL_PERFILES.md (raíz del monorepo)
 
 export type ProfileType = 'familia' | 'monitor' | 'miembro';
 

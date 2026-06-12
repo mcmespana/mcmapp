@@ -129,20 +129,22 @@ mcmapp/
 │   ├── components/           Componentes reutilizables
 │   ├── hooks/                Custom hooks (Firebase, canciones, calendario...)
 │   ├── contexts/             Estado global (React Context)
-│   ├── constants/            Colores, feature flags, Firebase config
+│   ├── constants/            Colores, catálogo de perfiles, Firebase config
 │   ├── utils/                Utilidades (acordes, filtros, BBCode)
-│   ├── assets/               Imágenes, fuentes, canciones (.cho)
+│   ├── assets/               Imágenes, fuentes, JSONs locales (álbumes, wordle)
 │   ├── notifications/        Sistema de notificaciones push
-│   └── services/             Servicio de push notifications
+│   ├── services/             Servicio de push notifications
+│   └── firebase-seed/        JSONs de seed/plantilla para Firebase (perfiles, encuestas, eventos)
+├── docs/                     Documentación (funcionalidades, contratos, planes) — ver docs/README.md
+├── scrapping-lecturas/       Scraper de lecturas litúrgicas (GitHub Action)
 ├── portadas-albumes/         Imágenes de portadas
-├── AGENTS.md                 Definición de agentes IA
-├── CLAUDE.md                 Guía para agentes IA (raíz)
-└── NOTIFICACIONES.md         Documentación de notificaciones push
+├── referencias/              Capturas de la app y material histórico
+└── CLAUDE.md                 Guía para agentes IA (raíz)
 ```
 
-## Feature flags
+## Visibilidad por perfiles
 
-En `mcm-app/constants/featureFlags.ts` se controlan las pestañas y funcionalidades visibles. Se pueden cambiar y desplegar via OTA update sin nuevo build (ver `mcm-app/FEATURE_FLAGS_OTA.md`).
+La visibilidad de tabs y secciones se controla desde Firebase RTDB (`/profileConfig`) mediante el **Sistema de Perfiles** — sin necesidad de deploy ni OTA. Ver `docs/contratos/PANEL_PERFILES.md` y la sección correspondiente de `mcm-app/CLAUDE.md`.
 
 ## Formato BBCode (contenido Materiales / Profundiza)
 
@@ -163,5 +165,6 @@ Desde Safari o Chrome en el móvil, pulsa compartir → "Añadir a pantalla de i
 
 - Lee `CLAUDE.md` en la raíz para orientación del monorepo
 - Lee `mcm-app/CLAUDE.md` para la referencia técnica completa
+- Índice de toda la documentación: `docs/README.md`
 - Documenta cambios importantes en `mcm-app/CHANGELOG.md`
 - Consulta tareas pendientes en `mcm-app/TODO.md`

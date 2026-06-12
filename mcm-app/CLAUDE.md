@@ -537,7 +537,7 @@ npx heroui-cli@latest agents-md --native --output AGENTS.md
 - `ErrorBoundary.tsx` envuelve toda la app en `_layout.tsx`
 - Splash screen: HelloWave con 3 repeticiones (900ms total)
 - Sistema de Perfiles: reemplaza al viejo `featureFlags.ts`. Ver `types/profileConfig.ts` + `utils/resolveProfileConfig.ts`
-- Sistema de notificaciones push: ver `NOTIFICACIONES.md` en la raíz del monorepo
+- Sistema de notificaciones push: ver `docs/funcionalidades/NOTIFICACIONES.md` en la raíz del monorepo
 - **Wordle:** `app/screens/WordleScreen.tsx` y `app/wordle.tsx` son código histórico sin uso activo. Nadie accede a él actualmente. No tocar ni añadirle funcionalidades hasta que se decida reactivarlo.
 - **Haptics:** `utils/haptics.ts` centraliza todo el feedback háptico. Usar las funciones semánticas de `h` (h.tap, h.add, h.remove, h.select, h.toggle, h.formSuccess…) en lugar de llamar a expo-haptics directamente.
 - **Arreglos del cantoral:** directiva custom `{arr: texto}` para anotaciones de arreglo (render sutil alineado a la derecha, toggle ON-por-canción). Lógica en `utils/arrangements.ts`; ver `ARREGLOS.md` para sintaxis, comportamiento y el prompt del generador de ChordPro.

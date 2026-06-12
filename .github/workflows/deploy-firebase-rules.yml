@@ -10,7 +10,7 @@
 # con el JSON de una cuenta de servicio del proyecto mcmapp-39b71 que tenga el
 # rol "Firebase Realtime Database Admin" (o "Editor"). Mientras no exista el
 # secret, el workflow avisa y termina sin error (no bloquea otros despliegues).
-# Ver ../../SEGURIDAD.md → "Automatizar el despliegue de las reglas".
+# Ver ../../docs/SEGURIDAD.md → "Automatizar el despliegue de las reglas".
 name: Deploy Firebase Rules
 
 on:
