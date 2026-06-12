@@ -79,8 +79,11 @@ function applyPreviewOverride(active: boolean) {
       updateUrl,
       requestHeaders: { 'expo-channel-name': PREVIEW_CHANNEL },
     });
-  } catch {
+  } catch (err) {
     // No bloqueante: si el override falla, la app sigue en su canal nativo.
+    // Requiere `updates.disableAntiBrickingMeasures: true` en app.json — en
+    // binarios construidos sin ese flag, expo-updates lanza aquí.
+    console.warn('[PreviewChannel] No se pudo aplicar el override OTA:', err);
   }
 }
 
