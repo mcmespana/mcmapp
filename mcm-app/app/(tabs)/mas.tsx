@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MasHomeScreen from '../screens/MasHomeScreen';
 import ComunicaScreen from '../screens/ComunicaScreen';
 import ComunicaGestionScreen from '../screens/ComunicaGestionScreen';
+import McmPanelScreen from '../screens/McmPanelScreen';
 import AlbumListScreen from '../screens/AlbumListScreen';
 import CalendarioScreen from './calendario';
 import EventosPasadosScreen from '../screens/EventosPasadosScreen';
@@ -30,6 +31,7 @@ export type MasStackParamList = EventStackParamList & {
   Calendario: undefined;
   Comunica: undefined;
   ComunicaGestion: undefined;
+  McmPanel: undefined;
   EventosPasados: undefined;
 };
 
@@ -154,6 +156,13 @@ export default function MasTab() {
         <Stack.Screen
           name="ComunicaGestion"
           component={ComunicaGestionScreen}
+          options={{
+            headerShown: false, // Pantalla completa — sin header
+          }}
+        />
+        <Stack.Screen
+          name="McmPanel"
+          component={McmPanelScreen}
           options={{
             headerShown: false, // Pantalla completa — sin header
           }}

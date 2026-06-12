@@ -22,6 +22,7 @@ import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { takePendingMasScreen } from '@/utils/masNavigation';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
@@ -43,6 +44,15 @@ interface NavigationItem {
   /** Id del evento a pasar como route param cuando target === 'JubileoHome'. */
   eventId?: string;
 }
+
+const MCM_PANEL_ITEM: NavigationItem = {
+  label: 'MCM Panel',
+  subtitle: 'Panel de administración de la app',
+  emoji: '🎛️',
+  materialIcon: 'tune',
+  target: 'McmPanel',
+  tintColor: '#6D28D9',
+};
 
 const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
   comunica: {
@@ -99,6 +109,7 @@ export default function MasHomeScreen() {
   const { isMd, isWeb } = useResponsive();
   const useTwoColumns = isWeb && isMd;
   const resolved = useResolvedProfileConfig();
+  const { isAdmin } = useAdminStatus();
   const navigationItems = React.useMemo(() => {
     const items: NavigationItem[] = [];
 
@@ -137,8 +148,12 @@ export default function MasHomeScreen() {
       if (entry) items.push(entry);
     }
 
+    if (isAdmin) {
+      items.push(MCM_PANEL_ITEM);
+    }
+
     return items;
-  }, [resolved.masItems, resolved.tabs]);
+  }, [resolved.masItems, resolved.tabs, isAdmin]);
 
   // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
   useFocusEffect(
