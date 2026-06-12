@@ -381,7 +381,9 @@ export default function SocialLoginSection({
       : scheme === 'dark'
         ? 'rgba(255,255,255,0.06)'
         : hexAlpha(brandColors.primary, '10');
-    const csIcon = onDarkBackground ? 'rgba(255,255,255,0.85)' : brandColors.primary;
+    const csIcon = onDarkBackground
+      ? 'rgba(255,255,255,0.85)'
+      : brandColors.primary;
     const csTitle = onDarkBackground ? '#fff' : theme.text;
     const csBody = onDarkBackground ? 'rgba(255,255,255,0.75)' : theme.icon;
     return (
@@ -469,32 +471,30 @@ export default function SocialLoginSection({
         </Text>
       </TouchableOpacity>
 
-      {/* Apple — iOS y web */}
-      {Platform.OS !== 'android' && (
-        <TouchableOpacity
-          style={[
-            styles.socialBtn,
-            styles.appleBtn,
-            !onDarkBackground && scheme === 'dark'
-              ? { borderColor: 'rgba(255,255,255,0.18)' }
-              : null,
-            ...(signingIn && signingIn !== 'apple' ? [styles.btnDisabled] : []),
-          ]}
-          onPress={handleAppleSignIn}
-          disabled={!!signingIn}
-          accessibilityRole="button"
-          accessibilityLabel="Continuar con Apple"
-        >
-          {signingIn === 'apple' ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <MaterialIcons name="apple" size={20} color="#fff" />
-          )}
-          <Text style={[styles.socialBtnLabel, { color: '#fff' }]}>
-            Continuar con Apple
-          </Text>
-        </TouchableOpacity>
-      )}
+      {/* Apple — iOS y web (Android ya salió antes con su aviso propio) */}
+      <TouchableOpacity
+        style={[
+          styles.socialBtn,
+          styles.appleBtn,
+          !onDarkBackground && scheme === 'dark'
+            ? { borderColor: 'rgba(255,255,255,0.18)' }
+            : null,
+          ...(signingIn && signingIn !== 'apple' ? [styles.btnDisabled] : []),
+        ]}
+        onPress={handleAppleSignIn}
+        disabled={!!signingIn}
+        accessibilityRole="button"
+        accessibilityLabel="Continuar con Apple"
+      >
+        {signingIn === 'apple' ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <MaterialIcons name="apple" size={20} color="#fff" />
+        )}
+        <Text style={[styles.socialBtnLabel, { color: '#fff' }]}>
+          Continuar con Apple
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }

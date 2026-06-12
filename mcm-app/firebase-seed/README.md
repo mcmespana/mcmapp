@@ -46,3 +46,21 @@ El mismo contenido se importa desde el código en
 `mcm-app/constants/defaultProfileConfig.ts` y se usa como fallback si Firebase no
 está disponible en primera carga (sin caché). **Mantén ambos sincronizados**: si
 editas la estructura remota, refleja los cambios en este JSON y viceversa.
+
+---
+
+## `evaluacion.json` · `app-evaluation-config.json` · `surveys.json`
+
+Seeds del **sistema de encuestas** (ver `ENCUESTAS.md` y `ENCUESTAS_CONTRATO.md`
+en la raíz del monorepo). Todos siguen la forma `{ updatedAt, data }`.
+
+| Seed                        | Importar en                              | Qué es |
+| --------------------------- | ---------------------------------------- | ------ |
+| `evaluacion.json`           | `activities/<evento>/evaluacion`         | Config de la evaluación de un evento (preguntas + estado). |
+| `app-evaluation-config.json`| `app/evaluationConfig`                   | Config de la evaluación de la app (incluye ejemplos de `scale`/`multi`). |
+| `surveys.json`              | `surveys`                                | Encuestas genéricas: índice `_index` (banners) + ejemplo `encuesta-monitores-2026`. |
+
+> ⚠️ Importar **reemplaza** el nodo destino. Hazlo antes de que haya respuestas
+> (las respuestas viven en `respuestas/<deviceId>` dentro del mismo nodo, o en
+> `app/evaluations` para la app). Tras importar, edita `data` desde el panel y
+> actualiza `updatedAt` en cada cambio.

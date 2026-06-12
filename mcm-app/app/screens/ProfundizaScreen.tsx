@@ -122,9 +122,7 @@ export default function ProfundizaScreen() {
 
   const secciones = normalizeSecciones(profundizaData ?? null);
   const hasContent = secciones.some(
-    (s) =>
-      s.introduccion ||
-      (Array.isArray(s.paginas) && s.paginas.length > 0),
+    (s) => s.introduccion || (Array.isArray(s.paginas) && s.paginas.length > 0),
   );
 
   if (!hasContent) {

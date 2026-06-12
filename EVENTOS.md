@@ -140,7 +140,9 @@ Ambas tienen el mismo efecto visual: la tarjeta no aparece y el espacio se reaco
 ## Evaluación del evento y de la app
 
 Cada evento puede ofrecer una sección de **evaluación** (valorar la actividad con
-estrellas + preguntas abiertas) y, aparte, una **evaluación de la app**.
+estrellas + preguntas abiertas) y, aparte, una **evaluación de la app**. Forman
+parte del **sistema de encuestas** — guía completa en `ENCUESTAS.md` y contrato de
+datos en `ENCUESTAS_CONTRATO.md`. Aquí va solo lo específico del evento.
 
 ### Nodo Firebase (config + respuestas)
 
@@ -148,18 +150,22 @@ estrellas + preguntas abiertas) y, aparte, una **evaluación de la app**.
 activities/<evento>/evaluacion
 ├── updatedAt: <timestamp>
 ├── hidden?:   boolean              (oculta la tarjeta en el hub)
-├── data:                           ← configuración (editable sin desplegar)
-│   ├── evaluationOpen: boolean     (true = enciende el banner de la Home)
-│   ├── title / intro
-│   └── questions: [ { id, type:'stars'|'text'|'yesno', label, optional?, placeholder? } ]
-└── respuestas/<pushId>             ← las escribe la app sola
+├── data:                           ← configuración (editable sin desplegar OTA)
+│   ├── status: 'open'              (preferido; o legacy evaluationOpen: true)
+│   ├── opensAt? / closesAt?        (epoch ms — ventana de apertura)
+│   ├── title / intro / thanksTitle / thanksBody
+│   └── questions: [ { id, type, label, optional?, ... } ]   ← 6 tipos, ver ENCUESTAS.md
+└── respuestas/<deviceId>           ← las escribe la app sola (una por dispositivo)
     └── { answers, userName, userProfileType, userDelegation, platform, timestamp }
 ```
 
-- Si `data.questions` está vacío o no existe, la app usa el set por defecto de
-  `constants/evaluation.ts` (`DEFAULT_EVENT_EVALUATION`).
-- La **evaluación de la app** no es del evento: usa preguntas fijas
-  (`DEFAULT_APP_EVALUATION`) y escribe en `app/evaluations/<pushId>`.
+- La app **lee la config de Firebase** (con caché) y, si falta, cae a
+  `constants/evaluation.ts` (`DEFAULT_EVENT_EVALUATION`). Si `data.questions` está
+  vacío usa las del fallback, pero el resto de campos (`status`, título…) sí se
+  aplican.
+- Tipos de pregunta: `stars`, `text`, `yesno`, `scale`, `single`, `multi`.
+- La **evaluación de la app** no es del evento: config en `app/evaluationConfig`
+  (fallback `DEFAULT_APP_EVALUATION`) y respuestas en `app/evaluations/<deviceId>`.
 
 ### Pasos para activarla
 
@@ -170,12 +176,13 @@ activities/<evento>/evaluacion
 2. Añadir las secciones al hub en `constants/events.ts` (ya hechas para Visita
    Papa): tarjeta `Evaluacion` (con `firebaseKey: 'evaluacion'`) y `EvaluacionApp`.
 3. Cuando quieras pedir la evaluación (típicamente al terminar el evento), pon
-   `data.evaluationOpen = true`. Aparecerá el banner **"Evalúa la actividad"** en
-   la Home a quien tenga acceso al evento. Se oculta solo cuando esa persona ya
-   ha evaluado.
+   `data.status = "open"` (y toca `updatedAt`). Aparecerá el banner **"Evalúa la
+   actividad"** en la Home a quien tenga acceso al evento. Se oculta solo cuando
+   esa persona ya ha evaluado. Para cerrarla, `status: "closed"`.
 
-> El anti-duplicado es local (AsyncStorage `evaluacion_done_<id>`): el banner
-> desaparece tras evaluar, pero el formulario permite reenviar.
+> El anti-duplicado es **por dispositivo**: caché local (`evaluacion_done_<id>`) +
+> comprobación en Firebase (`respuestas/<deviceId>`). Una persona no puede reenviar
+> la evaluación desde el mismo dispositivo.
 
 ## Cómo navega la app
 

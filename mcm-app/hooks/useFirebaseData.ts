@@ -33,12 +33,23 @@ export function useFirebaseData<T>(
             AsyncStorage.getItem(`${storageKey}_hidden`),
           ]);
 
+        // Caché corrupta (JSON inválido) no debe impedir el fetch remoto:
+        // se descarta y se sigue como si no hubiera caché.
+        let hasLocalCache = false;
         if (localDataStr && localDataStr !== 'undefined') {
-          const parsed = JSON.parse(localDataStr);
-          const transformed = transform ? transform(parsed) : (parsed as T);
-          if (isMounted) setData(transformed);
-          if (isMounted) setHidden(localHiddenStr === 'true');
-          setLoading(false); // show existing data while fetching remote
+          try {
+            const parsed = JSON.parse(localDataStr);
+            const transformed = transform ? transform(parsed) : (parsed as T);
+            if (isMounted) setData(transformed);
+            if (isMounted) setHidden(localHiddenStr === 'true');
+            setLoading(false); // show existing data while fetching remote
+            hasLocalCache = true;
+          } catch {
+            await AsyncStorage.multiRemove([
+              `${storageKey}_data`,
+              `${storageKey}_updatedAt`,
+            ]).catch(() => {});
+          }
         }
 
         const db = getDatabase(getFirebaseApp());
@@ -47,7 +58,6 @@ export function useFirebaseData<T>(
         // sólo el metadato (pocos bytes) y descargo `data` únicamente si
         // ha cambiado. Esto evita bajar megas de `songs`/`albums` en cada
         // arranque cuando el contenido remoto no se ha tocado.
-        const hasLocalCache = !!localDataStr && localDataStr !== 'undefined';
 
         if (hasLocalCache && localUpdatedAt) {
           const [metaSnap, hiddenSnap] = await Promise.all([

@@ -412,23 +412,36 @@ export default function NotificationsScreen() {
       },
     );
 
-    // Deduplicar por contenido (título + cuerpo) — la primera aparición gana
-    const seenContentKeys = new Set<string>();
-    const seenIds = new Set<string>();
-    return combined.filter((notification) => {
+    // Deduplicar por contenido (título + cuerpo) o por ID — la primera
+    // aparición gana. Al encontrar un duplicado, completamos en la copia
+    // conservada los campos que solo trae el otro origen: la `bodyLong` puede
+    // venir solo en el registro de Firebase (si el panel no la mete en el
+    // payload de la push) o solo en la copia local. Así el detalle siempre la
+    // muestra independientemente de por dónde haya llegado.
+    const result: (NotificationData | ReceivedNotification)[] = [];
+    const indexByKey = new Map<string, number>();
+    const indexById = new Map<string, number>();
+
+    for (const notification of combined) {
       const contentKey = `${notification.title}|${notification.body}`;
+      const existingIdx =
+        (notification.id ? indexById.get(notification.id) : undefined) ??
+        indexByKey.get(contentKey);
 
-      // Si ya vimos este contenido exacto, es duplicado
-      if (seenContentKeys.has(contentKey)) return false;
+      if (existingIdx !== undefined) {
+        const kept = result[existingIdx];
+        if (!kept.bodyLong && notification.bodyLong) {
+          result[existingIdx] = { ...kept, bodyLong: notification.bodyLong };
+        }
+        continue;
+      }
 
-      // Si ya vimos este ID exacto, es duplicado
-      if (notification.id && seenIds.has(notification.id)) return false;
-
-      seenContentKeys.add(contentKey);
-      if (notification.id) seenIds.add(notification.id);
-
-      return true;
-    });
+      result.push(notification);
+      const idx = result.length - 1;
+      indexByKey.set(contentKey, idx);
+      if (notification.id) indexById.set(notification.id, idx);
+    }
+    return result;
   }, [localNotifications, firebaseNotifications]);
 
   const hasUnread = allNotifications.some((n) => !isNotificationRead(n));
@@ -638,9 +651,11 @@ function NotificationDetailModal({
                   />
                 )}
 
-                {/* Cuerpo */}
+                {/* Cuerpo: descripción extendida (bodyLong) si existe, si no el
+                    body corto como fallback. El ScrollView del modal permite
+                    textos largos. */}
                 <Text style={[dStyles.body, { color: theme.text }]}>
-                  {notification.body}
+                  {notification.bodyLong || notification.body}
                 </Text>
 
                 {/* Separador si hay acciones */}
