@@ -1,5 +1,12 @@
 # MEJORAS.md — Análisis técnico transversal de la MCM App
 
+> **Estado (2026-06-12):** este documento es una foto del análisis de 2026-05-21.
+> Los quick wins de la primera tanda ya están ejecutados; lo pendiente está
+> recogido como tareas accionables en `mcm-app/TODO.md` (con referencia a la
+> sección § correspondiente de aquí) y el plan de ejecución por fases en
+> `PLAN_CALIDAD.md`. Usa este documento como contexto/diagnóstico, no como
+> lista de tareas.
+
 > Documento guía para el desarrollo de la app. Cubre rendimiento, arquitectura, calidad de código, tests, UX/UI, accesibilidad, seguridad, observabilidad, offline, i18n, DX/CI, build/OTA, backend y documentación.
 >
 > **Fecha del análisis:** 2026-05-21 · **Stack:** Expo 55 · React Native 0.83 · React 19.2 · TypeScript · Firebase RTDB · ChordSheetJS · heroui-native.

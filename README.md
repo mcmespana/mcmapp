@@ -20,7 +20,7 @@ npm install
 
 1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com/) con Realtime Database
 2. Copia `.env.example` → `.env.local` y rellena las credenciales
-3. Nodos necesarios: `songs`, `albums`, `jubileo` (con `horario`, `materiales`, `visitas`, `profundiza`, `grupos`, `contactos`)
+3. Nodos principales: `songs`, `albums`, `profileConfig`, `jubileo` y `activities/<evento>` (eventos), `surveys`. Estructura completa en `mcm-app/CLAUDE.md` §Firebase; JSONs de ejemplo importables en `mcm-app/firebase-seed/`
 
 ## Chuleta de comandos
 
