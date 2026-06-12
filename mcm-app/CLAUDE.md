@@ -319,6 +319,11 @@ const { data, loading, offline } = useFirebaseData<TipoData>(
 
 **Agentes: documentad cambios importantes en `CHANGELOG.md`**
 
+Formato de entrada: `## YYYY-MM-DD HH:MM — Título` (incluid **siempre la hora**,
+24h España — con varios cambios el mismo día es la única forma de saber el
+orden). Entrada nueva arriba del todo. Lo anterior a mayo de 2026 está
+archivado en `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
+
 Documentar SÍ:
 
 - Nuevas pantallas o funcionalidades

@@ -26,7 +26,7 @@
 1. **Trabaja siempre desde `mcm-app/`** para cualquier cambio de código de la app
 2. **Lee `mcm-app/CLAUDE.md`** antes de hacer cualquier cambio — contiene la arquitectura, convenciones y referencia técnica completa
 3. **Consulta `docs/README.md`** para localizar la documentación de funcionalidades (notificaciones, eventos, encuestas), contratos con el panel y planes técnicos
-4. **Documenta cambios importantes en `mcm-app/CHANGELOG.md`** — NO documentes cambios cosméticos (colores, padding, etc.), SÍ documenta: nuevas pantallas, cambios de navegación, cambios de lógica de datos, cambios en perfiles/visibilidad, nuevas dependencias, cambios en Firebase
+4. **Documenta cambios importantes en `mcm-app/CHANGELOG.md`** — entrada nueva arriba del todo, con **fecha Y hora** (`## YYYY-MM-DD HH:MM — Título`). NO documentes cambios cosméticos (colores, padding, etc.), SÍ documenta: nuevas pantallas, cambios de navegación, cambios de lógica de datos, cambios en perfiles/visibilidad, nuevas dependencias, cambios en Firebase
 5. **Consulta `mcm-app/TODO.md`** para ver la lista de tareas pendientes de mantenimiento y mejora
 6. **No toques archivos `.env.local`** — contienen credenciales de Firebase
 7. **Si añades paquetes con código nativo → añade `[skip-ota]` al commit y avisa al usuario** (ver OTA en `mcm-app/CLAUDE.md`)

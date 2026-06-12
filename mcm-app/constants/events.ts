@@ -293,7 +293,7 @@ export const EVENTS: Record<string, EventConfig> = {
  * botón en la Home y banner. También es el evento por defecto.
  *
  * TODO (mcmpanel/Firebase): mover esta decisión al nodo `activities/` para
- * poder activar/archivar eventos sin desplegar. Ver PROMPT_MCMPANEL_VISITAPAPA.md.
+ * poder activar/archivar eventos sin desplegar.
  */
 export const ACTIVE_EVENT_ID = VISITAPAPA.id;
 

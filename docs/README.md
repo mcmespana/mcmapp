@@ -45,7 +45,7 @@ Las tareas accionables derivadas de estos planes están en
 | Documento | Qué cubre |
 | --------- | --------- |
 | [CLAUDE.md](../mcm-app/CLAUDE.md) | Referencia técnica completa de la app (arquitectura, convenciones, Firebase) |
-| [CHANGELOG.md](../mcm-app/CHANGELOG.md) | Registro de cambios |
+| [CHANGELOG.md](../mcm-app/CHANGELOG.md) | Registro de cambios (desde mayo 2026; lo anterior en [CHANGELOG-ARCHIVO.md](CHANGELOG-ARCHIVO.md)) |
 | [TODO.md](../mcm-app/TODO.md) | Tareas pendientes de mantenimiento y mejora |
 | [DESIGN.md](../mcm-app/DESIGN.md) | Sistema de diseño |
 | [ARREGLOS.md](../mcm-app/ARREGLOS.md) | Directiva `{arr:}` del cantoral (anotaciones de arreglos) |
