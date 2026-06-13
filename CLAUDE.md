@@ -12,9 +12,10 @@
 │   ├── CHANGELOG.md        Registro de cambios
 │   └── firebase-seed/      JSONs de seed/plantilla para Firebase (perfiles, encuestas, eventos)
 ├── docs/                   ← Documentación del monorepo — ÍNDICE en docs/README.md
-│   ├── funcionalidades/    Notificaciones push, eventos, encuestas
+│   ├── funcionalidades/    Notificaciones push, eventos, encuestas, arreglos del cantoral
 │   ├── contratos/          Contratos de datos App ↔ MCM Panel (notificaciones, encuestas, perfiles)
 │   ├── planes/             MEJORAS.md (análisis técnico) y PLAN_CALIDAD.md (saneamiento por fases)
+│   ├── desarrollo/         Sistema de diseño y mantenimiento de tabs
 │   └── SEGURIDAD.md        Reglas Firebase RTDB y gestión de credenciales
 ├── scraper-lecturas/       ← Scraper Python de lecturas litúrgicas (corre vía GitHub Action)
 ├── portadas-albumes/       ← Assets de portadas de álbumes (imágenes)
@@ -65,3 +66,5 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Sistema de perfiles (App ↔ Panel) | `docs/contratos/PANEL_PERFILES.md` |
 | Seguridad y reglas Firebase | `docs/SEGURIDAD.md` |
 | Análisis técnico y plan de mejoras | `docs/planes/MEJORAS.md` + `docs/planes/PLAN_CALIDAD.md` |
+| Sistema de diseño / tabs | `docs/desarrollo/DESIGN.md` + `docs/desarrollo/TABS_MAINTENANCE.md` |
+| Arreglos del cantoral (`{arr:}`) | `docs/funcionalidades/ARREGLOS.md` |

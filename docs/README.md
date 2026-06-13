@@ -12,6 +12,7 @@ Cómo funciona cada sistema de la app, de principio a fin.
 | [NOTIFICACIONES.md](funcionalidades/NOTIFICACIONES.md) | Sistema de notificaciones push: cliente implementado, backend, plan de pruebas |
 | [EVENTOS.md](funcionalidades/EVENTOS.md) | Sistema de eventos (Jubileo, encuentros, retiros…): paths de Firebase y cómo añadir un evento nuevo |
 | [ENCUESTAS.md](funcionalidades/ENCUESTAS.md) | Sistema de encuestas y evaluaciones (guía funcional) |
+| [ARREGLOS.md](funcionalidades/ARREGLOS.md) | Directiva `{arr:}` del cantoral (anotaciones de arreglos) + prompt del generador ChordPro |
 
 ## Contratos de datos (App ↔ MCM Panel)
 
@@ -34,6 +35,15 @@ Si cambias uno de estos formatos, actualiza el contrato.
 Las tareas accionables derivadas de estos planes están en
 [`mcm-app/TODO.md`](../mcm-app/TODO.md).
 
+## Desarrollo
+
+Referencia técnica sobre cómo está construida la app por dentro.
+
+| Documento | Qué cubre |
+| --------- | --------- |
+| [DESIGN.md](desarrollo/DESIGN.md) | Sistema de diseño (tokens, colores, tipografía, glass, componentes) |
+| [TABS_MAINTENANCE.md](desarrollo/TABS_MAINTENANCE.md) | Implementación dual de tabs (iOS NativeTabs vs Android/Web) |
+
 ## Seguridad
 
 | Documento | Qué cubre |
@@ -42,14 +52,15 @@ Las tareas accionables derivadas de estos planes están en
 
 ## Documentación dentro de `mcm-app/`
 
+Documentos que viven junto al código por convención (las herramientas y los
+agentes los buscan en el raíz del proyecto).
+
 | Documento | Qué cubre |
 | --------- | --------- |
 | [CLAUDE.md](../mcm-app/CLAUDE.md) | Referencia técnica completa de la app (arquitectura, convenciones, Firebase) |
+| [AGENTS.md](../mcm-app/AGENTS.md) | Guía rápida de agentes IA (heroui-native, patrones) |
 | [CHANGELOG.md](../mcm-app/CHANGELOG.md) | Registro de cambios (desde mayo 2026; lo anterior en [CHANGELOG-ARCHIVO.md](CHANGELOG-ARCHIVO.md)) |
 | [TODO.md](../mcm-app/TODO.md) | Tareas pendientes de mantenimiento y mejora |
-| [DESIGN.md](../mcm-app/DESIGN.md) | Sistema de diseño |
-| [ARREGLOS.md](../mcm-app/ARREGLOS.md) | Directiva `{arr:}` del cantoral (anotaciones de arreglos) |
-| [TABS_MAINTENANCE.md](../mcm-app/TABS_MAINTENANCE.md) | Implementación dual de tabs (iOS NativeTabs vs Android/Web) |
 | [firebase-seed/README.md](../mcm-app/firebase-seed/README.md) | JSONs de ejemplo/seed para importar en Firebase RTDB |
 
 ## Datos de referencia

@@ -180,7 +180,7 @@ Ya hay 12 ficheros en `__tests__/` con infraestructura correcta (jest-expo + RTL
 ## Fase 7 — Tokens de diseño (gradual · sin fecha · regla boy-scout)
 
 - [ ] Migrar `radii`/`shadows`/tipografía inline a los tokens de `constants/` **solo al tocar cada archivo** por otra razón (Fases 1-2 tocarán casi todos). Como proyecto aparte sería un PR de 5.000 líneas que nadie puede revisar.
-- [ ] Unificar pesos de fuente y `borderRadius` de modales según `DESIGN.md` (MEJORAS §5.2).
+- [ ] Unificar pesos de fuente y `borderRadius` de modales según `docs/desarrollo/DESIGN.md` (MEJORAS §5.2).
 
 ---
 
