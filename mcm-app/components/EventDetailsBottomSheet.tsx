@@ -59,6 +59,18 @@ function decodeHtmlEntities(text: string): string {
 function normalizeDescription(input: string): string {
   return decodeHtmlEntities(
     input
+      // Keep <a href> links reachable: show the label and surface the URL so
+      // the plain-text URL tokenizer can make it tappable.
+      .replace(
+        /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi,
+        (_full, href, inner) => {
+          const label = inner.replace(/<[^>]+>/g, '').trim();
+          if (!label || href.includes(label) || label.includes(href)) {
+            return href;
+          }
+          return `${label} (${href})`;
+        },
+      )
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
       .replace(/<(b|strong)>/gi, BOLD_OPEN)
