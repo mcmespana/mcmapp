@@ -66,7 +66,8 @@ const ShareQrModal: React.FC<Props> = ({
             <View style={styles.card}>
               <Text style={styles.title}>{title}</Text>
               <Text style={styles.subtitle}>
-                Escanea el QR con la cámara del móvil y se abre directamente
+                Escanea con la cámara · Se abre en la app si la tienes, o en el
+                navegador si no
               </Text>
 
               {/* Marco blanco siempre: los lectores QR necesitan contraste. */}
