@@ -32,31 +32,84 @@ interface Props {
 // Matches http(s) URLs to make description links tappable.
 const URL_PATTERN = 'https?:\\/\\/[^\\s<>"\')]+';
 
-type DescriptionToken = { key: string; text: string; isUrl: boolean };
+// Sentinels used to preserve bold runs while stripping the rest of the HTML.
+const BOLD_OPEN = '\u0001';
+const BOLD_CLOSE = '\u0002';
 
-function tokenizeDescription(text: string): DescriptionToken[] {
-  const regex = new RegExp(URL_PATTERN, 'gi');
+type DescriptionToken = {
+  key: string;
+  text: string;
+  isUrl: boolean;
+  bold: boolean;
+};
+
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&apos;/gi, "'")
+    .replace(/&amp;/gi, '&');
+}
+
+// Google Calendar descriptions can arrive as HTML (<br>, <b>, &amp;, …).
+// Normalize them to plain text with basic line breaks + bold runs.
+function normalizeDescription(input: string): string {
+  return decodeHtmlEntities(
+    input
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
+      .replace(/<(b|strong)>/gi, BOLD_OPEN)
+      .replace(/<\/(b|strong)>/gi, BOLD_CLOSE)
+      .replace(/<[^>]+>/g, '') // strip any remaining tags
+      .replace(/\n{3,}/g, '\n\n'), // collapse excess blank lines
+  );
+}
+
+function tokenizeDescription(rawText: string): DescriptionToken[] {
+  const normalized = normalizeDescription(rawText);
+  const urlRegex = new RegExp(URL_PATTERN, 'gi');
   const tokens: DescriptionToken[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
+  let bold = false;
   let i = 0;
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
+
+  // Split on bold sentinels, keeping track of the current bold state.
+  for (const segment of normalized.split(/([\u0001\u0002])/)) {
+    if (segment === BOLD_OPEN) {
+      bold = true;
+      continue;
+    }
+    if (segment === BOLD_CLOSE) {
+      bold = false;
+      continue;
+    }
+    if (!segment) continue;
+
+    urlRegex.lastIndex = 0;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = urlRegex.exec(segment)) !== null) {
+      if (match.index > lastIndex) {
+        tokens.push({
+          key: `t${i++}`,
+          text: segment.slice(lastIndex, match.index),
+          isUrl: false,
+          bold,
+        });
+      }
+      tokens.push({ key: `u${i++}`, text: match[0], isUrl: true, bold });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < segment.length) {
       tokens.push({
         key: `t${i++}`,
-        text: text.slice(lastIndex, match.index),
+        text: segment.slice(lastIndex),
         isUrl: false,
+        bold,
       });
     }
-    tokens.push({ key: `u${i++}`, text: match[0], isUrl: true });
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < text.length) {
-    tokens.push({
-      key: `t${i++}`,
-      text: text.slice(lastIndex),
-      isUrl: false,
-    });
   }
   return tokens;
 }
@@ -270,6 +323,7 @@ export default function EventDetailsBottomSheet({
                       style={{
                         color: colors.info,
                         textDecorationLine: 'underline',
+                        fontWeight: p.bold ? '700' : undefined,
                       }}
                       onPress={() => handleOpenUrl(p.text)}
                     >
@@ -277,7 +331,14 @@ export default function EventDetailsBottomSheet({
                     </Text>
                   );
                 }
-                return <Text key={p.key}>{p.text}</Text>;
+                return (
+                  <Text
+                    key={p.key}
+                    style={p.bold ? { fontWeight: '700' } : undefined}
+                  >
+                    {p.text}
+                  </Text>
+                );
               })}
             </Text>
           </View>
