@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFirebaseData } from './useFirebaseData';
 import { useResolvedProfileConfig } from './useResolvedProfileConfig';
@@ -17,7 +17,15 @@ export interface CalendarConfig {
   color: string;
 }
 
-const CALENDAR_SETTINGS_KEY = '@mcm_calendar_settings';
+// La selección se guarda por ID de calendario ({ [id]: boolean }), no por
+// índice. Así sobrevive a reordenamientos, altas/bajas de calendarios y al
+// fallback transitorio mientras Firebase carga (que antes truncaba el array
+// guardado y perdía la selección del usuario).
+const CALENDAR_SELECTION_KEY = '@mcm_calendar_selection_v2';
+// Clave antigua (array booleano por índice) — se migra una sola vez.
+const LEGACY_SETTINGS_KEY = '@mcm_calendar_settings';
+
+type SelectionMap = Record<string, boolean>;
 
 export function useCalendarConfigs() {
   const {
@@ -27,10 +35,6 @@ export function useCalendarConfigs() {
   } = useFirebaseData<CalendarConfigFirebase[]>('calendars', 'calendars');
 
   const resolved = useResolvedProfileConfig();
-
-  const [visibleCalendars, setVisibleCalendars] = useState<boolean[]>([]);
-  const [calendarConfigs, setCalendarConfigs] = useState<CalendarConfig[]>([]);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // Fallback configuration in case Firebase data is not available
   const fallbackConfigs: CalendarConfigFirebase[] = useMemo(
@@ -46,105 +50,126 @@ export function useCalendarConfigs() {
     [],
   );
 
-  // Load user calendar settings from AsyncStorage
+  const calendarsToUse = useMemo(
+    () =>
+      calendarData && calendarData.length > 0 ? calendarData : fallbackConfigs,
+    [calendarData, fallbackConfigs],
+  );
+
+  // `null` mientras no se ha leído AsyncStorage; mapa explícito del usuario una
+  // vez cargado. Las claves ausentes caen al default del perfil/calendario.
+  const [selection, setSelection] = useState<SelectionMap | null>(null);
+  const legacyRef = useRef<boolean[] | null>(null);
+  const migratedRef = useRef(false);
+
+  // Default de un calendario cuando el usuario no lo ha tocado explícitamente.
+  const defaultFor = useCallback(
+    (cal: CalendarConfigFirebase) => {
+      const profileDefaults = resolved.defaultCalendars;
+      if (profileDefaults && profileDefaults.length > 0) {
+        return profileDefaults.includes(cal.id);
+      }
+      return cal.defaultSelected;
+    },
+    [resolved.defaultCalendars],
+  );
+
+  // Carga la selección persistida una sola vez.
   useEffect(() => {
+    let mounted = true;
     async function loadSettings() {
       try {
-        const storedSettings = await AsyncStorage.getItem(
-          CALENDAR_SETTINGS_KEY,
-        );
-        if (storedSettings) {
-          const parsedSettings = JSON.parse(storedSettings);
-          setVisibleCalendars(parsedSettings);
+        const stored = await AsyncStorage.getItem(CALENDAR_SELECTION_KEY);
+        if (stored) {
+          migratedRef.current = true;
+          if (mounted) setSelection(JSON.parse(stored));
+          return;
         }
+        // Si no hay clave nueva, recordamos la antigua para migrarla cuando
+        // tengamos la lista real de calendarios (no el fallback).
+        const legacy = await AsyncStorage.getItem(LEGACY_SETTINGS_KEY);
+        if (legacy) legacyRef.current = JSON.parse(legacy);
       } catch (error) {
         console.error('Error loading calendar settings:', error);
       } finally {
-        setSettingsLoaded(true);
+        if (mounted) {
+          setSelection((prev) => prev ?? {});
+        }
       }
     }
     loadSettings();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Process calendar data when it's available
+  // Migración one-shot del array por índice → mapa por ID, en cuanto llega la
+  // lista real de Firebase (no el fallback).
   useEffect(() => {
-    if (!settingsLoaded) return;
+    if (migratedRef.current) return;
+    if (!calendarData || calendarData.length === 0) return;
+    migratedRef.current = true;
+    const legacy = legacyRef.current;
+    if (!legacy) return;
+    const map: SelectionMap = {};
+    calendarData.forEach((cal, idx) => {
+      if (idx < legacy.length) map[cal.id] = legacy[idx];
+    });
+    setSelection(map);
+    AsyncStorage.setItem(CALENDAR_SELECTION_KEY, JSON.stringify(map)).catch(
+      () => {},
+    );
+    AsyncStorage.removeItem(LEGACY_SETTINGS_KEY).catch(() => {});
+  }, [calendarData]);
 
-    const calendarsToUse = calendarData || fallbackConfigs;
+  const calendarConfigs: CalendarConfig[] = useMemo(
+    () =>
+      calendarsToUse.map((cal) => ({
+        name: cal.name,
+        url: cal.url,
+        color: cal.color,
+      })),
+    [calendarsToUse],
+  );
 
-    // Convert Firebase format to CalendarConfig format
-    const configs: CalendarConfig[] = calendarsToUse.map((cal) => ({
-      name: cal.name,
-      url: cal.url,
-      color: cal.color,
-    }));
+  // Booleanos alineados con `calendarConfigs` (interfaz que esperan los
+  // consumidores), derivados del mapa por ID + defaults.
+  const visibleCalendars = useMemo(() => {
+    if (selection === null) return [];
+    return calendarsToUse.map((cal) =>
+      Object.prototype.hasOwnProperty.call(selection, cal.id)
+        ? selection[cal.id]
+        : defaultFor(cal),
+    );
+  }, [selection, calendarsToUse, defaultFor]);
 
-    setCalendarConfigs(configs);
-
-    // If no user settings exist, derive defaults from the resolved profile
-    // config (IDs de calendario por perfil + extras por delegación). Si el
-    // perfil no define `defaultCalendars`, caemos al flag `defaultSelected`
-    // del propio calendario para retrocompatibilidad.
-    if (visibleCalendars.length === 0) {
-      const profileDefaults = new Set(resolved.defaultCalendars);
-      const useProfileDefaults = profileDefaults.size > 0;
-      const defaultSelection = calendarsToUse.map((cal) =>
-        useProfileDefaults ? profileDefaults.has(cal.id) : cal.defaultSelected,
-      );
-      setVisibleCalendars(defaultSelection);
-    } else if (visibleCalendars.length !== calendarsToUse.length) {
-      // Adjust array length if number of calendars changed.
-      // Para nuevos calendarios remotos: respetar `defaultSelected` para que
-      // el usuario los vea por defecto si así lo decidió el panel admin
-      // (en lugar de quedar siempre ocultos hasta activación manual).
-      const newSelection = [...visibleCalendars];
-      while (newSelection.length < calendarsToUse.length) {
-        const idx = newSelection.length;
-        newSelection.push(calendarsToUse[idx]?.defaultSelected ?? false);
-      }
-      if (newSelection.length > calendarsToUse.length) {
-        newSelection.splice(calendarsToUse.length);
-      }
-      setVisibleCalendars(newSelection);
-    }
-  }, [
-    calendarData,
-    settingsLoaded,
-    fallbackConfigs,
-    visibleCalendars,
-    resolved.defaultCalendars,
-  ]);
-
-  // Save user settings to AsyncStorage whenever they change
-  useEffect(() => {
-    if (!settingsLoaded || visibleCalendars.length === 0) return;
-
-    async function saveSettings() {
-      try {
-        await AsyncStorage.setItem(
-          CALENDAR_SETTINGS_KEY,
-          JSON.stringify(visibleCalendars),
-        );
-      } catch (error) {
-        console.error('Error saving calendar settings:', error);
-      }
-    }
-    saveSettings();
-  }, [visibleCalendars, settingsLoaded]);
-
-  const toggleCalendarVisibility = (index: number) => {
-    if (index >= 0 && index < visibleCalendars.length) {
-      const newVisibility = [...visibleCalendars];
-      newVisibility[index] = !newVisibility[index];
-      setVisibleCalendars(newVisibility);
-    }
-  };
+  const toggleCalendarVisibility = useCallback(
+    (index: number) => {
+      const cal = calendarsToUse[index];
+      if (!cal) return;
+      setSelection((prev) => {
+        const base = prev ?? {};
+        const current = Object.prototype.hasOwnProperty.call(base, cal.id)
+          ? base[cal.id]
+          : defaultFor(cal);
+        const next: SelectionMap = { ...base, [cal.id]: !current };
+        AsyncStorage.setItem(
+          CALENDAR_SELECTION_KEY,
+          JSON.stringify(next),
+        ).catch((error) => {
+          console.error('Error saving calendar settings:', error);
+        });
+        return next;
+      });
+    },
+    [calendarsToUse, defaultFor],
+  );
 
   return {
     calendarConfigs,
     visibleCalendars,
     toggleCalendarVisibility,
-    loading: loading || !settingsLoaded,
+    loading: loading || selection === null,
     offline,
   };
 }
