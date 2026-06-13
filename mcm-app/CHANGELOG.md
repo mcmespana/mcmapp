@@ -13,6 +13,16 @@
 
 ---
 
+## 2026-06-13 — Fix: la selección de calendarios se perdía al reabrir la app
+
+- **Bug**: la visibilidad de calendarios se guardaba como array **por índice** (`boolean[]`) y se reconciliaba contra el `fallbackConfigs` (1 solo calendario) durante el instante en que Firebase aún cargaba. Eso truncaba el array guardado a longitud 1, lo persistía, y al llegar los datos reales rellenaba con los defaults — perdiendo la selección del usuario.
+- **Fix**: la selección ahora se persiste **por ID de calendario** (`{ [id]: boolean }`) en AsyncStorage. Sobrevive a reordenamientos, altas/bajas de calendarios y al fallback transitorio. Migración one-shot del formato antiguo por índice. Archivo: `hooks/useCalendarConfigs.ts`.
+
+## 2026-06-13 — Fix de ubicaciones y descripciones en detalle de evento
+
+- **Ubicaciones del calendario**: el parser ICS ahora desescapa `\,`, `\;` y `\\` en el campo `LOCATION` (antes salía "Plaza de la M Molas\, 1 Madrid\, España" con las barras visibles). Archivo: `hooks/useCalendarEvents.ts`.
+- **Descripciones con HTML**: las descripciones de Google Calendar pueden llegar como HTML (`<br>`, `<b>`, `&amp;`, …). El bottom sheet ahora normaliza el HTML a texto plano con saltos de línea, runs en negrita y entidades decodificadas, en lugar de mostrar las etiquetas en crudo. Archivo: `components/EventDetailsBottomSheet.tsx`.
+
 ## 2026-06-11 — Sección MCM Panel en Más (solo administradores Firebase)
 
 - **Nueva pantalla `McmPanelScreen`**: WebView que abre `mcmpanel.vercel.app`, notch violeta oscuro (`#4C1D95`) para distinguirlo visualmente del resto de pantallas.
