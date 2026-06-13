@@ -6,27 +6,32 @@
 
 ```
 /                           ← Raíz del monorepo
-├── mcm-app/               ← App principal (Expo/React Native) — LEE mcm-app/CLAUDE.md
-├── portadas-albumes/      ← Assets de portadas de álbumes (imágenes)
-├── README.md              ← Guía rápida para humanos
-├── AGENTS.md              ← Definición de agentes especializados
-├── NOTIFICACIONES.md      ← Documentación completa del sistema de notificaciones push
-├── EVENTOS.md             ← Cómo crear eventos (Jubileo, encuentros, retiros…) y estructura Firebase
-├── ENCUESTAS.md           ← Sistema de encuestas/evaluaciones (guía funcional)
-├── ENCUESTAS_CONTRATO.md  ← Contrato de datos de encuestas Panel ↔ App
-├── PROMPT_MCMPANEL_ENCUESTAS.md ← Encargo para el panel: crear/gestionar/analizar encuestas
-├── MEJORAS.md             ← Análisis técnico transversal (rendimiento, arquitectura, seguridad, observabilidad, DX, CI…) + plan priorizado (referenciado desde mcm-app/TODO.md)
-└── PLAN_CALIDAD.md        ← Plan de saneamiento de código por fases (archivos gigantes, carpetas/nombres, contexts, tipos, tests, observabilidad)
+├── mcm-app/                ← App principal (Expo/React Native) — LEE mcm-app/CLAUDE.md
+│   ├── CLAUDE.md           Referencia técnica completa (arquitectura, convenciones, Firebase)
+│   ├── TODO.md             Tareas pendientes de mantenimiento y mejora
+│   ├── CHANGELOG.md        Registro de cambios
+│   └── firebase-seed/      JSONs de seed/plantilla para Firebase (perfiles, encuestas, eventos)
+├── docs/                   ← Documentación del monorepo — ÍNDICE en docs/README.md
+│   ├── funcionalidades/    Notificaciones push, eventos, encuestas, arreglos del cantoral
+│   ├── contratos/          Contratos de datos App ↔ MCM Panel (notificaciones, encuestas, perfiles)
+│   ├── planes/             MEJORAS.md (análisis técnico) y PLAN_CALIDAD.md (saneamiento por fases)
+│   ├── desarrollo/         Sistema de diseño y mantenimiento de tabs
+│   └── SEGURIDAD.md        Reglas Firebase RTDB y gestión de credenciales
+├── scraper-lecturas/       ← Scraper Python de lecturas litúrgicas (corre vía GitHub Action)
+├── portadas-albumes/       ← Assets de portadas de álbumes (imágenes)
+└── README.md               ← Guía rápida para humanos (setup, builds, releases)
 ```
 
 ## Reglas para agentes
 
-1. **Trabaja siempre desde `mcm-app/`** para cualquier cambio de código
+1. **Trabaja siempre desde `mcm-app/`** para cualquier cambio de código de la app
 2. **Lee `mcm-app/CLAUDE.md`** antes de hacer cualquier cambio — contiene la arquitectura, convenciones y referencia técnica completa
-3. **Documenta cambios importantes en `mcm-app/CHANGELOG.md`** — NO documentes cambios cosméticos (colores, padding, etc.), SÍ documenta: nuevas pantallas, cambios de navegación, cambios de lógica de datos, cambios en feature flags, nuevas dependencias, cambios en Firebase
-4. **Consulta `mcm-app/TODO.md`** para ver la lista de tareas pendientes de mantenimiento y mejora
-5. **No toques archivos `.env.local`** — contienen credenciales de Firebase
-6. **Si añades paquetes con código nativo → añade `[skip-ota]` al commit y avisa al usuario** (ver OTA en `mcm-app/CLAUDE.md`)
+3. **Consulta `docs/README.md`** para localizar la documentación de funcionalidades (notificaciones, eventos, encuestas), contratos con el panel y planes técnicos
+4. **Documenta cambios importantes en `mcm-app/CHANGELOG.md`** — entrada nueva arriba del todo, con **fecha Y hora** (`## YYYY-MM-DD HH:MM — Título`). NO documentes cambios cosméticos (colores, padding, etc.), SÍ documenta: nuevas pantallas, cambios de navegación, cambios de lógica de datos, cambios en perfiles/visibilidad, nuevas dependencias, cambios en Firebase
+5. **Consulta `mcm-app/TODO.md`** para ver la lista de tareas pendientes de mantenimiento y mejora
+6. **No toques archivos `.env.local`** — contienen credenciales de Firebase
+7. **Si añades paquetes con código nativo → añade `[skip-ota]` al commit y avisa al usuario** (ver OTA en `mcm-app/CLAUDE.md`)
+8. **Sin acceso a Firebase, usa `mcm-app/firebase-seed/`** como referencia de la estructura real de los nodos (perfiles, encuestas, eventos como el Jubileo 2025) para construir JSONs nuevos
 
 ## Comandos rápidos (desde mcm-app/)
 
@@ -35,7 +40,8 @@ npm start              # Servidor de desarrollo
 npm run web            # Versión web
 npm run lint           # ESLint
 npm run format         # Prettier
-npm test               # Jest (no hay tests escritos aún)
+npm test               # Jest
+npx tsc --noEmit       # Typecheck
 ```
 
 ### Builds EAS
@@ -43,16 +49,22 @@ npm test               # Jest (no hay tests escritos aún)
 **NUNCA uses `npx eas-cli build` directamente** — usa los scripts npm que limpian symlinks de Claude Code:
 
 ```bash
-npm run eas:build:ios -- --profile development     # iOS para dispositivo
+npm run eas:build:ios -- --profile development      # iOS para dispositivo
 npm run eas:build:ios -- --profile production       # iOS para App Store
 npm run eas:build:android -- --profile development  # Android para dispositivo
 npm run eas:build:android -- --profile production   # Android para Play Store
 ```
 
-## Notas sobre notificaciones push
+## Documentación por tema
 
-`NOTIFICACIONES.md` documenta el sistema completo de notificaciones push (cliente implementado, backend pendiente). Consultar ese archivo para el estado actual, plan de implementación y guía de pruebas.
-
-## Notas sobre eventos (Jubileo y futuros)
-
-`EVENTOS.md` documenta cómo está organizado el sistema de eventos: convención de paths en Firebase (`jubileo/` legacy vs `activities/<nombre>/`), estructura de cada sección (`{ updatedAt, data, hidden? }`), y los tres pasos para añadir un evento nuevo tocando sólo `constants/events.ts` + `MasHomeScreen.tsx`.
+| Tema | Documento |
+| ---- | --------- |
+| Notificaciones push (sistema completo) | `docs/funcionalidades/NOTIFICACIONES.md` |
+| Contrato de notificaciones con el panel | `docs/contratos/NOTIFICACIONES_CONTRATO.md` |
+| Eventos (Jubileo, encuentros, retiros…) | `docs/funcionalidades/EVENTOS.md` |
+| Encuestas/evaluaciones | `docs/funcionalidades/ENCUESTAS.md` + `docs/contratos/ENCUESTAS_CONTRATO.md` |
+| Sistema de perfiles (App ↔ Panel) | `docs/contratos/PANEL_PERFILES.md` |
+| Seguridad y reglas Firebase | `docs/SEGURIDAD.md` |
+| Análisis técnico y plan de mejoras | `docs/planes/MEJORAS.md` + `docs/planes/PLAN_CALIDAD.md` |
+| Sistema de diseño / tabs | `docs/desarrollo/DESIGN.md` + `docs/desarrollo/TABS_MAINTENANCE.md` |
+| Arreglos del cantoral (`{arr:}`) | `docs/funcionalidades/ARREGLOS.md` |

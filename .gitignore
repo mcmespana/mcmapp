@@ -2,3 +2,12 @@
 .claude/
 node_modules/
 AGENTS.md
+
+# SO / editores
+.DS_Store
+Thumbs.db
+
+# Artefactos de build
+*.ipa
+*.apk
+*.aab

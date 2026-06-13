@@ -1,0 +1,80 @@
+[
+  {
+    "androidLink": "https://play.google.com/store/apps/details?id=va.iubilaeum2025.app",
+    "androidScheme": "iubilaeum2025://",
+    "descripcion": "App ofocial del Jubileo 2025 donde leer algunos materiales y acceder a los mapas de los eventos",
+    "icono": "https://www.iubilaeum2025.va/etc/designs/iubilaeum2025/release/library/main/images/logo/logo-iubilaeum2025.png",
+    "iosLink": "https://www.iubilaeum2025.va/content/dam/iubilaeum2025/icone-sito/App-Store.png/_jcr_content/renditions/cq5dam.web.1280.1280.png",
+    "iosScheme": "iubilaeum2025://",
+    "nombre": "App Jubileo",
+    "orden": 1,
+    "tipo": "Necesaria"
+  },
+  {
+    "androidLink": "https://play.google.com/store/apps/details?id=va.spc.vaticanvox&hl=ca",
+    "androidScheme": "vaticanvox://",
+    "descripcion": "Para escuchar las traducciones de Tor Vergata en tiempo real",
+    "icono": "https://play-lh.googleusercontent.com/9AiWvyweqV3BXVuoKQHgOdxktSfTDdbzffWF96YSUsI7Iet7obG8n3xjENa4g2vpmhVb=w240-h480-rw",
+    "iosLink": "https://apps.apple.com/pe/app/vatican-vox/id6739530276",
+    "iosScheme": "vaticanvox://",
+    "nombre": "Vatican VOX",
+    "orden": 2,
+    "tipo": "Necesaria"
+  },
+  {
+    "androidLink": "https://play.google.com/store/apps/details?id=it.acea.waidy&hl=es_GT",
+    "androidScheme": "acquea://",
+    "descripcion": "Todos los puntos de agua de Roma en tu movil",
+    "icono": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1YL2Q7bR9oqy2PlF_YYpz-nL3Nw3Hdeogkw&s",
+    "iosLink": "https://apps.apple.com/app/spotify-music/id324684580",
+    "iosScheme": "acquea://",
+    "nombre": "Acquea",
+    "orden": 3,
+    "tipo": "Opcional"
+  },
+  {
+    "androidLink": "https://play.google.com/store/apps/details?id=com.google.android.apps.maps",
+    "androidScheme": "geo:0,0?q=",
+    "descripcion": "Ahorra MBs con los mapas sin conexión y suscríbete a los mapas del Jubileo",
+    "icono": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8coh4kDdQQy_-m4PiC7ek_eTPJZhxntw_kw&s",
+    "iosLink": "https://apps.apple.com/app/google-maps/id585027354",
+    "iosScheme": "comgooglemaps://",
+    "nombre": "Google Maps",
+    "orden": 4,
+    "tipo": "Necesaria"
+  },
+
+  {
+    "androidLink": "https://play.google.com/store/apps/details?id=va.spc.vaticanaudio&hl=ca",
+    "androidScheme": "vaticanaudio://",
+    "descripcion": "Alternativa a Vatican VOX por si no funciona",
+    "icono": "https://play-lh.googleusercontent.com/jMvlRd4LDvPlGg8DqpQjNRhZ02ftdW3wR4B5wU6bzBN6cjLybfZ41MG-WaR0VyXQ4A=w480-h960-rw",
+    "iosLink": "https://apps.apple.com/ar/app/radio-vaticana/id1391716040",
+    "iosScheme": "vaticanaudio://",
+    "nombre": "Radio Vaticana",
+    "orden": 5,
+    "tipo": "Opcional"
+  },
+  {
+    "androidLink": "https://play.google.com/store/apps/details/MooneyGo_myCicero?id=net.pluservice.myCicero&hl=ca",
+    "androidScheme": "cicero://",
+    "descripcion": "Rutas por Roma con audioguía",
+    "icono": "https://play-lh.googleusercontent.com/0vXD8zdqAkMCW2ViEteeuuDD1vaUb6Nsemv1kkQiSOPwZRUeKA9jZXRLXFrNIdm6Tj8=w480-h960-rw",
+    "iosLink": "https://apps.apple.com/us/app/mooneygo-mycicero/id595700208",
+    "iosScheme": "mooneygo://",
+    "nombre": "Cicero",
+    "orden": 6,
+    "tipo": "Opcional"
+  },
+  {
+    "androidLink": "https://play.google.com/store/apps/details/MooneyGo_myCicero?id=net.pluservice.myCicero&hl=ca",
+    "androidScheme": "mooneygo://",
+    "descripcion": "Es posible que la necesitemos para el transporte",
+    "icono": "https://play-lh.googleusercontent.com/0vXD8zdqAkMCW2ViEteeuuDD1vaUb6Nsemv1kkQiSOPwZRUeKA9jZXRLXFrNIdm6Tj8=w480-h960-rw",
+    "iosLink": "https://apps.apple.com/us/app/mooneygo-mycicero/id595700208",
+    "iosScheme": "mooneygo://",
+    "nombre": "Money Go",
+    "orden": 7,
+    "tipo": "Opcional"
+  }
+]

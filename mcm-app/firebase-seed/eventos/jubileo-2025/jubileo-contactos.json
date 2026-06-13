@@ -1,0 +1,90 @@
+[
+  {
+    "nombre": "Teléfono MCM",
+    "responsabilidad": "Siempre disponible!",
+    "telefono": "+34649949583"
+  },
+  {
+    "nombre": "Rosy Treviño",
+    "responsabilidad": "Coordinación",
+    "telefono": "+34644730375"
+  },
+  {
+    "nombre": "David Soler",
+    "responsabilidad": "Coordinación",
+    "telefono": "+34608084613"
+  },
+  {
+    "nombre": "Sonia González",
+    "responsabilidad": "Resp. Villacañas, Madrid, Quintanar",
+    "telefono": "+34669837744"
+  },
+  {
+    "nombre": "Inma Agost",
+    "responsabilidad": "Resp. ZGZ, Espianrdo, Caravaca",
+    "telefono": "+34601209935"
+  },
+  {
+    "nombre": "Toñi Cabello",
+    "responsabilidad": "Resp. Córdoba - SANITARIA 🚑",
+    "telefono": "+34674990197"
+  },
+  {
+    "nombre": "Aurora Mechó",
+    "responsabilidad": "Resp. Castellón",
+    "telefono": "+34618588439"
+  },
+  {
+    "nombre": "María Gascó",
+    "responsabilidad": "Resp. Onda, L'Alcora",
+    "telefono": "+34625838125"
+  },
+  {
+    "nombre": "Irene Moreno",
+    "responsabilidad": "Resp. Vila-real, Nules",
+    "telefono": "+34639972854"
+  },
+  {
+    "nombre": "Anežka Gúberová",
+    "responsabilidad": "SANITARIA 🚑",
+    "telefono": "+421910852184"
+  },
+  {
+    "nombre": "Nahuel Altamirano",
+    "responsabilidad": "Resp. Argentina",
+    "telefono": "+549386531-3088"
+  },
+  {
+    "nombre": "Nahuel Altamirano",
+    "responsabilidad": "Resp. Argentina",
+    "telefono": "+549381438-9099"
+  },
+  {
+    "nombre": "Marta Ruiz",
+    "responsabilidad": "Benicarló - Equipo"
+  },
+  {
+    "nombre": "Irene Ribes",
+    "responsabilidad": "Onda - Equipo"
+  },
+  {
+    "nombre": "Loles Álvaro",
+    "responsabilidad": "Onda - Equipo"
+  },
+  {
+    "nombre": "Marta Pascual",
+    "responsabilidad": "Castellón - Equipo"
+  },
+  {
+    "nombre": "Jose Arribas",
+    "responsabilidad": "Madrid - Equipo"
+  },
+  {
+    "nombre": "Sara Mata",
+    "responsabilidad": "Vila-real - Equipo"
+  },
+  {
+    "nombre": "Thais Mor",
+    "responsabilidad": "BCN - Equipo"
+  }
+]

@@ -2,14 +2,19 @@
 
 > Registro de cambios importantes. Agentes IA: documentad aquí los cambios significativos.
 > NO documentar: ajustes cosméticos, typos, refactors sin cambio funcional.
+> Entradas anteriores a mayo de 2026: ver `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
 
 ## Formato
 
 ```
-## [fecha] — Descripción breve
+## YYYY-MM-DD HH:MM — Descripción breve
 - Qué cambió y por qué
 - Archivos principales afectados
 ```
+
+> **Incluid siempre la hora** (formato 24h, hora española) además de la fecha:
+> con varios cambios el mismo día es la única forma de saber el orden.
+> Entrada nueva SIEMPRE arriba del todo (orden cronológico inverso).
 
 ---
 
@@ -41,6 +46,8 @@
   `contigo/revision.tsx` y los avisos de Prettier pendientes (`--fix`).
 - **OTA-safe** (solo JS).
 
+---
+
 ## 2026-06-09 — Encuestas: banners automáticos + identidad real (auth)
 
 - **Banners automáticos** de encuestas genéricas sin depender de push. La app lee
@@ -61,6 +68,8 @@
   `_index`. Tests ampliados (`__tests__/surveys.test.ts`). Docs actualizadas
   (`ENCUESTAS.md`, `ENCUESTAS_CONTRATO.md`, `PROMPT_MCMPANEL_ENCUESTAS.md`).
 - **OTA-safe** (solo JS).
+
+---
 
 ## 2026-06-09 — Sistema de encuestas: config desde Firebase + tipos nuevos + encuestas genéricas
 
@@ -93,6 +102,8 @@
   (raíz del monorepo); actualizado `EVENTOS.md`.
 - **OTA-safe** (solo JS, sin dependencias nativas).
 
+---
+
 ## 2026-06-09 — Playlist: drag & drop para reordenar + "Orden ajustado" por defecto
 
 - La pantalla de playlist abre ahora **por defecto en "Orden ajustado"** (antes
@@ -107,6 +118,8 @@
 - Cambios: `app/screens/SelectedSongsScreen.tsx` (lista reordenable +
   `DraggableManualRow`), `components/playlist/PlaylistRow.tsx` (prop
   `onLongPress`).
+
+---
 
 ## 2026-06-09 — Playlist: QR para compartir/coro + contraseña al sobrescribir en la nube
 
@@ -127,6 +140,8 @@
   wrapper de `onSubmit` en `SelectedSongsScreen` descartaba el `name` que
   emite `CodeInputModal`.
 
+---
+
 ## 2026-06-09 — Menú de acciones de la playlist reorganizado por secciones
 
 - El bottom-sheet de acciones de la playlist (`PlaylistActionsBottomSheet`)
@@ -136,6 +151,8 @@
   (`PlaylistActionSection[]`) en lugar de `actions`.
 - Etiquetas más cortas al apoyarse en la cabecera de sección ("Subir playlist
   (compartir código)", "Exportar archivo (.mcm)"…).
+
+---
 
 ## 2026-06-09 — Export PDF de playlists: toggles arreglados, márgenes iOS, fecha editable y pie de página
 
@@ -161,6 +178,8 @@
   transforma `chordsheetjs` y mockea `jspdf`/`html2canvas` igual que Metro
   (`jest.config.js`).
 
+---
+
 ## 2026-06-09 — Reglas de seguridad de Firebase RTDB + despliegue automático
 
 - Reescritas las reglas de la Realtime Database (`mcm-app/database.rules.json`)
@@ -182,6 +201,8 @@
 - Eliminado `database.rules.proposed.json` (borrador superseded; además dejaba
   `songs/data` solo-lectura, lo que habría roto el panel de edición).
 
+---
+
 ## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
 
 - Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
@@ -196,25 +217,7 @@
   `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
   debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
 
-## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
-
-- **Antes** una notificación solo mostraba **un** botón de acción (`actionButton`);
-  el array `actionButtons` del panel se aceptaba pero solo se usaba el primer
-  elemento. **Ahora** se soportan **hasta 3 botones** por notificación, tanto en la
-  tarjeta del centro de notificaciones (un chip por botón) como en el modal de
-  detalle (botones apilados: el 1.º primario, los siguientes secundarios).
-- Nuevo `extractActionButtons()` en `utils/notificationRoutes.ts` (límite
-  `MAX_ACTION_BUTTONS = 3`): acepta el array `actionButtons` y el objeto único
-  `actionButton` (legacy), los combina y deduplica por `url|text`. Se conserva
-  `extractActionButton()` como atajo al primer botón.
-- Tipos: `NotificationActionButtonData` + campo `actionButtons[]` en
-  `NotificationData` y `ReceivedNotification` (`actionButton` se mantiene por
-  compatibilidad).
-- Archivos: `utils/notificationRoutes.ts`, `types/notifications.ts`,
-  `app/notifications.tsx`, `services/pushNotificationService.ts`,
-  `notifications/usePushNotifications.ts`, `__tests__/notificationRoutes.test.ts`.
-- Compatible con OTA (JS puro, sin código nativo). El MCM Panel debe enviar
-  `data.actionButtons` (array) — ver `NOTIFICACIONES_CONTRATO.md` §3.
+---
 
 ## 2026-06-07 — Evaluación: wizard tipo onboarding + ajustes de ubicación
 
@@ -229,6 +232,8 @@
   (`evaluationOpen`), sin depender de Firebase.
 - **Evalúa la app → Ajustes**: deja de estar en el hub del evento y en la Home;
   se abre desde el panel de Ajustes como pantalla raíz (`app/evaluacion-app.tsx`).
+
+---
 
 ## 2026-06-07 — Sección de Evaluación (evento + app)
 
@@ -258,6 +263,30 @@
   `app/screens/eventStackScreens.tsx`, `app/(tabs)/visitapapa.tsx`,
   `app/(tabs)/index.tsx`.
 
+---
+
+## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
+
+- **Antes** una notificación solo mostraba **un** botón de acción (`actionButton`);
+  el array `actionButtons` del panel se aceptaba pero solo se usaba el primer
+  elemento. **Ahora** se soportan **hasta 3 botones** por notificación, tanto en la
+  tarjeta del centro de notificaciones (un chip por botón) como en el modal de
+  detalle (botones apilados: el 1.º primario, los siguientes secundarios).
+- Nuevo `extractActionButtons()` en `utils/notificationRoutes.ts` (límite
+  `MAX_ACTION_BUTTONS = 3`): acepta el array `actionButtons` y el objeto único
+  `actionButton` (legacy), los combina y deduplica por `url|text`. Se conserva
+  `extractActionButton()` como atajo al primer botón.
+- Tipos: `NotificationActionButtonData` + campo `actionButtons[]` en
+  `NotificationData` y `ReceivedNotification` (`actionButton` se mantiene por
+  compatibilidad).
+- Archivos: `utils/notificationRoutes.ts`, `types/notifications.ts`,
+  `app/notifications.tsx`, `services/pushNotificationService.ts`,
+  `notifications/usePushNotifications.ts`, `__tests__/notificationRoutes.test.ts`.
+- Compatible con OTA (JS puro, sin código nativo). El MCM Panel debe enviar
+  `data.actionButtons` (array) — ver `NOTIFICACIONES_CONTRATO.md` §3.
+
+---
+
 ## 2026-06-06 — Fix layout de Materiales
 
 - **Materiales · tarjetas empujadas abajo / hueco enorme**: el `DateSelector`
@@ -266,6 +295,8 @@
   fondo (cortándolas). Se envuelve en una `View` (mismo patrón que
   `HorarioScreen`) para limitarlo a su altura natural. Archivo:
   `app/screens/MaterialesScreen.tsx`.
+
+---
 
 ## 2026-06-06 — Tab bar iOS visible + icono verde en carismochito
 
@@ -279,6 +310,8 @@
 - **Modo carismochito · icono de la app en verde**: el cuadro-logo del header de
   la Home se tiñe de verde mientras el modo está activo. Archivo:
   `app/(tabs)/index.tsx`.
+
+---
 
 ## 2026-06-06 — Fixes Android (tab bar) y mejoras en Grupos
 
@@ -306,6 +339,8 @@
   categoría **Alojamiento** (en la cuadrícula y en la búsqueda). Archivos:
   `constants/events.ts`, `app/screens/GruposScreen.tsx`.
 
+---
+
 ## 2026-06-05 — Login deshabilitado temporalmente en Android ("próximamente")
 
 - El inicio de sesión en Android queda **temporalmente desactivado** mientras se
@@ -318,6 +353,8 @@
   "próximamente" en lugar de los botones de Google/Apple en Android. Los usuarios
   que ya tuvieran sesión iniciada siguen viendo su cuenta (y pueden cerrar sesión).
 - Archivos: `app/onboarding.tsx` (`needsLoginStep`), `components/SocialLoginSection.tsx`.
+
+---
 
 ## 2026-06-05 — Fixes de calendario y notificaciones (Home + deep-link)
 
@@ -344,6 +381,8 @@
   `notifications/usePushNotifications.ts`, `utils/masNavigation.ts`,
   `app/screens/MasHomeScreen.tsx`.
 
+---
+
 ## 2026-06-05 — Fixes onboarding Android: login, botón "saltar" y toasts
 
 - **Login con Google en Android ya no muestra error al cancelar**: al cerrar el
@@ -362,6 +401,8 @@
   navegación aunque el inset reportado sea 0. Archivo:
   `contexts/AppToastContext.tsx`.
 
+---
+
 ## 2026-06-05 — Modo Carismochito: persistente y menos intrusivo
 
 - **Persiste al cerrar y reabrir la app**: si el modo queda activo, se recuerda
@@ -379,6 +420,8 @@
 - Archivos: `contexts/CarismochitoContext.tsx`,
   `components/CarismochitoOverlay.tsx`.
 
+---
+
 ## 2026-06-04 — Modo Carismochito: ritual de agitado + rediseño visual
 
 - **Activación por ritual de sacudidas**: ahora hace falta **agitar 5 veces**
@@ -394,6 +437,8 @@
 - Archivos: `contexts/CarismochitoContext.tsx`,
   `components/CarismochitoOverlay.tsx`,
   `components/CarismochitoChargeDots.tsx` (nuevo), `app/(tabs)/_layout.tsx`.
+
+---
 
 ## 2026-06-04 — Cantoral: sistema multimedia y ficha de canción
 
@@ -425,6 +470,8 @@
   `app/(tabs)/cancionero.tsx`, `utils/filterSongsData.ts`,
   `components/SecretPanelModal.tsx`.
 
+---
+
 ## 2026-06-03 — Rediseño de la pantalla de Horario + fix del día por defecto
 
 - **Rediseño visual del Horario** (`app/screens/HorarioScreen.tsx`,
@@ -451,6 +498,8 @@
   `webHeaderTitle`; el hub y "Compartiendo" no lo activan para no duplicar
   título. En iOS/Android no cambia nada (sigue el hero del contenido).
 
+---
+
 ## 2026-06-03 — Logo "alzad la mirada" en hero de Visita Papa + mascota carismochito PNG
 
 - **`EventConfig.heroImage`** (`constants/events.ts`): nuevo campo opcional para
@@ -465,6 +514,8 @@
 - Archivos: `constants/events.ts`, `app/screens/EventHomeScreen.tsx`,
   `components/CarismochitoMascot.tsx`, `assets/carismochito.png`,
   `assets/alzalamirada.png`.
+
+---
 
 ## 2026-06-03 — Eliminación de cuenta (requisito App Store 5.1.1(v))
 
@@ -481,6 +532,8 @@
 - **`utils/authHelpers.ts`**: nueva función `deleteUserData(uid)` que elimina
   `users/{uid}` de RTDB.
 - Al eliminar la cuenta se limpia también el nombre guardado localmente.
+
+---
 
 ## 2026-06-03 — Fix panel secreto del cantoral + menús contextuales en Contactos y Reflexiones
 
@@ -501,7 +554,9 @@
     soporte destructivo/disabled) y ejecuta la acción en `onCloseComplete` para
     no colisionar con Share/otros modales en iOS.
 
-## [2026-06-03] — Fix: login con Google roto en nativo tras OTA
+---
+
+## 2026-06-03 — Fix: login con Google roto en nativo tras OTA
 
 - **Causa**: las variables `EXPO_PUBLIC_GOOGLE_*` se hornean en el bundle JS, pero
   los workflows de OTA (`eas update`) solo inyectaban las `EXPO_PUBLIC_FIREBASE_*`.
@@ -520,6 +575,8 @@
 - **Nota web**: el `auth/unauthorized-domain` que apareció en `mcm.expo.app` era
   ajeno al repo — se había quitado el dominio de la lista de "Authorized domains"
   de Firebase Console; se volvió a añadir y quedó resuelto.
+
+---
 
 ## 2026-06-03 — Modo Carismochito: tema verde, cuenta atrás con anillo, haptics y mascota que baila
 
@@ -542,6 +599,8 @@
   descomentando una línea `require` (interruptor documentado en el archivo).
 - Dependencias ya presentes: `expo-haptics`, `expo-sensors`, `expo-image`,
   `react-native-svg` (sin paquetes nativos nuevos → no requiere build de tienda).
+
+---
 
 ## 2026-06-03 — Eventos: fix header transparente, botón Atrás y formulario Compartiendo
 
@@ -575,27 +634,7 @@
   cita y dos diseños alternos (fondo tintado / tarjeta limpia con barra de
   color) para dar variedad. Estado vacío amable cuando no hay reflexiones.
 
-## 2026-06-03 — Modo Carismochito: tema verde, cuenta atrás con anillo, haptics y mascota que baila
-
-- **Tema verde "de verdad" al activar** (`utils/heroUIRuntimeTheme.ts` →
-  `setCarismochitoTheme`, `contexts/CarismochitoContext.tsx`): al entrar en el
-  modo se tiñe la capa de componentes heroui-native con varios verdes distintos
-  (accent/success/danger/warning/focus/link) reutilizando el mismo mecanismo de
-  variables CSS que el modo claro/oscuro (toggle reactivo, sin tocar los ~60
-  archivos que usan `colors` estático). Se restaura el tema base al salir o al
-  desmontar. La capa propia (StyleSheet) se cubre con el lavado verde envolvente.
-- **Cuenta atrás rediseñada** (`components/CarismochitoOverlay.tsx`): pasa a 3 s
-  con un **anillo de progreso** SVG que se vacía alrededor de la mascota que
-  baila, con el número dentro. Sustituye al número gigante anterior.
-- **Respuesta háptica** (`utils/haptics.ts`: `shake`, `carismoOn`, `carismoOff`):
-  golpe al agitar el móvil, secuencia festiva al activarse y doble golpe al
-  desactivarse/cancelar.
-- **Mascota carismochito que baila** (`components/CarismochitoMascot.tsx`): nuevo
-  componente con baile (balanceo + salto + escala). Usa un carismochito vectorial
-  de respaldo y admite un **PNG** dejándolo en `assets/images/carismochito.png` y
-  descomentando una línea `require` (interruptor documentado en el archivo).
-- Dependencias ya presentes: `expo-haptics`, `expo-sensors`, `expo-image`,
-  `react-native-svg` (sin paquetes nativos nuevos → no requiere build de tienda).
+---
 
 ## 2026-06-02 — Eventos (Visita Papa): rediseño de headers, hero, estados vacíos y FABs
 
@@ -645,15 +684,6 @@
   a las 9 preguntas del panel + correcciones (rutas reales, `/pushTokens` usa
   `profileType`/`delegationId`/`topics` —no `userType`/`delegacion`—, segmentación por
   `topics`, iOS sin NSE, channel único `default`). Sin código nativo → compatible OTA.
-
----
-
-## 2026-05-29 — UI fixes: onboarding, eventos (Liquid Glass), modo oscuro login
-
-- **Onboarding — paso de login como pantalla final/resumen** (`app/onboarding.tsx`): para perfiles con login (monitor/miembro), al iniciar sesión la pantalla de login pasa a ser el último paso y muestra el resumen (perfil + delegación) con el botón "Ir a la app" centrado verticalmente; ya no hay pantalla `success` extra en ese flujo. Quien continúa sin cuenta sigue viendo la pantalla de resumen `success`.
-- **Onboarding — indicador de pasos**: el indicador de puntos (`ProgressDots`) ahora aparece en perfil, delegación y login, con un total dinámico según el perfil elegido (otros → 1, familia → 2, monitor/miembro → 3).
-- **Eventos — Liquid Glass en sub-pantallas** (`app/screens/eventStackScreens.tsx`, `components/EventActionButtons.tsx`, `app/(tabs)/visitapapa.tsx`, `app/(tabs)/mas.tsx`): las sub-pantallas con `ScreenHero` (Horario, Materiales, Visitas, Profundiza, Grupos, Contactos, Apps) ocultan el título duplicado del header (queda solo la barra glass + volver). Las acciones de Ajustes y Compartiendo salen del header y se muestran como FAB glass flotantes (`EventActionButtons`) que el tab renderiza por encima del navigator.
-- **Modo oscuro del login** (`components/SocialLoginSection.tsx`): el botón de Google ya no usa texto oscuro fijo (era ilegible sobre tarjeta oscura); colores de texto/borde adaptados al esquema oscuro.
 
 ---
 
@@ -724,6 +754,15 @@
 
 ---
 
+## 2026-05-29 — UI fixes: onboarding, eventos (Liquid Glass), modo oscuro login
+
+- **Onboarding — paso de login como pantalla final/resumen** (`app/onboarding.tsx`): para perfiles con login (monitor/miembro), al iniciar sesión la pantalla de login pasa a ser el último paso y muestra el resumen (perfil + delegación) con el botón "Ir a la app" centrado verticalmente; ya no hay pantalla `success` extra en ese flujo. Quien continúa sin cuenta sigue viendo la pantalla de resumen `success`.
+- **Onboarding — indicador de pasos**: el indicador de puntos (`ProgressDots`) ahora aparece en perfil, delegación y login, con un total dinámico según el perfil elegido (otros → 1, familia → 2, monitor/miembro → 3).
+- **Eventos — Liquid Glass en sub-pantallas** (`app/screens/eventStackScreens.tsx`, `components/EventActionButtons.tsx`, `app/(tabs)/visitapapa.tsx`, `app/(tabs)/mas.tsx`): las sub-pantallas con `ScreenHero` (Horario, Materiales, Visitas, Profundiza, Grupos, Contactos, Apps) ocultan el título duplicado del header (queda solo la barra glass + volver). Las acciones de Ajustes y Compartiendo salen del header y se muestran como FAB glass flotantes (`EventActionButtons`) que el tab renderiza por encima del navigator.
+- **Modo oscuro del login** (`components/SocialLoginSection.tsx`): el botón de Google ya no usa texto oscuro fijo (era ilegible sobre tarjeta oscura); colores de texto/borde adaptados al esquema oscuro.
+
+---
+
 ## 2026-05-29 — Visita Papa León XIV 2026: evento activo + eventos pasados
 
 - **Nueva tab "Visita Papa"** (`app/(tabs)/visitapapa.tsx`): el evento `visitapapa26` (Firebase `activities/visitapapa26`) tiene su propia pestaña antes de Calendario, con su hub y sub-pantallas (Horario, Materiales, Visitas, Profundiza, Grupos, Contactos, Apps, Reflexiones). Color de marca `#FCD200`.
@@ -745,38 +784,6 @@
 - **Hora en la tarjeta del día**: si el evento tiene `startTime`, se muestra `HH:MM – HH:MM` con icono de reloj en la tarjeta de la lista del día.
 - Archivos nuevos: `components/EventDetailsBottomSheet.tsx`.
 - Archivos modificados: `hooks/useCalendarEvents.ts`, `app/(tabs)/calendario.tsx`.
-
----
-
-## 2026-05-27 — Onboarding edge-to-edge
-
-- El onboarding ahora ocupa la pantalla completa, incluida la zona del notch / status bar / home indicator. El fondo del paso actual (azul marca en la bienvenida, blanco en los siguientes) cubre todo el shell sin recortes blancos arriba.
-- `app/_layout.tsx`: la pantalla `onboarding` pasa de `presentation: 'modal'` a `presentation: 'fullScreenModal'` y se le fija `contentStyle.backgroundColor` al azul de marca para evitar parpadeos blancos al abrir.
-- `app/onboarding.tsx`: sustituido el `SafeAreaView` exterior por un `View` con fondo dinámico por paso; cada step gestiona sus propios `insets` vía `useSafeAreaInsets`. La status bar se conmuta a `light` durante la bienvenida.
-- Pequeños retoques de diseño (no funcionales): badge "Te damos la bienvenida", logo con flotación suave, copy más cálido ("¡Vamos allá!"), icono `celebration` y pequeño pop en la pantalla de éxito.
-
----
-
-## 2026-05-26 — Limpieza de warnings iOS 26
-
-- Silenciado el log informativo `HeroUI Native Styling Principles` en arranque: `HeroUINativeProvider` ahora recibe `config={{ devInfo: { stylingPrinciples: false } }}` en `app/_layout.tsx`.
-- Resuelto warning `[RNScreens] Using both blurEffect and scrollEdgeEffects simultaneously` en el stack del Cantoral: `headerBlurEffect` se aplica solo en iOS < 26 (en iOS 26+ el sistema ya pinta el efecto glass vía `scrollEdgeEffects` por defecto). Archivo: `app/(tabs)/cancionero.tsx`.
-
----
-
-## 2026-05-25 — Modo Carismochito (easter egg por shake)
-
-Easter egg: al agitar el móvil aparece una cuenta atrás de 5 segundos que, si no se cancela, activa el "Modo Carismochito" — un guiño a la mascota del MCM tintando toda la app de un verde lima deliberadamente exagerado. Se desactiva agitando otra vez o tocando el badge flotante.
-
-- **Detección de shake**: nuevo `hooks/useShakeDetector.ts` basado en `expo-sensors` (carga perezosa para no romper en web). Umbral configurable (~3 picos > 1.9g en 700ms, cooldown 1.2s).
-- **Estado global**: `contexts/CarismochitoContext.tsx` con tres estados (`idle`, `countingDown`, `active`); una sola acción de "shake" se interpreta como activar / cancelar / desactivar según el estado actual.
-- **UI**: `components/CarismochitoOverlay.tsx` renderiza:
-  - Pantalla de cuenta atrás con la mascota SVG (verde slime con ojos negros, lengua rosa), número pulsante, halo verde y botón "Cancelar".
-  - Cuando está activo: tinte verde lima (`#7FFF00`) sobre toda la app con viñeta superior/inferior + badge flotante "MODO CARISMOCHITO" que también permite desactivar al tocarlo.
-- **Wiring**: `CarismochitoProvider` añadido al árbol de providers y `<CarismochitoOverlay />` al final de `InnerLayout` (encima de tabs, debajo del toast).
-- **Nueva dependencia nativa**: `expo-sensors ~55.0.8` — **requiere un nuevo build EAS** para que funcione en dispositivo (en web queda inerte).
-- Archivos nuevos: `hooks/useShakeDetector.ts`, `contexts/CarismochitoContext.tsx`, `components/CarismochitoOverlay.tsx`.
-- Archivos modificados: `app/_layout.tsx`, `package.json`.
 
 ---
 
@@ -841,6 +848,13 @@ Nueva funcionalidad que permite al usuario suscribirse a los calendarios ICS con
 
 ---
 
+## 2026-05-25 — Arreglo de navegación en tabs Más y Cantoral (Restauración)
+
+- **Bug fix**: Se restauró la lógica de navegación para volver a la pantalla inicial (`popToTop`) al pulsar la pestaña "Más" o "Cantoral" si ya se está en ella, usando el listener `tabPress` sobre el navigator padre (`useNavigation().getParent()`).
+- Archivos: `app/(tabs)/mas.tsx`, `app/(tabs)/cancionero.tsx`
+
+---
+
 ## 2026-05-24 — Virtualización de listas, WebView estable y rediseño de Grupos
 
 Tres cambios de rendimiento + UX descritos en `MEJORAS.md` §1.2, §1.3 y §1.4.
@@ -880,21 +894,6 @@ Tres cambios de rendimiento + UX descritos en `MEJORAS.md` §1.2, §1.3 y §1.4.
 - `app/screens/SongFullscreenScreen.tsx` — inyecta `styleState` en su WebView/iframe.
 - `hooks/useSongProcessor.ts` — split estructural/estilo + caché de parser + bootstrap script.
 - `components/SongDisplay.tsx` — refs a WebView/iframe y bridge de `postMessage`.
-
----
-
-## 2026-05-25 — Activación de React Compiler
-
-- **Qué cambia**: se activa `babel-plugin-react-compiler` (React 19 + Babel 7.25). El compilador memoiza automáticamente componentes y valores derivados, eliminando re-renders innecesarios sin necesidad de `useMemo`/`useCallback`/`React.memo` manuales.
-- **Cómo se activa en Expo SDK 55**: requiere DOS cosas (no basta sólo con el preset):
-  1. `experiments.reactCompiler: true` en `app.json` → hace que Metro pase `supportsReactCompiler: true` al caller de Babel.
-  2. `babel-plugin-react-compiler` instalado + opciones opcionales vía `babel-preset-expo` (`['babel-preset-expo', { 'react-compiler': {} }]`).
-- **Orden con Reanimated**: el preset de Expo se encarga de inyectar el compilador como primer plugin y el plugin de worklets después, así que no hay conflicto manual.
-- **Verificación**: transformando un componente con `caller.supportsReactCompiler = true` aparece el import `react/compiler-runtime` y el `c(N)` de memo cache → confirma que el compilador procesa el código.
-- **Archivos afectados**:
-  - `babel.config.js`: preset pasa de `'babel-preset-expo'` a `['babel-preset-expo', { 'react-compiler': {} }]`.
-  - `app.json`: añadido `experiments.reactCompiler: true`.
-  - `package.json`: nueva devDependency `babel-plugin-react-compiler@^1.0.0`.
 
 ---
 
@@ -1112,6 +1111,8 @@ Tres cambios de rendimiento + UX descritos en `MEJORAS.md` §1.2, §1.3 y §1.4.
 - **Multiplataforma**: en web abre una pestaña nueva con el HTML y lanza `print()` para que el usuario guarde como PDF; en iOS/Android usa `expo-print` (`printToFileAsync`) + `expo-sharing` para compartir el PDF resultante.
 - **Nueva dependencia**: `expo-print` (~15.0.0). Tras pull, ejecutar `npx expo install expo-print` si no se instala automáticamente.
 
+---
+
 ## 2026-05-17 — Rediseño selección de canciones: transpose persistido, orden libre, nube y modo Coro
 
 - **Nuevo modelo de selección** (`contexts/SelectedSongsContext.tsx`): `SelectedSong[]` con `{ filename, transpose, order, categoryHint, addedAt }`. Persistencia en `AsyncStorage` (`@mcm_playlist_v2`) con migración tolerante del formato anterior (array de strings). API ampliada: `setTranspose`, `moveSong`, `replaceAll`, `getSelectedSong`, `isHydrated`.
@@ -1132,39 +1133,6 @@ Tres cambios de rendimiento + UX descritos en `MEJORAS.md` §1.2, §1.3 y §1.4.
 
 ---
 
-## 2026-04-29 — Rediseño Contigo (Evangelio + Oración + Revisión)
-
-- **Nueva home `/contigo`**: layout reordenado a header (título + fecha + chip litúrgico + botón guardados) → hero card con `ProgressRing` (1/2/3 colores: azul, naranja, verde) → 3 `HabitTile`s (Evangelio · Oración · Revisión) → teaser del evangelio del día (título + cita + fade-out preview + chip "Leído hoy") → strip semanal Lun–Dom con dots por hábito → 3 `StatCard`s (racha · min sem. · lecturas mes) → `MonthHeatmap`. `app/(tabs)/contigo/index.tsx` reescrita.
-- **Nuevos componentes**: `components/contigo/HomeWidgets.tsx` (`ProgressRing`, `HeroCard`, `HabitTile`, `EvangelioTeaserCard`, `WeekStrip`, `StatCard`, `MonthHeatmap`), `components/contigo/BreathingPhase.tsx`, `components/contigo/theme.ts` (tokens `WARM_LIGHT` / `WARM_DARK`, helpers `warm()`, `formatDateLong()`, `getWeekDates()`, `buildCalendar()`, `offsetDate()`).
-- **Pantalla Revisión del día** (`app/(tabs)/contigo/revision.tsx`, ruta nueva, tipo "Agradecer y revisar"):
-  - Animación inicial "Para un momento..." con círculos concéntricos respirando ~5s (skip al tocar).
-  - Indicador de progreso con dots morados/dorados (sin números).
-  - Paso 1 "Agradecer" — toggle Lista/Texto libre, mínimo 3 casillas, +Añadir/−Quitar.
-  - Paso 2 "Revisar" — área de texto libre.
-  - Navegación por días con flechas (no fuerza la respiración).
-  - Persiste en `AsyncStorage` bajo `@contigo_revision_<YYYY-MM-DD>` y marca `revisionDone` en el habit tracker. Celebra con `CelebrationAnimation`. Solo se implementa el primer modelo; el "test" queda para futuro.
-- **Hook `useContigoHabits`**: nuevo campo `revisionDone` (sustituye al antiguo `examenDone`, eliminado), `setRevisionDone`, `isRevisionDone`, `getTotalMinutesWeek(todayStr)`, `getReadingsMonth(todayStr)`. `getStreak('examen')` → `getStreak('revision')`.
-- **Limpieza**: eliminado `components/contigo/ContigoToolCard.tsx` (sustituido por `HabitTile` + `EvangelioTeaserCard` en la nueva home).
-- **Evangelio**: paleta alineada con tokens del rediseño (`#C4922A`/`#DAA520`); ahora lee `params.date` para abrir el evangelio de un día concreto desde la pantalla de guardados.
-- **Bookmarks**: pantalla rediseñada en línea con la nueva tarjeta (barra dorada + cita + fecha larga + preview cursivo + botón "Leer evangelio →"); empty state ilustrado.
-- **Oración**: paleta alineada con tokens del rediseño. La pantalla mantiene su flujo completo (no se usa el bottom sheet del mockup) ya que la lógica existente cubre todos los casos.
-- **Dark mode**: cubierto en todas las pantallas y widgets nuevos vía `warm(isDark)`.
-- Archivos: `app/(tabs)/contigo/{index,revision,bookmarks,evangelio,oracion,_layout}.tsx`, `components/contigo/{HomeWidgets,BreathingPhase,theme}.ts(x)`, `hooks/useContigoHabits.ts`.
-
----
-
-## 2026-04-23 — Sistema de eventos genérico (Jubileo + futuros)
-
-- **Arquitectura**: nuevo registry `constants/events.ts` con `EventConfig` (id, title, tintColor, firebasePrefix, sections). Jubileo migrado a config; para añadir un evento nuevo basta con duplicar la entrada, subir datos a Firebase bajo `<firebasePrefix>/<section.firebaseKey>` y (opcional) añadir un ítem en MasHome que navegue al mismo `JubileoHome` pasando `{ eventId }`.
-- **Convenciones Firebase**: Jubileo vive en `jubileo/` (raíz, legacy). Eventos creados desde el panel MCM viven en `activities/<nombre>/` (el panel mantiene además `activities/updatedAt`).
-- **Flag `hidden` por sección**: cada nodo de sección admite un campo opcional `hidden: boolean` en Firebase (hermano de `data` y `updatedAt`); si es `true`, el hub oculta esa tarjeta. `useFirebaseData` lo expone en el return y lo persiste en AsyncStorage para disponibilidad offline. También se puede poner `hidden: true` en el `EventSection` del código local.
-- **Route params**: `MasStackParamList` ahora lleva `eventId?: string` en todas las pantallas de evento. `useCurrentEvent()` (nuevo hook) las resuelve con fallback al default.
-- **Sub-pantallas desacopladas**: `HorarioScreen`, `MaterialesScreen`, `VisitasScreen`, `GruposScreen`, `ContactosScreen`, `ProfundizaScreen`, `AppsScreen`, `ReflexionesScreen`, `ComidaScreen` ya no hardcodean `jubileo/xxx`; piden el path vía `getEventFirebasePath(event, key)` + `getEventCacheKey(event, key)`.
-- **Stack options dinámicas**: helpers `eventScreenOptions` + `eventHubScreenOptions` en `app/(tabs)/mas.tsx` derivan título, tintColor y color de texto del evento activo. Eliminada la repetición de 12 bloques idénticos.
-- **EventHomeScreen**: nuevo `app/screens/EventHomeScreen.tsx` (sustituye a `JubileoHomeScreen.tsx`, borrado). Grid responsive (2 cols < 700px, 3 cols ≥ 700px), tarjetas con sombra tintada + accent bar + icon circle, soporte dark mode completo. Cada card prefetcha su nodo Firebase, detecta `hidden` y se esconde si procede. Offline banner dirigido por `useNetworkStatus()`.
-- **Documentación**: guía completa en la raíz del monorepo (`/EVENTOS.md`) con estructura Firebase, los 3 pasos para crear un evento nuevo, uso del flag `hidden` y flujo de navegación. `CLAUDE.md` del monorepo lo referencia.
-- **Archivos principales**: `constants/events.ts` (nuevo), `hooks/useCurrentEvent.ts` (nuevo), `app/screens/EventHomeScreen.tsx` (nuevo), `app/screens/JubileoHomeScreen.tsx` (eliminado), `hooks/useFirebaseData.ts` (extendido con `hidden`), `app/(tabs)/mas.tsx`, `app/screens/MasHomeScreen.tsx` + las 9 sub-pantallas indicadas, `EVENTOS.md` (nuevo, raíz del monorepo).
-
 ## 2026-05-03 — Onboarding · rediseño visual
 
 - Rediseño completo de `app/onboarding.tsx` siguiendo el prototipo de Claude Design (4 pantallas: bienvenida, perfil, delegación, confirmación).
@@ -1172,203 +1140,3 @@ Tres cambios de rendimiento + UX descritos en `MEJORAS.md` §1.2, §1.3 y §1.4.
 - Animaciones con `react-native-reanimated`: slide-in/out entre pasos, fade-up con stagger en cards, ripple infinito, shimmer en botón "Comenzar".
 - Pantalla de éxito nueva con check animado y resumen del perfil/delegación elegidos.
 - Lógica de datos sin cambios: sigue leyendo `rawConfig.profiles`/`rawConfig.delegationList` desde `ProfileConfigContext` y persiste con `useUserProfile().setProfile`.
-
-## 2026-04-30 — Sistema de Perfiles · auditoría y endurecimiento
-
-Revisión completa del sistema. Cambios:
-
-- **Bug fix (segmentación de notificaciones)**: el resolver descartaba los `notificationTopic` de delegación (ej. `"castellon"`) al sanitizarlos contra `KNOWN_NOTIFICATION_TOPICS`. Resultado: el array `topics` que se subía a `/pushTokens/{id}` nunca incluía la delegación → backend no podía segmentar por delegación local. Ahora `notificationTopics` no se sanea contra catálogo (los IDs base del catálogo siguen presentes en cada perfil).
-- **`utils/resolveProfileConfig.ts`** ahora tolera config remota corrupta sin crashear: perfil ausente → cae al primer perfil válido (o `FALLBACK_PROFILE`); `delegations`, `global` o arrays del perfil ausentes → defaults sensatos.
-- **`isAppVersionSupported`** NaN-safe: strings inválidos (`"foo"`, `""`, undefined coercido) ya no producen `NaN > NaN` (que devolvía `false` y podía bloquear usuarios incorrectamente con la pantalla de actualización). Atajo explícito para `minVersion === '0.0.0'`.
-- **`contexts/ProfileConfigContext.tsx`** valida la forma del documento remoto (`global`, `profiles`, `delegations`, `delegationList`) antes de usarlo. Si está malformado, cae al fallback hardcoded con warning en dev.
-- **Nuevo test** `__tests__/resolveProfileConfig.test.ts` (15 casos): merge perfil+delegación, overrides, sanitización, retención de topics de delegación, tolerancia a config corrupta, semver. Pasan con `npx jest --preset=ts-jest`.
-- **Limpieza**: eliminados `app/(tabs)/_layout.tsx.backup` y `app/(tabs)/jubileo.tsx.old` (orphans de migraciones anteriores).
-- **Docs sincronizados**: `TODO.md`, `TABS_MAINTENANCE.md` y `firebase-seed/README.md` ya no referencian `featureFlags.ts`. La sección "qué editar tras importar el seed" refleja que las 16 delegaciones ya están sembradas y solo hace falta rellenar `defaultCalendars`.
-
-## 2026-04-23 — Sistema de Perfiles de Usuario · Fases 1-8 (reemplaza FeatureFlags)
-
-**Cambio de arquitectura**: toda la visibilidad de tabs/home/más/álbumes/notificaciones se configura ahora desde Firebase RTDB (`/profileConfig`) por perfil (familia/monitor/miembro) y delegación (MCM España y 15 delegaciones locales + Internacional). El antiguo sistema de feature flags está eliminado.
-
-- **Archivos eliminados**: `contexts/FeatureFlagsContext.tsx`, `constants/featureFlags.ts`, `__tests__/featureFlags.test.ts`, `FEATURE_FLAGS_OTA.md`, `components/UserProfileModal.tsx` (huérfano).
-- **Archivos nuevos**:
-  - `contexts/ProfileConfigContext.tsx` — descarga `/profileConfig` con caché offline (patrón `useFirebaseData`).
-  - `hooks/useResolvedProfileConfig.ts` — combina config remota + UserProfile → `ResolvedProfileConfig` memoizado.
-  - `app/onboarding.tsx` — pantalla inicial de 2 pasos (perfil → delegación). Saltable; default = `miembro` + `_default`.
-  - `components/MaintenanceScreen.tsx` — pantalla de bloqueo para `maintenanceMode` y `minAppVersion`.
-- **Archivos modificados**:
-  - `app/_layout.tsx` — reemplaza `FeatureFlagsProvider` por `ProfileConfigProvider`, añade redirect al onboarding, pantallas de mantenimiento/actualización.
-  - `contexts/UserProfileContext.tsx` — amplía con `profileType`, `delegationId`, `onboardingCompleted`; elimina `location`.
-  - `app/(tabs)/_layout.tsx`, `app/(tabs)/index.tsx`, `app/screens/MasHomeScreen.tsx` — filtran tabs/home buttons/más items por `resolved.*`.
-  - `hooks/useCalendarConfigs.ts` — semilla defaults desde `resolved.defaultCalendars`.
-  - `app/(tabs)/fotos.tsx` — filtra álbumes por intersección `album.tags ∩ resolved.albumTags` (álbum sin tags = visible para todos).
-  - `services/pushNotificationService.ts` + `notifications/usePushNotifications.ts` — token ampliado con `profileType`, `delegationId`, `topics`; re-publica metadata al cambiar el perfil.
-  - `components/SettingsPanel.tsx` — añade selectores de perfil y delegación; elimina el botón legacy de cambiar nombre.
-  - `components/AppFeedbackModal.tsx`, `ReportBugsModal.tsx`, `SuggestSongModal.tsx`, `hooks/useWordleStats.ts`, `app/screens/ReflexionesScreen.tsx` — sustituyen `profile.location` por `resolved.delegationLabel` en los reportes a Firebase.
-- **Firebase**:
-  - Nuevo nodo `/profileConfig` con `data.global`, `data.profiles`, `data.delegations`, `data.delegationList`, `data.overrides`.
-  - `/pushTokens/{id}` añade opcionalmente `profileType`, `delegationId`, `topics` para segmentación desde `mcmpanel`.
-  - `/albums/*` admite campo opcional `tags` (álbumes sin tags siguen siendo visibles para todos — retrocompatible).
-- **Pendiente manual del admin**: subir `firebase-seed/profileConfig.json` al nodo `/profileConfig` y rellenar `defaultCalendars` por perfil con los IDs reales de `/calendars`.
-
-## 2026-04-23 — Sistema de Perfiles de Usuario · Fase 0
-
-- **Preparación del nuevo sistema de perfiles/delegaciones**: se crean los cimientos (tipos, resolver puro, catálogo de IDs, fallback hardcoded y seed para Firebase) sin tocar aún los consumidores ni `FeatureFlagsContext`. La app se comporta exactamente igual que antes.
-- Diseño revisado en `TODO_SISTEMA_PERFILES.md`: pseudocódigo corregido, bloque `global` ampliado con todos los flags actuales + `minAppVersion` + `maintenanceMode`, overrides a nivel delegación, hook `useResolvedProfileConfig()` para romper el ciclo de providers, skip del onboarding = `miembro` + `_default`.
-- Archivos nuevos:
-  - `types/profileConfig.ts` — tipos (`ProfileType`, `ProfileBase`, `ProfileConfigData`, `ResolvedProfileConfig`, …)
-  - `constants/profileCatalog.ts` — `KNOWN_TABS`, `KNOWN_HOME_BUTTONS`, `KNOWN_MAS_ITEMS`, `KNOWN_ALBUM_TAGS`, `KNOWN_NOTIFICATION_TOPICS`
-  - `utils/resolveProfileConfig.ts` — resolver puro con sanitización + `isAppVersionSupported`
-  - `firebase-seed/profileConfig.json` — seed listo para importar a Firebase RTDB
-  - `firebase-seed/README.md` — instrucciones de subida
-  - `constants/defaultProfileConfig.ts` — importa el JSON + exporta `DEFAULT_RESOLVED_PROFILE_CONFIG` para render inmediato
-- Pendiente manual: subir `firebase-seed/profileConfig.json` al nodo `/profileConfig`, rellenar `delegationList` con las delegaciones reales y los IDs de `defaultCalendars` por perfil.
-
-## ${today} — Arreglo de navegación en tabs Más y Cantoral (Restauración)
-
-- **Bug fix**: Se restauró la lógica de navegación para volver a la pantalla inicial (`popToTop`) al pulsar la pestaña "Más" o "Cantoral" si ya se está en ella, usando el listener `tabPress` sobre el navigator padre (`useNavigation().getParent()`).
-- Archivos: `app/(tabs)/mas.tsx`, `app/(tabs)/cancionero.tsx`
-
-## 2026-03-25 — Migración completa de react-native-paper → heroui-native
-
-- **Eliminación de dependencia**: `react-native-paper` eliminado completamente del proyecto
-- **Nueva UI library**: `heroui-native` (v1.0.0) añadida junto con sus dependencias: `tailwindcss`, `uniwind`, `react-native-svg`, `tailwind-merge`, `tailwind-variants`
-- **Proveedor raíz**: `PaperProvider` reemplazado por `HeroUINativeProvider` en `app/_layout.tsx`
-- **Toast/Snackbar**: todos los usos de `Snackbar` + `Portal` reemplazados por el hook `useToast()` de heroui-native (patrón imperativo: `toast.show({...})`)
-- **Card**: `Card.Content` → `Card.Body` (HeroUI). Afecta: `EventItem.tsx`, `VisitasScreen.tsx`, `ReflexionesScreen.tsx`
-- **Accordion**: `List.Accordion` + `List.AccordionGroup` reemplazados con acordeón custom (estado local + TouchableOpacity) en `ProfundizaScreen.tsx`
-- **Modal**: todos los `Portal > Modal` de Paper → `Modal` nativo de React Native
-- **Formularios**: `TextInput` de Paper (floating label) → RN `TextInput` + etiqueta manual; `Switch` de Paper → RN `Switch`
-- **Botones**: `Button` de Paper → `TouchableOpacity` con estilos propios; `FAB` → TouchableOpacity absoluto en Android / `GlassFAB` sin cambios en iOS
-- **Listas**: `List.Item`, `List.Section`, `List.Accordion` → Views/TouchableOpacity con estilos custom en `GruposScreen.tsx`, `ContactosScreen.tsx`, `AppsScreen.tsx`
-- **Avatar**: `Avatar.Text` → View circular con iniciales en `ContactosScreen.tsx`
-- **Chip**: `Chip` de Paper → View + Text con estilos inline en `ReflexionesScreen.tsx`, `AppsScreen.tsx`
-- **IconButton**: todos los `IconButton` de Paper → `TouchableOpacity` + `MaterialIcons` de @expo/vector-icons
-- **Icons**: iconos de MDI (react-native-paper) → MaterialIcons en todos los componentes migrados
-- **Metro config**: extendido con `withUniwindConfig` para soporte Tailwind v4
-- **global.css**: nuevo entry point de Tailwind v4 con imports de tailwindcss, uniwind y heroui-native
-- Archivos afectados: `app/_layout.tsx`, `app/(tabs)/fotos.tsx`, `app/(tabs)/calendario.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `app/screens/GruposScreen.tsx`, `app/screens/ContactosScreen.tsx`, `app/screens/ProfundizaScreen.tsx`, `app/screens/ReflexionesScreen.tsx`, `app/screens/AppsScreen.tsx`, `app/screens/VisitasScreen.tsx`, `app/screens/ComunicaScreen.tsx`, `app/screens/ComunicaGestionScreen.tsx`, `app/screens/ComidaWebScreen.tsx`, `app/(tabsdesactivados)/comunica.tsx`, `components/EventItem.tsx`, `components/FormattedContent.tsx`, `components/SongControls.tsx`, `metro.config.js`, `global.css`, `package.json`
-
-## 2026-03-20 — Fix z-index cantoral + sistema de archivos .mcm para playlists
-
-- **Bug fix**: botón "Importar playlist" y otros elementos en la pantalla de selección quedaban ocultos detrás del menú liquid glass en iOS. Aumentado `paddingBottom` y `marginBottom` en `SelectedSongsScreen` y snackbars
-- **Nueva extensión .mcm**: las playlists ahora se exportan como archivos `.mcm` (JSON internamente) en vez de `.json`. Esto permite que solo MCM App abra estos archivos
-- **Asociación de archivos en iOS y Android**: configurado `CFBundleDocumentTypes` + `UTExportedTypeDeclarations` (iOS) e `intentFilters` (Android) en `app.json` para que el sistema operativo reconozca archivos `.mcm` y los abra con la app
-- **Importación desde archivos externos**: nuevo hook `useIncomingPlaylist` que escucha URLs entrantes cuando la app se abre desde un archivo `.mcm` (WhatsApp, Files, etc.) e importa la playlist automáticamente
-- **SelectedSongsProvider movido al root layout** para que el handler de archivos entrantes funcione desde cualquier pantalla
-- Compatibilidad retroactiva: la importación sigue aceptando `.json` y `.mcmsongs` además de `.mcm`
-- Archivos: `app/screens/SelectedSongsScreen.tsx`, `app/_layout.tsx`, `app/(tabs)/cancionero.tsx`, `app.json`, `hooks/useIncomingPlaylist.ts`, `app/screens/CategoriesScreen.tsx`
-
-## 2026-03-15 — Fix navegación en tabs Más y Cantoral
-
-- **Bug fix**: al pulsar el tab "Más" o "Cantoral" estando dentro de una sub-pantalla del stack, la pantalla se quedaba bloqueada sin responder
-- Añadido listener `tabPress` que hace `popToTop()` en el stack navigator interno cuando se re-pulsa el tab
-- Archivos: `app/(tabs)/mas.tsx`, `app/(tabs)/cancionero.tsx`
-
-## 2026-03-10 — Rediseño visual completo del Cantoral
-
-- **Rediseño completo de la sección Cantoral** con estética moderna inspirada en Liquid Glass / iOS 18+
-- **CategoriesScreen**: nuevo diseño con tarjetas redondeadas, emojis por categoría, contador de canciones, barra de búsqueda rápida integrada, fondo iOS-style (#F2F2F7)
-- **SongListScreen**: barra de búsqueda moderna, cabecera con título y contador, mejor separación visual
-- **SongListItem**: badges pill para tonalidad (key) y capo con colores temáticos, indicador verde de canción seleccionada, metadatos mejorados
-- **SongDetailScreen**: fondo adaptado a dark mode, padding optimizado
-- **SongControls**: menú FAB rediseñado con popup card flotante, iconos Material Design, indicadores de estado activo con colores azules, animación de rotación del FAB, separadores visuales entre secciones
-- **SongFontPanel**: nuevo diseño con controles +/- para tamaño, porcentaje visible, botones de tipografía con checkmark activo, handle de arrastre
-- **TransposePanel**: display de transposición actual, botones con colores semánticos (verde subir, rojo bajar), handle de arrastre
-- **SongFullscreenScreen**: controles con esquinas redondeadas (borderRadius 16), slider con fondo oscuro, header oculto en modo fullscreen
-- **SelectedSongsScreen**: barra de herramientas compacta con pill buttons, empty state con icono grande y descripción clara, modal de exportación con diseño moderno
-- **BottomSheet**: esquinas más redondeadas (20px), backdrop adaptado a dark mode
-- **cancionero.tsx**: título simplificado a "Cantoral", header shadow deshabilitado, tipografía con letter-spacing negativo
-- Soporte completo de dark mode en todas las pantallas con paleta consistente
-- Cross-platform: sombras adaptadas a web (boxShadow) y nativas (shadow\*/elevation)
-- Archivos afectados: `app/(tabs)/cancionero.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SongListScreen.tsx`, `app/screens/SongDetailScreen.tsx`, `app/screens/SongFullscreenScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `components/SongControls.tsx`, `components/SongDisplay.tsx`, `components/SongListItem.tsx`, `components/SongFontPanel.tsx`, `components/TransposePanel.tsx`, `components/BottomSheet.tsx`
-
----
-
-## 2026-03-06 — Actualización a Expo SDK 55
-
-- **Expo SDK 54 → 55**: actualizado expo, react (19.1→19.2), react-native (0.81→0.83), y todos los paquetes expo-\*
-- **New Architecture obligatoria**: eliminado flag `newArchEnabled` de `app.json` (ya es el comportamiento por defecto en SDK 55)
-- **Eliminado `edgeToEdgeEnabled`**: ya no es una opción válida en SDK 55 (edge-to-edge es el comportamiento por defecto)
-- **expo-file-system**: migrado a `expo-file-system/legacy` donde se usa la API clásica (`cacheDirectory`, `EncodingType`), ya que la API principal ahora usa `File`/`Directory`/`Paths`
-- **expo-notifications**: actualizado cleanup pattern de `removeNotificationSubscription()` a `subscription.remove()`
-- **expo-glass-effect**: actualizado `GlassStyle` de `'light'`/`'dark'` a `'regular'`/`'clear'`
-- **NativeTabs**: actualizado imports de `Icon`/`Label` a `NativeTabs.Trigger.Icon`/`NativeTabs.Trigger.Label`
-- **Nuevos plugins en app.json**: `@react-native-community/datetimepicker`, `expo-font`, `expo-image`, `expo-sharing`, `expo-web-browser`
-- Archivos principales: `package.json`, `app.json`, `app/(tabs)/_layout.tsx`, `app/(tabs)/cancionero.tsx`, `components/ui/GlassHeader.ios.tsx`, `hooks/useNetworkStatus.ts`, `notifications/usePushNotifications.ts`, `app/screens/SelectedSongsScreen.tsx`
-
----
-
-## 2026-03-03 — Mejoras del cliente de notificaciones, dark mode, accesibilidad y rendimiento
-
-### Notificaciones — mejoras del cliente
-
-- **NotificationsContext**: nuevo contexto (`contexts/NotificationsContext.tsx`) con suscripción en tiempo real a Firebase via `subscribeToNotifications()`, badge actualizado en foreground
-- **Modal de detalle**: nueva pantalla modal para ver notificaciones completas (body, imagen, botón de acción) en `app/notifications.tsx`
-- **Marcar todas como leídas**: botón en header + función `markAllNotificationsAsRead` en servicio
-- **iOS action buttons**: mapeado de `actionIdentifier` (view, view_event, view_photos) a rutas internas en `usePushNotifications.ts`
-- **useUnreadNotificationsCount**: simplificado, ahora delega al NotificationsContext
-
-### Dark mode
-
-- **ErrorBoundary.tsx**: usa `Appearance.getColorScheme()` para colores dinámicos (está fuera de providers)
-- **SongFullscreenScreen.tsx**: fondo dinámico con `useColorScheme`
-- **ComidaWebScreen.tsx**: overlay de carga y botón "Volver" adaptativos, ActivityIndicator usa tema correcto
-- **MonitoresWebScreen.tsx**: overlay de carga adaptativo, ActivityIndicator usa tema correcto
-- **WordleScreen.tsx**: teclado y barras de estadísticas con colores adaptativos
-- **ReflexionesScreen.tsx**: tarjetas grupales con fondo y texto adaptativos en modo oscuro
-
-### Rendimiento
-
-- **Home (`app/(tabs)/index.tsx`)**: `ContextualDecoration` envuelto en `React.memo()`, animaciones con `useRef` en vez de `useState`
-
-### Accesibilidad
-
-- `accessibilityLabel` y `accessibilityRole` en botones de Home (notificaciones, ajustes, grid), pantalla de notificaciones (back, mark read, swipe, detalle)
-
-### Infraestructura
-
-- **Pre-commit hooks**: husky + lint-staged en raíz del monorepo para formateo automático con Prettier
-- **Dependencias actualizadas**: todas las dependencias al máximo dentro de Expo SDK 54 (`npm update`)
-
-### Pendiente para próxima sesión
-
-- Upgrade a Expo SDK 55 (requiere `npx expo install --fix` + testing)
-- Firebase 11→12 (major version, revisar guía de migración)
-
----
-
-## 2026-03-01 — Mantenimiento general y reorganización de documentación
-
-### Cambios funcionales
-
-- **Cantoral activado**: `cancionero: true` en `constants/featureFlags.ts`
-- **ErrorBoundary global**: nuevo `components/ErrorBoundary.tsx`, envuelve toda la app en `_layout.tsx`
-- **Splash screen más rápido**: reducido de 1.5s a 0.9s (3 repeticiones en HelloWave)
-
-### Limpieza de código
-
-- Eliminados componentes muertos: `ReportBugsModalNew.tsx`, `ReportBugsModalFixed.tsx`, `ReportBugsModalSimple.tsx`, `.bak`, `.broken`, `.complex`
-- Eliminados scripts de debug: `test-calendar-fix.js`, `test-firebase.js`, `test-new-logic.js`
-- Eliminado `jest.config.js` y dependencias de test (jest-expo, @testing-library/\*, react-test-renderer)
-- Eliminado `dotenv` de dependencies (solo se usaba en script eliminado)
-- Movido `eslint-config-expo` de dependencies a devDependencies
-- Script `npm test` cambiado a placeholder hasta que se configuren tests
-
-### Documentación
-
-- Creado `CLAUDE.md` en raíz del monorepo (orientación para agentes)
-- Reescrito `mcm-app/CLAUDE.md` con referencia técnica completa
-- Creado `CHANGELOG.md` y `TODO.md`
-- Simplificado `README.md` para humanos con chuletas de comandos
-- Consolidado 4 archivos `NOTIS_*.md` + `PANEL_NOTIFICACIONES_NEXTJS.md` → `NOTIFICACIONES.md`
-- Eliminado `agents.md` (duplicado de `AGENTS.md`)
-
-## 2025-11 — Estado conocido al crear esta documentación
-
-- App publicada en stores (Android + iOS) y web
-- Cantoral (`cancionero`) desactivado via feature flag (`cancionero: false`)
-- Tab "Comunica" desactivada y movida a `app/(tabsdesactivados)/`
-- Sistema de notificaciones push: cliente implementado, backend (panel Next.js) pendiente
-- 4 componentes ReportBugsModal\* sin usar (reemplazados por AppFeedbackModal)
-- No hay tests de Jest escritos
-- Contraseña del panel secreto hardcodeada ("coco" en SecretPanelModal.tsx)

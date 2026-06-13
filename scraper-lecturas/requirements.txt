@@ -1,0 +1,5 @@
+requests==2.32.3
+beautifulsoup4==4.12.3
+lxml==5.3.0
+firebase-admin==6.6.0
+python-dotenv==1.0.1
