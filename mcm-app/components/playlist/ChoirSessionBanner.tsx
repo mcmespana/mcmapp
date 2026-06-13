@@ -7,7 +7,7 @@
  *   - botón "Usar mi tono" para que el esclavo se desincronice del tono,
  *   - botón "Salir" / "Cerrar sesión".
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { transposeLabel } from '@/utils/transposeKey';
+import ShareQrModal from '@/components/playlist/ShareQrModal';
 
 interface Props {
   /** Si true, el banner se muestra en posición fija arriba (no en flujo). */
@@ -43,6 +44,7 @@ const ChoirSessionBanner: React.FC<Props> = ({ floating, topOffset = 0 }) => {
   const isDark = scheme === 'dark';
   const styles = useMemo(() => createStyles(isDark), [isDark]);
   const { toast } = useToast();
+  const [showQr, setShowQr] = useState(false);
 
   if (mode === 'off' || !code) return null;
 
@@ -69,84 +71,102 @@ const ChoirSessionBanner: React.FC<Props> = ({ floating, topOffset = 0 }) => {
     : masterTranspose;
 
   return (
-    <View
-      style={[
-        styles.banner,
-        floating
-          ? {
-              position: 'absolute',
-              top: topOffset,
-              left: 8,
-              right: 8,
-              zIndex: 50,
-            }
-          : undefined,
-      ]}
-    >
-      <View style={styles.left}>
-        <View style={styles.icon}>
-          <MaterialIcons
-            name={mode === 'master' ? 'campaign' : 'headphones'}
-            size={16}
-            color="#fff"
-          />
+    <>
+      <View
+        style={[
+          styles.banner,
+          floating
+            ? {
+                position: 'absolute',
+                top: topOffset,
+                left: 8,
+                right: 8,
+                zIndex: 50,
+              }
+            : undefined,
+        ]}
+      >
+        <View style={styles.left}>
+          <View style={styles.icon}>
+            <MaterialIcons
+              name={mode === 'master' ? 'campaign' : 'headphones'}
+              size={16}
+              color="#fff"
+            />
+          </View>
+          <View style={styles.textBlock}>
+            <Text style={styles.role}>
+              {mode === 'master' ? 'Líder de coro' : 'Coro'} · {code}
+            </Text>
+            <Text style={styles.detail}>
+              {session?.current ? (
+                <>
+                  Tono:{' '}
+                  {effectiveTranspose === 0
+                    ? 'original'
+                    : `${transposeLabel(effectiveTranspose)} st`}
+                  {isOverriding ? ' (local)' : ''}
+                </>
+              ) : (
+                <>Sin canción aún</>
+              )}
+            </Text>
+          </View>
         </View>
-        <View style={styles.textBlock}>
-          <Text style={styles.role}>
-            {mode === 'master' ? 'Líder de coro' : 'Coro'} · {code}
-          </Text>
-          <Text style={styles.detail}>
-            {session?.current ? (
-              <>
-                Tono:{' '}
-                {effectiveTranspose === 0
-                  ? 'original'
-                  : `${transposeLabel(effectiveTranspose)} st`}
-                {isOverriding ? ' (local)' : ''}
-              </>
+
+        <View style={styles.right}>
+          <TouchableOpacity
+            style={styles.leaveBtn}
+            onPress={() => setShowQr(true)}
+            hitSlop={6}
+            accessibilityLabel="Mostrar QR del coro"
+          >
+            <MaterialIcons name="qr-code-2" size={16} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.leaveBtn}
+            onPress={handleShare}
+            hitSlop={6}
+          >
+            <MaterialIcons name="share" size={16} color="#fff" />
+          </TouchableOpacity>
+          {mode === 'slave' && session?.current ? (
+            isOverriding ? (
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => setOverrideTranspose(null)}
+              >
+                <MaterialIcons name="sync" size={16} color="#fff" />
+                <Text style={styles.actionText}>Sincronizar</Text>
+              </TouchableOpacity>
             ) : (
-              <>Sin canción aún</>
-            )}
-          </Text>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => setOverrideTranspose(masterTranspose)}
+              >
+                <MaterialIcons name="tune" size={16} color="#fff" />
+                <Text style={styles.actionText}>Mi tono</Text>
+              </TouchableOpacity>
+            )
+          ) : null}
+          <TouchableOpacity
+            style={styles.leaveBtn}
+            onPress={() => leave()}
+            hitSlop={6}
+          >
+            <MaterialIcons name="close" size={18} color="#fff" />
+          </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.right}>
-        <TouchableOpacity
-          style={styles.leaveBtn}
-          onPress={handleShare}
-          hitSlop={6}
-        >
-          <MaterialIcons name="share" size={16} color="#fff" />
-        </TouchableOpacity>
-        {mode === 'slave' && session?.current ? (
-          isOverriding ? (
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => setOverrideTranspose(null)}
-            >
-              <MaterialIcons name="sync" size={16} color="#fff" />
-              <Text style={styles.actionText}>Sincronizar</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => setOverrideTranspose(masterTranspose)}
-            >
-              <MaterialIcons name="tune" size={16} color="#fff" />
-              <Text style={styles.actionText}>Mi tono</Text>
-            </TouchableOpacity>
-          )
-        ) : null}
-        <TouchableOpacity
-          style={styles.leaveBtn}
-          onPress={() => leave()}
-          hitSlop={6}
-        >
-          <MaterialIcons name="close" size={18} color="#fff" />
-        </TouchableOpacity>
-      </View>
-    </View>
+      <ShareQrModal
+        visible={showQr}
+        title={`Coro · Código ${code}`}
+        url={`https://mcm.expo.app/coro?c=${code}`}
+        code={code}
+        onClose={() => setShowQr(false)}
+      />
+    </>
   );
 };
 
