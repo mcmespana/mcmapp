@@ -30,11 +30,10 @@ node .agents/skills/heroui-native/scripts/get_docs.mjs /docs/native/getting-star
 <GestureHandlerRootView>
   <SafeAreaProvider>
     <HeroUINativeProvider>
-      {' '}
-      // ← Toast incluido aquí
-      <FeatureFlagsProvider>
+      {/* Toast incluido aquí */}
+      <ProfileConfigProvider>
         <Stack />
-      </FeatureFlagsProvider>
+      </ProfileConfigProvider>
     </HeroUINativeProvider>
   </SafeAreaProvider>
 </GestureHandlerRootView>
