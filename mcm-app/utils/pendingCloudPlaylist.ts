@@ -8,6 +8,8 @@
  */
 let pendingPlaylist: string | null = null;
 let pendingChoir: string | null = null;
+/** Payload compacto de una playlist offline (mcmapp://playlist?d=...). */
+let pendingOffline: string | null = null;
 
 export function setPendingCloudPlaylistCode(code: string | null) {
   pendingPlaylist = code;
@@ -35,4 +37,14 @@ export function consumePendingChoirCode(): string | null {
 
 export function peekPendingChoirCode(): string | null {
   return pendingChoir;
+}
+
+export function setPendingOfflinePlaylist(payload: string | null) {
+  pendingOffline = payload;
+}
+
+export function consumePendingOfflinePlaylist(): string | null {
+  const payload = pendingOffline;
+  pendingOffline = null;
+  return payload;
 }
