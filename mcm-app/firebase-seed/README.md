@@ -54,11 +54,11 @@ editas la estructura remota, refleja los cambios en este JSON y viceversa.
 Seeds del **sistema de encuestas** (ver `docs/funcionalidades/ENCUESTAS.md` y
 `docs/contratos/ENCUESTAS_CONTRATO.md` en la raíz del monorepo). Todos siguen la forma `{ updatedAt, data }`.
 
-| Seed                        | Importar en                              | Qué es |
-| --------------------------- | ---------------------------------------- | ------ |
-| `evaluacion.json`           | `activities/<evento>/evaluacion`         | Config de la evaluación de un evento (preguntas + estado). |
-| `app-evaluation-config.json`| `app/evaluationConfig`                   | Config de la evaluación de la app (incluye ejemplos de `scale`/`multi`). |
-| `surveys.json`              | `surveys`                                | Encuestas genéricas: índice `_index` (banners) + ejemplo `encuesta-monitores-2026`. |
+| Seed                         | Importar en                      | Qué es                                                                              |
+| ---------------------------- | -------------------------------- | ----------------------------------------------------------------------------------- |
+| `evaluacion.json`            | `activities/<evento>/evaluacion` | Config de la evaluación de un evento (preguntas + estado).                          |
+| `app-evaluation-config.json` | `app/evaluationConfig`           | Config de la evaluación de la app (incluye ejemplos de `scale`/`multi`).            |
+| `surveys.json`               | `surveys`                        | Encuestas genéricas: índice `_index` (banners) + ejemplo `encuesta-monitores-2026`. |
 
 > ⚠️ Importar **reemplaza** el nodo destino. Hazlo antes de que haya respuestas
 > (las respuestas viven en `respuestas/<deviceId>` dentro del mismo nodo, o en
@@ -81,19 +81,19 @@ estructura. Convención de paths y pasos para crear un evento nuevo:
 Cada archivo corresponde a una sección del nodo `jubileo/` de Firebase
 (estructura legacy, hoy los eventos nuevos van bajo `activities/<nombre>/`):
 
-| Archivo | Nodo Firebase | Qué contiene |
-| ------- | ------------- | ------------ |
-| `jubileo-horario.json` | `jubileo/horario` | Días con eventos (hora, título, descripción) |
-| `jubileo-materiales.json` | `jubileo/materiales` | Materiales con páginas en BBCode |
-| `jubileo-profundiza.json` | `jubileo/profundiza` | Contenido "Profundiza" en BBCode |
-| `jubileo-visitas.json` | `jubileo/visitas` | Lugares para visitar (descripción, mapa) |
-| `jubileo-grupos.json` | `jubileo/grupos` | Grupos de participantes |
-| `jubileo-contactos.json` | `jubileo/contactos` | Teléfonos de contacto |
-| `jubileo-apps.json` | `jubileo/apps` | Apps recomendadas para el evento |
+| Archivo                   | Nodo Firebase        | Qué contiene                                 |
+| ------------------------- | -------------------- | -------------------------------------------- |
+| `jubileo-horario.json`    | `jubileo/horario`    | Días con eventos (hora, título, descripción) |
+| `jubileo-materiales.json` | `jubileo/materiales` | Materiales con páginas en BBCode             |
+| `jubileo-profundiza.json` | `jubileo/profundiza` | Contenido "Profundiza" en BBCode             |
+| `jubileo-visitas.json`    | `jubileo/visitas`    | Lugares para visitar (descripción, mapa)     |
+| `jubileo-grupos.json`     | `jubileo/grupos`     | Grupos de participantes                      |
+| `jubileo-contactos.json`  | `jubileo/contactos`  | Teléfonos de contacto                        |
+| `jubileo-apps.json`       | `jubileo/apps`       | Apps recomendadas para el evento             |
 
 ### `eventos/visita-papa-2026/` — Visita del Papa
 
-| Archivo | Nodo Firebase | Qué contiene |
-| ------- | ------------- | ------------ |
-| `visitapapa-materiales.json` | `activities/visitapapa26/materiales` | Materiales por día con páginas en BBCode |
-| `visita-misa.json` | — | Texto fuente del libreto de la misa (no es JSON pese a la extensión; materia prima de los materiales) |
+| Archivo                      | Nodo Firebase                        | Qué contiene                                                                                          |
+| ---------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `visitapapa-materiales.json` | `activities/visitapapa26/materiales` | Materiales por día con páginas en BBCode                                                              |
+| `visita-misa.json`           | —                                    | Texto fuente del libreto de la misa (no es JSON pese a la extensión; materia prima de los materiales) |
