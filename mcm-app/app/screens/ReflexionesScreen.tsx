@@ -413,7 +413,7 @@ export default function ReflexionesScreen() {
                 <View style={{ flex: 1 }}>
                   <BottomSheet.Title>Compartir reflexión</BottomSheet.Title>
                   <Text style={styles.sheetSubtitle}>
-                    Tu experiencia puede iluminar a otros
+                    La tuya o la de tu grupo
                   </Text>
                 </View>
               </View>
@@ -434,7 +434,7 @@ export default function ReflexionesScreen() {
                 <TextInput
                   value={contenido}
                   onChangeText={setContenido}
-                  placeholder="Escribe aquí tu reflexión"
+                  placeholder="Escribe aquí lo que quieras"
                   placeholderTextColor={theme.icon}
                   multiline
                   textAlignVertical="top"
@@ -462,7 +462,9 @@ export default function ReflexionesScreen() {
               </Pressable>
 
               <View style={styles.field}>
-                <Text style={styles.inputLabel}>Tu nombre (opcional)</Text>
+                <Text style={styles.inputLabel}>
+                  ¿Quién la envía? (opcional)
+                </Text>
                 <TextInput
                   value={autor}
                   onChangeText={setAutor}

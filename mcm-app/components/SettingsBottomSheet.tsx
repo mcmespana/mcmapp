@@ -10,12 +10,15 @@ import {
   Dimensions,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import useFontScale from '@/hooks/useFontScale';
 import { useAppSettings, ThemeScheme } from '@/contexts/AppSettingsContext';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useActiveSurveys } from '@/hooks/useActiveSurveys';
+import SurveyBanner from '@/components/SurveyBanner';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import type { ProfileType } from '@/types/profileConfig';
@@ -48,6 +51,7 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
   const resolved = useResolvedProfileConfig();
   const { rawConfig } = useProfileConfigContext();
   const { profile, setProfile } = useUserProfile();
+  const settingsSurveys = useActiveSurveys('app-settings');
   type PanelView = 'settings' | 'profile' | 'delegation';
   const [panelView, setPanelView] = useState<PanelView>('settings');
 
@@ -433,6 +437,70 @@ export default function SettingsBottomSheet({ visible, onClose }: Props) {
                   </PressableFeedback>
                 </View>
               </View>
+
+              {/* ── Sección: Sobre la app ── */}
+              <Text
+                style={[
+                  styles.sectionLabel,
+                  { color: theme.icon, marginTop: spacing.md },
+                ]}
+              >
+                SOBRE LA APP
+              </Text>
+
+              <PressableFeedback
+                style={[
+                  styles.surface,
+                  styles.surfaceClickable,
+                  { backgroundColor: surfaceBg },
+                ]}
+                onPress={() => {
+                  handleClose();
+                  router.push('/evaluacion-app');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Evalúa la app"
+              >
+                <PressableFeedback.Highlight />
+                <View style={[styles.surfaceRow, { flex: 1 }]}>
+                  <MaterialIcons
+                    name="rate-review"
+                    size={20}
+                    color={theme.icon}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.surfaceLabel, { color: theme.text }]}>
+                      Evalúa la app
+                    </Text>
+                    <Text style={[styles.surfaceHint, { color: theme.icon }]}>
+                      Errores, utilidad e ideas
+                    </Text>
+                  </View>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={theme.icon}
+                  style={{ opacity: 0.4 }}
+                />
+              </PressableFeedback>
+
+              {/* Encuestas genéricas con placement "app-settings" */}
+              {settingsSurveys.map((s) => (
+                <View
+                  key={s.id}
+                  style={[styles.surface, { backgroundColor: surfaceBg }]}
+                >
+                  <SurveyBanner
+                    entry={s}
+                    compact
+                    onPress={() => {
+                      handleClose();
+                      router.navigate(`/encuesta/${s.id}` as never);
+                    }}
+                  />
+                </View>
+              ))}
             </>
           )}
         </ScrollView>

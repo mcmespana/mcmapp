@@ -472,8 +472,13 @@ toast.show({
 **Switch** (de heroui-native, no RN nativo):
 
 ```tsx
-<Switch isSelected={val} onChange={setVal} />
+<Switch isSelected={val} onSelectedChange={setVal} />
 ```
+
+> ⚠️ El callback es `onSelectedChange` (NO `onChange`). Además, dentro de
+> Modales RN el Switch de heroui ha llegado a pintarse invisible (ver
+> `ExportPdfModal`, que usa un toggle propio con StyleSheet por ese motivo) —
+> verificar visualmente al usarlo en overlays.
 
 **Chip**:
 

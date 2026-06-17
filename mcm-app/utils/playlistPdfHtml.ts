@@ -17,9 +17,12 @@
  *    navegador la parte por filas (cabecera se queda con la primera
  *    fila gracias al wrapper).
  *  - Opción de "una canción por página" → `page-break-after: always`.
- *  - Encabezado de página fijo con el nombre de la playlist (esquina
- *    superior izquierda) y numeración (esquina inferior derecha) vía
- *    @page + counter.
+ *  - Pie de página con el nombre de la playlist (abajo-izquierda) y
+ *    "Página N" (abajo-derecha) vía margin boxes de @page. Soportado en
+ *    Chrome/Chromium ≥131 (web y WebView de Android); el motor de
+ *    impresión de iOS (WebKit) los ignora, igual que ignora los
+ *    márgenes de @page (esos se compensan con la opción `margins` de
+ *    expo-print al generar el fichero).
  */
 
 import {
@@ -55,6 +58,11 @@ export interface PdfBuildOptions {
   showChords: boolean;
   /** Tamaño de letra de la letra (12–16). El acorde escala proporcional. */
   lyricsFontPt: number;
+  /**
+   * Texto de fecha que se imprime en la portada. Si no se pasa se usa la
+   * fecha de hoy; cadena vacía = no imprimir fecha.
+   */
+  printedDate?: string;
 }
 
 const escapeHtml = (s: string) =>
@@ -63,6 +71,13 @@ const escapeHtml = (s: string) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+
+/** Escapa un texto para usarlo dentro de una cadena CSS entre comillas dobles. */
+const escapeCssString = (s: string) =>
+  s
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/[\n\r]/g, ' ');
 
 const cleanTitle = (t: string) => t.replace(/^\d+\.\s*/, '').trim();
 
@@ -167,11 +182,18 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
   const chordPt = (lyricsPt * 0.95).toFixed(2);
   const songs = opts.songs.map((s) => songBlock(s, opts)).join('\n');
 
-  const today = new Date().toLocaleDateString('es-ES', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const printedDate =
+    opts.printedDate !== undefined
+      ? opts.printedDate.trim()
+      : new Date().toLocaleDateString('es-ES', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+  const coverMeta = [
+    `${opts.songs.length} ${opts.songs.length === 1 ? 'canción' : 'canciones'}`,
+    ...(printedDate ? [escapeHtml(printedDate)] : []),
+  ].join(' · ');
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -185,6 +207,26 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
     @page {
       size: A4;
       margin: 18mm 16mm 18mm 16mm;
+      /* Pie de página. Margin boxes: Chrome/Chromium ≥131 (web y Android);
+         el motor de iOS los ignora sin romper nada. */
+      @bottom-left {
+        content: "${escapeCssString(opts.playlistName)}";
+        font-family: 'Inter', -apple-system, sans-serif;
+        font-size: 8.5pt;
+        color: #94a3b8;
+      }
+      @bottom-right {
+        content: "Página " counter(page);
+        font-family: 'Inter', -apple-system, sans-serif;
+        font-size: 8.5pt;
+        color: #94a3b8;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+    /* La portada va limpia, sin pie. */
+    @page :first {
+      @bottom-left { content: none; }
+      @bottom-right { content: none; }
     }
     * { box-sizing: border-box; }
     html, body {
@@ -431,7 +473,7 @@ export function buildPlaylistPdfHtml(opts: PdfBuildOptions): string {
     <div class="cover-eyebrow">Playlist · MCM</div>
     <h1 class="cover-title">${escapeHtml(opts.playlistName)}</h1>
     <div class="cover-rule"></div>
-    <div class="cover-meta">${opts.songs.length} ${opts.songs.length === 1 ? 'canción' : 'canciones'} · ${escapeHtml(today)}</div>
+    <div class="cover-meta">${coverMeta}</div>
     <div class="cover-toc">
       ${opts.songs
         .map((s, i) => {

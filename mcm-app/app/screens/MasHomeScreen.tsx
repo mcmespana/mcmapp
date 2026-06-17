@@ -143,11 +143,11 @@ export default function MasHomeScreen() {
   // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
   useFocusEffect(
     useCallback(() => {
-      const screen = takePendingMasScreen();
-      if (screen) {
-        // navigate() overloads don't accept union types — as never is the
-        // idiomatic TypeScript escape hatch for this overload resolution issue
-        navigation.navigate(screen as never);
+      const pending = takePendingMasScreen();
+      if (pending) {
+        // navigate() overloads no aceptan tipos unión ni un screen con params
+        // `undefined` + params — usamos `as any` como escape hatch idiomático.
+        (navigation.navigate as any)(pending.screen, pending.params);
       }
     }, [navigation]),
   );

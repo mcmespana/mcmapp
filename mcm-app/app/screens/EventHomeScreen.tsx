@@ -28,6 +28,8 @@ import { EventStackParamList } from './eventStackScreens';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import useNetworkStatus from '@/hooks/useNetworkStatus';
 import OfflineBanner from '@/components/OfflineBanner';
+import SurveyBanner from '@/components/SurveyBanner';
+import { useActiveSurveys } from '@/hooks/useActiveSurveys';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import {
   EventConfig,
@@ -53,6 +55,7 @@ export default function EventHomeScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const event = useCurrentEvent();
+  const eventSurveys = useActiveSurveys('event-banner', event.id);
 
   const { width } = useWindowDimensions();
   const isWide = width >= WIDE_BREAKPOINT;
@@ -137,6 +140,11 @@ export default function EventHomeScreen() {
             </Text>
           ) : null}
         </LinearGradient>
+
+        {/* ── Encuestas activas del evento (banner automático) ── */}
+        {eventSurveys.map((s) => (
+          <SurveyBanner key={s.id} entry={s} />
+        ))}
 
         <View style={[styles.gridContainer, { gap }]}>
           {visibleSections.map((section) => (

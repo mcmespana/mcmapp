@@ -43,9 +43,15 @@ import { radii } from '@/constants/uiStyles';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 
+import { h } from '@/utils/haptics';
 import PlaylistRow from '@/components/playlist/PlaylistRow';
+import ReorderableList, {
+  ReorderableListReorderEvent,
+  useReorderableDrag,
+} from 'react-native-reorderable-list';
 import PlaylistActionsBottomSheet, {
   PlaylistAction,
+  PlaylistActionSection,
 } from '@/components/playlist/PlaylistActionsBottomSheet';
 import ExportPdfModal, {
   PdfExportConfig,
@@ -55,6 +61,8 @@ import CodeInputModal, {
   CodeDialogVariant,
 } from '@/components/playlist/CodeInputModal';
 import ConfirmChoiceModal from '@/components/playlist/ConfirmChoiceModal';
+import ShareQrModal from '@/components/playlist/ShareQrModal';
+import PasswordPromptModal from '@/components/playlist/PasswordPromptModal';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 
 import {
@@ -100,7 +108,22 @@ type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<
 
 const WEB_BASE_URL = 'https://mcm.expo.app';
 
+/** Contraseña para sobrescribir una playlist en la nube que ya existe. */
+const OVERWRITE_PASSWORD = 'coco';
+
 type ViewMode = 'category' | 'manual';
+
+/**
+ * Fila del modo "Orden ajustado" dentro de `ReorderableList` (nativo):
+ * long-press sobre la fila inicia el arrastre. `useReorderableDrag` solo
+ * puede usarse dentro de una celda de la lista, por eso este wrapper.
+ */
+const DraggableManualRow: React.FC<React.ComponentProps<typeof PlaylistRow>> = (
+  props,
+) => {
+  const drag = useReorderableDrag();
+  return <PlaylistRow {...props} onLongPress={drag} />;
+};
 
 const SelectedSongsScreen: React.FC = () => {
   const {
@@ -129,7 +152,8 @@ const SelectedSongsScreen: React.FC = () => {
   >('songs', 'songs');
   const { toast } = useToast();
 
-  const [viewMode, setViewMode] = useState<ViewMode>('category');
+  // Por defecto "Orden ajustado": es donde se reordena con drag & drop.
+  const [viewMode, setViewMode] = useState<ViewMode>('manual');
 
   // Modales / sheets
   const [showActions, setShowActions] = useState(false);
@@ -153,6 +177,19 @@ const SelectedSongsScreen: React.FC = () => {
       onPress: () => void;
       variant?: 'primary' | 'secondary' | 'danger';
     }[];
+  } | null>(null);
+
+  // Modal de QR (tras subir playlist / iniciar coro, o desde el menú).
+  const [qrModal, setQrModal] = useState<{
+    title: string;
+    url: string;
+    code: string;
+  } | null>(null);
+
+  // Subida pendiente de contraseña (el código ya existe en la nube).
+  const [pendingOverwrite, setPendingOverwrite] = useState<{
+    code: string;
+    name?: string;
   } | null>(null);
 
   // Código de la última subida a la nube (para "cambiar código" / "borrar").
@@ -500,6 +537,7 @@ const SelectedSongsScreen: React.FC = () => {
           pageBreakPerSong: cfg.pageBreakPerSong,
           showChords: cfg.showChords,
           lyricsFontPt: cfg.lyricsFontPt,
+          printedDate: cfg.printedDate,
         });
 
         if (Platform.OS === 'web') {
@@ -526,6 +564,13 @@ const SelectedSongsScreen: React.FC = () => {
           const { uri } = await Print.printToFileAsync({
             html,
             base64: false,
+            // A4 en puntos (72 PPI); sin esto expo-print asume US Letter.
+            width: 595,
+            height: 842,
+            // iOS ignora el `margin` de @page del CSS, así que ahí los
+            // márgenes van por opción nativa (expo-print solo la aplica en
+            // iOS; Android sí respeta el @page del HTML).
+            margins: { top: 51, bottom: 51, left: 45, right: 45 },
           });
           const safeName =
             cfg.playlistName
@@ -551,7 +596,9 @@ const SelectedSongsScreen: React.FC = () => {
         toast.show({ label: 'Tenemos tu PDF recién sacado del orno' });
       } catch (err) {
         console.error('Error exportando PDF', err);
-        toast.show({ label: 'Error al generar el PDF, sorry, lo arreglaremos' });
+        toast.show({
+          label: 'Error al generar el PDF, sorry, lo arreglaremos',
+        });
       }
     },
     [flatSelectedSongs, settings.notation, toast],
@@ -691,25 +738,20 @@ const SelectedSongsScreen: React.FC = () => {
     async (code: string, name?: string) => {
       const exists = await cloudPlaylistExists(code);
       if (exists) {
-        // Pedimos confirmación: sobrescribir / cambiar código / cancelar.
-        // Cerramos diálogo de código temporalmente para evitar dos modales.
+        // El código ya tiene contenido (tuyo o de otra persona). Para
+        // machacarlo pedimos la contraseña; también se puede elegir otro
+        // código. Cerramos el diálogo de código para no apilar modales.
         setCodeDialog(null);
         setConfirmDialog({
           title: 'Código ocupado',
-          description: `Ya hay una playlist subida con el código ${code}. ¿Quieres sobrescribirla?`,
+          description: `Ya hay una playlist subida con el código ${code}. Para sobrescribirla necesitas la contraseña.`,
           actions: [
             {
-              label: 'Sobrescribir',
+              label: 'Sobrescribir…',
               variant: 'danger',
-              onPress: async () => {
+              onPress: () => {
                 setConfirmDialog(null);
-                try {
-                  await uploadCloudPlaylist(code, selectedSongs, { name });
-                  setLastUploadCode(code);
-                  showUploadSuccess(code, name);
-                } catch (e: any) {
-                  toast.show({ label: e?.message ?? 'Error al subir' });
-                }
+                setPendingOverwrite({ code, name });
               },
             },
             {
@@ -739,79 +781,40 @@ const SelectedSongsScreen: React.FC = () => {
     [selectedSongs],
   );
 
-  const showUploadSuccess = useCallback(
-    (code: string, name?: string) => {
-      const url = `${WEB_BASE_URL}/playlist?p=${code}`;
-      setConfirmDialog({
-        title: name
-          ? `¡${name} subida! Código ${code}`
-          : `¡Subida! Código ${code}`,
-        description: `Compártelo o copia el enlace:\n${url}`,
-        actions: [
-          {
-            label: 'Copiar enlace',
-            variant: 'primary',
-            onPress: () => {
-              void Clipboard.setStringAsync(url);
-              toast.show({ label: 'Enlace copiado' });
-              setConfirmDialog(null);
-            },
-          },
-          {
-            label: 'Copiar solo el código',
-            variant: 'secondary',
-            onPress: () => {
-              void Clipboard.setStringAsync(code);
-              toast.show({ label: 'Código copiado' });
-              setConfirmDialog(null);
-            },
-          },
-          {
-            label: 'Cerrar',
-            variant: 'secondary',
-            onPress: () => setConfirmDialog(null),
-          },
-        ],
+  /** Subida tras validar la contraseña de sobrescritura. */
+  const handleConfirmOverwrite = useCallback(async () => {
+    const pending = pendingOverwrite;
+    setPendingOverwrite(null);
+    if (!pending) return;
+    try {
+      await uploadCloudPlaylist(pending.code, selectedSongs, {
+        name: pending.name,
       });
-    },
-    [toast],
-  );
+      setLastUploadCode(pending.code);
+      showUploadSuccess(pending.code, pending.name);
+    } catch (e: any) {
+      toast.show({ label: e?.message ?? 'Error al subir' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingOverwrite, selectedSongs]);
 
-  const showChoirSuccess = useCallback(
-    (code: string) => {
-      const url = `${WEB_BASE_URL}/coro?c=${code}`;
-      setConfirmDialog({
-        title: `¡Coro iniciado! Código ${code}`,
-        description: `Compártelo o copia el enlace:\n${url}`,
-        actions: [
-          {
-            label: 'Copiar enlace',
-            variant: 'primary',
-            onPress: () => {
-              void Clipboard.setStringAsync(url);
-              toast.show({ label: 'Enlace copiado' });
-              setConfirmDialog(null);
-            },
-          },
-          {
-            label: 'Copiar solo el código',
-            variant: 'secondary',
-            onPress: () => {
-              void Clipboard.setStringAsync(code);
-              toast.show({ label: 'Código copiado' });
-              setConfirmDialog(null);
-            },
-          },
-          {
-            label: 'Cerrar',
-            variant: 'secondary',
-            onPress: () => setConfirmDialog(null),
-          },
-        ],
-      });
-    },
-    [toast],
-  );
+  const showUploadSuccess = useCallback((code: string, name?: string) => {
+    setQrModal({
+      title: name
+        ? `¡${name} subida! Código ${code}`
+        : `¡Subida! Código ${code}`,
+      url: `${WEB_BASE_URL}/playlist?p=${code}`,
+      code,
+    });
+  }, []);
+
+  const showChoirSuccess = useCallback((code: string) => {
+    setQrModal({
+      title: `¡Coro iniciado! Código ${code}`,
+      url: `${WEB_BASE_URL}/coro?c=${code}`,
+      code,
+    });
+  }, []);
 
   const handleDownloadFromCloud = useCallback(
     async (code: string) => {
@@ -963,8 +966,8 @@ const SelectedSongsScreen: React.FC = () => {
 
   // --- Acciones del sheet ---------------------------------------------------
 
-  const sheetActions = useMemo<PlaylistAction[]>(() => {
-    const actions: PlaylistAction[] = [
+  const sheetSections = useMemo<PlaylistActionSection[]>(() => {
+    const exportar: PlaylistAction[] = [
       {
         id: 'share-text',
         icon: 'share',
@@ -978,48 +981,46 @@ const SelectedSongsScreen: React.FC = () => {
         onPress: handleShareText,
       },
       {
-        id: 'upload-cloud',
-        icon: 'cloud-upload',
-        label: 'Compartir Playlist (código 4 dígitos)',
-        description: lastUploadCode
-          ? `Código actual: ${lastUploadCode}`
-          : 'Cualquiera con el código podrá importarla',
-        onPress: () => setCodeDialog({ variant: 'cloud-upload' }),
-        separator: true,
-      },
-      {
-        id: 'download-cloud',
-        icon: 'cloud-download',
-        label: 'Importar Playlist',
-        description: 'Introduce el código de 4 dígitos que te han pasado',
-
-        onPress: () => setCodeDialog({ variant: 'cloud-download' }),
-      },
-      {
         id: 'export-pdf',
         icon: 'picture-as-pdf',
         label: 'Exportar a PDF',
         description: 'Letra y acordes con un formato bonito',
         onPress: handleStartExportPdf,
-        separator: true,
-      },
-      {
-        id: 'export-file',
-        icon: 'file-upload',
-        label: 'Exportar playlist como archivo (.mcm)',
-        // description: 'Incluye el tono cambiado y el orden personalizado',
-        onPress: handleStartExportFile,
-      },
-      {
-        id: 'import-file',
-        icon: 'file-download',
-        label: 'Importar archivo de playlist (.mcm)',
-        onPress: handleImportFile,
       },
     ];
 
+    const nube: PlaylistAction[] = [
+      {
+        id: 'upload-cloud',
+        icon: 'cloud-upload',
+        label: 'Subir playlist (compartir código)',
+        description: lastUploadCode
+          ? `Código actual: ${lastUploadCode}`
+          : 'Cualquiera con el código podrá importarla',
+        onPress: () => setCodeDialog({ variant: 'cloud-upload' }),
+      },
+      {
+        id: 'download-cloud',
+        icon: 'cloud-download',
+        label: 'Importar playlist con código',
+        description: 'Introduce el código de 4 dígitos que te han pasado',
+        onPress: () => setCodeDialog({ variant: 'cloud-download' }),
+      },
+    ];
     if (lastUploadCode) {
-      actions.push(
+      nube.push(
+        {
+          id: 'show-qr-cloud',
+          icon: 'qr-code-2',
+          label: 'Ver QR de la playlist',
+          description: 'Quien lo escanee abre la playlist directamente',
+          onPress: () =>
+            setQrModal({
+              title: `Playlist · Código ${lastUploadCode}`,
+              url: `${WEB_BASE_URL}/playlist?p=${lastUploadCode}`,
+              code: lastUploadCode,
+            }),
+        },
         {
           id: 'change-cloud-code',
           icon: 'edit',
@@ -1041,83 +1042,116 @@ const SelectedSongsScreen: React.FC = () => {
       );
     }
 
-    if (choir.mode === 'off') {
-      actions.push(
-        {
-          id: 'choir-start',
-          icon: 'campaign',
-          label: 'Iniciar sesión de coro (ser líder)',
-          description:
-            'Otros dispositivos te siguen con un código de 4 dígitos',
-          onPress: () => setCodeDialog({ variant: 'choir-start' }),
-          separator: true,
-        },
-        {
-          id: 'choir-join',
-          icon: 'headphones',
-          label: 'Unirse a sesión de coro',
-          description: 'Introduces un código y sigues las canciones del líder',
-          onPress: () => setCodeDialog({ variant: 'choir-join' }),
-        },
-      );
-    } else {
-      actions.push(
-        {
-          id: 'choir-change-code',
-          icon: 'edit',
-          label: 'Cambiar código del coro',
-          description: `Actual: ${choir.code}${choir.mode === 'slave' ? ' (solo el líder puede cambiarlo)' : ''}`,
-          onPress: () =>
-            setCodeDialog({
-              variant: 'change-code',
-              initial: choir.code ?? undefined,
-            }),
-          separator: true,
-          disabled: choir.mode !== 'master',
-        },
-        {
-          id: 'choir-leave',
-          icon: 'logout',
-          label:
-            choir.mode === 'master'
-              ? 'Cerrar sesión de coro'
-              : 'Salir del coro',
-          variant: 'danger',
-          onPress: () => choir.leave(),
-        },
-      );
-    }
-
-    actions.push({
-      id: 'clear',
-      icon: 'delete-outline',
-      label: 'Vaciar playlist',
-      variant: 'danger',
-      separator: true,
-      onPress: () => {
-        setConfirmDialog({
-          title: '¿Vaciar la playlist?',
-          description: 'Se quitarán todas las canciones seleccionadas.',
-          actions: [
-            {
-              label: 'Vaciar',
-              variant: 'danger',
-              onPress: () => {
-                clearSelection();
-                setConfirmDialog(null);
-              },
-            },
-            {
-              label: 'Cancelar',
-              variant: 'secondary',
-              onPress: () => setConfirmDialog(null),
-            },
-          ],
-        });
+    const archivo: PlaylistAction[] = [
+      {
+        id: 'export-file',
+        icon: 'file-upload',
+        label: 'Exportar archivo (.mcm)',
+        description: 'Incluye tonos cambiados y orden personalizado',
+        onPress: handleStartExportFile,
       },
-    });
+      {
+        id: 'import-file',
+        icon: 'file-download',
+        label: 'Importar archivo (.mcm)',
+        onPress: handleImportFile,
+      },
+    ];
 
-    return actions;
+    const coro: PlaylistAction[] =
+      choir.mode === 'off'
+        ? [
+            {
+              id: 'choir-start',
+              icon: 'campaign',
+              label: 'Iniciar sesión de coro (ser líder)',
+              description:
+                'Otros dispositivos te siguen con un código de 4 dígitos',
+              onPress: () => setCodeDialog({ variant: 'choir-start' }),
+            },
+            {
+              id: 'choir-join',
+              icon: 'headphones',
+              label: 'Unirse a sesión de coro',
+              description:
+                'Introduces un código y sigues las canciones del líder',
+              onPress: () => setCodeDialog({ variant: 'choir-join' }),
+            },
+          ]
+        : [
+            {
+              id: 'show-qr-choir',
+              icon: 'qr-code-2',
+              label: 'Ver QR del coro',
+              description: 'Quien lo escanee se une al coro directamente',
+              onPress: () =>
+                setQrModal({
+                  title: `Coro · Código ${choir.code}`,
+                  url: `${WEB_BASE_URL}/coro?c=${choir.code}`,
+                  code: choir.code ?? '',
+                }),
+            },
+            {
+              id: 'choir-change-code',
+              icon: 'edit',
+              label: 'Cambiar código del coro',
+              description: `Actual: ${choir.code}${choir.mode === 'slave' ? ' (solo el líder puede cambiarlo)' : ''}`,
+              onPress: () =>
+                setCodeDialog({
+                  variant: 'change-code',
+                  initial: choir.code ?? undefined,
+                }),
+              disabled: choir.mode !== 'master',
+            },
+            {
+              id: 'choir-leave',
+              icon: 'logout',
+              label:
+                choir.mode === 'master'
+                  ? 'Cerrar sesión de coro'
+                  : 'Salir del coro',
+              variant: 'danger',
+              onPress: () => choir.leave(),
+            },
+          ];
+
+    const peligro: PlaylistAction[] = [
+      {
+        id: 'clear',
+        icon: 'delete-outline',
+        label: 'Vaciar playlist',
+        variant: 'danger',
+        onPress: () => {
+          setConfirmDialog({
+            title: '¿Vaciar la playlist?',
+            description: 'Se quitarán todas las canciones seleccionadas.',
+            actions: [
+              {
+                label: 'Vaciar',
+                variant: 'danger',
+                onPress: () => {
+                  clearSelection();
+                  setConfirmDialog(null);
+                },
+              },
+              {
+                label: 'Cancelar',
+                variant: 'secondary',
+                onPress: () => setConfirmDialog(null),
+              },
+            ],
+          });
+        },
+      },
+    ];
+
+    return [
+      { title: 'Exportar y compartir', actions: exportar },
+      { title: 'Playlist en la nube', actions: nube },
+      { title: 'Archivo', actions: archivo },
+      { title: 'Modo coro', actions: coro },
+      { actions: peligro },
+    ];
   }, [
     handleShareText,
     handleStartExportFile,
@@ -1165,7 +1199,9 @@ const SelectedSongsScreen: React.FC = () => {
     return <ProgressWithMessage message="Cargando canciones..." />;
   }
 
-  const submitForVariant = (variant: CodeDialogVariant) => {
+  const submitForVariant = (
+    variant: CodeDialogVariant,
+  ): ((code: string, name?: string) => Promise<void>) => {
     switch (variant) {
       case 'cloud-upload':
         return handleUploadToCloud;
@@ -1320,30 +1356,45 @@ const SelectedSongsScreen: React.FC = () => {
     </View>
   );
 
+  const manualRowProps = (
+    item: (typeof flatSelectedSongs)[number],
+    index: number,
+  ): React.ComponentProps<typeof PlaylistRow> => ({
+    song: item,
+    transpose: item.transpose,
+    capoOverride: item.capoOverride,
+    position: index + 1,
+    showReorderControls: true,
+    canMoveUp: index > 0,
+    canMoveDown: index < flatSelectedSongs.length - 1,
+    onMoveUp: () => handleMoveUp(item.filename),
+    onMoveDown: () => handleMoveDown(item.filename),
+    isNowPlaying: choir.session?.current?.filename === item.filename,
+    onPress: () => handleSongPress(item),
+    onRemove: () => removeSong(item.filename),
+  });
+
   const renderManualItem = ({
     item,
     index,
   }: {
     item: (typeof flatSelectedSongs)[number];
     index: number;
-  }) => {
-    const isNow = choir.session?.current?.filename === item.filename;
-    return (
-      <PlaylistRow
-        song={item}
-        transpose={item.transpose}
-        capoOverride={item.capoOverride}
-        position={index + 1}
-        showReorderControls
-        canMoveUp={index > 0}
-        canMoveDown={index < flatSelectedSongs.length - 1}
-        onMoveUp={() => handleMoveUp(item.filename)}
-        onMoveDown={() => handleMoveDown(item.filename)}
-        isNowPlaying={isNow}
-        onPress={() => handleSongPress(item)}
-        onRemove={() => removeSong(item.filename)}
-      />
-    );
+  }) => <PlaylistRow {...manualRowProps(item, index)} />;
+
+  const renderDraggableManualItem = ({
+    item,
+    index,
+  }: {
+    item: (typeof flatSelectedSongs)[number];
+    index: number;
+  }) => <DraggableManualRow {...manualRowProps(item, index)} />;
+
+  const handleReorder = ({ from, to }: ReorderableListReorderEvent) => {
+    const song = flatSelectedSongs[from];
+    if (!song || from === to) return;
+    h.select();
+    moveSong(song.filename, to);
   };
 
   const isEmpty = selectedSongs.length === 0;
@@ -1356,15 +1407,30 @@ const SelectedSongsScreen: React.FC = () => {
           {renderEmptyState()}
         </>
       ) : viewMode === 'manual' ? (
-        <FlatList
-          data={flatSelectedSongs}
-          renderItem={renderManualItem}
-          keyExtractor={(it) => it.filename}
-          ListHeaderComponent={renderHeaderBar()}
-          contentContainerStyle={styles.listContentContainer}
-          contentInsetAdjustmentBehavior="automatic"
-          showsVerticalScrollIndicator={false}
-        />
+        Platform.OS === 'web' ? (
+          // En web no hay drag & drop (la lista reordenable usa gestos
+          // nativos); se reordena con las flechas ↑/↓ de cada fila.
+          <FlatList
+            data={flatSelectedSongs}
+            renderItem={renderManualItem}
+            keyExtractor={(it) => it.filename}
+            ListHeaderComponent={renderHeaderBar()}
+            contentContainerStyle={styles.listContentContainer}
+            contentInsetAdjustmentBehavior="automatic"
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <ReorderableList
+            data={flatSelectedSongs}
+            onReorder={handleReorder}
+            renderItem={renderDraggableManualItem}
+            keyExtractor={(it) => it.filename}
+            ListHeaderComponent={renderHeaderBar()}
+            contentContainerStyle={styles.listContentContainer}
+            contentInsetAdjustmentBehavior="automatic"
+            showsVerticalScrollIndicator={false}
+          />
+        )
       ) : (
         <FlatList
           data={categorized}
@@ -1379,7 +1445,7 @@ const SelectedSongsScreen: React.FC = () => {
 
       <PlaylistActionsBottomSheet
         visible={showActions}
-        actions={sheetActions}
+        sections={sheetSections}
         onClose={() => setShowActions(false)}
         title={
           choir.mode !== 'off'
@@ -1394,10 +1460,10 @@ const SelectedSongsScreen: React.FC = () => {
           variant={codeDialog.variant}
           initialCode={codeDialog.initial}
           onClose={() => setCodeDialog(null)}
-          onSubmit={async (code) => {
+          onSubmit={async (code, name) => {
             const fn = submitForVariant(codeDialog.variant);
             try {
-              await fn(code);
+              await fn(code, name);
             } catch (e: any) {
               if (e?.message === '__handled__') return;
               throw e;
@@ -1413,6 +1479,28 @@ const SelectedSongsScreen: React.FC = () => {
           description={confirmDialog.description}
           actions={confirmDialog.actions}
           onClose={() => setConfirmDialog(null)}
+        />
+      ) : null}
+
+      {qrModal ? (
+        <ShareQrModal
+          visible
+          title={qrModal.title}
+          url={qrModal.url}
+          code={qrModal.code}
+          onClose={() => setQrModal(null)}
+        />
+      ) : null}
+
+      {pendingOverwrite ? (
+        <PasswordPromptModal
+          visible
+          title="Sobrescribir playlist"
+          description={`Vas a machacar la playlist con código ${pendingOverwrite.code}. Escribe la contraseña para confirmar.`}
+          expectedPassword={OVERWRITE_PASSWORD}
+          confirmLabel="Sobrescribir"
+          onSuccess={() => void handleConfirmOverwrite()}
+          onClose={() => setPendingOverwrite(null)}
         />
       ) : null}
 

@@ -18,7 +18,7 @@ import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import colors, { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -33,7 +33,11 @@ import {
   initializeNewUserReadStatus,
   isNotificationOlderThan60Days,
 } from '@/services/pushNotificationService';
-import { NotificationData, ReceivedNotification } from '@/types/notifications';
+import {
+  NotificationData,
+  NotificationActionButtonData,
+  ReceivedNotification,
+} from '@/types/notifications';
 import { normalizeNotificationRoute } from '@/utils/notificationRoutes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
@@ -87,11 +91,27 @@ function getRouteLabel(route: string): { label: string; icon: string } | null {
   return ROUTE_LABELS[norm] ?? ROUTE_LABELS[route] ?? null;
 }
 
+// Devuelve los botones de acción de una notificación (hasta 3). Soporta tanto
+// el array `actionButtons` (formato actual) como el `actionButton` único
+// (legacy / notificaciones cacheadas antiguas).
+function getActionButtons(
+  notification: NotificationData | ReceivedNotification,
+): NotificationActionButtonData[] {
+  if (notification.actionButtons && notification.actionButtons.length > 0) {
+    return notification.actionButtons;
+  }
+  return notification.actionButton ? [notification.actionButton] : [];
+}
+
 export default function NotificationsScreen() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { firebaseNotifications, refreshCount } = useNotifications();
+  // Deep-link: al tocar una notificación push (desde la bandeja del sistema) la
+  // app abre esta pantalla con `openId` para mostrar esa notificación en grande.
+  const { openId } = useLocalSearchParams<{ openId?: string }>();
+  const autoOpenedIdRef = React.useRef<string | null>(null);
 
   const [localNotifications, setLocalNotifications] = useState<
     ReceivedNotification[]
@@ -201,7 +221,11 @@ export default function NotificationsScreen() {
   }, []);
 
   const handleActionButtonPress = useCallback(
-    (notification: NotificationData | ReceivedNotification, e: any) => {
+    (
+      notification: NotificationData | ReceivedNotification,
+      button: NotificationActionButtonData,
+      e: any,
+    ) => {
       // Prevenir que el tap llegue al card padre
       if (e?.stopPropagation) e.stopPropagation();
       if (!isNotificationRead(notification)) {
@@ -209,11 +233,11 @@ export default function NotificationsScreen() {
           console.error('Error marcando como leída:', err),
         );
       }
-      if (!notification.actionButton) return;
-      if (notification.actionButton.isInternal) {
-        safePushRoute(notification.actionButton.url);
+      if (!button) return;
+      if (button.isInternal) {
+        safePushRoute(button.url);
       } else {
-        Linking.openURL(notification.actionButton.url).catch((err) =>
+        Linking.openURL(button.url).catch((err) =>
           console.error('Error abriendo URL:', err),
         );
       }
@@ -264,6 +288,7 @@ export default function NotificationsScreen() {
     const routeInfo = notification.internalRoute
       ? getRouteLabel(notification.internalRoute)
       : null;
+    const actionButtons = getActionButtons(notification);
 
     return (
       <View style={{ marginBottom: spacing.md }}>
@@ -342,29 +367,31 @@ export default function NotificationsScreen() {
                       </Text>
                     </View>
                   )}
-                  {/* Chip de botón de acción — Pressable para evitar <button> anidado en web */}
-                  {notification.actionButton && (
+                  {/* Chips de botones de acción (hasta 3) — Pressable para
+                      evitar <button> anidado en web */}
+                  {actionButtons.map((button, idx) => (
                     <Pressable
+                      key={`${button.url}-${idx}`}
                       style={styles.actionChip}
-                      onPress={(e?) => handleActionButtonPress(notification, e)}
-                      accessibilityLabel={notification.actionButton.text}
+                      onPress={(e?) =>
+                        handleActionButtonPress(notification, button, e)
+                      }
+                      accessibilityLabel={button.text}
                       accessibilityRole="button"
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
                       <Text style={styles.actionChipText} numberOfLines={1}>
-                        {notification.actionButton.text}
+                        {button.text}
                       </Text>
                       <MaterialIcons
                         name={
-                          notification.actionButton.isInternal
-                            ? 'arrow-forward'
-                            : 'open-in-new'
+                          button.isInternal ? 'arrow-forward' : 'open-in-new'
                         }
                         size={11}
                         color="#fff"
                       />
                     </Pressable>
-                  )}
+                  ))}
                 </View>
               </View>
             </View>
@@ -385,26 +412,52 @@ export default function NotificationsScreen() {
       },
     );
 
-    // Deduplicar por contenido (título + cuerpo) — la primera aparición gana
-    const seenContentKeys = new Set<string>();
-    const seenIds = new Set<string>();
-    return combined.filter((notification) => {
+    // Deduplicar por contenido (título + cuerpo) o por ID — la primera
+    // aparición gana. Al encontrar un duplicado, completamos en la copia
+    // conservada los campos que solo trae el otro origen: la `bodyLong` puede
+    // venir solo en el registro de Firebase (si el panel no la mete en el
+    // payload de la push) o solo en la copia local. Así el detalle siempre la
+    // muestra independientemente de por dónde haya llegado.
+    const result: (NotificationData | ReceivedNotification)[] = [];
+    const indexByKey = new Map<string, number>();
+    const indexById = new Map<string, number>();
+
+    for (const notification of combined) {
       const contentKey = `${notification.title}|${notification.body}`;
+      const existingIdx =
+        (notification.id ? indexById.get(notification.id) : undefined) ??
+        indexByKey.get(contentKey);
 
-      // Si ya vimos este contenido exacto, es duplicado
-      if (seenContentKeys.has(contentKey)) return false;
+      if (existingIdx !== undefined) {
+        const kept = result[existingIdx];
+        if (!kept.bodyLong && notification.bodyLong) {
+          result[existingIdx] = { ...kept, bodyLong: notification.bodyLong };
+        }
+        continue;
+      }
 
-      // Si ya vimos este ID exacto, es duplicado
-      if (notification.id && seenIds.has(notification.id)) return false;
-
-      seenContentKeys.add(contentKey);
-      if (notification.id) seenIds.add(notification.id);
-
-      return true;
-    });
+      result.push(notification);
+      const idx = result.length - 1;
+      indexByKey.set(contentKey, idx);
+      if (notification.id) indexById.set(notification.id, idx);
+    }
+    return result;
   }, [localNotifications, firebaseNotifications]);
 
   const hasUnread = allNotifications.some((n) => !isNotificationRead(n));
+
+  // Auto-abrir el detalle de la notificación indicada por `openId` (deep-link
+  // desde una push). Esperamos a que la lista esté cargada para que la
+  // notificación recién recibida ya esté disponible y haga match por id.
+  useEffect(() => {
+    if (!openId || loading) return;
+    if (autoOpenedIdRef.current === openId) return;
+    const match = allNotifications.find((n) => n.id === openId);
+    if (match) {
+      autoOpenedIdRef.current = openId;
+      handleNotificationPress(match);
+    }
+  }, [openId, loading, allNotifications, handleNotificationPress]);
 
   return (
     <SafeAreaView
@@ -526,19 +579,21 @@ function NotificationDetailModal({
     }
   };
 
+  const actionButtons = notification ? getActionButtons(notification) : [];
+
   const handleInternalRoute = () => {
     if (!notification) return;
     onClose();
     safePushRoute(notification.internalRoute ?? '');
   };
 
-  const handleActionButton = () => {
-    if (!notification?.actionButton) return;
-    if (notification.actionButton.isInternal) {
+  const handleActionButton = (button: NotificationActionButtonData) => {
+    if (!button) return;
+    if (button.isInternal) {
       onClose();
-      safePushRoute(notification.actionButton.url);
+      safePushRoute(button.url);
     } else {
-      Linking.openURL(notification.actionButton.url).catch((err) =>
+      Linking.openURL(button.url).catch((err) =>
         console.error('Error abriendo URL:', err),
       );
     }
@@ -596,13 +651,15 @@ function NotificationDetailModal({
                   />
                 )}
 
-                {/* Cuerpo */}
+                {/* Cuerpo: descripción extendida (bodyLong) si existe, si no el
+                    body corto como fallback. El ScrollView del modal permite
+                    textos largos. */}
                 <Text style={[dStyles.body, { color: theme.text }]}>
-                  {notification.body}
+                  {notification.bodyLong || notification.body}
                 </Text>
 
                 {/* Separador si hay acciones */}
-                {(notification.internalRoute || notification.actionButton) && (
+                {(notification.internalRoute || actionButtons.length > 0) && (
                   <View
                     style={[
                       dStyles.divider,
@@ -637,27 +694,34 @@ function NotificationDetailModal({
                   </Button>
                 )}
 
-                {/* Botón de acción CTA */}
-                {notification.actionButton && (
+                {/* Botones de acción CTA (hasta 3). El primero destaca como
+                    primario; los siguientes van en estilo secundario. */}
+                {actionButtons.map((button, idx) => (
                   <Button
-                    variant="primary"
-                    onPress={handleActionButton}
-                    style={dStyles.actionButton}
+                    key={`${button.url}-${idx}`}
+                    variant={idx === 0 ? 'primary' : 'secondary'}
+                    onPress={() => handleActionButton(button)}
+                    style={[
+                      dStyles.actionButton,
+                      idx > 0 && dStyles.actionButtonSecondary,
+                    ]}
                   >
-                    <Button.Label style={dStyles.actionButtonText}>
-                      {notification.actionButton.text}
+                    <Button.Label
+                      style={
+                        idx === 0
+                          ? dStyles.actionButtonText
+                          : dStyles.actionButtonTextSecondary
+                      }
+                    >
+                      {button.text}
                     </Button.Label>
                     <MaterialIcons
-                      name={
-                        notification.actionButton.isInternal
-                          ? 'arrow-forward'
-                          : 'open-in-new'
-                      }
+                      name={button.isInternal ? 'arrow-forward' : 'open-in-new'}
                       size={18}
-                      color="#fff"
+                      color={idx === 0 ? '#fff' : colors.primary}
                     />
                   </Button>
-                )}
+                ))}
               </>
             )}
           </ScrollView>
@@ -717,10 +781,23 @@ const dStyles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: radii.lg,
     gap: 10,
+    marginBottom: spacing.md,
     ...shadows.lg,
     shadowColor: colors.primary,
   },
   actionButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  actionButtonSecondary: {
+    backgroundColor: hexAlpha(colors.primary, '12'),
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    ...shadows.sm,
+    shadowColor: colors.primary,
+  },
+  actionButtonTextSecondary: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });
 
 // ============================================================================

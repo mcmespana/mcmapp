@@ -372,6 +372,36 @@ export default function SocialLoginSection({
     );
   }
 
+  // ── Android: inicio de sesión "próximamente" ──────────────────────
+  // El login con proveedores nativos está temporalmente deshabilitado en
+  // Android mientras se repara. Mostramos un aviso en lugar de los botones.
+  if (Platform.OS === 'android') {
+    const csBg = onDarkBackground
+      ? 'rgba(255,255,255,0.10)'
+      : scheme === 'dark'
+        ? 'rgba(255,255,255,0.06)'
+        : hexAlpha(brandColors.primary, '10');
+    const csIcon = onDarkBackground
+      ? 'rgba(255,255,255,0.85)'
+      : brandColors.primary;
+    const csTitle = onDarkBackground ? '#fff' : theme.text;
+    const csBody = onDarkBackground ? 'rgba(255,255,255,0.75)' : theme.icon;
+    return (
+      <View style={styles.container}>
+        <View style={[styles.comingSoonCard, { backgroundColor: csBg }]}>
+          <MaterialIcons name="schedule" size={26} color={csIcon} />
+          <Text style={[styles.comingSoonTitle, { color: csTitle }]}>
+            Inicio de sesión próximamente
+          </Text>
+          <Text style={[styles.comingSoonBody, { color: csBody }]}>
+            Estamos preparando el acceso con cuenta en Android. Mientras tanto
+            puedes seguir usando la app con normalidad. ¡Muy pronto!
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   // ── Estado: no autenticado ─────────────────────────────────────────
   const googleBg = onDarkBackground ? 'rgba(255,255,255,0.12)' : theme.card;
   const googleBorder = onDarkBackground
@@ -441,32 +471,30 @@ export default function SocialLoginSection({
         </Text>
       </TouchableOpacity>
 
-      {/* Apple — iOS y web */}
-      {Platform.OS !== 'android' && (
-        <TouchableOpacity
-          style={[
-            styles.socialBtn,
-            styles.appleBtn,
-            !onDarkBackground && scheme === 'dark'
-              ? { borderColor: 'rgba(255,255,255,0.18)' }
-              : null,
-            ...(signingIn && signingIn !== 'apple' ? [styles.btnDisabled] : []),
-          ]}
-          onPress={handleAppleSignIn}
-          disabled={!!signingIn}
-          accessibilityRole="button"
-          accessibilityLabel="Continuar con Apple"
-        >
-          {signingIn === 'apple' ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <MaterialIcons name="apple" size={20} color="#fff" />
-          )}
-          <Text style={[styles.socialBtnLabel, { color: '#fff' }]}>
-            Continuar con Apple
-          </Text>
-        </TouchableOpacity>
-      )}
+      {/* Apple — iOS y web (Android ya salió antes con su aviso propio) */}
+      <TouchableOpacity
+        style={[
+          styles.socialBtn,
+          styles.appleBtn,
+          !onDarkBackground && scheme === 'dark'
+            ? { borderColor: 'rgba(255,255,255,0.18)' }
+            : null,
+          ...(signingIn && signingIn !== 'apple' ? [styles.btnDisabled] : []),
+        ]}
+        onPress={handleAppleSignIn}
+        disabled={!!signingIn}
+        accessibilityRole="button"
+        accessibilityLabel="Continuar con Apple"
+      >
+        {signingIn === 'apple' ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <MaterialIcons name="apple" size={20} color="#fff" />
+        )}
+        <Text style={[styles.socialBtnLabel, { color: '#fff' }]}>
+          Continuar con Apple
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -505,6 +533,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
   } as ViewStyle,
+  comingSoonCard: {
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+    borderRadius: radii.md,
+  } as ViewStyle,
+  comingSoonTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+  } as TextStyle,
+  comingSoonBody: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
+    textAlign: 'center',
+  } as TextStyle,
   hintCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',

@@ -275,7 +275,7 @@ export default function RevisionScreen() {
             style={[styles.pillText, { color: purple }]}
             accessibilityLabel="Revisión: agradecer y revisar"
           >
-            ✦ AGRADECER Y REVISAR
+            ✦ EXAMEN ESTILO &apos;AGRADECER Y REVISAR&apos;
           </Text>
         </View>
       </View>
@@ -433,7 +433,7 @@ function GratefulStep({
     <View>
       <Text style={[styles.h2, { color: W.text }]}>Recorre tu día</Text>
       <Text style={[styles.helpText, { color: W.textSec }]}>
-        Selecciona aquello por lo que estás agradecido/a
+        Y mientras lo haces, recuerda aquello por lo que estás agradecido/a
       </Text>
 
       <View style={styles.modeRow}>
@@ -562,12 +562,12 @@ function RevisarStep({
       </Text>
       <Text style={[styles.helpText, { color: W.textSec }]}>
         Quizá te hayas equivocado en alguna cosa o no te hayas sentido demasiado
-        bien. Escríbelo aquí para revisarlo en otro momento de oración.
+        bien. Escríbelo aquí y recupéralo en otro momento para revisarlo mejor
       </Text>
       <TextInput
         value={text}
         onChangeText={setText}
-        placeholder="Hoy he sentido que..."
+        placeholder="Tengo que revisarme..."
         placeholderTextColor={W.textMuted}
         multiline
         textAlignVertical="top"

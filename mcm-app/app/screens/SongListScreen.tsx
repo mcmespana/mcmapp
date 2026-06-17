@@ -464,7 +464,9 @@ export default function SongsListScreen({
   );
 
   if ((isLoading || loadingSongs) && songs.length === 0) {
-    return <ProgressWithMessage message="Cargando canciones un momentito porfi..." />;
+    return (
+      <ProgressWithMessage message="Cargando canciones un momentito porfi..." />
+    );
   }
 
   if (error) {

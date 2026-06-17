@@ -87,6 +87,12 @@ export interface EventConfig {
   /** Subtítulo del banner destacado de la Home (modo evento). */
   bannerText?: string;
   /**
+   * Categorías de la pantalla de Grupos que se ocultan en este evento
+   * (ej. `['Alojamiento']`). La comparación ignora mayúsculas y acentos.
+   * Si falta, se muestran todas las categorías.
+   */
+  hiddenGroupCategories?: string[];
+  /**
    * Nombre del tab de expo-router que representa este evento (ej.
    * `'visitapapa'`). Lo usa el banner de la Home para el gating de visibilidad
    * (solo se muestra si el perfil tiene acceso al tab o al botón Home).
@@ -107,7 +113,7 @@ export const JUBILEO: EventConfig = {
   sections: [
     {
       label: 'Horario',
-      subtitle: 'Programa del encuentro',
+      subtitle: 'Minuto a minuto',
       emoji: '⏰',
       materialIcon: 'schedule',
       target: 'Horario',
@@ -152,7 +158,7 @@ export const JUBILEO: EventConfig = {
     },
     {
       label: 'Grupos',
-      subtitle: 'Equipos de trabajo',
+      subtitle: 'Conso+, Movilidad y Buses',
       emoji: '👥',
       materialIcon: 'groups',
       target: 'Grupos',
@@ -170,7 +176,7 @@ export const JUBILEO: EventConfig = {
     },
     {
       label: 'Apps',
-      subtitle: 'Herramientas MCM',
+      subtitle: 'Las vas a necesitar...',
       emoji: '📲',
       materialIcon: 'apps',
       target: 'Apps',
@@ -187,12 +193,13 @@ export const VISITAPAPA: EventConfig = {
   heroImage: require('@/assets/alzalamirada.png'),
   firebasePrefix: 'activities/visitapapa26',
   status: 'active',
-  bannerText: 'Horarios, materiales y todo para vivir la visita del Papa',
+  bannerText: 'Horarios, materiales y todo para vivir un momento histórico',
   tabId: 'visitapapa',
+  hiddenGroupCategories: ['Alojamiento'],
   sections: [
     {
       label: 'Horario',
-      subtitle: 'Programa del encuentro',
+      subtitle: 'Minuto a minuto',
       emoji: '⏰',
       materialIcon: 'schedule',
       target: 'Horario',
@@ -211,7 +218,7 @@ export const VISITAPAPA: EventConfig = {
     {
       // Sección-enlace: abre una lista de Google Maps en vez de navegar.
       label: 'Comida de Domingo',
-      subtitle: 'Dónde comer el domingo',
+      subtitle: 'Lista de Google Maps',
       emoji: '🍽️',
       materialIcon: 'restaurant',
       tintColor: '#F06292',
@@ -219,7 +226,7 @@ export const VISITAPAPA: EventConfig = {
     },
     {
       label: 'Sectores Eventos',
-      subtitle: 'Salidas y traslados',
+      subtitle: 'Consulta donde estaremos',
       emoji: '🚌',
       materialIcon: 'directions-bus',
       target: 'Visitas',
@@ -237,7 +244,7 @@ export const VISITAPAPA: EventConfig = {
     },
     {
       label: 'Grupos',
-      subtitle: 'Equipos de trabajo',
+      subtitle: 'Conso+, movilidad y buses',
       emoji: '👥',
       materialIcon: 'groups',
       target: 'Grupos',
@@ -246,7 +253,7 @@ export const VISITAPAPA: EventConfig = {
     },
     {
       label: 'Contactos',
-      subtitle: 'Teléfonos útiles',
+      subtitle: 'Por si te hacen falta',
       emoji: '☎️',
       materialIcon: 'contact-phone',
       target: 'Contactos',
@@ -261,6 +268,15 @@ export const VISITAPAPA: EventConfig = {
       target: 'Apps',
       tintColor: '#FFB74D',
       firebaseKey: 'apps',
+    },
+    {
+      label: 'Evalúa la actividad',
+      subtitle: 'Cuéntanos qué tal ha ido',
+      emoji: '⭐',
+      materialIcon: 'star-rate',
+      target: 'Evaluacion',
+      tintColor: '#FCD200',
+      firebaseKey: 'evaluacion',
     },
   ],
 };

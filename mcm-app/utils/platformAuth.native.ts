@@ -51,7 +51,32 @@ export async function configureGoogleSignIn(): Promise<void> {
 export async function doGoogleSignIn(auth: Auth): Promise<UserCredential> {
   const GoogleSignin = await getGoogleSignin();
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-  const response = await GoogleSignin.signIn();
+  let response;
+  try {
+    response = await GoogleSignin.signIn();
+  } catch (err: any) {
+    // En Android, cerrar el selector de cuenta lanza SIGN_IN_CANCELLED.
+    // Lo normalizamos a ERR_CANCELED para que la capa superior (AuthContext)
+    // lo trate como cancelación y NO muestre un toast de error.
+    if (
+      err?.code === '12501' || // statusCodes.SIGN_IN_CANCELLED (Android)
+      err?.code === 'SIGN_IN_CANCELLED' ||
+      err?.code === 'ERR_CANCELED'
+    ) {
+      const cancelled: any = new Error('Google Sign-In cancelado');
+      cancelled.code = 'ERR_CANCELED';
+      throw cancelled;
+    }
+    throw err;
+  }
+  // En @react-native-google-signin v13+ una cancelación NO lanza: devuelve
+  // `{ type: 'cancelled', data: null }`. La detectamos para no tratarla como
+  // un fallo real.
+  if (response?.type === 'cancelled') {
+    const cancelled: any = new Error('Google Sign-In cancelado');
+    cancelled.code = 'ERR_CANCELED';
+    throw cancelled;
+  }
   if (!response.data?.idToken) {
     throw new Error('Google Sign-In: no se recibió idToken');
   }

@@ -1,0 +1,90 @@
+{
+  "updatedAt": "1",
+  "_index": {
+    "updatedAt": "1",
+    "data": [
+      {
+        "id": "encuesta-monitores-2026",
+        "title": "Encuesta a monitores 2026",
+        "intro": "Queremos preparar mejor el próximo curso. ¿Nos ayudas?",
+        "emoji": "📋",
+        "accentColor": "#31AADF",
+        "status": "open",
+        "placement": { "type": "home-banner", "ctaLabel": "Responder" },
+        "audience": { "profileTypes": ["monitor"] }
+      }
+    ]
+  },
+  "encuesta-monitores-2026": {
+    "updatedAt": "1",
+    "data": {
+      "id": "encuesta-monitores-2026",
+      "title": "Encuesta a monitores 2026",
+      "intro": "Queremos preparar mejor el próximo curso. ¿Nos ayudas? 2 minutos.",
+      "emoji": "📋",
+      "status": "open",
+      "accentColor": "#31AADF",
+      "anonymous": false,
+      "thanksTitle": "¡Gracias por tu tiempo!",
+      "thanksBody": "Tus respuestas nos ayudan a preparar el próximo curso.",
+      "closedTitle": "Encuesta cerrada",
+      "closedBody": "Esta encuesta ya no admite respuestas. ¡Gracias!",
+      "placement": {
+        "type": "home-banner",
+        "ctaLabel": "Responder"
+      },
+      "audience": {
+        "profileTypes": ["monitor"],
+        "topics": [],
+        "delegationIds": []
+      },
+      "questions": [
+        {
+          "id": "satisfaccion",
+          "type": "stars",
+          "label": "¿Cómo valoras el acompañamiento recibido este curso?"
+        },
+        {
+          "id": "frecuencia",
+          "type": "single",
+          "label": "¿Con qué frecuencia te reúnes con tu grupo?",
+          "options": [
+            { "value": "semanal", "label": "Semanal" },
+            { "value": "quincenal", "label": "Quincenal" },
+            { "value": "mensual", "label": "Mensual" },
+            { "value": "menos", "label": "Menos a menudo" }
+          ]
+        },
+        {
+          "id": "temas",
+          "type": "multi",
+          "label": "¿Qué temas te gustaría trabajar el próximo curso?",
+          "optional": true,
+          "options": [
+            { "value": "oracion", "label": "Oración" },
+            { "value": "biblia", "label": "Biblia" },
+            { "value": "social", "label": "Compromiso social" },
+            { "value": "dinamicas", "label": "Dinámicas de grupo" }
+          ]
+        },
+        {
+          "id": "nps",
+          "type": "scale",
+          "label": "¿Recomendarías ser monitor a otra persona?",
+          "min": 0,
+          "max": 10,
+          "minLabel": "Nada probable",
+          "maxLabel": "Muy probable",
+          "optional": true
+        },
+        {
+          "id": "comentarios",
+          "type": "text",
+          "label": "¿Algo que quieras contarnos?",
+          "placeholder": "Lo que quieras…",
+          "optional": true
+        }
+      ]
+    }
+  }
+}

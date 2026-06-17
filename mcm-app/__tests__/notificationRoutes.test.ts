@@ -1,6 +1,8 @@
 import {
   normalizeNotificationRoute,
   extractActionButton,
+  extractActionButtons,
+  MAX_ACTION_BUTTONS,
 } from '@/utils/notificationRoutes';
 
 describe('normalizeNotificationRoute', () => {
@@ -76,5 +78,75 @@ describe('extractActionButton', () => {
     expect(
       extractActionButton({ actionButtons: [{ url: 'http://x.com' }] }),
     ).toEqual({ text: 'Ver', url: 'http://x.com', isInternal: false });
+  });
+});
+
+describe('extractActionButtons', () => {
+  it('devuelve un array vacío sin datos', () => {
+    expect(extractActionButtons(undefined)).toEqual([]);
+    expect(extractActionButtons({})).toEqual([]);
+  });
+
+  it('devuelve varios botones desde el array actionButtons', () => {
+    expect(
+      extractActionButtons({
+        actionButtons: [
+          { text: 'Sí', url: 'https://x.com/si' },
+          { text: 'No', url: 'https://x.com/no' },
+          { text: 'Fotos', url: '/(tabs)/fotos' },
+        ],
+      }),
+    ).toEqual([
+      { text: 'Sí', url: 'https://x.com/si', isInternal: false },
+      { text: 'No', url: 'https://x.com/no', isInternal: false },
+      { text: 'Fotos', url: '/(tabs)/fotos', isInternal: true },
+    ]);
+  });
+
+  it('envuelve el actionButton único (legacy) en un array', () => {
+    expect(
+      extractActionButtons({
+        actionButton: { text: 'Ver', url: '/(tabs)/mas', isInternal: true },
+      }),
+    ).toEqual([{ text: 'Ver', url: '/(tabs)/mas', isInternal: true }]);
+  });
+
+  it('combina actionButton + actionButtons y deduplica por url|text', () => {
+    expect(
+      extractActionButtons({
+        actionButton: { text: 'A', url: 'https://x.com/a' },
+        actionButtons: [
+          { text: 'A', url: 'https://x.com/a' }, // duplicado → se ignora
+          { text: 'B', url: 'https://x.com/b' },
+        ],
+      }),
+    ).toEqual([
+      { text: 'A', url: 'https://x.com/a', isInternal: false },
+      { text: 'B', url: 'https://x.com/b', isInternal: false },
+    ]);
+  });
+
+  it(`limita el número de botones a ${MAX_ACTION_BUTTONS}`, () => {
+    const result = extractActionButtons({
+      actionButtons: [
+        { text: '1', url: 'https://x.com/1' },
+        { text: '2', url: 'https://x.com/2' },
+        { text: '3', url: 'https://x.com/3' },
+        { text: '4', url: 'https://x.com/4' },
+      ],
+    });
+    expect(result).toHaveLength(MAX_ACTION_BUTTONS);
+    expect(result.map((b) => b.text)).toEqual(['1', '2', '3']);
+  });
+
+  it('descarta botones inválidos (sin url)', () => {
+    expect(
+      extractActionButtons({
+        actionButtons: [
+          { text: 'Sin url' },
+          { text: 'OK', url: '/(tabs)/mas' },
+        ],
+      }),
+    ).toEqual([{ text: 'OK', url: '/(tabs)/mas', isInternal: true }]);
   });
 });

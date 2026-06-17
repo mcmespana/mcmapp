@@ -7,6 +7,14 @@
 
 ## Prioridad alta
 
+- [x] **Drag & drop en "Orden ajustado" + orden ajustado por defecto**: ✅ hecho. La playlist abre por defecto en "Orden ajustado"; en nativo, long-press sobre una fila inicia el arrastre (`react-native-reorderable-list`, JS puro sobre reanimated/gesture-handler ya presentes → OTA-safe). Las flechas ↑/↓ se mantienen (y son el único reorden en web). Validar en dispositivo la convivencia drag ↔ swipe-para-quitar.
+- [x] **Sistema de QRs para coro y playlist**: ✅ hecho (generación). Al subir una playlist o iniciar un coro sale un modal con QR del enlace universal (`/playlist?p=XXXX`, `/coro?c=XXXX`) + código en grande + copiar; también "Ver QR" en el menú (nube y coro). Se escanea con la cámara del móvil y abre la app directamente vía deep link. Nuevo `components/playlist/ShareQrModal.tsx` + dep JS pura `react-native-qrcode-svg` (OTA-safe). Pendiente opcional: escáner DENTRO de la app (requiere `expo-camera` → build de tienda + `[skip-ota]`).
+- [x] **Repensar el menú de acciones de la playlist**: ✅ hecho. El bottom-sheet ahora va por secciones con cabecera (Exportar y compartir · Playlist en la nube · Archivo · Modo coro · zona peligro al final) en vez de ~12 items planos. `PlaylistActionsBottomSheet` acepta `sections` (`PlaylistActionSection[]`).
+- [x] **Re-subir playlist descargada con contraseña**: ✅ hecho. Subir a un código que ya existe (tuyo o de otro) pide la contraseña "coco" antes de machacar (`PasswordPromptModal`); también puedes elegir otro código. De paso: arreglado bug por el que el nombre de la playlist no llegaba a la nube (el wrapper del `CodeInputModal` descartaba el `name`).
+- [x] **PDF — toggles "una canción por página" / "mostrar acordes"**: ✅ arreglado. Los toggles existían pero el `Switch` de heroui-native se pintaba invisible dentro del Modal; sustituidos por toggle propio con StyleSheet (`components/playlist/ExportPdfModal.tsx`).
+- [x] **PDF — márgenes en iOS**: ✅ arreglado. iOS ignora el `margin` de `@page`; ahora se pasan tamaño A4 + `margins` nativos a `printToFileAsync` (solo los aplica iOS; Android sigue con el CSS). Validar en dispositivo.
+- [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
+- [x] **PDF — fecha impresa ajustable**: ✅ hecho. Campo "Fecha en la portada" en el modal de export (texto libre prefijado con hoy; vacío = sin fecha).
 - [x] **Cantoral — arreglos `{arr:}` por long-press en vivo (admin)**: ✅ hecho. Cuando `isAdmin`, long-press sobre una línea del visor abre una hoja para escribir el arreglo; se inserta `{arr: ...}` encima de esa línea, se ve al instante (render en vivo) y se propone a `songs/ediciones` (contentOld/contentNew). JS inyectado en el WebView (`hooks/useSongProcessor.ts`) que manda el índice de la línea original a RN vía `postMessage`/`onMessage` (`components/SongDisplay.tsx`). El mapeo fila↔línea es transpose-invariante (`injectRowLineIndices`/`renderableRowLineIndices` en `utils/arrangements.ts`, con tests). UI: `components/ArrangementInputModal.tsx`.
 - [x] **Cantoral — mostrar campos multimedia al usuario final**: hecho. Botón glass de multimedia en la barra superior del detalle (con punto rojo cuando hay material) → cajón "Multimedia y ficha" con Vídeos (reproductor flotante de YouTube arrastrable), Audios (abren en el navegador) y Ficha (ritmo, álbum, tiempo litúrgico, comentario, fuente). Indicadores ▶/🎧 en la lista. Nuevo campo `liturgicalTime` en el admin. Ver `types/songMedia.ts` y `components/song-media/`.
 - [ ] Revisar diseño en iPads y arreglarlo
@@ -61,6 +69,16 @@
 
 ## Prioridad baja
 
+- [ ] **Modo carismochito — cambiar el icono del launcher (icono "de fuera") a verde**:
+      hoy el modo solo tiñe la UI dentro de la app (incluido el cuadro-logo del
+      header de la Home). Cambiar el icono del móvil requiere **iconos
+      alternativos**: iOS `setAlternateIconName`, Android `activity-alias`
+      (vía `expo-dynamic-app-icon` o similar). Peros a valorar antes de hacerlo:
+      ⚠️ es **código nativo** → build de tienda, no OTA, y los iconos deben ir
+      empaquetados en el build; ⚠️ el cambio **persiste fuera de la app** (hay que
+      revertirlo al desactivar el modo); ⚠️ en Android el swap es tosco (ocurre al
+      pasar a segundo plano y puede reiniciar atajos). Encaja regular con un modo
+      efímero por agitado — decidir si compensa.
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales. Falta auditar Fotos (`AlbumListScreen`), Materiales, Horario, Comida, MasHome y los componentes `AlbumCard`/`EventItem`.
 
 ---
