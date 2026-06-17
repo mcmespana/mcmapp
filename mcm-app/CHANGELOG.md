@@ -18,7 +18,21 @@
 
 ---
 
-## 2026-06-15 — QR offline para compartir playlists sin internet
+## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
+
+- Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
+  muestra en el **modal de detalle** (scrollable, respeta saltos de línea). La
+  **tarjeta** sigue usando el `body` corto. El detalle muestra `bodyLong` si existe;
+  si no, cae a `body` (fallback).
+- La deduplicación de la lista ahora **fusiona** `bodyLong` entre la copia local (push)
+  y la de Firebase, de modo que el texto largo aparece aunque solo venga por uno de los
+  dos orígenes (p. ej. si el panel lo manda solo a Firebase para no inflar el payload).
+- Tipos: campo `bodyLong?` en `NotificationData` y `ReceivedNotification`.
+- Archivos: `types/notifications.ts`, `app/notifications.tsx`,
+  `notifications/usePushNotifications.ts`. Compatible con OTA (JS puro). El MCM Panel
+  debe enviar `data.bodyLong` — ver `NOTIFICACIONES_CONTRATO.md` §3.bis.
+
+## 2026-06-06 — Notificaciones: varios botones de acción (hasta 3)
 
 - **Nuevo**: opción "Ver QR offline" en el menú de la playlist (Seleccionadas). Genera un QR con la playlist **entera embebida** en un deep link `mcmapp://playlist?d=<payload>`. Un dispositivo con la app instalada y el cantoral cacheado puede escanearlo con la cámara normal y abrir la playlist **sin conexión a internet** (no descarga nada de Firebase, a diferencia del QR "en la nube" con código de 4 dígitos).
 - **Codificación compacta**: cada canción se codifica como categoría (1 letra, alineada con `songUtils`) + número de canción + tono (`t±n` semitonos) y cejilla (`cN`) opcionales; el orden se deduce de la posición. Respaldo "crudo" por `filename` para canciones sin categoría/número conocidos. Así el QR es pequeño aunque haya muchas canciones. El receptor resuelve categoría+número → `filename` contra su catálogo cacheado; las canciones que no tenga se omiten avisando al usuario.
