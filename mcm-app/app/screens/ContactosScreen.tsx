@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -156,15 +156,18 @@ export default function ContactosScreen() {
   const [menuContact, setMenuContact] = useState<Contacto | null>(null);
   const { toast } = useToast();
 
-  const call = (tel: string) => Linking.openURL(`tel:${tel}`);
-  const whatsapp = (tel: string) => {
+  const call = useCallback((tel: string) => Linking.openURL(`tel:${tel}`), []);
+  const whatsapp = useCallback((tel: string) => {
     const clean = tel.replace(/[^0-9+]/g, '').replace(/^\+/, '');
     Linking.openURL(`https://wa.me/${clean}`);
-  };
-  const copyPhone = async (tel: string) => {
-    await Clipboard.setStringAsync(tel);
-    toast.show({ variant: 'success', label: 'Teléfono copiado' });
-  };
+  }, []);
+  const copyPhone = useCallback(
+    async (tel: string) => {
+      await Clipboard.setStringAsync(tel);
+      toast.show({ variant: 'success', label: 'Teléfono copiado' });
+    },
+    [toast],
+  );
 
   // ⚡ Bolt Optimization: Precompute normalized strings to avoid running expensive operations
   // on every keystroke during live search, changing an O(N * M) complex operation into a fast lookup.
@@ -190,6 +193,70 @@ export default function ContactosScreen() {
   }, [normalizedData, query]);
 
   const tints = isDark ? AVATAR_TINTS_DARK : AVATAR_TINTS;
+  const showSearch = data ? data.length > 6 : false;
+
+  const ListHeader = useMemo(
+    () => (
+      <View>
+        <ScreenHero title="Contactos" hideOnWeb />
+        {showSearch ? (
+          <View style={styles.searchContainer}>
+            <SearchField value={query} onChange={setQuery}>
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input
+                  placeholder="Buscar contacto"
+                  autoCorrect={false}
+                  autoCapitalize="words"
+                />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+            {query.trim().length >= 2 ? (
+              <Text style={styles.resultsMeta}>
+                {filtered.length} de {data?.length || 0}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
+    ),
+    [
+      showSearch,
+      styles.searchContainer,
+      styles.resultsMeta,
+      query,
+      filtered.length,
+      data?.length,
+    ],
+  );
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: Contacto; index: number }) => (
+      <View style={styles.cardWrapper}>
+        <View
+          style={[
+            styles.card,
+            index === 0 && styles.cardFirst,
+            index === filtered.length - 1 && styles.cardLast,
+            index !== 0 && index !== filtered.length - 1 && styles.cardMiddle,
+          ]}
+        >
+          <ContactRow
+            contact={item}
+            tint={tints[index % tints.length]}
+            isLast={index === filtered.length - 1}
+            isDark={isDark}
+            styles={styles}
+            onCall={call}
+            onWhatsapp={whatsapp}
+            onLongPress={setMenuContact}
+          />
+        </View>
+      </View>
+    ),
+    [filtered.length, isDark, styles, tints, call, whatsapp, setMenuContact],
+  );
 
   if (!data || data.length === 0) {
     const showSkeleton = loading && !data;
@@ -214,34 +281,6 @@ export default function ContactosScreen() {
     );
   }
 
-  const showSearch = data.length > 6;
-
-  const ListHeader = (
-    <View>
-      <ScreenHero title="Contactos" hideOnWeb />
-      {showSearch ? (
-        <View style={styles.searchContainer}>
-          <SearchField value={query} onChange={setQuery}>
-            <SearchField.Group>
-              <SearchField.SearchIcon />
-              <SearchField.Input
-                placeholder="Buscar contacto"
-                autoCorrect={false}
-                autoCapitalize="words"
-              />
-              <SearchField.ClearButton />
-            </SearchField.Group>
-          </SearchField>
-          {query.trim().length >= 2 ? (
-            <Text style={styles.resultsMeta}>
-              {filtered.length} de {data.length}
-            </Text>
-          ) : null}
-        </View>
-      ) : null}
-    </View>
-  );
-
   return (
     <PageContainer>
       <View style={styles.container}>
@@ -249,35 +288,7 @@ export default function ContactosScreen() {
           data={filtered}
           keyExtractor={(c, idx) => `${c.nombre}-${idx}`}
           ListHeaderComponent={ListHeader}
-          renderItem={({ item, index }) => (
-            <View style={styles.cardWrapper}>
-              <View
-                style={[
-                  styles.card,
-                  // The card wraps each row individually so the FlatList can
-                  // virtualize. The visual "card grouping" is preserved with
-                  // top/bottom corners on first/last and seamless dividers via
-                  // negative marginTop on intermediate rows.
-                  index === 0 && styles.cardFirst,
-                  index === filtered.length - 1 && styles.cardLast,
-                  index !== 0 &&
-                    index !== filtered.length - 1 &&
-                    styles.cardMiddle,
-                ]}
-              >
-                <ContactRow
-                  contact={item}
-                  tint={tints[index % tints.length]}
-                  isLast={index === filtered.length - 1}
-                  isDark={isDark}
-                  styles={styles}
-                  onCall={call}
-                  onWhatsapp={whatsapp}
-                  onLongPress={setMenuContact}
-                />
-              </View>
-            </View>
-          )}
+          renderItem={renderItem}
           ListEmptyComponent={
             query.trim().length >= 2 ? (
               <View style={styles.emptyContainer}>

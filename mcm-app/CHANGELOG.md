@@ -349,7 +349,7 @@
   por una barra propia (`TextInput`) más grande, idéntica en iOS/Android y con
   **texto blanco garantizado en oscuro**. Botón "Encuéntrame" más prominente.
 - **Grupos · "Encuéntrame" con búsqueda amplia:** busca `nombre + 2 primeras
-  letras del apellido` (ej. "David So"), de modo que encuentra entradas
+letras del apellido` (ej. "David So"), de modo que encuentra entradas
   abreviadas como "David Sol. (Castellón)".
 - **Grupos · categorías ocultas por evento**: nueva propiedad
   `hiddenGroupCategories` en `EventConfig`. La Visita del Papa oculta la
