@@ -18,6 +18,13 @@
 
 ---
 
+## 2026-06-15 — QR offline para compartir playlists sin internet
+
+- **Nuevo**: opción "Ver QR offline" en el menú de la playlist (Seleccionadas). Genera un QR con la playlist **entera embebida** en un deep link `mcmapp://playlist?d=<payload>`. Un dispositivo con la app instalada y el cantoral cacheado puede escanearlo con la cámara normal y abrir la playlist **sin conexión a internet** (no descarga nada de Firebase, a diferencia del QR "en la nube" con código de 4 dígitos).
+- **Codificación compacta**: cada canción se codifica como categoría (1 letra, alineada con `songUtils`) + número de canción + tono (`t±n` semitonos) y cejilla (`cN`) opcionales; el orden se deduce de la posición. Respaldo "crudo" por `filename` para canciones sin categoría/número conocidos. Así el QR es pequeño aunque haya muchas canciones. El receptor resuelve categoría+número → `filename` contra su catálogo cacheado; las canciones que no tenga se omiten avisando al usuario.
+- **Toggle online/offline** dentro del `ShareQrModal`: si hay también código en la nube, se puede alternar entre los dos QR.
+- Archivos: `utils/offlinePlaylist.ts` (nuevo, + test), `utils/pendingCloudPlaylist.ts`, `app/playlist.tsx`, `app/screens/CategoriesScreen.tsx`, `app/screens/SelectedSongsScreen.tsx`, `components/playlist/ShareQrModal.tsx`. Sin dependencias nuevas ni código nativo (OTA normal).
+
 ## 2026-06-13 — Fix: la selección de calendarios se perdía al reabrir la app
 
 - **Bug**: la visibilidad de calendarios se guardaba como array **por índice** (`boolean[]`) y se reconciliaba contra el `fallbackConfigs` (1 solo calendario) durante el instante en que Firebase aún cargaba. Eso truncaba el array guardado a longitud 1, lo persistía, y al llegar los datos reales rellenaba con los defaults — perdiendo la selección del usuario.

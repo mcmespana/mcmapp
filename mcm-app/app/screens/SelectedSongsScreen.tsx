@@ -79,6 +79,12 @@ import {
 import { transposeLabel, transposeKey } from '@/utils/transposeKey';
 import { convertChord } from '@/utils/chordNotation';
 import { useSettings } from '@/contexts/SettingsContext';
+import {
+  encodeOfflinePlaylist,
+  decodeOfflinePlaylist,
+  parseSongNumber,
+  type FilenameResolver,
+} from '@/utils/offlinePlaylist';
 
 interface Song {
   title: string;
@@ -107,6 +113,8 @@ type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const WEB_BASE_URL = 'https://mcm.expo.app';
+/** Esquema propio para deep links offline (playlist embebida en la URL). */
+const APP_SCHEME = 'mcmapp://';
 
 /** Contraseña para sobrescribir una playlist en la nube que ya existe. */
 const OVERWRITE_PASSWORD = 'coco';
@@ -182,8 +190,10 @@ const SelectedSongsScreen: React.FC = () => {
   // Modal de QR (tras subir playlist / iniciar coro, o desde el menú).
   const [qrModal, setQrModal] = useState<{
     title: string;
-    url: string;
-    code: string;
+    url?: string;
+    code?: string;
+    offlineUrl?: string;
+    defaultMode?: 'online' | 'offline';
   } | null>(null);
 
   // Subida pendiente de contraseña (el código ya existe en la nube).
@@ -230,6 +240,33 @@ const SelectedSongsScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Auto-import de un QR offline (?d=<payload>). Esperamos a que el catálogo
+  // esté cargado para poder resolver categoría+número → filename.
+  const offlineImportAttempted = useRef(false);
+  useEffect(() => {
+    if (offlineImportAttempted.current) return;
+    const params: any = (route?.params as any) || {};
+    const payload = params.d;
+    if (typeof payload === 'string' && payload && allSongsData) {
+      offlineImportAttempted.current = true;
+      const { songs, missing } = decodeOfflinePlaylist(
+        payload,
+        offlineFilenameResolver,
+      );
+      if (songs.length === 0) {
+        toast.show({ label: 'No se pudo leer la playlist del QR' });
+        return;
+      }
+      askMergeOrReplace(songs);
+      if (missing > 0) {
+        toast.show({
+          label: `${missing} canción(es) del QR no están en este dispositivo`,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSongsData]);
+
   // Mapa filename → datos completos de la canción (con categoría original).
   const allSongsMap = useMemo(() => {
     const map = new Map<string, Song & { originalCategoryKey: string }>();
@@ -241,6 +278,49 @@ const SelectedSongsScreen: React.FC = () => {
     }
     return map;
   }, [allSongsData]);
+
+  // --- QR offline -----------------------------------------------------------
+  // Resuelve filename → (categoría, número) para CODIFICAR la playlist offline.
+  const resolveSongInfo = useCallback(
+    (filename: string) => {
+      const meta = allSongsMap.get(filename);
+      if (!meta) return null;
+      return {
+        categoryKey: meta.originalCategoryKey,
+        number: parseSongNumber(meta.title, filename),
+      };
+    },
+    [allSongsMap],
+  );
+
+  // Resuelve (categoría, número) → filename para DECODIFICAR un QR offline
+  // contra el catálogo cacheado del dispositivo.
+  const offlineFilenameResolver = useMemo<FilenameResolver>(() => {
+    const byCatNum = new Map<string, string>();
+    if (allSongsData) {
+      for (const [categoryKey, cat] of Object.entries(allSongsData)) {
+        cat.songs.forEach((song) => {
+          const n = parseSongNumber(song.title, song.filename);
+          if (n != null) {
+            const key = `${categoryKey}:${n}`;
+            if (!byCatNum.has(key)) byCatNum.set(key, song.filename);
+          }
+        });
+      }
+    }
+    return {
+      resolveCategory: (categoryKey, number) =>
+        byCatNum.get(`${categoryKey}:${number}`) ?? null,
+      hasFilename: (filename) => allSongsMap.has(filename),
+    };
+  }, [allSongsData, allSongsMap]);
+
+  // URL del QR offline con la playlist entera embebida.
+  const offlineUrl = useMemo(() => {
+    if (selectedSongs.length === 0) return undefined;
+    const payload = encodeOfflinePlaylist(selectedSongs, resolveSongInfo);
+    return `${APP_SCHEME}playlist?d=${encodeURIComponent(payload)}`;
+  }, [selectedSongs, resolveSongInfo]);
 
   // Datos enriquecidos de la selección, ordenados por el campo `order`.
   const enrichedSelected = useMemo(() => {
@@ -1007,6 +1087,24 @@ const SelectedSongsScreen: React.FC = () => {
         onPress: () => setCodeDialog({ variant: 'cloud-download' }),
       },
     ];
+    if (offlineUrl) {
+      nube.push({
+        id: 'show-qr-offline',
+        icon: 'qr-code-scanner',
+        label: 'Ver QR offline',
+        description: 'Compártela a otro dispositivo sin internet (con la app)',
+        onPress: () =>
+          setQrModal({
+            title: 'Playlist · Sin conexión',
+            offlineUrl,
+            url: lastUploadCode
+              ? `${WEB_BASE_URL}/playlist?p=${lastUploadCode}`
+              : undefined,
+            code: lastUploadCode ?? undefined,
+            defaultMode: 'offline',
+          }),
+      });
+    }
     if (lastUploadCode) {
       nube.push(
         {
@@ -1019,6 +1117,7 @@ const SelectedSongsScreen: React.FC = () => {
               title: `Playlist · Código ${lastUploadCode}`,
               url: `${WEB_BASE_URL}/playlist?p=${lastUploadCode}`,
               code: lastUploadCode,
+              offlineUrl,
             }),
         },
         {
@@ -1158,6 +1257,7 @@ const SelectedSongsScreen: React.FC = () => {
     handleStartExportPdf,
     handleImportFile,
     lastUploadCode,
+    offlineUrl,
     choir,
     handleDeleteFromCloud,
     clearSelection,
@@ -1488,6 +1588,8 @@ const SelectedSongsScreen: React.FC = () => {
           title={qrModal.title}
           url={qrModal.url}
           code={qrModal.code}
+          offlineUrl={qrModal.offlineUrl}
+          defaultMode={qrModal.defaultMode}
           onClose={() => setQrModal(null)}
         />
       ) : null}
