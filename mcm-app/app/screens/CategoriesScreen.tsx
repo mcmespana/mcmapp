@@ -29,6 +29,7 @@ import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import {
   consumePendingCloudPlaylistCode,
   consumePendingChoirCode,
+  consumePendingOfflinePlaylist,
 } from '@/utils/pendingCloudPlaylist';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
@@ -62,7 +63,7 @@ export default function CategoriesScreen({
     Categories: undefined;
     SongsList: { categoryId: string; categoryName: string };
     SongDetail: { songId: string; songTitle?: string };
-    SelectedSongs: { p?: string; c?: string } | undefined;
+    SelectedSongs: { p?: string; c?: string; d?: string } | undefined;
   }>;
 }) {
   const scheme = useColorScheme();
@@ -114,9 +115,12 @@ export default function CategoriesScreen({
   useEffect(() => {
     const pendingPlaylist = consumePendingCloudPlaylistCode();
     const pendingChoir = consumePendingChoirCode();
+    const pendingOffline = consumePendingOfflinePlaylist();
 
-    if (pendingPlaylist) {
+    if (pendingOffline) {
       // setParams no funciona para una nueva pantalla; usamos navigate.
+      navigation.navigate('SelectedSongs', { d: pendingOffline } as any);
+    } else if (pendingPlaylist) {
       navigation.navigate('SelectedSongs', { p: pendingPlaylist } as any);
     } else if (pendingChoir) {
       navigation.navigate('SelectedSongs', { c: pendingChoir } as any);

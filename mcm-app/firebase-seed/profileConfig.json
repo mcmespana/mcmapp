@@ -22,27 +22,11 @@
         "mas",
         "visitapapa"
       ],
-      "homeButtons": [
-        "fotos",
-        "evangelio",
-        "cancionero",
-        "visitapapa"
-      ],
-      "masItems": [
-        "comunica",
-        "eventos-pasados"
-      ],
-      "defaultCalendars": [
-        "mcm-europa"
-      ],
-      "albumTags": [
-        "all"
-      ],
-      "notificationTopics": [
-        "general",
-        "eventos",
-        "familias"
-      ]
+      "homeButtons": ["fotos", "evangelio", "cancionero", "visitapapa"],
+      "masItems": ["comunica", "eventos-pasados"],
+      "defaultCalendars": ["mcm-europa"],
+      "albumTags": ["all"],
+      "notificationTopics": ["general", "eventos", "familias"]
     },
     "monitor": {
       "label": "Monitor/a",
@@ -63,22 +47,10 @@
         "cancionero",
         "visitapapa"
       ],
-      "masItems": [
-        "comunica",
-        "comunica-gestion",
-        "eventos-pasados"
-      ],
-      "defaultCalendars": [
-        "mcm-europa"
-      ],
-      "albumTags": [
-        "all"
-      ],
-      "notificationTopics": [
-        "general",
-        "eventos",
-        "monitores"
-      ]
+      "masItems": ["comunica", "comunica-gestion", "eventos-pasados"],
+      "defaultCalendars": ["mcm-europa"],
+      "albumTags": ["all"],
+      "notificationTopics": ["general", "eventos", "monitores"]
     },
     "miembro": {
       "label": "Miembro MCM",
@@ -92,28 +64,11 @@
         "mas",
         "visitapapa"
       ],
-      "homeButtons": [
-        "fotos",
-        "evangelio",
-        "cancionero",
-        "visitapapa"
-      ],
-      "masItems": [
-        "comunica",
-        "comunica-gestion",
-        "eventos-pasados"
-      ],
-      "defaultCalendars": [
-        "mcm-europa"
-      ],
-      "albumTags": [
-        "all"
-      ],
-      "notificationTopics": [
-        "general",
-        "eventos",
-        "miembros"
-      ]
+      "homeButtons": ["fotos", "evangelio", "cancionero", "visitapapa"],
+      "masItems": ["comunica", "comunica-gestion", "eventos-pasados"],
+      "defaultCalendars": ["mcm-europa"],
+      "albumTags": ["all"],
+      "notificationTopics": ["general", "eventos", "miembros"]
     }
   },
   "delegations": {
@@ -133,9 +88,7 @@
       "label": "MCM Caravaca"
     },
     "mcm-castellon": {
-      "extraCalendars": [
-        "mcm-castellon"
-      ],
+      "extraCalendars": ["mcm-castellon"],
       "label": "MCM Castellón",
       "notificationTopic": "mcm-castellon"
     },
@@ -152,9 +105,7 @@
       "label": "MCM l'Alcora"
     },
     "mcm-madrid": {
-      "extraCalendars": [
-        "mcm-madrid"
-      ],
+      "extraCalendars": ["mcm-madrid"],
       "label": "MCM Madrid",
       "notificationTopic": "mcm-madrid"
     },
