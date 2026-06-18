@@ -353,6 +353,15 @@ const SelectedSongsScreen: React.FC = () => {
     [enrichedSelected],
   );
 
+  // Contador que coincide con lo que realmente se ve en la lista. La lista
+  // filtra canciones que no estén en el catálogo cargado, así que contar
+  // `selectedSongs.length` daba descuadres (p. ej. "13" mostrando 12 filas).
+  // Mientras el catálogo aún no ha cargado, caemos al total seleccionado para
+  // no parpadear a 0.
+  const visibleCount = allSongsData
+    ? flatSelectedSongs.length
+    : selectedSongs.length;
+
   const songIndexMap = useMemo(() => {
     const m = new Map<string, number>();
     flatSelectedSongs.forEach((s, i) => m.set(s.filename, i));
@@ -878,14 +887,24 @@ const SelectedSongsScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingOverwrite, selectedSongs]);
 
-  const showUploadSuccess = useCallback((code: string, name?: string) => {
-    setQrModal({
-      title: name
-        ? `¡${name} subida! Código ${code}`
-        : `¡Subida! Código ${code}`,
-      url: `${WEB_BASE_URL}/playlist?p=${code}`,
-      code,
-    });
+  const showUploadSuccess = useCallback(
+    (code: string, name?: string) => {
+      setQrModal({
+        title: name
+          ? `¡${name} subida! Código ${code}`
+          : `¡Subida! Código ${code}`,
+        url: `${WEB_BASE_URL}/playlist?p=${code}`,
+        code,
+        offlineUrl,
+      });
+    },
+    [offlineUrl],
+  );
+
+  /** Desde la pestaña "con código" del QR cuando aún no se ha subido. */
+  const handleQrRequestUpload = useCallback(() => {
+    setQrModal(null);
+    setCodeDialog({ variant: 'cloud-upload' });
   }, []);
 
   const showChoirSuccess = useCallback((code: string) => {
@@ -1088,38 +1107,30 @@ const SelectedSongsScreen: React.FC = () => {
       },
     ];
     if (offlineUrl) {
+      // Un único botón de QR: dentro, el modal ofrece dos pestañas
+      // (con código / sin conexión). Si todavía no se ha subido, la pestaña
+      // online invita a subir la playlist.
       nube.push({
-        id: 'show-qr-offline',
-        icon: 'qr-code-scanner',
-        label: 'Ver QR offline',
-        description: 'Compártela a otro dispositivo sin internet (con la app)',
+        id: 'show-qr',
+        icon: 'qr-code-2',
+        label: 'Compartir QR de la playlist',
+        description: 'Dos pestañas: con código (internet) o sin conexión',
         onPress: () =>
           setQrModal({
-            title: 'Playlist · Sin conexión',
-            offlineUrl,
+            title: lastUploadCode
+              ? `Playlist · Código ${lastUploadCode}`
+              : 'Compartir playlist',
             url: lastUploadCode
               ? `${WEB_BASE_URL}/playlist?p=${lastUploadCode}`
               : undefined,
             code: lastUploadCode ?? undefined,
-            defaultMode: 'offline',
+            offlineUrl,
+            defaultMode: lastUploadCode ? 'online' : 'offline',
           }),
       });
     }
     if (lastUploadCode) {
       nube.push(
-        {
-          id: 'show-qr-cloud',
-          icon: 'qr-code-2',
-          label: 'Ver QR de la playlist',
-          description: 'Quien lo escanee abre la playlist directamente',
-          onPress: () =>
-            setQrModal({
-              title: `Playlist · Código ${lastUploadCode}`,
-              url: `${WEB_BASE_URL}/playlist?p=${lastUploadCode}`,
-              code: lastUploadCode,
-              offlineUrl,
-            }),
-        },
         {
           id: 'change-cloud-code',
           icon: 'edit',
@@ -1386,8 +1397,7 @@ const SelectedSongsScreen: React.FC = () => {
         <View style={styles.summaryRow}>
           <View>
             <Text style={styles.selectionCount}>
-              {selectedSongs.length}{' '}
-              {selectedSongs.length === 1 ? 'canción' : 'canciones'}
+              {visibleCount} {visibleCount === 1 ? 'canción' : 'canciones'}
             </Text>
             {lastUploadCode ? (
               <Text style={styles.subInfo}>
@@ -1395,7 +1405,7 @@ const SelectedSongsScreen: React.FC = () => {
               </Text>
             ) : null}
           </View>
-          {selectedSongs.length > 1 ? (
+          {visibleCount > 1 ? (
             <View style={styles.viewToggle}>
               <TouchableOpacity
                 onPress={() => setViewMode('category')}
@@ -1590,6 +1600,7 @@ const SelectedSongsScreen: React.FC = () => {
           code={qrModal.code}
           offlineUrl={qrModal.offlineUrl}
           defaultMode={qrModal.defaultMode}
+          onRequestUpload={handleQrRequestUpload}
           onClose={() => setQrModal(null)}
         />
       ) : null}
