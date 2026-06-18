@@ -37,6 +37,11 @@ interface Props {
   offlineUrl?: string;
   /** Modo inicial cuando ambos están disponibles. Por defecto 'online'. */
   defaultMode?: 'online' | 'offline';
+  /**
+   * Si se pasa, la pestaña "con código" sigue disponible aunque todavía no
+   * haya `url`: muestra una invitación a subir la playlist a la nube.
+   */
+  onRequestUpload?: () => void;
   onClose: () => void;
 }
 
@@ -47,6 +52,7 @@ const ShareQrModal: React.FC<Props> = ({
   code,
   offlineUrl,
   defaultMode = 'online',
+  onRequestUpload,
   onClose,
 }) => {
   const scheme = useColorScheme();
@@ -56,6 +62,9 @@ const ShareQrModal: React.FC<Props> = ({
 
   const hasOnline = !!url;
   const hasOffline = !!offlineUrl;
+  // La pestaña "con código" se puede elegir si ya hay enlace o si podemos
+  // ofrecer subir la playlist en el momento.
+  const onlineSelectable = hasOnline || !!onRequestUpload;
   const [mode, setMode] = useState<'online' | 'offline'>(
     defaultMode === 'offline' && hasOffline ? 'offline' : 'online',
   );
@@ -69,11 +78,14 @@ const ShareQrModal: React.FC<Props> = ({
   }, [visible]);
 
   // Modo efectivo: si solo hay uno disponible, ignoramos el toggle.
-  const effectiveMode: 'online' | 'offline' = !hasOnline
+  const effectiveMode: 'online' | 'offline' = !onlineSelectable
     ? 'offline'
     : !hasOffline
       ? 'online'
       : mode;
+  // En la pestaña online sin enlace todavía, invitamos a subir.
+  const showUploadPrompt = effectiveMode === 'online' && !hasOnline;
+  const showTabs = hasOffline && onlineSelectable;
   const activeUrl = (effectiveMode === 'offline' ? offlineUrl : url) ?? '';
 
   const switchMode = (next: 'online' | 'offline') => {
@@ -101,7 +113,7 @@ const ShareQrModal: React.FC<Props> = ({
             <View style={styles.card}>
               <Text style={styles.title}>{title}</Text>
 
-              {hasOnline && hasOffline ? (
+              {showTabs ? (
                 <View style={styles.toggle}>
                   <TouchableOpacity
                     onPress={() => switchMode('online')}
@@ -139,46 +151,84 @@ const ShareQrModal: React.FC<Props> = ({
               ) : null}
 
               <Text style={styles.subtitle}>
-                {effectiveMode === 'offline'
-                  ? 'Funciona sin internet · Escanéalo con la cámara y se abre la app con la playlist ya cargada'
-                  : 'Escanea con la cámara · Se abre en la app si la tienes, o en el navegador si no'}
+                {showUploadPrompt
+                  ? 'Sube la playlist a la nube para compartir un QR con código que se abre por internet'
+                  : effectiveMode === 'offline'
+                    ? 'Funciona sin internet · Escanéalo con la cámara y se abre la app con la playlist ya cargada'
+                    : 'Escanea con la cámara · Se abre en la app si la tienes, o en el navegador si no'}
               </Text>
 
-              {/* Marco blanco siempre: los lectores QR necesitan contraste. */}
-              <View style={styles.qrWrap}>
-                <QRCode
-                  value={activeUrl}
-                  size={200}
-                  backgroundColor="#FFFFFF"
-                />
-              </View>
-
-              {effectiveMode === 'online' && code ? (
-                <Text style={styles.code}>{code}</Text>
+              {showUploadPrompt ? (
+                <View style={styles.uploadPrompt}>
+                  <MaterialIcons
+                    name="cloud-upload"
+                    size={48}
+                    color={isDark ? '#7AB3FF' : '#253883'}
+                  />
+                  <Text style={styles.uploadPromptText}>
+                    Esta playlist aún no está en la nube
+                  </Text>
+                </View>
               ) : (
-                <View style={styles.codeSpacer} />
+                <>
+                  {/* Marco blanco siempre: los lectores QR necesitan contraste. */}
+                  <View style={styles.qrWrap}>
+                    <QRCode
+                      value={activeUrl}
+                      size={200}
+                      backgroundColor="#FFFFFF"
+                    />
+                  </View>
+
+                  {effectiveMode === 'online' && code ? (
+                    <Text style={styles.code}>{code}</Text>
+                  ) : (
+                    <View style={styles.codeSpacer} />
+                  )}
+                </>
               )}
 
               <View style={styles.buttons}>
-                <TouchableOpacity
-                  onPress={() => copy('link')}
-                  style={[styles.btn, styles.btnPrimary]}
-                >
-                  <MaterialIcons name="link" size={18} color="#fff" />
-                  <Text style={styles.btnPrimaryText}>
-                    {copied === 'link' ? '¡Enlace copiado!' : 'Copiar enlace'}
-                  </Text>
-                </TouchableOpacity>
-                {effectiveMode === 'online' && code ? (
+                {showUploadPrompt ? (
                   <TouchableOpacity
-                    onPress={() => copy('code')}
-                    style={[styles.btn, styles.btnSecondary]}
+                    onPress={() => {
+                      h.tap();
+                      onRequestUpload?.();
+                    }}
+                    style={[styles.btn, styles.btnPrimary]}
                   >
-                    <Text style={styles.btnSecondaryText}>
-                      {copied === 'code' ? '¡Código copiado!' : 'Copiar código'}
+                    <MaterialIcons name="cloud-upload" size={18} color="#fff" />
+                    <Text style={styles.btnPrimaryText}>
+                      Subir playlist a la nube
                     </Text>
                   </TouchableOpacity>
-                ) : null}
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      onPress={() => copy('link')}
+                      style={[styles.btn, styles.btnPrimary]}
+                    >
+                      <MaterialIcons name="link" size={18} color="#fff" />
+                      <Text style={styles.btnPrimaryText}>
+                        {copied === 'link'
+                          ? '¡Enlace copiado!'
+                          : 'Copiar enlace'}
+                      </Text>
+                    </TouchableOpacity>
+                    {effectiveMode === 'online' && code ? (
+                      <TouchableOpacity
+                        onPress={() => copy('code')}
+                        style={[styles.btn, styles.btnSecondary]}
+                      >
+                        <Text style={styles.btnSecondaryText}>
+                          {copied === 'code'
+                            ? '¡Código copiado!'
+                            : 'Copiar código'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </>
+                )}
                 <TouchableOpacity
                   onPress={onClose}
                   style={[styles.btn, styles.btnSecondary]}
@@ -274,6 +324,19 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: '#FFFFFF',
       padding: 14,
       borderRadius: 14,
+    },
+    uploadPrompt: {
+      height: 228,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      paddingHorizontal: 16,
+    },
+    uploadPromptText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: isDark ? '#AEAEB2' : '#6B6B70',
+      textAlign: 'center',
     },
     codeSpacer: {
       height: 26,

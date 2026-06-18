@@ -18,6 +18,37 @@
 
 ---
 
+## 2026-06-18 17:30 — Playlist: QR unificado, contador correcto y tono transportado real
+
+- **Bug grave en el tono transportado**: `transposeKey` **siempre devolvía el
+  tono original** sin transponer. Miraba `lines[0]` del ChordPro parseado, que
+  es la línea de la directiva `{key:}` (el acorde queda en `lines[1]`), así que
+  nunca encontraba el `ChordLyricsPair`. Resultado: una canción en La subida +5
+  mostraba "La̶ → La +5" en vez de "La̶ Re". Ahora recorre todas las líneas
+  hasta dar con el acorde. Además se normalizan las claves que llegan en
+  mayúsculas ("Am" → "AM", "Bb" → "BB"), formas que ChordSheetJS no entendía y
+  que rompían menores y bemoles. Afecta también al **PDF exportado** y al
+  **texto de WhatsApp**, que usaban la misma función. (`utils/transposeKey.ts`,
+  nuevo `__tests__/transposeKey.test.ts`).
+- **Presentación del tono transportado**: ahora se muestra `La̶ Re (+5)` —tono
+  destino prominente y el transporte pequeño entre paréntesis— en lugar de
+  `La̶ → Re +5`. (`components/playlist/PlaylistRow.tsx`,
+  `components/SongListItem.tsx`).
+- **QR de la playlist unificado**: antes había dos opciones separadas ("Ver QR
+  offline" y "Ver QR de la playlist"). Ahora es **un único botón** "Compartir QR
+  de la playlist" que abre el modal con **dos pestañas** (con código / sin
+  conexión). Si la playlist aún no está subida, la pestaña "con código" invita a
+  subirla. (`app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/ShareQrModal.tsx`).
+- **Contador de canciones**: mostraba `selectedSongs.length`, pero la lista
+  filtra canciones que no estén en el catálogo cargado → descuadres (p. ej. "13"
+  con 12 filas). Ahora cuenta las realmente visibles (`flatSelectedSongs`), con
+  fallback al total mientras carga el catálogo. Además `normalizeOrder` **elimina
+  duplicados** por `filename` al importar/descargar, que inflaban el contador y
+  rompían las keys de la lista. (`app/screens/SelectedSongsScreen.tsx`,
+  `contexts/SelectedSongsContext.tsx`).
+- **OTA-safe** (solo JS).
+
 ## 2026-06-08 — Notificaciones: descripción extendida (`bodyLong`)
 
 - Nuevo campo opcional **`bodyLong`** en las notificaciones: descripción larga que se
