@@ -11,6 +11,7 @@ import {
   Linking,
   Image,
   ImageStyle,
+  TouchableOpacity,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,6 +32,9 @@ import OfflineBanner from '@/components/OfflineBanner';
 import SurveyBanner from '@/components/SurveyBanner';
 import { useActiveSurveys } from '@/hooks/useActiveSurveys';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { useEventSubscriptions } from '@/contexts/EventSubscriptionsContext';
+import { useToast } from '@/contexts/AppToastContext';
+import { h } from '@/utils/haptics';
 import {
   EventConfig,
   EventSection,
@@ -56,6 +60,57 @@ export default function EventHomeScreen() {
   const isDark = scheme === 'dark';
   const event = useCurrentEvent();
   const eventSurveys = useActiveSurveys('event-banner', event.id);
+
+  // ── Suscripción opt-in a avisos del evento ──
+  const {
+    isSubscribed,
+    toggle: toggleSubscription,
+    subscribe,
+    wasPrompted,
+    markPrompted,
+    loading: subsLoading,
+  } = useEventSubscriptions();
+  const { toast } = useToast();
+  const subscribed = isSubscribed(event.id);
+
+  // Auto-sugerencia: la primera vez que se abre un evento (y solo una vez),
+  // ofrecemos suscribirse. `wasPrompted` recuerda los ya ofrecidos.
+  const showSuggestion = !subsLoading && !subscribed && !wasPrompted(event.id);
+
+  const handleToggleSubscription = React.useCallback(() => {
+    const willSubscribe = !isSubscribed(event.id);
+    h.toggle();
+    toggleSubscription(event.id);
+    markPrompted(event.id);
+    toast.show({
+      variant: willSubscribe ? 'success' : 'default',
+      label: willSubscribe
+        ? `Te avisaremos de ${event.title}`
+        : `Ya no recibirás avisos de ${event.title}`,
+    });
+  }, [
+    event.id,
+    event.title,
+    isSubscribed,
+    toggleSubscription,
+    markPrompted,
+    toast,
+  ]);
+
+  const handleAcceptSuggestion = React.useCallback(() => {
+    h.add();
+    subscribe(event.id);
+    markPrompted(event.id);
+    toast.show({
+      variant: 'success',
+      label: `Te avisaremos de ${event.title}`,
+    });
+  }, [event.id, event.title, subscribe, markPrompted, toast]);
+
+  const handleDismissSuggestion = React.useCallback(() => {
+    h.tap();
+    markPrompted(event.id);
+  }, [event.id, markPrompted]);
 
   const { width } = useWindowDimensions();
   const isWide = width >= WIDE_BREAKPOINT;
@@ -139,7 +194,93 @@ export default function EventHomeScreen() {
               {event.bannerText}
             </Text>
           ) : null}
+
+          {/* Campana de suscripción a avisos del evento (opt-in) */}
+          <TouchableOpacity
+            style={[styles.bellButton, { backgroundColor: emblemBg }]}
+            onPress={handleToggleSubscription}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: subscribed }}
+            accessibilityLabel={
+              subscribed
+                ? `Dejar de recibir avisos de ${event.title}`
+                : `Recibir avisos de ${event.title}`
+            }
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <MaterialIcons
+              name={subscribed ? 'notifications-active' : 'notifications-none'}
+              size={22}
+              color={heroFg}
+            />
+          </TouchableOpacity>
         </LinearGradient>
+
+        {/* ── Auto-sugerencia de suscripción (una sola vez por evento) ── */}
+        {showSuggestion ? (
+          <View
+            style={[styles.suggestCard, { borderColor: hexAlpha(tint, '40') }]}
+          >
+            <View
+              style={[
+                styles.suggestIcon,
+                { backgroundColor: hexAlpha(tint, '18') },
+              ]}
+            >
+              <MaterialIcons
+                name="notifications-active"
+                size={22}
+                color={tint}
+              />
+            </View>
+            <View style={styles.suggestTextWrap}>
+              <Text
+                style={[
+                  styles.suggestTitle,
+                  { color: isDark ? '#fff' : '#1C1C1E' },
+                ]}
+              >
+                ¿Recibir avisos de este evento?
+              </Text>
+              <Text
+                style={[
+                  styles.suggestSubtitle,
+                  { color: isDark ? '#8E8E93' : '#6B7280' },
+                ]}
+              >
+                Te notificaremos solo de {event.title}, nada más.
+              </Text>
+            </View>
+            <View style={styles.suggestActions}>
+              <TouchableOpacity
+                onPress={handleAcceptSuggestion}
+                style={[styles.suggestBtn, { backgroundColor: tint }]}
+                accessibilityRole="button"
+                accessibilityLabel={`Sí, avisarme de ${event.title}`}
+              >
+                <Text style={[styles.suggestBtnText, { color: heroFg }]}>
+                  Avisarme
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleDismissSuggestion}
+                style={styles.suggestDismiss}
+                accessibilityRole="button"
+                accessibilityLabel="Ahora no"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text
+                  style={[
+                    styles.suggestDismissText,
+                    { color: isDark ? '#8E8E93' : '#6B7280' },
+                  ]}
+                >
+                  Ahora no
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
 
         {/* ── Encuestas activas del evento (banner automático) ── */}
         {eventSurveys.map((s) => (
@@ -321,6 +462,17 @@ interface Styles {
   heroImage: ImageStyle;
   heroTitle: TextStyle;
   heroSubtitle: TextStyle;
+  bellButton: ViewStyle;
+  suggestCard: ViewStyle;
+  suggestIcon: ViewStyle;
+  suggestTextWrap: ViewStyle;
+  suggestTitle: TextStyle;
+  suggestSubtitle: TextStyle;
+  suggestActions: ViewStyle;
+  suggestBtn: ViewStyle;
+  suggestBtnText: TextStyle;
+  suggestDismiss: ViewStyle;
+  suggestDismissText: TextStyle;
   motto: ViewStyle;
   mottoLine: ViewStyle;
   mottoText: TextStyle;
@@ -387,6 +539,69 @@ const createStyles = (isDark: boolean) =>
       lineHeight: 19,
       marginTop: 6,
       maxWidth: 460,
+    },
+    bellButton: {
+      position: 'absolute',
+      top: spacing.md,
+      right: spacing.md,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    suggestCard: {
+      width: '100%',
+      maxWidth: 1100,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.lg,
+      borderWidth: StyleSheet.hairlineWidth * 2,
+      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+    },
+    suggestIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    suggestTextWrap: {
+      flex: 1,
+      gap: 2,
+    },
+    suggestTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    suggestSubtitle: {
+      fontSize: 12,
+      lineHeight: 16,
+    },
+    suggestActions: {
+      alignItems: 'flex-end',
+      gap: 4,
+    },
+    suggestBtn: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: 8,
+      borderRadius: radii.md,
+    },
+    suggestBtnText: {
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    suggestDismiss: {
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+    },
+    suggestDismissText: {
+      fontSize: 12,
+      fontWeight: '600',
     },
     motto: {
       flexDirection: 'row',

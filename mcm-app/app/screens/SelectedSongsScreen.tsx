@@ -79,6 +79,12 @@ import {
 import { transposeLabel, transposeKey } from '@/utils/transposeKey';
 import { convertChord } from '@/utils/chordNotation';
 import { useSettings } from '@/contexts/SettingsContext';
+import {
+  encodeOfflinePlaylist,
+  decodeOfflinePlaylist,
+  parseSongNumber,
+  type FilenameResolver,
+} from '@/utils/offlinePlaylist';
 
 interface Song {
   title: string;
@@ -107,6 +113,8 @@ type SelectedSongsScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const WEB_BASE_URL = 'https://mcm.expo.app';
+/** Esquema propio para deep links offline (playlist embebida en la URL). */
+const APP_SCHEME = 'mcmapp://';
 
 /** Contraseña para sobrescribir una playlist en la nube que ya existe. */
 const OVERWRITE_PASSWORD = 'coco';
@@ -182,8 +190,10 @@ const SelectedSongsScreen: React.FC = () => {
   // Modal de QR (tras subir playlist / iniciar coro, o desde el menú).
   const [qrModal, setQrModal] = useState<{
     title: string;
-    url: string;
-    code: string;
+    url?: string;
+    code?: string;
+    offlineUrl?: string;
+    defaultMode?: 'online' | 'offline';
   } | null>(null);
 
   // Subida pendiente de contraseña (el código ya existe en la nube).
@@ -230,6 +240,33 @@ const SelectedSongsScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Auto-import de un QR offline (?d=<payload>). Esperamos a que el catálogo
+  // esté cargado para poder resolver categoría+número → filename.
+  const offlineImportAttempted = useRef(false);
+  useEffect(() => {
+    if (offlineImportAttempted.current) return;
+    const params: any = (route?.params as any) || {};
+    const payload = params.d;
+    if (typeof payload === 'string' && payload && allSongsData) {
+      offlineImportAttempted.current = true;
+      const { songs, missing } = decodeOfflinePlaylist(
+        payload,
+        offlineFilenameResolver,
+      );
+      if (songs.length === 0) {
+        toast.show({ label: 'No se pudo leer la playlist del QR' });
+        return;
+      }
+      askMergeOrReplace(songs);
+      if (missing > 0) {
+        toast.show({
+          label: `${missing} canción(es) del QR no están en este dispositivo`,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSongsData]);
+
   // Mapa filename → datos completos de la canción (con categoría original).
   const allSongsMap = useMemo(() => {
     const map = new Map<string, Song & { originalCategoryKey: string }>();
@@ -241,6 +278,49 @@ const SelectedSongsScreen: React.FC = () => {
     }
     return map;
   }, [allSongsData]);
+
+  // --- QR offline -----------------------------------------------------------
+  // Resuelve filename → (categoría, número) para CODIFICAR la playlist offline.
+  const resolveSongInfo = useCallback(
+    (filename: string) => {
+      const meta = allSongsMap.get(filename);
+      if (!meta) return null;
+      return {
+        categoryKey: meta.originalCategoryKey,
+        number: parseSongNumber(meta.title, filename),
+      };
+    },
+    [allSongsMap],
+  );
+
+  // Resuelve (categoría, número) → filename para DECODIFICAR un QR offline
+  // contra el catálogo cacheado del dispositivo.
+  const offlineFilenameResolver = useMemo<FilenameResolver>(() => {
+    const byCatNum = new Map<string, string>();
+    if (allSongsData) {
+      for (const [categoryKey, cat] of Object.entries(allSongsData)) {
+        cat.songs.forEach((song) => {
+          const n = parseSongNumber(song.title, song.filename);
+          if (n != null) {
+            const key = `${categoryKey}:${n}`;
+            if (!byCatNum.has(key)) byCatNum.set(key, song.filename);
+          }
+        });
+      }
+    }
+    return {
+      resolveCategory: (categoryKey, number) =>
+        byCatNum.get(`${categoryKey}:${number}`) ?? null,
+      hasFilename: (filename) => allSongsMap.has(filename),
+    };
+  }, [allSongsData, allSongsMap]);
+
+  // URL del QR offline con la playlist entera embebida.
+  const offlineUrl = useMemo(() => {
+    if (selectedSongs.length === 0) return undefined;
+    const payload = encodeOfflinePlaylist(selectedSongs, resolveSongInfo);
+    return `${APP_SCHEME}playlist?d=${encodeURIComponent(payload)}`;
+  }, [selectedSongs, resolveSongInfo]);
 
   // Datos enriquecidos de la selección, ordenados por el campo `order`.
   const enrichedSelected = useMemo(() => {
@@ -272,6 +352,15 @@ const SelectedSongsScreen: React.FC = () => {
     () => [...enrichedSelected].sort((a, b) => a.order - b.order),
     [enrichedSelected],
   );
+
+  // Contador que coincide con lo que realmente se ve en la lista. La lista
+  // filtra canciones que no estén en el catálogo cargado, así que contar
+  // `selectedSongs.length` daba descuadres (p. ej. "13" mostrando 12 filas).
+  // Mientras el catálogo aún no ha cargado, caemos al total seleccionado para
+  // no parpadear a 0.
+  const visibleCount = allSongsData
+    ? flatSelectedSongs.length
+    : selectedSongs.length;
 
   const songIndexMap = useMemo(() => {
     const m = new Map<string, number>();
@@ -798,14 +887,24 @@ const SelectedSongsScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingOverwrite, selectedSongs]);
 
-  const showUploadSuccess = useCallback((code: string, name?: string) => {
-    setQrModal({
-      title: name
-        ? `¡${name} subida! Código ${code}`
-        : `¡Subida! Código ${code}`,
-      url: `${WEB_BASE_URL}/playlist?p=${code}`,
-      code,
-    });
+  const showUploadSuccess = useCallback(
+    (code: string, name?: string) => {
+      setQrModal({
+        title: name
+          ? `¡${name} subida! Código ${code}`
+          : `¡Subida! Código ${code}`,
+        url: `${WEB_BASE_URL}/playlist?p=${code}`,
+        code,
+        offlineUrl,
+      });
+    },
+    [offlineUrl],
+  );
+
+  /** Desde la pestaña "con código" del QR cuando aún no se ha subido. */
+  const handleQrRequestUpload = useCallback(() => {
+    setQrModal(null);
+    setCodeDialog({ variant: 'cloud-upload' });
   }, []);
 
   const showChoirSuccess = useCallback((code: string) => {
@@ -1007,20 +1106,31 @@ const SelectedSongsScreen: React.FC = () => {
         onPress: () => setCodeDialog({ variant: 'cloud-download' }),
       },
     ];
+    if (offlineUrl) {
+      // Un único botón de QR: dentro, el modal ofrece dos pestañas
+      // (con código / sin conexión). Si todavía no se ha subido, la pestaña
+      // online invita a subir la playlist.
+      nube.push({
+        id: 'show-qr',
+        icon: 'qr-code-2',
+        label: 'Compartir QR de la playlist',
+        description: 'Dos pestañas: con código (internet) o sin conexión',
+        onPress: () =>
+          setQrModal({
+            title: lastUploadCode
+              ? `Playlist · Código ${lastUploadCode}`
+              : 'Compartir playlist',
+            url: lastUploadCode
+              ? `${WEB_BASE_URL}/playlist?p=${lastUploadCode}`
+              : undefined,
+            code: lastUploadCode ?? undefined,
+            offlineUrl,
+            defaultMode: lastUploadCode ? 'online' : 'offline',
+          }),
+      });
+    }
     if (lastUploadCode) {
       nube.push(
-        {
-          id: 'show-qr-cloud',
-          icon: 'qr-code-2',
-          label: 'Ver QR de la playlist',
-          description: 'Quien lo escanee abre la playlist directamente',
-          onPress: () =>
-            setQrModal({
-              title: `Playlist · Código ${lastUploadCode}`,
-              url: `${WEB_BASE_URL}/playlist?p=${lastUploadCode}`,
-              code: lastUploadCode,
-            }),
-        },
         {
           id: 'change-cloud-code',
           icon: 'edit',
@@ -1158,6 +1268,7 @@ const SelectedSongsScreen: React.FC = () => {
     handleStartExportPdf,
     handleImportFile,
     lastUploadCode,
+    offlineUrl,
     choir,
     handleDeleteFromCloud,
     clearSelection,
@@ -1286,8 +1397,7 @@ const SelectedSongsScreen: React.FC = () => {
         <View style={styles.summaryRow}>
           <View>
             <Text style={styles.selectionCount}>
-              {selectedSongs.length}{' '}
-              {selectedSongs.length === 1 ? 'canción' : 'canciones'}
+              {visibleCount} {visibleCount === 1 ? 'canción' : 'canciones'}
             </Text>
             {lastUploadCode ? (
               <Text style={styles.subInfo}>
@@ -1295,7 +1405,7 @@ const SelectedSongsScreen: React.FC = () => {
               </Text>
             ) : null}
           </View>
-          {selectedSongs.length > 1 ? (
+          {visibleCount > 1 ? (
             <View style={styles.viewToggle}>
               <TouchableOpacity
                 onPress={() => setViewMode('category')}
@@ -1488,6 +1598,9 @@ const SelectedSongsScreen: React.FC = () => {
           title={qrModal.title}
           url={qrModal.url}
           code={qrModal.code}
+          offlineUrl={qrModal.offlineUrl}
+          defaultMode={qrModal.defaultMode}
+          onRequestUpload={handleQrRequestUpload}
           onClose={() => setQrModal(null)}
         />
       ) : null}

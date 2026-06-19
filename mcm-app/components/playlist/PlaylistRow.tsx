@@ -198,17 +198,14 @@ const PlaylistRow: React.FC<Props> = ({
                   <Text style={styles.toneOriginalStriked}>
                     {convertChord(originalKey, notation)}
                   </Text>
-                  <MaterialIcons
-                    name="arrow-forward"
-                    size={12}
-                    color={isDark ? '#8E8E93' : '#8E8E93'}
-                  />
                   <View style={styles.keyPillTransposed}>
                     <Text style={styles.keyTextTransposed}>
                       {convertChord(targetKey, notation)}
                     </Text>
-                    <Text style={styles.transposeBadge}>{transposeBadge}</Text>
                   </View>
+                  <Text style={styles.transposeParenLabel}>
+                    ({transposeBadge})
+                  </Text>
                 </View>
               ) : (
                 <View style={styles.keyPill}>
@@ -398,7 +395,6 @@ const createStyles = (isDark: boolean) =>
     keyPillTransposed: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
       paddingHorizontal: 8,
       paddingVertical: 3,
       borderRadius: 6,
@@ -411,14 +407,11 @@ const createStyles = (isDark: boolean) =>
       fontWeight: '700',
       color: '#7A5A00',
     },
-    transposeBadge: {
+    transposeParenLabel: {
       fontSize: 11,
-      fontWeight: '800',
-      color: '#9D5C00',
+      fontWeight: '700',
+      color: isDark ? '#8E8E93' : '#8E8E93',
       fontVariant: ['tabular-nums'],
-      backgroundColor: 'rgba(255,255,255,0.7)',
-      paddingHorizontal: 4,
-      borderRadius: 4,
     },
     reorderRow: {
       flexDirection: 'column',

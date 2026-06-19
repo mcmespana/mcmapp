@@ -319,6 +319,11 @@ const { data, loading, offline } = useFirebaseData<TipoData>(
 
 **Agentes: documentad cambios importantes en `CHANGELOG.md`**
 
+Formato de entrada: `## YYYY-MM-DD HH:MM — Título` (incluid **siempre la hora**,
+24h España — con varios cambios el mismo día es la única forma de saber el
+orden). Entrada nueva arriba del todo. Lo anterior a mayo de 2026 está
+archivado en `docs/CHANGELOG-ARCHIVO.md` (raíz del monorepo).
+
 Documentar SÍ:
 
 - Nuevas pantallas o funcionalidades
@@ -537,7 +542,7 @@ npx heroui-cli@latest agents-md --native --output AGENTS.md
 - `ErrorBoundary.tsx` envuelve toda la app en `_layout.tsx`
 - Splash screen: HelloWave con 3 repeticiones (900ms total)
 - Sistema de Perfiles: reemplaza al viejo `featureFlags.ts`. Ver `types/profileConfig.ts` + `utils/resolveProfileConfig.ts`
-- Sistema de notificaciones push: ver `NOTIFICACIONES.md` en la raíz del monorepo
-- **Wordle:** `app/screens/WordleScreen.tsx` y `app/wordle.tsx` son código histórico sin uso activo. Nadie accede a él actualmente. No tocar ni añadirle funcionalidades hasta que se decida reactivarlo.
+- Sistema de notificaciones push: ver `docs/funcionalidades/NOTIFICACIONES.md` en la raíz del monorepo
+- **Wordle:** `app/screens/WordleScreen.tsx` y `app/wordle.tsx` no tienen uso activo, pero **se conservan a propósito** como código de referencia para recuperar el Wordle algún día. NO eliminar, NO refactorizar, NO añadirle funcionalidades hasta que se decida reactivarlo.
 - **Haptics:** `utils/haptics.ts` centraliza todo el feedback háptico. Usar las funciones semánticas de `h` (h.tap, h.add, h.remove, h.select, h.toggle, h.formSuccess…) en lugar de llamar a expo-haptics directamente.
-- **Arreglos del cantoral:** directiva custom `{arr: texto}` para anotaciones de arreglo (render sutil alineado a la derecha, toggle ON-por-canción). Lógica en `utils/arrangements.ts`; ver `ARREGLOS.md` para sintaxis, comportamiento y el prompt del generador de ChordPro.
+- **Arreglos del cantoral:** directiva custom `{arr: texto}` para anotaciones de arreglo (render sutil alineado a la derecha, toggle ON-por-canción). Lógica en `utils/arrangements.ts`; ver `docs/funcionalidades/ARREGLOS.md` (raíz del monorepo) para sintaxis, comportamiento y el prompt del generador de ChordPro.

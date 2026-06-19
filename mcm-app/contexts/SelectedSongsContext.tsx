@@ -80,10 +80,21 @@ interface SelectedSongsProviderProps {
   children: ReactNode;
 }
 
-/** Reordena `order` para que sean enteros consecutivos empezando en 0. */
+/**
+ * Reordena `order` para que sean enteros consecutivos empezando en 0 y
+ * **elimina duplicados** por `filename` (quedándose con la primera aparición).
+ * Los duplicados se podían colar al importar/descargar playlists (un mismo
+ * `filename` repetido) e inflaban el contador y rompían las keys de la lista.
+ */
 function normalizeOrder(songs: SelectedSong[]): SelectedSong[] {
+  const seen = new Set<string>();
   return [...songs]
     .sort((a, b) => a.order - b.order || a.addedAt - b.addedAt)
+    .filter((s) => {
+      if (seen.has(s.filename)) return false;
+      seen.add(s.filename);
+      return true;
+    })
     .map((s, i) => ({ ...s, order: i }));
 }
 

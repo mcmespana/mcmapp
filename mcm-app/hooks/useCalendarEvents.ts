@@ -88,7 +88,10 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
       current.location =
         line
           .slice('LOCATION:'.length)
-          .replace(/\\n/g, '\n')
+          .replace(/\\n/gi, '\n')
+          .replace(/\\,/g, ',')
+          .replace(/\\;/g, ';')
+          .replace(/\\\\/g, '\\')
           .trim()
           .split('\n')
           .filter((part) => part.trim().toLowerCase() !== 'españa')
