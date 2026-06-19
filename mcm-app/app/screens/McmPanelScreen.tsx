@@ -34,6 +34,18 @@ export default function McmPanelScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // El panel se monta como Stack.Screen DENTRO del tab "Más", así que la tab
+  // bar sigue visible. En iOS es una NativeTabs (UITabBar TRANSLÚCIDO) y el
+  // WebView se dibujaba por debajo, por eso (a) no se podía hacer scroll hasta
+  // el final —la última franja quedaba bajo la barra— y (b) el blanco del panel
+  // traspasaba el cristal creando un "aura". Reservamos la altura real de la
+  // barra (≈49 + safe-area) para que el WebView termine justo encima, y
+  // pintamos ese hueco con el fondo del sistema (no blanco) para que el cristal
+  // no brille. En Android la tab bar es opaca y el contenido ya queda por
+  // encima → no hace falta reservar nada (un spacer dejaría un hueco vacío).
+  const tabBarSpace = Platform.OS === 'ios' ? insets.bottom + 49 : 0;
+  const screenBg = scheme === 'dark' ? '#1C1C1E' : '#F2F2F7';
+
   const dynamicStyles = useMemo(
     () =>
       StyleSheet.create({
@@ -81,7 +93,7 @@ export default function McmPanelScreen() {
 
   // ── iOS / Android: WebView nativo con barra de color en el notch ────────
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: screenBg }]}>
       <StatusBar
         barStyle="light-content"
         backgroundColor={NOTCH_COLOR}
@@ -97,7 +109,7 @@ export default function McmPanelScreen() {
       )}
       <WebView
         source={{ uri: MCM_PANEL_URL }}
-        style={styles.webview}
+        style={[styles.webview, { backgroundColor: screenBg }]}
         javaScriptEnabled={true}
         domStorageEnabled={true}
         sharedCookiesEnabled={true}
@@ -113,6 +125,10 @@ export default function McmPanelScreen() {
         onError={onError}
         onHttpError={onError}
       />
+      {/* Hueco reservado para la tab bar: el WebView termina aquí, así se puede
+          hacer scroll hasta el fondo y el blanco del panel ya no traspasa el
+          cristal de la barra. */}
+      <View style={{ height: tabBarSpace, backgroundColor: screenBg }} />
     </View>
   );
 }
