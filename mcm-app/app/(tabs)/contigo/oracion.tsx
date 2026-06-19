@@ -9,7 +9,7 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -189,7 +189,6 @@ function buildCalendar(selectedDate: string): {
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function OracionScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -296,7 +295,29 @@ export default function OracionScreen() {
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
+      {/* Header NATIVO: back button del sistema (con el efecto "gota" de iOS)
+          + título. Sustituye al antiguo floating header custom. headerTransparent
+          deja ver el degradado cálido; en iOS<26 el blur replica el efecto
+          esmerilado que tenía la barra flotante. */}
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTitle: 'Mi Rato de Oración',
+          headerTransparent: true,
+          headerBackButtonDisplayMode: 'minimal',
+          headerShadowVisible: false,
+          headerTintColor: warm.title,
+          headerTitleStyle: {
+            color: warm.title,
+            fontWeight: '700',
+            fontSize: 17,
+          },
+          ...(Platform.OS === 'ios' &&
+          parseInt(String(Platform.Version), 10) < 26
+            ? { headerBlurEffect: 'systemChromeMaterial' as const }
+            : {}),
+        }}
+      />
 
       {/* Warm gradient background */}
       <LinearGradient
@@ -307,56 +328,14 @@ export default function OracionScreen() {
         pointerEvents="none"
       />
 
-      {/* ── Floating Header ── */}
-      <View
-        pointerEvents="box-none"
-        style={[
-          styles.floatingHeader,
-          {
-            paddingTop: Math.max(insets.top, 16),
-            backgroundColor: isDark
-              ? 'rgba(28,26,23,0.90)'
-              : 'rgba(254,251,245,0.90)',
-            borderBottomColor: warm.borderSubtle,
-            maxWidth: MAX_CONTENT_W,
-            alignSelf: 'center',
-            width: '100%',
-          },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[
-            styles.frostedBtn,
-            {
-              backgroundColor: isDark
-                ? 'rgba(255,255,255,0.08)'
-                : 'rgba(0,0,0,0.05)',
-            },
-          ]}
-        >
-          <MaterialIcons
-            name="arrow-back-ios-new"
-            size={20}
-            color={theme.text}
-          />
-        </TouchableOpacity>
-
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: warm.title }]}>
-            Mi Rato de Oración
-          </Text>
-        </View>
-
-        <View style={{ width: 44 }} />
-      </View>
-
       {/* ── Scroll content ── */}
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + 76,
+            // El header nativo es transparente y flota sobre el contenido,
+            // así que reservamos su altura (≈44 iOS / 56 Android + safe-area).
+            paddingTop: insets.top + (Platform.OS === 'android' ? 68 : 56),
             maxWidth: MAX_CONTENT_W,
             width: '100%',
             alignSelf: 'center',
