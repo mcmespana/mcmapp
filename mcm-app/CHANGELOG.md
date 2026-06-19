@@ -18,6 +18,29 @@
 
 ---
 
+## 2026-06-19 13:00 — Suscripción opt-in a notificaciones por evento
+
+- **Nuevo**: el usuario puede **suscribirse a avisos de un evento concreto**
+  (Jubileo, encuentros, retiros…) en lugar de que las notificaciones de evento
+  lleguen a todos. Modelo **opt-in + auto-sugerir**: nadie recibe avisos hasta
+  pulsar "Avisarme"; al abrir un evento por primera vez se ofrece suscribirse
+  (una sola vez por evento).
+- Cada suscripción añade el topic **`event-<eventId>`** al array `topics` de
+  `/pushTokens/{id}`, que el MCM Panel usa para segmentar el envío. El cambio se
+  escribe en Firebase al instante (no espera al heartbeat de 5 min).
+- La segmentación por **perfil** (familia/monitor/miembro) y **delegación** ya
+  estaba lista en el cliente vía `topics`/`profileType`/`delegationId`; lo que
+  faltaba (filtrar al enviar) es trabajo del Panel. Aquí solo se añade la capa
+  de eventos.
+- **UI**: campana de suscripción en el hero de `EventHomeScreen` + tarjeta de
+  auto-sugerencia.
+- **Archivos**: `contexts/EventSubscriptionsContext.tsx` (nuevo),
+  `app/screens/EventHomeScreen.tsx`, `notifications/usePushNotifications.ts`
+  (merge de topics + escritura inmediata), `app/_layout.tsx` (provider).
+- Contrato del Panel: ver §7.bis en
+  `docs/contratos/NOTIFICACIONES_CONTRATO.md`.
+- Todo JS puro → **compatible OTA** (sin build nativo).
+
 ## 2026-06-18 17:30 — Playlist: QR unificado, contador correcto y tono transportado real
 
 - **Bug grave en el tono transportado**: `transposeKey` **siempre devolvía el
