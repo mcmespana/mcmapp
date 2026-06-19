@@ -185,14 +185,21 @@ function ToastItem({
   }, []);
 
   const v = VARIANT_STYLES[t.variant ?? 'default'];
-  // Extra breathing room above the tab bar / home indicator — much more
-  // than the previous build, which felt glued to the edge on iOS.
-  // En Android el mínimo es más alto para que el toast nunca quede oculto bajo
-  // la barra de navegación de 3 botones (≈48dp) cuando el inset reportado es 0.
+  // El overlay del toast se pinta por ENCIMA de todo (zIndex alto) anclado a
+  // `bottom: 0`, así que el offset debe librar la ALTURA de la tab bar, no solo
+  // el home indicator. Alturas reales de la barra (app/(tabs)/_layout.tsx):
+  //   · iOS (NativeTabs)      ≈ 49 + insets.bottom
+  //   · Android (Tabs custom)  = 80 + insets.bottom
+  //   · Web (Tabs)             = 60 + insets.bottom
+  // Sumamos ~12px de aire. En pantallas sin tab bar (fullscreen, onboarding)
+  // el toast queda algo más arriba de lo estrictamente necesario; es un
+  // trade-off asumible porque la mayoría de toasts salen en pantallas con tabs.
   const bottomOffset =
     Platform.OS === 'ios'
-      ? Math.max(insets.bottom + 18, 36)
-      : Math.max(insets.bottom + 16, 56);
+      ? Math.max(insets.bottom + 61, 77)
+      : Platform.OS === 'web'
+        ? Math.max(insets.bottom + 72, 84)
+        : Math.max(insets.bottom + 92, 100);
 
   const useBlur = Platform.OS === 'ios';
 
