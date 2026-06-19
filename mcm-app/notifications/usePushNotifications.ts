@@ -31,6 +31,7 @@ import {
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useEventSubscriptions } from '@/contexts/EventSubscriptionsContext';
 import { router } from 'expo-router';
 
 /**
@@ -99,31 +100,53 @@ export default function usePushNotifications() {
 
   const resolved = useResolvedProfileConfig();
   const { profile } = useUserProfile();
+  const { eventTopics } = useEventSubscriptions();
 
   // Metadata para segmentación en Firebase. Solo la construimos cuando el
   // usuario ya tiene perfil/delegación definidos (post onboarding). Antes,
   // pasamos `null` para marcar "todavía sin clasificar".
+  //
+  // `topics` = topics del perfil/delegación + topics `event-<id>` de las
+  // suscripciones opt-in a eventos (deduplicados). Así un mismo token recibe
+  // tanto los envíos segmentados por perfil como los de los eventos a los que
+  // se haya apuntado.
   const profileMetadata = useMemo<TokenProfileMetadata>(
     () => ({
       profileType: profile.profileType,
       delegationId: profile.delegationId,
-      topics: resolved.notificationTopics,
+      topics: Array.from(
+        new Set([...resolved.notificationTopics, ...eventTopics]),
+      ),
     }),
-    [profile.profileType, profile.delegationId, resolved.notificationTopics],
+    [
+      profile.profileType,
+      profile.delegationId,
+      resolved.notificationTopics,
+      eventTopics,
+    ],
   );
 
   // Mantener una referencia mutable para que los efectos puedan leer el valor
   // más reciente sin recrearse (evita duplicar listeners y reescribir el token).
   const metadataRef = useRef(profileMetadata);
+  const didRegisterRef = useRef(false);
   useEffect(() => {
     metadataRef.current = profileMetadata;
     // Espejo a nivel de módulo para `tryRegisterPushToken()`.
     latestMetadata = profileMetadata;
+    // Propaga cambios de perfil/delegación/suscripciones a eventos al token
+    // de Firebase de inmediato (sin esperar al heartbeat de 5 min). En el
+    // primer render el token aún no está cacheado: `updateLastActive` es un
+    // no-op seguro y el registro inicial (efecto de abajo) hace la escritura.
+    if (didRegisterRef.current) {
+      updateLastActive(metadataRef.current).catch(() => {});
+    }
   }, [profileMetadata]);
 
   useEffect(() => {
     // Registrar token y guardar en Firebase, luego heartbeat inicial
     registerAndSaveToken(metadataRef.current).then(() => {
+      didRegisterRef.current = true;
       updateLastActive(metadataRef.current).catch(() => {});
     });
 
