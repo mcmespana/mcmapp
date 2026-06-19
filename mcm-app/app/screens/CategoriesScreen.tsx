@@ -127,12 +127,41 @@ export default function CategoriesScreen({
     }
   }, [navigation]);
 
-  // Header: hidden to use custom inline header
+  // Header NATIVO: los botones "sugerir" + "buscar" van como bar items del
+  // header nativo (headerRight) para que iOS 26 les aplique el efecto
+  // liquid-glass del sistema (igual que el back/buscar de dentro de una
+  // categoría). Antes vivían en un header inline dentro del scroll, por eso NO
+  // tenían ese efecto. El título "Cantoral" lo pone el screenOptions del stack.
+  const headerIconColor = isIOS ? (isDark ? '#f4c11e' : '#3d79b9') : '#1a1a1a';
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: false,
+      headerRight: () => (
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={() => setShowForm(true)}
+            style={styles.headerNativeButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="Sugerir canción"
+          >
+            <MaterialIcons name="add" size={24} color={headerIconColor} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('SongsList', {
+                categoryId: ALL_SONGS_CATEGORY_ID,
+                categoryName: ALL_SONGS_CATEGORY_NAME,
+              })
+            }
+            style={styles.headerNativeButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="Buscar canción"
+          >
+            <MaterialIcons name="search" size={24} color={headerIconColor} />
+          </TouchableOpacity>
+        </View>
+      ),
     });
-  }, [navigation]);
+  }, [navigation, styles, headerIconColor]);
 
   // En iPad/web amplio rendiriamos la "Tu selección" en una card destacada
   // de ancho completo arriba, y las categorías reales en un grid de 2-3 cols
@@ -273,47 +302,11 @@ export default function CategoriesScreen({
   const listHeader = useMemo(
     () => (
       <View>
-        <View style={[styles.inlineHeader, { paddingTop: 14 }]}>
-          <View style={styles.headerLeftContainer}>
-            <Text style={styles.headerTitle}>Cantoral</Text>
-          </View>
-          <View style={styles.headerRightContainer}>
-            <TouchableOpacity
-              onPress={() => setShowForm(true)}
-              style={styles.headerFloatingButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityLabel="Sugerir canción"
-            >
-              <MaterialIcons
-                name="add"
-                size={22}
-                color={isDark ? '#DAA520' : '#C4922A'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('SongsList', {
-                  categoryId: ALL_SONGS_CATEGORY_ID,
-                  categoryName: ALL_SONGS_CATEGORY_NAME,
-                })
-              }
-              style={styles.headerFloatingButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityLabel="Buscar canción"
-            >
-              <MaterialIcons
-                name="search"
-                size={22}
-                color={isDark ? '#DAA520' : '#C4922A'}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
         {renderSelectionHero()}
         {sectionLabel()}
       </View>
     ),
-    [renderSelectionHero, sectionLabel, isDark, navigation, styles],
+    [renderSelectionHero, sectionLabel],
   );
 
   if (loading && sortedCategories.length === 0) {
@@ -390,6 +383,17 @@ const createStyles = (
     container: {
       flex: 1,
       backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+    },
+    // Botones del header NATIVO (sugerir/buscar). Minimal —solo padding, sin
+    // fondo— para que iOS 26 los envuelva en su cápsula liquid-glass.
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginRight: Platform.OS === 'web' ? 8 : 0,
+    },
+    headerNativeButton: {
+      padding: 8,
     },
     inlineHeader: {
       flexDirection: 'row',
