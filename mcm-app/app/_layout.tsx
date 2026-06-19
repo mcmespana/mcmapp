@@ -39,6 +39,7 @@ import CommandPalette from '@/components/CommandPalette';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import MaintenanceScreen from '@/components/MaintenanceScreen';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
+import { EventSubscriptionsProvider } from '@/contexts/EventSubscriptionsContext';
 import { CalendarConfigProvider } from '@/contexts/CalendarConfigContext';
 import { OverlayStackProvider } from '@/contexts/OverlayStackContext';
 import UniwindThemeBridge from '@/components/UniwindThemeBridge';
@@ -71,25 +72,27 @@ export default function RootLayout() {
                   <AppSettingsProvider>
                     <UniwindThemeBridge />
                     <UserProfileProvider>
-                      <AuthProvider>
-                        <SelectedSongsProvider>
-                          <ChoirSessionProvider>
-                            <NotificationsProvider>
-                              <CalendarConfigProvider>
-                                <PreviewChannelProvider>
-                                  <OTAProvider>
-                                    <CarismochitoProvider>
-                                      <ActiveEventProvider>
-                                        <InnerLayout />
-                                      </ActiveEventProvider>
-                                    </CarismochitoProvider>
-                                  </OTAProvider>
-                                </PreviewChannelProvider>
-                              </CalendarConfigProvider>
-                            </NotificationsProvider>
-                          </ChoirSessionProvider>
-                        </SelectedSongsProvider>
-                      </AuthProvider>
+                      <EventSubscriptionsProvider>
+                        <AuthProvider>
+                          <SelectedSongsProvider>
+                            <ChoirSessionProvider>
+                              <NotificationsProvider>
+                                <CalendarConfigProvider>
+                                  <PreviewChannelProvider>
+                                    <OTAProvider>
+                                      <CarismochitoProvider>
+                                        <ActiveEventProvider>
+                                          <InnerLayout />
+                                        </ActiveEventProvider>
+                                      </CarismochitoProvider>
+                                    </OTAProvider>
+                                  </PreviewChannelProvider>
+                                </CalendarConfigProvider>
+                              </NotificationsProvider>
+                            </ChoirSessionProvider>
+                          </SelectedSongsProvider>
+                        </AuthProvider>
+                      </EventSubscriptionsProvider>
                     </UserProfileProvider>
                   </AppSettingsProvider>
                 </ProfileConfigProvider>

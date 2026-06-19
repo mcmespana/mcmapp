@@ -382,6 +382,37 @@ pushTokens.where('topics', 'array-contains', 'general')
 
 ---
 
+### 4.6. "Enviar notificación solo a los suscritos a un evento"
+
+> Novedad (junio 2026). La app permite **suscripción opt-in a un evento**
+> concreto (Jubileo, encuentros…). Ver detalle en
+> `docs/contratos/NOTIFICACIONES_CONTRATO.md` §7.bis.
+
+1. La app añade el topic **`event-<eventId>`** al array `topics` del token
+   cuando el usuario se suscribe (p. ej. `event-jubileo`). `eventId` = id del
+   evento en el registry de la app (`constants/events.ts`), que coincide con el
+   nodo de Firebase (`jubileo`, o el nombre bajo `activities/<nombre>`).
+2. Panel → _Notificaciones_ → _Nueva_ → destinatarios → **evento** → fija el
+   topic `event-<id>`.
+3. Query: `pushTokens.where('topics', 'array-contains', 'event-jubileo')`.
+4. **No uséis `eventos` para avisos de un evento puntual** — ese topic lo tienen
+   todos y volvería a llegar a todo el mundo. `eventos`/`general` quedan para
+   avisos transversales de la app.
+5. El selector de evento debería poblarse con la lista de eventos conocidos.
+   Recuento de suscritos = nº de tokens cuyo `topics` contiene `event-<id>`.
+
+**Combinación de ejes (evento + perfil + delegación):** dentro de un mismo eje
+es siempre OR (ej. "familia o monitor"). Entre ejes distintos, el composer
+ofrece un **conmutador AND/OR** con **AND (intersección) por defecto**:
+
+- **AND** (recomendado, por defecto): cada filtro acota más. Ej.: `event-jubileo`
+  AND `monitores` → solo los monitores suscritos al Jubileo.
+- **OR**: une audiencias. Ej.: `event-jubileo` OR `monitores` → suscritos al
+  Jubileo **más** todos los monitores (aunque no estén suscritos).
+
+El admin elige el modo por envío. Por defecto AND para evitar ampliar el alcance
+sin querer.
+
 ## 5. Validaciones que debería hacer el panel antes de guardar
 
 | Check                                                                                                            | Severidad | Acción                                                                                            |

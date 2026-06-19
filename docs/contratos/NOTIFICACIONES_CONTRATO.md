@@ -265,12 +265,15 @@ Vocabulario que entiende el tipo de la app (`types/notifications.ts`):
 
 **Cómo segmentar (recomendado): usad `topics`.** Es un array **pre-computado** =
 union de los `notificationTopics` del perfil + el `notificationTopic` de la
-delegación. Segmentad con "el array `topics` contiene X". Ejemplos:
+delegación + los topics `event-<id>` de los **eventos a los que el usuario se ha
+suscrito** (opt-in, ver §7.bis). Segmentad con "el array `topics` contiene X".
+Ejemplos:
 
 - Todos → `general`
 - Solo monitores → `monitores`
 - Solo Castellón → `mcm-castellon`
 - Familias de Madrid → `familias` **y** `mcm-madrid`
+- Suscritos al Jubileo → `event-jubileo`
 
 **Valores válidos de `profileType`:** `familia`, `monitor`, `miembro`.
 
@@ -288,6 +291,45 @@ añaden el suyo dinámicamente).
 > `delegationId: null`, `topics: []` (o `["general"]`). Si filtráis por topic y un
 > token no lo tiene, no le llega: para envíos masivos, segmentad por `general` o
 > tratad "sin topic" como "todos" según convenga.
+
+## 7.bis. Suscripción a eventos (topics `event-<id>`)
+
+**Problema que resuelve:** hasta ahora, un aviso de un evento concreto (Jubileo,
+un encuentro, un retiro…) salía al topic `eventos`, que **todos** los onboarded
+tienen → le llegaba a todo el mundo. Ahora la app permite **suscribirse opt-in a
+un evento**.
+
+**Cómo funciona en la app:**
+
+- En el hub de cada evento (`EventHomeScreen`) hay una **campana** de
+  suscripción. La primera vez que se abre un evento, además, se ofrece
+  suscribirse con una tarjeta ("¿Recibir avisos de este evento?").
+- Al suscribirse, la app añade el topic **`event-<eventId>`** al array
+  `topics` de `/pushTokens/{id}` (p. ej. `event-jubileo`). Al desuscribirse, lo
+  quita. El cambio se escribe en Firebase **al instante** (no espera al
+  heartbeat).
+- El `eventId` es el **id del evento en el registry de la app**
+  (`constants/events.ts`) — el mismo que ya usáis como nodo en Firebase: para
+  Jubileo es `jubileo`; para eventos del panel es el nombre bajo
+  `activities/<nombre>` (p. ej. `activities/evento2027` → `event-evento2027`).
+
+**Qué tiene que hacer el Panel:**
+
+1. **Para avisar de un evento concreto, segmentad por `event-<id>`**, NO por
+   `eventos`. Ej.: aviso del Jubileo → `topics array-contains 'event-jubileo'`.
+   Así solo le llega a los suscritos.
+2. El topic `eventos`/`general` queda para avisos **transversales** ("hay
+   novedades en la app"), no para un evento puntual.
+3. En el composer, junto al selector de perfil/delegación, añadid un **selector
+   de evento** que fije el topic `event-<id>`. Combinable con perfil/delegación
+   (intersección o unión, a vuestro criterio).
+4. **Recuento de suscritos**: contad los tokens de `/pushTokens` cuyo `topics`
+   contenga `event-<id>`. (Opcional: la app puede mantener un índice inverso
+   `/eventSubscriptions/{eventId}/{tokenId}` si os hace falta un contador barato
+   — pedidlo y se añade.)
+
+> Convención del id de topic: `event-` + `eventId` tal cual (kebab/slug). No
+> añadáis prefijos `activities/`; el id del evento ya es el slug final.
 
 ## 8. (c) Channels Android
 
