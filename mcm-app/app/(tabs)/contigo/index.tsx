@@ -6,10 +6,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, Stack } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits, type DayRecord } from '@/hooks/useContigoHabits';
@@ -108,6 +109,41 @@ export default function ContigoScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Header NATIVO: título pequeño "Contigo" + badge litúrgico y favoritos
+          como bar items. La fecha pasa al cuerpo. */}
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTitle: 'Contigo',
+          headerTransparent: true,
+          headerShadowVisible: false,
+          headerTintColor: isDark ? '#F5EFE3' : '#2A1E0E',
+          headerTitleStyle: {
+            color: isDark ? '#F5EFE3' : '#2A1E0E',
+            fontWeight: '700',
+            fontSize: 17,
+          },
+          headerRight: () => (
+            <View style={styles.nativeHeaderRight}>
+              <View style={styles.headerBadgeWrap}>
+                <LiturgicalBadge dateStr={todayStr} />
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push('/(tabs)/contigo/bookmarks')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{ padding: 4 }}
+                accessibilityLabel="Ver evangelios guardados"
+              >
+                <MaterialIcons name="bookmarks" size={22} color={W.accent} />
+              </TouchableOpacity>
+            </View>
+          ),
+          ...(Platform.OS === 'ios' &&
+          parseInt(String(Platform.Version), 10) < 26
+            ? { headerBlurEffect: 'systemChromeMaterial' as const }
+            : {}),
+        }}
+      />
       <LinearGradient
         colors={bgGradient}
         style={StyleSheet.absoluteFill}
@@ -117,7 +153,7 @@ export default function ContigoScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingTop: insets.top + 14,
+          paddingTop: insets.top + 52,
           paddingBottom: insets.bottom + 60,
         }}
         showsVerticalScrollIndicator={false}
@@ -133,42 +169,10 @@ export default function ContigoScreen() {
               : undefined
           }
         >
-          {/* ── Header ─────────────────────────────────── */}
-          <View style={styles.headerRow}>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={[
-                  styles.title,
-                  { color: isDark ? '#F5EFE3' : '#2A1E0E' },
-                ]}
-              >
-                Contigo
-              </Text>
-              <Text style={[styles.subtitle, { color: W.textSec }]}>
-                {formatDateLong(todayStr)}
-              </Text>
-            </View>
-            <View style={styles.headerRight}>
-              <View style={styles.headerBadgeWrap}>
-                <LiturgicalBadge dateStr={todayStr} />
-              </View>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/contigo/bookmarks')}
-                style={[
-                  styles.headerBtn,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(255,255,255,0.07)'
-                      : 'rgba(0,0,0,0.05)',
-                    borderColor: W.border,
-                  },
-                ]}
-                accessibilityLabel="Ver evangelios guardados"
-              >
-                <MaterialIcons name="bookmarks" size={18} color={W.accent} />
-              </TouchableOpacity>
-            </View>
-          </View>
+          {/* Fecha (el título y acciones están ahora en el header nativo) */}
+          <Text style={[styles.dateLine, { color: W.textSec }]}>
+            {formatDateLong(todayStr)}
+          </Text>
 
           {/* ── Login nudge (solo si hay hábitos y no hay sesión) ── */}
           {!authUser && Object.keys(records).length > 0 && (
@@ -340,6 +344,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginTop: 6,
+  },
+  nativeHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dateLine: {
+    fontSize: 13,
+    fontWeight: '500',
+    paddingHorizontal: 20,
+    marginBottom: 4,
   },
   headerBadgeWrap: { transform: [{ scale: 0.92 }] },
   headerBtn: {
