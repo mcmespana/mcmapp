@@ -10,7 +10,7 @@ import ComunicaScreen from '../screens/ComunicaScreen';
 import ComunicaGestionScreen from '../screens/ComunicaGestionScreen';
 import McmPanelScreen from '../screens/McmPanelScreen';
 import AlbumListScreen from '../screens/AlbumListScreen';
-import CalendarioScreen from './calendario';
+import { CalendarScreen } from './calendario';
 import EventosPasadosScreen from '../screens/EventosPasadosScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
 import EventActionButtons from '@/components/EventActionButtons';
@@ -141,12 +141,12 @@ export default function MasTab() {
         />
         <Stack.Screen
           name="Calendario"
-          component={CalendarioScreen}
+          component={CalendarScreen}
           options={{
-            // Calendario se comporta como un tab "de plataforma": pinta su
-            // propio header/contenido vía TabScreenWrapper. El swipe-back de
-            // iOS / botón nativo Android cubren la navegación de vuelta.
-            headerShown: false,
+            // CalendarScreen pone su propio título ("Calendario") y el botón de
+            // calendarios vía navigation.setOptions, usando el header nativo del
+            // stack de "Más".
+            title: 'Calendario',
           }}
         />
         <Stack.Screen
