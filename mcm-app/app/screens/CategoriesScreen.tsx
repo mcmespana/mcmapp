@@ -135,6 +135,13 @@ export default function CategoriesScreen({
   const headerIconColor = isIOS ? (isDark ? '#f4c11e' : '#3d79b9') : '#1a1a1a';
   useLayoutEffect(() => {
     navigation.setOptions({
+      // Título grande nativo (se encoge al hacer scroll) — antes se veía el
+      // título pequeño centrado.
+      headerLargeTitle: isIOS,
+      headerLargeTitleStyle: {
+        color: isDark ? '#FFFFFF' : '#1C1C1E',
+        fontWeight: '800',
+      },
       headerRight: () => (
         <View style={styles.headerActions}>
           <TouchableOpacity
@@ -161,7 +168,7 @@ export default function CategoriesScreen({
         </View>
       ),
     });
-  }, [navigation, styles, headerIconColor]);
+  }, [navigation, styles, headerIconColor, isDark]);
 
   // En iPad/web amplio rendiriamos la "Tu selección" en una card destacada
   // de ancho completo arriba, y las categorías reales en un grid de 2-3 cols
@@ -389,11 +396,11 @@ const createStyles = (
     headerActions: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
+      gap: 14,
       marginRight: Platform.OS === 'web' ? 8 : 0,
     },
     headerNativeButton: {
-      padding: 8,
+      padding: 6,
     },
     inlineHeader: {
       flexDirection: 'row',
