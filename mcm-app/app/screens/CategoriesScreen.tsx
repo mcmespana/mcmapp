@@ -134,38 +134,51 @@ export default function CategoriesScreen({
   // tenían ese efecto. El título "Cantoral" lo pone el screenOptions del stack.
   const headerIconColor = isIOS ? (isDark ? '#f4c11e' : '#3d79b9') : '#1a1a1a';
   useLayoutEffect(() => {
+    // En iOS: título GRANDE nativo. Necesita header NO transparente para que el
+    // título se ancle en la barra (con transparente, iOS no le pone fondo y
+    // parece flotar sobre la lista). Le damos el fondo del propio screen.
+    const iosLargeTitle = isIOS
+      ? {
+          headerLargeTitle: true,
+          headerTransparent: false,
+          headerStyle: {
+            backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+          } as const,
+          headerLargeTitleStyle: {
+            color: isDark ? '#FFFFFF' : '#1C1C1E',
+            fontWeight: '800' as const,
+          },
+        }
+      : {};
     navigation.setOptions({
-      // Título grande nativo (se encoge al hacer scroll) — antes se veía el
-      // título pequeño centrado.
-      headerLargeTitle: isIOS,
-      headerLargeTitleStyle: {
-        color: isDark ? '#FFFFFF' : '#1C1C1E',
-        fontWeight: '800',
-      },
+      ...iosLargeTitle,
+      // "Sugerir" a la IZQUIERDA y "Buscar" a la DERECHA → son dos bar items
+      // nativos distintos, así que iOS 26 les da una cápsula liquid-glass a
+      // cada uno (separadas), en vez de agruparlos en una sola.
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => setShowForm(true)}
+          style={styles.headerNativeButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Sugerir canción"
+        >
+          <MaterialIcons name="add" size={24} color={headerIconColor} />
+        </TouchableOpacity>
+      ),
       headerRight: () => (
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            onPress={() => setShowForm(true)}
-            style={styles.headerNativeButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityLabel="Sugerir canción"
-          >
-            <MaterialIcons name="add" size={24} color={headerIconColor} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('SongsList', {
-                categoryId: ALL_SONGS_CATEGORY_ID,
-                categoryName: ALL_SONGS_CATEGORY_NAME,
-              })
-            }
-            style={styles.headerNativeButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityLabel="Buscar canción"
-          >
-            <MaterialIcons name="search" size={24} color={headerIconColor} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('SongsList', {
+              categoryId: ALL_SONGS_CATEGORY_ID,
+              categoryName: ALL_SONGS_CATEGORY_NAME,
+            })
+          }
+          style={styles.headerNativeButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Buscar canción"
+        >
+          <MaterialIcons name="search" size={24} color={headerIconColor} />
+        </TouchableOpacity>
       ),
     });
   }, [navigation, styles, headerIconColor, isDark]);
