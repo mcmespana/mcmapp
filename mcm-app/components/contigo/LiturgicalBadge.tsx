@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Chip } from 'heroui-native';
+import { View, Text, StyleSheet } from 'react-native';
 import liturgicalCalendar from '@/assets/calendario-liturgico.json';
+import { getBrightness } from '@/components/ui/glass';
 
 interface LiturgicalBadgeProps {
   dateStr: string; // YYYY-MM-DD
@@ -91,14 +92,29 @@ export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
     setInfo(getLiturgicalInfo(dateStr));
   }, [dateStr]);
 
+  // Pill propio (color litúrgico de fondo + texto auto-contrastado), en vez del
+  // Chip de heroui cuyo color 'default' pintaba texto oscuro invisible sobre
+  // fondos/headers oscuros.
+  const textColor = getBrightness(info.hex) > 160 ? '#1A1A1A' : '#FFFFFF';
+
   return (
-    <Chip
-      size="sm"
-      variant="primary"
-      color={info.color}
-      style={{ elevation: 0 }}
-    >
-      <Chip.Label style={{ fontWeight: '700' }}>{info.name}</Chip.Label>
-    </Chip>
+    <View style={[styles.pill, { backgroundColor: info.hex }]}>
+      <Text style={[styles.label, { color: textColor }]} numberOfLines={1}>
+        {info.name}
+      </Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  pill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    alignSelf: 'flex-start',
+  },
+  label: {
+    fontWeight: '700',
+    fontSize: 12,
+  },
+});
