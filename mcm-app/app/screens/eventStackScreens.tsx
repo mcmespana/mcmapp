@@ -199,7 +199,12 @@ export const eventScreenOptions =
         headerStyle: { backgroundColor: 'transparent' },
         headerShadowVisible: false,
         headerBackground: () => <FloatingHeaderBackground />,
-        headerLeft: () => <GlassBackButton />,
+        // En iOS/Android usamos el back NATIVO (icono solo) — iOS 26 ya le pone
+        // su cápsula liquid-glass. El GlassBackButton custom se "envolvía dos
+        // veces" (cápsula dentro de cápsula). En web mantenemos el custom.
+        ...(isWeb
+          ? { headerLeft: () => <GlassBackButton /> }
+          : { headerBackButtonDisplayMode: 'minimal' as const }),
       };
     }
     return {
@@ -264,15 +269,21 @@ export const eventHubScreenOptions = ({
 export function eventStackScreenOptions({
   webStatusBarHeight,
   onNavReady,
+  isDark = false,
 }: {
   webStatusBarHeight?: number;
   onNavReady?: (navigation: any) => void;
+  isDark?: boolean;
 }) {
+  // En iOS el header es glass (se adapta al tema): en oscuro el texto debe ser
+  // CLARO o no se lee (antes estaba fijo en #1a1a1a → invisible en modo oscuro).
+  const iosHeaderText = isDark ? '#FFFFFF' : '#1a1a1a';
   return ({ navigation }: { navigation: any; route: any }) => {
     onNavReady?.(navigation);
     return {
       freezeOnBlur: true,
-      headerBackTitle: 'Atrás',
+      // Back solo con icono (sin la palabra "Atrás" al lado).
+      headerBackButtonDisplayMode: 'minimal' as const,
       headerStyle:
         Platform.OS === 'ios'
           ? { backgroundColor: 'transparent' }
@@ -285,12 +296,12 @@ export function eventStackScreenOptions({
                 shadowOpacity: 0,
               }
             : { backgroundColor: '#78909C' },
-      headerTintColor: Platform.OS === 'ios' ? '#1a1a1a' : '#fff',
+      headerTintColor: Platform.OS === 'ios' ? iosHeaderText : '#fff',
       headerShadowVisible: false,
       headerTitleStyle: {
         fontWeight: '700' as const,
         fontSize: 18,
-        color: Platform.OS === 'ios' ? '#1a1a1a' : '#fff',
+        color: Platform.OS === 'ios' ? iosHeaderText : '#fff',
       },
       headerTitleAlign: 'center' as const,
       headerStatusBarHeight: webStatusBarHeight,

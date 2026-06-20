@@ -3,6 +3,7 @@ import { Platform, View, StyleSheet } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 import EventHomeScreen from '../screens/EventHomeScreen';
 import SettingsBottomSheet from '@/components/SettingsBottomSheet';
@@ -36,6 +37,7 @@ export default function VisitaPapaTab() {
   const wasBlurredRef = useRef(false);
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
+  const isDark = useColorScheme() === 'dark';
 
   const navigation = useNavigation();
   const sectionColor = getEvent(EVENT_ID).tintColor;
@@ -96,6 +98,7 @@ export default function VisitaPapaTab() {
         initialRouteName="JubileoHome"
         screenOptions={eventStackScreenOptions({
           webStatusBarHeight,
+          isDark,
           onNavReady: (nav) => {
             stackNavRef.current = nav;
           },
