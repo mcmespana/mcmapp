@@ -120,6 +120,10 @@ export default function SongsListScreen({
   // Modal is fully dismissed (iOS can't present two Modals simultaneously).
   const pendingShareRef = useRef<string | null>(null);
   const isSearchAll = categoryId === '__ALL__';
+  // En la pantalla de búsqueda usamos el search NATIVO de iOS/Android
+  // (headerSearchBarOptions) en lugar del input custom. En web no está
+  // soportado por native-stack, así que ahí seguimos con el input propio.
+  const nativeSearch = isSearchAll && Platform.OS !== 'web';
 
   // In __ALL__ mode, search is always visible
   useEffect(() => {
@@ -131,6 +135,16 @@ export default function SongsListScreen({
     const cleanCategoryName = categoryName.replace(/^🔎\s*/, '');
     navigation.setOptions({
       title: isSearchAll ? 'Buscar' : cleanCategoryName,
+      headerSearchBarOptions: nativeSearch
+        ? {
+            placeholder: 'Busca por título, autor...',
+            hideWhenScrolling: false,
+            autoFocus: true,
+            textColor: isDark ? '#FFFFFF' : '#000000',
+            onChangeText: (e: { nativeEvent: { text: string } }) =>
+              setSearch(e.nativeEvent.text),
+          }
+        : undefined,
       headerRight: isSearchAll
         ? undefined
         : () => (
@@ -159,6 +173,8 @@ export default function SongsListScreen({
     isSearchAll,
     searchVisible,
     styles.headerButton,
+    nativeSearch,
+    isDark,
   ]);
 
   useEffect(() => {
@@ -367,7 +383,7 @@ export default function SongsListScreen({
   const listHeaderComponent = useMemo(
     () => (
       <View>
-        {searchVisible && (
+        {searchVisible && !nativeSearch && (
           <View style={styles.searchContainer}>
             <View style={styles.searchBox}>
               <MaterialIcons
@@ -431,6 +447,7 @@ export default function SongsListScreen({
       searchVisible,
       search,
       isSearchAll,
+      nativeSearch,
       filteredSongs.length,
       hasAnyMedia,
       styles,
