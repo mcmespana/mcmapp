@@ -195,8 +195,69 @@ export default function RevisionScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
+    <View style={[styles.container, { paddingTop: insets.top + 52 }]}>
+      {/* Header NATIVO: cerrar (izq) + navegador de fechas como título custom
+          (‹ fecha ›) dentro de la barra nativa. */}
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTransparent: true,
+          headerShadowVisible: false,
+          headerTintColor: W.text,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ padding: 6 }}
+              accessibilityLabel="Cerrar"
+            >
+              <MaterialIcons name="close" size={22} color={W.text} />
+            </TouchableOpacity>
+          ),
+          headerTitle: () => (
+            <View style={styles.navTitle}>
+              <TouchableOpacity
+                onPress={() => navigateDate(-1)}
+                style={styles.dateStepperBtn}
+                hitSlop={10}
+                accessibilityLabel="Día anterior"
+              >
+                <MaterialIcons
+                  name="chevron-left"
+                  size={20}
+                  color={W.textSec}
+                />
+              </TouchableOpacity>
+              <Text
+                style={[styles.navTitleText, { color: W.text }]}
+                numberOfLines={1}
+              >
+                {isToday ? 'Hoy' : formatDateLong(selDate)}
+              </Text>
+              <TouchableOpacity
+                onPress={() => navigateDate(1)}
+                disabled={isFutureDisabled}
+                style={[
+                  styles.dateStepperBtn,
+                  { opacity: isFutureDisabled ? 0.25 : 1 },
+                ]}
+                hitSlop={10}
+                accessibilityLabel="Día siguiente"
+              >
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={W.textSec}
+                />
+              </TouchableOpacity>
+            </View>
+          ),
+          ...(Platform.OS === 'ios' &&
+          parseInt(String(Platform.Version), 10) < 26
+            ? { headerBlurEffect: 'systemChromeMaterial' as const }
+            : {}),
+        }}
+      />
       <LinearGradient
         colors={bgColors}
         style={StyleSheet.absoluteFill}
@@ -204,80 +265,14 @@ export default function RevisionScreen() {
         end={{ x: 0.8, y: 1 }}
       />
 
-      {/* ── Header ── */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + 6,
-            backgroundColor: isDark
-              ? 'rgba(26,23,18,0.92)'
-              : 'rgba(251,247,241,0.92)',
-            borderBottomColor: W.border,
-          },
-        ]}
-      >
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={[
-              styles.headerBtn,
-              styles.headerBtnAbs,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.08)'
-                  : 'rgba(0,0,0,0.06)',
-              },
-            ]}
-            accessibilityLabel="Cerrar"
-          >
-            <MaterialIcons name="close" size={20} color={W.text} />
-          </TouchableOpacity>
-
-          <View style={styles.dateStepper}>
-            <TouchableOpacity
-              onPress={() => navigateDate(-1)}
-              style={styles.dateStepperBtn}
-              hitSlop={10}
-              accessibilityLabel="Día anterior"
-            >
-              <MaterialIcons name="chevron-left" size={20} color={W.textSec} />
-            </TouchableOpacity>
-            <View style={styles.dateCenter}>
-              <Text
-                style={[styles.dateTitle, { color: W.text }]}
-                numberOfLines={1}
-              >
-                {isToday ? 'Hoy' : formatDateLong(selDate)}
-              </Text>
-              <Text style={[styles.dateSub, { color: W.textMuted }]}>
-                Revisión del día
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => navigateDate(1)}
-              disabled={isFutureDisabled}
-              style={[
-                styles.dateStepperBtn,
-                { opacity: isFutureDisabled ? 0.25 : 1 },
-              ]}
-              hitSlop={10}
-              accessibilityLabel="Día siguiente"
-            >
-              <MaterialIcons name="chevron-right" size={20} color={W.textSec} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Pill */}
-        <View style={styles.pillRow}>
-          <Text
-            style={[styles.pillText, { color: purple }]}
-            accessibilityLabel="Revisión: agradecer y revisar"
-          >
-            ✦ EXAMEN ESTILO &apos;AGRADECER Y REVISAR&apos;
-          </Text>
-        </View>
+      {/* Pill (subtítulo movido al cuerpo desde el header) */}
+      <View style={styles.pillRow}>
+        <Text
+          style={[styles.pillText, { color: purple }]}
+          accessibilityLabel="Revisión: agradecer y revisar"
+        >
+          ✦ EXAMEN ESTILO &apos;AGRADECER Y REVISAR&apos;
+        </Text>
       </View>
 
       {/* ── Step indicator ── */}
@@ -626,6 +621,16 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  navTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  navTitleText: {
+    fontSize: 16,
+    fontWeight: '700',
+    maxWidth: 200,
   },
   dateCenter: {
     alignItems: 'center',
