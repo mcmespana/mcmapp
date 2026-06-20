@@ -73,9 +73,28 @@ export default function EventHomeScreen() {
   const { toast } = useToast();
   const subscribed = isSubscribed(event.id);
 
-  // Auto-sugerencia: la primera vez que se abre un evento (y solo una vez),
-  // ofrecemos suscribirse. `wasPrompted` recuerda los ya ofrecidos.
-  const showSuggestion = !subsLoading && !subscribed && !wasPrompted(event.id);
+  // Auto-suscripción (opt-out): la PRIMERA vez que se abre un evento, suscribimos
+  // automáticamente. `wasPrompted` marca que ya se hizo una vez por evento, así
+  // que si el usuario se desuscribe luego con la campana, NO le volvemos a
+  // suscribir al reentrar.
+  React.useEffect(() => {
+    if (subsLoading) return;
+    if (wasPrompted(event.id)) return;
+    subscribe(event.id);
+    markPrompted(event.id);
+    toast.show({
+      variant: 'success',
+      label: `Te avisaremos de ${event.title}. Desactívalo con la campana 🔔`,
+    });
+  }, [
+    subsLoading,
+    event.id,
+    event.title,
+    wasPrompted,
+    subscribe,
+    markPrompted,
+    toast,
+  ]);
 
   const handleToggleSubscription = React.useCallback(() => {
     const willSubscribe = !isSubscribed(event.id);
@@ -96,21 +115,6 @@ export default function EventHomeScreen() {
     markPrompted,
     toast,
   ]);
-
-  const handleAcceptSuggestion = React.useCallback(() => {
-    h.add();
-    subscribe(event.id);
-    markPrompted(event.id);
-    toast.show({
-      variant: 'success',
-      label: `Te avisaremos de ${event.title}`,
-    });
-  }, [event.id, event.title, subscribe, markPrompted, toast]);
-
-  const handleDismissSuggestion = React.useCallback(() => {
-    h.tap();
-    markPrompted(event.id);
-  }, [event.id, markPrompted]);
 
   const { width } = useWindowDimensions();
   const isWide = width >= WIDE_BREAKPOINT;
@@ -219,72 +223,6 @@ export default function EventHomeScreen() {
             />
           </TouchableOpacity>
         </LinearGradient>
-
-        {/* ── Auto-sugerencia de suscripción (una sola vez por evento) ── */}
-        {showSuggestion ? (
-          <View
-            style={[styles.suggestCard, { borderColor: hexAlpha(tint, '40') }]}
-          >
-            <View
-              style={[
-                styles.suggestIcon,
-                { backgroundColor: hexAlpha(tint, '18') },
-              ]}
-            >
-              <MaterialIcons
-                name="notifications-active"
-                size={22}
-                color={tint}
-              />
-            </View>
-            <View style={styles.suggestTextWrap}>
-              <Text
-                style={[
-                  styles.suggestTitle,
-                  { color: isDark ? '#fff' : '#1C1C1E' },
-                ]}
-              >
-                ¿Recibir avisos de este evento?
-              </Text>
-              <Text
-                style={[
-                  styles.suggestSubtitle,
-                  { color: isDark ? '#8E8E93' : '#6B7280' },
-                ]}
-              >
-                Te notificaremos solo de {event.title}, nada más.
-              </Text>
-            </View>
-            <View style={styles.suggestActions}>
-              <TouchableOpacity
-                onPress={handleAcceptSuggestion}
-                style={[styles.suggestBtn, { backgroundColor: tint }]}
-                accessibilityRole="button"
-                accessibilityLabel={`Sí, avisarme de ${event.title}`}
-              >
-                <Text style={[styles.suggestBtnText, { color: heroFg }]}>
-                  Avisarme
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleDismissSuggestion}
-                style={styles.suggestDismiss}
-                accessibilityRole="button"
-                accessibilityLabel="Ahora no"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Text
-                  style={[
-                    styles.suggestDismissText,
-                    { color: isDark ? '#8E8E93' : '#6B7280' },
-                  ]}
-                >
-                  Ahora no
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : null}
 
         {/* ── Encuestas activas del evento (banner automático) ── */}
         {eventSurveys.map((s) => (
