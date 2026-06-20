@@ -52,7 +52,7 @@ import { setPendingMasScreen } from '@/utils/masNavigation';
 import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
-import GlassSurface from '@/components/ui/GlassSurface';
+import AppIconButton from '@/components/ui/AppIconButton';
 import { setPendingEventScreen } from '@/utils/eventNavigation';
 import {
   DEFAULT_APP_EVALUATION,
@@ -590,54 +590,22 @@ export default function Home() {
           right={
             <>
               {showUpdateBadge && (
-                <TouchableOpacity
+                <AppIconButton
                   onPress={otaApply}
-                  style={[
-                    styles.headerBtn,
-                    {
-                      backgroundColor:
-                        Platform.OS === 'ios'
-                          ? 'transparent'
-                          : scheme === 'dark'
-                            ? 'rgba(163,189,49,0.15)'
-                            : 'rgba(163,189,49,0.12)',
-                      borderColor: colors.success,
-                    },
-                  ]}
+                  tintColor={colors.success}
+                  borderColor={colors.success}
                   accessibilityLabel="Actualización disponible. Toca y actualiza en menos de 5 segundos"
-                  accessibilityRole="button"
                 >
-                  {Platform.OS === 'ios' && (
-                    <GlassSurface
-                      variant="regular"
-                      tintColor={colors.success}
-                    />
-                  )}
                   <MaterialIcons
                     name="system-update"
                     size={22}
                     color={colors.success}
                   />
-                </TouchableOpacity>
+                </AppIconButton>
               )}
 
               {resolved.showNotificationsIcon && (
-                <TouchableOpacity
-                  style={[
-                    styles.headerBtn,
-                    {
-                      backgroundColor:
-                        Platform.OS === 'ios'
-                          ? 'transparent'
-                          : scheme === 'dark'
-                            ? 'rgba(255,255,255,0.07)'
-                            : 'rgba(0,0,0,0.05)',
-                      borderColor:
-                        scheme === 'dark'
-                          ? 'rgba(255,255,255,0.12)'
-                          : 'rgba(0,0,0,0.08)',
-                    },
-                  ]}
+                <AppIconButton
                   onPress={() => {
                     setNotifSheetInitial(null);
                     setNotifSheetOpen(true);
@@ -647,9 +615,7 @@ export default function Home() {
                       ? `Notificaciones, ${unreadCount} sin leer`
                       : 'Notificaciones'
                   }
-                  accessibilityRole="button"
                 >
-                  {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
                   <View style={styles.bellWrap}>
                     <MaterialIcons
                       name="notifications"
@@ -665,36 +631,19 @@ export default function Home() {
                       </View>
                     )}
                   </View>
-                </TouchableOpacity>
+                </AppIconButton>
               )}
 
-              <TouchableOpacity
+              <AppIconButton
                 onPress={() => setSettingsVisible(true)}
-                style={[
-                  styles.headerBtn,
-                  {
-                    backgroundColor:
-                      Platform.OS === 'ios'
-                        ? 'transparent'
-                        : scheme === 'dark'
-                          ? 'rgba(255,255,255,0.07)'
-                          : 'rgba(0,0,0,0.05)',
-                    borderColor:
-                      scheme === 'dark'
-                        ? 'rgba(255,255,255,0.12)'
-                        : 'rgba(0,0,0,0.08)',
-                  },
-                ]}
                 accessibilityLabel="Perfil y ajustes"
-                accessibilityRole="button"
               >
-                {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
                 <MaterialIcons
                   name="account-circle"
                   size={22}
                   color={theme.icon}
                 />
-              </TouchableOpacity>
+              </AppIconButton>
             </>
           }
         />
