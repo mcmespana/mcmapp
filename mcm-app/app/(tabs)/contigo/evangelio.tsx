@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
@@ -100,7 +100,6 @@ export default function EvangelioScreen() {
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   const warm = isDark ? WARM.dark : WARM.light;
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const fontScale = useFontScale();
   const { width: windowWidth } = useWindowDimensions();
@@ -193,8 +192,6 @@ export default function EvangelioScreen() {
 
   const liturgicalInfo = getLiturgicalInfo(selectedDate);
 
-  const goBack = () => router.back();
-
   const changeDate = (offset: number) => {
     setSelectedDate(addDays(selectedDate, offset));
   };
@@ -241,81 +238,63 @@ export default function EvangelioScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: warm.surface }]}>
-      {/* Remove standard header in favor of Liquid Glass floating header */}
+      {/* Header NATIVO: back del sistema (con la gota de iOS 26) + acciones
+          (guardar / ajustes de texto) como bar items. Sustituye al floating
+          header custom. */}
       <Stack.Screen
         options={{
-          headerShown: false,
+          headerShown: true,
+          headerTitle: 'Evangelio',
+          headerTransparent: true,
+          headerBackButtonDisplayMode: 'minimal',
+          headerShadowVisible: false,
+          headerTintColor: theme.text,
+          headerTitleStyle: {
+            color: theme.text,
+            fontWeight: '700',
+            fontSize: 17,
+          },
+          ...(Platform.OS === 'ios' &&
+          parseInt(String(Platform.Version), 10) < 26
+            ? { headerBlurEffect: 'systemChromeMaterial' as const }
+            : {}),
+          headerRight: () => (
+            <View style={styles.nativeHeaderActions}>
+              <TouchableOpacity
+                onPress={toggleBookmark}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.nativeHeaderBtn}
+                accessibilityLabel="Guardar evangelio"
+              >
+                <MaterialIcons
+                  name={isBookmarked ? 'bookmark' : 'bookmark-border'}
+                  size={24}
+                  color={isBookmarked ? warm.accent : theme.text}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setSettingsVisible(true)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.nativeHeaderBtn}
+                accessibilityLabel="Ajustes de texto"
+              >
+                <MaterialIcons
+                  name="text-fields"
+                  size={22}
+                  color={theme.text}
+                />
+              </TouchableOpacity>
+            </View>
+          ),
         }}
       />
-
-      {/* ── Custom Floating Liquid Glass Header ── */}
-      <View
-        style={[
-          styles.floatingHeader,
-          {
-            paddingTop: Math.max(insets.top, 16),
-            backgroundColor: isDark
-              ? 'rgba(28, 26, 23, 0.85)'
-              : 'rgba(254, 251, 245, 0.85)',
-          },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={goBack}
-          style={[
-            styles.frostedBtn,
-            {
-              backgroundColor: isDark
-                ? 'rgba(255,255,255,0.08)'
-                : 'rgba(0,0,0,0.05)',
-            },
-          ]}
-        >
-          <MaterialIcons
-            name="arrow-back-ios-new"
-            size={20}
-            color={theme.text}
-          />
-        </TouchableOpacity>
-
-        <View style={styles.floatingActions}>
-          <TouchableOpacity
-            onPress={toggleBookmark}
-            style={[
-              styles.frostedBtn,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.08)'
-                  : 'rgba(0,0,0,0.05)',
-              },
-            ]}
-          >
-            <MaterialIcons
-              name={isBookmarked ? 'bookmark' : 'bookmark-border'}
-              size={24}
-              color={isBookmarked ? warm.accent : theme.text}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setSettingsVisible(true)}
-            style={[
-              styles.frostedBtn,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.08)'
-                  : 'rgba(0,0,0,0.05)',
-              },
-            ]}
-          >
-            <MaterialIcons name="text-fields" size={22} color={theme.text} />
-          </TouchableOpacity>
-        </View>
-      </View>
 
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 80 },
+          {
+            paddingTop: insets.top + (Platform.OS === 'android' ? 68 : 56),
+          },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -1038,6 +1017,16 @@ export default function EvangelioScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  // Acciones del header NATIVO (guardar / ajustes). Minimal —solo padding— para
+  // que iOS 26 las envuelva en su cápsula liquid-glass.
+  nativeHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  nativeHeaderBtn: {
+    padding: 6,
   },
   floatingHeader: {
     position: 'absolute',
