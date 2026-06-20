@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -80,7 +81,22 @@ export default function BookmarksScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
+      {/* Header NATIVO: back del sistema (con gota iOS 26) + título. */}
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTitle: 'Guardados',
+          headerTransparent: true,
+          headerBackButtonDisplayMode: 'minimal',
+          headerShadowVisible: false,
+          headerTintColor: W.text,
+          headerTitleStyle: { color: W.text, fontWeight: '700', fontSize: 17 },
+          ...(Platform.OS === 'ios' &&
+          parseInt(String(Platform.Version), 10) < 26
+            ? { headerBlurEffect: 'systemChromeMaterial' as const }
+            : {}),
+        }}
+      />
       <LinearGradient
         colors={
           isDark
@@ -89,43 +105,6 @@ export default function BookmarksScreen() {
         }
         style={StyleSheet.absoluteFill}
       />
-
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + 12,
-            backgroundColor: isDark
-              ? 'rgba(26,23,18,0.92)'
-              : 'rgba(250,246,240,0.92)',
-            borderBottomColor: W.border,
-          },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[
-            styles.iconBtn,
-            {
-              backgroundColor: isDark
-                ? 'rgba(255,255,255,0.08)'
-                : 'rgba(0,0,0,0.06)',
-            },
-          ]}
-          accessibilityLabel="Volver"
-        >
-          <MaterialIcons name="arrow-back-ios-new" size={18} color={W.text} />
-        </TouchableOpacity>
-        <View>
-          <Text style={[styles.title, { color: W.text }]}>Guardados</Text>
-          <Text style={[styles.subtitle, { color: W.textSec }]}>
-            {bookmarks.length} evangelio
-            {bookmarks.length !== 1 ? 's' : ''} guardado
-            {bookmarks.length !== 1 ? 's' : ''}
-          </Text>
-        </View>
-        <View style={{ width: 36 }} />
-      </View>
 
       {isLoading ? (
         <View style={styles.center}>
@@ -143,10 +122,18 @@ export default function BookmarksScreen() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={styles.listWrap}
+          contentContainerStyle={[
+            styles.listWrap,
+            { paddingTop: insets.top + 56 },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           <View style={wideWrapperStyle}>
+            <Text style={[styles.countLabel, { color: W.textSec }]}>
+              {bookmarks.length} evangelio
+              {bookmarks.length !== 1 ? 's' : ''} guardado
+              {bookmarks.length !== 1 ? 's' : ''}
+            </Text>
             {bookmarks.map((b) => {
               const ev = b.readings?.evangelio;
               const titulo =
@@ -277,6 +264,12 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { fontSize: 12, marginTop: 2 },
+  countLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
 
   center: {
     flex: 1,
