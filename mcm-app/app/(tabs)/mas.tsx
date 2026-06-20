@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 import MasHomeScreen from '../screens/MasHomeScreen';
 import ComunicaScreen from '../screens/ComunicaScreen';
@@ -51,6 +52,7 @@ export default function MasTab() {
   const wasBlurredRef = useRef(false);
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
+  const isDark = useColorScheme() === 'dark';
 
   const navigation = useNavigation();
 
@@ -100,6 +102,7 @@ export default function MasTab() {
         initialRouteName="MasHome"
         screenOptions={eventStackScreenOptions({
           webStatusBarHeight,
+          isDark,
           onNavReady: (nav) => {
             stackNavRef.current = nav;
           },
