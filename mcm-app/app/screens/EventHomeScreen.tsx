@@ -152,44 +152,10 @@ export default function EventHomeScreen() {
     ? 'rgba(255,255,255,0.5)'
     : 'rgba(255,255,255,0.16)';
 
-  // Cuando el hub está APILADO (header nativo visible), la campana de
-  // suscripción va como bar item del header nativo (cristal del sistema). En la
-  // tab raíz (sin header) la campana sigue en el hero.
-  const headerTint = isDark ? '#FFFFFF' : '#1A1A1A';
-  React.useLayoutEffect(() => {
-    if (!isPushed) return;
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={handleToggleSubscription}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={{ padding: 6 }}
-          accessibilityRole="switch"
-          accessibilityState={{ checked: subscribed }}
-          accessibilityLabel={
-            subscribed
-              ? `Dejar de recibir avisos de ${event.title}`
-              : `Recibir avisos de ${event.title}`
-          }
-        >
-          <MaterialIcons
-            name={subscribed ? 'notifications-active' : 'notifications-none'}
-            size={22}
-            color={subscribed ? tint : headerTint}
-          />
-        </TouchableOpacity>
-      ),
-    });
-  }, [
-    navigation,
-    isPushed,
-    subscribed,
-    handleToggleSubscription,
-    event.title,
-    tint,
-    headerTint,
-  ]);
-
+  // La campana de suscripción va SIEMPRE en el hero, para que todos los eventos
+  // se vean igual tanto si se abren como tab propio (Visita Papa) como apilados
+  // desde "Más" (Jubileo). (Antes la metíamos en el header nativo cuando estaba
+  // apilado, lo que hacía que la campana se viera distinta entre eventos.)
   return (
     <SafeAreaView style={styles.container} edges={isPushed ? [] : ['top']}>
       <ScrollView
@@ -233,30 +199,25 @@ export default function EventHomeScreen() {
             </Text>
           ) : null}
 
-          {/* Campana de suscripción (opt-in). Solo en la tab raíz; cuando el
-              hub está apilado, la campana va en el header nativo (ver arriba). */}
-          {!isPushed && (
-            <TouchableOpacity
-              style={[styles.bellButton, { backgroundColor: emblemBg }]}
-              onPress={handleToggleSubscription}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: subscribed }}
-              accessibilityLabel={
-                subscribed
-                  ? `Dejar de recibir avisos de ${event.title}`
-                  : `Recibir avisos de ${event.title}`
-              }
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <MaterialIcons
-                name={
-                  subscribed ? 'notifications-active' : 'notifications-none'
-                }
-                size={22}
-                color={heroFg}
-              />
-            </TouchableOpacity>
-          )}
+          {/* Campana de suscripción (opt-in) — siempre en el hero. */}
+          <TouchableOpacity
+            style={[styles.bellButton, { backgroundColor: emblemBg }]}
+            onPress={handleToggleSubscription}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: subscribed }}
+            accessibilityLabel={
+              subscribed
+                ? `Dejar de recibir avisos de ${event.title}`
+                : `Recibir avisos de ${event.title}`
+            }
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <MaterialIcons
+              name={subscribed ? 'notifications-active' : 'notifications-none'}
+              size={22}
+              color={heroFg}
+            />
+          </TouchableOpacity>
         </LinearGradient>
 
         {/* ── Auto-sugerencia de suscripción (una sola vez por evento) ── */}
