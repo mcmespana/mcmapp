@@ -107,15 +107,37 @@ título + acciones como bar items → liquid glass en iOS 26). Ya hecho: cantora
   diseño); solo su barra superior.
 - Esfuerzo: medio-alto (muchas pantallas). Riesgo: medio (verificar visual).
 
-### Fase 2 — Una sola primitiva de pulsación
+### Fase 2 — Unificación de componentes (censo del 2026-06-21)
 
-Elegir **un** componente estándar (propuesta: `PressableFeedback` de heroui, o
-un wrapper propio `AppPressable`) y migrar los `TouchableOpacity`/`Pressable`
-sueltos a él, para que todo el feedback de pulsación sea idéntico.
+Censo real (`app/` + `components/`):
 
-- Empezar por un `AppButton`/`AppIconButton` compartido y usarlo en cabeceras y
-  tarjetas.
-- Esfuerzo: alto (52+38 ficheros), pero mecánico e incremental. Riesgo: bajo.
+| Categoría | Hoy | Problema |
+| --- | --- | --- |
+| Pulsables | `TouchableOpacity` 52 · `Pressable` 38 · heroui `Button` 21 · `PressableFeedback` 24 | 4 primitivas mezcladas → feedback distinto |
+| Inputs | `TextInput` crudo 14 · heroui `TextField` 0 | cada uno reinventa estilo |
+| Overlays | `Modal` RN 30 · `BottomSheet` 29 | dos sistemas para lo mismo |
+| Toggles | 13 custom (por el bug del `Switch` heroui en modales) | inconsistentes |
+
+**Plan (por lotes revertibles, validando en dispositivo):**
+
+1. **`AppIconButton`** (nuevo) — botón-icono con la **cápsula** estándar (el look
+   glass de los headers). Unifica botones de acción sueltos. **Resuelve el
+   "Inicio híbrido"**: los botones de Inicio pasan a usarlo manteniendo la
+   animación del badge.
+2. **Convención de pulsación**: contenido → `PressableFeedback` (heroui); barras
+   de navegación → bar items nativos. Prohibido `TouchableOpacity`/`Pressable`
+   sueltos nuevos. Migración incremental de los existentes.
+3. **`AppTextField`** (nuevo) — envuelve `TextInput` con tokens
+   (`radii`/`spacing`/colores). Migrar los 14 usos.
+4. **Búsqueda nativa** (`headerSearchBarOptions`) extendida a otras listas (ya en
+   cantoral).
+5. **Overlays** (fase posterior, mayor riesgo): converger 30 `Modal` + 29
+   `BottomSheet` hacia el `BottomSheet`/`Dialog` de heroui. Revisar el bug del
+   `Switch` antes de tocar toggles.
+
+- Esfuerzo: alto (90+ ficheros) pero mecánico e incremental. Riesgo: bajo-medio.
+- Orden sugerido: (1) `AppIconButton` + Inicio híbrido → (3) `AppTextField` →
+  (2) migración pulsables → (5) overlays.
 
 ### Fase 3 — Inputs y búsqueda nativos/consistentes
 
@@ -164,12 +186,14 @@ acciones de evento). Clasificación:
 | Oración | ✅ hecho | nativa (back + título) | — |
 | Evangelio | ✅ hecho | nativa (back + guardar/ajustes) | — |
 | **Favoritos** (`bookmarks`) | ✅ hecho | nativa (back + título; contador al cuerpo) | — |
-| **Revisión** (`revision`) | ⚠️ funcional | **navegador de fechas** (cerrar + ‹ día ›) | NO convertir a ciegas: el stepper de fecha es funcional. Requiere diseño (¿fecha como título + ‹›?) y verificación visual. |
-| **Índice de Contigo** (`index`) | ⚠️ dashboard | título grande "Contigo" + fecha + badge litúrgico + bookmarks | Es un **dashboard** (como Inicio). Header nativo perdería el título cálido + fecha. Decidir si merece la pena. |
-| **EventHomeScreen** | ⚠️ funcional | **campana de suscripción** (opt-in a eventos) | NO romper: la campana es la feature nueva de notificaciones. Hero del evento = diseño con identidad. Conservar flotante o mover campana a bar item con cuidado. |
-| Sub-pantallas de evento (Horario, Materiales, Grupos, Visitas, Contactos, Profundiza…) | ⏳ pendiente | `GlassHeader.ios` compartido | Conversión **centralizada** posible (vía `eventStackScreens`), pero verificar. Candidatas a nativo (son lista/detalle). |
-| **Inicio** (`index`) | ⚠️ dashboard | barra superior: **campana notificaciones** + ajustes + grid de colores | El grid NO puede ser nativo (contenido). Solo la barra superior, y lleva la campana de notificaciones (funcional). |
-| `MasHome` | ⏳ pendiente | `headerShown:false` + cabecera propia | Revisar; lleva navegación a eventos. |
+| **Revisión** (`revision`) | ✅ hecho | navegador de fechas (‹ día ›) como **título custom dentro de la barra nativa** + cerrar nativo | — |
+| **Índice de Contigo** (`index`) | ✅ hecho | título pequeño nativo "Contigo" + badge litúrgico y favoritos en headerRight; fecha al cuerpo | — |
+| **EventHomeScreen** | ✅ hecho | header nativo (back nativo) + **campana SIEMPRE en el hero** (consistente entre Jubileo y Visita Papa) + auto-suscripción opt-out | — |
+| Sub-pantallas de evento (Horario, Materiales, Grupos, Visitas, Contactos, Profundiza…) | ✅ ya eran nativas | `eventScreenOptions` + `GlassHeader` de fondo. Back ahora **nativo** (sin cápsula doble) + solo icono | — |
+| **Inicio** (`index`) | ⏸️ dashboard (custom a propósito) | barra superior: campana notificaciones (animada) + ajustes + grid | El grid NO puede ser nativo. Pendiente: **híbrido** (botones con cápsula compartida, sin perder la animación). Ver Fase 2. |
+| `MasHome` | ⏸️ dashboard (custom) | `ScreenHero` "Más" | Beneficio bajo; se mantiene. |
+| **Calendario** | ⏳ pendiente | pantalla suelta sin stack (no tiene header nativo) | Para header nativo hay que **envolverla en un stack** (como Cantoral/Más): título "Calendario" + botón de calendarios en headerRight. |
+| **Canción** (`SongDetail`) | ⏸️ opcional | `headerShown:false` (modo lectura con FAB glass) | Se pueden hacer los botones de arriba nativos (back + acciones). El FAB de abajo se queda custom (no existe FAB nativo en iOS). |
 
 > **Conclusión**: las "conversiones limpias" (back + título simple) ya están casi
 > todas hechas. Lo que queda son **cabeceras con función** (steppers, campanas,
