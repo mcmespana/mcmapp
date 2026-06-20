@@ -134,27 +134,11 @@ export default function CategoriesScreen({
   // tenían ese efecto. El título "Cantoral" lo pone el screenOptions del stack.
   const headerIconColor = isIOS ? (isDark ? '#f4c11e' : '#3d79b9') : '#1a1a1a';
   useLayoutEffect(() => {
-    // En iOS: título GRANDE nativo. Necesita header NO transparente para que el
-    // título se ancle en la barra (con transparente, iOS no le pone fondo y
-    // parece flotar sobre la lista). Le damos el fondo del propio screen.
-    const iosLargeTitle = isIOS
-      ? {
-          headerLargeTitle: true,
-          headerTransparent: false,
-          headerStyle: {
-            backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
-          } as const,
-          headerLargeTitleStyle: {
-            color: isDark ? '#FFFFFF' : '#1C1C1E',
-            fontWeight: '800' as const,
-          },
-        }
-      : {};
+    // Título pequeño nativo (centrado, heredado del stack) + los 2 botones
+    // separados. "Sugerir" a la IZQUIERDA y "Buscar" a la DERECHA → son dos bar
+    // items nativos distintos, así que iOS 26 les da una cápsula liquid-glass a
+    // cada uno (separadas), en vez de agruparlos en una sola.
     navigation.setOptions({
-      ...iosLargeTitle,
-      // "Sugerir" a la IZQUIERDA y "Buscar" a la DERECHA → son dos bar items
-      // nativos distintos, así que iOS 26 les da una cápsula liquid-glass a
-      // cada uno (separadas), en vez de agruparlos en una sola.
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => setShowForm(true)}
@@ -181,7 +165,7 @@ export default function CategoriesScreen({
         </TouchableOpacity>
       ),
     });
-  }, [navigation, styles, headerIconColor, isDark]);
+  }, [navigation, styles, headerIconColor]);
 
   // En iPad/web amplio rendiriamos la "Tu selección" en una card destacada
   // de ancho completo arriba, y las categorías reales en un grid de 2-3 cols
