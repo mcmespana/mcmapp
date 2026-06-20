@@ -5,7 +5,9 @@ import React, {
   useEffect,
   useCallback,
   useRef,
+  useLayoutEffect,
 } from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   View,
   StyleSheet,
@@ -15,7 +17,6 @@ import {
   Platform,
   Text,
 } from 'react-native';
-import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
 import { Calendar, CalendarProps, LocaleConfig } from 'react-native-calendars';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -26,7 +27,7 @@ import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useLocalSearchParams } from 'expo-router';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
@@ -76,7 +77,7 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
-export default function Calendario() {
+export function CalendarScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const isDark = scheme === 'dark';
@@ -103,6 +104,35 @@ export default function Calendario() {
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
   const [subscribeOpen, setSubscribeOpen] = useState(false);
   const [detailsEvent, setDetailsEvent] = useState<CalendarEvent | null>(null);
+
+  // Header NATIVO: título "Calendario" + botón de calendarios (suscribirse) como
+  // bar item. Antes el botón vivía en el cuerpo, junto al switcher Mes/Agenda.
+  const navigation = useNavigation();
+  const showSubscribe = !configsLoading && calendarConfigs.length > 0;
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: 'Calendario',
+      headerRight: showSubscribe
+        ? () => (
+            <TouchableOpacity
+              onPress={() => {
+                h.tap();
+                setSubscribeOpen(true);
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ padding: 6 }}
+              accessibilityLabel="Suscribirse a calendarios"
+            >
+              <MaterialIcons
+                name="bookmark-add"
+                size={22}
+                color={isDark ? colors.info : colors.primary}
+              />
+            </TouchableOpacity>
+          )
+        : undefined,
+    });
+  }, [navigation, showSubscribe, isDark]);
 
   useEffect(() => {
     if (dateParam && typeof dateParam === 'string') {
@@ -394,10 +424,7 @@ export default function Calendario() {
   }
 
   return (
-    <TabScreenWrapper
-      style={styles.container}
-      edges={Platform.OS === 'ios' ? ['top'] : []}
-    >
+    <View style={[styles.container, { flex: 1 }]}>
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
 
       {/* View mode switcher */}
@@ -448,24 +475,6 @@ export default function Calendario() {
             </Text>
           </TouchableOpacity>
         </View>
-        {!configsLoading && calendarConfigs.length > 0 && (
-          <TouchableOpacity
-            style={styles.subscribeIconBtn}
-            onPress={() => {
-              h.tap();
-              setSubscribeOpen(true);
-            }}
-            activeOpacity={0.75}
-            accessibilityLabel="Suscribirse a calendarios"
-            accessibilityRole="button"
-          >
-            <MaterialIcons
-              name="bookmark-add"
-              size={20}
-              color={isDark ? colors.info : colors.primary}
-            />
-          </TouchableOpacity>
-        )}
       </View>
 
       {viewMode === 'calendar' ? (
@@ -707,7 +716,35 @@ export default function Calendario() {
           detailsEvent ? calendarConfigs[detailsEvent.calendarIndex] : undefined
         }
       />
-    </TabScreenWrapper>
+    </View>
+  );
+}
+
+// Tab del calendario: envuelve la pantalla en un stack para tener header nativo
+// ("Calendario" + botón de calendarios). Reusa el mismo CalendarScreen que el
+// stack de "Más" (donde ya hay header propio).
+const CalStack = createNativeStackNavigator();
+export default function CalendarioTab() {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  return (
+    <CalStack.Navigator
+      screenOptions={{
+        headerShadowVisible: false,
+        headerTintColor: isDark ? '#FFFFFF' : '#1a1a1a',
+        headerTitleStyle: {
+          fontWeight: '700',
+          fontSize: 17,
+          color: isDark ? '#FFFFFF' : '#1a1a1a',
+        },
+      }}
+    >
+      <CalStack.Screen
+        name="CalendarMain"
+        component={CalendarScreen}
+        options={{ title: 'Calendario' }}
+      />
+    </CalStack.Navigator>
   );
 }
 
