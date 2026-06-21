@@ -1267,6 +1267,7 @@ export default function Home() {
           <TouchableOpacity
             onPress={() => setFeedbackVisible(true)}
             style={styles.feedbackLink}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={[styles.feedbackText, { color: theme.icon }]}>
               ¿Algún fallo? Cuéntanoslo
@@ -1512,6 +1513,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     lineHeight: 18,
+    fontVariant: ['tabular-nums'],
   } as TextStyle,
   eventInfo: {
     flex: 1,

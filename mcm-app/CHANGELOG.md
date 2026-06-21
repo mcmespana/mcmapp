@@ -18,6 +18,34 @@
 
 ---
 
+## 2026-06-21 22:30 — UI nativa: headers, cápsulas glass y campos unificados
+
+Pasada de unificación visual hacia componentes nativos/coherentes (toda OTA,
+sin código nativo). Ver `docs/planes/PLAN_UI_NATIVA.md`.
+
+- **Headers nativos**: Contigo (Oración, Evangelio, Favoritos, Revisión con su
+  navegador de fechas como título, índice) pasan de "floating header" custom a
+  header nativo de `native-stack`; back nativo (icono solo) con el efecto liquid
+  glass de iOS 26.
+- **Headers transparentes** (como el cantoral) en Calendario y Eventos Pasados
+  (stack de "Más"): de barra opaca a transparente + glass del sistema en iOS.
+- **Cantoral base** (`CategoriesScreen`): botones "sugerir"/"buscar" como bar
+  items nativos. **Búsqueda nativa** (`headerSearchBarOptions`) en TODAS las
+  categorías. **Calendario** envuelto en stack para tener header nativo.
+- **Canción**: header nativo transparente heredado del stack + **letra a
+  pantalla completa** (sin tarjeta, `SongDisplay` con `fullBleed`/`topInset`)
+  para que la letra scrollee bajo el header. FAB con icono `+`→X correcto.
+- **Componentes nuevos** (Fase 2): `GlassActionGroup` (cápsula glass segmentada,
+  usada en Inicio), `AppIconButton` y `AppTextField` (input unificado; migrado
+  SuggestSongModal).
+- **EventHome**: campana de suscripción siempre en el hero (consistente entre
+  Jubileo y Visita Papa); auto-suscripción opt-out al entrar.
+- **Eventos**: back solo icono (sin "Atrás") y sin cápsula doble.
+- **BottomSheet**: con teclado abierto, capa la altura y deja scrollear el
+  contenido (antes empujaba la hoja fuera de pantalla).
+- **LiturgicalBadge**: pill propio legible en oscuro; "Tiempo Ordinario" sin
+  color.
+
 ## 2026-06-21 19:30 — iPad: layouts que aprovechan el ancho (OTA-safe)
 
 Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
