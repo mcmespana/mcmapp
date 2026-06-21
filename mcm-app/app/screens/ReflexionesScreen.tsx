@@ -280,6 +280,7 @@ export default function ReflexionesScreen() {
       <ScreenHero
         title="Compartiendo"
         subtitle="Comparte aquí una frase, pensamiento o algo que te llevas de estos días"
+        floatingHeaderInset
       />
       <PageContainer>
         <ScrollView

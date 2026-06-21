@@ -24,7 +24,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
 import ArrangementInputModal from '@/components/ArrangementInputModal';
 import * as Clipboard from 'expo-clipboard';
-import brandColors, { Colors } from '@/constants/colors';
+import brandColors from '@/constants/colors';
 import { durations } from '@/constants/animations';
 import { h } from '@/utils/haptics';
 import { getDatabase, ref, push, set } from 'firebase/database';
@@ -211,6 +211,7 @@ export default function SongDetailScreen({
                 setShowMediaSheet(true);
               }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ paddingHorizontal: 6, paddingVertical: 4 }}
               accessibilityLabel="Multimedia y ficha"
             >
               <MaterialIcons
@@ -231,6 +232,7 @@ export default function SongDetailScreen({
               }
             }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ paddingHorizontal: 6, paddingVertical: 4 }}
             accessibilityLabel={
               isSelected ? 'Quitar de selección' : 'Añadir a selección'
             }
@@ -501,7 +503,10 @@ export default function SongDetailScreen({
     // Brief settings loading
   }
 
-  const screenBg = isDark ? Colors.dark.background : Colors.light.background;
+  // Mismo color que el fondo del HTML de la letra (`bodyBg` en useSongProcessor)
+  // para que el header transparente y la letra full-bleed se vean como un único
+  // fondo (sin el efecto de "dos fondos").
+  const screenBg = isDark ? '#2C2C2E' : '#FFFFFF';
 
   const contentView = (
     <Animated.View

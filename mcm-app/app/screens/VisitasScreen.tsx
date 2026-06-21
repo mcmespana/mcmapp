@@ -89,7 +89,7 @@ export default function VisitasScreen() {
           backgroundColor: Colors[scheme ?? 'light'].background,
         }}
       >
-        <ScreenHero title="Visitas" hideOnWeb />
+        <ScreenHero title="Visitas" hideOnWeb floatingHeaderInset />
         {!showSkeleton ? (
           <ComingSoon accentColor={event.tintColor} />
         ) : (
@@ -116,7 +116,7 @@ export default function VisitasScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHero title="Visitas" hideOnWeb />
+      <ScreenHero title="Visitas" hideOnWeb floatingHeaderInset />
       <PageContainer>
         <ScrollView contentContainerStyle={styles.list}>
           {(visitas || []).map((v, idx) => (
