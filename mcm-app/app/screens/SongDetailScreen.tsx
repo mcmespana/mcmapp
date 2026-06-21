@@ -511,13 +511,16 @@ export default function SongDetailScreen({
         { backgroundColor: screenBg },
       ]}
     >
-      <View style={{ height: insets.top + 44 }} />
       <ChoirSessionBanner />
+      {/* Letra a pantalla completa: scrollea bajo el header transparente (en
+          iOS, vía contentInset = altura del header). */}
       <SongDisplay
         songHtml={songHtml}
         isLoading={isFileLoading || isSongProcessing || isLoadingSettings}
         styleState={styleState}
         onMessage={isAdmin ? handleSongMessage : undefined}
+        fullBleed
+        topInset={insets.top + 44}
       />
       <SongControls
         chordsVisible={chordsVisible}
