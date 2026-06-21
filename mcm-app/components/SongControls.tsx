@@ -350,7 +350,7 @@ const SongControls: React.FC<SongControlsProps> = ({
               style={{ transform: [{ rotate: rotateInterpolation }] }}
             >
               <MaterialIcons
-                name={showActionButtons ? 'close' : 'tune'}
+                name={showActionButtons ? 'add' : 'tune'}
                 size={22}
                 color={isDark ? '#fff' : '#1C1C1E'}
               />
@@ -502,14 +502,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    // Borde hairline claro: da el acabado "liquid glass" refinado (mismo que
-    // GlassActionGroup / EventActionButtons) en iOS.
-    ...(Platform.OS === 'ios'
-      ? {
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: 'rgba(255,255,255,0.22)',
-        }
-      : null),
     ...Platform.select({
       web: {
         width: 54,
