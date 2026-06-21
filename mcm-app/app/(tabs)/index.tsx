@@ -52,7 +52,7 @@ import { setPendingMasScreen } from '@/utils/masNavigation';
 import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
-import AppIconButton from '@/components/ui/AppIconButton';
+import GlassActionGroup from '@/components/ui/GlassActionGroup';
 import { setPendingEventScreen } from '@/utils/eventNavigation';
 import {
   DEFAULT_APP_EVALUATION,
@@ -194,6 +194,8 @@ export default function Home() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
+  // Color neutro de los iconos en la cápsula glass (igual que EventActionButtons).
+  const glassFg = scheme === 'dark' ? '#EDEDED' : '#3A3A3C';
   const resolved = useResolvedProfileConfig();
   const { profile } = useUserProfile();
   const fontScale = useFontScale();
@@ -588,63 +590,71 @@ export default function Home() {
             </View>
           }
           right={
-            <>
-              {showUpdateBadge && (
-                <AppIconButton
-                  onPress={otaApply}
-                  tintColor={colors.success}
-                  borderColor={colors.success}
-                  accessibilityLabel="Actualización disponible. Toca y actualiza en menos de 5 segundos"
-                >
-                  <MaterialIcons
-                    name="system-update"
-                    size={22}
-                    color={colors.success}
-                  />
-                </AppIconButton>
-              )}
-
-              {resolved.showNotificationsIcon && (
-                <AppIconButton
-                  onPress={() => {
-                    setNotifSheetInitial(null);
-                    setNotifSheetOpen(true);
-                  }}
-                  accessibilityLabel={
-                    unreadCount > 0
-                      ? `Notificaciones, ${unreadCount} sin leer`
-                      : 'Notificaciones'
-                  }
-                >
-                  <View style={styles.bellWrap}>
+            <GlassActionGroup
+              items={[
+                ...(showUpdateBadge
+                  ? [
+                      {
+                        key: 'ota',
+                        onPress: otaApply,
+                        accessibilityLabel:
+                          'Actualización disponible. Toca y actualiza en menos de 5 segundos',
+                        children: (
+                          <MaterialIcons
+                            name="system-update"
+                            size={22}
+                            color={colors.success}
+                          />
+                        ),
+                      },
+                    ]
+                  : []),
+                ...(resolved.showNotificationsIcon
+                  ? [
+                      {
+                        key: 'notif',
+                        onPress: () => {
+                          setNotifSheetInitial(null);
+                          setNotifSheetOpen(true);
+                        },
+                        accessibilityLabel:
+                          unreadCount > 0
+                            ? `Notificaciones, ${unreadCount} sin leer`
+                            : 'Notificaciones',
+                        children: (
+                          <View style={styles.bellWrap}>
+                            <MaterialIcons
+                              name="notifications"
+                              size={22}
+                              color={glassFg}
+                            />
+                            {unreadCount > 0 && (
+                              <View style={styles.dotWrap}>
+                                <Animated.View
+                                  style={[styles.dotPing, animatedPingStyle]}
+                                />
+                                <View style={styles.dot} />
+                              </View>
+                            )}
+                          </View>
+                        ),
+                      },
+                    ]
+                  : []),
+                {
+                  key: 'settings',
+                  onPress: () => setSettingsVisible(true),
+                  accessibilityLabel: 'Perfil y ajustes',
+                  children: (
                     <MaterialIcons
-                      name="notifications"
+                      name="account-circle"
                       size={22}
-                      color={theme.icon}
+                      color={glassFg}
                     />
-                    {unreadCount > 0 && (
-                      <View style={styles.dotWrap}>
-                        <Animated.View
-                          style={[styles.dotPing, animatedPingStyle]}
-                        />
-                        <View style={styles.dot} />
-                      </View>
-                    )}
-                  </View>
-                </AppIconButton>
-              )}
-
-              <AppIconButton
-                onPress={() => setSettingsVisible(true)}
-                accessibilityLabel="Perfil y ajustes"
-              >
-                <MaterialIcons
-                  name="account-circle"
-                  size={22}
-                  color={theme.icon}
-                />
-              </AppIconButton>
-            </>
+                  ),
+                },
+              ]}
+            />
           }
         />
       </View>
