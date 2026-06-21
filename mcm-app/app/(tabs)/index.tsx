@@ -53,6 +53,7 @@ import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
 import GlassActionGroup from '@/components/ui/GlassActionGroup';
+import PressableScale from '@/components/ui/PressableScale';
 import { setPendingEventScreen } from '@/utils/eventNavigation';
 import {
   DEFAULT_APP_EVALUATION,
@@ -1021,7 +1022,7 @@ export default function Home() {
             <View style={styles.section}>
               <View style={[styles.quickGrid, isWide && styles.quickGridWide]}>
                 {quickItems.map((item) => (
-                  <TouchableOpacity
+                  <PressableScale
                     key={item.key}
                     style={styles.quickItem}
                     accessibilityLabel={item.label}
@@ -1035,7 +1036,6 @@ export default function Home() {
                       }
                       if (item.href) router.push(item.href as any);
                     }}
-                    activeOpacity={item.href ? 0.65 : 1}
                   >
                     <View
                       style={StyleSheet.flatten([
@@ -1068,7 +1068,7 @@ export default function Home() {
                     >
                       {item.label}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                 ))}
               </View>
             </View>
