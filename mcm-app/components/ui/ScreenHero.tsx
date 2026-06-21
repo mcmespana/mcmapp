@@ -7,7 +7,6 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import typography from '@/constants/typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
@@ -44,12 +43,6 @@ interface ScreenHeroProps {
    * header instead of a big in-content hero. Native keeps the hero.
    */
   hideOnWeb?: boolean;
-  /**
-   * Reserva la altura de un header NATIVO transparente (iOS): añade
-   * `safe-area-top + 44` de paddingTop para que el título no quede tapado por el
-   * header. Usar en pantallas de evento cuyo hero va FUERA del scroll.
-   */
-  floatingHeaderInset?: boolean;
 }
 
 /**
@@ -73,17 +66,10 @@ export default function ScreenHero({
   titleStyle,
   style,
   hideOnWeb = false,
-  floatingHeaderInset = false,
 }: ScreenHeroProps) {
-  const insets = useSafeAreaInsets();
   // En web el título de las sub-pantallas de evento vive en el header de
   // navegación, así que el hero in-content no se renderiza.
   if (hideOnWeb && Platform.OS === 'web') return null;
-
-  const insetStyle =
-    floatingHeaderInset && Platform.OS === 'ios'
-      ? { paddingTop: insets.top + 44 }
-      : null;
 
   return (
     <ScreenHeroInner
@@ -95,7 +81,7 @@ export default function ScreenHero({
       right={right}
       compact={compact}
       titleStyle={titleStyle}
-      style={StyleSheet.flatten([insetStyle, style])}
+      style={style}
     />
   );
 }

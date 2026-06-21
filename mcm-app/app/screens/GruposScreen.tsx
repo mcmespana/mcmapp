@@ -269,7 +269,7 @@ export default function GruposScreen() {
     return (
       <PageContainer>
         <View style={styles.container}>
-          <ScreenHero title="Grupos" hideOnWeb floatingHeaderInset />
+          <ScreenHero title="Grupos" hideOnWeb />
           <ComingSoon accentColor={event.tintColor} />
         </View>
       </PageContainer>
@@ -456,7 +456,7 @@ export default function GruposScreen() {
   // below swaps between the categories grid and the results list.
   const topBar = (
     <View>
-      <ScreenHero title="Grupos" hideOnWeb floatingHeaderInset />
+      <ScreenHero title="Grupos" hideOnWeb />
       <View style={styles.searchContainer}>
         <SearchBar
           value={search}

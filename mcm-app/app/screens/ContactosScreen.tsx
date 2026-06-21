@@ -198,7 +198,7 @@ export default function ContactosScreen() {
   const ListHeader = useMemo(
     () => (
       <View>
-        <ScreenHero title="Contactos" hideOnWeb floatingHeaderInset />
+        <ScreenHero title="Contactos" hideOnWeb />
         {showSearch ? (
           <View style={styles.searchContainer}>
             <SearchField value={query} onChange={setQuery}>
@@ -263,7 +263,7 @@ export default function ContactosScreen() {
     return (
       <PageContainer>
         <View style={styles.container}>
-          <ScreenHero title="Contactos" hideOnWeb floatingHeaderInset />
+          <ScreenHero title="Contactos" hideOnWeb />
           {showSkeleton ? (
             <View style={{ padding: 16, gap: spacing.sm }}>
               {[0, 1, 2, 3].map((i) => (
