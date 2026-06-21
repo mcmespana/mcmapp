@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import liturgicalCalendar from '@/assets/calendario-liturgico.json';
 import { getBrightness } from '@/components/ui/glass';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface LiturgicalBadgeProps {
   dateStr: string; // YYYY-MM-DD
@@ -87,14 +88,30 @@ export function getLiturgicalInfo(dateStr: string) {
 
 export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
   const [info, setInfo] = useState(() => getLiturgicalInfo(dateStr));
+  const isDark = useColorScheme() === 'dark';
 
   useEffect(() => {
     setInfo(getLiturgicalInfo(dateStr));
   }, [dateStr]);
 
-  // Pill propio (color litúrgico de fondo + texto auto-contrastado), en vez del
-  // Chip de heroui cuyo color 'default' pintaba texto oscuro invisible sobre
-  // fondos/headers oscuros.
+  // Tiempo Ordinario: SIN color de fondo, solo texto (legible en claro y
+  // oscuro). El resto de tiempos sí llevan su color litúrgico de fondo con
+  // texto auto-contrastado.
+  const isOrdinary = /ordinario/i.test(info.name);
+
+  if (isOrdinary) {
+    return (
+      <View style={styles.pillPlain}>
+        <Text
+          style={[styles.label, { color: isDark ? '#FFFFFF' : '#1C1C1E' }]}
+          numberOfLines={1}
+        >
+          {info.name}
+        </Text>
+      </View>
+    );
+  }
+
   const textColor = getBrightness(info.hex) > 160 ? '#1A1A1A' : '#FFFFFF';
 
   return (
@@ -111,6 +128,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
+    alignSelf: 'flex-start',
+  },
+  pillPlain: {
+    paddingVertical: 4,
     alignSelf: 'flex-start',
   },
   label: {
