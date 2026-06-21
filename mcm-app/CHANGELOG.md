@@ -18,6 +18,15 @@
 
 ---
 
+## 2026-06-21 14:00 — Cantoral: búsqueda nativa en todas las categorías
+
+- La búsqueda dentro de una categoría (`SongListScreen`) ahora usa la **barra de
+  búsqueda nativa** de iOS/Android (`headerSearchBarOptions`), igual que el
+  buscador general, en vez del input/toggle custom. En web se mantiene el input
+  propio (native-stack no soporta la barra nativa en web).
+- Badge litúrgico: "Tiempo Ordinario" se muestra sin color de fondo (solo texto
+  legible en claro/oscuro). (cosmético)
+
 ## 2026-06-19 13:00 — Suscripción opt-in a notificaciones por evento
 
 - **Nuevo**: el usuario puede **suscribirse a avisos de un evento concreto**
