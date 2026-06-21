@@ -20,6 +20,17 @@ interface SongDisplayProps {
    * el long-press de arreglos (`{ type: 'arr-longpress', line }`).
    */
   onMessage?: (data: any) => void;
+  /**
+   * Letra a pantalla completa (sin tarjeta con márgenes): ocupa todo el ancho,
+   * sin borde redondeado ni sombra. Usado en el detalle de canción para que la
+   * letra scrollee bajo el header transparente (efecto glass, como categorías).
+   */
+  fullBleed?: boolean;
+  /**
+   * Inset superior del scroll (iOS): la letra empieza por debajo del header
+   * transparente pero scrollea por debajo de él. Solo aplica con `fullBleed`.
+   */
+  topInset?: number;
 }
 
 const SongDisplay: React.FC<SongDisplayProps> = ({
@@ -27,6 +38,8 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
   isLoading,
   styleState,
   onMessage,
+  fullBleed = false,
+  topInset = 0,
 }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -160,13 +173,21 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
     );
   }
 
+  const useInset = fullBleed && Platform.OS === 'ios' && topInset > 0;
   return (
     <View
-      style={[
-        styles.cardContainer,
-        isDark && styles.cardContainerDark,
-        wideRadiusStyle,
-      ]}
+      style={
+        fullBleed
+          ? [
+              styles.fullBleedContainer,
+              { backgroundColor: isDark ? '#1C1C1E' : '#fff' },
+            ]
+          : [
+              styles.cardContainer,
+              isDark && styles.cardContainerDark,
+              wideRadiusStyle,
+            ]
+      }
     >
       <WebView
         ref={webViewRef}
@@ -174,6 +195,14 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         source={{ html: songHtml }}
         style={styles.webView}
         showsVerticalScrollIndicator={false}
+        {...(useInset
+          ? {
+              automaticallyAdjustContentInsets: false,
+              contentInsetAdjustmentBehavior: 'never' as const,
+              contentInset: { top: topInset, left: 0, right: 0, bottom: 0 },
+              scrollIndicatorInsets: { top: topInset },
+            }
+          : {})}
         onMessage={(event) => handleRawMessage(event.nativeEvent.data)}
         onLoadEnd={() => {
           readyRef.current = true;
@@ -189,6 +218,10 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
 };
 
 const styles = StyleSheet.create({
+  fullBleedContainer: {
+    flex: 1,
+    overflow: 'hidden',
+  },
   cardContainer: {
     flex: 1,
     marginHorizontal: 12,
