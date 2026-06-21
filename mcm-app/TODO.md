@@ -33,12 +33,46 @@
 
 ## UI nativa — pendientes (Fase 1/2 de `docs/planes/PLAN_UI_NATIVA.md`)
 
-- [ ] **Botones de header custom poco parecidos al liquid glass nativo**: los
-      botones de cabecera no-nativos (`AppIconButton` / `GlassSurface`) se ven
-      bastante distintos —y feos— comparados con los bar items nativos de iOS 26.
-      Acercar su aspecto al cristal del sistema (forma, blur, borde) o, donde se
-      pueda, pasarlos a bar items nativos. (`components/ui/AppIconButton.tsx`,
-      `components/ui/GlassSurface.ios.tsx`)
+> Hecho en la pasada del 2026-06-21 (ver CHANGELOG): headers nativos de Contigo,
+> headers transparentes en Calendario/Eventos Pasados, búsqueda nativa en todas
+> las categorías, canción con letra full-bleed, `GlassActionGroup`/`AppIconButton`/
+> `AppTextField`. Pendiente de la review de componentes:
+
+- [ ] **Pulido del glass (iOS 26) — fino, con dispositivo delante**: botones del
+      header de la canción "justos" dentro de la cápsula, seam/línea del header
+      sobre letra blanca, y acercar `AppIconButton`/`GlassSurface` al bar item
+      nativo. Difícil a ciegas. (`components/ui/AppIconButton.tsx`, `GlassSurface.ios.tsx`)
+- [ ] **Headers de evento (hub + sub-pantallas) transparentes** como el cantoral:
+      hoy usan el "floating header" opaco (`eventScreenOptions` con
+      `FloatingHeaderBackground`). Unificar al glass del sistema — cambio mayor,
+      revisar el inset de cada hero. (`app/screens/eventStackScreens.tsx`)
+- [ ] **Seguir Fase 2 (componentes unificados)**: migrar más `TextInput` a
+      `AppTextField` (quedan ~13); crear `AppPrimaryButton` (CTA de modales) y
+      `SegmentedControl`; adoptar `EmptyState` en los ~20 sitios que reinventan
+      el "no hay…". Ver §2 de `PLAN_UI_NATIVA.md`.
+
+## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
+
+- [ ] **Confirmar antes de desactivar** + exigir **más agitado** para salir.
+- [ ] **El badge no debe desactivar al tocarlo** → que abra la explicación.
+- [ ] **Onboarding/explicación** del modo (qué es, teaser "coleccionar
+      Carismochitos", "próximamente más"), persistido.
+- [ ] **Carismochito aparece en (casi) todas las pantallas** (overlay global),
+      excepto materiales/profundiza de evento y canción a pantalla completa.
+- [ ] **Colección + contador** al tocar la mascota (animación especial); guardado
+      por usuario y **solo con sesión iniciada** (si no, avisar de pérdida de
+      progreso).
+- [ ] **Icono de la app en verde/Carismochito** al activar el modo → iconos
+      alternativos (iOS `setAlternateIconName`, Android `activity-alias`). ⚠️
+      NATIVO (build de tienda, no OTA); persiste fuera de la app; en Android el
+      swap es tosco. (Ya estaba en "Prioridad baja"; detalle en el plan.)
+
+## Widget de Contigo (ver `docs/planes/PLAN_WIDGET_CONTIGO.md`)
+
+- [ ] **Widget de los 3 hábitos diarios** (Evangelio/Oración/Revisión) con marca,
+      deep-link y recordatorio (notificación local / Carismochito). ⚠️ NATIVO
+      (WidgetKit iOS / App Widget Android) → build de tienda + App Group para
+      compartir el estado del día con el widget. Empezar por iOS.
 
 ## Notificaciones push — mejoras pendientes (alineación con MCM Panel)
 
