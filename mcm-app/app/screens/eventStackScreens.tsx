@@ -198,7 +198,17 @@ export const eventScreenOptions =
           : {}),
         headerStyle: { backgroundColor: 'transparent' },
         headerShadowVisible: false,
-        headerBackground: () => <FloatingHeaderBackground />,
+        // En iOS: header TRANSPARENTE con glass del sistema (como el cantoral):
+        // el hero/contenido scrollea por debajo. El scroll auto-insetea solo.
+        // En Android/web mantenemos el fondo opaco (FloatingHeaderBackground).
+        ...(Platform.OS === 'ios'
+          ? {
+              headerTransparent: true,
+              ...(parseInt(String(Platform.Version), 10) < 26
+                ? { headerBlurEffect: 'systemChromeMaterial' as const }
+                : {}),
+            }
+          : { headerBackground: () => <FloatingHeaderBackground /> }),
         // En iOS/Android usamos el back NATIVO (icono solo) — iOS 26 ya le pone
         // su cápsula liquid-glass. El GlassBackButton custom se "envolvía dos
         // veces" (cápsula dentro de cápsula). En web mantenemos el custom.
