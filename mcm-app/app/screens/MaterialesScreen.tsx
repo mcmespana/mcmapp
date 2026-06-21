@@ -146,7 +146,7 @@ export default function MaterialesScreen() {
           backgroundColor: Colors[scheme ?? 'light'].background,
         }}
       >
-        <ScreenHero title="Materiales" hideOnWeb />
+        <ScreenHero title="Materiales" hideOnWeb floatingHeaderInset />
         {empty ? (
           <ComingSoon accentColor={event.tintColor} />
         ) : (
@@ -171,7 +171,7 @@ export default function MaterialesScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHero title="Materiales" hideOnWeb />
+      <ScreenHero title="Materiales" hideOnWeb floatingHeaderInset />
       <View style={styles.headerSection}>
         <DateSelector
           dates={fechas}
