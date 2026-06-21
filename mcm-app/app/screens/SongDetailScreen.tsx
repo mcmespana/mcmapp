@@ -7,6 +7,7 @@ import {
   Animated,
   TouchableOpacity,
 } from 'react-native';
+import GlassSurface from '@/components/ui/GlassSurface';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -193,71 +194,13 @@ export default function SongDetailScreen({
   }, [filename]);
 
   // Header NATIVO: back del sistema (gota iOS 26) + acciones (multimedia +
-  // añadir/quitar de selección) como bar items. Transparente para no robar
-  // espacio de lectura visualmente. El FAB de abajo (SongControls) se queda.
+  // añadir/quitar de selección). Sin barra de header (headerShown:false): es
+  // modo lectura, y una barra completa —aunque transparente— tapa una franja de
+  // letra. Los botones van FLOTANTES en las esquinas (tapan mucho menos) con su
+  // propio cristal. El FAB de abajo (SongControls) se queda.
   useLayoutEffect(() => {
-    const headerIconColor = isDark ? '#F5F5F7' : '#1C1C1E';
-    navigation.setOptions({
-      headerShown: true,
-      headerTransparent: true,
-      headerTitle: '',
-      headerBackButtonDisplayMode: 'minimal',
-      headerShadowVisible: false,
-      headerTintColor: headerIconColor,
-      ...(Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) < 26
-        ? { headerBlurEffect: 'systemChromeMaterial' as const }
-        : {}),
-      headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          {songHasMedia && (
-            <TouchableOpacity
-              onPress={() => {
-                h.tap();
-                setShowMediaSheet(true);
-              }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityLabel="Multimedia y ficha"
-            >
-              <MaterialIcons
-                name="ondemand-video"
-                size={22}
-                color={isDark ? brandColors.secondary : brandColors.primary}
-              />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={() => {
-              if (isSelected) {
-                h.remove();
-                removeSong(filename);
-              } else {
-                h.add();
-                addSong(filename);
-              }
-            }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityLabel={
-              isSelected ? 'Quitar de selección' : 'Añadir a selección'
-            }
-          >
-            <IconSymbol
-              name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
-              size={24}
-              color={isSelected ? APPLE_SYSTEM_GREEN : headerIconColor}
-            />
-          </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [
-    navigation,
-    isDark,
-    songHasMedia,
-    isSelected,
-    filename,
-    addSong,
-    removeSong,
-  ]);
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   useEffect(() => {
     setIsFileLoading(true);
@@ -507,6 +450,80 @@ export default function SongDetailScreen({
   }
 
   const screenBg = isDark ? Colors.dark.background : Colors.light.background;
+  const floatBtnBg = isDark ? 'rgba(44,44,46,0.92)' : 'rgba(255,255,255,0.92)';
+  const floatIconColor = isDark ? '#F5F5F7' : '#1C1C1E';
+  const btnTop = insets.top + 8;
+
+  // Botones flotantes (cristal propio) en las esquinas: tapan mucho menos letra
+  // que una barra de header completa. Los de la derecha (multimedia + añadir)
+  // van separados para que no salgan pegados.
+  const floatingButtons = (
+    <>
+      <TouchableOpacity
+        style={[
+          styles.floatBtn,
+          { top: btnTop, left: 16 },
+          Platform.OS !== 'ios' && { backgroundColor: floatBtnBg },
+        ]}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+        accessibilityLabel="Volver"
+      >
+        {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
+        <IconSymbol name="chevron.left" size={20} color={floatIconColor} />
+      </TouchableOpacity>
+      {songHasMedia && (
+        <TouchableOpacity
+          style={[
+            styles.floatBtn,
+            { top: btnTop, right: 76 },
+            Platform.OS !== 'ios' && { backgroundColor: floatBtnBg },
+          ]}
+          onPress={() => {
+            h.tap();
+            setShowMediaSheet(true);
+          }}
+          activeOpacity={0.7}
+          accessibilityLabel="Multimedia y ficha"
+        >
+          {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
+          <MaterialIcons
+            name="ondemand-video"
+            size={20}
+            color={isDark ? brandColors.secondary : brandColors.primary}
+          />
+          <View style={styles.mediaDot} />
+        </TouchableOpacity>
+      )}
+      <TouchableOpacity
+        style={[
+          styles.floatBtn,
+          { top: btnTop, right: 16 },
+          Platform.OS !== 'ios' && { backgroundColor: floatBtnBg },
+        ]}
+        onPress={() => {
+          if (isSelected) {
+            h.remove();
+            removeSong(filename);
+          } else {
+            h.add();
+            addSong(filename);
+          }
+        }}
+        activeOpacity={0.7}
+        accessibilityLabel={
+          isSelected ? 'Quitar de selección' : 'Añadir a selección'
+        }
+      >
+        {Platform.OS === 'ios' && <GlassSurface variant="regular" />}
+        <IconSymbol
+          name={isSelected ? 'checkmark.circle.fill' : 'plus.circle'}
+          size={24}
+          color={isSelected ? APPLE_SYSTEM_GREEN : floatIconColor}
+        />
+      </TouchableOpacity>
+    </>
+  );
 
   const contentView = (
     <Animated.View
@@ -579,6 +596,7 @@ export default function SongDetailScreen({
   return (
     <View style={{ flex: 1, backgroundColor: screenBg }}>
       {gestureContent}
+      {floatingButtons}
       <SongMediaSheet
         visible={showMediaSheet}
         onClose={() => setShowMediaSheet(false)}
