@@ -120,10 +120,11 @@ export default function SongsListScreen({
   // Modal is fully dismissed (iOS can't present two Modals simultaneously).
   const pendingShareRef = useRef<string | null>(null);
   const isSearchAll = categoryId === '__ALL__';
-  // En la pantalla de búsqueda usamos el search NATIVO de iOS/Android
-  // (headerSearchBarOptions) en lugar del input custom. En web no está
-  // soportado por native-stack, así que ahí seguimos con el input propio.
-  const nativeSearch = isSearchAll && Platform.OS !== 'web';
+  // Búsqueda NATIVA de iOS/Android (headerSearchBarOptions) en TODAS las
+  // categorías —no solo en "Buscar general"— para que sea el mismo buscador en
+  // todas partes. En web native-stack no la soporta, así que ahí seguimos con
+  // el input/toggle propio.
+  const nativeSearch = Platform.OS !== 'web';
 
   // In __ALL__ mode, search is always visible
   useEffect(() => {
@@ -138,34 +139,41 @@ export default function SongsListScreen({
       headerSearchBarOptions: nativeSearch
         ? {
             placeholder: 'Busca por título, autor...',
-            hideWhenScrolling: false,
-            autoFocus: true,
+            // En "Buscar general" la barra está siempre visible y con foco; en
+            // una categoría se oculta al hacer scroll (estándar iOS) y no roba
+            // el foco al entrar.
+            hideWhenScrolling: !isSearchAll,
+            autoFocus: isSearchAll,
             textColor: isDark ? '#FFFFFF' : '#000000',
             onChangeText: (e: { nativeEvent: { text: string } }) =>
               setSearch(e.nativeEvent.text),
           }
         : undefined,
-      headerRight: isSearchAll
+      // El botón-lupa custom solo en web (donde no hay barra nativa). En
+      // iOS/Android la barra nativa lo sustituye.
+      headerRight: nativeSearch
         ? undefined
-        : () => (
-            <TouchableOpacity
-              onPress={() => setSearchVisible((v) => !v)}
-              style={styles.headerButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialIcons
-                name={searchVisible ? 'search-off' : 'search'}
-                size={24}
-                color={
-                  isIOS
-                    ? '#f4c11e'
-                    : Platform.OS === 'web'
-                      ? '#1a1a1a'
-                      : '#1a1a1a'
-                }
-              />
-            </TouchableOpacity>
-          ),
+        : isSearchAll
+          ? undefined
+          : () => (
+              <TouchableOpacity
+                onPress={() => setSearchVisible((v) => !v)}
+                style={styles.headerButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <MaterialIcons
+                  name={searchVisible ? 'search-off' : 'search'}
+                  size={24}
+                  color={
+                    isIOS
+                      ? '#f4c11e'
+                      : Platform.OS === 'web'
+                        ? '#1a1a1a'
+                        : '#1a1a1a'
+                  }
+                />
+              </TouchableOpacity>
+            ),
     });
   }, [
     navigation,
