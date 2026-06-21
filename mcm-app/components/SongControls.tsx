@@ -502,6 +502,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    // Borde hairline claro: da el acabado "liquid glass" refinado (mismo que
+    // GlassActionGroup / EventActionButtons) en iOS.
+    ...(Platform.OS === 'ios'
+      ? {
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: 'rgba(255,255,255,0.22)',
+        }
+      : null),
     ...Platform.select({
       web: {
         width: 54,

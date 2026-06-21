@@ -18,6 +18,40 @@
 
 ---
 
+## 2026-06-21 19:30 — iPad: layouts que aprovechan el ancho (OTA-safe)
+
+Pasada de diseño para iPad (portrait y landscape). **Todo es JS puro
+(OTA-safe).** Falta habilitar el landscape a nivel nativo (ver nota al final).
+
+- **`PageContainer` ahora también limita el ancho en nativo**, no solo en web.
+  Antes era no-op en iPad, así que en horizontal las 9 pantallas que lo usan
+  (MasHome, Materiales, Profundiza, Reflexiones, Horario, Grupos, Contactos,
+  Visitas, Apps) se estiraban de lado a lado. Ahora se centran en una columna
+  legible (máx. 960). En móvil no cambia nada (su ancho está por debajo del
+  límite). (`components/ui/PageContainer.tsx`)
+- **`MasHomeScreen`: grid de 2 columnas en iPad** (portrait y landscape). Antes
+  el grid solo se activaba en **web** (`isWeb && isMd`); en iPad nativo se veía
+  una única columna estirada. El ancho de tarjeta usaba `calc()` (solo-web);
+  ahora usa porcentaje, válido en nativo. (`app/screens/MasHomeScreen.tsx`)
+- **`Calendario`: dos paneles en iPad landscape.** El mes va a la izquierda y los
+  eventos del día seleccionado a la derecha (máx. 1000, centrado). En iPad
+  portrait es una sola columna centrada (máx. 760) y en móvil, ancho completo
+  (sin cambios). El switcher Mes/Agenda deja de estirarse en ancho.
+  (`app/(tabs)/calendario.tsx`)
+- **Home: accesos rápidos centrados en ancho.** En iPad el grid de accesos
+  rápidos se agrupa centrado y envuelve en varias filas, en vez de separarse a
+  los extremos. Móvil sin cambios. (`app/(tabs)/index.tsx`)
+- **Fotos: 3 columnas en iPad landscape** (≥1024, incluye iPad 9 a 1080). En
+  portrait/medianas siguen 2; en móvil, 1. (`app/(tabs)/fotos.tsx`)
+- Ya estaban bien para tablet y no se han tocado: Cantoral
+  (`CategoriesScreen`/`SongList`/`SelectedSongs`, grid por `useResponsiveLayout`)
+  y el hub de eventos (`EventHomeScreen`, 3 col + ancho computado).
+- **Pendiente (build de tienda):** habilitar el landscape de iPad a nivel nativo
+  añadiendo `UISupportedInterfaceOrientations~ipad` en `ios.infoPlist` (iPhone
+  seguiría en portrait). Es cambio nativo → no OTA; se hará en la próxima release
+  de tienda. Hasta entonces estos layouts solo se ven en horizontal si el build
+  instalado ya permite rotar.
+
 ## 2026-06-21 14:00 — Cantoral: búsqueda nativa en todas las categorías
 
 - La búsqueda dentro de una categoría (`SongListScreen`) ahora usa la **barra de

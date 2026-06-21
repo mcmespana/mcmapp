@@ -1019,7 +1019,7 @@ export default function Home() {
 
             {/* ── Accesos rápidos ── */}
             <View style={styles.section}>
-              <View style={styles.quickGrid}>
+              <View style={[styles.quickGrid, isWide && styles.quickGridWide]}>
                 {quickItems.map((item) => (
                   <TouchableOpacity
                     key={item.key}
@@ -1456,6 +1456,13 @@ const styles = StyleSheet.create({
   quickGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+  } as ViewStyle,
+  // En ancho (iPad) los accesos rápidos se agrupan centrados y envuelven en
+  // varias filas en vez de separarse a los extremos de la columna.
+  quickGridWide: {
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.lg,
   } as ViewStyle,
   quickItem: {
     alignItems: 'center',
