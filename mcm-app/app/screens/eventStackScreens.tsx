@@ -305,9 +305,12 @@ export function eventStackScreenOptions({
       },
       headerTitleAlign: 'center' as const,
       headerStatusBarHeight: webStatusBarHeight,
-      headerTransparent: false,
-      headerBackground: () =>
-        Platform.OS === 'ios' ? <GlassHeader tintColor="#78909C" /> : undefined,
+      // Header TRANSPARENTE en iOS (como el cantoral): transparente arriba y
+      // glass del sistema al hacer scroll, en vez de la barra gris opaca.
+      headerTransparent: Platform.OS === 'ios',
+      ...(Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) < 26
+        ? { headerBlurEffect: 'systemChromeMaterial' as const }
+        : {}),
     };
   };
 }
