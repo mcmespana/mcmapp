@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Platform,
@@ -10,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
+import AppTextField from '@/components/ui/AppTextField';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -129,21 +129,9 @@ export default function SuggestSongModal({
       >
         {/* Título */}
         <Text style={[styles.fieldLabel, { color: theme.text }]}>Título *</Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            {
-              backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
-              color: theme.text,
-              borderColor: titulo.trim()
-                ? '#34C759'
-                : isDark
-                  ? '#3A3A3C'
-                  : '#E5E5EA',
-            },
-          ]}
+        <AppTextField
+          accentWhenFilled
           placeholder="Nombre de la canción"
-          placeholderTextColor={theme.icon}
           value={titulo}
           onChangeText={(t) => {
             setTitulo(t);
@@ -158,21 +146,9 @@ export default function SuggestSongModal({
         <Text style={[styles.fieldLabel, { color: theme.text }]}>
           Artista *
         </Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            {
-              backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
-              color: theme.text,
-              borderColor: artista.trim()
-                ? '#34C759'
-                : isDark
-                  ? '#3A3A3C'
-                  : '#E5E5EA',
-            },
-          ]}
+        <AppTextField
+          accentWhenFilled
           placeholder="Nombre del artista o banda"
-          placeholderTextColor={theme.icon}
           value={artista}
           onChangeText={(t) => {
             setArtista(t);
@@ -190,27 +166,14 @@ export default function SuggestSongModal({
         <Text style={[styles.fieldSublabel, { color: theme.icon }]}>
           Letra, acordes o cualquier detalle útil
         </Text>
-        <TextInput
-          style={[
-            styles.textArea,
-            {
-              backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
-              color: theme.text,
-              borderColor: letra.trim()
-                ? '#34C759'
-                : isDark
-                  ? '#3A3A3C'
-                  : '#E5E5EA',
-            },
-          ]}
+        <AppTextField
+          accentWhenFilled
           placeholder="Opcional — cualquier información que nos ayude a añadirla bien"
-          placeholderTextColor={theme.icon}
           value={letra}
           onChangeText={setLetra}
           maxLength={10000}
           multiline
           numberOfLines={4}
-          textAlignVertical="top"
           editable={!isSubmitting}
         />
         <Text style={[styles.charCount, { color: theme.icon }]}>
@@ -337,21 +300,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 8,
     marginTop: -4,
-  },
-  textInput: {
-    borderWidth: 1.5,
-    borderRadius: radii.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-  },
-  textArea: {
-    borderWidth: 1.5,
-    borderRadius: radii.md,
-    padding: 14,
-    fontSize: 15,
-    minHeight: 100,
-    lineHeight: 22,
   },
   charCount: {
     fontSize: 11,
