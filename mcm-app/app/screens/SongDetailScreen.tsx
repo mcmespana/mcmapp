@@ -203,7 +203,7 @@ export default function SongDetailScreen({
       headerShown: true,
       headerTitle: '',
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 28 }}>
           {songHasMedia && (
             <TouchableOpacity
               onPress={() => {
