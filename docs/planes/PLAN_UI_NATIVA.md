@@ -190,17 +190,33 @@ acciones de evento). Clasificación:
 | **Índice de Contigo** (`index`) | ✅ hecho | título pequeño nativo "Contigo" + badge litúrgico y favoritos en headerRight; fecha al cuerpo | — |
 | **EventHomeScreen** | ✅ hecho | header nativo (back nativo) + **campana SIEMPRE en el hero** (consistente entre Jubileo y Visita Papa) + auto-suscripción opt-out | — |
 | Sub-pantallas de evento (Horario, Materiales, Grupos, Visitas, Contactos, Profundiza…) | ✅ ya eran nativas | `eventScreenOptions` + `GlassHeader` de fondo. Back ahora **nativo** (sin cápsula doble) + solo icono | — |
-| **Inicio** (`index`) | ⏸️ dashboard (custom a propósito) | barra superior: campana notificaciones (animada) + ajustes + grid | El grid NO puede ser nativo. Pendiente: **híbrido** (botones con cápsula compartida, sin perder la animación). Ver Fase 2. |
+| **Inicio** (`index`) | ✅ híbrido | barra superior con `GlassActionGroup` (cápsula glass, campana animada intacta) + grid | El grid NO es nativo (contenido de diseño). |
 | `MasHome` | ⏸️ dashboard (custom) | `ScreenHero` "Más" | Beneficio bajo; se mantiene. |
-| **Calendario** | ⏳ pendiente | pantalla suelta sin stack (no tiene header nativo) | Para header nativo hay que **envolverla en un stack** (como Cantoral/Más): título "Calendario" + botón de calendarios en headerRight. |
-| **Canción** (`SongDetail`) | ⏸️ opcional | `headerShown:false` (modo lectura con FAB glass) | Se pueden hacer los botones de arriba nativos (back + acciones). El FAB de abajo se queda custom (no existe FAB nativo en iOS). |
+| **Calendario** | ✅ hecho | stack con header nativo **transparente** + "Calendario" + botón calendarios en headerRight | — |
+| **Eventos Pasados** | ✅ hecho | header transparente (stack de Más) + texto legible en oscuro | — |
+| **Canción** (`SongDetail`) | ✅ hecho | header nativo transparente (heredado) + **letra full-bleed** que scrollea bajo el header; FAB glass | Pulido fino del glass pendiente (ver TODO). |
+| Sub-pantallas de evento (hero) | ⏸️ pendiente | "floating header" opaco (`FloatingHeaderBackground`) | Transparentes como el cantoral = cambio mayor (cada hero su inset). Ver TODO. |
 
-> **Conclusión**: las "conversiones limpias" (back + título simple) ya están casi
-> todas hechas. Lo que queda son **cabeceras con función** (steppers, campanas,
-> acciones) o **dashboards** (Inicio, índice Contigo). Esas **no** se deben
-> convertir a ciegas: o se conserva su diseño, o se rediseñan con verificación
-> visual pantalla a pantalla. Hacerlo "del tirón" a producción degradaría
-> funcionalidad.
+> **Conclusión (2026-06-21)**: Fase 1 prácticamente completa. Queda **pulido fino
+> del glass de iOS 26** (con dispositivo delante) y, si se quiere, unificar los
+> headers "floating" de evento. El grueso pendiente es la **Fase 2 (componentes)**.
+
+## 5. Fase 2 — cola de trabajo (componentes ya creados y por crear)
+
+Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
+`EmptyState`, `ScreenHero`.
+
+- [ ] Migrar los **~13 `TextInput`** restantes a `AppTextField` (hecho:
+      SuggestSongModal). Lote a lote: AppFeedbackModal, ReportBugsModal,
+      SuggestSong (✓), CodeInput, PasswordPrompt, Arrangement, Evaluation,
+      Grupos, Reflexiones, Revisión, SelectedSongs, SecretPanel (admin, último).
+- [ ] **`AppPrimaryButton`** (CTA "Enviar/Guardar/Aceptar") — ~10 modales cada
+      uno con su botón. Crear y migrar.
+- [ ] **`SegmentedControl`** — unificar Mes/Agenda (Calendario), toggles de
+      ajustes, Evangelio, SongFullscreen (4-5 versiones distintas).
+- [ ] **`EmptyState`** — adoptarlo en los ~20 sitios que reinventan "no hay…".
+- [ ] **Chips/pills** — estandarizar (mezcla de heroui `Chip` + pills custom).
+- [ ] **Tokens** (`radii`/`shadows`/`typography`) — migrar números mágicos.
 
 ## 4. Decisiones de producto pendientes (bloquean algunas fases)
 
