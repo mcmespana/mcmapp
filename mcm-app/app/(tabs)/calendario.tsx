@@ -29,6 +29,7 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useLocalSearchParams } from 'expo-router';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
@@ -121,6 +122,7 @@ export function CalendarScreen() {
   // Header NATIVO: título "Calendario" + botón de calendarios (suscribirse) como
   // bar item. Antes el botón vivía en el cuerpo, junto al switcher Mes/Agenda.
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const showSubscribe = !configsLoading && calendarConfigs.length > 0;
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -437,7 +439,15 @@ export function CalendarScreen() {
   }
 
   return (
-    <View style={[styles.container, { flex: 1 }]}>
+    <View
+      style={[
+        styles.container,
+        { flex: 1 },
+        // Header transparente en iOS → reservamos su altura para que el
+        // contenido no quede debajo.
+        Platform.OS === 'ios' && { paddingTop: insets.top + 44 },
+      ]}
+    >
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
 
       <View style={[styles.bodyWrap, wideContentStyle]}>
@@ -762,6 +772,11 @@ export default function CalendarioTab() {
           fontSize: 17,
           color: isDark ? '#FFFFFF' : '#1a1a1a',
         },
+        // Header transparente (como el cantoral): glass del sistema en iOS.
+        headerTransparent: Platform.OS === 'ios',
+        ...(Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) < 26
+          ? { headerBlurEffect: 'systemChromeMaterial' as const }
+          : {}),
       }}
     >
       <CalStack.Screen

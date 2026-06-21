@@ -9,7 +9,10 @@ import {
   TextStyle,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -31,19 +34,23 @@ export default function EventosPasadosScreen() {
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
 
   const events = React.useMemo(() => getArchivedEvents(), []);
+
+  // Header transparente en iOS → reservamos su altura arriba.
+  const topPad = Platform.OS === 'ios' ? insets.top + 44 : spacing.md;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={
-          Platform.OS === 'ios'
-            ? { paddingBottom: 140, padding: spacing.md }
-            : { paddingBottom: spacing.xl, padding: spacing.md }
-        }
+        contentContainerStyle={{
+          paddingBottom: Platform.OS === 'ios' ? 140 : spacing.xl,
+          paddingHorizontal: spacing.md,
+          paddingTop: topPad,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {events.length === 0 ? (
