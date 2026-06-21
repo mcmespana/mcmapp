@@ -23,6 +23,22 @@
 
 ---
 
+## UI nativa — pendientes (Fase 1/2 de `docs/planes/PLAN_UI_NATIVA.md`)
+
+- [ ] **Buscador dentro de categoría ≠ buscador general**: el botón de buscar
+      dentro de una categoría (`SongListScreen`) no es el mismo que el de buscar
+      general del cantoral. Unificarlos para que se vean/comporten igual.
+- [ ] **Badge litúrgico "Tiempo Ordinario" — sin color**: para Tiempo Ordinario,
+      quitar el color de fondo del pill; que sea solo texto, legible en oscuro
+      (letra blanca) y en claro (letra oscura). Aplica también donde aparezca en
+      **eventos**. (`components/contigo/LiturgicalBadge.tsx`)
+- [ ] **Botones de header custom poco parecidos al liquid glass nativo**: los
+      botones de cabecera no-nativos (`AppIconButton` / `GlassSurface`) se ven
+      bastante distintos —y feos— comparados con los bar items nativos de iOS 26.
+      Acercar su aspecto al cristal del sistema (forma, blur, borde) o, donde se
+      pueda, pasarlos a bar items nativos. (`components/ui/AppIconButton.tsx`,
+      `components/ui/GlassSurface.ios.tsx`)
+
 ## Notificaciones push — mejoras pendientes (alineación con MCM Panel)
 
 > Contexto: ver `docs/contratos/NOTIFICACIONES_CONTRATO.md` (raíz del monorepo).
