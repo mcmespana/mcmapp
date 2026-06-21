@@ -61,6 +61,12 @@
       "sourceType": "github",
       "computedHash": "6116a849a6039e8b4d9dda3f6251c462e4ce8f583c53fda77838d0b2c124fe41"
     },
+    "make-interfaces-feel-better": {
+      "source": "jakubkrehel/make-interfaces-feel-better",
+      "sourceType": "github",
+      "skillPath": "skills/make-interfaces-feel-better/SKILL.md",
+      "computedHash": "2c3576e63d8c39d75ed327f1dcf6aab7aec0edf293a55f6cb3f7b8571974a01c"
+    },
     "performance": {
       "source": "addyosmani/web-quality-skills",
       "sourceType": "github",
