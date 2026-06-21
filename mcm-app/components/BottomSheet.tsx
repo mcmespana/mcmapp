@@ -11,6 +11,7 @@ import {
   Dimensions,
   Keyboard,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UIColors, Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -64,6 +65,13 @@ export default function BottomSheet({
   onCloseCompleteRef.current = onCloseComplete;
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [kbHeight, setKbHeight] = useState(0);
+  const insets = useSafeAreaInsets();
+  const screenHeight = Dimensions.get('window').height;
+  // Altura máxima de la hoja: siempre deja sitio para el safe-area superior y,
+  // si el teclado está abierto, para el teclado. Así la hoja nunca se sale por
+  // arriba al subir, y el ScrollView interno scrollea al campo enfocado.
+  const sheetMaxHeight = screenHeight - insets.top - kbHeight - 8;
   const slideAnim = useRef(new Animated.Value(OFF_SCREEN)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const dragAnim = useRef(new Animated.Value(0)).current;
@@ -123,6 +131,10 @@ export default function BottomSheet({
     const showSub = Keyboard.addListener(
       'keyboardWillShow',
       (e: { endCoordinates: { height: number }; duration: number }) => {
+        // Guardamos la altura del teclado para CAPAR la altura de la hoja (que
+        // quepa encima del teclado) y que su tope no se salga de pantalla al
+        // subir. El scroll interno lleva el campo enfocado a la vista.
+        setKbHeight(e.endCoordinates.height);
         Animated.timing(keyboardOffsetAnim, {
           toValue: -e.endCoordinates.height,
           duration: e.duration ?? 250,
@@ -133,6 +145,7 @@ export default function BottomSheet({
     const hideSub = Keyboard.addListener(
       'keyboardWillHide',
       (e: { duration: number }) => {
+        setKbHeight(0);
         Animated.timing(keyboardOffsetAnim, {
           toValue: 0,
           duration: e.duration ?? 250,
@@ -251,6 +264,7 @@ export default function BottomSheet({
               backgroundColor: bgColor,
               paddingBottom: 8,
               transform: [{ translateY }],
+              maxHeight: sheetMaxHeight,
               ...(height !== undefined && { height }),
             },
           ]}
@@ -291,7 +305,10 @@ export default function BottomSheet({
           <View
             style={[
               { backgroundColor: bgColor, paddingHorizontal },
-              height !== undefined && { flex: 1 },
+              // Con teclado abierto (o altura fija), el área de contenido se
+              // acota (flex:1) para que el ScrollView interno scrollee dentro de
+              // la hoja capada, en vez de empujar la hoja fuera de pantalla.
+              (height !== undefined || kbHeight > 0) && { flex: 1 },
             ]}
             onStartShouldSetResponder={() => true}
             {...(dragFromContent ? contentPanResponder.panHandlers : {})}
