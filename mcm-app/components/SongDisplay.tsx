@@ -180,7 +180,9 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         fullBleed
           ? [
               styles.fullBleedContainer,
-              { backgroundColor: isDark ? '#1C1C1E' : '#fff' },
+              // Mismo color que el bodyBg del HTML (useSongProcessor) → un único
+              // fondo continuo bajo el header transparente.
+              { backgroundColor: isDark ? '#2C2C2E' : '#ffffff' },
             ]
           : [
               styles.cardContainer,
@@ -193,7 +195,10 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         ref={webViewRef}
         originWhitelist={['*']}
         source={{ html: songHtml }}
-        style={styles.webView}
+        style={[
+          styles.webView,
+          fullBleed && { backgroundColor: isDark ? '#2C2C2E' : '#ffffff' },
+        ]}
         showsVerticalScrollIndicator={false}
         {...(useInset
           ? {

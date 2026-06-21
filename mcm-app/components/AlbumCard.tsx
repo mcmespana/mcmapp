@@ -10,6 +10,7 @@ import { Image } from 'expo-image';
 import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useColorScheme } from '@/hooks/useColorScheme';
 interface AlbumCardProps {
   album: {
     id: string;
@@ -24,11 +25,25 @@ interface AlbumCardProps {
 
 const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
   const { width } = useWindowDimensions();
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const activeStyles = createStyles(width);
   return (
     <PressableFeedback style={activeStyles.card} onPress={onPress}>
       <PressableFeedback.Highlight />
-      <View style={activeStyles.cardContent}>
+      {/* Image outline: hairline neutro (negro/10 claro · blanco/10 oscuro)
+          para un borde nítido y consistente alrededor de la foto. */}
+      <View
+        style={[
+          activeStyles.cardContent,
+          {
+            borderWidth: 1,
+            borderColor: isDark
+              ? 'rgba(255, 255, 255, 0.1)'
+              : 'rgba(0, 0, 0, 0.1)',
+          },
+        ]}
+      >
         <View style={activeStyles.imageBackground}>
           <Image
             source={{ uri: album.imageUrl }}
