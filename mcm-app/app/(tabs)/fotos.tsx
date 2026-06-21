@@ -54,6 +54,7 @@ interface FotosScreenStyles {
   listContentContainer: ViewStyle;
   albumCardContainerOneColumn: ViewStyle;
   albumCardContainerTwoColumns: ViewStyle;
+  albumCardContainerThreeColumns: ViewStyle;
   loadMoreButton: ViewStyle;
 }
 
@@ -155,6 +156,16 @@ export default function FotosScreen() {
     );
   };
 
+  // Columnas según ancho: 3 en iPad landscape (≥1024, incluye iPad 9 a 1080),
+  // 2 en tablet portrait / pantallas medianas, 1 en móvil.
+  const numColumns = width >= 1024 ? 3 : width > 600 ? 2 : 1;
+  const columnContainerStyle =
+    numColumns === 3
+      ? styles.albumCardContainerThreeColumns
+      : numColumns === 2
+        ? styles.albumCardContainerTwoColumns
+        : styles.albumCardContainerOneColumn;
+
   if (loading && displayedAlbums.length === 0) {
     return <ProgressWithMessage message="Cargando álbumes..." />;
   }
@@ -165,13 +176,7 @@ export default function FotosScreen() {
       <FlatList
         data={displayedAlbums}
         renderItem={({ item }) => (
-          <View
-            style={
-              width > 600
-                ? styles.albumCardContainerTwoColumns
-                : styles.albumCardContainerOneColumn
-            }
-          >
+          <View style={columnContainerStyle}>
             <AlbumCard
               album={item}
               onPress={() => handleAlbumPress(item.albumUrl)}
@@ -179,8 +184,8 @@ export default function FotosScreen() {
           </View>
         )}
         keyExtractor={(item) => item.id}
-        numColumns={width > 600 ? 2 : 1}
-        key={width > 600 ? 'TWO_COLUMNS' : 'ONE_COLUMN'} // Important for re-render on column change
+        numColumns={numColumns}
+        key={`COLS_${numColumns}`} // Important for re-render on column change
         contentContainerStyle={[
           styles.listContentContainer,
           {
@@ -215,6 +220,10 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     albumCardContainerTwoColumns: {
       width: '50%',
+      paddingHorizontal: 6,
+    },
+    albumCardContainerThreeColumns: {
+      width: '33.333%',
       paddingHorizontal: 6,
     },
     loadMoreButton: {

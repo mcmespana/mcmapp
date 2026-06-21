@@ -10,7 +10,15 @@
 ## Prioridad alta
 
 - [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
-- [ ] Revisar diseño en iPads y arreglarlo
+- [ ] **iPad: habilitar landscape a nivel nativo** — añadir
+      `UISupportedInterfaceOrientations~ipad` (las 4 orientaciones) en
+      `ios.infoPlist` de `app.json` para que iPad rote (iPhone se queda en
+      portrait). ⚠️ Cambio NATIVO → **build de tienda + commit `[skip-ota]`**, no
+      OTA. Hacerlo en la próxima release de tienda. Los layouts de iPad (pasada
+      del 2026-06-21, ver CHANGELOG) ya están listos para cuando se active.
+- [ ] **iPad: verificar en dispositivo real (9/10)** en horizontal y vertical
+      todas las pantallas y modales/bottom sheets (la pasada de layouts no se ha
+      probado en iPad físico). Posibles ajustes finos tras la prueba.
 - [ ] **Command Palette v2: deep-link a contenidos** — el palette actual (`CommandPalette.tsx`) solo navega a tabs/pantallas top-level. Para saltar a una canción concreta o a un punto dentro de los stacks anidados hay que exponer un `navigation ref` (p.ej. `CancioneroNavRefContext`). Después indexar canciones (`songs/data`), reflexiones (`compartiendo/data`) y eventos del calendario.
 
 ---

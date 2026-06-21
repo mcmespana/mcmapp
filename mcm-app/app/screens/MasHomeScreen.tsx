@@ -26,7 +26,7 @@ import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { takePendingMasScreen } from '@/utils/masNavigation';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
-import { useResponsive } from '@/hooks/useResponsive';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { splitTabsForIOS } from '@/constants/tabsCatalog';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
@@ -106,8 +106,10 @@ export default function MasHomeScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const [feedbackVisible, setFeedbackVisible] = useState(false);
-  const { isMd, isWeb } = useResponsive();
-  const useTwoColumns = isWeb && isMd;
+  // Grid de 2 columnas en tablet/web amplio (iPad portrait y landscape
+  // incluidos). En móvil se queda en una sola columna (lista vertical).
+  const layout = useResponsiveLayout();
+  const useTwoColumns = layout.isWide;
   const resolved = useResolvedProfileConfig();
   const { isAdmin } = useAdminStatus();
   const navigationItems = React.useMemo(() => {
@@ -342,7 +344,7 @@ const styles = StyleSheet.create({
   scrollContentGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    justifyContent: 'space-between',
   },
   card: {
     borderRadius: radii.xl,
@@ -350,9 +352,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardGridItem: {
-    // Two columns minus the row gap (spacing.md) divided over 2 items.
-    width: `calc(50% - ${spacing.md / 2}px)` as any,
-    marginBottom: 0,
+    // Dos columnas con un pequeño hueco entre ellas. Porcentaje (no `calc`)
+    // para que funcione igual en nativo (iPad) y en web; el `marginBottom`
+    // de `card` da el ritmo vertical.
+    width: '48.5%',
   },
   accentBar: {
     height: 4,
