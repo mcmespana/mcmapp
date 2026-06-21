@@ -182,7 +182,7 @@ export default function HorarioScreen() {
           backgroundColor: Colors[scheme ?? 'light'].background,
         }}
       >
-        <ScreenHero title="Horario" hideOnWeb floatingHeaderInset />
+        <ScreenHero title="Horario" hideOnWeb />
         {empty ? (
           <ComingSoon accentColor={event.tintColor} />
         ) : (
@@ -208,7 +208,7 @@ export default function HorarioScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHero title="Horario" hideOnWeb floatingHeaderInset />
+      <ScreenHero title="Horario" hideOnWeb />
       <View style={styles.headerSection}>
         <DateSelector
           dates={fechas}
