@@ -403,6 +403,7 @@ export function CalendarScreen() {
             ]}
             onPress={() => toggleCalendarVisibility(idx)}
             activeOpacity={0.7}
+            hitSlop={{ top: 5, bottom: 5 }}
           >
             <View
               style={[
@@ -802,6 +803,7 @@ function BackToTodayPill({ onPress, styles }: BackToTodayPillProps) {
         onPress();
       }}
       activeOpacity={0.75}
+      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
       accessibilityRole="button"
       accessibilityLabel="Volver a hoy"
     >
@@ -1003,6 +1005,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       fontWeight: '700',
       color: colors.info,
       lineHeight: 40,
+      fontVariant: ['tabular-nums'],
     },
     eventSectionWeekday: {
       fontSize: 14,
@@ -1180,6 +1183,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       fontWeight: '700',
       color: isDark ? '#FFFFFF' : '#1C1C1E',
       lineHeight: 30,
+      fontVariant: ['tabular-nums'],
     },
     sectionWeekday: {
       fontSize: 11,
@@ -1208,6 +1212,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       fontSize: 12,
       fontWeight: '600',
       color: isDark ? '#8E8E93' : '#636366',
+      fontVariant: ['tabular-nums'],
     },
 
     // Misc
