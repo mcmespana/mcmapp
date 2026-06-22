@@ -11,6 +11,7 @@
  * el código vía `onSubmit`. Devolver una promesa permite mostrar un
  * estado "cargando" durante la operación.
  */
+import { radii } from '@/constants/uiStyles';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
@@ -330,7 +331,7 @@ const createStyles = (isDark: boolean) =>
     },
     nameInput: {
       backgroundColor: isDark ? '#1C1C1E' : '#F8F8FA',
-      borderRadius: 12,
+      borderRadius: radii.md,
       paddingHorizontal: 16,
       paddingVertical: 14,
       fontSize: 16,
@@ -355,7 +356,7 @@ const createStyles = (isDark: boolean) =>
     cell: {
       width: 52,
       height: 60,
-      borderRadius: 12,
+      borderRadius: radii.md,
       borderWidth: 1.5,
       borderColor: isDark ? '#48484A' : '#D1D1D6',
       backgroundColor: isDark ? '#1C1C1E' : '#F8F8FA',
@@ -387,7 +388,7 @@ const createStyles = (isDark: boolean) =>
       gap: 6,
       paddingVertical: 8,
       paddingHorizontal: 12,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
     },
     suggestText: {

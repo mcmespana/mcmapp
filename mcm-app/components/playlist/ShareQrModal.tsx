@@ -10,6 +10,7 @@
  *
  * Si se pasan ambos, muestra un toggle para alternar entre los dos QR.
  */
+import { radii } from '@/constants/uiStyles';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
@@ -296,7 +297,7 @@ const createStyles = (isDark: boolean) =>
     toggleBtn: {
       flex: 1,
       paddingVertical: 7,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       alignItems: 'center',
     },
     toggleBtnActive: {
@@ -358,7 +359,7 @@ const createStyles = (isDark: boolean) =>
       flexDirection: 'row',
       gap: 6,
       paddingVertical: 12,
-      borderRadius: 12,
+      borderRadius: radii.md,
       alignItems: 'center',
       justifyContent: 'center',
     },

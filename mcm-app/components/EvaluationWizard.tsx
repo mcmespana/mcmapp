@@ -1,3 +1,4 @@
+import { radii } from '@/constants/uiStyles';
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import {
@@ -916,7 +917,7 @@ const scaleStyles = StyleSheet.create({
     minWidth: 44,
     height: 44,
     paddingHorizontal: 6,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',

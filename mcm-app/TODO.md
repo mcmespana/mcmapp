@@ -23,14 +23,6 @@
 
 ---
 
-## Modernización pendiente
-
-- [ ] **Extender `useContextMenu` a otras listas**: el hook ya existe (`hooks/useContextMenu.ts`) y se usa en `SongListItem`, Reflexiones y Contactos. Componente reutilizable `components/ContextMenuSheet.tsx` ya creado. Falta:
-  - [ ] Notificaciones (`app/notifications.tsx`) — marcar leída / eliminar
-  - [ ] Playlist (`app/screens/SelectedSongsScreen.tsx`) — subir / bajar / quitar
-
----
-
 ## UI nativa — pendientes (Fase 1/2 de `docs/planes/PLAN_UI_NATIVA.md`)
 
 > Hecho en la pasada del 2026-06-21 (ver CHANGELOG): headers nativos de Contigo,
@@ -106,7 +98,7 @@
 
 ## Mantenimiento
 
-- [ ] **Ampliar cobertura de tests**: ya hay 10 ficheros en `__tests__/` (`arrangements`, `chordNotation`, `filterSongsData`, `formatText`, `notificationRoutes`, `resolveProfileConfig`, `songUtils`, `useFirebaseData`, `useNetworkStatus`, `youtube`). Priorizar lo que falta: `useSongProcessor`, `useChoirSession`, `useResolvedProfileConfig`, y al menos una pantalla con render snapshot.
+- [ ] **Ampliar cobertura de tests**: ya hay 16 ficheros en `__tests__/` (entre ellos `logger` y `dismissNotification`, añadidos en jun-2026). Priorizar lo que falta: `useSongProcessor`, `useChoirSession`, `useResolvedProfileConfig`, y al menos una pantalla con render snapshot.
 
 ---
 
@@ -128,8 +120,7 @@
 
 ## Inconsistencias del Design System
 
-- [ ] **Tipografía no conectada a componentes**: `constants/typography.ts` define h1/h2/body/caption/button pero la mayoría de componentes usan fontSize inline. El archivo solo se importa en 5 sitios.
-- [ ] **Falta token para modal borderRadius**: los modales usan 8px o 12px según el componente. `radii.sm=8` y `radii.md=12` están disponibles pero no aplicados en los modales existentes.
+- [ ] **Tipografía no conectada a componentes**: `constants/typography.ts` define h1/h2/body/caption/button pero la mayoría de componentes usan fontSize inline. El archivo solo se importa en pocos sitios.
 - [ ] **Peso de fuente inconsistente**: section labels usan `fontWeight: '800'`, títulos de cards `'700'`, botones `'500'`/`'700'`. No hay guía clara de qué peso usar en cada nivel.
 - [ ] **Migrar componentes existentes a tokens**: `radii.*` y `shadows.*` están definidos pero los componentes siguen usando valores inline. Migrar gradualmente.
 
@@ -174,9 +165,8 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 ## Calidad de código y mantenibilidad
 
 - [ ] **Trocear ficheros enormes**: `SelectedSongsScreen.tsx` (1.750 líneas), `NotificationsBottomSheet.tsx` (908), `WordleScreen.tsx` (776), `SecretPanelModal.tsx` (660). Extraer subcomponentes, hooks y utilidades. Ver MEJORAS.md §2.1 y el plan por fases en `docs/planes/PLAN_CALIDAD.md`.
-- [ ] **`prettier/prettier` a `error`** en `eslint.config.js`. Hoy es warn y deja pasar formato roto. Ver MEJORAS.md §3.1.
-- [ ] **Logger centralizado** (`utils/logger.ts`) que sustituya los 99 `console.*` del código y conecte con Sentry en producción. Ver MEJORAS.md §3.2 y §8.2.
 - [ ] **Agrupar providers afines** en `app/_layout.tsx` (12 anidados). Por ejemplo, combinar `UserProfile` + `ProfileConfig`. Ver MEJORAS.md §2.2.
+- [ ] **Conectar el logger con Sentry**: `utils/logger.ts` ya expone `setReporter`; falta integrar `@sentry/react-native` y llamarlo en el arranque (ver «Crash reporting» abajo).
 
 ---
 
