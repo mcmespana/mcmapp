@@ -46,6 +46,9 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 
 import { h } from '@/utils/haptics';
 import PlaylistRow from '@/components/playlist/PlaylistRow';
+import ContextMenuSheet, {
+  ContextMenuAction,
+} from '@/components/ContextMenuSheet';
 import ReorderableList, {
   ReorderableListReorderEvent,
   useReorderableDrag,
@@ -1046,6 +1049,9 @@ const SelectedSongsScreen: React.FC = () => {
 
   // --- Reorden manual -------------------------------------------------------
 
+  // Canción sobre la que está abierto el menú contextual (clic derecho en web).
+  const [menuFilename, setMenuFilename] = useState<string | null>(null);
+
   const handleMoveUp = useCallback(
     (filename: string) => {
       const idx = flatSelectedSongs.findIndex((s) => s.filename === filename);
@@ -1480,6 +1486,7 @@ const SelectedSongsScreen: React.FC = () => {
     canMoveDown: index < flatSelectedSongs.length - 1,
     onMoveUp: () => handleMoveUp(item.filename),
     onMoveDown: () => handleMoveDown(item.filename),
+    onContextMenu: () => setMenuFilename(item.filename),
     isNowPlaying: choir.session?.current?.filename === item.filename,
     onPress: () => handleSongPress(item),
     onRemove: () => removeSong(item.filename),
@@ -1564,6 +1571,47 @@ const SelectedSongsScreen: React.FC = () => {
             : 'Acciones'
         }
       />
+
+      {/* Menú contextual (clic derecho en web) sobre una canción de la lista */}
+      {(() => {
+        const idx = menuFilename
+          ? flatSelectedSongs.findIndex((s) => s.filename === menuFilename)
+          : -1;
+        const song = idx >= 0 ? flatSelectedSongs[idx] : null;
+        const actions: ContextMenuAction[] = song
+          ? [
+              {
+                key: 'up',
+                label: 'Subir',
+                icon: 'keyboard-arrow-up',
+                disabled: idx <= 0,
+                onPress: () => handleMoveUp(song.filename),
+              },
+              {
+                key: 'down',
+                label: 'Bajar',
+                icon: 'keyboard-arrow-down',
+                disabled: idx >= flatSelectedSongs.length - 1,
+                onPress: () => handleMoveDown(song.filename),
+              },
+              {
+                key: 'remove',
+                label: 'Quitar de la lista',
+                icon: 'remove-circle-outline',
+                destructive: true,
+                onPress: () => removeSong(song.filename),
+              },
+            ]
+          : [];
+        return (
+          <ContextMenuSheet
+            visible={menuFilename !== null}
+            onClose={() => setMenuFilename(null)}
+            title={song?.title.replace(/^\d+\.\s*/, '')}
+            actions={actions}
+          />
+        );
+      })()}
 
       {codeDialog ? (
         <CodeInputModal

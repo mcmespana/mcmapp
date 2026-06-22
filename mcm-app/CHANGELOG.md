@@ -18,6 +18,20 @@
 
 ---
 
+## 2026-06-22 13:45 — Menú contextual en la Playlist (web)
+
+Modernización: `useContextMenu` también en la pantalla de Playlist
+(`SelectedSongsScreen`).
+
+- **Clic derecho en web** sobre una canción abre un `ContextMenuSheet` con
+  acciones «Subir» / «Bajar» / «Quitar de la lista».
+- Se limita a web a propósito: en nativo el long-press ya inicia el
+  arrastre (drag & drop) de `react-native-reorderable-list`, así que un menú
+  por long-press chocaría con el gesto. En nativo siguen disponibles drag,
+  swipe-para-quitar y los botones ↑/↓.
+- Archivos: `app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/PlaylistRow.tsx`.
+
 ## 2026-06-22 13:30 — Menú contextual y borrado en Notificaciones
 
 Modernización: se extiende `useContextMenu` a la pantalla de Notificaciones
