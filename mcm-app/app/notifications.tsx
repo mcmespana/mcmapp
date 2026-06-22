@@ -33,6 +33,8 @@ import {
   markAllNotificationsAsRead,
   initializeNewUserReadStatus,
   isNotificationOlderThan60Days,
+  dismissNotification,
+  getDismissedNotificationKeys,
 } from '@/services/pushNotificationService';
 import {
   NotificationData,
@@ -42,6 +44,10 @@ import {
 import { normalizeNotificationRoute } from '@/utils/notificationRoutes';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
+import { useContextMenu } from '@/hooks/useContextMenu';
+import ContextMenuSheet, {
+  ContextMenuAction,
+} from '@/components/ContextMenuSheet';
 
 // Mapeo de rutas internas a nombres legibles
 const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
@@ -104,6 +110,180 @@ function getActionButtons(
   return notification.actionButton ? [notification.actionButton] : [];
 }
 
+type NotificationStyles = ReturnType<typeof createStyles>;
+
+/**
+ * Fila de notificación. Extraída a componente para poder usar `useContextMenu`
+ * (long-press en nativo / clic derecho en web) por fila respetando las reglas
+ * de hooks. El menú contextual lo abre el padre vía `onLongPress`.
+ */
+function NotificationRow({
+  notification,
+  isUnread,
+  styles,
+  onPress,
+  onMarkRead,
+  onActionButtonPress,
+  onLongPress,
+}: {
+  notification: NotificationData | ReceivedNotification;
+  isUnread: boolean;
+  styles: NotificationStyles;
+  onPress: (n: NotificationData | ReceivedNotification) => void;
+  onMarkRead: (id: string) => void;
+  onActionButtonPress: (
+    n: NotificationData | ReceivedNotification,
+    b: NotificationActionButtonData,
+    e: any,
+  ) => void;
+  onLongPress: (n: NotificationData | ReceivedNotification) => void;
+}) {
+  const ctx = useContextMenu(() => onLongPress(notification));
+  const date = new Date(
+    'receivedAt' in notification
+      ? notification.receivedAt
+      : notification.createdAt,
+  );
+  const routeInfo = notification.internalRoute
+    ? getRouteLabel(notification.internalRoute)
+    : null;
+  const actionButtons = getActionButtons(notification);
+
+  const renderRightActions = (
+    _progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>,
+  ) => {
+    const scale = dragX.interpolate({
+      inputRange: [-100, 0],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <TouchableOpacity
+        style={styles.rightAction}
+        onPress={() => onMarkRead(notification.id)}
+        accessibilityLabel="Marcar como leída"
+        accessibilityRole="button"
+      >
+        <Animated.View
+          style={[styles.actionContent, { transform: [{ scale }] }]}
+        >
+          <MaterialIcons name="check" size={24} color="#fff" />
+          <Text style={styles.actionText}>Leída</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <View style={{ marginBottom: spacing.md }}>
+      <Swipeable
+        renderRightActions={(progress, dragX) =>
+          isUnread ? renderRightActions(progress, dragX) : null
+        }
+        rightThreshold={40}
+        overshootRight={false}
+      >
+        {/* TouchableOpacity de gesture-handler para evitar conflictos dentro de Swipeable */}
+        <TouchableOpacity
+          style={[styles.notificationCard, isUnread && styles.unreadCard]}
+          onPress={() => onPress(notification)}
+          activeOpacity={0.7}
+          accessibilityLabel={`${isUnread ? 'No leída: ' : ''}${notification.title}`}
+          accessibilityRole="button"
+          {...ctx}
+        >
+          {notification.icon && (
+            <Image
+              source={{ uri: notification.icon }}
+              style={styles.notificationIcon}
+              accessibilityLabel="Icono de notificación"
+            />
+          )}
+
+          <View style={styles.notificationContent}>
+            {/* Cabecera: título + indicadores */}
+            <View style={styles.notificationHeader}>
+              <Text
+                style={[
+                  styles.notificationTitle,
+                  !isUnread && styles.notificationTitleRead,
+                ]}
+                numberOfLines={1}
+              >
+                {notification.title}
+              </Text>
+              <View style={styles.notificationHeaderRight}>
+                {isUnread && <View style={styles.unreadBadge} />}
+                {/* Botón marcar como leída — Pressable para evitar <button> anidado en web */}
+                {isUnread && (
+                  <Pressable
+                    style={styles.markAsReadButton}
+                    onPress={() => onMarkRead(notification.id)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    accessibilityLabel="Marcar como leída"
+                    accessibilityRole="button"
+                  >
+                    <MaterialIcons
+                      name="check-circle-outline"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
+            {/* Cuerpo */}
+            <Text style={styles.notificationBody} numberOfLines={2}>
+              {notification.body}
+            </Text>
+
+            {/* Fila inferior: fecha + chips de destino/acción */}
+            <View style={styles.notificationFooter}>
+              <Text style={styles.notificationDate}>{formatDate(date)}</Text>
+              <View style={styles.chipsRow}>
+                {/* Chip de destino interno */}
+                {routeInfo && (
+                  <View style={styles.destinationChip}>
+                    <Text style={styles.destinationChipText}>
+                      {routeInfo.label}
+                    </Text>
+                  </View>
+                )}
+                {/* Chips de botones de acción (hasta 3) — Pressable para
+                    evitar <button> anidado en web */}
+                {actionButtons.map((button, idx) => (
+                  <Pressable
+                    key={`${button.url}-${idx}`}
+                    style={styles.actionChip}
+                    onPress={(e?) =>
+                      onActionButtonPress(notification, button, e)
+                    }
+                    accessibilityLabel={button.text}
+                    accessibilityRole="button"
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Text style={styles.actionChipText} numberOfLines={1}>
+                      {button.text}
+                    </Text>
+                    <MaterialIcons
+                      name={button.isInternal ? 'arrow-forward' : 'open-in-new'}
+                      size={11}
+                      color="#fff"
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Swipeable>
+    </View>
+  );
+}
+
 export default function NotificationsScreen() {
   const navigation = useNavigation();
   const scheme = useColorScheme();
@@ -121,6 +301,11 @@ export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<
+    (NotificationData | ReceivedNotification) | null
+  >(null);
+  const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
+  // Notificación sobre la que se abre el menú contextual (long-press / clic der.)
+  const [menuNotification, setMenuNotification] = useState<
     (NotificationData | ReceivedNotification) | null
   >(null);
 
@@ -143,6 +328,8 @@ export default function NotificationsScreen() {
       setLocalNotifications(localNotifs);
       const readNotificationIds = await getReadNotificationIds();
       setReadIds(new Set(readNotificationIds));
+      const dismissed = await getDismissedNotificationKeys();
+      setDismissedKeys(dismissed);
     } catch (error) {
       logger.error('Error cargando notificaciones:', error);
     } finally {
@@ -203,6 +390,30 @@ export default function NotificationsScreen() {
     [isNotificationRead, handleMarkAsRead],
   );
 
+  const handleDelete = useCallback(
+    async (notification: NotificationData | ReceivedNotification) => {
+      // Optimista: ocultar de inmediato añadiendo sus claves al set local.
+      setDismissedKeys((prev) => {
+        const next = new Set(prev);
+        if (notification.id) next.add(notification.id);
+        next.add(`${notification.title}|${notification.body}`);
+        return next;
+      });
+      await dismissNotification(notification);
+      await loadLocalData();
+      refreshCount();
+    },
+    [loadLocalData, refreshCount],
+  );
+
+  // Abre el menú contextual (marcar leída / eliminar) sobre una notificación.
+  const openContextMenu = useCallback(
+    (notification: NotificationData | ReceivedNotification) => {
+      setMenuNotification(notification);
+    },
+    [],
+  );
+
   const safePushRoute = useCallback((route: string) => {
     if (!route) return;
     const clean = normalizeRoute(route);
@@ -246,172 +457,37 @@ export default function NotificationsScreen() {
     [isNotificationRead, handleMarkAsRead, safePushRoute],
   );
 
-  const renderRightActions = (
-    _progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>,
-    notificationId: string,
-  ) => {
-    const scale = dragX.interpolate({
-      inputRange: [-100, 0],
-      outputRange: [1, 0],
-      extrapolate: 'clamp',
-    });
-
-    return (
-      <TouchableOpacity
-        style={styles.rightAction}
-        onPress={() => handleMarkAsRead(notificationId)}
-        accessibilityLabel="Marcar como leída"
-        accessibilityRole="button"
-      >
-        <Animated.View
-          style={[styles.actionContent, { transform: [{ scale }] }]}
-        >
-          <MaterialIcons name="check" size={24} color="#fff" />
-          <Text style={styles.actionText}>Leída</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  };
-
   const renderNotification = ({
     item: notification,
   }: {
     item: NotificationData | ReceivedNotification;
-  }) => {
-    const isRead = isNotificationRead(notification);
-    const isUnread = !isRead;
-    const date = new Date(
-      'receivedAt' in notification
-        ? notification.receivedAt
-        : notification.createdAt,
-    );
-    const routeInfo = notification.internalRoute
-      ? getRouteLabel(notification.internalRoute)
-      : null;
-    const actionButtons = getActionButtons(notification);
-
-    return (
-      <View style={{ marginBottom: spacing.md }}>
-        <Swipeable
-          renderRightActions={(progress, dragX) =>
-            isUnread
-              ? renderRightActions(progress, dragX, notification.id)
-              : null
-          }
-          rightThreshold={40}
-          overshootRight={false}
-        >
-          {/* TouchableOpacity de gesture-handler para evitar conflictos dentro de Swipeable */}
-          <TouchableOpacity
-            style={[styles.notificationCard, isUnread && styles.unreadCard]}
-            onPress={() => handleNotificationPress(notification)}
-            activeOpacity={0.7}
-            accessibilityLabel={`${isUnread ? 'No leída: ' : ''}${notification.title}`}
-            accessibilityRole="button"
-          >
-            {notification.icon && (
-              <Image
-                source={{ uri: notification.icon }}
-                style={styles.notificationIcon}
-                accessibilityLabel="Icono de notificación"
-              />
-            )}
-
-            <View style={styles.notificationContent}>
-              {/* Cabecera: título + indicadores */}
-              <View style={styles.notificationHeader}>
-                <Text
-                  style={[
-                    styles.notificationTitle,
-                    !isUnread && styles.notificationTitleRead,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {notification.title}
-                </Text>
-                <View style={styles.notificationHeaderRight}>
-                  {isUnread && <View style={styles.unreadBadge} />}
-                  {/* Botón marcar como leída — Pressable para evitar <button> anidado en web */}
-                  {isUnread && (
-                    <Pressable
-                      style={styles.markAsReadButton}
-                      onPress={() => handleMarkAsRead(notification.id)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      accessibilityLabel="Marcar como leída"
-                      accessibilityRole="button"
-                    >
-                      <MaterialIcons
-                        name="check-circle-outline"
-                        size={20}
-                        color={colors.primary}
-                      />
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-
-              {/* Cuerpo */}
-              <Text style={styles.notificationBody} numberOfLines={2}>
-                {notification.body}
-              </Text>
-
-              {/* Fila inferior: fecha + chips de destino/acción */}
-              <View style={styles.notificationFooter}>
-                <Text style={styles.notificationDate}>{formatDate(date)}</Text>
-                <View style={styles.chipsRow}>
-                  {/* Chip de destino interno */}
-                  {routeInfo && (
-                    <View style={styles.destinationChip}>
-                      <Text style={styles.destinationChipText}>
-                        {routeInfo.label}
-                      </Text>
-                    </View>
-                  )}
-                  {/* Chips de botones de acción (hasta 3) — Pressable para
-                      evitar <button> anidado en web */}
-                  {actionButtons.map((button, idx) => (
-                    <Pressable
-                      key={`${button.url}-${idx}`}
-                      style={styles.actionChip}
-                      onPress={(e?) =>
-                        handleActionButtonPress(notification, button, e)
-                      }
-                      accessibilityLabel={button.text}
-                      accessibilityRole="button"
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                      <Text style={styles.actionChipText} numberOfLines={1}>
-                        {button.text}
-                      </Text>
-                      <MaterialIcons
-                        name={
-                          button.isInternal ? 'arrow-forward' : 'open-in-new'
-                        }
-                        size={11}
-                        color="#fff"
-                      />
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </Swipeable>
-      </View>
-    );
-  };
+  }) => (
+    <NotificationRow
+      notification={notification}
+      isUnread={!isNotificationRead(notification)}
+      styles={styles}
+      onPress={handleNotificationPress}
+      onMarkRead={handleMarkAsRead}
+      onActionButtonPress={handleActionButtonPress}
+      onLongPress={openContextMenu}
+    />
+  );
 
   // Combinar Firebase (real-time) + locales, deduplicar, ordenar.
   // Locales van primero porque tienen estado `isRead` más fiable.
   const allNotifications = React.useMemo(() => {
-    const combined = [...localNotifications, ...firebaseNotifications].sort(
-      (a, b) => {
+    const combined = [...localNotifications, ...firebaseNotifications]
+      // Ocultar las descartadas (por id o por clave de contenido).
+      .filter(
+        (n) =>
+          !dismissedKeys.has(n.id) &&
+          !dismissedKeys.has(`${n.title}|${n.body}`),
+      )
+      .sort((a, b) => {
         const dateA = new Date('receivedAt' in a ? a.receivedAt : a.createdAt);
         const dateB = new Date('receivedAt' in b ? b.receivedAt : b.createdAt);
         return dateB.getTime() - dateA.getTime();
-      },
-    );
+      });
 
     // Deduplicar por contenido (título + cuerpo) o por ID — la primera
     // aparición gana. Al encontrar un duplicado, completamos en la copia
@@ -443,7 +519,7 @@ export default function NotificationsScreen() {
       if (notification.id) indexById.set(notification.id, idx);
     }
     return result;
-  }, [localNotifications, firebaseNotifications]);
+  }, [localNotifications, firebaseNotifications, dismissedKeys]);
 
   const hasUnread = allNotifications.some((n) => !isNotificationRead(n));
 
@@ -532,6 +608,36 @@ export default function NotificationsScreen() {
         notification={selectedNotification}
         onClose={() => setSelectedNotification(null)}
         scheme={scheme}
+      />
+
+      {/* Menú contextual (long-press / clic derecho) sobre una notificación */}
+      <ContextMenuSheet
+        visible={menuNotification !== null}
+        onClose={() => setMenuNotification(null)}
+        title={menuNotification?.title}
+        actions={
+          menuNotification
+            ? ([
+                ...(!isNotificationRead(menuNotification)
+                  ? [
+                      {
+                        key: 'read',
+                        label: 'Marcar como leída',
+                        icon: 'check-circle-outline',
+                        onPress: () => handleMarkAsRead(menuNotification.id),
+                      },
+                    ]
+                  : []),
+                {
+                  key: 'delete',
+                  label: 'Eliminar',
+                  icon: 'delete-outline',
+                  destructive: true,
+                  onPress: () => handleDelete(menuNotification),
+                },
+              ] as ContextMenuAction[])
+            : []
+        }
       />
     </SafeAreaView>
   );

@@ -44,6 +44,7 @@ const DEVICE_ID_KEY = '@mcm_device_id';
 const PUSH_TOKEN_KEY = '@mcm_push_token';
 const NOTIFICATIONS_HISTORY_KEY = '@mcm_notifications_history';
 const READ_NOTIFICATIONS_KEY = '@mcm_read_notifications'; // IDs de notificaciones leídas (Firebase + locales)
+const DISMISSED_NOTIFICATIONS_KEY = '@mcm_notifications_dismissed'; // Claves (id + contenido) de notificaciones descartadas/eliminadas
 
 // Token cacheado en memoria para acceso rápido desde updateLastActive
 let cachedPushToken: string | null = null;
@@ -539,6 +540,67 @@ export const clearLocalNotifications = async (): Promise<void> => {
     await AsyncStorage.removeItem(NOTIFICATIONS_HISTORY_KEY);
   } catch (error) {
     logger.error('Error limpiando historial local:', error);
+  }
+};
+
+/**
+ * Clave de contenido usada para deduplicar/descartar notificaciones cuando los
+ * IDs no son fiables entre orígenes (local vs Firebase).
+ */
+const notificationContentKey = (
+  n: NotificationData | ReceivedNotification,
+): string => `${n.title}|${n.body}`;
+
+/**
+ * Devuelve el set de claves descartadas (ids + claves de contenido). Las
+ * notificaciones de Firebase no se pueden borrar localmente, así que las
+ * "ocultamos" guardando su clave aquí y filtrándolas al pintar la lista.
+ */
+export const getDismissedNotificationKeys = async (): Promise<Set<string>> => {
+  try {
+    const data = await AsyncStorage.getItem(DISMISSED_NOTIFICATIONS_KEY);
+    return data ? new Set(JSON.parse(data)) : new Set();
+  } catch (error) {
+    logger.error('Error obteniendo notificaciones descartadas:', error);
+    return new Set();
+  }
+};
+
+/**
+ * Elimina una notificación: la quita del historial local (si está) y registra
+ * su id + clave de contenido como descartada para que su equivalente de
+ * Firebase no vuelva a aparecer.
+ */
+export const dismissNotification = async (
+  notification: NotificationData | ReceivedNotification,
+): Promise<void> => {
+  try {
+    const contentKey = notificationContentKey(notification);
+
+    // 1) Quitar del historial local (por id o por contenido equivalente).
+    const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
+    if (data) {
+      const notifications: ReceivedNotification[] = JSON.parse(data);
+      const filtered = notifications.filter(
+        (n) =>
+          n.id !== notification.id && notificationContentKey(n) !== contentKey,
+      );
+      await AsyncStorage.setItem(
+        NOTIFICATIONS_HISTORY_KEY,
+        JSON.stringify(filtered),
+      );
+    }
+
+    // 2) Registrar como descartada (id + clave de contenido).
+    const dismissed = await getDismissedNotificationKeys();
+    if (notification.id) dismissed.add(notification.id);
+    dismissed.add(contentKey);
+    await AsyncStorage.setItem(
+      DISMISSED_NOTIFICATIONS_KEY,
+      JSON.stringify(Array.from(dismissed)),
+    );
+  } catch (error) {
+    logger.error('Error eliminando notificación:', error);
   }
 };
 

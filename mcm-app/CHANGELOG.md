@@ -18,6 +18,23 @@
 
 ---
 
+## 2026-06-22 13:30 — Menú contextual y borrado en Notificaciones
+
+Modernización: se extiende `useContextMenu` a la pantalla de Notificaciones
+(toda OTA).
+
+- **Long-press / clic derecho** sobre una notificación abre un `ContextMenuSheet`
+  con acciones «Marcar como leída» (si no leída) y «Eliminar».
+- **Borrado de notificaciones**: nuevas funciones `dismissNotification` y
+  `getDismissedNotificationKeys` en `pushNotificationService`. Las eliminadas se
+  quitan del historial local y se registran (id + clave de contenido) como
+  descartadas para que su equivalente de Firebase no reaparezca.
+- Se extrae la fila a un componente `NotificationRow` (necesario para usar el
+  hook por fila respetando las reglas de hooks).
+- **Test nuevo**: `__tests__/dismissNotification.test.ts`.
+- Archivos: `app/notifications.tsx`, `services/pushNotificationService.ts`,
+  `__tests__/dismissNotification.test.ts`.
+
 ## 2026-06-22 13:00 — Logger centralizado y endurecimiento del lint
 
 Tanda de calidad de código (toda OTA, sin código nativo).
