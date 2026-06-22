@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getFirebaseApp } from '../utils/firebaseApp';
@@ -90,7 +91,7 @@ export default function useWordleLeaderboard(
           setGlobalRank(null);
         }
       } catch (e) {
-        console.error('Error loading leaderboard', e);
+        logger.error('Error loading leaderboard', e);
       }
     };
 

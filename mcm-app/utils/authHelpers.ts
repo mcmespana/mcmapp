@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { getDatabase, ref, update, get, set, remove } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import type { DayRecord } from '@/hooks/useContigoHabits';
@@ -59,7 +60,7 @@ export async function writeUserOnLogin(
       await set(createdAtRef, now);
     }
   } catch (err) {
-    console.error('[authHelpers] writeUserOnLogin:', err);
+    logger.error('[authHelpers] writeUserOnLogin:', err);
   }
 }
 
@@ -76,7 +77,7 @@ export async function updateUserMCMData(
       'mcm/onboardingCompleted': mcm.onboardingCompleted,
     });
   } catch (err) {
-    console.error('[authHelpers] updateUserMCMData:', err);
+    logger.error('[authHelpers] updateUserMCMData:', err);
   }
 }
 
@@ -99,7 +100,7 @@ export async function syncContigoHabit(
     const habitRef = ref(db(), `users/${uid}/contigo/habits/${date}`);
     await set(habitRef, stripUndefined(record));
   } catch (err) {
-    console.error('[authHelpers] syncContigoHabit:', err);
+    logger.error('[authHelpers] syncContigoHabit:', err);
   }
 }
 
@@ -122,7 +123,7 @@ export async function syncContigoBookmark(
       await set(bookmarkRef, stripUndefined(bookmark));
     }
   } catch (err) {
-    console.error('[authHelpers] syncContigoBookmark:', err);
+    logger.error('[authHelpers] syncContigoBookmark:', err);
   }
 }
 
@@ -139,6 +140,6 @@ export async function syncContigoRevision(
     const revisionRef = ref(db(), `users/${uid}/contigo/revisions/${date}`);
     await set(revisionRef, stripUndefined(data));
   } catch (err) {
-    console.error('[authHelpers] syncContigoRevision:', err);
+    logger.error('[authHelpers] syncContigoRevision:', err);
   }
 }

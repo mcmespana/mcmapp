@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
@@ -17,7 +18,7 @@ export function useRegisterServiceWorker() {
         .register('/sw.js', { scope: '/' })
         .catch((err) => {
           // No bloqueamos la app si falla el SW, solo lo registramos.
-          console.warn('[PWA] Service worker registration failed:', err);
+          logger.warn('[PWA] Service worker registration failed:', err);
         });
     };
 

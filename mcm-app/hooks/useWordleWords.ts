@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useState, useEffect } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getFirebaseApp } from '../utils/firebaseApp';
@@ -27,7 +28,7 @@ export default function useWordleWords() {
           setWords(dailyWordsLocal);
         }
       } catch (error) {
-        console.error('Error cargando palabras desde Firebase:', error);
+        logger.error('Error cargando palabras desde Firebase:', error);
         setWords(dailyWordsLocal);
       } finally {
         setLoading(false);

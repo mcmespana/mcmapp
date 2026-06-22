@@ -133,6 +133,8 @@ export default function AlbumListScreen() {
         onPress={loadMoreAlbums}
         isDisabled={isLoadingMore}
         style={styles.loadMoreButton}
+        accessibilityRole="button"
+        accessibilityLabel="Cargar más álbumes"
       >
         <Button.Label>Cargar Más</Button.Label>
       </Button>

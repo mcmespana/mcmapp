@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -171,7 +172,7 @@ export default function NotificationsBottomSheet({
       const ids = await getReadNotificationIds();
       setReadIds(new Set(ids));
     } catch (e) {
-      console.error('Error cargando notificaciones:', e);
+      logger.error('Error cargando notificaciones:', e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -259,7 +260,7 @@ export default function NotificationsBottomSheet({
         try {
           router.push(clean as any);
         } catch (e) {
-          console.error('Error navegando:', e);
+          logger.error('Error navegando:', e);
         }
       }, 320);
     },
@@ -413,7 +414,7 @@ export default function NotificationsBottomSheet({
                               router.push(normalizeRoute(btn.url) as any);
                             } catch {}
                           } else {
-                            Linking.openURL(btn.url).catch(console.error);
+                            Linking.openURL(btn.url).catch(logger.error);
                           }
                         }, 320);
                       }}
@@ -660,7 +661,7 @@ function NotificationDetail({
               if (btn.isInternal) {
                 navigateTo(btn.url);
               } else {
-                Linking.openURL(btn.url).catch(console.error);
+                Linking.openURL(btn.url).catch(logger.error);
               }
             }}
           >

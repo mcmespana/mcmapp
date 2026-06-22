@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDatabase, push, ref, set } from 'firebase/database';
@@ -97,7 +98,7 @@ export default function useWordleStats() {
         place: resolved.delegationLabel,
       });
     } catch (e) {
-      console.error('Error saving wordle result', e);
+      logger.error('Error saving wordle result', e);
     }
   };
 

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React from 'react';
 import { View, Text, StyleSheet, Linking, Platform } from 'react-native';
 import { Card, Button } from 'heroui-native';
@@ -49,7 +50,7 @@ const EventItem = React.memo(function EventItem({
   const handleMapsPress = () => {
     if (event.maps) {
       Linking.openURL(event.maps).catch((err) =>
-        console.error('Error opening maps:', err),
+        logger.error('Error opening maps:', err),
       );
     }
   };
@@ -139,6 +140,8 @@ const EventItem = React.memo(function EventItem({
                   size="sm"
                   onPress={handleMaterialsPress}
                   style={styles.metaBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Materiales de ${event.nombre}`}
                 >
                   <MaterialIcons
                     name="library-books"
@@ -156,6 +159,8 @@ const EventItem = React.memo(function EventItem({
                   size="sm"
                   onPress={handleMapsPress}
                   style={styles.metaBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Ver ${event.lugar || event.nombre} en Maps`}
                 >
                   <MaterialIcons
                     name="map"

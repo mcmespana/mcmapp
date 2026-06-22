@@ -5,6 +5,7 @@
  * (y para que coincida exactamente con la transposición real que aplica
  * `useSongProcessor`).
  */
+import { logger } from '@/utils/logger';
 import { ChordProParser, ChordLyricsPair } from 'chordsheetjs';
 
 const cache = new Map<string, string>();
@@ -60,7 +61,7 @@ export function transposeKey(
       }
     }
   } catch (e) {
-    console.warn('transposeKey error', e);
+    logger.warn('transposeKey error', e);
   }
   return k;
 }

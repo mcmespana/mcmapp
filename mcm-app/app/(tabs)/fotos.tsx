@@ -1,4 +1,5 @@
 // app/(tabs)/fotos.tsx
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -119,14 +120,14 @@ export default function FotosScreen() {
       try {
         await Linking.openURL(albumUrl);
       } catch (error) {
-        console.error('Failed to open URL:', error);
+        logger.error('Failed to open URL:', error);
         Alert.alert(
           'Error',
           'No se ha podido abrir el link, qué pena más grande',
         );
       }
     } else {
-      console.warn(`Don't know how to open this URL: ${albumUrl}`);
+      logger.warn(`Don't know how to open this URL: ${albumUrl}`);
       Alert.alert('Invalid Link', `Esta URL es un poco raruna: ${albumUrl}`);
     }
   };

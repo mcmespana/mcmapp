@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -89,7 +90,7 @@ export default function SuggestSongModal({
       onClose();
       onSuccess();
     } catch (error) {
-      console.error('Error enviando sugerencia:', error);
+      logger.error('Error enviando sugerencia:', error);
       setErrorMsg('No se pudo enviar. Inténtalo de nuevo.');
     } finally {
       setIsSubmitting(false);

@@ -1,3 +1,4 @@
+import { radii } from '@/constants/uiStyles';
 import React, { useCallback, useMemo, useRef } from 'react';
 import {
   View,
@@ -142,7 +143,7 @@ const createStyles = (isDark: boolean) =>
       alignItems: 'center',
       paddingVertical: 12,
       paddingHorizontal: 12,
-      borderRadius: 12,
+      borderRadius: radii.md,
       gap: 14,
     },
     itemDisabled: {

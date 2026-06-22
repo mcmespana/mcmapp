@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
@@ -183,7 +184,7 @@ export default function EvangelioScreen() {
         }
       }
     } catch (e) {
-      console.error('Failed to save bookmark', e);
+      logger.error('Failed to save bookmark', e);
     }
   };
 
@@ -223,7 +224,7 @@ export default function EvangelioScreen() {
   const openSource = () => {
     if (readings?.evangelio?.url) {
       Linking.openURL(readings.evangelio.url).catch((err) =>
-        console.error("Couldn't open URL", err),
+        logger.error("Couldn't open URL", err),
       );
     }
   };

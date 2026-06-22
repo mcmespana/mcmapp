@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   useCallback,
   useEffect,
@@ -45,6 +46,9 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 
 import { h } from '@/utils/haptics';
 import PlaylistRow from '@/components/playlist/PlaylistRow';
+import ContextMenuSheet, {
+  ContextMenuAction,
+} from '@/components/ContextMenuSheet';
 import ReorderableList, {
   ReorderableListReorderEvent,
   useReorderableDrag,
@@ -516,7 +520,7 @@ const SelectedSongsScreen: React.FC = () => {
       try {
         Share.share({ message: text });
       } catch (e) {
-        console.error(e);
+        logger.error(e);
       }
     }
   }, [buildShareText, toast]);
@@ -574,7 +578,7 @@ const SelectedSongsScreen: React.FC = () => {
       setShowExportFileModal(false);
       toast.show({ label: 'Playlist exportada' });
     } catch (err) {
-      console.error('Error exportando playlist', err);
+      logger.error('Error exportando playlist', err);
       setShowExportFileModal(false);
       toast.show({ label: 'Error al exportar' });
     }
@@ -684,7 +688,7 @@ const SelectedSongsScreen: React.FC = () => {
         setShowExportPdfModal(false);
         toast.show({ label: 'Tenemos tu PDF recién sacado del orno' });
       } catch (err) {
-        console.error('Error exportando PDF', err);
+        logger.error('Error exportando PDF', err);
         toast.show({
           label: 'Error al generar el PDF, sorry, lo arreglaremos',
         });
@@ -816,7 +820,7 @@ const SelectedSongsScreen: React.FC = () => {
         askMergeOrReplace(songs);
       }
     } catch (err) {
-      console.error('Error importando playlist', err);
+      logger.error('Error importando playlist', err);
       toast.show({ label: 'Error al importar' });
     }
   }, [importFromJson, askMergeOrReplace, toast]);
@@ -1044,6 +1048,9 @@ const SelectedSongsScreen: React.FC = () => {
   );
 
   // --- Reorden manual -------------------------------------------------------
+
+  // Canción sobre la que está abierto el menú contextual (clic derecho en web).
+  const [menuFilename, setMenuFilename] = useState<string | null>(null);
 
   const handleMoveUp = useCallback(
     (filename: string) => {
@@ -1479,6 +1486,7 @@ const SelectedSongsScreen: React.FC = () => {
     canMoveDown: index < flatSelectedSongs.length - 1,
     onMoveUp: () => handleMoveUp(item.filename),
     onMoveDown: () => handleMoveDown(item.filename),
+    onContextMenu: () => setMenuFilename(item.filename),
     isNowPlaying: choir.session?.current?.filename === item.filename,
     onPress: () => handleSongPress(item),
     onRemove: () => removeSong(item.filename),
@@ -1563,6 +1571,47 @@ const SelectedSongsScreen: React.FC = () => {
             : 'Acciones'
         }
       />
+
+      {/* Menú contextual (clic derecho en web) sobre una canción de la lista */}
+      {(() => {
+        const idx = menuFilename
+          ? flatSelectedSongs.findIndex((s) => s.filename === menuFilename)
+          : -1;
+        const song = idx >= 0 ? flatSelectedSongs[idx] : null;
+        const actions: ContextMenuAction[] = song
+          ? [
+              {
+                key: 'up',
+                label: 'Subir',
+                icon: 'keyboard-arrow-up',
+                disabled: idx <= 0,
+                onPress: () => handleMoveUp(song.filename),
+              },
+              {
+                key: 'down',
+                label: 'Bajar',
+                icon: 'keyboard-arrow-down',
+                disabled: idx >= flatSelectedSongs.length - 1,
+                onPress: () => handleMoveDown(song.filename),
+              },
+              {
+                key: 'remove',
+                label: 'Quitar de la lista',
+                icon: 'remove-circle-outline',
+                destructive: true,
+                onPress: () => removeSong(song.filename),
+              },
+            ]
+          : [];
+        return (
+          <ContextMenuSheet
+            visible={menuFilename !== null}
+            onClose={() => setMenuFilename(null)}
+            title={song?.title.replace(/^\d+\.\s*/, '')}
+            actions={actions}
+          />
+        );
+      })()}
 
       {codeDialog ? (
         <CodeInputModal

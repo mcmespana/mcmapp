@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useState, useEffect } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
@@ -157,7 +158,7 @@ export function useDailyReadings(dateStr: string) {
           setReadings(null);
         }
       } catch (err) {
-        console.error('Failed to load daily readings:', err);
+        logger.error('Failed to load daily readings:', err);
         if (isMounted)
           setError(err instanceof Error ? err : new Error('Unknown error'));
       } finally {

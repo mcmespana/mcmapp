@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   useLayoutEffect,
   ComponentProps,
@@ -521,7 +522,7 @@ export default function Home() {
     if (btn.isInternal) {
       router.push(normalizeRoute(btn.url) as any);
     } else {
-      Linking.openURL(btn.url).catch((e) => console.error(e));
+      Linking.openURL(btn.url).catch((e) => logger.error(e));
     }
   };
 

@@ -12,7 +12,17 @@ module.exports = defineConfig([
       prettier: prettierPlugin,
     },
     rules: {
-      'prettier/prettier': 'warn',
+      'prettier/prettier': 'error',
+      // El logging debe pasar por el logger centralizado (utils/logger.ts),
+      // que controla el entorno y el reporte a Sentry. El propio logger usa
+      // console internamente (excepción abajo).
+      'no-console': 'warn',
+    },
+  },
+  {
+    files: ['utils/logger.ts'],
+    rules: {
+      'no-console': 'off',
     },
   },
   prettierConfig,

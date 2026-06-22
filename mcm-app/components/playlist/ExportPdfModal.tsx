@@ -17,6 +17,7 @@
  * Switch de heroui-native se pintaba invisible dentro de este Modal RN
  * (pista clara sobre tarjeta blanca / estilos Tailwind sin resolver).
  */
+import { radii } from '@/constants/uiStyles';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
@@ -102,7 +103,7 @@ const toggleStyles = StyleSheet.create({
   thumb: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: '#FFFFFF',
     ...Platform.select({
       web: { boxShadow: '0 1px 3px rgba(0,0,0,0.25)' },
@@ -409,7 +410,7 @@ const createStyles = (isDark: boolean) =>
     btn: {
       flex: 1,
       paddingVertical: 12,
-      borderRadius: 12,
+      borderRadius: radii.md,
       alignItems: 'center',
       justifyContent: 'center',
     },

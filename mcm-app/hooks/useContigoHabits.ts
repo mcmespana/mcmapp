@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,7 +39,7 @@ export function useContigoHabits() {
         setRecords(JSON.parse(stored));
       }
     } catch (err) {
-      console.error('Failed to load contigo habits:', err);
+      logger.error('Failed to load contigo habits:', err);
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +64,7 @@ export function useContigoHabits() {
         syncContigoHabit(authUser.uid, changedDate, newRecords[changedDate]);
       }
     } catch (err) {
-      console.error('Failed to save contigo habits:', err);
+      logger.error('Failed to save contigo habits:', err);
     }
   };
 

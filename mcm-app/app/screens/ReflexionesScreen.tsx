@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
@@ -227,7 +228,7 @@ export default function ReflexionesScreen() {
       setList([nuevo, ...list]);
       h.formSuccess();
     } catch (e) {
-      console.error('Error adding post', e);
+      logger.error('Error adding post', e);
     }
     setShowForm(false);
     setTitulo('');

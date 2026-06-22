@@ -4,6 +4,7 @@
  * La validación es local: se compara con `expectedPassword` y, si
  * coincide, se llama a `onSuccess`.
  */
+import { radii } from '@/constants/uiStyles';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
@@ -187,7 +188,7 @@ const createStyles = (isDark: boolean) =>
     btn: {
       flex: 1,
       paddingVertical: 12,
-      borderRadius: 12,
+      borderRadius: radii.md,
       alignItems: 'center',
       justifyContent: 'center',
     },
