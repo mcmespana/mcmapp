@@ -29,6 +29,7 @@ import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useHeaderHeight } from '@react-navigation/elements';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import {
@@ -155,6 +156,13 @@ const SelectedSongsScreen: React.FC = () => {
   const scheme = useColorScheme() || 'light';
   const isDark = scheme === 'dark';
   const layout = useResponsiveLayout();
+  // En iOS el header es transparente (`headerTransparent`) y las FlatList lo
+  // compensan con `contentInsetAdjustmentBehavior="automatic"`. La
+  // `ReorderableList` (modo "Orden ajustado") NO respeta ese inset, así que su
+  // contenido arrancaba bajo el header y al arrastrar la primera canción
+  // quedaba tapada. Le damos el inset superior explícito.
+  const headerHeight = useHeaderHeight();
+  const reorderableTopInset = Platform.OS === 'ios' ? headerHeight : 0;
   const styles = useMemo(
     () => createStyles(scheme, layout.isWide, layout.readableMaxWidth),
     [scheme, layout.isWide, layout.readableMaxWidth],
@@ -1544,8 +1552,11 @@ const SelectedSongsScreen: React.FC = () => {
             renderItem={renderDraggableManualItem}
             keyExtractor={(it) => it.filename}
             ListHeaderComponent={renderHeaderBar()}
-            contentContainerStyle={styles.listContentContainer}
-            contentInsetAdjustmentBehavior="automatic"
+            contentContainerStyle={[
+              styles.listContentContainer,
+              { paddingTop: reorderableTopInset },
+            ]}
+            contentInsetAdjustmentBehavior="never"
             showsVerticalScrollIndicator={false}
           />
         )

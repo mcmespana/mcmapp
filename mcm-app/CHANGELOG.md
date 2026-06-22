@@ -18,6 +18,18 @@
 
 ---
 
+## 2026-06-22 15:10 — Fix: Playlist "Orden ajustado" tapada por el header (iOS)
+
+En iOS el header de la pantalla es transparente y las `FlatList` lo compensan
+con `contentInsetAdjustmentBehavior="automatic"`, pero la `ReorderableList`
+(modo «Orden ajustado», drag & drop) no respeta ese inset: su contenido
+arrancaba bajo el header y al arrastrar la primera canción quedaba tapada.
+
+- Se le da a la `ReorderableList` un `paddingTop` explícito igual a la altura
+  del header (`useHeaderHeight`, solo iOS) y `contentInsetAdjustmentBehavior="never"`.
+- No se toca el header ni las demás vistas (categoría / web siguen igual).
+- Archivo: `app/screens/SelectedSongsScreen.tsx`.
+
 ## 2026-06-22 14:45 — Accesibilidad: cobertura de pantallas pendientes
 
 Se añaden `accessibilityLabel`/`accessibilityRole` (y algún `accessibilityHint`)
