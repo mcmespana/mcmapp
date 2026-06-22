@@ -18,6 +18,23 @@
 
 ---
 
+## 2026-06-22 14:30 — Carismochito: onboarding, salir con confirmación
+
+Ajustes de comportamiento del Modo Carismochito (OTA). Ver
+`docs/planes/PLAN_CARISMOCHITO.md` §1 y §2.
+
+- **Onboarding/explicación**: tras la cuenta atrás de activación (primera vez)
+  se abre un modal de bienvenida que adelanta lo que vendrá (encontrar a
+  Carismochito por la app, «próximamente coleccionarlos…») sin destriparlo.
+  Persistido en `@carismochito_onboarding_seen`; reabrible desde el badge.
+- **El badge ya no desactiva**: al tocarlo abre la explicación (antes salía
+  del modo, poco intuitivo).
+- **Salir con confirmación + más agitado**: para salir hay que dar un par de
+  sacudidas fuertes (sin el semáforo de carga), que abren un diálogo
+  «¿Salir del Modo Carismochito?». Sustituye al desactivado inmediato.
+- Archivos: `contexts/CarismochitoContext.tsx`,
+  `components/CarismochitoOverlay.tsx`, nuevo `components/CarismochitoDialogs.tsx`.
+
 ## 2026-06-22 13:45 — Menú contextual en la Playlist (web)
 
 Modernización: `useContextMenu` también en la pantalla de Playlist

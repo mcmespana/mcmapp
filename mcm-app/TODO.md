@@ -45,10 +45,10 @@
 
 ## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
 
-- [ ] **Confirmar antes de desactivar** + exigir **más agitado** para salir.
-- [ ] **El badge no debe desactivar al tocarlo** → que abra la explicación.
-- [ ] **Onboarding/explicación** del modo (qué es, teaser "coleccionar
-      Carismochitos", "próximamente más"), persistido.
+> Hecho (jun-2026, ver CHANGELOG): confirmar antes de desactivar + salir con un
+> par de sacudidas fuertes (sin semáforo), el badge ahora abre la explicación, y
+> onboarding persistido con teaser de futuro.
+
 - [ ] **Carismochito aparece en (casi) todas las pantallas** (overlay global),
       excepto materiales/profundiza de evento y canción a pantalla completa.
 - [ ] **Colección + contador** al tocar la mascota (animación especial); guardado
