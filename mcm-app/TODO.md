@@ -114,7 +114,7 @@
       revertirlo al desactivar el modo); ⚠️ en Android el swap es tosco (ocurre al
       pasar a segundo plano y puede reiniciar atajos). Encaja regular con un modo
       efímero por agitado — decidir si compensa.
-- [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales. Falta auditar Fotos (`AlbumListScreen`), Materiales, Horario, Comida, MasHome y los componentes `AlbumCard`/`EventItem`.
+- [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales, y (jun-2026) Fotos (`AlbumListScreen`/`AlbumCard`), Materiales, Comida, MasHome y `EventItem`. Horario es de solo lectura (sin interactivos). Pendiente: validar en dispositivo con VoiceOver/TalkBack y revisar pantallas/flujos secundarios.
 
 ---
 

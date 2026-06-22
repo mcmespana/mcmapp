@@ -29,8 +29,17 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const activeStyles = createStyles(width);
+  const a11yLabel = [`Álbum: ${album.title}`, album.location, album.date]
+    .filter(Boolean)
+    .join(', ');
   return (
-    <PressableFeedback style={activeStyles.card} onPress={onPress}>
+    <PressableFeedback
+      style={activeStyles.card}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      accessibilityHint="Abre las fotos del álbum"
+    >
       <PressableFeedback.Highlight />
       {/* Image outline: hairline neutro (negro/10 claro · blanco/10 oscuro)
           para un borde nítido y consistente alrededor de la foto. */}

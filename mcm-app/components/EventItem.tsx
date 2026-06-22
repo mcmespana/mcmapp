@@ -140,6 +140,8 @@ const EventItem = React.memo(function EventItem({
                   size="sm"
                   onPress={handleMaterialsPress}
                   style={styles.metaBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Materiales de ${event.nombre}`}
                 >
                   <MaterialIcons
                     name="library-books"
@@ -157,6 +159,8 @@ const EventItem = React.memo(function EventItem({
                   size="sm"
                   onPress={handleMapsPress}
                   style={styles.metaBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Ver ${event.lugar || event.nombre} en Maps`}
                 >
                   <MaterialIcons
                     name="map"

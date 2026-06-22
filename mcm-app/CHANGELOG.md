@@ -18,6 +18,20 @@
 
 ---
 
+## 2026-06-22 14:45 — Accesibilidad: cobertura de pantallas pendientes
+
+Se añaden `accessibilityLabel`/`accessibilityRole` (y algún `accessibilityHint`)
+en las pantallas/componentes que faltaban (OTA):
+
+- Fotos: `AlbumCard` (label con título + lugar/fecha) y botón «Cargar Más» de
+  `AlbumListScreen`.
+- `MasHomeScreen`: tarjetas de navegación + enlace de feedback.
+- `MaterialesScreen` y `ComidaScreen`: tarjetas de actividad/opción.
+- `EventItem`: botones «Materiales» y «Ver en Maps».
+- (Horario es de solo lectura, sin elementos interactivos.)
+
+Pendiente: validación en dispositivo con VoiceOver/TalkBack.
+
 ## 2026-06-22 14:30 — Carismochito: onboarding, salir con confirmación
 
 Ajustes de comportamiento del Modo Carismochito (OTA). Ver
