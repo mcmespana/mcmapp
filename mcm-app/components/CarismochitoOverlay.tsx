@@ -16,6 +16,10 @@ import { useCarismochito } from '@/contexts/CarismochitoContext';
 import { useShakeDetector } from '@/hooks/useShakeDetector';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
 import ChargeDots from '@/components/CarismochitoChargeDots';
+import {
+  CarismochitoOnboarding,
+  CarismochitoExitConfirm,
+} from '@/components/CarismochitoDialogs';
 
 /* Verdes del HUD del modo (distintos tonos). */
 const G = '#1B9E4B'; // verde principal
@@ -337,7 +341,7 @@ function SidePeekMascot() {
 /** Tiempo que el badge superior permanece visible antes de retirarse solo. */
 const BADGE_VISIBLE_MS = 3800;
 
-function FloatingBadge({ onDeactivate }: { onDeactivate: () => void }) {
+function FloatingBadge({ onOpenInfo }: { onOpenInfo: () => void }) {
   const insets = useSafeAreaInsets();
   const enter = useRef(new Animated.Value(0)).current;
   const [hidden, setHidden] = useState(false);
@@ -379,7 +383,9 @@ function FloatingBadge({ onDeactivate }: { onDeactivate: () => void }) {
       ]}
     >
       <Pressable
-        onPress={onDeactivate}
+        onPress={onOpenInfo}
+        accessibilityRole="button"
+        accessibilityLabel="Modo Carismochito activo. Tócame para saber más"
         style={({ pressed }) => [
           styles.badge,
           pressed && { transform: [{ scale: 0.97 }], opacity: 0.92 },
@@ -389,7 +395,7 @@ function FloatingBadge({ onDeactivate }: { onDeactivate: () => void }) {
         <CarismochitoMascot size={38} dance={1} />
         <View style={styles.badgeText}>
           <Text style={styles.badgeTitle}>MODO CARISMOCHITO</Text>
-          <Text style={styles.badgeSubtitle}>Agita o tócame para salir</Text>
+          <Text style={styles.badgeSubtitle}>Tócame para saber más</Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -410,7 +416,12 @@ export default function CarismochitoOverlay() {
     shakesNeeded,
     toggleByShake,
     cancelCountdown,
-    deactivate,
+    onboardingVisible,
+    openOnboarding,
+    dismissOnboarding,
+    exitConfirmVisible,
+    confirmExit,
+    cancelExit,
   } = useCarismochito();
 
   // Listener de shake siempre activo — el contexto decide qué hacer según estado.
@@ -423,7 +434,7 @@ export default function CarismochitoOverlay() {
           restaurar el modo al reabrir la app. */}
       {state === 'active' && freshlyActivated ? <CelebrationConfetti /> : null}
       {state === 'active' && freshlyActivated ? (
-        <FloatingBadge onDeactivate={deactivate} />
+        <FloatingBadge onOpenInfo={openOnboarding} />
       ) : null}
       {state === 'idle' && chargeCount > 0 ? (
         <ChargeDots count={chargeCount} total={shakesNeeded} />
@@ -437,6 +448,18 @@ export default function CarismochitoOverlay() {
           />
         </View>
       ) : null}
+      {/* Explicación / onboarding del modo (primera activación o al tocar el
+          badge). */}
+      <CarismochitoOnboarding
+        visible={onboardingVisible}
+        onDismiss={dismissOnboarding}
+      />
+      {/* Confirmación antes de salir (tras un par de sacudidas fuertes). */}
+      <CarismochitoExitConfirm
+        visible={exitConfirmVisible}
+        onConfirm={confirmExit}
+        onCancel={cancelExit}
+      />
     </>
   );
 }

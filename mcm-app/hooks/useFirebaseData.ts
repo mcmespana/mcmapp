@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useEffect, useState } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -126,7 +127,7 @@ export function useFirebaseData<T>(
           if (isMounted) setData(remoteData);
         }
       } catch (e) {
-        console.error('Error loading firebase data', e);
+        logger.error('Error loading firebase data', e);
       } finally {
         if (isMounted) setLoading(false);
       }

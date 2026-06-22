@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 import { ChordProParser, HtmlDivFormatter, Song } from 'chordsheetjs';
@@ -78,7 +79,7 @@ function parseChordPro(chordPro: string): Song | null {
       .replace(/\{transpose:.*\}\n?/gi, '');
     song = new ChordProParser().parse(cleaned);
   } catch (e) {
-    console.error('Error parseando ChordPro en useSongProcessor:', e);
+    logger.error('Error parseando ChordPro en useSongProcessor:', e);
     song = null;
   }
   if (PARSED_CACHE.size >= PARSED_CACHE_LIMIT) {
@@ -649,7 +650,7 @@ export const useSongProcessor = ({
       finalHtml = convertHtmlChords(finalHtml, notation);
       setSongHtml(finalHtml);
     } catch (err) {
-      console.error('Error procesando canción en useSongProcessor:', err);
+      logger.error('Error procesando canción en useSongProcessor:', err);
       setSongHtml('❌ Error preparando la canción.');
     } finally {
       setIsLoadingSong(false);

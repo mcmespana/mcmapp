@@ -18,6 +18,85 @@
 
 ---
 
+## 2026-06-22 14:45 — Accesibilidad: cobertura de pantallas pendientes
+
+Se añaden `accessibilityLabel`/`accessibilityRole` (y algún `accessibilityHint`)
+en las pantallas/componentes que faltaban (OTA):
+
+- Fotos: `AlbumCard` (label con título + lugar/fecha) y botón «Cargar Más» de
+  `AlbumListScreen`.
+- `MasHomeScreen`: tarjetas de navegación + enlace de feedback.
+- `MaterialesScreen` y `ComidaScreen`: tarjetas de actividad/opción.
+- `EventItem`: botones «Materiales» y «Ver en Maps».
+- (Horario es de solo lectura, sin elementos interactivos.)
+
+Pendiente: validación en dispositivo con VoiceOver/TalkBack.
+
+## 2026-06-22 14:30 — Carismochito: onboarding, salir con confirmación
+
+Ajustes de comportamiento del Modo Carismochito (OTA). Ver
+`docs/planes/PLAN_CARISMOCHITO.md` §1 y §2.
+
+- **Onboarding/explicación**: tras la cuenta atrás de activación (primera vez)
+  se abre un modal de bienvenida que adelanta lo que vendrá (encontrar a
+  Carismochito por la app, «próximamente coleccionarlos…») sin destriparlo.
+  Persistido en `@carismochito_onboarding_seen`; reabrible desde el badge.
+- **El badge ya no desactiva**: al tocarlo abre la explicación (antes salía
+  del modo, poco intuitivo).
+- **Salir con confirmación + más agitado**: para salir hay que dar un par de
+  sacudidas fuertes (sin el semáforo de carga), que abren un diálogo
+  «¿Salir del Modo Carismochito?». Sustituye al desactivado inmediato.
+- Archivos: `contexts/CarismochitoContext.tsx`,
+  `components/CarismochitoOverlay.tsx`, nuevo `components/CarismochitoDialogs.tsx`.
+
+## 2026-06-22 13:45 — Menú contextual en la Playlist (web)
+
+Modernización: `useContextMenu` también en la pantalla de Playlist
+(`SelectedSongsScreen`).
+
+- **Clic derecho en web** sobre una canción abre un `ContextMenuSheet` con
+  acciones «Subir» / «Bajar» / «Quitar de la lista».
+- Se limita a web a propósito: en nativo el long-press ya inicia el
+  arrastre (drag & drop) de `react-native-reorderable-list`, así que un menú
+  por long-press chocaría con el gesto. En nativo siguen disponibles drag,
+  swipe-para-quitar y los botones ↑/↓.
+- Archivos: `app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/PlaylistRow.tsx`.
+
+## 2026-06-22 13:30 — Menú contextual y borrado en Notificaciones
+
+Modernización: se extiende `useContextMenu` a la pantalla de Notificaciones
+(toda OTA).
+
+- **Long-press / clic derecho** sobre una notificación abre un `ContextMenuSheet`
+  con acciones «Marcar como leída» (si no leída) y «Eliminar».
+- **Borrado de notificaciones**: nuevas funciones `dismissNotification` y
+  `getDismissedNotificationKeys` en `pushNotificationService`. Las eliminadas se
+  quitan del historial local y se registran (id + clave de contenido) como
+  descartadas para que su equivalente de Firebase no reaparezca.
+- Se extrae la fila a un componente `NotificationRow` (necesario para usar el
+  hook por fila respetando las reglas de hooks).
+- **Test nuevo**: `__tests__/dismissNotification.test.ts`.
+- Archivos: `app/notifications.tsx`, `services/pushNotificationService.ts`,
+  `__tests__/dismissNotification.test.ts`.
+
+## 2026-06-22 13:00 — Logger centralizado y endurecimiento del lint
+
+Tanda de calidad de código (toda OTA, sin código nativo).
+
+- **Nuevo `utils/logger.ts`**: logger centralizado con niveles
+  (`debug`/`info`/`log`/`warn`/`error`). En producción silencia
+  `debug`/`info`/`log` y mantiene `warn`/`error`. Punto único de enganche para
+  crash reporting vía `setReporter` (listo para Sentry, ver MEJORAS.md §8.1).
+- **Migrados los ~119 `console.*`** de la base de código (45 ficheros de
+  `app/`, `components/`, `hooks/`, `utils/`, `contexts/`, `services/`,
+  `notifications/`) a `logger.*`.
+- **ESLint más estricto**: `prettier/prettier` pasa de `warn` a `error` y se
+  añade `no-console: warn` (excepto en `utils/logger.ts`).
+- **Test nuevo**: `__tests__/logger.test.ts` (gating por entorno + reporter).
+- Archivos: `utils/logger.ts`, `eslint.config.js`, `__tests__/logger.test.ts`
+  y los 45 ficheros migrados.
+
 ## 2026-06-21 22:30 — UI nativa: headers, cápsulas glass y campos unificados
 
 Pasada de unificación visual hacia componentes nativos/coherentes (toda OTA,

@@ -15,6 +15,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Platform,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -22,6 +23,7 @@ import { h } from '@/utils/haptics';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useContextMenu } from '@/hooks/useContextMenu';
 import { convertChord } from '@/utils/chordNotation';
 import { transposeKey, transposeLabel } from '@/utils/transposeKey';
 
@@ -53,6 +55,11 @@ interface Props {
    * de la lista reordenable).
    */
   onLongPress?: () => void;
+  /**
+   * Abre un menú contextual (subir / bajar / quitar). Solo se cablea en web
+   * (clic derecho); en nativo el long-press ya está ocupado por el arrastre.
+   */
+  onContextMenu?: () => void;
   /** Marca esta canción como la actual en una sesión de coro. */
   isNowPlaying?: boolean;
 }
@@ -70,6 +77,7 @@ const PlaylistRow: React.FC<Props> = ({
   onPress,
   onRemove,
   onLongPress,
+  onContextMenu,
   isNowPlaying,
 }) => {
   const scheme = useColorScheme();
@@ -77,6 +85,11 @@ const PlaylistRow: React.FC<Props> = ({
   const styles = useMemo(() => createStyles(isDark), [isDark]);
   const { settings } = useSettings();
   const { notation } = settings;
+
+  // Menú contextual: en nativo el long-press inicia el arrastre, así que solo
+  // activamos el clic derecho en web (donde no hay drag & drop).
+  const contextMenu = useContextMenu(onContextMenu);
+  const webContextMenuProps = Platform.OS === 'web' ? contextMenu : {};
 
   const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
   const originalKey = song.key ? song.key.toUpperCase() : '';
@@ -133,6 +146,7 @@ const PlaylistRow: React.FC<Props> = ({
           delayLongPress={250}
           style={styles.inner}
           activeOpacity={0.6}
+          {...webContextMenuProps}
         >
           <View style={styles.leftSection}>
             {position !== undefined ? (

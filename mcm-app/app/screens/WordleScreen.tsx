@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   useMemo,
   useState,
@@ -117,7 +118,7 @@ export default function WordleScreen() {
           setStoredGuesses([]);
         }
       } catch (e) {
-        console.error('Error loading progress:', e);
+        logger.error('Error loading progress:', e);
         setStoredGuesses([]);
       } finally {
         setProgressLoaded(true);
@@ -135,7 +136,7 @@ export default function WordleScreen() {
         const completed = await AsyncStorage.getItem(lockKey);
         setIsGameLocked(completed === 'true');
       } catch (error) {
-        console.error('Error checking game lock:', error);
+        logger.error('Error checking game lock:', error);
       }
     };
     checkGameLock();
@@ -145,14 +146,14 @@ export default function WordleScreen() {
   useEffect(() => {
     if (!progressLoaded) return;
     AsyncStorage.setItem(progressKey, JSON.stringify(guesses)).catch((e) =>
-      console.error('Error saving progress:', e),
+      logger.error('Error saving progress:', e),
     );
   }, [guesses, progressKey, progressLoaded]);
 
   // Limpiar progreso cuando el juego termine
   useEffect(() => {
     if (status === 'won' || status === 'lost') {
-      AsyncStorage.removeItem(progressKey).catch(console.error);
+      AsyncStorage.removeItem(progressKey).catch(logger.error);
     }
   }, [status, progressKey]);
 
@@ -249,7 +250,7 @@ export default function WordleScreen() {
       // Si gana, bloquear el juego hasta la siguiente palabra
       if (status === 'won') {
         const lockKey = `wordle_completed_${playKey}`;
-        AsyncStorage.setItem(lockKey, 'true').catch(console.error);
+        AsyncStorage.setItem(lockKey, 'true').catch(logger.error);
         setIsGameLocked(true);
 
         // Copiar automáticamente el mensaje al portapapeles y mostrar alert
@@ -266,7 +267,7 @@ export default function WordleScreen() {
               ),
             )
             .catch((error) =>
-              console.error('Error copiando al portapapeles:', error),
+              logger.error('Error copiando al portapapeles:', error),
             );
         }, 1000); // Esperar 1 segundo para que se vea el confeti primero
 
@@ -294,7 +295,7 @@ export default function WordleScreen() {
             if (idx !== -1) setRank(idx + 1);
           }
         } catch (e) {
-          console.error('Error ranking', e);
+          logger.error('Error ranking', e);
         }
       };
       fetchRank();

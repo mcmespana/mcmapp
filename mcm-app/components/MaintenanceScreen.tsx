@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React from 'react';
 import {
   View,
@@ -47,7 +48,7 @@ export default function MaintenanceScreen({
 
   const openStore = () => {
     const url = Platform.OS === 'ios' ? STORE_URLS.ios : STORE_URLS.android;
-    Linking.openURL(url).catch((e) => console.error(e));
+    Linking.openURL(url).catch((e) => logger.error(e));
   };
 
   return (

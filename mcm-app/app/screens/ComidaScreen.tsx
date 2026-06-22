@@ -81,6 +81,8 @@ export default function ComidaScreen() {
                   })
                 }
                 activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={opt.label}
               >
                 <Text style={styles.icon}>{opt.icon}</Text>
                 <Text style={styles.label}>{opt.label}</Text>

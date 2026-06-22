@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import {
   Platform,
@@ -125,7 +126,7 @@ export default function AppFeedbackModal({
       onClose();
       onSuccess?.();
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      logger.error('Error submitting feedback:', error);
       setErrorMsg('No se pudo enviar. Inténtalo de nuevo.');
     } finally {
       setIsSubmitting(false);

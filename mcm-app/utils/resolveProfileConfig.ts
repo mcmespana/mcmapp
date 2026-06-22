@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import type {
   Delegation,
   ProfileBase,
@@ -43,7 +44,7 @@ function uniq<T>(arr: readonly T[]): T[] {
 
 function warn(message: string) {
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
-    console.warn(`[profileConfig] ${message}`);
+    logger.warn(`[profileConfig] ${message}`);
   }
 }
 

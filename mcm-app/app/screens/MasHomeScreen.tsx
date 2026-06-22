@@ -201,6 +201,9 @@ export default function MasHomeScreen() {
             {navigationItems.map((item, idx) => (
               <PressableFeedback
                 key={idx}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
+                accessibilityHint={item.subtitle}
                 style={[
                   styles.card,
                   useTwoColumns && styles.cardGridItem,
@@ -302,6 +305,8 @@ export default function MasHomeScreen() {
             <TouchableOpacity
               onPress={() => setFeedbackVisible(true)}
               style={styles.feedbackLink}
+              accessibilityRole="button"
+              accessibilityLabel="Reportar un fallo o sugerencia"
             >
               <Text
                 style={[

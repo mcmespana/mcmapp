@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useEffect, useState, useLayoutEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
@@ -262,11 +263,11 @@ export default function SongDetailScreen({
       setOriginalChordPro(content);
       setIsFileLoading(false);
     } else if (filename) {
-      console.error('Error: Contenido de la canción no proporcionado.');
+      logger.error('Error: Contenido de la canción no proporcionado.');
       setOriginalChordPro(null);
       setIsFileLoading(false);
     } else {
-      console.error('Error: Sin contenido ni filename.');
+      logger.error('Error: Sin contenido ni filename.');
       setOriginalChordPro(null);
       setIsFileLoading(false);
     }
@@ -442,7 +443,7 @@ export default function SongDetailScreen({
       setArrModalVisible(false);
       setArrLineIndex(null);
     } catch (err) {
-      console.error('Error guardando arreglo:', err);
+      logger.error('Error guardando arreglo:', err);
       // El render local ya se aplicó; avisamos de que no se pudo sincronizar.
       setArrError(
         'Se añadió en el dispositivo, pero no se pudo sincronizar. Reintenta.',

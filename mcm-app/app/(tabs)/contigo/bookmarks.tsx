@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -57,7 +58,7 @@ export default function BookmarksScreen() {
         setBookmarks([]);
       }
     } catch (e) {
-      console.error('bookmarks load', e);
+      logger.error('bookmarks load', e);
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +76,7 @@ export default function BookmarksScreen() {
     try {
       await AsyncStorage.setItem(STORAGE, JSON.stringify(next));
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     }
   };
 

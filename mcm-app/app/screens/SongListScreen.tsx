@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import {
   useState,
   useEffect,
@@ -64,10 +65,10 @@ const getSongsData = (data: any): Record<string, SongCategory> => {
     if (Array.isArray(data)) {
       return { All: { categoryTitle: 'All', songs: data } };
     }
-    console.error('Unexpected songs data format:', data);
+    logger.error('Unexpected songs data format:', data);
     return {};
   } catch (error) {
-    console.error('Error parsing songs data:', error);
+    logger.error('Error parsing songs data:', error);
     return {};
   }
 };
@@ -292,7 +293,7 @@ export default function SongsListScreen({
           }
         }
       } catch (err) {
-        console.error('Error loading songs:', err);
+        logger.error('Error loading songs:', err);
         setError('Error al cargar las canciones, lo sentimos :(');
         setSongs([]);
       } finally {

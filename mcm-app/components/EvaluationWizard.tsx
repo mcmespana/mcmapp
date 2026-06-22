@@ -1,3 +1,5 @@
+import { radii } from '@/constants/uiStyles';
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -181,7 +183,7 @@ export default function EvaluationWizard({
       h.formSuccess();
       setDone(true);
     } catch (e) {
-      console.error('Error enviando evaluación', e);
+      logger.error('Error enviando evaluación', e);
       h.tap();
       setSubmitting(false);
     }
@@ -915,7 +917,7 @@ const scaleStyles = StyleSheet.create({
     minWidth: 44,
     height: 44,
     paddingHorizontal: 6,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',

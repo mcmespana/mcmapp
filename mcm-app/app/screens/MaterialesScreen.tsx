@@ -184,6 +184,9 @@ export default function MaterialesScreen() {
           {dia.actividades.map((act: Actividad, idx: number) => (
             <PressableFeedback
               key={idx}
+              accessibilityRole="button"
+              accessibilityLabel={act.nombre}
+              accessibilityHint="Abre los materiales de la actividad"
               style={[
                 styles.card,
                 { backgroundColor: act.color || colors.primary },

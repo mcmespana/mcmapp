@@ -10,6 +10,7 @@
  * ignorar el tono del maestro y usar el suyo localmente (sin afectar a la
  * sesión remota).
  */
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useCallback,
@@ -103,7 +104,7 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
         }
         setDeviceId(id);
       } catch (e) {
-        console.error('deviceId persist error', e);
+        logger.error('deviceId persist error', e);
         setDeviceId(genDeviceId());
       }
     })();
@@ -125,7 +126,7 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
           setCode(parsed.code);
         }
       } catch (e) {
-        console.error('choir session restore error', e);
+        logger.error('choir session restore error', e);
       }
     })();
   }, [deviceId]);
@@ -164,11 +165,11 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
           }
         },
         (err) => {
-          console.error('choir session subscribe error', err);
+          logger.error('choir session subscribe error', err);
         },
       );
     } catch (e) {
-      console.error('choir subscribe error', e);
+      logger.error('choir subscribe error', e);
     }
     return () => {
       unsubRef.current?.();
@@ -211,7 +212,7 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
       try {
         await closeChoirSession(prevCode);
       } catch (e) {
-        console.error('Error cerrando sesión coro', e);
+        logger.error('Error cerrando sesión coro', e);
       }
     }
   }, [mode, code]);
@@ -222,7 +223,7 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
       try {
         await publishChoirCurrent(code, current);
       } catch (e) {
-        console.error('publishCurrent error', e);
+        logger.error('publishCurrent error', e);
       }
     },
     [mode, code],
@@ -234,7 +235,7 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
       try {
         await publishChoirPlaylist(code, playlist);
       } catch (e) {
-        console.error('publishPlaylist error', e);
+        logger.error('publishPlaylist error', e);
       }
     },
     [mode, code],

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useContext,
@@ -45,7 +46,7 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
           setSettingsState((prev) => ({ ...prev, ...JSON.parse(data) }));
         }
       } catch (e) {
-        console.error('Failed loading app settings', e);
+        logger.error('Failed loading app settings', e);
       } finally {
         setLoading(false);
       }
@@ -56,7 +57,7 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (loading) return;
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings)).catch((e) => {
-      console.error('Failed saving app settings', e);
+      logger.error('Failed saving app settings', e);
     });
   }, [settings, loading]);
 
