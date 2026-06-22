@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ProfileType } from '@/types/profileConfig';
@@ -50,7 +51,7 @@ export const UserProfileProvider = ({
           }));
         }
       } catch (e) {
-        console.error('Failed loading user profile', e);
+        logger.error('Failed loading user profile', e);
       } finally {
         setLoading(false);
       }
@@ -61,7 +62,7 @@ export const UserProfileProvider = ({
   useEffect(() => {
     if (loading) return;
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(profile)).catch((e) =>
-      console.error('Failed saving user profile', e),
+      logger.error('Failed saving user profile', e),
     );
   }, [profile, loading]);
 

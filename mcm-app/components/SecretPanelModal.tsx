@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -168,7 +169,7 @@ export default function SecretPanelModal({
         setEditYoutubeLinks(media.youtubeLinks);
         setEditAudioLinks(media.audioLinks);
       } catch (error) {
-        console.error('Error cargando multimedia de la canción:', error);
+        logger.error('Error cargando multimedia de la canción:', error);
       }
     };
 
@@ -330,10 +331,7 @@ export default function SecretPanelModal({
       const songsSnapshot = await get(songsRef);
 
       if (!songsSnapshot.exists()) {
-        console.error(
-          'No se encontró la ruta:',
-          `songs/data/${category}/songs`,
-        );
+        logger.error('No se encontró la ruta:', `songs/data/${category}/songs`);
         throw new Error(
           `No se encontró la categoría de canciones en: songs/data/${category}/songs`,
         );
@@ -434,7 +432,7 @@ export default function SecretPanelModal({
         [{ text: 'Perfecto', style: 'default' }],
       );
     } catch (error) {
-      console.error('Error updating song:', error);
+      logger.error('Error updating song:', error);
       Alert.alert(
         'Error',
         `No se pudieron guardar los cambios: ${(error as Error).message}`,

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useState,
@@ -82,7 +83,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
           setAppSettings(defaultSettings);
         }
       } catch (error) {
-        console.error('Failed to load settings from AsyncStorage:', error);
+        logger.error('Failed to load settings from AsyncStorage:', error);
         setAppSettings(defaultSettings); // Fallback to defaults on error
       }
       // Cargar el modo admin persistido (independiente de SongSettings).
@@ -90,7 +91,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
         const storedAdmin = await AsyncStorage.getItem(ADMIN_STORAGE_KEY);
         setIsAdminState(storedAdmin === 'true');
       } catch (error) {
-        console.error('Failed to load admin flag from AsyncStorage:', error);
+        logger.error('Failed to load admin flag from AsyncStorage:', error);
       }
       setIsLoadingSettings(false);
     };
@@ -109,7 +110,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
           JSON.stringify(settings),
         );
       } catch (error) {
-        console.error('Failed to save settings to AsyncStorage:', error);
+        logger.error('Failed to save settings to AsyncStorage:', error);
       }
     };
 
@@ -127,7 +128,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
     setIsAdminState(nextValue);
     AsyncStorage.setItem(ADMIN_STORAGE_KEY, nextValue ? 'true' : 'false').catch(
       (error) => {
-        console.error('Failed to save admin flag to AsyncStorage:', error);
+        logger.error('Failed to save admin flag to AsyncStorage:', error);
       },
     );
   }, []);

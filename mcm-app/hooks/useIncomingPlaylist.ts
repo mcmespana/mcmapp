@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
@@ -48,7 +49,7 @@ export function useIncomingPlaylist(onImport: ImportCallback) {
         onImportRef.current(filenames);
       }
     } catch (err) {
-      console.error('Error handling incoming playlist file:', err);
+      logger.error('Error handling incoming playlist file:', err);
     }
   }, []);
 

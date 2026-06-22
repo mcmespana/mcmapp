@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { createContext, useContext, useMemo, ReactNode } from 'react';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import type {
@@ -78,7 +79,7 @@ export const ProfileConfigProvider = ({
   const rawConfig = useMemo<ProfileConfigData>(() => {
     if (isValidProfileConfig(data)) return withDerivedDelegationList(data);
     if (data != null && typeof __DEV__ !== 'undefined' && __DEV__) {
-      console.warn(
+      logger.warn(
         '[profileConfig] Documento remoto inválido. Usando fallback hardcoded.',
       );
     }

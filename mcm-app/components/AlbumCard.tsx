@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React from 'react';
 import {
   View,
@@ -51,7 +52,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
             contentFit="cover"
             transition={300}
             onError={(event) =>
-              console.log(
+              logger.log(
                 `Error loading image for ${album.title}: ${event.error}`,
               )
             }

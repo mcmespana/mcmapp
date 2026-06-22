@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useContext,
@@ -60,7 +61,7 @@ function providerFromFirebase(firebaseUser: {
   if (pid.includes('apple')) return 'apple';
   // google.com, googleusercontent.com or any other provider defaults to google
   if (__DEV__ && !pid.includes('google')) {
-    console.warn(
+    logger.warn(
       `[AuthContext] Proveedor desconocido "${pid}", usando google por defecto`,
     );
   }
@@ -97,14 +98,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setLoading(false);
         },
         (error: any) => {
-          console.error('[AuthContext] onAuthStateChanged error:', error);
+          logger.error('[AuthContext] onAuthStateChanged error:', error);
           setConfigError(error?.message ?? String(error));
           setUser(null);
           setLoading(false);
         },
       );
     } catch (error: any) {
-      console.error('[AuthContext] Firebase Auth init failed:', error);
+      logger.error('[AuthContext] Firebase Auth init failed:', error);
       setConfigError(error?.message ?? String(error));
       setUser(null);
       setLoading(false);
@@ -133,7 +134,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (cancelled) return null;
       // Error real: propagar para que la UI muestre feedback (toast) en vez
       // de fallar en silencio.
-      console.error('[AuthContext] signInWithGoogle:', err);
+      logger.error('[AuthContext] signInWithGoogle:', err);
       throw err;
     }
   }, []);
@@ -154,7 +155,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const cancelled =
         err?.code === 'ERR_CANCELED' || String(err?.message).includes('cancel');
       if (cancelled) return null;
-      console.error('[AuthContext] signInWithApple:', err);
+      logger.error('[AuthContext] signInWithApple:', err);
       throw err;
     }
   }, []);
@@ -164,7 +165,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await doGoogleSignOut();
       await firebaseSignOut(getFirebaseAuth());
     } catch (err) {
-      console.error('[AuthContext] signOut:', err);
+      logger.error('[AuthContext] signOut:', err);
     }
   }, []);
 
@@ -207,11 +208,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           await runDelete();
         } catch (retryErr) {
-          console.error('[AuthContext] deleteAccount retry:', retryErr);
+          logger.error('[AuthContext] deleteAccount retry:', retryErr);
           return 'error';
         }
       } else {
-        console.error('[AuthContext] deleteAccount:', err);
+        logger.error('[AuthContext] deleteAccount:', err);
         return 'error';
       }
     }

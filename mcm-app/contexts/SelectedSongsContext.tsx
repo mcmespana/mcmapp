@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useState,
@@ -145,7 +146,7 @@ export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({
           }
         }
       } catch (e) {
-        console.error('Error hidratando playlist seleccionada', e);
+        logger.error('Error hidratando playlist seleccionada', e);
       } finally {
         if (!cancelled) {
           hydrationDone.current = true;
@@ -163,7 +164,7 @@ export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({
     if (!hydrationDone.current) return;
     const stored: StoredPlaylist = { version: 2, songs: selectedSongs };
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(stored)).catch((e) => {
-      console.error('Error guardando playlist seleccionada', e);
+      logger.error('Error guardando playlist seleccionada', e);
     });
   }, [selectedSongs]);
 

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   useCallback,
   useEffect,
@@ -516,7 +517,7 @@ const SelectedSongsScreen: React.FC = () => {
       try {
         Share.share({ message: text });
       } catch (e) {
-        console.error(e);
+        logger.error(e);
       }
     }
   }, [buildShareText, toast]);
@@ -574,7 +575,7 @@ const SelectedSongsScreen: React.FC = () => {
       setShowExportFileModal(false);
       toast.show({ label: 'Playlist exportada' });
     } catch (err) {
-      console.error('Error exportando playlist', err);
+      logger.error('Error exportando playlist', err);
       setShowExportFileModal(false);
       toast.show({ label: 'Error al exportar' });
     }
@@ -684,7 +685,7 @@ const SelectedSongsScreen: React.FC = () => {
         setShowExportPdfModal(false);
         toast.show({ label: 'Tenemos tu PDF recién sacado del orno' });
       } catch (err) {
-        console.error('Error exportando PDF', err);
+        logger.error('Error exportando PDF', err);
         toast.show({
           label: 'Error al generar el PDF, sorry, lo arreglaremos',
         });
@@ -816,7 +817,7 @@ const SelectedSongsScreen: React.FC = () => {
         askMergeOrReplace(songs);
       }
     } catch (err) {
-      console.error('Error importando playlist', err);
+      logger.error('Error importando playlist', err);
       toast.show({ label: 'Error al importar' });
     }
   }, [importFromJson, askMergeOrReplace, toast]);

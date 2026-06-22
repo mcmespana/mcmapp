@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -86,7 +87,7 @@ export default function ReportBugsModal({
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
-      console.error('Error submitting bug report:', error);
+      logger.error('Error submitting bug report:', error);
     } finally {
       setIsSubmitting(false);
     }

@@ -1,4 +1,5 @@
 // notifications/NotificationHandler.ts
+import { logger } from '@/utils/logger';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
@@ -43,7 +44,7 @@ if (Platform.OS === 'ios') {
         opensAppToForeground: true,
       },
     },
-  ]).catch((err) => console.error('Error configurando categorías:', err));
+  ]).catch((err) => logger.error('Error configurando categorías:', err));
 
   Notifications.setNotificationCategoryAsync('eventos', [
     {
@@ -53,7 +54,7 @@ if (Platform.OS === 'ios') {
         opensAppToForeground: true,
       },
     },
-  ]).catch((err) => console.error('Error configurando categorías:', err));
+  ]).catch((err) => logger.error('Error configurando categorías:', err));
 
   Notifications.setNotificationCategoryAsync('fotos', [
     {
@@ -63,5 +64,5 @@ if (Platform.OS === 'ios') {
         opensAppToForeground: true,
       },
     },
-  ]).catch((err) => console.error('Error configurando categorías:', err));
+  ]).catch((err) => logger.error('Error configurando categorías:', err));
 }

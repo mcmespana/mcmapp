@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -143,7 +144,7 @@ export default function NotificationsScreen() {
       const readNotificationIds = await getReadNotificationIds();
       setReadIds(new Set(readNotificationIds));
     } catch (error) {
-      console.error('Error cargando notificaciones:', error);
+      logger.error('Error cargando notificaciones:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -208,14 +209,14 @@ export default function NotificationsScreen() {
     try {
       router.push(clean as any);
     } catch (e) {
-      console.warn(
+      logger.warn(
         'Navigation failed for ' + clean + ', trying direct route...',
         e,
       );
       try {
         router.push(route as any);
       } catch (err) {
-        console.error('All navigation fallbacks failed:', err);
+        logger.error('All navigation fallbacks failed:', err);
       }
     }
   }, []);
@@ -230,7 +231,7 @@ export default function NotificationsScreen() {
       if (e?.stopPropagation) e.stopPropagation();
       if (!isNotificationRead(notification)) {
         handleMarkAsRead(notification.id).catch((err) =>
-          console.error('Error marcando como leída:', err),
+          logger.error('Error marcando como leída:', err),
         );
       }
       if (!button) return;
@@ -238,7 +239,7 @@ export default function NotificationsScreen() {
         safePushRoute(button.url);
       } else {
         Linking.openURL(button.url).catch((err) =>
-          console.error('Error abriendo URL:', err),
+          logger.error('Error abriendo URL:', err),
         );
       }
     },
@@ -567,14 +568,14 @@ function NotificationDetailModal({
     try {
       router.push(clean as any);
     } catch (e) {
-      console.warn(
+      logger.warn(
         'Navigation failed for ' + clean + ', trying direct route...',
         e,
       );
       try {
         router.push(route as any);
       } catch (err) {
-        console.error('All navigation fallbacks failed:', err);
+        logger.error('All navigation fallbacks failed:', err);
       }
     }
   };
@@ -594,7 +595,7 @@ function NotificationDetailModal({
       safePushRoute(button.url);
     } else {
       Linking.openURL(button.url).catch((err) =>
-        console.error('Error abriendo URL:', err),
+        logger.error('Error abriendo URL:', err),
       );
     }
   };

@@ -6,6 +6,7 @@
 // arrancar en un binario que todavía no incluye el módulo nativo (Expo Go o
 // un dev client sin recompilar). El error solo aparecerá —de forma
 // controlada— si el usuario intenta iniciar sesión con Google.
+import { logger } from '@/utils/logger';
 import {
   GoogleAuthProvider,
   OAuthProvider,
@@ -40,7 +41,7 @@ export async function configureGoogleSignIn(): Promise<void> {
     // El módulo nativo no está disponible en este binario — se degrada en
     // silencio; el botón de Google fallará con un mensaje controlado.
     if (__DEV__) {
-      console.warn(
+      logger.warn(
         '[platformAuth] Google Sign-In nativo no disponible en este binario:',
         err,
       );

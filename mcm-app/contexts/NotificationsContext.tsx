@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useContext,
@@ -47,7 +48,7 @@ export function NotificationsProvider({
       const ids = await getReadNotificationIds();
       setReadIds(ids);
     } catch (error) {
-      console.error('Error actualizando contador de notificaciones:', error);
+      logger.error('Error actualizando contador de notificaciones:', error);
     }
   }, []);
 

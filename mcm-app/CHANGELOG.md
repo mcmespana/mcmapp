@@ -18,6 +18,23 @@
 
 ---
 
+## 2026-06-22 13:00 — Logger centralizado y endurecimiento del lint
+
+Tanda de calidad de código (toda OTA, sin código nativo).
+
+- **Nuevo `utils/logger.ts`**: logger centralizado con niveles
+  (`debug`/`info`/`log`/`warn`/`error`). En producción silencia
+  `debug`/`info`/`log` y mantiene `warn`/`error`. Punto único de enganche para
+  crash reporting vía `setReporter` (listo para Sentry, ver MEJORAS.md §8.1).
+- **Migrados los ~119 `console.*`** de la base de código (45 ficheros de
+  `app/`, `components/`, `hooks/`, `utils/`, `contexts/`, `services/`,
+  `notifications/`) a `logger.*`.
+- **ESLint más estricto**: `prettier/prettier` pasa de `warn` a `error` y se
+  añade `no-console: warn` (excepto en `utils/logger.ts`).
+- **Test nuevo**: `__tests__/logger.test.ts` (gating por entorno + reporter).
+- Archivos: `utils/logger.ts`, `eslint.config.js`, `__tests__/logger.test.ts`
+  y los 45 ficheros migrados.
+
 ## 2026-06-21 22:30 — UI nativa: headers, cápsulas glass y campos unificados
 
 Pasada de unificación visual hacia componentes nativos/coherentes (toda OTA,

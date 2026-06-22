@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFirebaseData } from './useFirebaseData';
@@ -90,7 +91,7 @@ export function useCalendarConfigs() {
         const legacy = await AsyncStorage.getItem(LEGACY_SETTINGS_KEY);
         if (legacy) legacyRef.current = JSON.parse(legacy);
       } catch (error) {
-        console.error('Error loading calendar settings:', error);
+        logger.error('Error loading calendar settings:', error);
       } finally {
         if (mounted) {
           setSelection((prev) => prev ?? {});
@@ -157,7 +158,7 @@ export function useCalendarConfigs() {
           CALENDAR_SELECTION_KEY,
           JSON.stringify(next),
         ).catch((error) => {
-          console.error('Error saving calendar settings:', error);
+          logger.error('Error saving calendar settings:', error);
         });
         return next;
       });

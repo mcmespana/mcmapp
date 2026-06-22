@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, {
   createContext,
   useCallback,
@@ -76,7 +77,7 @@ export const EventSubscriptionsProvider = ({
           }
         }
       } catch (e) {
-        console.error('Failed loading event subscriptions', e);
+        logger.error('Failed loading event subscriptions', e);
       } finally {
         setLoading(false);
       }
@@ -87,14 +88,14 @@ export const EventSubscriptionsProvider = ({
   useEffect(() => {
     if (loading) return;
     AsyncStorage.setItem(SUBS_KEY, JSON.stringify(subscribedEventIds)).catch(
-      (e) => console.error('Failed saving event subscriptions', e),
+      (e) => logger.error('Failed saving event subscriptions', e),
     );
   }, [subscribedEventIds, loading]);
 
   useEffect(() => {
     if (loading) return;
     AsyncStorage.setItem(PROMPTED_KEY, JSON.stringify(promptedEventIds)).catch(
-      (e) => console.error('Failed saving event prompts', e),
+      (e) => logger.error('Failed saving event prompts', e),
     );
   }, [promptedEventIds, loading]);
 

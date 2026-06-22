@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -181,7 +182,7 @@ export default function EvaluationWizard({
       h.formSuccess();
       setDone(true);
     } catch (e) {
-      console.error('Error enviando evaluación', e);
+      logger.error('Error enviando evaluación', e);
       h.tap();
       setSubmitting(false);
     }

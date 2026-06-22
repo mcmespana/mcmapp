@@ -1,4 +1,5 @@
 // services/pushNotificationService.ts
+import { logger } from '@/utils/logger';
 import {
   getDatabase,
   ref,
@@ -59,7 +60,7 @@ export const getDeviceId = async (): Promise<string> => {
     }
     return deviceId;
   } catch (error) {
-    console.error('Error obteniendo device ID:', error);
+    logger.error('Error obteniendo device ID:', error);
     // Fallback: generar ID sin guardarlo
     return `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
@@ -73,7 +74,7 @@ export const cachePushToken = async (token: string): Promise<void> => {
   try {
     await AsyncStorage.setItem(PUSH_TOKEN_KEY, token);
   } catch (error) {
-    console.error('Error cacheando token en AsyncStorage:', error);
+    logger.error('Error cacheando token en AsyncStorage:', error);
   }
 };
 
@@ -167,10 +168,10 @@ export const saveTokenToFirebase = async (
     await set(ref(db, `pushTokens/${safeTokenId}`), tokenData);
   } catch (error: any) {
     // Log detallado para diagnosticar errores de Firebase (reglas, serialización, etc.)
-    console.error('❌ Error guardando token en Firebase:');
-    console.error('  message:', error?.message);
-    console.error('  code:', error?.code);
-    console.error('  stack:', error?.stack);
+    logger.error('❌ Error guardando token en Firebase:');
+    logger.error('  message:', error?.message);
+    logger.error('  code:', error?.code);
+    logger.error('  stack:', error?.stack);
     throw error;
   }
 };
@@ -219,7 +220,7 @@ export const updateLastActive = async (
       // No hacer nada — evita crear nodos "zombi" con solo lastActive.
     }
   } catch (error) {
-    console.error('Error actualizando lastActive:', error);
+    logger.error('Error actualizando lastActive:', error);
   }
 };
 
@@ -266,7 +267,7 @@ export const getNotificationsHistory = async (): Promise<
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   } catch (error) {
-    console.error('Error obteniendo historial de notificaciones:', error);
+    logger.error('Error obteniendo historial de notificaciones:', error);
     return [];
   }
 };
@@ -305,7 +306,7 @@ export const subscribeToNotifications = (
     // Retornar función de cleanup
     return () => off(notificationsRef, 'value', unsubscribe);
   } catch (error) {
-    console.error('Error suscribiéndose a notificaciones:', error);
+    logger.error('Error suscribiéndose a notificaciones:', error);
     return () => {};
   }
 };
@@ -350,7 +351,7 @@ export const saveReceivedNotificationLocally = async (
       );
     }
   } catch (error) {
-    console.error('Error guardando notificación localmente:', error);
+    logger.error('Error guardando notificación localmente:', error);
   }
 };
 
@@ -364,7 +365,7 @@ export const getLocalNotificationsHistory = async (): Promise<
     const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('Error obteniendo historial local:', error);
+    logger.error('Error obteniendo historial local:', error);
     return [];
   }
 };
@@ -377,7 +378,7 @@ export const getReadNotificationIds = async (): Promise<Set<string>> => {
     const data = await AsyncStorage.getItem(READ_NOTIFICATIONS_KEY);
     return data ? new Set(JSON.parse(data)) : new Set();
   } catch (error) {
-    console.error('Error obteniendo notificaciones leídas:', error);
+    logger.error('Error obteniendo notificaciones leídas:', error);
     return new Set();
   }
 };
@@ -420,7 +421,7 @@ export const markNotificationAsRead = async (
       JSON.stringify(Array.from(readIds)),
     );
   } catch (error) {
-    console.error('Error marcando notificación como leída:', error);
+    logger.error('Error marcando notificación como leída:', error);
   }
 };
 
@@ -467,10 +468,7 @@ export const markAllNotificationsAsRead = async (
       JSON.stringify(Array.from(readIds)),
     );
   } catch (error) {
-    console.error(
-      'Error marcando todas las notificaciones como leídas:',
-      error,
-    );
+    logger.error('Error marcando todas las notificaciones como leídas:', error);
   }
 };
 
@@ -528,7 +526,7 @@ export const getUnreadNotificationsCount = async (): Promise<number> => {
 
     return deduplicated.filter((n) => !isNotificationRead(n)).length;
   } catch (error) {
-    console.error('Error contando notificaciones sin leer:', error);
+    logger.error('Error contando notificaciones sin leer:', error);
     return 0;
   }
 };
@@ -540,7 +538,7 @@ export const clearLocalNotifications = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem(NOTIFICATIONS_HISTORY_KEY);
   } catch (error) {
-    console.error('Error limpiando historial local:', error);
+    logger.error('Error limpiando historial local:', error);
   }
 };
 
@@ -592,7 +590,7 @@ export const initializeNewUserReadStatus = async (
 
     return true;
   } catch (error) {
-    console.error('Error en inicialización de primer uso:', error);
+    logger.error('Error en inicialización de primer uso:', error);
     return false;
   }
 };
