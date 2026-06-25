@@ -1319,6 +1319,66 @@ const SelectedSongsScreen: React.FC = () => {
     });
   }, [navigation, headerIconColor, styles]);
 
+  // ⚡ Bolt Optimization:
+  // Memoize the ListHeaderComponent to prevent the header from generating
+  // a new React Element reference on every parent render, avoiding unnecessary
+  // unmounting and remounting within the FlatList.
+  const listHeader = useMemo(() => {
+    return (
+      <View>
+        <ChoirSessionBanner />
+        <View style={styles.summaryRow}>
+          <View>
+            <Text style={styles.selectionCount}>
+              {visibleCount} {visibleCount === 1 ? 'canción' : 'canciones'}
+            </Text>
+            {lastUploadCode ? (
+              <Text style={styles.subInfo}>
+                ☁️ Guardada con código {lastUploadCode}
+              </Text>
+            ) : null}
+          </View>
+          {visibleCount > 1 ? (
+            <View style={styles.viewToggle}>
+              <TouchableOpacity
+                onPress={() => setViewMode('category')}
+                style={[
+                  styles.viewToggleBtn,
+                  viewMode === 'category' && styles.viewToggleBtnActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.viewToggleText,
+                    viewMode === 'category' && styles.viewToggleTextActive,
+                  ]}
+                >
+                  Por categoría
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setViewMode('manual')}
+                style={[
+                  styles.viewToggleBtn,
+                  viewMode === 'manual' && styles.viewToggleBtnActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.viewToggleText,
+                    viewMode === 'manual' && styles.viewToggleTextActive,
+                  ]}
+                >
+                  Orden ajustado
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    );
+  }, [styles, visibleCount, lastUploadCode, viewMode, setViewMode]);
+
   // --- Render ---------------------------------------------------------------
 
   if (loading && selectedSongs.length === 0 && isHydrated) {
@@ -1405,62 +1465,6 @@ const SelectedSongsScreen: React.FC = () => {
     </View>
   );
 
-  const renderHeaderBar = () => {
-    return (
-      <View>
-        <ChoirSessionBanner />
-        <View style={styles.summaryRow}>
-          <View>
-            <Text style={styles.selectionCount}>
-              {visibleCount} {visibleCount === 1 ? 'canción' : 'canciones'}
-            </Text>
-            {lastUploadCode ? (
-              <Text style={styles.subInfo}>
-                ☁️ Guardada con código {lastUploadCode}
-              </Text>
-            ) : null}
-          </View>
-          {visibleCount > 1 ? (
-            <View style={styles.viewToggle}>
-              <TouchableOpacity
-                onPress={() => setViewMode('category')}
-                style={[
-                  styles.viewToggleBtn,
-                  viewMode === 'category' && styles.viewToggleBtnActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.viewToggleText,
-                    viewMode === 'category' && styles.viewToggleTextActive,
-                  ]}
-                >
-                  Por categoría
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setViewMode('manual')}
-                style={[
-                  styles.viewToggleBtn,
-                  viewMode === 'manual' && styles.viewToggleBtnActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.viewToggleText,
-                    viewMode === 'manual' && styles.viewToggleTextActive,
-                  ]}
-                >
-                  Orden ajustado
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-        </View>
-      </View>
-    );
-  };
-
   const renderCategoryGroup = ({ item }: { item: CategorizedSongs }) => (
     <View style={styles.categoryContainer}>
       <Text style={styles.categoryTitle}>{item.categoryTitle}</Text>
@@ -1536,39 +1540,51 @@ const SelectedSongsScreen: React.FC = () => {
         Platform.OS === 'web' ? (
           // En web no hay drag & drop (la lista reordenable usa gestos
           // nativos); se reordena con las flechas ↑/↓ de cada fila.
+          // ⚡ Bolt Optimization: Added initialNumToRender, maxToRenderPerBatch, and windowSize to optimize list rendering and memory usage
           <FlatList
             data={flatSelectedSongs}
             renderItem={renderManualItem}
             keyExtractor={(it) => it.filename}
-            ListHeaderComponent={renderHeaderBar()}
+            ListHeaderComponent={listHeader}
             contentContainerStyle={styles.listContentContainer}
             contentInsetAdjustmentBehavior="automatic"
             showsVerticalScrollIndicator={false}
+            initialNumToRender={15}
+            maxToRenderPerBatch={20}
+            windowSize={5}
           />
         ) : (
+          // ⚡ Bolt Optimization: Added initialNumToRender, maxToRenderPerBatch, and windowSize to optimize list rendering and memory usage
           <ReorderableList
             data={flatSelectedSongs}
             onReorder={handleReorder}
             renderItem={renderDraggableManualItem}
             keyExtractor={(it) => it.filename}
-            ListHeaderComponent={renderHeaderBar()}
+            ListHeaderComponent={listHeader}
             contentContainerStyle={[
               styles.listContentContainer,
               { paddingTop: reorderableTopInset },
             ]}
             contentInsetAdjustmentBehavior="never"
             showsVerticalScrollIndicator={false}
+            initialNumToRender={15}
+            maxToRenderPerBatch={20}
+            windowSize={5}
           />
         )
       ) : (
+        // ⚡ Bolt Optimization: Added initialNumToRender, maxToRenderPerBatch, and windowSize to optimize list rendering and memory usage
         <FlatList
           data={categorized}
           renderItem={renderCategoryGroup}
           keyExtractor={(it) => it.categoryKey}
-          ListHeaderComponent={renderHeaderBar()}
+          ListHeaderComponent={listHeader}
           contentContainerStyle={styles.listContentContainer}
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
+          initialNumToRender={15}
+          maxToRenderPerBatch={20}
+          windowSize={5}
         />
       )}
 
