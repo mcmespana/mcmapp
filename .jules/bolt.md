@@ -1,3 +1,6 @@
 ## 2026-06-16 - [ListHeaderComponent React Element Memory Leak]
 **Learning:** [Defining a React Element for \`ListHeaderComponent\` directly inside the parent render loop without memoization causes the `FlatList` to unmount and remount the header entirely on every parent re-render (like keystrokes in a search input). This also forces the \`FlatList\` internal layout mechanics to recalculate.]
 **Action:** [Always wrap \`ListHeaderComponent\` elements defined inside functional components with \`useMemo\`, or extract them into separate memoized components outside the main render loop.]
+## 2024-06-27 - [ListHeaderComponent React Element Memory Leak Fix]
+**Learning:** [Defining a React Element for `ListHeaderComponent` directly inside the parent render loop without memoization causes the `FlatList` to unmount and remount the header entirely on every parent re-render (like keystrokes in a search input). This also forces the `FlatList` internal layout mechanics to recalculate.]
+**Action:** [Always wrap `ListHeaderComponent` elements defined inside functional components with `useMemo` (or extract them into separate memoized components outside the main render loop), ensuring the hook is placed at the top level of the component before any early returns, and excluding global constants from the dependency array.]
