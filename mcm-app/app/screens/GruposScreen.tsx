@@ -262,25 +262,10 @@ export default function GruposScreen() {
     setSearch(findMeQuery);
   }, [findMeQuery]);
 
-  // ──────────────────────────────────────────────────────────
-  // 0) EMPTY STATE — sin grupos en Firebase (y ya no estamos cargando)
-  // ──────────────────────────────────────────────────────────
-  if (!hasGroups && !loading) {
+  // Memoize group ListHeader to avoid re-renders when memberFilter changes
+  const GroupListHeader = useMemo(() => {
+    if (!grupo) return null;
     return (
-      <PageContainer>
-        <View style={styles.container}>
-          <ScreenHero title="Grupos" hideOnWeb floatingHeaderInset />
-          <ComingSoon accentColor={event.tintColor} />
-        </View>
-      </PageContainer>
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────
-  // 1) GROUP DETAIL VIEW (highest priority)
-  // ──────────────────────────────────────────────────────────
-  if (grupo) {
-    const ListHeader = (
       <View style={styles.groupContainer}>
         {grupo.subtitulo ? (
           <View style={styles.quoteContainer}>
@@ -346,7 +331,26 @@ export default function GruposScreen() {
         ) : null}
       </View>
     );
+  }, [grupo, styles, myName, memberFilter, isDark, filteredMiembros.length]);
 
+  // ──────────────────────────────────────────────────────────
+  // 0) EMPTY STATE — sin grupos en Firebase (y ya no estamos cargando)
+  // ──────────────────────────────────────────────────────────
+  if (!hasGroups && !loading) {
+    return (
+      <PageContainer>
+        <View style={styles.container}>
+          <ScreenHero title="Grupos" hideOnWeb floatingHeaderInset />
+          <ComingSoon accentColor={event.tintColor} />
+        </View>
+      </PageContainer>
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // 1) GROUP DETAIL VIEW (highest priority)
+  // ──────────────────────────────────────────────────────────
+  if (grupo) {
     return (
       <PageContainer>
         <View style={styles.container}>
@@ -370,7 +374,7 @@ export default function GruposScreen() {
             renderItem={({ item }) => (
               <MemberRow name={item} myName={myName} styles={styles} />
             )}
-            ListHeaderComponent={ListHeader}
+            ListHeaderComponent={GroupListHeader}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={
               Platform.OS === 'ios'
