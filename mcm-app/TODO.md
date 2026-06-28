@@ -98,7 +98,7 @@
 
 ## Mantenimiento
 
-- [ ] **Ampliar cobertura de tests**: ya hay 16 ficheros en `__tests__/` (entre ellos `logger` y `dismissNotification`, añadidos en jun-2026). Priorizar lo que falta: `useSongProcessor`, `useChoirSession`, `useResolvedProfileConfig`, y al menos una pantalla con render snapshot.
+- [ ] **Ampliar cobertura de tests**: ya hay 18 ficheros en `__tests__/` / 183 tests. Hecho en jun-2026: `useSongProcessor` (núcleo del cantoral) y `choirSessionService` (Modo Coro, maestro/oyentes). Pendiente: `useResolvedProfileConfig` (el resolver puro `resolveProfileConfig` ya está cubierto) y al menos una pantalla con render snapshot.
 
 ---
 

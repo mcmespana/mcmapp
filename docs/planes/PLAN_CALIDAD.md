@@ -160,10 +160,10 @@ Objetivo: ninguna pantalla > 800 líneas; cada pantalla = composición de compon
 
 ## Fase 5 — Tests donde duele (continuo)
 
-Ya hay 12 ficheros en `__tests__/` con infraestructura correcta (jest-expo + RTL). Prioridades (coinciden con `mcm-app/TODO.md`):
+Ya hay 18 ficheros en `__tests__/` / 183 tests (jest-expo + RTL). Prioridades (coinciden con `mcm-app/TODO.md`):
 
-- [ ] **5.1 — `useSongProcessor`** (675 líneas, núcleo del cantoral, 0 tests).
-- [ ] **5.2 — `useChoirSession`** (concurrencia maestro/oyentes).
+- [x] **5.1 — `useSongProcessor`** (núcleo del cantoral): _hecho 2026-06-28._ `__tests__/useSongProcessor.test.ts` (17 tests) — vía `renderHook` sobre el HTML generado: badges de tono/cejilla/transpose, notación EN/ES, clases de `<body>` (acordes ocultos, tema oscuro), modo presentación y `styleState`.
+- [x] **5.2 — `useChoirSession`** (concurrencia maestro/oyentes): _hecho 2026-06-28._ Cubierto a nivel de servicio en `__tests__/choirSessionService.test.ts` (16 tests): validación de código, forma del payload + expiración 2 semanas, limpieza de `undefined`, publicaciones del maestro y traspaso de sesión entre códigos con sus casos de error.
 - [ ] **5.3 — Reducers/lógica de los contexts** tocados en Fase 3 (la fusión los vuelve testeables).
 - [ ] **5.4 — Regla de trabajo:** cada hook o util extraído en Fase 1 **sale con su test en el mismo PR**. Así la cobertura crece con el refactor, no como proyecto aparte que nunca llega.
 

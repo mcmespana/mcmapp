@@ -19,6 +19,11 @@ const mockSnapshot = {
 export const getDatabase = jest.fn(() => ({}));
 export const ref = jest.fn(() => ({}));
 export const get = jest.fn(() => Promise.resolve(mockSnapshot));
+export const set = jest.fn(() => Promise.resolve());
+export const update = jest.fn(() => Promise.resolve());
+export const remove = jest.fn(() => Promise.resolve());
+export const onValue = jest.fn(() => jest.fn());
+export const off = jest.fn();
 
 // Helper para cambiar lo que devuelve Firebase en cada test
 export const __setMockSnapshot = (data: any) => {
