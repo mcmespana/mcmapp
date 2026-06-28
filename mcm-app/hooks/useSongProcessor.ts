@@ -57,37 +57,186 @@ export interface SongStyleState {
   bottomPadding: number;
 }
 
+/**
+ * Detalle de un error de sintaxis al parsear el ChordPro de una canción.
+ * Lo usamos tanto para pintar una pantalla de error amable como para
+ * reportarlo a Firebase (`songs/fallitos`).
+ */
+export interface SongParseError {
+  /** Mensaje crudo del parser (peggy). */
+  message: string;
+  /** Línea (1-based) donde el parser detectó el problema, si la conocemos. */
+  line: number | null;
+  /** Columna (1-based) del problema, si la conocemos. */
+  column: number | null;
+  /** Texto de la línea problemática (tal cual la vio el parser). */
+  lineText: string | null;
+}
+
+interface ParsedResult {
+  song: Song | null;
+  error: SongParseError | null;
+}
+
 // ─── Module-level cache for parsed ChordPro ───
 // Pre-procesar `.cho` en build time (Metro Transformer) no aplica aquí porque
 // las canciones viven en Firebase, no en el bundle. La alternativa más cercana
 // es cachear el objeto `Song` parseado a nivel de módulo, de modo que abrir y
 // cerrar una canción no la re-parsee. Limitamos el tamaño con FIFO básico.
-const PARSED_CACHE = new Map<string, Song | null>();
+const PARSED_CACHE = new Map<string, ParsedResult>();
 const PARSED_CACHE_LIMIT = 64;
-function parseChordPro(chordPro: string): Song | null {
+function parseChordPro(chordPro: string): ParsedResult {
   const cached = PARSED_CACHE.get(chordPro);
   if (cached !== undefined) return cached;
-  let song: Song | null;
+  const cleaned = preprocessArrangements(chordPro)
+    .replace(/\{sov\}/gi, '{start_of_verse}')
+    .replace(/\{eov\}/gi, '{end_of_verse}')
+    .replace(/\{soc\}/gi, '{start_of_chorus}')
+    .replace(/\{eoc\}/gi, '{end_of_chorus}')
+    .replace(/\{sob\}/gi, '{start_of_bridge}')
+    .replace(/\{eob\}/gi, '{end_of_bridge}')
+    .replace(/\{transpose:.*\}\n?/gi, '');
+  let result: ParsedResult;
   try {
-    const cleaned = preprocessArrangements(chordPro)
-      .replace(/\{sov\}/gi, '{start_of_verse}')
-      .replace(/\{eov\}/gi, '{end_of_verse}')
-      .replace(/\{soc\}/gi, '{start_of_chorus}')
-      .replace(/\{eoc\}/gi, '{end_of_chorus}')
-      .replace(/\{sob\}/gi, '{start_of_bridge}')
-      .replace(/\{eob\}/gi, '{end_of_bridge}')
-      .replace(/\{transpose:.*\}\n?/gi, '');
-    song = new ChordProParser().parse(cleaned);
-  } catch (e) {
+    result = { song: new ChordProParser().parse(cleaned), error: null };
+  } catch (e: any) {
     logger.error('Error parseando ChordPro en useSongProcessor:', e);
-    song = null;
+    // Los errores del parser (peggy/PEG.js) traen `location.start.line/column`.
+    const loc = e?.location?.start;
+    const line =
+      typeof loc?.line === 'number' && loc.line > 0 ? loc.line : null;
+    const column =
+      typeof loc?.column === 'number' && loc.column > 0 ? loc.column : null;
+    let lineText: string | null = null;
+    if (line !== null) {
+      lineText = cleaned.split(/\r?\n/)[line - 1] ?? null;
+    }
+    result = {
+      song: null,
+      error: {
+        message: typeof e?.message === 'string' ? e.message : String(e),
+        line,
+        column,
+        lineText,
+      },
+    };
   }
   if (PARSED_CACHE.size >= PARSED_CACHE_LIMIT) {
     const firstKey = PARSED_CACHE.keys().next().value;
     if (firstKey !== undefined) PARSED_CACHE.delete(firstKey);
   }
-  PARSED_CACHE.set(chordPro, song);
-  return song;
+  PARSED_CACHE.set(chordPro, result);
+  return result;
+}
+
+const escapeHtml = (s: string): string =>
+  s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+/**
+ * Pantalla de error amable (en vez del texto plano en Times New Roman) cuando
+ * una canción tiene un error de sintaxis y no se puede renderizar.
+ */
+function buildErrorHtml(
+  error: SongParseError | null,
+  isDark: boolean,
+  fontFamily: string,
+): string {
+  const bg = isDark ? '#2C2C2E' : '#ffffff';
+  const text = isDark ? '#E5E5EA' : '#212529';
+  const subtle = isDark ? '#98989D' : '#8E8E93';
+  const accent = isDark ? '#FF8A80' : '#E15C62';
+  const codeBg = isDark ? 'rgba(255,138,128,0.10)' : 'rgba(225,92,98,0.07)';
+  const codeBorder = isDark ? 'rgba(255,138,128,0.28)' : 'rgba(225,92,98,0.22)';
+
+  const lineInfo =
+    error?.line != null
+      ? `<div class="err-line-label">Línea ${error.line}${
+          error.column != null ? ` · columna ${error.column}` : ''
+        }</div>`
+      : '';
+  const lineText =
+    error?.lineText != null && error.lineText.trim() !== ''
+      ? `<pre class="err-code">${escapeHtml(error.lineText)}</pre>`
+      : '';
+
+  return `<!DOCTYPE html><html><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <style>
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        font-family: ${fontFamily};
+        background-color: ${bg};
+        color: ${text};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 24px;
+        -webkit-font-smoothing: antialiased;
+      }
+      .err-wrap { max-width: 440px; width: 100%; text-align: center; }
+      .err-emoji { font-size: 56px; line-height: 1; margin-bottom: 16px; }
+      .err-title {
+        font-size: 1.7em;
+        font-weight: 800;
+        margin: 0 0 6px;
+        color: ${accent};
+        letter-spacing: -0.01em;
+      }
+      .err-sub {
+        font-size: 1.05em;
+        font-weight: 600;
+        margin: 0 0 20px;
+        color: ${text};
+      }
+      .err-line-label {
+        display: inline-block;
+        font-size: 0.78em;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: ${accent};
+        background: ${codeBg};
+        border: 1px solid ${codeBorder};
+        padding: 4px 12px;
+        border-radius: 16px;
+        margin-bottom: 10px;
+      }
+      .err-code {
+        text-align: left;
+        font-family: 'Roboto Mono', 'Courier New', monospace;
+        font-size: 0.85em;
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: ${codeBg};
+        border: 1px solid ${codeBorder};
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin: 0 0 24px;
+        color: ${text};
+      }
+      .err-foot {
+        font-size: 0.72em;
+        line-height: 1.45;
+        color: ${subtle};
+        margin: 0;
+        opacity: 0.9;
+      }
+    </style>
+  </head><body>
+    <div class="err-wrap">
+      <div class="err-emoji">😅</div>
+      <h1 class="err-title">Ay, mecachis</h1>
+      <p class="err-sub">Hay un error procesando esta canción</p>
+      ${lineInfo}
+      ${lineText}
+      <p class="err-foot">Hemos avisado a la gente maja que mantiene el cantoral para arreglarlo</p>
+    </div>
+  </body></html>`;
 }
 
 const themeVarsFor = (isDark: boolean) => ({
@@ -137,10 +286,12 @@ export const useSongProcessor = ({
   const [songHtml, setSongHtml] = useState<string>('Cargando…');
   const [isLoadingSong, setIsLoadingSong] = useState<boolean>(true);
 
-  const baseSong = useMemo<Song | null>(() => {
-    if (!originalChordPro) return null;
+  const parsed = useMemo<ParsedResult>(() => {
+    if (!originalChordPro) return { song: null, error: null };
     return parseChordPro(originalChordPro);
   }, [originalChordPro]);
+  const baseSong = parsed.song;
+  const songError = parsed.error;
 
   // Style snapshot for live updates. Computed every render but stable per
   // structural pass thanks to derived values.
@@ -184,7 +335,13 @@ export const useSongProcessor = ({
       return;
     }
     if (!baseSong) {
-      setSongHtml('❌ Error preparando la canción.');
+      setSongHtml(
+        buildErrorHtml(
+          songError,
+          styleRef.current.isDark,
+          styleRef.current.fontFamily,
+        ),
+      );
       setIsLoadingSong(false);
       return;
     }
@@ -651,7 +808,13 @@ export const useSongProcessor = ({
       setSongHtml(finalHtml);
     } catch (err) {
       logger.error('Error procesando canción en useSongProcessor:', err);
-      setSongHtml('❌ Error preparando la canción.');
+      setSongHtml(
+        buildErrorHtml(
+          songError,
+          styleRef.current.isDark,
+          styleRef.current.fontFamily,
+        ),
+      );
     } finally {
       setIsLoadingSong(false);
     }
@@ -662,6 +825,7 @@ export const useSongProcessor = ({
   }, [
     originalChordPro,
     baseSong,
+    songError,
     currentTranspose,
     notation,
     title,
@@ -672,5 +836,5 @@ export const useSongProcessor = ({
     adminMode,
   ]);
 
-  return { songHtml, isLoadingSong, styleState };
+  return { songHtml, isLoadingSong, styleState, songError };
 };

@@ -18,6 +18,26 @@
 
 ---
 
+## 2026-06-28 14:00 — Cantoral: pantalla amable para canciones con error de sintaxis
+
+Antes, cuando una canción tenía un error de sintaxis en su ChordPro y no se
+podía parsear, el visor mostraba un texto plano feo (`❌ Error preparando la
+canción.`) en Times New Roman. Ahora:
+
+- Se pinta una **pantalla de error con estilo** (centrada, emoji, colores de
+  marca y modo oscuro) que dice _"Ay, mecachis · Hay un error procesando esta
+  canción"_ y, en pequeñito, _"Hemos avisado a la gente maja que mantiene el
+  cantoral para arreglarlo"_.
+- Se muestra la **línea (y columna) del error** y se **pega el texto de la
+  línea problemática** para localizarlo de un vistazo.
+- El fallo se **reporta a Firebase** en la cola `songs/fallitos` (filename,
+  categoría, título, mensaje, línea/columna, texto de la línea, plataforma y
+  timestamp), una sola vez por canción+posición, para que quien mantiene el
+  cantoral lo pueda arreglar.
+- Archivos: `hooks/useSongProcessor.ts` (captura del error con
+  línea/columna + `buildErrorHtml`, nuevo `songError` en el retorno),
+  `app/screens/SongDetailScreen.tsx` (escritura a `songs/fallitos`).
+
 ## 2026-06-28 12:30 — Calidad: guardarraíles ESLint + typecheck de tests en CI
 
 Remate de la Fase 0 de `docs/planes/PLAN_CALIDAD.md` (los planes estaban
