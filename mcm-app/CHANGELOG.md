@@ -18,6 +18,24 @@
 
 ---
 
+## 2026-06-28 15:45 — Refactor: trocear GruposScreen (parcial, Fase 1.7)
+
+`app/screens/GruposScreen.tsx` pasa de **1100 → 561 líneas** (sale de la lista
+de archivos >800). Extraído a una carpeta nueva `components/grupos/`:
+
+- `SearchBar`, `MemberRow`, `GrupoCard`, `SearchHitRow` — los subcomponentes
+  (ya recibían `styles` por prop, así que la extracción es directa).
+- `gruposStyles.ts` — el `createStyles` + el tipo `GruposStyles`.
+- `gruposHelpers.ts` — tipos (`Grupo`/`Data`/`SearchHit`) y helpers puros
+  `normalize`/`isMe`, **con test** (`__tests__/gruposHelpers.test.ts`, 7 tests).
+  `highlightText` se movió dentro de `SearchHitRow` (su único uso).
+
+Cero cambios de comportamiento. **Parcial a propósito**: el cuerpo del
+componente (4 ramas de render, ~511 líneas) NO se ha troceado — requiere
+verificación en dispositivo y la posible migración a `SectionList` cambiaría
+comportamiento (queda como follow-up en PLAN_CALIDAD §1.7). Gigantes >800:
+11 → 10. typecheck/typecheck:tests/lint(0 err)/test(204) ok.
+
 ## 2026-06-28 15:10 — Refactor: trocear EvaluationWizard (Fase 1.9)
 
 `components/EvaluationWizard.tsx` pasa de **976 → 360 líneas**, quedando como
