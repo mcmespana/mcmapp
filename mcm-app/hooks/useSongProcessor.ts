@@ -71,6 +71,12 @@ export interface SongParseError {
   column: number | null;
   /** Texto de la línea problemática (tal cual la vio el parser). */
   lineText: string | null;
+  /**
+   * Pequeño contexto alrededor del error (línea anterior, la del error y la
+   * siguiente) para dar pistas: el parser PEG a veces apunta a la línea de
+   * después del fallo real, así que ver el entorno ayuda a localizarlo.
+   */
+  context: { n: number; text: string; isError: boolean }[];
 }
 
 interface ParsedResult {
@@ -108,8 +114,15 @@ function parseChordPro(chordPro: string): ParsedResult {
     const column =
       typeof loc?.column === 'number' && loc.column > 0 ? loc.column : null;
     let lineText: string | null = null;
+    const context: { n: number; text: string; isError: boolean }[] = [];
     if (line !== null) {
-      lineText = cleaned.split(/\r?\n/)[line - 1] ?? null;
+      const allLines = cleaned.split(/\r?\n/);
+      lineText = allLines[line - 1] ?? null;
+      const from = Math.max(1, line - 1);
+      const to = Math.min(allLines.length, line + 1);
+      for (let n = from; n <= to; n++) {
+        context.push({ n, text: allLines[n - 1] ?? '', isError: n === line });
+      }
     }
     result = {
       song: null,
@@ -118,6 +131,7 @@ function parseChordPro(chordPro: string): ParsedResult {
         line,
         column,
         lineText,
+        context,
       },
     };
   }
@@ -145,22 +159,61 @@ function buildErrorHtml(
   isDark: boolean,
   fontFamily: string,
 ): string {
-  const bg = isDark ? '#2C2C2E' : '#ffffff';
-  const text = isDark ? '#E5E5EA' : '#212529';
-  const subtle = isDark ? '#98989D' : '#8E8E93';
+  // Paleta cálida alrededor del rojo MCM (#E15C62) para que el error se sienta
+  // amable y no alarmante.
+  const pageBg = isDark ? '#1F1F21' : '#FBF7F6';
+  const cardBg = isDark ? '#2C2C2E' : '#FFFFFF';
+  const cardBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(225,92,98,0.10)';
+  const cardShadow = isDark
+    ? '0 18px 50px rgba(0,0,0,0.45)'
+    : '0 18px 50px rgba(225,92,98,0.12)';
+  const text = isDark ? '#F2F2F4' : '#1F2430';
+  const subtle = isDark ? '#9A9AA0' : '#9A8F8F';
   const accent = isDark ? '#FF8A80' : '#E15C62';
-  const codeBg = isDark ? 'rgba(255,138,128,0.10)' : 'rgba(225,92,98,0.07)';
-  const codeBorder = isDark ? 'rgba(255,138,128,0.28)' : 'rgba(225,92,98,0.22)';
+  const accentSoft = isDark ? '#FFB3AC' : '#EE7E83';
+  const haloGlow = isDark ? 'rgba(255,138,128,0.22)' : 'rgba(225,92,98,0.16)';
+  const codeBg = isDark ? 'rgba(255,138,128,0.08)' : 'rgba(225,92,98,0.05)';
+  const codeBorder = isDark ? 'rgba(255,138,128,0.24)' : 'rgba(225,92,98,0.18)';
+  const codeText = isDark ? '#E8E8EC' : '#43484F';
 
   const lineInfo =
     error?.line != null
-      ? `<div class="err-line-label">Línea ${error.line}${
-          error.column != null ? ` · columna ${error.column}` : ''
+      ? `<div class="err-line-label">📍 Línea ${error.line}${
+          error.column != null ? ` · col. ${error.column}` : ''
         }</div>`
       : '';
-  const lineText =
-    error?.lineText != null && error.lineText.trim() !== ''
-      ? `<pre class="err-code">${escapeHtml(error.lineText)}</pre>`
+
+  // Bloque de contexto con números de línea; la del error va resaltada.
+  const ctx = error?.context ?? [];
+  const codeRows =
+    ctx.length > 0
+      ? ctx
+          .map(
+            (l) =>
+              `<div class="err-row${l.isError ? ' is-error' : ''}">` +
+              `<span class="err-gutter">${l.n}</span>` +
+              `<span class="err-line">${escapeHtml(l.text) || ' '}</span>` +
+              `</div>`,
+          )
+          .join('')
+      : error?.lineText != null && error.lineText.trim() !== ''
+        ? `<div class="err-row is-error"><span class="err-line">${escapeHtml(
+            error.lineText,
+          )}</span></div>`
+        : '';
+  const codeBlock = codeRows
+    ? `<div class="err-codecard">
+        <div class="err-codecard-bar"><span></span><span></span><span></span></div>
+        <div class="err-code">${codeRows}</div>
+      </div>`
+    : '';
+
+  // Mensaje del parser como pista (p.ej. 'Expected "}" but "[" found.').
+  const hint =
+    error?.message && error.message.trim() !== ''
+      ? `<div class="err-hint"><span class="err-hint-tag">Pista</span>${escapeHtml(
+          error.message.trim(),
+        )}</div>`
       : '';
 
   return `<!DOCTYPE html><html><head>
@@ -170,70 +223,191 @@ function buildErrorHtml(
       html, body { height: 100%; margin: 0; }
       body {
         font-family: ${fontFamily};
-        background-color: ${bg};
+        background:
+          radial-gradient(120% 60% at 50% -10%, ${haloGlow} 0%, transparent 55%),
+          ${pageBg};
         color: ${text};
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 32px 24px;
+        padding: 28px 22px;
         -webkit-font-smoothing: antialiased;
       }
-      .err-wrap { max-width: 440px; width: 100%; text-align: center; }
-      .err-emoji { font-size: 56px; line-height: 1; margin-bottom: 16px; }
+      .err-card {
+        max-width: 380px;
+        width: 100%;
+        text-align: center;
+        background: ${cardBg};
+        border: 1px solid ${cardBorder};
+        border-radius: 26px;
+        box-shadow: ${cardShadow};
+        padding: 34px 26px 28px;
+        animation: err-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      @keyframes err-pop {
+        from { opacity: 0; transform: translateY(14px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0)    scale(1); }
+      }
+      .err-badge {
+        position: relative;
+        width: 92px;
+        height: 92px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+          radial-gradient(circle at 50% 38%, ${haloGlow} 0%, transparent 70%);
+      }
+      .err-badge::before {
+        content: '';
+        position: absolute;
+        inset: 14px;
+        border-radius: 50%;
+        background: ${codeBg};
+        border: 1.5px solid ${codeBorder};
+      }
+      .err-emoji {
+        position: relative;
+        font-size: 44px;
+        line-height: 1;
+        animation: err-float 3.2s ease-in-out infinite;
+      }
+      @keyframes err-float {
+        0%, 100% { transform: translateY(0) rotate(-2deg); }
+        50%      { transform: translateY(-4px) rotate(2deg); }
+      }
       .err-title {
-        font-size: 1.7em;
+        font-size: 1.55em;
         font-weight: 800;
         margin: 0 0 6px;
         color: ${accent};
-        letter-spacing: -0.01em;
+        letter-spacing: -0.015em;
       }
       .err-sub {
-        font-size: 1.05em;
+        font-size: 1.02em;
         font-weight: 600;
-        margin: 0 0 20px;
+        line-height: 1.4;
+        margin: 0 auto 18px;
+        max-width: 17em;
         color: ${text};
       }
       .err-line-label {
         display: inline-block;
-        font-size: 0.78em;
+        font-size: 0.74em;
         font-weight: 700;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-        color: ${accent};
+        letter-spacing: 0.01em;
+        color: ${accentSoft};
         background: ${codeBg};
         border: 1px solid ${codeBorder};
-        padding: 4px 12px;
-        border-radius: 16px;
-        margin-bottom: 10px;
+        padding: 5px 13px;
+        border-radius: 999px;
+        margin-bottom: 12px;
+      }
+      .err-codecard {
+        text-align: left;
+        background: ${codeBg};
+        border: 1px solid ${codeBorder};
+        border-radius: 14px;
+        overflow: hidden;
+        margin: 0 0 16px;
+      }
+      .err-codecard-bar {
+        display: flex;
+        gap: 6px;
+        padding: 9px 12px;
+        border-bottom: 1px solid ${codeBorder};
+      }
+      .err-codecard-bar span {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: ${accentSoft};
+        opacity: 0.55;
       }
       .err-code {
-        text-align: left;
         font-family: 'Roboto Mono', 'Courier New', monospace;
-        font-size: 0.85em;
+        font-size: 0.84em;
+        line-height: 1.55;
+        margin: 0;
+        padding: 8px 0;
+        color: ${codeText};
+      }
+      .err-row {
+        display: flex;
+        align-items: baseline;
+        padding: 1px 14px 1px 0;
+      }
+      .err-row.is-error {
+        background: ${haloGlow};
+        box-shadow: inset 3px 0 0 ${accent};
+      }
+      .err-gutter {
+        flex: 0 0 auto;
+        width: 2.6em;
+        padding-right: 12px;
+        text-align: right;
+        color: ${subtle};
+        opacity: 0.7;
+        user-select: none;
+      }
+      .err-row.is-error .err-gutter {
+        color: ${accent};
+        opacity: 1;
+        font-weight: 700;
+      }
+      .err-line {
+        flex: 1 1 auto;
         white-space: pre-wrap;
         word-break: break-word;
+      }
+      .err-hint {
+        text-align: left;
+        font-size: 0.76em;
+        line-height: 1.5;
+        color: ${subtle};
         background: ${codeBg};
-        border: 1px solid ${codeBorder};
+        border: 1px dashed ${codeBorder};
         border-radius: 12px;
-        padding: 12px 14px;
-        margin: 0 0 24px;
-        color: ${text};
+        padding: 10px 13px;
+        margin: 0 0 22px;
+        word-break: break-word;
+      }
+      .err-hint-tag {
+        display: inline-block;
+        font-size: 0.82em;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: ${accent};
+        margin-right: 8px;
       }
       .err-foot {
         font-size: 0.72em;
-        line-height: 1.45;
+        line-height: 1.5;
         color: ${subtle};
         margin: 0;
-        opacity: 0.9;
+        opacity: 0.92;
+      }
+      .err-foot::before {
+        content: '';
+        display: block;
+        width: 34px;
+        height: 2px;
+        border-radius: 2px;
+        margin: 0 auto 12px;
+        background: linear-gradient(90deg, transparent, ${codeBorder}, transparent);
       }
     </style>
   </head><body>
-    <div class="err-wrap">
-      <div class="err-emoji">😅</div>
+    <div class="err-card">
+      <div class="err-badge"><span class="err-emoji">😅</span></div>
       <h1 class="err-title">Ay, mecachis</h1>
       <p class="err-sub">Hay un error procesando esta canción</p>
       ${lineInfo}
-      ${lineText}
+      ${codeBlock}
+      ${hint}
       <p class="err-foot">Hemos avisado a la gente maja que mantiene el cantoral para arreglarlo</p>
     </div>
   </body></html>`;
