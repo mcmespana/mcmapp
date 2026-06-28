@@ -18,6 +18,65 @@
 
 ---
 
+## 2026-06-28 14:00 — Cantoral: pantalla amable para canciones con error de sintaxis
+
+Antes, cuando una canción tenía un error de sintaxis en su ChordPro y no se
+podía parsear, el visor mostraba un texto plano feo (`❌ Error preparando la
+canción.`) en Times New Roman. Ahora:
+
+- Se pinta una **pantalla de error con estilo** (centrada, emoji, colores de
+  marca y modo oscuro) que dice _"Ay, mecachis · Hay un error procesando esta
+  canción"_ y, en pequeñito, _"Hemos avisado a la gente maja que mantiene el
+  cantoral para arreglarlo"_.
+- Se muestra la **línea (y columna) del error** y se **pega el texto de la
+  línea problemática** para localizarlo de un vistazo.
+- El fallo se **reporta a Firebase** en la cola `songs/fallitos` (filename,
+  categoría, título, mensaje, línea/columna, texto de la línea, plataforma y
+  timestamp), una sola vez por canción+posición, para que quien mantiene el
+  cantoral lo pueda arreglar.
+- Archivos: `hooks/useSongProcessor.ts` (captura del error con
+  línea/columna + `buildErrorHtml`, nuevo `songError` en el retorno),
+  `app/screens/SongDetailScreen.tsx` (escritura a `songs/fallitos`).
+
+## 2026-06-28 13:15 — Tests: useSongProcessor + Modo Coro (Fase 5)
+
+Cobertura de dos piezas que estaban sin tests (PLAN_CALIDAD §5.1 y §5.2):
+
+- **`__tests__/useSongProcessor.test.ts`** (17 tests): el núcleo del cantoral.
+  Vía `renderHook`, comprueba el HTML generado — badges de tono/cejilla/
+  transpose, notación EN/ES (`Notation = 'EN' | 'ES'`), clases del `<body>`
+  (acordes ocultos, tema oscuro), cabecera de modo presentación y `styleState`.
+  Se exporta `UseSongProcessorParams` para poder tipar el test.
+- **`__tests__/choirSessionService.test.ts`** (16 tests): Modo Coro
+  (maestro/oyentes). Validación de código, forma del payload + expiración a 2
+  semanas, limpieza de `undefined` antes de escribir en RTDB, publicaciones del
+  maestro, y traspaso de sesión entre códigos con sus casos de error.
+- Ampliado `__mocks__/firebase.ts` con `set/update/remove/onValue/off`.
+
+Total: 16→18 ficheros de test, 150→183 tests. Sin cambios de comportamiento.
+
+## 2026-06-28 12:30 — Calidad: guardarraíles ESLint + typecheck de tests en CI
+
+Remate de la Fase 0 de `docs/planes/PLAN_CALIDAD.md` (los planes estaban
+desfasados: el logger central, la migración de `console.*` a 0, el CI, husky y
+lint-staged ya estaban hechos). Cambios de esta pasada:
+
+- **ESLint** (`eslint.config.js`): `no-console` sube de `warn` a `error` (la
+  migración al logger está completa, 0 `console.*` en el código); añadido
+  `max-lines: ['warn', { max: 400 }]` para señalar archivos grandes sin
+  bloquear los legacy en CI (33 avisos, todos en gigantes ya conocidos).
+- **Typecheck de tests** (Fase 4.2): nuevo `tsconfig.test.json` (extiende el
+  base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como
+  paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
+- **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
+  >600) y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
+  Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+
+Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
+Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`
+(Fase 4.1), porque con `lint-staged --max-warnings=0` bloquearía commits que
+toquen esos archivos.
+
 ## 2026-06-22 15:10 — Fix: Playlist "Orden ajustado" tapada por el header (iOS)
 
 En iOS el header de la pantalla es transparente y las `FlatList` lo compensan

@@ -163,6 +163,7 @@ export default function SongDetailScreen({
     songHtml,
     isLoadingSong: isSongProcessing,
     styleState,
+    songError,
   } = useSongProcessor({
     originalChordPro,
     currentTranspose,
@@ -179,6 +180,40 @@ export default function SongDetailScreen({
   });
 
   const isSelected = isSongSelected(filename);
+
+  // ── Reporte de canciones con error de sintaxis (cola `songs/fallitos`) ──
+  // Si una canción no se puede parsear, avisamos a quien mantiene el cantoral
+  // dejando el fallo en Firebase. Solo una vez por canción+línea para no
+  // inundar la cola en cada re-render.
+  const reportedFallitoRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!songError || !filename) return;
+    const reportKey = `${filename}::${songError.line ?? '?'}::${songError.column ?? '?'}`;
+    if (reportedFallitoRef.current === reportKey) return;
+    reportedFallitoRef.current = reportKey;
+    (async () => {
+      try {
+        const db = getDatabase(getFirebaseApp());
+        const fallitoRef = push(ref(db, 'songs/fallitos'));
+        await set(fallitoRef, {
+          filename,
+          category: firebaseCategory ?? null,
+          title: _navScreenTitle ?? null,
+          author: author ?? null,
+          message: songError.message,
+          line: songError.line,
+          column: songError.column,
+          lineText: songError.lineText,
+          reportedAt: new Date().toISOString(),
+          timestamp: Date.now(),
+          platform: Platform.OS,
+          status: 'syntax-error',
+        });
+      } catch (err) {
+        logger.error('Error reportando canción con fallo a Firebase:', err);
+      }
+    })();
+  }, [songError, filename, firebaseCategory, _navScreenTitle, author]);
 
   // ── Multimedia ──
   const media = useMemo(() => routeMedia ?? null, [routeMedia]);
