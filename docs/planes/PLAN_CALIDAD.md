@@ -83,7 +83,8 @@ Objetivo: ninguna pantalla > 800 líneas; cada pantalla = composición de compon
 - [ ] **1.6 — `SecretPanelModal.tsx` (1.121)** — panel admin; trocear por sección del panel.
 - [ ] **1.7 — `GruposScreen.tsx` (1.100)** — tiene 4 variantes de render con `.map()` anidados (ver MEJORAS §1.4); al trocear, migrar a `SectionList` con `GrupoItem`/`MiembroRow` memoizados (mata dos pájaros).
 - [ ] **1.8 — `HomeWidgets.tsx` (1.075)** — un archivo con N widgets dentro; partirlo en un archivo por widget.
-- [ ] **1.9 — Segunda ronda** (si hay energía): `notifications.tsx` (994), `EvaluationWizard.tsx` (974), `NotificationsBottomSheet.tsx` (937), ~~`PreviewChannelModal.tsx` (847)~~ **hecho 2026-06-28** → 349 líneas; piezas decorativas extraídas a `components/preview-channel/` (`AnimatedGradients`, `FloatingParticle`, `ConfettiBurst`, `GiantLever`, `LabDecorations`). Gigantes: 13 → 12.
+- [ ] **1.9 — Segunda ronda** (si hay energía): `notifications.tsx` (994), `EvaluationWizard.tsx` (974), ~~`NotificationsBottomSheet.tsx` (937)~~ **hecho 2026-06-28** → 365 líneas; extraídos a `components/notifications/` el detalle (`NotificationDetail`), el item de lista (`NotificationListItem`) y los helpers puros (`notificationDisplay.ts`, con test). ~~`PreviewChannelModal.tsx` (847)~~ **hecho 2026-06-28** → 349 líneas; piezas decorativas extraídas a `components/preview-channel/` (`AnimatedGradients`, `FloatingParticle`, `ConfettiBurst`, `GiantLever`, `LabDecorations`).
+  - Nota: `hooks/useSongProcessor.ts` pasó a >800 (1014) con el trabajo del cantoral (pantalla de error de sintaxis), así que el total de gigantes se mantiene ~12 pese a estos dos troceados.
 
 **Verificación de cada PR:** la app corriendo (web como mínimo, `npm run web`), no solo typecheck — extraer componentes rompe sutilmente estilos, gestos y memoización.
 

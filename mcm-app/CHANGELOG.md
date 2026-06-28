@@ -18,6 +18,25 @@
 
 ---
 
+## 2026-06-28 14:40 — Refactor: trocear NotificationsBottomSheet (Fase 1.9)
+
+`components/NotificationsBottomSheet.tsx` pasa de **938 → 365 líneas**. Piezas
+extraídas a una carpeta nueva `components/notifications/`:
+
+- `NotificationDetail.tsx` — vista "en grande" de una notificación.
+- `NotificationListItem.tsx` — tarjeta de la lista (swipe-para-leída, dot, chips
+  de destino/acción). La lógica de marcado/navegación sigue en el padre y se le
+  pasa por props.
+- `notificationDisplay.ts` — helpers puros (`normalizeRoute`, `getRouteLabel`,
+  `formatDate`, `ROUTE_LABELS`), **con test** (`__tests__/notificationDisplay.test.ts`,
+  14 tests).
+
+El sheet queda como datos + composición. Cero cambios de comportamiento (la
+acción del chip de botón se movió a un handler `handleActionButtonPress` con la
+misma lógica; se eliminaron dos estilos que ya no se usaban). Solo
+`app/(tabs)/index.tsx` consume el sheet y su import no cambia. Tests: 19
+ficheros / 197.
+
 ## 2026-06-28 14:05 — Refactor: trocear PreviewChannelModal (Fase 1.9)
 
 Descuartizado el más pequeño de los gigantes (PLAN_CALIDAD §1.9):

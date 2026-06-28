@@ -5,15 +5,11 @@ import {
   StyleSheet,
   Text,
   FlatList,
-  Image,
   Linking,
   RefreshControl,
-  Animated,
-  ScrollView,
-  Pressable,
   Dimensions,
 } from 'react-native';
-import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -21,7 +17,7 @@ import colors, { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
-import { radii, shadows } from '@/constants/uiStyles';
+import { radii } from '@/constants/uiStyles';
 import {
   getLocalNotificationsHistory,
   markNotificationAsRead,
@@ -33,79 +29,15 @@ import {
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import BottomSheet from './BottomSheet';
+import NotificationDetail from './notifications/NotificationDetail';
+import NotificationListItem from './notifications/NotificationListItem';
+import { normalizeRoute } from './notifications/notificationDisplay';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_GAP = 80; // space below safe-area (notch / Dynamic Island)
 
-const ROUTE_LABELS: Record<
-  string,
-  { label: string; icon: keyof typeof MaterialIcons.glyphMap }
-> = {
-  '/(tabs)/calendario': { label: 'Calendario', icon: 'calendar-today' },
-  '/(tabs)/fotos': { label: 'Fotos', icon: 'photo-library' },
-  '/(tabs)/cancionero': { label: 'Cantoral', icon: 'music-note' },
-  '/(tabs)/mas': { label: 'Más', icon: 'more-horiz' },
-  '/(tabs)/index': { label: 'Inicio', icon: 'home' },
-  '/wordle': { label: 'Wordle', icon: 'games' },
-  '/(tabs)/contigo': { label: 'Contigo', icon: 'favorite' },
-  '/(tabs)/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
-  '/(tabs)/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
-  '/(tabs)/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
-  '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
-};
-
-function normalizeRoute(route: string): string {
-  if (!route) return '';
-  let clean = route.trim();
-  if (clean.startsWith('http')) return clean;
-
-  clean = clean.replace(/\/+/g, '/');
-
-  const hasSlash = clean.startsWith('/');
-  const naked = hasSlash ? clean.substring(1) : clean;
-
-  if (naked.startsWith('(tabs)/')) {
-    return '/' + naked;
-  }
-
-  const tabPaths = [
-    'cancionero',
-    'calendario',
-    'fotos',
-    'mas',
-    'index',
-    'contigo',
-  ];
-
-  const isTab = tabPaths.some((p) => naked === p || naked.startsWith(p + '/'));
-  if (isTab) {
-    return '/(tabs)/' + naked;
-  }
-
-  return '/' + naked;
-}
-
-function getRouteLabel(route: string) {
-  const norm = normalizeRoute(route);
-  return ROUTE_LABELS[norm] ?? ROUTE_LABELS[route] ?? null;
-}
-
-function formatDate(date: Date): string {
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (minutes < 1) return 'Ahora';
-  if (minutes < 60) return `Hace ${minutes} min`;
-  if (hours < 24) return `Hace ${hours} h`;
-  if (days < 7) return `Hace ${days} d`;
-  return date.toLocaleDateString('es-ES', {
-    day: 'numeric',
-    month: 'short',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-  });
-}
+type Notification = NotificationData | ReceivedNotification;
+type ActionButton = NonNullable<Notification['actionButton']>;
 
 interface Props {
   visible: boolean;
@@ -115,7 +47,7 @@ interface Props {
    * notificación (vista "en grande") en lugar de la lista. Lo usa la tarjeta de
    * Novedades de la Home para abrir la última notificación concreta.
    */
-  initialNotification?: (NotificationData | ReceivedNotification) | null;
+  initialNotification?: Notification | null;
 }
 
 export default function NotificationsBottomSheet({
@@ -135,9 +67,8 @@ export default function NotificationsBottomSheet({
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState<
-    (NotificationData | ReceivedNotification) | null
-  >(null);
+  const [selectedNotification, setSelectedNotification] =
+    useState<Notification | null>(null);
 
   // Al abrir: si viene una notificación inicial, mostramos su detalle en grande
   // (y la marcamos como leída). Al cerrar: reseteamos la vista de detalle.
@@ -212,7 +143,7 @@ export default function NotificationsBottomSheet({
   }, [localNotifications, firebaseNotifications]);
 
   const isNotificationRead = React.useCallback(
-    (n: NotificationData | ReceivedNotification) => {
+    (n: Notification) => {
       if (readIds.has(n.id)) return true;
       if ('isRead' in n && n.isRead) return true;
       const dateStr = 'receivedAt' in n ? n.receivedAt : n.createdAt;
@@ -244,7 +175,7 @@ export default function NotificationsBottomSheet({
   };
 
   const handleNotificationPress = useCallback(
-    async (notification: NotificationData | ReceivedNotification) => {
+    async (notification: Notification) => {
       if (!isNotificationRead(notification))
         await handleMarkAsRead(notification.id);
       setSelectedNotification(notification);
@@ -267,181 +198,35 @@ export default function NotificationsBottomSheet({
     [onClose],
   );
 
-  // ── Swipe action ──────────────────────────────────────────────────────────
-  const renderRightActions = (
-    _progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>,
-    notificationId: string,
-  ) => {
-    const scale = dragX.interpolate({
-      inputRange: [-100, 0],
-      outputRange: [1, 0],
-      extrapolate: 'clamp',
-    });
-    return (
-      <TouchableOpacity
-        style={listStyles.rightAction}
-        onPress={() => handleMarkAsRead(notificationId)}
-      >
-        <Animated.View
-          style={[listStyles.actionContent, { transform: [{ scale }] }]}
-        >
-          <MaterialIcons name="check" size={24} color="#fff" />
-          <Text style={listStyles.actionText}>Leída</Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  };
+  const handleActionButtonPress = useCallback(
+    (btn: ActionButton) => {
+      onClose();
+      setTimeout(() => {
+        if (btn.isInternal) {
+          try {
+            router.push(normalizeRoute(btn.url) as any);
+          } catch {}
+        } else {
+          Linking.openURL(btn.url).catch(logger.error);
+        }
+      }, 320);
+    },
+    [onClose],
+  );
 
-  // ── Render notificación ───────────────────────────────────────────────────
-  const renderNotification = ({
-    item: notification,
-  }: {
-    item: NotificationData | ReceivedNotification;
-  }) => {
-    const isRead = isNotificationRead(notification);
-    const isUnread = !isRead;
-    const date = new Date(
-      'receivedAt' in notification
-        ? notification.receivedAt
-        : notification.createdAt,
-    );
-    const routeInfo = notification.internalRoute
-      ? getRouteLabel(notification.internalRoute)
-      : null;
-
-    return (
-      <View style={{ marginBottom: spacing.md }}>
-        <Swipeable
-          renderRightActions={(progress, dragX) =>
-            isUnread
-              ? renderRightActions(progress, dragX, notification.id)
-              : null
-          }
-          rightThreshold={40}
-          overshootRight={false}
-        >
-          <TouchableOpacity
-            style={[
-              listStyles.card,
-              {
-                backgroundColor: theme.background,
-                borderColor: isDark ? '#3A3A3C' : colors.border,
-              },
-              isUnread && {
-                backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
-                borderColor: colors.primary,
-              },
-            ]}
-            onPress={() => handleNotificationPress(notification)}
-            activeOpacity={0.7}
-          >
-            {notification.icon && (
-              <Image
-                source={{ uri: notification.icon }}
-                style={listStyles.icon}
-              />
-            )}
-
-            <View style={listStyles.content}>
-              <View style={listStyles.row}>
-                <Text
-                  style={[
-                    listStyles.title,
-                    { color: theme.text },
-                    !isUnread && { fontWeight: '500' },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {notification.title}
-                </Text>
-                <View style={listStyles.rightRow}>
-                  {isUnread && <View style={listStyles.dot} />}
-                  {isUnread && (
-                    <Pressable
-                      onPress={() => handleMarkAsRead(notification.id)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <MaterialIcons
-                        name="check-circle-outline"
-                        size={20}
-                        color={colors.primary}
-                      />
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-
-              <Text
-                style={[listStyles.body, { color: theme.icon }]}
-                numberOfLines={2}
-              >
-                {notification.body}
-              </Text>
-
-              <View style={listStyles.footer}>
-                <Text style={[listStyles.date, { color: theme.icon }]}>
-                  {formatDate(date)}
-                </Text>
-                <View style={listStyles.chipsRow}>
-                  {routeInfo && notification.internalRoute && (
-                    <Pressable
-                      style={listStyles.destChip}
-                      onPress={() =>
-                        handleDestinationChipPress(notification.internalRoute!)
-                      }
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Text style={listStyles.destChipText}>
-                        {routeInfo.label}
-                      </Text>
-                      <MaterialIcons
-                        name="chevron-right"
-                        size={13}
-                        color={colors.primary}
-                      />
-                    </Pressable>
-                  )}
-                  {notification.actionButton && (
-                    <Pressable
-                      style={listStyles.actionChip}
-                      onPress={() => {
-                        const btn = notification.actionButton!;
-                        onClose();
-                        setTimeout(() => {
-                          if (btn.isInternal) {
-                            try {
-                              router.push(normalizeRoute(btn.url) as any);
-                            } catch {}
-                          } else {
-                            Linking.openURL(btn.url).catch(logger.error);
-                          }
-                        }, 320);
-                      }}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                      <Text style={listStyles.actionChipText} numberOfLines={1}>
-                        {notification.actionButton.text}
-                      </Text>
-                      <MaterialIcons
-                        name={
-                          notification.actionButton.isInternal
-                            ? 'chevron-right'
-                            : 'open-in-new'
-                        }
-                        size={11}
-                        color="#fff"
-                      />
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </Swipeable>
-      </View>
-    );
-  };
+  const renderNotification = ({ item }: { item: Notification }) => (
+    <NotificationListItem
+      notification={item}
+      isRead={isNotificationRead(item)}
+      theme={theme}
+      isDark={isDark}
+      scheme={scheme}
+      onPress={handleNotificationPress}
+      onMarkRead={handleMarkAsRead}
+      onDestinationPress={handleDestinationChipPress}
+      onActionPress={handleActionButtonPress}
+    />
+  );
 
   // Fixed height so FlatList can scroll: leave SHEET_GAP below Dynamic Island
   const sheetHeight = SCREEN_HEIGHT - (insets.top + SHEET_GAP);
@@ -520,7 +305,7 @@ export default function NotificationsBottomSheet({
               }
               renderItem={renderNotification}
               contentContainerStyle={[
-                listStyles.listContent,
+                sheetStyles.listContent,
                 { paddingBottom: insets.bottom + spacing.md },
               ]}
               scrollEventThrottle={16}
@@ -541,165 +326,9 @@ export default function NotificationsBottomSheet({
   );
 }
 
-// ============================================================================
-// Vista de detalle
-// ============================================================================
-
-function NotificationDetail({
-  notification,
-  onClose,
-  scheme,
-  bottomInset,
-}: {
-  notification: NotificationData | ReceivedNotification;
-  onClose: () => void;
-  scheme: 'light' | 'dark';
-  bottomInset: number;
-}) {
-  const theme = Colors[scheme];
-  const date = new Date(
-    'receivedAt' in notification
-      ? notification.receivedAt
-      : notification.createdAt,
-  );
-  const routeInfo = notification.internalRoute
-    ? getRouteLabel(notification.internalRoute)
-    : null;
-
-  const navigateTo = (route: string) => {
-    onClose();
-    const clean = normalizeRoute(route);
-    setTimeout(() => {
-      try {
-        router.push(clean as any);
-      } catch {}
-    }, 320);
-  };
-
-  return (
-    <View style={{ flex: 1 }}>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[
-          detailStyles.content,
-          { paddingBottom: bottomInset + spacing.xl },
-        ]}
-        showsVerticalScrollIndicator
-        scrollIndicatorInsets={{ right: 1 }}
-      >
-        {notification.icon && (
-          <Image
-            source={{ uri: notification.icon }}
-            style={detailStyles.icon}
-          />
-        )}
-
-        <Text style={[detailStyles.title, { color: theme.text }]}>
-          {notification.title}
-        </Text>
-
-        <Text style={[detailStyles.date, { color: theme.icon }]}>
-          {date.toLocaleDateString('es-ES', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Text>
-
-        {notification.imageUrl && (
-          <Image
-            source={{ uri: notification.imageUrl }}
-            style={detailStyles.image}
-            resizeMode="cover"
-          />
-        )}
-
-        <Text style={[detailStyles.body, { color: theme.text }]}>
-          {notification.body}
-        </Text>
-
-        {(notification.internalRoute || notification.actionButton) && (
-          <View
-            style={[
-              detailStyles.divider,
-              { backgroundColor: hexAlpha(theme.icon, '20') },
-            ]}
-          />
-        )}
-
-        {notification.internalRoute && (
-          <Pressable
-            style={[detailStyles.routeBtn, { borderColor: colors.primary }]}
-            onPress={() => navigateTo(notification.internalRoute!)}
-          >
-            <MaterialIcons
-              name={(routeInfo?.icon ?? 'launch') as any}
-              size={20}
-              color={colors.primary}
-            />
-            <Text
-              style={[detailStyles.routeBtnText, { color: colors.primary }]}
-            >
-              {routeInfo ? `Ir a ${routeInfo.label}` : 'Abrir sección'}
-            </Text>
-            <MaterialIcons
-              name="chevron-right"
-              size={20}
-              color={colors.primary}
-            />
-          </Pressable>
-        )}
-
-        {notification.actionButton && (
-          <Pressable
-            style={detailStyles.actionBtn}
-            onPress={() => {
-              const btn = notification.actionButton!;
-              if (btn.isInternal) {
-                navigateTo(btn.url);
-              } else {
-                Linking.openURL(btn.url).catch(logger.error);
-              }
-            }}
-          >
-            <Text style={detailStyles.actionBtnText}>
-              {notification.actionButton.text}
-            </Text>
-            <MaterialIcons
-              name={
-                notification.actionButton.isInternal
-                  ? 'chevron-right'
-                  : 'open-in-new'
-              }
-              size={18}
-              color="#fff"
-            />
-          </Pressable>
-        )}
-      </ScrollView>
-    </View>
-  );
-}
-
-// ============================================================================
-// Estilos
-// ============================================================================
-
 const sheetStyles = StyleSheet.create({
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+  listContent: {
+    padding: spacing.md,
   },
   markAllHeaderBtn: {
     flexDirection: 'row',
@@ -732,207 +361,5 @@ const sheetStyles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     opacity: 0.7,
-  },
-});
-
-const listStyles = StyleSheet.create({
-  listContent: {
-    padding: spacing.md,
-  },
-  card: {
-    flexDirection: 'row',
-    borderRadius: radii.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    ...shadows.sm,
-  },
-  icon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: spacing.md,
-    backgroundColor: colors.border,
-    alignSelf: 'flex-start',
-    marginTop: 2,
-  },
-  content: { flex: 1 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: '700',
-    flex: 1,
-    marginRight: spacing.xs,
-  },
-  rightRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexShrink: 0,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  body: {
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 8,
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  date: { fontSize: 11 },
-  chipsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexShrink: 1,
-    flexWrap: 'wrap',
-  },
-  destChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: hexAlpha(colors.primary, '60'),
-    backgroundColor: hexAlpha(colors.primary, '12'),
-  },
-  destChipText: {
-    fontSize: 10,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  actionChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: radii.pill,
-    backgroundColor: colors.primary,
-    maxWidth: 140,
-  },
-  actionChipText: {
-    fontSize: 10,
-    color: '#fff',
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  rightAction: {
-    backgroundColor: colors.success,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: radii.md,
-    height: '100%',
-    width: 80,
-  },
-  actionContent: { alignItems: 'center', justifyContent: 'center' },
-  actionText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginTop: 4,
-    fontSize: 12,
-  },
-});
-
-const detailStyles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backBtn: {
-    width: 40,
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  content: {
-    padding: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  icon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginBottom: spacing.md,
-    alignSelf: 'center',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-    lineHeight: 30,
-  },
-  date: {
-    fontSize: 13,
-    marginBottom: spacing.lg,
-    textTransform: 'capitalize',
-  },
-  image: {
-    width: '100%',
-    height: 200,
-    borderRadius: radii.md,
-    marginBottom: spacing.lg,
-  },
-  body: {
-    fontSize: 16,
-    lineHeight: 26,
-    marginBottom: spacing.lg,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginBottom: spacing.lg,
-  },
-  routeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    marginBottom: spacing.md,
-  },
-  routeBtnText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: radii.lg,
-    gap: 10,
-    ...shadows.lg,
-  },
-  actionBtnText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '700',
   },
 });
