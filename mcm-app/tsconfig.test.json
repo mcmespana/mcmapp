@@ -1,0 +1,25 @@
+// tsconfig.test.json — typecheck que SÍ incluye los tests.
+// El tsconfig.json base los excluye (Metro/Expo no los compila); este reusa el
+// mismo conjunto de fuentes y añade __tests__ para que
+// `npm run typecheck:tests` (y el CI) detecten errores de tipos en los
+// ficheros de prueba. Ver docs/planes/PLAN_CALIDAD.md §4.2.
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "constants/**/*.ts",
+    "constants/**/*.tsx",
+    "hooks/**/*.ts",
+    "hooks/**/*.tsx",
+    "notifications/**/*.ts",
+    "notifications/**/*.tsx",
+    "__tests__/**/*.ts",
+    "__tests__/**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": ["node_modules", "babel.config.js", "metro.config.js"]
+}

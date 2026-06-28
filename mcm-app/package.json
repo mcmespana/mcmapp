@@ -10,6 +10,7 @@
     "lint": "expo lint",
     "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,md}'",
     "typecheck": "tsc --noEmit",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
     "test": "jest",
     "eas:build": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build",
     "eas:build:ios": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build -p ios",

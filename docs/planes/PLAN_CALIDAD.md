@@ -49,16 +49,16 @@ El problema real es **gigantismo de archivos y deuda acumulada por crecer rápid
 
 Objetivo: que el problema deje de crecer mientras se arregla el resto.
 
-- [ ] **0.1 — ESLint como muro** (`mcm-app/eslint.config.js`):
-  - `'prettier/prettier': 'error'` (hoy `warn`, deja pasar formato roto).
-  - `'no-console': 'error'` — con excepción (override de ESLint) solo para `utils/logger.ts`.
-  - `'max-lines': ['warn', { max: 400, skipBlankLines: true, skipComments: true }]` — `warn` y no `error` a propósito: señala los archivos nuevos sin bloquear los legacy. Cuando la Fase 1 termine, subir a `error` con `max: 800`.
-  - `'@typescript-eslint/no-explicit-any': 'warn'` → pasará a `error` al cerrar la Fase 3.
-- [ ] **0.2 — Logger central** (`mcm-app/utils/logger.ts`): niveles `debug/info/warn/error`; `debug`/`info` silenciados en producción (gate por `__DEV__`); diseñado para enchufarle un transport de Sentry en la Fase 5. Migrar los 113 `console.*` (mecánico: buscar-reemplazar + decidir nivel en cada caso; los `console.error` de catches de red suelen ser `warn`).
-- [ ] **0.3 — `lint-staged` con ESLint** (raíz `package.json`): hoy solo corre `prettier --write`. Añadir `eslint --fix --max-warnings=0` para `mcm-app/**/*.{ts,tsx}`. ⚠️ `.husky/pre-commit` aparece **borrado** en el working tree actual — restaurarlo (o averiguar por qué se borró) antes de que esto sirva de algo.
-- [ ] **0.4 — Regla escrita en `mcm-app/CLAUDE.md`**: «Ningún archivo nuevo > 400 líneas. Si una pantalla supera 600 líneas, extraer componentes/hooks ANTES de añadir la feature.» Gran parte del crecimiento lo generan agentes IA; sin la regla escrita donde la leen, reincidirán.
+- [x] **0.1 — ESLint como muro** (`mcm-app/eslint.config.js`): _hecho 2026-06-28._
+  - [x] `'prettier/prettier': 'error'`.
+  - [x] `'no-console': 'error'` — con override solo para `utils/logger.ts` (la migración de `console.*` está completa, 0 en el código).
+  - [x] `'max-lines': ['warn', { max: 400, skipBlankLines: true, skipComments: true }]` — `warn` a propósito (señala 13 gigantes + archivos nuevos sin bloquear los legacy en CI). Cuando la Fase 1 termine, subir a `error` con `max: 800`.
+  - [ ] `'@typescript-eslint/no-explicit-any': 'warn'` → pendiente: hay 66 `: any` en archivos grandes; con `lint-staged --max-warnings=0` activar el `warn` bloquearía cualquier commit que toque esos archivos. Activar al limpiarlos (Fase 4.1) o, si se quiere ya, hacerlo a la vez que se eliminan.
+- [x] **0.2 — Logger central** (`mcm-app/utils/logger.ts`): _hecho._ Niveles `debug/info/log/warn/error`; `debug`/`info`/`log` silenciados en producción (gate por `__DEV__`); enganche `setReporter` listo para Sentry (Fase 6). **Migración completada: 0 `console.*` en el código** (test en `__tests__/logger.test.ts`).
+- [x] **0.3 — `lint-staged` con ESLint** (raíz `package.json`): _hecho._ Corre `prettier --write` + `eslint --max-warnings=0 --fix` para `mcm-app/**/*.{js,jsx,ts,tsx}`. `.husky/pre-commit` (`npx lint-staged`) restaurado.
+- [ ] **0.4 — Regla escrita en `mcm-app/CLAUDE.md`**: _hecho 2026-06-28_ (sección «Convenciones de código»): «Ningún archivo nuevo > 400 líneas; si una pantalla supera 600, extraer componentes/hooks ANTES de añadir la feature.»
 
-**Criterio de salida:** lint en CI bloquea formato y `console.*` nuevos; regla anti-gigantes documentada.
+**Criterio de salida:** ✅ lint en CI bloquea formato y `console.*`; CI corre `typecheck` + `typecheck:tests` + `lint` + `test` en PRs; regla anti-gigantes documentada. Pendiente solo el `no-explicit-any: warn` (atado a Fase 4.1).
 
 ---
 
@@ -81,9 +81,10 @@ Objetivo: ninguna pantalla > 800 líneas; cada pantalla = composición de compon
 - [ ] **1.4 — `contigo/evangelio.tsx` (1.295) + `contigo/oracion.tsx` (1.170)** — mismo dominio; sospecha fuerte de duplicación entre ambas. **Antes de trocear, comparar**: lo común va a `components/contigo/` y a un hook compartido; después trocear lo que quede.
 - [ ] **1.5 — `calendario.tsx` (1.123)**.
 - [ ] **1.6 — `SecretPanelModal.tsx` (1.121)** — panel admin; trocear por sección del panel.
-- [ ] **1.7 — `GruposScreen.tsx` (1.100)** — tiene 4 variantes de render con `.map()` anidados (ver MEJORAS §1.4); al trocear, migrar a `SectionList` con `GrupoItem`/`MiembroRow` memoizados (mata dos pájaros).
-- [ ] **1.8 — `HomeWidgets.tsx` (1.075)** — un archivo con N widgets dentro; partirlo en un archivo por widget.
-- [ ] **1.9 — Segunda ronda** (si hay energía): `notifications.tsx` (994), `EvaluationWizard.tsx` (974), `NotificationsBottomSheet.tsx` (937), `PreviewChannelModal.tsx` (847).
+- [~] **1.7 — `GruposScreen.tsx` (1.100)** — **parcial, 2026-06-28** → 561 líneas (fuera de la lista de gigantes). Extraídos a `components/grupos/`: los subcomponentes (`SearchBar`, `MemberRow`, `GrupoCard`, `SearchHitRow`), los estilos (`gruposStyles.ts`) y los helpers puros (`gruposHelpers.ts`: `normalize`/`isMe`/tipos, con test). **Pendiente** (no tocado a propósito, requiere verificación en dispositivo): trocear las 4 ramas de render del cuerpo principal (~511 líneas, sigue >400) y valorar la migración a `SectionList` con items memoizados (MEJORAS §1.4) — eso sí cambia comportamiento.
+- [ ] **1.8 — `HomeWidgets.tsx` (1.075)** — un archivo con N widgets dentro; partirlo en un archivo por widget. ⚠️ Ojo: hay una extracción previa **huérfana** (`components/ui/ProgressRing.tsx`, `StatCard.tsx`, `TeaserCard.tsx` "extracted from HomeWidgets" pero **no las importa nadie** — Contigo sigue usando las de HomeWidgets). Antes de trocear hay que decidir si se adoptan esas versiones de `ui/` o se borran (dedup = cambio de comportamiento), si no se duplica más el lío.
+- [ ] **1.9 — Segunda ronda** (si hay energía): `notifications.tsx` (994), ~~`EvaluationWizard.tsx` (974)~~ **hecho 2026-06-28** → 360 líneas; extraídas a `components/evaluation/` las fases (`WelcomePhase`, `QuestionInput`, `SuccessPhase`), los controles (`WizardButton`, `ScaleInput`) y los estilos del armazón (`wizardStyles.ts`). ~~`NotificationsBottomSheet.tsx` (937)~~ **hecho 2026-06-28** → 365 líneas; extraídos a `components/notifications/` el detalle (`NotificationDetail`), el item de lista (`NotificationListItem`) y los helpers puros (`notificationDisplay.ts`, con test). ~~`PreviewChannelModal.tsx` (847)~~ **hecho 2026-06-28** → 349 líneas; piezas decorativas extraídas a `components/preview-channel/` (`AnimatedGradients`, `FloatingParticle`, `ConfettiBurst`, `GiantLever`, `LabDecorations`).
+  - Nota: `hooks/useSongProcessor.ts` pasó a >800 (1014) con el trabajo del cantoral (pantalla de error de sintaxis), que compensa parte de estos troceados en el recuento de gigantes (hoy 11).
 
 **Verificación de cada PR:** la app corriendo (web como mínimo, `npm run web`), no solo typecheck — extraer componentes rompe sutilmente estilos, gestos y memoización.
 
@@ -153,17 +154,17 @@ Objetivo: ninguna pantalla > 800 líneas; cada pantalla = composición de compon
 ## Fase 4 — Tipos y duplicación (~1 semana · solapable con Fase 1)
 
 - [ ] **4.1 — Eliminar los 63 `: any`** módulo a módulo. Al terminar: `'@typescript-eslint/no-explicit-any': 'error'`.
-- [ ] **4.2 — Incluir `__tests__` en typecheck**: hoy `tsconfig.json` los excluye. Crear `tsconfig.test.json` que los incluya y añadir `npm run typecheck:tests` al CI.
+- [x] **4.2 — Incluir `__tests__` en typecheck**: _hecho 2026-06-28._ Creado `tsconfig.test.json` (extiende el base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como paso del CI (`.github/workflows/ci.yml`). Los tests tipan limpios.
 - [ ] **4.3 — Pasada de duplicación con `jscpd`** (informe, no gate de CI). Candidatos ya sospechados: `evangelio.tsx` ↔ `oracion.tsx`, las 4 variantes de render de `GruposScreen`, modales de export.
 
 ---
 
 ## Fase 5 — Tests donde duele (continuo)
 
-Ya hay 12 ficheros en `__tests__/` con infraestructura correcta (jest-expo + RTL). Prioridades (coinciden con `mcm-app/TODO.md`):
+Ya hay 18 ficheros en `__tests__/` / 183 tests (jest-expo + RTL). Prioridades (coinciden con `mcm-app/TODO.md`):
 
-- [ ] **5.1 — `useSongProcessor`** (675 líneas, núcleo del cantoral, 0 tests).
-- [ ] **5.2 — `useChoirSession`** (concurrencia maestro/oyentes).
+- [x] **5.1 — `useSongProcessor`** (núcleo del cantoral): _hecho 2026-06-28._ `__tests__/useSongProcessor.test.ts` (17 tests) — vía `renderHook` sobre el HTML generado: badges de tono/cejilla/transpose, notación EN/ES, clases de `<body>` (acordes ocultos, tema oscuro), modo presentación y `styleState`.
+- [x] **5.2 — `useChoirSession`** (concurrencia maestro/oyentes): _hecho 2026-06-28._ Cubierto a nivel de servicio en `__tests__/choirSessionService.test.ts` (16 tests): validación de código, forma del payload + expiración 2 semanas, limpieza de `undefined`, publicaciones del maestro y traspaso de sesión entre códigos con sus casos de error.
 - [ ] **5.3 — Reducers/lógica de los contexts** tocados en Fase 3 (la fusión los vuelve testeables).
 - [ ] **5.4 — Regla de trabajo:** cada hook o util extraído en Fase 1 **sale con su test en el mismo PR**. Así la cobertura crece con el refactor, no como proyecto aparte que nunca llega.
 

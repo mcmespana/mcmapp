@@ -18,6 +18,140 @@
 
 ---
 
+## 2026-06-28 15:45 — Refactor: trocear GruposScreen (parcial, Fase 1.7)
+
+`app/screens/GruposScreen.tsx` pasa de **1100 → 561 líneas** (sale de la lista
+de archivos >800). Extraído a una carpeta nueva `components/grupos/`:
+
+- `SearchBar`, `MemberRow`, `GrupoCard`, `SearchHitRow` — los subcomponentes
+  (ya recibían `styles` por prop, así que la extracción es directa).
+- `gruposStyles.ts` — el `createStyles` + el tipo `GruposStyles`.
+- `gruposHelpers.ts` — tipos (`Grupo`/`Data`/`SearchHit`) y helpers puros
+  `normalize`/`isMe`, **con test** (`__tests__/gruposHelpers.test.ts`, 7 tests).
+  `highlightText` se movió dentro de `SearchHitRow` (su único uso).
+
+Cero cambios de comportamiento. **Parcial a propósito**: el cuerpo del
+componente (4 ramas de render, ~511 líneas) NO se ha troceado — requiere
+verificación en dispositivo y la posible migración a `SectionList` cambiaría
+comportamiento (queda como follow-up en PLAN_CALIDAD §1.7). Gigantes >800:
+11 → 10. typecheck/typecheck:tests/lint(0 err)/test(204) ok.
+
+## 2026-06-28 15:10 — Refactor: trocear EvaluationWizard (Fase 1.9)
+
+`components/EvaluationWizard.tsx` pasa de **976 → 360 líneas**, quedando como
+pura orquestación (máquina de estados, barra de progreso, top bar y footer).
+Piezas extraídas a una carpeta nueva `components/evaluation/`:
+
+- `WelcomePhase.tsx` — pantalla de bienvenida.
+- `QuestionInput.tsx` — el control de entrada por tipo de pregunta
+  (stars/text/yesno/scale/single/multi).
+- `SuccessPhase.tsx` — pantalla de agradecimiento.
+- `WizardButton.tsx` — botón principal con micro-animación (usado por el
+  wizard y por SuccessPhase).
+- `ScaleInput.tsx` — escala numérica (NPS 0..10).
+- `wizardStyles.ts` — estilos del armazón (`createWizardStyles(isDark)`).
+
+Cero cambios de comportamiento (mismo JSX/estilos repartidos, callbacks pasados
+por props). Se mantiene el export nombrado `EvaluationAnswers` en el mismo path
+(lo importan EvaluacionScreen/EvaluacionAppScreen/SurveyScreen). Gigantes >800:
+12 → 11. typecheck/typecheck:tests/lint(0 err)/test(197) ok.
+
+## 2026-06-28 14:40 — Refactor: trocear NotificationsBottomSheet (Fase 1.9)
+
+`components/NotificationsBottomSheet.tsx` pasa de **938 → 365 líneas**. Piezas
+extraídas a una carpeta nueva `components/notifications/`:
+
+- `NotificationDetail.tsx` — vista "en grande" de una notificación.
+- `NotificationListItem.tsx` — tarjeta de la lista (swipe-para-leída, dot, chips
+  de destino/acción). La lógica de marcado/navegación sigue en el padre y se le
+  pasa por props.
+- `notificationDisplay.ts` — helpers puros (`normalizeRoute`, `getRouteLabel`,
+  `formatDate`, `ROUTE_LABELS`), **con test** (`__tests__/notificationDisplay.test.ts`,
+  14 tests).
+
+El sheet queda como datos + composición. Cero cambios de comportamiento (la
+acción del chip de botón se movió a un handler `handleActionButtonPress` con la
+misma lógica; se eliminaron dos estilos que ya no se usaban). Solo
+`app/(tabs)/index.tsx` consume el sheet y su import no cambia. Tests: 19
+ficheros / 197.
+
+## 2026-06-28 14:05 — Refactor: trocear PreviewChannelModal (Fase 1.9)
+
+Descuartizado el más pequeño de los gigantes (PLAN_CALIDAD §1.9):
+`components/PreviewChannelModal.tsx` pasa de **847 → 349 líneas**. Las piezas
+decorativas animadas del "Laboratorio Alpha" se extraen a una carpeta nueva
+`components/preview-channel/`, cada una con sus propios estilos y constantes:
+
+- `AnimatedGradients.tsx` — fondo de gradientes morphing.
+- `FloatingParticle.tsx` — emojis flotantes.
+- `ConfettiBurst.tsx` — explosión de confeti (variantes explode/puff).
+- `GiantLever.tsx` — palanca MUNDANO ↔ ALPHA.
+- `LabDecorations.tsx` — título wobble, sparkles y ticker de frases.
+
+El modal queda como composición + contenido + estilos de layout. Cero cambios
+de comportamiento (mismo código, estilos repartidos sin solapamiento); solo
+`app/_layout.tsx` consumía el modal y su import no cambia. Gigantes >800
+líneas: 13 → 12. typecheck/typecheck:tests/lint(0 err)/test(183) en verde.
+
+## 2026-06-28 14:00 — Cantoral: pantalla amable para canciones con error de sintaxis
+
+Antes, cuando una canción tenía un error de sintaxis en su ChordPro y no se
+podía parsear, el visor mostraba un texto plano feo (`❌ Error preparando la
+canción.`) en Times New Roman. Ahora:
+
+- Se pinta una **pantalla de error con estilo** (centrada, emoji, colores de
+  marca y modo oscuro) que dice _"Ay, mecachis · Hay un error procesando esta
+  canción"_ y, en pequeñito, _"Hemos avisado a la gente maja que mantiene el
+  cantoral para arreglarlo"_.
+- Se muestra la **línea (y columna) del error** y se **pega el texto de la
+  línea problemática** para localizarlo de un vistazo.
+- El fallo se **reporta a Firebase** en la cola `songs/fallitos` (filename,
+  categoría, título, mensaje, línea/columna, texto de la línea, plataforma y
+  timestamp), una sola vez por canción+posición, para que quien mantiene el
+  cantoral lo pueda arreglar.
+- Archivos: `hooks/useSongProcessor.ts` (captura del error con
+  línea/columna + `buildErrorHtml`, nuevo `songError` en el retorno),
+  `app/screens/SongDetailScreen.tsx` (escritura a `songs/fallitos`).
+
+## 2026-06-28 13:15 — Tests: useSongProcessor + Modo Coro (Fase 5)
+
+Cobertura de dos piezas que estaban sin tests (PLAN_CALIDAD §5.1 y §5.2):
+
+- **`__tests__/useSongProcessor.test.ts`** (17 tests): el núcleo del cantoral.
+  Vía `renderHook`, comprueba el HTML generado — badges de tono/cejilla/
+  transpose, notación EN/ES (`Notation = 'EN' | 'ES'`), clases del `<body>`
+  (acordes ocultos, tema oscuro), cabecera de modo presentación y `styleState`.
+  Se exporta `UseSongProcessorParams` para poder tipar el test.
+- **`__tests__/choirSessionService.test.ts`** (16 tests): Modo Coro
+  (maestro/oyentes). Validación de código, forma del payload + expiración a 2
+  semanas, limpieza de `undefined` antes de escribir en RTDB, publicaciones del
+  maestro, y traspaso de sesión entre códigos con sus casos de error.
+- Ampliado `__mocks__/firebase.ts` con `set/update/remove/onValue/off`.
+
+Total: 16→18 ficheros de test, 150→183 tests. Sin cambios de comportamiento.
+
+## 2026-06-28 12:30 — Calidad: guardarraíles ESLint + typecheck de tests en CI
+
+Remate de la Fase 0 de `docs/planes/PLAN_CALIDAD.md` (los planes estaban
+desfasados: el logger central, la migración de `console.*` a 0, el CI, husky y
+lint-staged ya estaban hechos). Cambios de esta pasada:
+
+- **ESLint** (`eslint.config.js`): `no-console` sube de `warn` a `error` (la
+  migración al logger está completa, 0 `console.*` en el código); añadido
+  `max-lines: ['warn', { max: 400 }]` para señalar archivos grandes sin
+  bloquear los legacy en CI (33 avisos, todos en gigantes ya conocidos).
+- **Typecheck de tests** (Fase 4.2): nuevo `tsconfig.test.json` (extiende el
+  base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como
+  paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
+- **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
+  >600) y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
+  Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+
+Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
+Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`
+(Fase 4.1), porque con `lint-staged --max-warnings=0` bloquearía commits que
+toquen esos archivos.
+
 ## 2026-06-22 15:10 — Fix: Playlist "Orden ajustado" tapada por el header (iOS)
 
 En iOS el header de la pantalla es transparente y las `FlatList` lo compensan
