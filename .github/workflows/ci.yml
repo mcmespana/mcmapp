@@ -18,6 +18,8 @@ jobs:
         working-directory: ./mcm-app
       - run: npm run typecheck
         working-directory: ./mcm-app
+      - run: npm run typecheck:tests
+        working-directory: ./mcm-app
       - run: npm run lint
         working-directory: ./mcm-app
       - run: npm test -- --ci

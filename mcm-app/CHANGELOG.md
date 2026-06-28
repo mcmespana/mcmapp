@@ -18,6 +18,28 @@
 
 ---
 
+## 2026-06-28 12:30 — Calidad: guardarraíles ESLint + typecheck de tests en CI
+
+Remate de la Fase 0 de `docs/planes/PLAN_CALIDAD.md` (los planes estaban
+desfasados: el logger central, la migración de `console.*` a 0, el CI, husky y
+lint-staged ya estaban hechos). Cambios de esta pasada:
+
+- **ESLint** (`eslint.config.js`): `no-console` sube de `warn` a `error` (la
+  migración al logger está completa, 0 `console.*` en el código); añadido
+  `max-lines: ['warn', { max: 400 }]` para señalar archivos grandes sin
+  bloquear los legacy en CI (33 avisos, todos en gigantes ya conocidos).
+- **Typecheck de tests** (Fase 4.2): nuevo `tsconfig.test.json` (extiende el
+  base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como
+  paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
+- **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
+  >600) y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
+  Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+
+Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
+Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`
+(Fase 4.1), porque con `lint-staged --max-warnings=0` bloquearía commits que
+toquen esos archivos.
+
 ## 2026-06-22 15:10 — Fix: Playlist "Orden ajustado" tapada por el header (iOS)
 
 En iOS el header de la pantalla es transparente y las `FlatList` lo compensan
