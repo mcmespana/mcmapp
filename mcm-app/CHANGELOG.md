@@ -18,6 +18,24 @@
 
 ---
 
+## 2026-06-28 14:05 — Refactor: trocear PreviewChannelModal (Fase 1.9)
+
+Descuartizado el más pequeño de los gigantes (PLAN_CALIDAD §1.9):
+`components/PreviewChannelModal.tsx` pasa de **847 → 349 líneas**. Las piezas
+decorativas animadas del "Laboratorio Alpha" se extraen a una carpeta nueva
+`components/preview-channel/`, cada una con sus propios estilos y constantes:
+
+- `AnimatedGradients.tsx` — fondo de gradientes morphing.
+- `FloatingParticle.tsx` — emojis flotantes.
+- `ConfettiBurst.tsx` — explosión de confeti (variantes explode/puff).
+- `GiantLever.tsx` — palanca MUNDANO ↔ ALPHA.
+- `LabDecorations.tsx` — título wobble, sparkles y ticker de frases.
+
+El modal queda como composición + contenido + estilos de layout. Cero cambios
+de comportamiento (mismo código, estilos repartidos sin solapamiento); solo
+`app/_layout.tsx` consumía el modal y su import no cambia. Gigantes >800
+líneas: 13 → 12. typecheck/typecheck:tests/lint(0 err)/test(183) en verde.
+
 ## 2026-06-28 14:00 — Cantoral: pantalla amable para canciones con error de sintaxis
 
 Antes, cuando una canción tenía un error de sintaxis en su ChordPro y no se
