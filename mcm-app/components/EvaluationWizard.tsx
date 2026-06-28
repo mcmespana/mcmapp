@@ -1,4 +1,3 @@
-import { radii } from '@/constants/uiStyles';
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import {
@@ -7,24 +6,15 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
-  TextInput,
   View,
-  ViewStyle,
 } from 'react-native';
 import Animated, {
   Easing,
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
   SlideInLeft,
   SlideInRight,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
-  withRepeat,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,13 +22,16 @@ import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import StarRating from '@/components/StarRating';
 import colors, { Colors } from '@/constants/colors';
 import { getBrightness } from '@/components/ui/glass';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import type { EvaluationConfig } from '@/constants/evaluation';
+import WizardButton from '@/components/evaluation/WizardButton';
+import WelcomePhase from '@/components/evaluation/WelcomePhase';
+import QuestionInput from '@/components/evaluation/QuestionInput';
+import SuccessPhase from '@/components/evaluation/SuccessPhase';
+import { createWizardStyles } from '@/components/evaluation/wizardStyles';
 
 export type EvaluationAnswers = Record<
   string,
@@ -62,7 +55,8 @@ interface EvaluationWizardProps {
 /**
  * Evaluación tipo onboarding: una fase por pregunta, con barra de progreso,
  * transiciones animadas entre fases y una pantalla final de agradecimiento.
- * Sin dependencias nuevas (Reanimated ya está en el proyecto).
+ * Las fases (bienvenida, input de pregunta, éxito) y los controles (botón,
+ * escala) viven en `components/evaluation/`.
  */
 export default function EvaluationWizard({
   config,
@@ -206,7 +200,7 @@ export default function EvaluationWizard({
   const isLast = step === total - 1;
 
   const Entering = dir === 'back' ? SlideInLeft : SlideInRight;
-  const styles = createStyles(isDark);
+  const styles = createWizardStyles(isDark);
 
   // Mientras comprobamos si ya evaluó (cache local + Firebase) mostramos un
   // loader breve para no enseñar la bienvenida y saltar a "ya evaluado".
@@ -284,49 +278,14 @@ export default function EvaluationWizard({
         </Pressable>
       </View>
 
-      {/* Bienvenida */}
       {step < 0 ? (
-        <Animated.View
-          key="welcome"
-          entering={FadeIn.duration(420)}
-          style={styles.welcomeWrap}
-        >
-          <Animated.View
-            entering={FadeIn.duration(560).easing(
-              Easing.bezier(0.34, 1.56, 0.64, 1),
-            )}
-            style={[
-              styles.welcomeIcon,
-              { backgroundColor: hexAlpha(accentReadable, '18') },
-            ]}
-          >
-            <MaterialIcons
-              name="rate-review"
-              size={40}
-              color={accentReadable}
-            />
-          </Animated.View>
-          <Animated.Text
-            entering={FadeInUp.delay(120).duration(420)}
-            style={[styles.welcomeTitle, { color: theme.text }]}
-          >
-            {config.title || 'Evalúa la actividad'}
-          </Animated.Text>
-          {config.intro ? (
-            <Animated.Text
-              entering={FadeInUp.delay(200).duration(420)}
-              style={[styles.welcomeBody, { color: theme.icon }]}
-            >
-              {config.intro}
-            </Animated.Text>
-          ) : null}
-          <Animated.Text
-            entering={FadeInUp.delay(280).duration(420)}
-            style={[styles.welcomeMeta, { color: theme.icon }]}
-          >
-            {total} {total === 1 ? 'pregunta' : 'preguntas'} · 2 min
-          </Animated.Text>
-        </Animated.View>
+        <WelcomePhase
+          title={config.title}
+          intro={config.intro}
+          total={total}
+          accent={accentReadable}
+          theme={theme}
+        />
       ) : (
         // Fase de pregunta
         <KeyboardAvoidingView
@@ -356,171 +315,16 @@ export default function EvaluationWizard({
                 ) : null}
               </Text>
 
-              {currentQ!.type === 'stars' && (
-                <View style={styles.starsWrap}>
-                  <StarRating
-                    value={typeof currentVal === 'number' ? currentVal : 0}
-                    onChange={(n) => setAnswer(currentQ!.id, n)}
-                    color={starColor}
-                    size={46}
-                  />
-                </View>
-              )}
-
-              {currentQ!.type === 'text' && (
-                <TextInput
-                  value={typeof currentVal === 'string' ? currentVal : ''}
-                  onChangeText={(t) => setAnswer(currentQ!.id, t)}
-                  placeholder={currentQ!.placeholder}
-                  placeholderTextColor={theme.icon}
-                  multiline
-                  textAlignVertical="top"
-                  maxLength={1000}
-                  autoFocus
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      backgroundColor: isDark ? '#2C2C2E' : '#fff',
-                      borderColor: String(currentVal ?? '').trim()
-                        ? hexAlpha(accentReadable, '90')
-                        : hexAlpha(theme.icon, '35'),
-                    },
-                  ]}
-                />
-              )}
-
-              {currentQ!.type === 'yesno' && (
-                <View style={styles.yesnoRow}>
-                  {[
-                    { key: true, label: 'Sí', icon: 'thumb-up' as const },
-                    { key: false, label: 'No', icon: 'thumb-down' as const },
-                  ].map((opt) => {
-                    const selected = currentVal === opt.key;
-                    return (
-                      <Pressable
-                        key={opt.label}
-                        onPress={() => setAnswer(currentQ!.id, opt.key)}
-                        style={[
-                          styles.yesnoBtn,
-                          {
-                            borderColor: selected
-                              ? accentReadable
-                              : hexAlpha(theme.icon, '30'),
-                            backgroundColor: selected
-                              ? hexAlpha(accentReadable, '15')
-                              : 'transparent',
-                          },
-                        ]}
-                      >
-                        <MaterialIcons
-                          name={opt.icon}
-                          size={22}
-                          color={selected ? accentReadable : theme.icon}
-                        />
-                        <Text
-                          style={[
-                            styles.yesnoText,
-                            { color: selected ? accentReadable : theme.icon },
-                          ]}
-                        >
-                          {opt.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              )}
-
-              {currentQ!.type === 'scale' && (
-                <ScaleInput
-                  min={currentQ!.min ?? 0}
-                  max={currentQ!.max ?? 10}
-                  minLabel={currentQ!.minLabel}
-                  maxLabel={currentQ!.maxLabel}
-                  value={typeof currentVal === 'number' ? currentVal : null}
-                  onChange={(n) => setAnswer(currentQ!.id, n)}
-                  accent={accentReadable}
-                  theme={theme}
-                />
-              )}
-
-              {currentQ!.type === 'single' &&
-                (currentQ!.options ?? []).map((opt) => {
-                  const selected = currentVal === opt.value;
-                  return (
-                    <Pressable
-                      key={opt.value}
-                      onPress={() => {
-                        h.select();
-                        setAnswer(currentQ!.id, opt.value);
-                      }}
-                      style={[
-                        styles.optionRow,
-                        {
-                          borderColor: selected
-                            ? accentReadable
-                            : hexAlpha(theme.icon, '30'),
-                          backgroundColor: selected
-                            ? hexAlpha(accentReadable, '12')
-                            : 'transparent',
-                        },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={
-                          selected
-                            ? 'radio-button-checked'
-                            : 'radio-button-unchecked'
-                        }
-                        size={22}
-                        color={selected ? accentReadable : theme.icon}
-                      />
-                      <Text style={[styles.optionLabel, { color: theme.text }]}>
-                        {opt.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-
-              {currentQ!.type === 'multi' &&
-                (currentQ!.options ?? []).map((opt) => {
-                  const arr = Array.isArray(currentVal)
-                    ? (currentVal as string[])
-                    : [];
-                  const selected = arr.includes(opt.value);
-                  return (
-                    <Pressable
-                      key={opt.value}
-                      onPress={() => {
-                        h.select();
-                        toggleMulti(currentQ!.id, opt.value);
-                      }}
-                      style={[
-                        styles.optionRow,
-                        {
-                          borderColor: selected
-                            ? accentReadable
-                            : hexAlpha(theme.icon, '30'),
-                          backgroundColor: selected
-                            ? hexAlpha(accentReadable, '12')
-                            : 'transparent',
-                        },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={
-                          selected ? 'check-box' : 'check-box-outline-blank'
-                        }
-                        size={22}
-                        color={selected ? accentReadable : theme.icon}
-                      />
-                      <Text style={[styles.optionLabel, { color: theme.text }]}>
-                        {opt.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+              <QuestionInput
+                question={currentQ!}
+                value={currentVal}
+                theme={theme}
+                accent={accentReadable}
+                isDark={isDark}
+                starColor={starColor}
+                onAnswer={setAnswer}
+                onToggleMulti={toggleMulti}
+              />
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -554,423 +358,3 @@ export default function EvaluationWizard({
     </View>
   );
 }
-
-// ─── Botón con animación de pulsación ────────────────────────────────
-function WizardButton({
-  label,
-  onPress,
-  color,
-  disabled,
-  loading,
-}: {
-  label: string;
-  onPress: () => void;
-  color: string;
-  disabled?: boolean;
-  loading?: boolean;
-}) {
-  const scale = useSharedValue(1);
-  const aStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-  return (
-    <Animated.View style={aStyle}>
-      <Pressable
-        accessibilityRole="button"
-        disabled={disabled}
-        onPressIn={() => (scale.value = withTiming(0.97, { duration: 90 }))}
-        onPressOut={() => (scale.value = withTiming(1, { duration: 140 }))}
-        onPress={onPress}
-        style={[
-          btnStyles.btn,
-          {
-            backgroundColor: disabled ? hexAlpha(color, '45') : color,
-            shadowColor: color,
-            shadowOpacity: disabled ? 0 : 0.3,
-          },
-        ]}
-      >
-        <Text style={btnStyles.label}>{label}</Text>
-        {!loading && (
-          <MaterialIcons name="arrow-forward" size={18} color="#fff" />
-        )}
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-// ─── Escala numérica (p. ej. NPS 0..10) ──────────────────────────────
-function ScaleInput({
-  min,
-  max,
-  minLabel,
-  maxLabel,
-  value,
-  onChange,
-  accent,
-  theme,
-}: {
-  min: number;
-  max: number;
-  minLabel?: string;
-  maxLabel?: string;
-  value: number | null;
-  onChange: (n: number) => void;
-  accent: string;
-  theme: (typeof Colors)['light'];
-}) {
-  const steps = [];
-  for (let i = min; i <= max; i++) steps.push(i);
-  return (
-    <View>
-      <View style={scaleStyles.row}>
-        {steps.map((n) => {
-          const selected = value === n;
-          return (
-            <Pressable
-              key={n}
-              onPress={() => {
-                h.select();
-                onChange(n);
-              }}
-              style={[
-                scaleStyles.cell,
-                {
-                  borderColor: selected ? accent : hexAlpha(theme.icon, '30'),
-                  backgroundColor: selected ? accent : 'transparent',
-                },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={`${n}`}
-            >
-              <Text
-                style={[
-                  scaleStyles.cellText,
-                  { color: selected ? '#fff' : theme.text },
-                ]}
-              >
-                {n}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {(minLabel || maxLabel) && (
-        <View style={scaleStyles.labels}>
-          <Text style={[scaleStyles.labelText, { color: theme.icon }]}>
-            {minLabel ?? ''}
-          </Text>
-          <Text style={[scaleStyles.labelText, { color: theme.icon }]}>
-            {maxLabel ?? ''}
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-// ─── Pantalla de agradecimiento ──────────────────────────────────────
-function SuccessPhase({
-  accent,
-  theme,
-  insets,
-  justSubmitted,
-  thanksTitle,
-  thanksBody,
-  onDone,
-}: {
-  accent: string;
-  theme: (typeof Colors)['light'];
-  insets: { top: number; bottom: number };
-  justSubmitted: boolean;
-  thanksTitle?: string;
-  thanksBody?: string;
-  onDone: () => void;
-}) {
-  const scale = useSharedValue(0);
-  const ripple = useSharedValue(0);
-  useEffect(() => {
-    scale.value = withSpring(1, { damping: 9, stiffness: 140 });
-    ripple.value = withDelay(
-      250,
-      withRepeat(
-        withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }),
-        -1,
-        false,
-      ),
-    );
-  }, [scale, ripple]);
-  const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-  const rippleStyle = useAnimatedStyle(() => ({
-    opacity: 0.4 * (1 - ripple.value),
-    transform: [{ scale: 1 + ripple.value * 1.7 }],
-  }));
-
-  return (
-    <View
-      style={[
-        successStyles.root,
-        {
-          backgroundColor: theme.background,
-          paddingTop: insets.top + 28,
-          paddingBottom: insets.bottom + 28,
-        },
-      ]}
-    >
-      <View style={successStyles.iconWrap}>
-        <Animated.View
-          style={[
-            successStyles.ripple,
-            { backgroundColor: hexAlpha(accent, '22') },
-            rippleStyle,
-          ]}
-        />
-        <Animated.View
-          style={[
-            successStyles.iconCircle,
-            { backgroundColor: hexAlpha(accent, '15') },
-            iconStyle,
-          ]}
-        >
-          <MaterialIcons name="celebration" size={52} color={accent} />
-        </Animated.View>
-      </View>
-
-      <Animated.Text
-        entering={FadeInDown.delay(150).duration(420)}
-        style={[successStyles.title, { color: theme.text }]}
-      >
-        {justSubmitted
-          ? (thanksTitle ?? '¡Gracias de corazón!')
-          : '¡Ya nos lo has contado!'}
-      </Animated.Text>
-      <Animated.Text
-        entering={FadeInDown.delay(220).duration(420)}
-        style={[successStyles.sub, { color: theme.icon }]}
-      >
-        {justSubmitted
-          ? (thanksBody ??
-            'Hemos recibido tu evaluación. Nos ayuda muchísimo a mejorar 🙌')
-          : 'Ya enviaste tu evaluación. ¡Gracias por tu ayuda!'}
-      </Animated.Text>
-
-      <Animated.View
-        entering={FadeInUp.delay(320).duration(420)}
-        style={successStyles.cta}
-      >
-        <WizardButton label="Hecho" color={accent} onPress={onDone} />
-      </Animated.View>
-    </View>
-  );
-}
-
-const createStyles = (isDark: boolean) =>
-  StyleSheet.create({
-    root: { flex: 1 } as ViewStyle,
-    loadingWrap: {
-      alignItems: 'center',
-      justifyContent: 'center',
-    } as ViewStyle,
-    topBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      paddingHorizontal: 16,
-      paddingBottom: 6,
-    },
-    backBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 2,
-      width: 60,
-    },
-    backLabel: { fontSize: 14, fontWeight: '600' },
-    closeBtn: { width: 32, alignItems: 'flex-end' },
-    progressArea: { flex: 1, justifyContent: 'center' },
-    progressTrack: {
-      height: 6,
-      borderRadius: 3,
-      overflow: 'hidden',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-    },
-    progressFill: { height: '100%', borderRadius: 3 },
-    // Bienvenida
-    welcomeWrap: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 32,
-      gap: 12,
-    },
-    welcomeIcon: {
-      width: 92,
-      height: 92,
-      borderRadius: 28,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 8,
-    },
-    welcomeTitle: {
-      fontSize: 28,
-      fontWeight: '800',
-      letterSpacing: -0.5,
-      textAlign: 'center',
-    },
-    welcomeBody: {
-      fontSize: 15,
-      lineHeight: 22,
-      textAlign: 'center',
-      maxWidth: 320,
-    },
-    welcomeMeta: {
-      fontSize: 13,
-      fontWeight: '600',
-      marginTop: 4,
-      opacity: 0.8,
-    },
-    // Pregunta
-    phaseScroll: {
-      flexGrow: 1,
-      justifyContent: 'center',
-      paddingHorizontal: 28,
-      paddingVertical: 24,
-    },
-    stepCount: {
-      fontSize: 13,
-      fontWeight: '800',
-      letterSpacing: 1,
-      marginBottom: 10,
-    },
-    question: {
-      fontSize: 24,
-      fontWeight: '800',
-      letterSpacing: -0.4,
-      lineHeight: 30,
-      marginBottom: 24,
-    },
-    starsWrap: { alignItems: 'flex-start' },
-    input: {
-      borderWidth: 1.5,
-      borderRadius: 16,
-      padding: 16,
-      fontSize: 16,
-      minHeight: 130,
-      lineHeight: 23,
-    },
-    yesnoRow: { flexDirection: 'row', gap: 12 },
-    yesnoBtn: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      paddingVertical: 16,
-      borderRadius: 16,
-      borderWidth: 1.5,
-    },
-    yesnoText: { fontSize: 16, fontWeight: '700' },
-    // Opciones (single / multi)
-    optionRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      paddingVertical: 14,
-      paddingHorizontal: 16,
-      borderRadius: 14,
-      borderWidth: 1.5,
-      marginBottom: 10,
-    },
-    optionLabel: { flex: 1, fontSize: 16, fontWeight: '600' },
-    // Footer
-    footer: {
-      paddingHorizontal: 24,
-      paddingTop: 10,
-    },
-  });
-
-const btnStyles = StyleSheet.create({
-  btn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    width: '100%',
-    paddingVertical: 16,
-    borderRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 14,
-    elevation: 4,
-  },
-  label: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-});
-
-const scaleStyles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  cell: {
-    minWidth: 44,
-    height: 44,
-    paddingHorizontal: 6,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cellText: { fontSize: 16, fontWeight: '700' },
-  labels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  labelText: { fontSize: 12, fontWeight: '600', maxWidth: '45%' },
-});
-
-const successStyles = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 28,
-  },
-  iconWrap: {
-    width: 110,
-    height: 110,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  ripple: {
-    position: 'absolute',
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-  },
-  iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  sub: {
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-    maxWidth: 320,
-    marginBottom: 32,
-  },
-  cta: { width: '100%', maxWidth: 360, gap: 6 },
-});

@@ -18,6 +18,26 @@
 
 ---
 
+## 2026-06-28 15:10 — Refactor: trocear EvaluationWizard (Fase 1.9)
+
+`components/EvaluationWizard.tsx` pasa de **976 → 360 líneas**, quedando como
+pura orquestación (máquina de estados, barra de progreso, top bar y footer).
+Piezas extraídas a una carpeta nueva `components/evaluation/`:
+
+- `WelcomePhase.tsx` — pantalla de bienvenida.
+- `QuestionInput.tsx` — el control de entrada por tipo de pregunta
+  (stars/text/yesno/scale/single/multi).
+- `SuccessPhase.tsx` — pantalla de agradecimiento.
+- `WizardButton.tsx` — botón principal con micro-animación (usado por el
+  wizard y por SuccessPhase).
+- `ScaleInput.tsx` — escala numérica (NPS 0..10).
+- `wizardStyles.ts` — estilos del armazón (`createWizardStyles(isDark)`).
+
+Cero cambios de comportamiento (mismo JSX/estilos repartidos, callbacks pasados
+por props). Se mantiene el export nombrado `EvaluationAnswers` en el mismo path
+(lo importan EvaluacionScreen/EvaluacionAppScreen/SurveyScreen). Gigantes >800:
+12 → 11. typecheck/typecheck:tests/lint(0 err)/test(197) ok.
+
 ## 2026-06-28 14:40 — Refactor: trocear NotificationsBottomSheet (Fase 1.9)
 
 `components/NotificationsBottomSheet.tsx` pasa de **938 → 365 líneas**. Piezas
