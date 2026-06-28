@@ -38,6 +38,23 @@ canción.`) en Times New Roman. Ahora:
   línea/columna + `buildErrorHtml`, nuevo `songError` en el retorno),
   `app/screens/SongDetailScreen.tsx` (escritura a `songs/fallitos`).
 
+## 2026-06-28 13:15 — Tests: useSongProcessor + Modo Coro (Fase 5)
+
+Cobertura de dos piezas que estaban sin tests (PLAN_CALIDAD §5.1 y §5.2):
+
+- **`__tests__/useSongProcessor.test.ts`** (17 tests): el núcleo del cantoral.
+  Vía `renderHook`, comprueba el HTML generado — badges de tono/cejilla/
+  transpose, notación EN/ES (`Notation = 'EN' | 'ES'`), clases del `<body>`
+  (acordes ocultos, tema oscuro), cabecera de modo presentación y `styleState`.
+  Se exporta `UseSongProcessorParams` para poder tipar el test.
+- **`__tests__/choirSessionService.test.ts`** (16 tests): Modo Coro
+  (maestro/oyentes). Validación de código, forma del payload + expiración a 2
+  semanas, limpieza de `undefined` antes de escribir en RTDB, publicaciones del
+  maestro, y traspaso de sesión entre códigos con sus casos de error.
+- Ampliado `__mocks__/firebase.ts` con `set/update/remove/onValue/off`.
+
+Total: 16→18 ficheros de test, 150→183 tests. Sin cambios de comportamiento.
+
 ## 2026-06-28 12:30 — Calidad: guardarraíles ESLint + typecheck de tests en CI
 
 Remate de la Fase 0 de `docs/planes/PLAN_CALIDAD.md` (los planes estaban

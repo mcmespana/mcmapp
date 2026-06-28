@@ -15,7 +15,7 @@ import {
   injectRowLineIndices,
 } from '../utils/arrangements';
 
-interface UseSongProcessorParams {
+export interface UseSongProcessorParams {
   originalChordPro: string | null;
   currentTranspose: number;
   chordsVisible: boolean;
