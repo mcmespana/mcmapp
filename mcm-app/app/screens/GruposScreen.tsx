@@ -104,9 +104,9 @@ export default function GruposScreen() {
 
   const isSearching = search.trim().length >= 2;
 
-  const openMap = (url?: string) => {
+  const openMap = useCallback((url?: string) => {
     if (url) Linking.openURL(url);
-  };
+  }, []);
 
   // ⚡ Bolt Optimization: Precompute normalized strings for all groups and members
   // to avoid running expensive normalize() operations on every keystroke during live search.
@@ -226,25 +226,9 @@ export default function GruposScreen() {
     setSearch(findMeQuery);
   }, [findMeQuery]);
 
-  // ──────────────────────────────────────────────────────────
-  // 0) EMPTY STATE — sin grupos en Firebase (y ya no estamos cargando)
-  // ──────────────────────────────────────────────────────────
-  if (!hasGroups && !loading) {
+  const ListHeader = useMemo(() => {
+    if (!grupo) return null;
     return (
-      <PageContainer>
-        <View style={styles.container}>
-          <ScreenHero title="Grupos" hideOnWeb floatingHeaderInset />
-          <ComingSoon accentColor={event.tintColor} />
-        </View>
-      </PageContainer>
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────
-  // 1) GROUP DETAIL VIEW (highest priority)
-  // ──────────────────────────────────────────────────────────
-  if (grupo) {
-    const ListHeader = (
       <View style={styles.groupContainer}>
         {grupo.subtitulo ? (
           <View style={styles.quoteContainer}>
@@ -310,7 +294,35 @@ export default function GruposScreen() {
         ) : null}
       </View>
     );
+  }, [
+    grupo,
+    isDark,
+    memberFilter,
+    filteredMiembros.length,
+    myName,
+    styles,
+    openMap,
+  ]);
 
+  // ──────────────────────────────────────────────────────────
+  // 0) EMPTY STATE — sin grupos en Firebase (y ya no estamos cargando)
+  // ──────────────────────────────────────────────────────────
+  if (!hasGroups && !loading) {
+    return (
+      <PageContainer>
+        <View style={styles.container}>
+          <ScreenHero title="Grupos" hideOnWeb floatingHeaderInset />
+          <ComingSoon accentColor={event.tintColor} />
+        </View>
+      </PageContainer>
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // 1) GROUP DETAIL VIEW (highest priority)
+  // ──────────────────────────────────────────────────────────
+
+  if (grupo) {
     return (
       <PageContainer>
         <View style={styles.container}>
