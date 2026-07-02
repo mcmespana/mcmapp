@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Modal,
@@ -7,12 +7,15 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { h } from '@/utils/haptics';
+import { extractYouTubeId } from '@/utils/youtube';
 
 export interface FloatingMediaSource {
   /** 'youtube' → URL de embed de YouTube · 'drive' → URL de preview de Drive. */
@@ -26,34 +29,74 @@ interface FloatingMediaPlayerProps {
   onClose: () => void;
 }
 
+const YT_RED = '#FF3B30';
 const PLAYER_WIDTH = 208;
 // 16:9 → 208 * 9 / 16 ≈ 117 (igual que `.ytf-screen` del diseño).
 const VIDEO_HEIGHT = Math.round((PLAYER_WIDTH * 9) / 16);
-// Audio de Drive: solo hace falta la barra del reproductor.
-const AUDIO_HEIGHT = 100;
+// Audio de Drive: barra de reproducción compacta, no necesita tanto alto
+// como el vídeo pero sí casi todo el ancho disponible (el player de Drive
+// se ve apretado en un ancho tan estrecho como el del PiP de vídeo).
+const AUDIO_HEIGHT = 64;
+const SIDE_MARGIN = 14;
 
-/** Añade los parámetros de reproducción inline/autoplay a la URL de embed. */
+/**
+ * Página HTML mínima que instancia el reproductor con la **API oficial de
+ * IFrame de YouTube** (`iframe_api`), en vez de un `<iframe src="…/embed/…">`
+ * suelto. Un `<iframe>` a pelo cargado dentro de un WebView (vía
+ * `loadHTMLString`/`loadDataWithBaseURL`) no manda un `Referer` real y
+ * YouTube lo trata como un embed no fiable — algunos vídeos responden con
+ * "vídeo no disponible" aunque el propio vídeo permita embeberse en
+ * cualquier web (comprobable con el endpoint oembed). La API oficial hace el
+ * handshake vía `postMessage` y con `playerVars.origin` fijo funciona de
+ * forma consistente. Si aun así el vídeo da error (embed deshabilitado por
+ * el autor, restricción regional, etc.), mostramos un fallback dentro de la
+ * propia página con un botón que abre YouTube en el navegador.
+ */
+function embedShellHtml(videoId: string): string {
+  const safeId = videoId.replace(/[^A-Za-z0-9_-]/g, '');
+  return `<!doctype html><html><head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<style>
+html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}
+#player{position:absolute;inset:0}
+#player iframe{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;border:0}
+#fallback{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;background:#141414;padding:16px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center}
+#fallback.show{display:flex}
+#fallback p{color:#fff;opacity:.75;font-size:12.5px;line-height:1.4;margin:0 0 12px}
+#fallback button{background:${YT_RED};color:#fff;border:0;border-radius:16px;padding:9px 16px;font-size:12.5px;font-weight:600}
+</style>
+</head><body>
+<div id="player"></div>
+<div id="fallback">
+  <p>Este vídeo no se puede reproducir aquí.</p>
+  <button id="fallback-btn">Ver en YouTube</button>
+</div>
+<script>
+function post(msg){ if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(msg)); }
+document.getElementById('fallback-btn').addEventListener('click', function(){ post({ type: 'open-youtube' }); });
+var tag = document.createElement('script');
+tag.src = 'https://www.youtube.com/iframe_api';
+document.body.appendChild(tag);
+function onYouTubeIframeAPIReady() {
+  new YT.Player('player', {
+    videoId: '${safeId}',
+    playerVars: { playsinline: 1, autoplay: 1, rel: 0, origin: 'https://www.youtube.com' },
+    events: {
+      onError: function (e) {
+        document.getElementById('fallback').classList.add('show');
+        post({ type: 'yt-error', code: e && e.data });
+      },
+    },
+  });
+}
+</script>
+</body></html>`;
+}
+
+/** Añade los parámetros de reproducción inline/autoplay a la URL de embed (solo web). */
 function withPlaybackParams(embedUrl: string): string {
   const sep = embedUrl.includes('?') ? '&' : '?';
   return `${embedUrl}${sep}playsinline=1&autoplay=1&rel=0`;
-}
-
-/**
- * Página HTML mínima que envuelve el embed en un `<iframe>`. YouTube exige que
- * su player de embed viva DENTRO de un iframe en una página con referer válido
- * — cargar `youtube.com/embed/<id>` como documento principal del WebView
- * devuelve "vídeo no disponible" (error 153, falta el referer). Con este shell
- * + `baseUrl` de YouTube el embed funciona igual que en una web normal.
- */
-function embedShellHtml(src: string): string {
-  const safeSrc = src.replace(/"/g, '&quot;');
-  return `<!doctype html><html><head>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<style>html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}
-iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}</style>
-</head><body>
-<iframe src="${safeSrc}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
-</body></html>`;
 }
 
 /**
@@ -67,6 +110,7 @@ export default function FloatingMediaPlayer({
   onClose,
 }: FloatingMediaPlayerProps) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const [fullscreen, setFullscreen] = useState(false);
 
   // Drag (arrastre) + animación de entrada.
@@ -108,10 +152,36 @@ export default function FloatingMediaPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.url]);
 
+  const openInYouTube = useCallback((videoId: string | null) => {
+    if (!videoId) return;
+    void WebBrowser.openBrowserAsync(
+      `https://www.youtube.com/watch?v=${videoId}`,
+    );
+  }, []);
+
+  const handleWebViewMessage = useCallback(
+    (event: WebViewMessageEvent, videoId: string | null) => {
+      try {
+        const msg = JSON.parse(event.nativeEvent.data);
+        if (msg?.type === 'open-youtube') {
+          openInYouTube(videoId);
+        }
+      } catch {
+        /* mensaje no reconocido; se ignora */
+      }
+    },
+    [openInYouTube],
+  );
+
   if (!source) return null;
 
   const isVideo = source.kind === 'youtube';
+  const videoId = isVideo ? extractYouTubeId(source.url) : null;
   const screenHeight = isVideo ? VIDEO_HEIGHT : AUDIO_HEIGHT;
+  // El pip de vídeo es estrecho a propósito (estilo PiP); el de audio
+  // aprovecha casi todo el ancho de pantalla porque el reproductor de Drive
+  // necesita más sitio para sus controles.
+  const floatWidth = isVideo ? PLAYER_WIDTH : windowWidth - SIDE_MARGIN * 2;
 
   const handleClose = () => {
     h.tap();
@@ -119,30 +189,33 @@ export default function FloatingMediaPlayer({
     onClose();
   };
 
-  // YouTube necesita ir dentro de un iframe (ver embedShellHtml); el preview
-  // de Drive es una página normal y se carga directamente.
-  const playUri = isVideo ? withPlaybackParams(source.url) : source.url;
-  const nativeSource = isVideo
-    ? { html: embedShellHtml(playUri), baseUrl: 'https://www.youtube.com' }
-    : { uri: playUri };
-
-  const videoSurface = (height: number | '100%') =>
-    Platform.OS === 'web' ? (
-      // @ts-ignore — iframe sólo existe en web
-      <iframe
-        src={playUri}
-        style={{
-          width: '100%',
-          height,
-          border: 'none',
-          display: 'block',
-          backgroundColor: '#000',
-        }}
-        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-        allowFullScreen
-        title={source.label}
-      />
-    ) : (
+  const videoSurface = (height: number | '100%') => {
+    if (Platform.OS === 'web') {
+      const webSrc = isVideo ? withPlaybackParams(source.url) : source.url;
+      return (
+        // @ts-ignore — iframe sólo existe en web
+        <iframe
+          src={webSrc}
+          style={{
+            width: '100%',
+            height,
+            border: 'none',
+            display: 'block',
+            backgroundColor: '#000',
+          }}
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
+          title={source.label}
+        />
+      );
+    }
+    const nativeSource = isVideo
+      ? {
+          html: embedShellHtml(videoId ?? ''),
+          baseUrl: 'https://www.youtube.com',
+        }
+      : { uri: source.url };
+    return (
       <WebView
         source={nativeSource}
         style={{ width: '100%', height, backgroundColor: '#000' }}
@@ -153,8 +226,10 @@ export default function FloatingMediaPlayer({
         mediaPlaybackRequiresUserAction={false}
         javaScriptEnabled
         domStorageEnabled
+        onMessage={(e) => handleWebViewMessage(e, videoId)}
       />
     );
+  };
 
   const enterTranslateY = enter.interpolate({
     inputRange: [0, 1],
@@ -171,6 +246,7 @@ export default function FloatingMediaPlayer({
         style={[
           styles.floatWrap,
           {
+            width: floatWidth,
             bottom: insets.bottom + 96,
             opacity: enter,
             transform: [
@@ -186,6 +262,19 @@ export default function FloatingMediaPlayer({
           <Text style={styles.barLabel} numberOfLines={1}>
             {source.label}
           </Text>
+          {isVideo && (
+            <TouchableOpacity
+              onPress={() => {
+                h.tap();
+                openInYouTube(videoId);
+              }}
+              style={styles.barBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Ver en YouTube"
+            >
+              <MaterialIcons name="open-in-new" size={13} color={YT_RED} />
+            </TouchableOpacity>
+          )}
           {isVideo && (
             <TouchableOpacity
               onPress={() => {
@@ -257,8 +346,7 @@ export default function FloatingMediaPlayer({
 const styles = StyleSheet.create({
   floatWrap: {
     position: 'absolute',
-    right: 14,
-    width: PLAYER_WIDTH,
+    right: SIDE_MARGIN,
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#111',
