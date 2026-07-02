@@ -18,6 +18,22 @@
 
 ---
 
+## 2026-07-03 01:15 — Player flotante: fullscreen sin recargar + audios abren la app de Drive
+
+- **Pantalla completa fluida:** el modo grande ya no monta un segundo WebView
+  en un Modal (que recargaba el vídeo desde el principio). Ahora el propio
+  contenedor flotante se expande a pantalla completa con una
+  `LayoutAnimation` — el WebView es siempre la misma instancia y la
+  reproducción continúa sin cortes al entrar y salir. El botón alterna
+  fullscreen/fullscreen-exit y el arrastre se desactiva mientras está en
+  grande.
+- **Audios → app de Google Drive:** el botón "abrir fuera" de los audios (y
+  cualquier enlace de Drive de la ficha) pasa de `WebBrowser` (navegador
+  in-app, que se salta los universal links) a `Linking.openURL` — si la app
+  de Google Drive está instalada, el enlace la abre directamente.
+- `components/song-media/FloatingMediaPlayer.tsx` (sin Modal, −60 líneas),
+  `components/song-media/SongMediaSheet.tsx` (`openExternal` con rama Drive).
+
 ## 2026-07-02 19:00 — Fix (v3, definitivo): Referer HTTP real en el embed + abrir la app de YouTube
 
 La v2 (IFrame API en HTML inyectado) seguía cayendo al fallback en

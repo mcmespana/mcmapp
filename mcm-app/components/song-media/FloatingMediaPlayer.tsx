@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  LayoutAnimation,
   Linking,
-  Modal,
   PanResponder,
   Platform,
   StyleSheet,
@@ -68,8 +68,12 @@ function isYouTubeWatchUrl(url: string): boolean {
  * Reproductor flotante multimedia (estilo PiP de iOS) que se superpone a la
  * letra sin taparla del todo y se puede arrastrar por la pantalla. Reproduce
  * vídeos de YouTube (embed con Referer real) y audios de Google Drive
- * (preview). En web cae a un `<iframe>` directo, como cualquier página que
- * embebe YouTube.
+ * (preview). En web cae a un `<iframe>` directo.
+ *
+ * El modo "grande" NO usa un Modal: el propio contenedor flotante se expande
+ * a pantalla completa con una LayoutAnimation. Así el WebView es siempre la
+ * MISMA instancia y el vídeo sigue reproduciéndose sin recargar al entrar o
+ * salir de pantalla completa.
  */
 export default function FloatingMediaPlayer({
   source,
@@ -141,15 +145,23 @@ export default function FloatingMediaPlayer({
     }
   }, []);
 
+  const toggleFullscreen = useCallback(() => {
+    h.tap();
+    // Anima el cambio de tamaño/posición del contenedor — el WebView es el
+    // mismo, así que la reproducción continúa sin recargar.
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setFullscreen((f) => !f);
+  }, []);
+
   if (!source) return null;
 
   const isVideo = source.kind === 'youtube';
   const videoId = isVideo ? extractYouTubeId(source.url) : null;
-  const screenHeight = isVideo ? VIDEO_HEIGHT : AUDIO_HEIGHT;
+  const pipHeight = isVideo ? VIDEO_HEIGHT : AUDIO_HEIGHT;
   // El pip de vídeo es estrecho a propósito (estilo PiP); el de audio
   // aprovecha casi todo el ancho de pantalla porque el reproductor de Drive
   // necesita más sitio para sus controles.
-  const floatWidth = isVideo ? PLAYER_WIDTH : windowWidth - SIDE_MARGIN * 2;
+  const pipWidth = isVideo ? PLAYER_WIDTH : windowWidth - SIDE_MARGIN * 2;
 
   const handleClose = () => {
     h.tap();
@@ -159,14 +171,18 @@ export default function FloatingMediaPlayer({
 
   const playUri = isVideo ? withPlaybackParams(source.url) : source.url;
 
-  const videoSurface = (height: number | '100%') =>
+  // IMPORTANTE: una única superficie de vídeo en una posición fija del árbol
+  // de componentes. Entre PiP y pantalla completa SOLO cambian estilos de los
+  // contenedores — nunca desmontar/remontar el WebView/iframe, o el vídeo se
+  // recarga desde el principio.
+  const videoSurface =
     Platform.OS === 'web' ? (
       // @ts-ignore — iframe sólo existe en web
       <iframe
         src={playUri}
         style={{
           width: '100%',
-          height,
+          height: '100%',
           border: 'none',
           display: 'block',
           backgroundColor: '#000',
@@ -182,7 +198,7 @@ export default function FloatingMediaPlayer({
             ? { uri: playUri, headers: { Referer: EMBED_REFERER } }
             : { uri: playUri }
         }
-        style={{ width: '100%', height, backgroundColor: '#000' }}
+        style={{ flex: 1, backgroundColor: '#000' }}
         originWhitelist={['*']}
         allowsInlineMediaPlayback
         allowsPictureInPictureMediaPlayback
@@ -214,112 +230,91 @@ export default function FloatingMediaPlayer({
   });
 
   return (
-    <>
-      <Animated.View
-        style={[
-          styles.floatWrap,
-          {
-            width: floatWidth,
-            bottom: insets.bottom + 96,
-            opacity: enter,
-            transform: [
-              { translateX: pan.x },
-              { translateY: Animated.add(pan.y, enterTranslateY) },
-              { scale: enterScale },
-            ],
-          },
-        ]}
+    <Animated.View
+      style={[
+        styles.floatWrap,
+        fullscreen
+          ? styles.fsWrap
+          : {
+              width: pipWidth,
+              right: SIDE_MARGIN,
+              bottom: insets.bottom + 96,
+              opacity: enter,
+              transform: [
+                { translateX: pan.x },
+                { translateY: Animated.add(pan.y, enterTranslateY) },
+                { scale: enterScale },
+              ],
+            },
+      ]}
+    >
+      {/* Barra superior — arrastre (solo PiP) + título + acciones */}
+      <View
+        style={[styles.bar, fullscreen && { paddingTop: insets.top + 8 }]}
+        {...(fullscreen ? {} : panResponder.panHandlers)}
       >
-        {/* Barra superior — arrastre + título + cerrar */}
-        <View style={styles.bar} {...panResponder.panHandlers}>
-          <Text style={styles.barLabel} numberOfLines={1}>
-            {source.label}
-          </Text>
-          {isVideo && (
-            <TouchableOpacity
-              onPress={() => {
-                h.tap();
-                void openInYouTube(videoId);
-              }}
-              style={styles.barBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Abrir en la app de YouTube"
-            >
-              <MaterialIcons name="smart-display" size={13} color={YT_RED} />
-            </TouchableOpacity>
-          )}
-          {isVideo && (
-            <TouchableOpacity
-              onPress={() => {
-                h.tap();
-                setFullscreen(true);
-              }}
-              style={styles.barBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Pantalla completa"
-            >
-              <MaterialIcons name="fullscreen" size={15} color="#fff" />
-            </TouchableOpacity>
-          )}
+        <Text style={styles.barLabel} numberOfLines={1}>
+          {source.label}
+        </Text>
+        {isVideo && (
           <TouchableOpacity
-            onPress={handleClose}
+            onPress={() => {
+              h.tap();
+              void openInYouTube(videoId);
+            }}
             style={styles.barBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Cerrar reproductor"
+            accessibilityLabel="Abrir en la app de YouTube"
           >
-            <MaterialIcons name="close" size={15} color="#fff" />
+            <MaterialIcons name="smart-display" size={13} color={YT_RED} />
           </TouchableOpacity>
-        </View>
-        {/* Pantalla del vídeo / reproductor de audio */}
-        <View style={{ height: screenHeight, backgroundColor: '#000' }}>
-          {!fullscreen && videoSurface(screenHeight)}
-        </View>
-      </Animated.View>
-
-      {/* Pantalla completa (solo vídeo) */}
-      <Modal
-        visible={fullscreen}
-        transparent={false}
-        animationType="fade"
-        onRequestClose={() => setFullscreen(false)}
-        supportedOrientations={[
-          'portrait',
-          'landscape-left',
-          'landscape-right',
-        ]}
+        )}
+        {isVideo && (
+          <TouchableOpacity
+            onPress={toggleFullscreen}
+            style={styles.barBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={
+              fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'
+            }
+          >
+            <MaterialIcons
+              name={fullscreen ? 'fullscreen-exit' : 'fullscreen'}
+              size={15}
+              color="#fff"
+            />
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          onPress={handleClose}
+          style={styles.barBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Cerrar reproductor"
+        >
+          <MaterialIcons name="close" size={15} color="#fff" />
+        </TouchableOpacity>
+      </View>
+      {/* Pantalla del vídeo / reproductor de audio. En fullscreen el área
+          crece y el vídeo se centra a 16:9; el WebView interior es siempre
+          la misma instancia. */}
+      <View
+        style={
+          fullscreen
+            ? styles.fsVideoArea
+            : { height: pipHeight, backgroundColor: '#000' }
+        }
       >
-        <View style={styles.fsRoot}>
-          <View style={[styles.fsBar, { paddingTop: insets.top + 6 }]}>
-            <Text style={styles.fsLabel} numberOfLines={1}>
-              {source.label}
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                h.tap();
-                setFullscreen(false);
-              }}
-              style={styles.fsClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityLabel="Salir de pantalla completa"
-            >
-              <MaterialIcons name="close" size={22} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.fsVideo}>
-            {fullscreen && (
-              <View style={styles.fsVideoInner}>{videoSurface('100%')}</View>
-            )}
-          </View>
+        <View style={fullscreen ? styles.fsVideoInner : styles.videoFill}>
+          {videoSurface}
         </View>
-      </Modal>
-    </>
+      </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   floatWrap: {
     position: 'absolute',
-    right: SIDE_MARGIN,
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#111',
@@ -334,6 +329,16 @@ const styles = StyleSheet.create({
         elevation: 12,
       },
     }),
+  },
+  fsWrap: {
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    borderRadius: 0,
+    backgroundColor: '#000',
+    zIndex: 90,
   },
   bar: {
     flexDirection: 'row',
@@ -358,32 +363,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 8,
   },
-  fsRoot: {
+  videoFill: {
     flex: 1,
-    backgroundColor: '#000',
   },
-  fsBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 6,
-    backgroundColor: '#000',
-  },
-  fsLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  fsClose: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fsVideo: {
+  fsVideoArea: {
     flex: 1,
     justifyContent: 'center',
     backgroundColor: '#000',
