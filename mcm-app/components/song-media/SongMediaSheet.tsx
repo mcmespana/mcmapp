@@ -15,7 +15,9 @@ import { useToast } from '@/contexts/AppToastContext';
 import { h } from '@/utils/haptics';
 import BottomSheet from '@/components/BottomSheet';
 import brand from '@/constants/colors';
+import { toDrivePreviewUrl } from '@/utils/googleDrive';
 import type { MediaLink, SongMedia } from '@/types/songMedia';
+import type { FloatingMediaSource } from '@/components/song-media/FloatingMediaPlayer';
 
 interface SongMediaSheetProps {
   visible: boolean;
@@ -23,8 +25,8 @@ interface SongMediaSheetProps {
   media: SongMedia | null;
   /** Título de la canción — se usa como etiqueta del reproductor flotante. */
   songTitle?: string;
-  /** Abre el reproductor flotante con la URL de embed indicada. */
-  onPlayVideo: (embedUrl: string, label: string) => void;
+  /** Abre el reproductor flotante con la fuente indicada (vídeo o audio). */
+  onPlayMedia: (source: FloatingMediaSource) => void;
 }
 
 const YT_RED = '#FF3B30';
@@ -48,7 +50,7 @@ export default function SongMediaSheet({
   onClose,
   media,
   songTitle,
-  onPlayVideo,
+  onPlayMedia,
 }: SongMediaSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -82,7 +84,23 @@ export default function SongMediaSheet({
 
   const playVideo = (embedUrl: string, label: string) => {
     h.tap();
-    onPlayVideo(embedUrl, label);
+    onPlayMedia({ kind: 'youtube', url: embedUrl, label });
+  };
+
+  // Audio: si es un enlace de Drive reconocible, suena en el reproductor
+  // flotante (URL de preview embebible); si no, cae al navegador.
+  const playAudio = (link: MediaLink) => {
+    const previewUrl = toDrivePreviewUrl(link.url);
+    if (!previewUrl) {
+      void openExternal(link.url);
+      return;
+    }
+    h.tap();
+    onPlayMedia({
+      kind: 'drive',
+      url: previewUrl,
+      label: link.label || 'Audio',
+    });
   };
 
   const renderVideoRow = (
@@ -117,31 +135,50 @@ export default function SongMediaSheet({
     </TouchableOpacity>
   );
 
-  const renderAudioRow = (link: MediaLink, index: number) => (
-    <TouchableOpacity
-      key={`audio-${index}`}
-      style={styles.mRow}
-      activeOpacity={0.7}
-      onPress={() => openExternal(link.url)}
-    >
-      <View style={[styles.mIco, styles.mIcoDrive]}>
-        <MaterialIcons name="headphones" size={20} color={driveTint(isDark)} />
-      </View>
-      <View style={styles.mMain}>
-        <Text style={styles.mTitle} numberOfLines={1}>
-          {link.label || 'Audio'}
-        </Text>
-        <Text style={styles.mMeta}>Google Drive</Text>
-      </View>
-      <View style={[styles.mGo, styles.mGoExt]}>
-        <MaterialIcons
-          name="open-in-new"
-          size={17}
-          color={isDark ? '#8E8E93' : '#8E8E93'}
-        />
-      </View>
-    </TouchableOpacity>
-  );
+  const renderAudioRow = (link: MediaLink, index: number) => {
+    const playsInApp = Boolean(toDrivePreviewUrl(link.url));
+    return (
+      <TouchableOpacity
+        key={`audio-${index}`}
+        style={styles.mRow}
+        activeOpacity={0.7}
+        onPress={() => playAudio(link)}
+      >
+        <View style={[styles.mIco, styles.mIcoDrive]}>
+          <MaterialIcons
+            name="headphones"
+            size={20}
+            color={driveTint(isDark)}
+          />
+        </View>
+        <View style={styles.mMain}>
+          <Text style={styles.mTitle} numberOfLines={1}>
+            {link.label || 'Audio'}
+          </Text>
+          <Text style={styles.mMeta}>
+            {playsInApp ? 'Google Drive' : 'Enlace externo'}
+          </Text>
+        </View>
+        {playsInApp && (
+          <TouchableOpacity
+            style={[styles.mGo, styles.mGoExt]}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => openExternal(link.url)}
+            accessibilityLabel="Abrir en el navegador"
+          >
+            <MaterialIcons name="open-in-new" size={17} color="#8E8E93" />
+          </TouchableOpacity>
+        )}
+        <View style={styles.mGo}>
+          <MaterialIcons
+            name={playsInApp ? 'play-arrow' : 'open-in-new'}
+            size={playsInApp ? 20 : 17}
+            color={playsInApp ? brand.primary : '#8E8E93'}
+          />
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <BottomSheet visible={visible} onClose={onClose} title="Multimedia y ficha">
@@ -184,7 +221,7 @@ export default function SongMediaSheet({
                 color={isDark ? '#8E8E93' : '#8E8E93'}
               />
               <Text style={styles.secHeadText}>Audios</Text>
-              <Text style={styles.secHint}>se abren en el navegador</Text>
+              <Text style={styles.secHint}>reproductor flotante</Text>
             </View>
             {media.audioLinks?.map(renderAudioRow)}
           </View>

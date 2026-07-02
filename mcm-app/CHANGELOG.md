@@ -18,6 +18,32 @@
 
 ---
 
+## 2026-07-02 12:30 — Fix reproductor flotante de YouTube + audios de Drive en la app
+
+**Vídeos (fix):** el player flotante cargaba `youtube.com/embed/<id>` como
+documento principal del WebView y YouTube lo rechaza ("vídeo no disponible",
+error 153: el embed exige vivir dentro de un `<iframe>` en una página con
+referer válido — por eso en doceacordes funciona y aquí no). Ahora en nativo
+se carga un shell HTML mínimo con el embed dentro de un iframe y
+`baseUrl: https://www.youtube.com`; en web se mantiene el `<iframe>` directo.
+No hace falta tocar el repo del cantoral: valen tanto URLs `watch` como
+`embed` (la app ya normalizaba con `toYouTubeEmbedUrl`).
+
+**Audios (nuevo):** los enlaces de Google Drive ya no se abren en el
+navegador — suenan en el mismo reproductor flotante usando el endpoint
+oficial de embed de Drive (`/file/d/<id>/preview`), con botón secundario
+para abrir en el navegador. URLs no reconocidas como Drive siguen cayendo
+al navegador.
+
+- `components/song-media/FloatingYouTubePlayer.tsx` →
+  `FloatingMediaPlayer.tsx` (soporta `kind: 'youtube' | 'drive'`; sin botón
+  de pantalla completa para audio; altura reducida para el player de audio)
+- `utils/googleDrive.ts` (nuevo) + `__tests__/googleDrive.test.ts`:
+  `extractDriveFileId` / `toDrivePreviewUrl`
+- `components/song-media/SongMediaSheet.tsx`: prop `onPlayVideo` →
+  `onPlayMedia`; filas de audio reproducen in-app
+- `app/screens/SongDetailScreen.tsx`: estado `floatingVideo` → `floatingMedia`
+
 ## 2026-06-28 15:45 — Refactor: trocear GruposScreen (parcial, Fase 1.7)
 
 `app/screens/GruposScreen.tsx` pasa de **1100 → 561 líneas** (sale de la lista
