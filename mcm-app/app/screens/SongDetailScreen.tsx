@@ -32,9 +32,9 @@ import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { hasSongMedia } from '@/types/songMedia';
 import SongMediaSheet from '@/components/song-media/SongMediaSheet';
-import FloatingYouTubePlayer, {
-  type FloatingVideoSource,
-} from '@/components/song-media/FloatingYouTubePlayer';
+import FloatingMediaPlayer, {
+  type FloatingMediaSource,
+} from '@/components/song-media/FloatingMediaPlayer';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
 // add/remove song button. Not part of the MCM brand palette: it's an
@@ -219,8 +219,8 @@ export default function SongDetailScreen({
   const media = useMemo(() => routeMedia ?? null, [routeMedia]);
   const songHasMedia = hasSongMedia(media);
   const [showMediaSheet, setShowMediaSheet] = useState(false);
-  const [floatingVideo, setFloatingVideo] =
-    useState<FloatingVideoSource | null>(null);
+  const [floatingMedia, setFloatingMedia] =
+    useState<FloatingMediaSource | null>(null);
 
   // Al cambiar de canción (swipe), cerramos el cajón pero conservamos el
   // reproductor flotante (sobrevive porque es la misma instancia montada).
@@ -623,14 +623,14 @@ export default function SongDetailScreen({
         onClose={() => setShowMediaSheet(false)}
         media={media}
         songTitle={_navScreenTitle}
-        onPlayVideo={(embedUrl, label) => {
+        onPlayMedia={(source) => {
           setShowMediaSheet(false);
-          setFloatingVideo({ embedUrl, label });
+          setFloatingMedia(source);
         }}
       />
-      <FloatingYouTubePlayer
-        source={floatingVideo}
-        onClose={() => setFloatingVideo(null)}
+      <FloatingMediaPlayer
+        source={floatingMedia}
+        onClose={() => setFloatingMedia(null)}
       />
       {isAdmin && (
         <ArrangementInputModal

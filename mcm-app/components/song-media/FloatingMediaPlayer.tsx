@@ -14,19 +14,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { h } from '@/utils/haptics';
 
-export interface FloatingVideoSource {
-  embedUrl: string;
+export interface FloatingMediaSource {
+  /** 'youtube' → URL de embed de YouTube · 'drive' → URL de preview de Drive. */
+  kind: 'youtube' | 'drive';
+  url: string;
   label: string;
 }
 
-interface FloatingYouTubePlayerProps {
-  source: FloatingVideoSource | null;
+interface FloatingMediaPlayerProps {
+  source: FloatingMediaSource | null;
   onClose: () => void;
 }
 
 const PLAYER_WIDTH = 208;
 // 16:9 → 208 * 9 / 16 ≈ 117 (igual que `.ytf-screen` del diseño).
-const SCREEN_HEIGHT = Math.round((PLAYER_WIDTH * 9) / 16);
+const VIDEO_HEIGHT = Math.round((PLAYER_WIDTH * 9) / 16);
+// Audio de Drive: solo hace falta la barra del reproductor.
+const AUDIO_HEIGHT = 100;
 
 /** Añade los parámetros de reproducción inline/autoplay a la URL de embed. */
 function withPlaybackParams(embedUrl: string): string {
@@ -35,14 +39,33 @@ function withPlaybackParams(embedUrl: string): string {
 }
 
 /**
- * Reproductor flotante de YouTube (estilo PiP de iOS) que se superpone a la
- * letra sin taparla del todo y se puede arrastrar por la pantalla. En web cae
- * a un `<iframe>` (la PiP nativa no está disponible).
+ * Página HTML mínima que envuelve el embed en un `<iframe>`. YouTube exige que
+ * su player de embed viva DENTRO de un iframe en una página con referer válido
+ * — cargar `youtube.com/embed/<id>` como documento principal del WebView
+ * devuelve "vídeo no disponible" (error 153, falta el referer). Con este shell
+ * + `baseUrl` de YouTube el embed funciona igual que en una web normal.
  */
-export default function FloatingYouTubePlayer({
+function embedShellHtml(src: string): string {
+  const safeSrc = src.replace(/"/g, '&quot;');
+  return `<!doctype html><html><head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<style>html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}
+iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}</style>
+</head><body>
+<iframe src="${safeSrc}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+</body></html>`;
+}
+
+/**
+ * Reproductor flotante multimedia (estilo PiP de iOS) que se superpone a la
+ * letra sin taparla del todo y se puede arrastrar por la pantalla. Reproduce
+ * vídeos de YouTube (embed) y audios de Google Drive (preview). En web cae a
+ * un `<iframe>` directo, como hace cualquier página que embebe YouTube.
+ */
+export default function FloatingMediaPlayer({
   source,
   onClose,
-}: FloatingYouTubePlayerProps) {
+}: FloatingMediaPlayerProps) {
   const insets = useSafeAreaInsets();
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -81,11 +104,14 @@ export default function FloatingYouTubePlayer({
       tension: 90,
       friction: 11,
     }).start();
-    // Solo cuando cambia la URL del vídeo.
+    // Solo cuando cambia la URL.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source?.embedUrl]);
+  }, [source?.url]);
 
   if (!source) return null;
+
+  const isVideo = source.kind === 'youtube';
+  const screenHeight = isVideo ? VIDEO_HEIGHT : AUDIO_HEIGHT;
 
   const handleClose = () => {
     h.tap();
@@ -93,7 +119,12 @@ export default function FloatingYouTubePlayer({
     onClose();
   };
 
-  const playUri = withPlaybackParams(source.embedUrl);
+  // YouTube necesita ir dentro de un iframe (ver embedShellHtml); el preview
+  // de Drive es una página normal y se carga directamente.
+  const playUri = isVideo ? withPlaybackParams(source.url) : source.url;
+  const nativeSource = isVideo
+    ? { html: embedShellHtml(playUri), baseUrl: 'https://www.youtube.com' }
+    : { uri: playUri };
 
   const videoSurface = (height: number | '100%') =>
     Platform.OS === 'web' ? (
@@ -113,7 +144,7 @@ export default function FloatingYouTubePlayer({
       />
     ) : (
       <WebView
-        source={{ uri: playUri }}
+        source={nativeSource}
         style={{ width: '100%', height, backgroundColor: '#000' }}
         originWhitelist={['*']}
         allowsInlineMediaPlayback
@@ -155,17 +186,19 @@ export default function FloatingYouTubePlayer({
           <Text style={styles.barLabel} numberOfLines={1}>
             {source.label}
           </Text>
-          <TouchableOpacity
-            onPress={() => {
-              h.tap();
-              setFullscreen(true);
-            }}
-            style={styles.barBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Pantalla completa"
-          >
-            <MaterialIcons name="fullscreen" size={15} color="#fff" />
-          </TouchableOpacity>
+          {isVideo && (
+            <TouchableOpacity
+              onPress={() => {
+                h.tap();
+                setFullscreen(true);
+              }}
+              style={styles.barBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Pantalla completa"
+            >
+              <MaterialIcons name="fullscreen" size={15} color="#fff" />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={handleClose}
             style={styles.barBtn}
@@ -175,13 +208,13 @@ export default function FloatingYouTubePlayer({
             <MaterialIcons name="close" size={15} color="#fff" />
           </TouchableOpacity>
         </View>
-        {/* Pantalla del vídeo */}
-        <View style={{ height: SCREEN_HEIGHT, backgroundColor: '#000' }}>
-          {!fullscreen && videoSurface(SCREEN_HEIGHT)}
+        {/* Pantalla del vídeo / reproductor de audio */}
+        <View style={{ height: screenHeight, backgroundColor: '#000' }}>
+          {!fullscreen && videoSurface(screenHeight)}
         </View>
       </Animated.View>
 
-      {/* Pantalla completa */}
+      {/* Pantalla completa (solo vídeo) */}
       <Modal
         visible={fullscreen}
         transparent={false}
