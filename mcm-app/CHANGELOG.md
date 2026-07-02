@@ -18,6 +18,31 @@
 
 ---
 
+## 2026-07-02 18:20 — Fix (v2): API oficial de YouTube IFrame + ajuste tamaño audio
+
+El fix anterior (iframe crudo dentro de un shell HTML) resolvía el caso
+general pero seguía fallando en vídeos concretos (p.ej. "Yo celebraré",
+Entrada #11: "vídeo no disponible"), aunque el endpoint oembed de YouTube
+confirma que esos vídeos SÍ admiten embed en cualquier web. Causa: un
+`<iframe src="…/embed/ID">` suelto cargado vía `loadHTMLString` no manda un
+`Referer` real y YouTube lo puede rechazar de forma inconsistente.
+
+- Se sustituye el iframe suelto por la **API oficial de IFrame de YouTube**
+  (`https://www.youtube.com/iframe_api` + `new YT.Player(...)`), que hace el
+  handshake por `postMessage` y con `playerVars.origin` fijo es mucho más
+  fiable dentro de un WebView.
+- Si aun así el vídeo da error (`onError` de la API: embed deshabilitado por
+  el autor, restricción regional…), se muestra un fallback dentro de la
+  propia página con botón "Ver en YouTube" que abre el navegador. Además hay
+  un botón fijo (icono ↗ rojo) en la barra del reproductor para abrir
+  YouTube manualmente en cualquier momento, igual que hace doceacordes.
+- Audio (Drive): el reproductor pasa de 208×100 a **ancho casi completo de
+  pantalla × 64 de alto** — el player de Drive se veía apretado en un ancho
+  tan estrecho como el del PiP de vídeo.
+- `components/song-media/FloatingMediaPlayer.tsx`: nuevo `embedShellHtml`
+  basado en la API oficial + `onMessage` del WebView para el fallback +
+  `useWindowDimensions` para el ancho del audio.
+
 ## 2026-07-02 12:30 — Fix reproductor flotante de YouTube + audios de Drive en la app
 
 **Vídeos (fix):** el player flotante cargaba `youtube.com/embed/<id>` como
