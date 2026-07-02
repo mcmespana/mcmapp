@@ -18,6 +18,29 @@
 
 ---
 
+## 2026-07-02 19:00 — Fix (v3, definitivo): Referer HTTP real en el embed + abrir la app de YouTube
+
+La v2 (IFrame API en HTML inyectado) seguía cayendo al fallback en
+dispositivo. Diagnóstico definitivo: **todo lo que se carga en el WebView vía
+`loadHTMLString` sale sin cabecera HTTP `Referer`** — da igual el baseUrl, el
+iframe o la IFrame API — y el embed de YouTube rechaza peticiones sin Referer
+(códigos 152/153). Doceacordes funciona porque su navegador manda
+`Referer: https://doceacordes.es/` de verdad.
+
+- **El fix:** cargar la URL de embed real (`youtube.com/embed/<id>`) como
+  `source={{ uri, headers: { Referer: 'https://mcmespana.github.io/' } }}` —
+  el WebView de RN sí permite cabeceras en la petición inicial. YouTube nos
+  ve exactamente igual que a una web que embebe el vídeo.
+- **Abrir la app de YouTube (no la web):** el botón de la barra y cualquier
+  navegación que el propio player intente hacia `watch?v=`/`youtu.be` (p.ej.
+  tocar el logo o el "Ver en YouTube" del error) se interceptan con
+  `onShouldStartLoadWithRequest` y abren la app nativa vía
+  `Linking.openURL('youtube://…' / 'vnd.youtube://…')`, con fallback a la URL
+  https (que también abre la app por universal link si está instalada).
+- Se elimina el shell HTML con la IFrame API y el puente `onMessage` (ya no
+  hacen falta) y `WebBrowser` deja de usarse para YouTube.
+- `components/song-media/FloatingMediaPlayer.tsx`.
+
 ## 2026-07-02 18:20 — Fix (v2): API oficial de YouTube IFrame + ajuste tamaño audio
 
 El fix anterior (iframe crudo dentro de un shell HTML) resolvía el caso

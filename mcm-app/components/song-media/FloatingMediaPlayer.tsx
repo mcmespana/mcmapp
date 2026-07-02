@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Linking,
   Modal,
   PanResponder,
   Platform,
@@ -10,9 +11,8 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { WebView, type WebViewMessageEvent } from 'react-native-webview';
+import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as WebBrowser from 'expo-web-browser';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { h } from '@/utils/haptics';
 import { extractYouTubeId } from '@/utils/youtube';
@@ -40,70 +40,36 @@ const AUDIO_HEIGHT = 64;
 const SIDE_MARGIN = 14;
 
 /**
- * Página HTML mínima que instancia el reproductor con la **API oficial de
- * IFrame de YouTube** (`iframe_api`), en vez de un `<iframe src="…/embed/…">`
- * suelto. Un `<iframe>` a pelo cargado dentro de un WebView (vía
- * `loadHTMLString`/`loadDataWithBaseURL`) no manda un `Referer` real y
- * YouTube lo trata como un embed no fiable — algunos vídeos responden con
- * "vídeo no disponible" aunque el propio vídeo permita embeberse en
- * cualquier web (comprobable con el endpoint oembed). La API oficial hace el
- * handshake vía `postMessage` y con `playerVars.origin` fijo funciona de
- * forma consistente. Si aun así el vídeo da error (embed deshabilitado por
- * el autor, restricción regional, etc.), mostramos un fallback dentro de la
- * propia página con un botón que abre YouTube en el navegador.
+ * Referer que mandamos al cargar la página de embed de YouTube.
+ *
+ * CLAVE de por qué el player fallaba con "vídeo no disponible" (códigos
+ * 152/153): YouTube exige que la petición del embed llegue con una cabecera
+ * HTTP `Referer` real, como cuando una web (doceacordes) embebe el iframe.
+ * Todo lo que se carga en el WebView vía `loadHTMLString` (HTML inyectado,
+ * con o sin baseUrl, con o sin la IFrame API) sale SIN Referer y YouTube lo
+ * rechaza según el vídeo. La solución es cargar la URL de embed real con
+ * `source.headers.Referer` — el valor solo tiene que existir y ser una URL
+ * plausible; no hace falta que el dominio sirva nada.
  */
-function embedShellHtml(videoId: string): string {
-  const safeId = videoId.replace(/[^A-Za-z0-9_-]/g, '');
-  return `<!doctype html><html><head>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<style>
-html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}
-#player{position:absolute;inset:0}
-#player iframe{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;border:0}
-#fallback{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;background:#141414;padding:16px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center}
-#fallback.show{display:flex}
-#fallback p{color:#fff;opacity:.75;font-size:12.5px;line-height:1.4;margin:0 0 12px}
-#fallback button{background:${YT_RED};color:#fff;border:0;border-radius:16px;padding:9px 16px;font-size:12.5px;font-weight:600}
-</style>
-</head><body>
-<div id="player"></div>
-<div id="fallback">
-  <p>Este vídeo no se puede reproducir aquí.</p>
-  <button id="fallback-btn">Ver en YouTube</button>
-</div>
-<script>
-function post(msg){ if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(msg)); }
-document.getElementById('fallback-btn').addEventListener('click', function(){ post({ type: 'open-youtube' }); });
-var tag = document.createElement('script');
-tag.src = 'https://www.youtube.com/iframe_api';
-document.body.appendChild(tag);
-function onYouTubeIframeAPIReady() {
-  new YT.Player('player', {
-    videoId: '${safeId}',
-    playerVars: { playsinline: 1, autoplay: 1, rel: 0, origin: 'https://www.youtube.com' },
-    events: {
-      onError: function (e) {
-        document.getElementById('fallback').classList.add('show');
-        post({ type: 'yt-error', code: e && e.data });
-      },
-    },
-  });
-}
-</script>
-</body></html>`;
-}
+const EMBED_REFERER = 'https://mcmespana.github.io/';
 
-/** Añade los parámetros de reproducción inline/autoplay a la URL de embed (solo web). */
+/** Añade los parámetros de reproducción inline/autoplay a la URL de embed. */
 function withPlaybackParams(embedUrl: string): string {
   const sep = embedUrl.includes('?') ? '&' : '?';
   return `${embedUrl}${sep}playsinline=1&autoplay=1&rel=0`;
 }
 
+/** ¿La URL es una página de vídeo de YouTube (no de embed)? */
+function isYouTubeWatchUrl(url: string): boolean {
+  return /youtube\.com\/watch|youtu\.be\/|m\.youtube\.com/.test(url);
+}
+
 /**
  * Reproductor flotante multimedia (estilo PiP de iOS) que se superpone a la
  * letra sin taparla del todo y se puede arrastrar por la pantalla. Reproduce
- * vídeos de YouTube (embed) y audios de Google Drive (preview). En web cae a
- * un `<iframe>` directo, como hace cualquier página que embebe YouTube.
+ * vídeos de YouTube (embed con Referer real) y audios de Google Drive
+ * (preview). En web cae a un `<iframe>` directo, como cualquier página que
+ * embebe YouTube.
  */
 export default function FloatingMediaPlayer({
   source,
@@ -152,26 +118,28 @@ export default function FloatingMediaPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.url]);
 
-  const openInYouTube = useCallback((videoId: string | null) => {
+  /**
+   * Abre el vídeo preferentemente en la APP de YouTube (scheme nativo). Si
+   * la app no está instalada, `openURL` del scheme falla y caemos a la URL
+   * https vía Linking — que en iOS/Android también abre la app por universal
+   * link si existe, y si no, el navegador.
+   */
+  const openInYouTube = useCallback(async (videoId: string | null) => {
     if (!videoId) return;
-    void WebBrowser.openBrowserAsync(
-      `https://www.youtube.com/watch?v=${videoId}`,
-    );
-  }, []);
-
-  const handleWebViewMessage = useCallback(
-    (event: WebViewMessageEvent, videoId: string | null) => {
+    const appUrl =
+      Platform.OS === 'ios'
+        ? `youtube://www.youtube.com/watch?v=${videoId}`
+        : `vnd.youtube://watch?v=${videoId}`;
+    try {
+      await Linking.openURL(appUrl);
+    } catch {
       try {
-        const msg = JSON.parse(event.nativeEvent.data);
-        if (msg?.type === 'open-youtube') {
-          openInYouTube(videoId);
-        }
+        await Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
       } catch {
-        /* mensaje no reconocido; se ignora */
+        /* sin YouTube ni navegador no hay nada que hacer */
       }
-    },
-    [openInYouTube],
-  );
+    }
+  }, []);
 
   if (!source) return null;
 
@@ -189,35 +157,31 @@ export default function FloatingMediaPlayer({
     onClose();
   };
 
-  const videoSurface = (height: number | '100%') => {
-    if (Platform.OS === 'web') {
-      const webSrc = isVideo ? withPlaybackParams(source.url) : source.url;
-      return (
-        // @ts-ignore — iframe sólo existe en web
-        <iframe
-          src={webSrc}
-          style={{
-            width: '100%',
-            height,
-            border: 'none',
-            display: 'block',
-            backgroundColor: '#000',
-          }}
-          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-          allowFullScreen
-          title={source.label}
-        />
-      );
-    }
-    const nativeSource = isVideo
-      ? {
-          html: embedShellHtml(videoId ?? ''),
-          baseUrl: 'https://www.youtube.com',
-        }
-      : { uri: source.url };
-    return (
+  const playUri = isVideo ? withPlaybackParams(source.url) : source.url;
+
+  const videoSurface = (height: number | '100%') =>
+    Platform.OS === 'web' ? (
+      // @ts-ignore — iframe sólo existe en web
+      <iframe
+        src={playUri}
+        style={{
+          width: '100%',
+          height,
+          border: 'none',
+          display: 'block',
+          backgroundColor: '#000',
+        }}
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+        title={source.label}
+      />
+    ) : (
       <WebView
-        source={nativeSource}
+        source={
+          isVideo
+            ? { uri: playUri, headers: { Referer: EMBED_REFERER } }
+            : { uri: playUri }
+        }
         style={{ width: '100%', height, backgroundColor: '#000' }}
         originWhitelist={['*']}
         allowsInlineMediaPlayback
@@ -226,10 +190,19 @@ export default function FloatingMediaPlayer({
         mediaPlaybackRequiresUserAction={false}
         javaScriptEnabled
         domStorageEnabled
-        onMessage={(e) => handleWebViewMessage(e, videoId)}
+        setSupportMultipleWindows={false}
+        onShouldStartLoadWithRequest={(req) => {
+          // Cualquier intento de salir del embed hacia la página de vídeo
+          // (p.ej. tocar el logo o el "Ver en YouTube" del propio player) se
+          // intercepta y se abre la app de YouTube en su lugar.
+          if (isVideo && isYouTubeWatchUrl(req.url)) {
+            void openInYouTube(videoId ?? extractYouTubeId(req.url));
+            return false;
+          }
+          return true;
+        }}
       />
     );
-  };
 
   const enterTranslateY = enter.interpolate({
     inputRange: [0, 1],
@@ -266,13 +239,13 @@ export default function FloatingMediaPlayer({
             <TouchableOpacity
               onPress={() => {
                 h.tap();
-                openInYouTube(videoId);
+                void openInYouTube(videoId);
               }}
               style={styles.barBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Ver en YouTube"
+              accessibilityLabel="Abrir en la app de YouTube"
             >
-              <MaterialIcons name="open-in-new" size={13} color={YT_RED} />
+              <MaterialIcons name="smart-display" size={13} color={YT_RED} />
             </TouchableOpacity>
           )}
           {isVideo && (
