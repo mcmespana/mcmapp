@@ -57,27 +57,37 @@ export default function useWordleLeaderboard(
 
         if (statsSnap.exists()) {
           const statsData = statsSnap.val() as Record<string, any>;
-          const entries = Object.entries(statsData).map(([uid, data]) => {
-            const totalAttempts = data.distribution
-              ? Object.entries(data.distribution).reduce(
-                  (sum, [k, v]) => sum + Number(k) * Number(v),
-                  0,
-                )
-              : 0;
-            const played = data.played || 0;
-            const avg = played ? totalAttempts / played : Infinity;
-            return {
-              userId: uid,
-              name: data.userName || users[uid]?.name || 'Anónimo',
-              place: data.userLocation || users[uid]?.place || '',
-              played,
-              average: avg,
-            };
-          });
+          const entries: LeaderboardEntry[] = [];
 
-          const general = [...entries].sort((a, b) => a.average - b.average);
-          const participation = [...entries].sort(
-            (a, b) => b.played - a.played,
+          for (const uid in statsData) {
+            if (Object.prototype.hasOwnProperty.call(statsData, uid)) {
+              const data = statsData[uid];
+              let totalAttempts = 0;
+
+              if (data.distribution) {
+                for (const k in data.distribution) {
+                  if (Object.prototype.hasOwnProperty.call(data.distribution, k)) {
+                    totalAttempts += Number(k) * Number(data.distribution[k]);
+                  }
+                }
+              }
+
+              const played = data.played || 0;
+              const avg = played ? totalAttempts / played : Infinity;
+
+              entries.push({
+                userId: uid,
+                name: data.userName || users[uid]?.name || 'Anónimo',
+                place: data.userLocation || users[uid]?.place || '',
+                played,
+                average: avg,
+              });
+            }
+          }
+
+          const general = entries.slice().sort((a, b) => (a.average ?? Infinity) - (b.average ?? Infinity));
+          const participation = entries.slice().sort(
+            (a, b) => (b.played ?? 0) - (a.played ?? 0),
           );
 
           setGeneralRanking(general.slice(0, 5));
