@@ -18,6 +18,26 @@
 
 ---
 
+## 2026-07-07 18:40 — B1: la app consume `activities/<id>/_meta` del evento activo
+
+- El panel edita por evento `title`, `tintColor`, `bannerText` y `status`, pero
+  la app los ignoraba (todo salía del registry hardcodeado
+  `constants/events.ts`). Ahora, para el **evento activo**, la app mergea ese
+  `_meta` remoto sobre la config del registry: el banner de la Home y el hub del
+  evento reflejan los cambios del panel **sin publicar versión** (p. ej. cambiar
+  el banner o el color del evento activo).
+- `utils/mergeEventMeta.ts` (merge puro, valida hex/campos) +
+  `hooks/useEventMeta.ts` (lee el nodo `_meta` PLANO con caché offline; ese
+  nodo NO es `{updatedAt,data}` como el global, por eso no usa
+  `useFirebaseData`), aplicado en `contexts/ActiveEventContext.tsx`. Test:
+  `__tests__/mergeEventMeta.test.ts`. Retrocompatible: sin `_meta` remoto se
+  usa el registry.
+- Pendiente (follow-up bajo riesgo): mergear `_meta` de eventos NO activos para
+  que "Eventos pasados" respete `status: archived` del panel.
+- Lado panel (mcmpanel): avisos honestos en el card de metadatos (B2) y en el
+  diálogo de crear actividad (B3). Ejecuta B1–B3 de PLAN_INTEGRACIONES; queda B4
+  (escrituras granulares, pendiente por riesgo — toca el guardado compartido).
+
 ## 2026-07-07 18:00 — A4.3: deep link de notificación a un evento concreto
 
 - El panel puede mandar `data.eventId` (id del registry, p. ej. `jubileo` o

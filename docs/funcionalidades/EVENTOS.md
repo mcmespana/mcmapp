@@ -54,10 +54,16 @@ activities/_meta
 > evento global".
 
 **Metadatos por evento** (`activities/<evento>/_meta` con `status`, `title`,
-`tintColor`, `bannerText`): el panel permite editarlos, pero **la app hoy NO
-los lee** — título, color, banner y estado activo/archivado salen del registry
-hardcodeado (`constants/events.ts`). Consumirlos desde Firebase es una mejora
-pendiente (ver `docs/planes/PLAN_INTEGRACIONES.md`, Integración B).
+`tintColor`, `bannerText`): desde 2026-07-07 (B1 del PLAN_INTEGRACIONES) la app
+**sí los lee para el evento activo** y los mergea sobre el registry
+(`utils/mergeEventMeta.ts` + `hooks/useEventMeta.ts`, aplicado en
+`ActiveEventContext`). Así el panel puede cambiar título/color/banner del evento
+activo, o archivarlo, sin publicar la app. ⚠️ Nota de forma: este nodo `_meta`
+per-evento es **plano** (`{ status, title, tintColor, bannerText, updatedAt }`),
+NO `{ updatedAt, data }` como el `activities/_meta` global. **Pendiente**: los
+eventos NO activos siguen tomando `status` del registry (la lista "Eventos
+pasados" no refleja aún un `archived` puesto desde el panel a un evento no
+activo). Ver `docs/planes/PLAN_INTEGRACIONES.md`, Integración B.
 
 ### Forma de cada sección
 
