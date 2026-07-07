@@ -1,5 +1,7 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useEventMeta } from '@/hooks/useEventMeta';
+import { mergeEventMeta } from '@/utils/mergeEventMeta';
 import { ACTIVE_EVENT_ID, getEvent, EventConfig } from '@/constants/events';
 
 interface ActiveMetaData {
@@ -39,7 +41,16 @@ export function ActiveEventProvider({
     'activities_meta',
   );
   const activeEventId = data?.activeEventId ?? ACTIVE_EVENT_ID;
-  const activeEvent = getEvent(activeEventId);
+
+  // B1: mergea el `_meta` per-evento que edita el panel (title/tintColor/
+  // bannerText/status) sobre la config del registry, para reflejar cambios del
+  // panel sin publicar la app. Si el remoto falta, se conserva el registry.
+  const remoteMeta = useEventMeta(activeEventId);
+  const activeEvent = useMemo(
+    () => mergeEventMeta(getEvent(activeEventId), remoteMeta),
+    [activeEventId, remoteMeta],
+  );
+
   return (
     <ActiveEventContext.Provider value={{ activeEventId, activeEvent }}>
       {children}

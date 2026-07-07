@@ -174,14 +174,18 @@ Resumen para retomar. ✅ hecho · ⏳ pendiente.
   tipo (A4.2, OTA pero no de impacto cero, necesita prueba en dispositivo) y NSE
   de iOS (A4.4, nativo, requiere build de tienda) · [app]
 
-**Integración B — Eventos** (todo pendiente)
-- ⏳ B1 · consumir `activities/<id>/_meta` en la app (title/tint/banner/status)
-  · [app] · MEDIA — encaja con A4.3 (deep link a evento)
-- ⏳ B2 · sincerar la UI de metadatos del panel mientras B1 no esté · [panel] · MEDIA
-- ⏳ B3 · aviso al crear actividad ("no aparece hasta registrarla en
-  `events.ts`") · [panel] · BAJA
+**Integración B — Eventos**
+- ✅ B1 · consumir `activities/<id>/_meta` en la app (title/tint/banner/status)
+  · [app] · **para el evento activo** (banner/hub) — ver nota abajo
+- ✅ B2 · sincerar la UI de metadatos del panel · [panel] (aviso preciso en el
+  card, no bloqueante)
+- ✅ B3 · aviso al crear actividad ("no aparece hasta registrarla en
+  `events.ts`") · [panel]
 - ⏳ B4 · guardar `/activities` con escrituras granulares (no pisar
-  `evaluacion/respuestas` ni `compartiendo`) · [panel] · MEDIA
+  `evaluacion/respuestas` ni `compartiendo`) · [panel] · MEDIA · **PENDIENTE**
+  (el más delicado: toca el guardado compartido del `JSONManager`; requiere
+  rastrear las subrutas editadas por el admin y prueba contra Firebase real —
+  ver análisis en la sección B4 abajo). No hacer a ciegas.
 
 **Integración C — Perfiles** (todo pendiente)
 - ⏳ C1 · retirar gestión manual de `delegationList` (derivarla) · [panel] · MEDIA
@@ -207,14 +211,30 @@ Resumen para retomar. ✅ hecho · ⏳ pendiente.
 - ✅ E2 · nota de coherencia `updatedAt` · sin acción
 
 **Orden sugerido para continuar:** D (seguridad, único con riesgo de incidente)
-→ A2 → B2/B4 → B1 (+ A4.3 deep link) → C1/C2 → E1 → resto de prioridad baja.
-Dejar A4.4 (NSE iOS) para cuando se decida si merece la pena (requiere build).
+→ A2 → **B4** (escrituras granulares, con prueba en Firebase real) → C1/C2 → E1
+→ resto de prioridad baja. Dejar A4.4 (NSE iOS) y A4.2 (channels Android) para
+cuando se decida/haya dispositivo de prueba.
 
 ---
 
 ## Integración B — Eventos y sus secciones
 
-### B1. Consumir `activities/<id>/_meta` en la app · [app] · prioridad MEDIA
+### B1. Consumir `activities/<id>/_meta` en la app · [app] · prioridad MEDIA · ✅ HECHO (2026-07-07)
+
+> Implementado para el **evento activo**: `utils/mergeEventMeta.ts` (merge puro
+> con validación: title/bannerText no vacíos, tintColor hex, status ∈
+> active|archived) + `hooks/useEventMeta.ts` (lee el nodo PLANO
+> `activities/<id>/_meta` con caché offline; OJO: NO es `{updatedAt,data}` como
+> el global, por eso no usa `useFirebaseData`). Aplicado en
+> `ActiveEventContext.tsx`: el banner de la Home y el hub del evento activo ya
+> reflejan title/tintColor/bannerText/status del panel sin publicar la app.
+> Tests: `__tests__/mergeEventMeta.test.ts`.
+>
+> **Alcance/pendiente**: el merge se aplica al **evento activo** (el caso de más
+> valor). Falta, si se quiere, mergear `_meta` de eventos NO activos para que la
+> lista "Eventos pasados" respete `status: archived` puesto desde el panel
+> (`getArchivedEvents()` sigue leyendo el registry). Es un follow-up de bajo
+> riesgo (aplicar `mergeEventMeta` también en el consumo de la lista de eventos).
 
 **Problema**: el panel edita `title`, `tintColor`, `bannerText` y `status`
 (activo/archivado) por evento, pero la app lo ignora todo: el registry
@@ -228,21 +248,22 @@ un evento o cambiar el banner sin release. Nota: crear un evento 100% nuevo
 seguirá requiriendo registrarlo en `events.ts` (las `sections` y pantallas son
 código).
 
-### B2. Sincerar la UI de metadatos del panel · [panel] · prioridad MEDIA
+### B2. Sincerar la UI de metadatos del panel · [panel] · prioridad MEDIA · ✅ HECHO (2026-07-07)
 
-Mientras B1 no esté hecho, el card "Metadatos del evento" de
-`ActivitiesSection.tsx` es engañoso (el admin cambia "Estado en la app" y no
-pasa nada). **Acción**: añadir un aviso visible en ese card ("la app aún no
-lee estos campos, solo el evento activo global") o deshabilitar los campos no
-consumidos. Retirar el aviso al completar B1.
+> Implementado: aviso preciso (no bloqueante) en el card "Metadatos del evento"
+> de `ActivitiesSection.tsx` explicando que la app aplica Título/Color/Banner al
+> **evento activo** sin publicar versión, y que el Estado y los eventos no
+> activos dependen aún del registry (`constants/events.ts`). Refleja el alcance
+> real de B1 en vez de deshabilitar campos.
 
-### B3. Avisar al crear una actividad nueva · [panel] · prioridad BAJA
+### B3. Avisar al crear una actividad nueva · [panel] · prioridad BAJA · ✅ HECHO (2026-07-07)
 
-**Acción**: en el diálogo "Crear Nueva Actividad", añadir nota: "El evento no
-aparecerá en la app hasta que se registre en `mcm-app/constants/events.ts`
-(ver EVENTOS.md del repo mcmapp)".
+> Implementado: aviso ámbar en el diálogo "Crear Nueva Actividad"
+> (`ActivitiesSection.tsx`) — "el evento no aparecerá en la app hasta
+> registrarlo en `mcm-app/constants/events.ts`; aquí solo se crea el nodo de
+> datos en Firebase (ver EVENTOS.md)".
 
-### B4. No pisar datos que escribe la app al guardar `/activities` · [panel] · prioridad MEDIA
+### B4. No pisar datos que escribe la app al guardar `/activities` · [panel] · prioridad MEDIA · ⏳ PENDIENTE
 
 **Problema**: el guardado del panel hace `set()` del nodo `/activities`
 completo con su copia en memoria. La app escribe dentro de ese árbol
@@ -254,6 +275,26 @@ por subsección editada: `activities/<evento>/<subseccion>` y
 `activities/_meta`) en vez de `set('/activities')`. Aplicar el mismo criterio
 a `/jubileo` (subnodo `compartiendo`) y revisar `/app` (subnodo `feedback`,
 `evaluations`).
+
+> **Análisis (2026-07-07) — por qué se deja pendiente y con cuidado.** El
+> guardado vive en `JSONManager.tsx → writePending()`, que hace
+> `set('/${key}', pendingUpdates[key])` para CADA sección (es el camino de
+> guardado **compartido por todas las secciones**, no solo Actividades). Riesgos
+> a tener en cuenta antes de tocarlo:
+> - `pendingUpdates` guarda el **valor completo** de la sección, no un diff, así
+>   que no se sabe qué subruta editó el admin. Preservar a ciegas
+>   `compartiendo`/`respuestas` del remoto **pisaría** una edición legítima del
+>   admin en esas subsecciones (el panel tiene `CompartiendoSubsection`).
+> - La solución correcta necesita **rastrear las subrutas editadas** (p. ej. que
+>   `ActivitiesSection`/`updateSectionData` registren rutas tipo
+>   `activities/<evento>/<subseccion>` y `activities/<evento>/_meta` y
+>   `activities/_meta`) y hacer `update()` multi-path solo de esas.
+> - Al ser el guardado común, un fallo aquí afecta a TODAS las secciones →
+>   conviene diseñarlo aparte, con pruebas contra Firebase real (envío de una
+>   respuesta de evaluación mientras el admin guarda) antes de production.
+> **Recomendación**: hacerlo en su propia iteración, empezando por Actividades y
+> `/jubileo` (subnodo `compartiendo`), y de paso revisar `/app`
+> (`feedback`/`evaluations`).
 
 ---
 
