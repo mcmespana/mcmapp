@@ -36,6 +36,29 @@ activities/
     └── …
 ```
 
+### 3. Evento activo global — `activities/_meta`
+
+La app decide qué evento está "destacado" (tab propia + botón Home + banner)
+leyendo este nodo (`contexts/ActiveEventContext.tsx`), con fallback al
+`ACTIVE_EVENT_ID` hardcodeado en `constants/events.ts`:
+
+```
+activities/_meta
+├── updatedAt: "2026-07-06T..."          (ISO — invalida la caché)
+└── data
+    └── activeEventId: "visitapapa26"    (id del registry de events.ts)
+```
+
+> ⚠️ La forma es `{ updatedAt, data: {...} }` (patrón `useFirebaseData`), NO
+> campos en plano. El panel MCM escribe este nodo desde Actividades → "Modo
+> evento global".
+
+**Metadatos por evento** (`activities/<evento>/_meta` con `status`, `title`,
+`tintColor`, `bannerText`): el panel permite editarlos, pero **la app hoy NO
+los lee** — título, color, banner y estado activo/archivado salen del registry
+hardcodeado (`constants/events.ts`). Consumirlos desde Firebase es una mejora
+pendiente (ver `docs/planes/PLAN_INTEGRACIONES.md`, Integración B).
+
 ### Forma de cada sección
 
 Cada sección (nodo hijo del evento) tiene siempre:

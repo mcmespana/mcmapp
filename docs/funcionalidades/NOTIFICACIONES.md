@@ -325,7 +325,7 @@ El backend debe:
 
 #### UI del panel
 - Dashboard con estadísticas
-- Formulario: título (80 chars max), body (200 chars), **descripción detallada opcional `bodyLong` (~2000 chars, scrollable en la app)**, categoría, prioridad, icono URL, imagen URL, ruta interna, **hasta 3 botones de acción** (texto + URL/ruta + interno/externo cada uno)
+- Formulario: título (50 chars max), body (200 chars), **descripción detallada opcional `bodyLong` (~2000 chars, scrollable en la app)**, categoría, prioridad, icono URL, imagen URL, ruta interna, **hasta 3 botones de acción** (texto + URL/ruta + interno/externo cada uno)
 - Autenticación simple (usuario/contraseña via env vars)
 - Historial de notificaciones enviadas
 

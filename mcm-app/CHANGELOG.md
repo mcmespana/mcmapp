@@ -18,6 +18,20 @@
 
 ---
 
+## 2026-07-06 17:00 — Auditoría de integraciones app ↔ panel ↔ cantoral (solo docs en este repo)
+
+- Nuevo `docs/planes/PLAN_INTEGRACIONES.md`: hallazgos de la auditoría, arreglos
+  ya aplicados en mcmpanel (id de evento `visitapapa26` en el composer, forma
+  canónica de `activities/_meta`, preservación de colas de `/songs`, guardado
+  del JSONManager sin pisar ediciones) y acciones pendientes ejecutables una a
+  una (A1…E2).
+- Docs corregidos: `PANEL_PERFILES.md` (la app deriva `delegationList` de
+  `delegations`; catálogos con `visitapapa`/`eventos-pasados`; checklist
+  cerrado), `EVENTOS.md` (documenta `activities/_meta` y que la app no lee los
+  `_meta` por evento), `SEGURIDAD.md` (⚠️ el panel NO usa Admin SDK: no
+  desplegar las reglas hasta darle auth), `NOTIFICACIONES.md` (título máx. 50).
+- Sin cambios de código en la app.
+
 ## 2026-07-03 01:15 — Player flotante: fullscreen sin recargar + audios abren la app de Drive
 
 - **Pantalla completa fluida:** el modo grande ya no monta un segundo WebView

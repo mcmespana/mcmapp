@@ -1,12 +1,12 @@
 # MCM Panel — Gestión del Sistema de Perfiles
 
-> Documento para el agente que va a adaptar **mcmpanel** (Next.js admin) al
-> nuevo sistema de perfiles/delegaciones de la app MCM. Aquí se describe la
-> estructura en Firebase Realtime Database, qué controla cada cosa, y cómo
-> debería ser la UI de administración.
+> Contrato de datos del sistema de perfiles/delegaciones entre **mcmpanel**
+> (React/Vite admin, ya adaptado — sección "Perfiles") y la app MCM. Describe
+> la estructura en Firebase Realtime Database y qué controla cada cosa.
 >
-> **Diseño técnico completo de la app cliente**: `mcm-app/TODO_SISTEMA_PERFILES.md`.
 > **Seed inicial listo para importar**: `mcm-app/firebase-seed/profileConfig.json`.
+> **Implementación del panel**: `mcmpanel/src/components/sections/ProfileConfigSection.tsx`
+> (+ `profile/*`, `lib/profileCatalog.ts`, `lib/profileConfigSeed.ts`).
 
 ---
 
@@ -101,14 +101,18 @@ Cada array es una **lista de IDs** que la app conoce. Si el panel mete un ID
 que la app no conoce, el cliente lo descarta silenciosamente con un warning
 (no rompe la UI). Los IDs válidos son los del catálogo:
 
-| Campo                | IDs aceptados                                                                            | Notas                                               |
-| -------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `tabs`               | `index`, `cancionero`, `contigo`, `calendario`, `fotos`, `comunica`, `mas`               | Pestañas de la barra inferior                        |
-| `homeButtons`        | `comunica`, `cancionero`, `fotos`, `evangelio`, `mas`                                    | Botones del grid de la Home                          |
-| `masItems`           | `comunica`, `comunica-gestion`, `jubileo`                                                | Items del menú "Más"                                 |
-| `albumTags`          | `all`, `general`, `encuentros`, `interno`, `monitores`, `miembros`                       | Tags de visibilidad de fotos. `"all"` = ver todo     |
-| `notificationTopics` | `general`, `eventos`, `familias`, `monitores`, `miembros`                                | Topics base. Las delegaciones añaden los suyos       |
-| `defaultCalendars`   | IDs de `/calendars` (ej. `mcm-europa`)                                                   | **No validados contra catálogo** — ojo con typos    |
+| Campo                | IDs aceptados                                                                             | Notas                                               |
+| -------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `tabs`               | `index`, `cancionero`, `contigo`, `visitapapa`, `calendario`, `fotos`, `comunica`, `mas` | Pestañas de la barra inferior                        |
+| `homeButtons`        | `comunica`, `cancionero`, `fotos`, `evangelio`, `visitapapa`, `mas`                       | Botones del grid de la Home                          |
+| `masItems`           | `comunica`, `comunica-gestion`, `jubileo`, `eventos-pasados`                              | Items del menú "Más"                                 |
+| `albumTags`          | `all`, `general`, `encuentros`, `interno`, `monitores`, `miembros`                        | Tags de visibilidad de fotos. `"all"` = ver todo     |
+| `notificationTopics` | `general`, `eventos`, `familias`, `monitores`, `miembros`                                 | Topics base. Las delegaciones añaden los suyos       |
+| `defaultCalendars`   | IDs de `/calendars` (ej. `mcm-europa`)                                                    | **No validados contra catálogo** — ojo con typos    |
+
+> La lista viva está en `mcm-app/constants/profileCatalog.ts` (app) y su espejo
+> `mcmpanel/src/lib/profileCatalog.ts` (panel). Si añades un ID nuevo, actualiza
+> **ambos** ficheros; esta tabla es orientativa.
 
 **UX recomendada del panel para editar un perfil**:
 
@@ -163,23 +167,26 @@ también, aunque solo tengan `label` (heredan resto de `_default`).
 > nuevas sin tocar código de la app. Convención: usar slug en kebab-case
 > (`castellon`, `mcm-madrid`).
 
-### 1.4. `data.delegationList` — lista para el selector
+### 1.4. `data.delegationList` — ⚠️ DERIVADA, la app la ignora
 
-Array ordenado de las delegaciones que aparecen en el onboarding y en
-Ajustes. Es independiente de `data.delegations` para permitir reordenar /
-ocultar sin perder la config:
+**La app ya NO lee `delegationList` de Firebase.** El cliente la deriva
+siempre de `data.delegations` (todas las claves menos `_default`, en el orden
+en que Firebase devuelve el objeto) — ver
+`mcm-app/contexts/ProfileConfigContext.tsx → deriveDelegationList()`. Esto
+elimina el riesgo de que ambas fuentes se desincronicen.
 
-```json
-[
-  { "id": "mcm-espana", "label": "MCM España" },
-  { "id": "mcm-castellon", "label": "MCM Castellón" },
-  { "id": "mcm-madrid", "label": "MCM Madrid" }
-]
-```
+Implicaciones para el panel:
 
-> **Importante**: si una delegación está en `data.delegations` pero NO en
-> `data.delegationList`, el usuario no podrá seleccionarla en el onboarding.
-> El panel debería avisar al admin si detecta esa inconsistencia.
+- **Toda delegación en `data.delegations` es seleccionable** en el onboarding
+  y en Ajustes. No se puede "ocultar" una delegación quitándola de la lista;
+  para ocultarla hay que borrarla de `delegations`.
+- **El orden del selector no se controla desde `delegationList`** (RTDB
+  devuelve las claves de objeto en orden lexicográfico). Si algún día hace
+  falta orden manual, habría que reintroducir el soporte en la app.
+- El nodo `delegationList` puede seguir existiendo en Firebase (el panel aún
+  lo escribe y lo usa para poblar sus propios selectores, p. ej. el de
+  delegaciones del composer de notificaciones), pero es **redundante** de cara
+  a la app.
 
 ### 1.5. `data.overrides` — combinaciones específicas perfil:delegación
 
@@ -420,8 +427,6 @@ sin querer.
 | `tabs` no contiene `index`                                                                                       | warning   | Aviso: "El usuario no podrá volver a Inicio". Permitir guardar.                                   |
 | `tabs` está vacío                                                                                                | error     | Bloquear. La app caería al fallback.                                                              |
 | `defaultCalendars` referencia un ID que ya no está en `/calendars`                                                | warning   | Avisar y ofrecer limpiar.                                                                         |
-| `delegationList` tiene un id que no existe en `delegations`                                                       | warning   | Crear automáticamente la entrada con solo `label`.                                                |
-| `delegations.{id}` existe pero no está en `delegationList`                                                        | warning   | Avisar: "El usuario no podrá seleccionar esta delegación".                                        |
 | `notificationTopic` con caracteres raros (espacios, mayúsculas)                                                   | warning   | Auto-slugify (`"MCM Castellón"` → `"mcm-castellon"`).                                             |
 | `overrides[k]` con clave malformada (no `perfil:delegacion`)                                                      | error     | Bloquear.                                                                                         |
 | `minAppVersion` no es semver válido                                                                                | error     | Bloquear. La app interpretaría `0.0.0` y no bloquearía nada.                                      |
@@ -533,25 +538,18 @@ Si el agente del panel quiere ver cómo lo consume la app cliente:
 | Pantalla de onboarding | `mcm-app/app/onboarding.tsx`                       |
 | Pantalla de bloqueo    | `mcm-app/components/MaintenanceScreen.tsx`         |
 | Token + topics         | `mcm-app/services/pushNotificationService.ts`      |
-| Diseño técnico         | `mcm-app/TODO_SISTEMA_PERFILES.md`                 |
 
 ---
 
-## 10. Checklist para el agente que adapte mcmpanel
+## 10. Estado de la adaptación de mcmpanel
 
-- [ ] Pantalla de edición de los 3 perfiles con multiselects contra catálogo.
-- [ ] Pantalla de edición de delegaciones (CRUD + extras + override).
-- [ ] Sincronización automática `delegations` ↔ `delegationList`.
-- [ ] Pantalla de overrides perfil:delegación.
-- [ ] Pantalla de flags globales (mantenimiento, minAppVersion, ...).
-- [ ] Selector de calendarios en `defaultCalendars` poblado desde `/calendars`.
-- [ ] Selector de tags en álbumes poblado con catálogo.
-- [ ] Composer de notificaciones con filtro por perfil + delegación, con
-      preview de recuento.
-- [ ] Forzar `updatedAt` en cada escritura de `/profileConfig`.
-- [ ] Validaciones del §5 antes de guardar.
-- [ ] Botón "Inicializar profileConfig desde seed" si el nodo está vacío.
-- [ ] Reglas de seguridad RTDB actualizadas.
+La adaptación descrita en este documento **ya está hecha** (sección "Perfiles"
+del panel: editores de perfiles, delegaciones, overrides y sistema; composer de
+notificaciones con audiencia por perfil/delegación/evento y preview de
+recuento; `updatedAt` forzado en cada guardado; botón de inicializar desde
+seed). Pendiente conocido: reglas de seguridad RTDB (ver `docs/SEGURIDAD.md`
+— el panel aún escribe sin autenticación, no desplegar las reglas hasta
+resolverlo).
 
 ---
 
@@ -616,15 +614,16 @@ export interface ProfileConfigDocument {
   data: ProfileConfigData;
 }
 
-// Catálogos de IDs aceptados (deben coincidir con el cliente)
+// Catálogos de IDs aceptados (deben coincidir con el cliente —
+// fuente viva: mcm-app/constants/profileCatalog.ts)
 export const KNOWN_TABS = [
-  'index', 'cancionero', 'contigo', 'calendario', 'fotos', 'comunica', 'mas',
+  'index', 'cancionero', 'contigo', 'visitapapa', 'calendario', 'fotos', 'comunica', 'mas',
 ] as const;
 export const KNOWN_HOME_BUTTONS = [
-  'comunica', 'cancionero', 'fotos', 'evangelio', 'mas',
+  'comunica', 'cancionero', 'fotos', 'evangelio', 'visitapapa', 'mas',
 ] as const;
 export const KNOWN_MAS_ITEMS = [
-  'comunica', 'comunica-gestion', 'jubileo',
+  'comunica', 'comunica-gestion', 'jubileo', 'eventos-pasados',
 ] as const;
 export const KNOWN_ALBUM_TAGS = [
   'all', 'general', 'encuentros', 'interno', 'monitores', 'miembros',
@@ -717,11 +716,9 @@ await update(ref(db), {
    altere el timestamp. Solución: forzar el update siempre, idealmente desde
    un wrapper `saveProfileConfig()` único.
 
-2. **Editar `delegations` sin tocar `delegationList`**: la delegación
-   existirá técnicamente pero el usuario no podrá seleccionarla en el
-   onboarding. Solución: cuando el admin crea una delegación nueva, añadirla
-   automáticamente a `delegationList` (con un toggle "ocultar del selector"
-   para casos especiales).
+2. **Creer que `delegationList` controla el selector**: la app la deriva de
+   `delegations` (ver §1.4). Añadir/quitar una delegación del selector =
+   añadirla/quitarla de `data.delegations`. No hay "ocultar del selector".
 
 3. **IDs con typos en arrays del perfil**: la app descarta IDs desconocidos
    en silencio (warning solo en dev). El admin pensará que "no funciona" sin
