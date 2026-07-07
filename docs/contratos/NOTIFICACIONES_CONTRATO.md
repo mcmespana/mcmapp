@@ -102,12 +102,24 @@ stack de **"Más"** (`app/screens/EventHomeScreen.tsx`), al que se llega navegan
 `visitapapa26`). En Firebase los eventos están bajo `activities/<nombre>/` (y el
 legacy `jubileo/`).
 
-### Deep link a UNA actividad concreta
+### Deep link a UNA actividad/evento concreto (`data.eventId`)
 
-**Hoy no hay** un deep link estable tipo `/(tabs)/mas/evento/<id>`. El destino
-navegable es `/(tabs)/mas`. Abrir directamente un evento por `id/slug` requeriría
-trabajo nuevo en la app (registrar una ruta con parámetro y propagar `eventId`).
-Si el Panel lo necesita, lo dejamos como mejora pendiente — ver §"Mejoras".
+**Disponible desde 2026-07-07.** El Panel puede enviar `data.eventId` con el id
+del evento en el registry de la app (`constants/events.ts`), p. ej. `jubileo` o
+`visitapapa26` (el mismo id que el sufijo del topic `event-<id>`). Al tocar la
+notificación, la app abre el **hub de ese evento**:
+
+- Evento con tab propia (p. ej. `visitapapa26` → `visitapapa`) → abre su tab.
+- Evento sin tab propia (p. ej. Jubileo, archivado) → abre "Más".
+- Id no registrado en la app → se ignora y se cae al comportamiento normal
+  (centro de notificaciones o `internalRoute`).
+
+`data.eventId` **tiene prioridad** sobre `internalRoute` cuando resuelve.
+Además, el modal de detalle in-app muestra un botón "Ir a <evento>". El evento
+debe existir en `constants/events.ts` (crear el nodo en `/activities` NO basta,
+ver regla de oro 5 en `mcmpanel/CLAUDE.md`). Implementación app:
+`utils/notificationEventRoute.ts`. En el composer del panel: opción "🎉 Abrir un
+evento…" del selector de acción al tocar.
 
 ## 3. Categorías / botones de acción
 
@@ -400,6 +412,7 @@ para la **velocidad de entrega** (FCM). Para diferenciar visualmente `high` vs
 | `mutableContent`         | 🟡 | iOS lo ignora en la práctica (sin NSE) |
 | `data.id`                | ✅ | **Crítico**: dedup / marca leído |
 | `data.internalRoute`     | ✅ | Navegación (con normalización + alias) |
+| `data.eventId`           | ✅ | Deep link al hub del evento (prioritario sobre internalRoute) |
 | `data.actionButtons[]`   | ✅ | **Hasta 3** CTA en tarjeta + modal (formato recomendado) |
 | `data.actionButton`      | ✅ | Legacy (un botón) → se trata como array de uno |
 | `data.imageUrl`          | ✅ | Imagen en el modal de detalle in-app |

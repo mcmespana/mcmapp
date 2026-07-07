@@ -28,6 +28,7 @@ import {
   extractActionButton,
   extractActionButtons,
 } from '@/utils/notificationRoutes';
+import { routeForEventId } from '@/utils/notificationEventRoute';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -185,6 +186,9 @@ export default function usePushNotifications() {
           internalRoute: notification.request.content.data?.internalRoute as
             | string
             | undefined,
+          eventId: notification.request.content.data?.eventId as
+            | string
+            | undefined,
           data: notification.request.content.data,
         };
 
@@ -218,7 +222,15 @@ export default function usePushNotifications() {
         ) {
           targetRoute = ACTION_ROUTES[actionIdentifier];
         }
-        // 2. Ruta interna especificada en la notificación
+        // 2. Deep link a un evento concreto (data.eventId → ruta del hub).
+        //    Tiene prioridad sobre internalRoute cuando el id resuelve.
+        else if (
+          typeof data?.eventId === 'string' &&
+          routeForEventId(data.eventId)
+        ) {
+          targetRoute = routeForEventId(data.eventId) as string;
+        }
+        // 3. Ruta interna especificada en la notificación
         else if (data?.internalRoute) {
           targetRoute = data.internalRoute as string;
         }
@@ -257,6 +269,7 @@ export default function usePushNotifications() {
           isRead: false,
           category: data?.category as any,
           internalRoute: data?.internalRoute as string | undefined,
+          eventId: data?.eventId as string | undefined,
           data,
         };
 

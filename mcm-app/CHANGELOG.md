@@ -18,6 +18,23 @@
 
 ---
 
+## 2026-07-07 18:00 — A4.3: deep link de notificación a un evento concreto
+
+- El panel puede mandar `data.eventId` (id del registry, p. ej. `jubileo` o
+  `visitapapa26`) y, al tocar la notificación, la app abre el hub del evento en
+  vez de solo el centro de notificaciones. Evento con tab propia → su tab;
+  archivado sin tab → "Más"; id desconocido → fallback normal. Prioritario
+  sobre `internalRoute`. También botón "Ir al evento" en el modal de detalle.
+- Sin código nativo → entra por OTA. Aditivo y de impacto cero hasta que un
+  admin lo use. Archivos: `utils/notificationEventRoute.ts` (nuevo helper),
+  `notifications/usePushNotifications.ts` (handler de tap),
+  `app/notifications.tsx` (botón en el modal), `types/notifications.ts`
+  (`eventId`). Test: `__tests__/notificationEventRoute.test.ts`. Contrato §4/§(e).
+- Lado panel (repo mcmpanel): opción "🎉 Abrir un evento…" en el composer,
+  propagada por send/schedule/process-scheduled y persistida en el registro.
+- Ejecuta el punto 3 de la acción **A4**. Con A4.1 ya hecho, de A4 solo quedan
+  A4.2 (channels Android) y A4.4 (NSE de iOS, requiere build de tienda).
+
 ## 2026-07-07 17:15 — A4.1: chip visual de categoría en el centro de notificaciones
 
 - `data.category` ya no es solo una etiqueta guardada: la tarjeta del centro de

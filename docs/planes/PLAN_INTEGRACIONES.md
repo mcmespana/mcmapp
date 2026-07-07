@@ -120,12 +120,19 @@ tratarlas por separado, no como un bloque. Ordenadas de menor a mayor riesgo:
    solo unos. Cuidado: cambiar channels afecta a la entrega de los existentes y
    requiere que el panel mande `channelId`; es cross-repo y conviene coordinarlo
    con `§8`/`§9` del contrato. **Posterior**, con su propio plan.
-3. **Deep link a un evento concreto** · app + panel · riesgo MEDIO. Ya hay
-   infra (`utils/notificationRoutes.ts`, `utils/eventNavigation.ts`,
-   `ActiveEventContext`). Falta fijar la convención de ruta (p. ej.
-   `internalRoute` = `/(tabs)/mas` + `data.eventId`) y que el panel la emita.
-   Depende del contrato de rutas (`§4`). **Posterior**; encaja mejor junto a B1
-   (consumir `activities/<id>/_meta`).
+3. **Deep link a un evento concreto** · app + panel · sin nativo · ✅ **HECHO
+   (2026-07-07)**. Convención: el panel manda `data.eventId` (id del registry);
+   la app lo resuelve a la ruta del hub del evento
+   (`utils/notificationEventRoute.ts` → `/(tabs)/<tabId>` o `/(tabs)/mas` para
+   los archivados; id desconocido → fallback normal). Prioritario sobre
+   `internalRoute`. Wired en el handler de respuesta de push
+   (`usePushNotifications.ts`) y con botón "Ir al evento" en el modal
+   (`app/notifications.tsx`). Panel: opción "🎉 Abrir un evento…" en el composer
+   (`NotificationsSection.tsx`), propagado por `send`/`schedule`/
+   `process-scheduled` y persistido en el registro. Aditivo y de impacto cero
+   hasta que un admin lo use. Tests: `__tests__/notificationEventRoute.test.ts`.
+   Contrato §4 y §(e). Nota: el evento debe estar en `constants/events.ts`
+   (relacionado con B1, que sigue pendiente).
 4. **NSE de iOS (imagen en la notificación del sistema)** · app · riesgo ALTO ·
    **nativo**. Requiere un Notification Service Extension (nuevo target iOS +
    config plugin), NO se puede OTA y obliga a build de tienda (`[skip-ota]`).
@@ -139,9 +146,17 @@ separadas con su propio plan y, en el caso del NSE, decidir antes si merece la
 pena. No implementar A4 como bloque para no arriesgar la estabilidad del centro
 de notificaciones.
 
-**Estado A4 (2026-07-07):** hecho el punto 1 (sin nativo). **Pendientes:** los
-puntos 2 (channels Android), 3 (deep link a evento) y 4 (NSE de iOS) — este
-último es el único que exige build de tienda. Ver "Qué falta del PLAN" abajo.
+**Estado A4 (2026-07-07):** hechos los puntos **1 (visual de `data.category`)** y
+**3 (deep link a evento)** — ambos sin nativo, entregables por OTA/Vercel.
+**Pendientes:** el punto **2 (channels Android)** y el **4 (NSE de iOS)**.
+- **A4.2 (channels Android)**: técnicamente OTA, pero NO es de impacto cero —
+  crear channels extra hace que aparezcan canales (posiblemente vacíos) en los
+  ajustes del sistema de TODOS los Android, es difícil de revertir y necesita
+  prueba en dispositivo real para validar el heads-up. Requiere además que el
+  panel mande `channelId` (cross-repo). Se deja pendiente de decisión explícita
+  y prueba en dispositivo, para no arriesgar la entrega de push a ciegas.
+- **A4.4 (NSE de iOS)**: único que exige **build de tienda**. Fuera de alcance
+  salvo petición concreta.
 
 ---
 
@@ -154,9 +169,10 @@ Resumen para retomar. ✅ hecho · ⏳ pendiente.
 - ⏳ A2 · proteger endpoints de envío (`x-panel-key` + `PANEL_API_KEY`) · [panel]
   · prioridad ALTA · **sin empezar** (la solución real es la Integración D)
 - ✅ A3 · poblar selector de eventos desde `/activities` · [panel]
-- ◐ A4 · **parcial**: hecho el uso visual de `data.category`; pendientes
-  channels Android por tipo, deep link a un evento y NSE de iOS (nativo,
-  requiere build de tienda) · [app]
+- ◐ A4 · **parcial**: hechos el uso visual de `data.category` (A4.1) y el deep
+  link a un evento vía `data.eventId` (A4.3); pendientes channels Android por
+  tipo (A4.2, OTA pero no de impacto cero, necesita prueba en dispositivo) y NSE
+  de iOS (A4.4, nativo, requiere build de tienda) · [app]
 
 **Integración B — Eventos** (todo pendiente)
 - ⏳ B1 · consumir `activities/<id>/_meta` en la app (title/tint/banner/status)
