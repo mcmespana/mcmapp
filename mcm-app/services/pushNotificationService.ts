@@ -490,11 +490,19 @@ export const isNotificationOlderThan60Days = (dateStr?: string): boolean => {
   return diffDays > 60;
 };
 
-export const getUnreadNotificationsCount = async (): Promise<number> => {
+export const getUnreadNotificationsCount = async (
+  // Filtro opcional para las notificaciones de Firebase (historial remoto). Lo
+  // usa el NotificationsContext para descontar del badge los avisos dirigidos a
+  // otra audiencia (perfil/delegación/evento). Sin filtro → se cuentan todas.
+  filterFirebaseNotification?: (n: NotificationData) => boolean,
+): Promise<number> => {
   try {
     const readIds = await getReadNotificationIds();
     const localNotifications = await getLocalNotificationsHistory();
-    const firebaseNotifications = await getNotificationsHistory();
+    const firebaseHistory = await getNotificationsHistory();
+    const firebaseNotifications = filterFirebaseNotification
+      ? firebaseHistory.filter(filterFirebaseNotification)
+      : firebaseHistory;
 
     // Combinar, priorizando locales
     const combined = [...localNotifications, ...firebaseNotifications].sort(

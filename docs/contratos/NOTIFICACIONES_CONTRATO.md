@@ -331,6 +331,32 @@ un evento**.
 > Convención del id de topic: `event-` + `eventId` tal cual (kebab/slug). No
 > añadáis prefijos `activities/`; el id del evento ya es el slug final.
 
+## 7.ter. Filtrado del historial in-app por `audience`
+
+La app pinta el nodo `/notifications` completo en el centro de notificaciones (la
+campana), no solo lo que llegó como push a ESE dispositivo. Para que un aviso
+segmentado ("solo monitores de Madrid") **no** lo vea cualquiera que abra la
+campana, la app filtra cada registro contra el usuario actual usando el objeto
+`audience` que el Panel ya guarda en el registro (`/notifications/<id>.audience`,
+ver `api/_lib/push.ts → dispatchNotification`).
+
+- El match replica exactamente la semántica de envío del Panel
+  (`mcmpanel/src/lib/audience.ts → tokenMatchesAudience`): 4 ejes
+  (`todos`/`perfiles`/`delegaciones`/`eventId`) combinados con `match`
+  (`all` = AND, `any` = OR). El "usuario" es `profileType` + `delegationId` +
+  la unión de `notificationTopics` (perfil/delegación) y los topics
+  `event-<id>` de las suscripciones opt-in — la MISMA metadata que se guarda en
+  `/pushTokens`. Así, un registro visible en la campana es exactamente uno que
+  ese dispositivo habría recibido como push.
+- **Registro sin `audience` (o con `audience: null` / sin ejes activos) → visible
+  para todos.** Esto preserva el histórico anterior a la segmentación.
+- **Qué debe hacer el Panel:** seguir escribiendo `audience` en el registro tal
+  cual hasta ahora. Ningún cambio nuevo. Si algún día se envía sin `audience`,
+  el aviso se considera "para todos" en la campana.
+- Implementación app: `utils/notificationAudience.ts` (lógica pura + tests en
+  `__tests__/notificationAudience.test.ts`), aplicada en
+  `contexts/NotificationsContext.tsx` (lista visible **y** contador del badge).
+
 ## 8. (c) Channels Android
 
 Solo uno, creado en runtime (`usePushNotifications.ts`):
