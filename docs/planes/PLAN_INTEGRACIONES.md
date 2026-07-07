@@ -108,12 +108,12 @@ concreto, channels Android por tipo, uso visual de `data.category`.
 tratarlas por separado, no como un bloque. Ordenadas de menor a mayor riesgo:
 
 1. **Uso visual de `data.category`** · app · riesgo BAJO · sin nativo · sin
-   panel. Hoy la categoría se guarda pero no pinta nada (`§6` del contrato).
-   Añadir color/icono/etiqueta por categoría en la tarjeta y el modal de
-   `app/notifications.tsx`. Es puro UI y autocontenido, pero toca un archivo
-   grande (~1100 líneas): extraer primero un helper `categoryVisual(category)`
-   a `utils/` con su test, y consumirlo desde la fila/el modal. **Candidata a
-   la siguiente iteración** — es la más segura y con retorno visible.
+   panel · ✅ **HECHO (2026-07-07)**. Implementado: helper puro
+   `utils/notificationCategory.ts` (`categoryVisual(category)` → etiqueta, color
+   legible e icono; `general`/ausente/desconocida → sin chip) con test
+   `__tests__/notificationCategory.test.ts`, consumido desde la tarjeta y el
+   modal de `app/notifications.tsx`. Contrato §6 y §(e) actualizados. Sin nativo
+   → entra por OTA.
 2. **Channels Android por tipo** · app · riesgo MEDIO · nativo-runtime. Hoy
    existe un único channel `default` (importancia MAX). Crear channels por
    tipo/prioridad (`usePushNotifications.ts`) permitiría al usuario silenciar
@@ -138,6 +138,61 @@ tratarlas por separado, no como un bloque. Ordenadas de menor a mayor riesgo:
 separadas con su propio plan y, en el caso del NSE, decidir antes si merece la
 pena. No implementar A4 como bloque para no arriesgar la estabilidad del centro
 de notificaciones.
+
+**Estado A4 (2026-07-07):** hecho el punto 1 (sin nativo). **Pendientes:** los
+puntos 2 (channels Android), 3 (deep link a evento) y 4 (NSE de iOS) — este
+último es el único que exige build de tienda. Ver "Qué falta del PLAN" abajo.
+
+---
+
+## Qué falta del PLAN (estado a 2026-07-07)
+
+Resumen para retomar. ✅ hecho · ⏳ pendiente.
+
+**Integración A — Notificaciones**
+- ✅ A1 · filtrar historial in-app por audiencia · [app]
+- ⏳ A2 · proteger endpoints de envío (`x-panel-key` + `PANEL_API_KEY`) · [panel]
+  · prioridad ALTA · **sin empezar** (la solución real es la Integración D)
+- ✅ A3 · poblar selector de eventos desde `/activities` · [panel]
+- ◐ A4 · **parcial**: hecho el uso visual de `data.category`; pendientes
+  channels Android por tipo, deep link a un evento y NSE de iOS (nativo,
+  requiere build de tienda) · [app]
+
+**Integración B — Eventos** (todo pendiente)
+- ⏳ B1 · consumir `activities/<id>/_meta` en la app (title/tint/banner/status)
+  · [app] · MEDIA — encaja con A4.3 (deep link a evento)
+- ⏳ B2 · sincerar la UI de metadatos del panel mientras B1 no esté · [panel] · MEDIA
+- ⏳ B3 · aviso al crear actividad ("no aparece hasta registrarla en
+  `events.ts`") · [panel] · BAJA
+- ⏳ B4 · guardar `/activities` con escrituras granulares (no pisar
+  `evaluacion/respuestas` ni `compartiendo`) · [panel] · MEDIA
+
+**Integración C — Perfiles** (todo pendiente)
+- ⏳ C1 · retirar gestión manual de `delegationList` (derivarla) · [panel] · MEDIA
+- ⏳ C2 · unificar seeds de `profileConfig` (app como fuente) · [panel] · BAJA
+- ⏳ C3 · documentar `appReviewMode` en el contrato + tipar opcionales · [app] · BAJA
+- ⏳ C4 · completar validaciones del §5 (override, semver, slug, tabs sin
+  `index`) · [panel] · BAJA
+
+**Integración D — Seguridad Firebase** (todo pendiente · prioridad MÁXIMA)
+- ⏳ D1 · credencial de servidor en `api/_lib/push.ts` (`?auth=`) · [panel]
+- ⏳ D2 · auth real para escrituras del panel (Firebase Auth + `/admins`, o
+  mover escrituras a `api/`) · [panel]
+- ⏳ D3 · completar `database.rules.json` (`/scheduledNotifications`, lecturas
+  del panel, `/users`) · [app]
+- ⏳ D4 · desplegar reglas + smoke test app y panel
+- ⏳ D5 · verificar `CRON_SECRET` en Vercel
+- ⚠️ **No desplegar las reglas** (`deploy-firebase-rules.yml`) hasta completar
+  D1–D3: hoy romperían el panel entero (ver `docs/SEGURIDAD.md`).
+
+**Integración E — Cantoral** (pendiente)
+- ⏳ E1 · proteger ediciones del panel frente al uploader (opción a: cantoral
+  del panel solo-lectura) · [panel]/[cantoral] · MEDIA
+- ✅ E2 · nota de coherencia `updatedAt` · sin acción
+
+**Orden sugerido para continuar:** D (seguridad, único con riesgo de incidente)
+→ A2 → B2/B4 → B1 (+ A4.3 deep link) → C1/C2 → E1 → resto de prioridad baja.
+Dejar A4.4 (NSE iOS) para cuando se decida si merece la pena (requiere build).
 
 ---
 

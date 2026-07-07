@@ -18,6 +18,20 @@
 
 ---
 
+## 2026-07-07 17:15 — A4.1: chip visual de categoría en el centro de notificaciones
+
+- `data.category` ya no es solo una etiqueta guardada: la tarjeta del centro de
+  notificaciones y el modal de detalle pintan un chip de color con icono según
+  la categoría (Eventos, Cantoral, Fotos, Urgente, Mantenimiento, Celebración).
+  `general`, ausente y valores desconocidos no pintan chip (sin ruido).
+- Sin código nativo → entra por OTA. Archivos:
+  `utils/notificationCategory.ts` (nuevo, helper puro),
+  `app/notifications.tsx` (chip en fila y modal). Test:
+  `__tests__/notificationCategory.test.ts`. Contrato §6 y §(e) actualizados.
+- Ejecuta el punto 1 de la acción **A4** de `docs/planes/PLAN_INTEGRACIONES.md`
+  (el único sin build nativo). Pendientes A4.2 (channels Android), A4.3 (deep
+  link a evento) y A4.4 (NSE de iOS, requiere build de tienda).
+
 ## 2026-07-07 16:45 — Plan de integraciones: A3 hecha (en mcmpanel) y A4 valorada
 
 - `docs/planes/PLAN_INTEGRACIONES.md`: marcadas A1 y A3 como hechas y añadida la
