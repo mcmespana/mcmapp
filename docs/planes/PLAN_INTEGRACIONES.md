@@ -41,7 +41,14 @@ No requieren acción, se listan para contexto:
 
 ## Integración A — Notificaciones
 
-### A1. Filtrar el historial in-app por audiencia · [app] · prioridad ALTA
+### A1. Filtrar el historial in-app por audiencia · [app] · prioridad ALTA · ✅ HECHO (2026-07-07)
+
+> Implementado: `utils/notificationAudience.ts` (lógica pura + tests en
+> `__tests__/notificationAudience.test.ts`), aplicado en
+> `contexts/NotificationsContext.tsx` (lista visible + contador del badge). El
+> campo `audience` se tipó en `types/notifications.ts` y el contrato lo
+> documenta en §7.ter (`NOTIFICACIONES_CONTRATO.md`). Retrocompatible: registro
+> sin `audience` → visible para todos.
 
 **Problema**: el panel segmenta el envío push (`audience` de 4 ejes), pero la
 app pinta TODO el nodo `/notifications` en el centro de notificaciones. Una
@@ -74,7 +81,14 @@ Vercel (`PANEL_API_KEY`), y que el frontend lo envíe tras el login. Como el
 login del panel es client-side, el secreto acaba en el bundle: esto solo sube
 el listón. La solución real es la Integración D (auth de verdad).
 
-### A3. Poblar el selector de eventos desde `/activities` · [panel] · prioridad BAJA
+### A3. Poblar el selector de eventos desde `/activities` · [panel] · prioridad BAJA · ✅ HECHO (2026-07-07)
+
+> Implementado en `NotificationsSection.tsx`: se suscribe a `/activities`
+> (excluyendo `_meta`) + legacy `jubileo` y une sus ids a `eventOptions` con 0
+> suscriptores; la etiqueta usa `/activities/<id>/_meta.title` si existe. El id
+> del nodo coincide con el id del registry de la app y con el topic `event-<id>`
+> (verificado con `visitapapa26` en `constants/events.ts`), así que el filtrado
+> sigue siendo correcto.
 
 **Problema**: el desplegable "evento" del composer se autodescubre de los
 topics `event-*` presentes en `/pushTokens` + una lista hardcodeada
@@ -84,11 +98,46 @@ topics `event-*` presentes en `/pushTokens` + una lista hardcodeada
 `_meta`) y `jubileo` al construir `eventOptions` en `NotificationsSection.tsx`,
 con su `_meta.title` como etiqueta si existe.
 
-### A4. Mejoras ya identificadas en el contrato · [app] · prioridad BAJA
+### A4. Mejoras ya identificadas en el contrato · [app] · prioridad BAJA · 🔎 VALORADA (2026-07-07)
 
 Referencia: `docs/contratos/NOTIFICACIONES_CONTRATO.md § Mejoras futuras` —
 NSE de iOS para imagen en la notificación del sistema, deep link a un evento
 concreto, channels Android por tipo, uso visual de `data.category`.
+
+**Valoración (2026-07-07).** A4 agrupa cuatro mejoras heterogéneas; conviene
+tratarlas por separado, no como un bloque. Ordenadas de menor a mayor riesgo:
+
+1. **Uso visual de `data.category`** · app · riesgo BAJO · sin nativo · sin
+   panel. Hoy la categoría se guarda pero no pinta nada (`§6` del contrato).
+   Añadir color/icono/etiqueta por categoría en la tarjeta y el modal de
+   `app/notifications.tsx`. Es puro UI y autocontenido, pero toca un archivo
+   grande (~1100 líneas): extraer primero un helper `categoryVisual(category)`
+   a `utils/` con su test, y consumirlo desde la fila/el modal. **Candidata a
+   la siguiente iteración** — es la más segura y con retorno visible.
+2. **Channels Android por tipo** · app · riesgo MEDIO · nativo-runtime. Hoy
+   existe un único channel `default` (importancia MAX). Crear channels por
+   tipo/prioridad (`usePushNotifications.ts`) permitiría al usuario silenciar
+   solo unos. Cuidado: cambiar channels afecta a la entrega de los existentes y
+   requiere que el panel mande `channelId`; es cross-repo y conviene coordinarlo
+   con `§8`/`§9` del contrato. **Posterior**, con su propio plan.
+3. **Deep link a un evento concreto** · app + panel · riesgo MEDIO. Ya hay
+   infra (`utils/notificationRoutes.ts`, `utils/eventNavigation.ts`,
+   `ActiveEventContext`). Falta fijar la convención de ruta (p. ej.
+   `internalRoute` = `/(tabs)/mas` + `data.eventId`) y que el panel la emita.
+   Depende del contrato de rutas (`§4`). **Posterior**; encaja mejor junto a B1
+   (consumir `activities/<id>/_meta`).
+4. **NSE de iOS (imagen en la notificación del sistema)** · app · riesgo ALTO ·
+   **nativo**. Requiere un Notification Service Extension (nuevo target iOS +
+   config plugin), NO se puede OTA y obliga a build de tienda (`[skip-ota]`).
+   Es el de mayor coste/riesgo y el que menos aporta (la imagen ya se ve en el
+   modal in-app). **No hacer sin decisión explícita**; candidato a quedar fuera
+   de alcance salvo petición concreta.
+
+**Recomendación**: en la siguiente iteración, abordar solo el punto 1 (visual de
+`data.category`) de forma autocontenida y con tests; dejar 2–4 como acciones
+separadas con su propio plan y, en el caso del NSE, decidir antes si merece la
+pena. No implementar A4 como bloque para no arriesgar la estabilidad del centro
+de notificaciones.
 
 ---
 
