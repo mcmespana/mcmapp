@@ -31,6 +31,7 @@ Si cambias uno de estos formatos, actualiza el contrato.
 | --------- | --------- |
 | [MEJORAS.md](planes/MEJORAS.md) | Análisis técnico transversal (rendimiento, arquitectura, seguridad, DX, CI) con plan priorizado |
 | [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md) | Plan de saneamiento de código por fases (archivos gigantes, contexts, tipos, tests) |
+| [PLAN_INTEGRACIONES.md](planes/PLAN_INTEGRACIONES.md) | Auditoría de integraciones app ↔ panel ↔ cantoral (2026-07): arreglos aplicados y acciones pendientes ejecutables una a una |
 
 Las tareas accionables derivadas de estos planes están en
 [`mcm-app/TODO.md`](../mcm-app/TODO.md).
