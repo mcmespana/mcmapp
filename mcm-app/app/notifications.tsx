@@ -42,6 +42,7 @@ import {
   ReceivedNotification,
 } from '@/types/notifications';
 import { normalizeNotificationRoute } from '@/utils/notificationRoutes';
+import { categoryVisual } from '@/utils/notificationCategory';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import { useContextMenu } from '@/hooks/useContextMenu';
@@ -147,6 +148,7 @@ function NotificationRow({
   const routeInfo = notification.internalRoute
     ? getRouteLabel(notification.internalRoute)
     : null;
+  const category = categoryVisual(notification.category);
   const actionButtons = getActionButtons(notification);
 
   const renderRightActions = (
@@ -244,6 +246,34 @@ function NotificationRow({
             <View style={styles.notificationFooter}>
               <Text style={styles.notificationDate}>{formatDate(date)}</Text>
               <View style={styles.chipsRow}>
+                {/* Chip de categoría de negocio (data.category). Solo para
+                    categorías con significado propio; "general"/desconocida no
+                    pinta chip. */}
+                {category && (
+                  <View
+                    style={[
+                      styles.categoryChip,
+                      {
+                        borderColor: hexAlpha(category.color, '60'),
+                        backgroundColor: hexAlpha(category.color, '14'),
+                      },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={category.icon as any}
+                      size={11}
+                      color={category.color}
+                    />
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        { color: category.color },
+                      ]}
+                    >
+                      {category.label}
+                    </Text>
+                  </View>
+                )}
                 {/* Chip de destino interno */}
                 {routeInfo && (
                   <View style={styles.destinationChip}>
@@ -667,6 +697,7 @@ function NotificationDetailModal({
   const routeInfo = notification?.internalRoute
     ? getRouteLabel(notification.internalRoute)
     : null;
+  const category = categoryVisual(notification?.category);
 
   const safePushRoute = (route: string) => {
     if (!route) return;
@@ -748,6 +779,33 @@ function NotificationDetailModal({
                     minute: '2-digit',
                   })}
                 </Text>
+
+                {/* Chip de categoría de negocio (data.category) */}
+                {category && (
+                  <View
+                    style={[
+                      dStyles.categoryChip,
+                      {
+                        borderColor: hexAlpha(category.color, '60'),
+                        backgroundColor: hexAlpha(category.color, '14'),
+                      },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={category.icon as any}
+                      size={13}
+                      color={category.color}
+                    />
+                    <Text
+                      style={[
+                        dStyles.categoryChipText,
+                        { color: category.color },
+                      ]}
+                    >
+                      {category.label}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Imagen grande */}
                 {notification.imageUrl && (
@@ -853,6 +911,19 @@ const dStyles = StyleSheet.create({
   },
   title: { fontSize: 22, fontWeight: '700', marginBottom: spacing.sm },
   date: { fontSize: 13, marginBottom: spacing.lg, textTransform: 'capitalize' },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  categoryChipText: { fontSize: 12, fontWeight: '600' },
   image: {
     width: '100%',
     height: 200,
@@ -1079,6 +1150,19 @@ const createStyles = (scheme: 'light' | 'dark') => {
     destinationChipText: {
       fontSize: 10,
       color: colors.primary,
+      fontWeight: '600',
+    },
+    categoryChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingVertical: 3,
+      paddingHorizontal: 7,
+      borderRadius: radii.pill,
+      borderWidth: 1,
+    },
+    categoryChipText: {
+      fontSize: 10,
       fontWeight: '600',
     },
     actionChip: {

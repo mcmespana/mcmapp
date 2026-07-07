@@ -220,12 +220,18 @@ opcional.
 
 ## 6. Categoría de negocio (`data.category`)
 
-Se **guarda** en la notificación local, pero **hoy no dispara** color/icono/filtro/
-agrupación en la UI (es una etiqueta a futuro). No rechaza valores desconocidos.
+Se **guarda** y, desde 2026-07-07, la app pinta un **chip de color con icono** en
+la tarjeta del centro de notificaciones y en el modal de detalle (helper
+`utils/notificationCategory.ts`). No rechaza valores desconocidos.
+
+**Cuándo se ve el chip:** solo para las categorías con significado propio. La
+categoría `general`, la ausente y cualquier valor desconocido **no** pintan chip
+(para no llenar la lista de ruido). Es puramente visual: no filtra ni agrupa
+todavía.
 
 Vocabulario que entiende el tipo de la app (`types/notifications.ts`):
 `general`, `eventos`, `cancionero`, `fotos`, `urgente`, `mantenimiento`,
-`celebraciones`.
+`celebraciones`. De estas, pintan chip todas menos `general`.
 
 > El contrato usaba `evento`/`actividad`/`jubileo`/`cantoral`. Para no divergir,
 > recomendamos converger al vocabulario de arriba (p. ej. `eventos` en vez de
@@ -398,7 +404,7 @@ para la **velocidad de entrega** (FCM). Para diferenciar visualmente `high` vs
 | `data.actionButton`      | ✅ | Legacy (un botón) → se trata como array de uno |
 | `data.imageUrl`          | ✅ | Imagen en el modal de detalle in-app |
 | `data.icon`              | ✅ | Miniatura en la tarjeta in-app |
-| `data.category`          | 🟡 | Se guarda; sin efecto visual todavía |
+| `data.category`          | ✅ | Chip de color + icono en tarjeta y modal (salvo `general`) |
 | `data.priority`          | ❌ | No se usa (usad el top-level) |
 
 ✅ procesa · 🟡 parcial/limitado · ❌ ignora
