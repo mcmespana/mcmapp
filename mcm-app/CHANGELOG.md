@@ -18,6 +18,25 @@
 
 ---
 
+## 2026-07-07 16:30 — A1: filtrar el historial in-app de notificaciones por audiencia
+
+- El centro de notificaciones (la campana) pintaba TODO el nodo `/notifications`,
+  así que un aviso segmentado ("solo monitores de Madrid") lo veía cualquiera.
+  Ahora la app filtra cada registro contra el usuario actual usando el objeto
+  `audience` que el panel ya guarda en el registro, con la MISMA semántica de
+  envío (4 ejes + AND/OR). Un registro sin `audience` → visible para todos
+  (retrocompatible con el histórico).
+- El "usuario" es `profileType` + `delegationId` + unión de `notificationTopics`
+  y topics `event-<id>` — la misma metadata que va a `/pushTokens`. El filtro se
+  aplica tanto a la lista visible como al contador del badge.
+- Archivos: `utils/notificationAudience.ts` (nuevo, lógica pura),
+  `contexts/NotificationsContext.tsx` (consume perfil/config/eventos y filtra),
+  `services/pushNotificationService.ts` (el contador acepta un predicado),
+  `types/notifications.ts` (campo `audience`). Tests:
+  `__tests__/notificationAudience.test.ts` (12 casos). Contrato actualizado:
+  `docs/contratos/NOTIFICACIONES_CONTRATO.md` §7.ter.
+- Ejecuta la acción **A1** de `docs/planes/PLAN_INTEGRACIONES.md`.
+
 ## 2026-07-06 17:00 — Auditoría de integraciones app ↔ panel ↔ cantoral (solo docs en este repo)
 
 - Nuevo `docs/planes/PLAN_INTEGRACIONES.md`: hallazgos de la auditoría, arreglos

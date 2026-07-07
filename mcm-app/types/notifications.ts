@@ -1,5 +1,7 @@
 // types/notifications.ts
 
+import type { NotificationAudience } from '@/utils/notificationAudience';
+
 /**
  * Botón de acción de una notificación: un call-to-action con texto propio que
  * abre una URL externa o navega a una ruta interna de la app.
@@ -38,6 +40,12 @@ export interface NotificationData {
 
   // Para notificaciones internas (deep linking)
   internalRoute?: string; // Ruta dentro de la app, ej: "/calendario", "/(tabs)/fotos"
+
+  // Segmentación de audiencia con la que el panel envió esta notificación (4
+  // ejes + AND/OR). La app la usa para filtrar el historial in-app y no mostrar
+  // avisos dirigidos a otros perfiles/delegaciones/eventos. Ausente o null =
+  // enviada a todos (retrocompatible con el histórico).
+  audience?: NotificationAudience | null;
 
   // Data adicional que puede usar la app
   data?: Record<string, any>;
