@@ -18,6 +18,15 @@
 
 ---
 
+## 2026-07-07 16:45 — Plan de integraciones: A3 hecha (en mcmpanel) y A4 valorada
+
+- `docs/planes/PLAN_INTEGRACIONES.md`: marcadas A1 y A3 como hechas y añadida la
+  valoración de A4 (cuatro mejoras separadas por riesgo; recomendación de
+  abordar solo el uso visual de `data.category` en la siguiente iteración y
+  dejar channels Android, deep link a evento y NSE de iOS como acciones aparte).
+- A3 se implementó en el repo `mcmpanel` (selector de eventos del composer
+  poblado desde `/activities`); aquí solo se documenta.
+
 ## 2026-07-07 16:30 — A1: filtrar el historial in-app de notificaciones por audiencia
 
 - El centro de notificaciones (la campana) pintaba TODO el nodo `/notifications`,
