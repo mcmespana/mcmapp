@@ -43,6 +43,8 @@ import {
 } from '@/types/notifications';
 import { normalizeNotificationRoute } from '@/utils/notificationRoutes';
 import { categoryVisual } from '@/utils/notificationCategory';
+import { routeForEventId } from '@/utils/notificationEventRoute';
+import { getEvent } from '@/constants/events';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import { useContextMenu } from '@/hooks/useContextMenu';
@@ -698,6 +700,15 @@ function NotificationDetailModal({
     ? getRouteLabel(notification.internalRoute)
     : null;
   const category = categoryVisual(notification?.category);
+  // Deep link a un evento concreto (data.eventId): si resuelve a una ruta del
+  // registry, ofrecemos un botón "Ir a <evento>".
+  const eventRoute = notification?.eventId
+    ? routeForEventId(notification.eventId)
+    : null;
+  const eventTitle =
+    eventRoute && notification?.eventId
+      ? getEvent(notification.eventId).title
+      : null;
 
   const safePushRoute = (route: string) => {
     if (!route) return;
@@ -723,6 +734,12 @@ function NotificationDetailModal({
     if (!notification) return;
     onClose();
     safePushRoute(notification.internalRoute ?? '');
+  };
+
+  const handleEventRoute = () => {
+    if (!eventRoute) return;
+    onClose();
+    safePushRoute(eventRoute);
   };
 
   const handleActionButton = (button: NotificationActionButtonData) => {
@@ -824,13 +841,41 @@ function NotificationDetailModal({
                 </Text>
 
                 {/* Separador si hay acciones */}
-                {(notification.internalRoute || actionButtons.length > 0) && (
+                {(notification.internalRoute ||
+                  eventRoute ||
+                  actionButtons.length > 0) && (
                   <View
                     style={[
                       dStyles.divider,
                       { backgroundColor: hexAlpha(theme.icon, '30') },
                     ]}
                   />
+                )}
+
+                {/* Botón de deep link a un evento (data.eventId) */}
+                {eventRoute && (
+                  <Button
+                    variant="outline"
+                    onPress={handleEventRoute}
+                    style={[
+                      dStyles.routeButton,
+                      { borderColor: colors.primary },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name="event"
+                      size={20}
+                      color={colors.primary}
+                    />
+                    <Button.Label style={{ color: colors.primary, flex: 1 }}>
+                      {eventTitle ? `Ir a ${eventTitle}` : 'Ir al evento'}
+                    </Button.Label>
+                    <MaterialIcons
+                      name="arrow-forward-ios"
+                      size={14}
+                      color={colors.primary}
+                    />
+                  </Button>
                 )}
 
                 {/* Botón de destino interno (internalRoute) */}

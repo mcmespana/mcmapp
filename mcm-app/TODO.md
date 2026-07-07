@@ -77,10 +77,12 @@
   - `mutableContent` NO pintan imagen en iOS (no hay Notification Service Extension);
     la imagen solo se ve in-app vía `data.imageUrl`. Añadir NSE (Android ya funciona).
     ⚠️ Código nativo → requiere build de producción y commit con `[skip-ota]`.
-- [ ] **Deep link a un evento/actividad concreto** — hoy el destino navegable es
-      `/(tabs)/mas`; no hay ruta estable tipo `/(tabs)/mas/evento/<id>`. Registrar una
-      ruta con parámetro `eventId` y propagarla para que una notificación abra el evento
-      directamente (Jubileo, visitapapa26, `activities/<nombre>`).
+- [x] **Deep link a un evento/actividad concreto** (2026-07-07) — el panel manda
+      `data.eventId` (id del registry) y la app abre el hub del evento
+      (`utils/notificationEventRoute.ts`: `/(tabs)/<tabId>` o `/(tabs)/mas`).
+      Prioritario sobre `internalRoute`; botón "Ir al evento" en el modal. El
+      evento debe existir en `constants/events.ts` (ligado a consumir
+      `activities/<id>/_meta`, aún pendiente).
 - [ ] **Channels Android por tipo/prioridad** — hoy solo existe el channel `default`
       (importancia MAX), así que `priority` no diferencia el display. Crear channels
       (`urgente`, `eventos`…) para heads-up/sonido diferenciados y permitir que el panel

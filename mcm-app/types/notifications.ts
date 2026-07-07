@@ -41,6 +41,12 @@ export interface NotificationData {
   // Para notificaciones internas (deep linking)
   internalRoute?: string; // Ruta dentro de la app, ej: "/calendario", "/(tabs)/fotos"
 
+  // Deep link a un evento concreto del registry de la app (constants/events.ts),
+  // p. ej. "jubileo" o "visitapapa26". Al tocar la notificación, la app abre el
+  // hub de ese evento (ver utils/notificationEventRoute.ts). Tiene prioridad
+  // sobre internalRoute cuando resuelve. Ausente = comportamiento normal.
+  eventId?: string;
+
   // Segmentación de audiencia con la que el panel envió esta notificación (4
   // ejes + AND/OR). La app la usa para filtrar el historial in-app y no mostrar
   // avisos dirigidos a otros perfiles/delegaciones/eventos. Ausente o null =
@@ -99,6 +105,7 @@ export interface ReceivedNotification {
   isRead: boolean;
   category?: NotificationCategory;
   internalRoute?: string;
+  eventId?: string; // Deep link a un evento (ver NotificationData.eventId)
   data?: Record<string, any>;
 }
 
