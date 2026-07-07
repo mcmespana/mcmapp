@@ -83,14 +83,24 @@
       Prioritario sobre `internalRoute`; botón "Ir al evento" en el modal. El
       evento debe existir en `constants/events.ts` (ligado a consumir
       `activities/<id>/_meta`, aún pendiente).
-- [ ] **Channels Android por tipo/prioridad** — hoy solo existe el channel `default`
-      (importancia MAX), así que `priority` no diferencia el display. Crear channels
-      (`urgente`, `eventos`…) para heads-up/sonido diferenciados y permitir que el panel
-      mande `channelId`. ⚠️ Puede requerir build nativo.
-- [ ] **Usar `data.category` en el centro de notificaciones** — hoy se guarda pero no
-      dispara color/icono/agrupación/filtro. Diseñar el tratamiento visual por categoría
-      y converger el vocabulario con el panel (`eventos` vs `evento`, `cancionero` vs
-      `cantoral`).
+- [ ] **Channels Android por tipo/prioridad (A4.2 — PENDIENTE, con condiciones)** — hoy
+      solo existe el channel `default` (importancia MAX), así que `priority` no
+      diferencia el display. Crear channels (`urgente`, `eventos`…) para heads-up/sonido
+      diferenciados y permitir que el panel mande `channelId`.
+      **Por qué está pendiente (decisión 2026-07-07):** aunque `setNotificationChannelAsync`
+      es runtime (NO necesita build nativo), NO es de impacto cero: crear channels extra
+      hace que aparezcan canales (posiblemente vacíos) en los ajustes del sistema de
+      TODOS los Android, es difícil de revertir (`deleteNotificationChannelAsync` no borra
+      las preferencias que el usuario ya haya tocado) y altera la ruta de entrega del push.
+      **Requisitos antes de hacerlo:** (1) decidir el set de channels y el mapeo
+      categoría/priority→channel; (2) que el panel mande `channelId` (cross-repo, ver
+      contrato §8/§9); (3) **probar en dispositivo Android real** el heads-up/sonido antes
+      de mergear a production. No enviar a ciegas por OTA. Ver
+      `docs/planes/PLAN_INTEGRACIONES.md` (A4, punto 2).
+- [x] **Usar `data.category` en el centro de notificaciones (A4.1)** (2026-07-07) —
+      chip de color con icono por categoría en la tarjeta y el modal
+      (`utils/notificationCategory.ts`). `general`/ausente/desconocida no pintan chip.
+      Pendiente aún (opcional): agrupación/filtro por categoría.
 - [ ] **(Panel) Corregir el contrato** — que el MCM Panel use las rutas reales,
       segmente por `topics`/`profileType`/`delegationId` (no `userType`/`delegacion`) y
       desacople `categoryId` (solo iOS) de `data.category`. Detalle en
