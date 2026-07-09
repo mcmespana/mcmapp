@@ -181,11 +181,11 @@ Resumen para retomar. ✅ hecho · ⏳ pendiente.
   card, no bloqueante)
 - ✅ B3 · aviso al crear actividad ("no aparece hasta registrarla en
   `events.ts`") · [panel]
-- ⏳ B4 · guardar `/activities` con escrituras granulares (no pisar
-  `evaluacion/respuestas` ni `compartiendo`) · [panel] · MEDIA · **PENDIENTE**
-  (el más delicado: toca el guardado compartido del `JSONManager`; requiere
-  rastrear las subrutas editadas por el admin y prueba contra Firebase real —
-  ver análisis en la sección B4 abajo). No hacer a ciegas.
+- ✅ B4 · guardar `/activities` con escrituras granulares (no pisar
+  `evaluacion/respuestas` ni `compartiendo`) · [panel] — implementado con
+  `update()` multi-path por subruta editada. ⚠️ **Pendiente un smoke test contra
+  Firebase real** (guardar mientras llega una respuesta de evaluación) — ver nota
+  en la sección B4 abajo.
 
 **Integración C — Perfiles** (todo pendiente)
 - ⏳ C1 · retirar gestión manual de `delegationList` (derivarla) · [panel] · MEDIA
@@ -211,9 +211,9 @@ Resumen para retomar. ✅ hecho · ⏳ pendiente.
 - ✅ E2 · nota de coherencia `updatedAt` · sin acción
 
 **Orden sugerido para continuar:** D (seguridad, único con riesgo de incidente)
-→ A2 → **B4** (escrituras granulares, con prueba en Firebase real) → C1/C2 → E1
-→ resto de prioridad baja. Dejar A4.4 (NSE iOS) y A4.2 (channels Android) para
-cuando se decida/haya dispositivo de prueba.
+→ A2 → C1/C2 → E1 → resto de prioridad baja. Pendientes de verificación en
+entorno real: **B4** (smoke test en Firebase). Dejar A4.4 (NSE iOS) y A4.2
+(channels Android) para cuando se decida/haya dispositivo de prueba.
 
 ---
 
@@ -263,7 +263,29 @@ código).
 > registrarlo en `mcm-app/constants/events.ts`; aquí solo se crea el nodo de
 > datos en Firebase (ver EVENTOS.md)".
 
-### B4. No pisar datos que escribe la app al guardar `/activities` · [panel] · prioridad MEDIA · ⏳ PENDIENTE
+### B4. No pisar datos que escribe la app al guardar `/activities` · [panel] · prioridad MEDIA · ✅ HECHO (2026-07-07)
+
+> Implementado: `src/lib/activityWrites.ts` (helper puro: traduce la subruta
+> editada a ruta Firebase, colapsa solapamientos y resuelve valores) +
+> `JSONManager.tsx` (guarda Actividades/Jubileo con un único `update()`
+> multi-path de SOLO las subrutas que el admin tocó, en vez de `set('/activities')`).
+> `ActivitiesSection.tsx` reporta la subruta editada (`onUpdate(data, editedPath)`).
+> Con esto:
+> - `activities/<evento>/evaluacion/respuestas` y los subnodos NO editados nunca
+>   se sobrescriben (antes se perdían en la carrera con la app).
+> - Se corrige de paso un clobber preexistente: cada edición de Actividades
+>   reescribía TODO `/jubileo` (incluido `jubileo/compartiendo`); ahora solo se
+>   escribe la sección realmente editada.
+> - Fallback seguro: si no hay rutas rastreadas, cae al `set()` de nodo completo
+>   de antes. Las demás secciones no cambian.
+> Lógica pura verificada con 13 checks (colapso de rutas, valores frescos,
+> `evaluacion` nunca escrito).
+>
+> ⚠️ **Smoke test pendiente contra Firebase real** (no reproducible en este
+> entorno): editar una subsección y guardar mientras un dispositivo escribe una
+> respuesta de evaluación / una reflexión en `compartiendo`, y confirmar que
+> ninguna se pierde. Recomendado antes de dar por cerrada la verificación en
+> producción.
 
 **Problema**: el guardado del panel hace `set()` del nodo `/activities`
 completo con su copia en memoria. La app escribe dentro de ese árbol
