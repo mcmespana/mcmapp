@@ -18,6 +18,18 @@
 
 ---
 
+## 2026-07-07 19:20 — B4 (panel): escrituras granulares de Actividades
+
+- Cambio en el repo **mcmpanel** (aquí solo se documenta, es contrato de datos).
+  El panel guardaba `/activities` con `set()` del nodo completo, lo que pisaba
+  lo que escribe la app: `activities/<evento>/evaluacion/respuestas/<device>` y
+  `activities/<evento>/compartiendo` (reflexiones). Ahora escribe con `update()`
+  multi-path SOLO las subrutas que el admin editó, así esos subnodos ya no se
+  sobrescriben. Corrige además un clobber preexistente: cada edición de
+  Actividades reescribía todo `/jubileo`.
+- Sin cambios en la app. Ejecuta B4 de PLAN_INTEGRACIONES (queda un smoke test
+  contra Firebase real). Con esto la **Integración B está completa** (B1–B4).
+
 ## 2026-07-07 18:40 — B1: la app consume `activities/<id>/_meta` del evento activo
 
 - El panel edita por evento `title`, `tintColor`, `bannerText` y `status`, pero
