@@ -122,12 +122,10 @@ class VaticanNewsScraper(BaseScraper):
 
     def _get_html(self, url: str, fecha_iso: str) -> str | None:
         session = requests.Session()
-        for attempt, delay in enumerate(RETRY_DELAYS, start=1):
+        max_attempts = len(RETRY_DELAYS) + 1
+        for attempt in range(1, max_attempts + 1):
             try:
-                log.info(
-                    f"[VaticanNews] {fecha_iso} intento {attempt}/{len(RETRY_DELAYS) + 1}"
-                    f" → {url}"
-                )
+                log.info(f"[VaticanNews] {fecha_iso} intento {attempt}/{max_attempts} → {url}")
                 resp = session.get(url, headers=HEADERS, timeout=15)
                 if resp.status_code == 200:
                     log.info(f"[VaticanNews] {fecha_iso} OK ({len(resp.content)} bytes)")
@@ -140,8 +138,8 @@ class VaticanNewsScraper(BaseScraper):
                 )
             except requests.RequestException as e:
                 log.warning(f"[VaticanNews] {fecha_iso}: error de red en intento {attempt}: {e}")
-            if attempt <= len(RETRY_DELAYS):
-                time.sleep(delay)
+            if attempt < max_attempts:
+                time.sleep(RETRY_DELAYS[attempt - 1])
 
         log.error(f"[VaticanNews] {fecha_iso}: todos los intentos fallaron")
         return None
@@ -166,16 +164,20 @@ class VaticanNewsScraper(BaseScraper):
 
     def _extract_palabras_papas(self, soup: BeautifulSoup) -> tuple[str, str] | None:
         """
-        Find the evidence section whose <h2> matches a papas pattern and
-        extract (comentario_text, comentarista).
+        Find the <section> whose <h2> matches a papas pattern and extract
+        (comentario_text, comentarista).
 
-        Walks <section class="section--evidence"> elements; the heading is
-        inside <div class="section__head"> and content in
-        <div class="section__content">.
+        The heading lives in <div class="section__head"> and the content in
+        <div class="section__wrapper">. We match sections by heading text
+        only (not by the "section--evidence" modifier class) because Vatican
+        News occasionally serves this same section without that class.
+        Likewise, the content is taken from the first <div> child of
+        ".section__wrapper" rather than requiring a ".section__content"
+        class, since that class name is not always present.
 
         Returns None if no matching section is found or content is empty.
         """
-        for section in soup.select("section.section--evidence"):
+        for section in soup.select("section"):
             h2 = section.select_one(".section__head h2")
             if h2 is None:
                 continue
@@ -183,7 +185,12 @@ class VaticanNewsScraper(BaseScraper):
             if not any(pat in h2_text for pat in _PAPAS_PATTERNS):
                 continue
 
-            content_div = section.select_one(".section__content")
+            wrapper = section.select_one(".section__wrapper")
+            if wrapper is None:
+                continue
+            content_div = wrapper.select_one(".section__content") or wrapper.find(
+                "div", recursive=False
+            )
             if content_div is None:
                 continue
 
