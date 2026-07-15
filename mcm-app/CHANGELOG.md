@@ -18,6 +18,38 @@
 
 ---
 
+## 2026-07-15 18:30 — Contigo: subrayado de lecturas, bookmarks duraderos y tamaño de letra propio
+
+- **Bookmarks duraderos en Firebase.** El Job del scraper borra
+  `seccion_oracion/lecturas/{fecha}` pasados 30 días, así que un evangelio
+  guardado perdía su texto al reinstalar o cambiar de dispositivo. Ahora el
+  bookmark guarda el **texto completo** también en el subárbol del propio
+  usuario (`users/{uid}/contigo/bookmarks/{date}`): crecimiento acotado
+  (solo lo que cada usuario guarda) y se conserva para siempre sin hinchar el
+  nodo común. Al abrir la sección se **hidrata** lo local desde RTDB, de modo
+  que los guardados sobreviven a reinstalaciones y al borrado a 30 días.
+- **Subrayado de lecturas (evangelio y salmo).** Nuevo modo «subrayar»: un toque
+  marca la frase; la selección nativa (copiar, buscar, herramientas de escritura
+  de iOS) sigue disponible con pulsación larga. Subrayar **auto-guarda** el día
+  como bookmark y almacena las frases subrayadas (visibles en «Guardados»).
+- **Tamaño de letra propio de Contigo + modo oscuro.** El botón de ajustes de la
+  lectura abre un bottom sheet dedicado (`ReaderSettingsSheet`) con vista previa
+  en vivo, tamaño de letra y tema. El tamaño es **independiente del global**,
+  pero si no se ha configurado uno propio, **hereda** del general (transición
+  suave). Mecanismo reutilizable (`useSectionFontScale`) para futuras secciones
+  de lectura (p.ej. materiales de eventos). Las lecturas secundarias suben de 16
+  a 17 pt para acercarse al evangelio.
+- **Datos:** nuevo campo con texto completo y `highlights` en
+  `users/{uid}/contigo/bookmarks/{date}`. Sin cambios en las reglas RTDB (el
+  nodo ya era privado del dueño).
+- Archivos: `hooks/useSectionFontScale.ts`, `hooks/useReaderBookmarks.ts`,
+  `utils/contigoBookmarks.ts`, `utils/readingSegments.ts`,
+  `components/contigo/HighlightableText.tsx`,
+  `components/contigo/ReaderSettingsSheet.tsx`,
+  `components/contigo/ReadingCard.tsx`, `contexts/AppSettingsContext.tsx`,
+  `utils/authHelpers.ts`, `app/(tabs)/contigo/evangelio.tsx`,
+  `app/(tabs)/contigo/bookmarks.tsx`.
+
 ## 2026-07-07 19:20 — B4 (panel): escrituras granulares de Actividades
 
 - Cambio en el repo **mcmpanel** (aquí solo se documenta, es contrato de datos).

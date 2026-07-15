@@ -15,6 +15,14 @@ export type ThemeScheme = 'light' | 'dark' | 'system';
 interface AppSettings {
   fontScale: number;
   theme: ThemeScheme;
+  /**
+   * Overrides de tamaño de letra por sección (p.ej. 'contigo').
+   * Si una sección NO tiene entrada aquí, hereda del `fontScale` global — así
+   * el usuario nota una transición suave. En cuanto configura un tamaño
+   * específico para la sección, esta pasa a ser independiente del global.
+   * Reutilizable para otras secciones de lectura (materiales de eventos…).
+   */
+  sectionFontScales: Record<string, number>;
 }
 
 interface AppSettingsContextType {
@@ -26,6 +34,7 @@ interface AppSettingsContextType {
 const defaultSettings: AppSettings = {
   fontScale: 1,
   theme: 'system',
+  sectionFontScales: {},
 };
 
 const STORAGE_KEY = '@app_settings';
