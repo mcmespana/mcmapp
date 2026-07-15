@@ -6,6 +6,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
+import { HighlightableText } from '@/components/contigo/HighlightableText';
 
 import useFontScale from '@/hooks/useFontScale';
 
@@ -14,6 +15,13 @@ interface ReadingCardProps {
   cita: string;
   texto: string;
   defaultExpanded?: boolean;
+  /** Escala de letra a aplicar. Si se omite, usa la global de la app. */
+  scale?: number;
+  /** Habilita el subrayado por frase en el cuerpo. */
+  highlightable?: boolean;
+  highlighted?: string[];
+  highlightMode?: boolean;
+  onChangeHighlights?: (next: string[]) => void;
 }
 
 // Warm amber accent for Contigo section
@@ -25,12 +33,18 @@ export function ReadingCard({
   cita,
   texto,
   defaultExpanded = false,
+  scale,
+  highlightable = false,
+  highlighted = [],
+  highlightMode = false,
+  onChangeHighlights,
 }: ReadingCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   const accent = isDark ? WARM_ACCENT_DARK : WARM_ACCENT_LIGHT;
-  const fontScale = useFontScale();
+  const globalScale = useFontScale();
+  const fontScale = scale ?? globalScale;
 
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -91,20 +105,34 @@ export function ReadingCard({
                 },
               ]}
             >
-              <Text
-                style={[
-                  styles.bodyText,
-                  {
-                    color: theme.text,
-                    fontSize: 16 * fontScale,
-                    lineHeight: 24 * fontScale,
-                    fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
-                  },
-                ]}
-                selectable
-              >
-                {texto}
-              </Text>
+              {highlightable ? (
+                <HighlightableText
+                  text={texto}
+                  highlighted={highlighted}
+                  highlightMode={highlightMode}
+                  onChange={(next) => onChangeHighlights?.(next)}
+                  color={theme.text}
+                  fontSize={17 * fontScale}
+                  lineHeight={26 * fontScale}
+                  fontFamily={Platform.OS === 'ios' ? 'Palatino' : 'serif'}
+                  isDark={isDark}
+                />
+              ) : (
+                <Text
+                  style={[
+                    styles.bodyText,
+                    {
+                      color: theme.text,
+                      fontSize: 17 * fontScale,
+                      lineHeight: 26 * fontScale,
+                      fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
+                    },
+                  ]}
+                  selectable
+                >
+                  {texto}
+                </Text>
+              )}
             </View>
           )}
         </View>
