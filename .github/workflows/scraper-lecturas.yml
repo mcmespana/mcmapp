@@ -34,17 +34,40 @@ jobs:
     outputs:
       should_run: ${{ steps.check.outputs.should_run }}
     steps:
-      - name: Comprobar que es la 1:xx en España
+      - name: Comprobar que ya ha pasado la 1:00 en España
         id: check
         run: |
           SPAIN_HOUR=$(TZ='Europe/Madrid' date +%H)
+          SPAIN_TZ=$(TZ='Europe/Madrid' date +%Z)
+          SCHEDULE="${{ github.event.schedule }}"
           echo "Hora actual en España: $(TZ='Europe/Madrid' date '+%H:%M %Z')"
-          if [ "${{ github.event_name }}" != "schedule" ] || [ "$SPAIN_HOUR" = "01" ]; then
+          echo "Cron disparado: ${SCHEDULE:-n/a}"
+
+          # Las dos líneas de "on.schedule" están en UTC y ambas se disparan
+          # TODOS los días del año (GitHub no entiende el cambio de hora), así
+          # que cada día del calendario en España recibe dos disparos:
+          #   - uno "correcto" sobre la 01:1x hora local (invierno o verano)
+          #   - otro "sobrante", pensado para la otra estación, que cae fuera
+          #     de temporada (p.ej. las 00:1x o las 02:1x locales)
+          # Solo debe ejecutarse el disparo cuyo cron coincide con la
+          # estación actual, y solo si ya ha pasado la 1:00 (para tolerar
+          # retrasos de GitHub Actions sin exigir que sea exactamente la 1:xx).
+          should_run=false
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            should_run=true
+          elif [ "$SPAIN_HOUR" != "00" ]; then
+            if { [ "$SCHEDULE" = "10 0 * * *" ] && [ "$SPAIN_TZ" = "CET" ]; } || \
+               { [ "$SCHEDULE" = "10 23 * * *" ] && [ "$SPAIN_TZ" = "CEST" ]; }; then
+              should_run=true
+            fi
+          fi
+
+          if [ "$should_run" = "true" ]; then
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "Proceder con el scraper."
           else
             echo "should_run=false" >> "$GITHUB_OUTPUT"
-            echo "Disparo del cron incorrecto para este horario, omitiendo."
+            echo "Disparo del cron fuera de temporada o antes de la 1:00, omitiendo."
           fi
 
   scrape:
