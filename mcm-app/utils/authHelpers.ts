@@ -2,6 +2,7 @@ import { logger } from '@/utils/logger';
 import { getDatabase, ref, update, get, set, remove } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import type { DayRecord } from '@/hooks/useContigoHabits';
+import type { StoredBookmark } from '@/utils/contigoBookmarks';
 
 function db() {
   return getDatabase(getFirebaseApp());
@@ -104,16 +105,18 @@ export async function syncContigoHabit(
   }
 }
 
-/** Sincroniza los metadatos de un bookmark de evangelio con RTDB. Solo guarda
- *  la cita y la fecha, NO el texto completo del evangelio. */
+/** Sincroniza un bookmark de evangelio con RTDB.
+ *
+ *  A diferencia del nodo global `seccion_oracion/lecturas/*` (que un Job limpia
+ *  pasados 30 días), este bookmark guarda el TEXTO COMPLETO de las lecturas bajo
+ *  el subárbol del propio usuario. El crecimiento es acotado (solo los días que
+ *  el usuario guarda, y por usuario), así que se conserva para siempre sin
+ *  hinchar la base común: el bookmark sobrevive al borrado a 30 días y se puede
+ *  restaurar en otro dispositivo. Pasa `null` para eliminarlo. */
 export async function syncContigoBookmark(
   uid: string,
   date: string,
-  bookmark: {
-    bookmarkedAt: number;
-    cita: string;
-    diaLiturgico?: string;
-  } | null,
+  bookmark: StoredBookmark | null,
 ): Promise<void> {
   try {
     const bookmarkRef = ref(db(), `users/${uid}/contigo/bookmarks/${date}`);
@@ -124,6 +127,27 @@ export async function syncContigoBookmark(
     }
   } catch (err) {
     logger.error('[authHelpers] syncContigoBookmark:', err);
+  }
+}
+
+/** Descarga todos los bookmarks de CONTIGO del usuario desde RTDB (con texto
+ *  completo). Se usa para hidratar el almacenamiento local tras iniciar sesión
+ *  o cambiar de dispositivo, de forma que los guardados no se pierdan aunque el
+ *  nodo global de lecturas ya se haya limpiado. */
+export async function fetchContigoBookmarks(
+  uid: string,
+): Promise<StoredBookmark[]> {
+  try {
+    const bookmarksRef = ref(db(), `users/${uid}/contigo/bookmarks`);
+    const snap = await get(bookmarksRef);
+    if (!snap.exists()) return [];
+    const val = snap.val() as Record<string, StoredBookmark>;
+    return Object.values(val).filter(
+      (b): b is StoredBookmark => !!b && typeof b === 'object' && !!b.date,
+    );
+  } catch (err) {
+    logger.error('[authHelpers] fetchContigoBookmarks:', err);
+    return [];
   }
 }
 
