@@ -1,5 +1,4 @@
-import { logger } from '@/utils/logger';
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,18 +12,11 @@ import {
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { warm, formatDateLong } from '@/components/contigo/theme';
-
-interface Bookmark {
-  date: string;
-  readings: any;
-  bookmarkedAt: number;
-}
-
-const STORAGE = '@contigo_bookmarks';
+import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
+import { countHighlights } from '@/utils/contigoBookmarks';
 
 export default function BookmarksScreen() {
   const router = useRouter();
@@ -42,43 +34,13 @@ export default function BookmarksScreen() {
       }
     : undefined;
 
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    try {
-      const str = await AsyncStorage.getItem(STORAGE);
-      if (str) {
-        const parsed = JSON.parse(str);
-        const valid: Bookmark[] = parsed
-          .filter((b: any) => typeof b !== 'string')
-          .sort((a: Bookmark, b: Bookmark) => b.bookmarkedAt - a.bookmarkedAt);
-        setBookmarks(valid);
-      } else {
-        setBookmarks([]);
-      }
-    } catch (e) {
-      logger.error('bookmarks load', e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const { bookmarks, isLoading, removeBookmark, reload } = useReaderBookmarks();
 
   useFocusEffect(
     useCallback(() => {
-      load();
-    }, [load]),
+      reload();
+    }, [reload]),
   );
-
-  const removeBookmark = async (date: string) => {
-    const next = bookmarks.filter((b) => b.date !== date);
-    setBookmarks(next);
-    try {
-      await AsyncStorage.setItem(STORAGE, JSON.stringify(next));
-    } catch (e) {
-      logger.error(e);
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -139,6 +101,7 @@ export default function BookmarksScreen() {
               const ev = b.readings?.evangelio;
               const titulo =
                 b.readings?.info?.titulo || ev?.cita || 'Evangelio guardado';
+              const nHighlights = countHighlights(b);
               const firstLine = ev?.texto
                 ? ev.texto
                     .split('\n')
@@ -180,6 +143,21 @@ export default function BookmarksScreen() {
                         >
                           {formatDateLong(b.date)}
                         </Text>
+                        {nHighlights > 0 ? (
+                          <View style={styles.hlChipRow}>
+                            <MaterialIcons
+                              name="border-color"
+                              size={11}
+                              color={W.accent}
+                            />
+                            <Text
+                              style={[styles.hlChipText, { color: W.accent }]}
+                            >
+                              {nHighlights} subrayado
+                              {nHighlights !== 1 ? 's' : ''}
+                            </Text>
+                          </View>
+                        ) : null}
                       </View>
                       <TouchableOpacity
                         onPress={() => removeBookmark(b.date)}
@@ -302,6 +280,13 @@ const styles = StyleSheet.create({
   },
   cita: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
   dateText: { fontSize: 11 },
+  hlChipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 4,
+  },
+  hlChipText: { fontSize: 11, fontWeight: '700' },
   removeBtn: {
     width: 28,
     height: 28,

@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   ScrollView,
   View,
@@ -14,13 +14,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import useFontScale from '@/hooks/useFontScale';
+import useSectionFontScale from '@/hooks/useSectionFontScale';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
 import {
@@ -28,14 +27,15 @@ import {
   getLiturgicalInfo,
 } from '@/components/contigo/LiturgicalBadge';
 import { ReadingCard } from '@/components/contigo/ReadingCard';
-import SettingsBottomSheet from '@/components/SettingsBottomSheet';
+import { HighlightableText } from '@/components/contigo/HighlightableText';
+import ReaderSettingsSheet from '@/components/contigo/ReaderSettingsSheet';
 import BottomSheet from '@/components/BottomSheet';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
+import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
+import { segmentReading } from '@/utils/readingSegments';
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
-import { useAuth } from '@/contexts/AuthContext';
-import { syncContigoBookmark } from '@/utils/authHelpers';
 
 // ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
@@ -102,7 +102,7 @@ export default function EvangelioScreen() {
   const theme = Colors[scheme ?? 'light'];
   const warm = isDark ? WARM.dark : WARM.light;
   const insets = useSafeAreaInsets();
-  const fontScale = useFontScale();
+  const { scale: fontScale } = useSectionFontScale('contigo');
   const { width: windowWidth } = useWindowDimensions();
   // iPad / large tablet / desktop web — cap content width.
   const isWide = windowWidth >= 720;
@@ -115,7 +115,6 @@ export default function EvangelioScreen() {
       }
     : undefined;
 
-  const { user: authUser } = useAuth();
   const { todayStr, getRecord, setReadingDone } = useContigoHabits();
   const params = useLocalSearchParams<{ date?: string }>();
   const initialDate =
@@ -129,63 +128,29 @@ export default function EvangelioScreen() {
   const [showCheck, setShowCheck] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [creditsVisible, setCreditsVisible] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [highlightMode, setHighlightMode] = useState(false);
 
-  useEffect(() => {
-    AsyncStorage.getItem('@contigo_bookmarks').then((str) => {
-      if (str) {
-        const bookmarks: any[] = JSON.parse(str);
-        if (bookmarks.length > 0 && typeof bookmarks[0] === 'string') {
-          setIsBookmarked(bookmarks.includes(selectedDate));
-        } else {
-          setIsBookmarked(bookmarks.some((b) => b.date === selectedDate));
-        }
-      }
-    });
-  }, [selectedDate]);
+  const {
+    getBookmark,
+    isBookmarked: isBookmarkedFn,
+    toggleBookmark: toggleBm,
+    setHighlights,
+  } = useReaderBookmarks();
+  const isBookmarked = isBookmarkedFn(selectedDate);
+  const bookmark = getBookmark(selectedDate);
+  const evangelioHighlights = bookmark?.highlights?.evangelio ?? [];
+  const salmoHighlights = bookmark?.highlights?.salmo ?? [];
 
   const toggleBookmark = async () => {
     if (Platform.OS !== 'web')
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const str = await AsyncStorage.getItem('@contigo_bookmarks');
-      let bookmarks: any[] = str ? JSON.parse(str) : [];
-      if (isBookmarked) {
-        if (bookmarks.length > 0 && typeof bookmarks[0] === 'string') {
-          bookmarks = bookmarks.filter((d) => d !== selectedDate);
-        } else {
-          bookmarks = bookmarks.filter((b) => b.date !== selectedDate);
-        }
-      } else {
-        // Handle migration if mixing arrays, filter strings out
-        bookmarks = bookmarks.filter((b) => typeof b !== 'string');
-        bookmarks.push({
-          date: selectedDate,
-          readings: readings,
-          bookmarkedAt: Date.now(),
-        });
-      }
-      await AsyncStorage.setItem(
-        '@contigo_bookmarks',
-        JSON.stringify(bookmarks),
-      );
-      const nowBookmarked = !isBookmarked;
-      setIsBookmarked(nowBookmarked);
-      // Sync solo metadatos (sin texto completo) a RTDB si hay sesión
-      if (authUser) {
-        if (nowBookmarked && readings?.evangelio) {
-          syncContigoBookmark(authUser.uid, selectedDate, {
-            bookmarkedAt: Date.now(),
-            cita: readings.evangelio.cita ?? '',
-            diaLiturgico: readings.info?.diaLiturgico,
-          });
-        } else {
-          syncContigoBookmark(authUser.uid, selectedDate, null);
-        }
-      }
-    } catch (e) {
-      logger.error('Failed to save bookmark', e);
-    }
+    await toggleBm(selectedDate, readings);
+  };
+
+  const toggleHighlightMode = () => {
+    if (Platform.OS !== 'web')
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setHighlightMode((v) => !v);
   };
 
   const record = getRecord(selectedDate);
@@ -262,6 +227,19 @@ export default function EvangelioScreen() {
           headerRight: () => (
             <View style={styles.nativeHeaderActions}>
               <TouchableOpacity
+                onPress={toggleHighlightMode}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.nativeHeaderBtn}
+                accessibilityLabel="Subrayar texto"
+                accessibilityState={{ selected: highlightMode }}
+              >
+                <MaterialIcons
+                  name="border-color"
+                  size={21}
+                  color={highlightMode ? warm.accent : theme.text}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={toggleBookmark}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={styles.nativeHeaderBtn}
@@ -277,7 +255,7 @@ export default function EvangelioScreen() {
                 onPress={() => setSettingsVisible(true)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={styles.nativeHeaderBtn}
-                accessibilityLabel="Ajustes de texto"
+                accessibilityLabel="Ajustes de lectura"
               >
                 <MaterialIcons
                   name="text-fields"
@@ -456,6 +434,46 @@ export default function EvangelioScreen() {
             </View>
           ) : (
             <View style={styles.mainContent}>
+              {/* ── Highlight-mode hint ── */}
+              {highlightMode ? (
+                <View
+                  style={[
+                    styles.highlightBanner,
+                    {
+                      backgroundColor: hexAlpha(
+                        warm.accent,
+                        isDark ? '20' : '16',
+                      ),
+                      borderColor: hexAlpha(warm.accent, '33'),
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="border-color"
+                    size={16}
+                    color={warm.accent}
+                  />
+                  <Text
+                    style={[styles.highlightBannerText, { color: warm.accent }]}
+                  >
+                    Toca una frase para subrayarla. Mantén pulsado para copiar.
+                  </Text>
+                  <TouchableOpacity
+                    onPress={toggleHighlightMode}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text
+                      style={[
+                        styles.highlightBannerDone,
+                        { color: warm.accent },
+                      ]}
+                    >
+                      Hecho
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
               {/* ── Evangelio Card ── */}
               <Card
                 style={[
@@ -607,21 +625,26 @@ export default function EvangelioScreen() {
                               {readings.evangelio.cita}
                             </Text>
                           </View>
-                          <Text
-                            style={[
-                              styles.bodyText,
-                              {
-                                color: theme.text,
-                                fontSize: 18 * fontScale,
-                                lineHeight: 28 * fontScale,
-                                fontFamily:
-                                  Platform.OS === 'ios' ? 'Palatino' : 'serif',
-                              },
-                            ]}
-                            selectable
-                          >
-                            {readings.evangelio.texto}
-                          </Text>
+                          <HighlightableText
+                            text={readings.evangelio.texto}
+                            highlighted={evangelioHighlights}
+                            highlightMode={highlightMode}
+                            onChange={(next) =>
+                              setHighlights(
+                                selectedDate,
+                                'evangelio',
+                                next,
+                                readings,
+                              )
+                            }
+                            color={theme.text}
+                            fontSize={18 * fontScale}
+                            lineHeight={28 * fontScale}
+                            fontFamily={
+                              Platform.OS === 'ios' ? 'Palatino' : 'serif'
+                            }
+                            isDark={isDark}
+                          />
                         </>
                       ) : (
                         <>
@@ -703,21 +726,19 @@ export default function EvangelioScreen() {
                         {readings.evangelio.cita}
                       </Text>
                     </View>
-                    <Text
-                      style={[
-                        styles.bodyText,
-                        {
-                          color: theme.text,
-                          fontSize: 18 * fontScale,
-                          lineHeight: 28 * fontScale,
-                          fontFamily:
-                            Platform.OS === 'ios' ? 'Palatino' : 'serif',
-                        },
-                      ]}
-                      selectable
-                    >
-                      {readings.evangelio.texto}
-                    </Text>
+                    <HighlightableText
+                      text={readings.evangelio.texto}
+                      highlighted={evangelioHighlights}
+                      highlightMode={highlightMode}
+                      onChange={(next) =>
+                        setHighlights(selectedDate, 'evangelio', next, readings)
+                      }
+                      color={theme.text}
+                      fontSize={18 * fontScale}
+                      lineHeight={28 * fontScale}
+                      fontFamily={Platform.OS === 'ios' ? 'Palatino' : 'serif'}
+                      isDark={isDark}
+                    />
                   </View>
                 )}
               </Card>
@@ -820,6 +841,7 @@ export default function EvangelioScreen() {
                       title="Primera Lectura"
                       cita={readings.lectura1.cita}
                       texto={readings.lectura1.texto}
+                      scale={fontScale}
                     />
                   )}
 
@@ -828,6 +850,13 @@ export default function EvangelioScreen() {
                       title="Salmo"
                       cita={readings.salmo.cita}
                       texto={readings.salmo.texto}
+                      scale={fontScale}
+                      highlightable
+                      highlightMode={highlightMode}
+                      highlighted={salmoHighlights}
+                      onChangeHighlights={(next) =>
+                        setHighlights(selectedDate, 'salmo', next, readings)
+                      }
                     />
                   )}
 
@@ -836,6 +865,7 @@ export default function EvangelioScreen() {
                       title="Segunda Lectura"
                       cita={readings.lectura2.cita}
                       texto={readings.lectura2.texto}
+                      scale={fontScale}
                     />
                   )}
                 </View>
@@ -868,9 +898,15 @@ export default function EvangelioScreen() {
       {/* Celebration burst animation */}
       <CelebrationAnimation visible={showCheck} isDark={isDark} />
 
-      <SettingsBottomSheet
+      <ReaderSettingsSheet
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
+        sectionKey="contigo"
+        previewText={
+          readings?.evangelio?.texto
+            ? segmentReading(readings.evangelio.texto)[0]
+            : undefined
+        }
       />
 
       {/* Credits Sheet */}
@@ -1154,6 +1190,26 @@ const styles = StyleSheet.create({
   mainContent: {
     paddingHorizontal: 16,
     marginTop: 16,
+  },
+  highlightBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  highlightBannerText: {
+    flex: 1,
+    fontSize: 12.5,
+    fontWeight: '600',
+    lineHeight: 17,
+  },
+  highlightBannerDone: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   evangelioCard: {
     borderRadius: radii.xl,
