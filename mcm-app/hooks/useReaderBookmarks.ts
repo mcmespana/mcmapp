@@ -13,6 +13,7 @@ import {
   type BookmarkHighlights,
   type HighlightSource,
 } from '@/utils/contigoBookmarks';
+import type { HighlightRange } from '@/utils/highlightRanges';
 import type { DailyReadings } from '@/hooks/useDailyReadings';
 
 /**
@@ -108,19 +109,19 @@ export function useReaderBookmarks() {
     [authUser],
   );
 
-  /** Fija las frases subrayadas de una fuente. Auto-crea el bookmark si no
-   *  existe (para no perder ni el subrayado ni el texto). */
+  /** Fija los subrayados (rangos con color) de una fuente. Auto-crea el
+   *  bookmark si no existe (para no perder ni el subrayado ni el texto). */
   const setHighlights = useCallback(
     async (
       date: string,
       source: HighlightSource,
-      texts: string[],
+      ranges: HighlightRange[],
       readings: DailyReadings | null,
     ) => {
       const existing = getBookmark(date);
       const prevHighlights: BookmarkHighlights = existing?.highlights ?? {};
       const highlights: BookmarkHighlights = { ...prevHighlights };
-      if (texts.length > 0) highlights[source] = texts;
+      if (ranges.length > 0) highlights[source] = ranges;
       else delete highlights[source];
 
       await persist({

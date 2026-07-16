@@ -6,22 +6,27 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
-import { HighlightableText } from '@/components/contigo/HighlightableText';
+import {
+  HighlightableReading,
+  type ReadingSelection,
+} from '@/components/contigo/HighlightableReading';
+import type { HighlightRange } from '@/utils/highlightRanges';
 
 import useFontScale from '@/hooks/useFontScale';
 
 interface ReadingCardProps {
   title: string;
   cita: string;
+  /** Texto de la lectura. Si es subrayable debe ser el texto CANÓNICO. */
   texto: string;
   defaultExpanded?: boolean;
   /** Escala de letra a aplicar. Si se omite, usa la global de la app. */
   scale?: number;
-  /** Habilita el subrayado por frase en el cuerpo. */
+  /** Habilita subrayado con selección nativa en el cuerpo. */
   highlightable?: boolean;
-  highlighted?: string[];
-  highlightMode?: boolean;
-  onChangeHighlights?: (next: string[]) => void;
+  penMode?: boolean;
+  ranges?: HighlightRange[];
+  onSelectionChange?: (sel: ReadingSelection | null) => void;
 }
 
 // Warm amber accent for Contigo section
@@ -35,9 +40,9 @@ export function ReadingCard({
   defaultExpanded = false,
   scale,
   highlightable = false,
-  highlighted = [],
-  highlightMode = false,
-  onChangeHighlights,
+  penMode = false,
+  ranges = [],
+  onSelectionChange,
 }: ReadingCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -47,6 +52,8 @@ export function ReadingCard({
   const fontScale = scale ?? globalScale;
 
   const [expanded, setExpanded] = useState(defaultExpanded);
+  // En modo subrayar la tarjeta subrayable se abre sola para poder seleccionar.
+  const isOpen = expanded || (highlightable && penMode);
 
   if (!texto) return null;
 
@@ -87,14 +94,14 @@ export function ReadingCard({
                 </View>
               </View>
               <MaterialIcons
-                name={expanded ? 'expand-less' : 'expand-more'}
+                name={isOpen ? 'expand-less' : 'expand-more'}
                 size={22}
                 color={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)'}
               />
             </View>
           </PressableFeedback>
 
-          {expanded && (
+          {isOpen && (
             <View
               style={[
                 styles.body,
@@ -106,11 +113,11 @@ export function ReadingCard({
               ]}
             >
               {highlightable ? (
-                <HighlightableText
+                <HighlightableReading
                   text={texto}
-                  highlighted={highlighted}
-                  highlightMode={highlightMode}
-                  onChange={(next) => onChangeHighlights?.(next)}
+                  ranges={ranges}
+                  penMode={penMode}
+                  onSelectionChange={onSelectionChange}
                   color={theme.text}
                   fontSize={17 * fontScale}
                   lineHeight={26 * fontScale}

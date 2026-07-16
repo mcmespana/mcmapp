@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -27,13 +27,26 @@ import {
   getLiturgicalInfo,
 } from '@/components/contigo/LiturgicalBadge';
 import { ReadingCard } from '@/components/contigo/ReadingCard';
-import { HighlightableText } from '@/components/contigo/HighlightableText';
+import {
+  HighlightableReading,
+  type ReadingSelection,
+} from '@/components/contigo/HighlightableReading';
+import { HighlightActionBar } from '@/components/contigo/HighlightActionBar';
+import { ReadingCalendarSheet } from '@/components/contigo/ReadingCalendarSheet';
+import { CreditsSheet } from '@/components/contigo/CreditsSheet';
 import ReaderSettingsSheet from '@/components/contigo/ReaderSettingsSheet';
-import BottomSheet from '@/components/BottomSheet';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
-import { segmentReading } from '@/utils/readingSegments';
+import { useAvailableReadingDates } from '@/hooks/useAvailableReadingDates';
+import { segmentReading, normalizeReadingText } from '@/utils/readingSegments';
+import {
+  addHighlight,
+  normalizeHighlights,
+  removeHighlight,
+  type HighlightColorKey,
+} from '@/utils/highlightRanges';
+import type { HighlightSource } from '@/utils/contigoBookmarks';
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 
@@ -129,8 +142,13 @@ export default function EvangelioScreen() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [creditsVisible, setCreditsVisible] = useState(false);
   const [highlightMode, setHighlightMode] = useState(false);
+  const [calendarVisible, setCalendarVisible] = useState(false);
+  // Latch: no consultamos las fechas disponibles hasta abrir el calendario.
+  const [calendarOpened, setCalendarOpened] = useState(false);
+  const availableDates = useAvailableReadingDates(calendarOpened);
 
   const {
+    bookmarks,
     getBookmark,
     isBookmarked: isBookmarkedFn,
     toggleBookmark: toggleBm,
@@ -138,8 +156,78 @@ export default function EvangelioScreen() {
   } = useReaderBookmarks();
   const isBookmarked = isBookmarkedFn(selectedDate);
   const bookmark = getBookmark(selectedDate);
-  const evangelioHighlights = bookmark?.highlights?.evangelio ?? [];
-  const salmoHighlights = bookmark?.highlights?.salmo ?? [];
+
+  // Texto canónico (los rangos de subrayado son offsets sobre esta forma).
+  const evangelioCanonical = useMemo(
+    () =>
+      readings?.evangelio?.texto
+        ? normalizeReadingText(readings.evangelio.texto)
+        : '',
+    [readings?.evangelio?.texto],
+  );
+  const salmoCanonical = useMemo(
+    () =>
+      readings?.salmo?.texto ? normalizeReadingText(readings.salmo.texto) : '',
+    [readings?.salmo?.texto],
+  );
+  const evangelioRanges = useMemo(
+    () =>
+      normalizeHighlights(evangelioCanonical, bookmark?.highlights?.evangelio),
+    [evangelioCanonical, bookmark?.highlights?.evangelio],
+  );
+  const salmoRanges = useMemo(
+    () => normalizeHighlights(salmoCanonical, bookmark?.highlights?.salmo),
+    [salmoCanonical, bookmark?.highlights?.salmo],
+  );
+
+  // Selección nativa activa dentro del modo subrayar (evangelio o salmo).
+  const [activeSel, setActiveSel] = useState<{
+    source: HighlightSource;
+    sel: ReadingSelection;
+  } | null>(null);
+
+  const handleSelection =
+    (source: HighlightSource) => (sel: ReadingSelection | null) => {
+      setActiveSel((prev) => {
+        if (sel) return { source, sel };
+        return prev?.source === source ? null : prev;
+      });
+    };
+
+  const sourceData = (source: HighlightSource) =>
+    source === 'evangelio'
+      ? { text: evangelioCanonical, ranges: evangelioRanges }
+      : { text: salmoCanonical, ranges: salmoRanges };
+
+  const applyHighlightColor = (color: HighlightColorKey) => {
+    if (!activeSel) return;
+    const { text, ranges } = sourceData(activeSel.source);
+    const next = addHighlight(
+      text,
+      ranges,
+      activeSel.sel.start,
+      activeSel.sel.end,
+      color,
+    );
+    setHighlights(selectedDate, activeSel.source, next, readings);
+  };
+
+  const eraseHighlightSelection = () => {
+    if (!activeSel) return;
+    const { text, ranges } = sourceData(activeSel.source);
+    const next = removeHighlight(
+      text,
+      ranges,
+      activeSel.sel.start,
+      activeSel.sel.end,
+    );
+    setHighlights(selectedDate, activeSel.source, next, readings);
+  };
+
+  const exitHighlightMode = () => {
+    setHighlightMode(false);
+    setActiveSel(null);
+  };
 
   const toggleBookmark = async () => {
     if (Platform.OS !== 'web')
@@ -150,7 +238,13 @@ export default function EvangelioScreen() {
   const toggleHighlightMode = () => {
     if (Platform.OS !== 'web')
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setHighlightMode((v) => !v);
+    if (highlightMode) exitHighlightMode();
+    else setHighlightMode(true);
+  };
+
+  const openCalendar = () => {
+    setCalendarOpened(true);
+    setCalendarVisible(true);
   };
 
   const record = getRecord(selectedDate);
@@ -159,6 +253,7 @@ export default function EvangelioScreen() {
   const liturgicalInfo = getLiturgicalInfo(selectedDate);
 
   const changeDate = (offset: number) => {
+    exitHighlightMode();
     setSelectedDate(addDays(selectedDate, offset));
   };
 
@@ -210,22 +305,25 @@ export default function EvangelioScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          headerTitle: 'Evangelio',
+          headerTitle: '',
           headerTransparent: true,
           headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
           headerTintColor: theme.text,
-          headerTitleStyle: {
-            color: theme.text,
-            fontWeight: '700',
-            fontSize: 17,
-          },
           ...(Platform.OS === 'ios' &&
           parseInt(String(Platform.Version), 10) < 26
             ? { headerBlurEffect: 'systemChromeMaterial' as const }
             : {}),
           headerRight: () => (
             <View style={styles.nativeHeaderActions}>
+              <TouchableOpacity
+                onPress={openCalendar}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.nativeHeaderBtn}
+                accessibilityLabel="Calendario de evangelios"
+              >
+                <MaterialIcons name="event" size={22} color={theme.text} />
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={toggleHighlightMode}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -274,6 +372,8 @@ export default function EvangelioScreen() {
           {
             paddingTop: insets.top + (Platform.OS === 'android' ? 68 : 56),
           },
+          // Hueco para la barra flotante de subrayado
+          highlightMode && { paddingBottom: 170 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -434,46 +534,6 @@ export default function EvangelioScreen() {
             </View>
           ) : (
             <View style={styles.mainContent}>
-              {/* ── Highlight-mode hint ── */}
-              {highlightMode ? (
-                <View
-                  style={[
-                    styles.highlightBanner,
-                    {
-                      backgroundColor: hexAlpha(
-                        warm.accent,
-                        isDark ? '20' : '16',
-                      ),
-                      borderColor: hexAlpha(warm.accent, '33'),
-                    },
-                  ]}
-                >
-                  <MaterialIcons
-                    name="border-color"
-                    size={16}
-                    color={warm.accent}
-                  />
-                  <Text
-                    style={[styles.highlightBannerText, { color: warm.accent }]}
-                  >
-                    Toca una frase para subrayarla. Mantén pulsado para copiar.
-                  </Text>
-                  <TouchableOpacity
-                    onPress={toggleHighlightMode}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text
-                      style={[
-                        styles.highlightBannerDone,
-                        { color: warm.accent },
-                      ]}
-                    >
-                      Hecho
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-
               {/* ── Evangelio Card ── */}
               <Card
                 style={[
@@ -625,18 +685,11 @@ export default function EvangelioScreen() {
                               {readings.evangelio.cita}
                             </Text>
                           </View>
-                          <HighlightableText
-                            text={readings.evangelio.texto}
-                            highlighted={evangelioHighlights}
-                            highlightMode={highlightMode}
-                            onChange={(next) =>
-                              setHighlights(
-                                selectedDate,
-                                'evangelio',
-                                next,
-                                readings,
-                              )
-                            }
+                          <HighlightableReading
+                            text={evangelioCanonical}
+                            ranges={evangelioRanges}
+                            penMode={highlightMode}
+                            onSelectionChange={handleSelection('evangelio')}
                             color={theme.text}
                             fontSize={18 * fontScale}
                             lineHeight={28 * fontScale}
@@ -726,13 +779,11 @@ export default function EvangelioScreen() {
                         {readings.evangelio.cita}
                       </Text>
                     </View>
-                    <HighlightableText
-                      text={readings.evangelio.texto}
-                      highlighted={evangelioHighlights}
-                      highlightMode={highlightMode}
-                      onChange={(next) =>
-                        setHighlights(selectedDate, 'evangelio', next, readings)
-                      }
+                    <HighlightableReading
+                      text={evangelioCanonical}
+                      ranges={evangelioRanges}
+                      penMode={highlightMode}
+                      onSelectionChange={handleSelection('evangelio')}
                       color={theme.text}
                       fontSize={18 * fontScale}
                       lineHeight={28 * fontScale}
@@ -849,14 +900,12 @@ export default function EvangelioScreen() {
                     <ReadingCard
                       title="Salmo"
                       cita={readings.salmo.cita}
-                      texto={readings.salmo.texto}
+                      texto={salmoCanonical}
                       scale={fontScale}
                       highlightable
-                      highlightMode={highlightMode}
-                      highlighted={salmoHighlights}
-                      onChangeHighlights={(next) =>
-                        setHighlights(selectedDate, 'salmo', next, readings)
-                      }
+                      penMode={highlightMode}
+                      ranges={salmoRanges}
+                      onSelectionChange={handleSelection('salmo')}
                     />
                   )}
 
@@ -909,144 +958,35 @@ export default function EvangelioScreen() {
         }
       />
 
-      {/* Credits Sheet */}
-      <BottomSheet
+      {/* Barra flotante del modo subrayar (colores pastel + goma) */}
+      <HighlightActionBar
+        visible={highlightMode}
+        hasSelection={!!activeSel}
+        onPickColor={applyHighlightColor}
+        onErase={eraseHighlightSelection}
+        onDone={exitHighlightMode}
+        isDark={isDark}
+      />
+
+      {/* Calendario de evangelios */}
+      <ReadingCalendarSheet
+        visible={calendarVisible}
+        onClose={() => setCalendarVisible(false)}
+        selectedDate={selectedDate}
+        todayStr={todayStr}
+        onSelectDate={(d) => {
+          exitHighlightMode();
+          setSelectedDate(d);
+        }}
+        availableDates={availableDates}
+        bookmarks={bookmarks}
+      />
+
+      {/* Fuentes de los textos */}
+      <CreditsSheet
         visible={creditsVisible}
         onClose={() => setCreditsVisible(false)}
-        title="Fuentes de los textos"
-      >
-        <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ gap: 20, paddingBottom: 20 }}
-          >
-            <Text style={{ fontSize: 15, lineHeight: 22, color: theme.text }}>
-              Los textos bíblicos y los comentarios que te mostramos en la
-              aplicación están extraídos de webs que los comparten de forma
-              gratuita en abierto. Junto a los comentarios se indica su autor de
-              la misma forma que se muestra en la web original.
-            </Text>
-
-            <View
-              style={{
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.06)'
-                  : 'rgba(0,0,0,0.04)',
-                padding: 16,
-                borderRadius: radii.lg,
-                gap: 4,
-              }}
-            >
-              <Text
-                style={{ fontSize: 14, fontWeight: '700', color: theme.text }}
-              >
-                Vatican News
-              </Text>
-              <Text style={{ fontSize: 13, color: theme.icon }}>
-                © 2017-{new Date().getFullYear()} Dicasterium pro Communicatione
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  Linking.openURL(
-                    'https://www.vaticannews.va/es/evangelio-de-hoy',
-                  )
-                }
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: warm.accent,
-                    textDecorationLine: 'underline',
-                    marginTop: 4,
-                  }}
-                >
-                  vaticannews.va/es/evangelio-de-hoy
-                </Text>
-              </TouchableOpacity>
-              <Text style={{ fontSize: 13, color: theme.icon, marginTop: 4 }}>
-                webmaster@vaticannews.va
-              </Text>
-            </View>
-
-            <View
-              style={{
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.06)'
-                  : 'rgba(0,0,0,0.04)',
-                padding: 16,
-                borderRadius: radii.lg,
-                gap: 4,
-              }}
-            >
-              <Text
-                style={{ fontSize: 14, fontWeight: '700', color: theme.text }}
-              >
-                Vida Nueva
-              </Text>
-              <Text style={{ fontSize: 13, color: theme.icon }}>
-                © {new Date().getFullYear()} Copyright Vida Nueva
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  Linking.openURL(
-                    'https://www.vidanuevadigital.com/evangeliodeldia/',
-                  )
-                }
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: warm.accent,
-                    textDecorationLine: 'underline',
-                    marginTop: 4,
-                  }}
-                >
-                  vidanuevadigital.com/evangeliodeldia
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View
-              style={{
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.06)'
-                  : 'rgba(0,0,0,0.04)',
-                padding: 16,
-                borderRadius: radii.lg,
-                gap: 4,
-              }}
-            >
-              <Text
-                style={{ fontSize: 14, fontWeight: '700', color: theme.text }}
-              >
-                Dominicos · Orden de Predicadores
-              </Text>
-              <Text style={{ fontSize: 13, color: theme.icon, lineHeight: 18 }}>
-                Textos bíblicos de la Versión oficial de la Conferencia
-                Episcopal Española. Editorial BAC
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  Linking.openURL(
-                    'https://www.dominicos.org/predicacion/evangelio-del-dia/hoy/',
-                  )
-                }
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: warm.accent,
-                    textDecorationLine: 'underline',
-                    marginTop: 4,
-                  }}
-                >
-                  dominicos.org/predicacion/evangelio-del-dia/hoy
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </View>
-      </BottomSheet>
+      />
     </View>
   );
 }
@@ -1190,26 +1130,6 @@ const styles = StyleSheet.create({
   mainContent: {
     paddingHorizontal: 16,
     marginTop: 16,
-  },
-  highlightBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 14,
-  },
-  highlightBannerText: {
-    flex: 1,
-    fontSize: 12.5,
-    fontWeight: '600',
-    lineHeight: 17,
-  },
-  highlightBannerDone: {
-    fontSize: 13,
-    fontWeight: '800',
   },
   evangelioCard: {
     borderRadius: radii.xl,

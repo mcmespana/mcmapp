@@ -1,13 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '@/utils/logger';
 import type { DailyReadings } from '@/hooks/useDailyReadings';
+import type { StoredHighlight } from '@/utils/highlightRanges';
 
 export const BOOKMARKS_KEY = '@contigo_bookmarks';
 
 /** Fuentes de texto que se pueden subrayar dentro de un día. */
 export type HighlightSource = 'evangelio' | 'salmo';
 
-export type BookmarkHighlights = Partial<Record<HighlightSource, string[]>>;
+/** Subrayados por fuente. Cada entrada puede ser un rango con color (formato
+ *  actual) o una frase suelta (formato legacy del primer release). */
+export type BookmarkHighlights = Partial<
+  Record<HighlightSource, StoredHighlight[]>
+>;
 
 export interface StoredBookmark {
   date: string;
