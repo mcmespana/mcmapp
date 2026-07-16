@@ -283,10 +283,15 @@ const SelectedSongsScreen: React.FC = () => {
   const allSongsMap = useMemo(() => {
     const map = new Map<string, Song & { originalCategoryKey: string }>();
     if (!allSongsData) return map;
-    for (const [categoryKey, categoryData] of Object.entries(allSongsData)) {
-      categoryData.songs.forEach((song) => {
+    // Bolt Optimization: Using `for...in` and `for...of` loops instead of `Object.entries(allSongsData)`
+    // and chained arrays to prevent the GC overhead of allocating intermediate key-value tuple arrays
+    // and closures during intense component re-renders. Added `hasOwnProperty` check to replicate `Object.entries` safety.
+    for (const categoryKey in allSongsData) {
+      if (!Object.prototype.hasOwnProperty.call(allSongsData, categoryKey)) continue;
+      const categoryData = allSongsData[categoryKey];
+      for (const song of categoryData.songs) {
         map.set(song.filename, { ...song, originalCategoryKey: categoryKey });
-      });
+      }
     }
     return map;
   }, [allSongsData]);
@@ -310,14 +315,18 @@ const SelectedSongsScreen: React.FC = () => {
   const offlineFilenameResolver = useMemo<FilenameResolver>(() => {
     const byCatNum = new Map<string, string>();
     if (allSongsData) {
-      for (const [categoryKey, cat] of Object.entries(allSongsData)) {
-        cat.songs.forEach((song) => {
+      // Bolt Optimization: replaced `Object.entries()` + `forEach` with native loops
+      // for 0-allocation property iteration, retaining `hasOwnProperty` safety.
+      for (const categoryKey in allSongsData) {
+        if (!Object.prototype.hasOwnProperty.call(allSongsData, categoryKey)) continue;
+        const cat = allSongsData[categoryKey];
+        for (const song of cat.songs) {
           const n = parseSongNumber(song.title, song.filename);
           if (n != null) {
             const key = `${categoryKey}:${n}`;
             if (!byCatNum.has(key)) byCatNum.set(key, song.filename);
           }
-        });
+        }
       }
     }
     return {
@@ -384,7 +393,10 @@ const SelectedSongsScreen: React.FC = () => {
   const categorized = useMemo<CategorizedSongs[]>(() => {
     if (!allSongsData) return [];
     const out: CategorizedSongs[] = [];
-    for (const [categoryKey, categoryData] of Object.entries(allSongsData)) {
+    // Bolt Optimization: native loop to prevent tuple array allocations.
+    for (const categoryKey in allSongsData) {
+      if (!Object.prototype.hasOwnProperty.call(allSongsData, categoryKey)) continue;
+      const categoryData = allSongsData[categoryKey];
       const selectedInCat = enrichedSelected
         .filter((s) => s.originalCategoryKey === categoryKey)
         .sort((a, b) => a.filename.localeCompare(b.filename));
