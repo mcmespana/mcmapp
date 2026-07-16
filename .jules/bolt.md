@@ -1,3 +1,6 @@
 ## 2026-06-16 - [ListHeaderComponent React Element Memory Leak]
 **Learning:** [Defining a React Element for \`ListHeaderComponent\` directly inside the parent render loop without memoization causes the `FlatList` to unmount and remount the header entirely on every parent re-render (like keystrokes in a search input). This also forces the \`FlatList\` internal layout mechanics to recalculate.]
 **Action:** [Always wrap \`ListHeaderComponent\` elements defined inside functional components with \`useMemo\`, or extract them into separate memoized components outside the main render loop.]
+## 2024-05-14 - [Chained Array Methods in Firebase Hooks]
+**Learning:** Chained array methods like `Object.entries().map()` and `.reduce()` inside Firebase data processing hooks create heavy intermediate array allocations and closure executions.
+**Action:** Replace them with single-pass native `for...in` loops to greatly reduce memory pressure and garbage collection overhead, especially when parsing unbounded database records such as `statsData`. Use `Object.prototype.hasOwnProperty.call(obj, key)` to safely iterate, and always handle undefined variables in `Array.prototype.sort()` using `??` to satisfy TypeScript.
