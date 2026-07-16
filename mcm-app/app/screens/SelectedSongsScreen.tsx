@@ -126,6 +126,76 @@ const OVERWRITE_PASSWORD = 'coco';
 
 type ViewMode = 'category' | 'manual';
 
+interface HeaderBarProps {
+  visibleCount: number;
+  lastUploadCode: string | null;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+  styles: any;
+}
+
+const HeaderBar = React.memo(function HeaderBar({
+  visibleCount,
+  lastUploadCode,
+  viewMode,
+  setViewMode,
+  styles,
+}: HeaderBarProps) {
+  return (
+    <View>
+      <ChoirSessionBanner />
+      <View style={styles.summaryRow}>
+        <View>
+          <Text style={styles.selectionCount}>
+            {visibleCount} {visibleCount === 1 ? 'canción' : 'canciones'}
+          </Text>
+          {lastUploadCode ? (
+            <Text style={styles.subInfo}>
+              ☁️ Guardada con código {lastUploadCode}
+            </Text>
+          ) : null}
+        </View>
+        {visibleCount > 1 ? (
+          <View style={styles.viewToggle}>
+            <TouchableOpacity
+              onPress={() => setViewMode('category')}
+              style={[
+                styles.viewToggleBtn,
+                viewMode === 'category' && styles.viewToggleBtnActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.viewToggleText,
+                  viewMode === 'category' && styles.viewToggleTextActive,
+                ]}
+              >
+                Por categoría
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setViewMode('manual')}
+              style={[
+                styles.viewToggleBtn,
+                viewMode === 'manual' && styles.viewToggleBtnActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.viewToggleText,
+                  viewMode === 'manual' && styles.viewToggleTextActive,
+                ]}
+              >
+                Orden ajustado
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+});
+
 /**
  * Fila del modo "Orden ajustado" dentro de `ReorderableList` (nativo):
  * long-press sobre la fila inicia el arrastre. `useReorderableDrag` solo
@@ -1321,10 +1391,6 @@ const SelectedSongsScreen: React.FC = () => {
 
   // --- Render ---------------------------------------------------------------
 
-  if (loading && selectedSongs.length === 0 && isHydrated) {
-    return <ProgressWithMessage message="Cargando canciones..." />;
-  }
-
   const submitForVariant = (
     variant: CodeDialogVariant,
   ): ((code: string, name?: string) => Promise<void>) => {
@@ -1405,61 +1471,18 @@ const SelectedSongsScreen: React.FC = () => {
     </View>
   );
 
-  const renderHeaderBar = () => {
-    return (
-      <View>
-        <ChoirSessionBanner />
-        <View style={styles.summaryRow}>
-          <View>
-            <Text style={styles.selectionCount}>
-              {visibleCount} {visibleCount === 1 ? 'canción' : 'canciones'}
-            </Text>
-            {lastUploadCode ? (
-              <Text style={styles.subInfo}>
-                ☁️ Guardada con código {lastUploadCode}
-              </Text>
-            ) : null}
-          </View>
-          {visibleCount > 1 ? (
-            <View style={styles.viewToggle}>
-              <TouchableOpacity
-                onPress={() => setViewMode('category')}
-                style={[
-                  styles.viewToggleBtn,
-                  viewMode === 'category' && styles.viewToggleBtnActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.viewToggleText,
-                    viewMode === 'category' && styles.viewToggleTextActive,
-                  ]}
-                >
-                  Por categoría
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setViewMode('manual')}
-                style={[
-                  styles.viewToggleBtn,
-                  viewMode === 'manual' && styles.viewToggleBtnActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.viewToggleText,
-                    viewMode === 'manual' && styles.viewToggleTextActive,
-                  ]}
-                >
-                  Orden ajustado
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-        </View>
-      </View>
-    );
-  };
+  const headerComponent = useMemo(
+    () => (
+      <HeaderBar
+        visibleCount={visibleCount}
+        lastUploadCode={lastUploadCode}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        styles={styles}
+      />
+    ),
+    [visibleCount, lastUploadCode, viewMode, setViewMode, styles],
+  );
 
   const renderCategoryGroup = ({ item }: { item: CategorizedSongs }) => (
     <View style={styles.categoryContainer}>
@@ -1525,6 +1548,10 @@ const SelectedSongsScreen: React.FC = () => {
 
   const isEmpty = selectedSongs.length === 0;
 
+  if (loading && selectedSongs.length === 0 && isHydrated) {
+    return <ProgressWithMessage message="Cargando canciones..." />;
+  }
+
   return (
     <View style={styles.container}>
       {isEmpty ? (
@@ -1540,7 +1567,7 @@ const SelectedSongsScreen: React.FC = () => {
             data={flatSelectedSongs}
             renderItem={renderManualItem}
             keyExtractor={(it) => it.filename}
-            ListHeaderComponent={renderHeaderBar()}
+            ListHeaderComponent={headerComponent}
             contentContainerStyle={styles.listContentContainer}
             contentInsetAdjustmentBehavior="automatic"
             showsVerticalScrollIndicator={false}
@@ -1551,7 +1578,7 @@ const SelectedSongsScreen: React.FC = () => {
             onReorder={handleReorder}
             renderItem={renderDraggableManualItem}
             keyExtractor={(it) => it.filename}
-            ListHeaderComponent={renderHeaderBar()}
+            ListHeaderComponent={headerComponent}
             contentContainerStyle={[
               styles.listContentContainer,
               { paddingTop: reorderableTopInset },
@@ -1565,7 +1592,7 @@ const SelectedSongsScreen: React.FC = () => {
           data={categorized}
           renderItem={renderCategoryGroup}
           keyExtractor={(it) => it.categoryKey}
-          ListHeaderComponent={renderHeaderBar()}
+          ListHeaderComponent={headerComponent}
           contentContainerStyle={styles.listContentContainer}
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
