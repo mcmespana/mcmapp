@@ -78,7 +78,10 @@ export default function CategoriesScreen({
     { categoryTitle: string; songs: any[] }
   > | null>('songs', 'songs', filterSongsData);
   const { selectedSongs } = useSelectedSongs();
-  const { sortedCategories, displayCategories } = useMemo(() => {
+  // ⚡ Bolt Optimization:
+  // Split the useMemo to prevent re-sorting and re-mapping all categories
+  // every time `selectedSongs.length` changes (O(N log N) -> O(1) on selection change).
+  const { sortedCategories, baseCategoryItems } = useMemo(() => {
     const actualCategories = songsData ? Object.keys(songsData) : [];
     const sortedCats = actualCategories.sort((a, b) => {
       const titleA = songsData?.[a]?.categoryTitle ?? a;
@@ -86,21 +89,25 @@ export default function CategoriesScreen({
       return titleA.localeCompare(titleB);
     });
 
-    const displayCats = [
+    const mappedCats = sortedCats.map((cat) => ({
+      id: cat,
+      name: songsData?.[cat]?.categoryTitle ?? cat,
+      songCount: songsData?.[cat]?.songs?.length || 0,
+    }));
+
+    return { sortedCategories: sortedCats, baseCategoryItems: mappedCats };
+  }, [songsData]);
+
+  const displayCategories = useMemo(() => {
+    return [
       {
         id: SELECTED_SONGS_CATEGORY_ID,
         name: 'Tu selección',
         songCount: selectedSongs.length,
       },
-      ...sortedCats.map((cat) => ({
-        id: cat,
-        name: songsData?.[cat]?.categoryTitle ?? cat,
-        songCount: songsData?.[cat]?.songs?.length || 0,
-      })),
+      ...baseCategoryItems,
     ];
-
-    return { sortedCategories: sortedCats, displayCategories: displayCats };
-  }, [songsData, selectedSongs.length]);
+  }, [baseCategoryItems, selectedSongs.length]);
 
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();

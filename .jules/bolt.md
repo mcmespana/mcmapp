@@ -1,3 +1,6 @@
 ## 2026-06-16 - [ListHeaderComponent React Element Memory Leak]
 **Learning:** [Defining a React Element for \`ListHeaderComponent\` directly inside the parent render loop without memoization causes the `FlatList` to unmount and remount the header entirely on every parent re-render (like keystrokes in a search input). This also forces the \`FlatList\` internal layout mechanics to recalculate.]
 **Action:** [Always wrap \`ListHeaderComponent\` elements defined inside functional components with \`useMemo\`, or extract them into separate memoized components outside the main render loop.]
+## 2026-07-08 - [Split useMemo for O(1) state updates]
+**Learning:** [Combining large dataset processing (O(N log N) sorting and O(N) mapping) with frequently changing scalar dependencies (like `selectedSongs.length`) inside a single `useMemo` causes massive unnecessary re-computations when the scalar value changes.]
+**Action:** [Always split such `useMemo` hooks. Compute and memoize the expensive heavy-lifting using only the large dataset as a dependency, then use a second, lightweight `useMemo` to combine the pre-computed array with the scalar state.]
