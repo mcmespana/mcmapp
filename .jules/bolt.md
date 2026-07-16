@@ -1,3 +1,6 @@
 ## 2026-06-16 - [ListHeaderComponent React Element Memory Leak]
 **Learning:** [Defining a React Element for \`ListHeaderComponent\` directly inside the parent render loop without memoization causes the `FlatList` to unmount and remount the header entirely on every parent re-render (like keystrokes in a search input). This also forces the \`FlatList\` internal layout mechanics to recalculate.]
 **Action:** [Always wrap \`ListHeaderComponent\` elements defined inside functional components with \`useMemo\`, or extract them into separate memoized components outside the main render loop.]
+## 2026-07-03 - [Avoid intermediate arrays in large Firebase loops]
+**Learning:** In client-side loops processing unbounded Firebase collections (like the all-users stats node for Wordle leaderboard), using chained array methods `Object.entries().map()` or `.reduce()` inside iterates over the entire node. It forces the allocation of thousands of intermediate tuple arrays which are immediately discarded, increasing GC pressure and affecting framerate.
+**Action:** Use native `for...in` or `for...of` loops with scalar variables directly over the data objects when calculating derived stats or distributions over unbounded structures, skipping `Object.entries()`.

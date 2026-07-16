@@ -57,27 +57,36 @@ export default function useWordleLeaderboard(
 
         if (statsSnap.exists()) {
           const statsData = statsSnap.val() as Record<string, any>;
-          const entries = Object.entries(statsData).map(([uid, data]) => {
-            const totalAttempts = data.distribution
-              ? Object.entries(data.distribution).reduce(
-                  (sum, [k, v]) => sum + Number(k) * Number(v),
-                  0,
-                )
-              : 0;
+
+          // ⚡ Bolt Optimization: Replace O(N) map and reduce allocations with native loops.
+          // Since the stats payload includes all Wordle players, it can be large.
+          // Avoiding Object.entries() skips creating thousands of intermediate tuple arrays.
+          const entries: LeaderboardEntry[] = [];
+          for (const uid in statsData) {
+            const data = statsData[uid];
+            let totalAttempts = 0;
+
+            if (data.distribution) {
+              for (const k in data.distribution) {
+                totalAttempts += Number(k) * Number(data.distribution[k]);
+              }
+            }
+
             const played = data.played || 0;
             const avg = played ? totalAttempts / played : Infinity;
-            return {
+
+            entries.push({
               userId: uid,
               name: data.userName || users[uid]?.name || 'Anónimo',
               place: data.userLocation || users[uid]?.place || '',
               played,
               average: avg,
-            };
-          });
+            });
+          }
 
-          const general = [...entries].sort((a, b) => a.average - b.average);
+          const general = [...entries].sort((a, b) => a.average! - b.average!);
           const participation = [...entries].sort(
-            (a, b) => b.played - a.played,
+            (a, b) => b.played! - a.played!,
           );
 
           setGeneralRanking(general.slice(0, 5));
