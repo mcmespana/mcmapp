@@ -186,12 +186,12 @@ export default function EvangelioScreen() {
     sel: ReadingSelection;
   } | null>(null);
 
+  // "Pegajosa": nos quedamos con la ÚLTIMA selección no vacía. Al tocar un
+  // chip de color, iOS puede colapsar la selección nativa antes de que llegue
+  // el onPress — si la vaciáramos aquí, el color no tendría a qué aplicarse.
   const handleSelection =
     (source: HighlightSource) => (sel: ReadingSelection | null) => {
-      setActiveSel((prev) => {
-        if (sel) return { source, sel };
-        return prev?.source === source ? null : prev;
-      });
+      if (sel) setActiveSel({ source, sel });
     };
 
   const sourceData = (source: HighlightSource) =>
@@ -210,6 +210,9 @@ export default function EvangelioScreen() {
       color,
     );
     setHighlights(selectedDate, activeSel.source, next, readings);
+    // Salimos del modo subrayar: el texto vuelve a pintarse con los colores
+    // pastel y el subrayado recién hecho se ve al instante.
+    exitHighlightMode();
   };
 
   const eraseHighlightSelection = () => {
@@ -222,6 +225,7 @@ export default function EvangelioScreen() {
       activeSel.sel.end,
     );
     setHighlights(selectedDate, activeSel.source, next, readings);
+    exitHighlightMode();
   };
 
   const exitHighlightMode = () => {
