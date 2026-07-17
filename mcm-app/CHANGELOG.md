@@ -18,6 +18,33 @@
 
 ---
 
+## 2026-07-16 13:45 — Contigo: subrayado con selección nativa y colores pastel + calendario de evangelios
+
+- **Subrayado v2 (reemplaza al de frases).** En modo subrayar se superpone al
+  texto un `TextInput` de solo lectura con glifos transparentes: la selección
+  es la NATIVA del sistema (asas de arrastre, lupa, menú de copiar y
+  herramientas de escritura/IA de iOS) y marca inicio y fin exactos. Una barra
+  flotante ofrece **5 colores pastel** y goma de borrar; el modelo pasa de
+  frases a **rangos de caracteres con color** (`utils/highlightRanges.ts`,
+  offsets sobre el texto canónico de `normalizeReadingText`). Retrocompatible:
+  las frases guardadas por la versión anterior se convierten al vuelo.
+- **Calendario de evangelios** (`ReadingCalendarSheet` + botón en el header):
+  navegación por meses con animación, días con lectura disponible (consulta
+  las claves de `seccion_oracion/lecturas` vía REST `shallow=true`, cacheado
+  6 h — `hooks/useAvailableReadingDates.ts`), guardados y subrayados marcados,
+  leyenda y salto a hoy.
+- **Ajustes de lectura**: la barra de tamaño ahora se puede pulsar y
+  arrastrar; se elimina el botón «Sincronizar con la app» (la herencia del
+  tamaño global sigue funcionando en silencio). El header del evangelio pierde
+  el título y gana el botón de calendario.
+- **Cantoral — sheet de transponer**: sección TONO rediseñada con −1/+1
+  grandes y fijos (pensados para pulsar varias veces rápido), mantener
+  pulsado repite, y valor central con animación de confirmación. Se retiran
+  los pasos ±2.
+- Refactor: créditos de fuentes extraídos a
+  `components/contigo/CreditsSheet.tsx`; `HighlightableText` sustituido por
+  `components/contigo/HighlightableReading.tsx`.
+
 ## 2026-07-15 18:30 — Contigo: subrayado de lecturas, bookmarks duraderos y tamaño de letra propio
 
 - **Bookmarks duraderos en Firebase.** El Job del scraper borra
