@@ -18,6 +18,17 @@
 
 ---
 
+## 2026-07-16 14:20 — Fix: modo subrayar con capa única (se veía el texto doblado)
+
+- La capa de selección (TextInput con glifos "transparentes" superpuesta al
+  texto) se pintaba igualmente en iOS y quedaba doblada y desalineada. Ahora el
+  modo subrayar muestra UNA sola capa: el propio `TextInput` de solo lectura con
+  el texto visible (misma tipografía), con altura autoajustada.
+- Al elegir color (o borrar con la goma) se aplica y se sale automáticamente del
+  modo subrayar, de forma que el pastel recién pintado se ve al instante.
+- La selección ahora es "pegajosa": tocar el chip de color ya no puede perder la
+  selección por el colapso nativo previo al onPress.
+
 ## 2026-07-16 13:45 — Contigo: subrayado con selección nativa y colores pastel + calendario de evangelios
 
 - **Subrayado v2 (reemplaza al de frases).** En modo subrayar se superpone al
