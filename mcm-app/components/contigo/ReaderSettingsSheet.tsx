@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Platform,
+  PanResponder,
   TouchableOpacity,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -34,9 +35,9 @@ const DEFAULT_PREVIEW =
   'En aquel tiempo, dijo Jesús a sus discípulos: «Yo soy la luz del mundo».';
 
 /**
- * Bottom sheet minimalista y bonito solo para la lectura: tamaño de letra
- * (propio de la sección, con herencia del global) y modo claro/oscuro.
- * Reutilizable en otras secciones de lectura pasando otra `sectionKey`.
+ * Bottom sheet minimalista solo para la lectura: tamaño de letra (propio de la
+ * sección, con herencia silenciosa del global mientras no se toque) y tema.
+ * La barra de tamaño se puede pulsar y arrastrar, además de los botones A/A.
  */
 export default function ReaderSettingsSheet({
   visible,
@@ -48,8 +49,7 @@ export default function ReaderSettingsSheet({
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const W = warm(isDark);
-  const { scale, hasOverride, globalScale, setScale, reset, min, max, step } =
-    useSectionFontScale(sectionKey);
+  const { scale, setScale, min, max, step } = useSectionFontScale(sectionKey);
 
   const canDecrease = scale > min + 0.001;
   const canIncrease = scale < max - 0.001;
@@ -65,10 +65,41 @@ export default function ReaderSettingsSheet({
     setScale(scale + step);
   };
 
+  // ── Barra pulsable y arrastrable ──
+  const trackWidth = useRef(0);
+  // Refs para que el PanResponder (creado una vez) vea siempre el último valor.
+  const setScaleRef = useRef(setScale);
+  setScaleRef.current = setScale;
+  const boundsRef = useRef({ min, max });
+  boundsRef.current = { min, max };
+  const lastSnapped = useRef(scale);
+
+  const scrubTo = (x: number) => {
+    const w = trackWidth.current;
+    if (w <= 0) return;
+    const { min: lo, max: hi } = boundsRef.current;
+    const progress = Math.max(0, Math.min(1, x / w));
+    // Paso fino de 5% al arrastrar
+    const snapped = Math.round((lo + progress * (hi - lo)) * 20) / 20;
+    if (snapped !== lastSnapped.current) {
+      lastSnapped.current = snapped;
+      h.select();
+      setScaleRef.current(snapped);
+    }
+  };
+
+  const trackResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => scrubTo(e.nativeEvent.locationX),
+      onPanResponderMove: (e) => scrubTo(e.nativeEvent.locationX),
+    }),
+  ).current;
+
   const segmentBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
   const surfaceBg = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)';
 
-  // Progreso del tamaño dentro del rango, para la barra.
   const progress = Math.max(0, Math.min(1, (scale - min) / (max - min)));
 
   return (
@@ -94,24 +125,11 @@ export default function ReaderSettingsSheet({
         </View>
 
         {/* ── Tamaño de letra ── */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionLabel, { color: W.textSec }]}>
-            TAMAÑO DE LETRA
-          </Text>
-          {hasOverride ? (
-            <TouchableOpacity
-              onPress={() => {
-                h.tap();
-                reset();
-              }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={[styles.resetLink, { color: W.accent }]}>
-                Sincronizar con la app
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        <Text
+          style={[styles.sectionLabel, { color: W.textSec, marginBottom: 12 }]}
+        >
+          TAMAÑO DE LETRA
+        </Text>
 
         <View style={styles.sizeRow}>
           <TouchableOpacity
@@ -128,26 +146,34 @@ export default function ReaderSettingsSheet({
           </TouchableOpacity>
 
           <View style={styles.trackWrap}>
-            <View style={[styles.track, { backgroundColor: segmentBg }]}>
-              <View
-                style={[
-                  styles.trackFill,
-                  {
-                    backgroundColor: W.accent,
-                    width: `${progress * 100}%`,
-                  },
-                ]}
-              />
-              <View
-                style={[
-                  styles.knob,
-                  {
-                    backgroundColor: W.accent,
-                    left: `${progress * 100}%`,
-                    borderColor: W.bgCard,
-                  },
-                ]}
-              />
+            <View
+              style={styles.trackHitbox}
+              onLayout={(e) => {
+                trackWidth.current = e.nativeEvent.layout.width;
+              }}
+              {...trackResponder.panHandlers}
+            >
+              <View style={[styles.track, { backgroundColor: segmentBg }]}>
+                <View
+                  style={[
+                    styles.trackFill,
+                    {
+                      backgroundColor: W.accent,
+                      width: `${progress * 100}%`,
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.knob,
+                    {
+                      backgroundColor: W.accent,
+                      left: `${progress * 100}%`,
+                      borderColor: W.bgCard,
+                    },
+                  ]}
+                />
+              </View>
             </View>
             <Text style={[styles.percentLabel, { color: W.textMuted }]}>
               {Math.round(scale * 100)}%
@@ -167,17 +193,6 @@ export default function ReaderSettingsSheet({
             <Text style={[styles.sizeGlyphBig, { color: W.text }]}>A</Text>
           </TouchableOpacity>
         </View>
-
-        {!hasOverride ? (
-          <View style={styles.syncHint}>
-            <MaterialIcons name="link" size={13} color={W.textMuted} />
-            <Text style={[styles.syncHintText, { color: W.textMuted }]}>
-              Ligado al tamaño general de la app (
-              {Math.round(globalScale * 100)}
-              %). Ajústalo aquí para tener uno propio en la lectura.
-            </Text>
-          </View>
-        ) : null}
 
         {/* ── Tema ── */}
         <Text
@@ -249,20 +264,10 @@ const styles = StyleSheet.create({
     minHeight: 96,
     justifyContent: 'center',
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.8,
-  },
-  resetLink: {
-    fontSize: 12,
-    fontWeight: '700',
   },
   sizeRow: {
     flexDirection: 'row',
@@ -282,7 +287,13 @@ const styles = StyleSheet.create({
   trackWrap: {
     flex: 1,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+  },
+  // Zona táctil generosa: se puede tocar y arrastrar en toda la barra.
+  trackHitbox: {
+    width: '100%',
+    height: 34,
+    justifyContent: 'center',
   },
   track: {
     width: '100%',
@@ -296,11 +307,11 @@ const styles = StyleSheet.create({
   },
   knob: {
     position: 'absolute',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
-    marginLeft: -9,
+    marginLeft: -10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -310,18 +321,6 @@ const styles = StyleSheet.create({
   percentLabel: {
     fontSize: 12,
     fontWeight: '700',
-  },
-  syncHint: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    marginTop: 12,
-    paddingHorizontal: 2,
-  },
-  syncHintText: {
-    flex: 1,
-    fontSize: 12,
-    lineHeight: 17,
   },
   themeSegment: {
     flexDirection: 'row',

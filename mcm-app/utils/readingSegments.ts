@@ -48,6 +48,23 @@ export function segmentReading(text: string): string[] {
   return tokenizeReading(text).map((t) => t.text);
 }
 
+/** Forma canónica de un texto de lectura: frases normalizadas unidas por un
+ *  espacio, con salto de línea donde el original tenía párrafo/verso.
+ *
+ *  IMPORTANTE: los rangos de subrayado (`HighlightRange`) se guardan como
+ *  offsets sobre ESTA forma canónica, y tanto la vista de lectura como la capa
+ *  de selección nativa renderizan exactamente esta cadena — así los offsets
+ *  coinciden siempre. */
+export function normalizeReadingText(text: string): string {
+  const tokens = tokenizeReading(text);
+  let out = '';
+  for (let i = 0; i < tokens.length; i++) {
+    out += tokens[i].text;
+    if (i < tokens.length - 1) out += tokens[i].breakAfter ? '\n' : ' ';
+  }
+  return out;
+}
+
 /** Normaliza un fragmento para compararlo de forma robusta (por si cambia el
  *  espaciado entre guardado y render). */
 export function normalizeSegment(seg: string): string {
