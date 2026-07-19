@@ -13,12 +13,12 @@ sus STOP conditions y actualiza tu fila al terminar.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001  | Escapar metadatos de canción en el WebView del cantoral (XSS) | P1 | S | — | TODO |
-| 002  | Fechas locales: "hoy" UTC en Home/Calendario y fecha de reflexión | P1 | S | — | TODO |
-| 003  | Reflexiones: escritura atómica + conservar texto si falla | P1 | S | 002 (misma pantalla, coordinar) | TODO |
+| 001  | Escapar metadatos de canción en el WebView del cantoral (XSS) | P1 | S | — | DONE |
+| 002  | Fechas locales: "hoy" UTC en Home/Calendario y fecha de reflexión | P1 | S | — | DONE |
+| 003  | Reflexiones: escritura atómica + conservar texto si falla | P1 | S | 002 (misma pantalla, coordinar) | DONE |
 | 004  | Contigo: sync bidireccional de hábitos/revisiones + tests authHelpers | P1 | M | — | TODO |
 | 005  | Scraper: vacío=error, fecha inválida vetada, pytest en CI, workflow sin inyección | P1 | M | — | TODO |
-| 006  | Higiene de deps (4 muertas, jest dup) + pinear CLIs en pipelines | P2 | S | — | TODO |
+| 006  | Higiene de deps (4 muertas, jest dup) + pinear CLIs en pipelines | P2 | S | — | DONE |
 | 007  | Privacidad: respuestas de encuestas dejan de ser legibles públicamente (reglas versionadas) | P1* | M | — (deploy bloqueado por Integración D) | TODO |
 | 008  | Caché compartida en useFirebaseData + calendario stale-while-revalidate | P2 | M | mejor tras 001-005 | TODO |
 
@@ -87,6 +87,35 @@ haptics directos fuera del wrapper `h.*` (DEBT-07).
 6. **La parte OTA-able del plan Contigo** — recordatorio local diario +
    rachas en Home, antes del widget nativo (el propio
    PLAN_WIDGET_CONTIGO §4 la separa).
+
+## Ejecución 2026-07-19 (planes 001, 002, 003, 006)
+
+- **001**: además de escapar `author`/`title`/el badge de tono (`key`) en
+  `useSongProcessor.ts`, se descubrió durante la ejecución que
+  `HtmlDivFormatter` de ChordSheetJS **no escapa nada** de lo que extrae del
+  propio ChordPro (`{title:}`, comentarios, letra) — verificado
+  empíricamente (`{title: <script>}` → `<h1><script>` literal). Se amplió el
+  fix para escapar el ChordPro completo justo antes de parsear (dentro de
+  `parseChordPro`), preservando el texto sin escapar para el contexto de
+  error (evita doble-escape en la pantalla de error de sintaxis). Efecto
+  secundario aceptado y documentado en el código: si la línea del error
+  contiene `& < > "` antes del punto exacto del fallo, la columna reportada
+  puede desplazarse levemente (la línea sigue siendo correcta).
+  **Hallazgo relacionado sin arreglar (fuera de scope de este plan):**
+  `utils/playlistPdfHtml.ts` usa el mismo `ChordProParser`+`HtmlDivFormatter`
+  sin escapar para el PDF de playlists — mismo patrón vulnerable, consumidor
+  distinto. Candidato a un plan 001b.
+- **006**: ejecutado y cherry-picked a `production` — se determinó
+  OTA-safe: las 4 dependencias eliminadas no tenían NINGÚN import (ni
+  estático ni dinámico) antes del cambio, así que el bundle JS es idéntico
+  antes/después (el mecanismo de crash de OTA que describe `CLAUDE.md`
+  requiere referenciar un módulo nativo AUSENTE del binario — aquí no hay
+  ninguna referencia, ni antes ni después). El pin de `eas:build*` en
+  `package.json` (scripts de desarrollador local) se dejó deliberadamente en
+  `@latest` — el riesgo real está en los pipelines de CI, no en el uso
+  interactivo local.
+- **004 y 005 quedan pendientes** (esfuerzo M, no "cortitos") para una
+  siguiente tanda.
 
 ## Findings considered and rejected
 

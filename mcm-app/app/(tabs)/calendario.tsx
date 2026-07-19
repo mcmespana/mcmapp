@@ -33,6 +33,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
+import { localISO } from '@/utils/localDate';
 import CalendarSubscribeBottomSheet from '@/components/CalendarSubscribeBottomSheet';
 import EventDetailsBottomSheet from '@/components/EventDetailsBottomSheet';
 
@@ -112,7 +113,9 @@ export function CalendarScreen() {
     offline,
   } = useCalendarConfig();
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // `localISO()` (hora local) — `toISOString()` desplazaba "hoy" al día
+  // anterior entre las 00:00 y ~01-02h locales (conversión a UTC).
+  const todayStr = localISO();
 
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');

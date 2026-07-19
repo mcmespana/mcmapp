@@ -50,6 +50,7 @@ import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { setPendingMasScreen } from '@/utils/masNavigation';
+import { localISO } from '@/utils/localDate';
 import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
@@ -126,9 +127,11 @@ function getUpcomingEventsByWeek(
   maxEvents: number,
   visibleCalendars: boolean[],
 ): EventGroup[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split('T')[0];
+  // `localISO()` (hora local) — antes usaba `toISOString()`, que convierte a
+  // UTC: en España (UTC+1/+2) "hoy" resultaba ser AYER las 365 noches del
+  // año, colando los eventos de ayer como "próximos".
+  const todayStr = localISO();
+  const today = parseLocalDate(todayStr); // medianoche local, para getWeekLabel
   const seen = new Set<string>();
   const eventsByWeek: Map<string, CalendarEvent[]> = new Map();
 
