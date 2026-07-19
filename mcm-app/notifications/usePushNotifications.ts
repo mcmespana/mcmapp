@@ -12,6 +12,7 @@
 //
 import { useEffect, useMemo, useRef } from 'react';
 import { AppState, AppStateStatus, Platform } from 'react-native';
+import { logger } from '@/utils/logger';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import {
@@ -367,5 +368,9 @@ async function registerAndSaveToken(
 
     // 5. Guardar en Firebase
     await saveTokenToFirebase(token, profileMetadata ?? undefined);
-  } catch {}
+  } catch (e) {
+    // Sin esto, cualquier fallo de permisos/token/escritura era invisible y
+    // "no me llegan notificaciones" resultaba indepurable en campo.
+    logger.error('[push] registerAndSaveToken:', e);
+  }
 }

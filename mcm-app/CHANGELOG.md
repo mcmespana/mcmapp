@@ -18,6 +18,23 @@
 
 ---
 
+## 2026-07-19 16:45 — Quick wins de la auditoría: logging de registro push y limpieza
+
+- El registro de notificaciones push (`registerAndSaveToken`) ya no traga
+  errores en silencio: fallos de permisos/token/escritura se loguean con
+  `logger.error` (antes "no me llegan notificaciones" era indepurable).
+- `ReflexionesScreen` usa el toast de la app (`AppToastContext`) en vez del
+  de heroui (único straggler del repo).
+- `TabScreenWrapper.ios.tsx` → `TabScreenWrapper.tsx` (era cross-platform;
+  el sufijo `.ios` era engañoso y los imports llevaban extensión explícita).
+- Docs sincronizados con la realidad: conteo de tests y ruta de
+  `utils/firebaseApp.ts` en CLAUDE.md, React Compiler ya activo (fuera del
+  TODO), README sin `expo-cli` deprecado y con la chuleta de builds vía
+  `npm run eas:build*`.
+- Archivos: `notifications/usePushNotifications.ts`,
+  `app/screens/ReflexionesScreen.tsx`, `components/ui/TabScreenWrapper.tsx`,
+  `CLAUDE.md`, `TODO.md`, `README.md` (raíz), `plans/README.md`.
+
 ## 2026-07-19 16:20 — Celebración al publicar reflexión + metadatos OG del web
 
 - Al compartir una reflexión con éxito, se lanza el `CelebrationBurst` (ya
