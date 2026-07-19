@@ -55,7 +55,11 @@ jobs:
           fi
 
       - name: Instalar EAS CLI
-        run: npm install -g eas-cli@latest
+        # Pineado a propósito — subir deliberadamente, no usar @latest (una
+        # major nueva del CLI podría romper esta OTA de PRODUCCIÓN sin
+        # ningún cambio en el repo, y dos runs del mismo commit se
+        # comportarían distinto).
+        run: npm install -g eas-cli@21.0.2
 
       - name: Instalar dependencias
         working-directory: ./mcm-app
