@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { Spinner, BottomSheet, useToast } from 'heroui-native';
 import ContextMenuSheet from '@/components/ContextMenuSheet';
+import CelebrationBurst from '@/components/ui/CelebrationBurst';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import DateTimePicker, {
   DateTimePickerAndroid,
@@ -176,6 +177,14 @@ export default function ReflexionesScreen() {
   const [autor, setAutor] = useState(getDefaultAuthor());
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+
+  // El burst se auto-apaga para poder relanzarse en la siguiente publicación.
+  useEffect(() => {
+    if (!celebrate) return;
+    const t = setTimeout(() => setCelebrate(false), 1600);
+    return () => clearTimeout(t);
+  }, [celebrate]);
 
   // El botón "+" vive ahora en la barra superior (EventActionButtons). Al
   // pulsarlo, el tab renavega a esta pantalla con un `openFormNonce` nuevo;
@@ -227,6 +236,7 @@ export default function ReflexionesScreen() {
       );
       setList([nuevo, ...list]);
       h.formSuccess();
+      setCelebrate(true);
     } catch (e) {
       logger.error('Error adding post', e);
     }
@@ -571,6 +581,7 @@ export default function ReflexionesScreen() {
             : []
         }
       />
+      <CelebrationBurst visible={celebrate} emoji="💬" />
     </View>
   );
 }
