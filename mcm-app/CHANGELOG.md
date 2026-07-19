@@ -18,6 +18,21 @@
 
 ---
 
+## 2026-07-19 16:20 — Celebración al publicar reflexión + metadatos OG del web
+
+- Al compartir una reflexión con éxito, se lanza el `CelebrationBurst` (ya
+  existente en `components/ui/`, hasta ahora sin consumidores pese a que su
+  docstring nombraba este caso de uso). Overlay de 1,1s, solo
+  transform/opacity con native driver, no bloquea toques.
+- Web/PWA: añadidos `og:site_name` y `og:locale` (es_ES) en `app/+html.tsx`;
+  anotado que `og:image`/`og:url`/canonical necesitan el dominio público
+  definitivo (URLs absolutas) cuando se fije.
+- Instalados packs de skills para agentes: `shadcn/improve` e
+  `ibelick/ui-skills` (`.agents/skills/`), con auditoría técnica completa en
+  `plans/` (8 planes priorizados).
+- Archivos: `app/screens/ReflexionesScreen.tsx`, `app/+html.tsx`,
+  `plans/*`, `.agents/skills/*`.
+
 ## 2026-07-16 14:20 — Fix: modo subrayar con capa única (se veía el texto doblado)
 
 - La capa de selección (TextInput con glifos "transparentes" superpuesta al
