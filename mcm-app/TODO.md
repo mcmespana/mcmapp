@@ -110,7 +110,7 @@
 
 ## Mantenimiento
 
-- [ ] **Ampliar cobertura de tests**: ya hay 18 ficheros en `__tests__/` / 183 tests. Hecho en jun-2026: `useSongProcessor` (núcleo del cantoral) y `choirSessionService` (Modo Coro, maestro/oyentes). Pendiente: `useResolvedProfileConfig` (el resolver puro `resolveProfileConfig` ya está cubierto) y al menos una pantalla con render snapshot.
+- [ ] **Ampliar cobertura de tests**: ya hay 28 ficheros en `__tests__/` / 267 tests. Hecho en jun-2026: `useSongProcessor` (núcleo del cantoral) y `choirSessionService` (Modo Coro, maestro/oyentes). Pendiente: `useResolvedProfileConfig` (el resolver puro `resolveProfileConfig` ya está cubierto) y al menos una pantalla con render snapshot.
 
 ---
 
@@ -168,7 +168,6 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 
 > Análisis técnico transversal completo en **`docs/planes/MEJORAS.md`** (raíz del monorepo). Cada item de abajo tiene su sección con archivo:línea y propuesta concreta. Los quick wins de aquella primera tanda ya están hechos.
 
-- [ ] **React Compiler** — activar `babel-plugin-react-compiler` (soportado en React 19). Memoiza automáticamente. Ver MEJORAS.md §1.6.
 - [ ] Auditar si `react-native-render-html` compensa (solo se usa en `FormattedContent.tsx`). Si BBCode simple bastara, ahorraría peso de bundle. Ver MEJORAS.md §1.10.
 - [ ] Cómo medir antes/después (cold start, transpose, bytes de red, memoria) → MEJORAS.md "Lo que NO se ha cubierto" §1.
 

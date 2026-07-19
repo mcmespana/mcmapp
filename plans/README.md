@@ -38,22 +38,18 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (con motivo) | REJECTED (con 
 
 ## Quick wins sin plan propio (una línea cada uno, hacer de pasada)
 
-- `notifications/usePushNotifications.ts:370` — el `catch {}` vacío de
-  `registerAndSaveToken` traga todos los fallos de registro push pese a que
-  el docstring promete "logging detallado": añadir `logger.error(...)`.
-- `app/screens/ReflexionesScreen.tsx:18` — único uso del `useToast` de
-  `heroui-native`; el resto del repo usa `@/contexts/AppToastContext`
-  (misma API). Lo corrige el plan 003 de paso.
-- `components/ui/TabScreenWrapper.ios.tsx` — es cross-platform (branch
-  interno `Platform.OS !== 'ios'`) pero lleva sufijo `.ios` y se importa con
-  extensión explícita en 2 sitios: renombrar a `TabScreenWrapper.tsx`.
-- Docs desactualizados (corregir en una pasada): `mcm-app/CLAUDE.md` dice
-  "16 ficheros / 150 tests" (hay 28 / 267) y "app inicializada en
-  `hooks/firebaseApp.ts`" (es `utils/firebaseApp.ts`); `TODO.md` lista el
-  React Compiler como pendiente (ya está activo en `babel.config.js` +
-  `app.json`); `README.md` raíz instala `expo-cli` deprecado y enseña
-  `eas build` directo contradiciendo la regla de CLAUDE.md; MEJORAS.md §11
-  describe husky/CI de un estado anterior (ya resuelto).
+- [x] _(hecho 2026-07-19)_ `notifications/usePushNotifications.ts` — el
+  `catch {}` vacío de `registerAndSaveToken` ahora loguea con
+  `logger.error`.
+- [x] _(hecho 2026-07-19)_ `app/screens/ReflexionesScreen.tsx` — `useToast`
+  migrado de `heroui-native` a `@/contexts/AppToastContext` (misma API).
+- [x] _(hecho 2026-07-19)_ `TabScreenWrapper.ios.tsx` renombrado a
+  `TabScreenWrapper.tsx` (era cross-platform; imports sin extensión).
+- [x] _(hecho 2026-07-19, parcial)_ Docs: corregidos CLAUDE.md (conteo de
+  tests, `utils/firebaseApp.ts`), TODO.md (React Compiler ya activo,
+  conteos) y README raíz (`expo-cli` deprecado, chuleta de builds vía
+  `npm run eas:build*`). Pendiente: MEJORAS.md §11 (describe husky/CI de un
+  estado anterior — es un doc-foto con disclaimer, prioridad mínima).
 
 ## Backlog de hallazgos auditados sin plan (candidatos a próxima tanda)
 
