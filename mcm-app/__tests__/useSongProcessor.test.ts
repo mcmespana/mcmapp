@@ -140,6 +140,70 @@ describe('useSongProcessor — modo presentación (fullscreen)', () => {
   });
 });
 
+describe('useSongProcessor — sanitización de contenido no confiable (XSS)', () => {
+  // `/songs/data` es escribible públicamente (panel secreto sin Firebase
+  // Auth, ver docs/SEGURIDAD.md §3.1), así que título/autor/letra/tono deben
+  // tratarse como HTML no confiable antes de entrar en el WebView.
+  const SCRIPT = '<script>alert(1)</script>';
+
+  it('escapa el autor (prop) en el bloque de metadatos', () => {
+    const { result } = renderSong({ author: SCRIPT, isFullscreen: false });
+    expect(result.current.songHtml).not.toContain(SCRIPT);
+    expect(result.current.songHtml).toContain(
+      '&lt;script&gt;alert(1)&lt;/script&gt;',
+    );
+  });
+
+  it('escapa el autor (prop) en la cabecera de pantalla completa', () => {
+    const { result } = renderSong({ author: SCRIPT, isFullscreen: true });
+    expect(result.current.songHtml).not.toContain(SCRIPT);
+  });
+
+  it('escapa el título (prop) en la cabecera de pantalla completa', () => {
+    const { result } = renderSong({ title: SCRIPT, isFullscreen: true });
+    expect(result.current.songHtml).not.toContain(SCRIPT);
+  });
+
+  it('escapa el tono (prop key) en el badge', () => {
+    const { result } = renderSong({ key: SCRIPT });
+    expect(result.current.songHtml).not.toContain(SCRIPT);
+  });
+
+  it('escapa el título embebido en el propio ChordPro ({title: ...})', () => {
+    const { result } = renderSong({
+      originalChordPro: `{title: ${SCRIPT}}\n[C]Hola`,
+    });
+    expect(result.current.songHtml).not.toContain(SCRIPT);
+    expect(result.current.songHtml).toContain('&lt;script&gt;');
+  });
+
+  it('escapa un comentario malicioso en el cuerpo del ChordPro', () => {
+    const { result } = renderSong({
+      originalChordPro: `{title: Test}\n{comment: ${SCRIPT}}\n[C]Hola`,
+    });
+    expect(result.current.songHtml).not.toContain(SCRIPT);
+  });
+
+  it('escapa HTML embebido en una línea de letra', () => {
+    const { result } = renderSong({
+      originalChordPro: `{title: Test}\n[C]Hola ${SCRIPT} mundo`,
+    });
+    expect(result.current.songHtml).not.toContain(SCRIPT);
+    expect(result.current.songHtml).toContain('Hola');
+    expect(result.current.songHtml).toContain('mundo');
+  });
+
+  it('no doble-escapa un "&" normal en la letra', () => {
+    const { result } = renderSong({
+      originalChordPro: '{title: Test}\n[C]Tú & Yo',
+    });
+    // ChordSheetJS trocea la letra por columna de acorde ("Tú " / "& Yo"), así
+    // que solo comprobamos que el "&" está escapado una única vez.
+    expect(result.current.songHtml).toContain('&amp; Yo');
+    expect(result.current.songHtml).not.toContain('&amp;amp;');
+  });
+});
+
 describe('useSongProcessor — styleState', () => {
   it('refleja los parámetros de estilo de entrada', () => {
     const { result } = renderSong({

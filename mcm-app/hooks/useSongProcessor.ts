@@ -102,9 +102,24 @@ function parseChordPro(chordPro: string): ParsedResult {
     .replace(/\{sob\}/gi, '{start_of_bridge}')
     .replace(/\{eob\}/gi, '{end_of_bridge}')
     .replace(/\{transpose:.*\}\n?/gi, '');
+  // `HtmlDivFormatter` de ChordSheetJS NO escapa el texto libre al formatear:
+  // título, autor, comentarios y letra se emiten tal cual dentro del HTML
+  // (verificado: `{title: <script>}` produce `<h1><script>` literal). El
+  // ChordPro viene de Firebase (`/songs/data`, escribible públicamente), así
+  // que escapamos ANTES de parsear — `& < > "` no forman parte de la sintaxis
+  // ChordPro (`{directivas}`, `[acordes]`, comentarios `#`), así que el
+  // parseo no se ve afectado. Usamos `cleaned` SIN escapar para el contexto
+  // de error de abajo (que ya escapa una vez en `buildErrorHtml`; escapar
+  // aquí también produciría doble-escape visual). Efecto secundario acotado:
+  // si la línea del error contiene alguno de esos caracteres antes del punto
+  // exacto del fallo, la COLUMNA reportada puede desplazarse (la línea
+  // sigue siendo correcta) — tradeoff aceptado por seguridad.
   let result: ParsedResult;
   try {
-    result = { song: new ChordProParser().parse(cleaned), error: null };
+    result = {
+      song: new ChordProParser().parse(escapeHtml(cleaned)),
+      error: null,
+    };
   } catch (e: any) {
     logger.error('Error parseando ChordPro en useSongProcessor:', e);
     // Los errores del parser (peggy/PEG.js) traen `location.start.line/column`.
@@ -544,7 +559,7 @@ export const useSongProcessor = ({
 
       let metaInsert = '';
       if (author && !isFullscreen) {
-        metaInsert += `<div class="song-meta-author">${author}</div>`;
+        metaInsert += `<div class="song-meta-author">${escapeHtml(author)}</div>`;
       }
 
       const displayKey = key
@@ -552,10 +567,16 @@ export const useSongProcessor = ({
           ? transposeKey(key, currentTranspose)
           : key.toUpperCase()
         : '';
+      // `key` viene de texto libre del ChordPro (`{key: ...}`), que puede
+      // venir de Firebase (`/songs/data` es escribible públicamente). Escapar
+      // DESPUÉS de convertChord: su regex solo busca letras A-G, así que
+      // corre seguro sobre la cadena cruda; el resultado ya no debe
+      // interpolarse sin escapar.
+      const displayKeyHtml = escapeHtml(convertChord(displayKey, notation));
 
       let badges = '';
       if (displayKey) {
-        badges += `<span class="meta-badge">${convertChord(displayKey, notation)}</span>`;
+        badges += `<span class="meta-badge">${displayKeyHtml}</span>`;
       }
       if (capo !== undefined && capo > 0) {
         badges += `<span class="meta-badge">Cejilla ${capo}</span>`;
@@ -572,10 +593,11 @@ export const useSongProcessor = ({
       let fsHeader = '';
       if (isFullscreen) {
         let fsMeta = '';
-        if (author) fsMeta += `<span class="fs-author">${author}</span>`;
+        if (author)
+          fsMeta += `<span class="fs-author">${escapeHtml(author)}</span>`;
         if (displayKey) {
           if (fsMeta) fsMeta += `<span class="fs-sep">·</span>`;
-          fsMeta += `<span class="fs-badge-sm">${convertChord(displayKey, notation)}</span>`;
+          fsMeta += `<span class="fs-badge-sm">${displayKeyHtml}</span>`;
         }
         if (capo !== undefined && capo > 0) {
           fsMeta += `<span class="fs-badge-sm">Cejilla ${capo}</span>`;
@@ -587,7 +609,7 @@ export const useSongProcessor = ({
               : `${currentTranspose}`;
           fsMeta += `<span class="fs-badge-sm fs-badge-accent">${td} semitonos</span>`;
         }
-        fsHeader = `<div class="fs-header">${title ? `<div class="fs-title">${title}</div>` : ''}${fsMeta ? `<div class="fs-meta">${fsMeta}</div>` : ''}</div>`;
+        fsHeader = `<div class="fs-header">${title ? `<div class="fs-title">${escapeHtml(title)}</div>` : ''}${fsMeta ? `<div class="fs-meta">${fsMeta}</div>` : ''}</div>`;
       }
 
       let finalSongContentWithMeta = formattedSong;
