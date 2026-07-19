@@ -18,6 +18,44 @@
 
 ---
 
+## 2026-07-19 18:30 — Seguridad cantoral (XSS), bug de fecha UTC, reflexiones atómicas, limpieza de deps
+
+- **Seguridad (cantoral)**: `author`/`title`/el badge de tono se escapan
+  antes de inyectarse en el WebView de la canción. Además, se descubrió que
+  `HtmlDivFormatter` de ChordSheetJS no escapa NADA de lo que extrae del
+  ChordPro (título, comentarios, letra) — como `/songs/data` es escribible
+  públicamente, cualquier canción podía ejecutar HTML/JS arbitrario en el
+  WebView de todos los dispositivos que la abrieran. Ahora el ChordPro se
+  escapa completo antes de parsear. También se endurece `SongDisplay`
+  (`originWhitelist` + bloqueo de navegación) para que el WebView del
+  cantoral no siga marcado como superficie de confianza total.
+- **Fix de fecha (bug UTC)**: "hoy" en Home y Calendario, y la fecha de una
+  reflexión, se calculaban con `toISOString()` (convierte a UTC) — en España
+  eso desplazaba "hoy" al día anterior entre medianoche y la 1-2 de la
+  madrugada, colando eventos de ayer como "próximos". Nuevo helper
+  `utils/localDate.ts` (`localISO`) usado en los tres sitios y en
+  `useContigoHabits` (que ya lo tenía, ahora compartido).
+- **Reflexiones**: la publicación ahora es una única escritura atómica
+  (`update()` multi-path para `data`+`updatedAt`, antes eran dos `set()`
+  separados que podían dejar una reflexión invisible para otros
+  dispositivos si el segundo fallaba). Si falla el guardado, el texto ya NO
+  se borra del formulario y se muestra un toast de error.
+- **Dependencias**: eliminadas 4 sin ningún uso en el código
+  (`@gorhom/bottom-sheet`, `react-native-modal` —iba en versión *release
+  candidate*—, `@react-native-picker/picker`, `@react-native-community/slider`)
+  y `jest` deduplicado (estaba a la vez en `dependencies` y
+  `devDependencies`). Pineadas las versiones de `eas-cli`/`firebase-tools`
+  en los workflows de release (antes `@latest`, con riesgo de que una major
+  nueva rompiera un deploy sin cambios en el repo).
+- Archivos: `hooks/useSongProcessor.ts`, `components/SongDisplay.tsx`,
+  `utils/localDate.ts` (nuevo), `utils/reflexiones.ts` (nuevo),
+  `app/(tabs)/index.tsx`, `app/(tabs)/calendario.tsx`,
+  `app/screens/ReflexionesScreen.tsx`, `hooks/useContigoHabits.ts`,
+  `package.json`, `.github/workflows/{deploy-web,deploy-firebase-rules,
+  ota-preview,ota-production}.yml`, `plans/README.md`.
+
+---
+
 ## 2026-07-19 16:45 — Quick wins de la auditoría: logging de registro push y limpieza
 
 - El registro de notificaciones push (`registerAndSaveToken`) ya no traga
