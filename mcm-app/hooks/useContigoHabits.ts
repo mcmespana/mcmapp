@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { syncContigoHabit } from '@/utils/authHelpers';
+import { localISO } from '@/utils/localDate';
 
 export type PrayerDuration =
   | 'less_than_1'
@@ -215,13 +216,9 @@ export function useContigoHabits() {
 }
 
 // ── Pure helpers (local-time, no UTC drift) ────────────────────────────────
-function localISO(d: Date = new Date()): string {
-  return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, '0'),
-    String(d.getDate()).padStart(2, '0'),
-  ].join('-');
-}
+// `localISO` vive en utils/localDate.ts (compartida con Home/Calendario/
+// Reflexiones — antes cada sitio calculaba "hoy" a su manera y varios lo
+// hacían mal con `toISOString()`, que convierte a UTC).
 
 function offsetISODate(base: string, delta: number): string {
   const [y, m, d] = base.split('-').map(Number);
