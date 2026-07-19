@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Button, Spinner } from 'heroui-native';
-import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
+import TabScreenWrapper from '@/components/ui/TabScreenWrapper';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';

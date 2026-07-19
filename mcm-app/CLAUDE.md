@@ -18,7 +18,7 @@ npm run android        # App en Android
 npm run ios            # App en iOS
 npm run lint           # ESLint
 npm run format         # Prettier
-npm test               # Jest (16 ficheros en __tests__/, 150 tests)
+npm test               # Jest (suite completa en __tests__/ — 28+ ficheros)
 npm run typecheck:tests # Typecheck incluyendo __tests__ (tsconfig.test.json)
 npx tsc --noEmit       # Verificar tipos TypeScript
 ```
@@ -233,7 +233,7 @@ Edita `/profileConfig/data/*` en Firebase RTDB (desde `mcmpanel` o consola). Los
 
 - Credenciales en `.env.local` (no commiteado), template en `.env.example`
 - Todas las variables con prefijo `EXPO_PUBLIC_`
-- Config en `constants/firebase.ts`, app inicializada en `hooks/firebaseApp.ts`
+- Config en `constants/firebase.ts`, app inicializada en `utils/firebaseApp.ts`
 
 ### Estructura de la base de datos
 
