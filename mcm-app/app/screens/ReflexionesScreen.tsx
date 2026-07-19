@@ -32,9 +32,11 @@ import { getBrightness } from '@/components/ui/glass';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
-import { getDatabase, ref, push, set } from 'firebase/database';
+import { getDatabase, ref, push, update } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { h } from '@/utils/haptics';
+import { localISO } from '@/utils/localDate';
+import { buildReflexionUpdate } from '@/utils/reflexiones';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import PageContainer from '@/components/ui/PageContainer';
@@ -224,29 +226,41 @@ export default function ReflexionesScreen() {
       id: Date.now().toString(),
       titulo: titulo.trim(),
       contenido,
-      fecha: fecha.toISOString().slice(0, 10),
+      fecha: localISO(fecha),
       grupal: false,
       autor,
     };
     try {
       const db = getDatabase(getFirebaseApp());
       const newRef = push(ref(db, `${compartiendoPath}/data`));
-      await set(newRef, nuevo);
-      await set(
-        ref(db, `${compartiendoPath}/updatedAt`),
-        Date.now().toString(),
+      if (!newRef.key) throw new Error('push() sin key');
+      // Un único update() multi-path: data/<key> + updatedAt a la vez. Antes
+      // eran dos set() separados — si el segundo fallaba (o la app moría
+      // entre medias) la reflexión quedaba escrita pero invisible para el
+      // resto de dispositivos, porque useFirebaseData solo redescarga
+      // `data` cuando `updatedAt` cambia.
+      await update(
+        ref(db, compartiendoPath),
+        buildReflexionUpdate(newRef.key, nuevo, Date.now()),
       );
       setList([nuevo, ...list]);
       h.formSuccess();
       setCelebrate(true);
+      setShowForm(false);
+      setTitulo('');
+      setContenido('');
+      setFecha(new Date());
+      setAutor(getDefaultAuthor());
     } catch (e) {
       logger.error('Error adding post', e);
+      // No limpiar el formulario: si falla el guardado (offline es habitual
+      // en los eventos donde se usa esta pantalla) el usuario no debe
+      // perder lo que escribió ni creer que se compartió.
+      toast.show({
+        variant: 'danger',
+        label: 'No se pudo compartir. Revisa tu conexión e inténtalo de nuevo.',
+      });
     }
-    setShowForm(false);
-    setTitulo('');
-    setContenido('');
-    setFecha(new Date());
-    setAutor(getDefaultAuthor());
     setSaving(false);
   }
 
