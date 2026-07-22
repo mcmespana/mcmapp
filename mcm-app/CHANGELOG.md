@@ -18,6 +18,30 @@
 
 ---
 
+## 2026-07-22 22:30 — Plan 008: caché de datos compartida (dedupe) + calendario stale-while-revalidate
+
+- **`useFirebaseData`**: nueva caché a nivel de módulo compartida entre las
+  instancias del mismo `storageKey`. Antes cada consumidor del mismo path
+  repetía el `JSON.parse` de la caché de AsyncStorage y su propio round-trip a
+  Firebase — el nodo `songs` tiene 3 consumidores vivos a la vez (Categories,
+  SongList, SelectedSongs por `freezeOnBlur`). Ahora el fetch remoto se
+  **coalesce** (una sola descarga aunque monten varios a la vez) y el parseo se
+  reutiliza. La API del hook no cambia (`{ data, loading, offline, hidden }`).
+- **Datos crudos en caché**: la caché de módulo y AsyncStorage guardan ahora el
+  dato **sin transformar**; el `transform` se aplica por instancia al leer (dos
+  consumidores del mismo path pueden filtrar distinto). Antes AsyncStorage
+  guardaba lo que transformara el último en escribir —dependiente de una
+  carrera—; la vista de cada pantalla es idéntica porque el transform se aplica
+  siempre al leer.
+- **Calendario (`useCalendarEvents`)**: stale-while-revalidate — la caché se
+  muestra al instante también **online** (antes solo offline; online se
+  esperaba a bajar todos los ICS aunque hubiera datos válidos). El fetch+parseo
+  se coalesce entre Home y Calendario. El `catch {}` vacío por calendario ahora
+  loguea con `logger.error`, y un fallo parcial **no pisa** la caché buena en
+  disco ni degrada la vista si ya había caché.
+- Tests: +3 casos de dedupe en `__tests__/useFirebaseData.test.ts` (los 6
+  existentes intactos). Suite: 32 ficheros, 305 tests.
+
 ## 2026-07-22 21:13 — Comunica (familias): nueva URL de la web embebida
 
 - El WebView de "Comunica" (portal para familias) apunta ahora a

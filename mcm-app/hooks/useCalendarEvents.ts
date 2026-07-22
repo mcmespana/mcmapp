@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Network from 'expo-network';
@@ -145,6 +146,95 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
   return events;
 }
 
+type CalendarFetchResult = {
+  map: Record<string, CalendarEvent[]>;
+  anyFailed: boolean;
+};
+
+// Descarga + parseo de TODOS los calendarios, COALESCIDO por la lista de URLs:
+// `useCalendarEvents` se monta a la vez en Home y en Calendario; sin esto cada
+// instancia descargaba y parseaba todos los ICS por su cuenta. Dos monturas
+// concurrentes con la misma lista comparten un único ciclo fetch+parse.
+const calendarInflight = new Map<string, Promise<CalendarFetchResult>>();
+
+/** Solo para tests: vacía el coalescer de calendarios. */
+export function __resetCalendarCacheForTests() {
+  calendarInflight.clear();
+}
+
+function fetchAndParseCalendars(
+  calendars: CalendarConfig[],
+): Promise<CalendarFetchResult> {
+  const key = calendars.map((c) => c.url).join('|');
+  const existing = calendarInflight.get(key);
+  if (existing) return existing;
+
+  const run = async (): Promise<CalendarFetchResult> => {
+    const map: Record<string, CalendarEvent[]> = {};
+    let anyFailed = false;
+    for (let i = 0; i < calendars.length; i++) {
+      const cfg = calendars[i];
+      try {
+        const proxyBase = process.env.EXPO_PUBLIC_CORS_PROXY_URL;
+        const proxyUrl = proxyBase
+          ? proxyBase + encodeURIComponent(cfg.url)
+          : null;
+        let res: Response | null = null;
+        if (proxyUrl) {
+          try {
+            res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error('Proxy request failed');
+          } catch {
+            // Fallback to direct fetch if proxy fails
+            res = await fetch(cfg.url);
+          }
+        } else {
+          res = await fetch(cfg.url);
+        }
+        const text = await res.text();
+        const events = parseICS(text);
+
+        events.forEach((ev) => {
+          const withCal: CalendarEvent = { ...ev, calendarIndex: i };
+
+          // If no endDate or it's a single-day event, only add to the start date
+          if (!ev.endDate || ev.isSingleDay) {
+            const dateStr = ev.startDate;
+            if (!map[dateStr]) map[dateStr] = [];
+            map[dateStr].push(withCal);
+          } else {
+            // For multi-day events, iterate through the range
+            const start = new Date(ev.startDate);
+            const end = new Date(ev.endDate);
+            for (
+              let d = new Date(start);
+              d <= end;
+              d.setDate(d.getDate() + 1)
+            ) {
+              const dateStr = d.toISOString().split('T')[0];
+              if (!map[dateStr]) map[dateStr] = [];
+              map[dateStr].push(withCal);
+            }
+          }
+        });
+      } catch (e) {
+        // Antes este catch era vacío: un calendario roto (o su fuente caída)
+        // desaparecía sin rastro. Marcamos el fallo para no pisar la caché
+        // buena con un resultado parcial (ver más abajo).
+        anyFailed = true;
+        logger.error('[calendar] fallo cargando calendario', i, cfg.url, e);
+      }
+    }
+    return { map, anyFailed };
+  };
+
+  const promise = run().finally(() => {
+    calendarInflight.delete(key);
+  });
+  calendarInflight.set(key, promise);
+  return promise;
+}
+
 export default function useCalendarEvents(calendars: CalendarConfig[]) {
   const [eventsByDate, setEventsByDate] = useState<
     Record<string, CalendarEvent[]>
@@ -153,74 +243,59 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
 
   useEffect(() => {
     let mounted = true;
-    async function fetchCalendars() {
+    async function load() {
       setLoading(true);
       const state = await Network.getNetworkStateAsync();
       const connected =
         state.isConnected && state.isInternetReachable !== false;
+
+      // 1. Caché primero SIEMPRE (online u offline): stale-while-revalidate.
+      //    Antes la caché solo se usaba offline; online el usuario esperaba a
+      //    que bajaran todos los ICS aunque hubiera datos válidos cacheados.
       const cachedStr = await AsyncStorage.getItem('calendar_events');
-      if (!connected && cachedStr) {
-        setEventsByDate(JSON.parse(cachedStr));
-        setLoading(false);
+      let hadCache = false;
+      if (cachedStr) {
+        try {
+          const cached = JSON.parse(cachedStr) as Record<
+            string,
+            CalendarEvent[]
+          >;
+          hadCache = true;
+          if (mounted) {
+            setEventsByDate(cached);
+            setLoading(false);
+          }
+        } catch (e) {
+          logger.error('[calendar] caché local corrupta', e);
+        }
+      }
+
+      // 2. Offline: nos quedamos con la caché (o con nada si no la había).
+      if (!connected) {
+        if (mounted) setLoading(false);
         return;
       }
-      const map: Record<string, CalendarEvent[]> = {};
-      for (let i = 0; i < calendars.length; i++) {
-        const cfg = calendars[i];
-        try {
-          const proxyBase = process.env.EXPO_PUBLIC_CORS_PROXY_URL;
-          const proxyUrl = proxyBase
-            ? proxyBase + encodeURIComponent(cfg.url)
-            : null;
-          let res: Response | null = null;
-          if (proxyUrl) {
-            try {
-              res = await fetch(proxyUrl);
-              if (!res.ok) throw new Error('Proxy request failed');
-            } catch {
-              // Fallback to direct fetch if proxy fails
-              res = await fetch(cfg.url);
-            }
-          } else {
-            res = await fetch(cfg.url);
-          }
-          const text = await res.text();
-          const events = parseICS(text);
 
-          events.forEach((ev) => {
-            const withCal: CalendarEvent = { ...ev, calendarIndex: i };
+      // 3. Online: revalidar en background (coalescido entre Home y Calendario).
+      const { map, anyFailed } = await fetchAndParseCalendars(calendars);
+      if (!mounted) return;
 
-            // If no endDate or it's a single-day event, only add to the start date
-            if (!ev.endDate || ev.isSingleDay) {
-              const dateStr = ev.startDate;
-              if (!map[dateStr]) map[dateStr] = [];
-              map[dateStr].push(withCal);
-            } else {
-              // For multi-day events, iterate through the range
-              const start = new Date(ev.startDate);
-              const end = new Date(ev.endDate);
-              for (
-                let d = new Date(start);
-                d <= end;
-                d.setDate(d.getDate() + 1)
-              ) {
-                const dateStr = d.toISOString().split('T')[0];
-                if (!map[dateStr]) map[dateStr] = [];
-                map[dateStr].push(withCal);
-              }
-            }
-          });
-        } catch {}
-      }
-      if (mounted) {
+      if (!anyFailed) {
+        // Resultado completo y autoritativo → actualiza vista y persiste.
         setEventsByDate(map);
         AsyncStorage.setItem('calendar_events', JSON.stringify(map)).catch(
           () => {},
         );
-        setLoading(false);
+      } else if (!hadCache) {
+        // Parcial pero no había caché: mostrar lo que sí llegó (mejor que nada).
+        // NO se persiste: solo se guarda un resultado completo.
+        setEventsByDate(map);
       }
+      // Parcial CON caché: mantenemos la vista cacheada (no la degradamos con
+      // un resultado incompleto) y tampoco pisamos el disco.
+      setLoading(false);
     }
-    fetchCalendars();
+    load();
     return () => {
       mounted = false;
     };

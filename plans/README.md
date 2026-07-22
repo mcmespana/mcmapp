@@ -24,7 +24,7 @@ sus STOP conditions y actualiza tu fila al terminar.
 | 005  | Scraper: vacío=error, fecha inválida vetada, pytest en CI, workflow sin inyección | P1 | M | — | DONE |
 | 006  | Higiene de deps (4 muertas, jest dup) + pinear CLIs en pipelines | P2 | S | — | DONE |
 | 007  | ~~Privacidad: respuestas de encuestas dejan de ser legibles públicamente~~ | P1* | M | — | **REJECTED** (2026-07-22, decisión de producto — ver `docs/planes/BACKLOG.md` §3) |
-| 008  | Caché compartida en useFirebaseData + calendario stale-while-revalidate | P2 | M | mejor tras 001-005 | TODO |
+| 008  | Caché compartida en useFirebaseData + calendario stale-while-revalidate | P2 | M | mejor tras 001-005 | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (con motivo) | REJECTED (con motivo)
 
@@ -91,6 +91,22 @@ haptics directos fuera del wrapper `h.*` (DEBT-07).
 6. **La parte OTA-able del plan Contigo** — recordatorio local diario +
    rachas en Home, antes del widget nativo (el propio
    PLAN_WIDGET_CONTIGO §4 la separa).
+
+## Ejecución 2026-07-22 (plan 008)
+
+- **008**: implementado tal como estaba planeado. Sin drift.
+  `useFirebaseData` gana una caché de módulo (`nodeCache`) que deduplica el
+  `JSON.parse` de la caché y coalesce el fetch remoto (`inflight` por
+  `storageKey`); guarda lo CRUDO y aplica `transform` por instancia —
+  verificado que los 3 consumidores de `songs` comparten `('songs','songs')` y
+  que `filterSongsData` no muta su entrada. Los 6 tests existentes pasan SIN
+  tocarlos + 3 nuevos de dedupe. `useCalendarEvents` pasa a
+  stale-while-revalidate (caché al instante también online), coalesce
+  Home↔Calendario, loguea el fallo por calendario y no pisa la caché buena con
+  un resultado parcial. Suite 305 verde, typecheck y lint (CI) limpios.
+  Decisión de diseño documentada: en fallo parcial CON caché no se degrada la
+  vista (mejora sobre el literal del plan, evita el parpadeo que su STOP
+  condition anticipaba). Detalle en `mcm-app/CHANGELOG.md` 2026-07-22 22:30.
 
 ## Follow-up 2026-07-22 (post-005) — visibilidad del resumen
 
