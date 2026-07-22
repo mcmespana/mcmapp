@@ -5,15 +5,15 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   View,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getDatabase, push, ref, set } from 'firebase/database';
 
 import BottomSheet from './BottomSheet';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
+import AppTextField from '@/components/ui/AppTextField';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { Colors, FeedbackCategoryColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
@@ -23,10 +23,8 @@ import { getFirebaseApp } from '@/utils/firebaseApp';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 
-// Apple system colors used inside the modal — not part of the MCM brand
-// palette, but match iOS native conventions for "active border" and
-// "destructive text" inside form controls.
-const APPLE_SYSTEM_GREEN = '#34C759';
+// Apple system color used inside the modal — not part of the MCM brand
+// palette, but matches iOS native conventions for "destructive text".
 const APPLE_SYSTEM_RED = '#FF3B30';
 
 interface AppFeedbackModalProps {
@@ -244,21 +242,10 @@ export default function AppFeedbackModal({
               </Text>
             </View>
 
-            <TextInput
-              style={[
-                styles.textArea,
-                {
-                  backgroundColor: isDark
-                    ? Colors.dark.background
-                    : hexAlpha(theme.icon, '14'),
-                  color: theme.text,
-                  borderColor: feedbackText.trim()
-                    ? APPLE_SYSTEM_GREEN
-                    : hexAlpha(theme.icon, '40'),
-                },
-              ]}
+            <AppTextField
+              accentWhenFilled
+              style={styles.textArea}
               placeholder={selectedCategoryData!.placeholder}
-              placeholderTextColor={theme.icon}
               value={feedbackText}
               onChangeText={(t) => {
                 setFeedbackText(t);
@@ -267,7 +254,6 @@ export default function AppFeedbackModal({
               maxLength={1000}
               multiline
               numberOfLines={5}
-              textAlignVertical="top"
               editable={!isSubmitting}
             />
             <Text style={[styles.charCount, { color: theme.icon }]}>
@@ -285,39 +271,16 @@ export default function AppFeedbackModal({
               </View>
             ) : null}
 
-            <TouchableOpacity
-              style={[
-                styles.submitBtn,
-                {
-                  backgroundColor: canSubmit
-                    ? selectedCategoryData!.color
-                    : hexAlpha(theme.icon, '40'),
-                },
-              ]}
+            <AppPrimaryButton
+              label={
+                isSubmitting ? 'Enviando...' : selectedCategoryData!.submitText
+              }
+              icon={selectedCategoryData!.icon}
+              color={selectedCategoryData!.color}
               onPress={handleSubmit}
               disabled={!canSubmit}
-              activeOpacity={0.8}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <MaterialIcons
-                  name={selectedCategoryData!.icon}
-                  size={18}
-                  color={canSubmit ? '#fff' : theme.icon}
-                />
-              )}
-              <Text
-                style={[
-                  styles.submitBtnText,
-                  { color: canSubmit ? '#fff' : theme.icon },
-                ]}
-              >
-                {isSubmitting
-                  ? 'Enviando...'
-                  : selectedCategoryData!.submitText}
-              </Text>
-            </TouchableOpacity>
+              loading={isSubmitting}
+            />
           </>
         )}
       </ScrollView>
@@ -367,10 +330,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   textArea: {
-    borderWidth: 1.5,
-    borderRadius: radii.md,
-    padding: 14,
-    fontSize: 15,
     minHeight: 120,
     lineHeight: 22,
   },
@@ -390,17 +349,5 @@ const styles = StyleSheet.create({
     color: APPLE_SYSTEM_RED,
     fontSize: 13,
     fontWeight: '500',
-  },
-  submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 15,
-    borderRadius: radii.md,
-  },
-  submitBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
   },
 });

@@ -28,7 +28,7 @@
 
 | | |
 |---|---|
-| **Ahora mismo (en curso / siguiente)** | UI Nativa 🔒 (preguntar las 3 decisiones antes) |
+| **Ahora mismo (en curso / siguiente)** | UI Nativa — **Fase 2** (componentes); las 3 decisiones ya están tomadas (ver §4) |
 | **Después** | Integración D 🔒 → Widget de Contigo 🔒 → Carismochito + Panel Pañuelo |
 | **Bloqueado, no tocar sin preguntar** | Integración D, Widget de Contigo, Panel Pañuelo |
 | **Oportunista (solo si piden hueco)** | Calidad Fase 1, Integraciones resto, bolsa nativa |
@@ -73,7 +73,7 @@
 |---|---|---|---|---|---|
 | 1 | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers` | Sonnet | No | ✅ **DONE** (2026-07-22) | `plans/004-contigo-sync-bidireccional.md` |
 | 2 | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet | No | ✅ **DONE** (2026-07-22) | `plans/005-scraper-fiabilidad-y-ci.md` |
-| 3 | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate | **Opus** | No | ✅ **DONE** (2026-07-22) — pendiente validar rendimiento real en dispositivo | `plans/008-cache-compartida-firebase-calendario.md` |
+| 3 | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate | **Opus** | No | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `plans/008-cache-compartida-firebase-calendario.md` |
 | 4 | **UI Nativa** — headers nativos + componentes unificados | Sonnet (Fable en la cola mecánica de Fase 2) | Parcial — 3 decisiones bloquean partes concretas, no todo (ver §4) | 🟡 En curso (Fase 1 casi hecha) | `docs/planes/PLAN_UI_NATIVA.md` |
 | 5 | **Integración D** — Seguridad Firebase | Opus | **Sí** — D2 + repo `mcmpanel` (ver §4) | ⏳ Pendiente, importante pero no urgente | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" |
 | 6 | **Widget de Contigo** | Opus | **Sí** — ¿release de tienda ya? (ver §4) | ⏳ Al final | `docs/planes/PLAN_WIDGET_CONTIGO.md` |
@@ -171,7 +171,7 @@ reabrir este plan tal cual, su premisa ya no aplica.
 | Decisión | Bloquea | Dónde consultar el contexto | Qué preguntar |
 |---|---|---|---|
 | **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?" |
-| **3 decisiones de UI** — qué pantallas van a header nativo plano vs floating glass; primitiva de pulsación estándar; ¿Contigo/Eventos mantienen paleta propia o se alinean a marca? | UI Nativa (Fases 1 resto y 4; Fase 2/3 no bloqueadas) | `docs/planes/PLAN_UI_NATIVA.md` §4 | Las 3 preguntas literales de esa sección |
+| ~~**3 decisiones de UI**~~ ✅ **RESUELTAS (2026-07-22)** | UI Nativa | `docs/planes/PLAN_UI_NATIVA.md` §4 | **(1) Headers**: nativo plano en pantallas "lista+detalle" (Revisión, Materiales, Horario, sub-pantallas de evento), floating glass solo donde aporta identidad (heros de evento). **(2) Pulsación**: `PressableFeedback` (heroui) como primitiva única de contenido — es la opción con feedback nativo más consistente y ya soportada por la librería; barras de navegación siguen con bar items nativos. **(3) Color**: Contigo (warm) y Eventos (color por evento) **mantienen su paleta propia** — es identidad intencional; documentar como temas con nombre, no forzar alineación a marca. |
 | **Release de tienda para el Widget** — ¿se compromete ya? ¿iOS primero? ¿App Intents interactivos o solo abrir la app? | Widget de Contigo | `docs/planes/PLAN_WIDGET_CONTIGO.md` | "¿Arrancamos el Widget de Contigo? Implica una build de tienda dedicada — ¿cuándo?" |
 | **Icono nativo Carismochito (§5)** | Bolsa nativa / Carismochito | `docs/planes/PLAN_CARISMOCHITO.md` §5 | "¿Compensa el icono alternativo para un modo que es efímero (se activa agitando)?" |
 | **Plan funcional del Panel Pañuelo** | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md` (stub) | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o esperamos a después de Carismochito §1–4?" |

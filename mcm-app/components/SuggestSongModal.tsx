@@ -7,14 +7,13 @@ import {
   StyleSheet,
   Platform,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
 import AppTextField from '@/components/ui/AppTextField';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { radii } from '@/constants/uiStyles';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -242,39 +241,14 @@ export default function SuggestSongModal({
         ) : null}
 
         {/* Botón enviar */}
-        <TouchableOpacity
-          style={[
-            styles.submitBtn,
-            {
-              backgroundColor: canSubmit
-                ? '#007AFF'
-                : isDark
-                  ? '#3A3A3C'
-                  : '#E5E5EA',
-            },
-          ]}
+        <AppPrimaryButton
+          label={isSubmitting ? 'Enviando...' : 'Enviar sugerencia'}
+          icon="send"
           onPress={handleSubmit}
           disabled={!canSubmit}
-          activeOpacity={0.8}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <MaterialIcons
-              name="send"
-              size={18}
-              color={canSubmit ? '#fff' : theme.icon}
-            />
-          )}
-          <Text
-            style={[
-              styles.submitBtnText,
-              { color: canSubmit ? '#fff' : theme.icon },
-            ]}
-          >
-            {isSubmitting ? 'Enviando...' : 'Enviar sugerencia'}
-          </Text>
-        </TouchableOpacity>
+          loading={isSubmitting}
+          style={styles.submitBtn}
+        />
 
         <Text style={[styles.disclaimer, { color: theme.icon }]}>
           Recibiremos tu sugerencia y, con algo de tiempo y suerte, la
@@ -342,18 +316,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 15,
-    borderRadius: radii.md,
     marginTop: 20,
     marginBottom: 16,
-  },
-  submitBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
   },
   disclaimer: {
     fontSize: 12,
