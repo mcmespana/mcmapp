@@ -92,6 +92,25 @@ haptics directos fuera del wrapper `h.*` (DEBT-07).
    rachas en Home, antes del widget nativo (el propio
    PLAN_WIDGET_CONTIGO §4 la separa).
 
+## Follow-up 2026-07-22 (post-005) — visibilidad del resumen
+
+> Pedido explícito tras 005: los fallos parciales ya rompían el exit code
+> correctamente, pero no había ningún resumen visible sin abrir logs
+> completos, y el skip por "no es la hora" quedaba enterrado en texto plano.
+
+- **`main.py`**: nuevas `_append_step_summary`/`_build_summary_markdown` —
+  al final de cada run (normal o `--cleanup-only`) escriben una tabla
+  markdown con el resultado por fuente (`✅ OK` / `❌ N error(es)`) en
+  `$GITHUB_STEP_SUMMARY` (pestaña "Summary" del run de Actions). No-op fuera
+  de Actions (ejecución local). No cambia exit codes ni ningún
+  comportamiento existente — solo visibilidad.
+- **Workflow**: el job `check-time` ahora escribe también su veredicto
+  (procede / omitido) al step summary, y usa `::notice::` en el caso
+  "omitido" para que aparezca como anotación visible en la lista de checks
+  del run sin abrir logs — antes quedaba indistinguible de un día con
+  scraping real completado.
+- 3 tests nuevos (`tests/test_main.py`). Suite 102→105 verde.
+
 ## Ejecución 2026-07-22 (plan 005)
 
 - **005**: los 4 pasos aplicados tal como estaba planeado. Sin drift. Entorno
