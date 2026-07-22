@@ -2,7 +2,8 @@ import { logger } from '@/utils/logger';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
-import { syncContigoHabit } from '@/utils/authHelpers';
+import { syncContigoHabit, fetchContigoHabits } from '@/utils/authHelpers';
+import { mergeContigoHabits } from '@/utils/contigoMerge';
 import { localISO } from '@/utils/localDate';
 
 export type PrayerDuration =
@@ -33,23 +34,58 @@ export function useContigoHabits() {
   const [isLoading, setIsLoading] = useState(true);
   const { user: authUser } = useAuth();
 
-  const load = async () => {
+  const readLocalRecords = async (): Promise<Record<string, DayRecord>> => {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setRecords(JSON.parse(stored));
-      }
+      return stored ? JSON.parse(stored) : {};
     } catch (err) {
       logger.error('Failed to load contigo habits:', err);
-    } finally {
-      setIsLoading(false);
+      return {};
     }
   };
 
-  // Load records on mount
+  // Reload local-only (usado al enfocar la pantalla de Contigo, para
+  // recoger cambios que otra pantalla haya escrito en AsyncStorage).
+  const load = async () => {
+    const stored = await readLocalRecords();
+    setRecords(stored);
+    setIsLoading(false);
+  };
+
+  // Carga local al montar / cambiar de sesión y, si hay sesión, hidrata
+  // desde RTDB (multi-dispositivo / reinstalación — antes los hábitos solo
+  // subían, nunca se leían de vuelta). Fusiona por fecha: gana el registro
+  // más completo, a igualdad el local, y re-sube las fechas donde lo local
+  // aportó algo que el remoto no tenía.
   useEffect(() => {
-    load();
-  }, []);
+    let mounted = true;
+    (async () => {
+      const localRecords = await readLocalRecords();
+      if (mounted) {
+        setRecords(localRecords);
+        setIsLoading(false);
+      }
+      if (!authUser) return;
+      const remoteRecords = await fetchContigoHabits(authUser.uid);
+      if (Object.keys(remoteRecords).length === 0) return;
+      const { merged, datesToResync } = mergeContigoHabits(
+        localRecords,
+        remoteRecords,
+      );
+      if (mounted) setRecords(merged);
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      } catch (err) {
+        logger.error('Failed to persist merged contigo habits:', err);
+      }
+      for (const date of datesToResync) {
+        syncContigoHabit(authUser.uid, date, merged[date]);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [authUser]);
 
   const reloadRecords = () => load();
 

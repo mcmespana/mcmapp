@@ -1,9 +1,13 @@
 # Implementation Plans
 
 Generados por la skill `improve` (auditoría **deep**) el 2026-07-18, sobre el
-commit `2d2822c`. Ejecutar en el orden de la tabla salvo que las dependencias
-digan otra cosa. Cada executor: lee el plan completo antes de empezar, respeta
+commit `2d2822c`. Cada executor: lee el plan completo antes de empezar, respeta
 sus STOP conditions y actualiza tu fila al terminar.
+
+> **El orden real de ejecución (combinando estos planes tácticos con los
+> estratégicos de `docs/planes/`) vive en `docs/planes/BACKLOG.md`** — esta
+> tabla es el detalle de la tanda táctica, no la cola global. Consulta el
+> backlog antes de decidir qué toca ahora.
 
 > Selección: la auditoría corrió de forma no interactiva; se escribieron
 > planes para los 8 hallazgos de mayor leverage (impacto ÷ esfuerzo,
@@ -16,10 +20,10 @@ sus STOP conditions y actualiza tu fila al terminar.
 | 001  | Escapar metadatos de canción en el WebView del cantoral (XSS) | P1 | S | — | DONE |
 | 002  | Fechas locales: "hoy" UTC en Home/Calendario y fecha de reflexión | P1 | S | — | DONE |
 | 003  | Reflexiones: escritura atómica + conservar texto si falla | P1 | S | 002 (misma pantalla, coordinar) | DONE |
-| 004  | Contigo: sync bidireccional de hábitos/revisiones + tests authHelpers | P1 | M | — | TODO |
-| 005  | Scraper: vacío=error, fecha inválida vetada, pytest en CI, workflow sin inyección | P1 | M | — | TODO |
+| 004  | Contigo: sync bidireccional de hábitos/revisiones + tests authHelpers | P1 | M | — | DONE |
+| 005  | Scraper: vacío=error, fecha inválida vetada, pytest en CI, workflow sin inyección | P1 | M | — | DONE |
 | 006  | Higiene de deps (4 muertas, jest dup) + pinear CLIs en pipelines | P2 | S | — | DONE |
-| 007  | Privacidad: respuestas de encuestas dejan de ser legibles públicamente (reglas versionadas) | P1* | M | — (deploy bloqueado por Integración D) | TODO |
+| 007  | ~~Privacidad: respuestas de encuestas dejan de ser legibles públicamente~~ | P1* | M | — | **REJECTED** (2026-07-22, decisión de producto — ver `docs/planes/BACKLOG.md` §3) |
 | 008  | Caché compartida en useFirebaseData + calendario stale-while-revalidate | P2 | M | mejor tras 001-005 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (con motivo) | REJECTED (con motivo)
@@ -29,10 +33,10 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (con motivo) | REJECTED (con 
 - **003 tras 002**: ambos tocan `ReflexionesScreen.tsx` (003 respeta la línea
   de fecha que 002 cambia). Ejecutables en cualquier orden, pero no en
   paralelo.
-- **007**: el cambio al fichero versionado es ejecutable ya; el **despliegue**
-  de reglas sigue bloqueado por el prerequisito documentado en
-  `docs/SEGURIDAD.md` (auth real en mcmpanel — "Integración D" de
-  `docs/planes/PLAN_INTEGRACIONES.md`). El plan NO despliega nada.
+- **007**: ~~el cambio al fichero versionado es ejecutable ya...~~ **REJECTED**
+  el 2026-07-22 — decisión de producto, el panel debe ver las respuestas. Ver
+  banner de anulación en `plans/007-privacidad-respuestas-encuestas.md` y
+  `docs/planes/BACKLOG.md` §3.
 - **008 al final**: es el cambio con más radio de acción (hook central de
   datos); mejor con el resto de fixes ya asentados.
 
@@ -87,6 +91,49 @@ haptics directos fuera del wrapper `h.*` (DEBT-07).
 6. **La parte OTA-able del plan Contigo** — recordatorio local diario +
    rachas en Home, antes del widget nativo (el propio
    PLAN_WIDGET_CONTIGO §4 la separa).
+
+## Follow-up 2026-07-22 (post-005) — visibilidad del resumen
+
+> Pedido explícito tras 005: los fallos parciales ya rompían el exit code
+> correctamente, pero no había ningún resumen visible sin abrir logs
+> completos, y el skip por "no es la hora" quedaba enterrado en texto plano.
+
+- **`main.py`**: nuevas `_append_step_summary`/`_build_summary_markdown` —
+  al final de cada run (normal o `--cleanup-only`) escriben una tabla
+  markdown con el resultado por fuente (`✅ OK` / `❌ N error(es)`) en
+  `$GITHUB_STEP_SUMMARY` (pestaña "Summary" del run de Actions). No-op fuera
+  de Actions (ejecución local). No cambia exit codes ni ningún
+  comportamiento existente — solo visibilidad.
+- **Workflow**: el job `check-time` ahora escribe también su veredicto
+  (procede / omitido) al step summary, y usa `::notice::` en el caso
+  "omitido" para que aparezca como anotación visible en la lista de checks
+  del run sin abrir logs — antes quedaba indistinguible de un día con
+  scraping real completado.
+- 3 tests nuevos (`tests/test_main.py`). Suite 102→105 verde.
+
+## Ejecución 2026-07-22 (plan 005)
+
+- **005**: los 4 pasos aplicados tal como estaba planeado. Sin drift. Entorno
+  local necesitó `cffi` (dependencia transitiva rota de `cryptography` en
+  este contenedor) para poder importar `firebase.client` en los tests —
+  nada que ver con el código del scraper. 5 tests nuevos
+  (`tests/test_base.py`: fecha ISO; `tests/test_main.py`: fetch vacío/con
+  solo `None`), más el test que estaba en rojo, arreglado. Suite completa
+  97→102 verde. Workflow: paso de pytest añadido antes del scraper, y los 4
+  inputs (`date`/`dry_run`/`backfill_dominicos`/`cleanup_only`) pasan a leerse
+  vía `env:` (`INPUT_*`), ninguno queda interpolado dentro de `run:`.
+
+## Ejecución 2026-07-22 (plan 004)
+
+- **004**: hidratación implementada tal como estaba planeada
+  (`fetchContigoHabits`/`fetchContigoRevisions` en `authHelpers.ts`, merge
+  puro en `utils/contigoMerge.ts`, efecto en `useContigoHabits.ts` dependiente
+  de `authUser`, hidratación de texto en `revision.tsx`). Sin drift real: el
+  único cambio detectado en `useContigoHabits.ts` desde que se escribió el
+  plan fue el refactor de `localISO` (Plan 002, ya DONE), ajeno al alcance.
+  19 tests nuevos (`authHelpers.test.ts` + `contigoMerge.test.ts`). Suite
+  completa 32/302 verde, typecheck y lint limpios. Detalle en
+  `mcm-app/CHANGELOG.md` 2026-07-22 20:15.
 
 ## Ejecución 2026-07-19 (planes 001, 002, 003, 006)
 

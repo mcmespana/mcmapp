@@ -364,6 +364,14 @@ desincronización de delegationList.
 
 ## Integración D — Seguridad Firebase (transversal) · prioridad MÁXIMA
 
+> **Nota de repriorización (2026-07-22):** la app está en **beta privada**,
+> no en gran producción, así que esto deja de ser una urgencia de incidente
+> activo — no hay prisa. Sigue siendo **importante** hacerlo bien antes de
+> escalar a más usuarios. Alcance en el repo `mcmapp`: solo **D3** (completar
+> `database.rules.json`); D1/D2/D4/D5 viven en `mcmpanel` y requieren
+> añadirlo a la sesión. Orden real de ejecución y decisión bloqueante (D2) en
+> `docs/planes/BACKLOG.md` §1 y §4.
+
 **Contexto** (ver aviso en `docs/SEGURIDAD.md`): `mcm-app/database.rules.json`
 asume que el panel escribe con Admin SDK, pero el panel usa el SDK cliente sin
 auth y sus funciones `api/` usan REST sin token. Hoy las reglas reales de

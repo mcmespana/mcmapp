@@ -1,5 +1,12 @@
 # Plan — Modo Carismochito (onboarding, colección y comportamiento)
 
+> **Pendiente de ejecutar bien** (§1–4, ver `docs/planes/BACKLOG.md` §1 — es
+> uno de los dos ítems de cierre de la cola, junto con el nuevo concepto
+> **Panel Pañuelo**: `docs/planes/PLAN_PANEL_PANUELO.md`, un espacio con
+> modelo 3D del pañuelo del MCM donde colocar chapas/emblemas ganados por
+> participar en actividades — con aire de familia con la colección de §4 de
+> aquí abajo. Sin plan funcional todavía, solo anotado.)
+>
 > Estado actual: el modo se activa agitando el móvil 5 veces → cuenta atrás 3s →
 > activo (tiñe la UI de verde, mascota/overlay). Se desactiva tocando el badge
 > flotante o agitando. Persiste entre sesiones.

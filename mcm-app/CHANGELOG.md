@@ -40,6 +40,70 @@
   El workflow `.github/workflows/ota-preview.yml` publica en la branch EAS
   `preview` con cada push a la rama git `preview`.
 
+## 2026-07-22 20:15 — Plan 004: hábitos y revisiones de Contigo se restauran al iniciar sesión
+
+- **Bug arreglado**: los hábitos diarios (`users/{uid}/contigo/habits`) y las
+  revisiones (`users/{uid}/contigo/revisions`) se subían a RTDB al marcar,
+  pero nada los leía de vuelta — reinstalar la app o cambiar de dispositivo
+  con sesión iniciada borraba rachas, heatmap y el texto de revisiones
+  antiguas aunque siguieran en la nube.
+- **`utils/authHelpers.ts`**: nuevas `fetchContigoHabits`/`fetchContigoRevisions`
+  (mismo patrón que `fetchContigoBookmarks`), y `stripUndefined` pasa a
+  exportarse para poder testearla directamente.
+- **`hooks/useContigoHabits.ts`**: al montar o cambiar de sesión, hidrata
+  desde RTDB y fusiona con lo local vía el nuevo helper puro
+  `utils/contigoMerge.ts` — por fecha, gana el registro con más hábitos
+  marcados, a igualdad el local (un remoto desactualizado nunca "desmarca"
+  progreso reciente); las fechas donde lo local aportó algo se re-suben.
+  `reloadRecords` (recarga al enfocar la pantalla) sigue siendo solo local,
+  sin tocar red.
+- **`app/(tabs)/contigo/revision.tsx`**: si no hay entrada local para el día
+  seleccionado y hay sesión, hidrata el texto completo (gratitud + revisión)
+  desde RTDB y lo persiste en local para no repetir la descarga.
+- **Tests nuevos**: `__tests__/authHelpers.test.ts` (14, cubre también
+  `writeUserOnLogin`/`deleteUserData` que no tenían ninguno) y
+  `__tests__/contigoMerge.test.ts` (5, semántica de fusión). Suite completa:
+  32 ficheros, 302 tests verdes.
+- Plan `plans/004-contigo-sync-bidireccional.md` → DONE. Ver
+  `docs/planes/BACKLOG.md` — siguiente en la cola: Plan 005 (scraper).
+
+## 2026-07-22 19:10 — Backlog único de planes (`docs/planes/BACKLOG.md`); anulado el plan 007; archivado MEJORAS.md
+
+- **Nuevo `docs/planes/BACKLOG.md`**: fuente única de verdad del orden de
+  ejecución de todos los planes (tácticos de `plans/` + estratégicos de
+  `docs/planes/`), con protocolo de trabajo explícito — qué hacer cuando se
+  dice "seguimos" (avanza la cola principal) o "me sobran tokens" (muestra
+  el backlog y deja repriorizar sin avanzar la cola), y qué ítems están
+  bloqueados por una decisión del usuario (con dónde consultar el contexto y
+  qué preguntar antes de ejecutar). Referenciado desde `CLAUDE.md` (raíz,
+  regla 9) y `docs/README.md` como punto de entrada.
+- **Cola principal fijada**: Plan 004 → Plan 005 → Plan 008 (Opus, con foco
+  extra en medir rendimiento real) → UI Nativa → Integración D (repriorizada,
+  ver abajo) → Widget de Contigo (al final) → Carismochito + Panel Pañuelo
+  (cierre). Fuera de la cola: Calidad Fase 1 (solo si piden hueco),
+  Integraciones resto, y una "bolsa nativa" para la próxima build de tienda
+  (el fix del modo alpha de arriba ya está mergeado, solo pendiente de build).
+- **Plan 007 anulado** (privacidad de respuestas de encuestas): decisión de
+  producto — el panel debe poder ver nombres/respuestas, no es un bug.
+  Banner de anulación en `plans/007-privacidad-respuestas-encuestas.md`,
+  estado `REJECTED` en `plans/README.md`.
+- **Integración D repriorizada**: ya no es urgencia de incidente (la app está
+  en beta privada, no en gran producción); sigue siendo importante hacerla
+  pero sin prisa. Nota añadida en `docs/planes/PLAN_INTEGRACIONES.md`.
+- **`docs/planes/MEJORAS.md` archivado** a `docs/planes/archivo/MEJORAS.md`
+  (superseded por `BACKLOG.md` + `TODO.md` + `PLAN_CALIDAD.md`). Multilenguaje
+  queda anotado como "deuda futura" (no ahora); enlaces legales en "Más"
+  queda como tarea pequeña pendiente de que el usuario pase las 3 URLs.
+- **Nuevo concepto anotado** (sin plan funcional, solo idea):
+  `docs/planes/PLAN_PANEL_PANUELO.md` — espacio con modelo 3D del pañuelo del
+  MCM donde colocar chapas ganadas por participar en actividades. Cierre
+  final de la cola junto con Carismochito.
+- Archivos: `docs/planes/BACKLOG.md`, `docs/planes/PLAN_PANEL_PANUELO.md`,
+  `docs/planes/PLAN_CARISMOCHITO.md`, `docs/planes/PLAN_INTEGRACIONES.md`,
+  `docs/README.md`, `CLAUDE.md` (raíz), `plans/README.md`,
+  `plans/007-privacidad-respuestas-encuestas.md`, `mcm-app/TODO.md`; retirado
+  `docs/planes/RESUMEN_EJECUTIVO.md` (fusionado en BACKLOG.md).
+
 ## 2026-07-19 18:30 — Seguridad cantoral (XSS), bug de fecha UTC, reflexiones atómicas, limpieza de deps
 
 - **Seguridad (cantoral)**: `author`/`title`/el badge de tono se escapan

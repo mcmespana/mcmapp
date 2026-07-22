@@ -28,6 +28,7 @@ Códigos de salida:
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -115,16 +116,31 @@ def run(
     if cleanup_only:
         deleted = cleanup_old_dates(dry_run=dry_run)
         log.info(f"Cleanup finalizado. Borradas: {deleted}")
+        _append_step_summary(
+            f"### 🧹 Scraper Lecturas — solo limpieza ({target_date})\n\n"
+            f"Fechas antiguas borradas: **{deleted}**\n"
+        )
         return 0
 
     scrapers = build_scrapers(backfill_dominicos=backfill_dominicos, target_date=target_date)
-    errors = sum(_run_one(s, dry_run=dry_run) for s in scrapers)
+    results = [(s.__class__.__name__, _run_one(s, dry_run=dry_run)) for s in scrapers]
+    errors = sum(n for _, n in results)
 
     # Always run cleanup at end of nightly cycle
-    cleanup_old_dates(dry_run=dry_run)
+    deleted = cleanup_old_dates(dry_run=dry_run)
 
     log.info("=" * 60)
-    return _exit_code(errors, len(scrapers))
+    exit_code = _exit_code(errors, len(scrapers))
+    _append_step_summary(
+        _build_summary_markdown(
+            target_date=target_date,
+            dry_run=dry_run,
+            results=results,
+            deleted=deleted,
+            exit_code=exit_code,
+        )
+    )
+    return exit_code
 
 
 def _run_one(scraper: BaseScraper, *, dry_run: bool) -> int:
@@ -137,6 +153,10 @@ def _run_one(scraper: BaseScraper, *, dry_run: bool) -> int:
         data_list = scraper.fetch()
     except Exception as e:
         log.error(f"[{name}] Error inesperado en fetch: {e}", exc_info=True)
+        return 1
+
+    if not any(data is not None for data in data_list):
+        log.error(f"[{name}] fetch() no devolvió ningún dato")
         return 1
 
     writes = scraper.WRITES_NODES
@@ -235,6 +255,56 @@ def _exit_code(errors: int, total_scrapers: int) -> int:
         return 1
     log.error("TODOS los scrapers fallaron.")
     return 2
+
+
+def _append_step_summary(markdown: str) -> None:
+    """Añade `markdown` al resumen del run de GitHub Actions (pestaña
+    "Summary" del run, visible sin abrir logs). No cambia el exit code ni
+    ningún comportamiento — solo visibilidad. No-op fuera de Actions (p.ej.
+    ejecuciones locales, donde $GITHUB_STEP_SUMMARY no existe)."""
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not summary_path:
+        return
+    try:
+        with open(summary_path, "a", encoding="utf-8") as f:
+            f.write(markdown + "\n")
+    except OSError as e:
+        log.warning(f"No se pudo escribir GITHUB_STEP_SUMMARY: {e}")
+
+
+def _build_summary_markdown(
+    *,
+    target_date: str,
+    dry_run: bool,
+    results: list[tuple[str, int]],
+    deleted: int,
+    exit_code: int,
+) -> str:
+    """Tabla en markdown con el resultado por fuente, para que un fallo
+    parcial (una web que cambió su HTML) se vea de un vistazo en el resumen
+    del run, sin tener que abrir los logs completos."""
+    status = {
+        0: "✅ Todo OK",
+        1: "⚠️ Fallo parcial — revisar qué fuente falló abajo",
+        2: "❌ Fallaron TODAS las fuentes",
+    }[exit_code]
+
+    lines = [
+        f"### 📖 Scraper Lecturas — {target_date}"
+        + (" (dry-run)" if dry_run else ""),
+        "",
+        f"**Resultado:** {status}",
+        "",
+        "| Fuente | Estado |",
+        "| --- | --- |",
+    ]
+    for name, errs in results:
+        lines.append(
+            f"| {name} | {'✅ OK' if errs == 0 else f'❌ {errs} error(es)'} |"
+        )
+    lines.append("")
+    lines.append(f"Fechas antiguas borradas en la limpieza: {deleted}")
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------

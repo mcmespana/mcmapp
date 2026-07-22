@@ -62,12 +62,27 @@ jobs:
             fi
           fi
 
+          NOW="$(TZ='Europe/Madrid' date '+%H:%M %Z')"
+
           if [ "$should_run" = "true" ]; then
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "Proceder con el scraper."
+            {
+              echo "### ▶️ Scraper Lecturas: procede"
+              echo "Hora en España: $NOW. Disparo: ${{ github.event_name }} (cron ${SCHEDULE:-manual})."
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "should_run=false" >> "$GITHUB_OUTPUT"
             echo "Disparo del cron fuera de temporada o antes de la 1:00, omitiendo."
+            # ::notice:: para que el skip sea visible en la lista de checks del
+            # run sin tener que abrir logs — es el comportamiento ESPERADO del
+            # doble-cron (uno de los dos disparos diarios siempre cae fuera de
+            # temporada), pero solo si el OTRO disparo del día sí procedió.
+            echo "::notice title=Scraper Lecturas omitido::Fuera de temporada o antes de la 1:00 en España (hora: $NOW, cron: ${SCHEDULE:-n/a}). Esperado en el doble-cron diario — solo preocupante si NINGÚN disparo del día llega a ejecutar el scraper."
+            {
+              echo "### ⏭️ Scraper Lecturas: omitido"
+              echo "Fuera de temporada o antes de la 1:00 en España (hora: $NOW, cron: ${SCHEDULE:-n/a})."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   scrape:
@@ -92,23 +107,33 @@ jobs:
         working-directory: scraper-lecturas
         run: pip install -r requirements.txt
 
+      - name: Tests
+        working-directory: scraper-lecturas
+        run: |
+          pip install -r requirements-dev.txt
+          python -m pytest tests/ -q
+
       - name: Ejecutar scraper
         working-directory: scraper-lecturas
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_DATABASE_URL: ${{ secrets.EXPO_PUBLIC_FIREBASE_DATABASE_URL }}
+          INPUT_DATE: ${{ github.event.inputs.date }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
+          INPUT_BACKFILL: ${{ github.event.inputs.backfill_dominicos }}
+          INPUT_CLEANUP_ONLY: ${{ github.event.inputs.cleanup_only }}
         run: |
           ARGS=""
-          if [ -n "${{ github.event.inputs.date }}" ]; then
-            ARGS="$ARGS --date ${{ github.event.inputs.date }}"
+          if [ -n "$INPUT_DATE" ]; then
+            ARGS="$ARGS --date $INPUT_DATE"
           fi
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
-          if [ "${{ github.event.inputs.backfill_dominicos }}" = "true" ]; then
+          if [ "$INPUT_BACKFILL" = "true" ]; then
             ARGS="$ARGS --backfill-dominicos"
           fi
-          if [ "${{ github.event.inputs.cleanup_only }}" = "true" ]; then
+          if [ "$INPUT_CLEANUP_ONLY" = "true" ]; then
             ARGS="$ARGS --cleanup-only"
           fi
           python main.py $ARGS

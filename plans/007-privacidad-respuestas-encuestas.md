@@ -1,6 +1,17 @@
 # Plan 007: Dejar de exponer públicamente las respuestas (con nombre real) de encuestas y evaluaciones
 
-> **Executor instructions**: Follow this plan step by step. Run every
+> ⛔ **ANULADO (2026-07-22) — no ejecutar.** Decisión de producto: el panel
+> **debe** poder ver nombres/respuestas de encuestas, es una funcionalidad
+> deseada y no un bug. El diseño actual (`.read: true` en `/surveys` y
+> `/activities`) se mantiene tal cual. Motivo adicional: la app está en
+> **beta privada**, no en gran producción, así que no hay urgencia de
+> exposición real. Si en el futuro aparece un bug de reglas **no
+> relacionado** con esta visibilidad deseada del panel, evaluarlo aparte —
+> la premisa de este plan concreto ya no aplica. Ver
+> `docs/planes/BACKLOG.md` §3. El resto del documento se deja como
+> referencia técnica (útil si algún día se retoma el análisis).
+
+> **Executor instructions** (histórico, ya no aplica — ver anulación arriba): Follow this plan step by step. Run every
 > verification command and confirm the expected result before moving to the
 > next step. If anything in the "STOP conditions" section occurs, stop and
 > report — do not improvise. When done, update the status row for this plan
