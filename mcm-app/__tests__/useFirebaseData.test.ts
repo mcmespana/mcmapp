@@ -10,7 +10,10 @@
  * - Que se detecte correctamente el estado offline
  */
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { useFirebaseData } from '@/hooks/useFirebaseData';
+import {
+  useFirebaseData,
+  __resetNodeCacheForTests,
+} from '@/hooks/useFirebaseData';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { get } from 'firebase/database';
 import { getNetworkStateAsync } from 'expo-network';
@@ -24,10 +27,11 @@ afterAll(() => {
   console.error = originalError;
 });
 
-// Reiniciar mocks antes de cada test
+// Reiniciar mocks y la caché de módulo del hook antes de cada test.
 beforeEach(() => {
   jest.clearAllMocks();
   (AsyncStorage.clear as jest.Mock)();
+  __resetNodeCacheForTests();
 });
 
 describe('useFirebaseData', () => {
@@ -170,5 +174,82 @@ describe('useFirebaseData', () => {
     });
 
     expect(result.current.data).toBeNull();
+  });
+});
+
+describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
+  it('coalesce el fetch remoto: dos hooks del mismo path hacen un solo get()', async () => {
+    (get as jest.Mock).mockResolvedValue({
+      exists: () => true,
+      val: () => ({ updatedAt: '100', data: { n: 1 } }),
+    });
+
+    const { result } = renderHook(() => ({
+      a: useFirebaseData<{ n: number }>('songs', 'shared'),
+      b: useFirebaseData<{ n: number }>('songs', 'shared'),
+    }));
+
+    await waitFor(() => {
+      expect(result.current.a.loading).toBe(false);
+      expect(result.current.b.loading).toBe(false);
+    });
+
+    // Un único round-trip a Firebase pese a haber dos consumidores.
+    expect((get as jest.Mock).mock.calls.length).toBe(1);
+    expect(result.current.a.data).toEqual({ n: 1 });
+    expect(result.current.b.data).toEqual({ n: 1 });
+  });
+
+  it('un segundo mount se sirve de la caché de módulo (sin releer AsyncStorage)', async () => {
+    (get as jest.Mock)
+      // Mount A (sin caché): descarga completa del nodo.
+      .mockResolvedValueOnce({
+        exists: () => true,
+        val: () => ({ updatedAt: '100', data: { n: 1 } }),
+      })
+      // Mount B (caché de módulo caliente): solo comprueba metadatos, iguales.
+      .mockResolvedValueOnce({ exists: () => true, val: () => '100' }) // updatedAt
+      .mockResolvedValueOnce({ exists: () => true, val: () => false }); // hidden
+
+    const a = renderHook(() => useFirebaseData<{ n: number }>('songs', 'warm'));
+    await waitFor(() => expect(a.result.current.loading).toBe(false));
+
+    const getItemForData = () =>
+      (AsyncStorage.getItem as jest.Mock).mock.calls.filter(
+        (c) => c[0] === 'warm_data',
+      ).length;
+    const callsAfterA = getItemForData();
+
+    const b = renderHook(() => useFirebaseData<{ n: number }>('songs', 'warm'));
+    await waitFor(() => expect(b.result.current.loading).toBe(false));
+
+    // B no vuelve a leer `warm_data` de AsyncStorage: lo sirve la caché de módulo.
+    expect(getItemForData()).toBe(callsAfterA);
+    expect(b.result.current.data).toEqual({ n: 1 });
+  });
+
+  it('aplica el transform de cada instancia sobre los mismos datos crudos', async () => {
+    (get as jest.Mock).mockResolvedValue({
+      exists: () => true,
+      val: () => ({ updatedAt: '100', data: [1, 2, 3] }),
+    });
+
+    const doble = (d: number[]) => d.map((n) => n * 2);
+    const cuenta = (d: number[]) => d.length;
+
+    const { result } = renderHook(() => ({
+      a: useFirebaseData<number[]>('songs', 'shared', doble),
+      b: useFirebaseData<number>('songs', 'shared', cuenta),
+    }));
+
+    await waitFor(() => {
+      expect(result.current.a.loading).toBe(false);
+      expect(result.current.b.loading).toBe(false);
+    });
+
+    expect(result.current.a.data).toEqual([2, 4, 6]);
+    expect(result.current.b.data).toBe(3);
+    // Sigue siendo un único fetch pese a los transforms distintos.
+    expect((get as jest.Mock).mock.calls.length).toBe(1);
   });
 });
