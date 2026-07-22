@@ -18,6 +18,28 @@
 
 ---
 
+## 2026-07-22 21:00 — Fix: el modo alpha (7 taps) no conectaba al canal OTA preview
+
+- **Causa raíz**: `Updates.setUpdateURLAndRequestHeadersOverride()` exige que el
+  binario esté construido con `updates.disableAntiBrickingMeasures: true` en
+  `app.json`. Sin ese flag, expo-updates lanza un error que el `try/catch` de
+  `PreviewChannelContext` silenciaba — el toggle parecía funcionar pero el
+  dispositivo seguía en el canal `production`.
+- **Fix**: añadido `"disableAntiBrickingMeasures": true` al bloque `updates` de
+  `app.json`, y el `catch` ahora loguea con `logger.warn` para que el fallo sea
+  visible. (`app.json`, `contexts/PreviewChannelContext.tsx`)
+- ⚠️ **Requiere build de tienda**: el flag se hornea en el binario nativo
+  (Expo.plist / AndroidManifest). Los binarios ya instalados seguirán ignorando
+  el toggle hasta que se publique una nueva build de producción con este cambio.
+  Las OTAs no pueden activar el flag — este commit en sí es OTA-safe (no añade
+  módulos nativos nuevos), simplemente el toggle no surtirá efecto hasta la
+  próxima build de tienda.
+- El resto de la cadena ya estaba bien: 7 taps (`SecretMenuTrigger` →
+  `useSecretTap`) → modal Laboratorio Alpha → flag en AsyncStorage → override al
+  arrancar → `useOTAUpdate` hace `checkForUpdateAsync` contra el canal `preview`.
+  El workflow `.github/workflows/ota-preview.yml` publica en la branch EAS
+  `preview` con cada push a la rama git `preview`.
+
 ## 2026-07-19 18:30 — Seguridad cantoral (XSS), bug de fecha UTC, reflexiones atómicas, limpieza de deps
 
 - **Seguridad (cantoral)**: `author`/`title`/el badge de tono se escapan
