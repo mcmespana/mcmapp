@@ -30,7 +30,7 @@
 | **Después** | UI Nativa |
 | **Bloqueado, no tocar sin preguntar** | Integración D, Widget de Contigo, Panel Pañuelo |
 | **Oportunista (solo si piden hueco)** | Calidad Fase 1, Integraciones resto, bolsa nativa |
-| **Hecho hoy** | ✅ Plan 004 y ✅ Plan 005 (2026-07-22) — ver `mcm-app/CHANGELOG.md` y `plans/README.md` |
+| **Hecho hoy** | ✅ Plan 004, ✅ Plan 005 + resumen visible, ✅ PR #298 (fix modo alpha, mergeada) — ver `mcm-app/CHANGELOG.md` y `plans/README.md` |
 
 ---
 
@@ -116,7 +116,7 @@
 
 | Qué | Origen | Nota |
 |---|---|---|
-| **PR #261** — fix modo alpha: `disableAntiBrickingMeasures` para el override del canal OTA preview | [github.com/mcmespana/mcmapp/pull/261](https://github.com/mcmespana/mcmapp/pull/261) — ya abierta, código listo | Solo necesita mergear + la próxima build de tienda para surtir efecto |
+| ✅ Fix modo alpha (`disableAntiBrickingMeasures`) | [PR #298](https://github.com/mcmespana/mcmapp/pull/298), mergeada a `main` 2026-07-22 | Código ya en `main`; el toggle en sí no surte efecto hasta la próxima build de tienda |
 | iPad: landscape nativo (`UISupportedInterfaceOrientations~ipad`) | `mcm-app/TODO.md` (prioridad alta) | Los layouts de iPad ya están listos, falta activar la orientación |
 | NSE iOS — imagen en notificación del sistema | `docs/planes/PLAN_INTEGRACIONES.md` A4.4 / `TODO.md` | Nuevo target iOS, requiere config plugin |
 | Android — channels de notificación por tipo | `docs/planes/PLAN_INTEGRACIONES.md` A4.2 | Cross-repo: el panel debe mandar `channelId` |
