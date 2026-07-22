@@ -18,6 +18,19 @@
 
 ---
 
+## 2026-07-22 23:15 — UI Nativa Fase 2: `AppPrimaryButton` (CTA unificado)
+
+- Nuevo `components/ui/AppPrimaryButton.tsx`: botón CTA estándar
+  ("Enviar/Guardar/Aceptar") que sustituye el `TouchableOpacity` + estilo a mano
+  que cada modal reimplementaba (azul lleno, icono opcional, spinner al enviar,
+  estado deshabilitado). Usa `PressableFeedback` (heroui) con `Scale` —la
+  primitiva de pulsación decidida para la app— y una prop `color` para que
+  Contigo (warm) y los eventos (color por evento) mantengan su paleta propia.
+- Migrados los CTAs de `SuggestSongModal`, `AppFeedbackModal` y `ReportBugsModal`.
+- **Decisiones de UI tomadas** (ver `docs/planes/PLAN_UI_NATIVA.md` §4): headers
+  nativos en pantallas "lista+detalle" y floating glass solo en heros de evento;
+  pulsación estándar `PressableFeedback`; Contigo/Eventos conservan su paleta.
+
 ## 2026-07-22 22:30 — Plan 008: caché de datos compartida (dedupe) + calendario stale-while-revalidate
 
 - **`useFirebaseData`**: nueva caché a nivel de módulo compartida entre las

@@ -7,13 +7,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   View,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getDatabase, push, ref, set } from 'firebase/database';
 
 import BottomSheet from './BottomSheet';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { Colors, FeedbackCategoryColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
@@ -285,39 +285,16 @@ export default function AppFeedbackModal({
               </View>
             ) : null}
 
-            <TouchableOpacity
-              style={[
-                styles.submitBtn,
-                {
-                  backgroundColor: canSubmit
-                    ? selectedCategoryData!.color
-                    : hexAlpha(theme.icon, '40'),
-                },
-              ]}
+            <AppPrimaryButton
+              label={
+                isSubmitting ? 'Enviando...' : selectedCategoryData!.submitText
+              }
+              icon={selectedCategoryData!.icon}
+              color={selectedCategoryData!.color}
               onPress={handleSubmit}
               disabled={!canSubmit}
-              activeOpacity={0.8}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <MaterialIcons
-                  name={selectedCategoryData!.icon}
-                  size={18}
-                  color={canSubmit ? '#fff' : theme.icon}
-                />
-              )}
-              <Text
-                style={[
-                  styles.submitBtnText,
-                  { color: canSubmit ? '#fff' : theme.icon },
-                ]}
-              >
-                {isSubmitting
-                  ? 'Enviando...'
-                  : selectedCategoryData!.submitText}
-              </Text>
-            </TouchableOpacity>
+              loading={isSubmitting}
+            />
           </>
         )}
       </ScrollView>
@@ -390,17 +367,5 @@ const styles = StyleSheet.create({
     color: APPLE_SYSTEM_RED,
     fontSize: 13,
     fontWeight: '500',
-  },
-  submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 15,
-    borderRadius: radii.md,
-  },
-  submitBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
   },
 });
