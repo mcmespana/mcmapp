@@ -29,6 +29,30 @@
   `ComunicaGestionScreen.tsx` (administradores).
 - Archivo: `app/screens/ComunicaScreen.tsx`
 
+## 2026-07-22 20:15 — Plan 004: hábitos y revisiones de Contigo se restauran al iniciar sesión
+
+- **Bug arreglado**: los hábitos diarios (`users/{uid}/contigo/habits`) y las
+  revisiones (`users/{uid}/contigo/revisions`) se subían a RTDB al marcar,
+  pero nada los leía de vuelta — reinstalar la app o cambiar de dispositivo
+  con sesión iniciada borraba rachas, heatmap y el texto de revisiones
+  antiguas aunque siguieran en la nube.
+- **`utils/authHelpers.ts`**: nuevas `fetchContigoHabits`/`fetchContigoRevisions`
+  (mismo patrón que `fetchContigoBookmarks`), y `stripUndefined` pasa a
+  exportarse para poder testearla directamente.
+- **`hooks/useContigoHabits.ts`**: al montar o cambiar de sesión, hidrata
+  desde RTDB y fusiona con lo local vía el nuevo helper puro
+  `utils/contigoMerge.ts` — por fecha, gana el registro con más hábitos
+  marcados, a igualdad el local (un remoto desactualizado nunca "desmarca"
+  progreso reciente); las fechas donde lo local aportó algo se re-suben.
+  `reloadRecords` (recarga al enfocar la pantalla) sigue siendo solo local,
+  sin tocar red.
+- **`app/(tabs)/contigo/revision.tsx`**: si no hay entrada local para el día
+  seleccionado y hay sesión, hidrata el texto completo (gratitud + revisión)
+  desde RTDB y lo persiste en local para no repetir la descarga.
+- **Tests nuevos**: `__tests__/authHelpers.test.ts` (14, cubre también
+  `writeUserOnLogin`/`deleteUserData` que no tenían ninguno) y
+  `__tests__/contigoMerge.test.ts` (5, semántica de fusión).
+
 ---
 
 ## 2026-07-19 16:45 — Quick wins de la auditoría: logging de registro push y limpieza

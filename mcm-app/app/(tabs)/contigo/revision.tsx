@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   Text,
@@ -28,7 +34,10 @@ import {
 import { BreathingPhase } from '@/components/contigo/BreathingPhase';
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { useAuth } from '@/contexts/AuthContext';
-import { syncContigoRevision } from '@/utils/authHelpers';
+import {
+  syncContigoRevision,
+  fetchContigoRevisions,
+} from '@/utils/authHelpers';
 
 const REVISION_STORAGE = '@contigo_revision_';
 
@@ -84,41 +93,60 @@ export default function RevisionScreen() {
 
   const totalSteps = 2;
 
-  // Load any persisted entry for the selected date.
+  // Aplica un registro de revisión (local o hidratado de RTDB) al formulario.
   // Mode is read from the saved record (no inference from array shape).
+  const applyRevisionData = useCallback((raw: string) => {
+    try {
+      const data = JSON.parse(raw);
+      const savedMode: Mode = data?.grateful?.mode === 'free' ? 'free' : 'list';
+      setMode(savedMode);
+      const g: string[] = Array.isArray(data?.grateful?.items)
+        ? data.grateful.items
+        : [];
+      if (savedMode === 'free') {
+        setSingleGrat(g[0] || '');
+        setItems(['', '', '']);
+      } else {
+        setItems(g.length >= 3 ? g : [...g, ...Array(3 - g.length).fill('')]);
+        setSingleGrat('');
+      }
+      setRevText(data?.grateful?.revision || '');
+    } catch {}
+  }, []);
+
+  // Carga la entrada guardada del día seleccionado: local primero; si no hay
+  // nada local y hay sesión, hidrata desde RTDB (multi-dispositivo /
+  // reinstalación). Gana el que exista; el local nunca se pisa con remoto.
   useEffect(() => {
     if (!selDate) return;
-    AsyncStorage.getItem(REVISION_STORAGE + selDate)
-      .then((raw) => {
-        if (!raw) {
-          setItems(['', '', '']);
-          setSingleGrat('');
-          setRevText('');
-          setMode('list');
-          return;
-        }
-        try {
-          const data = JSON.parse(raw);
-          const savedMode: Mode =
-            data?.grateful?.mode === 'free' ? 'free' : 'list';
-          setMode(savedMode);
-          const g: string[] = Array.isArray(data?.grateful?.items)
-            ? data.grateful.items
-            : [];
-          if (savedMode === 'free') {
-            setSingleGrat(g[0] || '');
-            setItems(['', '', '']);
-          } else {
-            setItems(
-              g.length >= 3 ? g : [...g, ...Array(3 - g.length).fill('')],
-            );
-            setSingleGrat('');
-          }
-          setRevText(data?.grateful?.revision || '');
-        } catch {}
-      })
-      .catch(() => {});
-  }, [selDate]);
+    let mounted = true;
+    (async () => {
+      const raw = await AsyncStorage.getItem(REVISION_STORAGE + selDate).catch(
+        () => null,
+      );
+      if (raw) {
+        applyRevisionData(raw);
+        return;
+      }
+      setItems(['', '', '']);
+      setSingleGrat('');
+      setRevText('');
+      setMode('list');
+
+      if (!authUser) return;
+      const remote = await fetchContigoRevisions(authUser.uid);
+      const remoteRecord = remote[selDate];
+      if (!remoteRecord || !mounted) return;
+      const remoteRaw = JSON.stringify({ ...remoteRecord, ts: Date.now() });
+      await AsyncStorage.setItem(REVISION_STORAGE + selDate, remoteRaw).catch(
+        () => {},
+      );
+      if (mounted) applyRevisionData(remoteRaw);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [selDate, authUser, applyRevisionData]);
 
   // Cleanup any pending "go back after celebration" timer on unmount or
   // when the user navigates away manually before it fires.
