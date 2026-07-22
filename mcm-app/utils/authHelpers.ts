@@ -10,7 +10,7 @@ function db() {
 
 /** RTDB rechaza valores `undefined`. Elimina recursivamente las claves cuyo
  *  valor sea `undefined` antes de escribir. */
-function stripUndefined<T>(value: T): T {
+export function stripUndefined<T>(value: T): T {
   if (Array.isArray(value)) {
     return value.map((v) => stripUndefined(v)) as unknown as T;
   }
@@ -105,6 +105,28 @@ export async function syncContigoHabit(
   }
 }
 
+/** Descarga todos los hábitos diarios de CONTIGO del usuario desde RTDB. Se
+ *  usa para hidratar el almacenamiento local tras iniciar sesión o cambiar
+ *  de dispositivo (antes solo subían, nunca se leían de vuelta). */
+export async function fetchContigoHabits(
+  uid: string,
+): Promise<Record<string, DayRecord>> {
+  try {
+    const habitsRef = ref(db(), `users/${uid}/contigo/habits`);
+    const snap = await get(habitsRef);
+    if (!snap.exists()) return {};
+    const val = snap.val() as Record<string, DayRecord>;
+    const out: Record<string, DayRecord> = {};
+    for (const [date, record] of Object.entries(val)) {
+      if (record && typeof record === 'object') out[date] = record;
+    }
+    return out;
+  } catch (err) {
+    logger.error('[authHelpers] fetchContigoHabits:', err);
+    return {};
+  }
+}
+
 /** Sincroniza un bookmark de evangelio con RTDB.
  *
  *  A diferencia del nodo global `seccion_oracion/lecturas/*` (que un Job limpia
@@ -165,5 +187,35 @@ export async function syncContigoRevision(
     await set(revisionRef, stripUndefined(data));
   } catch (err) {
     logger.error('[authHelpers] syncContigoRevision:', err);
+  }
+}
+
+export interface StoredContigoRevision {
+  date: string;
+  type: string;
+  grateful: { mode: string; items: string[]; revision: string };
+}
+
+/** Descarga todas las revisiones diarias de CONTIGO del usuario desde RTDB.
+ *  Se usa para hidratar el texto guardado localmente tras iniciar sesión o
+ *  cambiar de dispositivo. */
+export async function fetchContigoRevisions(
+  uid: string,
+): Promise<Record<string, StoredContigoRevision>> {
+  try {
+    const revisionsRef = ref(db(), `users/${uid}/contigo/revisions`);
+    const snap = await get(revisionsRef);
+    if (!snap.exists()) return {};
+    const val = snap.val() as Record<string, StoredContigoRevision>;
+    const out: Record<string, StoredContigoRevision> = {};
+    for (const [date, record] of Object.entries(val)) {
+      if (record && typeof record === 'object' && record.grateful) {
+        out[date] = record;
+      }
+    }
+    return out;
+  } catch (err) {
+    logger.error('[authHelpers] fetchContigoRevisions:', err);
+    return {};
   }
 }

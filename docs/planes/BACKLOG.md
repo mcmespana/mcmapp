@@ -19,17 +19,18 @@
 ## 🧭 Puntero rápido
 
 > **Si el usuario dice "seguimos": el siguiente ítem no empezado de la Cola
-> Principal (abajo) es el que toca.** Ahora mismo eso es el **Plan 004**.
+> Principal (abajo) es el que toca.** Ahora mismo eso es el **Plan 005**.
 >
 > Actualiza esta caja cada vez que se cierra un ítem — es lo primero que
 > lee cualquiera que retome esto.
 
 | | |
 |---|---|
-| **Ahora mismo (en curso / siguiente)** | Plan 004 → luego Plan 005 |
+| **Ahora mismo (en curso / siguiente)** | Plan 005 (scraper) |
 | **Después** | Plan 008 (Opus) |
 | **Bloqueado, no tocar sin preguntar** | Integración D, Widget de Contigo, Panel Pañuelo |
 | **Oportunista (solo si piden hueco)** | Calidad Fase 1, Integraciones resto, bolsa nativa |
+| **Hecho hoy** | ✅ Plan 004 (2026-07-22) — ver `mcm-app/CHANGELOG.md` |
 
 ---
 
@@ -68,8 +69,8 @@
 
 | # | Ítem | Modelo | 🔒 Decisión | Estado | Documento técnico |
 |---|---|---|---|---|---|
-| 1 | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers` | Sonnet | No | ⏳ Siguiente | `plans/004-contigo-sync-bidireccional.md` |
-| 2 | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet | No | ⏳ Pendiente | `plans/005-scraper-fiabilidad-y-ci.md` |
+| 1 | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers` | Sonnet | No | ✅ **DONE** (2026-07-22) | `plans/004-contigo-sync-bidireccional.md` |
+| 2 | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet | No | ⏳ Siguiente | `plans/005-scraper-fiabilidad-y-ci.md` |
 | 3 | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate | **Opus** — revisar rendimiento real (medir antes/después, no solo análisis estático); es el cambio de mayor radio de todo el backlog | No (aprobado, ejecutar con cuidado) | ⏳ Pendiente | `plans/008-cache-compartida-firebase-calendario.md` |
 | 4 | **UI Nativa** — headers nativos + componentes unificados | Sonnet (Fable en la cola mecánica de Fase 2) | Parcial — 3 decisiones bloquean partes concretas, no todo (ver §4) | 🟡 En curso (Fase 1 casi hecha) | `docs/planes/PLAN_UI_NATIVA.md` |
 | 5 | **Integración D** — Seguridad Firebase | Opus | **Sí** — D2 + repo `mcmpanel` (ver §4) | ⏳ Pendiente, importante pero no urgente | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" |
