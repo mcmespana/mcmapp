@@ -11,6 +11,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
+import { logger } from '@/utils/logger';
 
 /**
  * Activa o desactiva el canal "preview" de EAS Update en tiempo de ejecución,
@@ -79,8 +80,11 @@ function applyPreviewOverride(active: boolean) {
       updateUrl,
       requestHeaders: { 'expo-channel-name': PREVIEW_CHANNEL },
     });
-  } catch {
+  } catch (err) {
     // No bloqueante: si el override falla, la app sigue en su canal nativo.
+    // Requiere `updates.disableAntiBrickingMeasures: true` en app.json — en
+    // binarios construidos sin ese flag, expo-updates lanza aquí.
+    logger.warn('[PreviewChannel] No se pudo aplicar el override OTA:', err);
   }
 }
 
