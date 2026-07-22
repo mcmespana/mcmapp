@@ -18,6 +18,19 @@
 
 ---
 
+## 2026-07-22 21:13 — Comunica (familias): nueva URL de la web embebida
+
+- El WebView de "Comunica" (portal para familias) apunta ahora a
+  `https://comunica.movimientoconsolacion.com/aptest/?app=1` en lugar de la
+  raíz del dominio. El parámetro `?app=1` permite a la web detectar que se
+  carga desde la app.
+- La URL sigue hardcodeada como constante en el propio componente (no viene
+  de Firebase ni de un JSON de config) — mismo patrón que
+  `ComunicaGestionScreen.tsx` (administradores).
+- Archivo: `app/screens/ComunicaScreen.tsx`
+
+---
+
 ## 2026-07-19 16:45 — Quick wins de la auditoría: logging de registro push y limpieza
 
 - El registro de notificaciones push (`registerAndSaveToken`) ya no traga

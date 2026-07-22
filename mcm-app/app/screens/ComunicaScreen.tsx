@@ -23,7 +23,7 @@ const iframeStyles =
   Platform.OS === 'web' ? require('../../styles/comunica.module.css') : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-const COMUNICA_URL = 'https://comunica.movimientoconsolacion.com';
+const COMUNICA_URL = 'https://comunica.movimientoconsolacion.com/aptest/?app=1';
 
 // Color fijo para la zona del notch (azul oscuro del header de Comunica MCM)
 // Se usa color fijo porque la detección automática del color del header
