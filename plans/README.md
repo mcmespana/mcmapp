@@ -1,9 +1,13 @@
 # Implementation Plans
 
 Generados por la skill `improve` (auditoría **deep**) el 2026-07-18, sobre el
-commit `2d2822c`. Ejecutar en el orden de la tabla salvo que las dependencias
-digan otra cosa. Cada executor: lee el plan completo antes de empezar, respeta
+commit `2d2822c`. Cada executor: lee el plan completo antes de empezar, respeta
 sus STOP conditions y actualiza tu fila al terminar.
+
+> **El orden real de ejecución (combinando estos planes tácticos con los
+> estratégicos de `docs/planes/`) vive en `docs/planes/BACKLOG.md`** — esta
+> tabla es el detalle de la tanda táctica, no la cola global. Consulta el
+> backlog antes de decidir qué toca ahora.
 
 > Selección: la auditoría corrió de forma no interactiva; se escribieron
 > planes para los 8 hallazgos de mayor leverage (impacto ÷ esfuerzo,
@@ -19,7 +23,7 @@ sus STOP conditions y actualiza tu fila al terminar.
 | 004  | Contigo: sync bidireccional de hábitos/revisiones + tests authHelpers | P1 | M | — | TODO |
 | 005  | Scraper: vacío=error, fecha inválida vetada, pytest en CI, workflow sin inyección | P1 | M | — | TODO |
 | 006  | Higiene de deps (4 muertas, jest dup) + pinear CLIs en pipelines | P2 | S | — | DONE |
-| 007  | Privacidad: respuestas de encuestas dejan de ser legibles públicamente (reglas versionadas) | P1* | M | — (deploy bloqueado por Integración D) | TODO |
+| 007  | ~~Privacidad: respuestas de encuestas dejan de ser legibles públicamente~~ | P1* | M | — | **REJECTED** (2026-07-22, decisión de producto — ver `docs/planes/BACKLOG.md` §3) |
 | 008  | Caché compartida en useFirebaseData + calendario stale-while-revalidate | P2 | M | mejor tras 001-005 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (con motivo) | REJECTED (con motivo)
@@ -29,10 +33,10 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (con motivo) | REJECTED (con 
 - **003 tras 002**: ambos tocan `ReflexionesScreen.tsx` (003 respeta la línea
   de fecha que 002 cambia). Ejecutables en cualquier orden, pero no en
   paralelo.
-- **007**: el cambio al fichero versionado es ejecutable ya; el **despliegue**
-  de reglas sigue bloqueado por el prerequisito documentado en
-  `docs/SEGURIDAD.md` (auth real en mcmpanel — "Integración D" de
-  `docs/planes/PLAN_INTEGRACIONES.md`). El plan NO despliega nada.
+- **007**: ~~el cambio al fichero versionado es ejecutable ya...~~ **REJECTED**
+  el 2026-07-22 — decisión de producto, el panel debe ver las respuestas. Ver
+  banner de anulación en `plans/007-privacidad-respuestas-encuestas.md` y
+  `docs/planes/BACKLOG.md` §3.
 - **008 al final**: es el cambio con más radio de acción (hook central de
   datos); mejor con el resto de fixes ya asentados.
 

@@ -4,6 +4,11 @@
 > Agentes IA: consultad esta lista antes de trabajar. Al terminar una tarea,
 > **eliminadla de aquí** y documentad el cambio en `CHANGELOG.md` (las tareas
 > completadas no se acumulan en este archivo).
+>
+> Para saber **en qué orden** abordar los planes grandes (Calidad, UI Nativa,
+> Integraciones, Carismochito, Widget…) y qué decisiones están pendientes de
+> confirmación, ver `docs/planes/BACKLOG.md` — esta lista es el detalle de
+> tareas sueltas, no el orden global.
 
 ---
 

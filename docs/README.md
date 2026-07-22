@@ -27,11 +27,23 @@ Si cambias uno de estos formatos, actualiza el contrato.
 
 ## Planes técnicos
 
+> ★ **Empieza por [`BACKLOG.md`](planes/BACKLOG.md)** — es la fuente única de
+> verdad del orden de ejecución de TODOS los planes (tácticos de `plans/` +
+> estratégicos de aquí abajo), qué está bloqueado por una decisión pendiente,
+> y el protocolo de trabajo ("seguimos", "me sobran tokens"). Consúltalo
+> antes de priorizar nada.
+
 | Documento | Qué cubre |
 | --------- | --------- |
-| [MEJORAS.md](planes/MEJORAS.md) | Análisis técnico transversal (rendimiento, arquitectura, seguridad, DX, CI) con plan priorizado |
+| [BACKLOG.md](planes/BACKLOG.md) | ★ Orden de ejecución, decisiones pendientes, protocolo de trabajo |
 | [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md) | Plan de saneamiento de código por fases (archivos gigantes, contexts, tipos, tests) |
 | [PLAN_INTEGRACIONES.md](planes/PLAN_INTEGRACIONES.md) | Auditoría de integraciones app ↔ panel ↔ cantoral (2026-07): arreglos aplicados y acciones pendientes ejecutables una a una |
+| [PLAN_UI_NATIVA.md](planes/PLAN_UI_NATIVA.md) | Unificación de UI y componentes nativos (headers, botones, inputs, color) |
+| [PLAN_CARISMOCHITO.md](planes/PLAN_CARISMOCHITO.md) | Modo Carismochito: onboarding, colección, comportamiento |
+| [PLAN_WIDGET_CONTIGO.md](planes/PLAN_WIDGET_CONTIGO.md) | Widget nativo de hábitos diarios de Contigo |
+| [PLAN_PANEL_PANUELO.md](planes/PLAN_PANEL_PANUELO.md) | Concepto nuevo (sin plan funcional aún): colección de chapas en un pañuelo 3D |
+| [`plans/`](../plans/README.md) | Planes tácticos numerados (001–008), ejecutables paso a paso |
+| [archivo/MEJORAS.md](planes/archivo/MEJORAS.md) | 🗄️ Archivado — análisis técnico de mayo 2026, superseded por lo de arriba |
 
 Las tareas accionables derivadas de estos planes están en
 [`mcm-app/TODO.md`](../mcm-app/TODO.md).

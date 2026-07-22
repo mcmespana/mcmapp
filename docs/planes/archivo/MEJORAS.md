@@ -1,5 +1,13 @@
 # MEJORAS.md — Análisis técnico transversal de la MCM App
 
+> 🗄️ **ARCHIVADO (2026-07-22).** Documento obsoleto, movido aquí desde
+> `docs/planes/`. Sus acciones ya se repartieron entre `mcm-app/TODO.md`,
+> `docs/planes/PLAN_CALIDAD.md` y `docs/planes/BACKLOG.md` (fuente única de
+> verdad del orden de ejecución actual). Las dos decisiones que seguían
+> abiertas aquí quedan recogidas en `BACKLOG.md` §2.D (i18n, "deuda futura")
+> y §2.E (enlaces legales en "Más"). No uses este documento para priorizar
+> trabajo — solo como contexto histórico del análisis de mayo 2026.
+
 > **Estado (2026-06-12):** este documento es una foto del análisis de 2026-05-21.
 > Los quick wins de la primera tanda ya están ejecutados; lo pendiente está
 > recogido como tareas accionables en `mcm-app/TODO.md` (con referencia a la

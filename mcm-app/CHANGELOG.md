@@ -18,6 +18,43 @@
 
 ---
 
+## 2026-07-22 19:10 — Backlog único de planes (`docs/planes/BACKLOG.md`); anulado el plan 007; archivado MEJORAS.md
+
+- **Nuevo `docs/planes/BACKLOG.md`**: fuente única de verdad del orden de
+  ejecución de todos los planes (tácticos de `plans/` + estratégicos de
+  `docs/planes/`), con protocolo de trabajo explícito — qué hacer cuando se
+  dice "seguimos" (avanza la cola principal) o "me sobran tokens" (muestra
+  el backlog y deja repriorizar sin avanzar la cola), y qué ítems están
+  bloqueados por una decisión del usuario (con dónde consultar el contexto y
+  qué preguntar antes de ejecutar). Referenciado desde `CLAUDE.md` (raíz,
+  regla 9) y `docs/README.md` como punto de entrada.
+- **Cola principal fijada**: Plan 004 → Plan 005 → Plan 008 (Opus, con foco
+  extra en medir rendimiento real) → UI Nativa → Integración D (repriorizada,
+  ver abajo) → Widget de Contigo (al final) → Carismochito + Panel Pañuelo
+  (cierre). Fuera de la cola: Calidad Fase 1 (solo si piden hueco),
+  Integraciones resto, y una "bolsa nativa" para la próxima build de tienda
+  (incluye la PR #261, ya abierta, que necesita build para surtir efecto).
+- **Plan 007 anulado** (privacidad de respuestas de encuestas): decisión de
+  producto — el panel debe poder ver nombres/respuestas, no es un bug.
+  Banner de anulación en `plans/007-privacidad-respuestas-encuestas.md`,
+  estado `REJECTED` en `plans/README.md`.
+- **Integración D repriorizada**: ya no es urgencia de incidente (la app está
+  en beta privada, no en gran producción); sigue siendo importante hacerla
+  pero sin prisa. Nota añadida en `docs/planes/PLAN_INTEGRACIONES.md`.
+- **`docs/planes/MEJORAS.md` archivado** a `docs/planes/archivo/MEJORAS.md`
+  (superseded por `BACKLOG.md` + `TODO.md` + `PLAN_CALIDAD.md`). Multilenguaje
+  queda anotado como "deuda futura" (no ahora); enlaces legales en "Más"
+  queda como tarea pequeña pendiente de que el usuario pase las 3 URLs.
+- **Nuevo concepto anotado** (sin plan funcional, solo idea):
+  `docs/planes/PLAN_PANEL_PANUELO.md` — espacio con modelo 3D del pañuelo del
+  MCM donde colocar chapas ganadas por participar en actividades. Cierre
+  final de la cola junto con Carismochito.
+- Archivos: `docs/planes/BACKLOG.md`, `docs/planes/PLAN_PANEL_PANUELO.md`,
+  `docs/planes/PLAN_CARISMOCHITO.md`, `docs/planes/PLAN_INTEGRACIONES.md`,
+  `docs/README.md`, `CLAUDE.md` (raíz), `plans/README.md`,
+  `plans/007-privacidad-respuestas-encuestas.md`, `mcm-app/TODO.md`; retirado
+  `docs/planes/RESUMEN_EJECUTIVO.md` (fusionado en BACKLOG.md).
+
 ## 2026-07-19 18:30 — Seguridad cantoral (XSS), bug de fecha UTC, reflexiones atómicas, limpieza de deps
 
 - **Seguridad (cantoral)**: `author`/`title`/el badge de tono se escapan

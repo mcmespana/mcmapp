@@ -14,7 +14,7 @@
 ├── docs/                   ← Documentación del monorepo — ÍNDICE en docs/README.md
 │   ├── funcionalidades/    Notificaciones push, eventos, encuestas, arreglos del cantoral
 │   ├── contratos/          Contratos de datos App ↔ MCM Panel (notificaciones, encuestas, perfiles)
-│   ├── planes/             MEJORAS.md (análisis técnico) y PLAN_CALIDAD.md (saneamiento por fases)
+│   ├── planes/             BACKLOG.md (★ orden de ejecución, LEE ESTO PRIMERO) y planes por tema
 │   ├── desarrollo/         Sistema de diseño y mantenimiento de tabs
 │   └── SEGURIDAD.md        Reglas Firebase RTDB y gestión de credenciales
 ├── scraper-lecturas/       ← Scraper Python de lecturas litúrgicas (corre vía GitHub Action)
@@ -32,6 +32,7 @@
 6. **No toques archivos `.env.local`** — contienen credenciales de Firebase
 7. **Si añades paquetes con código nativo → añade `[skip-ota]` al commit y avisa al usuario** (ver OTA en `mcm-app/CLAUDE.md`)
 8. **Sin acceso a Firebase, usa `mcm-app/firebase-seed/`** como referencia de la estructura real de los nodos (perfiles, encuestas, eventos como el Jubileo 2025) para construir JSONs nuevos
+9. **Antes de retomar o priorizar cualquier plan/tarea de fondo, lee `docs/planes/BACKLOG.md` ENTERO** — es la fuente única de verdad del orden de ejecución, qué está bloqueado por una decisión pendiente del usuario, y el protocolo de trabajo (qué hacer cuando dicen "seguimos" o "me sobran tokens"). No priorices desde cero ni mires un solo `PLAN_*.md` suelto sin pasar antes por ahí.
 
 ## Comandos rápidos (desde mcm-app/)
 
@@ -65,6 +66,7 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Encuestas/evaluaciones | `docs/funcionalidades/ENCUESTAS.md` + `docs/contratos/ENCUESTAS_CONTRATO.md` |
 | Sistema de perfiles (App ↔ Panel) | `docs/contratos/PANEL_PERFILES.md` |
 | Seguridad y reglas Firebase | `docs/SEGURIDAD.md` |
-| Análisis técnico y plan de mejoras | `docs/planes/MEJORAS.md` + `docs/planes/PLAN_CALIDAD.md` |
+| Orden de ejecución de planes (★ leer primero) | `docs/planes/BACKLOG.md` |
+| Plan de saneamiento de código | `docs/planes/PLAN_CALIDAD.md` |
 | Sistema de diseño / tabs | `docs/desarrollo/DESIGN.md` + `docs/desarrollo/TABS_MAINTENANCE.md` |
 | Arreglos del cantoral (`{arr:}`) | `docs/funcionalidades/ARREGLOS.md` |
