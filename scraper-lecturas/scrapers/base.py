@@ -1,9 +1,14 @@
 """Base classes and data models for all lecturas scrapers."""
 
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
+
+# Duplicado deliberadamente de utils/cleanup.py (1 línea) para no crear un
+# ciclo de imports entre scrapers/base.py y utils/cleanup.py.
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 @dataclass
@@ -55,11 +60,15 @@ class BaseScraper(ABC):
         ...
 
     def validate(self, data: EvangelioData) -> bool:
-        """True iff all REQUIRED_FIELDS are non-empty strings."""
+        """True iff all REQUIRED_FIELDS are non-empty strings and `fecha`
+        is a valid ISO date (YYYY-MM-DD) — sin esto, el nodo se escribiría
+        bajo una clave que la app nunca lee y el cleanup nunca reclama."""
         for field_name in self.REQUIRED_FIELDS:
             value = getattr(data, field_name, None)
             if value is None or not str(value).strip():
                 return False
+        if not _ISO_DATE_RE.match(data.fecha or ""):
+            return False
         return True
 
     # ------------------------------------------------------------------

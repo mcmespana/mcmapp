@@ -139,6 +139,10 @@ def _run_one(scraper: BaseScraper, *, dry_run: bool) -> int:
         log.error(f"[{name}] Error inesperado en fetch: {e}", exc_info=True)
         return 1
 
+    if not any(data is not None for data in data_list):
+        log.error(f"[{name}] fetch() no devolvió ningún dato")
+        return 1
+
     writes = scraper.WRITES_NODES
 
     for data in data_list:

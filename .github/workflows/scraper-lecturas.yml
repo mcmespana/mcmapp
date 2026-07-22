@@ -92,23 +92,33 @@ jobs:
         working-directory: scraper-lecturas
         run: pip install -r requirements.txt
 
+      - name: Tests
+        working-directory: scraper-lecturas
+        run: |
+          pip install -r requirements-dev.txt
+          python -m pytest tests/ -q
+
       - name: Ejecutar scraper
         working-directory: scraper-lecturas
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_DATABASE_URL: ${{ secrets.EXPO_PUBLIC_FIREBASE_DATABASE_URL }}
+          INPUT_DATE: ${{ github.event.inputs.date }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
+          INPUT_BACKFILL: ${{ github.event.inputs.backfill_dominicos }}
+          INPUT_CLEANUP_ONLY: ${{ github.event.inputs.cleanup_only }}
         run: |
           ARGS=""
-          if [ -n "${{ github.event.inputs.date }}" ]; then
-            ARGS="$ARGS --date ${{ github.event.inputs.date }}"
+          if [ -n "$INPUT_DATE" ]; then
+            ARGS="$ARGS --date $INPUT_DATE"
           fi
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
-          if [ "${{ github.event.inputs.backfill_dominicos }}" = "true" ]; then
+          if [ "$INPUT_BACKFILL" = "true" ]; then
             ARGS="$ARGS --backfill-dominicos"
           fi
-          if [ "${{ github.event.inputs.cleanup_only }}" = "true" ]; then
+          if [ "$INPUT_CLEANUP_ONLY" = "true" ]; then
             ARGS="$ARGS --cleanup-only"
           fi
           python main.py $ARGS

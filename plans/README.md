@@ -21,7 +21,7 @@ sus STOP conditions y actualiza tu fila al terminar.
 | 002  | Fechas locales: "hoy" UTC en Home/Calendario y fecha de reflexión | P1 | S | — | DONE |
 | 003  | Reflexiones: escritura atómica + conservar texto si falla | P1 | S | 002 (misma pantalla, coordinar) | DONE |
 | 004  | Contigo: sync bidireccional de hábitos/revisiones + tests authHelpers | P1 | M | — | DONE |
-| 005  | Scraper: vacío=error, fecha inválida vetada, pytest en CI, workflow sin inyección | P1 | M | — | TODO |
+| 005  | Scraper: vacío=error, fecha inválida vetada, pytest en CI, workflow sin inyección | P1 | M | — | DONE |
 | 006  | Higiene de deps (4 muertas, jest dup) + pinear CLIs en pipelines | P2 | S | — | DONE |
 | 007  | ~~Privacidad: respuestas de encuestas dejan de ser legibles públicamente~~ | P1* | M | — | **REJECTED** (2026-07-22, decisión de producto — ver `docs/planes/BACKLOG.md` §3) |
 | 008  | Caché compartida en useFirebaseData + calendario stale-while-revalidate | P2 | M | mejor tras 001-005 | TODO |
@@ -91,6 +91,18 @@ haptics directos fuera del wrapper `h.*` (DEBT-07).
 6. **La parte OTA-able del plan Contigo** — recordatorio local diario +
    rachas en Home, antes del widget nativo (el propio
    PLAN_WIDGET_CONTIGO §4 la separa).
+
+## Ejecución 2026-07-22 (plan 005)
+
+- **005**: los 4 pasos aplicados tal como estaba planeado. Sin drift. Entorno
+  local necesitó `cffi` (dependencia transitiva rota de `cryptography` en
+  este contenedor) para poder importar `firebase.client` en los tests —
+  nada que ver con el código del scraper. 5 tests nuevos
+  (`tests/test_base.py`: fecha ISO; `tests/test_main.py`: fetch vacío/con
+  solo `None`), más el test que estaba en rojo, arreglado. Suite completa
+  97→102 verde. Workflow: paso de pytest añadido antes del scraper, y los 4
+  inputs (`date`/`dry_run`/`backfill_dominicos`/`cleanup_only`) pasan a leerse
+  vía `env:` (`INPUT_*`), ninguno queda interpolado dentro de `run:`.
 
 ## Ejecución 2026-07-22 (plan 004)
 
