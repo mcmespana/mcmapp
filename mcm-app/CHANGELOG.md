@@ -27,6 +27,9 @@
   primitiva de pulsación decidida para la app— y una prop `color` para que
   Contigo (warm) y los eventos (color por evento) mantengan su paleta propia.
 - Migrados los CTAs de `SuggestSongModal`, `AppFeedbackModal` y `ReportBugsModal`.
+- Además, los `TextInput` crudos de `AppFeedbackModal` y `ReportBugsModal`
+  pasan a `AppTextField` (mismo look de input unificado, borde verde al
+  rellenar) — SuggestSong ya lo usaba.
 - **Decisiones de UI tomadas** (ver `docs/planes/PLAN_UI_NATIVA.md` §4): headers
   nativos en pantallas "lista+detalle" y floating glass solo en heros de evento;
   pulsación estándar `PressableFeedback`; Contigo/Eventos conservan su paleta.

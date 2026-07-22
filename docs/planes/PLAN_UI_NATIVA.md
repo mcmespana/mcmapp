@@ -210,10 +210,10 @@ Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
 > componentes nuevos de Fase 2 la usan; prohibido `TouchableOpacity`/`Pressable`
 > sueltos NUEVOS.
 
-- [ ] Migrar los **~13 `TextInput`** restantes a `AppTextField` (hecho:
-      SuggestSongModal). Lote a lote: AppFeedbackModal, ReportBugsModal,
-      SuggestSong (✓), CodeInput, PasswordPrompt, Arrangement, Evaluation,
-      Grupos, Reflexiones, Revisión, SelectedSongs, SecretPanel (admin, último).
+- [~] Migrar los **~13 `TextInput`** restantes a `AppTextField`. Hechos:
+      SuggestSong (✓), **AppFeedbackModal (✓), ReportBugsModal (✓)** (2026-07-22).
+      Pendientes: CodeInput, PasswordPrompt, Arrangement, Evaluation, Grupos,
+      Reflexiones, Revisión, SelectedSongs, SecretPanel (admin, último).
 - [~] **`AppPrimaryButton`** (CTA "Enviar/Guardar/Aceptar") — **creado**
       (`components/ui/AppPrimaryButton.tsx`, usa `PressableFeedback` + `Scale`,
       prop `color` para paletas propias de Contigo/eventos). Migrados: **SuggestSong,
