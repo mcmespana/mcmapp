@@ -18,6 +18,13 @@
 
 ---
 
+## 2026-07-22 23:55 — UI Nativa Fase 2: adoptar `EmptyState` en estados vacíos
+
+- Estados "no hay…" reinventados a mano migrados al componente canónico
+  `EmptyState`: `ReflexionesScreen` ("aún no hay reflexiones"),
+  `app/notifications.tsx` y `NotificationsBottomSheet` ("no hay notificaciones").
+  Mismo look de vacío unificado (icono en círculo tintado + título + subtítulo).
+
 ## 2026-07-22 23:45 — UI Nativa Fase 2: más migraciones a `AppTextField`
 
 - `AppTextField` gana dos props: `error` (borde rojo, con prioridad sobre
