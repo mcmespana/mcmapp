@@ -1,7 +1,10 @@
 // app/screens/ComunicaScreen.tsx
-// WebView para comunica.movimientoconsolacion.com
-// Sin header, pantalla completa, cookies persistentes.
-// Usa color fijo para el notch — la detección automática no es fiable.
+// WebView para comunica.movimientoconsolacion.com (portal de familias).
+// Sin header propio: la web se ve a pantalla completa con cookies persistentes.
+//   · iOS  → la web queda en zona segura (contentInset) y se desliza por debajo
+//            de una barra glass nativa (systemChromeMaterial) al hacer scroll.
+//            Extra de scroll al fondo para no dejar el botón bajo el tab bar.
+//   · Android → franja lisa (blanca/oscura) en el notch; la web arranca debajo.
 
 import React, { useState, useCallback, useMemo } from 'react';
 import {
@@ -16,6 +19,7 @@ import { WebView } from 'react-native-webview';
 import { useToast } from '@/contexts/AppToastContext';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import GlassSurface from '@/components/ui/GlassSurface';
 
 // CSS module reutilizado del iframe (solo aplica en web)
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -25,11 +29,11 @@ const iframeStyles =
 
 const COMUNICA_URL = 'https://comunica.movimientoconsolacion.com/aptest/?app=1';
 
-// Color fijo para la zona del notch (azul oscuro del header de Comunica MCM)
-// Se usa color fijo porque la detección automática del color del header
-// de la web no es fiable: muchas veces devuelve blanco (#ffffff) y hace
-// que el texto de la barra de estado (hora, batería, etc.) sea ilegible.
-const NOTCH_COLOR = '#253883';
+// Altura aproximada del tab bar iOS (sin la safe-area inferior) + margen cómodo.
+// Se suma como contentInset inferior para que el contenido pueda arrastrarse por
+// encima del tab bar translúcido (si no, el último botón de la web queda tapado).
+const IOS_TAB_BAR_HEIGHT = 49;
+const IOS_BOTTOM_EXTRA = 32;
 
 export default function ComunicaScreen() {
   const scheme = useColorScheme() ?? 'light';
@@ -63,6 +67,18 @@ export default function ComunicaScreen() {
     setIsLoading(false);
   }, [toast]);
 
+  const renderLoading = useCallback(
+    () => (
+      <View style={dynamicStyles.loadingContainer}>
+        <ActivityIndicator size="large" color={tintColor} />
+      </View>
+    ),
+    [dynamicStyles.loadingContainer, tintColor],
+  );
+
+  // Texto de la status bar: oscuro sobre glass claro, claro sobre glass oscuro.
+  const barStyle = scheme === 'dark' ? 'light-content' : 'dark-content';
+
   // ── Web: iframe ──────────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
     return (
@@ -83,39 +99,69 @@ export default function ComunicaScreen() {
     );
   }
 
-  // ── iOS / Android: WebView nativo con barra de color en el notch ────────
+  // ── iOS: WebView a pantalla completa bajo una barra glass en el notch ──────
+  if (Platform.OS === 'ios') {
+    const bottomInset = insets.bottom + IOS_TAB_BAR_HEIGHT + IOS_BOTTOM_EXTRA;
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle={barStyle} translucent />
+        <WebView
+          source={{ uri: COMUNICA_URL }}
+          style={styles.webview}
+          // Rendimiento y persistencia
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          sharedCookiesEnabled={true}
+          thirdPartyCookiesEnabled={true}
+          // La web arranca en zona segura y se desliza bajo el glass al scrollear;
+          // el inset inferior da margen para subir el contenido sobre el tab bar.
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
+          contentInset={{
+            top: insets.top,
+            left: 0,
+            right: 0,
+            bottom: bottomInset,
+          }}
+          scrollIndicatorInsets={{ top: insets.top, bottom: bottomInset }}
+          renderLoading={renderLoading}
+          onLoadEnd={onLoadEnd}
+          onError={onError}
+          onHttpError={onError}
+        />
+        {insets.top > 0 && (
+          <View
+            style={[styles.notchGlass, { height: insets.top }]}
+            pointerEvents="none"
+          >
+            <GlassSurface variant="regular" bottomBorder />
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // ── Android: franja lisa en el notch, la web arranca debajo ────────────────
+  const stripColor = scheme === 'dark' ? '#1C1C1E' : '#FFFFFF';
   return (
-    <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={NOTCH_COLOR}
-        translucent
-      />
+    <View style={[styles.container, { backgroundColor: stripColor }]}>
+      <StatusBar barStyle={barStyle} backgroundColor={stripColor} translucent />
       {insets.top > 0 && (
         <View
           style={[
             styles.notchBar,
-            { backgroundColor: NOTCH_COLOR, height: insets.top },
+            { backgroundColor: stripColor, height: insets.top },
           ]}
         />
       )}
       <WebView
         source={{ uri: COMUNICA_URL }}
         style={styles.webview}
-        // Rendimiento y persistencia
         javaScriptEnabled={true}
         domStorageEnabled={true}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
-        // Pantalla completa en iOS (contenido detrás del tab bar translúcido)
-        contentInsetAdjustmentBehavior="never"
-        automaticallyAdjustContentInsets={false}
-        // Loader
-        renderLoading={() => (
-          <View style={dynamicStyles.loadingContainer}>
-            <ActivityIndicator size="large" color={tintColor} />
-          </View>
-        )}
+        renderLoading={renderLoading}
         onLoadEnd={onLoadEnd}
         onError={onError}
         onHttpError={onError}
@@ -130,6 +176,16 @@ const styles = StyleSheet.create({
   },
   notchBar: {
     width: '100%',
+  },
+  // Barra glass superpuesta sobre el notch (solo iOS). overflow:hidden recorta
+  // el material al alto de la safe-area; pointerEvents none deja pasar el scroll.
+  notchGlass: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    overflow: 'hidden',
   },
   webview: {
     flex: 1,

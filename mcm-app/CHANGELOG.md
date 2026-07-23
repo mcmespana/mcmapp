@@ -18,6 +18,24 @@
 
 ---
 
+## 2026-07-23 06:37 — Comunica (familias): barra superior glass y scroll bajo el tab bar
+
+- **Barra superior**: se sustituye la franja azul sólida del notch por una
+  barra **glass nativa** (`GlassSurface`, mismo material `systemChromeMaterial`
+  del tab bar y de los headers del cantoral) en iOS; la web queda a pantalla
+  completa por detrás y se desliza bajo el cristal al hacer scroll. El texto de
+  la status bar pasa a ser **adaptativo** (oscuro en claro / claro en oscuro),
+  así siempre es legible. En Android (sin cristal fiable) se usa una franja
+  lisa blanca/oscura según el tema.
+- **Scroll inferior (iOS)**: se añade `contentInset` inferior (alto del tab bar
+  + margen) para poder arrastrar el contenido por encima del tab bar
+  translúcido — antes el último botón de la web (p. ej. «Guardar») quedaba
+  tapado. Además la web arranca en zona segura vía `contentInset` superior.
+- Archivo: `app/screens/ComunicaScreen.tsx`. Cambio OTA-safe (sin módulos
+  nativos nuevos; `GlassSurface`/`expo-blur` ya están en el binario).
+
+---
+
 ## 2026-07-22 21:13 — Comunica (familias): nueva URL de la web embebida
 
 - El WebView de "Comunica" (portal para familias) apunta ahora a
