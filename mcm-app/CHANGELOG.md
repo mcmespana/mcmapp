@@ -18,6 +18,25 @@
 
 ---
 
+## 2026-07-23 06:51 — Comunica (familias): navegación atrás/adelante en la web
+
+- Nuevo `components/ui/WebViewNavControls.tsx`: cápsula **glass flotante**
+  (reutiliza `GlassActionGroup`, el look segmentado del cantoral/eventos) con
+  botones **atrás/adelante** para WebViews a pantalla completa. Se **auto-oculta
+  cuando no hay historial** en ninguna dirección (en la primera página no
+  aparece nada) y atenúa el segmento cuyo sentido no está disponible. Háptica
+  al pulsar (`h.tap`).
+- `ComunicaScreen`: cablea `onNavigationStateChange` → estado
+  `canGoBack/canGoForward`, `ref.goBack()/goForward()`, y la cápsula flotante
+  abajo-izquierda (por encima del tab bar). En **Android** el botón/gesto atrás
+  del sistema navega primero por el historial de la web (`BackHandler` bajo
+  `useFocusEffect`) y solo sale de la pantalla al agotarlo.
+- Componente reutilizable: preparado para colgarlo también de Gestión y MCM
+  Panel si se quiere. Cambio OTA-safe (sin módulos nativos nuevos).
+- Archivos: `components/ui/WebViewNavControls.tsx`, `app/screens/ComunicaScreen.tsx`.
+
+---
+
 ## 2026-07-23 06:37 — Comunica (familias): barra superior glass y scroll bajo el tab bar
 
 - **Barra superior**: se sustituye la franja azul sólida del notch por una
