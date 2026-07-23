@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomSheet from './BottomSheet';
+import AppTextField from '@/components/ui/AppTextField';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -75,18 +76,12 @@ export default function ArrangementInputModal({
           </View>
         ) : null}
 
-        <TextInput
+        <AppTextField
           ref={inputRef}
-          style={[
-            styles.input,
-            {
-              backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
-              color: theme.text,
-              borderColor: text.trim() ? '#E15C62' : theme.icon,
-            },
-          ]}
+          accentWhenFilled
+          accentColor="#E15C62"
+          style={styles.input}
           placeholder="Ej: Intro: solo guitarra (x2)"
-          placeholderTextColor={theme.icon}
           value={text}
           onChangeText={setText}
           multiline
@@ -169,12 +164,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   input: {
-    borderWidth: 1,
-    borderRadius: radii.sm,
-    padding: 12,
-    fontSize: 16,
     minHeight: 52,
-    textAlignVertical: 'top',
   },
   note: {
     fontSize: 12,

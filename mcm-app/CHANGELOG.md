@@ -18,6 +18,15 @@
 
 ---
 
+## 2026-07-22 23:45 — UI Nativa Fase 2: más migraciones a `AppTextField`
+
+- `AppTextField` gana dos props: `error` (borde rojo, con prioridad sobre
+  foco/contenido) y `accentColor` (color de acento configurable, por defecto el
+  verde de iOS) — así las pantallas con paleta propia lo respetan.
+- Migrados a `AppTextField`: `PasswordPromptModal` (usa `error` para la
+  contraseña incorrecta) y `ArrangementInputModal` (usa `accentColor` con el
+  rojo de marca `#E15C62`).
+
 ## 2026-07-22 23:15 — UI Nativa Fase 2: `AppPrimaryButton` (CTA unificado)
 
 - Nuevo `components/ui/AppPrimaryButton.tsx`: botón CTA estándar
