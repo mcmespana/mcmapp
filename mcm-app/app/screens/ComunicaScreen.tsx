@@ -6,20 +6,23 @@
 //            Extra de scroll al fondo para no dejar el botón bajo el tab bar.
 //   · Android → franja lisa (blanca/oscura) en el notch; la web arranca debajo.
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   Platform,
   View,
   StyleSheet,
   StatusBar,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
+import { useFocusEffect } from '@react-navigation/native';
+import { WebView, WebViewNavigation } from 'react-native-webview';
 import { useToast } from '@/contexts/AppToastContext';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import GlassSurface from '@/components/ui/GlassSurface';
+import WebViewNavControls from '@/components/ui/WebViewNavControls';
 
 // CSS module reutilizado del iframe (solo aplica en web)
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -41,6 +44,31 @@ export default function ComunicaScreen() {
   const tintColor = ThemeColors[scheme].tint;
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  // ── Navegación dentro de la web (atrás/adelante) ──────────────────────────
+  const webViewRef = useRef<WebView>(null);
+  const [nav, setNav] = useState({ canGoBack: false, canGoForward: false });
+  const onNavStateChange = useCallback((s: WebViewNavigation) => {
+    setNav({ canGoBack: s.canGoBack, canGoForward: s.canGoForward });
+  }, []);
+  const goBack = useCallback(() => webViewRef.current?.goBack(), []);
+  const goForward = useCallback(() => webViewRef.current?.goForward(), []);
+
+  // Android: el botón/gesto atrás del sistema navega primero por el historial
+  // de la web; solo sale de la pantalla cuando ya no hay a dónde volver.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android') return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (nav.canGoBack) {
+          webViewRef.current?.goBack();
+          return true;
+        }
+        return false;
+      });
+      return () => sub.remove();
+    }, [nav.canGoBack]),
+  );
 
   const dynamicStyles = useMemo(
     () =>
@@ -106,6 +134,7 @@ export default function ComunicaScreen() {
       <View style={styles.container}>
         <StatusBar barStyle={barStyle} translucent />
         <WebView
+          ref={webViewRef}
           source={{ uri: COMUNICA_URL }}
           style={styles.webview}
           // Rendimiento y persistencia
@@ -124,6 +153,7 @@ export default function ComunicaScreen() {
             bottom: bottomInset,
           }}
           scrollIndicatorInsets={{ top: insets.top, bottom: bottomInset }}
+          onNavigationStateChange={onNavStateChange}
           renderLoading={renderLoading}
           onLoadEnd={onLoadEnd}
           onError={onError}
@@ -137,6 +167,16 @@ export default function ComunicaScreen() {
             <GlassSurface variant="regular" bottomBorder />
           </View>
         )}
+        <WebViewNavControls
+          canGoBack={nav.canGoBack}
+          canGoForward={nav.canGoForward}
+          onBack={goBack}
+          onForward={goForward}
+          style={[
+            styles.navControls,
+            { bottom: insets.bottom + IOS_TAB_BAR_HEIGHT + 12 },
+          ]}
+        />
       </View>
     );
   }
@@ -155,16 +195,25 @@ export default function ComunicaScreen() {
         />
       )}
       <WebView
+        ref={webViewRef}
         source={{ uri: COMUNICA_URL }}
         style={styles.webview}
         javaScriptEnabled={true}
         domStorageEnabled={true}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
+        onNavigationStateChange={onNavStateChange}
         renderLoading={renderLoading}
         onLoadEnd={onLoadEnd}
         onError={onError}
         onHttpError={onError}
+      />
+      <WebViewNavControls
+        canGoBack={nav.canGoBack}
+        canGoForward={nav.canGoForward}
+        onBack={goBack}
+        onForward={goForward}
+        style={[styles.navControls, { bottom: insets.bottom + 16 }]}
       />
     </View>
   );
@@ -190,4 +239,10 @@ const styles = StyleSheet.create({
   webview: {
     flex: 1,
   } as any,
+  // Cápsula glass atrás/adelante flotante, abajo-izquierda. `bottom` lo fija
+  // cada rama para quedar por encima del tab bar (translúcido en iOS).
+  navControls: {
+    position: 'absolute',
+    left: 16,
+  },
 });
