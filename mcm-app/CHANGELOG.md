@@ -55,6 +55,22 @@
 
 ---
 
+## 2026-07-22 23:55 — UI Nativa Fase 2: adoptar `EmptyState` en estados vacíos
+
+- Estados "no hay…" reinventados a mano migrados al componente canónico
+  `EmptyState`: `ReflexionesScreen` ("aún no hay reflexiones"),
+  `app/notifications.tsx` y `NotificationsBottomSheet` ("no hay notificaciones").
+  Mismo look de vacío unificado (icono en círculo tintado + título + subtítulo).
+
+## 2026-07-22 23:45 — UI Nativa Fase 2: más migraciones a `AppTextField`
+
+- `AppTextField` gana dos props: `error` (borde rojo, con prioridad sobre
+  foco/contenido) y `accentColor` (color de acento configurable, por defecto el
+  verde de iOS) — así las pantallas con paleta propia lo respetan.
+- Migrados a `AppTextField`: `PasswordPromptModal` (usa `error` para la
+  contraseña incorrecta) y `ArrangementInputModal` (usa `accentColor` con el
+  rojo de marca `#E15C62`).
+
 ## 2026-07-22 23:15 — UI Nativa Fase 2: `AppPrimaryButton` (CTA unificado)
 
 - Nuevo `components/ui/AppPrimaryButton.tsx`: botón CTA estándar

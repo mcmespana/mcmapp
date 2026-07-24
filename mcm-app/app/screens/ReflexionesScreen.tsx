@@ -20,6 +20,7 @@ import { Spinner, BottomSheet } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import ContextMenuSheet from '@/components/ContextMenuSheet';
 import CelebrationBurst from '@/components/ui/CelebrationBurst';
+import EmptyState from '@/components/ui/EmptyState';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import DateTimePicker, {
   DateTimePickerAndroid,
@@ -317,17 +318,12 @@ export default function ReflexionesScreen() {
           ]}
         >
           {sortedList.length === 0 ? (
-            <View style={styles.emptyState}>
-              <MaterialIcons
-                name="auto-stories"
-                size={40}
-                color={colors.success}
-              />
-              <Text style={styles.emptyTitle}>Aún no hay reflexiones</Text>
-              <Text style={styles.emptyText}>
-                Pulsa el botón + de arriba para compartir la primera.
-              </Text>
-            </View>
+            <EmptyState
+              icon="auto-stories"
+              title="Aún no hay reflexiones"
+              subtitle="Pulsa el botón + de arriba para compartir la primera."
+              accentColor={colors.success}
+            />
           ) : (
             sortedList.map((r, i) => {
               const color = pickCardColor(r.id);

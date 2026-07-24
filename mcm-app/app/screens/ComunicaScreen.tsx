@@ -152,6 +152,8 @@ export default function ComunicaScreen() {
             right: 0,
             bottom: bottomInset,
           }}
+          // @ts-expect-error `scrollIndicatorInsets` es un passthrough de iOS
+          // válido en runtime pero ausente de los tipos de react-native-webview.
           scrollIndicatorInsets={{ top: insets.top, bottom: bottomInset }}
           onNavigationStateChange={onNavStateChange}
           renderLoading={renderLoading}
