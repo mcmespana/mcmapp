@@ -15,6 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
@@ -50,7 +51,7 @@ export default function EventosPasadosScreen() {
         showsVerticalScrollIndicator={false}
       >
         {events.length === 0 ? (
-          <Text style={styles.empty}>Todavía no hay eventos pasados.</Text>
+          <EmptyState icon="history" title="Todavía no hay eventos pasados" />
         ) : (
           events.map((event) => (
             <PressableFeedback
@@ -126,7 +127,6 @@ export default function EventosPasadosScreen() {
 interface Styles {
   safeArea: ViewStyle;
   container: ViewStyle;
-  empty: TextStyle;
   card: ViewStyle;
   accentBar: ViewStyle;
   cardBody: ViewStyle;
@@ -143,12 +143,6 @@ const createStyles = (isDark: boolean) =>
     },
     container: {
       flex: 1,
-    },
-    empty: {
-      textAlign: 'center',
-      marginTop: spacing.xl,
-      color: isDark ? '#8E8E93' : '#6B7280',
-      fontSize: 15,
     },
     card: {
       borderRadius: radii.xl,
