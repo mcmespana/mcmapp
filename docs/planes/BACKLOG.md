@@ -12,7 +12,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires solo `plans/README.md` o un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-07-22.
+> Última actualización: 2026-07-24.
 
 ---
 
@@ -28,11 +28,11 @@
 
 | | |
 |---|---|
-| **Ahora mismo (en curso / siguiente)** | UI Nativa — **Fase 2** (componentes); las 3 decisiones ya están tomadas (ver §4) |
+| **Ahora mismo (en curso / siguiente)** | UI Nativa — **Fase 2** (componentes), ~65-70% hecho; queda `SegmentedControl`, chips/pills, tokens, y los formularios de Contigo + `SecretPanelModal` (pendientes de verificación en dispositivo / grandes) |
 | **Después** | Integración D 🔒 → Widget de Contigo 🔒 → Carismochito + Panel Pañuelo |
 | **Bloqueado, no tocar sin preguntar** | Integración D, Widget de Contigo, Panel Pañuelo |
 | **Oportunista (solo si piden hueco)** | Calidad Fase 1, Integraciones resto, bolsa nativa |
-| **Hecho hoy** | ✅ Plan 004, ✅ Plan 005 + resumen visible, ✅ Plan 008, ✅ PR #298 (fix modo alpha) — ver `mcm-app/CHANGELOG.md` y `plans/README.md` |
+| **Hecho** | ✅ Plan 004, ✅ Plan 005 + resumen visible, ✅ Plan 008 (en `main`, pendiente de validar en dispositivo antes de producción), ✅ PR #298 (fix modo alpha), ✅ UI Nativa Fase 1 + Fase 2 parcial (PRs #301-#304, `AppTextField`/`AppPrimaryButton`/`EmptyState` — #301-#303 ya en producción vía cherry-pick, #304 solo en `main`) — ver `mcm-app/CHANGELOG.md` y `plans/README.md` |
 
 ---
 
@@ -74,7 +74,7 @@
 | 1 | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers` | Sonnet | No | ✅ **DONE** (2026-07-22) | `plans/004-contigo-sync-bidireccional.md` |
 | 2 | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet | No | ✅ **DONE** (2026-07-22) | `plans/005-scraper-fiabilidad-y-ci.md` |
 | 3 | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate | **Opus** | No | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `plans/008-cache-compartida-firebase-calendario.md` |
-| 4 | **UI Nativa** — headers nativos + componentes unificados | Sonnet (Fable en la cola mecánica de Fase 2) | Parcial — 3 decisiones bloquean partes concretas, no todo (ver §4) | 🟡 En curso (Fase 1 casi hecha) | `docs/planes/PLAN_UI_NATIVA.md` |
+| 4 | **UI Nativa** — headers nativos + componentes unificados | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70% (`AppTextField`/`EmptyState` mayormente hechos, `AppPrimaryButton` parcial, `SegmentedControl`/chips/tokens sin empezar) | `docs/planes/PLAN_UI_NATIVA.md` |
 | 5 | **Integración D** — Seguridad Firebase | Opus | **Sí** — D2 + repo `mcmpanel` (ver §4) | ⏳ Pendiente, importante pero no urgente | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" |
 | 6 | **Widget de Contigo** | Opus | **Sí** — ¿release de tienda ya? (ver §4) | ⏳ Al final | `docs/planes/PLAN_WIDGET_CONTIGO.md` |
 | 7 | **Carismochito** (ejecutar bien §1–4) + **Panel Pañuelo** (concepto nuevo) | Sonnet (Opus solo el icono nativo §5) | Panel Pañuelo: **sí**, falta el plan funcional | ⏳ Cierre final | `docs/planes/PLAN_CARISMOCHITO.md` + `docs/planes/PLAN_PANEL_PANUELO.md` |
