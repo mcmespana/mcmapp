@@ -23,6 +23,7 @@ import {
   TextInput,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import {
   CODE_LENGTH,
@@ -189,13 +190,13 @@ const CodeInputModal: React.FC<Props> = ({
         {copy.askForName && (
           <View style={styles.nameRow}>
             <Text style={styles.inputLabel}>Nombre</Text>
-            <TextInput
+            <AppTextField
               value={name}
               onChangeText={setName}
               placeholder="Ej. Eucaristía domingo 7 abril 2031"
-              placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
-              style={styles.nameInput}
               editable={!submitting}
+              accentColor={isDark ? '#7AB3FF' : '#253883'}
+              accentWhenFilled
             />
           </View>
         )}
@@ -328,16 +329,6 @@ const createStyles = (isDark: boolean) =>
       marginBottom: 6,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
-    },
-    nameInput: {
-      backgroundColor: isDark ? '#1C1C1E' : '#F8F8FA',
-      borderRadius: radii.md,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      fontSize: 16,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      borderWidth: 1.5,
-      borderColor: isDark ? '#48484A' : '#D1D1D6',
     },
     hiddenInput: {
       position: 'absolute',

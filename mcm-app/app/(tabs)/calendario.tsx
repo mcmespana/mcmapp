@@ -36,6 +36,7 @@ import { h } from '@/utils/haptics';
 import { localISO } from '@/utils/localDate';
 import CalendarSubscribeBottomSheet from '@/components/CalendarSubscribeBottomSheet';
 import EventDetailsBottomSheet from '@/components/EventDetailsBottomSheet';
+import EmptyState from '@/components/ui/EmptyState';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -596,17 +597,11 @@ export function CalendarScreen() {
                       renderEventCard(ev, i, selectedDate < todayStr),
                     )
                   ) : (
-                    <View style={styles.emptyState}>
-                      <MaterialIcons
-                        name="event-available"
-                        size={40}
-                        color={isDark ? Colors.dark.card : '#D1D1D6'}
-                      />
-                      <Text style={styles.emptyText}>Sin eventos</Text>
-                      <Text style={styles.emptySubtext}>
-                        No hay eventos programados para este día
-                      </Text>
-                    </View>
+                    <EmptyState
+                      icon="event-available"
+                      title="Sin eventos"
+                      subtitle="No hay eventos programados para este día"
+                    />
                   )}
                 </View>
               </View>
@@ -713,28 +708,19 @@ export function CalendarScreen() {
                 return renderEventCard(item, 0, isPast);
               }}
               ListEmptyComponent={
-                <View style={styles.agendaEmptyState}>
-                  <MaterialIcons
-                    name={allCalendarsHidden ? 'visibility-off' : 'event-busy'}
-                    size={44}
-                    color={isDark ? '#48484A' : '#C7C7CC'}
-                  />
-                  <Text style={[styles.emptyText, { marginTop: 12 }]}>
-                    {allCalendarsHidden
+                <EmptyState
+                  icon={allCalendarsHidden ? 'visibility-off' : 'event-busy'}
+                  title={
+                    allCalendarsHidden
                       ? 'Todos los calendarios ocultos'
-                      : 'Sin eventos este mes'}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.emptySubtext,
-                      { textAlign: 'center', marginTop: 4 },
-                    ]}
-                  >
-                    {allCalendarsHidden
+                      : 'Sin eventos este mes'
+                  }
+                  subtitle={
+                    allCalendarsHidden
                       ? 'Activa algún calendario desde los filtros de arriba'
-                      : 'No hay eventos programados para ' + monthLabel}
-                  </Text>
-                </View>
+                      : 'No hay eventos programados para ' + monthLabel
+                  }
+                />
               }
             />
           </View>
@@ -1104,36 +1090,12 @@ const createStyles = (scheme: 'light' | 'dark') => {
       color: '#8E8E93',
     },
 
-    // Empty state
-    emptyState: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 40,
-      gap: 8,
-    },
-    emptyText: {
-      fontSize: 17,
-      fontWeight: '600',
-      color: isDark ? '#636366' : '#AEAEB2',
-    },
-    emptySubtext: {
-      fontSize: 14,
-      color: isDark ? '#48484A' : '#C7C7CC',
-    },
-
     // Agenda container — flex: 1 para que el SectionList crezca y los chips no
     agendaContainer: {
       flex: 1,
     },
     agendaList: {
       flex: 1,
-    },
-    agendaEmptyState: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 60,
-      paddingHorizontal: 32,
-      gap: 4,
     },
 
     // Agenda view

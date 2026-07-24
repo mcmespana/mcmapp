@@ -212,12 +212,18 @@ Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
 
 - [~] Migrar los **~13 `TextInput`** restantes a `AppTextField`. Hechos:
       SuggestSong (✓), AppFeedbackModal (✓), ReportBugsModal (✓),
-      **PasswordPromptModal (✓), ArrangementInputModal (✓)** (2026-07-22).
-      `AppTextField` ganó props `error` (borde rojo) y `accentColor` (para
-      respetar paletas propias — Arrangement usa el rojo de marca).
-      Pendientes: CodeInput (solo el campo `name`; el de código es un input
-      OCULTO tipo OTP, NO migrar), Evaluation, Grupos, Reflexiones, Revisión,
-      SelectedSongs, SecretPanel (admin, último).
+      PasswordPromptModal (✓), ArrangementInputModal (✓) (2026-07-22),
+      **Evaluation (QuestionInput, texto libre), SelectedSongs (nombre de
+      fichero al exportar), Reflexiones (título/contenido/autor),
+      CodeInputModal (campo `name`), ExportPdfModal (título/fecha)**
+      (2026-07-24). `AppTextField` ganó props `error` (borde rojo) y
+      `accentColor` (para respetar paletas propias — Arrangement usa el rojo
+      de marca, PDF el rojo, Reflexiones el verde).
+      Pendientes: Revisión de Contigo (paleta warm propia — como Evangelio,
+      requiere verificación en dispositivo antes de tocar el color de fondo),
+      Grupos (`SearchBar` es un compound component deliberadamente custom, no
+      un `TextInput` simple — descartado), SecretPanel (panel admin, 16
+      campos, superficie grande — último).
 - [~] **`AppPrimaryButton`** (CTA "Enviar/Guardar/Aceptar") — **creado**
       (`components/ui/AppPrimaryButton.tsx`, usa `PressableFeedback` + `Scale`,
       prop `color` para paletas propias de Contigo/eventos). Migrados: **SuggestSong,
@@ -227,10 +233,14 @@ Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
 - [ ] **`SegmentedControl`** — unificar Mes/Agenda (Calendario), toggles de
       ajustes, Evangelio, SongFullscreen (4-5 versiones distintas).
 - [~] **`EmptyState`** — adoptarlo en los ~20 sitios que reinventan "no hay…".
-      Hechos: Calendario, SelectedSongs, Home (previos) + ReflexionesScreen,
-      notifications.tsx, NotificationsBottomSheet, **EventosPasadosScreen,
-      ContactosScreen** (2026-07-22/23). Pendientes: evangelio "no se
-      encontraron lecturas", SongList "no se encontraron canciones". **NO** en
+      Hechos: SelectedSongs, Home (previos) + ReflexionesScreen,
+      notifications.tsx, NotificationsBottomSheet, EventosPasadosScreen,
+      ContactosScreen (2026-07-22/23), **Calendario (día seleccionado +
+      vista agenda, con icono dinámico según filtros)** (2026-07-24).
+      Pendientes: evangelio "no se encontraron lecturas" (paleta warm de
+      Contigo — requiere verificación en dispositivo), SongList "no se
+      encontraron canciones" (es un estado de ERROR en rojo con diagnóstico,
+      no un vacío neutro — descartado, no migrar). **NO** en
       `CommandPalette` (dropdown compacto — el padding de EmptyState lo
       desbordaría).
 - [ ] **Chips/pills** — estandarizar (mezcla de heroui `Chip` + pills custom).

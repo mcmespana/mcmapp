@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import AppTextField from '@/components/ui/AppTextField';
 import StarRating from '@/components/StarRating';
 import { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -47,25 +48,16 @@ export default function QuestionInput({
       )}
 
       {question.type === 'text' && (
-        <TextInput
+        <AppTextField
           value={typeof value === 'string' ? value : ''}
           onChangeText={(t) => onAnswer(question.id, t)}
           placeholder={question.placeholder}
-          placeholderTextColor={theme.icon}
           multiline
-          textAlignVertical="top"
           maxLength={1000}
           autoFocus
-          style={[
-            qStyles.input,
-            {
-              color: theme.text,
-              backgroundColor: isDark ? '#2C2C2E' : '#fff',
-              borderColor: String(value ?? '').trim()
-                ? hexAlpha(accent, '90')
-                : hexAlpha(theme.icon, '35'),
-            },
-          ]}
+          accentWhenFilled
+          accentColor={accent}
+          style={qStyles.input}
         />
       )}
 

@@ -8,7 +8,6 @@ import {
   Share,
   Text,
   Pressable,
-  TextInput,
   Modal,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -21,6 +20,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import ContextMenuSheet from '@/components/ContextMenuSheet';
 import CelebrationBurst from '@/components/ui/CelebrationBurst';
 import EmptyState from '@/components/ui/EmptyState';
+import AppTextField from '@/components/ui/AppTextField';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import DateTimePicker, {
   DateTimePickerAndroid,
@@ -444,25 +444,24 @@ export default function ReflexionesScreen() {
 
               <View style={styles.field}>
                 <Text style={styles.inputLabel}>Título (opcional)</Text>
-                <TextInput
+                <AppTextField
                   value={titulo}
                   onChangeText={setTitulo}
                   placeholder="Un título breve"
-                  placeholderTextColor={theme.icon}
-                  style={styles.input}
+                  accentColor={colors.success}
+                  accentWhenFilled
                 />
               </View>
 
               <View style={styles.field}>
                 <Text style={styles.inputLabel}>Compartiendo…</Text>
-                <TextInput
+                <AppTextField
                   value={contenido}
                   onChangeText={setContenido}
                   placeholder="Escribe aquí lo que quieras"
-                  placeholderTextColor={theme.icon}
                   multiline
-                  textAlignVertical="top"
-                  style={[styles.input, styles.textArea]}
+                  accentColor={colors.success}
+                  accentWhenFilled
                 />
               </View>
 
@@ -489,12 +488,12 @@ export default function ReflexionesScreen() {
                 <Text style={styles.inputLabel}>
                   ¿Quién la envía? (opcional)
                 </Text>
-                <TextInput
+                <AppTextField
                   value={autor}
                   onChangeText={setAutor}
                   placeholder="Cómo quieres firmar"
-                  placeholderTextColor={theme.icon}
-                  style={styles.input}
+                  accentColor={colors.success}
+                  accentWhenFilled
                 />
               </View>
 
@@ -709,17 +708,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       letterSpacing: 0.2,
       marginBottom: 6,
     },
-    input: {
-      borderWidth: 1,
-      borderColor: scheme === 'dark' ? '#48484A' : '#D8DCC8',
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      fontSize: 16,
-      color: theme.text,
-      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
-    },
-    textArea: { minHeight: 120, paddingTop: 12 },
     dateField: {
       flexDirection: 'row',
       alignItems: 'center',
