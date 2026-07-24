@@ -211,9 +211,13 @@ Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
 > sueltos NUEVOS.
 
 - [~] Migrar los **~13 `TextInput`** restantes a `AppTextField`. Hechos:
-      SuggestSong (✓), **AppFeedbackModal (✓), ReportBugsModal (✓)** (2026-07-22).
-      Pendientes: CodeInput, PasswordPrompt, Arrangement, Evaluation, Grupos,
-      Reflexiones, Revisión, SelectedSongs, SecretPanel (admin, último).
+      SuggestSong (✓), AppFeedbackModal (✓), ReportBugsModal (✓),
+      **PasswordPromptModal (✓), ArrangementInputModal (✓)** (2026-07-22).
+      `AppTextField` ganó props `error` (borde rojo) y `accentColor` (para
+      respetar paletas propias — Arrangement usa el rojo de marca).
+      Pendientes: CodeInput (solo el campo `name`; el de código es un input
+      OCULTO tipo OTP, NO migrar), Evaluation, Grupos, Reflexiones, Revisión,
+      SelectedSongs, SecretPanel (admin, último).
 - [~] **`AppPrimaryButton`** (CTA "Enviar/Guardar/Aceptar") — **creado**
       (`components/ui/AppPrimaryButton.tsx`, usa `PressableFeedback` + `Scale`,
       prop `color` para paletas propias de Contigo/eventos). Migrados: **SuggestSong,
@@ -222,7 +226,11 @@ Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
       a uno.
 - [ ] **`SegmentedControl`** — unificar Mes/Agenda (Calendario), toggles de
       ajustes, Evangelio, SongFullscreen (4-5 versiones distintas).
-- [ ] **`EmptyState`** — adoptarlo en los ~20 sitios que reinventan "no hay…".
+- [~] **`EmptyState`** — adoptarlo en los ~20 sitios que reinventan "no hay…".
+      Hechos: Calendario, SelectedSongs, Home (previos) + **ReflexionesScreen,
+      notifications.tsx, NotificationsBottomSheet** (2026-07-22). Pendientes:
+      EventosPasados (texto pelado), ContactosScreen, CommandPalette, evangelio
+      "no se encontraron lecturas", SongList "no se encontraron canciones".
 - [ ] **Chips/pills** — estandarizar (mezcla de heroui `Chip` + pills custom).
 - [ ] **Tokens** (`radii`/`shadows`/`typography`) — migrar números mágicos.
 

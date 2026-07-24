@@ -21,6 +21,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import colors, { Colors } from '@/constants/colors';
+import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
@@ -610,17 +611,11 @@ export default function NotificationsScreen() {
           <Text style={styles.emptyText}>Cargando...</Text>
         </View>
       ) : allNotifications.length === 0 ? (
-        <View style={styles.emptyState}>
-          <MaterialIcons
-            name="notifications-none"
-            size={64}
-            color={Colors[scheme ?? 'light'].icon}
-          />
-          <Text style={styles.emptyTitle}>No hay notificaciones</Text>
-          <Text style={styles.emptyText}>
-            Aquí aparecerán tus notificaciones cuando las tengas.
-          </Text>
-        </View>
+        <EmptyState
+          icon="notifications-none"
+          title="No hay notificaciones"
+          subtitle="Aquí aparecerán tus notificaciones cuando las tengas."
+        />
       ) : (
         <FlatList
           data={allNotifications}

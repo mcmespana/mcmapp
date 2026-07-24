@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import colors, { Colors } from '@/constants/colors';
+import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
@@ -284,19 +285,11 @@ export default function NotificationsBottomSheet({
               </Text>
             </View>
           ) : allNotifications.length === 0 ? (
-            <View style={sheetStyles.empty}>
-              <MaterialIcons
-                name="notifications-none"
-                size={64}
-                color={theme.icon}
-              />
-              <Text style={[sheetStyles.emptyTitle, { color: theme.text }]}>
-                No hay notificaciones
-              </Text>
-              <Text style={[sheetStyles.emptyText, { color: theme.icon }]}>
-                Aquí aparecerán tus notificaciones cuando las tengas.
-              </Text>
-            </View>
+            <EmptyState
+              icon="notifications-none"
+              title="No hay notificaciones"
+              subtitle="Aquí aparecerán tus notificaciones cuando las tengas."
+            />
           ) : (
             <FlatList
               data={allNotifications}

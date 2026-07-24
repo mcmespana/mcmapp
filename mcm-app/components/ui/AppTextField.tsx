@@ -14,15 +14,31 @@ import { radii } from '@/constants/uiStyles';
  * autoFocus, etc.), así que es un reemplazo directo.
  */
 interface AppTextFieldProps extends TextInputProps {
-  /** Borde verde cuando el campo tiene contenido (además de al enfocar). */
+  /** Borde de acento cuando el campo tiene contenido (además de al enfocar). */
   accentWhenFilled?: boolean;
+  /** Color de acento (foco/contenido). Por defecto verde "completado" de iOS.
+   *  Permite que pantallas con paleta propia (Contigo, eventos) lo respeten. */
+  accentColor?: string;
+  /** Borde rojo de error (tiene prioridad sobre foco/contenido). */
+  error?: boolean;
 }
 
 const ACCENT = '#34C759'; // verde "completado" de iOS
+const ERROR = '#FF453A'; // rojo de error de iOS
 
 const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
   function AppTextField(
-    { style, accentWhenFilled, value, multiline, onFocus, onBlur, ...rest },
+    {
+      style,
+      accentWhenFilled,
+      accentColor = ACCENT,
+      error,
+      value,
+      multiline,
+      onFocus,
+      onBlur,
+      ...rest
+    },
     ref,
   ) {
     const isDark = useColorScheme() === 'dark';
@@ -32,7 +48,11 @@ const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
     const bg = isDark ? '#2C2C2E' : '#F2F2F7';
     const neutralBorder = isDark ? '#3A3A3C' : '#E5E5EA';
     const filled = accentWhenFilled && !!(value && String(value).trim());
-    const borderColor = focused || filled ? ACCENT : neutralBorder;
+    const borderColor = error
+      ? ERROR
+      : focused || filled
+        ? accentColor
+        : neutralBorder;
 
     return (
       <TextInput
