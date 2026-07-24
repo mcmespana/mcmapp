@@ -18,6 +18,14 @@
 
 ---
 
+## 2026-07-24 04:10 — UI Nativa Fase 2: más `EmptyState` (Eventos pasados, Contactos)
+
+- `EventosPasadosScreen` (texto pelado "todavía no hay eventos pasados") y el
+  vacío de búsqueda de `ContactosScreen` pasan al componente canónico
+  `EmptyState` (icono + título + subtítulo unificados). `CommandPalette` se
+  deja fuera a propósito: es un dropdown compacto y el padding de `EmptyState`
+  lo desbordaría.
+
 ## 2026-07-23 06:51 — Comunica (familias): navegación atrás/adelante en la web
 
 - Nuevo `components/ui/WebViewNavControls.tsx`: cápsula **glass flotante**

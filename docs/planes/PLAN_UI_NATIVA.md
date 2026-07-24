@@ -227,10 +227,12 @@ Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
 - [ ] **`SegmentedControl`** — unificar Mes/Agenda (Calendario), toggles de
       ajustes, Evangelio, SongFullscreen (4-5 versiones distintas).
 - [~] **`EmptyState`** — adoptarlo en los ~20 sitios que reinventan "no hay…".
-      Hechos: Calendario, SelectedSongs, Home (previos) + **ReflexionesScreen,
-      notifications.tsx, NotificationsBottomSheet** (2026-07-22). Pendientes:
-      EventosPasados (texto pelado), ContactosScreen, CommandPalette, evangelio
-      "no se encontraron lecturas", SongList "no se encontraron canciones".
+      Hechos: Calendario, SelectedSongs, Home (previos) + ReflexionesScreen,
+      notifications.tsx, NotificationsBottomSheet, **EventosPasadosScreen,
+      ContactosScreen** (2026-07-22/23). Pendientes: evangelio "no se
+      encontraron lecturas", SongList "no se encontraron canciones". **NO** en
+      `CommandPalette` (dropdown compacto — el padding de EmptyState lo
+      desbordaría).
 - [ ] **Chips/pills** — estandarizar (mezcla de heroui `Chip` + pills custom).
 - [ ] **Tokens** (`radii`/`shadows`/`typography`) — migrar números mágicos.
 
