@@ -18,6 +18,28 @@
 
 ---
 
+## 2026-07-24 18:42 — UI Nativa Fase 2: `AppTextField` en más formularios + `EmptyState` en Calendario
+
+- Migrados a `AppTextField`: pregunta de texto libre del wizard de encuestas
+  (`QuestionInput`), nombre de fichero al exportar playlist
+  (`SelectedSongsScreen`), formulario de "Compartiendo" en Reflexiones
+  (título/contenido/autor), nombre de sesión al subir/cambiar código
+  (`CodeInputModal`) y título/fecha del modal de exportar PDF
+  (`ExportPdfModal`). Cada campo respeta su acento existente (verde de
+  Reflexiones, azul de playlists, rojo de PDF) vía `accentColor`.
+- Descartados a propósito en esta pasada: el input oculto de dígitos de
+  `CodeInputModal` (hack de opacidad casi nula para el UI de celdas — no es
+  un campo visible), el `TextInput` de solo-selección de
+  `HighlightableReading` (no es un formulario, es un truco de
+  selección/resaltado de texto de lectura) y los formularios de Contigo
+  (`revision.tsx`) que usan la paleta cálida propia — se dejan para cuando
+  se pueda verificar en dispositivo, igual que `evangelio.tsx` en el lote
+  anterior. `SecretPanelModal` (panel de depuración, 16 campos) se deja
+  fuera por ser una superficie grande sin verificar en dispositivo.
+- `EmptyState` adoptado en el tab Calendario: "Sin eventos" del día
+  seleccionado y "Sin eventos este mes" / "Todos los calendarios ocultos"
+  de la vista agenda.
+
 ## 2026-07-24 04:10 — UI Nativa Fase 2: más `EmptyState` (Eventos pasados, Contactos)
 
 - `EventosPasadosScreen` (texto pelado "todavía no hay eventos pasados") y el

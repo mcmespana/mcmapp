@@ -15,11 +15,11 @@ import {
   Platform,
   Share,
   Modal,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import AppTextField from '@/components/ui/AppTextField';
 import { useToast } from '@/contexts/AppToastContext';
 import { extractSongMedia } from '@/types/songMedia';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1692,11 +1692,10 @@ const SelectedSongsScreen: React.FC = () => {
                 <Text style={styles.modalDescription}>
                   Elige un nombre para tu archivo
                 </Text>
-                <TextInput
+                <AppTextField
                   value={exportFileName}
                   onChangeText={setExportFileName}
                   placeholder="Playlist 7-ago"
-                  placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
                   autoFocus
                   selectTextOnFocus
                   style={styles.modalInput}
@@ -1959,15 +1958,7 @@ const createStyles = (
       marginBottom: 14,
     },
     modalInput: {
-      borderWidth: 1,
-      borderColor: isDark ? '#3A3A3C' : '#D1D1D6',
-      borderRadius: radii.md,
-      paddingVertical: 12,
-      paddingHorizontal: 14,
-      fontSize: 16,
       marginBottom: 8,
-      backgroundColor: isDark ? '#1C1C1E' : '#F8F8FA',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
     },
     modalNote: {
       fontSize: 12,
