@@ -18,6 +18,34 @@
 
 ---
 
+## 2026-07-26 11:20 — Comunica: cápsula atrás/adelante legible en oscuro + tema hacia la web
+
+- **Fix (modo oscuro)**: la cápsula atrás/adelante era ilegible. `GlassSurface`
+  sin `tintColor` pinta **blanco al 95% en Android/web** ignorando el tema, y en
+  iOS usa `systemChromeMaterial`, que sigue la apariencia del **sistema** y no el
+  tema elegido a mano en la app → iconos blancos sobre cristal blanco (o al
+  revés). `GlassActionGroup` acepta ahora un `tintColor` opcional (aditivo, no
+  cambia el resto de usos) y `WebViewNavControls` lo fija según el tema de la
+  app; el rim blanco se atenúa sobre cápsula oscura y sube el contraste del
+  estado deshabilitado.
+- **Tema hacia la web**: la app propaga claro/oscuro a Comunica por tres vías
+  complementarias — `?theme=` en la URL inicial (render server-side sin
+  parpadeo), **cookie `mcm_theme`** (viaja en todas las peticiones siguientes,
+  legible desde PHP) y clase/atributo en `<html>` + `color-scheme` (para webs
+  que resuelven el tema solo con CSS). Si el usuario cambia el tema con Comunica
+  abierto se reinyecta **sin recargar**, para no perder formularios a medias.
+  La URL se congela con el tema del montaje para que un cambio de tema no mute
+  `source.uri` y fuerce recarga. Fondo del contenedor según tema (sin flash
+  blanco al cargar en oscuro).
+- **Nuevo** `docs/contratos/COMUNICA_WEBVIEW.md`: contrato para el repo PHP de
+  Comunica (`?app=1`, tema, zona segura con `env(safe-area-inset-*)`, saneado de
+  los parámetros). Indexado en `docs/README.md`.
+- Archivos: `components/ui/GlassActionGroup.tsx`,
+  `components/ui/WebViewNavControls.tsx`, `app/screens/ComunicaScreen.tsx`.
+  Cambio OTA-safe.
+
+---
+
 ## 2026-07-24 18:42 — UI Nativa Fase 2: `AppTextField` en más formularios + `EmptyState` en Calendario
 
 - Migrados a `AppTextField`: pregunta de texto libre del wizard de encuestas
