@@ -18,6 +18,44 @@
 
 ---
 
+## 2026-07-26 18:05 — Contigo: revisión a fondo del sistema de subrayado
+
+- **Copiar/pegar y menú nativo de verdad**: `HighlightableReading` renderiza el
+  texto en iOS como un `TextInput` de solo lectura (un `UITextView` real) en los
+  **dos** modos, en vez de cambiar de componente al entrar en modo subrayar. Se
+  gana la selección nativa completa: asas, lupa, Copiar, Traducir, Buscar y las
+  Herramientas de escritura de iOS. En Android se sigue usando `Text selectable`
+  al leer (evita que "Pegar" escriba dentro de la lectura) y `TextInput` al
+  subrayar. Todas las lecturas usan ya el mismo componente, sean subrayables o
+  no.
+- **Los subrayados ya no desaparecen en modo subrayar**: los tramos de color se
+  pasan como hijos `<Text>` del `TextInput` (cadena atribuida nativa) en lugar de
+  un `value` plano. Como consecuencia, aplicar un color ya **no** cierra el modo
+  subrayar: se pueden marcar varias frases seguidas viendo lo ya pintado.
+  (Excepción conocida: en web RNW no admite hijos en el `textarea`, así que ahí
+  el color se ve al salir del modo.)
+- **Se pueden subrayar TODAS las lecturas del día**: primera lectura, salmo,
+  segunda lectura y también el **comentario**, no solo evangelio y salmo.
+  `HighlightSource` pasa a `evangelio | comentario | lectura1 | salmo | lectura2`
+  y el estado se centraliza en el hook nuevo `useReadingHighlights`, de modo que
+  añadir una fuente es añadir una entrada a `HIGHLIGHT_SOURCES` (antes había que
+  duplicar memos y handlers a mano, que es por lo que la primera lectura se
+  quedó sin subrayado).
+- **Fix de los toggles de las tarjetas**: al entrar en modo subrayar la tarjeta
+  se abre una vez y a partir de ahí manda el usuario. Antes `isOpen` la forzaba
+  abierta mientras durase el modo, así que pulsar la cabecera no hacía nada
+  visible y las tarjetas parecían abrirse y cerrarse solas.
+- **Texto**: "Otras lecturas de la misa" → "Todas las lecturas del día".
+- **Documentación**: nuevo `docs/funcionalidades/SUBRAYADO.md` con el modelo de
+  datos, por qué el texto es un `TextInput`, y los pasos concretos (iOS `UIMenu`
+  vía `editMenuForTextIn`, Android `ActionMode.Callback2`) para meter "Subrayar"
+  en el menú nativo — eso requiere **build de tienda**, no OTA. Tarea añadida a
+  `TODO.md`.
+- Archivos: `components/contigo/HighlightableReading.tsx`,
+  `components/contigo/ReadingCard.tsx`, `hooks/useReadingHighlights.ts` (nuevo),
+  `app/(tabs)/contigo/evangelio.tsx`, `utils/contigoBookmarks.ts`,
+  `docs/funcionalidades/SUBRAYADO.md`.
+
 ## 2026-07-26 11:20 — Comunica: cápsula atrás/adelante legible en oscuro + tema hacia la web
 
 - **Fix (modo oscuro)**: la cápsula atrás/adelante era ilegible. `GlassSurface`

@@ -68,3 +68,4 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Análisis técnico y plan de mejoras | `docs/planes/MEJORAS.md` + `docs/planes/PLAN_CALIDAD.md` |
 | Sistema de diseño / tabs | `docs/desarrollo/DESIGN.md` + `docs/desarrollo/TABS_MAINTENANCE.md` |
 | Arreglos del cantoral (`{arr:}`) | `docs/funcionalidades/ARREGLOS.md` |
+| Subrayado de lecturas (Contigo) | `docs/funcionalidades/SUBRAYADO.md` |

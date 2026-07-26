@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Card, PressableFeedback } from 'heroui-native';
 import { Colors } from '@/constants/colors';
@@ -52,8 +52,17 @@ export function ReadingCard({
   const fontScale = scale ?? globalScale;
 
   const [expanded, setExpanded] = useState(defaultExpanded);
-  // En modo subrayar la tarjeta subrayable se abre sola para poder seleccionar.
-  const isOpen = expanded || (highlightable && penMode);
+  // Al ENTRAR en modo subrayar la tarjeta subrayable se abre una vez, para que
+  // haya texto que seleccionar. A partir de ahí manda el usuario: si la cierra
+  // se queda cerrada (antes `isOpen` la forzaba abierta y el toggle no hacía
+  // nada visible — parecía que la tarjeta se volvía loca).
+  const prevPenMode = useRef(penMode);
+  useEffect(() => {
+    if (highlightable && penMode && !prevPenMode.current) setExpanded(true);
+    prevPenMode.current = penMode;
+  }, [penMode, highlightable]);
+
+  const isOpen = expanded;
 
   if (!texto) return null;
 
@@ -112,34 +121,21 @@ export function ReadingCard({
                 },
               ]}
             >
-              {highlightable ? (
-                <HighlightableReading
-                  text={texto}
-                  ranges={ranges}
-                  penMode={penMode}
-                  onSelectionChange={onSelectionChange}
-                  color={theme.text}
-                  fontSize={17 * fontScale}
-                  lineHeight={26 * fontScale}
-                  fontFamily={Platform.OS === 'ios' ? 'Palatino' : 'serif'}
-                  isDark={isDark}
-                />
-              ) : (
-                <Text
-                  style={[
-                    styles.bodyText,
-                    {
-                      color: theme.text,
-                      fontSize: 17 * fontScale,
-                      lineHeight: 26 * fontScale,
-                      fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
-                    },
-                  ]}
-                  selectable
-                >
-                  {texto}
-                </Text>
-              )}
+              {/* Siempre el mismo componente de texto: así se copia igual de
+                  bien sea o no subrayable la lectura. */}
+              <HighlightableReading
+                text={texto}
+                ranges={highlightable ? ranges : []}
+                penMode={highlightable && penMode}
+                onSelectionChange={
+                  highlightable ? onSelectionChange : undefined
+                }
+                color={theme.text}
+                fontSize={17 * fontScale}
+                lineHeight={26 * fontScale}
+                fontFamily={Platform.OS === 'ios' ? 'Palatino' : 'serif'}
+                isDark={isDark}
+              />
             </View>
           )}
         </View>
@@ -195,10 +191,5 @@ const styles = StyleSheet.create({
     padding: 14,
     paddingTop: 10,
     borderTopWidth: 1,
-  },
-  bodyText: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '400',
   },
 });

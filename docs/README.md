@@ -13,6 +13,7 @@ Cómo funciona cada sistema de la app, de principio a fin.
 | [EVENTOS.md](funcionalidades/EVENTOS.md) | Sistema de eventos (Jubileo, encuentros, retiros…): paths de Firebase y cómo añadir un evento nuevo |
 | [ENCUESTAS.md](funcionalidades/ENCUESTAS.md) | Sistema de encuestas y evaluaciones (guía funcional) |
 | [ARREGLOS.md](funcionalidades/ARREGLOS.md) | Directiva `{arr:}` del cantoral (anotaciones de arreglos) + prompt del generador ChordPro |
+| [SUBRAYADO.md](funcionalidades/SUBRAYADO.md) | Subrayado de las lecturas de Contigo: rangos, componente de texto nativo y qué falta (build nativa) para el ítem "Subrayar" del menú del sistema |
 
 ## Contratos de datos (App ↔ MCM Panel)
 

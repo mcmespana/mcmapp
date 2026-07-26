@@ -16,6 +16,14 @@
       portrait). ⚠️ Cambio NATIVO → **build de tienda + commit `[skip-ota]`**, no
       OTA. Hacerlo en la próxima release de tienda. Los layouts de iPad (pasada
       del 2026-06-21, ver CHANGELOG) ya están listos para cuando se active.
+- [ ] **Subrayar desde el menú NATIVO del sistema** — hoy hay que entrar al modo
+      subrayar (botón del rotulador). Lo suyo es un ítem "Subrayar" con sus
+      colores dentro del menú de selección nativo (junto a Copiar / Herramientas
+      de escritura / Traducir). No se puede desde JS: `UIMenu` propio vía
+      `textView(_:editMenuForTextIn:suggestedActions:)` en iOS 16+ y
+      `ActionMode.Callback2` en Android. ⚠️ Cambio NATIVO → **build de tienda +
+      commit `[skip-ota]`**. Contrato hacia JS y pasos detallados en
+      `docs/funcionalidades/SUBRAYADO.md`.
 - [ ] **iPad: verificar en dispositivo real (9/10)** en horizontal y vertical
       todas las pantallas y modales/bottom sheets (la pasada de layouts no se ha
       probado en iPad físico). Posibles ajustes finos tras la prueba.
