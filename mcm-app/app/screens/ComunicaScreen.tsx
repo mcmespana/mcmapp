@@ -6,7 +6,13 @@
 //            Extra de scroll al fondo para no dejar el botón bajo el tab bar.
 //   · Android → franja lisa (blanca/oscura) en el notch; la web arranca debajo.
 
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from 'react';
 import {
   Platform,
   View,
@@ -32,6 +38,31 @@ const iframeStyles =
 
 const COMUNICA_URL = 'https://comunica.movimientoconsolacion.com/aptest/?app=1';
 
+/**
+ * Propaga el tema de la app (claro/oscuro) a la web embebida. Se manda por
+ * TRES vías complementarias, todas inofensivas si la web todavía las ignora:
+ *
+ *   1. `?theme=` en la URL inicial → PHP puede renderizar ya en oscuro en la
+ *      primerísima petición, sin parpadeo.
+ *   2. Cookie `mcm_theme` (1 año, path=/) → viaja en TODAS las peticiones
+ *      siguientes, así que PHP la lee aunque el usuario navegue por el portal.
+ *   3. Atributo/clase en `<html>` + `color-scheme` → sirve a webs que resuelven
+ *      el tema solo con CSS, sin tocar el servidor.
+ *
+ * Se reinyecta en cada carga de página y también en caliente si el usuario
+ * cambia el tema mientras está en la pantalla (sin recargar, para no perder
+ * lo que tenga escrito en un formulario).
+ */
+const themeBridgeJS = (theme: 'light' | 'dark') => `(function(){try{
+  var t=${JSON.stringify(theme)};
+  var r=document.documentElement;
+  r.dataset.mcmTheme=t;
+  r.classList.toggle('dark', t==='dark');
+  r.classList.toggle('light', t!=='dark');
+  r.style.colorScheme=t;
+  document.cookie='mcm_theme='+t+';path=/;max-age=31536000;samesite=Lax';
+}catch(e){}})();true;`;
+
 // Altura aproximada del tab bar iOS (sin la safe-area inferior) + margen cómodo.
 // Se suma como contentInset inferior para que el contenido pueda arrastrarse por
 // encima del tab bar translúcido (si no, el último botón de la web queda tapado).
@@ -53,6 +84,21 @@ export default function ComunicaScreen() {
   }, []);
   const goBack = useCallback(() => webViewRef.current?.goBack(), []);
   const goForward = useCallback(() => webViewRef.current?.goForward(), []);
+
+  // ── Tema (claro/oscuro) hacia la web ──────────────────────────────────────
+  // La URL se congela con el tema del montaje: si dependiera de `scheme`, un
+  // cambio de tema mutaría `source.uri` y RECARGARÍA la web, perdiendo lo que
+  // el usuario tuviera escrito. Los cambios en caliente van por injectJavaScript.
+  const initialTheme = useRef(scheme).current;
+  const sourceUri = useMemo(
+    () => `${COMUNICA_URL}&theme=${initialTheme}`,
+    [initialTheme],
+  );
+  const themeJS = useMemo(() => themeBridgeJS(scheme), [scheme]);
+
+  useEffect(() => {
+    webViewRef.current?.injectJavaScript(themeJS);
+  }, [themeJS]);
 
   // Android: el botón/gesto atrás del sistema navega primero por el historial
   // de la web; solo sale de la pantalla cuando ya no hay a dónde volver.
@@ -106,13 +152,15 @@ export default function ComunicaScreen() {
 
   // Texto de la status bar: oscuro sobre glass claro, claro sobre glass oscuro.
   const barStyle = scheme === 'dark' ? 'light-content' : 'dark-content';
+  // Fondo bajo el WebView: evita el flash blanco al cargar en modo oscuro.
+  const pageBg = scheme === 'dark' ? '#1C1C1E' : '#FFFFFF';
 
   // ── Web: iframe ──────────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
     return (
       <View style={styles.container}>
         <iframe
-          src={COMUNICA_URL}
+          src={sourceUri}
           title="Comunica"
           className={iframeStyles?.iframe}
           style={{ flex: 1, width: '100%', height: '100%', border: 'none' }}
@@ -131,17 +179,19 @@ export default function ComunicaScreen() {
   if (Platform.OS === 'ios') {
     const bottomInset = insets.bottom + IOS_TAB_BAR_HEIGHT + IOS_BOTTOM_EXTRA;
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: pageBg }]}>
         <StatusBar barStyle={barStyle} translucent />
         <WebView
           ref={webViewRef}
-          source={{ uri: COMUNICA_URL }}
+          source={{ uri: sourceUri }}
           style={styles.webview}
           // Rendimiento y persistencia
           javaScriptEnabled={true}
           domStorageEnabled={true}
           sharedCookiesEnabled={true}
           thirdPartyCookiesEnabled={true}
+          // Reaplica el tema en cada carga de página (también tras navegar)
+          injectedJavaScript={themeJS}
           // La web arranca en zona segura y se desliza bajo el glass al scrollear;
           // el inset inferior da margen para subir el contenido sobre el tab bar.
           automaticallyAdjustContentInsets={false}
@@ -182,7 +232,7 @@ export default function ComunicaScreen() {
   }
 
   // ── Android: franja lisa en el notch, la web arranca debajo ────────────────
-  const stripColor = scheme === 'dark' ? '#1C1C1E' : '#FFFFFF';
+  const stripColor = pageBg;
   return (
     <View style={[styles.container, { backgroundColor: stripColor }]}>
       <StatusBar barStyle={barStyle} backgroundColor={stripColor} translucent />
@@ -196,12 +246,13 @@ export default function ComunicaScreen() {
       )}
       <WebView
         ref={webViewRef}
-        source={{ uri: COMUNICA_URL }}
+        source={{ uri: sourceUri }}
         style={styles.webview}
         javaScriptEnabled={true}
         domStorageEnabled={true}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
+        injectedJavaScript={themeJS}
         onNavigationStateChange={onNavStateChange}
         renderLoading={renderLoading}
         onLoadEnd={onLoadEnd}

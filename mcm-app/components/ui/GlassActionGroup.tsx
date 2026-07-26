@@ -33,6 +33,14 @@ interface GlassActionGroupProps {
   height?: number;
   /** Ancho de cada segmento. Por defecto 44. */
   itemWidth?: number;
+  /**
+   * Tinte explícito del cristal. Sin él, la cápsula usa el material de sistema
+   * (`systemChromeMaterial` en iOS) y un blanco translúcido en Android/web —
+   * ambos siguen la apariencia del SISTEMA, no el tema de la app. Pásalo
+   * cuando la cápsula deba seguir el tema elegido en la app (p. ej. sobre un
+   * WebView, donde el usuario puede haber forzado claro/oscuro a mano).
+   */
+  tintColor?: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -42,11 +50,18 @@ export default function GlassActionGroup({
   items,
   height = DEFAULT_H,
   itemWidth = 44,
+  tintColor,
   style,
 }: GlassActionGroupProps) {
   const isDark = useColorScheme() === 'dark';
   const dividerColor = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)';
   const radius = height / 2;
+  // El rim blanco es el borde de cristal estándar sobre superficies claras; en
+  // una cápsula tintada de oscuro queda como un halo raro, así que se atenúa.
+  const rimColor =
+    tintColor && isDark
+      ? 'rgba(255, 255, 255, 0.10)'
+      : 'rgba(255, 255, 255, 0.22)';
 
   if (items.length === 0) return null;
 
@@ -58,7 +73,11 @@ export default function GlassActionGroup({
       >
         <GlassSurface
           variant="regular"
-          style={[styles.glass, { borderRadius: radius }]}
+          tintColor={tintColor}
+          style={[
+            styles.glass,
+            { borderRadius: radius, borderColor: rimColor },
+          ]}
         />
         {items.map((it, i) => (
           <React.Fragment key={it.key}>
