@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, StyleSheet, Text, TextInput } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  type StyleProp,
+  type TextStyle,
+} from 'react-native';
 import {
   computeSpans,
   highlightBg,
@@ -15,9 +22,9 @@ interface HighlightableReadingProps {
   /** Texto CANÓNICO de la lectura (ver normalizeReadingText). */
   text: string;
   /** Rangos subrayados (offsets sobre el texto canónico). */
-  ranges: HighlightRange[];
-  /** Modo subrayar: muestra la capa de selección nativa. */
-  penMode: boolean;
+  ranges?: HighlightRange[];
+  /** Modo subrayar: activa el reporte de selección para pintar. */
+  penMode?: boolean;
   /** Selección nativa actual (null si no hay o es vacía). */
   onSelectionChange?: (sel: ReadingSelection | null) => void;
   color: string;
@@ -25,29 +32,57 @@ interface HighlightableReadingProps {
   lineHeight: number;
   fontFamily?: string;
   isDark: boolean;
+  style?: StyleProp<TextStyle>;
 }
 
 /**
- * Lectura con subrayados pastel y selección NATIVA de verdad.
+ * Texto de lectura con subrayados pastel y selección NATIVA de verdad.
  *
- * - Modo lectura: `Text` con spans de color pastel; `selectable` para el
- *   gesto nativo básico de copiar.
- * - Modo subrayar: el texto se muestra COMO un `TextInput` multilínea de solo
- *   lectura (una única capa — nada de superposiciones que se desalineen). El
- *   sistema da la selección nativa completa: asas de arrastre, lupa y menú de
- *   copiar / herramientas de escritura de iOS. `onSelectionChange` entrega el
- *   inicio y el fin exactos para subrayar.
+ * ## Por qué un `TextInput` de solo lectura
+ *
+ * `<Text selectable>` de RN se apoya en un `UILabel`/`TextView` recortado: la
+ * selección es tosca, y en iOS **no** ofrece el menú completo del sistema
+ * (Herramientas de escritura / Apple Intelligence, Traducir, Buscar…). Un
+ * `TextInput` multilínea de solo lectura es un `UITextView` real, así que se
+ * comporta como el texto de Notas o Safari: asas de arrastre, lupa y menú
+ * nativo completo.
+ *
+ * Por eso en iOS usamos SIEMPRE la misma capa (no cambiamos de componente al
+ * entrar en modo subrayar): el usuario no pierde la selección ni ve saltos de
+ * layout, y el texto se puede copiar igual de bien en los dos modos.
+ *
+ * ## Los subrayados se ven SIEMPRE
+ *
+ * Los spans de color se pasan como hijos `<Text>` del propio `TextInput` (RN
+ * los convierte en la cadena atribuida nativa), no como un `value` plano. Así
+ * los subrayados siguen visibles dentro del modo subrayar, que es cuando más
+ * falta hacen: se ve lo que ya está pintado mientras se pinta lo siguiente.
+ *
+ * ## Por plataforma
+ *
+ * - **iOS**: `TextInput` de solo lectura en los dos modos.
+ * - **Android**: `Text selectable` al leer (menú nativo de copiar sin riesgo de
+ *   pegar dentro) y `TextInput` al subrayar (única forma de conocer los
+ *   offsets exactos de la selección).
+ * - **Web**: `Text` seleccionable al leer (selección del navegador) y
+ *   `TextInput` con `value` al subrayar — RNW no admite hijos en el textarea,
+ *   así que ahí el color se ve al salir del modo subrayar.
+ *
+ * Nota: el ítem "Subrayar" DENTRO del menú nativo requiere código nativo
+ * (`UIMenu` propio en iOS / `ActionMode` en Android) y por tanto una build de
+ * tienda. Ver `docs/funcionalidades/SUBRAYADO.md`.
  */
 export function HighlightableReading({
   text,
-  ranges,
-  penMode,
+  ranges = [],
+  penMode = false,
   onSelectionChange,
   color,
   fontSize,
   lineHeight,
   fontFamily,
   isDark,
+  style,
 }: HighlightableReadingProps) {
   const spans = useMemo(() => computeSpans(text, ranges), [text, ranges]);
 
@@ -70,49 +105,14 @@ export function HighlightableReading({
     ...(fontFamily ? { fontFamily } : {}),
   } as const;
 
-  if (penMode) {
-    return (
-      <TextInput
-        style={[
-          styles.base,
-          styles.input,
-          textStyle,
-          { minHeight: lineHeight, height: inputHeight },
-        ]}
-        value={text}
-        multiline
-        scrollEnabled={false}
-        // iOS: UITextView de solo lectura sigue siendo seleccionable con
-        // asas nativas. Android necesita editable para poder seleccionar;
-        // el valor controlado + sin teclado impide cualquier edición real.
-        editable={Platform.OS === 'android'}
-        showSoftInputOnFocus={false}
-        caretHidden
-        onChangeText={() => {}}
-        autoCorrect={false}
-        spellCheck={false}
-        onContentSizeChange={(e) =>
-          setInputHeight(Math.ceil(e.nativeEvent.contentSize.height))
-        }
-        onSelectionChange={(e) => {
-          const { start, end } = e.nativeEvent.selection;
-          onSelRef.current?.(
-            end > start
-              ? { start: Math.min(start, end), end: Math.max(start, end) }
-              : null,
-          );
-        }}
-        accessibilityLabel="Selecciona el texto que quieres subrayar"
-      />
-    );
-  }
-
-  return (
-    <Text selectable style={[styles.base, textStyle]}>
-      {spans.map((s, i) =>
+  // Hijos con los tramos subrayados. Sirven igual para `Text` que para
+  // `TextInput` (RN los vuelca en la cadena atribuida nativa).
+  const spanChildren = useMemo(
+    () =>
+      spans.map((s, i) =>
         s.color ? (
           <Text
-            key={i}
+            key={`${i}-${s.color}`}
             style={{ backgroundColor: highlightBg(s.color, isDark) }}
           >
             {s.text}
@@ -120,8 +120,61 @@ export function HighlightableReading({
         ) : (
           <Text key={i}>{s.text}</Text>
         ),
-      )}
-    </Text>
+      ),
+    [spans, isDark],
+  );
+
+  // RNW no soporta hijos dentro del textarea: allí caemos a `value` plano.
+  const isWeb = Platform.OS === 'web';
+  // iOS siempre en UITextView; el resto solo cuando hace falta seleccionar.
+  const asInput = Platform.OS === 'ios' || penMode;
+
+  if (!asInput) {
+    return (
+      <Text selectable style={[styles.base, textStyle, style]}>
+        {spanChildren}
+      </Text>
+    );
+  }
+
+  return (
+    <TextInput
+      style={[
+        styles.base,
+        styles.input,
+        textStyle,
+        style,
+        { minHeight: lineHeight, height: inputHeight },
+      ]}
+      multiline
+      scrollEnabled={false}
+      // iOS: un UITextView de solo lectura sigue siendo seleccionable con asas
+      // nativas y menú completo. Android necesita editable para poder
+      // seleccionar; sin teclado no hay forma práctica de editar.
+      editable={Platform.OS === 'android'}
+      showSoftInputOnFocus={false}
+      caretHidden
+      onChangeText={() => {}}
+      autoCorrect={false}
+      spellCheck={false}
+      textBreakStrategy="highQuality"
+      onContentSizeChange={(e) =>
+        setInputHeight(Math.ceil(e.nativeEvent.contentSize.height))
+      }
+      onSelectionChange={(e) => {
+        if (!penMode) return;
+        const { start, end } = e.nativeEvent.selection;
+        onSelRef.current?.(
+          end > start
+            ? { start: Math.min(start, end), end: Math.max(start, end) }
+            : null,
+        );
+      }}
+      accessibilityLabel={
+        penMode ? 'Selecciona el texto que quieres subrayar' : undefined
+      }
+      {...(isWeb ? { value: text } : { children: spanChildren })}
+    />
   );
 }
 

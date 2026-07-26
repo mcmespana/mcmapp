@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ScrollView,
   View,
@@ -27,10 +27,7 @@ import {
   getLiturgicalInfo,
 } from '@/components/contigo/LiturgicalBadge';
 import { ReadingCard } from '@/components/contigo/ReadingCard';
-import {
-  HighlightableReading,
-  type ReadingSelection,
-} from '@/components/contigo/HighlightableReading';
+import { HighlightableReading } from '@/components/contigo/HighlightableReading';
 import { HighlightActionBar } from '@/components/contigo/HighlightActionBar';
 import { ReadingCalendarSheet } from '@/components/contigo/ReadingCalendarSheet';
 import { CreditsSheet } from '@/components/contigo/CreditsSheet';
@@ -39,14 +36,8 @@ import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
 import { useAvailableReadingDates } from '@/hooks/useAvailableReadingDates';
-import { segmentReading, normalizeReadingText } from '@/utils/readingSegments';
-import {
-  addHighlight,
-  normalizeHighlights,
-  removeHighlight,
-  type HighlightColorKey,
-} from '@/utils/highlightRanges';
-import type { HighlightSource } from '@/utils/contigoBookmarks';
+import { segmentReading } from '@/utils/readingSegments';
+import { useReadingHighlights } from '@/hooks/useReadingHighlights';
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 
@@ -157,80 +148,19 @@ export default function EvangelioScreen() {
   const isBookmarked = isBookmarkedFn(selectedDate);
   const bookmark = getBookmark(selectedDate);
 
-  // Texto canónico (los rangos de subrayado son offsets sobre esta forma).
-  const evangelioCanonical = useMemo(
-    () =>
-      readings?.evangelio?.texto
-        ? normalizeReadingText(readings.evangelio.texto)
-        : '',
-    [readings?.evangelio?.texto],
+  // Subrayado de TODAS las lecturas del día (evangelio, comentario, primera
+  // lectura, salmo y segunda lectura). El texto canónico y los rangos viven en
+  // el hook — ver hooks/useReadingHighlights.ts.
+  const hl = useReadingHighlights(
+    selectedDate,
+    readings,
+    bookmark,
+    setHighlights,
   );
-  const salmoCanonical = useMemo(
-    () =>
-      readings?.salmo?.texto ? normalizeReadingText(readings.salmo.texto) : '',
-    [readings?.salmo?.texto],
-  );
-  const evangelioRanges = useMemo(
-    () =>
-      normalizeHighlights(evangelioCanonical, bookmark?.highlights?.evangelio),
-    [evangelioCanonical, bookmark?.highlights?.evangelio],
-  );
-  const salmoRanges = useMemo(
-    () => normalizeHighlights(salmoCanonical, bookmark?.highlights?.salmo),
-    [salmoCanonical, bookmark?.highlights?.salmo],
-  );
-
-  // Selección nativa activa dentro del modo subrayar (evangelio o salmo).
-  const [activeSel, setActiveSel] = useState<{
-    source: HighlightSource;
-    sel: ReadingSelection;
-  } | null>(null);
-
-  // "Pegajosa": nos quedamos con la ÚLTIMA selección no vacía. Al tocar un
-  // chip de color, iOS puede colapsar la selección nativa antes de que llegue
-  // el onPress — si la vaciáramos aquí, el color no tendría a qué aplicarse.
-  const handleSelection =
-    (source: HighlightSource) => (sel: ReadingSelection | null) => {
-      if (sel) setActiveSel({ source, sel });
-    };
-
-  const sourceData = (source: HighlightSource) =>
-    source === 'evangelio'
-      ? { text: evangelioCanonical, ranges: evangelioRanges }
-      : { text: salmoCanonical, ranges: salmoRanges };
-
-  const applyHighlightColor = (color: HighlightColorKey) => {
-    if (!activeSel) return;
-    const { text, ranges } = sourceData(activeSel.source);
-    const next = addHighlight(
-      text,
-      ranges,
-      activeSel.sel.start,
-      activeSel.sel.end,
-      color,
-    );
-    setHighlights(selectedDate, activeSel.source, next, readings);
-    // Salimos del modo subrayar: el texto vuelve a pintarse con los colores
-    // pastel y el subrayado recién hecho se ve al instante.
-    exitHighlightMode();
-  };
-
-  const eraseHighlightSelection = () => {
-    if (!activeSel) return;
-    const { text, ranges } = sourceData(activeSel.source);
-    const next = removeHighlight(
-      text,
-      ranges,
-      activeSel.sel.start,
-      activeSel.sel.end,
-    );
-    setHighlights(selectedDate, activeSel.source, next, readings);
-    exitHighlightMode();
-  };
 
   const exitHighlightMode = () => {
     setHighlightMode(false);
-    setActiveSel(null);
+    hl.clearSelection();
   };
 
   const toggleBookmark = async () => {
@@ -690,10 +620,10 @@ export default function EvangelioScreen() {
                             </Text>
                           </View>
                           <HighlightableReading
-                            text={evangelioCanonical}
-                            ranges={evangelioRanges}
+                            text={hl.canonical.evangelio}
+                            ranges={hl.ranges.evangelio}
                             penMode={highlightMode}
-                            onSelectionChange={handleSelection('evangelio')}
+                            onSelectionChange={hl.onSelectionChange.evangelio}
                             color={theme.text}
                             fontSize={18 * fontScale}
                             lineHeight={28 * fontScale}
@@ -705,19 +635,16 @@ export default function EvangelioScreen() {
                         </>
                       ) : (
                         <>
-                          <Text
-                            style={[
-                              styles.bodyText,
-                              {
-                                color: theme.text,
-                                fontSize: 18 * fontScale,
-                                lineHeight: 28 * fontScale,
-                              },
-                            ]}
-                            selectable
-                          >
-                            {readings.evangelio.comentario}
-                          </Text>
+                          <HighlightableReading
+                            text={hl.canonical.comentario}
+                            ranges={hl.ranges.comentario}
+                            penMode={highlightMode}
+                            onSelectionChange={hl.onSelectionChange.comentario}
+                            color={theme.text}
+                            fontSize={18 * fontScale}
+                            lineHeight={28 * fontScale}
+                            isDark={isDark}
+                          />
 
                           {readings.evangelio.comentarista ? (
                             <Text
@@ -784,10 +711,10 @@ export default function EvangelioScreen() {
                       </Text>
                     </View>
                     <HighlightableReading
-                      text={evangelioCanonical}
-                      ranges={evangelioRanges}
+                      text={hl.canonical.evangelio}
+                      ranges={hl.ranges.evangelio}
                       penMode={highlightMode}
-                      onSelectionChange={handleSelection('evangelio')}
+                      onSelectionChange={hl.onSelectionChange.evangelio}
                       color={theme.text}
                       fontSize={18 * fontScale}
                       lineHeight={28 * fontScale}
@@ -888,15 +815,19 @@ export default function EvangelioScreen() {
                   <Text
                     style={[styles.otherReadingsTitle, { color: theme.text }]}
                   >
-                    Otras lecturas de la misa
+                    Todas las lecturas del día
                   </Text>
 
                   {readings.lectura1 && (
                     <ReadingCard
                       title="Primera Lectura"
                       cita={readings.lectura1.cita}
-                      texto={readings.lectura1.texto}
+                      texto={hl.canonical.lectura1}
                       scale={fontScale}
+                      highlightable
+                      penMode={highlightMode}
+                      ranges={hl.ranges.lectura1}
+                      onSelectionChange={hl.onSelectionChange.lectura1}
                     />
                   )}
 
@@ -904,12 +835,12 @@ export default function EvangelioScreen() {
                     <ReadingCard
                       title="Salmo"
                       cita={readings.salmo.cita}
-                      texto={salmoCanonical}
+                      texto={hl.canonical.salmo}
                       scale={fontScale}
                       highlightable
                       penMode={highlightMode}
-                      ranges={salmoRanges}
-                      onSelectionChange={handleSelection('salmo')}
+                      ranges={hl.ranges.salmo}
+                      onSelectionChange={hl.onSelectionChange.salmo}
                     />
                   )}
 
@@ -917,8 +848,12 @@ export default function EvangelioScreen() {
                     <ReadingCard
                       title="Segunda Lectura"
                       cita={readings.lectura2.cita}
-                      texto={readings.lectura2.texto}
+                      texto={hl.canonical.lectura2}
                       scale={fontScale}
+                      highlightable
+                      penMode={highlightMode}
+                      ranges={hl.ranges.lectura2}
+                      onSelectionChange={hl.onSelectionChange.lectura2}
                     />
                   )}
                 </View>
@@ -965,9 +900,9 @@ export default function EvangelioScreen() {
       {/* Barra flotante del modo subrayar (colores pastel + goma) */}
       <HighlightActionBar
         visible={highlightMode}
-        hasSelection={!!activeSel}
-        onPickColor={applyHighlightColor}
-        onErase={eraseHighlightSelection}
+        hasSelection={hl.hasSelection}
+        onPickColor={hl.applyColor}
+        onErase={hl.erase}
         onDone={exitHighlightMode}
         isDark={isDark}
       />
