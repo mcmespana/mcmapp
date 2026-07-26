@@ -18,6 +18,42 @@
 
 ---
 
+## 2026-07-26 22:15 — Barra de pestañas: píldora flotante glass unificada (expo-glass-tabs)
+
+- **Experimento / prueba en producción**: sustituye la implementación dual del
+  tab bar (`NativeTabs` en iOS / `Tabs` clásico en Android-Web) por una única
+  píldora flotante liquid-glass (librería `expo-glass-tabs`) que se **encoge y
+  oculta las etiquetas al hacer scroll** — igual en las tres plataformas. En
+  iOS esto cambia el tab bar nativo real (Liquid Glass del sistema) por una
+  recreación en JS; a cambio gana la animación de minimizado, que el
+  `NativeTabs` no ofrecía.
+- Nueva dependencia `expo-glass-tabs` (0.1.1) — **sin código nativo propio**:
+  se apoya en `expo-blur`/`expo-glass-effect`/`react-native-reanimated`/
+  `react-native-gesture-handler`, ya instalados. **No requiere build de
+  tienda ni `[skip-ota]`**, se puede publicar por OTA normal.
+  - `app/(tabs)/_layout.tsx`: reescrito sobre las primitivas headless
+    `Tabs`/`TabList`/`TabSlot`/`TabTrigger` de `expo-router/ui`. Sigue
+    limitando la píldora a 5 tabs visibles (`splitTabsForIOS`, reutilizado
+    ahora en todas las plataformas); el resto se registra en un `TabList`
+    oculto para que siga siendo navegable (`router.navigate`) aunque no
+    tenga botón visible. Header propio por tab (color + título) ya que la
+    barra headless no ofrece header nativo como el `Tabs` clásico.
+  - `app/screens/MasHomeScreen.tsx`: la lógica de "tabs que no caben van como
+    tarjetas" ya no es exclusiva de iOS — aplica en todas las plataformas al
+    compartir el mismo límite de 5.
+  - `app/(tabs)/index.tsx`, `calendario.tsx`, `fotos.tsx`: scroll principal
+    enganchado a `useMinimizeOnScroll()` (efecto de encogerse); padding
+    inferior que antes sólo se aplicaba en iOS (barra flotante) ahora es
+    universal (la píldora flota sobre el contenido en todas partes).
+  - Pendiente/no cubierto en esta pasada: el resto de pantallas internas
+    (Contigo, Cantoral, Más y sus subpantallas) no llevan aún el hook de
+    scroll ni el padding ajustado — su contenido puede quedar parcialmente
+    tapado por la píldora en listas largas.
+- Verificado en este entorno: `tsc --noEmit`, `lint` y suite de tests (305)
+  en verde; capturas con Playwright en web confirman el render (fallback
+  sólido, sin liquid glass real ahí) y el minimizado al hacer scroll.
+  **Sin probar en iOS/Android reales todavía.**
+
 ## 2026-07-26 11:20 — Comunica: cápsula atrás/adelante legible en oscuro + tema hacia la web
 
 - **Fix (modo oscuro)**: la cápsula atrás/adelante era ilegible. `GlassSurface`

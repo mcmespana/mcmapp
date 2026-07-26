@@ -11,7 +11,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Pressable,
   Linking,
@@ -28,6 +27,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useMinimizeOnScroll } from 'expo-glass-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -197,6 +197,7 @@ interface QuickItem {
 
 export default function Home() {
   const navigation = useNavigation();
+  const onScroll = useMinimizeOnScroll();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
   // Color neutro de los iconos en la cápsula glass (igual que EventActionButtons).
@@ -664,14 +665,16 @@ export default function Home() {
         />
       </View>
 
-      <ScrollView
+      <Animated.ScrollView
         style={{ backgroundColor: theme.background }}
         contentContainerStyle={[
           styles.scrollContent,
           isWide && styles.scrollContentWide,
-          Platform.OS === 'ios' && { paddingBottom: 120 },
+          { paddingBottom: 120 },
         ]}
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
         {/* ── Two-column wrapper on wide screens ── */}
         <View style={isWide ? styles.wideRow : undefined}>
@@ -1283,7 +1286,7 @@ export default function Home() {
             </Text>
           </SecretMenuTrigger>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }

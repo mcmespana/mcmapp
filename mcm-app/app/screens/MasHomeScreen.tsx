@@ -115,12 +115,16 @@ export default function MasHomeScreen() {
   const navigationItems = React.useMemo(() => {
     const items: NavigationItem[] = [];
 
-    // En iOS la barra nativa sólo admite 5 triggers; los tabs que no caben
-    // se exponen aquí como tarjetas para evitar el "More" automático del sistema.
-    if (Platform.OS === 'ios') {
+    // La píldora flotante (expo-glass-tabs, todas las plataformas) sólo
+    // admite 5 triggers visibles; los tabs que no caben se exponen aquí como
+    // tarjetas — antes esto era exclusivo de iOS (limitación de
+    // UITabBarController), ahora aplica también a Android/Web al compartir
+    // la misma barra.
+    {
       const visibleSet = new Set(resolved.tabs);
       const { overflowTabs } = splitTabsForIOS(visibleSet);
-      // Tabs cuyo screen está registrado en el stack de Más (no accesibles vía router.navigate en iOS)
+      // Tabs cuyo screen está registrado en el stack de Más (evita depender
+      // de router.navigate hacia una tab sin trigger visible).
       const OVERFLOW_STACK_TARGETS: Partial<
         Record<string, keyof MasStackParamList>
       > = {

@@ -18,6 +18,8 @@ import {
   Text,
 } from 'react-native';
 import { Calendar, CalendarProps, LocaleConfig } from 'react-native-calendars';
+import Animated from 'react-native-reanimated';
+import { useMinimizeOnScroll } from 'expo-glass-tabs';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
@@ -82,6 +84,7 @@ LocaleConfig.locales['es'] = {
 LocaleConfig.defaultLocale = 'es';
 
 export function CalendarScreen() {
+  const onScroll = useMinimizeOnScroll();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const isDark = scheme === 'dark';
@@ -512,7 +515,11 @@ export function CalendarScreen() {
         </View>
 
         {viewMode === 'calendar' ? (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <Animated.ScrollView
+            showsVerticalScrollIndicator={false}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+          >
             <View style={isLandscapeWide ? styles.monthRowTwoPane : undefined}>
               <View style={isLandscapeWide ? styles.monthLeftPane : undefined}>
                 {/* Wrapper para detectar swipes horizontales (cross-platform) */}
@@ -606,7 +613,7 @@ export function CalendarScreen() {
                 </View>
               </View>
             </View>
-          </ScrollView>
+          </Animated.ScrollView>
         ) : (
           <View style={styles.agendaContainer}>
             {/* Agenda view header */}
@@ -949,7 +956,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     // Event section (calendar view)
     eventSection: {
       paddingHorizontal: 16,
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
+      paddingBottom: 100,
     },
     eventSectionHeader: {
       flexDirection: 'row',
@@ -1123,7 +1130,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     agendaContent: {
       paddingHorizontal: 16,
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
+      paddingBottom: 100,
     },
 
     // Section header (agenda)

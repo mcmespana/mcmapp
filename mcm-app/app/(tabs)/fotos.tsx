@@ -3,14 +3,14 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  FlatList,
   StyleSheet,
   Linking,
   useWindowDimensions,
   ViewStyle,
   Alert,
-  Platform,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { useMinimizeOnScroll } from 'expo-glass-tabs';
 import { Button, Spinner } from 'heroui-native';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper';
 import AlbumCard from '@/components/AlbumCard';
@@ -60,6 +60,7 @@ interface FotosScreenStyles {
 }
 
 export default function FotosScreen() {
+  const onScroll = useMinimizeOnScroll();
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
@@ -174,7 +175,7 @@ export default function FotosScreen() {
   return (
     <TabScreenWrapper style={styles.container} edges={['top']}>
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
-      <FlatList
+      <Animated.FlatList
         data={displayedAlbums}
         renderItem={({ item }) => (
           <View style={columnContainerStyle}>
@@ -193,11 +194,13 @@ export default function FotosScreen() {
             maxWidth: width > 1200 ? 1600 : 1200,
             alignSelf: 'center',
           },
-          Platform.OS === 'ios' && { paddingBottom: 100 },
+          { paddingBottom: 100 },
         ]}
         onEndReached={loadMoreAlbums}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       />
     </TabScreenWrapper>
   );
