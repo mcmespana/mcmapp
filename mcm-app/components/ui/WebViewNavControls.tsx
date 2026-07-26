@@ -32,7 +32,11 @@ export default function WebViewNavControls({
 }: WebViewNavControlsProps) {
   const isDark = useColorScheme() === 'dark';
   const fg = isDark ? '#FFFFFF' : '#1A1A1A';
-  const off = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.22)';
+  const off = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)';
+  // Tinte explícito: sin él la cápsula usa el material del SISTEMA y se queda
+  // blanca en Android/web, o desalineada con el tema si el usuario ha forzado
+  // claro/oscuro a mano en la app → iconos blancos sobre cristal blanco.
+  const tint = isDark ? '#1C1C1E' : '#FFFFFF';
 
   // Nada que navegar → no renderizamos controles vacíos.
   if (!canGoBack && !canGoForward) return null;
@@ -42,6 +46,7 @@ export default function WebViewNavControls({
       style={style}
       height={44}
       itemWidth={50}
+      tintColor={tint}
       items={[
         {
           key: 'back',

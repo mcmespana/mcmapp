@@ -24,6 +24,7 @@ Si cambias uno de estos formatos, actualiza el contrato.
 | [NOTIFICACIONES_CONTRATO.md](contratos/NOTIFICACIONES_CONTRATO.md) | Payload de notificaciones push: rutas, `actionButtons[]`, segmentación |
 | [ENCUESTAS_CONTRATO.md](contratos/ENCUESTAS_CONTRATO.md) | Estructura de encuestas/evaluaciones en Firebase |
 | [PANEL_PERFILES.md](contratos/PANEL_PERFILES.md) | Sistema de perfiles: nodo `/profileConfig`, delegaciones, visibilidad |
+| [COMUNICA_WEBVIEW.md](contratos/COMUNICA_WEBVIEW.md) | Comunica embebido: `?app=1`, tema claro/oscuro (`?theme=` + cookie), zona segura |
 
 ## Planes técnicos
 
