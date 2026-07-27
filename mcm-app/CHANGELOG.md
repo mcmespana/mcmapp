@@ -18,6 +18,24 @@
 
 ---
 
+## 2026-07-27 23:45 — Comunica: el tema de la web ya no se congela antes de tiempo
+
+- **Tema correcto en la primera petición.** La URL inicial (`?theme=`) se
+  congelaba en el primer render, antes de que `AppSettingsContext` terminara de
+  leer el tema guardado de AsyncStorage. En arranque en frío eso mandaba el tema
+  del **sistema operativo**, no el elegido en la app: alguien con la app en Claro
+  y el móvil en oscuro veía Comunica cargar en oscuro y corregirse después. Ahora
+  la pantalla espera a tener el tema guardado (muestra el loader) y solo entonces
+  monta la web.
+- **Web (iframe):** al ser cross-origin no admite inyección de JS, así que el
+  cambio de tema en caliente no le llegaba nunca y se quedaba siempre en claro.
+  Ahora el `src` del iframe lleva el tema actual y se recarga al cambiarlo.
+- **Costura de color al hacer overscroll:** el fondo bajo el WebView pasa de
+  `#1C1C1E` a `#121316` para coincidir con el fondo de página de la web.
+- Archivos: `app/screens/ComunicaScreen.tsx`,
+  `docs/contratos/COMUNICA_WEBVIEW.md` (contrato al día: quién resuelve
+  «Sistema», colores de fondo, excepción de la web).
+
 ## 2026-07-26 18:05 — Contigo: revisión a fondo del sistema de subrayado
 
 - **Copiar/pegar y menú nativo de verdad**: `HighlightableReading` renderiza el
