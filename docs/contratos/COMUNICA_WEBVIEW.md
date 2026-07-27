@@ -69,6 +69,44 @@ recarga** la página (perdería lo escrito en formularios): reinyecta el JS que
 actualiza la clase de `<html>` y la cookie. Por eso conviene que el CSS reaccione
 a la clase — el cambio se ve al instante sin recargar.
 
+Esto aplica tanto si el cambio viene del selector de la app como del sistema
+operativo cuando el selector está en **Sistema** (la app escucha `Appearance` y
+reinyecta igual).
+
+> **Excepción — versión web de la app.** Ahí Comunica va en un `<iframe>`
+> cross-origin: no se le puede inyectar JS, así que un cambio de tema **sí**
+> recarga el iframe con el nuevo `?theme=`. No hay alternativa y en web el caso
+> es marginal.
+
+### Quién resuelve «Sistema»
+
+**La app.** El selector tiene tres valores (Sistema / Claro / Oscuro) pero a la
+web solo le llega `light` o `dark` ya resueltos; la web nunca ve `system`. Si
+algún día se quisiera delegar, bastaría con omitir `theme` y no escribir
+`mcm_theme` para que la web cayera en «Automático» (`prefers-color-scheme` +
+`matchMedia`) — **hoy no es el caso: la app manda siempre**.
+
+### Color de fondo de página (costura de overscroll)
+
+La app pinta un fondo sólido por detrás del WebView para evitar el flash blanco
+al cargar; se ve además en el rebote del scroll. Tiene que ser **el mismo** que
+el fondo de página de la web, o aparece una costura de color:
+
+| Tema | Color |
+| ---- | ----- |
+| Oscuro | `#121316` |
+| Claro | `#FFFFFF` |
+
+Si la web cambia su fondo de página, avisad para actualizar `PAGE_BG_DARK` /
+`PAGE_BG_LIGHT` en `ComunicaScreen.tsx`.
+
+### Momento de la primera carga
+
+La app no monta la web hasta haber leído de disco el tema guardado. Sin eso, en
+un arranque en frío el primer render usaría el tema del sistema operativo y
+alguien con la app en Claro y el móvil en oscuro recibiría `?theme=dark` en la
+primera petición (parpadeo, corregido acto seguido por la inyección).
+
 ## 3. Zona segura (notch y tab bar)
 
 La app dibuja la web **a pantalla completa**, por detrás de la barra superior
