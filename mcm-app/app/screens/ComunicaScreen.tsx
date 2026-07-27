@@ -27,6 +27,7 @@ import { WebView, WebViewNavigation } from 'react-native-webview';
 import { useToast } from '@/contexts/AppToastContext';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 import GlassSurface from '@/components/ui/GlassSurface';
 import WebViewNavControls from '@/components/ui/WebViewNavControls';
 
@@ -69,8 +70,15 @@ const themeBridgeJS = (theme: 'light' | 'dark') => `(function(){try{
 const IOS_TAB_BAR_HEIGHT = 49;
 const IOS_BOTTOM_EXTRA = 32;
 
+// Fondo bajo el WebView. Debe coincidir con el fondo de página de la web:
+// si no, se ve una costura de color en el rebote del overscroll y durante la
+// carga. `#121316` es el fondo oscuro que usa comunica (acordado con la web).
+const PAGE_BG_DARK = '#121316';
+const PAGE_BG_LIGHT = '#FFFFFF';
+
 export default function ComunicaScreen() {
   const scheme = useColorScheme() ?? 'light';
+  const { loading: settingsLoading } = useAppSettings();
   const insets = useSafeAreaInsets();
   const tintColor = ThemeColors[scheme].tint;
   const [isLoading, setIsLoading] = useState(true);
@@ -86,12 +94,21 @@ export default function ComunicaScreen() {
   const goForward = useCallback(() => webViewRef.current?.goForward(), []);
 
   // ── Tema (claro/oscuro) hacia la web ──────────────────────────────────────
-  // La URL se congela con el tema del montaje: si dependiera de `scheme`, un
+  // La URL se congela con el PRIMER tema válido: si dependiera de `scheme`, un
   // cambio de tema mutaría `source.uri` y RECARGARÍA la web, perdiendo lo que
   // el usuario tuviera escrito. Los cambios en caliente van por injectJavaScript.
-  const initialTheme = useRef(scheme).current;
+  //
+  // «Válido» = después de que AppSettings haya leído AsyncStorage. Antes de eso
+  // el tema guardado todavía no se conoce y `scheme` cae al del sistema
+  // operativo; congelarlo ahí mandaría `?theme=dark` a alguien que tiene la app
+  // en Claro con el móvil en oscuro (parpadeo del tema equivocado al entrar).
+  const latchedTheme = useRef<'light' | 'dark' | null>(null);
+  if (latchedTheme.current === null && !settingsLoading) {
+    latchedTheme.current = scheme;
+  }
+  const initialTheme = latchedTheme.current;
   const sourceUri = useMemo(
-    () => `${COMUNICA_URL}&theme=${initialTheme}`,
+    () => (initialTheme ? `${COMUNICA_URL}&theme=${initialTheme}` : null),
     [initialTheme],
   );
   const themeJS = useMemo(() => themeBridgeJS(scheme), [scheme]);
@@ -153,14 +170,30 @@ export default function ComunicaScreen() {
   // Texto de la status bar: oscuro sobre glass claro, claro sobre glass oscuro.
   const barStyle = scheme === 'dark' ? 'light-content' : 'dark-content';
   // Fondo bajo el WebView: evita el flash blanco al cargar en modo oscuro.
-  const pageBg = scheme === 'dark' ? '#1C1C1E' : '#FFFFFF';
+  const pageBg = scheme === 'dark' ? PAGE_BG_DARK : PAGE_BG_LIGHT;
+
+  // Todavía no se sabe el tema guardado: no montamos la web para no cargarla
+  // con el tema equivocado (dura lo que tarda un read de AsyncStorage).
+  if (!sourceUri) {
+    return (
+      <View style={[styles.container, { backgroundColor: pageBg }]}>
+        <View style={dynamicStyles.loadingContainer}>
+          <ActivityIndicator size="large" color={tintColor} />
+        </View>
+      </View>
+    );
+  }
 
   // ── Web: iframe ──────────────────────────────────────────────────────────
+  // En web el iframe es cross-origin: no se le puede inyectar JS, así que el
+  // único modo de propagar un cambio de tema en caliente es recargarlo con el
+  // nuevo `?theme=` (de ahí que aquí sí dependa de `scheme` y no de la URL
+  // congelada). Cambiar de tema es raro y en web no hay WebView que preservar.
   if (Platform.OS === 'web') {
     return (
       <View style={styles.container}>
         <iframe
-          src={sourceUri}
+          src={`${COMUNICA_URL}&theme=${scheme}`}
           title="Comunica"
           className={iframeStyles?.iframe}
           style={{ flex: 1, width: '100%', height: '100%', border: 'none' }}
