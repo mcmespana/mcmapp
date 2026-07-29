@@ -9,6 +9,11 @@ export interface GlassSurfaceProps {
   variant?: 'clear' | 'regular' | 'material';
   /** Optional bottom hairline border. */
   bottomBorder?: boolean;
+  /**
+   * Color de esa hairline. El default (negro al 10%) es invisible sobre
+   * superficies oscuras: pásalo explícito en modo oscuro.
+   */
+  bottomBorderColor?: string;
   children?: React.ReactNode;
   style?: ViewStyle | ViewStyle[];
 }
@@ -26,6 +31,7 @@ export default function GlassSurface({
   tintColor,
   variant = 'regular',
   bottomBorder = false,
+  bottomBorderColor,
   children,
   style,
 }: GlassSurfaceProps) {
@@ -58,7 +64,14 @@ export default function GlassSurface({
         style,
       ]}
     >
-      {bottomBorder ? <View style={styles.bottomBorder} /> : null}
+      {bottomBorder ? (
+        <View
+          style={[
+            styles.bottomBorder,
+            bottomBorderColor ? { backgroundColor: bottomBorderColor } : null,
+          ]}
+        />
+      ) : null}
       {children}
     </View>
   );
