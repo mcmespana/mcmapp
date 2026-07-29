@@ -25,6 +25,11 @@ export interface GlassSurfaceProps {
   blurTint?: BlurTint;
   /** Optional bottom hairline border (used by GlassHeader to separate from content). */
   bottomBorder?: boolean;
+  /**
+   * Color de esa hairline. El default (negro al 10%) es invisible sobre
+   * superficies oscuras: pásalo explícito en modo oscuro.
+   */
+  bottomBorderColor?: string;
   /** Children rendered on top of the glass effect (rare — usually you wrap content elsewhere). */
   children?: React.ReactNode;
   style?: ViewStyle | ViewStyle[];
@@ -42,6 +47,7 @@ export default function GlassSurface({
   variant = 'regular',
   blurTint: blurTintOverride,
   bottomBorder = false,
+  bottomBorderColor,
   children,
   style,
 }: GlassSurfaceProps) {
@@ -101,7 +107,14 @@ export default function GlassSurface({
   return (
     <View style={[StyleSheet.absoluteFill, style]}>
       {baseLayer}
-      {bottomBorder ? <View style={styles.bottomBorder} /> : null}
+      {bottomBorder ? (
+        <View
+          style={[
+            styles.bottomBorder,
+            bottomBorderColor ? { backgroundColor: bottomBorderColor } : null,
+          ]}
+        />
+      ) : null}
       {children}
     </View>
   );
