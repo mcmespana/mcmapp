@@ -18,6 +18,42 @@
 
 ---
 
+## 2026-07-29 19:20 — Visita Papa archivada y Comunica como tab (después de Contigo)
+
+- **Archivar un evento ahora hace algo.** El "archivar" del panel MCM
+  (`activities/<id>/_meta.status = 'archived'`) se leía y se mergeaba sobre el
+  registry, pero **ningún sitio de la app consumía el `status`**: la tab del
+  evento dependía sólo de la lista `tabs` del perfil, el botón de la Home de
+  `homeButtons` y el banner de "tener acceso al evento", así que archivar no
+  cambiaba nada visible. Nuevo `hooks/useVisibleTabs.ts` (quita el `tabId` del
+  evento archivado en `(tabs)/_layout.tsx` y en las tarjetas de overflow de
+  `MasHomeScreen`), más el gating del banner y del botón del grid en
+  `app/(tabs)/index.tsx`. `EventosPasadosScreen` ya incluye el evento en curso
+  cuando el panel lo archiva en caliente (antes leía sólo el registry).
+- **Visita Papa León XIV 2026 pasa a `status: 'archived'`** en
+  `constants/events.ts`: sin tab, sin botón en la Home y sin banner; se accede
+  desde **Más > Eventos pasados**. El panel puede devolverla a `active`.
+- **Comunica es tab propia, justo después de Contigo.** Faltaba la ruta:
+  `TABS_CONFIG` y `KNOWN_TABS` ya listaban `comunica`, pero no existía
+  `app/(tabs)/comunica.tsx`, así que ponerla en `tabs` no podía funcionar. Se
+  crea la ruta (envuelve `ComunicaScreen`, `headerShown: false` porque el WebView
+  gestiona su propia zona segura) y se mueve su entrada del catálogo detrás de
+  `contigo`. El botón de la Home apunta a `/comunica` cuando el perfil tiene el
+  tab, en vez de abrir la pantalla dentro del stack de "Más".
+- **`firebase-seed/profileConfig.json`:** los tres perfiles (familia, monitor,
+  miembro) añaden `comunica` a `tabs`, quitan `visitapapa` de `tabs`/
+  `homeButtons` y quitan `comunica` de `masItems` (ya no hace falta duplicarla en
+  "Más"). ⚠️ El mismo cambio hay que aplicarlo en `/profileConfig/data/profiles/*`
+  de Firebase (desde el panel) para que surta efecto sin publicar.
+- Orden resultante de la barra: Inicio · Cantoral · Contigo · Comunica ·
+  Calendario · Fotos · Más (en iOS, Calendario y Fotos siguen cayendo como
+  tarjetas en "Más", igual que antes).
+- Archivos: `constants/events.ts`, `constants/tabsCatalog.ts`,
+  `hooks/useVisibleTabs.ts`, `app/(tabs)/comunica.tsx`, `app/(tabs)/_layout.tsx`,
+  `app/(tabs)/index.tsx`, `app/screens/MasHomeScreen.tsx`,
+  `app/screens/EventosPasadosScreen.tsx`, `firebase-seed/profileConfig.json`,
+  `docs/funcionalidades/EVENTOS.md`.
+
 ## 2026-07-27 23:45 — Comunica: el tema de la web ya no se congela antes de tiempo
 
 - **Tema correcto en la primera petición.** La URL inicial (`?theme=`) se

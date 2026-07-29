@@ -192,7 +192,10 @@ export const VISITAPAPA: EventConfig = {
   tintColor: '#FCD200',
   heroImage: require('@/assets/alzalamirada.png'),
   firebasePrefix: 'activities/visitapapa26',
-  status: 'active',
+  // Archivado tras la visita: ya no tiene tab propia, ni botón en la Home, ni
+  // banner. Se accede desde "Más > Eventos pasados". El panel MCM puede
+  // devolverlo a `active` desde `activities/visitapapa26/_meta.status`.
+  status: 'archived',
   bannerText: 'Horarios, materiales y todo para vivir un momento histórico',
   tabId: 'visitapapa',
   hiddenGroupCategories: ['Alojamiento'],
@@ -289,11 +292,14 @@ export const EVENTS: Record<string, EventConfig> = {
 };
 
 /**
- * Evento activo / destacado ("modo evento"): la app lo resalta con tab propia,
- * botón en la Home y banner. También es el evento por defecto.
+ * Evento "en curso" por defecto: el que la app usa cuando no se le pasa un
+ * `eventId` explícito y el que consulta en `activities/<id>/_meta`.
  *
- * TODO (mcmpanel/Firebase): mover esta decisión al nodo `activities/` para
- * poder activar/archivar eventos sin desplegar.
+ * OJO: que este evento esté DESTACADO ("modo evento": tab propia, botón en la
+ * Home y banner) NO depende de esta constante, sino de su `status`. Con
+ * `status: 'archived'` la app lo trata como evento pasado aunque siga siendo el
+ * `ACTIVE_EVENT_ID`. El panel MCM puede cambiar ese `status` en
+ * `activities/<id>/_meta` sin publicar una versión nueva de la app.
  */
 export const ACTIVE_EVENT_ID = VISITAPAPA.id;
 
@@ -305,9 +311,14 @@ export function getEvent(id?: string | null): EventConfig {
   return EVENTS[id] ?? EVENTS[DEFAULT_EVENT_ID];
 }
 
+/** True si el evento es pasado: no se destaca en la app (tab/botón/banner). */
+export function isEventArchived(event: EventConfig): boolean {
+  return event.status === 'archived';
+}
+
 /** Eventos archivados (pasados), para "Más > Eventos pasados". */
 export function getArchivedEvents(): EventConfig[] {
-  return Object.values(EVENTS).filter((e) => e.status === 'archived');
+  return Object.values(EVENTS).filter(isEventArchived);
 }
 
 /** Path de Firebase de una sección: `<firebasePrefix>/<key>`. */

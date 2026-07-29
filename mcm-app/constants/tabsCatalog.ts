@@ -65,6 +65,19 @@ export const TABS_CONFIG: TabConfig[] = [
     headerShown: false,
   },
   {
+    name: 'comunica',
+    label: 'Comunica',
+    subtitle: 'Portal de comunicación',
+    emoji: '📣',
+    iosIcon: { default: 'globe', selected: 'globe' },
+    androidIcon: 'public',
+    tintColor: TabHeaderColors.comunica,
+    headerColor: TabHeaderColors.comunica,
+    // La pantalla es un WebView a pantalla completa que gestiona su propia zona
+    // segura (barra glass en el notch); un header encima la partiría.
+    headerShown: false,
+  },
+  {
     name: 'visitapapa',
     label: 'Visita Papa',
     subtitle: 'Visita del Papa León XIV 2026',
@@ -95,17 +108,6 @@ export const TABS_CONFIG: TabConfig[] = [
     androidIcon: 'photo-library',
     tintColor: TabHeaderColors.fotos,
     headerColor: TabHeaderColors.fotos,
-    headerShown: true,
-  },
-  {
-    name: 'comunica',
-    label: 'Comunica',
-    subtitle: 'Portal de comunicación',
-    emoji: '📣',
-    iosIcon: { default: 'globe', selected: 'globe' },
-    androidIcon: 'public',
-    tintColor: TabHeaderColors.comunica,
-    headerColor: TabHeaderColors.comunica,
     headerShown: true,
   },
   {

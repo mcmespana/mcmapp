@@ -16,14 +16,14 @@
       "tabs": [
         "index",
         "contigo",
+        "comunica",
         "calendario",
         "fotos",
         "cancionero",
-        "mas",
-        "visitapapa"
+        "mas"
       ],
-      "homeButtons": ["fotos", "evangelio", "cancionero", "visitapapa"],
-      "masItems": ["comunica", "eventos-pasados"],
+      "homeButtons": ["fotos", "evangelio", "cancionero"],
+      "masItems": ["eventos-pasados"],
       "defaultCalendars": ["mcm-europa"],
       "albumTags": ["all"],
       "notificationTopics": ["general", "eventos", "familias"]
@@ -34,20 +34,14 @@
       "tabs": [
         "index",
         "contigo",
+        "comunica",
         "calendario",
         "fotos",
         "cancionero",
-        "mas",
-        "visitapapa"
+        "mas"
       ],
-      "homeButtons": [
-        "fotos",
-        "evangelio",
-        "comunica",
-        "cancionero",
-        "visitapapa"
-      ],
-      "masItems": ["comunica", "comunica-gestion", "eventos-pasados"],
+      "homeButtons": ["fotos", "evangelio", "comunica", "cancionero"],
+      "masItems": ["comunica-gestion", "eventos-pasados"],
       "defaultCalendars": ["mcm-europa"],
       "albumTags": ["all"],
       "notificationTopics": ["general", "eventos", "monitores"]
@@ -58,14 +52,14 @@
       "tabs": [
         "index",
         "contigo",
+        "comunica",
         "calendario",
         "fotos",
         "cancionero",
-        "mas",
-        "visitapapa"
+        "mas"
       ],
-      "homeButtons": ["fotos", "evangelio", "cancionero", "visitapapa"],
-      "masItems": ["comunica", "comunica-gestion", "eventos-pasados"],
+      "homeButtons": ["fotos", "evangelio", "cancionero"],
+      "masItems": ["comunica-gestion", "eventos-pasados"],
       "defaultCalendars": ["mcm-europa"],
       "albumTags": ["all"],
       "notificationTopics": ["general", "eventos", "miembros"]
