@@ -68,7 +68,11 @@ import {
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useActiveSurveys } from '@/hooks/useActiveSurveys';
 import SurveyBanner from '@/components/SurveyBanner';
-import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import {
+  getEventCacheKey,
+  getEventFirebasePath,
+  isEventArchived,
+} from '@/constants/events';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
@@ -238,7 +242,13 @@ export default function Home() {
   // valor hardcoded en `constants/events.ts`.
   const { activeEvent } = useActiveMeta();
   const activeTabId = activeEvent.tabId ?? '';
+  // Un evento archivado (`status: 'archived'`, ya sea en el registry o puesto
+  // desde el panel MCM) deja de destacarse: sin banner, sin botón en la Home y
+  // sin tab (esto último lo filtra `useVisibleTabs`). Se sigue viendo en
+  // "Más > Eventos pasados".
+  const eventArchived = isEventArchived(activeEvent);
   const hasEventAccess =
+    !eventArchived &&
     activeTabId !== '' &&
     (resolved.tabs.includes(activeTabId) ||
       resolved.homeButtons.includes(activeTabId));
@@ -390,6 +400,10 @@ export default function Home() {
     (g) => g.events.length > 0,
   );
 
+  // ¿El perfil tiene Comunica como tab propia? Cambia a dónde apunta el botón
+  // de la Home (tab vs. pantalla dentro del stack de "Más").
+  const comunicaIsTab = resolved.tabs.includes('comunica');
+
   // Quick grid items — filtrados por la config del perfil resuelto
   const quickItems = useMemo<QuickItem[]>(() => {
     const visible = new Set(resolved.homeButtons);
@@ -400,7 +414,9 @@ export default function Home() {
         icon: 'forum',
         iconBg: scheme === 'dark' ? '#3A2200' : '#FFF0E0',
         iconColor: '#E08A3C',
-        href: '/mas',
+        // Con Comunica como tab propia vamos directos a la tab; si el perfil no
+        // la tiene, se sigue abriendo la pantalla dentro del stack de "Más".
+        href: comunicaIsTab ? '/comunica' : '/mas',
       },
       cancionero: {
         key: 'cancionero',
@@ -444,10 +460,19 @@ export default function Home() {
         dashed: true,
       },
     };
+    // El botón del evento en curso desaparece cuando el evento se archiva.
     return resolved.homeButtons
       .filter((id) => visible.has(id) && catalog[id])
+      .filter((id) => !(eventArchived && id === activeTabId))
       .map((id) => catalog[id]);
-  }, [resolved.homeButtons, scheme, theme.icon]);
+  }, [
+    resolved.homeButtons,
+    scheme,
+    theme.icon,
+    comunicaIsTab,
+    eventArchived,
+    activeTabId,
+  ]);
 
   // Hide the tab navigator header — we render our own
   useLayoutEffect(() => {
@@ -1033,7 +1058,7 @@ export default function Home() {
                     accessibilityRole="button"
                     onPress={() => {
                       h.tap();
-                      if (item.key === 'comunica') {
+                      if (item.key === 'comunica' && !comunicaIsTab) {
                         setPendingMasScreen('Comunica');
                       } else if (item.key === 'fotos') {
                         setPendingMasScreen('Fotos');
