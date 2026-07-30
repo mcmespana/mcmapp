@@ -3,8 +3,12 @@
 > Qué le manda la app MCM a la web de Comunica cuando la carga embebida, y qué
 > tiene que hacer la web (PHP) para responder bien.
 >
-> Lado app: `mcm-app/app/screens/ComunicaScreen.tsx`.
-> Lado web: repo de `comunica.movimientoconsolacion.com` (PHP).
+> Lado app: `mcm-app/app/screens/ComunicaScreen.tsx` (layout) +
+> `mcm-app/hooks/useComunicaWebView.ts` (tema, historial, progreso, errores).
+> Lado web: repo de `comunica.movimientoconsolacion.com` (PHP). Los formularios
+> del CRM (alta de laicos, monitores, participantes) viven en el repo
+> `comunicaFormularios`, y su hoja `crm_comunica_estilos.css` ya implementa este
+> contrato — sirve de **referencia** de cómo hacerlo en el portal PHP.
 
 ## 1. Detectar que se está dentro de la app
 
@@ -62,6 +66,33 @@ html.light { --bg: #ffffff; --fg: #1a1a1a; }
 > `@media (prefers-color-scheme: dark)`. Si la web solo usa el media query, el
 > modo oscuro elegido a mano en la app no se verá reflejado.
 
+La app actualiza además el `<meta name="theme-color">` de la página con el color
+de fondo del tema, y conviene que el `<head>` declare
+`<meta name="color-scheme" content="light dark">` para que los controles nativos
+(inputs, scrollbars) se pinten acordes.
+
+Receta usada en `comunicaFormularios` (recomendada para el portal): declarar la
+paleta en variables CSS con los valores CLAROS por defecto y sobrescribir solo
+las variables en los dos escenarios oscuros — así las reglas se escriben una vez
+y el tema claro no se toca:
+
+```css
+:root { --bg: #ffffff; --fg: #1a1a1a; /* … */ }
+
+/* Oscuro pedido explícitamente por la app */
+html.dark, html[data-mcm-theme="dark"] { --bg: #121316; --fg: #edf0f5; }
+
+/* Fuera de la app: preferencia del sistema, salvo que se haya pedido claro */
+@media (prefers-color-scheme: dark) {
+  html:not(.light):not([data-mcm-theme="light"]) { --bg: #121316; --fg: #edf0f5; }
+}
+```
+
+Ojo con dos detalles que muerden: las variables CSS **no** funcionan dentro de un
+`url()` (para un SVG embebido, como la flecha de los `<select>`, hay que guardar
+el `url()` entero en la variable), y los logos azul oscuro sobre transparente
+necesitan una tarjeta clara detrás en oscuro para seguir legibles.
+
 ### Cambio de tema en caliente
 
 Si el usuario cambia el tema mientras tiene Comunica abierto, la app **no
@@ -77,6 +108,15 @@ reinyecta igual).
 > cross-origin: no se le puede inyectar JS, así que un cambio de tema **sí**
 > recarga el iframe con el nuevo `?theme=`. No hay alternativa y en web el caso
 > es marginal.
+
+### Apariencia nativa de la app
+
+La app llama a `Appearance.setColorScheme()` con el tema elegido, así que todo lo
+que pinta el sistema operativo (barra glass del notch, tab bar, teclado, fondo por
+defecto del propio WebView) sigue el selector de la app y no el modo del
+dispositivo. Antes se quedaba en claro con la app en oscuro. La web no tiene que
+hacer nada con esto, pero explica por qué el marco de la pantalla cambia a la vez
+que el contenido.
 
 ### Quién resuelve «Sistema»
 
@@ -99,6 +139,10 @@ el fondo de página de la web, o aparece una costura de color:
 
 Si la web cambia su fondo de página, avisad para actualizar `PAGE_BG_DARK` /
 `PAGE_BG_LIGHT` en `ComunicaScreen.tsx`.
+
+Ese color se aplica también al propio WebView (`opaque={false}` en iOS): sin eso,
+WKWebView pinta las zonas del `contentInset` —la franja del notch y el hueco del
+tab bar— con su blanco por defecto, que no cambia nunca de tema.
 
 ### Momento de la primera carga
 
@@ -131,14 +175,24 @@ Y conviene que el `<head>` lleve:
 
 sin el cual `env(safe-area-inset-*)` vale siempre 0.
 
-## 4. Navegación
+## 4. Mientras carga
+
+La app tapa la pantalla con una portada de marca propia (onda del logo animada,
+barra de progreso alimentada por `onLoadProgress`, esqueleto de formulario) y la
+desvanece cuando la web termina de cargar. **La web no tiene que poner ningún
+loader propio para la primera carga**; si falla, la app ofrece «Reintentar».
+
+En las navegaciones siguientes dentro del portal no se tapa nada: solo aparece un
+hilo de progreso arriba, como en un navegador.
+
+## 5. Navegación
 
 La app pone su propia cápsula flotante **atrás/adelante** (abajo a la izquierda)
 sobre el historial del WebView, y en Android el botón atrás del sistema navega
 primero por el historial de la web. La web **no** necesita añadir botones de
 volver propios; si los tiene y `app=1`, mejor ocultarlos.
 
-## 5. Notas de seguridad
+## 6. Notas de seguridad
 
 - Sanea siempre `$_GET['theme']` / `$_COOKIE['mcm_theme']` antes de volcarlos al
   HTML (arriba se hace con la comparación a `'dark'`). Son entrada de usuario:

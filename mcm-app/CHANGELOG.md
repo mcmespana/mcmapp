@@ -18,6 +18,46 @@
 
 ---
 
+## 2026-07-30 01:15 — Comunica: modo oscuro completo + pantalla de carga de marca
+
+- **Franjas de arriba y de abajo en claro con la app en oscuro (bug).** Las zonas
+  del `contentInset` (notch arriba, hueco del tab bar abajo) y el rebote del
+  scroll las pintaba **WKWebView con su blanco por defecto**, no la pantalla: se
+  veían dos bandas claras sobre contenido oscuro y no cambiaban nunca de color.
+  El WebView ahora lleva el fondo del tema (`opaque={false}` en iOS + `style`).
+- **El tema del sistema mandaba sobre el de la app en todo lo nativo.** La barra
+  glass del notch, la tab bar nativa de iOS, el teclado y el fondo por defecto de
+  los WebView seguían la apariencia del **sistema operativo**, así que con la app
+  en Oscuro y el móvil en Claro se quedaban claros (y al cambiar el modo del
+  dispositivo con Comunica abierto la parte de arriba no reaccionaba).
+  `AppSettingsContext` ahora llama a `Appearance.setColorScheme()` con el tema
+  elegido — afecta a TODA la app, no solo a Comunica.
+- **Barra glass del notch teñida con el tema** (antes usaba el material del
+  sistema sin tinte) y hairline visible también en oscuro
+  (`GlassSurface` acepta `bottomBorderColor`).
+- **Pantalla de carga de marca** (`ComunicaLoader`): onda del logo animada,
+  barra de progreso real (`onLoadProgress`), esqueleto de formulario y salida en
+  fade. Comunica tarda en responder y antes no se mostraba nada: `renderLoading`
+  no se aplicaba porque faltaba `startInLoadingState`. En error se ofrece
+  **Reintentar** en la propia pantalla; los fallos de navegaciones posteriores
+  siguen siendo un toast y muestran un hilo de progreso arriba
+  (`ComunicaTopProgress`) en vez de tapar la web.
+- La mecánica del WebView (tema hacia la web, historial, progreso, errores) se
+  extrae a `hooks/useComunicaWebView.ts`; la pantalla se queda con el layout.
+- **Lado web** (repo `comunicaFormularios`): `crm_comunica_estilos.css` gana una
+  capa de modo oscuro por variables, colgada de `html.dark` /
+  `data-mcm-theme="dark"` (y de `prefers-color-scheme` fuera de la app), con el
+  fondo de página `#121316` que espera la app; los formularios añaden
+  `viewport-fit=cover` y `<meta name="color-scheme">`, y los elementos fijos
+  reservan `env(safe-area-inset-bottom)`. El tema claro queda igual (verificado
+  pixel a pixel; solo cambian los iconos de enlace externo de los botones
+  legales, que eran oscuros sobre fondo de color).
+- Archivos: `app/screens/ComunicaScreen.tsx`, `hooks/useComunicaWebView.ts`,
+  `components/ui/ComunicaLoader.tsx`, `components/ui/ComunicaTopProgress.tsx`,
+  `components/ui/GlassSurface{,.ios}.tsx`, `contexts/AppSettingsContext.tsx`,
+  `__tests__/comunicaThemeBridge.test.ts`,
+  `docs/contratos/COMUNICA_WEBVIEW.md`.
+
 ## 2026-07-29 19:20 — Visita Papa archivada y Comunica como tab (después de Contigo)
 
 - **Archivar un evento ahora hace algo.** El "archivar" del panel MCM
