@@ -22,6 +22,7 @@ import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useVisibleTabs } from '@/hooks/useVisibleTabs';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { takePendingMasScreen } from '@/utils/masNavigation';
 import PageContainer from '@/components/ui/PageContainer';
@@ -111,6 +112,7 @@ export default function MasHomeScreen() {
   const layout = useResponsiveLayout();
   const useTwoColumns = layout.isWide;
   const resolved = useResolvedProfileConfig();
+  const visibleTabs = useVisibleTabs();
   const { isAdmin } = useAdminStatus();
   const navigationItems = React.useMemo(() => {
     const items: NavigationItem[] = [];
@@ -118,8 +120,7 @@ export default function MasHomeScreen() {
     // En iOS la barra nativa sólo admite 5 triggers; los tabs que no caben
     // se exponen aquí como tarjetas para evitar el "More" automático del sistema.
     if (Platform.OS === 'ios') {
-      const visibleSet = new Set(resolved.tabs);
-      const { overflowTabs } = splitTabsForIOS(visibleSet);
+      const { overflowTabs } = splitTabsForIOS(visibleTabs);
       // Tabs cuyo screen está registrado en el stack de Más (no accesibles vía router.navigate en iOS)
       const OVERFLOW_STACK_TARGETS: Partial<
         Record<string, keyof MasStackParamList>
@@ -155,7 +156,7 @@ export default function MasHomeScreen() {
     }
 
     return items;
-  }, [resolved.masItems, resolved.tabs, isAdmin]);
+  }, [resolved.masItems, visibleTabs, isAdmin]);
 
   // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
   useFocusEffect(

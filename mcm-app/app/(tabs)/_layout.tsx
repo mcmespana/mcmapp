@@ -5,6 +5,7 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useVisibleTabs } from '@/hooks/useVisibleTabs';
 import { StatusBar } from 'expo-status-bar';
 
 // Import iOS-specific NativeTabs
@@ -48,8 +49,7 @@ const CARISMO_TABBAR_TINT_IOS = '#1B9E4B';
 // muestran como tarjetas dentro de MasHomeScreen. Las rutas sin trigger siguen
 // siendo navegables programáticamente (expo-router las mantiene en el state).
 function IOSNativeTabsLayout() {
-  const resolved = useResolvedProfileConfig();
-  const visibleTabs = new Set(resolved.tabs);
+  const visibleTabs = useVisibleTabs();
   const { mainTabs } = splitTabsForIOS(visibleTabs);
   // Modo carismochito: tiñe iconos + labels de verde. NOTA: en iOS sólo
   // tocamos `tintColor`/`labelStyle` (fiables). El `backgroundColor` de la
@@ -115,7 +115,7 @@ function AndroidWebTabsLayout() {
   const bottomPad =
     Platform.OS === 'web' ? Math.max(bottomInset, 12) : 8 + bottomInset;
   const resolved = useResolvedProfileConfig();
-  const visibleTabs = new Set(resolved.tabs);
+  const visibleTabs = useVisibleTabs();
   // Modo carismochito: tiñe la barra de pestañas de verde mientras está activo.
   // En modo CLARO el fondo se mantiene blanco y sólo se tiñen los iconos; en
   // OSCURO usamos el fondo verde casi negro. Antes el fondo verde oscuro se
