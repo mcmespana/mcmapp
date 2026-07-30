@@ -5,64 +5,27 @@
 //            de una barra glass nativa (systemChromeMaterial) al hacer scroll.
 //            Extra de scroll al fondo para no dejar el botón bajo el tab bar.
 //   · Android → franja lisa (blanca/oscura) en el notch; la web arranca debajo.
+//
+// La mecánica (tema hacia la web, historial, progreso, errores) vive en
+// `hooks/useComunicaWebView.ts`; aquí solo queda el layout de cada plataforma.
 
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-} from 'react';
-import {
-  Platform,
-  View,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-  BackHandler,
-} from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Platform, View, StyleSheet, StatusBar, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
-import { WebView, WebViewNavigation } from 'react-native-webview';
-import { useToast } from '@/contexts/AppToastContext';
-import { Colors as ThemeColors } from '@/constants/colors';
+import { WebView } from 'react-native-webview';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useAppSettings } from '@/contexts/AppSettingsContext';
+import { durations, easings } from '@/constants/animations';
 import GlassSurface from '@/components/ui/GlassSurface';
 import WebViewNavControls from '@/components/ui/WebViewNavControls';
+import ComunicaLoader from '@/components/ui/ComunicaLoader';
+import ComunicaTopProgress from '@/components/ui/ComunicaTopProgress';
+import { COMUNICA_URL, useComunicaWebView } from '@/hooks/useComunicaWebView';
 
 // CSS module reutilizado del iframe (solo aplica en web)
 /* eslint-disable @typescript-eslint/no-require-imports */
 const iframeStyles =
   Platform.OS === 'web' ? require('../../styles/comunica.module.css') : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
-
-const COMUNICA_URL = 'https://comunica.movimientoconsolacion.com/aptest/?app=1';
-
-/**
- * Propaga el tema de la app (claro/oscuro) a la web embebida. Se manda por
- * TRES vías complementarias, todas inofensivas si la web todavía las ignora:
- *
- *   1. `?theme=` en la URL inicial → PHP puede renderizar ya en oscuro en la
- *      primerísima petición, sin parpadeo.
- *   2. Cookie `mcm_theme` (1 año, path=/) → viaja en TODAS las peticiones
- *      siguientes, así que PHP la lee aunque el usuario navegue por el portal.
- *   3. Atributo/clase en `<html>` + `color-scheme` → sirve a webs que resuelven
- *      el tema solo con CSS, sin tocar el servidor.
- *
- * Se reinyecta en cada carga de página y también en caliente si el usuario
- * cambia el tema mientras está en la pantalla (sin recargar, para no perder
- * lo que tenga escrito en un formulario).
- */
-const themeBridgeJS = (theme: 'light' | 'dark') => `(function(){try{
-  var t=${JSON.stringify(theme)};
-  var r=document.documentElement;
-  r.dataset.mcmTheme=t;
-  r.classList.toggle('dark', t==='dark');
-  r.classList.toggle('light', t!=='dark');
-  r.style.colorScheme=t;
-  document.cookie='mcm_theme='+t+';path=/;max-age=31536000;samesite=Lax';
-}catch(e){}})();true;`;
 
 // Altura aproximada del tab bar iOS (sin la safe-area inferior) + margen cómodo.
 // Se suma como contentInset inferior para que el contenido pueda arrastrarse por
@@ -76,110 +39,113 @@ const IOS_BOTTOM_EXTRA = 32;
 const PAGE_BG_DARK = '#121316';
 const PAGE_BG_LIGHT = '#FFFFFF';
 
+// Hairline bajo la barra glass del notch. La de por defecto (negro al 10%) no
+// se ve sobre fondo oscuro.
+const HAIRLINE_DARK = 'rgba(255,255,255,0.12)';
+const HAIRLINE_LIGHT = 'rgba(0,0,0,0.10)';
+
 export default function ComunicaScreen() {
   const scheme = useColorScheme() ?? 'light';
-  const { loading: settingsLoading } = useAppSettings();
   const insets = useSafeAreaInsets();
-  const tintColor = ThemeColors[scheme].tint;
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
-  // ── Navegación dentro de la web (atrás/adelante) ──────────────────────────
-  const webViewRef = useRef<WebView>(null);
-  const [nav, setNav] = useState({ canGoBack: false, canGoForward: false });
-  const onNavStateChange = useCallback((s: WebViewNavigation) => {
-    setNav({ canGoBack: s.canGoBack, canGoForward: s.canGoForward });
-  }, []);
-  const goBack = useCallback(() => webViewRef.current?.goBack(), []);
-  const goForward = useCallback(() => webViewRef.current?.goForward(), []);
-
-  // ── Tema (claro/oscuro) hacia la web ──────────────────────────────────────
-  // La URL se congela con el PRIMER tema válido: si dependiera de `scheme`, un
-  // cambio de tema mutaría `source.uri` y RECARGARÍA la web, perdiendo lo que
-  // el usuario tuviera escrito. Los cambios en caliente van por injectJavaScript.
-  //
-  // «Válido» = después de que AppSettings haya leído AsyncStorage. Antes de eso
-  // el tema guardado todavía no se conoce y `scheme` cae al del sistema
-  // operativo; congelarlo ahí mandaría `?theme=dark` a alguien que tiene la app
-  // en Claro con el móvil en oscuro (parpadeo del tema equivocado al entrar).
-  const latchedTheme = useRef<'light' | 'dark' | null>(null);
-  if (latchedTheme.current === null && !settingsLoading) {
-    latchedTheme.current = scheme;
-  }
-  const initialTheme = latchedTheme.current;
-  const sourceUri = useMemo(
-    () => (initialTheme ? `${COMUNICA_URL}&theme=${initialTheme}` : null),
-    [initialTheme],
-  );
-  const themeJS = useMemo(() => themeBridgeJS(scheme), [scheme]);
-
-  useEffect(() => {
-    webViewRef.current?.injectJavaScript(themeJS);
-  }, [themeJS]);
-
-  // Android: el botón/gesto atrás del sistema navega primero por el historial
-  // de la web; solo sale de la pantalla cuando ya no hay a dónde volver.
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS !== 'android') return;
-      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (nav.canGoBack) {
-          webViewRef.current?.goBack();
-          return true;
-        }
-        return false;
-      });
-      return () => sub.remove();
-    }, [nav.canGoBack]),
-  );
-
-  const dynamicStyles = useMemo(
-    () =>
-      StyleSheet.create({
-        loadingContainer: {
-          ...StyleSheet.absoluteFillObject,
-          justifyContent: 'center' as const,
-          alignItems: 'center' as const,
-          backgroundColor:
-            scheme === 'dark' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.85)',
-        },
-      }),
-    [scheme],
-  );
-
-  const onLoadEnd = useCallback(() => setIsLoading(false), []);
-  const onError = useCallback(() => {
-    toast.show({
-      variant: 'danger',
-      label: 'Error al cargar el contenido. Verifica tu conexión a internet.',
-      actionLabel: 'Cerrar',
-      onActionPress: ({ hide }) => hide(),
-    });
-    setIsLoading(false);
-  }, [toast]);
-
-  const renderLoading = useCallback(
-    () => (
-      <View style={dynamicStyles.loadingContainer}>
-        <ActivityIndicator size="large" color={tintColor} />
-      </View>
-    ),
-    [dynamicStyles.loadingContainer, tintColor],
-  );
-
-  // Texto de la status bar: oscuro sobre glass claro, claro sobre glass oscuro.
-  const barStyle = scheme === 'dark' ? 'light-content' : 'dark-content';
-  // Fondo bajo el WebView: evita el flash blanco al cargar en modo oscuro.
+  // Fondo de la pantalla Y del propio WebView: sin esto, las zonas del
+  // `contentInset` (notch arriba, hueco del tab bar abajo) y el rebote del
+  // scroll los pinta WKWebView con su blanco por defecto — se veían dos
+  // franjas claras en modo oscuro que además nunca cambiaban de color.
   const pageBg = scheme === 'dark' ? PAGE_BG_DARK : PAGE_BG_LIGHT;
+  const hairline = scheme === 'dark' ? HAIRLINE_DARK : HAIRLINE_LIGHT;
+
+  const {
+    webViewRef,
+    sourceUri,
+    themeJS,
+    nav,
+    onNavigationStateChange,
+    goBack,
+    goForward,
+    status,
+    progress,
+    pageLoading,
+    onLoadStart,
+    onLoadProgress,
+    onLoadEnd,
+    onError,
+    retry,
+  } = useComunicaWebView(pageBg);
+
+  // La portada de carga se desvanece cuando la web ya está lista (y se
+  // desmonta al acabar la transición, para no dejar una capa invisible encima).
+  const loaderOpacity = useRef(new Animated.Value(1)).current;
+  const [loaderMounted, setLoaderMounted] = useState(true);
+  useEffect(() => {
+    if (status === 'ready') {
+      Animated.timing(loaderOpacity, {
+        toValue: 0,
+        duration: durations.slow,
+        easing: easings.exit,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setLoaderMounted(false);
+      });
+    } else {
+      setLoaderMounted(true);
+      loaderOpacity.setValue(1);
+    }
+  }, [status, loaderOpacity]);
+
+  // Texto de la status bar: oscuro sobre fondo claro, claro sobre fondo oscuro.
+  const barStyle = scheme === 'dark' ? 'light-content' : 'dark-content';
+
+  // Props comunes a iOS/Android del WebView.
+  const commonWebViewProps = useMemo(
+    () => ({
+      // Rendimiento y persistencia
+      javaScriptEnabled: true,
+      domStorageEnabled: true,
+      sharedCookiesEnabled: true,
+      thirdPartyCookiesEnabled: true,
+      // Reaplica el tema en cada carga de página (también tras navegar)
+      injectedJavaScript: themeJS,
+      onNavigationStateChange,
+      onLoadStart,
+      onLoadProgress,
+      onLoadEnd,
+      onError,
+      onHttpError: onError,
+    }),
+    [
+      themeJS,
+      onNavigationStateChange,
+      onLoadStart,
+      onLoadProgress,
+      onLoadEnd,
+      onError,
+    ],
+  );
+
+  const loaderOverlay = (insetTop: number, insetBottom: number) =>
+    loaderMounted || status === 'error' ? (
+      <Animated.View
+        style={[StyleSheet.absoluteFill, { opacity: loaderOpacity }]}
+        pointerEvents={status === 'ready' ? 'none' : 'auto'}
+      >
+        <ComunicaLoader
+          scheme={scheme}
+          progress={progress}
+          error={status === 'error'}
+          onRetry={retry}
+          insetTop={insetTop}
+          insetBottom={insetBottom}
+        />
+      </Animated.View>
+    ) : null;
 
   // Todavía no se sabe el tema guardado: no montamos la web para no cargarla
   // con el tema equivocado (dura lo que tarda un read de AsyncStorage).
   if (!sourceUri) {
     return (
       <View style={[styles.container, { backgroundColor: pageBg }]}>
-        <View style={dynamicStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={tintColor} />
-        </View>
+        {loaderOverlay(insets.top, insets.bottom)}
       </View>
     );
   }
@@ -191,19 +157,21 @@ export default function ComunicaScreen() {
   // congelada). Cambiar de tema es raro y en web no hay WebView que preservar.
   if (Platform.OS === 'web') {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: pageBg }]}>
         <iframe
           src={`${COMUNICA_URL}&theme=${scheme}`}
           title="Comunica"
           className={iframeStyles?.iframe}
-          style={{ flex: 1, width: '100%', height: '100%', border: 'none' }}
+          style={{
+            flex: 1,
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            backgroundColor: pageBg,
+          }}
           onLoad={onLoadEnd}
         />
-        {isLoading && (
-          <View style={dynamicStyles.loadingContainer}>
-            <ActivityIndicator size="large" color={tintColor} />
-          </View>
-        )}
+        {loaderOverlay(0, 0)}
       </View>
     );
   }
@@ -217,14 +185,12 @@ export default function ComunicaScreen() {
         <WebView
           ref={webViewRef}
           source={{ uri: sourceUri }}
-          style={styles.webview}
-          // Rendimiento y persistencia
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          sharedCookiesEnabled={true}
-          thirdPartyCookiesEnabled={true}
-          // Reaplica el tema en cada carga de página (también tras navegar)
-          injectedJavaScript={themeJS}
+          style={[styles.webview, { backgroundColor: pageBg }]}
+          // `opaque={false}` quita el fondo blanco propio de WKWebView: sin
+          // esto el color de arriba lo pintaba él y ni salía oscuro ni cambiaba
+          // al cambiar de tema.
+          opaque={false}
+          {...commonWebViewProps}
           // La web arranca en zona segura y se desliza bajo el glass al scrollear;
           // el inset inferior da margen para subir el contenido sobre el tab bar.
           automaticallyAdjustContentInsets={false}
@@ -238,20 +204,29 @@ export default function ComunicaScreen() {
           // @ts-expect-error `scrollIndicatorInsets` es un passthrough de iOS
           // válido en runtime pero ausente de los tipos de react-native-webview.
           scrollIndicatorInsets={{ top: insets.top, bottom: bottomInset }}
-          onNavigationStateChange={onNavStateChange}
-          renderLoading={renderLoading}
-          onLoadEnd={onLoadEnd}
-          onError={onError}
-          onHttpError={onError}
         />
         {insets.top > 0 && (
           <View
             style={[styles.notchGlass, { height: insets.top }]}
             pointerEvents="none"
           >
-            <GlassSurface variant="regular" bottomBorder />
+            {/* El tinte explícito es lo que garantiza que la franja siga al
+                tema de la APP: el material del sistema sin teñir se resolvía
+                con la apariencia del dispositivo. */}
+            <GlassSurface
+              variant="regular"
+              tintColor={pageBg}
+              bottomBorder
+              bottomBorderColor={hairline}
+            />
           </View>
         )}
+        <ComunicaTopProgress
+          scheme={scheme}
+          progress={progress}
+          visible={pageLoading && status === 'ready'}
+          top={insets.top}
+        />
         <WebViewNavControls
           canGoBack={nav.canGoBack}
           canGoForward={nav.canGoForward}
@@ -262,37 +237,34 @@ export default function ComunicaScreen() {
             { bottom: insets.bottom + IOS_TAB_BAR_HEIGHT + 12 },
           ]}
         />
+        {loaderOverlay(insets.top, bottomInset)}
       </View>
     );
   }
 
   // ── Android: franja lisa en el notch, la web arranca debajo ────────────────
-  const stripColor = pageBg;
   return (
-    <View style={[styles.container, { backgroundColor: stripColor }]}>
-      <StatusBar barStyle={barStyle} backgroundColor={stripColor} translucent />
+    <View style={[styles.container, { backgroundColor: pageBg }]}>
+      <StatusBar barStyle={barStyle} backgroundColor={pageBg} translucent />
       {insets.top > 0 && (
         <View
           style={[
             styles.notchBar,
-            { backgroundColor: stripColor, height: insets.top },
+            { backgroundColor: pageBg, height: insets.top },
           ]}
         />
       )}
       <WebView
         ref={webViewRef}
         source={{ uri: sourceUri }}
-        style={styles.webview}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        sharedCookiesEnabled={true}
-        thirdPartyCookiesEnabled={true}
-        injectedJavaScript={themeJS}
-        onNavigationStateChange={onNavStateChange}
-        renderLoading={renderLoading}
-        onLoadEnd={onLoadEnd}
-        onError={onError}
-        onHttpError={onError}
+        style={[styles.webview, { backgroundColor: pageBg }]}
+        {...commonWebViewProps}
+      />
+      <ComunicaTopProgress
+        scheme={scheme}
+        progress={progress}
+        visible={pageLoading && status === 'ready'}
+        top={insets.top}
       />
       <WebViewNavControls
         canGoBack={nav.canGoBack}
@@ -301,6 +273,7 @@ export default function ComunicaScreen() {
         onForward={goForward}
         style={[styles.navControls, { bottom: insets.bottom + 16 }]}
       />
+      {loaderOverlay(insets.top, insets.bottom)}
     </View>
   );
 }
