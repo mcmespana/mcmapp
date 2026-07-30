@@ -69,11 +69,12 @@ app/
 │   ├── _layout.tsx             # Tabs: plataforma iOS (NativeTabs) vs Android/Web (Tabs)
 │   ├── index.tsx               # Home: grid de botones de navegación
 │   ├── cancionero.tsx          # Cantoral: stack navigator interno (Categories → Songs → Detail → Fullscreen)
+│   ├── contigo/                # Contigo: acompañamiento y oración (rutas anidadas)
+│   ├── comunica.tsx            # Comunica: WebView del portal (envuelve ComunicaScreen)
+│   ├── visitapapa.tsx          # Tab del evento Visita Papa (oculta: evento archivado)
 │   ├── calendario.tsx          # Calendario: eventos ICS
 │   ├── fotos.tsx               # Galería de fotos
 │   └── mas.tsx                 # Más opciones (JubileoHome, Grupos, Materiales, etc.)
-├── (disabled)/
-│   └── comunica.tsx            # Tab desactivada (movida fuera de tabs activos)
 ├── screens/                    # 20 pantallas individuales
 │   ├── CategoriesScreen.tsx    # Lista de categorías del cantoral
 │   ├── SongListScreen.tsx      # Lista de canciones por categoría
@@ -176,8 +177,11 @@ RootLayout (Stack)
 ├── (tabs) ← Bottom Tabs
 │   ├── index (Home)           ← Grid de botones
 │   ├── cancionero             ← Stack interno: Categories → SongsList → SongDetail → SongFullscreen
+│   ├── contigo                ← Acompañamiento y oración
+│   ├── comunica               ← WebView del portal de comunicación
 │   ├── calendario             ← Eventos ICS
 │   ├── fotos                  ← Galería
+│   ├── visitapapa             ← Stack del evento (oculto mientras esté archivado)
 │   └── mas                    ← Stack interno: MasHome → Jubileo/Grupos/Materiales/etc.
 ├── wordle                     ← Juego
 └── notifications              ← Lista de notificaciones
@@ -187,7 +191,12 @@ RootLayout (Stack)
 
 - **iOS**: `NativeTabs` (expo-router/unstable-native-tabs) para liquid glass
 - **Android/Web**: `Tabs` tradicionales (expo-router)
-- Config centralizada en `TABS_CONFIG` array en `app/(tabs)/_layout.tsx`
+- Config centralizada en `TABS_CONFIG` (`constants/tabsCatalog.ts`); el **orden
+  de la barra** lo da ese array, NO la lista `tabs` del perfil
+- Qué tabs se ven: `hooks/useVisibleTabs.ts` = `tabs` del perfil resuelto menos
+  el tab del evento en curso si está archivado (`status: 'archived'`)
+- En iOS sólo caben 5 triggers: `splitTabsForIOS` deja los 4 primeros + "Más", y
+  el resto se ve como tarjetas en `MasHomeScreen`
 
 ## Sistema de Perfiles (reemplaza a los feature flags)
 
@@ -294,8 +303,10 @@ danger: '#9D1E74'; // Morado LC
 
 ### Añadir nuevo tab
 
-1. Crear archivo en `app/(tabs)/nuevoTab.tsx`
-2. Añadir objeto a `TABS_CONFIG` en `app/(tabs)/_layout.tsx`
+1. Crear archivo en `app/(tabs)/nuevoTab.tsx` — **imprescindible**: sin la ruta,
+   meter el ID en `TABS_CONFIG`/`tabs` no muestra nada (le pasaba a `comunica`)
+2. Añadir objeto a `TABS_CONFIG` en `constants/tabsCatalog.ts`, en la posición
+   que deba ocupar en la barra (ese array define el orden)
 3. Añadir el ID a `KNOWN_TABS` en `constants/profileCatalog.ts`
 4. Añadir el ID a `profiles.*.tabs` en `firebase-seed/profileConfig.json` y en `/profileConfig` en Firebase
 5. Definir color en `TabHeaderColors` si aplica (en `constants/colors.ts`)

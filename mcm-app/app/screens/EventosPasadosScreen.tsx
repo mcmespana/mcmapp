@@ -19,13 +19,15 @@ import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
-import { getArchivedEvents } from '@/constants/events';
+import { getArchivedEvents, isEventArchived } from '@/constants/events';
+import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { MasStackParamList } from '../(tabs)/mas';
 
 /**
- * "Eventos pasados": lista los eventos archivados (`status: 'archived'` en
- * `constants/events.ts`) como tarjetas que abren su hub. Hoy muestra Jubileo;
- * cuando un evento activo se archive aparecerá aquí automáticamente.
+ * "Eventos pasados": lista los eventos archivados como tarjetas que abren su
+ * hub. Son archivados los que tienen `status: 'archived'` en
+ * `constants/events.ts` y también el evento en curso cuando el panel MCM lo
+ * archiva en caliente (`activities/<id>/_meta.status`), sin publicar la app.
  */
 export default function EventosPasadosScreen() {
   const navigation =
@@ -34,7 +36,21 @@ export default function EventosPasadosScreen() {
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
 
-  const events = React.useMemo(() => getArchivedEvents(), []);
+  const { activeEvent } = useActiveMeta();
+  const events = React.useMemo(() => {
+    const list = getArchivedEvents();
+    // El evento en curso puede estar archivado sólo en remoto: en ese caso el
+    // registry aún lo da como activo y hay que añadirlo (o sustituirlo, para
+    // quedarnos con el título/color que trae el panel).
+    if (!isEventArchived(activeEvent)) {
+      return list.filter((e) => e.id !== activeEvent.id);
+    }
+    const i = list.findIndex((e) => e.id === activeEvent.id);
+    if (i === -1) return [...list, activeEvent];
+    const merged = [...list];
+    merged[i] = activeEvent;
+    return merged;
+  }, [activeEvent]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>

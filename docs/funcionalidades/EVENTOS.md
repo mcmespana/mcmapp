@@ -65,6 +65,23 @@ eventos NO activos siguen tomando `status` del registry (la lista "Eventos
 pasados" no refleja aún un `archived` puesto desde el panel a un evento no
 activo). Ver `docs/planes/PLAN_INTEGRACIONES.md`, Integración B.
 
+**Qué hace `status: 'archived'` en la app** (desde 2026-07-29): archivar el
+evento activo lo saca de todos los sitios donde estaba destacado y lo deja sólo
+en "Más > Eventos pasados":
+
+| Sitio                            | Quién lo filtra                               |
+| -------------------------------- | --------------------------------------------- |
+| Tab propia (`tabId`)             | `hooks/useVisibleTabs.ts` → `(tabs)/_layout`  |
+| Tarjeta de overflow en iOS       | `useVisibleTabs` → `MasHomeScreen`            |
+| Botón del grid de la Home        | `app/(tabs)/index.tsx` (`quickItems`)         |
+| Banner "modo evento" de la Home  | `app/(tabs)/index.tsx` (`showEventBanner`)    |
+| Lista "Eventos pasados"          | `EventosPasadosScreen` (lo AÑADE)             |
+
+Ojo: el `status` es lo único que decide si un evento se destaca. `tabId` puede
+seguir en la lista `tabs` del perfil (`/profileConfig`) sin que el tab aparezca,
+y `ACTIVE_EVENT_ID` puede apuntar a un evento archivado (sigue siendo el evento
+por defecto para routing/caché, simplemente no se destaca).
+
 ### Forma de cada sección
 
 Cada sección (nodo hijo del evento) tiene siempre:
