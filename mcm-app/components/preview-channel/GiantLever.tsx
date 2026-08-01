@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   leverTrackOn: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: LEVER_HEIGHT / 2,
     overflow: 'hidden',
   },

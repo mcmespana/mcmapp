@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
 
   /* Mascota asomándose girada 90° desde un lateral */
   peekRoot: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 9300,
     elevation: 52,
   },
@@ -552,12 +552,12 @@ const styles = StyleSheet.create({
 
   /* Modal de cuenta atrás */
   modalRoot: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 9998,
     elevation: 80,
   },
   countdownRoot: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   haloOuter: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ringInner: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },

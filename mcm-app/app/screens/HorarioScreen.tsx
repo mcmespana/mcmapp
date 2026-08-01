@@ -16,8 +16,8 @@ import { getClosestDateIndex } from '@/utils/dateUtils';
 import DateSelector from '@/components/DateSelector';
 import EventItem, { EventItemData } from '@/components/EventItem';
 import { ThemedText } from '@/components/ThemedText';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from 'expo-router/react-navigation';
+import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import { MasStackParamList } from '../(tabs)/mas';
 
 type Nav = NativeStackNavigationProp<MasStackParamList, 'Materiales'>;

@@ -1,4 +1,4 @@
-import { useRoute } from '@react-navigation/native';
+import { useRoute } from 'expo-router/react-navigation';
 import { getEvent, EventConfig } from '@/constants/events';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
 

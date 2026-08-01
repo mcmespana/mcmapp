@@ -71,7 +71,15 @@ describe('mergeRemoteBookmarks', () => {
     await upsertLocalBookmark(mk('2026-01-01', 100)); // local sin texto
     const remote = [
       mk('2026-01-01', 200, {
-        readings: { evangelio: { texto: 'T', cita: 'Jn 1', comentario: '', comentarista: '', url: '' } },
+        readings: {
+          evangelio: {
+            texto: 'T',
+            cita: 'Jn 1',
+            comentario: '',
+            comentarista: '',
+            url: '',
+          },
+        },
       }),
       mk('2026-02-02', 50),
     ];
@@ -84,7 +92,15 @@ describe('mergeRemoteBookmarks', () => {
   it('conserva las readings locales si el remoto no las trae', async () => {
     await upsertLocalBookmark(
       mk('2026-01-01', 100, {
-        readings: { evangelio: { texto: 'local', cita: '', comentario: '', comentarista: '', url: '' } },
+        readings: {
+          evangelio: {
+            texto: 'local',
+            cita: '',
+            comentario: '',
+            comentarista: '',
+            url: '',
+          },
+        },
       }),
     );
     const merged = await mergeRemoteBookmarks([mk('2026-01-01', 300)]);

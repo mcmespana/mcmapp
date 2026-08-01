@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from 'expo-router/react-navigation';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { shadows } from '@/constants/uiStyles';
 import GlassSurface from './GlassSurface';

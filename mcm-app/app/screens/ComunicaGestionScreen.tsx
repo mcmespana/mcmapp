@@ -81,7 +81,7 @@ export default function ComunicaGestionScreen() {
     () =>
       StyleSheet.create({
         loadingContainer: {
-          ...StyleSheet.absoluteFillObject,
+          ...StyleSheet.absoluteFill,
           justifyContent: 'center' as const,
           alignItems: 'center' as const,
           backgroundColor:

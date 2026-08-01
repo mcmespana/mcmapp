@@ -14,7 +14,7 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
 import SongControls from '@/components/SongControls';
-import { RouteProp, NavigationProp } from '@react-navigation/native';
+import { RouteProp, NavigationProp } from 'expo-router/react-navigation';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';

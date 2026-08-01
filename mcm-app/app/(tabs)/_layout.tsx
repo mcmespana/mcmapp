@@ -18,7 +18,7 @@ import {
   ThemeProvider,
   DarkTheme,
   DefaultTheme,
-} from '@react-navigation/native';
+} from 'expo-router/react-navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';

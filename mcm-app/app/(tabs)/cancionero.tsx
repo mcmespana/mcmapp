@@ -1,6 +1,6 @@
 import { useNavigation } from 'expo-router';
 import { useRef, useEffect } from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';

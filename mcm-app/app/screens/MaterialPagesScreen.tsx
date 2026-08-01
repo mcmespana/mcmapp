@@ -11,7 +11,7 @@ import {
   ViewStyle,
   type ColorSchemeName,
 } from 'react-native';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp } from 'expo-router/react-navigation';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
@@ -56,7 +56,7 @@ const generateRandomCircles = (count: number = 5) => {
 };
 
 export default function MaterialPagesScreen({ route }: { route: RouteProps }) {
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flatListRef = useRef<FlatList<any>>(null);
   const { actividad, fecha } = route.params;
   const introBackgroundColor = actividad.color || colors.primary; // Fallback color

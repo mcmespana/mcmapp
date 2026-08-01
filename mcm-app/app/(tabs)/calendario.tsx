@@ -7,7 +7,7 @@ import React, {
   useRef,
   useLayoutEffect,
 } from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import {
   View,
   StyleSheet,
@@ -28,7 +28,7 @@ import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useLocalSearchParams } from 'expo-router';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation } from 'expo-router/react-navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useBottomTabBarHeight } from 'expo-router/build/react-navigation/bottom-tabs';
 import GlassSurface from './GlassSurface';
 
 /**

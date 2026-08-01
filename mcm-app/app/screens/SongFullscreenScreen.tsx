@@ -18,7 +18,7 @@ import {
   RouteProp,
   useNavigation,
   NavigationProp,
-} from '@react-navigation/native';
+} from 'expo-router/react-navigation';
 import { WebView } from 'react-native-webview';
 import { BlurView } from 'expo-blur';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';

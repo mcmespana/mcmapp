@@ -13,7 +13,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp } from 'expo-router/react-navigation';
 import { Spinner, BottomSheet } from 'heroui-native';
 // Toast de la app (mismo API que el de heroui) — el resto del repo usa este.
 import { useToast } from '@/contexts/AppToastContext';

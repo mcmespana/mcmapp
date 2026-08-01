@@ -6,7 +6,7 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import {
   useLayoutEffect,
   useMemo,

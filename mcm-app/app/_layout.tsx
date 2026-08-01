@@ -13,7 +13,7 @@ import {
   ThemeProvider as NavThemeProvider,
   DarkTheme,
   DefaultTheme,
-} from '@react-navigation/native';
+} from 'expo-router/react-navigation';
 import { usePathname, useSegments, router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';

@@ -1185,7 +1185,7 @@ const styles = StyleSheet.create({
   },
   // Checkmark overlay
   checkOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 100,

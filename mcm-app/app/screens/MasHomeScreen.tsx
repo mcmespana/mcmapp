@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
+import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';

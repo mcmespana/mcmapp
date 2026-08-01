@@ -290,7 +290,7 @@ const btnStyles = StyleSheet.create({
     letterSpacing: -0.2,
   } as TextStyle,
   shimmerWrap: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: 'hidden',
     borderRadius: 16,
   } as ViewStyle,

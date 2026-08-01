@@ -415,7 +415,7 @@ const isIOS = Platform.OS === 'ios';
 
 const styles = StyleSheet.create({
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.3)',
     zIndex: 999,
   },

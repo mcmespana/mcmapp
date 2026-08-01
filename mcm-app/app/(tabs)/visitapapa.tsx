@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
 import { useNavigation } from 'expo-router';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
