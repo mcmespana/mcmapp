@@ -53,6 +53,15 @@ module.exports = defineConfig([
     // Scripts de build y tests corren en Node, fuera del bundle de la app: ahí
     // console es la salida legítima (y algún test espía sobre console).
     files: ['scripts/**', '__tests__/**'],
+    languageOptions: {
+      globals: {
+        __dirname: 'readonly',
+        Buffer: 'readonly',
+        process: 'readonly',
+        require: 'readonly',
+        module: 'writable',
+      },
+    },
     rules: {
       'no-console': 'off',
     },
