@@ -28,7 +28,7 @@ import { takePendingMasScreen } from '@/utils/masNavigation';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { splitTabsForIOS } from '@/constants/tabsCatalog';
+import { splitTabsForBar } from '@/constants/tabsCatalog';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 
@@ -117,10 +117,12 @@ export default function MasHomeScreen() {
   const navigationItems = React.useMemo(() => {
     const items: NavigationItem[] = [];
 
-    // En iOS la barra nativa sólo admite 5 triggers; los tabs que no caben
-    // se exponen aquí como tarjetas para evitar el "More" automático del sistema.
-    if (Platform.OS === 'ios') {
-      const { overflowTabs } = splitTabsForIOS(visibleTabs);
+    // La barra flotante muestra como mucho MAX_TAB_BAR_ITEMS tabs; los que no
+    // caben se exponen aquí como tarjetas. Aplica a iOS y Android, que
+    // comparten esa barra. En web sigue la barra clásica, que los muestra
+    // todos, así que ahí no hay overflow que recoger.
+    if (Platform.OS !== 'web') {
+      const { overflowTabs } = splitTabsForBar(visibleTabs);
       // Tabs cuyo screen está registrado en el stack de Más (no accesibles vía router.navigate en iOS)
       const OVERFLOW_STACK_TARGETS: Partial<
         Record<string, keyof MasStackParamList>
@@ -129,7 +131,7 @@ export default function MasHomeScreen() {
         calendario: 'Calendario',
       };
       for (const tab of overflowTabs) {
-        // 'mas' nunca debería estar en overflow (splitTabsForIOS lo garantiza),
+        // 'mas' nunca debería estar en overflow (splitTabsForBar lo garantiza),
         // pero filtramos defensivamente para no auto-referenciar esta pantalla.
         if (tab.name === 'mas') continue;
         const stackTarget = OVERFLOW_STACK_TARGETS[tab.name];
