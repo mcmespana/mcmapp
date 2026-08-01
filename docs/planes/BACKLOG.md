@@ -12,7 +12,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires solo `plans/README.md` o un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-07-24.
+> Última actualización: 2026-08-01.
 
 ---
 
@@ -26,13 +26,14 @@
 > Actualiza esta caja cada vez que se cierra un ítem — es lo primero que
 > lee cualquiera que retome esto.
 
-| | |
-|---|---|
-| **Ahora mismo (en curso / siguiente)** | UI Nativa — **Fase 2** (componentes), ~65-70% hecho; queda `SegmentedControl`, chips/pills, tokens, y los formularios de Contigo + `SecretPanelModal` (pendientes de verificación en dispositivo / grandes) |
-| **Después** | Integración D 🔒 → Widget de Contigo 🔒 → Carismochito + Panel Pañuelo |
-| **Bloqueado, no tocar sin preguntar** | Integración D, Widget de Contigo, Panel Pañuelo |
-| **Oportunista (solo si piden hueco)** | Calidad Fase 1, Integraciones resto, bolsa nativa |
-| **Hecho** | ✅ Plan 004, ✅ Plan 005 + resumen visible, ✅ Plan 008 (en `main`, pendiente de validar en dispositivo antes de producción), ✅ PR #298 (fix modo alpha), ✅ UI Nativa Fase 1 + Fase 2 parcial (PRs #301-#304, `AppTextField`/`AppPrimaryButton`/`EmptyState` — #301-#303 ya en producción vía cherry-pick, #304 solo en `main`) — ver `mcm-app/CHANGELOG.md` y `plans/README.md` |
+|                                         |                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ahora mismo (en curso / siguiente)**  | UI Nativa — **Fase 2** (componentes), ~65-70% hecho; queda `SegmentedControl`, chips/pills, tokens, y los formularios de Contigo + `SecretPanelModal` (pendientes de verificación en dispositivo / grandes)                                                                                                                                                                        |
+| **Después**                             | Integración D 🔒 → Widget de Contigo 🔒 → Carismochito + Panel Pañuelo                                                                                                                                                                                                                                                                                                             |
+| **Bloqueado, no tocar sin preguntar**   | Integración D, Widget de Contigo, Panel Pañuelo                                                                                                                                                                                                                                                                                                                                    |
+| **Oportunista (solo si piden hueco)**   | Calidad Fase 1, Integraciones resto, bolsa nativa                                                                                                                                                                                                                                                                                                                                  |
+| **Pendiente de dev build (no mergear)** | `claude/compact-tabs-bar-uxxaoz` — Expo SDK 57 + barra de pestañas flotante compacta. Código nativo: hay que validarlo en dispositivo antes de mergear. Al validarlo se desbloquea la actualización de dependencias de terceros (ver `mcm-app/TODO.md`) para meterlo todo en la misma release de tienda                                                                            |
+| **Hecho**                               | ✅ Plan 004, ✅ Plan 005 + resumen visible, ✅ Plan 008 (en `main`, pendiente de validar en dispositivo antes de producción), ✅ PR #298 (fix modo alpha), ✅ UI Nativa Fase 1 + Fase 2 parcial (PRs #301-#304, `AppTextField`/`AppPrimaryButton`/`EmptyState` — #301-#303 ya en producción vía cherry-pick, #304 solo en `main`) — ver `mcm-app/CHANGELOG.md` y `plans/README.md` |
 
 ---
 
@@ -69,17 +70,18 @@
 
 ## 1. Cola Principal (orden secuencial — "seguimos" avanza aquí)
 
-| # | Ítem | Modelo | 🔒 Decisión | Estado | Documento técnico |
-|---|---|---|---|---|---|
-| 1 | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers` | Sonnet | No | ✅ **DONE** (2026-07-22) | `plans/004-contigo-sync-bidireccional.md` |
-| 2 | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet | No | ✅ **DONE** (2026-07-22) | `plans/005-scraper-fiabilidad-y-ci.md` |
-| 3 | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate | **Opus** | No | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `plans/008-cache-compartida-firebase-calendario.md` |
-| 4 | **UI Nativa** — headers nativos + componentes unificados | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70% (`AppTextField`/`EmptyState` mayormente hechos, `AppPrimaryButton` parcial, `SegmentedControl`/chips/tokens sin empezar) | `docs/planes/PLAN_UI_NATIVA.md` |
-| 5 | **Integración D** — Seguridad Firebase | Opus | **Sí** — D2 + repo `mcmpanel` (ver §4) | ⏳ Pendiente, importante pero no urgente | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" |
-| 6 | **Widget de Contigo** | Opus | **Sí** — ¿release de tienda ya? (ver §4) | ⏳ Al final | `docs/planes/PLAN_WIDGET_CONTIGO.md` |
-| 7 | **Carismochito** (ejecutar bien §1–4) + **Panel Pañuelo** (concepto nuevo) | Sonnet (Opus solo el icono nativo §5) | Panel Pañuelo: **sí**, falta el plan funcional | ⏳ Cierre final | `docs/planes/PLAN_CARISMOCHITO.md` + `docs/planes/PLAN_PANEL_PANUELO.md` |
+| #   | Ítem                                                                                    | Modelo                                       | 🔒 Decisión                                                             | Estado                                                                                                                                                                                                                                                                                  | Documento técnico                                                        |
+| --- | --------------------------------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| 1   | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers`  | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `plans/004-contigo-sync-bidireccional.md`                                |
+| 2   | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `plans/005-scraper-fiabilidad-y-ci.md`                                   |
+| 3   | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate   | **Opus**                                     | No                                                                      | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `plans/008-cache-compartida-firebase-calendario.md`                      |
+| 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70% (`AppTextField`/`EmptyState` mayormente hechos, `AppPrimaryButton` parcial, `SegmentedControl`/chips/tokens sin empezar)                                                                                                                        | `docs/planes/PLAN_UI_NATIVA.md`                                          |
+| 5   | **Integración D** — Seguridad Firebase                                                  | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                  | ⏳ Pendiente, importante pero no urgente                                                                                                                                                                                                                                                | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                     |
+| 6   | **Widget de Contigo**                                                                   | Opus                                         | **Sí** — ¿release de tienda ya? (ver §4)                                | ⏳ Al final                                                                                                                                                                                                                                                                             | `docs/planes/PLAN_WIDGET_CONTIGO.md`                                     |
+| 7   | **Carismochito** (ejecutar bien §1–4) + **Panel Pañuelo** (concepto nuevo)              | Sonnet (Opus solo el icono nativo §5)        | Panel Pañuelo: **sí**, falta el plan funcional                          | ⏳ Cierre final                                                                                                                                                                                                                                                                         | `docs/planes/PLAN_CARISMOCHITO.md` + `docs/planes/PLAN_PANEL_PANUELO.md` |
 
 **Notas de orden:**
+
 - El **4** (UI Nativa) puede avanzar en lo no bloqueado (Fase 2: migrar
   `TextInput`→`AppTextField`, `AppPrimaryButton`, `EmptyState`…) mientras se
   resuelven las 3 decisiones que sí bloquean partes concretas.
@@ -97,14 +99,16 @@
 ## 2. Bolsa oportunista (fuera de la Cola Principal — no la avanza "seguimos")
 
 ### A. Calidad · Fase 1 — descuartizar los gigantes
-- **Trigger exclusivo:** el usuario dice algo tipo *"me sobran tokens esta
-  semana, ¿por dónde seguimos?"* (ver Protocolo §3). No se ejecuta por
+
+- **Trigger exclusivo:** el usuario dice algo tipo _"me sobran tokens esta
+  semana, ¿por dónde seguimos?"_ (ver Protocolo §3). No se ejecuta por
   iniciativa propia ni entra en la Cola Principal.
 - **Modelo:** Sonnet.
 - **Detalle:** `docs/planes/PLAN_CALIDAD.md` Fase 1 (`SelectedSongsScreen`,
   `onboarding.tsx`, `(tabs)/index.tsx`…).
 
 ### B. Integraciones — resto (A2, C1–C4, E1)
+
 - **Trigger:** "cuando estén" — oportunista, sin fecha fija; hacerlo cuando
   haya hueco o cuando el resto de piezas cross-repo estén listas. No bloquea
   nada ni es prioritario.
@@ -112,18 +116,19 @@
 - **Detalle:** `docs/planes/PLAN_INTEGRACIONES.md` secciones A2, C, E1.
 
 ### C. Bolsa nativa — para "el día que hagamos una build de tienda"
+
 > Todo esto es código nativo (no OTA). No tiene sentido hacer una build de
 > tienda por una sola cosa — cuando se decida hacer una, revisar esta lista
 > y empaquetar todo lo que esté listo en esa misma build.
 
-| Qué | Origen | Nota |
-|---|---|---|
-| ✅ Fix modo alpha (`disableAntiBrickingMeasures`) | [PR #298](https://github.com/mcmespana/mcmapp/pull/298), mergeada a `main` 2026-07-22 | Código ya en `main`; el toggle en sí no surte efecto hasta la próxima build de tienda |
-| iPad: landscape nativo (`UISupportedInterfaceOrientations~ipad`) | `mcm-app/TODO.md` (prioridad alta) | Los layouts de iPad ya están listos, falta activar la orientación |
-| NSE iOS — imagen en notificación del sistema | `docs/planes/PLAN_INTEGRACIONES.md` A4.4 / `TODO.md` | Nuevo target iOS, requiere config plugin |
-| Android — channels de notificación por tipo | `docs/planes/PLAN_INTEGRACIONES.md` A4.2 | Cross-repo: el panel debe mandar `channelId` |
-| Sentry / crash reporting | `docs/planes/PLAN_CALIDAD.md` Fase 6 | Decisión de cuenta/proveedor pendiente |
-| Icono alternativo Carismochito | `docs/planes/PLAN_CARISMOCHITO.md` §5 | 🔒 decisión — ¿compensa para un modo efímero? |
+| Qué                                                              | Origen                                                                                | Nota                                                                                  |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| ✅ Fix modo alpha (`disableAntiBrickingMeasures`)                | [PR #298](https://github.com/mcmespana/mcmapp/pull/298), mergeada a `main` 2026-07-22 | Código ya en `main`; el toggle en sí no surte efecto hasta la próxima build de tienda |
+| iPad: landscape nativo (`UISupportedInterfaceOrientations~ipad`) | `mcm-app/TODO.md` (prioridad alta)                                                    | Los layouts de iPad ya están listos, falta activar la orientación                     |
+| NSE iOS — imagen en notificación del sistema                     | `docs/planes/PLAN_INTEGRACIONES.md` A4.4 / `TODO.md`                                  | Nuevo target iOS, requiere config plugin                                              |
+| Android — channels de notificación por tipo                      | `docs/planes/PLAN_INTEGRACIONES.md` A4.2                                              | Cross-repo: el panel debe mandar `channelId`                                          |
+| Sentry / crash reporting                                         | `docs/planes/PLAN_CALIDAD.md` Fase 6                                                  | Decisión de cuenta/proveedor pendiente                                                |
+| Icono alternativo Carismochito                                   | `docs/planes/PLAN_CARISMOCHITO.md` §5                                                 | 🔒 decisión — ¿compensa para un modo efímero?                                         |
 
 > Solo encontré **una** PR abierta que mencione explícitamente necesitar una
 > build de tienda (#261). Busqué también por "EAS"/"App Store"/"Play
@@ -134,12 +139,14 @@
 > confirmado que se ignoran, tal como pediste.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
+
 - **Multilenguaje (i18n)** — catalán/portugués/inglés. Por ahora **no**. Si
   algún día se decide, ver `docs/planes/archivo/MEJORAS.md` §10 (razonamiento
   archivado) y usar `i18n-js` + `expo-localization` desde el principio (el
   coste de extraer strings después es ~10× mayor).
 
 ### E. Tarea pequeña — enlaces legales en "Más"
+
 - Añadir 3 enlaces discretos en `MasHomeScreen` (o donde encaje mejor en la
   pestaña Más) a: **condiciones de uso**, **aviso legal**, **política de
   cookies** — ya publicados en la web.
@@ -153,6 +160,7 @@
 ## 3. Anulados
 
 ### Plan 007 — Privacidad de respuestas de encuestas
+
 **Anulado el 2026-07-22.** Decisión de producto: el panel **debe** poder ver
 nombres/respuestas de encuestas — es una funcionalidad deseada, no un bug. El
 diseño actual (`.read: true` en `/surveys` y `/activities`) se mantiene tal
@@ -168,14 +176,14 @@ reabrir este plan tal cual, su premisa ya no aplica.
 
 ## 4. Decisiones pendientes — preguntar ANTES de ejecutar
 
-| Decisión | Bloquea | Dónde consultar el contexto | Qué preguntar |
-|---|---|---|---|
-| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?" |
-| ~~**3 decisiones de UI**~~ ✅ **RESUELTAS (2026-07-22)** | UI Nativa | `docs/planes/PLAN_UI_NATIVA.md` §4 | **(1) Headers**: nativo plano en pantallas "lista+detalle" (Revisión, Materiales, Horario, sub-pantallas de evento), floating glass solo donde aporta identidad (heros de evento). **(2) Pulsación**: `PressableFeedback` (heroui) como primitiva única de contenido — es la opción con feedback nativo más consistente y ya soportada por la librería; barras de navegación siguen con bar items nativos. **(3) Color**: Contigo (warm) y Eventos (color por evento) **mantienen su paleta propia** — es identidad intencional; documentar como temas con nombre, no forzar alineación a marca. |
-| **Release de tienda para el Widget** — ¿se compromete ya? ¿iOS primero? ¿App Intents interactivos o solo abrir la app? | Widget de Contigo | `docs/planes/PLAN_WIDGET_CONTIGO.md` | "¿Arrancamos el Widget de Contigo? Implica una build de tienda dedicada — ¿cuándo?" |
-| **Icono nativo Carismochito (§5)** | Bolsa nativa / Carismochito | `docs/planes/PLAN_CARISMOCHITO.md` §5 | "¿Compensa el icono alternativo para un modo que es efímero (se activa agitando)?" |
-| **Plan funcional del Panel Pañuelo** | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md` (stub) | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o esperamos a después de Carismochito §1–4?" |
-| **URLs de los 3 documentos legales** | Tarea "enlaces legales" (§2.E) | este documento | "Pásame los links de condiciones de uso, aviso legal y política de cookies" |
+| Decisión                                                                                                               | Bloquea                        | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`)                             | Integración D                  | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ~~**3 decisiones de UI**~~ ✅ **RESUELTAS (2026-07-22)**                                                               | UI Nativa                      | `docs/planes/PLAN_UI_NATIVA.md` §4                   | **(1) Headers**: nativo plano en pantallas "lista+detalle" (Revisión, Materiales, Horario, sub-pantallas de evento), floating glass solo donde aporta identidad (heros de evento). **(2) Pulsación**: `PressableFeedback` (heroui) como primitiva única de contenido — es la opción con feedback nativo más consistente y ya soportada por la librería; barras de navegación siguen con bar items nativos. **(3) Color**: Contigo (warm) y Eventos (color por evento) **mantienen su paleta propia** — es identidad intencional; documentar como temas con nombre, no forzar alineación a marca. |
+| **Release de tienda para el Widget** — ¿se compromete ya? ¿iOS primero? ¿App Intents interactivos o solo abrir la app? | Widget de Contigo              | `docs/planes/PLAN_WIDGET_CONTIGO.md`                 | "¿Arrancamos el Widget de Contigo? Implica una build de tienda dedicada — ¿cuándo?"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Icono nativo Carismochito (§5)**                                                                                     | Bolsa nativa / Carismochito    | `docs/planes/PLAN_CARISMOCHITO.md` §5                | "¿Compensa el icono alternativo para un modo que es efímero (se activa agitando)?"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Plan funcional del Panel Pañuelo**                                                                                   | Panel Pañuelo                  | `docs/planes/PLAN_PANEL_PANUELO.md` (stub)           | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o esperamos a después de Carismochito §1–4?"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **URLs de los 3 documentos legales**                                                                                   | Tarea "enlaces legales" (§2.E) | este documento                                       | "Pásame los links de condiciones de uso, aviso legal y política de cookies"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ---
 

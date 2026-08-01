@@ -1,31 +1,93 @@
 # 📱 Mantenimiento de Tabs - Guía Completa
 
-## 🎯 Solución Implementada
+## 🎯 Arquitectura actual
 
-Se ha implementado una **solución híbrida** que proporciona la mejor experiencia en cada plataforma:
+Desde agosto de 2026 la barra de pestañas tiene **tres** implementaciones, no dos:
 
-- **iOS**: NativeTabs para compatibilidad con liquid glass
-- **Android/Web**: Tabs tradicionales para mejor funcionalidad y visualización
+| Plataforma | Barra                              | Navegador                                       |
+| ---------- | ---------------------------------- | ----------------------------------------------- |
+| iOS        | `CompactTabBar` (flotante, nativa) | `NativeTabs` con la barra del sistema oculta    |
+| Android    | `CompactTabBar` (flotante, nativa) | `Tabs` de expo-router con `tabBar={() => null}` |
+| Web        | Barra clásica, en flujo            | `Tabs` de expo-router                           |
 
-## 🏗️ Arquitectura
+`CompactTabBar` envuelve `NativeCompactTabBar` de
+[`expo-native-compact-tabs`](https://github.com/Kellytomi/expo-native-compact-tabs):
+al scrollear se **compacta manteniendo todos los iconos visibles**, en lugar de
+colapsar a la píldora del sistema que los esconde. Liquid Glass real en iOS 26+,
+píldora sólida con cápsula animada en iOS 16.4–18.x y Android.
 
-### Estructura del archivo `app/(tabs)/_layout.tsx`
+> ⚠️ Es un control **visual**, no un navegador. Quien navega es expo-router desde
+> `onTabSelected`; `selectedIndex` se deriva del `usePathname()`.
 
-```typescript
-// Componente principal que decide qué implementación usar
-export default function TabsLayout() {
-  return (
-    <>
-      {Platform.OS === 'ios' ? (
-        <iOSNativeTabsLayout />  // Para iOS
-      ) : (
-        <AndroidWebTabsLayout /> // Para Android/Web
-      )}
-      <StatusBar />
-    </>
-  );
-}
+### Por qué Android sigue con `Tabs` y no con `NativeTabs`
+
+Porque en Android los headers salen de las `options` de cada `Tabs.Screen`
+(`title`, `headerColor`, `headerShown` de `TABS_CONFIG`). Con `NativeTabs` habría
+que reconstruirlos pantalla a pantalla sin ganar nada: la barra visible ya no es
+la del navegador.
+
+### Ficheros
+
 ```
+app/(tabs)/_layout.tsx            ← selector por plataforma (3 ramas)
+components/tabs/
+  IOSTabsLayout.tsx               ← NativeTabs (barra oculta) + overlay
+  AndroidTabsLayout.tsx           ← Tabs (barra oculta) + overlay
+  WebTabsLayout.tsx               ← barra clásica, sin cambios
+  CompactTabBar.tsx               ← la barra flotante en sí
+  tabBarController.ts             ← estado compacta/expandida (singleton)
+  useTabScroll.ts                 ← engancha una pantalla a la barra
+constants/tabsCatalog.ts          ← TABS_CONFIG (orden) + splitTabsForBar
+constants/tabIcons.ts             ← mapa estático de PNGs por tab
+scripts/generate-tab-icons.js     ← genera esos PNGs (`npm run icons:tabs`)
+hooks/useTabBarClearance.ts       ← hueco a reservar al final de un scroll
+utils/tabRoutes.ts                ← helpers puros tab ↔ ruta
+```
+
+### Tope de tabs en la barra
+
+`MAX_TAB_BAR_ITEMS = 6` (en `constants/tabsCatalog.ts`). Antes era 5 y venía
+impuesto por `UITabBarController`; con barra propia es una decisión de diseño y
+se aplica igual en iOS y Android. Los que no caben se muestran como tarjetas en
+`MasHomeScreen` vía `splitTabsForBar`. En web se ven todos.
+
+### La barra FLOTA: hay que reservarle hueco
+
+No ocupa layout en iOS ni en Android, así que cada pantalla de tab tiene que
+dejar sitio al final de su scroll. Eso y el colapso se resuelven de una vez con
+`components/tabs/useTabScroll.ts`:
+
+```tsx
+// Pantalla raíz de un tab, con ScrollView
+const { scrollRef, onScroll, contentPaddingBottom } =
+  useTabScroll("cancionero");
+
+<Animated.ScrollView
+  ref={scrollRef}
+  onScroll={onScroll}
+  scrollEventThrottle={16}
+  contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
+/>;
+```
+
+```tsx
+// Con FlatList / SectionList (usa Animated.FlatList)
+const { listRef, onScroll, contentPaddingBottom } =
+  useTabListScroll<FlatList>("fotos");
+```
+
+Reglas:
+
+- La clave es el `name` del tab en `TABS_CONFIG`. Sirve para que **re-tapear el
+  tab activo** mande ese scroller arriba del todo.
+- Pantallas **anidadas** dentro de un tab (detalle de canción, subrutas de
+  Contigo, EventHome apilado desde Más) pasan `null`: colapsan igual, pero no se
+  registran para no pisar al scroller raíz del tab.
+- Para UI flotante que NO es un scroll (FABs, mini reproductor, barras de
+  acciones), usar `useTabBarClearance()` directamente como `bottom`.
+- `Comunica` es la excepción: es un WebView, no hay scroller de RN al que
+  engancharse, así que ahí la barra se queda expandida y el hueco se da por
+  `contentInset`.
 
 ## 📋 Cómo Añadir un Nuevo Tab
 
@@ -37,28 +99,40 @@ En `app/(tabs)/_layout.tsx`, añade un objeto al array `TABS_CONFIG`:
 const TABS_CONFIG: TabConfig[] = [
   // ... tabs existentes
   {
-    name: 'nuevoTab',
-    label: 'Nuevo Tab',
-    iosIcon: { default: 'star', selected: 'star.fill' },
-    androidIcon: 'star',
+    name: "nuevoTab",
+    label: "Nuevo Tab",
+    iosIcon: { default: "star", selected: "star.fill" },
+    androidIcon: "star",
     headerColor: TabHeaderColors.nuevoTab, // Opcional
     headerShown: true,
   },
 ];
 ```
 
-### 2. (Opcional) Definir color del header
+### 2. Generar el icono PNG del tab
+
+`expo-native-compact-tabs` pinta desde imágenes, no desde SF Symbols ni fuentes
+de iconos. En cuanto el tab está en `TABS_CONFIG` con su `androidIcon`:
+
+```bash
+npm run icons:tabs   # rasteriza el glifo a assets/tab-icons/<tab>/
+```
+
+Y registrar el resultado en `constants/tabIcons.ts` (el mapa es **estático** a
+propósito: Metro necesita ver cada `require()` con ruta literal).
+
+### 3. (Opcional) Definir color del header
 
 Si quieres que el tab tenga un color identificativo, añádelo a `constants/colors.ts`:
 
 ```typescript
 export const TabHeaderColors = {
   // ... colores existentes
-  nuevoTab: '#FF5733',
+  nuevoTab: "#FF5733",
 };
 ```
 
-### 3. Registrar el tab en el Sistema de Perfiles
+### 4. Registrar el tab en el Sistema de Perfiles
 
 El antiguo `constants/featureFlags.ts` ya no existe. Ahora la visibilidad por
 perfil/delegación se controla desde `/profileConfig` en Firebase RTDB. Hay
@@ -69,7 +143,7 @@ que tocar dos sitios:
 2. **Config remota + seed** (`firebase-seed/profileConfig.json` y `/profileConfig/data/profiles/*` en Firebase):
    añadir el nuevo ID al array `tabs` de los perfiles que deban verlo.
 
-### 4. Crear el archivo del tab
+### 5. Crear el archivo del tab
 
 Crear `app/(tabs)/nuevoTab.tsx`:
 
@@ -106,10 +180,10 @@ Los colores de headers se definen en `constants/colors.ts` en el objeto `TabHead
 
 ```typescript
 export const TabHeaderColors = {
-  calendario: '#31AADF',
-  fotos: '#E15C62',
-  comunica: '#9D1E74dd',
-  nuevoTab: '#TU_COLOR', // Añade aquí el color para tu nuevo tab
+  calendario: "#31AADF",
+  fotos: "#E15C62",
+  comunica: "#9D1E74dd",
+  nuevoTab: "#TU_COLOR", // Añade aquí el color para tu nuevo tab
 };
 ```
 
@@ -149,18 +223,21 @@ Luego, en la configuración del tab en `_layout.tsx`, simplemente referencia el 
 
 ### Principios de Diseño
 
-1. **Separación clara**: iOS y Android/Web están completamente separados
+1. **Separación clara**: iOS, Android y Web están completamente separados
 2. **Misma funcionalidad**: Ambos tienen las mismas opciones de tabs
 3. **Fácil de extender**: Añadir un tab nuevo requiere cambios en ambos lugares
 4. **Consistencia**: Los nombres en `TABS_CONFIG`, `KNOWN_TABS` y `profiles.*.tabs` deben coincidir
 
 ### Checklist para Cambios
 
-- [ ] ¿Añado el tab al array `TABS_CONFIG`?
+- [ ] ¿Añado el tab al array `TABS_CONFIG` (`constants/tabsCatalog.ts`)?
+- [ ] ¿Genero su PNG con `npm run icons:tabs` y lo registro en `constants/tabIcons.ts`?
 - [ ] ¿Defino el color en `TabHeaderColors` (si aplica)?
 - [ ] ¿Añado el ID a `KNOWN_TABS` en `constants/profileCatalog.ts`?
 - [ ] ¿Añado el ID a `tabs` en cada perfil de `firebase-seed/profileConfig.json` **y** en `/profileConfig/data/profiles/*` de Firebase?
 - [ ] ¿Creo el archivo del tab con `TabScreenWrapper`?
+- [ ] ¿Engancho su scroller con `useTabScroll` / `useTabListScroll`?
+- [ ] ¿Cabe en la barra (`MAX_TAB_BAR_ITEMS`) o va a caer a MasHome?
 - [ ] ¿Pruebo en iOS, Android y Web?
 
 ## 🐛 Solución de Problemas

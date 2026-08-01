@@ -18,6 +18,65 @@
 
 ---
 
+## 2026-08-01 19:30 — Expo SDK 57 + barra de pestañas flotante compacta
+
+> ⚠️ **Incluye código nativo (Swift + Kotlin) y un salto de SDK: NO entra por
+> OTA.** Todos los commits llevan `[skip-ota]`. Esta rama queda **pendiente de
+> validar en una dev build** antes de mergear.
+
+### Expo SDK 55 → 56 → 57
+
+- **SDK 56** (RN 0.85, TypeScript 6). Cambios obligados:
+  - `StyleSheet.absoluteFillObject` desaparece de RN (también en runtime) →
+    `StyleSheet.absoluteFill`, que ahora es un objeto plano y spreadable.
+  - **expo-router 56 ya no admite `@react-navigation/*` como dependencia
+    directa**: trae su copia vendorizada. Se eliminan los 4 paquetes y los ~40
+    imports pasan a `expo-router/react-navigation` y
+    `expo-router/build/react-navigation/*`.
+  - `eslint-config-expo` 56 activa las reglas del React Compiler como error
+    (~330 avisos sobre patrones preexistentes). Quedan como `warn`; sanearlas
+    está apuntado en TODO.md.
+  - `jest-expo` 56 requiere `@react-native/jest-preset` aparte.
+- **SDK 57** (RN 0.86): sin cambios de código, solo alineación de versiones. Es
+  lo que exige `expo-native-compact-tabs` (peers `expo>=57`, `rn>=0.86`).
+
+### Barra de pestañas
+
+- Nueva dependencia **`expo-native-compact-tabs` 0.2.0**: barra flotante nativa
+  que al compactarse con el scroll **mantiene todos los iconos visibles**, en vez
+  de colapsar a la píldora del sistema que los esconde. Liquid Glass real en
+  iOS 26+, píldora sólida con cápsula animada en iOS 16.4–18.x y Android.
+- El layout pasa de **dos ramas a tres**: iOS y Android comparten la barra
+  flotante; **web se queda exactamente como estaba**.
+  - iOS: `NativeTabs` sigue de navegador pero con la barra del sistema oculta.
+  - Android: se mantiene el navegador `Tabs` con `tabBar={() => null}`, para no
+    perder los headers que salen de las options de cada `Tabs.Screen`.
+- **Tope de items 5 → 6** (`MAX_TAB_BAR_ITEMS`), aplicado ahora también en
+  Android: ya no lo impone `UITabBarController`. `splitTabsForIOS` →
+  `splitTabsForBar`, y MasHomeScreen muestra las tarjetas de overflow en las dos
+  plataformas.
+- **Iconos**: la librería pinta desde PNG, no admite SF Symbols ni MaterialIcons.
+  `scripts/generate-tab-icons.js` (`npm run icons:tabs`) rasteriza el mismo glifo
+  que ya declaraba `androidIcon`, más 5 fotogramas de animación de selección.
+- **La barra flota**: no ocupa layout. `components/tabs/useTabScroll.ts` da a cada
+  pantalla el `onScroll` del colapso y el `paddingBottom` a reservar; sustituye a
+  los paddings 100/120/140 que estaban a mano y casi siempre detrás de un
+  `Platform.OS === 'ios' &&` (en Android no había reserva ninguna). Se recolocan
+  también FAB, mini reproductor, barra de subrayado y puntos de Carismochito.
+- Comunica (WebView) no colapsa la barra: no hay scroller de RN al que
+  engancharse. El hueco se da por `contentInset`.
+- Se eliminan `TabBarBackground.tsx` / `.ios.tsx` y `GlassTabBarBackground.ios.tsx`:
+  no los usaba nadie y reexportaban `useBottomTabBarHeight()`, que con la barra
+  del navegador oculta ya no significa nada.
+
+### Archivos principales
+
+`app/(tabs)/_layout.tsx`, `components/tabs/*` (nuevo), `constants/tabsCatalog.ts`,
+`constants/tabIcons.ts`, `constants/spacing.ts`, `hooks/useTabBarClearance.ts`,
+`utils/tabRoutes.ts`, `scripts/generate-tab-icons.js`, `assets/tab-icons/*`
+
+---
+
 ## 2026-07-30 01:15 — Comunica: modo oscuro completo + pantalla de carga de marca
 
 - **Franjas de arriba y de abajo en claro con la app en oscuro (bug).** Las zonas
@@ -237,9 +296,9 @@
   así siempre es legible. En Android (sin cristal fiable) se usa una franja
   lisa blanca/oscura según el tema.
 - **Scroll inferior (iOS)**: se añade `contentInset` inferior (alto del tab bar
-  + margen) para poder arrastrar el contenido por encima del tab bar
-  translúcido — antes el último botón de la web (p. ej. «Guardar») quedaba
-  tapado. Además la web arranca en zona segura vía `contentInset` superior.
+  - margen) para poder arrastrar el contenido por encima del tab bar
+    translúcido — antes el último botón de la web (p. ej. «Guardar») quedaba
+    tapado. Además la web arranca en zona segura vía `contentInset` superior.
 - Archivo: `app/screens/ComunicaScreen.tsx`. Cambio OTA-safe (sin módulos
   nativos nuevos; `GlassSurface`/`expo-blur` ya están en el binario).
 
@@ -423,8 +482,8 @@
   dispositivos si el segundo fallaba). Si falla el guardado, el texto ya NO
   se borra del formulario y se muestra un toast de error.
 - **Dependencias**: eliminadas 4 sin ningún uso en el código
-  (`@gorhom/bottom-sheet`, `react-native-modal` —iba en versión *release
-  candidate*—, `@react-native-picker/picker`, `@react-native-community/slider`)
+  (`@gorhom/bottom-sheet`, `react-native-modal` —iba en versión _release
+  candidate_—, `@react-native-picker/picker`, `@react-native-community/slider`)
   y `jest` deduplicado (estaba a la vez en `dependencies` y
   `devDependencies`). Pineadas las versiones de `eas-cli`/`firebase-tools`
   en los workflows de release (antes `@latest`, con riesgo de que una major
@@ -434,7 +493,7 @@
   `app/(tabs)/index.tsx`, `app/(tabs)/calendario.tsx`,
   `app/screens/ReflexionesScreen.tsx`, `hooks/useContigoHabits.ts`,
   `package.json`, `.github/workflows/{deploy-web,deploy-firebase-rules,
-  ota-preview,ota-production}.yml`, `plans/README.md`.
+ota-preview,ota-production}.yml`, `plans/README.md`.
 
 ---
 
@@ -797,8 +856,8 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
-  >600) y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  > 600.  y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
+  >       Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

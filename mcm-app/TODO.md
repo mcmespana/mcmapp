@@ -14,6 +14,21 @@
 
 ## Prioridad alta
 
+- [ ] **Actualizar dependencias de TERCEROS a su último major** — el salto de
+      SDK (55→57) ya está hecho y solo movió lo que gestiona Expo. Falta
+      heroui-native, firebase, ChordSheetJS, jest y demás. Se dejó fuera a
+      propósito para no mezclar el riesgo del SDK con breaking changes de
+      terceros en la misma rama. **Hacerlo cuando la dev build de
+      `claude/compact-tabs-bar-uxxaoz` esté validada**, para poder meterlo todo
+      en la misma release de tienda.
+- [ ] **Sanear las reglas del React Compiler** — `eslint-config-expo` 56+ las
+      activa como error y sacan ~330 avisos sobre patrones que ya estaban:
+      `react-hooks/refs` (refs leídas en render, 276), `set-state-in-effect`
+      (37), `immutability` (`sharedValue.value = …` de Reanimated, 14),
+      `preserve-manual-memoization` (12), `static-components` (8), `purity` (3).
+      Ahora mismo están bajadas a `warn` en `eslint.config.js`. Al terminar,
+      volver a subirlas a `error`.
+
 - [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
 - [ ] **iPad: habilitar landscape a nivel nativo** — añadir
       `UISupportedInterfaceOrientations~ipad` (las 4 orientaciones) en
