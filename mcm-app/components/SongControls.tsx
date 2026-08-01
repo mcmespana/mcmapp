@@ -20,7 +20,7 @@ import ReportBugsModal from './ReportBugsModal';
 import SecretPanelModal from './SecretPanelModal';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 
 interface FontOption {
   name: string;
@@ -96,7 +96,8 @@ const SongControls: React.FC<SongControlsProps> = ({
   const scheme = useColorScheme();
   const { toast } = useToast();
   const isDark = scheme === 'dark';
-  const insets = useSafeAreaInsets();
+  // El FAB va por encima de la barra de pestañas flotante.
+  const tabBarClearance = useTabBarClearance();
   const layout = useResponsiveLayout();
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -238,7 +239,7 @@ const SongControls: React.FC<SongControlsProps> = ({
         style={[
           styles.fabContainer,
           {
-            bottom: insets.bottom + (isIOS ? 52 : 24),
+            bottom: tabBarClearance + 8,
             right: fabRightOffset,
           },
         ]}
@@ -410,8 +411,6 @@ const SongControls: React.FC<SongControlsProps> = ({
     </>
   );
 };
-
-const isIOS = Platform.OS === 'ios';
 
 const styles = StyleSheet.create({
   scrim: {

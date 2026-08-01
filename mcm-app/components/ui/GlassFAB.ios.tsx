@@ -4,6 +4,7 @@ import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { radii, shadows } from '@/constants/uiStyles';
 import GlassSurface from './GlassSurface';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 
 interface GlassFABProps {
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -30,6 +31,8 @@ export default function GlassFAB({
   style,
 }: GlassFABProps) {
   const isPill = !!label;
+  // Se apoya sobre la barra de pestañas flotante, que ya incluye el inset.
+  const tabBarClearance = useTabBarClearance();
   return (
     <PressableFeedback
       onPress={onPress}
@@ -49,7 +52,6 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 90,
     width: 56,
     height: 56,
     borderRadius: radii.full,

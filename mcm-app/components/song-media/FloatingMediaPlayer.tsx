@@ -13,6 +13,7 @@ import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { h } from '@/utils/haptics';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 
 export interface FloatingMediaSource {
   /** 'youtube' → URL de embed de YouTube · 'drive' → URL de preview de Drive. */
@@ -67,6 +68,8 @@ export default function FloatingMediaPlayer({
   onClose,
 }: FloatingMediaPlayerProps) {
   const insets = useSafeAreaInsets();
+  // Se apoya sobre la barra de pestañas flotante, que ya incluye el inset.
+  const tabBarClearance = useTabBarClearance();
   const [fullscreen, setFullscreen] = useState(false);
 
   // Drag (arrastre) + animación de entrada.
@@ -171,7 +174,7 @@ export default function FloatingMediaPlayer({
         style={[
           styles.floatWrap,
           {
-            bottom: insets.bottom + 96,
+            bottom: tabBarClearance + 18,
             opacity: enter,
             transform: [
               { translateX: pan.x },

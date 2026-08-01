@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 
 const DOT_SIZE = 10;
 const DOT_GAP = 8;
@@ -60,7 +60,8 @@ export default function CarismochitoChargeDots({
   count: number;
   total: number;
 }) {
-  const insets = useSafeAreaInsets();
+  // Los puntos se dibujan sobre la barra de pestañas flotante.
+  const tabBarClearance = useTabBarClearance();
   const containerOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -76,7 +77,7 @@ export default function CarismochitoChargeDots({
       pointerEvents="none"
       style={[
         styles.root,
-        { bottom: insets.bottom + 80, opacity: containerOpacity },
+        { bottom: tabBarClearance + 8, opacity: containerOpacity },
       ]}
     >
       <View style={styles.row}>

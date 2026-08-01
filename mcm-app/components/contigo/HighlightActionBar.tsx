@@ -8,13 +8,13 @@ import {
   View,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_KEYS,
   type HighlightColorKey,
 } from '@/utils/highlightRanges';
 import { h } from '@/utils/haptics';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 
 interface HighlightActionBarProps {
   visible: boolean;
@@ -38,7 +38,8 @@ export function HighlightActionBar({
   onDone,
   isDark,
 }: HighlightActionBarProps) {
-  const insets = useSafeAreaInsets();
+  // La barra de subrayado se coloca justo encima de la de pestañas.
+  const tabBarClearance = useTabBarClearance();
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export function HighlightActionBar({
       style={[
         styles.wrap,
         {
-          bottom: insets.bottom + 14,
+          bottom: tabBarClearance + 8,
           opacity: anim,
           transform: [{ translateY }],
           backgroundColor: isDark ? '#26221C' : '#FFFFFF',
