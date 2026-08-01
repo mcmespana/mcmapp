@@ -1,4 +1,6 @@
 import { logger } from '@/utils/logger';
+import Animated from 'react-native-reanimated';
+import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import {
   useState,
   useEffect,
@@ -98,6 +100,10 @@ export default function SongsListScreen({
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
+  // Pantalla ANIDADA dentro del tab Cantoral: colapsa la barra flotante, pero
+  // sin registrarse (el scroller del tab es el de CategoriesScreen).
+  const { listRef, onScroll, contentPaddingBottom } =
+    useTabListScroll<FlatList>(null);
   const styles = useMemo(
     () =>
       createStyles(
@@ -554,7 +560,10 @@ export default function SongsListScreen({
           </TouchableOpacity>
         </View>
       </BottomSheet>
-      <FlatList
+      <Animated.FlatList
+        ref={listRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         data={filteredSongs}
         keyExtractor={(item) => item.filename}
         initialNumToRender={15}
@@ -562,7 +571,10 @@ export default function SongsListScreen({
         windowSize={5}
         renderItem={renderItem}
         ListHeaderComponent={listHeaderComponent}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: contentPaddingBottom },
+        ]}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -649,7 +661,6 @@ const createStyles = (
     },
     listContent: {
       paddingHorizontal: isWide ? 20 : 12,
-      paddingBottom: bottomInset + 20,
       ...(isWide
         ? {
             maxWidth,

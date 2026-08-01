@@ -9,7 +9,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   Platform,
@@ -22,6 +21,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import {
@@ -44,6 +45,9 @@ const REVISION_STORAGE = '@contigo_revision_';
 type Mode = 'list' | 'free';
 
 export default function RevisionScreen() {
+  // Subruta de Contigo: colapsa la barra flotante (sin registrarse: el
+  // scroller del tab es el de contigo/index) y le reserva hueco.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const scheme = useColorScheme();
@@ -332,8 +336,14 @@ export default function RevisionScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={80}
       >
-        <ScrollView
-          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        <Animated.ScrollView
+          ref={scrollRef}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{
+            padding: 20,
+            paddingBottom: contentPaddingBottom,
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -356,7 +366,7 @@ export default function RevisionScreen() {
               />
             )}
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       </KeyboardAvoidingView>
 
       {/* ── Footer ── */}

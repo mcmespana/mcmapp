@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   useWindowDimensions,
@@ -13,12 +12,17 @@ import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { warm, formatDateLong } from '@/components/contigo/theme';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
 import { countHighlights } from '@/utils/contigoBookmarks';
 
 export default function BookmarksScreen() {
+  // Subruta de Contigo: colapsa la barra flotante (sin registrarse: el
+  // scroller del tab es el de contigo/index) y le reserva hueco.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll(null);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
@@ -84,10 +88,16 @@ export default function BookmarksScreen() {
           </Text>
         </View>
       ) : (
-        <ScrollView
+        <Animated.ScrollView
+          ref={scrollRef}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           contentContainerStyle={[
             styles.listWrap,
-            { paddingTop: insets.top + 56 },
+            {
+              paddingTop: insets.top + 56,
+              paddingBottom: contentPaddingBottom,
+            },
           ]}
           showsVerticalScrollIndicator={false}
         >
@@ -218,7 +228,7 @@ export default function BookmarksScreen() {
               );
             })}
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       )}
     </View>
   );
@@ -262,7 +272,6 @@ const styles = StyleSheet.create({
 
   listWrap: {
     padding: 16,
-    paddingBottom: 60,
     gap: 12,
   },
   card: {

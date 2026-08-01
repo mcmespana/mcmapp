@@ -21,6 +21,9 @@ import { Calendar, CalendarProps, LocaleConfig } from 'react-native-calendars';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
+import Animated from 'react-native-reanimated';
+import type { SectionListProps } from 'react-native';
+import { useTabScroll, useTabListScroll } from '@/components/tabs/useTabScroll';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -81,8 +84,27 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
+// Reanimated 4 no trae `Animated.SectionList` hecho, hay que crearlo. Se hace
+// a nivel de módulo para que no se remonte la lista en cada render.
+const AnimatedSectionList = Animated.createAnimatedComponent(
+  SectionList as React.ComponentType<
+    SectionListProps<CalendarEvent, { title: string; data: CalendarEvent[] }>
+  >,
+);
+
 export function CalendarScreen() {
   const scheme = useColorScheme();
+  // Modo agenda: es el scroller que representa al tab (re-tap → arriba).
+  const {
+    listRef: agendaRef,
+    onScroll: onAgendaScroll,
+    contentPaddingBottom,
+  } = useTabListScroll<
+    SectionList<CalendarEvent, { title: string; data: CalendarEvent[] }>
+  >('calendario');
+  // Modo calendario: colapsa igual, pero sin registrarse (mismo tab).
+  const { scrollRef: calendarScrollRef, onScroll: onCalendarScroll } =
+    useTabScroll(null);
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const isDark = scheme === 'dark';
   const layout = useResponsiveLayout();
@@ -512,7 +534,13 @@ export function CalendarScreen() {
         </View>
 
         {viewMode === 'calendar' ? (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <Animated.ScrollView
+            ref={calendarScrollRef}
+            onScroll={onCalendarScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={isLandscapeWide ? styles.monthRowTwoPane : undefined}>
               <View style={isLandscapeWide ? styles.monthLeftPane : undefined}>
                 {/* Wrapper para detectar swipes horizontales (cross-platform) */}
@@ -606,7 +634,7 @@ export function CalendarScreen() {
                 </View>
               </View>
             </View>
-          </ScrollView>
+          </Animated.ScrollView>
         ) : (
           <View style={styles.agendaContainer}>
             {/* Agenda view header */}
@@ -645,11 +673,17 @@ export function CalendarScreen() {
               </View>
             )}
 
-            <SectionList
+            <AnimatedSectionList
+              ref={agendaRef}
+              onScroll={onAgendaScroll}
+              scrollEventThrottle={16}
               sections={agendaSectionsFiltered}
               keyExtractor={(item, index) => `${item.title}-${index}`}
               style={styles.agendaList}
-              contentContainerStyle={styles.agendaContent}
+              contentContainerStyle={[
+                styles.agendaContent,
+                { paddingBottom: contentPaddingBottom },
+              ]}
               stickySectionHeadersEnabled={false}
               renderSectionHeader={({ section: { title, data } }) => {
                 const isPast = title < todayStr;
@@ -949,7 +983,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
     // Event section (calendar view)
     eventSection: {
       paddingHorizontal: 16,
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
     },
     eventSectionHeader: {
       flexDirection: 'row',
@@ -1123,7 +1156,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     agendaContent: {
       paddingHorizontal: 16,
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
     },
 
     // Section header (agenda)

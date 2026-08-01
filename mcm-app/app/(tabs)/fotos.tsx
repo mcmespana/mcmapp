@@ -9,8 +9,9 @@ import {
   useWindowDimensions,
   ViewStyle,
   Alert,
-  Platform,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import { Button, Spinner } from 'heroui-native';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper';
 import AlbumCard from '@/components/AlbumCard';
@@ -60,6 +61,8 @@ interface FotosScreenStyles {
 }
 
 export default function FotosScreen() {
+  const { listRef, onScroll, contentPaddingBottom } =
+    useTabListScroll<FlatList>('fotos');
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
@@ -174,7 +177,10 @@ export default function FotosScreen() {
   return (
     <TabScreenWrapper style={styles.container} edges={['top']}>
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
-      <FlatList
+      <Animated.FlatList
+        ref={listRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         data={displayedAlbums}
         renderItem={({ item }) => (
           <View style={columnContainerStyle}>
@@ -193,7 +199,7 @@ export default function FotosScreen() {
             maxWidth: width > 1200 ? 1600 : 1200,
             alignSelf: 'center',
           },
-          Platform.OS === 'ios' && { paddingBottom: 100 },
+          { paddingBottom: contentPaddingBottom },
         ]}
         onEndReached={loadMoreAlbums}
         onEndReachedThreshold={0.5}
@@ -213,7 +219,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
 
     listContentContainer: {
       paddingTop: 12,
-      paddingBottom: 20,
     },
     albumCardContainerOneColumn: {
       width: '100%',

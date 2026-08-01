@@ -11,7 +11,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Pressable,
   Linking,
@@ -35,6 +34,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -201,6 +201,8 @@ interface QuickItem {
 
 export default function Home() {
   const navigation = useNavigation();
+  // Compacta la barra de pestañas flotante al scrollear y reserva su hueco.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('index');
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
   // Color neutro de los iconos en la cápsula glass (igual que EventActionButtons).
@@ -689,12 +691,15 @@ export default function Home() {
         />
       </View>
 
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         style={{ backgroundColor: theme.background }}
         contentContainerStyle={[
           styles.scrollContent,
           isWide && styles.scrollContentWide,
-          Platform.OS === 'ios' && { paddingBottom: 120 },
+          { paddingBottom: contentPaddingBottom },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -1308,7 +1313,7 @@ export default function Home() {
             </Text>
           </SecretMenuTrigger>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }

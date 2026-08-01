@@ -1,7 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import {
-  ScrollView,
   View,
   Text,
   StyleSheet,
@@ -18,6 +17,8 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useSectionFontScale from '@/hooks/useSectionFontScale';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
@@ -101,6 +102,9 @@ function addDays(dateStr: string, offset: number): string {
 }
 
 export default function EvangelioScreen() {
+  // Subruta de Contigo: colapsa la barra flotante (sin registrarse: el
+  // scroller del tab es el de contigo/index) y le reserva hueco.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
@@ -300,14 +304,19 @@ export default function EvangelioScreen() {
         }}
       />
 
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[
           styles.scrollContent,
           {
             paddingTop: insets.top + (Platform.OS === 'android' ? 68 : 56),
+            paddingBottom: contentPaddingBottom,
           },
-          // Hueco para la barra flotante de subrayado
-          highlightMode && { paddingBottom: 170 },
+          // Hueco extra para la barra flotante de subrayado, que se pone por
+          // encima de la de pestañas.
+          highlightMode && { paddingBottom: contentPaddingBottom + 90 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -881,7 +890,7 @@ export default function EvangelioScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Celebration burst animation */}
       <CelebrationAnimation visible={showCheck} isDark={isDark} />
@@ -967,9 +976,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scrollContent: {
-    paddingBottom: 80,
-  },
+  scrollContent: {},
   // Custom Segmented Control
   segmentedContainer: {
     flexDirection: 'row',

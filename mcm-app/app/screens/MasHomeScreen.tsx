@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   Text,
-  ScrollView,
   Platform,
   TouchableOpacity,
 } from 'react-native';
@@ -28,6 +27,8 @@ import { takePendingMasScreen } from '@/utils/masNavigation';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { splitTabsForBar } from '@/constants/tabsCatalog';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
@@ -102,6 +103,7 @@ const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
 };
 
 export default function MasHomeScreen() {
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('mas');
   const navigation =
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
@@ -185,13 +187,12 @@ export default function MasHomeScreen() {
         onClose={() => setFeedbackVisible(false)}
       />
       <PageContainer>
-        <ScrollView
+        <Animated.ScrollView
+          ref={scrollRef}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           style={styles.container}
-          contentContainerStyle={
-            Platform.OS === 'ios'
-              ? { paddingBottom: 140 }
-              : { paddingBottom: spacing.xl }
-          }
+          contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
           showsVerticalScrollIndicator={false}
         >
           <ScreenHero title="Más" subtitle="Atajos y secciones de la app" />
@@ -331,7 +332,7 @@ export default function MasHomeScreen() {
               </Text>
             </SecretMenuTrigger>
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       </PageContainer>
     </SafeAreaView>
   );

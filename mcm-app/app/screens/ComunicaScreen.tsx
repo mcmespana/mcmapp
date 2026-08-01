@@ -14,6 +14,7 @@ import { Platform, View, StyleSheet, StatusBar, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { durations, easings } from '@/constants/animations';
 import GlassSurface from '@/components/ui/GlassSurface';
 import WebViewNavControls from '@/components/ui/WebViewNavControls';
@@ -27,11 +28,10 @@ const iframeStyles =
   Platform.OS === 'web' ? require('../../styles/comunica.module.css') : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-// Altura aproximada del tab bar iOS (sin la safe-area inferior) + margen cómodo.
-// Se suma como contentInset inferior para que el contenido pueda arrastrarse por
-// encima del tab bar translúcido (si no, el último botón de la web queda tapado).
-const IOS_TAB_BAR_HEIGHT = 49;
-const IOS_BOTTOM_EXTRA = 32;
+// Margen cómodo por encima del hueco de la barra de pestañas. El alto de la
+// barra ya lo aporta `useTabBarClearance()`; esto es sólo el respiro extra para
+// que el último botón de la web no quede pegado a ella.
+const BOTTOM_EXTRA = 20;
 
 // Fondo bajo el WebView. Debe coincidir con el fondo de página de la web:
 // si no, se ve una costura de color en el rebote del overscroll y durante la
@@ -47,6 +47,10 @@ const HAIRLINE_LIGHT = 'rgba(0,0,0,0.10)';
 export default function ComunicaScreen() {
   const scheme = useColorScheme() ?? 'light';
   const insets = useSafeAreaInsets();
+  // La barra de pestañas flota sobre el WebView: hay que dejarle hueco con
+  // contentInset (aquí no hay scroller de RN al que enganchar el colapso, así
+  // que en este tab la barra se queda siempre expandida).
+  const tabBarClearance = useTabBarClearance();
 
   // Fondo de la pantalla Y del propio WebView: sin esto, las zonas del
   // `contentInset` (notch arriba, hueco del tab bar abajo) y el rebote del
@@ -145,7 +149,7 @@ export default function ComunicaScreen() {
   if (!sourceUri) {
     return (
       <View style={[styles.container, { backgroundColor: pageBg }]}>
-        {loaderOverlay(insets.top, insets.bottom)}
+        {loaderOverlay(insets.top, tabBarClearance)}
       </View>
     );
   }
@@ -178,7 +182,7 @@ export default function ComunicaScreen() {
 
   // ── iOS: WebView a pantalla completa bajo una barra glass en el notch ──────
   if (Platform.OS === 'ios') {
-    const bottomInset = insets.bottom + IOS_TAB_BAR_HEIGHT + IOS_BOTTOM_EXTRA;
+    const bottomInset = tabBarClearance + BOTTOM_EXTRA;
     return (
       <View style={[styles.container, { backgroundColor: pageBg }]}>
         <StatusBar barStyle={barStyle} translucent />
@@ -232,10 +236,7 @@ export default function ComunicaScreen() {
           canGoForward={nav.canGoForward}
           onBack={goBack}
           onForward={goForward}
-          style={[
-            styles.navControls,
-            { bottom: insets.bottom + IOS_TAB_BAR_HEIGHT + 12 },
-          ]}
+          style={[styles.navControls, { bottom: tabBarClearance + 12 }]}
         />
         {loaderOverlay(insets.top, bottomInset)}
       </View>
@@ -271,9 +272,9 @@ export default function ComunicaScreen() {
         canGoForward={nav.canGoForward}
         onBack={goBack}
         onForward={goForward}
-        style={[styles.navControls, { bottom: insets.bottom + 16 }]}
+        style={[styles.navControls, { bottom: tabBarClearance + 12 }]}
       />
-      {loaderOverlay(insets.top, insets.bottom)}
+      {loaderOverlay(insets.top, tabBarClearance)}
     </View>
   );
 }

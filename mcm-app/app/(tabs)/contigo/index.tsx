@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
 import {
-  ScrollView,
   View,
   Text,
   StyleSheet,
@@ -12,6 +11,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, Stack } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits, type DayRecord } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
@@ -30,6 +31,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function ContigoScreen() {
   const insets = useSafeAreaInsets();
+  // Pantalla raíz del tab Contigo.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const router = useRouter();
   const scheme = useColorScheme();
   const { user: authUser } = useAuth();
@@ -150,11 +153,14 @@ export default function ContigoScreen() {
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
       />
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingTop: insets.top + 52,
-          paddingBottom: insets.bottom + 60,
+          paddingBottom: contentPaddingBottom,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -314,7 +320,7 @@ export default function ContigoScreen() {
             </View>
           </View>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }

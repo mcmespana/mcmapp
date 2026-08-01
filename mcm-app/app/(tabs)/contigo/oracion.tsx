@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Platform,
   TouchableOpacity,
   Alert,
@@ -16,6 +15,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useContigoHabits, Emotion } from '@/hooks/useContigoHabits';
 import { Colors } from '@/constants/colors';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -189,6 +190,9 @@ function buildCalendar(selectedDate: string): {
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function OracionScreen() {
+  // Subruta de Contigo: colapsa la barra flotante (sin registrarse: el
+  // scroller del tab es el de contigo/index) y le reserva hueco.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll(null);
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -329,9 +333,13 @@ export default function OracionScreen() {
       />
 
       {/* ── Scroll content ── */}
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[
           styles.scrollContent,
+          { paddingBottom: contentPaddingBottom },
           {
             // El header nativo es transparente y flota sobre el contenido,
             // así que reservamos su altura (≈44 iOS / 56 Android + safe-area).
@@ -841,7 +849,7 @@ export default function OracionScreen() {
             </View>
           </View>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Celebration overlay */}
       <CelebrationAnimation visible={showCheck} isDark={isDark} />
@@ -882,7 +890,7 @@ const styles = StyleSheet.create({
   },
 
   // Scroll
-  scrollContent: { paddingBottom: 80 },
+  scrollContent: {},
 
   // Date nav
   dateNavCard: {
