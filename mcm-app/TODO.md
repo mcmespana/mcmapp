@@ -20,13 +20,14 @@
       de tienda** antes de que `production` lo reciba, no vale OTA. Orden:
       validar la dev build → merge a `main` → build de producción iOS + Android
       → subir a las tiendas → mover `production`.
-- [ ] **Actualizar dependencias de TERCEROS a su último major** — el salto de
-      SDK (55→57) ya está hecho y solo movió lo que gestiona Expo. Falta
-      heroui-native, firebase, ChordSheetJS, jest y demás. Se dejó fuera a
-      propósito para no mezclar el riesgo del SDK con breaking changes de
-      terceros en la misma rama. **Hacerlo cuando la dev build de
-      `claude/compact-tabs-bar-uxxaoz` esté validada**, para poder meterlo todo
-      en la misma release de tienda.
+- [ ] **Revisar las 4 dependencias que se quedaron atrás** (2026-08-01). No se
+      subieron por incompatibilidad REAL comprobada, no por prudencia — hay que
+      esperar a que el ecosistema se mueva: - `eslint` 9 → 10: rompe el `eslint-plugin-react` que trae
+      `eslint-config-expo` (`contextOrFilename.getFilename is not a function`).
+      Reintentar cuando salga `eslint-config-expo` con soporte de ESLint 10. - `jest` 29 → 30 (+ `@types/jest` 30): `jest-expo` 57 está construido
+      contra jest 29; mezclarlos rompe el runtime entero
+      (`_moduleMocker.clearMocksOnScope is not a function`). Va atado al SDK. - `typescript` 6 → 7, `@babel/core` 7 → 8: los fija Expo, no se tocan a
+      mano. Entrarán con el SDK 58.
 - [ ] **Sanear las reglas del React Compiler** — `eslint-config-expo` 56+ las
       activa como error. Están bajadas a `warn` en `eslint.config.js`. Ya se
       hizo una pasada de medición (2026-08-01), esto es lo que queda y lo que
@@ -34,29 +35,29 @@
       de meterte**:
 
       - `react-hooks/refs` (**276**, el 78% del total): casi todos son el idiom
-            de RN `useRef(new Animated.Value(0)).current`, que la app usa en todas
-            sus animaciones. Es el patrón que documenta React Native; el compilador
-            lo marca porque no puede demostrar que sea seguro. Arreglarlo de verdad
-            = reescribir todas las animaciones a Reanimated. Mucho riesgo, cero
-            beneficio para el usuario. **Recomendación: dejarlo en `warn` y no
-            perseguir el número.**
-          - `react-hooks/immutability` (**14**): son `sharedValue.value = …`, o sea
-            LA api de Reanimated. No tiene arreglo por diseño.
-          - `react-hooks/set-state-in-effect` (**37**): repartidos de uno en uno por
-            33 ficheros, casi siempre sincronizando estado desde una fuente async.
-            Hay que mirarlos caso a caso; no hay un arreglo mecánico.
-          - `react-hooks/purity` (**3**): revisados uno a uno, los tres son falsos
-            positivos (`Date.now()` dentro de un handler async en
-            `ReflexionesScreen`, `Math.random()` en un `useMemo` del Wordle, que
-            además es código congelado).
-          - `react-hooks/preserve-manual-memoization` (**12**): sin revisar.
-          - ✅ `react-hooks/static-components`: **arreglado** (era real —
-            `ActionButton` se definía dentro de `SongControls` y remontaba todo el
-            menú en cada render).
+                de RN `useRef(new Animated.Value(0)).current`, que la app usa en todas
+                sus animaciones. Es el patrón que documenta React Native; el compilador
+                lo marca porque no puede demostrar que sea seguro. Arreglarlo de verdad
+                = reescribir todas las animaciones a Reanimated. Mucho riesgo, cero
+                beneficio para el usuario. **Recomendación: dejarlo en `warn` y no
+                perseguir el número.**
+              - `react-hooks/immutability` (**14**): son `sharedValue.value = …`, o sea
+                LA api de Reanimated. No tiene arreglo por diseño.
+              - `react-hooks/set-state-in-effect` (**37**): repartidos de uno en uno por
+                33 ficheros, casi siempre sincronizando estado desde una fuente async.
+                Hay que mirarlos caso a caso; no hay un arreglo mecánico.
+              - `react-hooks/purity` (**3**): revisados uno a uno, los tres son falsos
+                positivos (`Date.now()` dentro de un handler async en
+                `ReflexionesScreen`, `Math.random()` en un `useMemo` del Wordle, que
+                además es código congelado).
+              - `react-hooks/preserve-manual-memoization` (**12**): sin revisar.
+              - ✅ `react-hooks/static-components`: **arreglado** (era real —
+                `ActionButton` se definía dentro de `SongControls` y remontaba todo el
+                menú en cada render).
 
-          Sólo tiene sentido subir las reglas a `error` si algún día se hace la
-          migración de animaciones; mientras tanto el valor está en revisar los
-          `set-state-in-effect` y `preserve-manual-memoization` con calma.
+              Sólo tiene sentido subir las reglas a `error` si algún día se hace la
+              migración de animaciones; mientras tanto el valor está en revisar los
+              `set-state-in-effect` y `preserve-manual-memoization` con calma.
 
 - [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
 - [ ] **iPad: habilitar landscape a nivel nativo** — añadir
