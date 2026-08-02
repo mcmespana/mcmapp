@@ -102,8 +102,28 @@ export default function SecretPanelModal({
   // URL de embed resultante de lo que el admin escribe (preview en vivo).
   const videoEmbedUrl = toYouTubeEmbedUrl(editVideoInput);
 
-  // Cargar datos iniciales cuando se abre el modal
-  useEffect(() => {
+  // El formulario se rellena con los datos de la canción al ABRIR el modal (y
+  // si esos datos cambian mientras está abierto). Se ajusta durante el render
+  // —el patrón que documenta React para "cambiar estado cuando cambia una
+  // prop"— en vez de con un efecto, así no se pinta un render con los campos
+  // de la canción anterior.
+  const source = {
+    visible,
+    isAdmin,
+    songTitle,
+    songAuthor,
+    songKey,
+    songCapo,
+    songInfo,
+    songContent,
+  };
+  const [lastSource, setLastSource] = useState(source);
+  if (
+    (Object.keys(source) as (keyof typeof source)[]).some(
+      (k) => source[k] !== lastSource[k],
+    )
+  ) {
+    setLastSource(source);
     if (visible) {
       setEditTitle(songTitle || '');
       setEditAuthor(songAuthor || '');
@@ -115,16 +135,7 @@ export default function SecretPanelModal({
       setIsAuthenticated(isAdmin);
       setPassword('');
     }
-  }, [
-    visible,
-    isAdmin,
-    songTitle,
-    songAuthor,
-    songKey,
-    songCapo,
-    songInfo,
-    songContent,
-  ]);
+  }
 
   // Cargar los campos multimedia desde Firebase (no viajan en los params de
   // navegación). Se prefijan en el formulario para que el admin los edite.

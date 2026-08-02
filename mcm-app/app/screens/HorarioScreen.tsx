@@ -36,16 +36,20 @@ export default function HorarioScreen() {
     getEventCacheKey(event, 'horario'),
   );
 
-  const [index, setIndex] = useState(() => {
-    return horarioData ? getClosestDateIndex(horarioData) : 0;
-  });
-
-  // Update index when horarioData loads — abrimos en el día más cercano a hoy.
-  useEffect(() => {
-    if (horarioData && horarioData.length > 0) {
-      setIndex(getClosestDateIndex(horarioData));
-    }
-  }, [horarioData]);
+  // Se abre por el día más cercano a hoy; en cuanto el usuario elige otro,
+  // manda su elección. Derivarlo (en vez de sincronizarlo con un efecto) evita
+  // además que un refresco de Firebase le devolviera al día de hoy estando en
+  // otro día.
+  const closestIndex = React.useMemo(
+    () => (horarioData?.length ? getClosestDateIndex(horarioData) : 0),
+    [horarioData],
+  );
+  const [pickedIndex, setIndex] = useState<number | null>(null);
+  // Acotado por si los datos encogen y el día elegido ya no existe.
+  const index = Math.min(
+    pickedIndex ?? closestIndex,
+    Math.max(0, (horarioData?.length ?? 0) - 1),
+  );
 
   // Animation values for last day
   const shakeAnim = useRef(new Animated.Value(0)).current;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Text, Platform } from 'react-native';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
@@ -116,26 +116,24 @@ export default function MaterialesScreen() {
     getEventCacheKey(event, 'materiales'),
   );
 
-  // Get initial day index from navigation params, or calculate closest date
-  const getInitialIndex = () => {
+  // Día por defecto: el que pida la navegación y, si no viene ninguno, el más
+  // cercano a hoy. En cuanto el usuario elige otro, manda su elección. Se deriva
+  // en vez de sincronizarse con un efecto, así un refresco de Firebase ya no le
+  // devuelve al día de hoy estando en otro.
+  const defaultIndex = React.useMemo(() => {
     if (route.params?.initialDayIndex !== undefined) {
       return route.params.initialDayIndex;
     }
-    return materialesData ? getClosestDateIndex(materialesData) : 0;
-  };
-
-  const [index, setIndex] = useState(getInitialIndex);
-
-  // Update index when materialesData loads (only if no specific day was requested)
-  useEffect(() => {
-    if (
-      materialesData &&
-      materialesData.length > 0 &&
-      route.params?.initialDayIndex === undefined
-    ) {
-      setIndex(getClosestDateIndex(materialesData));
-    }
+    return materialesData?.length ? getClosestDateIndex(materialesData) : 0;
   }, [materialesData, route.params?.initialDayIndex]);
+
+  const [pickedIndex, setIndex] = useState<number | null>(null);
+  // Acotado por si los datos encogen y el día elegido ya no existe.
+  const index = Math.min(
+    pickedIndex ?? defaultIndex,
+    Math.max(0, (materialesData?.length ?? 0) - 1),
+  );
+
   const fechas = materialesData
     ? materialesData.map((d) => ({ fecha: d.fecha }))
     : [];

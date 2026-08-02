@@ -116,8 +116,19 @@ export default function SongDetailScreen({
   const [arrSaving, setArrSaving] = useState(false);
   const [arrError, setArrError] = useState<string | null>(null);
 
-  const [isFileLoading, setIsFileLoading] = useState(true);
-  const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
+  // El ChordPro VIVO: el que llega con la canción, salvo que se haya editado
+  // aquí mismo (arreglos del admin). La edición se guarda JUNTO al fichero al
+  // que pertenece, así que al pasar a otra canción deja de contar sola — antes
+  // hacía falta un efecto que volcara `content` en estado en cada cambio.
+  const [edited, setEdited] = useState<{
+    filename?: string;
+    text: string;
+  } | null>(null);
+  const originalChordPro =
+    edited && filename !== undefined && edited.filename === filename
+      ? edited.text
+      : (content ?? null);
+  const setOriginalChordPro = (text: string) => setEdited({ filename, text });
   // Si la canción está en la selección, su `transpose` vive en el contexto
   // (single source of truth). Si no, usamos este estado local efímero.
   const selectedMeta = getSelectedSong(filename);
@@ -226,11 +237,23 @@ export default function SongDetailScreen({
   const [floatingMedia, setFloatingMedia] =
     useState<FloatingMediaSource | null>(null);
 
-  // Al cambiar de canción (swipe), cerramos el cajón pero conservamos el
-  // reproductor flotante (sobrevive porque es la misma instancia montada).
-  useEffect(() => {
+  // Al cambiar de canción (swipe) se resetean los estados efímeros: se cierra
+  // el cajón de multimedia —el reproductor flotante NO, que sobrevive porque es
+  // la misma instancia montada— y vuelven a su sitio transposición, cejilla y
+  // visibilidad de arreglos. Se ajusta DURANTE el render (el patrón que
+  // documenta React para "cambiar estado cuando cambia una prop"), así la
+  // canción nueva ya sale con sus valores en el primer render en vez de pintar
+  // uno intermedio con los de la anterior.
+  const [lastSong, setLastSong] = useState({ filename, content });
+  if (lastSong.filename !== filename) {
     setShowMediaSheet(false);
-  }, [filename]);
+  }
+  if (lastSong.filename !== filename || lastSong.content !== content) {
+    setLastSong({ filename, content });
+    setLocalTranspose(0);
+    setLocalCapoOverride(null);
+    setArrangementsVisible(true);
+  }
 
   // Header NATIVO transparente, HEREDANDO la config del stack del cantoral
   // (headerTransparent + glass en iOS 26), igual que Categorías y dentro de una
@@ -297,23 +320,12 @@ export default function SongDetailScreen({
   ]);
 
   useEffect(() => {
-    setIsFileLoading(true);
-    if (content) {
-      setOriginalChordPro(content);
-      setIsFileLoading(false);
-    } else if (filename) {
-      logger.error('Error: Contenido de la canción no proporcionado.');
-      setOriginalChordPro(null);
-      setIsFileLoading(false);
-    } else {
-      logger.error('Error: Sin contenido ni filename.');
-      setOriginalChordPro(null);
-      setIsFileLoading(false);
-    }
-    // Al cambiar de canción reseteamos los estados efímeros locales.
-    setLocalTranspose(0);
-    setLocalCapoOverride(null);
-    setArrangementsVisible(true);
+    if (content) return;
+    logger.error(
+      filename
+        ? 'Error: Contenido de la canción no proporcionado.'
+        : 'Error: Sin contenido ni filename.',
+    );
   }, [filename, content]);
 
   // Modo coro - MAESTRO: cuando entro a una canción, lo publico para los
@@ -561,7 +573,7 @@ export default function SongDetailScreen({
           iOS, vía contentInset = altura del header). */}
       <SongDisplay
         songHtml={songHtml}
-        isLoading={isFileLoading || isSongProcessing || isLoadingSettings}
+        isLoading={isSongProcessing || isLoadingSettings}
         styleState={styleState}
         onMessage={isAdmin ? handleSongMessage : undefined}
         fullBleed

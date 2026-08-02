@@ -64,7 +64,17 @@ export default function BottomSheet({
   const onCloseCompleteRef = useRef(onCloseComplete);
   onCloseCompleteRef.current = onCloseComplete;
 
-  const [modalVisible, setModalVisible] = useState(false);
+  // El `Modal` de RN tiene que seguir MONTADO mientras se reproduce la
+  // animación de salida: por eso no basta con `visible`. Se enciende durante el
+  // render (el patrón que documenta React para "cambiar estado cuando cambia
+  // una prop") y se apaga en el callback de la animación de cierre.
+  const [modalVisible, setModalVisible] = useState(visible);
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (visible !== lastVisible) {
+    setLastVisible(visible);
+    if (visible) setModalVisible(true);
+  }
+
   const [kbHeight, setKbHeight] = useState(0);
   const insets = useSafeAreaInsets();
   const screenHeight = Dimensions.get('window').height;
@@ -83,7 +93,6 @@ export default function BottomSheet({
     if (visible) {
       dragAnim.setValue(0);
       keyboardOffsetAnim.setValue(0);
-      setModalVisible(true);
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,

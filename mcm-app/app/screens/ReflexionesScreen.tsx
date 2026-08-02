@@ -160,16 +160,25 @@ export default function ReflexionesScreen() {
 
   const grupos = gruposData?.['Conso+'] ?? [];
 
-  const [list, setList] = useState<Reflexion[]>([]);
-
-  useEffect(() => {
-    if (dataRef) {
-      const arrayData = Array.isArray(dataRef)
-        ? dataRef
-        : Object.values(dataRef as Record<string, Reflexion>);
-      setList(arrayData);
-    }
+  // Lo que hay en Firebase, normalizado a array (el nodo llega como objeto
+  // indexado por la key de push, o como array en los datos antiguos).
+  const remoteList = useMemo<Reflexion[]>(() => {
+    if (!dataRef) return [];
+    return Array.isArray(dataRef)
+      ? dataRef
+      : Object.values(dataRef as Record<string, Reflexion>);
   }, [dataRef]);
+
+  // Las que se acaban de publicar desde aquí se pintan al instante, sin esperar
+  // a que Firebase devuelva la lista con ellas dentro. Se dejan de añadir a
+  // mano en cuanto llegan ya en la lista remota (se casan por id).
+  const [justPublished, setJustPublished] = useState<Reflexion[]>([]);
+  const list = useMemo(() => {
+    if (justPublished.length === 0) return remoteList;
+    const remoteIds = new Set(remoteList.map((r) => r.id));
+    const pending = justPublished.filter((r) => !remoteIds.has(r.id));
+    return pending.length > 0 ? [...pending, ...remoteList] : remoteList;
+  }, [justPublished, remoteList]);
 
   useEffect(() => {
     setAutor(getDefaultAuthor());
@@ -194,10 +203,15 @@ export default function ReflexionesScreen() {
   // El botón "+" vive ahora en la barra superior (EventActionButtons). Al
   // pulsarlo, el tab renavega a esta pantalla con un `openFormNonce` nuevo;
   // ese cambio abre el formulario aquí.
+  // Se ajusta DURANTE el render (el patrón que documenta React para "cambiar
+  // estado cuando cambia una prop"): así el formulario ya sale abierto en el
+  // primer render tras renavegar, sin el parpadeo de un render intermedio.
   const openFormNonce = route.params?.openFormNonce;
-  useEffect(() => {
+  const [lastOpenFormNonce, setLastOpenFormNonce] = useState(openFormNonce);
+  if (openFormNonce !== lastOpenFormNonce) {
+    setLastOpenFormNonce(openFormNonce);
     if (openFormNonce) setShowForm(true);
-  }, [openFormNonce]);
+  }
 
   const showDatePicker = () => {
     if (Platform.OS === 'android') {
@@ -244,7 +258,7 @@ export default function ReflexionesScreen() {
         ref(db, compartiendoPath),
         buildReflexionUpdate(newRef.key, nuevo, Date.now()),
       );
-      setList([nuevo, ...list]);
+      setJustPublished((prev) => [nuevo, ...prev]);
       h.formSuccess();
       setCelebrate(true);
       setShowForm(false);

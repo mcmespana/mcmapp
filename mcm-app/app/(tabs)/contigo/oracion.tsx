@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -188,6 +188,39 @@ function buildCalendar(selectedDate: string): {
   return { cells, year: y, month: m, daysInMonth };
 }
 
+/** Duraciones que tienen botón propio; cualquier otra es "personalizada". */
+const PRESET_MINUTES = [1, 3, 8, 13, 16];
+
+/**
+ * Cómo debe arrancar el formulario para lo que ya hubiera guardado ese día.
+ * Se usa tanto al montar la pantalla como al cambiar de día, para que las dos
+ * situaciones no puedan separarse.
+ */
+function prayerFormFor(
+  rec:
+    | {
+        prayerEmotion?: string;
+        prayerDone?: boolean;
+        prayerDurationMinutes?: number;
+      }
+    | null
+    | undefined,
+): {
+  emotion: Emotion | null;
+  duration: number | null;
+  isCustom: boolean;
+} {
+  const minutes =
+    rec?.prayerDone && rec?.prayerDurationMinutes
+      ? rec.prayerDurationMinutes
+      : null;
+  return {
+    emotion: (rec?.prayerEmotion as Emotion) || null,
+    duration: minutes,
+    isCustom: minutes !== null && !PRESET_MINUTES.includes(minutes),
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default function OracionScreen() {
   // Subruta de Contigo: se registra con la clave del tab (gana el último
@@ -213,26 +246,25 @@ export default function OracionScreen() {
   const record = getRecord(selectedDate);
   const liturgicalInfo = getLiturgicalInfo(selectedDate);
 
-  const [emotion, setEmotion] = useState<Emotion | null>(null);
-  const [duration, setDuration] = useState<number | null>(null);
-  const [isCustom, setIsCustom] = useState(false);
+  const initialForm = prayerFormFor(record);
+  const [emotion, setEmotion] = useState<Emotion | null>(initialForm.emotion);
+  const [duration, setDuration] = useState<number | null>(initialForm.duration);
+  const [isCustom, setIsCustom] = useState(initialForm.isCustom);
   const [showCheck, setShowCheck] = useState(false);
 
-  // Sync form state ONLY when the user navigates to a different date.
-  // getRecord is intentionally excluded — it's an unstable reference that
-  // would re-run the effect on every render and reset the user's selections.
-  useEffect(() => {
-    const curr = getRecord(selectedDate);
-    setEmotion(curr?.prayerEmotion || null);
-    if (curr?.prayerDone && curr?.prayerDurationMinutes) {
-      setDuration(curr.prayerDurationMinutes);
-      setIsCustom(![1, 3, 8, 13, 16].includes(curr.prayerDurationMinutes));
-    } else {
-      setDuration(null);
-      setIsCustom(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate]);
+  // El formulario se rellena con lo ya guardado SOLO al cambiar de día: si se
+  // resincronizara en cada render, borraría lo que el usuario está eligiendo.
+  // Se ajusta DURANTE el render (el patrón que documenta React para "cambiar
+  // estado cuando cambia una prop") en vez de con un efecto, así no hay un
+  // render intermedio con el formulario del día anterior.
+  const [lastDate, setLastDate] = useState(selectedDate);
+  if (selectedDate !== lastDate) {
+    setLastDate(selectedDate);
+    const next = prayerFormFor(getRecord(selectedDate));
+    setEmotion(next.emotion);
+    setDuration(next.duration);
+    setIsCustom(next.isCustom);
+  }
 
   const handleDecrease = () => setDuration((p) => Math.max(1, (p || 15) - 1));
   const handleIncrease = () => setDuration((p) => Math.min(120, (p || 15) + 1));

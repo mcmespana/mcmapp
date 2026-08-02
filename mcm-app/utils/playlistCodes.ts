@@ -33,3 +33,23 @@ export function todayCode(): string {
   const base = `${dd}${mm}${yyyy}`;
   return base.slice(0, CODE_LENGTH).padEnd(CODE_LENGTH, '0');
 }
+
+const MONTH_NAMES = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
+];
+
+/** Nombre por defecto que se propone al subir una playlist: «Playlist 7 abr». */
+export function defaultPlaylistName(now = new Date()): string {
+  return `Playlist ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
+}

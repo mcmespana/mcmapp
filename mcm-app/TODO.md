@@ -39,35 +39,44 @@
 > optimizar, así que esos componentes se quedan sin memoización automática. No
 > son bugs. Están en `warn` en `eslint.config.js`.
 
-- [ ] **`react-hooks/set-state-in-effect` — quedan 35** (eran 37). Revisados y
-      clasificados el 2026-08-02; **no todos tienen arreglo, no vayas a por el
-      número**:
+- [ ] **`react-hooks/set-state-in-effect` — quedan 7** (eran 35). Los 28
+      arreglados el 2026-08-02 con dos patrones, ninguno de ellos `key={visible}`:
 
-      - ✅ Hechos: `LiturgicalBadge` y `VersionDisplay` eran estado DERIVADO
-                sincronizado por un efecto → `useMemo`. Se ahorra un render y, en
-                VersionDisplay, el pie ya no parpadea vacío en el primer render.
-              - **LEGÍTIMOS, no tocar** (~20): efectos que reciben datos de fuera y no
-                se pueden derivar — suscripciones de Firebase (`useAdminStatus`,
-                `AuthContext`, `ChoirSessionContext`), cargas async (`useEventMeta`,
-                `HorarioScreen`, `MaterialesScreen`), y el flag de hidratación de
-                `useColorScheme.web.ts`.
-              - **Reset de formulario al abrir un modal** (~8): `ArrangementInputModal`,
-                `PasswordPromptModal`, `CodeInputModal`, `ShareQrModal`,
-                `ExportPdfModal`, `SuggestSongModal`… El patrón React moderno es
-                remontar con `key={visible}` en vez del efecto. Es un cambio de
-                comportamiento sutil (pierde el estado al reabrir, que es justo lo que
-                se busca) — **hay que probarlo modal por modal en dispositivo**.
-              - **Paginación derivable** (2): `fotos.tsx:89` y `AlbumListScreen.tsx:68`
-                repiten el mismo bloque: `displayedAlbums` podría calcularse como
-                `sortedAlbums.slice(0, (page + 1) * ALBUMS_PER_PAGE)` en vez de
-                guardarse en estado. Merece la pena porque además elimina lógica
-                duplicada, pero toca el "cargar más" de dos pantallas.
-              - Resto: `SongDetailScreen` (×2), `SongListScreen` (×2),
-                `ReflexionesScreen` (×2), `WordleScreen` (×2, código congelado — NO
-                tocar), `calendario`, `index`, `notifications`, `oracion`,
-                `ComunicaScreen`, `BottomSheet`, `NotificationsBottomSheet`,
-                `NotificationPermissionBanner`, `AddToHomeBanner`, `SecretPanelModal`,
-                `useSongProcessor`, `useWordleGame`. Sin revisar uno a uno.
+      - **Estado DERIVADO** donde el efecto solo copiaba algo calculable:
+                `useAdminStatus`, `useEventMeta` y `ChoirSessionContext` guardan ahora el
+                resultado JUNTO a la clave a la que pertenece (uid / eventId / código),
+                así lo viejo deja de contar solo; `SongListScreen` construye la lista con
+                una función pura + `useMemo` (el efecto era `async` sin esperar a nada);
+                `fotos.tsx` y `AlbumListScreen` comparten `hooks/useAlbumPagination.ts`;
+                `useColorScheme.web.ts` usa `useSyncExternalStore` para el flag de
+                hidratación.
+              - **Ajuste durante el render** (el patrón que documenta React para «cambiar
+                estado cuando cambia una prop») en los modales que se resetean al abrir y
+                en las pantallas que reaccionan a un parámetro de navegación. Es
+                equivalente al efecto pero sin el render intermedio con los datos
+                anteriores, y **no cambia el comportamiento** (a diferencia de
+                `key={visible}`, que además habría matado la animación de salida del
+                `BottomSheet`).
+
+      Los **7 que quedan NO son deuda pendiente, son decisiones**; no vayas a por el
+      número:
+
+      - `WordleScreen` (×2) y `useWordleGame` — **código congelado**, CLAUDE.md
+                prohíbe refactorizarlo.
+              - `notifications.tsx:568` — auto-abrir por deep-link. Es una ACCIÓN
+                disparada por la navegación, no estado que derivar: un efecto es
+                justamente la herramienta correcta.
+              - `AddToHomeBanner:30` — lee `window`/`localStorage`, que solo existen en
+                cliente. Moverlo al render rompería la hidratación del render estático de
+                web.
+              - `useSongProcessor:523` — el efecto entero es síncrono y se podría pasar a
+                `useMemo`, pero eso mete ~500 líneas de formateo ChordPro→HTML DENTRO del
+                render en la pantalla más usada de la app. Hoy la pantalla pinta primero y
+                formatea después; cambiarlo es una decisión de rendimiento **que hay que
+                medir en dispositivo**.
+              - `ComunicaScreen:136` — el montaje/desmontaje del loader va atado al
+                `Animated.Value` del fundido. **Entra en la migración a Reanimated**
+                (abajo), que reescribe esa animación de todas formas.
 
 - [ ] **`react-hooks/refs` (276 avisos, 34 ficheros) → migrar animaciones a
       Reanimated.** Es el 80% del ruido y viene de ~41 `useRef(new
@@ -97,20 +106,24 @@ Animated.Value(0)).current` repartidos por 20 ficheros (cada valor genera
       falsos positivos (`Date.now()` en un handler async de `ReflexionesScreen`,
       `Math.random()` en un `useMemo` del Wordle, que además es código
       congelado).
-- [ ] Cuando `refs` y `set-state-in-effect` estén hechos, **subir las reglas a
-      `error`** en `eslint.config.js` para que no se cuelen más.
+- [ ] Cuando `refs` esté hecho, **subir las reglas a `error`** en
+      `eslint.config.js` para que no se cuelen más. Ojo: `set-state-in-effect` no
+      puede subir a `error` tal cual — los 7 casos de arriba son legítimos y
+      necesitarían su `eslint-disable-next-line` con el motivo antes de hacerlo.
 
 ### 3. Headers que se esconden al hacer scroll
 
 - [x] ~~Fotos~~ — hecho: el título va en un `ScreenHero` dentro de la lista y se
       va con el scroll.
-- [ ] **Comunica en Android**: en **iOS ya funciona** como se pedía (barra glass
-      en el notch y el contenido deslizándose por debajo, vía `contentInset`).
-      En Android no se puede hacer igual porque su WebView **no admite
-      `contentInset`**: si se pone la franja del notch como overlay, el
-      principio de la página queda tapado para siempre. Opciones a explorar:
-      inyectar `padding-top` por CSS en la web, o pedir a la web que reserve
-      ella el espacio. Requiere tocar el portal, no sólo la app.
+- [x] ~~Comunica en Android~~ — hecho (2026-08-02): la franja del notch es ya un
+      overlay y la web se desliza por debajo, igual que en iOS. Como el WebView
+      de Android no admite `contentInset`, el hueco (arriba **y abajo**, que
+      tampoco estaba: la barra flotante tapaba el final de la página) lo reserva
+      la propia página con el `padding` que le inyecta `safeAreaBridgeJS`.
+      **Pendiente sólo de validar en un Android real**, y de decidir con el lado
+      web si prefieren el opt-out (`data-mcm-insets="self"`) para no perder su
+      propio `padding` de `<body>`. Contrato actualizado en
+      `docs/contratos/COMUNICA_WEBVIEW.md` §3.
 - [ ] **Calendario**: es el otro tab que sigue con header opaco
       (`headerShown: true`). Si se quiere el mismo trato que Fotos, mismo
       patrón: `ScreenHero` dentro del scroller y `headerShown: false`. No se ha

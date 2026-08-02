@@ -5,7 +5,7 @@
  * coincide, se llama a `onSuccess`.
  */
 import { radii } from '@/constants/uiStyles';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -46,12 +46,17 @@ const PasswordPromptModal: React.FC<Props> = ({
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
-  useEffect(() => {
+  // Se limpia al ABRIR, ajustando el estado durante el render (el patrón que
+  // documenta React para "cambiar estado cuando cambia una prop"): así el
+  // modal nunca llega a pintar un render con la contraseña del intento anterior.
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (visible !== lastVisible) {
+    setLastVisible(visible);
     if (visible) {
       setPassword('');
       setError(false);
     }
-  }, [visible]);
+  }
 
   const handleConfirm = () => {
     if (password.trim().toLowerCase() === expectedPassword.toLowerCase()) {

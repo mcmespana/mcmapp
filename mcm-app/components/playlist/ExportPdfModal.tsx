@@ -18,7 +18,7 @@
  * (pista clara sobre tarjeta blanca / estilos Tailwind sin resolver).
  */
 import { radii } from '@/constants/uiStyles';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -136,13 +136,19 @@ const ExportPdfModal: React.FC<Props> = ({
   const [lyricsFontPt, setLyricsFontPt] = useState(13);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  // Al ABRIR se recupera el nombre de la playlist y se refresca la fecha de
+  // impresión. Se ajusta durante el render (el patrón que documenta React para
+  // "cambiar estado cuando cambia una prop"), no con un efecto: así el diálogo
+  // no llega a pintarse con el nombre de la exportación anterior.
+  const [lastOpen, setLastOpen] = useState({ visible, initialName });
+  if (lastOpen.visible !== visible || lastOpen.initialName !== initialName) {
+    setLastOpen({ visible, initialName });
     if (visible) {
       setName(initialName);
       setPrintedDate(todayPrintedDate());
       setSubmitting(false);
     }
-  }, [visible, initialName]);
+  }
 
   const handleSubmit = async () => {
     if (!name.trim() || submitting) return;

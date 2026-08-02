@@ -1,6 +1,6 @@
 // app/(tabs)/fotos.tsx
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   FlatList,
@@ -12,18 +12,17 @@ import {
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
-import { Button, Spinner } from 'heroui-native';
+import { Button } from 'heroui-native';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper';
 import ScreenHero from '@/components/ui/ScreenHero';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useAlbumPagination } from '@/hooks/useAlbumPagination';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-
-const ALBUMS_PER_PAGE = 4;
 
 interface Album {
   id: string;
@@ -80,43 +79,8 @@ export default function FotosScreen() {
     // Orden inverso por ID (más nuevos primero).
     return visible.sort((a, b) => b.id.localeCompare(a.id));
   }, [allAlbumsData, resolved.albumTags]);
-  const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(0);
-  const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
-  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
-  useEffect(() => {
-    const initialAlbums = sortedAlbums.slice(0, ALBUMS_PER_PAGE);
-    setDisplayedAlbums(initialAlbums);
-    setCurrentPage(0);
-    setAllAlbumsLoaded(
-      initialAlbums.length < ALBUMS_PER_PAGE ||
-        sortedAlbums.length <= ALBUMS_PER_PAGE,
-    );
-  }, [sortedAlbums]);
-
-  const loadMoreAlbums = () => {
-    if (allAlbumsLoaded || isLoadingMore) return;
-
-    setIsLoadingMore(true);
-    const nextPage = currentPage + 1;
-    const startIndex = nextPage * ALBUMS_PER_PAGE;
-    const endIndex = startIndex + ALBUMS_PER_PAGE;
-    const newAlbums = sortedAlbums.slice(startIndex, endIndex);
-
-    if (newAlbums.length > 0) {
-      setDisplayedAlbums((prevAlbums) => [...prevAlbums, ...newAlbums]);
-      setCurrentPage(nextPage);
-      if (
-        newAlbums.length < ALBUMS_PER_PAGE ||
-        displayedAlbums.length + newAlbums.length === sortedAlbums.length
-      ) {
-        setAllAlbumsLoaded(true);
-      }
-    } else {
-      setAllAlbumsLoaded(true);
-    }
-    setIsLoadingMore(false);
-  };
+  const { displayedAlbums, allAlbumsLoaded, loadMoreAlbums } =
+    useAlbumPagination(sortedAlbums);
 
   const handleAlbumPress = async (albumUrl: string) => {
     const supported = await Linking.canOpenURL(albumUrl);
@@ -137,15 +101,6 @@ export default function FotosScreen() {
   };
 
   const renderFooter = () => {
-    if (isLoadingMore) {
-      return (
-        <Spinner
-          size="lg"
-          color={ThemeColors[scheme ?? 'light'].tint}
-          style={{ marginVertical: 20 }}
-        />
-      );
-    }
     if (allAlbumsLoaded) {
       return null;
     }
@@ -153,7 +108,6 @@ export default function FotosScreen() {
       <Button
         variant="outline"
         onPress={loadMoreAlbums}
-        isDisabled={isLoadingMore}
         style={styles.loadMoreButton}
       >
         <Button.Label>Cargar más...</Button.Label>

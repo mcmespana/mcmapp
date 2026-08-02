@@ -2,7 +2,6 @@
 import React, {
   useState,
   useMemo,
-  useEffect,
   useCallback,
   useRef,
   useLayoutEffect,
@@ -175,11 +174,16 @@ export function CalendarScreen() {
     });
   }, [navigation, showSubscribe, isDark]);
 
-  useEffect(() => {
+  // Un deep-link con `?date=` salta a ese día. Se ajusta DURANTE el render (el
+  // patrón que documenta React para "cambiar estado cuando cambia una prop"),
+  // no en un efecto: así no hay un render intermedio pintando el día anterior.
+  const [lastDateParam, setLastDateParam] = useState(dateParam);
+  if (dateParam !== lastDateParam) {
+    setLastDateParam(dateParam);
     if (dateParam && typeof dateParam === 'string') {
       setSelectedDate(dateParam);
     }
-  }, [dateParam]);
+  }
 
   const { eventsByDate, loading: eventsLoading } =
     useCalendarEvents(calendarConfigs);

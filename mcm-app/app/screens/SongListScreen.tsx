@@ -1,14 +1,7 @@
 import { logger } from '@/utils/logger';
 import Animated from 'react-native-reanimated';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
-import {
-  useState,
-  useEffect,
-  useMemo,
-  useLayoutEffect,
-  useCallback,
-  useRef,
-} from 'react';
+import { useState, useMemo, useLayoutEffect, useCallback, useRef } from 'react';
 import {
   FlatList,
   Text,
@@ -77,6 +70,114 @@ const getSongsData = (data: any): Record<string, SongCategory> => {
 
 const isIOS = Platform.OS === 'ios';
 
+/**
+ * Construye la lista de canciones de una categoría —o de TODAS, con
+ * `__ALL__`— ya ordenada y con los campos derivados que usan el buscador y el
+ * índice alfabético.
+ *
+ * Es una función PURA. Antes esto vivía dentro de un `useEffect` declarado
+ * `async` que en realidad no esperaba a nada: la lista se copiaba a estado y
+ * se recalculaba con un render de más por cada cambio de categoría.
+ */
+function buildSongList(
+  songsData: Record<string, SongCategory>,
+  categoryId: string,
+): { songs: Song[]; error: string | null } {
+  try {
+    if (categoryId === '__ALL__') {
+      const allSongs: Song[] = [];
+      for (const originalCategoryKey in songsData) {
+        if (
+          !Object.prototype.hasOwnProperty.call(songsData, originalCategoryKey)
+        ) {
+          continue;
+        }
+        const categorySongs = songsData[originalCategoryKey].songs;
+        const categoryTitle = songsData[originalCategoryKey].categoryTitle;
+        const categoryLetterMatch = categoryTitle.match(/^[A-Za-z]/);
+        const categoryLetter = categoryLetterMatch
+          ? categoryLetterMatch[0].toUpperCase()
+          : originalCategoryKey.charAt(0).toUpperCase();
+
+        const songsWithMetadata = categorySongs.map((song) => {
+          const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
+          let numericPart = '';
+          if (titleMatch && titleMatch[1]) {
+            numericPart = String(parseInt(titleMatch[1], 10));
+          } else {
+            const filenameMatch = song.filename.match(/_(\d+)\.html$/);
+            if (filenameMatch && filenameMatch[1]) {
+              numericPart = String(parseInt(filenameMatch[1], 10));
+            }
+          }
+          // Pre-calculate the clean title for sorting (Schwartzian transform)
+          const sortTitle = song.title.replace(/^\d+\.\s*/, '').toLowerCase();
+          const searchableText =
+            `${song.title || ''} ${song.author || ''}`.toLowerCase();
+          return {
+            ...song,
+            originalCategoryKey: categoryLetter,
+            numericFilenamePart: numericPart,
+            sortTitle,
+            searchableText,
+          };
+        });
+        allSongs.push(...songsWithMetadata);
+      }
+      allSongs.sort((a, b) => {
+        const titleA = a.sortTitle || a.title;
+        const titleB = b.sortTitle || b.title;
+        return titleA.localeCompare(titleB);
+      });
+      return { songs: allSongs, error: null };
+    }
+
+    const categoryKey = Object.keys(songsData).find(
+      (key) => key.trim().toLowerCase() === categoryId.trim().toLowerCase(),
+    );
+    if (!categoryKey) {
+      return { songs: [], error: `Categoría '${categoryId}' no encontrada` };
+    }
+
+    const categorySongs = songsData[categoryKey].songs;
+    if (!categorySongs || !Array.isArray(categorySongs)) {
+      return {
+        songs: [],
+        error: `No se encontraron canciones de '${categoryKey}'`,
+      };
+    }
+
+    const songsWithNumericPart = categorySongs.map((song) => {
+      const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
+      let numericPart = '';
+      if (titleMatch && titleMatch[1]) {
+        numericPart = titleMatch[1].padStart(2, '0');
+      } else {
+        const filenameMatch = song.filename.match(/_(\d+)\.html$/);
+        if (filenameMatch && filenameMatch[1]) {
+          numericPart = filenameMatch[1].padStart(2, '0');
+        }
+      }
+      const searchableText =
+        `${song.title || ''} ${song.author || ''}`.toLowerCase();
+      return { ...song, numericFilenamePart: numericPart, searchableText };
+    });
+    songsWithNumericPart.sort((a, b) => {
+      const numA = parseInt(a.numericFilenamePart, 10) || Infinity;
+      const numB = parseInt(b.numericFilenamePart, 10) || Infinity;
+      if (numA !== numB) return numA - numB;
+      return a.title.localeCompare(b.title);
+    });
+    return { songs: songsWithNumericPart, error: null };
+  } catch (err) {
+    logger.error('Error loading songs:', err);
+    return {
+      songs: [],
+      error: 'Error al cargar las canciones, lo sentimos :(',
+    };
+  }
+}
+
 export default function SongsListScreen({
   route,
   navigation,
@@ -118,10 +219,11 @@ export default function SongsListScreen({
   const { addSong, removeSong, isSongSelected, getSelectedSong } =
     useSelectedSongs();
   const [search, setSearch] = useState('');
-  const [searchVisible, setSearchVisible] = useState(false);
-  const [songs, setSongs] = useState<Song[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [searchToggled, setSearchToggled] = useState(false);
+  const { songs, error } = useMemo(
+    () => buildSongList(songsData, categoryId),
+    [songsData, categoryId],
+  );
   const [menuSong, setMenuSong] = useState<Song | null>(null);
   // Message to share — stored in a ref so we can fire it after the sheet
   // Modal is fully dismissed (iOS can't present two Modals simultaneously).
@@ -133,10 +235,10 @@ export default function SongsListScreen({
   // el input/toggle propio.
   const nativeSearch = Platform.OS !== 'web';
 
-  // In __ALL__ mode, search is always visible
-  useEffect(() => {
-    if (isSearchAll) setSearchVisible(true);
-  }, [isSearchAll]);
+  // En "Buscar general" el buscador está SIEMPRE visible; en una categoría lo
+  // enseña y lo esconde el botón de la cabecera. Derivado, no sincronizado con
+  // un efecto.
+  const searchVisible = isSearchAll || searchToggled;
 
   // Header: title + optional search toggle button
   useLayoutEffect(() => {
@@ -164,7 +266,7 @@ export default function SongsListScreen({
           ? undefined
           : () => (
               <TouchableOpacity
-                onPress={() => setSearchVisible((v) => !v)}
+                onPress={() => setSearchToggled((v) => !v)}
                 style={styles.headerButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
@@ -191,124 +293,6 @@ export default function SongsListScreen({
     nativeSearch,
     isDark,
   ]);
-
-  useEffect(() => {
-    if (!songsData) return;
-    setIsLoading(true);
-    setError(null);
-
-    const loadSongs = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        if (categoryId === '__ALL__') {
-          let allSongs: Song[] = [];
-          for (const originalCategoryKey in songsData) {
-            if (
-              Object.prototype.hasOwnProperty.call(
-                songsData,
-                originalCategoryKey,
-              )
-            ) {
-              const categorySongs = songsData[originalCategoryKey].songs;
-              const categoryTitle =
-                songsData[originalCategoryKey].categoryTitle;
-              const categoryLetterMatch = categoryTitle.match(/^[A-Za-z]/);
-              const categoryLetter = categoryLetterMatch
-                ? categoryLetterMatch[0].toUpperCase()
-                : originalCategoryKey.charAt(0).toUpperCase();
-
-              const songsWithMetadata = categorySongs.map((song) => {
-                const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
-                let numericPart = '';
-                if (titleMatch && titleMatch[1]) {
-                  numericPart = String(parseInt(titleMatch[1], 10));
-                } else {
-                  const filenameMatch = song.filename.match(/_(\d+)\.html$/);
-                  if (filenameMatch && filenameMatch[1]) {
-                    numericPart = String(parseInt(filenameMatch[1], 10));
-                  }
-                }
-                // Pre-calculate the clean title for sorting (Schwartzian transform)
-                const sortTitle = song.title
-                  .replace(/^\d+\.\s*/, '')
-                  .toLowerCase();
-                const searchableText =
-                  `${song.title || ''} ${song.author || ''}`.toLowerCase();
-                return {
-                  ...song,
-                  originalCategoryKey: categoryLetter,
-                  numericFilenamePart: numericPart,
-                  sortTitle,
-                  searchableText,
-                };
-              });
-              allSongs.push(...songsWithMetadata);
-            }
-          }
-          allSongs.sort((a, b) => {
-            const titleA = a.sortTitle || a.title;
-            const titleB = b.sortTitle || b.title;
-            return titleA.localeCompare(titleB);
-          });
-          setSongs(allSongs);
-        } else {
-          const categoryKey = Object.keys(songsData).find(
-            (key) =>
-              key.trim().toLowerCase() === categoryId.trim().toLowerCase(),
-          );
-
-          if (categoryKey) {
-            const categorySongs = songsData[categoryKey].songs;
-
-            if (categorySongs && Array.isArray(categorySongs)) {
-              const songsWithNumericPart = categorySongs.map((song) => {
-                const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
-                let numericPart = '';
-                if (titleMatch && titleMatch[1]) {
-                  numericPart = titleMatch[1].padStart(2, '0');
-                } else {
-                  const filenameMatch = song.filename.match(/_(\d+)\.html$/);
-                  if (filenameMatch && filenameMatch[1]) {
-                    numericPart = filenameMatch[1].padStart(2, '0');
-                  }
-                }
-                const searchableText =
-                  `${song.title || ''} ${song.author || ''}`.toLowerCase();
-                return {
-                  ...song,
-                  numericFilenamePart: numericPart,
-                  searchableText,
-                };
-              });
-              songsWithNumericPart.sort((a, b) => {
-                const numA = parseInt(a.numericFilenamePart, 10) || Infinity;
-                const numB = parseInt(b.numericFilenamePart, 10) || Infinity;
-                if (numA !== numB) return numA - numB;
-                return a.title.localeCompare(b.title);
-              });
-              setSongs(songsWithNumericPart);
-            } else {
-              setError(`No se encontraron canciones de '${categoryKey}'`);
-              setSongs([]);
-            }
-          } else {
-            setError(`Categoría '${categoryId}' no encontrada`);
-            setSongs([]);
-          }
-        }
-      } catch (err) {
-        logger.error('Error loading songs:', err);
-        setError('Error al cargar las canciones, lo sentimos :(');
-        setSongs([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadSongs();
-  }, [categoryId, songsData]);
 
   const filteredSongs = useMemo(() => {
     const searchTerm = search.trim().toLowerCase();
@@ -495,7 +479,7 @@ export default function SongsListScreen({
     ],
   );
 
-  if ((isLoading || loadingSongs) && songs.length === 0) {
+  if (loadingSongs && songs.length === 0) {
     return (
       <ProgressWithMessage message="Cargando canciones un momentito porfi..." />
     );

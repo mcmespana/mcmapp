@@ -18,6 +18,82 @@
 
 ---
 
+## 2026-08-03 01:55 — Comunica se desliza bajo el notch en Android y 28 efectos de sincronización menos
+
+### Comunica (Android): zona segura dentro de la página
+
+En iOS la web ya quedaba en zona segura y se deslizaba bajo la barra glass del
+notch gracias al `contentInset` del WKWebView. **El WebView de Android no tiene
+`contentInset`**, así que allí la franja del notch era una barra en el layout y
+la web arrancaba debajo, sin deslizarse. Y abajo pasaba algo peor: nadie
+reservaba el hueco de la barra de pestañas flotante, que **tapaba el final de
+cada página de forma permanente**.
+
+Ahora el hueco lo reserva la propia página: la app le inyecta un `<style>` con
+`padding-top` / `padding-bottom` (`safeAreaBridgeJS` en
+`hooks/useComunicaWebView.ts`) y la franja del notch pasa a ser un overlay
+opaco del color de la página. El resultado es el mismo que en iOS.
+
+- Los insets se publican SIEMPRE como variables CSS (`--mcm-app-inset-top` /
+  `--mcm-app-inset-bottom`) en las dos plataformas, para que la web pueda
+  usarlas en sus elementos `position: fixed` — que ningún inset del contenedor
+  mueve.
+- La conversión dp → px CSS se hace con el ancho real del viewport, así que
+  aguanta un `<meta viewport>` que no sea `width=device-width`.
+- Es idempotente (reutiliza el mismo `<style>` por id) y se reinyecta en cada
+  carga y al rotar.
+- **Opt-out para la web**: con `<html data-mcm-insets="self">` la app no toca el
+  layout y solo publica las variables.
+- Contrato actualizado: `docs/contratos/COMUNICA_WEBVIEW.md` §3. Tests nuevos en
+  `__tests__/comunicaThemeBridge.test.ts`.
+
+⚠️ **Sin validar en un Android real todavía.**
+
+### React Compiler: `set-state-in-effect` de 35 a 7
+
+Efectos que solo copiaban a estado algo que ya se podía calcular. Además del
+aviso, varios escondían comportamientos molestos que se van con el arreglo:
+
+- **`hooks/useAlbumPagination.ts` (nuevo)** — la paginación de álbumes, que
+  estaba duplicada en `app/(tabs)/fotos.tsx` y `app/screens/AlbumListScreen.tsx`.
+  La lista visible pasa a ser un `slice` derivado: **un refresco de Firebase ya
+  no devuelve al usuario a la primera página** perdiendo todo lo cargado. Con
+  tests (`__tests__/useAlbumPagination.test.ts`).
+- **`SongListScreen`** — la construcción de la lista era un `useEffect` declarado
+  `async` que no esperaba a nada. Ahora es una función pura (`buildSongList`) +
+  `useMemo`; se van tres estados.
+- **`useAdminStatus`, `useEventMeta`, `ChoirSessionContext`** — el resultado se
+  guarda junto a la clave a la que pertenece (uid / eventId / código de sesión),
+  así lo viejo deja de contar solo al cambiar. De paso se cierra la rendija por
+  la que un `isAdmin: true` del usuario anterior seguía en pie hasta la primera
+  respuesta del nuevo.
+- **`HorarioScreen` y `MaterialesScreen`** — el día abierto se deriva; **un
+  refresco de Firebase ya no te devuelve al día de hoy** si estabas en otro.
+- **`ReflexionesScreen`** — la lista se deriva de Firebase y las recién
+  publicadas se pintan al instante hasta que llegan confirmadas (casadas por id).
+- **`AuthContext`** — si falta la config de Firebase, el fallo es un valor desde
+  el primer render en vez de un setState en el efecto.
+- **`useColorScheme.web.ts`** — el flag de hidratación pasa a
+  `useSyncExternalStore`.
+- Modales que se resetean al abrir (`ArrangementInputModal`,
+  `PasswordPromptModal`, `CodeInputModal`, `ShareQrModal`, `ExportPdfModal`,
+  `SecretPanelModal`, `NotificationsBottomSheet`) y pantallas que reaccionan a un
+  parámetro de navegación (`calendario`, `oracion`, `SongDetailScreen`): pasan al
+  patrón documentado de **ajuste durante el render**. Mismo comportamiento, sin
+  el render intermedio con los datos de la vez anterior. **No** se ha usado
+  `key={visible}`: habría matado la animación de salida del `BottomSheet`.
+
+Los **7 restantes son decisiones, no deuda**, y quedan justificados uno a uno en
+`TODO.md`: Wordle (código congelado), el auto-abrir por deep-link de
+`notifications.tsx` (una acción, no estado), `AddToHomeBanner` (lee `window`, no
+puede subir al render sin romper la hidratación en web), `useSongProcessor`
+(pasarlo a `useMemo` metería el formateo ChordPro→HTML dentro del render en la
+pantalla más usada — decisión de rendimiento a medir) y el loader de
+`ComunicaScreen` (va atado al `Animated.Value`, entra en la migración a
+Reanimated).
+
+Sin cambios nativos: el commit **no** necesita `[skip-ota]` por este motivo.
+
 ## 2026-08-02 03:10 — Fotos sin header fijo y dos antipatrones de estado menos
 
 - **Fotos: el título ya no es una barra clavada arriba.** Pasa a un `ScreenHero`

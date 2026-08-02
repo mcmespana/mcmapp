@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -43,15 +43,14 @@ export default function SuggestSongModal({
   const [titulo, setTitulo] = useState('');
   const [artista, setArtista] = useState('');
   const [letra, setLetra] = useState('');
-  const [categoria, setCategoria] = useState('');
+  const [pickedCategoria, setCategoria] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  useEffect(() => {
-    if (!categoria && availableCategories.length > 0) {
-      setCategoria(availableCategories[0]);
-    }
-  }, [availableCategories, categoria]);
+  // Mientras el usuario no elija, vale la primera categoría disponible. Es un
+  // valor por defecto DERIVADO: antes lo sembraba un efecto, que además volvía
+  // a dispararse cada vez que cambiaba la lista de categorías.
+  const categoria = pickedCategoria || (availableCategories[0] ?? '');
 
   const handleSubmit = async () => {
     if (!titulo.trim() || !artista.trim()) {

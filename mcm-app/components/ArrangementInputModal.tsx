@@ -42,13 +42,21 @@ export default function ArrangementInputModal({
   const [text, setText] = useState('');
   const inputRef = useRef<TextInput>(null);
 
+  // El campo se vacía al ABRIR, ajustando el estado durante el render (el
+  // patrón que documenta React para "cambiar estado cuando cambia una prop").
+  // Antes lo hacía un efecto, que pintaba un render con el texto anterior.
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (visible !== lastVisible) {
+    setLastVisible(visible);
+    if (visible) setText('');
+  }
+
+  // El foco sí es un efecto de verdad: toca el input nativo, y con un pequeño
+  // retardo para que el sheet termine de montar antes.
   useEffect(() => {
-    if (visible) {
-      setText('');
-      // Pequeño retardo para que el sheet termine de montar antes del focus.
-      const t = setTimeout(() => inputRef.current?.focus(), 250);
-      return () => clearTimeout(t);
-    }
+    if (!visible) return;
+    const t = setTimeout(() => inputRef.current?.focus(), 250);
+    return () => clearTimeout(t);
   }, [visible]);
 
   const canSave = text.trim().length > 0 && !saving;
