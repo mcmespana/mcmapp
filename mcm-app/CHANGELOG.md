@@ -18,6 +18,37 @@
 
 ---
 
+## 2026-08-01 21:10 — Arreglo del tamaño de los iconos de la barra de pestañas
+
+Los iconos salían enormes, montados unos sobre otros y encima de las
+etiquetas. Eran **dos** bugs a la vez:
+
+- **El generador de iconos normalizaba cada glifo a su propio bounding box.**
+  Los glifos de MaterialIcons comparten una caja em de 512 unidades y están
+  diseñados dentro de ella, así que ajustar cada uno a su caja los descuadra
+  entre sí: `more-horiz` (86 unidades de alto) acababa dibujado tan grande como
+  `home` (363), 4x de más. Ahora se dibuja sobre la caja em, que es exactamente
+  lo que pinta `<MaterialIcons />` en el resto de la app. De paso la caja baja
+  de 28 a 24pt, que es lo que espera la barra nativa.
+- **Bug de escala en iOS de `expo-native-compact-tabs`.** `UITabBarItem` dibuja
+  la imagen a su tamaño natural en puntos (píxeles ÷ escala) y no la
+  redimensiona, pero la librería carga los ficheros con
+  `UIImage(contentsOfFile:)`, que siempre reporta escala 1.0 → un asset @3x se
+  pinta 3x más grande. En dev con Metro no se veía porque el fichero llega por
+  http y ahí sí se decodifica con la escala correcta.
+
+Se añade **`patch-package`** (con `postinstall`) y el parche
+`patches/expo-native-compact-tabs+0.2.0.patch`, que normaliza la escala a
+partir del ancho real en píxeles: el icono mide 24pt venga del fichero que
+venga. No vale mirar el nombre del fichero, porque los bundlers que hashean
+los assets embebidos se comen el sufijo `@3x`. Android no estaba afectado (su
+icono va en una caja fija de 28dp con `CENTER_INSIDE`).
+
+Archivos: `scripts/generate-tab-icons.js`, `assets/tab-icons/*`, `patches/`,
+`package.json`
+
+---
+
 ## 2026-08-01 19:30 — Expo SDK 57 + barra de pestañas flotante compacta
 
 > ⚠️ **Incluye código nativo (Swift + Kotlin) y un salto de SDK: NO entra por
@@ -856,8 +887,8 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
-  > 600.  y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  >       Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
+  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

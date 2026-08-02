@@ -13,6 +13,10 @@
  *   icon.png / icon@2x.png / icon@3x.png       ← icono base
  *   frame-1..3.png (+@2x/@3x)                  ← fotogramas de la animación
  *
+ * Se dibuja sobre la caja EM de la fuente (no sobre el bounding box de cada
+ * glifo) para que todos los iconos tengan el mismo tamaño óptico entre sí,
+ * igual que cuando los pinta `<MaterialIcons />`.
+ *
  * Los iconos salen BLANCOS sobre transparente a propósito: la barra nativa los
  * tiñe con `tintColor` / `inactiveTintColor`, igual que hace UIKit con los
  * template images.
@@ -38,16 +42,15 @@ const GLYPHMAP = path.join(
 );
 const OUT_DIR = path.join(ROOT, 'assets/tab-icons');
 
-/** Lado del icono en puntos. 28pt es la medida habitual de un tab item. */
-const SIZE_PT = 28;
+/**
+ * Lado del icono en puntos. 24pt es la caja que espera la barra nativa (su
+ * propio código lo documenta) y es también el tamaño con el que MaterialIcons
+ * está diseñado.
+ */
+const SIZE_PT = 24;
 const DENSITIES = [1, 2, 3];
 
-/**
- * El glifo base ocupa el 82% del lienzo para que el fotograma más grande
- * (x1.20) siga cabiendo sin recortarse.
- */
-const BASE_FILL = 0.82;
-/** Escalas de los fotogramas intermedios: pequeño rebote al seleccionar. */
+/** Escalas de los fotogramas: pequeño rebote al seleccionar. */
 const FRAME_SCALES = [1.1, 1.2, 1.09];
 
 function loadTabs() {
@@ -73,22 +76,31 @@ function svgFor(font, glyphMap, iconName, scale) {
     throw new Error(`MaterialIcons no tiene el glifo "${iconName}"`);
   }
 
-  // Se dibuja a un tamaño de referencia grande y luego se centra con la caja
-  // real del glifo, que no coincide con la métrica de la fuente.
-  const REF = 1000;
-  const path0 = font.getPath(String.fromCharCode(codepoint), 0, 0, REF);
-  const box = path0.getBoundingBox();
-  const glyphW = box.x2 - box.x1;
-  const glyphH = box.y2 - box.y1;
+  // CLAVE: se dibuja sobre la CAJA EM de la fuente, no sobre el bounding box
+  // del glifo. Todos los glifos de MaterialIcons comparten un em de 512
+  // unidades (advance 512, ascender 512, descender 0) y están diseñados dentro
+  // de él, así que normalizar cada uno a su propia caja los descuadra entre sí:
+  // `more-horiz` (86 unidades de alto) acababa dibujado tan grande como `home`
+  // (363), o sea 4x. Sobre la caja em sale exactamente lo mismo que pinta
+  // `<MaterialIcons size={24} />` en la app.
+  const glyphPath = font.getPath(
+    String.fromCharCode(codepoint),
+    0,
+    SIZE_PT, // baseline: descender = 0, así que el em ocupa de 0 a SIZE_PT
+    SIZE_PT,
+  );
 
-  const target = SIZE_PT * BASE_FILL * scale;
-  const factor = target / Math.max(glyphW, glyphH);
-  const offsetX = (SIZE_PT - glyphW * factor) / 2 - box.x1 * factor;
-  const offsetY = (SIZE_PT - glyphH * factor) / 2 - box.y1 * factor;
+  // El rebote de la animación escala respecto al CENTRO de la caja, para que
+  // el icono crezca en su sitio en vez de desplazarse.
+  const center = SIZE_PT / 2;
+  const transform =
+    scale === 1
+      ? ''
+      : ` transform="translate(${center} ${center}) scale(${scale}) translate(${-center} ${-center})"`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE_PT}" height="${SIZE_PT}" viewBox="0 0 ${SIZE_PT} ${SIZE_PT}">
-  <g transform="translate(${offsetX} ${offsetY}) scale(${factor})">
-    <path d="${path0.toPathData(3)}" fill="#FFFFFF"/>
+  <g${transform}>
+    <path d="${glyphPath.toPathData(3)}" fill="#FFFFFF"/>
   </g>
 </svg>`;
 }

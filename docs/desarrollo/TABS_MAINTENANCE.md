@@ -44,6 +44,43 @@ hooks/useTabBarClearance.ts       ← hueco a reservar al final de un scroll
 utils/tabRoutes.ts                ← helpers puros tab ↔ ruta
 ```
 
+### Los iconos son PNG (y por qué)
+
+No es un capricho: en el límite nativo la barra recibe un `UIImage` (iOS) o un
+`Bitmap` (Android). Ninguna librería de iconos cambia eso — SF Symbols,
+MaterialIcons o Lucide acabarían igualmente rasterizados ahí. La alternativa
+real sería pintar la barra en JS con `react-native-svg`, pero entonces se pierde
+lo único por lo que se usa esta librería: que la barra sea nativa (Liquid Glass,
+animación de selección de UIKit).
+
+Para que en el día a día nadie toque un PNG a mano, `npm run icons:tabs` los
+genera desde el MISMO glifo de MaterialIcons que ya declara `androidIcon` en
+`TABS_CONFIG`. Dos detalles del generador que costaron un susto:
+
+- Se dibuja sobre la **caja em** de la fuente, no sobre el bounding box de cada
+  glifo. Los glifos de MaterialIcons comparten un em de 512 unidades y están
+  diseñados dentro de él; normalizar cada uno a su propia caja los descuadra
+  entre sí (`more-horiz` salía 4x más grande de lo que le toca).
+- La caja es de **24pt**, que es lo que espera la barra nativa.
+
+### Parche a la librería (`patches/`)
+
+`expo-native-compact-tabs` tiene un bug de escala en iOS: `UITabBarItem` dibuja
+la imagen a su tamaño natural en puntos (píxeles ÷ escala) y nunca la
+redimensiona, pero la librería carga los ficheros con `UIImage(contentsOfFile:)`,
+que **siempre reporta escala 1.0**. Resultado en un build real: un asset @3x se
+pinta 3 veces más grande, tapando las etiquetas. En dev con Metro no se ve
+porque ahí el fichero llega por http y sí se decodifica con la escala correcta.
+
+El parche (`patches/expo-native-compact-tabs+0.2.0.patch`, aplicado por
+`patch-package` en el `postinstall`) normaliza la escala a partir del ancho real
+en píxeles, así que el icono mide 24pt venga del fichero que venga. No se puede
+resolver mirando el nombre del fichero: los bundlers que hashean los assets
+embebidos se comen el sufijo `@3x`.
+
+Android no está afectado: su icono va en una caja fija de 28dp con
+`CENTER_INSIDE`, así que el bitmap se ajusta solo.
+
 ### Tope de tabs en la barra
 
 `MAX_TAB_BAR_ITEMS = 6` (en `constants/tabsCatalog.ts`). Antes era 5 y venía

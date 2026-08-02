@@ -1,0 +1,55 @@
+diff --git a/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift b/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift
+index e4c82b3..a011df9 100644
+--- a/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift
++++ b/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift
+@@ -409,6 +409,30 @@ public final class ExpoNativeCompactTabsView: ExpoView, UITabBarDelegate {
+     }
+   }
+ 
++  /// Point size every icon is normalised to. `UITabBarItem` draws its image at
++  /// the image's natural point size (pixels / scale) and never resizes it, so
++  /// the point size is entirely decided by how the `UIImage` was decoded.
++  private static let iconPointSize: CGFloat = 24
++
++  /// Reinterprets an image's scale so it always measures `iconPointSize`
++  /// points, whatever pixel density the file happens to be.
++  ///
++  /// Without this, icons come out at the wrong size in a real build:
++  /// `UIImage(contentsOfFile:)` always reports scale 1.0, so a @3x asset (72px)
++  /// is drawn as 72pt instead of 24pt — three times too big, overlapping the
++  /// labels. The filename cannot be trusted either: bundlers that hash embedded
++  /// assets drop the `@3x` suffix. Deriving the scale from the pixel width is
++  /// the only thing that holds in every case.
++  private static func normalisedToIconBox(_ image: UIImage) -> UIImage {
++    guard let cgImage = image.cgImage, cgImage.width > 0 else { return image }
++    let scale = CGFloat(cgImage.width) / iconPointSize
++    return UIImage(
++      cgImage: cgImage,
++      scale: scale,
++      orientation: image.imageOrientation
++    )
++  }
++
+   private func loadImage(_ uri: String, completion: @escaping (UIImage?) -> Void) {
+     let cacheKey = uri as NSString
+     if let cached = Self.imageCache.object(forKey: cacheKey) {
+@@ -423,15 +447,16 @@ public final class ExpoNativeCompactTabsView: ExpoView, UITabBarDelegate {
+ 
+     if url.isFileURL {
+       let image = UIImage(contentsOfFile: url.path)
++        .map(Self.normalisedToIconBox)
+       if let image { Self.imageCache.setObject(image, forKey: cacheKey) }
+       completion(image)
+       return
+     }
+ 
+     URLSession.shared.dataTask(with: url) { data, _, _ in
+-      let image = data.flatMap {
+-        UIImage(data: $0, scale: UIScreen.main.scale)
+-      }
++      let image = data
++        .flatMap { UIImage(data: $0, scale: UIScreen.main.scale) }
++        .map(Self.normalisedToIconBox)
+       if let image { Self.imageCache.setObject(image, forKey: cacheKey) }
+       DispatchQueue.main.async { completion(image) }
+     }.resume()
