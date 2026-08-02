@@ -49,7 +49,7 @@
       con otra cosa. Estimación: una iteración entera.
 - [ ] **`react-hooks/refs` (276 avisos, 34 ficheros) → migrar animaciones a
       Reanimated.** Es el 80% del ruido y viene de ~41 `useRef(new
-    Animated.Value(0)).current` repartidos por 20 ficheros (cada valor genera
+  Animated.Value(0)).current` repartidos por 20 ficheros (cada valor genera
       varios avisos, uno por cada lectura en render). **Beneficio real, no sólo
       cosmético**: Reanimated corre las animaciones en el hilo de UI, así que no
       se entrecortan cuando JS está ocupado (justo lo que pasa al abrir el
@@ -70,7 +70,7 @@
       es pequeño: **hacerlo sólo de pasada si se toca ese fichero por otra
       cosa**.
 - [ ] **NO tocar: `react-hooks/immutability` (14)** — son `sharedValue.value =
-    …`, o sea LA api de Reanimated. No tiene arreglo por diseño.
+  …`, o sea LA api de Reanimated. No tiene arreglo por diseño.
 - [ ] **NO tocar: `react-hooks/purity` (3)** — revisados uno a uno, los tres son
       falsos positivos (`Date.now()` en un handler async de `ReflexionesScreen`,
       `Math.random()` en un `useMemo` del Wordle, que además es código
@@ -78,7 +78,23 @@
 - [ ] Cuando `refs` y `set-state-in-effect` estén hechos, **subir las reglas a
       `error`** en `eslint.config.js` para que no se cuelen más.
 
-### 3. Subrayado — siguiente iteración
+### 3. Headers que se esconden al hacer scroll (Fotos y Comunica)
+
+- [ ] **Fotos y Comunica: header transparente que se oculta al scrollear**, como
+      el del evento (Visita Papa) y el del cantoral. Hoy los dos llevan un
+      header OPACO fijo (`headerShown: true` con `headerColor` en
+      `TABS_CONFIG`), así que el contenido nunca pasa por debajo. Lo que se
+      pide es que las cosas se escondan detrás al bajar.
+      Implica: `headerTransparent: true` + `contentInsetAdjustmentBehavior` en
+      el scroller + revisar el `paddingTop` de cada pantalla (Comunica es un
+      WebView y ya gestiona su propia zona segura con la barra glass del notch,
+      así que ahí hay que tocar el `contentInset` superior, no un padding).
+      **No es un ajuste de una línea**: cambia cómo se compone la pantalla y hay
+      que verlo en dispositivo, por eso queda fuera de la iteración de arreglos
+      de la barra. Ver también el ítem de UI nativa sobre headers de evento
+      transparentes, que es el mismo trabajo.
+
+### 4. Subrayado — siguiente iteración
 
 - [ ] **"Subrayar" dentro del menú NATIVO del sistema** — hoy hay que entrar al
       modo subrayar (botón del rotulador). Lo suyo es seleccionar en cualquier
@@ -91,7 +107,7 @@
       `docs/funcionalidades/SUBRAYADO.md`. Ya está hecha la mitad JS: al
       seleccionar texto subrayado, la barra reconoce el color y deja cambiarlo.
 
-### 4. Otros
+### 5. Otros
 
 - [ ] **Revisar las 4 dependencias que se quedaron atrás** (2026-08-01). No se
       subieron por incompatibilidad REAL comprobada, no por prudencia — hay que
@@ -201,22 +217,22 @@
       cada render) lo habría cazado un render test.
 
       Por dónde empezar, en orden de rentabilidad:
-              1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-                 Más): que monten sin reventar con datos vacíos, con datos y offline.
-              2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
-                 hook con sus contextos).
-              3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
-                 releer del bookmark.
-              4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
+                  1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+                     Más): que monten sin reventar con datos vacíos, con datos y offline.
+                  2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+                     hook con sus contextos).
+                  3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+                     releer del bookmark.
+                  4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-              Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
-              lee la suite entera para tocar código: lee los tests del área que toca. Lo
-              que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-              de en una build de 20 minutos— y evita iteraciones enteras como la del
-              tamaño de los iconos. El coste real de una suite grande es de
-              MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
-              detalles internos) que hay que reescribir en cada refactor. Por eso la
-              lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
+                  Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+                  lee la suite entera para tocar código: lee los tests del área que toca. Lo
+                  que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+                  de en una build de 20 minutos— y evita iteraciones enteras como la del
+                  tamaño de los iconos. El coste real de una suite grande es de
+                  MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+                  detalles internos) que hay que reescribir en cada refactor. Por eso la
+                  lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Modo carismochito — cambiar el icono del launcher (icono "de fuera") a verde**:
       hoy el modo solo tiñe la UI dentro de la app (incluido el cuadro-logo del

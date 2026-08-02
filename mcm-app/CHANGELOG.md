@@ -18,6 +18,37 @@
 
 ---
 
+## 2026-08-02 02:20 — Arreglos de la barra de pestañas tras la primera dev build
+
+Se sustituye `createCompactTabBarController()` de la librería por un
+controlador propio (`components/tabs/tabBarController.ts`), porque hacían falta
+tres cosas que aquel no daba:
+
+- **El doble tap ya no volvía a la pantalla anterior** en Más y Cantoral.
+  Regresión de la barra nueva: `cancionero`, `mas` y `visitapapa` hacían
+  `popToTop()` desde un listener de `tabPress` del navegador, y con la barra del
+  sistema oculta ese evento no se dispara. Ahora la barra emite el re-tap y los
+  tres se suscriben con `useTabReselect`; si hay pantallas que cerrar cierra, y
+  si no, sube el scroll.
+- **El scroll-arriba se quedaba detrás del header.** Subía a 0, que con
+  `contentInsetAdjustmentBehavior="automatic"` cae POR DEBAJO de la cabecera.
+  Ahora sube a `-contentInset.top`, aprendido de los propios eventos de scroll.
+- **La barra tardaba en compactarse en el cantoral.** El controlador de la
+  librería recorta el offset a >= 0, así que durante todo el recorrido del
+  header grande el valor se quedaba pegado a 0.
+
+Además:
+
+- La lista de canciones no subía al re-tapear: las pantallas anidadas pasaban
+  `null` como clave y no se registraban. Ahora usan la clave de su tab y gana la
+  última montada. Igual en las subrutas de Contigo y en el modo calendario.
+- **Dentro de una canción la barra se queda compacta** (`useForceCompact`).
+- **Comunica**: el WebView también compacta la barra ahora (no es un scroller de
+  RN pero emite `onScroll`), y las flechas de navegación bajan a
+  `TAB_BAR_HEIGHT + safe area + 8`.
+
+---
+
 ## 2026-08-02 01:30 — React Compiler: 7 avisos menos y el diagnóstico bien hecho
 
 Los avisos de `preserve-manual-memoization` NO eran por llamadas impuras como
