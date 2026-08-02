@@ -122,9 +122,11 @@ Reglas:
   registran para no pisar al scroller raíz del tab.
 - Para UI flotante que NO es un scroll (FABs, mini reproductor, barras de
   acciones), usar `useTabBarClearance()` directamente como `bottom`.
-- `Comunica` es la excepción: es un WebView, no hay scroller de RN al que
-  engancharse, así que ahí la barra se queda expandida y el hueco se da por
-  `contentInset`.
+- `Comunica` es la excepción: es un WebView, no un scroller de RN. Se engancha a
+  su `onScroll` con `useWebViewCollapse()` (por JS, no worklet) para que la barra
+  compacte igual, y el hueco de abajo se reserva según la plataforma —
+  `contentInset` en iOS, `padding` inyectado en la propia página en Android,
+  que no lo admite. Ver `docs/contratos/COMUNICA_WEBVIEW.md` §3.
 
 ## 📋 Cómo Añadir un Nuevo Tab
 

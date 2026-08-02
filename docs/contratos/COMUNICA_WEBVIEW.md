@@ -153,17 +153,78 @@ primera petición (parpadeo, corregido acto seguido por la inyección).
 
 ## 3. Zona segura (notch y tab bar)
 
-La app dibuja la web **a pantalla completa**, por detrás de la barra superior
-translúcida y del tab bar inferior, y compensa con `contentInset`. Eso funciona
-para contenido que scrollea normal.
+La app dibuja la web **a pantalla completa**, por detrás de la franja superior
+del notch y del tab bar flotante inferior. El contenido arranca en zona segura
+pero **se desliza por debajo** de ambos al hacer scroll. Cómo se consigue el
+hueco depende de la plataforma:
 
-⚠️ **Con elementos `position: fixed` el inset no sirve** — un botón fijo abajo
-(tipo «Guardar» pegado al viewport) queda tapado por el tab bar. Si la web usa
-elementos fijos, debe reservar el hueco ella misma:
+| Plataforma | Mecanismo |
+| ---------- | --------- |
+| iOS | `contentInset` del WKWebView — lo mueve el contenedor nativo, la web no se entera |
+| Android | **La propia página**: el WebView de Android no admite `contentInset`, así que la app le inyecta el padding por CSS |
+
+### Variables CSS que la app publica
+
+En **ambas** plataformas la app escribe estas dos variables en `<html>`, y las
+reescribe cuando cambian (rotación de pantalla, cambio de safe area):
+
+```css
+--mcm-app-inset-top     /* alto del notch */
+--mcm-app-inset-bottom  /* hueco del tab bar flotante + respiro */
+```
+
+Vienen ya en **píxeles CSS** (la app convierte de dp usando el ancho real del
+viewport), así que se usan tal cual.
+
+### Lo que la app inyecta en Android
+
+Un `<style id="mcm-app-safe-area">` con:
+
+```css
+body {
+  padding-top: var(--mcm-app-inset-top) !important;
+  padding-bottom: var(--mcm-app-inset-bottom) !important;
+}
+html {
+  scroll-padding-top: var(--mcm-app-inset-top);
+  scroll-padding-bottom: var(--mcm-app-inset-bottom);
+}
+```
+
+Es idempotente (reutiliza siempre el mismo `<style>` por id, no acumula) y lleva
+`!important` a propósito: si la web pierde ese padding, el principio de la página
+queda tapado por la franja del notch de forma permanente.
+
+> ⚠️ **Si la web tiene su propio `padding` en `<body>`, el de arriba y el de
+> abajo se pierden en Android.** Si eso molesta, usad el opt-out de abajo.
+
+### Opt-out: que la web reserve el hueco ella misma
+
+Si el portal prefiere gestionarlo (porque tiene un layout propio, una barra fija
+o un `padding` en `body` que no quiere perder), basta con declarar en el HTML:
+
+```html
+<html data-mcm-insets="self">
+```
+
+Con eso la app **deja de tocar el layout** y se limita a publicar las dos
+variables. La web las aplica donde le convenga:
+
+```css
+.contenido { padding-top: var(--mcm-app-inset-top, 0px); }
+.barra-fija-abajo { padding-bottom: var(--mcm-app-inset-bottom, 0px); }
+```
+
+### Elementos `position: fixed`
+
+⚠️ **Ni el `contentInset` de iOS ni el padding de `body` mueven un elemento
+`position: fixed`** — un botón fijo abajo (tipo «Guardar» pegado al viewport)
+queda tapado por el tab bar en las dos plataformas. Para esos, la web **tiene**
+que usar las variables:
 
 ```css
 .barra-fija-abajo {
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  padding-bottom: calc(12px + var(--mcm-app-inset-bottom, env(safe-area-inset-bottom)));
 }
 ```
 

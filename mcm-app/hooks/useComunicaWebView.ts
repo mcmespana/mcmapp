@@ -48,9 +48,62 @@ export const themeBridgeJS = (theme: 'light' | 'dark', pageBg: string) =>
   document.cookie='mcm_theme='+t+';path=/;max-age=31536000;samesite=Lax';
 }catch(e){}})();true;`;
 
+/**
+ * Reserva dentro de la PÁGINA el hueco del notch y el de la barra de pestañas
+ * flotante, para las plataformas donde el WebView no sabe hacerlo solo.
+ *
+ * iOS lo resuelve con `contentInset` (el scroller nativo se desplaza y el
+ * contenido se desliza por debajo de la barra glass). **El WebView de Android
+ * no admite `contentInset`**: si se superpone la franja del notch, el principio
+ * de la página queda tapado para siempre. La única forma de conseguir el mismo
+ * efecto es que la propia página reserve el espacio, así que se lo inyectamos.
+ *
+ * Se publican siempre dos variables CSS —`--mcm-app-inset-top` y
+ * `--mcm-app-inset-bottom`— para que la web pueda usarlas en sus elementos
+ * `position: fixed`, que ningún inset del contenedor mueve (ver el contrato).
+ * El `padding` sobre `<body>` solo se aplica donde hace falta (`applyPadding`).
+ *
+ * **Opt-out**: si la web declara `data-mcm-insets="self"` en `<html>`, se le
+ * dejan las variables y no se le toca el layout — reserva ella el hueco.
+ *
+ * Es idempotente: reutiliza siempre el mismo `<style>`, así que reinyectarlo en
+ * cada carga y en cada rotación no acumula padding.
+ */
+export const safeAreaBridgeJS = ({
+  top,
+  bottom,
+  widthDp,
+  applyPadding,
+}: {
+  /** Alto de la safe area superior, en dp. */
+  top: number;
+  /** Hueco a reservar al final de la página, en dp. */
+  bottom: number;
+  /** Ancho del WebView en dp, para convertir dp → px CSS. */
+  widthDp: number;
+  /** Si además del `padding` hay que mover el `<body>`. */
+  applyPadding: boolean;
+}) =>
+  `(function(){try{
+  var TOP=${JSON.stringify(top)},BOT=${JSON.stringify(bottom)};
+  var W=${JSON.stringify(widthDp)},APPLY=${applyPadding ? 'true' : 'false'};
+  var r=document.documentElement;
+  // dp → px CSS. Con el viewport habitual (\`width=device-width\`) 1dp es 1px
+  // CSS, pero si la web declarara un ancho fijo dejaría de serlo: \`innerWidth\`
+  // mide el viewport REAL en px CSS, así que la proporción lo corrige.
+  var s=(W>0&&window.innerWidth>0)?window.innerWidth/W:1;
+  if(!isFinite(s)||s<=0.2||s>5)s=1;
+  r.style.setProperty('--mcm-app-inset-top',Math.round(TOP*s)+'px');
+  r.style.setProperty('--mcm-app-inset-bottom',Math.round(BOT*s)+'px');
+  var el=document.getElementById('mcm-app-safe-area');
+  if(!APPLY||r.getAttribute('data-mcm-insets')==='self'){if(el)el.remove();return;}
+  if(!el){el=document.createElement('style');el.id='mcm-app-safe-area';(document.head||r).appendChild(el);}
+  el.textContent='body{padding-top:var(--mcm-app-inset-top)!important;padding-bottom:var(--mcm-app-inset-bottom)!important;}html{scroll-padding-top:var(--mcm-app-inset-top);scroll-padding-bottom:var(--mcm-app-inset-bottom);}';
+}catch(e){}})();true;`;
+
 type Status = 'loading' | 'ready' | 'error';
 
-export function useComunicaWebView(pageBg: string) {
+export function useComunicaWebView(pageBg: string, safeAreaJS = '') {
   const scheme = useColorScheme() ?? 'light';
   const { loading: settingsLoading } = useAppSettings();
   const { toast } = useToast();
@@ -103,9 +156,15 @@ export function useComunicaWebView(pageBg: string) {
     [scheme, pageBg],
   );
 
+  // Todo lo que la app le mete a la web, junto. Va como `injectedJavaScript`
+  // (se ejecuta en CADA carga de página) y además se reinyecta en caliente
+  // cuando cambia algo: el tema, o los insets al rotar la pantalla. Los dos
+  // trozos son idempotentes, así que repetirlos no acumula nada.
+  const injectedJS = useMemo(() => themeJS + safeAreaJS, [themeJS, safeAreaJS]);
+
   useEffect(() => {
-    webViewRef.current?.injectJavaScript(themeJS);
-  }, [themeJS]);
+    webViewRef.current?.injectJavaScript(injectedJS);
+  }, [injectedJS]);
 
   // ── Carga: progreso, primera carga y errores ──────────────────────────────
   const [status, setStatus] = useState<Status>('loading');
@@ -133,11 +192,11 @@ export function useComunicaWebView(pageBg: string) {
     setPageLoading(false);
     if (failedRef.current) return; // el error manda: no destapamos la web rota
     hasLoadedOk.current = true;
-    // Reinyecta el tema por si esta carga no aplicó `injectedJavaScript`
+    // Reinyecta tema e insets por si esta carga no aplicó `injectedJavaScript`
     // (redirecciones, back/forward cache): es idempotente y baratísimo.
-    webViewRef.current?.injectJavaScript(themeJS);
+    webViewRef.current?.injectJavaScript(injectedJS);
     setStatus('ready');
-  }, [themeJS]);
+  }, [injectedJS]);
 
   const onError = useCallback(
     // Sirve tanto para `onError` como para `onHttpError` (tipos distintos en
@@ -171,7 +230,7 @@ export function useComunicaWebView(pageBg: string) {
     scheme,
     webViewRef,
     sourceUri,
-    themeJS,
+    injectedJS,
     nav,
     onNavigationStateChange,
     goBack,

@@ -4,13 +4,22 @@
 //   · iOS  → la web queda en zona segura (contentInset) y se desliza por debajo
 //            de una barra glass nativa (systemChromeMaterial) al hacer scroll.
 //            Extra de scroll al fondo para no dejar el botón bajo el tab bar.
-//   · Android → franja lisa (blanca/oscura) en el notch; la web arranca debajo.
+//   · Android → mismo efecto, pero el hueco se reserva DENTRO de la página
+//            (`safeAreaBridgeJS`), porque su WebView no admite `contentInset`.
+//            La franja del notch es un overlay liso del color de la página.
 //
 // La mecánica (tema hacia la web, historial, progreso, errores) vive en
 // `hooks/useComunicaWebView.ts`; aquí solo queda el layout de cada plataforma.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, View, StyleSheet, StatusBar, Animated } from 'react-native';
+import {
+  Platform,
+  View,
+  StyleSheet,
+  StatusBar,
+  Animated,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -22,7 +31,11 @@ import GlassSurface from '@/components/ui/GlassSurface';
 import WebViewNavControls from '@/components/ui/WebViewNavControls';
 import ComunicaLoader from '@/components/ui/ComunicaLoader';
 import ComunicaTopProgress from '@/components/ui/ComunicaTopProgress';
-import { COMUNICA_URL, useComunicaWebView } from '@/hooks/useComunicaWebView';
+import {
+  COMUNICA_URL,
+  safeAreaBridgeJS,
+  useComunicaWebView,
+} from '@/hooks/useComunicaWebView';
 
 // CSS module reutilizado del iframe (solo aplica en web)
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -49,6 +62,7 @@ const HAIRLINE_LIGHT = 'rgba(0,0,0,0.10)';
 export default function ComunicaScreen() {
   const scheme = useColorScheme() ?? 'light';
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   // La barra de pestañas flota sobre el WebView: hay que dejarle hueco con
   // contentInset (aquí no hay scroller de RN al que enganchar el colapso, así
   // que en este tab la barra se queda siempre expandida).
@@ -68,10 +82,28 @@ export default function ComunicaScreen() {
   const pageBg = scheme === 'dark' ? PAGE_BG_DARK : PAGE_BG_LIGHT;
   const hairline = scheme === 'dark' ? HAIRLINE_DARK : HAIRLINE_LIGHT;
 
+  // Hueco que hay que dejar al final de la web: el de la barra flotante más un
+  // respiro para que el último botón no quede pegado a ella.
+  const bottomInset = tabBarClearance + BOTTOM_EXTRA;
+
+  // Insets hacia DENTRO de la página. En iOS solo se publican las variables CSS
+  // (el hueco de verdad lo pone `contentInset`); en Android son el mecanismo
+  // único, porque allí el WebView no tiene `contentInset`.
+  const safeAreaJS = useMemo(
+    () =>
+      safeAreaBridgeJS({
+        top: insets.top,
+        bottom: bottomInset,
+        widthDp: windowWidth,
+        applyPadding: Platform.OS === 'android',
+      }),
+    [insets.top, bottomInset, windowWidth],
+  );
+
   const {
     webViewRef,
     sourceUri,
-    themeJS,
+    injectedJS,
     nav,
     onNavigationStateChange,
     goBack,
@@ -84,7 +116,7 @@ export default function ComunicaScreen() {
     onLoadEnd,
     onError,
     retry,
-  } = useComunicaWebView(pageBg);
+  } = useComunicaWebView(pageBg, safeAreaJS);
 
   // La portada de carga se desvanece cuando la web ya está lista (y se
   // desmonta al acabar la transición, para no dejar una capa invisible encima).
@@ -117,8 +149,8 @@ export default function ComunicaScreen() {
       domStorageEnabled: true,
       sharedCookiesEnabled: true,
       thirdPartyCookiesEnabled: true,
-      // Reaplica el tema en cada carga de página (también tras navegar)
-      injectedJavaScript: themeJS,
+      // Reaplica tema e insets en cada carga de página (también tras navegar)
+      injectedJavaScript: injectedJS,
       onNavigationStateChange,
       onLoadStart,
       onLoadProgress,
@@ -129,7 +161,7 @@ export default function ComunicaScreen() {
         onWebViewScroll(event.nativeEvent.contentOffset.y),
     }),
     [
-      themeJS,
+      injectedJS,
       onWebViewScroll,
       onNavigationStateChange,
       onLoadStart,
@@ -194,7 +226,6 @@ export default function ComunicaScreen() {
 
   // ── iOS: WebView a pantalla completa bajo una barra glass en el notch ──────
   if (Platform.OS === 'ios') {
-    const bottomInset = tabBarClearance + BOTTOM_EXTRA;
     return (
       <View style={[styles.container, { backgroundColor: pageBg }]}>
         <StatusBar barStyle={barStyle} translucent />
@@ -255,24 +286,33 @@ export default function ComunicaScreen() {
     );
   }
 
-  // ── Android: franja lisa en el notch, la web arranca debajo ────────────────
+  // ── Android: WebView a pantalla completa bajo una franja lisa en el notch ──
+  // El hueco de arriba y el de abajo los reserva la PÁGINA (`safeAreaJS`), no
+  // el contenedor: el WebView de Android no tiene `contentInset`. Así la web
+  // arranca en zona segura pero se desliza por debajo de la franja al scrollear,
+  // igual que en iOS.
   return (
     <View style={[styles.container, { backgroundColor: pageBg }]}>
       <StatusBar barStyle={barStyle} backgroundColor={pageBg} translucent />
-      {insets.top > 0 && (
-        <View
-          style={[
-            styles.notchBar,
-            { backgroundColor: pageBg, height: insets.top },
-          ]}
-        />
-      )}
       <WebView
         ref={webViewRef}
         source={{ uri: sourceUri }}
         style={[styles.webview, { backgroundColor: pageBg }]}
         {...commonWebViewProps}
       />
+      {insets.top > 0 && (
+        <View
+          style={[styles.notchBar, { height: insets.top }]}
+          pointerEvents="none"
+        >
+          {/* Opaca y del color de la página: sin blur real en Android, una
+              franja translúcida con texto pasando por debajo se ve sucia. */}
+          <View
+            style={[StyleSheet.absoluteFill, { backgroundColor: pageBg }]}
+          />
+          <View style={[styles.hairline, { backgroundColor: hairline }]} />
+        </View>
+      )}
       <ComunicaTopProgress
         scheme={scheme}
         progress={progress}
@@ -286,7 +326,7 @@ export default function ComunicaScreen() {
         onForward={goForward}
         style={[styles.navControls, { bottom: tabBarClearance + 12 }]}
       />
-      {loaderOverlay(insets.top, tabBarClearance)}
+      {loaderOverlay(insets.top, bottomInset)}
     </View>
   );
 }
@@ -295,8 +335,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // Franja opaca superpuesta sobre el notch (Android). La web pasa por debajo:
+  // el hueco equivalente lo reserva ella con el padding que le inyectamos.
   notchBar: {
-    width: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  hairline: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
   },
   // Barra glass superpuesta sobre el notch (solo iOS). overflow:hidden recorta
   // el material al alto de la safe-area; pointerEvents none deja pasar el scroll.
