@@ -76,9 +76,12 @@ export default function CompactTabBar({ tabs }: CompactTabBarProps) {
       const isReselection = nativeEvent.index === selectedIndex;
 
       if (isReselection) {
-        // Re-tap del tab activo: subir su scroll arriba del todo, que es lo que
-        // hace la barra nativa del sistema.
-        tabBarController.scrollToTop(tab.name, true);
+        // Re-tap del tab activo. Primero se deja que el stack del tab vuelva a
+        // su pantalla raíz (cantoral, más y visitapapa se suscriben con
+        // `useTabReselect`); si no había nada que cerrar, sube el scroll. Es la
+        // UX de siempre de iOS, que antes daba el evento `tabPress` del
+        // navegador — con la barra del sistema oculta ese evento ya no existe.
+        tabBarController.handleReselect(tab.name);
         return;
       }
 

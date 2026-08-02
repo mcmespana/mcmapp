@@ -100,10 +100,10 @@ export default function SongsListScreen({
   const scheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const layout = useResponsiveLayout();
-  // Pantalla ANIDADA dentro del tab Cantoral: colapsa la barra flotante, pero
-  // sin registrarse (el scroller del tab es el de CategoriesScreen).
+  // Se registra con la clave del tab igual que CategoriesScreen: gana el
+  // último montado, así el re-tap sube ESTA lista mientras se está viendo.
   const { listRef, onScroll, contentPaddingBottom } =
-    useTabListScroll<FlatList>(null);
+    useTabListScroll<FlatList>('cancionero');
   const styles = useMemo(
     () =>
       createStyles(

@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { TAB_BAR_HEIGHT } from '@/constants/spacing';
+import { useWebViewCollapse } from '@/components/tabs/tabBarController';
 import { durations, easings } from '@/constants/animations';
 import GlassSurface from '@/components/ui/GlassSurface';
 import WebViewNavControls from '@/components/ui/WebViewNavControls';
@@ -51,6 +53,13 @@ export default function ComunicaScreen() {
   // contentInset (aquí no hay scroller de RN al que enganchar el colapso, así
   // que en este tab la barra se queda siempre expandida).
   const tabBarClearance = useTabBarClearance();
+  // El WebView no es un scroller de RN, pero sí emite `onScroll`: con eso la
+  // barra se compacta aquí igual que en el resto de la app.
+  const onWebViewScroll = useWebViewCollapse();
+  // Las flechas se apoyan JUSTO encima de la barra. `tabBarClearance` incluye
+  // el respiro que se reserva al final del scroll y las dejaba flotando muy
+  // altas; aquí basta con el alto de la barra más la safe area.
+  const navControlsBottom = TAB_BAR_HEIGHT + insets.bottom + 8;
 
   // Fondo de la pantalla Y del propio WebView: sin esto, las zonas del
   // `contentInset` (notch arriba, hueco del tab bar abajo) y el rebote del
@@ -116,9 +125,12 @@ export default function ComunicaScreen() {
       onLoadEnd,
       onError,
       onHttpError: onError,
+      onScroll: (event: { nativeEvent: { contentOffset: { y: number } } }) =>
+        onWebViewScroll(event.nativeEvent.contentOffset.y),
     }),
     [
       themeJS,
+      onWebViewScroll,
       onNavigationStateChange,
       onLoadStart,
       onLoadProgress,
@@ -236,7 +248,7 @@ export default function ComunicaScreen() {
           canGoForward={nav.canGoForward}
           onBack={goBack}
           onForward={goForward}
-          style={[styles.navControls, { bottom: tabBarClearance + 12 }]}
+          style={[styles.navControls, { bottom: navControlsBottom }]}
         />
         {loaderOverlay(insets.top, bottomInset)}
       </View>

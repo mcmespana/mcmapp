@@ -45,9 +45,9 @@ const REVISION_STORAGE = '@contigo_revision_';
 type Mode = 'list' | 'free';
 
 export default function RevisionScreen() {
-  // Subruta de Contigo: colapsa la barra flotante (sin registrarse: el
-  // scroller del tab es el de contigo/index) y le reserva hueco.
-  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll(null);
+  // Subruta de Contigo: se registra con la clave del tab (gana el último
+  // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const scheme = useColorScheme();

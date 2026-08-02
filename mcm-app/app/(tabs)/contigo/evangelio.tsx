@@ -102,9 +102,9 @@ function addDays(dateStr: string, offset: number): string {
 }
 
 export default function EvangelioScreen() {
-  // Subruta de Contigo: colapsa la barra flotante (sin registrarse: el
-  // scroller del tab es el de contigo/index) y le reserva hueco.
-  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll(null);
+  // Subruta de Contigo: se registra con la clave del tab (gana el último
+  // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];

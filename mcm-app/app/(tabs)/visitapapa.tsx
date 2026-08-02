@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
 import { useNavigation } from 'expo-router';
+import { useTabReselect } from '@/components/tabs/tabBarController';
 import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -40,6 +41,19 @@ export default function VisitaPapaTab() {
   const isDark = useColorScheme() === 'dark';
 
   const navigation = useNavigation();
+
+  // Re-tap del tab activo → volver a la pantalla raíz del stack. Antes esto lo
+  // daba el evento `tabPress` del navegador, pero con la barra del sistema
+  // oculta ya no se dispara: ahora lo emite la barra flotante. Devolver `true`
+  // le dice a la barra que el gesto ya está gestionado y que NO haga además
+  // scroll-arriba.
+  useTabReselect('visitapapa', () => {
+    if (stackNavRef.current?.canGoBack()) {
+      stackNavRef.current.popToTop();
+      return true;
+    }
+    return false;
+  });
   const sectionColor = getEvent(EVENT_ID).tintColor;
 
   useEffect(() => {
@@ -71,20 +85,9 @@ export default function VisitaPapaTab() {
       }, 0);
     });
 
-    // Same-tab re-tap: pop a la raíz desde JS (ver nota en mas.tsx).
-    const unsubscribeTabPress = navigation
-      .getParent()
-      ?.addListener('tabPress' as any, () => {
-        if (!(navigation as any).isFocused?.()) return;
-        if (stackNavRef.current?.canGoBack()) {
-          stackNavRef.current.popToTop();
-        }
-      });
-
     return () => {
       unsubscribeBlur();
       unsubscribeFocus();
-      unsubscribeTabPress?.();
     };
   }, [navigation]);
 

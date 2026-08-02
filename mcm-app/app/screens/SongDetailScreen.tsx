@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
+import { useForceCompact } from '@/components/tabs/tabBarController';
 import SongControls from '@/components/SongControls';
 import { RouteProp, NavigationProp } from 'expo-router/react-navigation';
 import { RootStackParamList } from '../(tabs)/cancionero';
@@ -70,6 +71,9 @@ export default function SongDetailScreen({
   route,
   navigation,
 }: SongDetailScreenProps) {
+  // La barra de pestañas se queda COMPACTA mientras se lee una canción: aquí
+  // lo que importa es que quepa la mayor cantidad de letra posible.
+  useForceCompact(true);
   const {
     filename,
     title: _navScreenTitle,

@@ -102,9 +102,9 @@ export function CalendarScreen() {
   } = useTabListScroll<
     SectionList<CalendarEvent, { title: string; data: CalendarEvent[] }>
   >('calendario');
-  // Modo calendario: colapsa igual, pero sin registrarse (mismo tab).
+  // Modo calendario: mismo tab; se registra igual y gana el que esté montado.
   const { scrollRef: calendarScrollRef, onScroll: onCalendarScroll } =
-    useTabScroll(null);
+    useTabScroll('calendario');
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const isDark = scheme === 'dark';
   const layout = useResponsiveLayout();
