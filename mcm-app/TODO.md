@@ -14,6 +14,12 @@
 
 ## Prioridad alta
 
+- [ ] **Igualar `production` a esta rama** — `claude/compact-tabs-bar-uxxaoz`
+      lleva el salto a Expo SDK 57 + la barra de pestañas flotante + la
+      actualización de dependencias. Es todo código NATIVO: hace falta **build
+      de tienda** antes de que `production` lo reciba, no vale OTA. Orden:
+      validar la dev build → merge a `main` → build de producción iOS + Android
+      → subir a las tiendas → mover `production`.
 - [ ] **Actualizar dependencias de TERCEROS a su último major** — el salto de
       SDK (55→57) ya está hecho y solo movió lo que gestiona Expo. Falta
       heroui-native, firebase, ChordSheetJS, jest y demás. Se dejó fuera a
@@ -44,6 +50,14 @@
       `ActionMode.Callback2` en Android. ⚠️ Cambio NATIVO → **build de tienda +
       commit `[skip-ota]`**. Contrato hacia JS y pasos detallados en
       `docs/funcionalidades/SUBRAYADO.md`.
+- [ ] **Subrayado: reconocer la selección que ya está subrayada** — hoy, si
+      seleccionas un texto y le das al botón de subrayar existente, se comporta
+      como si fuera texto nuevo. Debería **detectar que ese tramo ya está
+      subrayado**, entrar en modo "editar subrayado" en vez de crear otro, y
+      ofrecer el selector de color con el color actual preseleccionado para
+      poder cambiarlo (o quitarlo). Va emparejado con el ítem del menú nativo de
+      arriba: los dos caminos —menú del sistema y botón del rotulador— deberían
+      acabar en la misma acción. Siguiente iteración del subrayado.
 - [ ] **iPad: verificar en dispositivo real (9/10)** en horizontal y vertical
       todas las pantallas y modales/bottom sheets (la pasada de layouts no se ha
       probado en iPad físico). Posibles ajustes finos tras la prueba.
