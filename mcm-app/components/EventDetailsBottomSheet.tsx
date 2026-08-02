@@ -167,9 +167,13 @@ export default function EventDetailsBottomSheet({
   const accentColor = calendarConfig?.color || colors.info;
   const surfaceBg = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)';
 
+  // Igual que arriba: usar `event?.description` dentro del useMemo hace que el
+  // React Compiler infiera `event` entero como dependencia y se salte el
+  // componente. Extraído a una variable, la inferida y la declarada coinciden.
+  const description = event?.description;
   const descriptionParts = useMemo(
-    () => (event?.description ? tokenizeDescription(event.description) : null),
-    [event?.description],
+    () => (description ? tokenizeDescription(description) : null),
+    [description],
   );
 
   const handleOpenUrl = async (

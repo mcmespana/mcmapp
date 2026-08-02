@@ -14,80 +14,95 @@
 
 ## Prioridad alta
 
-- [ ] **Igualar `production` a esta rama** — `claude/compact-tabs-bar-uxxaoz`
-      lleva el salto a Expo SDK 57 + la barra de pestañas flotante + la
-      actualización de dependencias. Es todo código NATIVO: hace falta **build
-      de tienda** antes de que `production` lo reciba, no vale OTA. Orden:
-      validar la dev build → merge a `main` → build de producción iOS + Android
-      → subir a las tiendas → mover `production`.
+> Orden propuesto (repriorízalo si no lo ves). Los 1-3 están atados entre sí:
+> la rama de la barra de tabs no se mergea hasta validarla, y hay cosas que
+> sólo se pueden hacer con la build nativa delante.
+
+### 1. Validar y publicar la rama de la barra de tabs
+
+- [ ] **Validar `claude/compact-tabs-bar-uxxaoz` en dev build** — es lo que
+      desbloquea todo lo demás. Lleva Expo SDK 57, la barra flotante, la
+      actualización de dependencias, iPad landscape y el subrayado nuevo.
+- [ ] **Igualar `production` a esta rama** — es todo código NATIVO: hace falta
+      **build de tienda**, no vale OTA. Orden: validar dev build → merge a
+      `main` → build de producción iOS + Android → subir a las tiendas → mover
+      `production`.
+- [ ] **iPad: verificar en dispositivo real** en horizontal y vertical todas las
+      pantallas y modales/bottom sheets. El landscape ya está activado
+      (`UISupportedInterfaceOrientations~ipad`), pero la pasada de layouts nunca
+      se ha probado en un iPad físico. Posibles ajustes finos tras la prueba.
+
+### 2. React Compiler — lo que SÍ merece la pena
+
+> Contexto: el React Compiler está ACTIVADO (`experiments.reactCompiler: true`
+> en `app.json`). Estas reglas son su linter: marcan sitios donde NO puede
+> optimizar, así que esos componentes se quedan sin memoización automática. No
+> son bugs. Están en `warn` en `eslint.config.js`.
+
+- [ ] **`react-hooks/set-state-in-effect` (37 avisos, 33 ficheros)** — es lo más
+      rentable que queda. Muchos son el antipatrón clásico de "estado derivado
+      sincronizado por un efecto", que se arregla con un `useMemo` y encima
+      ahorra un render (ej. `LiturgicalBadge`, `VersionDisplay`). Otros son
+      legítimos (suscripciones de Firebase con `onValue`) y hay que dejarlos.
+      **Requiere criterio caso a caso, no hay arreglo mecánico**; son cambios de
+      comportamiento, así que conviene hacerlo en su propia rama y no mezclado
+      con otra cosa. Estimación: una iteración entera.
+- [ ] **`react-hooks/refs` (276 avisos, 34 ficheros) → migrar animaciones a
+      Reanimated.** Es el 80% del ruido y viene de ~41 `useRef(new
+    Animated.Value(0)).current` repartidos por 20 ficheros (cada valor genera
+      varios avisos, uno por cada lectura en render). **Beneficio real, no sólo
+      cosmético**: Reanimated corre las animaciones en el hilo de UI, así que no
+      se entrecortan cuando JS está ocupado (justo lo que pasa al abrir el
+      cantoral o cargar el calendario). Además destapa la optimización del
+      compilador en esos componentes. **Coste**: 20 ficheros de animaciones que
+      sólo se pueden validar mirando la app. Candidato perfecto a iteración
+      dedicada con dispositivo delante. Empezar por los gordos:
+      `CarismochitoOverlay` (31), `ComunicaLoader` (24), `BottomSheet` (23),
+      `OTAUpdatePrompt` (19), `FloatingMediaPlayer` (17).
+- [ ] **`react-hooks/preserve-manual-memoization` — quedan 5** (de 12). Los 7
+      mecánicos ya están hechos (el patrón era: usar `user?.uid` dentro de un
+      `useCallback` hace que el compilador infiera `user` entero y se salte el
+      componente; se arregla sacando `const uid = user?.uid` fuera). Los 5 que
+      quedan son de otra clase ("memoized in source but not in compilation
+      output"): `useMemo` que mutan un `Map` por dentro, o callbacks async con
+      setState. `app/notifications.tsx:511`, `SelectedSongsScreen` (×3),
+      `NotificationsBottomSheet:100`. Piden reestructurar cada caso y el premio
+      es pequeño: **hacerlo sólo de pasada si se toca ese fichero por otra
+      cosa**.
+- [ ] **NO tocar: `react-hooks/immutability` (14)** — son `sharedValue.value =
+    …`, o sea LA api de Reanimated. No tiene arreglo por diseño.
+- [ ] **NO tocar: `react-hooks/purity` (3)** — revisados uno a uno, los tres son
+      falsos positivos (`Date.now()` en un handler async de `ReflexionesScreen`,
+      `Math.random()` en un `useMemo` del Wordle, que además es código
+      congelado).
+- [ ] Cuando `refs` y `set-state-in-effect` estén hechos, **subir las reglas a
+      `error`** en `eslint.config.js` para que no se cuelen más.
+
+### 3. Subrayado — siguiente iteración
+
+- [ ] **"Subrayar" dentro del menú NATIVO del sistema** — hoy hay que entrar al
+      modo subrayar (botón del rotulador). Lo suyo es seleccionar en cualquier
+      momento y que el menú del sistema tenga un ítem "Subrayar" con sus
+      colores, junto a Copiar / Herramientas de escritura / Traducir. No se
+      puede desde JS: `UIMenu` vía `textView(_:editMenuForTextIn:suggestedActions:)`
+      en iOS 16+ y `ActionMode.Callback2` en Android. ⚠️ Es un MÓDULO NATIVO →
+      **build de tienda + commit `[skip-ota]`**, y hay que probarlo en
+      dispositivo. Contrato hacia JS y pasos en
+      `docs/funcionalidades/SUBRAYADO.md`. Ya está hecha la mitad JS: al
+      seleccionar texto subrayado, la barra reconoce el color y deja cambiarlo.
+
+### 4. Otros
+
 - [ ] **Revisar las 4 dependencias que se quedaron atrás** (2026-08-01). No se
       subieron por incompatibilidad REAL comprobada, no por prudencia — hay que
-      esperar a que el ecosistema se mueva: - `eslint` 9 → 10: rompe el `eslint-plugin-react` que trae
+      esperar a que el ecosistema se mueva. Ninguna afecta al binario que
+      instalan los usuarios: - `eslint` 9 → 10: rompe el `eslint-plugin-react` que trae
       `eslint-config-expo` (`contextOrFilename.getFilename is not a function`).
       Reintentar cuando salga `eslint-config-expo` con soporte de ESLint 10. - `jest` 29 → 30 (+ `@types/jest` 30): `jest-expo` 57 está construido
       contra jest 29; mezclarlos rompe el runtime entero
       (`_moduleMocker.clearMocksOnScope is not a function`). Va atado al SDK. - `typescript` 6 → 7, `@babel/core` 7 → 8: los fija Expo, no se tocan a
       mano. Entrarán con el SDK 58.
-- [ ] **Sanear las reglas del React Compiler** — el React Compiler está
-      ACTIVADO en la app (`experiments.reactCompiler: true` en `app.json` +
-      `babel-preset-expo` con `react-compiler`). Estas reglas son su linter:
-      señalan sitios donde el compilador no puede optimizar. Están bajadas a
-      `warn` en `eslint.config.js`. Medido el 2026-08-01, esto es lo que queda:
-
-      - `react-hooks/refs` (**276**, el 80% del total): casi todos son el idiom
-            de RN `useRef(new Animated.Value(0)).current`, que la app usa en todas
-            sus animaciones. Es el patrón que documenta React Native; el compilador
-            lo marca porque no puede demostrar que sea seguro. Arreglarlo de verdad
-            = migrar todas las animaciones a Reanimated. **Recomendación: dejarlo en
-            `warn`.** Sólo tendría sentido dentro de una migración de animaciones
-            hecha a propósito.
-          - `react-hooks/immutability` (**14**): son `sharedValue.value = …`, o sea
-            LA api de Reanimated. No tiene arreglo por diseño.
-          - `react-hooks/set-state-in-effect` (**37**): repartidos de uno en uno por
-            33 ficheros, casi siempre sincronizando estado desde una fuente async.
-            Caso a caso; no hay arreglo mecánico. Es lo más rentable si algún día se
-            quiere bajar el número.
-          - `react-hooks/preserve-manual-memoization` (**12**): revisados. Son
-            `useCallback` que contienen llamadas impuras (`Date.now()`,
-            `new Date()`) dentro; el compilador no puede preservar la memoización a
-            través de eso y se salta el componente entero. No es un bug: siguen
-            funcionando con su `useCallback` manual, sólo pierden la optimización
-            automática. Arreglarlo pide reestructurar el envío de formularios.
-          - `react-hooks/purity` (**3**): revisados uno a uno, los tres son falsos
-            positivos (`Date.now()` dentro de un handler async en
-            `ReflexionesScreen` y `Math.random()` en un `useMemo` del Wordle, que
-            además es código congelado).
-          - ✅ **Arreglados**: `static-components` (era un bug real —
-            `ActionButton` se definía dentro de `SongControls` y remontaba todo el
-            menú en cada render) y `exhaustive-deps` (`useSectionFontScale` creaba
-            un objeto nuevo en cada render y dejaba sus `useCallback` sin efecto).
-
 - [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
-- [ ] **iPad: habilitar landscape a nivel nativo** — añadir
-      `UISupportedInterfaceOrientations~ipad` (las 4 orientaciones) en
-      `ios.infoPlist` de `app.json` para que iPad rote (iPhone se queda en
-      portrait). ⚠️ Cambio NATIVO → **build de tienda + commit `[skip-ota]`**, no
-      OTA. Hacerlo en la próxima release de tienda. Los layouts de iPad (pasada
-      del 2026-06-21, ver CHANGELOG) ya están listos para cuando se active.
-- [ ] **Subrayar desde el menú NATIVO del sistema** — hoy hay que entrar al modo
-      subrayar (botón del rotulador). Lo suyo es un ítem "Subrayar" con sus
-      colores dentro del menú de selección nativo (junto a Copiar / Herramientas
-      de escritura / Traducir). No se puede desde JS: `UIMenu` propio vía
-      `textView(_:editMenuForTextIn:suggestedActions:)` en iOS 16+ y
-      `ActionMode.Callback2` en Android. ⚠️ Cambio NATIVO → **build de tienda +
-      commit `[skip-ota]`**. Contrato hacia JS y pasos detallados en
-      `docs/funcionalidades/SUBRAYADO.md`.
-- [ ] **Subrayado: reconocer la selección que ya está subrayada** — hoy, si
-      seleccionas un texto y le das al botón de subrayar existente, se comporta
-      como si fuera texto nuevo. Debería **detectar que ese tramo ya está
-      subrayado**, entrar en modo "editar subrayado" en vez de crear otro, y
-      ofrecer el selector de color con el color actual preseleccionado para
-      poder cambiarlo (o quitarlo). Va emparejado con el ítem del menú nativo de
-      arriba: los dos caminos —menú del sistema y botón del rotulador— deberían
-      acabar en la misma acción. Siguiente iteración del subrayado.
-- [ ] **iPad: verificar en dispositivo real (9/10)** en horizontal y vertical
-      todas las pantallas y modales/bottom sheets (la pasada de layouts no se ha
-      probado en iPad físico). Posibles ajustes finos tras la prueba.
 - [ ] **Command Palette v2: deep-link a contenidos** — el palette actual (`CommandPalette.tsx`) solo navega a tabs/pantallas top-level. Para saltar a una canción concreta o a un punto dentro de los stacks anidados hay que exponer un `navigation ref` (p.ej. `CancioneroNavRefContext`). Después indexar canciones (`songs/data`), reflexiones (`compartiendo/data`) y eventos del calendario.
 
 ---
@@ -186,22 +201,22 @@
       cada render) lo habría cazado un render test.
 
       Por dónde empezar, en orden de rentabilidad:
-          1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-             Más): que monten sin reventar con datos vacíos, con datos y offline.
-          2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
-             hook con sus contextos).
-          3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
-             releer del bookmark.
-          4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
+              1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+                 Más): que monten sin reventar con datos vacíos, con datos y offline.
+              2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+                 hook con sus contextos).
+              3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+                 releer del bookmark.
+              4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-          Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
-          lee la suite entera para tocar código: lee los tests del área que toca. Lo
-          que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-          de en una build de 20 minutos— y evita iteraciones enteras como la del
-          tamaño de los iconos. El coste real de una suite grande es de
-          MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
-          detalles internos) que hay que reescribir en cada refactor. Por eso la
-          lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
+              Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+              lee la suite entera para tocar código: lee los tests del área que toca. Lo
+              que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+              de en una build de 20 minutos— y evita iteraciones enteras como la del
+              tamaño de los iconos. El coste real de una suite grande es de
+              MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+              detalles internos) que hay que reescribir en cada refactor. Por eso la
+              lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Modo carismochito — cambiar el icono del launcher (icono "de fuera") a verde**:
       hoy el modo solo tiñe la UI dentro de la app (incluido el cuadro-logo del

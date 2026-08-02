@@ -18,6 +18,32 @@
 
 ---
 
+## 2026-08-02 01:30 — React Compiler: 7 avisos menos y el diagnóstico bien hecho
+
+Los avisos de `preserve-manual-memoization` NO eran por llamadas impuras como
+decía la entrada anterior — el mensaje completo del compilador lo aclara:
+
+> The inferred dependency was `user`, but the source dependencies were
+> [scope, `user?.uid`, …]. Inferred less specific property than source.
+
+O sea: el compilador infiere `user` entero como dependencia, el código declara
+`user?.uid`, no coinciden y **se salta el componente entero**. El arreglo es
+mecánico: sacar `const uid = user?.uid` fuera del `useCallback`. Aplicado en
+`EvaluacionAppScreen`, `EvaluacionScreen`, `SurveyScreen` y
+`EventDetailsBottomSheet` (mismo patrón con `event?.description`).
+
+**7 de 12 arreglados**; quedan 5 de otra clase ("memoized in source but not in
+compilation output": `useMemo` que mutan un Map, callbacks async con setState)
+que sí piden reestructurar caso a caso.
+
+`TODO.md` queda reescrito y **priorizado** con el coste y el beneficio REAL de
+cada familia, incluida la migración de animaciones a Reanimated (los 276 avisos
+de `react-hooks/refs` salen de ~41 `useRef(new Animated.Value(0)).current`; la
+migración no es cosmética: Reanimated corre en el hilo de UI y las animaciones
+dejan de entrecortarse cuando JS está ocupado).
+
+---
+
 ## 2026-08-02 00:40 — iPad landscape, subrayado que reconoce lo ya subrayado y limpieza
 
 - **iPad rota de verdad.** `UISupportedInterfaceOrientations~ipad` con las 4
