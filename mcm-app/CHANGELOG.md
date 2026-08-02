@@ -18,6 +18,30 @@
 
 ---
 
+## 2026-08-02 03:10 — Fotos sin header fijo y dos antipatrones de estado menos
+
+- **Fotos: el título ya no es una barra clavada arriba.** Pasa a un `ScreenHero`
+  dentro de la propia lista, así que se va con el scroll igual que en el hub de
+  eventos o en Más. Antes en Android era un header opaco fijo y en iOS no había
+  título ninguno. `headerShown: false` para ese tab en `TABS_CONFIG`.
+- **`LiturgicalBadge` y `VersionDisplay`**: guardaban en estado algo que se
+  puede calcular y lo sincronizaban con un efecto. Pasan a `useMemo`: un render
+  menos cada vez, y el pie de la Home ya no parpadea vacío en el primer render.
+  Eran dos de los avisos de `react-hooks/set-state-in-effect`.
+
+Los 35 avisos restantes de esa regla quedan **clasificados uno a uno** en
+`TODO.md`: cuáles son legítimos (suscripciones de Firebase, cargas async),
+cuáles son resets de formulario al abrir un modal (se arreglan con
+`key={visible}`, pero hay que probarlos en dispositivo) y cuáles son paginación
+derivable.
+
+**Comunica**: en iOS ya hace lo que se pedía (barra glass en el notch con el
+contenido deslizándose por debajo, vía `contentInset`). En Android no se puede
+igual porque su WebView no admite `contentInset`: el principio de la página
+quedaría tapado para siempre. Queda anotado en `TODO.md`.
+
+---
+
 ## 2026-08-02 02:20 — Arreglos de la barra de pestañas tras la primera dev build
 
 Se sustituye `createCompactTabBarController()` de la librería por un

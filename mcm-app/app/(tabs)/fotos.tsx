@@ -14,6 +14,7 @@ import Animated from 'react-native-reanimated';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import { Button, Spinner } from 'heroui-native';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper';
+import ScreenHero from '@/components/ui/ScreenHero';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
@@ -191,6 +192,12 @@ export default function FotosScreen() {
           </View>
         )}
         keyExtractor={(item) => item.id}
+        // El título va DENTRO de la lista, no en un header fijo: así se va con
+        // el scroll, como en el hub de eventos (Visita Papa) o en Más. Antes en
+        // Android era una barra opaca clavada arriba y en iOS no había título.
+        ListHeaderComponent={
+          <ScreenHero title="Fotos" subtitle="Galería de fotos MCM" />
+        }
         numColumns={numColumns}
         key={`COLS_${numColumns}`} // Important for re-render on column change
         contentContainerStyle={[

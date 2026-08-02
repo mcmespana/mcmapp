@@ -108,7 +108,9 @@ export const TABS_CONFIG: TabConfig[] = [
     androidIcon: 'photo-library',
     tintColor: TabHeaderColors.fotos,
     headerColor: TabHeaderColors.fotos,
-    headerShown: true,
+    // Sin header fijo: el título va dentro de la lista (ScreenHero) y se va con
+    // el scroll, como en el hub de eventos.
+    headerShown: false,
   },
   {
     name: 'mas',

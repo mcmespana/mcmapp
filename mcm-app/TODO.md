@@ -39,17 +39,39 @@
 > optimizar, así que esos componentes se quedan sin memoización automática. No
 > son bugs. Están en `warn` en `eslint.config.js`.
 
-- [ ] **`react-hooks/set-state-in-effect` (37 avisos, 33 ficheros)** — es lo más
-      rentable que queda. Muchos son el antipatrón clásico de "estado derivado
-      sincronizado por un efecto", que se arregla con un `useMemo` y encima
-      ahorra un render (ej. `LiturgicalBadge`, `VersionDisplay`). Otros son
-      legítimos (suscripciones de Firebase con `onValue`) y hay que dejarlos.
-      **Requiere criterio caso a caso, no hay arreglo mecánico**; son cambios de
-      comportamiento, así que conviene hacerlo en su propia rama y no mezclado
-      con otra cosa. Estimación: una iteración entera.
+- [ ] **`react-hooks/set-state-in-effect` — quedan 35** (eran 37). Revisados y
+      clasificados el 2026-08-02; **no todos tienen arreglo, no vayas a por el
+      número**:
+
+      - ✅ Hechos: `LiturgicalBadge` y `VersionDisplay` eran estado DERIVADO
+                sincronizado por un efecto → `useMemo`. Se ahorra un render y, en
+                VersionDisplay, el pie ya no parpadea vacío en el primer render.
+              - **LEGÍTIMOS, no tocar** (~20): efectos que reciben datos de fuera y no
+                se pueden derivar — suscripciones de Firebase (`useAdminStatus`,
+                `AuthContext`, `ChoirSessionContext`), cargas async (`useEventMeta`,
+                `HorarioScreen`, `MaterialesScreen`), y el flag de hidratación de
+                `useColorScheme.web.ts`.
+              - **Reset de formulario al abrir un modal** (~8): `ArrangementInputModal`,
+                `PasswordPromptModal`, `CodeInputModal`, `ShareQrModal`,
+                `ExportPdfModal`, `SuggestSongModal`… El patrón React moderno es
+                remontar con `key={visible}` en vez del efecto. Es un cambio de
+                comportamiento sutil (pierde el estado al reabrir, que es justo lo que
+                se busca) — **hay que probarlo modal por modal en dispositivo**.
+              - **Paginación derivable** (2): `fotos.tsx:89` y `AlbumListScreen.tsx:68`
+                repiten el mismo bloque: `displayedAlbums` podría calcularse como
+                `sortedAlbums.slice(0, (page + 1) * ALBUMS_PER_PAGE)` en vez de
+                guardarse en estado. Merece la pena porque además elimina lógica
+                duplicada, pero toca el "cargar más" de dos pantallas.
+              - Resto: `SongDetailScreen` (×2), `SongListScreen` (×2),
+                `ReflexionesScreen` (×2), `WordleScreen` (×2, código congelado — NO
+                tocar), `calendario`, `index`, `notifications`, `oracion`,
+                `ComunicaScreen`, `BottomSheet`, `NotificationsBottomSheet`,
+                `NotificationPermissionBanner`, `AddToHomeBanner`, `SecretPanelModal`,
+                `useSongProcessor`, `useWordleGame`. Sin revisar uno a uno.
+
 - [ ] **`react-hooks/refs` (276 avisos, 34 ficheros) → migrar animaciones a
       Reanimated.** Es el 80% del ruido y viene de ~41 `useRef(new
-  Animated.Value(0)).current` repartidos por 20 ficheros (cada valor genera
+Animated.Value(0)).current` repartidos por 20 ficheros (cada valor genera
       varios avisos, uno por cada lectura en render). **Beneficio real, no sólo
       cosmético**: Reanimated corre las animaciones en el hilo de UI, así que no
       se entrecortan cuando JS está ocupado (justo lo que pasa al abrir el
@@ -70,7 +92,7 @@
       es pequeño: **hacerlo sólo de pasada si se toca ese fichero por otra
       cosa**.
 - [ ] **NO tocar: `react-hooks/immutability` (14)** — son `sharedValue.value =
-  …`, o sea LA api de Reanimated. No tiene arreglo por diseño.
+…`, o sea LA api de Reanimated. No tiene arreglo por diseño.
 - [ ] **NO tocar: `react-hooks/purity` (3)** — revisados uno a uno, los tres son
       falsos positivos (`Date.now()` en un handler async de `ReflexionesScreen`,
       `Math.random()` en un `useMemo` del Wordle, que además es código
@@ -78,21 +100,23 @@
 - [ ] Cuando `refs` y `set-state-in-effect` estén hechos, **subir las reglas a
       `error`** en `eslint.config.js` para que no se cuelen más.
 
-### 3. Headers que se esconden al hacer scroll (Fotos y Comunica)
+### 3. Headers que se esconden al hacer scroll
 
-- [ ] **Fotos y Comunica: header transparente que se oculta al scrollear**, como
-      el del evento (Visita Papa) y el del cantoral. Hoy los dos llevan un
-      header OPACO fijo (`headerShown: true` con `headerColor` en
-      `TABS_CONFIG`), así que el contenido nunca pasa por debajo. Lo que se
-      pide es que las cosas se escondan detrás al bajar.
-      Implica: `headerTransparent: true` + `contentInsetAdjustmentBehavior` en
-      el scroller + revisar el `paddingTop` de cada pantalla (Comunica es un
-      WebView y ya gestiona su propia zona segura con la barra glass del notch,
-      así que ahí hay que tocar el `contentInset` superior, no un padding).
-      **No es un ajuste de una línea**: cambia cómo se compone la pantalla y hay
-      que verlo en dispositivo, por eso queda fuera de la iteración de arreglos
-      de la barra. Ver también el ítem de UI nativa sobre headers de evento
-      transparentes, que es el mismo trabajo.
+- [x] ~~Fotos~~ — hecho: el título va en un `ScreenHero` dentro de la lista y se
+      va con el scroll.
+- [ ] **Comunica en Android**: en **iOS ya funciona** como se pedía (barra glass
+      en el notch y el contenido deslizándose por debajo, vía `contentInset`).
+      En Android no se puede hacer igual porque su WebView **no admite
+      `contentInset`**: si se pone la franja del notch como overlay, el
+      principio de la página queda tapado para siempre. Opciones a explorar:
+      inyectar `padding-top` por CSS en la web, o pedir a la web que reserve
+      ella el espacio. Requiere tocar el portal, no sólo la app.
+- [ ] **Calendario**: es el otro tab que sigue con header opaco
+      (`headerShown: true`). Si se quiere el mismo trato que Fotos, mismo
+      patrón: `ScreenHero` dentro del scroller y `headerShown: false`. No se ha
+      hecho porque nadie lo ha pedido y el calendario tiene sus propios
+      controles pegados arriba (selector de mes, chips de filtro) que habría que
+      recolocar.
 
 ### 4. Subrayado — siguiente iteración
 
@@ -217,22 +241,22 @@
       cada render) lo habría cazado un render test.
 
       Por dónde empezar, en orden de rentabilidad:
-                  1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-                     Más): que monten sin reventar con datos vacíos, con datos y offline.
-                  2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
-                     hook con sus contextos).
-                  3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
-                     releer del bookmark.
-                  4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
+                          1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+                             Más): que monten sin reventar con datos vacíos, con datos y offline.
+                          2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+                             hook con sus contextos).
+                          3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+                             releer del bookmark.
+                          4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-                  Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
-                  lee la suite entera para tocar código: lee los tests del área que toca. Lo
-                  que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-                  de en una build de 20 minutos— y evita iteraciones enteras como la del
-                  tamaño de los iconos. El coste real de una suite grande es de
-                  MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
-                  detalles internos) que hay que reescribir en cada refactor. Por eso la
-                  lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
+                          Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+                          lee la suite entera para tocar código: lee los tests del área que toca. Lo
+                          que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+                          de en una build de 20 minutos— y evita iteraciones enteras como la del
+                          tamaño de los iconos. El coste real de una suite grande es de
+                          MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+                          detalles internos) que hay que reescribir en cada refactor. Por eso la
+                          lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Modo carismochito — cambiar el icono del launcher (icono "de fuera") a verde**:
       hoy el modo solo tiñe la UI dentro de la app (incluido el cuadro-logo del
