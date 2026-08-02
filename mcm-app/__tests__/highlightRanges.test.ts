@@ -3,6 +3,7 @@ import {
   computeSpans,
   normalizeHighlights,
   removeHighlight,
+  selectionHighlight,
   type HighlightRange,
 } from '@/utils/highlightRanges';
 import { normalizeReadingText } from '@/utils/readingSegments';
@@ -123,5 +124,63 @@ describe('normalizeReadingText', () => {
 
   it('conserva los saltos de párrafo', () => {
     expect(normalizeReadingText('Uno.\nDos.')).toBe('Uno.\nDos.');
+  });
+});
+
+describe('selectionHighlight', () => {
+  // "En el principio existía la Palabra…" — se subraya "principio" (6..15).
+  const ranges: HighlightRange[] = [
+    { start: 6, end: 15, color: 'sun', text: TEXT.slice(6, 15) },
+  ];
+
+  it('devuelve null si la selección no toca ningún subrayado', () => {
+    expect(selectionHighlight(ranges, 20, 30)).toBeNull();
+  });
+
+  it('devuelve null sin rangos o con selección vacía', () => {
+    expect(selectionHighlight([], 0, 10)).toBeNull();
+    expect(selectionHighlight(ranges, 8, 8)).toBeNull();
+    expect(selectionHighlight(ranges, 10, 6)).toBeNull();
+  });
+
+  it('reconoce una selección enteramente subrayada', () => {
+    expect(selectionHighlight(ranges, 6, 15)).toEqual({
+      color: 'sun',
+      full: true,
+    });
+  });
+
+  it('reconoce una selección DENTRO de un subrayado', () => {
+    expect(selectionHighlight(ranges, 8, 12)).toEqual({
+      color: 'sun',
+      full: true,
+    });
+  });
+
+  it('marca full=false cuando la selección se sale del subrayado', () => {
+    // 0..15 incluye "En el " sin subrayar más "principio" subrayado.
+    expect(selectionHighlight(ranges, 0, 15)).toEqual({
+      color: 'sun',
+      full: false,
+    });
+  });
+
+  it('con varios colores gana el que cubre más caracteres', () => {
+    const mixed: HighlightRange[] = [
+      { start: 0, end: 3, color: 'sun', text: TEXT.slice(0, 3) },
+      { start: 3, end: 15, color: 'mint', text: TEXT.slice(3, 15) },
+    ];
+    expect(selectionHighlight(mixed, 0, 15)).toEqual({
+      color: 'mint',
+      full: true,
+    });
+  });
+
+  it('el color que gana no depende del orden de los rangos', () => {
+    const mixed: HighlightRange[] = [
+      { start: 3, end: 15, color: 'mint', text: TEXT.slice(3, 15) },
+      { start: 0, end: 3, color: 'sun', text: TEXT.slice(0, 3) },
+    ];
+    expect(selectionHighlight(mixed, 0, 15)?.color).toBe('mint');
   });
 });

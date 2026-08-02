@@ -68,6 +68,22 @@ Los tramos de color se pasan como **hijos `<Text>`** del `TextInput` (React
 Native los convierte en la cadena atribuida nativa), no como un `value` plano.
 Por eso los subrayados siguen visibles dentro del modo subrayar.
 
+## Seleccionar texto que YA está subrayado
+
+Si la selección cae sobre un tramo ya subrayado, la barra de acciones deja de
+tratarlo como texto nuevo: **marca con un aro el color que ya tiene** y la goma
+se anuncia como "quitar el subrayado". Así el mismo gesto sirve para poner,
+cambiar de color y quitar.
+
+La lógica es pura y está en `selectionHighlight()` (`utils/highlightRanges.ts`):
+dada la selección y los rangos, devuelve `{ color, full }`, o `null` si no toca
+ningún subrayado. Si la selección pisa varios colores gana el que cubra más
+caracteres; `full` dice si TODA la selección está subrayada o sólo una parte.
+El hook `useReadingHighlights` lo expone como `selection` y la pantalla se lo
+pasa a `HighlightActionBar`.
+
+Está cubierto por tests en `__tests__/highlightRanges.test.ts`.
+
 ## Pendiente: "Subrayar" en el menú nativo (requiere build de tienda)
 
 Hoy el flujo es: botón del rotulador en el header → modo subrayar → seleccionar

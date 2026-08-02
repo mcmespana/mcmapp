@@ -910,6 +910,7 @@ export default function EvangelioScreen() {
       <HighlightActionBar
         visible={highlightMode}
         hasSelection={hl.hasSelection}
+        selection={hl.selection}
         onPickColor={hl.applyColor}
         onErase={hl.erase}
         onDone={exitHighlightMode}

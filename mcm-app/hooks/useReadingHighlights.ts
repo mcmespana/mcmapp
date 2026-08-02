@@ -10,8 +10,10 @@ import {
   addHighlight,
   normalizeHighlights,
   removeHighlight,
+  selectionHighlight,
   type HighlightColorKey,
   type HighlightRange,
+  type SelectionHighlight,
 } from '@/utils/highlightRanges';
 import { normalizeReadingText } from '@/utils/readingSegments';
 
@@ -26,6 +28,13 @@ export interface ReadingHighlights {
   onSelectionChange: BySource<(sel: ReadingSelection | null) => void>;
   /** Hay una selección viva a la que aplicar color/goma. */
   hasSelection: boolean;
+  /**
+   * Subrayado que YA tiene la selección actual, si lo tiene. Con esto la barra
+   * de acciones sabe que no está ante texto nuevo: marca el color puesto y
+   * ofrece cambiarlo o quitarlo, en vez de comportarse como si empezara de
+   * cero.
+   */
+  selection: SelectionHighlight | null;
   applyColor: (color: HighlightColorKey) => void;
   erase: () => void;
   clearSelection: () => void;
@@ -96,6 +105,12 @@ export function useReadingHighlights(
 
   const clearSelection = useCallback(() => setActiveSel(null), []);
 
+  const selection = useMemo(() => {
+    if (!activeSel) return null;
+    const { source, sel } = activeSel;
+    return selectionHighlight(ranges[source], sel.start, sel.end);
+  }, [activeSel, ranges]);
+
   const applyColor = useCallback(
     (color: HighlightColorKey) => {
       if (!activeSel) return;
@@ -134,6 +149,7 @@ export function useReadingHighlights(
     ranges,
     onSelectionChange,
     hasSelection: !!activeSel,
+    selection,
     applyColor,
     erase,
     clearSelection,

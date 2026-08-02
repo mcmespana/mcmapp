@@ -28,36 +28,39 @@
       contra jest 29; mezclarlos rompe el runtime entero
       (`_moduleMocker.clearMocksOnScope is not a function`). Va atado al SDK. - `typescript` 6 → 7, `@babel/core` 7 → 8: los fija Expo, no se tocan a
       mano. Entrarán con el SDK 58.
-- [ ] **Sanear las reglas del React Compiler** — `eslint-config-expo` 56+ las
-      activa como error. Están bajadas a `warn` en `eslint.config.js`. Ya se
-      hizo una pasada de medición (2026-08-01), esto es lo que queda y lo que
-      cuesta cada familia — **no vale con "arreglar los warnings", léelo antes
-      de meterte**:
+- [ ] **Sanear las reglas del React Compiler** — el React Compiler está
+      ACTIVADO en la app (`experiments.reactCompiler: true` en `app.json` +
+      `babel-preset-expo` con `react-compiler`). Estas reglas son su linter:
+      señalan sitios donde el compilador no puede optimizar. Están bajadas a
+      `warn` en `eslint.config.js`. Medido el 2026-08-01, esto es lo que queda:
 
-      - `react-hooks/refs` (**276**, el 78% del total): casi todos son el idiom
-                de RN `useRef(new Animated.Value(0)).current`, que la app usa en todas
-                sus animaciones. Es el patrón que documenta React Native; el compilador
-                lo marca porque no puede demostrar que sea seguro. Arreglarlo de verdad
-                = reescribir todas las animaciones a Reanimated. Mucho riesgo, cero
-                beneficio para el usuario. **Recomendación: dejarlo en `warn` y no
-                perseguir el número.**
-              - `react-hooks/immutability` (**14**): son `sharedValue.value = …`, o sea
-                LA api de Reanimated. No tiene arreglo por diseño.
-              - `react-hooks/set-state-in-effect` (**37**): repartidos de uno en uno por
-                33 ficheros, casi siempre sincronizando estado desde una fuente async.
-                Hay que mirarlos caso a caso; no hay un arreglo mecánico.
-              - `react-hooks/purity` (**3**): revisados uno a uno, los tres son falsos
-                positivos (`Date.now()` dentro de un handler async en
-                `ReflexionesScreen`, `Math.random()` en un `useMemo` del Wordle, que
-                además es código congelado).
-              - `react-hooks/preserve-manual-memoization` (**12**): sin revisar.
-              - ✅ `react-hooks/static-components`: **arreglado** (era real —
-                `ActionButton` se definía dentro de `SongControls` y remontaba todo el
-                menú en cada render).
-
-              Sólo tiene sentido subir las reglas a `error` si algún día se hace la
-              migración de animaciones; mientras tanto el valor está en revisar los
-              `set-state-in-effect` y `preserve-manual-memoization` con calma.
+      - `react-hooks/refs` (**276**, el 80% del total): casi todos son el idiom
+            de RN `useRef(new Animated.Value(0)).current`, que la app usa en todas
+            sus animaciones. Es el patrón que documenta React Native; el compilador
+            lo marca porque no puede demostrar que sea seguro. Arreglarlo de verdad
+            = migrar todas las animaciones a Reanimated. **Recomendación: dejarlo en
+            `warn`.** Sólo tendría sentido dentro de una migración de animaciones
+            hecha a propósito.
+          - `react-hooks/immutability` (**14**): son `sharedValue.value = …`, o sea
+            LA api de Reanimated. No tiene arreglo por diseño.
+          - `react-hooks/set-state-in-effect` (**37**): repartidos de uno en uno por
+            33 ficheros, casi siempre sincronizando estado desde una fuente async.
+            Caso a caso; no hay arreglo mecánico. Es lo más rentable si algún día se
+            quiere bajar el número.
+          - `react-hooks/preserve-manual-memoization` (**12**): revisados. Son
+            `useCallback` que contienen llamadas impuras (`Date.now()`,
+            `new Date()`) dentro; el compilador no puede preservar la memoización a
+            través de eso y se salta el componente entero. No es un bug: siguen
+            funcionando con su `useCallback` manual, sólo pierden la optimización
+            automática. Arreglarlo pide reestructurar el envío de formularios.
+          - `react-hooks/purity` (**3**): revisados uno a uno, los tres son falsos
+            positivos (`Date.now()` dentro de un handler async en
+            `ReflexionesScreen` y `Math.random()` en un `useMemo` del Wordle, que
+            además es código congelado).
+          - ✅ **Arreglados**: `static-components` (era un bug real —
+            `ActionButton` se definía dentro de `SongControls` y remontaba todo el
+            menú en cada render) y `exhaustive-deps` (`useSectionFontScale` creaba
+            un objeto nuevo en cada render y dejaba sus `useCallback` sin efecto).
 
 - [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
 - [ ] **iPad: habilitar landscape a nivel nativo** — añadir
@@ -176,11 +179,29 @@
 
 ## Mantenimiento
 
-- [ ] **Ampliar cobertura de tests**: ya hay 28 ficheros en `__tests__/` / 267 tests. Hecho en jun-2026: `useSongProcessor` (núcleo del cantoral) y `choirSessionService` (Modo Coro, maestro/oyentes). Pendiente: `useResolvedProfileConfig` (el resolver puro `resolveProfileConfig` ya está cubierto) y al menos una pantalla con render snapshot.
+- [ ] **Ampliar cobertura de tests — tarea ideal para "quemar tokens"** (anotado
+      2026-08-01). Hoy hay 325 tests en 34 ficheros, pero **casi todos son de
+      lógica pura**: no hay ni un test que renderice una pantalla. Justo el tipo
+      de bug que se coló con la barra de tabs (`ActionButton` remontándose en
+      cada render) lo habría cazado un render test.
 
----
+      Por dónde empezar, en orden de rentabilidad:
+          1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+             Más): que monten sin reventar con datos vacíos, con datos y offline.
+          2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+             hook con sus contextos).
+          3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+             releer del bookmark.
+          4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-## Prioridad baja
+          Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+          lee la suite entera para tocar código: lee los tests del área que toca. Lo
+          que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+          de en una build de 20 minutos— y evita iteraciones enteras como la del
+          tamaño de los iconos. El coste real de una suite grande es de
+          MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+          detalles internos) que hay que reescribir en cada refactor. Por eso la
+          lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Modo carismochito — cambiar el icono del launcher (icono "de fuera") a verde**:
       hoy el modo solo tiñe la UI dentro de la app (incluido el cuadro-logo del

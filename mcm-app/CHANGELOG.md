@@ -18,6 +18,31 @@
 
 ---
 
+## 2026-08-02 00:40 — iPad landscape, subrayado que reconoce lo ya subrayado y limpieza
+
+- **iPad rota de verdad.** `UISupportedInterfaceOrientations~ipad` con las 4
+  orientaciones en `app.json`; el iPhone se queda en portrait. Los layouts de
+  iPad estaban listos desde junio, sólo faltaba activarlo a nivel nativo.
+  Verificado en el `Info.plist` que genera `expo prebuild`. ⚠️ Cambio NATIVO.
+- **Subrayado: al seleccionar texto ya subrayado, la barra lo reconoce.** Marca
+  con un aro el color que ya tiene y la goma se anuncia como "quitar el
+  subrayado", en vez de comportarse como si fuera texto nuevo. Nueva función
+  pura `selectionHighlight()` en `utils/highlightRanges.ts` (si la selección
+  pisa varios colores gana el que cubra más caracteres), expuesta por
+  `useReadingHighlights` como `selection`. 7 tests nuevos.
+- **Dos avisos del React Compiler que eran bugs de verdad, arreglados**:
+  `useSectionFontScale` construía `settings.sectionFontScales ?? {}` suelto en
+  el cuerpo, así que sin overrides creaba un objeto nuevo en cada render y sus
+  dos `useCallback` cambiaban de identidad siempre — la memoización no servía
+  de nada. (El otro, `ActionButton` en `SongControls`, iba en la entrada
+  anterior.) El resto de familias están medidas y explicadas en `TODO.md`.
+
+Sigue **pendiente** el ítem "Subrayar" dentro del menú nativo del sistema: eso
+pide un módulo nativo (UIMenu en iOS, ActionMode en Android) y es una iteración
+propia — ver `docs/funcionalidades/SUBRAYADO.md`.
+
+---
+
 ## 2026-08-01 23:05 — Actualización de dependencias de terceros y limpieza
 
 Segunda mitad de la puesta al día: el salto de SDK sólo movió lo que

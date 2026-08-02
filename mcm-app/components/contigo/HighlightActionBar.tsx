@@ -12,6 +12,7 @@ import {
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_KEYS,
   type HighlightColorKey,
+  type SelectionHighlight,
 } from '@/utils/highlightRanges';
 import { h } from '@/utils/haptics';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
@@ -20,6 +21,12 @@ interface HighlightActionBarProps {
   visible: boolean;
   /** Hay una selección activa (habilita colores y goma). */
   hasSelection: boolean;
+  /**
+   * Subrayado que la selección YA tiene, si lo tiene. Cuando llega, la barra
+   * deja de comportarse como si fuera texto nuevo: marca el color puesto y el
+   * copy pasa a hablar de cambiarlo o quitarlo.
+   */
+  selection?: SelectionHighlight | null;
   onPickColor: (color: HighlightColorKey) => void;
   onErase: () => void;
   onDone: () => void;
@@ -33,6 +40,7 @@ interface HighlightActionBarProps {
 export function HighlightActionBar({
   visible,
   hasSelection,
+  selection = null,
   onPickColor,
   onErase,
   onDone,
@@ -73,25 +81,39 @@ export function HighlightActionBar({
     >
       {hasSelection ? (
         <View style={styles.row}>
-          {HIGHLIGHT_COLOR_KEYS.map((key) => (
-            <TouchableOpacity
-              key={key}
-              onPress={() => {
-                h.add();
-                onPickColor(key);
-              }}
-              style={[
-                styles.swatch,
-                {
-                  backgroundColor: HIGHLIGHT_COLORS[key].swatch,
-                  borderColor: isDark
-                    ? 'rgba(255,255,255,0.25)'
-                    : 'rgba(0,0,0,0.10)',
-                },
-              ]}
-              accessibilityLabel={`Subrayar en color ${key}`}
-            />
-          ))}
+          {HIGHLIGHT_COLOR_KEYS.map((key) => {
+            const isCurrent = selection?.color === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                onPress={() => {
+                  h.add();
+                  onPickColor(key);
+                }}
+                style={[
+                  styles.swatch,
+                  {
+                    backgroundColor: HIGHLIGHT_COLORS[key].swatch,
+                    borderColor: isDark
+                      ? 'rgba(255,255,255,0.25)'
+                      : 'rgba(0,0,0,0.10)',
+                  },
+                  // El color que ya tiene la selección se marca con un aro,
+                  // para que se vea de un vistazo cuál está puesto.
+                  isCurrent && styles.swatchCurrent,
+                  isCurrent && {
+                    borderColor: isDark ? '#FFFFFF' : '#3A3A3C',
+                  },
+                ]}
+                accessibilityLabel={
+                  isCurrent
+                    ? `Color ${key}, el que ya tiene la selección`
+                    : `Subrayar en color ${key}`
+                }
+                accessibilityState={{ selected: isCurrent }}
+              />
+            );
+          })}
           <View
             style={[
               styles.divider,
@@ -108,7 +130,11 @@ export function HighlightActionBar({
               onErase();
             }}
             style={styles.eraseBtn}
-            accessibilityLabel="Quitar subrayado de la selección"
+            accessibilityLabel={
+              selection
+                ? 'Quitar el subrayado de la selección'
+                : 'Quitar subrayado de la selección'
+            }
           >
             <MaterialIcons
               name="format-color-reset"
@@ -144,6 +170,9 @@ export function HighlightActionBar({
 }
 
 const styles = StyleSheet.create({
+  swatchCurrent: {
+    borderWidth: 2.5,
+  },
   wrap: {
     position: 'absolute',
     left: 16,
