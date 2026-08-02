@@ -36,7 +36,12 @@ export default function GlassFAB({
   return (
     <PressableFeedback
       onPress={onPress}
-      style={[styles.fab, isPill && styles.pill, style]}
+      style={[
+        styles.fab,
+        { bottom: tabBarClearance + 12 },
+        isPill && styles.pill,
+        style,
+      ]}
     >
       <PressableFeedback.Scale />
       <GlassSurface tintColor={tintColor} variant="regular" />

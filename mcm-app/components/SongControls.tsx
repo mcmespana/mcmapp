@@ -59,6 +59,69 @@ interface SongControlsProps {
   onSetCapoOverride?: (capo: number | null) => void;
 }
 
+/**
+ * Botón del menú de acciones.
+ *
+ * Vive FUERA de `SongControls` a propósito: definido dentro, React lo trataba
+ * como un tipo de componente nuevo en cada render y desmontaba y volvía a
+ * montar todo el menú (perdiendo estado y animaciones por el camino). Es lo que
+ * señala la regla `react-hooks/static-components` del React Compiler.
+ */
+function ActionButton({
+  icon,
+  label,
+  onPress,
+  isActive = false,
+  isDark,
+}: {
+  icon: keyof typeof MaterialIcons.glyphMap;
+  label: string;
+  onPress: () => void;
+  isActive?: boolean;
+  isDark: boolean;
+}) {
+  return (
+    <PressableFeedback
+      style={[
+        styles.actionButton,
+        isActive &&
+          (isDark ? styles.actionButtonActiveDark : styles.actionButtonActive),
+      ]}
+      onPress={() => {
+        h.tap();
+        onPress();
+      }}
+    >
+      <PressableFeedback.Highlight />
+      <MaterialIcons
+        name={icon}
+        size={18}
+        color={
+          isActive
+            ? isDark
+              ? '#7AB3FF'
+              : '#253883'
+            : isDark
+              ? '#AEAEB2'
+              : '#636366'
+        }
+      />
+      <Text
+        style={[
+          styles.actionButtonText,
+          isDark && styles.actionButtonTextDark,
+          isActive &&
+            (isDark
+              ? styles.actionButtonTextActiveDark
+              : styles.actionButtonTextActive),
+        ]}
+      >
+        {label}
+      </Text>
+    </PressableFeedback>
+  );
+}
+
 const SongControls: React.FC<SongControlsProps> = ({
   chordsVisible,
   hasArrangements = false,
@@ -176,57 +239,6 @@ const SongControls: React.FC<SongControlsProps> = ({
     onSetTranspose(semitones);
   };
 
-  const ActionButton = ({
-    icon,
-    label,
-    onPress,
-    isActive = false,
-  }: {
-    icon: keyof typeof MaterialIcons.glyphMap;
-    label: string;
-    onPress: () => void;
-    isActive?: boolean;
-  }) => (
-    <PressableFeedback
-      style={[
-        styles.actionButton,
-        isActive &&
-          (isDark ? styles.actionButtonActiveDark : styles.actionButtonActive),
-      ]}
-      onPress={() => {
-        h.tap();
-        onPress();
-      }}
-    >
-      <PressableFeedback.Highlight />
-      <MaterialIcons
-        name={icon}
-        size={18}
-        color={
-          isActive
-            ? isDark
-              ? '#7AB3FF'
-              : '#253883'
-            : isDark
-              ? '#AEAEB2'
-              : '#636366'
-        }
-      />
-      <Text
-        style={[
-          styles.actionButtonText,
-          isDark && styles.actionButtonTextDark,
-          isActive &&
-            (isDark
-              ? styles.actionButtonTextActiveDark
-              : styles.actionButtonTextActive),
-        ]}
-      >
-        {label}
-      </Text>
-    </PressableFeedback>
-  );
-
   return (
     <>
       {/* Scrim when menu is open */}
@@ -249,6 +261,7 @@ const SongControls: React.FC<SongControlsProps> = ({
             style={[styles.menuContainer, isDark && styles.menuContainerDark]}
           >
             <ActionButton
+              isDark={isDark}
               icon={chordsVisible ? 'music-note' : 'music-off'}
               label={`Acordes ${chordsVisible ? 'ON' : 'OFF'}`}
               onPress={onToggleChords}
@@ -256,6 +269,7 @@ const SongControls: React.FC<SongControlsProps> = ({
             />
             {hasArrangements && onToggleArrangements && (
               <ActionButton
+                isDark={isDark}
                 icon="auto-awesome"
                 label={`Arreglos ${arrangementsVisible ? 'ON' : 'OFF'}`}
                 onPress={onToggleArrangements}
@@ -263,12 +277,14 @@ const SongControls: React.FC<SongControlsProps> = ({
               />
             )}
             <ActionButton
+              isDark={isDark}
               icon="translate"
               label={`Notación: ${notation}`}
               onPress={onToggleNotation}
               isActive={notation !== 'ES'}
             />
             <ActionButton
+              isDark={isDark}
               icon="swap-vert"
               label={
                 currentTranspose !== 0 &&
@@ -290,6 +306,7 @@ const SongControls: React.FC<SongControlsProps> = ({
               }
             />
             <ActionButton
+              isDark={isDark}
               icon="text-fields"
               label="Tipo de letra"
               onPress={handleOpenFontPanel}
@@ -305,6 +322,7 @@ const SongControls: React.FC<SongControlsProps> = ({
             />
 
             <ActionButton
+              isDark={isDark}
               icon="content-copy"
               label="Copiar letra"
               onPress={() => {
@@ -313,11 +331,13 @@ const SongControls: React.FC<SongControlsProps> = ({
               }}
             />
             <ActionButton
+              isDark={isDark}
               icon="fullscreen"
               label="Pantalla completa"
               onPress={onNavigateToFullscreen}
             />
             <ActionButton
+              isDark={isDark}
               icon="bug-report"
               label="Reportar error"
               onPress={() => setShowReportBugsModal(true)}

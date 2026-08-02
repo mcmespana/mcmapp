@@ -171,12 +171,10 @@ export default function usePushNotifications() {
           title: notification.request.content.title || 'Notificación',
           body: notification.request.content.body || '',
           bodyLong: notification.request.content.data?.bodyLong as
-            | string
-            | undefined,
+            string | undefined,
           icon: notification.request.content.data?.icon as string | undefined,
           imageUrl: notification.request.content.data?.imageUrl as
-            | string
-            | undefined,
+            string | undefined,
           actionButton: extractActionButton(notification.request.content.data),
           actionButtons: extractActionButtons(
             notification.request.content.data,
@@ -185,11 +183,9 @@ export default function usePushNotifications() {
           isRead: false,
           category: notification.request.content.data?.category as any,
           internalRoute: notification.request.content.data?.internalRoute as
-            | string
-            | undefined,
+            string | undefined,
           eventId: notification.request.content.data?.eventId as
-            | string
-            | undefined,
+            string | undefined,
           data: notification.request.content.data,
         };
 

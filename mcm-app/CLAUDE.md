@@ -315,9 +315,8 @@ danger: '#9D1E74'; // Morado LC
 1. Crear archivo en `app/(tabs)/nuevoTab.tsx` — **imprescindible**: sin la ruta,
    meter el ID en `TABS_CONFIG`/`tabs` no muestra nada (le pasaba a `comunica`)
 2. Añadir objeto a `TABS_CONFIG` en `constants/tabsCatalog.ts`, en la posición
-   que deba ocupar en la barra (ese array define el orden)
-2b. Generar su icono PNG (`npm run icons:tabs`) y registrarlo en
-   `constants/tabIcons.ts`
+   que deba ocupar en la barra (ese array define el orden), y generar su icono
+   PNG (`npm run icons:tabs`) registrándolo en `constants/tabIcons.ts`
 3. Añadir el ID a `KNOWN_TABS` en `constants/profileCatalog.ts`
 4. Añadir el ID a `profiles.*.tabs` en `firebase-seed/profileConfig.json` y en `/profileConfig` en Firebase
 5. Definir color en `TabHeaderColors` si aplica (en `constants/colors.ts`)

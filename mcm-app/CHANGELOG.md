@@ -18,6 +18,44 @@
 
 ---
 
+## 2026-08-01 23:05 — Actualización de dependencias de terceros y limpieza
+
+Segunda mitad de la puesta al día: el salto de SDK sólo movió lo que
+gestiona Expo, esto es todo lo demás. **Regla seguida: no se toca nada que
+fije el SDK** (react, react-native, reanimated, screens, svg,
+safe-area-context, webview, gesture-handler, async-storage, worklets,
+TypeScript, babel) — `expo install --fix` confirma que están donde deben.
+
+- **Subidas**: firebase 12.10 → 12.17, heroui-native 1.0 → 1.0.8,
+  **chordsheetjs 14 → 15.6.1**, react-native-calendars, tailwindcss +
+  tailwind-merge + tailwind-variants, uniwind 1.6 → 1.10, prettier 3.2 → 3.9,
+  eslint-plugin-prettier, @expo/vector-icons, @react-native-community/cli,
+  google-signin, ts-jest. Majors: **@testing-library/react-native 13 → 14**,
+  eslint-config-prettier 9 → 10, cross-env 7 → 10, @types/node 22 → 26.
+- **chordsheetjs 15** sólo rompe una cosa (hace opcional su soporte PDF) y no
+  nos afecta: el PDF de playlists va por `HtmlDivFormatter` → HTML →
+  expo-print, no usamos su `PdfFormatter`.
+- **RNTL 14** hizo `renderHook` asíncrono (envuelve el render en `act`): los
+  tres tests de hooks pasan a `await`. En `useFirebaseData` se cae la aserción
+  del `loading === true` inicial, que con la API nueva ya no es observable.
+- **Descartadas por incompatibilidad real, comprobada**: `eslint 10` (rompe el
+  eslint-plugin-react que trae eslint-config-expo) y `jest 30` (jest-expo 57
+  está construido contra jest 29 y mezclarlos rompe el runtime entero).
+
+### Bug real arreglado de camino
+
+`ActionButton` se definía **dentro** de `SongControls`, así que React lo
+trataba como un tipo de componente nuevo en cada render y desmontaba y volvía
+a montar todo el menú de acciones del cantoral. Sacado a nivel de módulo con
+`isDark` por prop. Lo señalaba `react-hooks/static-components`, una de las
+reglas del React Compiler que activa el SDK 56.
+
+El resto de esas reglas se han **medido** y el veredicto está en `TODO.md`:
+el 78% son el idiom de RN `useRef(new Animated.Value(0)).current` y los
+`sharedValue.value = …` de Reanimated, que no tienen arreglo razonable.
+
+---
+
 ## 2026-08-01 21:10 — Arreglo del tamaño de los iconos de la barra de pestañas
 
 Los iconos salían enormes, montados unos sobre otros y encima de las

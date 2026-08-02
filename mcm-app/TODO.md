@@ -28,12 +28,35 @@
       `claude/compact-tabs-bar-uxxaoz` esté validada**, para poder meterlo todo
       en la misma release de tienda.
 - [ ] **Sanear las reglas del React Compiler** — `eslint-config-expo` 56+ las
-      activa como error y sacan ~330 avisos sobre patrones que ya estaban:
-      `react-hooks/refs` (refs leídas en render, 276), `set-state-in-effect`
-      (37), `immutability` (`sharedValue.value = …` de Reanimated, 14),
-      `preserve-manual-memoization` (12), `static-components` (8), `purity` (3).
-      Ahora mismo están bajadas a `warn` en `eslint.config.js`. Al terminar,
-      volver a subirlas a `error`.
+      activa como error. Están bajadas a `warn` en `eslint.config.js`. Ya se
+      hizo una pasada de medición (2026-08-01), esto es lo que queda y lo que
+      cuesta cada familia — **no vale con "arreglar los warnings", léelo antes
+      de meterte**:
+
+      - `react-hooks/refs` (**276**, el 78% del total): casi todos son el idiom
+            de RN `useRef(new Animated.Value(0)).current`, que la app usa en todas
+            sus animaciones. Es el patrón que documenta React Native; el compilador
+            lo marca porque no puede demostrar que sea seguro. Arreglarlo de verdad
+            = reescribir todas las animaciones a Reanimated. Mucho riesgo, cero
+            beneficio para el usuario. **Recomendación: dejarlo en `warn` y no
+            perseguir el número.**
+          - `react-hooks/immutability` (**14**): son `sharedValue.value = …`, o sea
+            LA api de Reanimated. No tiene arreglo por diseño.
+          - `react-hooks/set-state-in-effect` (**37**): repartidos de uno en uno por
+            33 ficheros, casi siempre sincronizando estado desde una fuente async.
+            Hay que mirarlos caso a caso; no hay un arreglo mecánico.
+          - `react-hooks/purity` (**3**): revisados uno a uno, los tres son falsos
+            positivos (`Date.now()` dentro de un handler async en
+            `ReflexionesScreen`, `Math.random()` en un `useMemo` del Wordle, que
+            además es código congelado).
+          - `react-hooks/preserve-manual-memoization` (**12**): sin revisar.
+          - ✅ `react-hooks/static-components`: **arreglado** (era real —
+            `ActionButton` se definía dentro de `SongControls` y remontaba todo el
+            menú en cada render).
+
+          Sólo tiene sentido subir las reglas a `error` si algún día se hace la
+          migración de animaciones; mientras tanto el valor está en revisar los
+          `set-state-in-effect` y `preserve-manual-memoization` con calma.
 
 - [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
 - [ ] **iPad: habilitar landscape a nivel nativo** — añadir

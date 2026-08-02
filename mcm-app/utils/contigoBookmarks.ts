@@ -7,11 +7,7 @@ export const BOOKMARKS_KEY = '@contigo_bookmarks';
 
 /** Fuentes de texto que se pueden subrayar dentro de un día. */
 export type HighlightSource =
-  | 'evangelio'
-  | 'comentario'
-  | 'lectura1'
-  | 'salmo'
-  | 'lectura2';
+  'evangelio' | 'comentario' | 'lectura1' | 'salmo' | 'lectura2';
 
 /** Todas las fuentes subrayables, en orden de aparición en la pantalla. */
 export const HIGHLIGHT_SOURCES: HighlightSource[] = [

@@ -7,11 +7,7 @@ import { mergeContigoHabits } from '@/utils/contigoMerge';
 import { localISO } from '@/utils/localDate';
 
 export type PrayerDuration =
-  | 'less_than_1'
-  | '2_to_4'
-  | '5_to_10'
-  | '10_to_15'
-  | 'more_than_15';
+  'less_than_1' | '2_to_4' | '5_to_10' | '10_to_15' | 'more_than_15';
 
 export type Emotion = 'joy' | 'sadness' | 'anger' | 'fear' | 'disgust';
 
