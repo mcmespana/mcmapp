@@ -154,16 +154,17 @@
 
 ### 4. Subrayado — siguiente iteración
 
-- [ ] **"Subrayar" dentro del menú NATIVO del sistema** — hoy hay que entrar al
-      modo subrayar (botón del rotulador). Lo suyo es seleccionar en cualquier
-      momento y que el menú del sistema tenga un ítem "Subrayar" con sus
-      colores, junto a Copiar / Herramientas de escritura / Traducir. No se
-      puede desde JS: `UIMenu` vía `textView(_:editMenuForTextIn:suggestedActions:)`
-      en iOS 16+ y `ActionMode.Callback2` en Android. ⚠️ Es un MÓDULO NATIVO →
-      **build de tienda + commit `[skip-ota]`**, y hay que probarlo en
-      dispositivo. Contrato hacia JS y pasos en
-      `docs/funcionalidades/SUBRAYADO.md`. Ya está hecha la mitad JS: al
-      seleccionar texto subrayado, la barra reconoce el color y deja cambiarlo.
+- [ ] **"Subrayar" dentro del menú NATIVO del sistema** — ⚠️ **replanteado el
+      2026-08-03, leer antes de empezar**: resulta que `HighlightableReading` YA
+      renderiza con un `TextInput` de solo lectura, que en iOS **es un
+      `UITextView` real**. O sea que NO hay que sustituir el render por una
+      vista nativa (que era el grueso del trabajo estimado); basta con enganchar
+      el menú al text view que ya hay. Lo delicado pasa a ser otra cosa: el
+      delegate `textView(_:editMenuForTextIn:suggestedActions:)` **ya lo ocupa
+      React Native**, así que hay que interponer un proxy que reenvíe el resto y
+      probarlo en dispositivo. Alcance mínimo: UN ítem «Subrayar» que abra la
+      barra de colores actual — el submenú por color es extra. Detalle en
+      `docs/funcionalidades/SUBRAYADO.md`.
 
 ### 5. Otros
 

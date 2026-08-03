@@ -96,7 +96,22 @@ implica un **build de tienda** (no vale una OTA) y commit con `[skip-ota]`.
 
 ### iOS
 
-- Módulo nativo (Expo Module o view manager) que envuelva un `UITextView`.
+> **Hallazgo (2026-08-03) que abarata esto**: `HighlightableReading` YA renderiza
+> con un `TextInput` multilínea de solo lectura, y en iOS eso **es un
+> `UITextView` real** (por eso se eligió: ver el bloque «Por qué un TextInput de
+> solo lectura» del componente). O sea que **no hace falta sustituir el render
+> por una vista nativa nueva** — que es lo que este documento daba por hecho y
+> lo que hacía el trabajo grande. Basta con enganchar el menú al text view que
+> ya existe.
+>
+> Lo que sigue siendo delicado: en iOS 16+ el menú se construye desde
+> `textView(_:editMenuForTextIn:suggestedActions:)`, y ese delegate **ya lo
+> ocupa React Native** (`RCTBaseTextInputView`). Hay que interponerse sin
+> pisarlo (delegate proxy que reenvíe todo lo demás), y eso es lo que hay que
+> probar en dispositivo antes de fiarse.
+
+- Módulo nativo (Expo Module o view manager) que enganche el menú al `UITextView`
+  que ya monta el `TextInput` de solo lectura.
 - Implementar `textView(_:editMenuForTextIn:suggestedActions:)` (iOS 16+) y
   devolver un `UIMenu` con un submenú "Subrayar" y una `UIAction` por color de
   `HIGHLIGHT_COLORS`.
@@ -114,10 +129,14 @@ implica un **build de tienda** (no vale una OTA) y commit con `[skip-ota]`.
 
 ### Cuando se haga
 
-1. `HighlightableReading` pasa a envolver la vista nativa; el resto (rangos,
-   paleta, persistencia) no cambia — el contrato ya es `{start, end, color}`.
-2. La barra flotante y el modo subrayar se pueden mantener como camino
-   alternativo (accesible, y el único disponible en web).
+1. `HighlightableReading` NO cambia su render (ya es el `UITextView` bueno):
+   solo se le engancha el menú. El resto (rangos, paleta, persistencia) no
+   cambia — el contrato ya es `{start, end, color}`.
+   **Alcance mínimo acordado**: basta con UN ítem «Subrayar» en el menú nativo
+   que abra la barra de colores que ya existe. El submenú con un color por
+   `UIAction` es un extra, no el objetivo.
+2. **El modo subrayar actual se MANTIENE pase lo que pase**: es el único camino
+   en web, y el fallback si el menú nativo falla.
 3. Commit con `[skip-ota]` + avisar de que hace falta build de tienda:
    `npm run eas:build:ios -- --profile production`.
 
