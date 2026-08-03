@@ -1,14 +1,19 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Animated,
   Modal,
-  PanResponder,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -73,43 +78,50 @@ export default function FloatingMediaPlayer({
   const [fullscreen, setFullscreen] = useState(false);
 
   // Drag (arrastre) + animación de entrada.
-  const pan = useRef(new Animated.ValueXY()).current;
-  const enter = useRef(new Animated.Value(0)).current;
+  const panX = useSharedValue(0);
+  const panY = useSharedValue(0);
+  const enter = useSharedValue(0);
+  // Posición al empezar el gesto: hace que cada arrastre CONTINÚE desde donde
+  // se dejó el anterior. Es lo que hacían `extractOffset`/`flattenOffset`.
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, { dx, dy }) =>
-        Math.abs(dx) > 4 || Math.abs(dy) > 4,
-      onPanResponderGrant: () => {
-        pan.extractOffset();
-      },
-      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-        useNativeDriver: false,
-      }),
-      onPanResponderRelease: () => {
-        pan.flattenOffset();
-      },
-      onPanResponderTerminate: () => {
-        pan.flattenOffset();
-      },
-    }),
-  ).current;
+  // El arrastre pasa de `PanResponder` a gesture-handler, así que ahora corre
+  // entero en el hilo de UI: el reproductor sigue al dedo aunque JS esté
+  // ocupado (que es lo normal, con un WebView reproduciendo al lado).
+  const drag = Gesture.Pan()
+    .minDistance(4)
+    .onStart(() => {
+      startX.value = panX.value;
+      startY.value = panY.value;
+    })
+    .onUpdate((e) => {
+      panX.value = startX.value + e.translationX;
+      panY.value = startY.value + e.translationY;
+    });
 
   // Al abrir una nueva fuente: reset de posición + animación de entrada.
   useEffect(() => {
     if (!source) return;
-    pan.setValue({ x: 0, y: 0 });
-    pan.setOffset({ x: 0, y: 0 });
-    enter.setValue(0);
-    Animated.spring(enter, {
-      toValue: 1,
-      useNativeDriver: false,
-      tension: 90,
-      friction: 11,
-    }).start();
+    panX.value = 0;
+    panY.value = 0;
+    enter.value = 0;
+    // `tension: 90, friction: 11` de RN Animated → mismo muelle aquí.
+    enter.value = withSpring(1, { stiffness: 90, damping: 11, mass: 1 });
     // Solo cuando cambia la URL.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.url]);
+
+  const floatStyle = useAnimatedStyle(() => ({
+    opacity: enter.value,
+    transform: [
+      { translateX: panX.value },
+      // La entrada sube 14pt y el arrastre se suma encima (antes,
+      // `Animated.add(pan.y, enterTranslateY)`).
+      { translateY: panY.value + interpolate(enter.value, [0, 1], [14, 0]) },
+      { scale: interpolate(enter.value, [0, 1], [0.96, 1]) },
+    ],
+  }));
 
   if (!source) return null;
 
@@ -159,58 +171,40 @@ export default function FloatingMediaPlayer({
       />
     );
 
-  const enterTranslateY = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [14, 0],
-  });
-  const enterScale = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.96, 1],
-  });
-
   return (
     <>
       <Animated.View
-        style={[
-          styles.floatWrap,
-          {
-            bottom: tabBarClearance + 18,
-            opacity: enter,
-            transform: [
-              { translateX: pan.x },
-              { translateY: Animated.add(pan.y, enterTranslateY) },
-              { scale: enterScale },
-            ],
-          },
-        ]}
+        style={[styles.floatWrap, { bottom: tabBarClearance + 18 }, floatStyle]}
       >
         {/* Barra superior — arrastre + título + cerrar */}
-        <View style={styles.bar} {...panResponder.panHandlers}>
-          <Text style={styles.barLabel} numberOfLines={1}>
-            {source.label}
-          </Text>
-          {isVideo && (
+        <GestureDetector gesture={drag}>
+          <View style={styles.bar}>
+            <Text style={styles.barLabel} numberOfLines={1}>
+              {source.label}
+            </Text>
+            {isVideo && (
+              <TouchableOpacity
+                onPress={() => {
+                  h.tap();
+                  setFullscreen(true);
+                }}
+                style={styles.barBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Pantalla completa"
+              >
+                <MaterialIcons name="fullscreen" size={15} color="#fff" />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
-              onPress={() => {
-                h.tap();
-                setFullscreen(true);
-              }}
+              onPress={handleClose}
               style={styles.barBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Pantalla completa"
+              accessibilityLabel="Cerrar reproductor"
             >
-              <MaterialIcons name="fullscreen" size={15} color="#fff" />
+              <MaterialIcons name="close" size={15} color="#fff" />
             </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={handleClose}
-            style={styles.barBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Cerrar reproductor"
-          >
-            <MaterialIcons name="close" size={15} color="#fff" />
-          </TouchableOpacity>
-        </View>
+          </View>
+        </GestureDetector>
         {/* Pantalla del vídeo / reproductor de audio */}
         <View style={{ height: screenHeight, backgroundColor: '#000' }}>
           {!fullscreen && videoSurface(screenHeight)}

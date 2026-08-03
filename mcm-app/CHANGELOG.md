@@ -18,6 +18,27 @@
 
 ---
 
+## 2026-08-03 04:45 — Migración a Reanimated (segundo bloque): OTA prompt y reproductor flotante
+
+Sigue la migración. `react-hooks/refs` baja de 196 a **160** (117 de los 277
+originales).
+
+- `OTAUpdatePrompt` (19): entrada del modal, rotación del icono y pulso del halo.
+- `FloatingMediaPlayer` (17): entrada del reproductor y, sobre todo, **el
+  arrastre**, que pasa de `PanResponder` a `Gesture.Pan()` de gesture-handler.
+  Ahora el reproductor sigue al dedo en el hilo de UI aunque JS esté ocupado —
+  que es lo habitual, con un WebView reproduciendo vídeo al lado.
+
+Dos cosas aprendidas que quedan apuntadas en `TODO.md` para el resto:
+
+- **Los bucles infinitos hay que pararlos a mano** con `cancelAnimation`. En
+  Reanimated siguen corriendo en el hilo de UI aunque el componente esté oculto;
+  con `Animated.loop` bastaba el `.stop()` del cleanup.
+- Los `PanResponder` se replican guardando la posición inicial en `onStart`, que
+  es lo que hacían `extractOffset`/`flattenOffset`.
+
+⚠️ **Sin validar en dispositivo**: son animaciones y un gesto.
+
 ## 2026-08-03 04:10 — La barra de pestañas ya no sale cortada al salir del onboarding
 
 Al terminar el onboarding, la barra flotante aparecía con las etiquetas ~34pt

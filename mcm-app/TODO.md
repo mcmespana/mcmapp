@@ -78,20 +78,20 @@
                 `Animated.Value` del fundido. **Entra en la migración a Reanimated**
                 (abajo), que reescribe esa animación de todas formas.
 
-- [ ] **`react-hooks/refs` — quedan 196** (eran 277). Migración de animaciones a
+- [ ] **`react-hooks/refs` — quedan 160** (eran 277). Migración de animaciones a
       Reanimated **EN CURSO**. Viene de los `useRef(new Animated.Value(0)).current`
       repartidos por la app (cada valor genera varios avisos, uno por lectura en
       render). **Beneficio real, no cosmético**: Reanimated corre las animaciones
       en el hilo de UI, así que no se entrecortan cuando JS está ocupado.
 
-      - ✅ **Hechos (2026-08-03, 81 avisos)**: `ComunicaLoader` (24),
+      - ✅ **Hechos (2026-08-03, 117 avisos)**: `ComunicaLoader` (24),
+                `OTAUpdatePrompt` (19), `FloatingMediaPlayer` (17),
                 `CarismochitoChargeDots` (14), `ComunicaTopProgress` (13),
                 `BreathingPhase` (10), `CelebrationBurst` (10) y
                 `CelebrationAnimation` (10 — resultó ser una copia literal de
                 `CelebrationBurst`, así que ahora delega en él).
               - **Pendientes, por tamaño**: `CarismochitoOverlay` (31),
-                `BottomSheet` (23), `OTAUpdatePrompt` (19), `FloatingMediaPlayer` (17),
-                `HorarioScreen` (11), `CarismochitoMascot` (11),
+                `BottomSheet` (23), `HorarioScreen` (11), `CarismochitoMascot` (11),
                 `SongFullscreenScreen` (10), `ReadingCalendarSheet` (8),
                 `AppToastContext` (8), `CarismochitoDialogs` (7),
                 `TransposeBottomSheet` (7), `HighlightActionBar` (7),
@@ -106,10 +106,15 @@
                 `Animated.loop` → `withRepeat`, `Animated.sequence` → `withSequence`,
                 `Animated.delay` → `withDelay`, `Animated.spring({tension, friction})`
                 → `withSpring({stiffness, damping})`, e `interpolate()` dentro del
-                worklet en vez de `.interpolate()`.
+                worklet en vez de `.interpolate()`. **Los bucles infinitos hay que
+                pararlos a mano** con `cancelAnimation` al desmontar/ocultar: en
+                Reanimated siguen corriendo en el hilo de UI aunque nadie los mire
+                (con `Animated.loop` bastaba el `.stop()`). Los `PanResponder` pasan a
+                `Gesture.Pan()` de gesture-handler, guardando la posición inicial en
+                `onStart` para replicar `extractOffset`/`flattenOffset`.
               - **Ojo**: cada fichero migrado cambia avisos de `refs` por 1-2 de
                 `immutability` (`sharedValue.value = …`), que son la API de Reanimated
-                y no tienen arreglo. Es el intercambio esperado: 81 `refs` menos ha
+                y no tienen arreglo. Es el intercambio esperado: 117 `refs` menos ha
                 costado 1 `immutability` más.
               - ⚠️ **Nada de esto está validado en dispositivo**: son animaciones, y
                 sólo se comprueban mirándolas.
