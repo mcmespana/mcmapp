@@ -6,24 +6,29 @@
 // del logo, una barra de progreso real (`onLoadProgress`) y un esqueleto de
 // formulario que anticipa lo que va a aparecer. Al terminar se desvanece.
 //
-// Solo RN Animated (native driver) + expo-linear-gradient: nada de SVG ni
-// dependencias nuevas. Todo el color sale de tokens y respeta claro/oscuro.
+// Solo Reanimated + expo-linear-gradient: nada de SVG ni dependencias nuevas.
+// Todo el color sale de tokens y respeta claro/oscuro. Las animaciones corren
+// en el hilo de UI, que aquí importa especialmente: esta portada se ve JUSTO
+// mientras JS está ocupado arrancando el WebView.
 
-import React, { useEffect, useMemo, useRef } from 'react';
-import {
-  Animated,
+import React, { useEffect, useMemo } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
   Easing,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import brand from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
-import { durations, easings } from '@/constants/animations';
+import { durations, reaEasings } from '@/constants/animations';
 
 interface ComunicaLoaderProps {
   /** Tema resuelto por la app (no el del sistema). */
@@ -47,6 +52,53 @@ const WAVE_BARS = [
   { h: 34, delay: 360 },
   { h: 22, delay: 480 },
 ];
+
+/**
+ * Una barra de la onda del logo, latiendo en bucle con su propio desfase.
+ *
+ * Cada barra tiene su `useSharedValue` porque los hooks no se pueden llamar en
+ * un bucle — antes era un array de `Animated.Value` guardado en un ref. El
+ * retardo va DENTRO de la secuencia repetida, igual que el `Animated.delay`
+ * original, para conservar el mismo ritmo.
+ */
+function WaveBar({
+  height,
+  delay,
+  color,
+}: {
+  height: number;
+  delay: number;
+  color: string;
+}) {
+  const scale = useSharedValue(0.45);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withDelay(
+          delay,
+          withTiming(1, { duration: 480, easing: reaEasings.cubic }),
+        ),
+        withTiming(0.4, { duration: 480, easing: reaEasings.cubic }),
+      ),
+      -1,
+      false,
+    );
+  }, [scale, delay]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scaleY: scale.value }],
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        { width: 6, height, borderRadius: 3, backgroundColor: color },
+        style,
+      ]}
+    />
+  );
+}
 
 export default function ComunicaLoader({
   scheme,
@@ -90,91 +142,63 @@ export default function ComunicaLoader({
     [isDark],
   );
 
-  // ── Animaciones en loop: onda + anillo que respira ────────────────────────
-  const bars = useRef(WAVE_BARS.map(() => new Animated.Value(0.45))).current;
-  const ring = useRef(new Animated.Value(0)).current;
-  const entry = useRef(new Animated.Value(0)).current;
+  // ── Animaciones en loop: anillo que respira + entrada ─────────────────────
+  const ring = useSharedValue(0);
+  const entry = useSharedValue(0);
 
   useEffect(() => {
-    const loops = bars.map((v, i) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(WAVE_BARS[i].delay),
-          Animated.timing(v, {
-            toValue: 1,
-            duration: 480,
-            easing: easings.cubic,
-            useNativeDriver: true,
-          }),
-          Animated.timing(v, {
-            toValue: 0.4,
-            duration: 480,
-            easing: easings.cubic,
-            useNativeDriver: true,
-          }),
-        ]),
-      ),
-    );
-    const ringLoop = Animated.loop(
-      Animated.timing(ring, {
-        toValue: 1,
-        duration: 2200,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    );
-    const enter = Animated.timing(entry, {
-      toValue: 1,
+    entry.value = withTiming(1, {
       duration: durations.slow,
-      easing: easings.bouncy,
-      useNativeDriver: true,
+      easing: reaEasings.bouncy,
     });
-
-    enter.start();
-    loops.forEach((l) => l.start());
-    ringLoop.start();
-    return () => {
-      enter.stop();
-      loops.forEach((l) => l.stop());
-      ringLoop.stop();
-    };
-  }, [bars, ring, entry]);
+    ring.value = withRepeat(
+      withTiming(1, { duration: 2200, easing: Easing.out(Easing.ease) }),
+      -1,
+      false,
+    );
+  }, [ring, entry]);
 
   // ── Barra de progreso ─────────────────────────────────────────────────────
   // `onLoadProgress` llega a saltos (y en Android a veces se queda en 0.1 un
   // rato), así que se anima hacia el valor recibido con un mínimo visible para
   // que la barra nunca parezca congelada del todo.
-  const bar = useRef(new Animated.Value(0.06)).current;
+  const bar = useSharedValue(0.06);
   useEffect(() => {
-    Animated.timing(bar, {
-      toValue: Math.max(0.06, Math.min(progress, 1)),
+    bar.value = withTiming(Math.max(0.06, Math.min(progress, 1)), {
       duration: 420,
-      easing: easings.standard,
-      useNativeDriver: true,
-    }).start();
+      easing: reaEasings.standard,
+    });
   }, [bar, progress]);
 
   // ── Shimmer del esqueleto ─────────────────────────────────────────────────
-  const shimmer = useRef(new Animated.Value(0)).current;
+  const shimmer = useSharedValue(0);
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.timing(shimmer, {
-        toValue: 1,
-        duration: 1400,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }),
+    shimmer.value = withRepeat(
+      withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      false,
     );
-    loop.start();
-    return () => loop.stop();
   }, [shimmer]);
 
-  const shimmerStyle = {
-    opacity: shimmer.interpolate({
-      inputRange: [0, 0.5, 1],
-      outputRange: [0.45, 1, 0.45],
-    }),
-  };
+  // El mismo estilo se aplica a varias piezas del esqueleto: comparten un solo
+  // shared value, así que laten a la vez.
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(shimmer.value, [0, 0.5, 1], [0.45, 1, 0.45]),
+  }));
+
+  const entryStyle = useAnimatedStyle(() => ({
+    opacity: entry.value,
+    transform: [{ translateY: interpolate(entry.value, [0, 1], [12, 0]) }],
+  }));
+
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(ring.value, [0, 0.15, 1], [0, 0.9, 0]),
+    transform: [{ scale: interpolate(ring.value, [0, 1], [0.85, 1.45]) }],
+  }));
+
+  const barStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: bar.value }],
+  }));
 
   const skeletonRow = (width: `${number}%`, height = 14) => (
     <Animated.View
@@ -209,55 +233,24 @@ export default function ComunicaLoader({
           { paddingTop: insetTop + spacing.xl, paddingBottom: insetBottom },
         ]}
       >
-        <Animated.View
-          style={{
-            opacity: entry,
-            transform: [
-              {
-                translateY: entry.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [12, 0],
-                }),
-              },
-            ],
-            alignItems: 'center',
-          }}
-        >
+        <Animated.View style={[styles.entry, entryStyle]}>
           {/* Marca: burbuja con la onda de audio del logo + anillo que respira */}
           <View style={styles.markWrapper}>
             <Animated.View
               style={[
                 styles.markRing,
-                {
-                  borderColor: palette.markRing,
-                  opacity: ring.interpolate({
-                    inputRange: [0, 0.15, 1],
-                    outputRange: [0, 0.9, 0],
-                  }),
-                  transform: [
-                    {
-                      scale: ring.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.85, 1.45],
-                      }),
-                    },
-                  ],
-                },
+                { borderColor: palette.markRing },
+                ringStyle,
               ]}
             />
             <View style={[styles.mark, { backgroundColor: palette.markBg }]}>
               <View style={styles.wave}>
                 {WAVE_BARS.map((b, i) => (
-                  <Animated.View
+                  <WaveBar
                     key={i}
-                    style={{
-                      width: 6,
-                      height: b.h,
-                      borderRadius: 3,
-                      backgroundColor:
-                        i % 2 === 0 ? palette.accent : palette.accentSoft,
-                      transform: [{ scaleY: bars[i] }],
-                    }}
+                    height={b.h}
+                    delay={b.delay}
+                    color={i % 2 === 0 ? palette.accent : palette.accentSoft}
                   />
                 ))}
               </View>
@@ -296,12 +289,10 @@ export default function ComunicaLoader({
               <Animated.View
                 style={[
                   styles.fill,
-                  {
-                    backgroundColor: palette.accent,
-                    // scaleX sobre el ancho completo: animable en el hilo
-                    // nativo (a diferencia de `width`, que va por JS).
-                    transform: [{ scaleX: bar }],
-                  },
+                  // scaleX sobre el ancho completo: animable en el hilo de UI
+                  // (a diferencia de `width`, que obliga a pasar por JS).
+                  { backgroundColor: palette.accent },
+                  barStyle,
                 ]}
               />
             </View>
@@ -346,6 +337,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     justifyContent: 'center',
     gap: spacing.xl,
+  },
+  entry: {
+    alignItems: 'center',
   },
   markWrapper: {
     width: 108,

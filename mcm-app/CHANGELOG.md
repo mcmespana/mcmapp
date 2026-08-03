@@ -18,6 +18,39 @@
 
 ---
 
+## 2026-08-03 03:20 — Migración a Reanimated (primer bloque): 6 componentes
+
+Primer tramo de la migración de animaciones de `Animated` de React Native a
+Reanimated. **Beneficio real**: Reanimated corre las animaciones en el hilo de
+UI, así que dejan de entrecortarse cuando JS está ocupado — que es justo lo que
+pasa en dos de los casos migrados (la portada de Comunica se ve MIENTRAS arranca
+el WebView, y el burst de celebración se lanza a la vez que se guarda el hábito).
+
+Migrados (81 avisos de `react-hooks/refs` menos, de 277 a 196):
+
+- `ComunicaLoader` (24) — onda del logo, anillo, barra de progreso y shimmer.
+- `CarismochitoChargeDots` (14)
+- `ComunicaTopProgress` (13)
+- `BreathingPhase` (10) — los tres anillos de la respiración de Revisión.
+- `CelebrationBurst` (10)
+- `CelebrationAnimation` (10) — **resultó ser una copia literal de
+  `CelebrationBurst`** (mismas 12 partículas, mismos colores, mismas duraciones
+  900/800 ms y la misma curva bezier). Ahora delega en él, así que la animación
+  vive en un solo sitio.
+
+Los arrays de `Animated.Value` (partículas del burst, barras de la onda) pasan a
+ser un subcomponente por elemento con su propio shared value, porque los hooks no
+se pueden llamar en un bucle de longitud variable.
+
+`constants/animations.ts` gana `reaEasings`: las mismas curvas que `easings` pero
+en la versión de Reanimated. Son dos módulos `Easing` distintos y **no son
+intercambiables** — el de react-native no puede ejecutarse dentro de un worklet.
+
+Queda pendiente el resto (`CarismochitoOverlay`, `BottomSheet`, `OTAUpdatePrompt`,
+`FloatingMediaPlayer`…), listado por tamaño en `TODO.md`.
+
+⚠️ **Sin validar en dispositivo**: son animaciones, y solo se comprueban mirándolas.
+
 ## 2026-08-03 02:40 — La barra de pestañas ya no sale cortada al salir del onboarding
 
 Al terminar el onboarding, la barra flotante aparecía con las etiquetas

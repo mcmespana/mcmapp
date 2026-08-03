@@ -78,18 +78,41 @@
                 `Animated.Value` del fundido. **Entra en la migración a Reanimated**
                 (abajo), que reescribe esa animación de todas formas.
 
-- [ ] **`react-hooks/refs` (276 avisos, 34 ficheros) → migrar animaciones a
-      Reanimated.** Es el 80% del ruido y viene de ~41 `useRef(new
-Animated.Value(0)).current` repartidos por 20 ficheros (cada valor genera
-      varios avisos, uno por cada lectura en render). **Beneficio real, no sólo
-      cosmético**: Reanimated corre las animaciones en el hilo de UI, así que no
-      se entrecortan cuando JS está ocupado (justo lo que pasa al abrir el
-      cantoral o cargar el calendario). Además destapa la optimización del
-      compilador en esos componentes. **Coste**: 20 ficheros de animaciones que
-      sólo se pueden validar mirando la app. Candidato perfecto a iteración
-      dedicada con dispositivo delante. Empezar por los gordos:
-      `CarismochitoOverlay` (31), `ComunicaLoader` (24), `BottomSheet` (23),
-      `OTAUpdatePrompt` (19), `FloatingMediaPlayer` (17).
+- [ ] **`react-hooks/refs` — quedan 196** (eran 277). Migración de animaciones a
+      Reanimated **EN CURSO**. Viene de los `useRef(new Animated.Value(0)).current`
+      repartidos por la app (cada valor genera varios avisos, uno por lectura en
+      render). **Beneficio real, no cosmético**: Reanimated corre las animaciones
+      en el hilo de UI, así que no se entrecortan cuando JS está ocupado.
+
+      - ✅ **Hechos (2026-08-03, 81 avisos)**: `ComunicaLoader` (24),
+                `CarismochitoChargeDots` (14), `ComunicaTopProgress` (13),
+                `BreathingPhase` (10), `CelebrationBurst` (10) y
+                `CelebrationAnimation` (10 — resultó ser una copia literal de
+                `CelebrationBurst`, así que ahora delega en él).
+              - **Pendientes, por tamaño**: `CarismochitoOverlay` (31),
+                `BottomSheet` (23), `OTAUpdatePrompt` (19), `FloatingMediaPlayer` (17),
+                `HorarioScreen` (11), `CarismochitoMascot` (11),
+                `SongFullscreenScreen` (10), `ReadingCalendarSheet` (8),
+                `AppToastContext` (8), `CarismochitoDialogs` (7),
+                `TransposeBottomSheet` (7), `HighlightActionBar` (7),
+                `ComunicaScreen` (6), `SongDetailScreen` (5) y 15 ficheros con 1-5.
+                **`WordleScreen` NO se toca** (código congelado).
+              - **Cómo se está haciendo** (seguir el mismo patrón): `useSharedValue` +
+                `useAnimatedStyle`, curvas desde `reaEasings` en
+                `constants/animations.ts` (son las MISMAS que `easings`, pero en la
+                versión worklet de Reanimated — no son intercambiables). Los arrays de
+                `Animated.Value` se convierten en un subcomponente por elemento con su
+                propio shared value, porque los hooks no se pueden llamar en un bucle.
+                `Animated.loop` → `withRepeat`, `Animated.sequence` → `withSequence`,
+                `Animated.delay` → `withDelay`, `Animated.spring({tension, friction})`
+                → `withSpring({stiffness, damping})`, e `interpolate()` dentro del
+                worklet en vez de `.interpolate()`.
+              - **Ojo**: cada fichero migrado cambia avisos de `refs` por 1-2 de
+                `immutability` (`sharedValue.value = …`), que son la API de Reanimated
+                y no tienen arreglo. Es el intercambio esperado: 81 `refs` menos ha
+                costado 1 `immutability` más.
+              - ⚠️ **Nada de esto está validado en dispositivo**: son animaciones, y
+                sólo se comprueban mirándolas.
 - [ ] **`react-hooks/preserve-manual-memoization` — quedan 5** (de 12). Los 7
       mecánicos ya están hechos (el patrón era: usar `user?.uid` dentro de un
       `useCallback` hace que el compilador infiera `user` entero y se salte el
