@@ -10,7 +10,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   Platform,
   KeyboardAvoidingView,
   useWindowDimensions,
@@ -23,6 +22,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
+import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import {
@@ -512,20 +512,22 @@ function GratefulStep({
           {items.map((g, i) => (
             <View key={i} style={styles.gratRow}>
               <Text style={[styles.gratStar, { color: W.accent }]}>✦</Text>
-              <TextInput
+              <AppTextField
                 value={g}
-                onChangeText={(v) => {
+                onChangeText={(v: string) => {
                   const next = [...items];
                   next[i] = v;
                   setItems(next);
                 }}
                 placeholder="Gracias, Jesús por..."
-                placeholderTextColor={W.textMuted}
+                accentWhenFilled
+                accentColor={purple + '55'}
+                // La paleta warm de Contigo manda: el `style` va después de los
+                // estilos del componente, así que fondo y color son los de aquí.
                 style={[
                   styles.input,
                   {
                     color: W.text,
-                    borderColor: g.trim() ? purple + '55' : W.border,
                     backgroundColor: isDark
                       ? 'rgba(255,255,255,0.04)'
                       : 'rgba(0,0,0,0.02)',
@@ -554,18 +556,17 @@ function GratefulStep({
           </TouchableOpacity>
         </View>
       ) : (
-        <TextInput
+        <AppTextField
           value={singleGrat}
           onChangeText={setSingleGrat}
           placeholder="Gracias, Jesús por..."
-          placeholderTextColor={W.textMuted}
+          accentColor={purple + '55'}
           multiline
           textAlignVertical="top"
           style={[
             styles.textarea,
             {
               color: W.text,
-              borderColor: W.border,
               backgroundColor: isDark
                 ? 'rgba(255,255,255,0.04)'
                 : 'rgba(0,0,0,0.02)',
@@ -597,18 +598,16 @@ function RevisarStep({
         Quizá te hayas equivocado en alguna cosa o no te hayas sentido demasiado
         bien. Escríbelo aquí y recupéralo en otro momento para revisarlo mejor
       </Text>
-      <TextInput
+      <AppTextField
         value={text}
         onChangeText={setText}
         placeholder="Tengo que revisarme..."
-        placeholderTextColor={W.textMuted}
         multiline
         textAlignVertical="top"
         style={[
           styles.textarea,
           {
             color: W.text,
-            borderColor: W.border,
             backgroundColor: isDark
               ? 'rgba(255,255,255,0.04)'
               : 'rgba(0,0,0,0.02)',

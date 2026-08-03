@@ -18,6 +18,31 @@
 
 ---
 
+## 2026-08-04 01:20 — UI Nativa Fase 2 cerrada
+
+**`SegmentedControl` (nuevo)** — era el último componente que faltaba del plan.
+La forma sale del conmutador Mes/Agenda del calendario, que era el que mejor
+estaba resuelto; ahora el calendario lo usa a él y se han borrado sus cinco
+estilos propios. Acepta `accentColor` para que Contigo y los eventos conserven
+su paleta. No usa el `Tabs` de heroui a propósito: aquí no se navega, se cambia
+una vista dentro de la misma pantalla, y `Tabs` arrastra gestión de foco y
+accesibilidad de navegación que aquí confunde a los lectores de pantalla.
+
+**`AppTextField`** — migrados los tres campos de Revisión (Contigo). El `style`
+del componente se aplica al final, así que la paleta warm se conserva tal cual.
+
+**`AppPrimaryButton`** — el CTA de `ArrangementInputModal`.
+
+**Los dos `TextInput` que quedan NO se migran, y es a propósito**: los buscadores
+(`SongListScreen`, `grupos/SearchBar`) son otro patrón —icono dentro, botón de
+limpiar— y meterlos en `AppTextField` los empeoraría; y el de `CodeInputModal`
+es un input INVISIBLE detrás de las celdas del código, no un campo de
+formulario.
+
+**Pie de "Más" extraído** a `components/mas/MasFooter.tsx`: al añadirle los
+enlaces legales, la pantalla se pasó del límite de 400 líneas del propio ESLint
+del repo. Ahora son 388 y el pie no vive mezclado con la rejilla de tarjetas.
+
 ## 2026-08-04 00:30 — Versión 2.1.0 · fuera las barras opacas fijas
 
 **Versión 2.1.0** (`app.json`: `version` y `runtimeVersion`). El bump de

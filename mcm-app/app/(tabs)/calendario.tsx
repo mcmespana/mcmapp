@@ -23,6 +23,7 @@ import { radii } from '@/constants/uiStyles';
 import Animated from 'react-native-reanimated';
 import type { SectionListProps } from 'react-native';
 import { useTabScroll, useTabListScroll } from '@/components/tabs/useTabScroll';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -491,52 +492,15 @@ export function CalendarScreen() {
             layout.isWide && styles.switcherWrapperWide,
           ]}
         >
-          <View style={styles.segmentedControl}>
-            <TouchableOpacity
-              style={[
-                styles.segmentBtn,
-                viewMode === 'calendar' && styles.segmentBtnActive,
-              ]}
-              onPress={() => setViewMode('calendar')}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="calendar-month"
-                size={16}
-                color={viewMode === 'calendar' ? '#fff' : '#8E8E93'}
-              />
-              <Text
-                style={[
-                  styles.segmentLabel,
-                  viewMode === 'calendar' && styles.segmentLabelActive,
-                ]}
-              >
-                Mes
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.segmentBtn,
-                viewMode === 'agenda' && styles.segmentBtnActive,
-              ]}
-              onPress={() => setViewMode('agenda')}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="view-agenda"
-                size={16}
-                color={viewMode === 'agenda' ? '#fff' : '#8E8E93'}
-              />
-              <Text
-                style={[
-                  styles.segmentLabel,
-                  viewMode === 'agenda' && styles.segmentLabelActive,
-                ]}
-              >
-                Agenda
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <SegmentedControl
+            value={viewMode}
+            onChange={setViewMode}
+            accessibilityLabel="Vista del calendario"
+            options={[
+              { value: 'calendar', label: 'Mes', icon: 'calendar-month' },
+              { value: 'agenda', label: 'Agenda', icon: 'view-agenda' },
+            ]}
+          />
         </View>
 
         {viewMode === 'calendar' ? (
@@ -891,33 +855,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
       justifyContent: 'center',
       alignItems: 'center',
-    },
-    segmentedControl: {
-      flex: 1,
-      flexDirection: 'row',
-      backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
-      borderRadius: 10,
-      padding: 2,
-    },
-    segmentBtn: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      paddingVertical: 8,
-      borderRadius: 8,
-    },
-    segmentBtnActive: {
-      backgroundColor: colors.info,
-    },
-    segmentLabel: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#8E8E93',
-    },
-    segmentLabelActive: {
-      color: '#fff',
     },
 
     // Calendar

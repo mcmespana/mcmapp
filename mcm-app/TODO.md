@@ -138,10 +138,12 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       hoy usan el "floating header" opaco (`eventScreenOptions` con
       `FloatingHeaderBackground`). Unificar al glass del sistema — cambio mayor,
       revisar el inset de cada hero. (`app/screens/eventStackScreens.tsx`)
-- [ ] **Seguir Fase 2 (componentes unificados)**: migrar más `TextInput` a
-      `AppTextField` (quedan ~13); crear `AppPrimaryButton` (CTA de modales) y
-      `SegmentedControl`; adoptar `EmptyState` en los ~20 sitios que reinventan
-      el "no hay…". Ver §2 de `PLAN_UI_NATIVA.md`.
+- [x] **Fase 2 (componentes unificados) — CERRADA (2026-08-03)**:
+      `SegmentedControl` creado y adoptado en el calendario, `AppTextField` en
+      Revisión, `AppPrimaryButton` en `ArrangementInputModal`. Los dos
+      `TextInput` que quedan son buscadores y un input oculto de código: no
+      encajan en `AppTextField` y se dejan a propósito. `EmptyState` ya está en
+      9 pantallas.
 
 ## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
 
