@@ -18,19 +18,16 @@
 > la rama de la barra de tabs no se mergea hasta validarla, y hay cosas que
 > sólo se pueden hacer con la build nativa delante.
 
-### 1. Validar y publicar la rama de la barra de tabs
+### 1. Sacar la build de tienda de agosto
 
-- [ ] **Validar `claude/compact-tabs-bar-uxxaoz` en dev build** — es lo que
-      desbloquea todo lo demás. Lleva Expo SDK 57, la barra flotante, la
-      actualización de dependencias, iPad landscape y el subrayado nuevo.
-- [ ] **Igualar `production` a esta rama** — es todo código NATIVO: hace falta
-      **build de tienda**, no vale OTA. Orden: validar dev build → merge a
-      `main` → build de producción iOS + Android → subir a las tiendas → mover
-      `production`.
-- [ ] **iPad: verificar en dispositivo real** en horizontal y vertical todas las
-      pantallas y modales/bottom sheets. El landscape ya está activado
-      (`UISupportedInterfaceOrientations~ipad`), pero la pasada de layouts nunca
-      se ha probado en un iPad físico. Posibles ajustes finos tras la prueba.
+- [ ] **Todo el paso a paso está en `docs/desarrollo/BUILD_AGOSTO_2026.md`** —
+      qué variables configurar y dónde, el checklist de pruebas completo y el
+      orden de publicación. No se duplica aquí para que no haya dos listas que
+      se contradigan.
+
+Es lo que desbloquea el resto: la rama `claude/compact-tabs-bar-uxxaoz` lleva
+SDK 57, barra flotante, Reanimated 4, NSE de iOS, Sentry, analítica, icono de
+Carismochito y subrayado nativo. Todo NATIVO, nada sale por OTA.
 
 ### 2. React Compiler — lo que SÍ merece la pena
 
@@ -43,71 +40,38 @@
       arreglados el 2026-08-02 con dos patrones, ninguno de ellos `key={visible}`:
 
       - **Estado DERIVADO** donde el efecto solo copiaba algo calculable:
-                `useAdminStatus`, `useEventMeta` y `ChoirSessionContext` guardan ahora el
-                resultado JUNTO a la clave a la que pertenece (uid / eventId / código),
-                así lo viejo deja de contar solo; `SongListScreen` construye la lista con
-                una función pura + `useMemo` (el efecto era `async` sin esperar a nada);
-                `fotos.tsx` y `AlbumListScreen` comparten `hooks/useAlbumPagination.ts`;
-                `useColorScheme.web.ts` usa `useSyncExternalStore` para el flag de
-                hidratación.
-              - **Ajuste durante el render** (el patrón que documenta React para «cambiar
-                estado cuando cambia una prop») en los modales que se resetean al abrir y
-                en las pantallas que reaccionan a un parámetro de navegación. Es
-                equivalente al efecto pero sin el render intermedio con los datos
-                anteriores, y **no cambia el comportamiento** (a diferencia de
-                `key={visible}`, que además habría matado la animación de salida del
-                `BottomSheet`).
+                    `useAdminStatus`, `useEventMeta` y `ChoirSessionContext` guardan ahora el
+                    resultado JUNTO a la clave a la que pertenece (uid / eventId / código),
+                    así lo viejo deja de contar solo; `SongListScreen` construye la lista con
+                    una función pura + `useMemo` (el efecto era `async` sin esperar a nada);
+                    `fotos.tsx` y `AlbumListScreen` comparten `hooks/useAlbumPagination.ts`;
+                    `useColorScheme.web.ts` usa `useSyncExternalStore` para el flag de
+                    hidratación.
+                  - **Ajuste durante el render** (el patrón que documenta React para «cambiar
+                    estado cuando cambia una prop») en los modales que se resetean al abrir y
+                    en las pantallas que reaccionan a un parámetro de navegación. Es
+                    equivalente al efecto pero sin el render intermedio con los datos
+                    anteriores, y **no cambia el comportamiento** (a diferencia de
+                    `key={visible}`, que además habría matado la animación de salida del
+                    `BottomSheet`).
 
-      Los **6 que quedan NO son deuda pendiente, son decisiones**; no vayas a por el
-      número:
+          Los **6 que quedan NO son deuda pendiente, son decisiones**; no vayas a por el
+          número:
 
-      - `WordleScreen` (×2) y `useWordleGame` — **código congelado**, CLAUDE.md
-                prohíbe refactorizarlo.
-              - `notifications.tsx:568` — auto-abrir por deep-link. Es una ACCIÓN
-                disparada por la navegación, no estado que derivar: un efecto es
-                justamente la herramienta correcta.
-              - `AddToHomeBanner:30` — lee `window`/`localStorage`, que solo existen en
-                cliente. Moverlo al render rompería la hidratación del render estático de
-                web.
-              - `useSongProcessor:523` — el efecto entero es síncrono y se podría pasar a
-                `useMemo`, pero eso mete ~500 líneas de formateo ChordPro→HTML DENTRO del
-                render en la pantalla más usada de la app. Hoy la pantalla pinta primero y
-                formatea después; cambiarlo es una decisión de rendimiento **que hay que
-                medir en dispositivo**.
-              - ~~`ComunicaScreen`~~ — hecho al migrarlo a Reanimated.
-
-- [x] ~~`react-hooks/refs`~~ — **migración a Reanimated TERMINADA** (2026-08-03).
-      De 277 avisos a **34**, y los 34 que quedan **no son animaciones**: son
-      refs legítimas (`.panHandlers`, `.current` de timers, callbacks estables,
-      el ref del WebView…). Ya no queda ni un `useRef(new Animated.Value())` en
-      la app salvo el Wordle, que es código congelado.
-
-      **Lo que se ganó**: Reanimated corre las animaciones en el hilo de UI, así
-      que dejan de entrecortarse cuando JS está ocupado. Se nota especialmente en
-      la portada de Comunica (se ve MIENTRAS arranca el WebView), el burst de
-      celebración (se lanza a la vez que se guarda el hábito) y el arrastre del
-      reproductor flotante (con un vídeo reproduciéndose al lado).
-
-      **Recetario, por si hay que migrar algo nuevo**: `useSharedValue` +
-      `useAnimatedStyle`; curvas desde `reaEasings` (`constants/animations.ts`),
-      que son las MISMAS que `easings` pero en la versión worklet — no son
-      intercambiables. `Animated.loop` → `withRepeat`, `Animated.sequence` →
-      `withSequence`, `Animated.delay` → `withDelay`,
-      `Animated.spring({tension, friction})` → `withSpring({stiffness, damping})`,
-      `.interpolate()` → `interpolate()` dentro del worklet, y las props de SVG
-      por `useAnimatedProps` (no por estilo). Un array de `Animated.Value` se
-      convierte en un subcomponente por elemento con su propio shared value,
-      porque los hooks no se pueden llamar en un bucle. **Los bucles infinitos
-      hay que pararlos a mano** con `cancelAnimation`: siguen corriendo en el
-      hilo de UI aunque el componente esté oculto.
-
-      **Decisión consciente**: el gesto de `BottomSheet` se queda en
-      `PanResponder`. Ese sheet lo comparten una decena de modales y muchos
-      llevan un ScrollView dentro; pasarlo a gesture-handler cambiaría cómo
-      compiten los dos por el toque. Sus animaciones sí están migradas.
-
-      ⚠️ **NADA de esto está validado en dispositivo**: son animaciones, y solo
-      se comprueban mirándolas. Es lo primero que hay que repasar en la build.
+          - `WordleScreen` (×2) y `useWordleGame` — **código congelado**, CLAUDE.md
+                    prohíbe refactorizarlo.
+                  - `notifications.tsx:568` — auto-abrir por deep-link. Es una ACCIÓN
+                    disparada por la navegación, no estado que derivar: un efecto es
+                    justamente la herramienta correcta.
+                  - `AddToHomeBanner:30` — lee `window`/`localStorage`, que solo existen en
+                    cliente. Moverlo al render rompería la hidratación del render estático de
+                    web.
+                  - `useSongProcessor:523` — el efecto entero es síncrono y se podría pasar a
+                    `useMemo`, pero eso mete ~500 líneas de formateo ChordPro→HTML DENTRO del
+                    render en la pantalla más usada de la app. Hoy la pantalla pinta primero y
+                    formatea después; cambiarlo es una decisión de rendimiento **que hay que
+                    medir en dispositivo**.
+                  - ~~`ComunicaScreen`~~ — hecho al migrarlo a Reanimated.
 
 - [ ] **`react-hooks/preserve-manual-memoization` — quedan 5** (de 12). Los 7
       mecánicos ya están hechos (el patrón era: usar `user?.uid` dentro de un
@@ -134,32 +98,14 @@
 
 ### 3. Headers que se esconden al hacer scroll
 
-- [x] ~~Fotos~~ — hecho: el título va en un `ScreenHero` dentro de la lista y se
-      va con el scroll.
-- [x] ~~Comunica en Android~~ — hecho (2026-08-02): la franja del notch es ya un
-      overlay y la web se desliza por debajo, igual que en iOS. Como el WebView
-      de Android no admite `contentInset`, el hueco (arriba **y abajo**, que
-      tampoco estaba: la barra flotante tapaba el final de la página) lo reserva
-      la propia página con el `padding` que le inyecta `safeAreaBridgeJS`.
-      **Pendiente sólo de validar en un Android real**, y de decidir con el lado
-      web si prefieren el opt-out (`data-mcm-insets="self"`) para no perder su
-      propio `padding` de `<body>`. Contrato actualizado en
-      `docs/contratos/COMUNICA_WEBVIEW.md` §3.
 - [ ] **Calendario**: es el otro tab que sigue con header opaco
-      (`headerShown: true`). Si se quiere el mismo trato que Fotos, mismo
-      patrón: `ScreenHero` dentro del scroller y `headerShown: false`. No se ha
-      hecho porque nadie lo ha pedido y el calendario tiene sus propios
-      controles pegados arriba (selector de mes, chips de filtro) que habría que
-      recolocar.
+      (`headerShown: true`). Mismo patrón que Fotos: `ScreenHero` dentro del
+      scroller y `headerShown: false`. **Requiere el móvil delante**: hay que
+      recolocar el selector de mes y los chips de filtro, que hoy van pegados
+      arriba, y eso a ciegas se rompe. No hacerlo justo antes de una build.
 
-### 4. Subrayado — siguiente iteración
+### 4. Varios de prioridad alta
 
-- [x] **"Subrayar" dentro del menú NATIVO del sistema** (2026-08-03) — módulo
-      local `modules/highlight-menu/`. Queda **probarlo en dispositivo**: que el
-      menú de iOS conserve Copiar/Traducir/Buscar/Herramientas de escritura con
-      el proxy del delegate puesto, que `onSelectionChange` siga llegando en modo
-      lápiz, y que en Android salga tanto leyendo como subrayando. Checklist en
-      `docs/desarrollo/BUILD_AGOSTO_2026.md` §5.
 - [ ] **Revisar las 4 dependencias que se quedaron atrás** (2026-08-01). No se
       subieron por incompatibilidad REAL comprobada, no por prudencia — hay que
       esperar a que el ecosistema se mueva. Ninguna afecta al binario que
@@ -205,14 +151,6 @@
 - [ ] **Colección + contador** al tocar la mascota (animación especial); guardado
       por usuario y **solo con sesión iniciada** (si no, avisar de pérdida de
       progreso).
-- [x] **Icono de la app en verde/Carismochito** (2026-08-03) — hecho con
-      `expo-alternate-app-icons`; iconos generados con `npm run icons:alt` y swap
-      en `utils/appIcon.ts`. Queda **probarlo en dispositivo** con la build de
-      tienda: en iOS sale una alerta del sistema en cada cambio real (de Apple, no
-      se puede quitar) y en Android el launcher puede tardar en refrescar.
-
-## Widget de Contigo (ver `docs/planes/PLAN_WIDGET_CONTIGO.md`)
-
 - [ ] **Widget de los 3 hábitos diarios** (Evangelio/Oración/Revisión) con marca,
       deep-link y recordatorio (notificación local / Carismochito). ⚠️ NATIVO
       (WidgetKit iOS / App Widget Android) → build de tienda + App Group para
@@ -225,18 +163,6 @@
 > Estas mejoras requieren build nativo o trabajo nuevo y por eso quedaron fuera
 > de la entrega OTA de 2026-06-02.
 
-- [x] **NSE iOS para imágenes en la notificación del sistema** (2026-08-03) —
-      `plugins/withNotificationServiceExtension.js` crea el target de Xcode en cada
-      prebuild; el Swift está en `targets/notification-service/`. Queda **probarlo
-      en un iPhone real** con la build de tienda y que el Panel empiece a mandar
-      `mutableContent: true` en los pushes con imagen (sin ese flag iOS no ejecuta
-      la extensión). Ver `docs/desarrollo/BUILD_AGOSTO_2026.md` §5.
-- [x] **Deep link a un evento/actividad concreto** (2026-07-07) — el panel manda
-      `data.eventId` (id del registry) y la app abre el hub del evento
-      (`utils/notificationEventRoute.ts`: `/(tabs)/<tabId>` o `/(tabs)/mas`).
-      Prioritario sobre `internalRoute`; botón "Ir al evento" en el modal. El
-      evento debe existir en `constants/events.ts` (ligado a consumir
-      `activities/<id>/_meta`, aún pendiente).
 - [ ] **Channels Android — probar en dispositivo real antes de production** ⚠️ los
       canales YA están implementados (2026-08-03): siete, uno por categoría del Panel,
       en `constants/notificationChannels.ts` + `notifications/androidChannels.ts`.
@@ -249,10 +175,6 @@
       `default` como hasta ahora, y con un `channelId` que la app no declare Android
       **no entrega** la notificación. Tabla cerrada en
       `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8.
-- [x] **Usar `data.category` en el centro de notificaciones (A4.1)** (2026-07-07) —
-      chip de color con icono por categoría en la tarjeta y el modal
-      (`utils/notificationCategory.ts`). `general`/ausente/desconocida no pintan chip.
-      Pendiente aún (opcional): agrupación/filtro por categoría.
 - [ ] **(Panel) Corregir el contrato** — que el MCM Panel use las rutas reales,
       segmente por `topics`/`profileType`/`delegationId` (no `userType`/`delegacion`) y
       desacople `categoryId` (solo iOS) de `data.category`. Detalle en
@@ -269,22 +191,22 @@
       cada render) lo habría cazado un render test.
 
       Por dónde empezar, en orden de rentabilidad:
-                          1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-                             Más): que monten sin reventar con datos vacíos, con datos y offline.
-                          2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
-                             hook con sus contextos).
-                          3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
-                             releer del bookmark.
-                          4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
+                              1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+                                 Más): que monten sin reventar con datos vacíos, con datos y offline.
+                              2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+                                 hook con sus contextos).
+                              3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+                                 releer del bookmark.
+                              4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-                          Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
-                          lee la suite entera para tocar código: lee los tests del área que toca. Lo
-                          que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-                          de en una build de 20 minutos— y evita iteraciones enteras como la del
-                          tamaño de los iconos. El coste real de una suite grande es de
-                          MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
-                          detalles internos) que hay que reescribir en cada refactor. Por eso la
-                          lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
+                              Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+                              lee la suite entera para tocar código: lee los tests del área que toca. Lo
+                              que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+                              de en una build de 20 minutos— y evita iteraciones enteras como la del
+                              tamaño de los iconos. El coste real de una suite grande es de
+                              MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+                              detalles internos) que hay que reescribir en cada refactor. Por eso la
+                              lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales, y (jun-2026) Fotos (`AlbumListScreen`/`AlbumCard`), Materiales, Comida, MasHome y `EventItem`. Horario es de solo lectura (sin interactivos). Pendiente: validar en dispositivo con VoiceOver/TalkBack y revisar pantallas/flujos secundarios.
 
@@ -333,29 +255,15 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 
 ---
 
-## Calidad de código y mantenibilidad
-
-- [ ] **Trocear ficheros enormes**: `SelectedSongsScreen.tsx` (1.750 líneas), `NotificationsBottomSheet.tsx` (908), `WordleScreen.tsx` (776), `SecretPanelModal.tsx` (660). Extraer subcomponentes, hooks y utilidades. Ver MEJORAS.md §2.1 y el plan por fases en `docs/planes/PLAN_CALIDAD.md`.
-- [ ] **Agrupar providers afines** en `app/_layout.tsx` (12 anidados). Por ejemplo, combinar `UserProfile` + `ProfileConfig`. Ver MEJORAS.md §2.2.
-
----
-
 ## Seguridad y observabilidad
 
 - [ ] **Firebase App Check** (DeviceCheck/Play Integrity) para evitar abuso de las API keys públicas (`EXPO_PUBLIC_*`). Ver MEJORAS.md §7.2.
-- [x] **Crash reporting con Sentry** (2026-08-03) — `utils/sentry.ts` engancha
-      `logger.warn/error` (y por tanto el `ErrorBoundary`) más los crashes nativos.
-      Queda **crear el proyecto en Sentry y configurar las variables**: paso a paso
-      en `docs/desarrollo/BUILD_AGOSTO_2026.md` §2. Sin `EXPO_PUBLIC_SENTRY_DSN` no
-      reporta nada, así que hasta que se configure está apagado.
-- [x] **Analítica de uso** (2026-08-03) — Aptabase (`utils/analytics.ts` +
-      catálogo tipado en `constants/analyticsEvents.ts`). Queda **crear la app en
-      eu.aptabase.com y poner `EXPO_PUBLIC_APTABASE_KEY`**: paso a paso en
-      `docs/desarrollo/BUILD_AGOSTO_2026.md` §2.4. Sin la clave no se manda nada.
-      Y antes de publicar: **actualizar la política de privacidad**, la ficha de
-      privacidad de App Store y el formulario de Data Safety de Play (ver el item
-      de política de privacidad más abajo).
-- [ ] **Política de privacidad / consentimiento** — revisar si está pendiente para stores europeas / notificaciones push. Ver MEJORAS.md §7.4.
+- [ ] **Fichas de privacidad de las tiendas** ⚠️ **bloquea publicar**: con la
+      analítica encendida hay que declarar "datos de uso" en App Store y en el
+      Data Safety de Play, y decirlo en la política de privacidad. Detalle y
+      salida (no poner la clave de Aptabase) en
+      `docs/desarrollo/BUILD_AGOSTO_2026.md` §6. Los tres enlaces legales ya
+      están dentro de la app (`constants/legalLinks.ts` → pie de "Más").
 
 ---
 

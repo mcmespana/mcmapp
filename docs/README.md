@@ -30,8 +30,8 @@ Si cambias uno de estos formatos, actualiza el contrato.
 ## Planes técnicos
 
 > ★ **Empieza por [`BACKLOG.md`](planes/BACKLOG.md)** — es la fuente única de
-> verdad del orden de ejecución de TODOS los planes (tácticos de `plans/` +
-> estratégicos de aquí abajo), qué está bloqueado por una decisión pendiente,
+> verdad del orden de ejecución de todos los planes, qué está bloqueado por
+> una decisión pendiente,
 > y el protocolo de trabajo ("seguimos", "me sobran tokens"). Consúltalo
 > antes de priorizar nada.
 
@@ -44,7 +44,7 @@ Si cambias uno de estos formatos, actualiza el contrato.
 | [PLAN_CARISMOCHITO.md](planes/PLAN_CARISMOCHITO.md) | Modo Carismochito: onboarding, colección, comportamiento |
 | [PLAN_WIDGET_CONTIGO.md](planes/PLAN_WIDGET_CONTIGO.md) | Widget nativo de hábitos diarios de Contigo |
 | [PLAN_PANEL_PANUELO.md](planes/PLAN_PANEL_PANUELO.md) | Concepto nuevo (sin plan funcional aún): colección de chapas en un pañuelo 3D |
-| [`plans/`](../plans/README.md) | Planes tácticos numerados (001–008), ejecutables paso a paso |
+| [`planes/archivo/tacticos/`](planes/archivo/tacticos/README.md) | Planes tácticos 001–008 — **todos cerrados**, archivados |
 | [archivo/MEJORAS.md](planes/archivo/MEJORAS.md) | 🗄️ Archivado — análisis técnico de mayo 2026, superseded por lo de arriba |
 
 Las tareas accionables derivadas de estos planes están en

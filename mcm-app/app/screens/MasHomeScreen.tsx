@@ -5,6 +5,7 @@ import {
   Text,
   Platform,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +18,7 @@ import type { ComponentProps } from 'react';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 import { VersionDisplay } from '@/components/VersionDisplay';
+import { LEGAL_LINKS } from '@/constants/legalLinks';
 import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { MasStackParamList } from '../(tabs)/mas';
@@ -321,6 +323,41 @@ export default function MasHomeScreen() {
                 ¿Algún fallo? Cuéntanoslo
               </Text>
             </TouchableOpacity>
+            {/* Enlaces legales. Apple y Google exigen que la política de
+                privacidad se pueda abrir DESDE DENTRO de la app, no solo desde
+                la ficha de la tienda. */}
+            <View style={styles.legalRow}>
+              {LEGAL_LINKS.map((link, index) => (
+                <React.Fragment key={link.id}>
+                  {index > 0 ? (
+                    <Text
+                      style={[
+                        styles.legalSeparator,
+                        { color: isDark ? '#5A5A5F' : '#B0B0B8' },
+                      ]}
+                    >
+                      ·
+                    </Text>
+                  ) : null}
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL(link.url)}
+                    accessibilityRole="link"
+                    accessibilityLabel={link.label}
+                    hitSlop={8}
+                  >
+                    <Text
+                      style={[
+                        styles.legalText,
+                        { color: isDark ? '#8E8E93' : '#6B7280' },
+                      ]}
+                    >
+                      {link.label}
+                    </Text>
+                  </TouchableOpacity>
+                </React.Fragment>
+              ))}
+            </View>
+
             <SecretMenuTrigger>
               <Text
                 style={[
@@ -416,6 +453,22 @@ const styles = StyleSheet.create({
   feedbackLink: {
     padding: spacing.sm,
     marginTop: 4,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  legalText: {
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 12,
   },
   feedbackText: {
     fontSize: 12,

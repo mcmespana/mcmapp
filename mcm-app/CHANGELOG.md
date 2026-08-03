@@ -18,6 +18,24 @@
 
 ---
 
+## 2026-08-03 23:15 — Enlaces legales en "Más" y limpieza de documentación
+
+**Enlaces legales.** Política de privacidad, términos y condiciones y aviso
+legal en el pie de "Más", con las URLs centralizadas en
+`constants/legalLinks.ts`. No era solo la tarea pendiente del backlog: Apple y
+Google **exigen** que la política de privacidad se pueda abrir desde dentro de
+la app, no solo desde la ficha de la tienda.
+
+**Limpieza de documentación.** La carpeta `plans/` de la raíz (1.700 líneas, 8
+planes tácticos, todos DONE o REJECTED) ocupaba un sitio de entrada del repo
+como si fuera trabajo pendiente. Archivada en
+`docs/planes/archivo/tacticos/`. El puntero de `BACKLOG.md` estaba desfasado
+(decía "ahora mismo: UI Nativa" cuando todo gira alrededor de la build) y se ha
+reescrito. En `TODO.md` se ha quitado la sección que duplicaba la Fase 1 de
+`PLAN_CALIDAD.md` —con cifras que además se contradecían entre los dos
+documentos— y las tareas ya terminadas, que es lo que el propio TODO pide en su
+cabecera y llevaba tiempo sin cumplirse.
+
 ## 2026-08-03 21:30 — Analítica con Aptabase y "Subrayar" en el menú nativo
 
 **Aptabase** (`@aptabase/react-native`). Se eligió por lo que NO guarda: ningún

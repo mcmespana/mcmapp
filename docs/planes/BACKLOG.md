@@ -2,38 +2,42 @@
 
 > **Qué es esto:** el único sitio donde se decide **qué se hace ahora, qué es
 > lo siguiente, y qué está bloqueado por una decisión tuya**. Antes de este
-> documento la información vivía repartida entre `plans/README.md`,
-> `docs/planes/*.md` y conversaciones sueltas — este archivo la sustituye
-> como punto de entrada. Los documentos técnicos de detalle (`plans/00X-*.md`,
-> `docs/planes/PLAN_*.md`) siguen siendo la referencia profunda de CADA ítem;
+> documento la información vivía repartida entre varios sitios y
+> conversaciones sueltas — este archivo la sustituye
+> como punto de entrada. Los documentos técnicos de detalle (`docs/planes/PLAN_*.md`) siguen siendo la referencia profunda de cada ítem;
 > este documento solo dice **el orden y quién decide qué**.
 >
 > **Regla para cualquier agente/conversación que retome este trabajo:** lee
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
-> cero ni mires solo `plans/README.md` o un `docs/planes/PLAN_*.md` suelto.
+> cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-08-01.
+> Última actualización: 2026-08-03.
 
 ---
 
 ## 🧭 Puntero rápido
 
-> **Si el usuario dice "seguimos": el siguiente ítem no empezado de la Cola
-> Principal (abajo) es el que toca.** Ahora mismo eso es **UI Nativa** — y ojo:
-> tiene 🔒 3 decisiones de producto que bloquean partes (ver §4), así que
-> antes de ejecutar hay que preguntar.
+> **Todo gira ahora mismo alrededor de la build de tienda de agosto.** La rama
+> `claude/compact-tabs-bar-uxxaoz` lleva SDK 57, la barra flotante, Reanimated 4,
+> NSE de iOS, Sentry, analítica, icono de Carismochito y el subrayado nativo.
+> Nada de eso puede salir por OTA.
 >
-> Actualiza esta caja cada vez que se cierra un ítem — es lo primero que
-> lee cualquiera que retome esto.
+> **Si el usuario dice "seguimos"**: lo que toca es sacar la build adelante —
+> paso a paso completo en `docs/desarrollo/BUILD_AGOSTO_2026.md`. La Cola
+> Principal (§1) se reanuda cuando la build esté publicada.
 
-|                                         |                                                                                                                                                                                                                                                                                                                                                                                    |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Ahora mismo (en curso / siguiente)**  | UI Nativa — **Fase 2** (componentes), ~65-70% hecho; queda `SegmentedControl`, chips/pills, tokens, y los formularios de Contigo + `SecretPanelModal` (pendientes de verificación en dispositivo / grandes)                                                                                                                                                                        |
-| **Después**                             | Integración D 🔒 → Widget de Contigo 🔒 → Carismochito + Panel Pañuelo                                                                                                                                                                                                                                                                                                             |
-| **Bloqueado, no tocar sin preguntar**   | Integración D, Widget de Contigo, Panel Pañuelo                                                                                                                                                                                                                                                                                                                                    |
-| **Oportunista (solo si piden hueco)**   | Calidad Fase 1, Integraciones resto, bolsa nativa                                                                                                                                                                                                                                                                                                                                  |
-| **Pendiente de dev build (no mergear)** | `claude/compact-tabs-bar-uxxaoz` — Expo SDK 57 + barra de pestañas flotante compacta. Código nativo: hay que validarlo en dispositivo antes de mergear. Al validarlo se desbloquea la actualización de dependencias de terceros (ver `mcm-app/TODO.md`) para meterlo todo en la misma release de tienda                                                                            |
-| **Hecho**                               | ✅ Plan 004, ✅ Plan 005 + resumen visible, ✅ Plan 008 (en `main`, pendiente de validar en dispositivo antes de producción), ✅ PR #298 (fix modo alpha), ✅ UI Nativa Fase 1 + Fase 2 parcial (PRs #301-#304, `AppTextField`/`AppPrimaryButton`/`EmptyState` — #301-#303 ya en producción vía cherry-pick, #304 solo en `main`) — ver `mcm-app/CHANGELOG.md` y `plans/README.md` |
+|  |  |
+| --- | --- |
+| **Ahora mismo** | **Build de tienda de agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6) |
+| **Bloqueado por ti** | Widget de Contigo (¿se compromete?) · Firebase App Check (¿compensa el riesgo?) · Integración D2 (modelo de auth del panel) · Panel Pañuelo (falta plan funcional) |
+| **Bloqueado fuera** | Que el Panel mande `channelId` y `mutableContent` · política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) |
+| **Después de la build** | UI Nativa Fase 2 (lo que queda) → Integración D → Widget → Carismochito + Panel Pañuelo |
+| **Oportunista** | Calidad Fase 1 (gigantes), Integraciones resto |
+| **Cerrado** | Los 8 planes tácticos (archivados en `archivo/tacticos/`), UI Nativa Fase 1, PR #298 |
+
+> **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
+> mueve hasta que las tiendas tengan el binario nuevo, o la gente recibe un
+> bundle que su app no puede ejecutar.
 
 ---
 
@@ -43,12 +47,10 @@
    Principal (§1). Si tiene 🔒 (bloqueado por decisión), **para y pregunta**
    usando la pregunta exacta de la tabla de §4 — no lo ejecutes a ciegas, no
    inventes la decisión. Si no tiene 🔒, ejecútalo siguiendo su documento
-   técnico (`plans/00X-*.md` tiene pasos/STOP conditions/done criteria
-   literales; `docs/planes/PLAN_*.md` es más abierto, usa criterio).
+   técnico (`docs/planes/PLAN_*.md`).
 2. **Al terminar un ítem**: actualiza (a) el puntero rápido de arriba, (b) la
    fila de la Cola Principal (§1), y (c) el estado en el documento de origen
-   (`plans/README.md` para tácticos, la cabecera del `PLAN_*.md` para
-   estratégicos). Si hubo cambio de código real, entrada nueva en
+   (la cabecera del `PLAN_*.md` correspondiente). Si hubo cambio de código real, entrada nueva en
    `mcm-app/CHANGELOG.md` (fecha+hora, arriba del todo — regla del CLAUDE.md
    raíz).
 3. **"Me sobran tokens [esta semana], ¿por dónde seguimos?"** (o cualquier
@@ -72,9 +74,9 @@
 
 | #   | Ítem                                                                                    | Modelo                                       | 🔒 Decisión                                                             | Estado                                                                                                                                                                                                                                                                                  | Documento técnico                                                        |
 | --- | --------------------------------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| 1   | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers`  | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `plans/004-contigo-sync-bidireccional.md`                                |
-| 2   | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `plans/005-scraper-fiabilidad-y-ci.md`                                   |
-| 3   | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate   | **Opus**                                     | No                                                                      | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `plans/008-cache-compartida-firebase-calendario.md`                      |
+| 1   | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers`  | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/004-…`                                |
+| 2   | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/005-…`                                   |
+| 3   | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate   | **Opus**                                     | No                                                                      | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `archivo/tacticos/008-…`                      |
 | 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70% (`AppTextField`/`EmptyState` mayormente hechos, `AppPrimaryButton` parcial, `SegmentedControl`/chips/tokens sin empezar)                                                                                                                        | `docs/planes/PLAN_UI_NATIVA.md`                                          |
 | 5   | **Integración D** — Seguridad Firebase                                                  | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                  | ⏳ Pendiente, importante pero no urgente                                                                                                                                                                                                                                                | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                     |
 | 6   | **Widget de Contigo**                                                                   | Opus                                         | **Sí** — ¿release de tienda ya? (ver §4)                                | ⏳ Al final                                                                                                                                                                                                                                                                             | `docs/planes/PLAN_WIDGET_CONTIGO.md`                                     |
@@ -180,15 +182,13 @@
   archivado) y usar `i18n-js` + `expo-localization` desde el principio (el
   coste de extraer strings después es ~10× mayor).
 
-### E. Tarea pequeña — enlaces legales en "Más"
+### E. ~~Enlaces legales en "Más"~~ ✅ HECHO (2026-08-03)
 
-- Añadir 3 enlaces discretos en `MasHomeScreen` (o donde encaje mejor en la
-  pestaña Más) a: **condiciones de uso**, **aviso legal**, **política de
-  cookies** — ya publicados en la web.
-- 🔒 **Necesito las 3 URLs** antes de poder implementarlo — no debo
-  inventarlas. Pásamelas cuando quieras hacer esto (encaja bien como tarea de
-  "me sobran tokens").
-- Prioridad baja, no bloquea nada.
+Los tres enlaces (política de privacidad, términos y condiciones, aviso legal)
+están en el pie de "Más", con las URLs de `comunica.movimientoconsolacion.com`
+centralizadas en `mcm-app/constants/legalLinks.ts`. Apple y Google exigen que la
+política de privacidad se pueda abrir desde dentro de la app, así que además de
+tarea pendiente era un requisito de publicación.
 
 ---
 
@@ -201,8 +201,8 @@ nombres/respuestas de encuestas — es una funcionalidad deseada, no un bug. El
 diseño actual (`.read: true` en `/surveys` y `/activities`) se mantiene tal
 cual. Motivo adicional: la app está en **beta privada**, no en gran
 producción, así que no hay urgencia de exposición real. Banner de anulación
-añadido en `plans/007-privacidad-respuestas-encuestas.md` y estado marcado
-`REJECTED` en `plans/README.md`. **Si en el futuro aparece un bug real de
+añadido en `archivo/tacticos/007-…` y estado marcado
+`REJECTED` en `archivo/tacticos/README.md`. **Si en el futuro aparece un bug real de
 reglas** (no relacionado con esta visibilidad deseada del panel — p. ej. una
 ruta que debería estar protegida por otro motivo), evaluarlo aparte; no
 reabrir este plan tal cual, su premisa ya no aplica.
@@ -214,11 +214,9 @@ reabrir este plan tal cual, su premisa ya no aplica.
 | Decisión                                                                                                               | Bloquea                        | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`)                             | Integración D                  | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ~~**3 decisiones de UI**~~ ✅ **RESUELTAS (2026-07-22)**                                                               | UI Nativa                      | `docs/planes/PLAN_UI_NATIVA.md` §4                   | **(1) Headers**: nativo plano en pantallas "lista+detalle" (Revisión, Materiales, Horario, sub-pantallas de evento), floating glass solo donde aporta identidad (heros de evento). **(2) Pulsación**: `PressableFeedback` (heroui) como primitiva única de contenido — es la opción con feedback nativo más consistente y ya soportada por la librería; barras de navegación siguen con bar items nativos. **(3) Color**: Contigo (warm) y Eventos (color por evento) **mantienen su paleta propia** — es identidad intencional; documentar como temas con nombre, no forzar alineación a marca. |
-| **Release de tienda para el Widget** — ¿se compromete ya? ¿iOS primero? ¿App Intents interactivos o solo abrir la app? | Widget de Contigo              | `docs/planes/PLAN_WIDGET_CONTIGO.md`                 | "¿Arrancamos el Widget de Contigo? Implica una build de tienda dedicada — ¿cuándo?"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| **Icono nativo Carismochito (§5)**                                                                                     | Bolsa nativa / Carismochito    | `docs/planes/PLAN_CARISMOCHITO.md` §5                | "¿Compensa el icono alternativo para un modo que es efímero (se activa agitando)?"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Widget de Contigo** — ¿se compromete? ¿iOS primero? ¿App Intents o solo abrir la app? | Widget de Contigo | `docs/planes/PLAN_WIDGET_CONTIGO.md` | "¿Arrancamos el Widget? Implica build de tienda propia" |
+| **Firebase App Check** — ¿compensa? | Protección de las claves públicas | `mcm-app/TODO.md` §Seguridad | "Es nativo, arrastra `@react-native-firebase` entero y mal configurado deja fuera a toda la base instalada. ¿Lo metemos en esta build o esperamos?" |
 | **Plan funcional del Panel Pañuelo**                                                                                   | Panel Pañuelo                  | `docs/planes/PLAN_PANEL_PANUELO.md` (stub)           | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o esperamos a después de Carismochito §1–4?"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| **URLs de los 3 documentos legales**                                                                                   | Tarea "enlaces legales" (§2.E) | este documento                                       | "Pásame los links de condiciones de uso, aviso legal y política de cookies"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ---
 
