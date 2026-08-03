@@ -51,10 +51,13 @@ GoogleService-Info.plist
 
 
 # prebuilds (CNG/Prebuild generated folders)
+# OJO: SOLO con barra inicial. Sin ella, `ios/` y `android/` casan con
+# CUALQUIER carpeta con ese nombre a cualquier profundidad, y se tragaron el
+# código nativo de `modules/highlight-menu/{ios,android}` — el módulo llegó a
+# EAS sin fuentes y la build reventó. Con `/android` y `/ios` basta: las
+# carpetas de prebuild solo existen en la raíz de `mcm-app/`.
 /android
 /ios
-ios/
-android/
 
 # builds
 *.apk

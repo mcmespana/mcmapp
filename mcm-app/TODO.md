@@ -140,12 +140,15 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       revisar el inset de cada hero. (`app/screens/eventStackScreens.tsx`)
 - [x] **Fase 2 (componentes unificados) — CERRADA (2026-08-03)**:
       `SegmentedControl` creado y adoptado en el calendario, `AppPrimaryButton`
-      en `ArrangementInputModal`. (El `AppTextField` de Revisión se retiró: esa
-      pantalla se refactorizó en paralelo y chocaba. Se replantea cuando esté
-      quieta.) Los dos
-      `TextInput` que quedan son buscadores y un input oculto de código: no
-      encajan en `AppTextField` y se dejan a propósito. `EmptyState` ya está en
-      9 pantallas.
+      en `ArrangementInputModal`, `EmptyState` en 11 pantallas (SongList y
+      Grupos migrados de sus versiones a mano).
+
+      **Los `TextInput` que quedan NO se migran, y está decidido**: los
+      buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
+      de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
+      celdas del código; y los de Revisión quedaron, tras el refactor del examen
+      del día, como campos SIN borde dentro de una fila que sí lo tiene —
+      `AppTextField` les metería un borde dentro de otro.
 
 ## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
 

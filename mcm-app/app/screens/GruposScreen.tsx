@@ -32,6 +32,7 @@ import {
   type SearchHit,
 } from '@/components/grupos/gruposHelpers';
 import { createStyles } from '@/components/grupos/gruposStyles';
+import EmptyState from '@/components/ui/EmptyState';
 import SearchBar from '@/components/grupos/SearchBar';
 import MemberRow from '@/components/grupos/MemberRow';
 import GrupoCard from '@/components/grupos/GrupoCard';
@@ -492,15 +493,11 @@ export default function GruposScreen() {
               />
             )}
             ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <MaterialIcons name="search-off" size={48} color="#999" />
-                <Text style={styles.emptyText}>
-                  No he encontrado nada, ya lo siento 😔
-                </Text>
-                <Text style={styles.emptyHint}>
-                  Prueba con otro nombre o apellido.
-                </Text>
-              </View>
+              <EmptyState
+                icon="search-off"
+                title="No he encontrado nada, ya lo siento 😔"
+                subtitle="Prueba con otro nombre o apellido."
+              />
             }
             stickySectionHeadersEnabled
             contentContainerStyle={

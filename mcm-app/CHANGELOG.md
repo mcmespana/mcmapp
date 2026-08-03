@@ -18,6 +18,19 @@
 
 ---
 
+## 2026-08-04 02:10 — `EmptyState` en el cantoral y en Grupos
+
+Los dos "no he encontrado nada" que quedaban a mano —la lista de canciones y la
+búsqueda de Grupos— pasan a `EmptyState`. Tenían la misma forma (icono/emoji +
+titular + pista) reimplementada dos veces con tamaños y colores distintos.
+Fuera sus siete estilos propios.
+
+Con esto **el inventario de `TextInput` sueltos queda cerrado como decisión, no
+como pendiente**: los buscadores son otro patrón, el de `CodeInputModal` es un
+input invisible detrás de las celdas del código, y los de Revisión quedaron tras
+el refactor del examen del día como campos sin borde dentro de una fila que sí
+lo tiene — meterles `AppTextField` sería un borde dentro de otro.
+
 ## 2026-08-04 01:20 — UI Nativa Fase 2 cerrada
 
 **`SegmentedControl` (nuevo)** — era el último componente que faltaba del plan.

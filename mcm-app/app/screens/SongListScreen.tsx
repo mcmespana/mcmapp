@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import Animated from 'react-native-reanimated';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
+import EmptyState from '@/components/ui/EmptyState';
 import { useState, useMemo, useLayoutEffect, useCallback, useRef } from 'react';
 import {
   FlatList,
@@ -562,17 +563,15 @@ export default function SongsListScreen({
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>🔍</Text>
-            <Text style={styles.emptyText}>
-              No hemos encontrado esa canción
-            </Text>
-            {search.length > 0 && (
-              <Text style={styles.hintText}>
-                Prueba con otro título o nombre de autor
-              </Text>
-            )}
-          </View>
+          <EmptyState
+            emoji="🔍"
+            title="No hemos encontrado esa canción"
+            subtitle={
+              search.length > 0
+                ? 'Prueba con otro título o nombre de autor'
+                : undefined
+            }
+          />
         }
       />
     </View>
@@ -666,29 +665,6 @@ const createStyles = (
       textAlign: 'center',
       margin: 10,
       fontFamily: 'monospace',
-    },
-    emptyContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingVertical: 60,
-      paddingHorizontal: 40,
-    },
-    emptyEmoji: {
-      fontSize: 48,
-      marginBottom: 16,
-    },
-    emptyText: {
-      fontSize: 17,
-      fontWeight: '600',
-      color: isDark ? '#8E8E93' : '#636366',
-      marginBottom: 8,
-      textAlign: 'center',
-    },
-    hintText: {
-      fontSize: 14,
-      color: isDark ? '#636366' : '#AEAEB2',
-      textAlign: 'center',
     },
     menuActions: {
       paddingBottom: 8,
