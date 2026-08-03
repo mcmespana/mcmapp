@@ -242,20 +242,18 @@
       Prioritario sobre `internalRoute`; botón "Ir al evento" en el modal. El
       evento debe existir en `constants/events.ts` (ligado a consumir
       `activities/<id>/_meta`, aún pendiente).
-- [ ] **Channels Android por tipo/prioridad (A4.2 — PENDIENTE, con condiciones)** — hoy
-      solo existe el channel `default` (importancia MAX), así que `priority` no
-      diferencia el display. Crear channels (`urgente`, `eventos`…) para heads-up/sonido
-      diferenciados y permitir que el panel mande `channelId`.
-      **Por qué está pendiente (decisión 2026-07-07):** aunque `setNotificationChannelAsync`
-      es runtime (NO necesita build nativo), NO es de impacto cero: crear channels extra
-      hace que aparezcan canales (posiblemente vacíos) en los ajustes del sistema de
-      TODOS los Android, es difícil de revertir (`deleteNotificationChannelAsync` no borra
-      las preferencias que el usuario ya haya tocado) y altera la ruta de entrega del push.
-      **Requisitos antes de hacerlo:** (1) decidir el set de channels y el mapeo
-      categoría/priority→channel; (2) que el panel mande `channelId` (cross-repo, ver
-      contrato §8/§9); (3) **probar en dispositivo Android real** el heads-up/sonido antes
-      de mergear a production. No enviar a ciegas por OTA. Ver
-      `docs/planes/PLAN_INTEGRACIONES.md` (A4, punto 2).
+- [ ] **Channels Android — probar en dispositivo real antes de production** ⚠️ los
+      canales YA están implementados (2026-08-03): siete, uno por categoría del Panel,
+      en `constants/notificationChannels.ts` + `notifications/androidChannels.ts`.
+      Queda lo que siempre fue requisito y no se puede hacer a ciegas:
+      (a) **verificar en un Android real** el heads-up y el sonido de cada canal —
+      aparecen en los ajustes del sistema de TODOS los Android y las preferencias que
+      el usuario toque ya no se pueden revertir desde la app
+      (`deleteNotificationChannelAsync` no las borra);
+      (b) **que el Panel mande `channelId`** (cross-repo) — sin él todo cae en
+      `default` como hasta ahora, y con un `channelId` que la app no declare Android
+      **no entrega** la notificación. Tabla cerrada en
+      `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8.
 - [x] **Usar `data.category` en el centro de notificaciones (A4.1)** (2026-07-07) —
       chip de color con icono por categoría en la tarjeta y el modal
       (`utils/notificationCategory.ts`). `general`/ausente/desconocida no pintan chip.

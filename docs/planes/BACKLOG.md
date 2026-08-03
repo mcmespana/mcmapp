@@ -115,28 +115,69 @@
 - **Modelo:** Sonnet (Fable para C2/C3, son copiar/documentar).
 - **Detalle:** `docs/planes/PLAN_INTEGRACIONES.md` secciones A2, C, E1.
 
-### C. Bolsa nativa — para "el día que hagamos una build de tienda"
+### C. Bolsa nativa — la build de tienda de agosto de 2026
 
-> Todo esto es código nativo (no OTA). No tiene sentido hacer una build de
-> tienda por una sola cosa — cuando se decida hacer una, revisar esta lista
-> y empaquetar todo lo que esté listo en esa misma build.
+> **Estado: la build YA está en marcha.** La rama
+> `claude/compact-tabs-bar-uxxaoz` es la "súper rama" que se lleva todo lo
+> nativo acumulado. Ya no es una lista de espera: es el **contenido de esta
+> build** más lo que aún se puede meter antes de compilar. Revisión: 2026-08-03.
 
-| Qué                                                              | Origen                                                                                | Nota                                                                                  |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| ✅ Fix modo alpha (`disableAntiBrickingMeasures`)                | [PR #298](https://github.com/mcmespana/mcmapp/pull/298), mergeada a `main` 2026-07-22 | Código ya en `main`; el toggle en sí no surte efecto hasta la próxima build de tienda |
-| iPad: landscape nativo (`UISupportedInterfaceOrientations~ipad`) | `mcm-app/TODO.md` (prioridad alta)                                                    | Los layouts de iPad ya están listos, falta activar la orientación                     |
-| NSE iOS — imagen en notificación del sistema                     | `docs/planes/PLAN_INTEGRACIONES.md` A4.4 / `TODO.md`                                  | Nuevo target iOS, requiere config plugin                                              |
-| Android — channels de notificación por tipo                      | `docs/planes/PLAN_INTEGRACIONES.md` A4.2                                              | Cross-repo: el panel debe mandar `channelId`                                          |
-| Sentry / crash reporting                                         | `docs/planes/PLAN_CALIDAD.md` Fase 6                                                  | Decisión de cuenta/proveedor pendiente                                                |
-| Icono alternativo Carismochito                                   | `docs/planes/PLAN_CARISMOCHITO.md` §5                                                 | 🔒 decisión — ¿compensa para un modo efímero?                                         |
+#### C.1 — Ya dentro de la rama (se publica con esta build)
 
-> Solo encontré **una** PR abierta que mencione explícitamente necesitar una
-> build de tienda (#261). Busqué también por "EAS"/"App Store"/"Play
-> Store"/"código nativo"/"no OTA" y no apareció una segunda — si tenías otra
-> en mente, dime cuál y la reviso.
->
-> El resto de PRs abiertas son de **Bolt/Jules** (`bolt-*`, `jules-*`) —
-> confirmado que se ignoran, tal como pediste.
+| Qué | Dónde | Nota |
+| --- | ----- | ---- |
+| ✅ **Expo SDK 55 → 57**, RN 0.83 → 0.86, React 19.2.3 | `package.json` | El cambio nativo más grande de la build; es lo que obliga a compilar de todas formas |
+| ✅ **Barra de pestañas flotante** (`expo-native-compact-tabs` 0.2.0) | `components/tabs/` | Módulo nativo NUEVO + `patch-package` (`postinstall`) |
+| ✅ **Parche del módulo de tabs** | `patches/expo-native-compact-tabs+0.2.0.patch` | Dos arreglos: escala de los iconos (`normalisedToIconBox`) y relayout de safe area al volver del onboarding (`didMoveToWindow`/`safeAreaInsetsDidChange`) |
+| ✅ **Reanimated 4.5.1 + `react-native-worklets`** | toda la app | Migración completa de `Animated`/`PanResponder`; nativo |
+| ✅ **iPad landscape** (`UISupportedInterfaceOrientations~ipad`) | `app.json` | Falta **probar en iPad físico** (ver `TODO.md` §1) |
+| ✅ **Fix modo alpha** (`disableAntiBrickingMeasures`) | [PR #298](https://github.com/mcmespana/mcmapp/pull/298) | Ya estaba en `main`; el toggle no surtía efecto hasta esta build |
+| ✅ **Reproductor multimedia** (YouTube con `Referer`, PiP de audio) | `components/song-media/` | Recuperado de `production` el 2026-08-03 |
+| ✅ **Channels Android por categoría** | `constants/notificationChannels.ts` | **No es nativo** (es runtime), pero se estrena aquí — ver C.3 |
+
+#### C.2 — Aprobado y pendiente de escribir (entra en esta build si da tiempo)
+
+| Qué | Decisión | Estado |
+| --- | -------- | ------ |
+| **NSE iOS** — imagen en la notificación del sistema | ✅ "Sí, adelante" (2026-08-03) | **Pendiente**. Target iOS nuevo + config plugin. `richContent.image` no pinta nada en iOS sin esto |
+| **"Subrayar" en el menú nativo de selección** | ✅ "Escríbelo entero, yo compilo" (2026-08-03) | **Pendiente**. Alcance mínimo: un item "Subrayar" que abra la barra de colores que YA existe; el modo lápiz actual se mantiene |
+
+> Sobre el subrayado: replanteado el 2026-08-03 — `HighlightableReading` ya
+> renderiza con un `TextInput` de solo lectura, que en iOS **es** un `UITextView`
+> real. No hace falta sustituir la vista nativa (que era el grueso del trabajo
+> estimado); el riesgo se mueve a interponer un proxy del delegado
+> `textView(_:editMenuForTextIn:suggestedActions:)`, que React Native ya ocupa.
+> Detalle en `docs/funcionalidades/SUBRAYADO.md`.
+
+#### C.3 — Cambios que exigen algo FUERA de la app
+
+| Qué | Quién | Estado |
+| --- | ----- | ------ |
+| **`channelId` en el push** | MCM Panel | El Panel debe mandar `channelId` top-level con el mismo valor que `data.category` (`general` → `default`). Sin él todo cae en `default` como hasta ahora; **con un `channelId` que la app no declare, Android no entrega la notificación**. Tabla cerrada en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8 |
+| **Probar los channels en un Android real** | Usuario | Requisito que ya fijaba `TODO.md`: verificar heads-up/sonido por canal antes de mergear a `production`. Los canales aparecen en los ajustes del sistema de todos los Android y sus preferencias no se pueden revertir a mano |
+
+#### C.4 — Sigue bloqueado por una decisión tuya
+
+| Qué | Qué falta decidir |
+| --- | ----------------- |
+| **Sentry / crash reporting** (`PLAN_CALIDAD.md` Fase 6) | Cuenta y proveedor. `utils/logger.ts` ya expone `setReporter`, así que la app está preparada; falta el SDK nativo. Si se quiere en ESTA build hay que decidirlo antes de compilar |
+| **Icono alternativo Carismochito** (`PLAN_CARISMOCHITO.md` §5) | ¿Compensa para un modo efímero (se activa agitando)? Persiste fuera de la app y en Android exige `activity-alias` |
+| **Widget de Contigo** (`PLAN_WIDGET_CONTIGO.md`) | Es una build dedicada, no un extra de ésta: WidgetKit + App Group. ¿Se compromete y para cuándo? |
+
+> ⚠️ **Guardarraíles ≠ build de tienda.** Lo que se buscaba en `PLAN_CALIDAD.md`
+> son los guardarraíles de la **Fase 0**, que es explícitamente OTA-safe (lint,
+> tests, CI). Lo único de ese plan que pide build de tienda es Sentry (Fase 6).
+
+> **Nada de esta rama puede salir por OTA.** Lleva SDK nuevo, módulos nativos
+> nuevos y un parche nativo: una OTA con este bundle crashearía en los binarios
+> instalados. Orden obligatorio: validar dev build → merge a `main` → build de
+> producción iOS + Android → tiendas → mover `production`.
+
+> PRs abiertas: solo #261 mencionaba explícitamente necesitar build de tienda.
+> #306 (barra de tabs alternativa) se **cerró** el 2026-08-03: la sustituye el
+> enfoque de esta rama con `expo-native-compact-tabs`, que mantiene el
+> `UITabBarController` nativo y todos los iconos visibles al compactarse. El
+> resto de PRs abiertas son de Bolt/Jules (`bolt-*`, `jules-*`) y se ignoran.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
