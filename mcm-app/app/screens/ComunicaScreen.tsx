@@ -174,8 +174,18 @@ export default function ComunicaScreen() {
       onLoadEnd,
       onError,
       onHttpError: onError,
-      onScroll: (event: { nativeEvent: { contentOffset: { y: number } } }) =>
-        onWebViewScroll(event.nativeEvent.contentOffset.y),
+      onScroll: (event: {
+        nativeEvent: {
+          contentOffset: { y: number };
+          contentSize?: { height: number };
+          layoutMeasurement?: { height: number };
+        };
+      }) =>
+        onWebViewScroll({
+          y: event.nativeEvent.contentOffset.y,
+          contentHeight: event.nativeEvent.contentSize?.height,
+          viewportHeight: event.nativeEvent.layoutMeasurement?.height,
+        }),
     }),
     [
       injectedJS,

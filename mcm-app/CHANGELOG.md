@@ -18,6 +18,39 @@
 
 ---
 
+## 2026-08-03 15:05 — La barra de pestañas ya no se expande sola
+
+Reescrita la regla de compactar/expandir de la barra flotante. Se ha sacado de
+`tabBarController.ts` a `components/tabs/collapseRule.ts` como función pura con
+directiva `'worklet'`, para que la usen los dos caminos que había duplicados (el
+worklet de Reanimated y el `onScroll` por JS del WebView de Comunica) y para
+poder probarla: `__tests__/collapseRule.test.ts`, 16 casos.
+
+Tres bugs arreglados:
+
+- **Al llegar al final del scroll la barra se ponía grande.** El rebote elástico
+  llevaba el offset por encima del máximo y al volver se leía como "el usuario
+  está subiendo". Ahora el offset se recorta contra los límites reales
+  (`-contentInset.top` y `contentSize - viewport + contentInset.bottom`).
+- **Costaba compactar.** Los umbrales eran simétricos (6 px en ambos sentidos).
+  Ahora compactar cuesta 5 px hacia abajo y expandir 40 px hacia arriba, y el
+  ancla persigue el extremo alcanzado en cada sentido, así que el recorrido se
+  mide desde donde el usuario dio la vuelta.
+- **Entrar en una pantalla anidada expandía la barra.** El scroller recién
+  montado emitía su primer evento en el offset inicial y eso disparaba la regla
+  de "arriba del todo siempre expandida". Ahora esa regla solo aplica después de
+  que el usuario arrastre de verdad (`onBeginDrag`), así que el estado compacto
+  se hereda al navegar dentro de un tab.
+
+Además, los worklets de scroll ya no llaman a `setCompact` en cada fotograma:
+llevan un espejo del estado en un shared value (`compactMirrors`), que se
+actualiza desde JS sin suscribir la pantalla entera a re-render.
+
+Archivos: `components/tabs/collapseRule.ts` (nuevo),
+`components/tabs/tabBarController.ts`, `app/screens/ComunicaScreen.tsx`,
+`__tests__/collapseRule.test.ts` (nuevo),
+`docs/desarrollo/TABS_MAINTENANCE.md`.
+
 ## 2026-08-03 06:20 — Recupera de `production` los arreglos del reproductor multimedia
 
 Auditoría de `production` frente a esta rama. `main` y `production` divergieron

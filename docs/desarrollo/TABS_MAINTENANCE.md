@@ -36,6 +36,7 @@ components/tabs/
   WebTabsLayout.tsx               ← barra clásica, sin cambios
   CompactTabBar.tsx               ← la barra flotante en sí
   tabBarController.ts             ← estado compacta/expandida (singleton)
+  collapseRule.ts                 ← regla pura de cuándo compactar/expandir
   useTabScroll.ts                 ← engancha una pantalla a la barra
 constants/tabsCatalog.ts          ← TABS_CONFIG (orden) + splitTabsForBar
 constants/tabIcons.ts             ← mapa estático de PNGs por tab
@@ -127,6 +128,29 @@ Reglas:
   compacte igual, y el hueco de abajo se reserva según la plataforma —
   `contentInset` en iOS, `padding` inyectado en la propia página en Android,
   que no lo admite. Ver `docs/contratos/COMUNICA_WEBVIEW.md` §3.
+
+### Cuándo se compacta y cuándo se expande
+
+La decisión vive en `components/tabs/collapseRule.ts`, una función pura
+(`collapseStep`) con directiva `'worklet'`: la llaman los dos caminos —el
+worklet de Reanimated de `useCollapsingScroll` y el `onScroll` por JS del
+WebView de Comunica— y se prueba sola en `__tests__/collapseRule.test.ts`.
+
+Cuatro reglas, cada una arreglando algo que se notaba en uso:
+
+1. **Umbrales asimétricos.** Compactar cuesta 5 px de recorrido hacia abajo;
+   expandir, 40 px hacia arriba. Con umbrales simétricos costaba compactar y
+   cualquier temblor del dedo devolvía la barra a grande mientras leías.
+2. **El ancla persigue el extremo.** Compactada, el ancla sigue al punto más
+   bajo alcanzado; expandida, al más alto. Así el recorrido se mide desde donde
+   el usuario dio la vuelta de verdad y no desde donde cambió el estado.
+3. **El rebote elástico se recorta** contra `minY` (`-contentInset.top`) y
+   `maxY` (`contentSize - viewport + contentInset.bottom`). Sin esto, llegar
+   abajo del todo se leía como "el usuario sube" y expandía la barra sola.
+4. **Nada se decide hasta que el usuario arrastra** (`interacted`, que lo activa
+   `onBeginDrag`). Un scroller recién montado emite su primer evento en el
+   offset inicial, y eso expandía la barra al entrar en una pantalla anidada:
+   ahora el estado compacto se hereda de la pantalla anterior.
 
 ## 📋 Cómo Añadir un Nuevo Tab
 

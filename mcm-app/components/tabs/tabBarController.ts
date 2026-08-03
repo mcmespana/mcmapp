@@ -27,10 +27,7 @@ import {
   useSharedValue,
 } from 'react-native-reanimated';
 
-/** Recorrido en píxeles que hay que arrastrar en una dirección para cambiar. */
-const DIRECTION_THRESHOLD = 6;
-/** Por debajo de este offset la barra siempre se muestra expandida. */
-const ARM_AT = 12;
+import { ARM_AT, collapseStep } from '@/components/tabs/collapseRule';
 
 type Scrollable = {
   scrollTo: (opts: { y: number; animated?: boolean }) => void;
@@ -48,6 +45,13 @@ const scrollRefs = new Map<string, { current: Scrollable | null }>();
 /** `contentInset.top` aprendido de los eventos de scroll, por tab. */
 const insetTops = new Map<string, number>();
 const reselectHandlers = new Map<string, Set<ReselectHandler>>();
+/**
+ * Copias de `compact` en shared values, para que los worklets de scroll sepan
+ * el estado actual SIN suscribir a re-render a la pantalla entera (que es lo
+ * que pasaría con `useCompact()`: cada colapso repintaría la lista completa).
+ * Se escriben desde el hilo de JS, que es donde vive el estado de verdad.
+ */
+const compactMirrors = new Set<{ value: boolean }>();
 
 function notify() {
   listeners.forEach((listener) => listener());
@@ -56,6 +60,9 @@ function notify() {
 function setCompact(next: boolean) {
   if (next === compact) return;
   compact = next;
+  compactMirrors.forEach((mirror) => {
+    mirror.value = next;
+  });
   notify();
 }
 
@@ -160,8 +167,18 @@ interface CollapsingScrollOptions {
  */
 export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
   const scrollRef = useRef<Scrollable | null>(null);
-  const lastY = useSharedValue(0);
+  /** Punto desde el que se mide el recorrido. Persigue al extremo alcanzado. */
   const anchor = useSharedValue(0);
+  /** Espejo de `compact` (ver `compactMirrors`). */
+  const isCompact = useSharedValue(false);
+  /**
+   * ¿Ha arrastrado el usuario en ESTA pantalla? Mientras sea `false` no se
+   * aplica la regla de "arriba del todo siempre expandida": al entrar en una
+   * pantalla anidada (una canción del cantoral, un item de Más…) el scroller
+   * nuevo emite su primer evento en el offset inicial, y esa regla expandía la
+   * barra sola. El estado compacto se hereda entre pantallas.
+   */
+  const interacted = useSharedValue(false);
 
   useEffect(() => {
     if (!tabName) return;
@@ -172,6 +189,14 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
     };
   }, [tabName]);
 
+  useEffect(() => {
+    isCompact.value = compact;
+    compactMirrors.add(isCompact);
+    return () => {
+      compactMirrors.delete(isCompact);
+    };
+  }, [isCompact]);
+
   const rememberInset = useCallback(
     (top: number) => {
       if (tabName) insetTops.set(tabName, top);
@@ -181,32 +206,44 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
 
   const onScroll = useAnimatedScrollHandler({
     onBeginDrag: (event) => {
+      interacted.value = true;
       anchor.value = event.contentOffset.y;
     },
     onScroll: (event) => {
       // OJO: se usa el offset TAL CUAL, sin recortarlo a 0. En las pantallas
       // con header grande arranca en negativo, y recortarlo era justo lo que
       // hacía que la barra tardara tanto en compactarse.
-      const y = event.contentOffset.y;
       const insetTop = event.contentInset?.top ?? 0;
       if (insetTop > 0) runOnJS(rememberInset)(insetTop);
 
-      lastY.value = y;
+      // Límites REALES del recorrido, para que `collapseStep` pueda descartar
+      // el rebote elástico de los extremos.
+      const contentHeight = event.contentSize?.height ?? 0;
+      const viewportHeight = event.layoutMeasurement?.height ?? 0;
+      const next = collapseStep(
+        {
+          anchor: anchor.value,
+          compact: isCompact.value,
+          interacted: interacted.value,
+        },
+        {
+          y: event.contentOffset.y,
+          minY: -insetTop,
+          maxY:
+            contentHeight > 0
+              ? contentHeight -
+                viewportHeight +
+                (event.contentInset?.bottom ?? 0)
+              : null,
+        },
+      );
 
-      // Arriba del todo (contando el inset del header) siempre expandida.
-      if (y <= -insetTop + ARM_AT) {
-        anchor.value = y;
-        runOnJS(setCompact)(false);
-        return;
-      }
-
-      const dy = y - anchor.value;
-      if (dy > DIRECTION_THRESHOLD) {
-        anchor.value = y;
-        runOnJS(setCompact)(true);
-      } else if (dy < -DIRECTION_THRESHOLD) {
-        anchor.value = y;
-        runOnJS(setCompact)(false);
+      anchor.value = next.anchor;
+      if (next.compact !== isCompact.value) {
+        // Se actualiza el espejo YA, sin esperar al salto al hilo de JS: si no,
+        // los siguientes fotogramas seguirían decidiendo con el estado viejo.
+        isCompact.value = next.compact;
+        runOnJS(setCompact)(next.compact);
       }
     },
   });
@@ -214,30 +251,47 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
   return { scrollRef: scrollRef as React.RefObject<ScrollView>, onScroll };
 }
 
+/** Lo que hace falta del evento de scroll del WebView. */
+export interface WebViewScrollMetrics {
+  y: number;
+  /** Alto total del documento, para recortar el rebote del final. */
+  contentHeight?: number;
+  /** Alto visible del WebView. */
+  viewportHeight?: number;
+}
+
 /**
  * Handler de scroll para vistas que NO son un scroller de React Native, como el
  * WebView de Comunica: llega por el hilo de JS (no es un worklet) y sin
- * `contentInset`, pero basta para compactar la barra igual que en el resto de
- * la app.
+ * `contentInset`, pero por lo demás sigue exactamente las mismas reglas que
+ * `useCollapsingScroll` (umbrales asimétricos, ancla con histéresis y recorte
+ * del rebote).
  */
 export function useWebViewCollapse() {
   const anchor = useRef(0);
+  const interacted = useRef(false);
 
-  return useCallback((y: number) => {
-    if (y <= ARM_AT) {
-      anchor.current = y;
-      setCompact(false);
-      return;
-    }
-    const dy = y - anchor.current;
-    if (dy > DIRECTION_THRESHOLD) {
-      anchor.current = y;
-      setCompact(true);
-    } else if (dy < -DIRECTION_THRESHOLD) {
-      anchor.current = y;
-      setCompact(false);
-    }
-  }, []);
+  return useCallback(
+    ({ y, contentHeight = 0, viewportHeight = 0 }: WebViewScrollMetrics) => {
+      // El WebView no avisa del inicio del arrastre, así que el "ha
+      // interactuado" se deduce del propio offset: si se ha movido del origen,
+      // alguien lo ha movido.
+      if (y > ARM_AT) interacted.current = true;
+
+      const next = collapseStep(
+        { anchor: anchor.current, compact, interacted: interacted.current },
+        {
+          y,
+          minY: 0,
+          maxY: contentHeight > 0 ? contentHeight - viewportHeight : null,
+        },
+      );
+
+      anchor.current = next.anchor;
+      setCompact(next.compact);
+    },
+    [],
+  );
 }
 
 export const tabBarController = {
