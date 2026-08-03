@@ -161,6 +161,20 @@
         }
       ],
       "expo-asset",
+      "./plugins/withNotificationServiceExtension",
+      [
+        "expo-alternate-app-icons",
+        [
+          {
+            "name": "Carismochito",
+            "ios": "./assets/app-icons/carismochito.png",
+            "android": {
+              "foregroundImage": "./assets/app-icons/carismochito-foreground.png",
+              "backgroundColor": "#A3BD31"
+            }
+          }
+        ]
+      ],
       ["expo-build-properties"],
       "@react-native-community/datetimepicker",
       "expo-font",

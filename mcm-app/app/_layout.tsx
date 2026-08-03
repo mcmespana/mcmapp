@@ -1,5 +1,10 @@
 // app/_layout.tsx
 
+// Sentry el PRIMERO de todos los imports: se arranca como efecto de cargar el
+// módulo, así que cuanto antes se importe, más crashes de arranque captura.
+// Sin `EXPO_PUBLIC_SENTRY_DSN` no hace absolutamente nada.
+import { wrapRoot } from '@/utils/sentry';
+
 import '../notifications/NotificationHandler'; // Inicializa el handler de notificaciones
 import usePushNotifications from '../notifications/usePushNotifications'; // Hook para notificaciones push
 
@@ -58,7 +63,7 @@ import { ActiveEventProvider } from '@/contexts/ActiveEventContext';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -290,3 +295,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2E',
   },
 });
+
+// `wrapRoot` es la identidad cuando Sentry está apagado (sin DSN), así que el
+// árbol de componentes no cambia en absoluto en ese caso.
+export default wrapRoot(RootLayout);

@@ -213,10 +213,11 @@
 - [ ] **Colección + contador** al tocar la mascota (animación especial); guardado
       por usuario y **solo con sesión iniciada** (si no, avisar de pérdida de
       progreso).
-- [ ] **Icono de la app en verde/Carismochito** al activar el modo → iconos
-      alternativos (iOS `setAlternateIconName`, Android `activity-alias`). ⚠️
-      NATIVO (build de tienda, no OTA); persiste fuera de la app; en Android el
-      swap es tosco. (Ya estaba en "Prioridad baja"; detalle en el plan.)
+- [x] **Icono de la app en verde/Carismochito** (2026-08-03) — hecho con
+      `expo-alternate-app-icons`; iconos generados con `npm run icons:alt` y swap
+      en `utils/appIcon.ts`. Queda **probarlo en dispositivo** con la build de
+      tienda: en iOS sale una alerta del sistema en cada cambio real (de Apple, no
+      se puede quitar) y en Android el launcher puede tardar en refrescar.
 
 ## Widget de Contigo (ver `docs/planes/PLAN_WIDGET_CONTIGO.md`)
 
@@ -232,10 +233,12 @@
 > Estas mejoras requieren build nativo o trabajo nuevo y por eso quedaron fuera
 > de la entrega OTA de 2026-06-02.
 
-- [ ] **NSE iOS para imágenes en la notificación del sistema** — hoy `richContent.image`
-  - `mutableContent` NO pintan imagen en iOS (no hay Notification Service Extension);
-    la imagen solo se ve in-app vía `data.imageUrl`. Añadir NSE (Android ya funciona).
-    ⚠️ Código nativo → requiere build de producción y commit con `[skip-ota]`.
+- [x] **NSE iOS para imágenes en la notificación del sistema** (2026-08-03) —
+      `plugins/withNotificationServiceExtension.js` crea el target de Xcode en cada
+      prebuild; el Swift está en `targets/notification-service/`. Queda **probarlo
+      en un iPhone real** con la build de tienda y que el Panel empiece a mandar
+      `mutableContent: true` en los pushes con imagen (sin ese flag iOS no ejecuta
+      la extensión). Ver `docs/desarrollo/BUILD_AGOSTO_2026.md` §5.
 - [x] **Deep link a un evento/actividad concreto** (2026-07-07) — el panel manda
       `data.eventId` (id del registry) y la app abre el hub del evento
       (`utils/notificationEventRoute.ts`: `/(tabs)/<tabId>` o `/(tabs)/mas`).
@@ -291,16 +294,6 @@
                           detalles internos) que hay que reescribir en cada refactor. Por eso la
                           lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
-- [ ] **Modo carismochito — cambiar el icono del launcher (icono "de fuera") a verde**:
-      hoy el modo solo tiñe la UI dentro de la app (incluido el cuadro-logo del
-      header de la Home). Cambiar el icono del móvil requiere **iconos
-      alternativos**: iOS `setAlternateIconName`, Android `activity-alias`
-      (vía `expo-dynamic-app-icon` o similar). Peros a valorar antes de hacerlo:
-      ⚠️ es **código nativo** → build de tienda, no OTA, y los iconos deben ir
-      empaquetados en el build; ⚠️ el cambio **persiste fuera de la app** (hay que
-      revertirlo al desactivar el modo); ⚠️ en Android el swap es tosco (ocurre al
-      pasar a segundo plano y puede reiniciar atajos). Encaja regular con un modo
-      efímero por agitado — decidir si compensa.
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales, y (jun-2026) Fotos (`AlbumListScreen`/`AlbumCard`), Materiales, Comida, MasHome y `EventItem`. Horario es de solo lectura (sin interactivos). Pendiente: validar en dispositivo con VoiceOver/TalkBack y revisar pantallas/flujos secundarios.
 
 ---
@@ -352,14 +345,17 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 
 - [ ] **Trocear ficheros enormes**: `SelectedSongsScreen.tsx` (1.750 líneas), `NotificationsBottomSheet.tsx` (908), `WordleScreen.tsx` (776), `SecretPanelModal.tsx` (660). Extraer subcomponentes, hooks y utilidades. Ver MEJORAS.md §2.1 y el plan por fases en `docs/planes/PLAN_CALIDAD.md`.
 - [ ] **Agrupar providers afines** en `app/_layout.tsx` (12 anidados). Por ejemplo, combinar `UserProfile` + `ProfileConfig`. Ver MEJORAS.md §2.2.
-- [ ] **Conectar el logger con Sentry**: `utils/logger.ts` ya expone `setReporter`; falta integrar `@sentry/react-native` y llamarlo en el arranque (ver «Crash reporting» abajo).
 
 ---
 
 ## Seguridad y observabilidad
 
 - [ ] **Firebase App Check** (DeviceCheck/Play Integrity) para evitar abuso de las API keys públicas (`EXPO_PUBLIC_*`). Ver MEJORAS.md §7.2.
-- [ ] **Crash reporting** — integrar Sentry (`@sentry/react-native`). Hoy `ErrorBoundary` muestra UI pero no reporta. Ver MEJORAS.md §8.1.
+- [x] **Crash reporting con Sentry** (2026-08-03) — `utils/sentry.ts` engancha
+      `logger.warn/error` (y por tanto el `ErrorBoundary`) más los crashes nativos.
+      Queda **crear el proyecto en Sentry y configurar las variables**: paso a paso
+      en `docs/desarrollo/BUILD_AGOSTO_2026.md` §2. Sin `EXPO_PUBLIC_SENTRY_DSN` no
+      reporta nada, así que hasta que se configure está apagado.
 - [ ] **Analítica de uso** — Firebase Analytics o PostHog, con eventos clave (`app_open`, `tab_view`, `song_open`, `playlist_create`, `notification_received`). Sin esto no se puede priorizar por datos reales. Ver MEJORAS.md §8.3.
 - [ ] **Política de privacidad / consentimiento** — revisar si está pendiente para stores europeas / notificaciones push. Ver MEJORAS.md §7.4.
 

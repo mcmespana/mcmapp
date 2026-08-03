@@ -18,6 +18,52 @@
 
 ---
 
+## 2026-08-03 18:10 — NSE de iOS, Sentry e icono de Carismochito
+
+Las tres piezas nativas que faltaban para la build de tienda de agosto. Todo
+requiere **build de producción**, nada sale por OTA.
+
+**Notification Service Extension (iOS).** Hasta ahora las notificaciones con
+imagen se veían en Android pero nunca en iOS, y no había forma de arreglarlo sin
+una extensión. Como el proyecto es "managed" (no hay `ios/` en el repo), el
+target de Xcode se crea en cada prebuild con un config plugin propio:
+`plugins/withNotificationServiceExtension.js` + el Swift en
+`targets/notification-service/`. La extensión busca la URL en `data.imageUrl`,
+`richContent.image` y `attachment-url`, y si algo falla entrega la notificación
+sin imagen — nunca se traga el aviso.
+**Requiere del Panel**: `mutableContent: true` en los pushes con imagen; sin ese
+flag iOS ni arranca la extensión. Contrato actualizado (§4 y TL;DR).
+**Requiere de Apple**: la extensión es un bundle id nuevo
+(`com.familiaconsolacion.mcmapp.MCMNotificationService`) y EAS pide credenciales
+la primera vez que se compila.
+
+**Sentry** (`@sentry/react-native` 7.11). `utils/logger.ts` ya tenía el enganche
+`setReporter` desde hace meses; ahora se usa: todo `logger.warn`/`logger.error`
+de la app —incluido el `ErrorBoundary`— llega a Sentry, más los crashes nativos
+y las excepciones no capturadas. **Sin `EXPO_PUBLIC_SENTRY_DSN` no reporta
+absolutamente nada** y el árbol de componentes queda idéntico: el SDK nativo va
+en el binario precisamente para poder encenderlo después por OTA. El plugin de
+subida de source maps se configura con `SENTRY_ORG`/`SENTRY_PROJECT`/
+`SENTRY_AUTH_TOKEN` en el build. Los workflows de OTA ahora propagan el DSN: sin
+eso, la primera OTA habría apagado el crash reporting sin avisar.
+
+**Icono alternativo de Carismochito** (`expo-alternate-app-icons`). Al activar el
+modo, el icono del launcher pasa a la mascota sobre verde COM; al desactivarlo,
+vuelve el normal. Los iconos se generan con `npm run icons:alt`. `utils/appIcon.ts`
+sólo llama al nativo cuando el icono no coincide ya con el estado: en iOS cada
+cambio real dispara una alerta del sistema que no se puede suprimir, así que
+hacerlo a ciegas en cada arranque sería insufrible. Al arrancar se repara el
+icono si quedó descolgado del estado guardado.
+
+**Documento nuevo**: `docs/desarrollo/BUILD_AGOSTO_2026.md` — paso a paso de la
+build, qué variables configurar y dónde, y el checklist de pruebas.
+
+Archivos: `plugins/withNotificationServiceExtension.js`,
+`targets/notification-service/*`, `utils/sentry.ts`, `utils/appIcon.ts`,
+`scripts/generate-alt-icons.js`, `assets/app-icons/*`, `app.json`,
+`app.config.ts`, `app/_layout.tsx`, `contexts/CarismochitoContext.tsx`,
+`.env.example`, `.github/workflows/ota-{production,preview}.yml`.
+
 ## 2026-08-03 15:40 — Canales de notificación de Android por categoría
 
 Android tenía un único canal (`default`, importancia `MAX`): todo salía igual de

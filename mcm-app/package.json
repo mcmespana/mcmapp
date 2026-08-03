@@ -16,6 +16,7 @@
     "eas:build:ios": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build -p ios",
     "eas:build:android": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build -p android",
     "icons:tabs": "node scripts/generate-tab-icons.js",
+    "icons:alt": "node scripts/generate-alt-icons.js",
     "postinstall": "patch-package"
   },
   "dependencies": {
@@ -24,8 +25,10 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.1.0",
     "@react-native-google-signin/google-signin": "^16.1.4",
+    "@sentry/react-native": "~7.11.0",
     "chordsheetjs": "^15.6.1",
     "expo": "^57.0.9",
+    "expo-alternate-app-icons": "^8.0.0",
     "expo-apple-authentication": "~57.0.1",
     "expo-asset": "~57.0.8",
     "expo-blur": "~57.0.2",

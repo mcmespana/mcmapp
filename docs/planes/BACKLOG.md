@@ -134,12 +134,14 @@
 | ✅ **Fix modo alpha** (`disableAntiBrickingMeasures`) | [PR #298](https://github.com/mcmespana/mcmapp/pull/298) | Ya estaba en `main`; el toggle no surtía efecto hasta esta build |
 | ✅ **Reproductor multimedia** (YouTube con `Referer`, PiP de audio) | `components/song-media/` | Recuperado de `production` el 2026-08-03 |
 | ✅ **Channels Android por categoría** | `constants/notificationChannels.ts` | **No es nativo** (es runtime), pero se estrena aquí — ver C.3 |
+| ✅ **NSE iOS** — imagen en la notificación del sistema | `plugins/withNotificationServiceExtension.js` + `targets/notification-service/` | Target de Xcode nuevo, creado por config plugin propio. Bundle id `…​.MCMNotificationService`: EAS pide credenciales la primera vez |
+| ✅ **Sentry** (`@sentry/react-native`) | `utils/sentry.ts` | Sin `EXPO_PUBLIC_SENTRY_DSN` no reporta nada; el SDK nativo va en el binario para poder encenderlo luego por OTA |
+| ✅ **Icono alternativo Carismochito** | `expo-alternate-app-icons` + `utils/appIcon.ts` | Iconos generados con `npm run icons:alt` |
 
 #### C.2 — Aprobado y pendiente de escribir (entra en esta build si da tiempo)
 
 | Qué | Decisión | Estado |
 | --- | -------- | ------ |
-| **NSE iOS** — imagen en la notificación del sistema | ✅ "Sí, adelante" (2026-08-03) | **Pendiente**. Target iOS nuevo + config plugin. `richContent.image` no pinta nada en iOS sin esto |
 | **"Subrayar" en el menú nativo de selección** | ✅ "Escríbelo entero, yo compilo" (2026-08-03) | **Pendiente**. Alcance mínimo: un item "Subrayar" que abra la barra de colores que YA existe; el modo lápiz actual se mantiene |
 
 > Sobre el subrayado: replanteado el 2026-08-03 — `HighlightableReading` ya
@@ -160,9 +162,10 @@
 
 | Qué | Qué falta decidir |
 | --- | ----------------- |
-| **Sentry / crash reporting** (`PLAN_CALIDAD.md` Fase 6) | Cuenta y proveedor. `utils/logger.ts` ya expone `setReporter`, así que la app está preparada; falta el SDK nativo. Si se quiere en ESTA build hay que decidirlo antes de compilar |
-| **Icono alternativo Carismochito** (`PLAN_CARISMOCHITO.md` §5) | ¿Compensa para un modo efímero (se activa agitando)? Persiste fuera de la app y en Android exige `activity-alias` |
 | **Widget de Contigo** (`PLAN_WIDGET_CONTIGO.md`) | Es una build dedicada, no un extra de ésta: WidgetKit + App Group. ¿Se compromete y para cuándo? |
+
+> **Paso a paso del día de la build**: `docs/desarrollo/BUILD_AGOSTO_2026.md`
+> — variables de Sentry, credenciales de la extensión y checklist de pruebas.
 
 > ⚠️ **Guardarraíles ≠ build de tienda.** Lo que se buscaba en `PLAN_CALIDAD.md`
 > son los guardarraíles de la **Fase 0**, que es explícitamente OTA-safe (lint,

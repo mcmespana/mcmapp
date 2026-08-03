@@ -38,10 +38,14 @@
    avisos urgentes. El Panel debe mandar `channelId` top-level con el mismo valor
    que `data.category` (y `default` para `general`). Lista cerrada en §8 — un
    `channelId` que la app no declare **no se entrega** en Android.
-6. **Imagen en iOS**: **no hay Notification Service Extension**. `richContent.image`
-   + `mutableContent` NO pintan imagen en la notificación del sistema iOS. La imagen
-   solo se ve dentro de la app (modal de detalle) vía `data.imageUrl`. En Android sí
-   se ve. Mantener `data.imageUrl` siempre.
+6. **Imagen en iOS**: ✅ **RESUELTO en la build de tienda de agosto de 2026.** La app
+   ya lleva Notification Service Extension, así que `richContent.image` /
+   `data.imageUrl` **sí** pintan imagen en la notificación del sistema de iOS —
+   pero **solo si el push trae `mutableContent: true`**. Sin ese flag iOS ni
+   siquiera arranca la extensión. Mantener `data.imageUrl` siempre; la extensión
+   busca la URL en `data.imageUrl`, `richContent.image` y `attachment-url`, por ese
+   orden. En versiones anteriores de la app la imagen sigue viéndose solo dentro de
+   la app (el flag no molesta).
 
 ---
 
@@ -223,11 +227,18 @@ Dónde mandarlo:
 
 - **Android**: la imagen de `richContent.image` se muestra en la notificación del
   sistema automáticamente. ✅
-- **iOS**: **NO** hay Notification Service Extension configurada. `mutableContent` +
-  `richContent.image` **no** adjuntan imagen a la notificación del sistema. La imagen
-  solo aparece **dentro de la app** (modal de detalle) leyendo **`data.imageUrl`**. ⚠️
-- **Acción**: enviad siempre `data.imageUrl` (es lo que usa la app). Añadir NSE en
-  iOS es una mejora futura (requiere build nativo, no OTA).
+- **iOS**: ✅ desde la build de tienda de **agosto de 2026** hay Notification Service
+  Extension (`MCMNotificationService`), así que la imagen **sí** se adjunta a la
+  notificación del sistema. **Condición imprescindible: el push tiene que llevar
+  `mutableContent: true`.** Sin ese flag iOS no ejecuta la extensión y la
+  notificación llega sin foto (no falla, simplemente no hay imagen).
+- **Dónde busca la URL la extensión**, por orden: `data.imageUrl` →
+  `richContent.image` → `attachment-url`. Solo `https`. Si la descarga falla o
+  tarda más de ~30 s, la notificación se entrega **sin** imagen: nunca se pierde.
+- **Acción**: enviad siempre `data.imageUrl` (es lo que usa además el modal de
+  detalle dentro de la app) **y** `mutableContent: true` cuando haya imagen.
+- **Versiones antiguas de la app**: `mutableContent` no les molesta — sin extensión
+  el flag simplemente no hace nada.
 
 ## 5. Icono (`data.icon`)
 
@@ -460,8 +471,8 @@ diferencia: `default`/`urgente` se asoman, `cancionero`/`fotos` solo suenan y
 | `sound`                  | ✅ | Sonido (foreground y SO) |
 | `priority` (top-level)   | 🟡 | Solo entrega (FCM). Display fijo por channel MAX |
 | `categoryId`             | 🟡 | Solo iOS, ids `general`/`eventos`/`fotos`; resto ignorado |
-| `richContent.image`      | 🟡 | Android sí; **iOS no** (sin NSE) |
-| `mutableContent`         | 🟡 | iOS lo ignora en la práctica (sin NSE) |
+| `richContent.image`      | ✅ | Android e iOS (iOS necesita `mutableContent`) |
+| `mutableContent`         | ✅ | **Obligatorio en iOS** para que se vea la imagen |
 | `data.id`                | ✅ | **Crítico**: dedup / marca leído |
 | `data.internalRoute`     | ✅ | Navegación (con normalización + alias) |
 | `data.eventId`           | ✅ | Deep link al hub del evento (prioritario sobre internalRoute) |
@@ -493,8 +504,7 @@ Todo es **JS puro → compatible con OTA** (sin código nativo, sin `[skip-ota]`
 
 ## Mejoras futuras sugeridas (requieren build nativo o trabajo nuevo)
 
-1. **NSE iOS** para imagen en la notificación del sistema (`richContent.image`). Nativo → `[skip-ota]`.
-
-Hechas desde entonces: deep link a un evento concreto (`data.eventId`, §2), chip
-de color/icono por `data.category` en el centro de notificaciones (§6) y channels
-Android por categoría (§8).
+Ya no queda ninguna de las que había. Hechas desde entonces: deep link a un
+evento concreto (`data.eventId`, §2), chip de color/icono por `data.category` en
+el centro de notificaciones (§6), channels Android por categoría (§8) y la
+Notification Service Extension de iOS para la imagen (§TL;DR punto 6).
