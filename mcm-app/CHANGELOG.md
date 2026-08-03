@@ -45,6 +45,18 @@ TODO estaba desfasado, no pendiente. Corregido allí.
 nativos y no entran en la 2.1. Anotados en `docs/planes/BACKLOG.md` §C-bis con
 el motivo.
 
+## 2026-08-03 23:45 — Render tests de la barra de pestañas compacta
+
+Primeros render tests del repo (`react-test-renderer`, ya presente en
+`package.json` pero sin usar): `__tests__/CompactTabBar.test.tsx` cubre
+`components/tabs/CompactTabBar.tsx` (ver `docs/desarrollo/TABS_MAINTENANCE.md`).
+Mockea la vista nativa de `expo-native-compact-tabs` (no existe bajo Jest y
+resolver los PNG de iconos vía `Image.resolveAssetSource` tampoco funciona ahí)
+y comprueba lo que sí es responsabilidad nuestra: qué `items` recibe la barra,
+qué tab marca `selectedIndex` según el pathname, y que `onTabSelected` navega
+al tab pulsado o delega el re-tap en `tabBarController.handleReselect` sin
+navegar.
+
 ## 2026-08-03 23:15 — Enlaces legales en "Más" y limpieza de documentación
 
 **Enlaces legales.** Política de privacidad, términos y condiciones y aviso
