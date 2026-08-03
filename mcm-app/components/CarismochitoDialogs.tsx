@@ -1,6 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import {
-  Animated,
   Modal,
   Platform,
   Pressable,
@@ -20,24 +25,19 @@ const G_DARK = '#06210F';
 
 /** Tarjeta central con animación de entrada (escala + fade). */
 function PopCard({ children }: { children: React.ReactNode }) {
-  const enter = useRef(new Animated.Value(0)).current;
+  const enter = useSharedValue(0);
   useEffect(() => {
-    Animated.spring(enter, {
-      toValue: 1,
-      tension: 90,
-      friction: 9,
-      useNativeDriver: true,
-    }).start();
+    enter.value = withSpring(1, { stiffness: 90, damping: 9, mass: 1 });
   }, [enter]);
-  const scale = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.85, 1],
-  });
+
+  const cardStyle = useAnimatedStyle(() => ({
+    opacity: enter.value,
+    transform: [{ scale: interpolate(enter.value, [0, 1], [0.85, 1]) }],
+  }));
+
   return (
     <View style={styles.backdrop}>
-      <Animated.View
-        style={[styles.card, { opacity: enter, transform: [{ scale }] }]}
-      >
+      <Animated.View style={[styles.card, cardStyle]}>
         <LinearGradient
           colors={['#0C3D1C', G_DARK]}
           start={{ x: 0, y: 0 }}

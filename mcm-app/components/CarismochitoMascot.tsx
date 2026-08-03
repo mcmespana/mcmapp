@@ -1,5 +1,15 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  Easing,
+  cancelAnimation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
 
@@ -148,73 +158,56 @@ export default function CarismochitoMascot({
   size?: number;
   dance?: 1 | 2;
 }) {
-  const sway = useRef(new Animated.Value(0)).current; // rotación + balanceo lateral
-  const bob = useRef(new Animated.Value(0)).current; // salto vertical + escala
+  const sway = useSharedValue(0); // rotación + balanceo lateral
+  const bob = useSharedValue(0); // salto vertical + escala
 
   useEffect(() => {
-    const swayLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(sway, {
-          toValue: 1,
-          duration: dance === 2 ? 460 : 900,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(sway, {
-          toValue: -1,
-          duration: dance === 2 ? 460 : 900,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
+    const swayMs = dance === 2 ? 460 : 900;
+    const bobMs = dance === 2 ? 300 : 700;
+
+    sway.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: swayMs, easing: Easing.inOut(Easing.quad) }),
+        withTiming(-1, { duration: swayMs, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+      false,
     );
-    const bobLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bob, {
-          toValue: 1,
-          duration: dance === 2 ? 300 : 700,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(bob, {
-          toValue: 0,
-          duration: dance === 2 ? 300 : 700,
-          easing: Easing.in(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
+    bob.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: bobMs, easing: Easing.out(Easing.quad) }),
+        withTiming(0, { duration: bobMs, easing: Easing.in(Easing.quad) }),
+      ),
+      -1,
+      false,
     );
-    swayLoop.start();
-    bobLoop.start();
+
+    // Los bucles de Reanimated corren en el hilo de UI y NO se paran solos al
+    // desmontar: hay que cancelarlos.
     return () => {
-      swayLoop.stop();
-      bobLoop.stop();
+      cancelAnimation(sway);
+      cancelAnimation(bob);
     };
   }, [sway, bob, dance]);
 
-  const rotate = sway.interpolate({
-    inputRange: [-1, 1],
-    outputRange: dance === 2 ? ['-9deg', '9deg'] : ['-4deg', '4deg'],
-  });
-  const translateX = sway.interpolate({
-    inputRange: [-1, 1],
-    outputRange: dance === 2 ? [-6, 6] : [-2, 2],
-  });
-  const translateY = bob.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, dance === 2 ? -16 : -5],
-  });
-  const scale = bob.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, dance === 2 ? 1.08 : 1.03],
+  const danceStyle = useAnimatedStyle(() => {
+    const big = dance === 2;
+    return {
+      transform: [
+        {
+          translateX: interpolate(sway.value, [-1, 1], big ? [-6, 6] : [-2, 2]),
+        },
+        { translateY: interpolate(bob.value, [0, 1], [0, big ? -16 : -5]) },
+        {
+          rotate: `${interpolate(sway.value, [-1, 1], big ? [-9, 9] : [-4, 4])}deg`,
+        },
+        { scale: interpolate(bob.value, [0, 1], [1, big ? 1.08 : 1.03]) },
+      ],
+    };
   });
 
   return (
-    <Animated.View
-      style={{
-        transform: [{ translateX }, { translateY }, { rotate }, { scale }],
-      }}
-    >
+    <Animated.View style={danceStyle}>
       {MASCOT_PNG != null ? (
         <Image
           source={MASCOT_PNG}

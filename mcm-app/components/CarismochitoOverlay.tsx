@@ -1,13 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Animated,
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
   Easing,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+  cancelAnimation,
+  interpolate,
+  runOnJS,
+  useAnimatedProps,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
@@ -60,49 +66,41 @@ function CountdownScreen({
   onCancel: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const enter = useRef(new Animated.Value(0)).current;
-  const numberScale = useRef(new Animated.Value(1)).current;
+  const enter = useSharedValue(0);
+  const numberScale = useSharedValue(1);
   // Progreso del anillo: 0 (lleno) → 1 (vacío) de forma continua.
-  const progress = useRef(new Animated.Value(0)).current;
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    Animated.spring(enter, {
-      toValue: 1,
-      tension: 90,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
+    enter.value = withSpring(1, { stiffness: 90, damping: 10, mass: 1 });
     // El anillo se vacía suavemente durante toda la cuenta atrás.
-    Animated.timing(progress, {
-      toValue: 1,
+    progress.value = withTiming(1, {
       duration: totalSeconds * 1000,
       easing: Easing.linear,
-      useNativeDriver: false,
-    }).start();
+    });
   }, [enter, progress, totalSeconds]);
 
   useEffect(() => {
-    numberScale.setValue(0.5);
-    Animated.spring(numberScale, {
-      toValue: 1,
-      tension: 80,
-      friction: 6,
-      useNativeDriver: true,
-    }).start();
+    // Cada segundo el número entra de golpe desde pequeño.
+    numberScale.value = 0.5;
+    numberScale.value = withSpring(1, { stiffness: 80, damping: 6, mass: 1 });
   }, [countdown, numberScale]);
 
-  const enterScale = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.9, 1],
-  });
-  const dashoffset = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, RING_C],
-  });
+  const rootStyle = useAnimatedStyle(() => ({ opacity: enter.value }));
+  const contentStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(enter.value, [0, 1], [0.9, 1]) }],
+  }));
+  const numberStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: numberScale.value }],
+  }));
+  // El anillo es una prop de SVG, no un estilo: va por `useAnimatedProps`.
+  const ringProps = useAnimatedProps(() => ({
+    strokeDashoffset: interpolate(progress.value, [0, 1], [0, RING_C]),
+  }));
 
   return (
     <Animated.View
-      style={[styles.countdownRoot, { opacity: enter }]}
+      style={[styles.countdownRoot, rootStyle]}
       pointerEvents="auto"
     >
       <LinearGradient
@@ -119,8 +117,8 @@ function CountdownScreen({
       <Animated.View
         style={[
           styles.countdownContent,
-          { transform: [{ scale: enterScale }] },
           { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
+          contentStyle,
         ]}
       >
         <Text style={styles.activatingLabel}>activando modo</Text>
@@ -150,7 +148,7 @@ function CountdownScreen({
               strokeLinecap="round"
               fill="none"
               strokeDasharray={`${RING_C} ${RING_C}`}
-              strokeDashoffset={dashoffset}
+              animatedProps={ringProps}
               // Empieza arriba (12 en punto).
               transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
             />
@@ -158,9 +156,7 @@ function CountdownScreen({
 
           <View style={styles.ringInner} pointerEvents="none">
             <CarismochitoMascot size={132} dance={2} />
-            <Animated.Text
-              style={[styles.number, { transform: [{ scale: numberScale }] }]}
-            >
+            <Animated.Text style={[styles.number, numberStyle]}>
               {countdown}
             </Animated.Text>
           </View>
@@ -245,13 +241,54 @@ function randomGap() {
   return PEEK_MIN_GAP_MS + Math.random() * (PEEK_MAX_GAP_MS - PEEK_MIN_GAP_MS);
 }
 
+/**
+ * El cuerpo de la asomada. Va en su propio componente porque `hiddenX`/`shownX`
+ * sólo se conocen DESPUÉS del `if (!peek) return null`, y `useAnimatedStyle` no
+ * puede ir detrás de un return condicional.
+ */
+function PeekMascotBody({
+  slide,
+  isRight,
+  hiddenX,
+  shownX,
+  topPct,
+}: {
+  slide: SharedValue<number>;
+  isRight: boolean;
+  hiddenX: number;
+  shownX: number;
+  topPct: number;
+}) {
+  const style = useAnimatedStyle(() => ({
+    opacity: slide.value,
+    transform: [
+      { translateX: interpolate(slide.value, [0, 1], [hiddenX, shownX]) },
+      // Girada 90°: asoma tumbada de lado desde el borde.
+      { rotate: isRight ? '-90deg' : '90deg' },
+    ],
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.peekMascot,
+        isRight ? { right: 0 } : { left: 0 },
+        { top: `${topPct * 100}%` },
+        style,
+      ]}
+    >
+      <CarismochitoMascot size={PEEK_SIZE} dance={1} />
+    </Animated.View>
+  );
+}
+
 function SidePeekMascot() {
   // 'left' | 'right' alternando; posición vertical algo aleatoria por asomada.
   const [peek, setPeek] = useState<{
     side: 'left' | 'right';
     topPct: number;
   } | null>(null);
-  const slide = useRef(new Animated.Value(0)).current;
+  const slide = useSharedValue(0);
   const sideRef = useRef<'left' | 'right'>('right');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -267,26 +304,26 @@ function SidePeekMascot() {
           side: sideRef.current,
           topPct: 0.25 + Math.random() * 0.35,
         });
-        slide.setValue(0);
-        Animated.sequence([
-          Animated.spring(slide, {
-            toValue: 1,
-            tension: 70,
-            friction: 9,
-            useNativeDriver: true,
-          }),
-          Animated.delay(PEEK_HOLD_MS),
-          Animated.timing(slide, {
-            toValue: 0,
-            duration: 380,
-            easing: Easing.in(Easing.cubic),
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
+        const done = () => {
           if (cancelled) return;
           setPeek(null);
           scheduleNext(randomGap());
-        });
+        };
+        slide.value = 0;
+        slide.value = withSequence(
+          withSpring(1, { stiffness: 70, damping: 9, mass: 1 }),
+          withDelay(
+            PEEK_HOLD_MS,
+            withTiming(
+              0,
+              { duration: 380, easing: Easing.in(Easing.cubic) },
+              () => {
+                'worklet';
+                runOnJS(done)();
+              },
+            ),
+          ),
+        );
       }, delay);
     };
 
@@ -296,7 +333,7 @@ function SidePeekMascot() {
     return () => {
       cancelled = true;
       if (timerRef.current) clearTimeout(timerRef.current);
-      slide.stopAnimation();
+      cancelAnimation(slide);
     };
   }, [slide]);
 
@@ -306,30 +343,16 @@ function SidePeekMascot() {
   // Oculta fuera de pantalla → asoma dejando PEEK_REVEAL px dentro.
   const hiddenX = isRight ? PEEK_SIZE : -PEEK_SIZE;
   const shownX = isRight ? PEEK_SIZE - PEEK_REVEAL : -(PEEK_SIZE - PEEK_REVEAL);
-  const translateX = slide.interpolate({
-    inputRange: [0, 1],
-    outputRange: [hiddenX, shownX],
-  });
 
   return (
     <View pointerEvents="none" style={styles.peekRoot}>
-      <Animated.View
-        style={[
-          styles.peekMascot,
-          isRight ? { right: 0 } : { left: 0 },
-          {
-            top: `${peek.topPct * 100}%`,
-            opacity: slide,
-            transform: [
-              { translateX },
-              // Girada 90°: asoma tumbada de lado desde el borde.
-              { rotate: isRight ? '-90deg' : '90deg' },
-            ],
-          },
-        ]}
-      >
-        <CarismochitoMascot size={PEEK_SIZE} dance={1} />
-      </Animated.View>
+      <PeekMascotBody
+        slide={slide}
+        isRight={isRight}
+        hiddenX={hiddenX}
+        shownX={shownX}
+        topPct={peek.topPct}
+      />
     </View>
   );
 }
@@ -343,44 +366,38 @@ const BADGE_VISIBLE_MS = 3800;
 
 function FloatingBadge({ onOpenInfo }: { onOpenInfo: () => void }) {
   const insets = useSafeAreaInsets();
-  const enter = useRef(new Animated.Value(0)).current;
+  const enter = useSharedValue(0);
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    Animated.spring(enter, {
-      toValue: 1,
-      tension: 80,
-      friction: 9,
-      useNativeDriver: true,
-    }).start();
+    enter.value = withSpring(1, { stiffness: 80, damping: 9, mass: 1 });
 
     // Se asoma para anunciar el modo y, pasados unos segundos, se desliza
     // hacia arriba y se desmonta para no estorbar (se sigue saliendo agitando).
     const t = setTimeout(() => {
-      Animated.timing(enter, {
-        toValue: 0,
-        duration: 420,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }).start(() => setHidden(true));
+      enter.value = withTiming(
+        0,
+        { duration: 420, easing: Easing.in(Easing.cubic) },
+        () => {
+          'worklet';
+          runOnJS(setHidden)(true);
+        },
+      );
     }, BADGE_VISIBLE_MS);
     return () => clearTimeout(t);
   }, [enter]);
 
-  const translateY = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-60, 0],
-  });
+  const badgeStyle = useAnimatedStyle(() => ({
+    opacity: enter.value,
+    transform: [{ translateY: interpolate(enter.value, [0, 1], [-60, 0]) }],
+  }));
 
   if (hidden) return null;
 
   return (
     <Animated.View
       pointerEvents="box-none"
-      style={[
-        styles.badgeRoot,
-        { top: insets.top + 8, opacity: enter, transform: [{ translateY }] },
-      ]}
+      style={[styles.badgeRoot, { top: insets.top + 8 }, badgeStyle]}
     >
       <Pressable
         onPress={onOpenInfo}
