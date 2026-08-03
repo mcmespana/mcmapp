@@ -11,9 +11,13 @@ import type { WebViewProgressEvent } from 'react-native-webview/lib/WebViewTypes
 import { useToast } from '@/contexts/AppToastContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
+import {
+  COMUNICA_BASE_URL,
+  consumePendingComunicaAuthUrl,
+  subscribeComunicaAuthUrl,
+} from '@/utils/pendingComunicaLink';
 
-export const COMUNICA_URL =
-  'https://comunica.movimientoconsolacion.com/aptest/?app=1';
+export const COMUNICA_URL = `${COMUNICA_BASE_URL}?app=1`;
 
 /**
  * Propaga el tema de la app (claro/oscuro) a la web embebida. Se manda por
@@ -147,9 +151,20 @@ export function useComunicaWebView(pageBg: string, safeAreaJS = '') {
     latchedTheme.current = scheme;
   }
   const initialTheme = latchedTheme.current;
+
+  // Enlace de acceso llegado por deep link desde el correo (ver
+  // `utils/pendingComunicaLink.ts`). Manda sobre la URL normal: es justo lo que
+  // la persona ha pedido al pulsar el botón del email. Cambiarlo RECARGA el
+  // WebView a propósito — es la única forma de que WordPress vea el token.
+  const [authUrl, setAuthUrl] = useState<string | null>(
+    consumePendingComunicaAuthUrl,
+  );
+  useEffect(() => subscribeComunicaAuthUrl(setAuthUrl), []);
+
   const sourceUri = useMemo(
-    () => (initialTheme ? `${COMUNICA_URL}&theme=${initialTheme}` : null),
-    [initialTheme],
+    () =>
+      initialTheme ? `${authUrl ?? COMUNICA_URL}&theme=${initialTheme}` : null,
+    [initialTheme, authUrl],
   );
   const themeJS = useMemo(
     () => themeBridgeJS(scheme, pageBg),
