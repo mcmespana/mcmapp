@@ -18,6 +18,27 @@
 
 ---
 
+## 2026-08-04 01:20 — Examen del día: celebra siempre y ya no queda tapado por las pestañas
+
+- **La celebración se lanza SIEMPRE al guardar**, no solo si la revisión es de
+  hoy: el hábito se marca igual en retroactivas, así que la recompensa debe ser
+  la misma. Además ahora se sale de la pantalla cuando el burst termina (2,1 s)
+  en vez de a mitad (1,4 s), que era por lo que "no celebraba".
+- **Los botones de Continuar / Guardar ya no quedan debajo de la barra flotante
+  de pestañas**: el footer va en el flujo, así que es él quien reserva el hueco
+  (`useTabBarClearance`) en lugar del contenido del scroll.
+- **Una sola tipografía para todo lo que se escribe** en los dos pasos: la lista
+  de gratitud usaba la fuente del sistema a 14 y los textos largos serif a 15,
+  de modo que cada paso se veía distinto.
+- **Los campos de la lista centran bien el texto**: la fila pasa a ser la caja
+  (flex row) con la estrella y el input como hermanos centrados, en vez de una
+  estrella absoluta con `lineHeight: 50` a mano y el padding vertical fantasma
+  de Android sin desactivar.
+- Repaso de UX: etiqueta "Paso N de 2 · Agradecer/Revisar", transición cruzada
+  entre pasos, háptica al cambiar de paso, de modo y de fecha, y añadir/quitar
+  agradecimientos en una sola fila con iconos.
+- Archivo: `app/(tabs)/contigo/revision.tsx`
+
 ## 2026-08-04 00:30 — Versión 2.1.0 · fuera las barras opacas fijas
 
 **Versión 2.1.0** (`app.json`: `version` y `runtimeVersion`). El bump de
@@ -205,12 +226,12 @@ Android tenía un único canal (`default`, importancia `MAX`): todo salía igual
 agresivo y silenciar el cantoral significaba silenciarlo todo. Ahora hay siete,
 uno por cada categoría de negocio que ya manda el Panel en `data.category`:
 
-| Canal | Importancia | Efecto |
-| ----- | ----------- | ------ |
-| `default` (general) · `urgente` | `MAX` | Heads-up + sonido |
-| `eventos` · `celebraciones` | `HIGH` | Heads-up + sonido |
-| `cancionero` · `fotos` | `DEFAULT` | Sonido, sin heads-up |
-| `mantenimiento` | `LOW` | Silencioso, solo bandeja |
+| Canal                           | Importancia | Efecto                   |
+| ------------------------------- | ----------- | ------------------------ |
+| `default` (general) · `urgente` | `MAX`       | Heads-up + sonido        |
+| `eventos` · `celebraciones`     | `HIGH`      | Heads-up + sonido        |
+| `cancionero` · `fotos`          | `DEFAULT`   | Sonido, sin heads-up     |
+| `mantenimiento`                 | `LOW`       | Silencioso, solo bandeja |
 
 Los ids son literalmente los valores de `category`, con `general` → `default`
 (el id de un canal es inmutable en Android: renombrarlo habría perdido los
@@ -1502,7 +1523,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`
