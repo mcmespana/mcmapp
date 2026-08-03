@@ -96,13 +96,16 @@ Carismochito y subrayado nativo. Todo NATIVO, nada sale por OTA.
       justificados arriba. Hacerlo cuando la build de tienda esté validada, no
       antes: son cambios que solo añaden ruido si hay que revertir algo.
 
-### 3. Headers que se esconden al hacer scroll
+### 3. Headers que se esconden al hacer scroll — ✅ CERRADO (2026-08-03)
 
-- [ ] **Calendario**: es el otro tab que sigue con header opaco
-      (`headerShown: true`). Mismo patrón que Fotos: `ScreenHero` dentro del
-      scroller y `headerShown: false`. **Requiere el móvil delante**: hay que
-      recolocar el selector de mes y los chips de filtro, que hoy van pegados
-      arriba, y eso a ciegas se rompe. No hacerlo justo antes de una build.
+Ya no queda ninguna pantalla con barra opaca fija. Fotos (sin hero) y Calendario
+(`headerShown: false`) fueron las dos últimas. **Los headers de evento ya eran
+transparentes con glass en iOS** desde junio — este TODO decía lo contrario y
+estaba desfasado; en Android/web siguen opacos a propósito, porque allí no hay
+glass del sistema que usar.
+
+Pendiente de mirar en dispositivo: que en Fotos y Calendario el contenido no
+quede pegado a la barra de estado ni le falte respiro arriba.
 
 ### 4. Varios de prioridad alta
 

@@ -474,9 +474,11 @@ export function CalendarScreen() {
       style={[
         styles.container,
         { flex: 1 },
-        // Header transparente en iOS → reservamos su altura para que el
-        // contenido no quede debajo.
-        Platform.OS === 'ios' && { paddingTop: insets.top + 44 },
+        // Ya no hay header de navegación (`headerShown: false` en
+        // TABS_CONFIG): solo hace falta el hueco de la barra de estado, igual
+        // en las dos plataformas. Antes se reservaban 44pt extra para un
+        // header que en Android además era una barra opaca fija.
+        { paddingTop: insets.top },
       ]}
     >
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}

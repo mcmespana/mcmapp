@@ -18,6 +18,33 @@
 
 ---
 
+## 2026-08-04 00:30 — Versión 2.1.0 · fuera las barras opacas fijas
+
+**Versión 2.1.0** (`app.json`: `version` y `runtimeVersion`). El bump de
+`runtimeVersion` separa el canal de OTAs del de la 2.0, que es lo que toca al
+cambiar el binario.
+
+**Fotos y Calendario dejan de tener cabecera fija.** Eran las dos últimas
+pantallas con una barra clavada arriba, y en Android además era opaca y de
+color:
+
+- **Fotos**: fuera el hero "Fotos · Galería de fotos MCM". La pestaña ya se
+  llama Fotos y las portadas se explican solas; ese bloque de dos líneas se
+  comía una pantalla entera de álbumes cada vez que entrabas.
+- **Calendario**: `headerShown: false`. El conmutador Calendario/Agenda hace de
+  ancla visual. En iOS se quitan también los 44pt que se reservaban para un
+  header que ya era transparente.
+
+**Hallazgo**: los headers de los eventos (hub y sub-pantallas) **ya eran
+transparentes con glass del sistema en iOS** desde la pasada de junio
+(`eventScreenOptions` + el `screenOptions` del stack). Lo que sigue opaco es
+Android/web, donde no hay glass de sistema que usar — o sea que el item del
+TODO estaba desfasado, no pendiente. Corregido allí.
+
+**Widget de Contigo y Firebase App Check → build 2.2 (nov-dic).** Los dos son
+nativos y no entran en la 2.1. Anotados en `docs/planes/BACKLOG.md` §C-bis con
+el motivo.
+
 ## 2026-08-03 23:15 — Enlaces legales en "Más" y limpieza de documentación
 
 **Enlaces legales.** Política de privacidad, términos y condiciones y aviso

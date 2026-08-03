@@ -28,10 +28,10 @@
 
 |  |  |
 | --- | --- |
-| **Ahora mismo** | **Build de tienda de agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6) |
-| **Bloqueado por ti** | Widget de Contigo (¿se compromete?) · Firebase App Check (¿compensa el riesgo?) · Integración D2 (modelo de auth del panel) · Panel Pañuelo (falta plan funcional) |
+| **Ahora mismo** | **Build de tienda 2.1 — agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6) |
+| **Bloqueado por ti** | Integración D2 (modelo de auth del panel) · Panel Pañuelo (falta plan funcional) |
 | **Bloqueado fuera** | Que el Panel mande `channelId` y `mutableContent` · política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) |
-| **Después de la build** | UI Nativa Fase 2 (lo que queda) → Integración D → Widget → Carismochito + Panel Pañuelo |
+| **Después de la build** | Integración D → **Build 2.2 (nov-dic): Widget + App Check** → Carismochito + Panel Pañuelo |
 | **Oportunista** | Calidad Fase 1 (gigantes), Integraciones resto |
 | **Cerrado** | Los 8 planes tácticos (archivados en `archivo/tacticos/`), UI Nativa Fase 1, PR #298 |
 
@@ -151,6 +151,16 @@
 | **`channelId` en el push** | MCM Panel | El Panel debe mandar `channelId` top-level con el mismo valor que `data.category` (`general` → `default`). Sin él todo cae en `default` como hasta ahora; **con un `channelId` que la app no declare, Android no entrega la notificación**. Tabla cerrada en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8 |
 | **Probar los channels en un Android real** | Usuario | Requisito que ya fijaba `TODO.md`: verificar heads-up/sonido por canal antes de mergear a `production`. Los canales aparecen en los ajustes del sistema de todos los Android y sus preferencias no se pueden revertir a mano |
 
+### C-bis. Build 2.2 — noviembre/diciembre de 2026
+
+Decidido el 2026-08-03: estas dos son NATIVAS y **no entran en la 2.1**. Se
+guardan para la siguiente build de tienda.
+
+| Qué | Estado | Por qué se aplaza |
+| --- | ------ | ----------------- |
+| **Widget de Contigo** (WidgetKit iOS / App Widget Android + App Group) | 0% | Es una feature entera, no un extra. `docs/planes/PLAN_WIDGET_CONTIGO.md` |
+| **Firebase App Check** (DeviceCheck / Play Integrity) | 0% | Arrastra `@react-native-firebase` entero junto al SDK JS que ya se usa, y un *enforcement* mal configurado deja sin datos a toda la base instalada. Además la Integración D (reglas) sigue abierta, que es el agujero de verdad |
+
 #### C.4 — Sigue bloqueado por una decisión tuya
 
 | Qué | Qué falta decidir |
@@ -214,8 +224,6 @@ reabrir este plan tal cual, su premisa ya no aplica.
 | Decisión                                                                                                               | Bloquea                        | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`)                             | Integración D                  | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| **Widget de Contigo** — ¿se compromete? ¿iOS primero? ¿App Intents o solo abrir la app? | Widget de Contigo | `docs/planes/PLAN_WIDGET_CONTIGO.md` | "¿Arrancamos el Widget? Implica build de tienda propia" |
-| **Firebase App Check** — ¿compensa? | Protección de las claves públicas | `mcm-app/TODO.md` §Seguridad | "Es nativo, arrastra `@react-native-firebase` entero y mal configurado deja fuera a toda la base instalada. ¿Lo metemos en esta build o esperamos?" |
 | **Plan funcional del Panel Pañuelo**                                                                                   | Panel Pañuelo                  | `docs/planes/PLAN_PANEL_PANUELO.md` (stub)           | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o esperamos a después de Carismochito §1–4?"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ---

@@ -4,7 +4,7 @@
 > por sabido. Lo que hay que configurar UNA vez está en §2; el día de la build
 > se hace §3 → §4 → §5 → §6.
 >
-> Rama: `claude/compact-tabs-bar-uxxaoz` · App v2.0.0 · Expo SDK 57
+> Rama: `claude/compact-tabs-bar-uxxaoz` · **App v2.1.0** · Expo SDK 57
 
 ---
 
@@ -201,7 +201,7 @@ npm run eas:build:android -- --profile production
 ```
 
 `autoIncrement` sube solo el número de build. La versión visible sigue siendo
-la de `app.json` (`2.0.0`) — cámbiala ahí si quieres que salga otra.
+la de `app.json` (`2.1.0`) — cámbiala ahí si quieres que salga otra.
 
 ### 4.3 Subir a las tiendas
 

@@ -97,7 +97,10 @@ export const TABS_CONFIG: TabConfig[] = [
     androidIcon: 'calendar-today',
     tintColor: TabHeaderColors.calendario,
     headerColor: TabHeaderColors.calendario,
-    headerShown: true,
+    // Sin barra opaca fija: el conmutador Calendario/Agenda hace de
+    // ancla visual y el contenido se va con el scroll, como en Fotos y el
+    // cantoral.
+    headerShown: false,
   },
   {
     name: 'fotos',
