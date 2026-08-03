@@ -18,6 +18,29 @@
 
 ---
 
+## 2026-08-03 04:10 — La barra de pestañas ya no sale cortada al salir del onboarding
+
+Al terminar el onboarding, la barra flotante aparecía con las etiquetas ~34pt
+más abajo de la cuenta, cortadas contra el borde de la cápsula. Con el
+onboarding ya hecho de antes no pasaba, y se arreglaba solo al reiniciar.
+
+**Causa (nativa, de la librería).** En iOS 26 el hueco del home indicator lo
+reserva UIKit DENTRO de la `UITabBar`, a partir del `safeAreaInsets` de la
+vista. El onboarding se presenta como `fullScreenModal` y mientras está encima
+iOS **saca de la ventana** la vista que queda debajo, así que ese inset pasa a
+valer cero: la barra reparte sus items por los 78pt enteros en vez de por los 44
+de arriba. Al cerrarse el modal no cambia ningún tamaño, no llega otro
+`layoutSubviews` y la posición mala se queda pegada.
+
+**Arreglo (nativo).** `patches/expo-native-compact-tabs+0.2.0.patch` añade
+`didMoveToWindow()` y `safeAreaInsetsDidChange()`, que invalidan el layout de la
+vista **y el de la `UITabBar`** (lo que hay que recalcular es su reparto interno
+de items, no solo el frame). Cubre también el camino pre-iOS 26, donde
+`resolvedTabFrame` lee `window?.safeAreaInsets.bottom` y caía a 0.
+
+⚠️ **Es código nativo: necesita build de tienda.** Se retiró el apaño en JS que
+remontaba la barra (commit anterior), que ya no hace falta.
+
 ## 2026-08-03 03:20 — Migración a Reanimated (primer bloque): 6 componentes
 
 Primer tramo de la migración de animaciones de `Animated` de React Native a
@@ -50,32 +73,6 @@ Queda pendiente el resto (`CarismochitoOverlay`, `BottomSheet`, `OTAUpdatePrompt
 `FloatingMediaPlayer`…), listado por tamaño en `TODO.md`.
 
 ⚠️ **Sin validar en dispositivo**: son animaciones, y solo se comprueban mirándolas.
-
-## 2026-08-03 02:40 — La barra de pestañas ya no sale cortada al salir del onboarding
-
-Al terminar el onboarding, la barra flotante aparecía con las etiquetas
-cortadas por abajo y la cápsula de selección desalineada. Con el onboarding ya
-hecho de antes no pasaba, y se arreglaba solo al reiniciar la app.
-
-**Causa (nativa, de la librería).** El onboarding se presenta como
-`fullScreenModal` y iOS saca de la ventana la vista que queda debajo mientras
-dura. La barra nativa calcula su posición leyendo `window.safeAreaInsets.bottom`
-(`ExpoNativeCompactTabsView.swift`, `resolvedTabFrame`), así que al hacer layout
-sin ventana se coloca como si el móvil no tuviera home indicator. Al cerrarse el
-modal no cambia ningún tamaño, UIKit no vuelve a llamar a `layoutSubviews` y la
-posición mala se queda pegada.
-
-**Apaño (JS, va por OTA).** `CompactTabBar` se remonta UNA vez justo cuando el
-perfil aparece habiendo terminado ya la carga — que es exactamente "el usuario
-acaba de completar el onboarding" — para que la barra rehaga su layout ya con
-ventana. En un arranque en frío el perfil llega con la carga aún en curso, así
-que no se remonta nada y el caso normal no cambia.
-
-`expo-native-compact-tabs` está en 0.2.0, que es la última publicada: no hay
-versión con el fallo corregido. El arreglo de verdad sería parchear el Swift
-(`patches/`), y eso pide build de tienda.
-
-⚠️ Sin validar en dispositivo todavía.
 
 ## 2026-08-03 01:55 — Comunica se desliza bajo el notch en Android y 28 efectos de sincronización menos
 
