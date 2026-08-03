@@ -318,6 +318,19 @@ emulador, y mandar pushes desde el Panel):
 - [ ] Abre modales y bottom sheets en horizontal.
 - [ ] Barra de pestañas en horizontal: se ve entera y bien centrada.
 
+**Caché compartida de Firebase (Plan 008) — se estrena en esta build:**
+
+Está en `main` desde el 2026-07-22 pero **nunca ha llegado a un dispositivo**:
+se dejó fuera de `production` a propósito porque toca el hook central de datos
+(`useFirebaseData`) y cambia comportamiento visible del calendario
+(stale-while-revalidate: pinta lo cacheado y refresca por detrás).
+
+- [ ] Calendario: abre, cierra y vuelve a abrir. Los eventos salen **al
+      instante** desde caché y se actualizan solos si hay cambios.
+- [ ] Con el móvil en avión: sale lo cacheado, sin pantalla de error.
+- [ ] Cambia algo en Firebase y reabre: el cambio llega sin reinstalar.
+- [ ] Cantoral y Fotos: mismo hook, comprobar que no tardan más que antes.
+
 ### 5.2 Lo de siempre (regresión)
 
 - [ ] Cantoral: buscar, abrir canción, acordes, transportar, pantalla completa.
@@ -346,6 +359,24 @@ puede tocarse hasta que las tiendas tengan el binario nuevo:
 
 Si mueves `production` antes de que la gente tenga el binario nuevo, la OTA les
 manda un bundle que su app no puede ejecutar.
+
+### ⚠️ Antes de darle a "publicar" en las tiendas
+
+La analítica obliga a actualizar tres cosas **fuera del código**. Apple y Google
+lo preguntan en el formulario de envío, así que esto bloquea la publicación:
+
+- [ ] **Política de privacidad**: decir que se recogen datos de uso anónimos.
+      Ayuda que Aptabase no guarde identificadores persistentes de dispositivo
+      ni de usuario — la declaración es corta, pero hay que hacerla.
+- [ ] **App Store → ficha de privacidad**: declarar "Datos de uso → Datos de
+      interacción con el producto", **no vinculados** a la identidad del usuario
+      y **no usados para seguimiento**.
+- [ ] **Play Console → Data safety**: lo mismo, marcando que los datos van
+      cifrados en tránsito y que no se comparten con terceros.
+
+Si prefieres no tocar nada de esto todavía: **no pongas
+`EXPO_PUBLIC_APTABASE_KEY`**. Sin la clave la app no manda ningún evento y no
+hay nada que declarar; se enciende luego por OTA cuando los textos estén.
 
 ### Avisar al Panel
 
