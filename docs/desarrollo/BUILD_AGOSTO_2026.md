@@ -127,10 +127,42 @@ analítica** en toda la base instalada. Los workflows ya lo leen.
 La NSE es un **bundle id nuevo**: `com.familiaconsolacion.mcmapp.MCMNotificationService`.
 Necesita su propio App ID y su propio perfil de aprovisionamiento en Apple.
 
-**No hay que hacer nada por adelantado**: EAS lo detecta y lo crea solo. Pero la
-primera vez **pregunta por la terminal** (`Do you want EAS to handle credentials
-for the extension?` → **Yes**). Así que el primer build de iOS **no lo lances y
-te vayas a hacer otra cosa**: quédate los dos primeros minutos.
+**El proyecto es managed (CNG): la carpeta `ios/` NO existe cuando EAS resuelve
+las credenciales.** Por eso EAS no puede "ver" el target de la extensión por su
+cuenta — se entera al hacer prebuild, y para entonces los perfiles ya están
+resueltos y solo se generó el de la app principal. El build falla al firmar:
+
+```
+No profiles for 'com.familiaconsolacion.mcmapp.MCMNotificationService' were found
+```
+
+La extensión se le declara a mano en `app.json`, y **ya está puesto**:
+
+```jsonc
+"extra": {
+  "eas": {
+    "build": {
+      "experimental": {
+        "ios": {
+          "appExtensions": [
+            {
+              "targetName": "MCMNotificationService",
+              "bundleIdentifier": "com.familiaconsolacion.mcmapp.MCMNotificationService"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+Con eso, el primer build de iOS **pregunta por la terminal** si quieres que EAS
+genere las credenciales de la extensión → **Yes**. Así que ese primer build no
+lo lances y te vayas: quédate los dos primeros minutos.
+
+Para comprobarlo antes de compilar: `npx eas-cli credentials` → iOS → el perfil
+→ tienen que salir **dos** targets, la app y `MCMNotificationService`.
 
 ---
 
@@ -395,7 +427,7 @@ como hasta ahora — así que no hay prisa, pero sí cuidado al hacerlo.
 
 | Síntoma | Causa casi seguro | Arreglo |
 | --- | --- | --- |
-| El build de iOS falla en la fase de firma de `MCMNotificationService` | EAS no llegó a crear las credenciales de la extensión | Vuelve a lanzarlo y responde **Yes** a la pregunta de credenciales (§2.4) |
+| `No profiles for '…MCMNotificationService' were found` | Falta declarar la extensión en `extra.eas.build.experimental.ios.appExtensions` — en managed, EAS no la ve sola | Ya está en `app.json` (§2.5). Si sigue fallando: `npx eas-cli credentials` y genera el perfil de ese bundle id a mano |
 | App Store Connect rechaza el `.ipa` por versiones que no cuadran | La extensión y la app llevan `CFBundleVersion` distinto | Mira `plugins/withNotificationServiceExtension.js`: coge la versión de la misma config que la app, así que suele ser que se editó a mano |
 | App Store Connect rechaza el icono por canal alfa | Se regeneró `carismochito.png` sin `removeAlpha()` | `npm run icons:alt` (el script ya lo quita) |
 | El prebuild de iOS crea el target **dos veces** | Se lanzó `prebuild` sin `--clean` sobre un `ios/` viejo | `rm -rf ios` y repetir. El plugin ya se protege, pero con un proyecto a medias puede liarse |

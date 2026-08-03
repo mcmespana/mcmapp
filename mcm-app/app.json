@@ -204,7 +204,19 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "aa9f2d3a-b74a-4169-bad4-e851015e30c6"
+        "projectId": "aa9f2d3a-b74a-4169-bad4-e851015e30c6",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "MCMNotificationService",
+                  "bundleIdentifier": "com.familiaconsolacion.mcmapp.MCMNotificationService"
+                }
+              ]
+            }
+          }
+        }
       }
     },
     "updates": {
