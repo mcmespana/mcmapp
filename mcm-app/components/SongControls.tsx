@@ -4,10 +4,14 @@ import {
   Text,
   StyleSheet,
   Platform,
-  Animated,
   Pressable,
   TouchableOpacity,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { h } from '@/utils/haptics';
 import { PressableFeedback } from 'heroui-native';
 import GlassSurface from '@/components/ui/GlassSurface';
@@ -162,7 +166,7 @@ const SongControls: React.FC<SongControlsProps> = ({
   // El FAB va por encima de la barra de pestañas flotante.
   const tabBarClearance = useTabBarClearance();
   const layout = useResponsiveLayout();
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useSharedValue(0);
 
   // En iPad / web amplio el contenido del SongDetail está centrado con
   // `contentMaxWidth`. Alineamos el FAB con el borde derecho de ese
@@ -190,17 +194,12 @@ const SongControls: React.FC<SongControlsProps> = ({
       h.menuClose();
     }
     setShowActionButtons(toOpen);
-    Animated.spring(rotateAnim, {
-      toValue: toOpen ? 1 : 0,
-      useNativeDriver: Platform.OS !== 'web',
-      friction: 6,
-    }).start();
+    rotateAnim.value = withSpring(toOpen ? 1 : 0, { damping: 6, mass: 1 });
   };
 
-  const rotateInterpolation = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '45deg'],
-  });
+  const fabIconStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotateAnim.value * 45}deg` }],
+  }));
 
   useEffect(() => {
     return () => {
@@ -367,9 +366,7 @@ const SongControls: React.FC<SongControlsProps> = ({
                 tintColor={showActionButtons ? '#FF453A' : undefined}
               />
             )}
-            <Animated.View
-              style={{ transform: [{ rotate: rotateInterpolation }] }}
-            >
+            <Animated.View style={fabIconStyle}>
               <MaterialIcons
                 name={showActionButtons ? 'add' : 'tune'}
                 size={22}

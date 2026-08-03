@@ -18,6 +18,45 @@
 
 ---
 
+## 2026-08-03 05:40 — Migración a Reanimated TERMINADA (`refs` 277 → 34)
+
+Último bloque. Ya no queda ni un `useRef(new Animated.Value())` en la app, salvo
+el Wordle (código congelado). Los 34 avisos que quedan **no son animaciones**:
+son refs legítimas (`.panHandlers`, timers, callbacks estables, el ref del
+WebView…).
+
+En esta tanda: `CarismochitoOverlay` (31), `BottomSheet` (23),
+`CarismochitoMascot` (11), `HorarioScreen` (11), `SongFullscreenScreen` (10),
+`AppToastContext` (8), `ReadingCalendarSheet` (8), `CarismochitoDialogs` (7),
+`TransposeBottomSheet` (7), `HighlightActionBar` (7), `ComunicaScreen` (6),
+`SongDetailScreen` (5) y `SongControls` (2).
+
+**Lo que se gana** es que las animaciones corren en el hilo de UI y dejan de
+entrecortarse cuando JS está ocupado. Se nota sobre todo en la portada de
+Comunica (se ve MIENTRAS arranca el WebView), el burst de celebración (se lanza a
+la vez que se guarda el hábito) y el arrastre del reproductor flotante.
+
+**Decisión consciente**: el GESTO de `BottomSheet` se queda en `PanResponder`.
+Ese sheet lo comparten una decena de modales y muchos llevan un ScrollView
+dentro; pasarlo a gesture-handler cambiaría cómo compiten los dos por el toque,
+que es lo delicado. Sus animaciones sí están migradas.
+
+De paso, dos arreglos que salieron por el camino:
+
+- `ComunicaScreen` cierra el último `set-state-in-effect` de la migración
+  (quedan 6, todos justificados en `TODO.md`).
+- Los `PanResponder` de `BottomSheet` se crean UNA vez y se quedaban con el
+  `onClose` del primer render. Ahora va por ref.
+
+**`jest.config.js`**: Reanimated arranca su módulo nativo al importarse y bajo
+Jest revienta (`loadUnpackers`). Se añade el resolver que trae
+`react-native-worklets` para tests. Sin esto, cualquier fichero que acabe
+importando Reanimated —aunque sea de rebote a través de un contexto— tumbaba su
+suite entera; de hecho pasó al migrar `AppToastContext`.
+
+⚠️ **NADA de esto está validado en dispositivo**: son animaciones, y sólo se
+comprueban mirándolas. Es lo primero a repasar en la build de tienda.
+
 ## 2026-08-03 04:45 — Migración a Reanimated (segundo bloque): OTA prompt y reproductor flotante
 
 Sigue la migración. `react-hooks/refs` baja de 196 a **160** (117 de los 277

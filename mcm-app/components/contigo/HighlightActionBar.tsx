@@ -1,12 +1,17 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  Animated,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
   HIGHLIGHT_COLORS,
@@ -48,31 +53,29 @@ export function HighlightActionBar({
 }: HighlightActionBarProps) {
   // La barra de subrayado se coloca justo encima de la de pestañas.
   const tabBarClearance = useTabBarClearance();
-  const anim = useRef(new Animated.Value(0)).current;
+  const anim = useSharedValue(0);
 
   useEffect(() => {
-    Animated.spring(anim, {
-      toValue: visible ? 1 : 0,
-      useNativeDriver: Platform.OS !== 'web',
-      tension: 60,
-      friction: 10,
-    }).start();
+    anim.value = withSpring(visible ? 1 : 0, {
+      stiffness: 60,
+      damping: 10,
+      mass: 1,
+    });
   }, [visible, anim]);
 
-  const translateY = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [120, 0],
-  });
+  const barStyle = useAnimatedStyle(() => ({
+    opacity: anim.value,
+    transform: [{ translateY: interpolate(anim.value, [0, 1], [120, 0]) }],
+  }));
 
   return (
     <Animated.View
       pointerEvents={visible ? 'auto' : 'none'}
       style={[
         styles.wrap,
+        barStyle,
         {
           bottom: tabBarClearance + 8,
-          opacity: anim,
-          transform: [{ translateY }],
           backgroundColor: isDark ? '#26221C' : '#FFFFFF',
           borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
           shadowColor: '#000',

@@ -11,22 +11,27 @@
 // La mecánica (tema hacia la web, historial, progreso, errores) vive en
 // `hooks/useComunicaWebView.ts`; aquí solo queda el layout de cada plataforma.
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Platform,
   View,
   StyleSheet,
   StatusBar,
-  Animated,
   useWindowDimensions,
 } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { TAB_BAR_HEIGHT } from '@/constants/spacing';
 import { useWebViewCollapse } from '@/components/tabs/tabBarController';
-import { durations, easings } from '@/constants/animations';
+import { durations, reaEasings } from '@/constants/animations';
 import GlassSurface from '@/components/ui/GlassSurface';
 import WebViewNavControls from '@/components/ui/WebViewNavControls';
 import ComunicaLoader from '@/components/ui/ComunicaLoader';
@@ -120,23 +125,35 @@ export default function ComunicaScreen() {
 
   // La portada de carga se desvanece cuando la web ya está lista (y se
   // desmonta al acabar la transición, para no dejar una capa invisible encima).
-  const loaderOpacity = useRef(new Animated.Value(1)).current;
+  const loaderOpacity = useSharedValue(1);
   const [loaderMounted, setLoaderMounted] = useState(true);
+
+  // Se ajusta durante el render: si la web vuelve a cargar (reintento), la
+  // portada tiene que estar montada YA en ese mismo render, no un frame después.
+  const [lastStatus, setLastStatus] = useState(status);
+  if (status !== lastStatus) {
+    setLastStatus(status);
+    if (status !== 'ready') setLoaderMounted(true);
+  }
+
   useEffect(() => {
-    if (status === 'ready') {
-      Animated.timing(loaderOpacity, {
-        toValue: 0,
-        duration: durations.slow,
-        easing: easings.exit,
-        useNativeDriver: true,
-      }).start(({ finished }) => {
-        if (finished) setLoaderMounted(false);
-      });
-    } else {
-      setLoaderMounted(true);
-      loaderOpacity.setValue(1);
+    if (status !== 'ready') {
+      loaderOpacity.value = 1;
+      return;
     }
+    loaderOpacity.value = withTiming(
+      0,
+      { duration: durations.slow, easing: reaEasings.exit },
+      (finished) => {
+        'worklet';
+        if (finished) runOnJS(setLoaderMounted)(false);
+      },
+    );
   }, [status, loaderOpacity]);
+
+  const loaderStyle = useAnimatedStyle(() => ({
+    opacity: loaderOpacity.value,
+  }));
 
   // Texto de la status bar: oscuro sobre fondo claro, claro sobre fondo oscuro.
   const barStyle = scheme === 'dark' ? 'light-content' : 'dark-content';
@@ -174,7 +191,7 @@ export default function ComunicaScreen() {
   const loaderOverlay = (insetTop: number, insetBottom: number) =>
     loaderMounted || status === 'error' ? (
       <Animated.View
-        style={[StyleSheet.absoluteFill, { opacity: loaderOpacity }]}
+        style={[StyleSheet.absoluteFill, loaderStyle]}
         pointerEvents={status === 'ready' ? 'none' : 'auto'}
       >
         <ComunicaLoader

@@ -39,7 +39,7 @@
 > optimizar, así que esos componentes se quedan sin memoización automática. No
 > son bugs. Están en `warn` en `eslint.config.js`.
 
-- [ ] **`react-hooks/set-state-in-effect` — quedan 7** (eran 35). Los 28
+- [ ] **`react-hooks/set-state-in-effect` — quedan 6** (eran 35). Los 29
       arreglados el 2026-08-02 con dos patrones, ninguno de ellos `key={visible}`:
 
       - **Estado DERIVADO** donde el efecto solo copiaba algo calculable:
@@ -58,7 +58,7 @@
                 `key={visible}`, que además habría matado la animación de salida del
                 `BottomSheet`).
 
-      Los **7 que quedan NO son deuda pendiente, son decisiones**; no vayas a por el
+      Los **6 que quedan NO son deuda pendiente, son decisiones**; no vayas a por el
       número:
 
       - `WordleScreen` (×2) y `useWordleGame` — **código congelado**, CLAUDE.md
@@ -74,50 +74,41 @@
                 render en la pantalla más usada de la app. Hoy la pantalla pinta primero y
                 formatea después; cambiarlo es una decisión de rendimiento **que hay que
                 medir en dispositivo**.
-              - `ComunicaScreen:136` — el montaje/desmontaje del loader va atado al
-                `Animated.Value` del fundido. **Entra en la migración a Reanimated**
-                (abajo), que reescribe esa animación de todas formas.
+              - ~~`ComunicaScreen`~~ — hecho al migrarlo a Reanimated.
 
-- [ ] **`react-hooks/refs` — quedan 160** (eran 277). Migración de animaciones a
-      Reanimated **EN CURSO**. Viene de los `useRef(new Animated.Value(0)).current`
-      repartidos por la app (cada valor genera varios avisos, uno por lectura en
-      render). **Beneficio real, no cosmético**: Reanimated corre las animaciones
-      en el hilo de UI, así que no se entrecortan cuando JS está ocupado.
+- [x] ~~`react-hooks/refs`~~ — **migración a Reanimated TERMINADA** (2026-08-03).
+      De 277 avisos a **34**, y los 34 que quedan **no son animaciones**: son
+      refs legítimas (`.panHandlers`, `.current` de timers, callbacks estables,
+      el ref del WebView…). Ya no queda ni un `useRef(new Animated.Value())` en
+      la app salvo el Wordle, que es código congelado.
 
-      - ✅ **Hechos (2026-08-03, 117 avisos)**: `ComunicaLoader` (24),
-                `OTAUpdatePrompt` (19), `FloatingMediaPlayer` (17),
-                `CarismochitoChargeDots` (14), `ComunicaTopProgress` (13),
-                `BreathingPhase` (10), `CelebrationBurst` (10) y
-                `CelebrationAnimation` (10 — resultó ser una copia literal de
-                `CelebrationBurst`, así que ahora delega en él).
-              - **Pendientes, por tamaño**: `CarismochitoOverlay` (31),
-                `BottomSheet` (23), `HorarioScreen` (11), `CarismochitoMascot` (11),
-                `SongFullscreenScreen` (10), `ReadingCalendarSheet` (8),
-                `AppToastContext` (8), `CarismochitoDialogs` (7),
-                `TransposeBottomSheet` (7), `HighlightActionBar` (7),
-                `ComunicaScreen` (6), `SongDetailScreen` (5) y 15 ficheros con 1-5.
-                **`WordleScreen` NO se toca** (código congelado).
-              - **Cómo se está haciendo** (seguir el mismo patrón): `useSharedValue` +
-                `useAnimatedStyle`, curvas desde `reaEasings` en
-                `constants/animations.ts` (son las MISMAS que `easings`, pero en la
-                versión worklet de Reanimated — no son intercambiables). Los arrays de
-                `Animated.Value` se convierten en un subcomponente por elemento con su
-                propio shared value, porque los hooks no se pueden llamar en un bucle.
-                `Animated.loop` → `withRepeat`, `Animated.sequence` → `withSequence`,
-                `Animated.delay` → `withDelay`, `Animated.spring({tension, friction})`
-                → `withSpring({stiffness, damping})`, e `interpolate()` dentro del
-                worklet en vez de `.interpolate()`. **Los bucles infinitos hay que
-                pararlos a mano** con `cancelAnimation` al desmontar/ocultar: en
-                Reanimated siguen corriendo en el hilo de UI aunque nadie los mire
-                (con `Animated.loop` bastaba el `.stop()`). Los `PanResponder` pasan a
-                `Gesture.Pan()` de gesture-handler, guardando la posición inicial en
-                `onStart` para replicar `extractOffset`/`flattenOffset`.
-              - **Ojo**: cada fichero migrado cambia avisos de `refs` por 1-2 de
-                `immutability` (`sharedValue.value = …`), que son la API de Reanimated
-                y no tienen arreglo. Es el intercambio esperado: 117 `refs` menos ha
-                costado 1 `immutability` más.
-              - ⚠️ **Nada de esto está validado en dispositivo**: son animaciones, y
-                sólo se comprueban mirándolas.
+      **Lo que se ganó**: Reanimated corre las animaciones en el hilo de UI, así
+      que dejan de entrecortarse cuando JS está ocupado. Se nota especialmente en
+      la portada de Comunica (se ve MIENTRAS arranca el WebView), el burst de
+      celebración (se lanza a la vez que se guarda el hábito) y el arrastre del
+      reproductor flotante (con un vídeo reproduciéndose al lado).
+
+      **Recetario, por si hay que migrar algo nuevo**: `useSharedValue` +
+      `useAnimatedStyle`; curvas desde `reaEasings` (`constants/animations.ts`),
+      que son las MISMAS que `easings` pero en la versión worklet — no son
+      intercambiables. `Animated.loop` → `withRepeat`, `Animated.sequence` →
+      `withSequence`, `Animated.delay` → `withDelay`,
+      `Animated.spring({tension, friction})` → `withSpring({stiffness, damping})`,
+      `.interpolate()` → `interpolate()` dentro del worklet, y las props de SVG
+      por `useAnimatedProps` (no por estilo). Un array de `Animated.Value` se
+      convierte en un subcomponente por elemento con su propio shared value,
+      porque los hooks no se pueden llamar en un bucle. **Los bucles infinitos
+      hay que pararlos a mano** con `cancelAnimation`: siguen corriendo en el
+      hilo de UI aunque el componente esté oculto.
+
+      **Decisión consciente**: el gesto de `BottomSheet` se queda en
+      `PanResponder`. Ese sheet lo comparten una decena de modales y muchos
+      llevan un ScrollView dentro; pasarlo a gesture-handler cambiaría cómo
+      compiten los dos por el toque. Sus animaciones sí están migradas.
+
+      ⚠️ **NADA de esto está validado en dispositivo**: son animaciones, y solo
+      se comprueban mirándolas. Es lo primero que hay que repasar en la build.
+
 - [ ] **`react-hooks/preserve-manual-memoization` — quedan 5** (de 12). Los 7
       mecánicos ya están hechos (el patrón era: usar `user?.uid` dentro de un
       `useCallback` hace que el compilador infiera `user` entero y se salte el
@@ -128,16 +119,18 @@
       `NotificationsBottomSheet:100`. Piden reestructurar cada caso y el premio
       es pequeño: **hacerlo sólo de pasada si se toca ese fichero por otra
       cosa**.
-- [ ] **NO tocar: `react-hooks/immutability` (14)** — son `sharedValue.value =
+- [ ] **NO tocar: `react-hooks/immutability` (26, eran 14)** — son `sharedValue.value =
 …`, o sea LA api de Reanimated. No tiene arreglo por diseño.
 - [ ] **NO tocar: `react-hooks/purity` (3)** — revisados uno a uno, los tres son
       falsos positivos (`Date.now()` en un handler async de `ReflexionesScreen`,
       `Math.random()` en un `useMemo` del Wordle, que además es código
       congelado).
-- [ ] Cuando `refs` esté hecho, **subir las reglas a `error`** en
-      `eslint.config.js` para que no se cuelen más. Ojo: `set-state-in-effect` no
-      puede subir a `error` tal cual — los 7 casos de arriba son legítimos y
-      necesitarían su `eslint-disable-next-line` con el motivo antes de hacerlo.
+- [ ] **Subir `react-hooks/refs` a `error`** en `eslint.config.js`: con la
+      migración hecha, los 34 que quedan son refs legítimas y habría que darles
+      su `eslint-disable-next-line` con el motivo antes de subir la regla.
+      `set-state-in-effect` tampoco puede subir tal cual — mismos 6 casos
+      justificados arriba. Hacerlo cuando la build de tienda esté validada, no
+      antes: son cambios que solo añaden ruido si hay que revertir algo.
 
 ### 3. Headers que se esconden al hacer scroll
 

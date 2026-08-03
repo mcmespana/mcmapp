@@ -1,12 +1,16 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
-  Animated,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from '@/components/BottomSheet';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -48,7 +52,7 @@ export function ReadingCalendarSheet({
 
   // Mes visible (YYYY-MM); arranca en el mes de la fecha seleccionada.
   const [monthKey, setMonthKey] = useState(() => selectedDate.slice(0, 7));
-  const slide = useRef(new Animated.Value(0)).current;
+  const slide = useSharedValue(0);
 
   // Re-centrar el mes al abrir.
   const wasVisible = useRef(false);
@@ -78,14 +82,13 @@ export function ReadingCalendarSheet({
     const d = new Date(year, month - 1 + delta, 1);
     setMonthKey(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
     // Pequeño deslizamiento direccional al cambiar de mes.
-    slide.setValue(delta * 26);
-    Animated.spring(slide, {
-      toValue: 0,
-      useNativeDriver: Platform.OS !== 'web',
-      tension: 90,
-      friction: 12,
-    }).start();
+    slide.value = delta * 26;
+    slide.value = withSpring(0, { stiffness: 90, damping: 12, mass: 1 });
   };
+
+  const gridStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: slide.value }],
+  }));
 
   const roseDot = HIGHLIGHT_COLORS.rose.swatch;
 
@@ -123,9 +126,7 @@ export function ReadingCalendarSheet({
         </View>
 
         {/* ── Rejilla ── */}
-        <Animated.View
-          style={[styles.grid, { transform: [{ translateX: slide }] }]}
-        >
+        <Animated.View style={[styles.grid, gridStyle]}>
           {cells.map((day, i) => {
             if (day === null) {
               return <View key={`e${i}`} style={styles.cell} />;

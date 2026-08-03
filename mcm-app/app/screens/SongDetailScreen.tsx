@@ -5,9 +5,14 @@ import {
   View,
   Platform,
   Dimensions,
-  Animated,
   TouchableOpacity,
 } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -171,7 +176,7 @@ export default function SongDetailScreen({
   const effectiveCapo =
     currentCapoOverride !== null ? currentCapoOverride : capo;
 
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useSharedValue(0);
   const screenWidth = Dimensions.get('window').width;
 
   const {
@@ -506,18 +511,16 @@ export default function SongDetailScreen({
 
   const animateAndSet = (params: any, direction: 'next' | 'prev') => {
     const toValue = direction === 'next' ? -screenWidth : screenWidth;
-    Animated.timing(slideAnim, {
-      toValue,
-      duration: durations.quick,
-      useNativeDriver: true,
-    }).start(() => {
+    // La canción actual se va por un lado; al terminar se cambian los params y
+    // la nueva entra desde el lado contrario.
+    const swapAndSlideIn = () => {
       navigation.setParams(params);
-      slideAnim.setValue(-toValue);
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: durations.quick,
-        useNativeDriver: true,
-      }).start();
+      slideAnim.value = -toValue;
+      slideAnim.value = withTiming(0, { duration: durations.quick });
+    };
+    slideAnim.value = withTiming(toValue, { duration: durations.quick }, () => {
+      'worklet';
+      runOnJS(swapAndSlideIn)();
     });
   };
 
@@ -560,13 +563,13 @@ export default function SongDetailScreen({
   // fondo (sin el efecto de "dos fondos").
   const screenBg = isDark ? '#2C2C2E' : '#FFFFFF';
 
+  const slideStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: slideAnim.value }],
+  }));
+
   const contentView = (
     <Animated.View
-      style={[
-        styles.container,
-        { transform: [{ translateX: slideAnim }] },
-        { backgroundColor: screenBg },
-      ]}
+      style={[styles.container, { backgroundColor: screenBg }, slideStyle]}
     >
       <ChoirSessionBanner />
       {/* Letra a pantalla completa: scrollea bajo el header transparente (en

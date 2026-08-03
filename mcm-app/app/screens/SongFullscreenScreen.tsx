@@ -5,14 +5,12 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  Animated,
-  Pressable,
-} from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   RouteProp,
@@ -67,7 +65,7 @@ function AutoScrollControls({
   bottom,
 }: AutoScrollControlsProps) {
   const [expanded, setExpanded] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useSharedValue(0);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelHideTimer = useCallback(() => {
@@ -88,13 +86,13 @@ function AutoScrollControls({
   }, [scheduleHide]);
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: expanded ? 1 : 0,
+    fadeAnim.value = withTiming(expanded ? 1 : 0, {
       duration: expanded ? 180 : 240,
-      useNativeDriver: true,
-    }).start();
+    });
     if (!expanded) cancelHideTimer();
   }, [expanded, fadeAnim, cancelHideTimer]);
+
+  const panelStyle = useAnimatedStyle(() => ({ opacity: fadeAnim.value }));
 
   useEffect(() => () => cancelHideTimer(), [cancelHideTimer]);
 
@@ -120,7 +118,7 @@ function AutoScrollControls({
     <View style={[styles.controlsCluster, { bottom }]} pointerEvents="box-none">
       {/* Selector de velocidad — pill horizontal, sólo visible al interactuar */}
       <Animated.View
-        style={[styles.speedPanel, { opacity: fadeAnim }]}
+        style={[styles.speedPanel, panelStyle]}
         pointerEvents={expanded ? 'auto' : 'none'}
       >
         <TranslucentBg isDark={isDark} style={styles.speedPanelBg} />
@@ -331,14 +329,12 @@ export default function SongFullscreenScreen({
   );
 
   // Fade-in de entrada
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useSharedValue(0);
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
+    fadeAnim.value = withTiming(1, { duration: 400 });
   }, [fadeAnim]);
+
+  const screenStyle = useAnimatedStyle(() => ({ opacity: fadeAnim.value }));
 
   const closeTop = Math.max(insets.top, 12) + 8;
   const controlsBottom = Math.max(insets.bottom, 12) + 16;
@@ -347,7 +343,8 @@ export default function SongFullscreenScreen({
     <Animated.View
       style={[
         styles.container,
-        { backgroundColor: theme.background, opacity: fadeAnim },
+        { backgroundColor: theme.background },
+        screenStyle,
       ]}
     >
       {/* Contenido de la canción */}
