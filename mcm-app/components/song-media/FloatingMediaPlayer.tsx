@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Modal,
+  LayoutAnimation,
+  Linking,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -19,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { h } from '@/utils/haptics';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { extractYouTubeId } from '@/utils/youtube';
 
 export interface FloatingMediaSource {
   /** 'youtube' → URL de embed de YouTube · 'drive' → URL de preview de Drive. */
@@ -32,11 +35,29 @@ interface FloatingMediaPlayerProps {
   onClose: () => void;
 }
 
+const YT_RED = '#FF3B30';
 const PLAYER_WIDTH = 208;
 // 16:9 → 208 * 9 / 16 ≈ 117 (igual que `.ytf-screen` del diseño).
 const VIDEO_HEIGHT = Math.round((PLAYER_WIDTH * 9) / 16);
-// Audio de Drive: solo hace falta la barra del reproductor.
-const AUDIO_HEIGHT = 100;
+// Audio de Drive: barra de reproducción compacta, no necesita tanto alto
+// como el vídeo pero sí casi todo el ancho disponible (el player de Drive
+// se ve apretado en un ancho tan estrecho como el del PiP de vídeo).
+const AUDIO_HEIGHT = 64;
+const SIDE_MARGIN = 14;
+
+/**
+ * Referer que mandamos al cargar la página de embed de YouTube.
+ *
+ * CLAVE de por qué el player fallaba con "vídeo no disponible" (códigos
+ * 152/153): YouTube exige que la petición del embed llegue con una cabecera
+ * HTTP `Referer` real, como cuando una web (doceacordes) embebe el iframe.
+ * Todo lo que se carga en el WebView vía `loadHTMLString` (HTML inyectado,
+ * con o sin baseUrl, con o sin la IFrame API) sale SIN Referer y YouTube lo
+ * rechaza según el vídeo. La solución es cargar la URL de embed real con
+ * `source.headers.Referer` — el valor solo tiene que existir y ser una URL
+ * plausible; no hace falta que el dominio sirva nada.
+ */
+const EMBED_REFERER = 'https://mcmespana.github.io/';
 
 /** Añade los parámetros de reproducción inline/autoplay a la URL de embed. */
 function withPlaybackParams(embedUrl: string): string {
@@ -44,35 +65,28 @@ function withPlaybackParams(embedUrl: string): string {
   return `${embedUrl}${sep}playsinline=1&autoplay=1&rel=0`;
 }
 
-/**
- * Página HTML mínima que envuelve el embed en un `<iframe>`. YouTube exige que
- * su player de embed viva DENTRO de un iframe en una página con referer válido
- * — cargar `youtube.com/embed/<id>` como documento principal del WebView
- * devuelve "vídeo no disponible" (error 153, falta el referer). Con este shell
- * + `baseUrl` de YouTube el embed funciona igual que en una web normal.
- */
-function embedShellHtml(src: string): string {
-  const safeSrc = src.replace(/"/g, '&quot;');
-  return `<!doctype html><html><head>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<style>html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}
-iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}</style>
-</head><body>
-<iframe src="${safeSrc}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
-</body></html>`;
+/** ¿La URL es una página de vídeo de YouTube (no de embed)? */
+function isYouTubeWatchUrl(url: string): boolean {
+  return /youtube\.com\/watch|youtu\.be\/|m\.youtube\.com/.test(url);
 }
 
 /**
  * Reproductor flotante multimedia (estilo PiP de iOS) que se superpone a la
  * letra sin taparla del todo y se puede arrastrar por la pantalla. Reproduce
- * vídeos de YouTube (embed) y audios de Google Drive (preview). En web cae a
- * un `<iframe>` directo, como hace cualquier página que embebe YouTube.
+ * vídeos de YouTube (embed con Referer real) y audios de Google Drive
+ * (preview). En web cae a un `<iframe>` directo.
+ *
+ * El modo "grande" NO usa un Modal: el propio contenedor flotante se expande
+ * a pantalla completa con una LayoutAnimation. Así el WebView es siempre la
+ * MISMA instancia y el vídeo sigue reproduciéndose sin recargar al entrar o
+ * salir de pantalla completa.
  */
 export default function FloatingMediaPlayer({
   source,
   onClose,
 }: FloatingMediaPlayerProps) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   // Se apoya sobre la barra de pestañas flotante, que ya incluye el inset.
   const tabBarClearance = useTabBarClearance();
   const [fullscreen, setFullscreen] = useState(false);
@@ -86,9 +100,9 @@ export default function FloatingMediaPlayer({
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
 
-  // El arrastre pasa de `PanResponder` a gesture-handler, así que ahora corre
-  // entero en el hilo de UI: el reproductor sigue al dedo aunque JS esté
-  // ocupado (que es lo normal, con un WebView reproduciendo al lado).
+  // El arrastre va por gesture-handler, así que corre entero en el hilo de UI:
+  // el reproductor sigue al dedo aunque JS esté ocupado (que es lo normal, con
+  // un WebView reproduciendo al lado).
   const drag = Gesture.Pan()
     .minDistance(4)
     .onStart(() => {
@@ -112,21 +126,56 @@ export default function FloatingMediaPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.url]);
 
-  const floatStyle = useAnimatedStyle(() => ({
+  const pipStyle = useAnimatedStyle(() => ({
     opacity: enter.value,
     transform: [
       { translateX: panX.value },
-      // La entrada sube 14pt y el arrastre se suma encima (antes,
-      // `Animated.add(pan.y, enterTranslateY)`).
+      // La entrada sube 14pt y el arrastre se suma encima.
       { translateY: panY.value + interpolate(enter.value, [0, 1], [14, 0]) },
       { scale: interpolate(enter.value, [0, 1], [0.96, 1]) },
     ],
   }));
 
+  /**
+   * Abre el vídeo preferentemente en la APP de YouTube (scheme nativo). Si
+   * la app no está instalada, `openURL` del scheme falla y caemos a la URL
+   * https vía Linking — que en iOS/Android también abre la app por universal
+   * link si existe, y si no, el navegador.
+   */
+  const openInYouTube = useCallback(async (videoId: string | null) => {
+    if (!videoId) return;
+    const appUrl =
+      Platform.OS === 'ios'
+        ? `youtube://www.youtube.com/watch?v=${videoId}`
+        : `vnd.youtube://watch?v=${videoId}`;
+    try {
+      await Linking.openURL(appUrl);
+    } catch {
+      try {
+        await Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
+      } catch {
+        /* sin YouTube ni navegador no hay nada que hacer */
+      }
+    }
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    h.tap();
+    // Anima el cambio de tamaño/posición del contenedor — el WebView es el
+    // mismo, así que la reproducción continúa sin recargar.
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setFullscreen((f) => !f);
+  }, []);
+
   if (!source) return null;
 
   const isVideo = source.kind === 'youtube';
-  const screenHeight = isVideo ? VIDEO_HEIGHT : AUDIO_HEIGHT;
+  const videoId = isVideo ? extractYouTubeId(source.url) : null;
+  const pipHeight = isVideo ? VIDEO_HEIGHT : AUDIO_HEIGHT;
+  // El pip de vídeo es estrecho a propósito (estilo PiP); el de audio
+  // aprovecha casi todo el ancho de pantalla porque el reproductor de Drive
+  // necesita más sitio para sus controles.
+  const pipWidth = isVideo ? PLAYER_WIDTH : windowWidth - SIDE_MARGIN * 2;
 
   const handleClose = () => {
     h.tap();
@@ -134,21 +183,20 @@ export default function FloatingMediaPlayer({
     onClose();
   };
 
-  // YouTube necesita ir dentro de un iframe (ver embedShellHtml); el preview
-  // de Drive es una página normal y se carga directamente.
   const playUri = isVideo ? withPlaybackParams(source.url) : source.url;
-  const nativeSource = isVideo
-    ? { html: embedShellHtml(playUri), baseUrl: 'https://www.youtube.com' }
-    : { uri: playUri };
 
-  const videoSurface = (height: number | '100%') =>
+  // IMPORTANTE: una única superficie de vídeo en una posición fija del árbol
+  // de componentes. Entre PiP y pantalla completa SOLO cambian estilos de los
+  // contenedores — nunca desmontar/remontar el WebView/iframe, o el vídeo se
+  // recarga desde el principio.
+  const videoSurface =
     Platform.OS === 'web' ? (
       // @ts-ignore — iframe sólo existe en web
       <iframe
         src={playUri}
         style={{
           width: '100%',
-          height,
+          height: '100%',
           border: 'none',
           display: 'block',
           backgroundColor: '#000',
@@ -159,8 +207,12 @@ export default function FloatingMediaPlayer({
       />
     ) : (
       <WebView
-        source={nativeSource}
-        style={{ width: '100%', height, backgroundColor: '#000' }}
+        source={
+          isVideo
+            ? { uri: playUri, headers: { Referer: EMBED_REFERER } }
+            : { uri: playUri }
+        }
+        style={{ flex: 1, backgroundColor: '#000' }}
         originWhitelist={['*']}
         allowsInlineMediaPlayback
         allowsPictureInPictureMediaPlayback
@@ -168,94 +220,110 @@ export default function FloatingMediaPlayer({
         mediaPlaybackRequiresUserAction={false}
         javaScriptEnabled
         domStorageEnabled
+        setSupportMultipleWindows={false}
+        onShouldStartLoadWithRequest={(req) => {
+          // Cualquier intento de salir del embed hacia la página de vídeo
+          // (p.ej. tocar el logo o el "Ver en YouTube" del propio player) se
+          // intercepta y se abre la app de YouTube en su lugar.
+          if (isVideo && isYouTubeWatchUrl(req.url)) {
+            void openInYouTube(videoId ?? extractYouTubeId(req.url));
+            return false;
+          }
+          return true;
+        }}
       />
     );
 
-  return (
-    <>
-      <Animated.View
-        style={[styles.floatWrap, { bottom: tabBarClearance + 18 }, floatStyle]}
+  const bar = (
+    <View style={[styles.bar, fullscreen && { paddingTop: insets.top + 8 }]}>
+      <Text style={styles.barLabel} numberOfLines={1}>
+        {source.label}
+      </Text>
+      {isVideo && (
+        <TouchableOpacity
+          onPress={() => {
+            h.tap();
+            void openInYouTube(videoId);
+          }}
+          style={styles.barBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Abrir en la app de YouTube"
+        >
+          <MaterialIcons name="smart-display" size={13} color={YT_RED} />
+        </TouchableOpacity>
+      )}
+      {isVideo && (
+        <TouchableOpacity
+          onPress={toggleFullscreen}
+          style={styles.barBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={
+            fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'
+          }
+        >
+          <MaterialIcons
+            name={fullscreen ? 'fullscreen-exit' : 'fullscreen'}
+            size={15}
+            color="#fff"
+          />
+        </TouchableOpacity>
+      )}
+      <TouchableOpacity
+        onPress={handleClose}
+        style={styles.barBtn}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel="Cerrar reproductor"
       >
-        {/* Barra superior — arrastre + título + cerrar */}
-        <GestureDetector gesture={drag}>
-          <View style={styles.bar}>
-            <Text style={styles.barLabel} numberOfLines={1}>
-              {source.label}
-            </Text>
-            {isVideo && (
-              <TouchableOpacity
-                onPress={() => {
-                  h.tap();
-                  setFullscreen(true);
-                }}
-                style={styles.barBtn}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityLabel="Pantalla completa"
-              >
-                <MaterialIcons name="fullscreen" size={15} color="#fff" />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              onPress={handleClose}
-              style={styles.barBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Cerrar reproductor"
-            >
-              <MaterialIcons name="close" size={15} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </GestureDetector>
-        {/* Pantalla del vídeo / reproductor de audio */}
-        <View style={{ height: screenHeight, backgroundColor: '#000' }}>
-          {!fullscreen && videoSurface(screenHeight)}
-        </View>
-      </Animated.View>
+        <MaterialIcons name="close" size={15} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
 
-      {/* Pantalla completa (solo vídeo) */}
-      <Modal
-        visible={fullscreen}
-        transparent={false}
-        animationType="fade"
-        onRequestClose={() => setFullscreen(false)}
-        supportedOrientations={[
-          'portrait',
-          'landscape-left',
-          'landscape-right',
-        ]}
+  return (
+    <Animated.View
+      style={[
+        styles.floatWrap,
+        fullscreen
+          ? styles.fsWrap
+          : [
+              {
+                width: pipWidth,
+                right: SIDE_MARGIN,
+                // La barra de pestañas FLOTA sobre el contenido, así que el
+                // reproductor tiene que apoyarse encima de ella.
+                bottom: tabBarClearance + 18,
+              },
+              pipStyle,
+            ],
+      ]}
+    >
+      {/* Barra superior — arrastre (solo PiP) + título + acciones */}
+      {fullscreen ? (
+        bar
+      ) : (
+        <GestureDetector gesture={drag}>{bar}</GestureDetector>
+      )}
+      {/* Pantalla del vídeo / reproductor de audio. En fullscreen el área
+          crece y el vídeo se centra a 16:9; el WebView interior es siempre
+          la misma instancia. */}
+      <View
+        style={
+          fullscreen
+            ? styles.fsVideoArea
+            : { height: pipHeight, backgroundColor: '#000' }
+        }
       >
-        <View style={styles.fsRoot}>
-          <View style={[styles.fsBar, { paddingTop: insets.top + 6 }]}>
-            <Text style={styles.fsLabel} numberOfLines={1}>
-              {source.label}
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                h.tap();
-                setFullscreen(false);
-              }}
-              style={styles.fsClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityLabel="Salir de pantalla completa"
-            >
-              <MaterialIcons name="close" size={22} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.fsVideo}>
-            {fullscreen && (
-              <View style={styles.fsVideoInner}>{videoSurface('100%')}</View>
-            )}
-          </View>
+        <View style={fullscreen ? styles.fsVideoInner : styles.videoFill}>
+          {videoSurface}
         </View>
-      </Modal>
-    </>
+      </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   floatWrap: {
     position: 'absolute',
-    right: 14,
-    width: PLAYER_WIDTH,
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#111',
@@ -270,6 +338,16 @@ const styles = StyleSheet.create({
         elevation: 12,
       },
     }),
+  },
+  fsWrap: {
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    borderRadius: 0,
+    backgroundColor: '#000',
+    zIndex: 90,
   },
   bar: {
     flexDirection: 'row',
@@ -294,32 +372,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 8,
   },
-  fsRoot: {
+  videoFill: {
     flex: 1,
-    backgroundColor: '#000',
   },
-  fsBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 6,
-    backgroundColor: '#000',
-  },
-  fsLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  fsClose: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fsVideo: {
+  fsVideoArea: {
     flex: 1,
     justifyContent: 'center',
     backgroundColor: '#000',

@@ -18,6 +18,40 @@
 
 ---
 
+## 2026-08-03 06:20 — Recupera de `production` los arreglos del reproductor multimedia
+
+Auditoría de `production` frente a esta rama. `main` y `production` divergieron
+el 28-jun y se han mantenido a mano en paralelo, así que se comparó por
+CONTENIDO (equivalencia de parches), no por historia: de todos los commits de
+`production` que tocan código de app, **solo 11 no estaban aquí, y de esos solo
+4 faltaban de verdad** — el resto ya estaba reimplementado (URL `/aptest` de
+Comunica, `disableAntiBrickingMeasures`, `AppPrimaryButton`, hidratación de
+hábitos, el oscuro de Comunica y el plan de integraciones).
+
+Los 4 que faltaban son la saga del reproductor del cantoral (`a3395fc`,
+`ede0478`, `78e0866`, `bba0dd6`), y explican por qué **los vídeos de YouTube no
+funcionaban en esta rama y sí en producción**:
+
+- **La causa**: YouTube exige una cabecera HTTP `Referer` real en la petición
+  del embed. Todo lo que se carga con `loadHTMLString` —HTML inyectado, con o
+  sin `baseUrl`, con o sin la IFrame API— sale SIN Referer, y YouTube lo rechaza
+  con "vídeo no disponible" (152/153). Esta rama tenía justamente esa versión
+  con shell de iframe, que fue el intento fallido. La solución es cargar la URL
+  de embed real con `source.headers.Referer`.
+- **Audio de Drive**: el PiP de audio pasa a casi todo el ancho de pantalla y
+  menos alto (64 en vez de 100) — con el ancho estrecho del PiP de vídeo los
+  controles de Drive se veían apretados.
+- **Pantalla completa sin recargar**: ya no monta un segundo WebView en un
+  Modal; el propio contenedor se expande con `LayoutAnimation` y el WebView es
+  siempre la misma instancia, así que el vídeo no se corta al entrar o salir.
+- **Enlaces nativos**: los saltos a `watch?v=` se interceptan y abren la APP de
+  YouTube; los de Drive pasan de `WebBrowser` a `Linking` para que los capture
+  la app de Google Drive (`SongMediaSheet`).
+
+Se conservan sobre esa base las dos cosas propias de esta rama: el hueco de la
+barra de pestañas flotante (`useTabBarClearance`) y el arrastre en Reanimated +
+gesture-handler.
+
 ## 2026-08-03 05:40 — Migración a Reanimated TERMINADA (`refs` 277 → 34)
 
 Último bloque. Ya no queda ni un `useRef(new Animated.Value())` en la app, salvo

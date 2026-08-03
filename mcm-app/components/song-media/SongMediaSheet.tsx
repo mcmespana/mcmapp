@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Dimensions,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -15,7 +16,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import { h } from '@/utils/haptics';
 import BottomSheet from '@/components/BottomSheet';
 import brand from '@/constants/colors';
-import { toDrivePreviewUrl } from '@/utils/googleDrive';
+import { extractDriveFileId, toDrivePreviewUrl } from '@/utils/googleDrive';
 import type { MediaLink, SongMedia } from '@/types/songMedia';
 import type { FloatingMediaSource } from '@/components/song-media/FloatingMediaPlayer';
 
@@ -74,6 +75,19 @@ export default function SongMediaSheet({
 
   const openExternal = async (url: string) => {
     h.tap();
+    // Los enlaces de Drive van por Linking (no por el navegador in-app):
+    // así el universal/app link lo captura la app de Google Drive si está
+    // instalada. WebBrowser abriría un Safari/Chrome embebido y se la
+    // saltaría siempre.
+    if (extractDriveFileId(url)) {
+      toast.show({ label: 'Abriendo en Google Drive…' });
+      try {
+        await Linking.openURL(url);
+      } catch {
+        /* sin app ni navegador no hay nada que hacer */
+      }
+      return;
+    }
     toast.show({ label: 'Abriendo en el navegador…' });
     try {
       await WebBrowser.openBrowserAsync(url);
