@@ -139,8 +139,10 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       `FloatingHeaderBackground`). Unificar al glass del sistema — cambio mayor,
       revisar el inset de cada hero. (`app/screens/eventStackScreens.tsx`)
 - [x] **Fase 2 (componentes unificados) — CERRADA (2026-08-03)**:
-      `SegmentedControl` creado y adoptado en el calendario, `AppTextField` en
-      Revisión, `AppPrimaryButton` en `ArrangementInputModal`. Los dos
+      `SegmentedControl` creado y adoptado en el calendario, `AppPrimaryButton`
+      en `ArrangementInputModal`. (El `AppTextField` de Revisión se retiró: esa
+      pantalla se refactorizó en paralelo y chocaba. Se replantea cuando esté
+      quieta.) Los dos
       `TextInput` que quedan son buscadores y un input oculto de código: no
       encajan en `AppTextField` y se dejan a propósito. `EmptyState` ya está en
       9 pantallas.
