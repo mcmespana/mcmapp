@@ -18,6 +18,37 @@
 
 ---
 
+## 2026-08-03 19:05 — Los enlaces de acceso de Comunica abren la app
+
+Los correos del área privada («Acceder a mi área privada») llevarán un enlace
+mágico. Hasta ahora ese enlace sólo podía acabar en el navegador, aunque la
+persona tuviera la app instalada y aunque Comunica sea un tab de la propia app.
+Ahora abre la app y entra ahí directamente — también pulsándolo desde Mail,
+Gmail o el cliente de correo de Android.
+
+**Cómo.** El correo enlaza a una ruta puente del dominio de Comunica
+(`/app/acceso?acceso_magico=…`) declarada como universal link (iOS) y app link
+(Android). Con la app instalada la intercepta el sistema operativo antes de que
+haya petición web; sin app, WordPress la redirige al área privada de siempre con
+el token intacto. Se reclama **sólo esa ruta**, no el portal entero: un enlace
+cualquiera de Comunica compartido por WhatsApp sigue abriendo el navegador.
+
+- `app.json` — `associatedDomains` de iOS + `intentFilters` con `autoVerify` para
+  `comunica.movimientoconsolacion.com/app/acceso`
+- `app/+native-intent.ts` (nuevo) — reescribe el deep link entrante a
+  `/(tabs)/comunica` y deja el token en la cola
+- `utils/pendingComunicaLink.ts` (nuevo) — la cola, y el montaje de la URL del
+  área (sólo se reenvían `acceso_magico` y `token`)
+- `hooks/useComunicaWebView.ts` — el WebView carga esa URL en vez de la de
+  arranque, así WordPress valida el token y crea la sesión dentro de la app
+- `__tests__/comunicaDeepLink.test.ts` (nuevo)
+- Contrato actualizado: `docs/contratos/COMUNICA_WEBVIEW.md` §6
+
+⚠️ **Requiere build de tienda**: `associatedDomains` e `intentFilters` son
+configuración nativa y no viajan en una OTA. Y en Android no funcionará hasta
+que se rellene la huella SHA-256 de firma en los ajustes del plugin de
+WordPress (ver el contrato).
+
 ## 2026-08-03 18:10 — NSE de iOS, Sentry e icono de Carismochito
 
 Las tres piezas nativas que faltaban para la build de tienda de agosto. Todo

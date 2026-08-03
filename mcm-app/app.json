@@ -45,7 +45,10 @@
         ]
       },
       "appleTeamId": "5P53S6QB23",
-      "associatedDomains": ["applinks:mcm.expo.app"]
+      "associatedDomains": [
+        "applinks:mcm.expo.app",
+        "applinks:comunica.movimientoconsolacion.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -86,6 +89,18 @@
               "scheme": "https",
               "host": "mcm.expo.app",
               "pathPrefix": "/coro"
+            }
+          ]
+        },
+        {
+          "autoVerify": true,
+          "action": "VIEW",
+          "category": ["DEFAULT", "BROWSABLE"],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "comunica.movimientoconsolacion.com",
+              "pathPrefix": "/app/acceso"
             }
           ]
         }
