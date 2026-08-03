@@ -9,7 +9,7 @@
 // OJO: es un control VISUAL, no un navegador. Quien navega es expo-router
 // desde `onTabSelected`; `selectedIndex` se deriva del pathname.
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +23,7 @@ import { TAB_ICONS } from '@/constants/tabIcons';
 import { TAB_BAR_HEIGHT, TAB_BAR_COMPACT_HEIGHT } from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useCarismochito } from '@/contexts/CarismochitoContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { Colors } from '@/constants/colors';
 import { tabBarController } from '@/components/tabs/tabBarController';
 import { h } from '@/utils/haptics';
@@ -39,6 +40,51 @@ interface CompactTabBarProps {
   tabs: TabConfig[];
 }
 
+/**
+ * Nonce que cambia UNA vez, justo al terminar el onboarding, para remontar la
+ * barra nativa y obligarla a rehacer su layout.
+ *
+ * **Por qué hace falta.** El onboarding se presenta como `fullScreenModal`, y
+ * mientras está encima iOS saca de la ventana la vista que queda debajo. La
+ * barra nativa calcula su posición vertical leyendo
+ * `window.safeAreaInsets.bottom` (`ExpoNativeCompactTabsView.swift`,
+ * `resolvedTabFrame`), así que si le toca hacer layout sin ventana se coloca
+ * como si el móvil no tuviera home indicator. Al cerrarse el onboarding no
+ * cambia ningún tamaño, así que UIKit no vuelve a llamar a `layoutSubviews` y
+ * la barra se queda mal —con las etiquetas cortadas por abajo— hasta que se
+ * reinicia la app.
+ *
+ * **Por qué solo pasa viniendo del onboarding.** Con el onboarding ya hecho, el
+ * perfil llega mientras la app todavía está cargando y nunca hay un modal a
+ * pantalla completa por encima de los tabs, así que la barra hace su layout con
+ * ventana desde el principio. Por eso la condición es exactamente esa: que el
+ * perfil aparezca DESPUÉS de que la carga haya terminado.
+ *
+ * Es un apaño en JS de un fallo que está en el nativo de la librería
+ * (`expo-native-compact-tabs@0.2.0`, sin versión más nueva). Arreglarlo de
+ * verdad pide parchear el Swift, y eso son build de tienda y `[skip-ota]`.
+ */
+function useRelayoutAfterOnboarding(): number {
+  const { profile, loading } = useUserProfile();
+  const hasProfile = profile.profileType !== null;
+
+  const [seen, setSeen] = useState({ loading, hasProfile, nonce: 0 });
+  if (seen.loading !== loading || seen.hasProfile !== hasProfile) {
+    // Solo cuenta si la carga YA había terminado y no había perfil: eso es
+    // justo "el usuario acaba de completar el onboarding". En un arranque en
+    // frío el perfil aparece con `loading` todavía a true, así que no dispara.
+    const completedNow =
+      !loading && !seen.loading && hasProfile && !seen.hasProfile;
+    setSeen({
+      loading,
+      hasProfile,
+      nonce: seen.nonce + (completedNow ? 1 : 0),
+    });
+  }
+
+  return seen.nonce;
+}
+
 export default function CompactTabBar({ tabs }: CompactTabBarProps) {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
@@ -46,6 +92,7 @@ export default function CompactTabBar({ tabs }: CompactTabBarProps) {
   const isDark = scheme === 'dark';
   const { isActive: carismoActive } = useCarismochito();
   const compact = tabBarController.useCompact();
+  const relayoutNonce = useRelayoutAfterOnboarding();
 
   const items = useMemo<NativeCompactTabBarItem[]>(
     () =>
@@ -104,6 +151,9 @@ export default function CompactTabBar({ tabs }: CompactTabBarProps) {
 
   return (
     <NativeCompactTabBar
+      // Ver `useRelayoutAfterOnboarding`: remonta la barra al salir del
+      // onboarding para que rehaga su layout ya con ventana.
+      key={relayoutNonce}
       items={items}
       selectedIndex={selectedIndex}
       compact={compact}
