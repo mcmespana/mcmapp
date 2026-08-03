@@ -253,7 +253,56 @@ sobre el historial del WebView, y en Android el botón atrás del sistema navega
 primero por el historial de la web. La web **no** necesita añadir botones de
 volver propios; si los tiene y `app=1`, mejor ocultarlos.
 
-## 6. Notas de seguridad
+## 6. Enlaces de acceso del correo que abren la app
+
+Los correos del área privada («Acceder a mi área privada») **no enlazan al área
+directamente**: enlazan a una ruta puente del mismo dominio, que iOS y Android
+reconocen como propiedad de la app MCM.
+
+```
+https://comunica.movimientoconsolacion.com/app/acceso?acceso_magico=XXXX
+https://comunica.movimientoconsolacion.com/app/acceso?token=XXXX
+```
+
+Qué pasa al pulsarlo:
+
+| Situación                                              | Qué ocurre                                                                                                        |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| App instalada (iOS o Android)                          | El sistema abre la **app** con esa URL. La petición web **no se llega a hacer**                                    |
+| Sin app, u ordenador                                   | La petición llega a WordPress, que **redirige (302)** al área privada con el token intacto → login por web de siempre |
+| Cliente de correo que envuelve el enlace en un redirector | Se pierde el universal link → cae en el caso anterior (web). Es el motivo de que exista `mcmapp://comunica?…`      |
+
+### Lado app
+
+- `app.json` declara el dominio: `associatedDomains` (iOS) e `intentFilters` con
+  `autoVerify` y `pathPrefix: /app/acceso` (Android). Se reclama **solo esa
+  ruta**, no el portal entero: así ningún otro enlace de Comunica que alguien
+  comparta se abre en la app por sorpresa.
+- `app/+native-intent.ts` traduce la URL entrante: guarda el token en
+  `utils/pendingComunicaLink.ts` y devuelve `/(tabs)/comunica`.
+- `hooks/useComunicaWebView.ts` carga esa URL en lugar de la de arranque, ya con
+  `app=1` y el `theme=` que toque. El WebView lleva `sharedCookiesEnabled`, así
+  que la cookie de sesión de PHP se conserva entre aperturas.
+
+### Lado web (plugin de WordPress)
+
+Todo en `inc/stic-app-links.php` del repo `mcmespana/comunicaAreaPrivada`:
+
+- Sirve `/.well-known/apple-app-site-association` y
+  `/.well-known/assetlinks.json` desde PHP (sin ficheros en el hosting).
+- Atiende `/app/acceso` y redirige al área privada conservando **solo**
+  `acceso_magico` y `token` — no es un redirector abierto.
+- `sticpa_app_link_url()` convierte cualquier enlace del área en su versión
+  puente; es lo que usa el correo de acceso.
+
+> ⚠️ **Android no verificará el dominio hasta que se rellene la huella SHA-256**
+> del certificado de firma de la app en Ajustes → SinergiaCRM Private Area
+> (Play Console → Setup → App integrity → App signing). Hasta entonces esos
+> enlaces siguen abriendo el navegador en Android; iOS sí funciona sin nada más.
+> Y en iOS hace falta un **build de tienda**: `associatedDomains` es
+> configuración nativa, no viaja en una OTA.
+
+## 7. Notas de seguridad
 
 - Sanea siempre `$_GET['theme']` / `$_COOKIE['mcm_theme']` antes de volcarlos al
   HTML (arriba se hace con la comparación a `'dark'`). Son entrada de usuario:
