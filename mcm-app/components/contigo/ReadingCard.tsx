@@ -27,6 +27,8 @@ interface ReadingCardProps {
   penMode?: boolean;
   ranges?: HighlightRange[];
   onSelectionChange?: (sel: ReadingSelection | null) => void;
+  /** "Subrayar" desde el menú nativo de selección. */
+  onNativeHighlightRequest?: (sel: ReadingSelection) => void;
 }
 
 // Warm amber accent for Contigo section
@@ -43,6 +45,7 @@ export function ReadingCard({
   penMode = false,
   ranges = [],
   onSelectionChange,
+  onNativeHighlightRequest,
 }: ReadingCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -127,6 +130,9 @@ export function ReadingCard({
                 text={texto}
                 ranges={highlightable ? ranges : []}
                 penMode={highlightable && penMode}
+                onNativeHighlightRequest={
+                  highlightable ? onNativeHighlightRequest : undefined
+                }
                 onSelectionChange={
                   highlightable ? onSelectionChange : undefined
                 }

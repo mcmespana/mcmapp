@@ -19,6 +19,8 @@ código **nativo**, que vive en el binario y no se puede actualizar así:
 - `@sentry/react-native` — SDK nativo de crash reporting
 - `expo-alternate-app-icons` — icono alternativo de Carismochito
 - Notification Service Extension de iOS — un **target nuevo** de Xcode
+- `@aptabase/react-native` — analítica de uso
+- `modules/highlight-menu` — módulo nativo propio: "Subrayar" en el menú del sistema
 - iPad landscape (`UISupportedInterfaceOrientations~ipad`)
 
 Si esto saliera por OTA, la app **crashearía** en los móviles ya instalados: el
@@ -53,8 +55,9 @@ Sin esto Sentry funciona, pero los errores llegan **minificados**
 
 ### 2.3 Meter las variables donde tocan
 
-Son **cuatro** variables y van en **tres sitios distintos**. Es el punto donde
-más fácil es equivocarse, así que aquí está la tabla completa:
+Son **cuatro** variables de Sentry y van en **tres sitios distintos** (la de
+Aptabase está en §2.4). Es el punto donde más fácil es equivocarse, así que aquí
+está la tabla completa:
 
 | Variable | Qué es | EAS (builds) | GitHub (OTAs) | `.env.local` (dev) |
 | --- | --- | :---: | :---: | :---: |
@@ -94,7 +97,32 @@ EXPO_PUBLIC_SENTRY_DSN=https://…
 EXPO_PUBLIC_SENTRY_DEBUG=1
 ```
 
-### 2.4 Credenciales de la extensión de notificaciones (iOS)
+### 2.4 Aptabase — analítica de uso
+
+1. Entra en <https://eu.aptabase.com> (servidores europeos) y crea una cuenta.
+2. **New App** → nombre `MCM App` → elige React Native.
+3. Copia el **App Key**. Empieza por `A-EU-…`; esa `EU` es lo que hace que los
+   datos se queden en Europa, no hay que configurar nada más.
+
+Igual que el DSN de Sentry: **no es un secreto** (va dentro del bundle) pero se
+guarda como secret para no publicarlo.
+
+| Variable | EAS (builds) | GitHub (OTAs) | `.env.local` (dev) |
+| --- | :---: | :---: | :---: |
+| `EXPO_PUBLIC_APTABASE_KEY` | ✅ | ✅ | opcional |
+
+```bash
+npx eas-cli secret:create --scope project --name EXPO_PUBLIC_APTABASE_KEY --value "A-EU-…"
+```
+
+Y en GitHub → Settings → Secrets → Actions, un secret con el **mismo nombre y
+valor**. ⚠️ Mismo aviso que con Sentry: si falta ahí, **la primera OTA apaga la
+analítica** en toda la base instalada. Los workflows ya lo leen.
+
+> Sin la clave la app no manda **ningún** evento: se puede dejar para más
+> adelante y encenderla luego por OTA sin recompilar.
+
+### 2.5 Credenciales de la extensión de notificaciones (iOS)
 
 La NSE es un **bundle id nuevo**: `com.familiaconsolacion.mcmapp.MCMNotificationService`.
 Necesita su propio App ID y su propio perfil de aprovisionamiento en Apple.
@@ -129,6 +157,12 @@ Tiene que terminar en `✔ Finished prebuild` y deben existir:
 - `ios/MCMNotificationService/NotificationService.swift`
 - `ios/MCMApp/Images.xcassets/Carismochito.appiconset/`
 - `ios/sentry.properties`
+
+Y que el módulo local del subrayado se autolinka:
+
+```bash
+npx expo-modules-autolinking search -p apple --json | grep highlight-menu
+```
 
 Lo mismo para Android (**necesita `google-services.json` en `mcm-app/`**, que
 está gitignoreado — cógelo de la consola de Firebase si no lo tienes):
@@ -251,6 +285,32 @@ emulador, y mandar pushes desde el Panel):
       Sentry los stack traces salgan con nombres de fichero y línea de verdad.
       Si salen minificados, faltó `SENTRY_AUTH_TOKEN`/`SENTRY_ORG`/`SENTRY_PROJECT`.
 
+**Analítica (Aptabase):**
+
+- [ ] Con `EXPO_PUBLIC_APTABASE_KEY` puesta, abre la app y navega un rato.
+- [ ] En el panel de Aptabase aparecen `app_abierta` y varios `pantalla_vista`
+      con rutas legibles (`/(tabs)/cancionero`, no la ruta de cada canción).
+- [ ] Abre una canción → `cancion_abierta` con su categoría y el origen.
+- [ ] Todos los eventos llevan `perfil` y `delegacion` **rellenos**, no
+      `sin_perfil` (eso indicaría que se están mandando antes de tiempo).
+- [ ] Ningún evento lleva títulos, nombres ni texto escrito por nadie.
+
+**"Subrayar" en el menú nativo (Contigo → Evangelio):**
+
+- [ ] Selecciona texto de una lectura **sin** activar el modo lápiz: en el menú
+      del sistema sale **"Subrayar"**.
+- [ ] Tocarlo abre la barra de colores con esa selección ya cogida, y al elegir
+      color se subraya el tramo correcto (ni corrido ni de más).
+- [ ] El menú **conserva el resto**: Copiar, Traducir, Buscar y —en iOS—
+      Herramientas de escritura. Es lo que podría romper el proxy del delegate.
+- [ ] Con el modo lápiz encendido, seleccionar sigue actualizando la barra
+      (`onSelectionChange` viaja por el mismo delegate).
+- [ ] Android: el ítem sale **tanto leyendo como en modo lápiz**.
+- [ ] Pruébalo en las cinco lecturas (evangelio, comentario, primera, salmo,
+      segunda) — cada una es un texto distinto.
+- [ ] Web (`npm run web`): no hay menú nativo, pero el **modo lápiz de siempre
+      tiene que seguir funcionando igual**.
+
 **iPad (landscape, nunca se ha probado en un iPad físico):**
 
 - [ ] Gira el iPad en horizontal en: Inicio, Cantoral (lista y canción),
@@ -312,14 +372,14 @@ como hasta ahora — así que no hay prisa, pero sí cuidado al hacerlo.
 | Sentry funcionaba y de repente dejó de reportar | Salió una OTA sin el secret de GitHub | Añade `EXPO_PUBLIC_SENTRY_DSN` en los secrets del repo (§2.3b) y relanza la OTA |
 | Los errores de Sentry salen minificados | Faltó el token al compilar | `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` en los secrets de EAS |
 | En iOS la notificación con foto llega sin foto | El Panel no mandó `mutableContent: true` | Sin ese flag iOS ni siquiera arranca la extensión |
+| No llega ningún evento a Aptabase | Falta `EXPO_PUBLIC_APTABASE_KEY` o la clave no es `A-EU-…` | `npx eas-cli secret:list`; la app avisa por consola si la clave tiene mal formato |
+| Se rompió algo del menú de selección de las lecturas | El proxy del delegate de iOS | `modules/highlight-menu/ios/HighlightMenuView.swift`. Quitar `onNativeHighlightRequest` en `evangelio.tsx` desactiva el módulo entero sin tocar el resto |
 | El icono de Android no cambia | El launcher tarda en refrescar la caché | Espera, o reinicia el launcher. En launchers con icono redondo antiguo (API < 26) el cambio no se aplica: es una limitación conocida |
 
 ---
 
 ## 8. Qué queda fuera de esta build
 
-- **Subrayado nativo** — el item "Subrayar" en el menú de selección del sistema.
-  Aprobado, sin escribir todavía. Ver `docs/funcionalidades/SUBRAYADO.md`.
 - **Widget de Contigo** — es una build dedicada, no un extra de ésta. Ver
   `docs/planes/PLAN_WIDGET_CONTIGO.md`.
 

@@ -154,20 +154,12 @@
 
 ### 4. Subrayado — siguiente iteración
 
-- [ ] **"Subrayar" dentro del menú NATIVO del sistema** — ⚠️ **replanteado el
-      2026-08-03, leer antes de empezar**: resulta que `HighlightableReading` YA
-      renderiza con un `TextInput` de solo lectura, que en iOS **es un
-      `UITextView` real**. O sea que NO hay que sustituir el render por una
-      vista nativa (que era el grueso del trabajo estimado); basta con enganchar
-      el menú al text view que ya hay. Lo delicado pasa a ser otra cosa: el
-      delegate `textView(_:editMenuForTextIn:suggestedActions:)` **ya lo ocupa
-      React Native**, así que hay que interponer un proxy que reenvíe el resto y
-      probarlo en dispositivo. Alcance mínimo: UN ítem «Subrayar» que abra la
-      barra de colores actual — el submenú por color es extra. Detalle en
-      `docs/funcionalidades/SUBRAYADO.md`.
-
-### 5. Otros
-
+- [x] **"Subrayar" dentro del menú NATIVO del sistema** (2026-08-03) — módulo
+      local `modules/highlight-menu/`. Queda **probarlo en dispositivo**: que el
+      menú de iOS conserve Copiar/Traducir/Buscar/Herramientas de escritura con
+      el proxy del delegate puesto, que `onSelectionChange` siga llegando en modo
+      lápiz, y que en Android salga tanto leyendo como subrayando. Checklist en
+      `docs/desarrollo/BUILD_AGOSTO_2026.md` §5.
 - [ ] **Revisar las 4 dependencias que se quedaron atrás** (2026-08-01). No se
       subieron por incompatibilidad REAL comprobada, no por prudencia — hay que
       esperar a que el ecosistema se mueva. Ninguna afecta al binario que
@@ -356,7 +348,13 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
       Queda **crear el proyecto en Sentry y configurar las variables**: paso a paso
       en `docs/desarrollo/BUILD_AGOSTO_2026.md` §2. Sin `EXPO_PUBLIC_SENTRY_DSN` no
       reporta nada, así que hasta que se configure está apagado.
-- [ ] **Analítica de uso** — Firebase Analytics o PostHog, con eventos clave (`app_open`, `tab_view`, `song_open`, `playlist_create`, `notification_received`). Sin esto no se puede priorizar por datos reales. Ver MEJORAS.md §8.3.
+- [x] **Analítica de uso** (2026-08-03) — Aptabase (`utils/analytics.ts` +
+      catálogo tipado en `constants/analyticsEvents.ts`). Queda **crear la app en
+      eu.aptabase.com y poner `EXPO_PUBLIC_APTABASE_KEY`**: paso a paso en
+      `docs/desarrollo/BUILD_AGOSTO_2026.md` §2.4. Sin la clave no se manda nada.
+      Y antes de publicar: **actualizar la política de privacidad**, la ficha de
+      privacidad de App Store y el formulario de Data Safety de Play (ver el item
+      de política de privacidad más abajo).
 - [ ] **Política de privacidad / consentimiento** — revisar si está pendiente para stores europeas / notificaciones push. Ver MEJORAS.md §7.4.
 
 ---

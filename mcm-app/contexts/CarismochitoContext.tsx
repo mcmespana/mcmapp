@@ -9,6 +9,7 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setCarismochitoTheme } from '@/utils/heroUIRuntimeTheme';
 import { syncAppIcon } from '@/utils/appIcon';
+import { trackEvent } from '@/utils/analytics';
 import { h } from '@/utils/haptics';
 
 export type CarismochitoState = 'idle' | 'countingDown' | 'active';
@@ -134,6 +135,7 @@ export function CarismochitoProvider({
         AsyncStorage.setItem(STORAGE_KEY, '1').catch(() => {});
         // Y el icono del launcher, que vive fuera de la app.
         syncAppIcon(true);
+        trackEvent('carismochito_activado');
         h.carismoOn();
         // Primera vez: abrir la explicación/onboarding justo tras la cuenta
         // atrás. Las siguientes veces solo confeti + badge.

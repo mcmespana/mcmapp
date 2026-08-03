@@ -18,6 +18,53 @@
 
 ---
 
+## 2026-08-03 21:30 — Analítica con Aptabase y "Subrayar" en el menú nativo
+
+**Aptabase** (`@aptabase/react-native`). Se eligió por lo que NO guarda: ningún
+identificador persistente de dispositivo ni de usuario. Lo único que agrupa los
+eventos es un `sessionId` aleatorio que caduca a la hora de inactividad, así que
+no hay forma de seguir a nadie entre sesiones. Con menores en el público, eso
+era el criterio, no un extra. Servidores en la UE (la región va dentro de la
+propia App Key: `A-EU-…`).
+
+Lo que hace que sirva de algo es el **catálogo cerrado y tipado** de eventos
+(`constants/analyticsEvents.ts`): `trackEvent` solo acepta nombres declarados
+ahí y con sus propiedades exactas, así que inventarse un evento no compila.
+Nueve eventos: `app_abierta`, `pantalla_vista`, `cancion_abierta`,
+`modo_presentacion`, `playlist_usada`, `notificacion_abierta`,
+`onboarding_completado`, `evento_abierto` y `carismochito_activado`.
+
+`pantalla_vista` se dispara **solo**, desde `hooks/useScreenTracking.ts`, a
+partir de la ruta de expo-router: cubre toda la app —incluidas las pantallas que
+aún no existen— sin llamadas repartidas que alguien se olvide de poner. Las
+rutas se normalizan (`/cancionero/alabare-a-mi-senor…` → `/cancionero/:id`) para
+que los gráficos se puedan leer y para no mandar títulos.
+
+Nada sale hasta que el perfil está cargado, así que los eventos llevan `perfil`
+y `delegacion` de verdad y no `sin_perfil`. **Sin `EXPO_PUBLIC_APTABASE_KEY` no
+se manda ningún evento**, igual que con Sentry.
+
+**"Subrayar" en el menú nativo de selección** (`modules/highlight-menu/`, módulo
+local de Expo). Al seleccionar texto en cualquier lectura de Contigo, el menú
+del sistema trae un ítem "Subrayar" junto a Copiar/Traducir/Buscar; tocarlo abre
+la barra de colores que ya existía. Ya no hace falta entrar antes en el modo
+lápiz — **que se mantiene**: es el único camino en web y el respaldo si el menú
+nativo fallara.
+
+En iOS el menú se construye en `textView(_:editMenuForTextIn:suggestedActions:)`
+y ese delegate **ya lo ocupa React Native**, así que el módulo interpone un
+proxy que implementa solo ese método y reenvía todo lo demás con
+`forwardingTarget(for:)`. En Android es un `ActionMode.Callback` que también
+reenvía al anterior. La vista envuelve el texto en vez de buscarlo por su tag
+(con la nueva arquitectura eso ya no es fiable) y sin
+`onNativeHighlightRequest` el árbol de `HighlightableReading` queda idéntico.
+
+Archivos: `utils/analytics.ts`, `constants/analyticsEvents.ts`,
+`hooks/useScreenTracking.ts`, `modules/highlight-menu/*`,
+`components/contigo/HighlightableReading.tsx`, `components/contigo/ReadingCard.tsx`,
+`app/(tabs)/contigo/evangelio.tsx`, más los puntos de evento en onboarding,
+cantoral, playlist, notificaciones, eventos y Carismochito.
+
 ## 2026-08-03 18:10 — NSE de iOS, Sentry e icono de Carismochito
 
 Las tres piezas nativas que faltaban para la build de tienda de agosto. Todo

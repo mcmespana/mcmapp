@@ -36,6 +36,9 @@ import {
 import { ChoirSessionProvider } from '@/contexts/ChoirSessionContext';
 import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
 import { useRegisterServiceWorker } from '@/hooks/useRegisterServiceWorker';
+import { useScreenTracking } from '@/hooks/useScreenTracking';
+import { trackEvent } from '@/utils/analytics';
+import { tramoTamano } from '@/constants/analyticsEvents';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { isAppVersionSupported } from '@/utils/resolveProfileConfig';
 import { HelloWave } from '@/components/HelloWave';
@@ -142,6 +145,10 @@ function InnerLayout() {
   const handleIncomingPlaylist = useCallback(
     (songs: string[]) => {
       songs.forEach((fn) => addSong(fn));
+      trackEvent('playlist_usada', {
+        accion: 'importada',
+        tamano: tramoTamano(songs.length),
+      });
       toast.show({
         label: `Playlist importada (${songs.length} ${songs.length === 1 ? 'canción' : 'canciones'})`,
         actionLabel: 'OK',
@@ -153,6 +160,9 @@ function InnerLayout() {
   useIncomingPlaylist(handleIncomingPlaylist);
 
   useStatusBarTheme(pathname);
+  // Analítica: arranca Aptabase y registra cada cambio de pantalla. Sin
+  // EXPO_PUBLIC_APTABASE_KEY no hace nada.
+  useScreenTracking();
 
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 

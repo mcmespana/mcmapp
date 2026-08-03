@@ -23,7 +23,10 @@ import {
   markNotificationAsRead,
   type TokenProfileMetadata,
 } from '@/services/pushNotificationService';
-import { ReceivedNotification } from '@/types/notifications';
+import {
+  ReceivedNotification,
+  type NotificationCategory,
+} from '@/types/notifications';
 import {
   normalizeNotificationRoute,
   extractActionButton,
@@ -31,6 +34,7 @@ import {
 } from '@/utils/notificationRoutes';
 import { routeForEventId } from '@/utils/notificationEventRoute';
 import { syncAndroidNotificationChannels } from '@/notifications/androidChannels';
+import { trackEvent } from '@/utils/analytics';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -209,6 +213,14 @@ export default function usePushNotifications() {
         const notificationId = getStableNotificationId(
           response.notification.request.content,
         );
+
+        // Analítica: qué tipo de aviso se abre de verdad. Solo la categoría,
+        // nunca el título ni el id — eso identificaría el envío concreto.
+        trackEvent('notificacion_abierta', {
+          categoria:
+            (data?.category as NotificationCategory | undefined) ??
+            'sin_categoria',
+        });
 
         // Determinar ruta de navegación
         let targetRoute: string | undefined;

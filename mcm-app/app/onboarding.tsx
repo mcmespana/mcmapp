@@ -41,6 +41,7 @@ import {
   DEFAULT_PROFILE_TYPE,
 } from '@/constants/defaultProfileConfig';
 import type { ProfileType } from '@/types/profileConfig';
+import { setAnalyticsProfile, trackEvent } from '@/utils/analytics';
 
 type Step = 'welcome' | 'profile' | 'delegation' | 'login' | 'success';
 
@@ -1683,24 +1684,37 @@ export default function OnboardingScreen() {
     setStep(next);
   };
 
-  const persistAndExit = (values: {
-    profileType: ProfileType;
-    delegationId: string;
-    onboardingCompleted: boolean;
-  }) => {
+  const persistAndExit = (
+    values: {
+      profileType: ProfileType;
+      delegationId: string;
+      onboardingCompleted: boolean;
+    },
+    via: 'completado' | 'saltado' = 'completado',
+  ) => {
     if (finishedRef.current) return;
     finishedRef.current = true;
     setProfile(values);
+    // El perfil se pone a mano además del `setProfile` porque el contexto tarda
+    // un render en propagarse y este evento sale ya.
+    setAnalyticsProfile({
+      perfil: values.profileType,
+      delegacion: values.delegationId,
+    });
+    trackEvent('onboarding_completado', { via });
     router.replace('/');
   };
 
   const handleSkip = () => {
     const resolved = resolveOnboardingValues(profileType, delegationId);
-    persistAndExit({
-      profileType: resolved.profileType,
-      delegationId: resolved.delegationId,
-      onboardingCompleted: false,
-    });
+    persistAndExit(
+      {
+        profileType: resolved.profileType,
+        delegationId: resolved.delegationId,
+        onboardingCompleted: false,
+      },
+      'saltado',
+    );
   };
 
   // Si el usuario eligió "Otros" como perfil, no le mostramos la pantalla de

@@ -1,4 +1,6 @@
 import { logger } from '@/utils/logger';
+import { trackEvent } from '@/utils/analytics';
+import { tramoTamano } from '@/constants/analyticsEvents';
 import React, {
   useCallback,
   useEffect,
@@ -519,6 +521,10 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleShareText = useCallback(() => {
     const text = buildShareText();
+    trackEvent('playlist_usada', {
+      accion: 'compartida',
+      tamano: tramoTamano(flatSelectedSongs.length),
+    });
     const desktopLike =
       Platform.OS === 'web' ||
       Platform.OS === 'windows' ||

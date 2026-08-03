@@ -137,24 +137,15 @@
 | ✅ **NSE iOS** — imagen en la notificación del sistema | `plugins/withNotificationServiceExtension.js` + `targets/notification-service/` | Target de Xcode nuevo, creado por config plugin propio. Bundle id `…​.MCMNotificationService`: EAS pide credenciales la primera vez |
 | ✅ **Sentry** (`@sentry/react-native`) | `utils/sentry.ts` | Sin `EXPO_PUBLIC_SENTRY_DSN` no reporta nada; el SDK nativo va en el binario para poder encenderlo luego por OTA |
 | ✅ **Icono alternativo Carismochito** | `expo-alternate-app-icons` + `utils/appIcon.ts` | Iconos generados con `npm run icons:alt` |
-
-#### C.2 — Aprobado y pendiente de escribir (entra en esta build si da tiempo)
-
-| Qué | Decisión | Estado |
-| --- | -------- | ------ |
-| **"Subrayar" en el menú nativo de selección** | ✅ "Escríbelo entero, yo compilo" (2026-08-03) | **Pendiente**. Alcance mínimo: un item "Subrayar" que abra la barra de colores que YA existe; el modo lápiz actual se mantiene |
-
-> Sobre el subrayado: replanteado el 2026-08-03 — `HighlightableReading` ya
-> renderiza con un `TextInput` de solo lectura, que en iOS **es** un `UITextView`
-> real. No hace falta sustituir la vista nativa (que era el grueso del trabajo
-> estimado); el riesgo se mueve a interponer un proxy del delegado
-> `textView(_:editMenuForTextIn:suggestedActions:)`, que React Native ya ocupa.
-> Detalle en `docs/funcionalidades/SUBRAYADO.md`.
+| ✅ **Analítica** (`@aptabase/react-native`) | `utils/analytics.ts` + `constants/analyticsEvents.ts` | Sin identificadores persistentes, servidores UE. Sin `EXPO_PUBLIC_APTABASE_KEY` no manda nada |
+| ✅ **"Subrayar" en el menú nativo** | `modules/highlight-menu/` | Módulo local de Expo. El modo lápiz se mantiene como respaldo y para web |
 
 #### C.3 — Cambios que exigen algo FUERA de la app
 
 | Qué | Quién | Estado |
 | --- | ----- | ------ |
+| **Política de privacidad + fichas de las tiendas** | Usuario | La analítica obliga a actualizar la política de privacidad, la ficha de privacidad de App Store y el formulario de Data Safety de Play **antes** de publicar. Aptabase no manda identificadores persistentes, lo que simplifica la declaración, pero hay que hacerla |
+| **Cuenta de Sentry y de Aptabase** | Usuario | Crear proyecto, copiar claves y meterlas como secrets de EAS y de GitHub. §2 de `BUILD_AGOSTO_2026.md` |
 | **`channelId` en el push** | MCM Panel | El Panel debe mandar `channelId` top-level con el mismo valor que `data.category` (`general` → `default`). Sin él todo cae en `default` como hasta ahora; **con un `channelId` que la app no declare, Android no entrega la notificación**. Tabla cerrada en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8 |
 | **Probar los channels en un Android real** | Usuario | Requisito que ya fijaba `TODO.md`: verificar heads-up/sonido por canal antes de mergear a `production`. Los canales aparecen en los ajustes del sistema de todos los Android y sus preferencias no se pueden revertir a mano |
 

@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import { trackEvent } from '@/utils/analytics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
@@ -60,6 +61,10 @@ export default function EventHomeScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const event = useCurrentEvent();
+
+  React.useEffect(() => {
+    trackEvent('evento_abierto', { evento: event.id });
+  }, [event.id]);
   const eventSurveys = useActiveSurveys('event-banner', event.id);
 
   // ── Suscripción opt-in a avisos del evento ──

@@ -24,6 +24,7 @@ import * as Haptics from 'expo-haptics';
 import { PressableFeedback } from 'heroui-native';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSettings } from '../../contexts/SettingsContext';
+import { trackEvent } from '@/utils/analytics';
 import { hasArrangements } from '../../utils/arrangements';
 import { useSongProcessor } from '../../hooks/useSongProcessor';
 import { useColorScheme } from '../../hooks/useColorScheme';
@@ -255,6 +256,10 @@ export default function SongFullscreenScreen({
   useKeyboardShortcut('escape', () => navigation.goBack(), {
     preventDefault: false,
   });
+
+  useEffect(() => {
+    trackEvent('modo_presentacion');
+  }, []);
 
   const { settings } = useSettings();
   const { chordsVisible, fontSize, fontFamily, notation } = settings;

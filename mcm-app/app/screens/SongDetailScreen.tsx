@@ -19,6 +19,7 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
 import { useForceCompact } from '@/components/tabs/tabBarController';
+import { trackEvent } from '@/utils/analytics';
 import SongControls from '@/components/SongControls';
 import { RouteProp, NavigationProp } from 'expo-router/react-navigation';
 import { RootStackParamList } from '../(tabs)/cancionero';
@@ -79,6 +80,7 @@ export default function SongDetailScreen({
   // La barra de pestañas se queda COMPACTA mientras se lee una canción: aquí
   // lo que importa es que quepa la mayor cantidad de letra posible.
   useForceCompact(true);
+
   const {
     filename,
     title: _navScreenTitle,
@@ -92,6 +94,23 @@ export default function SongDetailScreen({
     source,
     firebaseCategory,
   } = route.params;
+
+  // Analítica: una canción abierta por navegación, no por render. `source` lo
+  // pone quien navega: 'category' desde una categoría, 'selection' desde la
+  // playlist, y sin valor cuando se llega por la búsqueda global.
+  useEffect(() => {
+    trackEvent('cancion_abierta', {
+      categoria: firebaseCategory ?? 'desconocida',
+      origen:
+        source === 'selection'
+          ? 'playlist'
+          : source === 'category'
+            ? 'lista'
+            : 'busqueda',
+    });
+    // Solo al cambiar de canción, no en cada re-render de la misma.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content]);
   const {
     addSong,
     removeSong,

@@ -39,6 +39,9 @@ jobs:
       # avisar. El DSN no es un secreto (va dentro de la app igualmente), pero
       # se guarda como secret de GitHub para no publicarlo en el repo.
       EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
+      # Aptabase: idéntico razonamiento — si falta aquí, la primera OTA apaga
+      # la analítica en toda la base instalada.
+      EXPO_PUBLIC_APTABASE_KEY: ${{ secrets.EXPO_PUBLIC_APTABASE_KEY }}
     steps:
       - name: Checkout código
         uses: actions/checkout@v4

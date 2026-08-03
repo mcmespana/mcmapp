@@ -12,6 +12,7 @@ import {
   highlightBg,
   type HighlightRange,
 } from '@/utils/highlightRanges';
+import { HighlightMenuView } from '@/modules/highlight-menu';
 
 export interface ReadingSelection {
   start: number;
@@ -27,6 +28,11 @@ interface HighlightableReadingProps {
   penMode?: boolean;
   /** Selección nativa actual (null si no hay o es vacía). */
   onSelectionChange?: (sel: ReadingSelection | null) => void;
+  /**
+   * "Subrayar" desde el menú NATIVO de selección, sin pasar por el modo lápiz.
+   * Si no se pasa, el ítem no se añade y todo funciona como antes.
+   */
+  onNativeHighlightRequest?: (sel: ReadingSelection) => void;
   color: string;
   fontSize: number;
   lineHeight: number;
@@ -77,6 +83,7 @@ export function HighlightableReading({
   ranges = [],
   penMode = false,
   onSelectionChange,
+  onNativeHighlightRequest,
   color,
   fontSize,
   lineHeight,
@@ -129,15 +136,33 @@ export function HighlightableReading({
   // iOS siempre en UITextView; el resto solo cuando hace falta seleccionar.
   const asInput = Platform.OS === 'ios' || penMode;
 
+  // El ítem del menú nativo se engancha envolviendo el texto. `withMenu` lo
+  // hace opcional: sin `onNativeHighlightRequest` no se monta la vista nativa
+  // y el árbol queda EXACTAMENTE como antes.
+  const withMenu = (node: React.ReactElement) =>
+    onNativeHighlightRequest ? (
+      <HighlightMenuView
+        label="Subrayar"
+        onHighlightRequest={({ nativeEvent }) => {
+          const { start, end } = nativeEvent;
+          if (end > start) onNativeHighlightRequest({ start, end });
+        }}
+      >
+        {node}
+      </HighlightMenuView>
+    ) : (
+      node
+    );
+
   if (!asInput) {
-    return (
+    return withMenu(
       <Text selectable style={[styles.base, textStyle, style]}>
         {spanChildren}
-      </Text>
+      </Text>,
     );
   }
 
-  return (
+  return withMenu(
     <TextInput
       style={[
         styles.base,
@@ -174,7 +199,7 @@ export function HighlightableReading({
         penMode ? 'Selecciona el texto que quieres subrayar' : undefined
       }
       {...(isWeb ? { value: text } : { children: spanChildren })}
-    />
+    />,
   );
 }
 
