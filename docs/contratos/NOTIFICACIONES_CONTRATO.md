@@ -33,7 +33,12 @@
    `fotos`. Mandar `evento`/`actividad`/`cantoral`/`jubileo`/`urgente` como
    `categoryId` no aporta botones (se ignora). Conviene **desacoplar** `categoryId`
    (solo iOS action buttons) de `data.category` (etiqueta de negocio).
-5. **Imagen en iOS**: **no hay Notification Service Extension**. `richContent.image`
+5. **`channelId` (Android)**: la app pasa de un channel a **siete**, uno por
+   categoría, para que el usuario pueda silenciar el cantoral sin silenciar los
+   avisos urgentes. El Panel debe mandar `channelId` top-level con el mismo valor
+   que `data.category` (y `default` para `general`). Lista cerrada en §8 — un
+   `channelId` que la app no declare **no se entrega** en Android.
+6. **Imagen en iOS**: **no hay Notification Service Extension**. `richContent.image`
    + `mutableContent` NO pintan imagen en la notificación del sistema iOS. La imagen
    solo se ve dentro de la app (modal de detalle) vía `data.imageUrl`. En Android sí
    se ve. Mantener `data.imageUrl` siempre.
@@ -377,22 +382,69 @@ ver `api/_lib/push.ts → dispatchNotification`).
 
 ## 8. (c) Channels Android
 
-Solo uno, creado en runtime (`usePushNotifications.ts`):
+> **Cambiado en la build de tienda de agosto de 2026.** Antes había un único
+> channel `default` con importancia `MAX`: todo salía igual de agresivo y
+> silenciar el cantoral significaba silenciarlo todo. Ahora hay **siete**.
 
-| `channelId` | Nombre              | Importancia |
-| ----------- | ------------------- | ----------- |
-| `default`   | "Notificaciones MCM" | `MAX` (heads-up) |
+En Android 8+ el "cómo suena" una notificación (heads-up, sonido, vibración) NO
+lo decide el payload: lo decide el **channel**, y el usuario puede silenciar cada
+uno por separado desde los ajustes del sistema.
 
-El Panel puede (a futuro) mandar `channelId`, pero hoy solo existe `default`. Crear
-channels por prioridad/tipo (p. ej. `urgente`) es una mejora futura (ver §Mejoras).
+Los ids de channel son **exactamente los valores de `data.category`** que el
+Panel ya manda, con una única traducción: `general` → `default` (es el channel
+que ya existe en las instalaciones actuales; el id de un channel es inmutable y
+renombrarlo perdería los ajustes del usuario).
+
+| `channelId`     | `data.category` | Nombre en ajustes        | Importancia | Efecto |
+| --------------- | --------------- | ------------------------ | ----------- | ------ |
+| `default`       | `general`       | Avisos generales         | `MAX`       | Heads-up + sonido |
+| `urgente`       | `urgente`       | Urgente                  | `MAX`       | Heads-up + sonido |
+| `eventos`       | `eventos`       | Eventos y calendario     | `HIGH`      | Heads-up + sonido |
+| `celebraciones` | `celebraciones` | Celebraciones            | `HIGH`      | Heads-up + sonido |
+| `cancionero`    | `cancionero`    | Cantoral                 | `DEFAULT`   | Sonido, sin heads-up |
+| `fotos`         | `fotos`         | Fotos                    | `DEFAULT`   | Sonido, sin heads-up |
+| `mantenimiento` | `mantenimiento` | Mantenimiento de la app  | `LOW`       | Silencioso, solo bandeja |
+
+Catálogo en la app: `constants/notificationChannels.ts` (puro, con tests en
+`__tests__/notificationChannels.test.ts`); alta en el sistema en
+`notifications/androidChannels.ts`.
+
+### Qué tiene que hacer el Panel
+
+**Mandar `channelId` top-level en el push, con el mismo valor que `data.category`
+(y `default` cuando la categoría sea `general` o no haya).** Un ejemplo:
+
+```jsonc
+{
+  "to": "ExponentPushToken[...]",
+  "title": "Cambio de horario",
+  "body": "El encuentro empieza a las 18:00",
+  "channelId": "eventos",          // ← NUEVO (Android)
+  "priority": "high",
+  "data": { "id": "...", "category": "eventos" }
+}
+```
+
+Sin `channelId` todo sigue llegando al channel `default` (`MAX`), igual que
+antes: el cambio es retrocompatible, pero entonces el usuario no puede silenciar
+por categoría. **Si el Panel manda un `channelId` que la app no declara, Android
+NO entrega la notificación** — de ahí que la lista de arriba sea cerrada y que
+convenga derivarla de `category` en vez de escribirla a mano.
+
+`channelId` es **solo Android**; iOS lo ignora.
+
+### Canales que ya no existen
+
+Al arrancar, la app borra del sistema cualquier channel que no esté en la tabla.
+Si el Panel usaba alguno inventado, deja de funcionar: usad los siete de arriba.
 
 ## 9. Prioridad
 
 La app **no** lee `priority` para configurar nada por notificación. En Android el
-"heads-up" lo decide la **importancia del channel** (`MAX`), así que **todas** salen
-como heads-up independientemente de `priority`. `priority` (top-level) sí lo usa Expo
-para la **velocidad de entrega** (FCM). Para diferenciar visualmente `high` vs
-`normal` haría falta channels separados (mejora futura).
+"heads-up" lo decide la **importancia del channel**, así que ahora sí se
+diferencia: `default`/`urgente` se asoman, `cancionero`/`fotos` solo suenan y
+`mantenimiento` es silencioso. `priority` (top-level) sí lo usa Expo para la
+**velocidad de entrega** (FCM); mantenedlo.
 
 > Detalle menor: el tipo de la app usaba `high|normal|low`; Expo/top-level usa
 > `default|normal|high`. Mantened `default|normal|high` en el campo top-level.
@@ -442,6 +494,7 @@ Todo es **JS puro → compatible con OTA** (sin código nativo, sin `[skip-ota]`
 ## Mejoras futuras sugeridas (requieren build nativo o trabajo nuevo)
 
 1. **NSE iOS** para imagen en la notificación del sistema (`richContent.image`). Nativo → `[skip-ota]`.
-2. **Deep link a un evento concreto** (`/(tabs)/mas` + `eventId` por parámetro de ruta).
-3. **Channels Android por tipo/prioridad** (`urgente`, `eventos`) para heads-up/sonido diferenciados.
-4. **Usar `data.category`** para color/icono/agrupación en el centro de notificaciones.
+
+Hechas desde entonces: deep link a un evento concreto (`data.eventId`, §2), chip
+de color/icono por `data.category` en el centro de notificaciones (§6) y channels
+Android por categoría (§8).

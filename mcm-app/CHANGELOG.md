@@ -18,6 +18,36 @@
 
 ---
 
+## 2026-08-03 15:40 — Canales de notificación de Android por categoría
+
+Android tenía un único canal (`default`, importancia `MAX`): todo salía igual de
+agresivo y silenciar el cantoral significaba silenciarlo todo. Ahora hay siete,
+uno por cada categoría de negocio que ya manda el Panel en `data.category`:
+
+| Canal | Importancia | Efecto |
+| ----- | ----------- | ------ |
+| `default` (general) · `urgente` | `MAX` | Heads-up + sonido |
+| `eventos` · `celebraciones` | `HIGH` | Heads-up + sonido |
+| `cancionero` · `fotos` | `DEFAULT` | Sonido, sin heads-up |
+| `mantenimiento` | `LOW` | Silencioso, solo bandeja |
+
+Los ids son literalmente los valores de `category`, con `general` → `default`
+(el id de un canal es inmutable en Android: renombrarlo habría perdido los
+ajustes del usuario en las instalaciones actuales). Los canales se dan de alta
+antes de pedir permisos —crearlos no lo requiere— y al sincronizar se borran los
+que la app ya no declara.
+
+**Requiere cambio en MCM Panel**: hay que mandar `channelId` top-level con el
+mismo valor que `data.category`. Sin él todo sigue llegando a `default`, igual
+que antes; con un `channelId` que la app no declare, Android **no entrega** la
+notificación. Contrato actualizado en `docs/contratos/NOTIFICACIONES_CONTRATO.md`
+§8 con la tabla cerrada y un ejemplo de payload.
+
+Archivos: `constants/notificationChannels.ts` (nuevo, catálogo puro),
+`notifications/androidChannels.ts` (nuevo, alta en el sistema),
+`notifications/usePushNotifications.ts`,
+`__tests__/notificationChannels.test.ts` (nuevo).
+
 ## 2026-08-03 15:05 — La barra de pestañas ya no se expande sola
 
 Reescrita la regla de compactar/expandir de la barra flotante. Se ha sacado de

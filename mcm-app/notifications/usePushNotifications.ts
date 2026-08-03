@@ -30,6 +30,7 @@ import {
   extractActionButtons,
 } from '@/utils/notificationRoutes';
 import { routeForEventId } from '@/utils/notificationEventRoute';
+import { syncAndroidNotificationChannels } from '@/notifications/androidChannels';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -319,7 +320,12 @@ async function registerAndSaveToken(
   if (Platform.OS === 'web') return;
 
   try {
-    // 1. Permisos
+    // 1. Canales de Android. Antes que los permisos a propósito: crear canales
+    // no requiere permiso, y así los ajustes del sistema ya salen poblados
+    // cuando el usuario va a mirarlos.
+    await syncAndroidNotificationChannels();
+
+    // 2. Permisos
     // Cast to any: TS no resuelve `expo-modules-core` (anidado bajo expo/) y
     // por eso no ve los campos heredados de PermissionResponse (`status`,
     // `granted`...). En runtime sí existen.
@@ -333,16 +339,6 @@ async function registerAndSaveToken(
 
     if (!granted) {
       return;
-    }
-
-    // 2. Canal Android
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Notificaciones MCM',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#253883',
-      });
     }
 
     // 3. Obtener token
