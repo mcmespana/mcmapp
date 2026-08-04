@@ -4,3 +4,6 @@
 ## 2026-07-08 - [Split useMemo for O(1) state updates]
 **Learning:** [Combining large dataset processing (O(N log N) sorting and O(N) mapping) with frequently changing scalar dependencies (like `selectedSongs.length`) inside a single `useMemo` causes massive unnecessary re-computations when the scalar value changes.]
 **Action:** [Always split such `useMemo` hooks. Compute and memoize the expensive heavy-lifting using only the large dataset as a dependency, then use a second, lightweight `useMemo` to combine the pre-computed array with the scalar state.]
+## 2026-07-09 - [Object.entries over large dynamic objects]
+**Learning:** [Using \`Object.entries()\` combined with array methods like \`.reduce\` or \`.map\` on large, unstructured dynamic Firebase data (e.g. Wordle stats leaderboard) creates intermediate array allocations that bloat memory and heavily tax garbage collection. This causes noticeable UI stutters on lower-end devices.]
+**Action:** [Use native \`for...in\` loops to iterate over dynamic objects directly and accumulate results iteratively instead of chaining map/reduce/filter array methods.]

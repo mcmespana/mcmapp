@@ -1484,60 +1484,79 @@ const SelectedSongsScreen: React.FC = () => {
     [visibleCount, lastUploadCode, viewMode, setViewMode, styles],
   );
 
-  const renderCategoryGroup = ({ item }: { item: CategorizedSongs }) => (
-    <View style={styles.categoryContainer}>
-      <Text style={styles.categoryTitle}>{item.categoryTitle}</Text>
-      {item.data.map((song) => {
-        const isNow = choir.session?.current?.filename === song.filename;
-        return (
-          <PlaylistRow
-            key={song.filename}
-            song={song}
-            transpose={song.transpose}
-            capoOverride={song.capoOverride}
-            isNowPlaying={isNow}
-            onPress={() => handleSongPress(song)}
-            onRemove={() => removeSong(song.filename)}
-          />
-        );
-      })}
-    </View>
+  const renderCategoryGroup = useCallback(
+    ({ item }: { item: CategorizedSongs }) => (
+      <View style={styles.categoryContainer}>
+        <Text style={styles.categoryTitle}>{item.categoryTitle}</Text>
+        {item.data.map((song) => {
+          const isNow = choir.session?.current?.filename === song.filename;
+          return (
+            <PlaylistRow
+              key={song.filename}
+              song={song}
+              transpose={song.transpose}
+              capoOverride={song.capoOverride}
+              isNowPlaying={isNow}
+              onPress={() => handleSongPress(song)}
+              onRemove={() => removeSong(song.filename)}
+            />
+          );
+        })}
+      </View>
+    ),
+    [styles, choir.session, handleSongPress, removeSong],
   );
 
-  const manualRowProps = (
-    item: (typeof flatSelectedSongs)[number],
-    index: number,
-  ): React.ComponentProps<typeof PlaylistRow> => ({
-    song: item,
-    transpose: item.transpose,
-    capoOverride: item.capoOverride,
-    position: index + 1,
-    showReorderControls: true,
-    canMoveUp: index > 0,
-    canMoveDown: index < flatSelectedSongs.length - 1,
-    onMoveUp: () => handleMoveUp(item.filename),
-    onMoveDown: () => handleMoveDown(item.filename),
-    onContextMenu: () => setMenuFilename(item.filename),
-    isNowPlaying: choir.session?.current?.filename === item.filename,
-    onPress: () => handleSongPress(item),
-    onRemove: () => removeSong(item.filename),
-  });
+  const manualRowProps = useCallback(
+    (
+      item: (typeof flatSelectedSongs)[number],
+      index: number,
+    ): React.ComponentProps<typeof PlaylistRow> => ({
+      song: item,
+      transpose: item.transpose,
+      capoOverride: item.capoOverride,
+      position: index + 1,
+      showReorderControls: true,
+      canMoveUp: index > 0,
+      canMoveDown: index < flatSelectedSongs.length - 1,
+      onMoveUp: () => handleMoveUp(item.filename),
+      onMoveDown: () => handleMoveDown(item.filename),
+      onContextMenu: () => setMenuFilename(item.filename),
+      isNowPlaying: choir.session?.current?.filename === item.filename,
+      onPress: () => handleSongPress(item),
+      onRemove: () => removeSong(item.filename),
+    }),
+    [
+      flatSelectedSongs.length,
+      handleMoveUp,
+      handleMoveDown,
+      choir.session,
+      handleSongPress,
+      removeSong,
+    ],
+  );
 
-  const renderManualItem = ({
-    item,
-    index,
-  }: {
-    item: (typeof flatSelectedSongs)[number];
-    index: number;
-  }) => <PlaylistRow {...manualRowProps(item, index)} />;
+  const renderManualItem = useCallback(
+    ({
+      item,
+      index,
+    }: {
+      item: (typeof flatSelectedSongs)[number];
+      index: number;
+    }) => <PlaylistRow {...manualRowProps(item, index)} />,
+    [manualRowProps],
+  );
 
-  const renderDraggableManualItem = ({
-    item,
-    index,
-  }: {
-    item: (typeof flatSelectedSongs)[number];
-    index: number;
-  }) => <DraggableManualRow {...manualRowProps(item, index)} />;
+  const renderDraggableManualItem = useCallback(
+    ({
+      item,
+      index,
+    }: {
+      item: (typeof flatSelectedSongs)[number];
+      index: number;
+    }) => <DraggableManualRow {...manualRowProps(item, index)} />,
+    [manualRowProps],
+  );
 
   const handleReorder = ({ from, to }: ReorderableListReorderEvent) => {
     const song = flatSelectedSongs[from];

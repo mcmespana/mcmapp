@@ -466,18 +466,24 @@ export default function SongsListScreen({
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: Song }) => (
-      <SongListItem
-        song={item}
-        onPress={handleSongPress}
-        onLongPress={handleSongLongPress}
-        isSearchAllMode={isSearchAll}
-        isSelected={isSongSelected(item.filename)}
-        selectedTranspose={getSelectedSong(item.filename)?.transpose ?? 0}
-        onAddSong={addSong}
-        onRemoveSong={removeSong}
-      />
-    ),
+    ({ item }: { item: Song }) => {
+      const isSelected = isSongSelected(item.filename);
+      const selectedTranspose = isSelected
+        ? (getSelectedSong(item.filename)?.transpose ?? 0)
+        : 0;
+      return (
+        <SongListItem
+          song={item}
+          onPress={handleSongPress}
+          onLongPress={handleSongLongPress}
+          isSearchAllMode={isSearchAll}
+          isSelected={isSelected}
+          selectedTranspose={selectedTranspose}
+          onAddSong={addSong}
+          onRemoveSong={removeSong}
+        />
+      );
+    },
     [
       handleSongPress,
       handleSongLongPress,
