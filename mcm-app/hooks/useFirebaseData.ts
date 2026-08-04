@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirebaseApp } from '../utils/firebaseApp';
@@ -43,6 +43,44 @@ function mergeCacheEntry(storageKey: string, patch: Partial<CacheEntry>) {
     inflight: null,
   };
   nodeCache.set(storageKey, { ...prev, ...patch });
+}
+
+/**
+ * Reintentos con espera creciente para la fase remota.
+ *
+ * Antes, un `get()` que fallara por red intermitente se tragaba con un
+ * `logger.error` y la pantalla se quedaba con lo que hubiera en caché hasta el
+ * siguiente montaje. En un encuentro con el wifi saturado, eso es exactamente
+ * "la app no carga". Ahora se reintenta dos veces (0,4 s → 1,2 s) antes de
+ * rendirse.
+ *
+ * No se reintenta eternamente a propósito: si de verdad no hay red, insistir
+ * solo gasta batería. Para ese caso está el re-fetch al volver online, que es
+ * un evento y no una espera activa.
+ *
+ * Reintentar `run()` ENTERO es seguro: sus escrituras en AsyncStorage son
+ * idempotentes (mismo valor, misma clave).
+ */
+const RETRY_DELAYS_MS = [400, 1200];
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function withRetry(run: () => Promise<void>): Promise<void> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await run();
+      return;
+    } catch (error) {
+      if (attempt >= RETRY_DELAYS_MS.length) throw error;
+      logger.warn(
+        `[firebase] fallo de red, reintento ${attempt + 1}/${RETRY_DELAYS_MS.length}`,
+        error,
+      );
+      await wait(RETRY_DELAYS_MS[attempt]);
+    }
+  }
 }
 
 // Refresco remoto COALESCIDO por storageKey: si ya hay uno en vuelo, se reutiliza
@@ -121,7 +159,7 @@ function refreshRemote(
     });
   };
 
-  const promise = run().finally(() => {
+  const promise = withRetry(run).finally(() => {
     const entry = nodeCache.get(storageKey);
     if (entry) entry.inflight = null;
   });
@@ -141,6 +179,9 @@ export function useFirebaseData<T>(
   // Lo usa el hub de eventos para esconder secciones desde el panel sin
   // borrar sus datos. Si el nodo no lo trae, se asume false.
   const [hidden, setHidden] = useState(false);
+  // Estado de red de la última comprobación, para distinguir "he recuperado la
+  // conexión" de "el listener ha vuelto a emitir estando ya conectado".
+  const wasOfflineRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -160,6 +201,7 @@ export function useFirebaseData<T>(
         const state = await Network.getNetworkStateAsync();
         const connected =
           state.isConnected && state.isInternetReachable !== false;
+        wasOfflineRef.current = !connected;
         if (isMounted) setOffline(!connected);
 
         // 1. Servir desde la caché de módulo o, si no existe, desde AsyncStorage.
@@ -220,8 +262,29 @@ export function useFirebaseData<T>(
       }
     }
     fetchData();
+
+    // Resincronización al RECUPERAR la red.
+    //
+    // Antes, si la app arrancaba sin cobertura, se quedaba con la caché hasta
+    // que el usuario volviera a montar la pantalla — o sea, hasta que navegara
+    // a otro sitio y volviera. Ahora, en cuanto hay red otra vez, se revalida
+    // sola.
+    //
+    // Solo dispara en la TRANSICIÓN sin red → con red: el listener también
+    // emite al cambiar de wifi a datos estando ya conectado, y ahí no hay nada
+    // que recuperar.
+    const subscription = Network.addNetworkStateListener((state) => {
+      const connected =
+        !!state.isConnected && state.isInternetReachable !== false;
+      const wasOffline = wasOfflineRef.current;
+      wasOfflineRef.current = !connected;
+      if (isMounted) setOffline(!connected);
+      if (connected && wasOffline) fetchData();
+    });
+
     return () => {
       isMounted = false;
+      subscription.remove();
     };
   }, [path, storageKey, transform]);
 

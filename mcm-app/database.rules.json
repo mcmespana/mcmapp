@@ -138,6 +138,25 @@
     },
 
     /* ------------------------------------------------------------------ *
+     *  NOTIFICACIONES PROGRAMADAS  (/scheduledNotifications)
+     *  Las crea el panel y las procesa su cron (`process-scheduled`). La app
+     *  NO las lee ni las escribe nunca.
+     *
+     *  Denegado en ambos sentidos A PROPÓSITO: quien las toque debe hacerlo con
+     *  el Admin SDK, que ignora estas reglas. Sin este bloque el nodo también
+     *  quedaría denegado (regla 1: lo no listado se bloquea), pero entonces
+     *  sería por olvido y no por decisión — y al leer el fichero no habría
+     *  forma de saber cuál de las dos cosas era.
+     *
+     *  ⚠️ Si el panel escribe aquí con el SDK de cliente, dejará de funcionar
+     *  en cuanto se desplieguen estas reglas. Ver docs/desarrollo/FIREBASE_REGLAS.md
+     * ------------------------------------------------------------------ */
+    "scheduledNotifications": {
+      ".read": false,
+      ".write": false
+    },
+
+    /* ------------------------------------------------------------------ *
      *  TOKENS PUSH  (/pushTokens/<tokenId>)
      *  La raíz NO es enumerable (no se puede listar todos los tokens).
      *  Cada dispositivo escribe/lee su propio nodo (registro + heartbeat).

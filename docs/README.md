@@ -58,6 +58,7 @@ Referencia técnica sobre cómo está construida la app por dentro.
 | --------- | --------- |
 | [DESIGN.md](desarrollo/DESIGN.md) | Sistema de diseño (tokens, colores, tipografía, glass, componentes) |
 | [TABS_MAINTENANCE.md](desarrollo/TABS_MAINTENANCE.md) | Implementación dual de tabs (iOS NativeTabs vs Android/Web) |
+| [FIREBASE_REGLAS.md](desarrollo/FIREBASE_REGLAS.md) | Reglas de la base de datos: qué falta, qué debe cambiar el Panel y cómo desplegarlas |
 | [BUILD_AGOSTO_2026.md](desarrollo/BUILD_AGOSTO_2026.md) | ★ Paso a paso de la build de tienda: variables de Sentry, credenciales, pruebas |
 
 ## Seguridad

@@ -18,6 +18,31 @@
 
 ---
 
+## 2026-08-04 03:00 — Red: reintentos y resincronización al volver online
+
+`useFirebaseData` se tragaba los fallos de red con un `logger.error` y ya: sin
+reintento, y la pantalla se quedaba con lo que hubiera en caché **hasta el
+siguiente montaje**. En un encuentro con el wifi saturado eso es exactamente "la
+app no carga".
+
+- **Reintentos con espera creciente** (0,4 s → 1,2 s, tres intentos) en la fase
+  remota. Reintentar la operación entera es seguro porque sus escrituras en
+  AsyncStorage son idempotentes. Se rinde a propósito tras el tercero: insistir
+  sin red solo gasta batería, y dejar promesas colgadas impediría limpiar el
+  `inflight` que coalesce las peticiones. Tests en
+  `__tests__/firebaseRetry.test.ts`.
+- **Resincronización al recuperar la red**: si la app arranca sin cobertura, en
+  cuanto vuelve se revalida sola. Solo dispara en la transición sin red → con
+  red, porque el listener también emite al pasar de wifi a datos estando ya
+  conectado y ahí no hay nada que recuperar.
+
+**Reglas de Firebase revisadas** (escritas, NO desplegadas):
+`/scheduledNotifications` no estaba declarado. Ya estaba denegado —lo no listado
+se bloquea— pero por omisión y no por decisión. Ahora es explícito y comentado.
+Documento nuevo `docs/desarrollo/FIREBASE_REGLAS.md` con qué tiene que cambiar
+el Panel, la decisión de auth pendiente y los comandos de despliegue (a mano y
+por el workflow que ya existe y solo espera un secret).
+
 ## 2026-08-04 02:10 — `EmptyState` en el cantoral y en Grupos
 
 Los dos "no he encontrado nada" que quedaban a mano —la lista de canciones y la
