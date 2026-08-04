@@ -11,7 +11,7 @@
  * Si se pasan ambos, muestra un toggle para alternar entre los dos QR.
  */
 import { radii } from '@/constants/uiStyles';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -70,13 +70,18 @@ const ShareQrModal: React.FC<Props> = ({
     defaultMode === 'offline' && hasOffline ? 'offline' : 'online',
   );
 
-  useEffect(() => {
+  // Al ABRIR se vuelve a la pestaña por defecto y se olvida el "¡copiado!" de
+  // la vez anterior. Se ajusta durante el render (el patrón que documenta React
+  // para "cambiar estado cuando cambia una prop") en vez de con un efecto, así
+  // el modal no llega a pintarse un instante con la pestaña anterior.
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (visible !== lastVisible) {
+    setLastVisible(visible);
     if (visible) {
       setCopied(null);
       setMode(defaultMode === 'offline' && hasOffline ? 'offline' : 'online');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
+  }
 
   // Modo efectivo: si solo hay uno disponible, ignoramos el toggle.
   const effectiveMode: 'online' | 'offline' = !onlineSelectable

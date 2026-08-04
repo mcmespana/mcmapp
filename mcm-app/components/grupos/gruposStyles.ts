@@ -275,25 +275,6 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: isDark ? '#A0A0A8' : '#6B6B70',
       paddingHorizontal: 4,
     },
-    emptyContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 32,
-      gap: 8,
-    },
-    emptyText: {
-      fontSize: 16,
-      color: isDark ? '#CCCCCC' : '#666',
-      textAlign: 'center',
-      fontWeight: '500',
-    },
-    emptyHint: {
-      fontSize: 13,
-      color: isDark ? '#A0A0A8' : '#888',
-      fontStyle: 'italic',
-      textAlign: 'center',
-    },
     emptyInline: {
       paddingHorizontal: 16,
       paddingVertical: 24,

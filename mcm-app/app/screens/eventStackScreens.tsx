@@ -1,6 +1,6 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 
 import GlassHeader from '@/components/ui/GlassHeader.ios';
 import GlassBackButton from '@/components/ui/GlassBackButton';

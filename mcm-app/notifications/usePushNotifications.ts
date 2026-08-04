@@ -23,13 +23,18 @@ import {
   markNotificationAsRead,
   type TokenProfileMetadata,
 } from '@/services/pushNotificationService';
-import { ReceivedNotification } from '@/types/notifications';
+import {
+  ReceivedNotification,
+  type NotificationCategory,
+} from '@/types/notifications';
 import {
   normalizeNotificationRoute,
   extractActionButton,
   extractActionButtons,
 } from '@/utils/notificationRoutes';
 import { routeForEventId } from '@/utils/notificationEventRoute';
+import { syncAndroidNotificationChannels } from '@/notifications/androidChannels';
+import { trackEvent } from '@/utils/analytics';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -171,12 +176,10 @@ export default function usePushNotifications() {
           title: notification.request.content.title || 'Notificación',
           body: notification.request.content.body || '',
           bodyLong: notification.request.content.data?.bodyLong as
-            | string
-            | undefined,
+            string | undefined,
           icon: notification.request.content.data?.icon as string | undefined,
           imageUrl: notification.request.content.data?.imageUrl as
-            | string
-            | undefined,
+            string | undefined,
           actionButton: extractActionButton(notification.request.content.data),
           actionButtons: extractActionButtons(
             notification.request.content.data,
@@ -185,11 +188,9 @@ export default function usePushNotifications() {
           isRead: false,
           category: notification.request.content.data?.category as any,
           internalRoute: notification.request.content.data?.internalRoute as
-            | string
-            | undefined,
+            string | undefined,
           eventId: notification.request.content.data?.eventId as
-            | string
-            | undefined,
+            string | undefined,
           data: notification.request.content.data,
         };
 
@@ -212,6 +213,14 @@ export default function usePushNotifications() {
         const notificationId = getStableNotificationId(
           response.notification.request.content,
         );
+
+        // Analítica: qué tipo de aviso se abre de verdad. Solo la categoría,
+        // nunca el título ni el id — eso identificaría el envío concreto.
+        trackEvent('notificacion_abierta', {
+          categoria:
+            (data?.category as NotificationCategory | undefined) ??
+            'sin_categoria',
+        });
 
         // Determinar ruta de navegación
         let targetRoute: string | undefined;
@@ -323,7 +332,12 @@ async function registerAndSaveToken(
   if (Platform.OS === 'web') return;
 
   try {
-    // 1. Permisos
+    // 1. Canales de Android. Antes que los permisos a propósito: crear canales
+    // no requiere permiso, y así los ajustes del sistema ya salen poblados
+    // cuando el usuario va a mirarlos.
+    await syncAndroidNotificationChannels();
+
+    // 2. Permisos
     // Cast to any: TS no resuelve `expo-modules-core` (anidado bajo expo/) y
     // por eso no ve los campos heredados de PermissionResponse (`status`,
     // `granted`...). En runtime sí existen.
@@ -337,16 +351,6 @@ async function registerAndSaveToken(
 
     if (!granted) {
       return;
-    }
-
-    // 2. Canal Android
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Notificaciones MCM',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#253883',
-      });
     }
 
     // 3. Obtener token

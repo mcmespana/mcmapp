@@ -50,7 +50,7 @@ export default function McmPanelScreen() {
     () =>
       StyleSheet.create({
         loadingContainer: {
-          ...StyleSheet.absoluteFillObject,
+          ...StyleSheet.absoluteFill,
           justifyContent: 'center' as const,
           alignItems: 'center' as const,
           backgroundColor:

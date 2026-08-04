@@ -11,7 +11,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Pressable,
   Linking,
@@ -30,11 +29,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -201,6 +201,8 @@ interface QuickItem {
 
 export default function Home() {
   const navigation = useNavigation();
+  // Compacta la barra de pestañas flotante al scrollear y reserva su hueco.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('index');
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
   // Color neutro de los iconos en la cápsula glass (igual que EventActionButtons).
@@ -317,41 +319,55 @@ export default function Home() {
   const { firebaseNotifications, readIds, unreadCount } = useNotifications();
   const latestNotification = firebaseNotifications[0] ?? null;
 
-  const [isUnread, setIsUnread] = useState(false);
-
-  useEffect(() => {
-    if (!latestNotification) {
-      setIsUnread(false);
-      return;
-    }
-    if (readIds.has(latestNotification.id)) {
-      setIsUnread(false);
-      return;
-    }
+  // Lo que se sabe sin preguntar a disco: sin notificación, ya leída o de hace
+  // más de 60 días, no hay nada que marcar. Solo lo que sobrevive a este filtro
+  // merece la comprobación cruzada de abajo.
+  const candidate = useMemo(() => {
+    if (!latestNotification) return null;
+    if (readIds.has(latestNotification.id)) return null;
     const dateStr = (
       'receivedAt' in latestNotification
         ? latestNotification.receivedAt
         : latestNotification.createdAt
     ) as string | undefined;
-    if (isNotificationOlderThan60Days(dateStr)) {
-      setIsUnread(false);
-      return;
-    }
-
-    // Comprobación cruzada asíncrona: ver si ya se leyó la versión local
-    getLocalNotificationsHistory().then((localData) => {
-      const match = localData.find(
-        (n) =>
-          n.title === latestNotification.title &&
-          n.body === latestNotification.body,
-      );
-      if (match && (match.isRead || readIds.has(match.id))) {
-        setIsUnread(false);
-      } else {
-        setIsUnread(true);
-      }
-    });
+    if (isNotificationOlderThan60Days(dateStr)) return null;
+    return latestNotification;
   }, [latestNotification, readIds]);
+
+  // Comprobación cruzada asíncrona: la misma notificación puede constar ya
+  // leída en su copia local, con otro id (se casan por título + cuerpo). El
+  // resultado se guarda JUNTO al id comprobado, así que al llegar otra
+  // notificación deja de contar solo, sin resetearlo a mano.
+  const [crossCheck, setCrossCheck] = useState<{
+    id: string;
+    unread: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!candidate) return;
+    let alive = true;
+    getLocalNotificationsHistory().then((localData) => {
+      if (!alive) return;
+      const match = localData.find(
+        (n) => n.title === candidate.title && n.body === candidate.body,
+      );
+      const unread = !(match && (match.isRead || readIds.has(match.id)));
+      setCrossCheck((prev) =>
+        prev && prev.id === candidate.id && prev.unread === unread
+          ? prev
+          : { id: candidate.id, unread },
+      );
+    });
+    return () => {
+      alive = false;
+    };
+  }, [candidate, readIds]);
+
+  // Como antes: no se enciende hasta que la comprobación cruzada responde.
+  const isUnread =
+    candidate !== null && crossCheck !== null && crossCheck.id === candidate.id
+      ? crossCheck.unread
+      : false;
 
   // Ping animation for the notification badge (Reanimated 3).
   const pingScale = useSharedValue(1);
@@ -689,12 +705,15 @@ export default function Home() {
         />
       </View>
 
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         style={{ backgroundColor: theme.background }}
         contentContainerStyle={[
           styles.scrollContent,
           isWide && styles.scrollContentWide,
-          Platform.OS === 'ios' && { paddingBottom: 120 },
+          { paddingBottom: contentPaddingBottom },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -1308,7 +1327,7 @@ export default function Home() {
             </Text>
           </SecretMenuTrigger>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }

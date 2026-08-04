@@ -1,12 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  Animated,
-  Pressable,
-} from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -109,21 +107,20 @@ export default function TransposeBottomSheet({
   };
 
   // Pop del valor central en cada cambio de tono.
-  const valuePop = useRef(new Animated.Value(1)).current;
+  const valuePop = useSharedValue(1);
   const firstRender = useRef(true);
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
-    valuePop.setValue(1.18);
-    Animated.spring(valuePop, {
-      toValue: 1,
-      useNativeDriver: Platform.OS !== 'web',
-      tension: 260,
-      friction: 9,
-    }).start();
+    valuePop.value = 1.18;
+    valuePop.value = withSpring(1, { stiffness: 260, damping: 9, mass: 1 });
   }, [currentTranspose, valuePop]);
+
+  const valuePopStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: valuePop.value }],
+  }));
 
   const handleCapoMinus = () => {
     if (!onSetCapoOverride) return;
@@ -208,8 +205,8 @@ export default function TransposeBottomSheet({
               <Animated.Text
                 style={[
                   styles.toneDisplayValue,
+                  valuePopStyle,
                   {
-                    transform: [{ scale: valuePop }],
                     color: isTransposed
                       ? isDark
                         ? '#F4C11E'

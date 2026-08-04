@@ -12,7 +12,7 @@
  * estado "cargando" durante la operación.
  */
 import { radii } from '@/constants/uiStyles';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import {
   CODE_LENGTH,
+  defaultPlaylistName,
   generateRandomCode,
   isValidCode,
   todayCode,
@@ -99,6 +100,28 @@ const COPY: Record<CodeDialogVariant, VariantCopy> = {
   },
 };
 
+/** Código y nombre con los que arranca el diálogo al abrirse. */
+function seedFor(
+  variant: CodeDialogVariant,
+  initialCode?: string,
+): { code: string; name: string } {
+  let code = '';
+  if (initialCode && isValidCode(initialCode)) {
+    code = initialCode;
+  } else if (
+    variant === 'cloud-upload' ||
+    variant === 'choir-start' ||
+    variant === 'change-code'
+  ) {
+    code = generateRandomCode();
+  }
+
+  // Nombre por defecto solo para la nube, con la fecha de hoy.
+  const name = variant === 'cloud-upload' ? defaultPlaylistName() : '';
+
+  return { code, name };
+}
+
 const CodeInputModal: React.FC<Props> = ({
   visible,
   variant,
@@ -116,45 +139,25 @@ const CodeInputModal: React.FC<Props> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Al abrir, sembrar valor inicial.
-  useEffect(() => {
-    if (!visible) return;
-    setError(null);
-    setSubmitting(false);
-    if (initialCode && isValidCode(initialCode)) {
-      setCode(initialCode);
-    } else if (
-      variant === 'cloud-upload' ||
-      variant === 'choir-start' ||
-      variant === 'change-code'
-    ) {
-      setCode(generateRandomCode());
-    } else {
-      setCode('');
+  // Al abrir se siembran los valores iniciales, ajustando el estado durante el
+  // render (el patrón que documenta React para "cambiar estado cuando cambia
+  // una prop"). Antes lo hacía un efecto, que dejaba un render con el código
+  // del intento anterior antes de sustituirlo.
+  const [lastSeed, setLastSeed] = useState({ visible, variant, initialCode });
+  if (
+    lastSeed.visible !== visible ||
+    lastSeed.variant !== variant ||
+    lastSeed.initialCode !== initialCode
+  ) {
+    setLastSeed({ visible, variant, initialCode });
+    if (visible) {
+      const seed = seedFor(variant, initialCode);
+      setError(null);
+      setSubmitting(false);
+      setCode(seed.code);
+      setName(seed.name);
     }
-
-    // Auto-completar un nombre chulo por defecto para la nube
-    if (variant === 'cloud-upload') {
-      const monthNames = [
-        'ene',
-        'feb',
-        'mar',
-        'abr',
-        'may',
-        'jun',
-        'jul',
-        'ago',
-        'sep',
-        'oct',
-        'nov',
-        'dic',
-      ];
-      const now = new Date();
-      setName(`Playlist ${now.getDate()} ${monthNames[now.getMonth()]}`);
-    } else {
-      setName('');
-    }
-  }, [visible, variant, initialCode]);
+  }
 
   const valid = isValidCode(code);
 

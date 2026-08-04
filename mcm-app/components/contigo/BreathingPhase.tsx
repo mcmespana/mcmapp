@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  Animated,
-  Easing,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { reaEasings } from '@/constants/animations';
 
 const BREATH_MS = 2100;
 
@@ -16,28 +16,22 @@ const BREATH_MS = 2100;
  * Tap to skip.
  */
 export function BreathingPhase({ onDone }: { onDone: () => void }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.72)).current;
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.72);
   const [phaseLabel, setPhaseLabel] = React.useState<'inhale' | 'exhale'>(
     'inhale',
   );
   const finished = useRef(false);
 
   useEffect(() => {
-    Animated.timing(opacity, {
-      toValue: 1,
-      duration: 480,
-      useNativeDriver: true,
-    }).start();
+    opacity.value = withTiming(1, { duration: 480 });
 
     const breath = (to: number, label: 'inhale' | 'exhale') => {
       setPhaseLabel(label);
-      Animated.timing(scale, {
-        toValue: to,
+      scale.value = withTiming(to, {
         duration: BREATH_MS,
-        easing: Easing.inOut(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
+        easing: reaEasings.cubic,
+      });
     };
 
     // inhale (already at 0.72) → exhale ↑ → inhale ↓ → done
@@ -55,15 +49,27 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
   const fade = () => {
     if (finished.current) return;
     finished.current = true;
-    Animated.timing(opacity, {
-      toValue: 0,
-      duration: 380,
-      useNativeDriver: true,
-    }).start(() => onDone());
+    opacity.value = withTiming(0, { duration: 380 }, () => {
+      'worklet';
+      runOnJS(onDone)();
+    });
   };
 
+  // Los tres anillos siguen la MISMA respiración a distinta escala; antes eran
+  // `Animated.multiply(scale, k)`.
+  const rootStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const glowStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value * 1.35 }],
+  }));
+  const ring2Style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  const ring1Style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value * 0.84 }],
+  }));
+
   return (
-    <Animated.View pointerEvents="auto" style={[styles.root, { opacity }]}>
+    <Animated.View pointerEvents="auto" style={[styles.root, rootStyle]}>
       <TouchableWithoutFeedback onPress={fade}>
         <View style={styles.touch}>
           <View style={styles.headWrap}>
@@ -73,19 +79,9 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
             </Text>
           </View>
           <View style={styles.ringStack}>
-            <Animated.View
-              style={[
-                styles.glow,
-                { transform: [{ scale: Animated.multiply(scale, 1.35) }] },
-              ]}
-            />
-            <Animated.View style={[styles.ring2, { transform: [{ scale }] }]} />
-            <Animated.View
-              style={[
-                styles.ring1,
-                { transform: [{ scale: Animated.multiply(scale, 0.84) }] },
-              ]}
-            >
+            <Animated.View style={[styles.glow, glowStyle]} />
+            <Animated.View style={[styles.ring2, ring2Style]} />
+            <Animated.View style={[styles.ring1, ring1Style]}>
               <Text style={styles.phaseText}>
                 {phaseLabel === 'inhale' ? 'Respira...' : 'Inspira...'}
               </Text>

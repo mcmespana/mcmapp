@@ -17,7 +17,7 @@ import { BottomSheet, Button } from 'heroui-native';
 // dentro de Swipeable para que los toques anidados funcionen correctamente.
 import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import colors, { Colors } from '@/constants/colors';

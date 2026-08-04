@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
@@ -8,28 +8,24 @@ import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { usePreviewChannel } from '@/contexts/PreviewChannelContext';
 
 export const VersionDisplay: React.FC<{ style?: any }> = ({ style }) => {
-  const [updateInfo, setUpdateInfo] = useState<string>('');
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
 
-  useEffect(() => {
-    // Solo mostramos versión + hash del bundle OTA cuando aplica. La
-    // notificación de "hay update disponible" la gestiona el modal
-    // <OTAUpdatePrompt> montado en el root layout — aquí no duplicamos
-    // ese mensaje para evitar ruido visual en el pie de la Home.
+  // Solo mostramos versión + hash del bundle OTA cuando aplica. La
+  // notificación de "hay update disponible" la gestiona el modal
+  // <OTAUpdatePrompt> montado en el root layout — aquí no duplicamos ese
+  // mensaje para evitar ruido visual en el pie de la Home.
+  //
+  // Se CALCULA, no se guarda en estado desde un efecto: son constantes del
+  // bundle, no cambian en caliente. Así además el pie no parpadea en el primer
+  // render (antes salía vacío hasta que corría el efecto).
+  const updateInfo = useMemo(() => {
     const appVersion = Constants.expoConfig?.version || '1.0.1';
-
-    if (__DEV__) {
-      setUpdateInfo(`v${appVersion} • dev`);
-      return;
-    }
-
+    if (__DEV__) return `v${appVersion} • dev`;
     if (Updates.isEnabled && Updates.updateId) {
-      const shortId = Updates.updateId.slice(0, 6);
-      setUpdateInfo(`v${appVersion}+${shortId}`);
-    } else {
-      setUpdateInfo(`v${appVersion}`);
+      return `v${appVersion}+${Updates.updateId.slice(0, 6)}`;
     }
+    return `v${appVersion}`;
   }, []);
 
   if (!updateInfo) return null;

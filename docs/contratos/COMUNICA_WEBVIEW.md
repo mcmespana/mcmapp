@@ -153,17 +153,78 @@ primera petición (parpadeo, corregido acto seguido por la inyección).
 
 ## 3. Zona segura (notch y tab bar)
 
-La app dibuja la web **a pantalla completa**, por detrás de la barra superior
-translúcida y del tab bar inferior, y compensa con `contentInset`. Eso funciona
-para contenido que scrollea normal.
+La app dibuja la web **a pantalla completa**, por detrás de la franja superior
+del notch y del tab bar flotante inferior. El contenido arranca en zona segura
+pero **se desliza por debajo** de ambos al hacer scroll. Cómo se consigue el
+hueco depende de la plataforma:
 
-⚠️ **Con elementos `position: fixed` el inset no sirve** — un botón fijo abajo
-(tipo «Guardar» pegado al viewport) queda tapado por el tab bar. Si la web usa
-elementos fijos, debe reservar el hueco ella misma:
+| Plataforma | Mecanismo |
+| ---------- | --------- |
+| iOS | `contentInset` del WKWebView — lo mueve el contenedor nativo, la web no se entera |
+| Android | **La propia página**: el WebView de Android no admite `contentInset`, así que la app le inyecta el padding por CSS |
+
+### Variables CSS que la app publica
+
+En **ambas** plataformas la app escribe estas dos variables en `<html>`, y las
+reescribe cuando cambian (rotación de pantalla, cambio de safe area):
+
+```css
+--mcm-app-inset-top     /* alto del notch */
+--mcm-app-inset-bottom  /* hueco del tab bar flotante + respiro */
+```
+
+Vienen ya en **píxeles CSS** (la app convierte de dp usando el ancho real del
+viewport), así que se usan tal cual.
+
+### Lo que la app inyecta en Android
+
+Un `<style id="mcm-app-safe-area">` con:
+
+```css
+body {
+  padding-top: var(--mcm-app-inset-top) !important;
+  padding-bottom: var(--mcm-app-inset-bottom) !important;
+}
+html {
+  scroll-padding-top: var(--mcm-app-inset-top);
+  scroll-padding-bottom: var(--mcm-app-inset-bottom);
+}
+```
+
+Es idempotente (reutiliza siempre el mismo `<style>` por id, no acumula) y lleva
+`!important` a propósito: si la web pierde ese padding, el principio de la página
+queda tapado por la franja del notch de forma permanente.
+
+> ⚠️ **Si la web tiene su propio `padding` en `<body>`, el de arriba y el de
+> abajo se pierden en Android.** Si eso molesta, usad el opt-out de abajo.
+
+### Opt-out: que la web reserve el hueco ella misma
+
+Si el portal prefiere gestionarlo (porque tiene un layout propio, una barra fija
+o un `padding` en `body` que no quiere perder), basta con declarar en el HTML:
+
+```html
+<html data-mcm-insets="self">
+```
+
+Con eso la app **deja de tocar el layout** y se limita a publicar las dos
+variables. La web las aplica donde le convenga:
+
+```css
+.contenido { padding-top: var(--mcm-app-inset-top, 0px); }
+.barra-fija-abajo { padding-bottom: var(--mcm-app-inset-bottom, 0px); }
+```
+
+### Elementos `position: fixed`
+
+⚠️ **Ni el `contentInset` de iOS ni el padding de `body` mueven un elemento
+`position: fixed`** — un botón fijo abajo (tipo «Guardar» pegado al viewport)
+queda tapado por el tab bar en las dos plataformas. Para esos, la web **tiene**
+que usar las variables:
 
 ```css
 .barra-fija-abajo {
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  padding-bottom: calc(12px + var(--mcm-app-inset-bottom, env(safe-area-inset-bottom)));
 }
 ```
 
@@ -192,7 +253,56 @@ sobre el historial del WebView, y en Android el botón atrás del sistema navega
 primero por el historial de la web. La web **no** necesita añadir botones de
 volver propios; si los tiene y `app=1`, mejor ocultarlos.
 
-## 6. Notas de seguridad
+## 6. Enlaces de acceso del correo que abren la app
+
+Los correos del área privada («Acceder a mi área privada») **no enlazan al área
+directamente**: enlazan a una ruta puente del mismo dominio, que iOS y Android
+reconocen como propiedad de la app MCM.
+
+```
+https://comunica.movimientoconsolacion.com/app/acceso?acceso_magico=XXXX
+https://comunica.movimientoconsolacion.com/app/acceso?token=XXXX
+```
+
+Qué pasa al pulsarlo:
+
+| Situación                                              | Qué ocurre                                                                                                        |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| App instalada (iOS o Android)                          | El sistema abre la **app** con esa URL. La petición web **no se llega a hacer**                                    |
+| Sin app, u ordenador                                   | La petición llega a WordPress, que **redirige (302)** al área privada con el token intacto → login por web de siempre |
+| Cliente de correo que envuelve el enlace en un redirector | Se pierde el universal link → cae en el caso anterior (web). Es el motivo de que exista `mcmapp://comunica?…`      |
+
+### Lado app
+
+- `app.json` declara el dominio: `associatedDomains` (iOS) e `intentFilters` con
+  `autoVerify` y `pathPrefix: /app/acceso` (Android). Se reclama **solo esa
+  ruta**, no el portal entero: así ningún otro enlace de Comunica que alguien
+  comparta se abre en la app por sorpresa.
+- `app/+native-intent.ts` traduce la URL entrante: guarda el token en
+  `utils/pendingComunicaLink.ts` y devuelve `/(tabs)/comunica`.
+- `hooks/useComunicaWebView.ts` carga esa URL en lugar de la de arranque, ya con
+  `app=1` y el `theme=` que toque. El WebView lleva `sharedCookiesEnabled`, así
+  que la cookie de sesión de PHP se conserva entre aperturas.
+
+### Lado web (plugin de WordPress)
+
+Todo en `inc/stic-app-links.php` del repo `mcmespana/comunicaAreaPrivada`:
+
+- Sirve `/.well-known/apple-app-site-association` y
+  `/.well-known/assetlinks.json` desde PHP (sin ficheros en el hosting).
+- Atiende `/app/acceso` y redirige al área privada conservando **solo**
+  `acceso_magico` y `token` — no es un redirector abierto.
+- `sticpa_app_link_url()` convierte cualquier enlace del área en su versión
+  puente; es lo que usa el correo de acceso.
+
+> ⚠️ **Android no verificará el dominio hasta que se rellene la huella SHA-256**
+> del certificado de firma de la app en Ajustes → SinergiaCRM Private Area
+> (Play Console → Setup → App integrity → App signing). Hasta entonces esos
+> enlaces siguen abriendo el navegador en Android; iOS sí funciona sin nada más.
+> Y en iOS hace falta un **build de tienda**: `associatedDomains` es
+> configuración nativa, no viaja en una OTA.
+
+## 7. Notas de seguridad
 
 - Sanea siempre `$_GET['theme']` / `$_COOKIE['mcm_theme']` antes de volcarlos al
   HTML (arriba se hace con la comparación a `'dark'`). Son entrada de usuario:

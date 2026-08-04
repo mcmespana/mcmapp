@@ -66,6 +66,12 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
     remoteConfig,
   ) as SurveyConfig;
 
+  // El uid se saca a una variable ANTES de los callbacks a propósito: si se
+  // usa `user?.uid` dentro, el React Compiler infiere `user` entero como
+  // dependencia, no coincide con la lista declarada y se salta el componente
+  // entero (regla `preserve-manual-memoization`).
+  const uid = user?.uid;
+
   const handleSubmit = useCallback(
     async (answers: EvaluationAnswers) => {
       const deviceId = await getDeviceId();
@@ -80,7 +86,7 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
         platform: Platform.OS,
         ...buildIdentityFields({
           anonymous: config.anonymous,
-          authUid: user?.uid,
+          authUid: uid,
           name: profile.name,
           profileType: profile.profileType,
           delegationLabel: resolved.delegationLabel,
@@ -88,14 +94,14 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
       });
       await set(ref(db, `${surveyPath(surveyId)}/updatedAt`), Date.now());
       // Dedup entre dispositivos solo si hay sesión y no es anónima.
-      if (user?.uid && !config.anonymous)
-        await markUserAnswered(user.uid, scope, surveyId);
+      if (uid && !config.anonymous)
+        await markUserAnswered(uid, scope, surveyId);
     },
     [
       surveyId,
       scope,
       config.anonymous,
-      user?.uid,
+      uid,
       profile.name,
       profile.profileType,
       resolved.delegationLabel,
@@ -104,11 +110,7 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
 
   const checkSubmitted = useCallback(async () => {
     try {
-      if (
-        user?.uid &&
-        !config.anonymous &&
-        (await hasUserAnswered(user.uid, scope))
-      )
+      if (uid && !config.anonymous && (await hasUserAnswered(uid, scope)))
         return true;
       const deviceId = await getDeviceId();
       const db = getDatabase(getFirebaseApp());
@@ -117,7 +119,7 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
     } catch {
       return false;
     }
-  }, [surveyId, scope, config.anonymous, user?.uid]);
+  }, [surveyId, scope, config.anonymous, uid]);
 
   // ── Estados que no muestran el formulario ──
   if (loading && !remoteConfig) {

@@ -1,0 +1,97 @@
+diff --git a/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift b/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift
+index e4c82b3..3b0f433 100644
+--- a/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift
++++ b/node_modules/expo-native-compact-tabs/ios/ExpoNativeCompactTabsView.swift
+@@ -128,6 +128,41 @@ public final class ExpoNativeCompactTabsView: ExpoView, UITabBarDelegate {
+     }
+   }
+ 
++  /// Rehace el layout cuando la safe area pasa a ser conocida.
++  ///
++  /// Ninguno de los dos caminos sobrevive a que la vista se quede sin ventana:
++  ///
++  ///   - iOS 26+: el frame no depende de la safe area, pero es UIKit quien
++  ///     reserva el hueco del home indicator DENTRO de la `UITabBar` a partir
++  ///     de `safeAreaInsets`. Sin ventana ese inset es cero, así que la barra
++  ///     reparte sus items por los 78pt enteros y las etiquetas caen ~34pt más
++  ///     abajo de la cuenta, saliéndose de la cápsula.
++  ///   - Pre-26: `resolvedTabFrame` lee `window?.safeAreaInsets.bottom`
++  ///     directamente y cae a 0.
++  ///
++  /// Pasa de verdad: al presentar un `fullScreenModal` (el onboarding de la
++  /// app) iOS SACA de la ventana la vista que queda debajo. Al cerrarse no
++  /// cambia ningún tamaño, así que no llega otro `layoutSubviews` por su cuenta
++  /// y la barra se queda mal colocada hasta reiniciar.
++  ///
++  /// Se invalida también la `UITabBar`: lo que hay que recalcular es su reparto
++  /// interno de items, no solo el frame que le damos nosotros.
++  private func relayoutForSafeArea() {
++    guard window != nil else { return }
++    setNeedsLayout()
++    tabBar.setNeedsLayout()
++  }
++
++  public override func didMoveToWindow() {
++    super.didMoveToWindow()
++    relayoutForSafeArea()
++  }
++
++  public override func safeAreaInsetsDidChange() {
++    super.safeAreaInsetsDidChange()
++    relayoutForSafeArea()
++  }
++
+   func setItems(_ definitions: [ExpoNativeCompactTabItem]) {
+     let changed = definitions.count != itemDefinitions.count ||
+       zip(definitions, itemDefinitions).contains { next, current in
+@@ -409,6 +444,30 @@ public final class ExpoNativeCompactTabsView: ExpoView, UITabBarDelegate {
+     }
+   }
+ 
++  /// Point size every icon is normalised to. `UITabBarItem` draws its image at
++  /// the image's natural point size (pixels / scale) and never resizes it, so
++  /// the point size is entirely decided by how the `UIImage` was decoded.
++  private static let iconPointSize: CGFloat = 24
++
++  /// Reinterprets an image's scale so it always measures `iconPointSize`
++  /// points, whatever pixel density the file happens to be.
++  ///
++  /// Without this, icons come out at the wrong size in a real build:
++  /// `UIImage(contentsOfFile:)` always reports scale 1.0, so a @3x asset (72px)
++  /// is drawn as 72pt instead of 24pt — three times too big, overlapping the
++  /// labels. The filename cannot be trusted either: bundlers that hash embedded
++  /// assets drop the `@3x` suffix. Deriving the scale from the pixel width is
++  /// the only thing that holds in every case.
++  private static func normalisedToIconBox(_ image: UIImage) -> UIImage {
++    guard let cgImage = image.cgImage, cgImage.width > 0 else { return image }
++    let scale = CGFloat(cgImage.width) / iconPointSize
++    return UIImage(
++      cgImage: cgImage,
++      scale: scale,
++      orientation: image.imageOrientation
++    )
++  }
++
+   private func loadImage(_ uri: String, completion: @escaping (UIImage?) -> Void) {
+     let cacheKey = uri as NSString
+     if let cached = Self.imageCache.object(forKey: cacheKey) {
+@@ -423,15 +482,16 @@ public final class ExpoNativeCompactTabsView: ExpoView, UITabBarDelegate {
+ 
+     if url.isFileURL {
+       let image = UIImage(contentsOfFile: url.path)
++        .map(Self.normalisedToIconBox)
+       if let image { Self.imageCache.setObject(image, forKey: cacheKey) }
+       completion(image)
+       return
+     }
+ 
+     URLSession.shared.dataTask(with: url) { data, _, _ in
+-      let image = data.flatMap {
+-        UIImage(data: $0, scale: UIScreen.main.scale)
+-      }
++      let image = data
++        .flatMap { UIImage(data: $0, scale: UIScreen.main.scale) }
++        .map(Self.normalisedToIconBox)
+       if let image { Self.imageCache.setObject(image, forKey: cacheKey) }
+       DispatchQueue.main.async { completion(image) }
+     }.resume()

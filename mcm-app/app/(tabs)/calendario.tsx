@@ -2,12 +2,11 @@
 import React, {
   useState,
   useMemo,
-  useEffect,
   useCallback,
   useRef,
   useLayoutEffect,
 } from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import {
   View,
   StyleSheet,
@@ -21,6 +20,10 @@ import { Calendar, CalendarProps, LocaleConfig } from 'react-native-calendars';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
+import Animated from 'react-native-reanimated';
+import type { SectionListProps } from 'react-native';
+import { useTabScroll, useTabListScroll } from '@/components/tabs/useTabScroll';
+import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import typography from '@/constants/typography';
 import useCalendarEvents, { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -28,7 +31,7 @@ import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useLocalSearchParams } from 'expo-router';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation } from 'expo-router/react-navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -81,8 +84,27 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
+// Reanimated 4 no trae `Animated.SectionList` hecho, hay que crearlo. Se hace
+// a nivel de módulo para que no se remonte la lista en cada render.
+const AnimatedSectionList = Animated.createAnimatedComponent(
+  SectionList as React.ComponentType<
+    SectionListProps<CalendarEvent, { title: string; data: CalendarEvent[] }>
+  >,
+);
+
 export function CalendarScreen() {
   const scheme = useColorScheme();
+  // Modo agenda: es el scroller que representa al tab (re-tap → arriba).
+  const {
+    listRef: agendaRef,
+    onScroll: onAgendaScroll,
+    contentPaddingBottom,
+  } = useTabListScroll<
+    SectionList<CalendarEvent, { title: string; data: CalendarEvent[] }>
+  >('calendario');
+  // Modo calendario: mismo tab; se registra igual y gana el que esté montado.
+  const { scrollRef: calendarScrollRef, onScroll: onCalendarScroll } =
+    useTabScroll('calendario');
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const isDark = scheme === 'dark';
   const layout = useResponsiveLayout();
@@ -153,11 +175,16 @@ export function CalendarScreen() {
     });
   }, [navigation, showSubscribe, isDark]);
 
-  useEffect(() => {
+  // Un deep-link con `?date=` salta a ese día. Se ajusta DURANTE el render (el
+  // patrón que documenta React para "cambiar estado cuando cambia una prop"),
+  // no en un efecto: así no hay un render intermedio pintando el día anterior.
+  const [lastDateParam, setLastDateParam] = useState(dateParam);
+  if (dateParam !== lastDateParam) {
+    setLastDateParam(dateParam);
     if (dateParam && typeof dateParam === 'string') {
       setSelectedDate(dateParam);
     }
-  }, [dateParam]);
+  }
 
   const { eventsByDate, loading: eventsLoading } =
     useCalendarEvents(calendarConfigs);
@@ -448,9 +475,11 @@ export function CalendarScreen() {
       style={[
         styles.container,
         { flex: 1 },
-        // Header transparente en iOS → reservamos su altura para que el
-        // contenido no quede debajo.
-        Platform.OS === 'ios' && { paddingTop: insets.top + 44 },
+        // Ya no hay header de navegación (`headerShown: false` en
+        // TABS_CONFIG): solo hace falta el hueco de la barra de estado, igual
+        // en las dos plataformas. Antes se reservaban 44pt extra para un
+        // header que en Android además era una barra opaca fija.
+        { paddingTop: insets.top },
       ]}
     >
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
@@ -463,56 +492,25 @@ export function CalendarScreen() {
             layout.isWide && styles.switcherWrapperWide,
           ]}
         >
-          <View style={styles.segmentedControl}>
-            <TouchableOpacity
-              style={[
-                styles.segmentBtn,
-                viewMode === 'calendar' && styles.segmentBtnActive,
-              ]}
-              onPress={() => setViewMode('calendar')}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="calendar-month"
-                size={16}
-                color={viewMode === 'calendar' ? '#fff' : '#8E8E93'}
-              />
-              <Text
-                style={[
-                  styles.segmentLabel,
-                  viewMode === 'calendar' && styles.segmentLabelActive,
-                ]}
-              >
-                Mes
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.segmentBtn,
-                viewMode === 'agenda' && styles.segmentBtnActive,
-              ]}
-              onPress={() => setViewMode('agenda')}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="view-agenda"
-                size={16}
-                color={viewMode === 'agenda' ? '#fff' : '#8E8E93'}
-              />
-              <Text
-                style={[
-                  styles.segmentLabel,
-                  viewMode === 'agenda' && styles.segmentLabelActive,
-                ]}
-              >
-                Agenda
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <SegmentedControl
+            value={viewMode}
+            onChange={setViewMode}
+            accessibilityLabel="Vista del calendario"
+            options={[
+              { value: 'calendar', label: 'Mes', icon: 'calendar-month' },
+              { value: 'agenda', label: 'Agenda', icon: 'view-agenda' },
+            ]}
+          />
         </View>
 
         {viewMode === 'calendar' ? (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <Animated.ScrollView
+            ref={calendarScrollRef}
+            onScroll={onCalendarScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={isLandscapeWide ? styles.monthRowTwoPane : undefined}>
               <View style={isLandscapeWide ? styles.monthLeftPane : undefined}>
                 {/* Wrapper para detectar swipes horizontales (cross-platform) */}
@@ -606,7 +604,7 @@ export function CalendarScreen() {
                 </View>
               </View>
             </View>
-          </ScrollView>
+          </Animated.ScrollView>
         ) : (
           <View style={styles.agendaContainer}>
             {/* Agenda view header */}
@@ -645,11 +643,17 @@ export function CalendarScreen() {
               </View>
             )}
 
-            <SectionList
+            <AnimatedSectionList
+              ref={agendaRef}
+              onScroll={onAgendaScroll}
+              scrollEventThrottle={16}
               sections={agendaSectionsFiltered}
               keyExtractor={(item, index) => `${item.title}-${index}`}
               style={styles.agendaList}
-              contentContainerStyle={styles.agendaContent}
+              contentContainerStyle={[
+                styles.agendaContent,
+                { paddingBottom: contentPaddingBottom },
+              ]}
               stickySectionHeadersEnabled={false}
               renderSectionHeader={({ section: { title, data } }) => {
                 const isPast = title < todayStr;
@@ -852,33 +856,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
       justifyContent: 'center',
       alignItems: 'center',
     },
-    segmentedControl: {
-      flex: 1,
-      flexDirection: 'row',
-      backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
-      borderRadius: 10,
-      padding: 2,
-    },
-    segmentBtn: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      paddingVertical: 8,
-      borderRadius: 8,
-    },
-    segmentBtnActive: {
-      backgroundColor: colors.info,
-    },
-    segmentLabel: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#8E8E93',
-    },
-    segmentLabelActive: {
-      color: '#fff',
-    },
 
     // Calendar
     calendar: {
@@ -949,7 +926,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
     // Event section (calendar view)
     eventSection: {
       paddingHorizontal: 16,
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
     },
     eventSectionHeader: {
       flexDirection: 'row',
@@ -1123,7 +1099,6 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     agendaContent: {
       paddingHorizontal: 16,
-      paddingBottom: Platform.OS === 'ios' ? 100 : 24,
     },
 
     // Section header (agenda)

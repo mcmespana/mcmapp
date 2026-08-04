@@ -7,13 +7,19 @@ import React, {
   useState,
 } from 'react';
 import {
-  Animated,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -127,53 +133,31 @@ function ToastItem({
   onHide: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(28)).current;
-  const scale = useRef(new Animated.Value(0.96)).current;
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(28);
+  const scale = useSharedValue(0.96);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hide = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 20,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 0.97,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(onHide);
+    translateY.value = withTiming(20, { duration: 200 });
+    scale.value = withTiming(0.97, { duration: 200 });
+    opacity.value = withTiming(0, { duration: 200 }, () => {
+      'worklet';
+      runOnJS(onHide)();
+    });
   }, [opacity, translateY, scale, onHide]);
 
   useEffect(() => {
     triggerHaptic(t.variant ?? 'default');
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-      Animated.spring(translateY, {
-        toValue: 0,
-        tension: 110,
-        friction: 11,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scale, {
-        toValue: 1,
-        tension: 130,
-        friction: 12,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // `tension/friction` de RN Animated → `stiffness/damping` aquí.
+    opacity.value = withTiming(1, { duration: 220 });
+    translateY.value = withSpring(0, {
+      stiffness: 110,
+      damping: 11,
+      mass: 1,
+    });
+    scale.value = withSpring(1, { stiffness: 130, damping: 12, mass: 1 });
 
     const duration = t.duration ?? (t.actionLabel ? 5200 : 3400);
     timerRef.current = setTimeout(hide, duration);
@@ -183,6 +167,11 @@ function ToastItem({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const toastStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+  }));
 
   const v = VARIANT_STYLES[t.variant ?? 'default'];
   // El overlay del toast se pinta por ENCIMA de todo (zIndex alto) anclado a
@@ -205,11 +194,7 @@ function ToastItem({
 
   return (
     <Animated.View
-      style={[
-        styles.toastShadow,
-        { marginBottom: bottomOffset },
-        { opacity, transform: [{ translateY }, { scale }] },
-      ]}
+      style={[styles.toastShadow, { marginBottom: bottomOffset }, toastStyle]}
     >
       <View style={styles.toastClip}>
         {useBlur ? (

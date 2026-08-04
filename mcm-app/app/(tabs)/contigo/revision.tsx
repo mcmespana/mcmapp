@@ -9,19 +9,22 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   Platform,
   KeyboardAvoidingView,
   useWindowDimensions,
 } from 'react-native';
+import type { TextStyle } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { h } from '@/utils/haptics';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import {
@@ -43,7 +46,27 @@ const REVISION_STORAGE = '@contigo_revision_';
 
 type Mode = 'list' | 'free';
 
+const STEP_NAMES = ['Agradecer', 'Revisar'] as const;
+
+// Tipografía ÚNICA para todo lo que el usuario escribe (los tres campos de los
+// dos pasos). Antes la lista de gratitud usaba la fuente del sistema y los
+// textos largos serif, así que cada paso se veía de un tipo distinto.
+const WRITING_FONT: TextStyle = {
+  fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
+  fontSize: 16,
+  // Android mete un padding vertical fantasma en TextInput que descuadra el
+  // centrado; con esto el texto queda donde toca en ambas plataformas.
+  includeFontPadding: false,
+};
+
 export default function RevisionScreen() {
+  // Subruta de Contigo: se registra con la clave del tab (gana el último
+  // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
+  const { scrollRef, onScroll } = useTabScroll('contigo');
+  // El footer va en el flujo (no flota), así que el hueco de la barra flotante
+  // lo reserva ÉL — no el contenido del scroll. Sin esto los botones quedaban
+  // justo debajo de las pestañas.
+  const tabClearance = useTabBarClearance();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const scheme = useColorScheme();
@@ -151,11 +174,18 @@ export default function RevisionScreen() {
   // Cleanup any pending "go back after celebration" timer on unmount or
   // when the user navigates away manually before it fires.
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideCelebrationTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   useEffect(() => {
     return () => {
       if (closeTimer.current) {
         clearTimeout(closeTimer.current);
         closeTimer.current = null;
+      }
+      if (hideCelebrationTimer.current) {
+        clearTimeout(hideCelebrationTimer.current);
+        hideCelebrationTimer.current = null;
       }
     };
   }, []);
@@ -163,6 +193,7 @@ export default function RevisionScreen() {
   const navigateDate = (delta: number) => {
     const next = offsetDate(selDate, delta);
     if (next > todayStr) return;
+    h.select();
     setSelDate(next);
     setStep(0);
     setSaved(false);
@@ -191,24 +222,33 @@ export default function RevisionScreen() {
     // Always mark the habit done — the streak / heatmap / week strip should
     // reflect any saved reflection, even retroactive ones.
     await setRevisionDone(selDate, true);
-    if (selDate === todayStr) {
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 2200);
-      if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
+    // Se celebra SIEMPRE que se guarda una revisión, sea de hoy o retroactiva:
+    // el hábito se marca igual, así que la recompensa debe ser la misma.
+    setShowCelebration(true);
+    h.formSuccess();
+    if (hideCelebrationTimer.current) {
+      clearTimeout(hideCelebrationTimer.current);
     }
+    hideCelebrationTimer.current = setTimeout(() => {
+      hideCelebrationTimer.current = null;
+      setShowCelebration(false);
+    }, 2200);
     setSaved(true);
     if (closeTimer.current) clearTimeout(closeTimer.current);
+    // Se sale DESPUÉS de que la celebración termine, no a mitad de burst.
     closeTimer.current = setTimeout(() => {
       closeTimer.current = null;
       router.back();
-    }, 1400);
+    }, 2100);
   };
 
   const handleNext = () => {
-    if (step < totalSteps - 1) setStep(step + 1);
-    else handleSave();
+    if (step < totalSteps - 1) {
+      h.tap();
+      setStep(step + 1);
+    } else {
+      handleSave();
+    }
   };
 
   const isToday = selDate === todayStr;
@@ -325,6 +365,9 @@ export default function RevisionScreen() {
           />
         ))}
       </View>
+      <Text style={[styles.stepLabel, { color: W.textMuted }]}>
+        Paso {step + 1} de {totalSteps} · {STEP_NAMES[step]}
+      </Text>
 
       {/* ── Body ── */}
       <KeyboardAvoidingView
@@ -332,31 +375,40 @@ export default function RevisionScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={80}
       >
-        <ScrollView
-          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        <Animated.ScrollView
+          ref={scrollRef}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ padding: 20, paddingBottom: 28 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           <View style={wideWrapperStyle}>
-            {step === 0 ? (
-              <GratefulStep
-                isDark={isDark}
-                mode={mode}
-                setMode={setMode}
-                items={items}
-                setItems={setItems}
-                singleGrat={singleGrat}
-                setSingleGrat={setSingleGrat}
-              />
-            ) : (
-              <RevisarStep
-                isDark={isDark}
-                text={revText}
-                setText={setRevText}
-              />
-            )}
+            <Animated.View
+              key={step}
+              entering={FadeIn.duration(220)}
+              exiting={FadeOut.duration(120)}
+            >
+              {step === 0 ? (
+                <GratefulStep
+                  isDark={isDark}
+                  mode={mode}
+                  setMode={setMode}
+                  items={items}
+                  setItems={setItems}
+                  singleGrat={singleGrat}
+                  setSingleGrat={setSingleGrat}
+                />
+              ) : (
+                <RevisarStep
+                  isDark={isDark}
+                  text={revText}
+                  setText={setRevText}
+                />
+              )}
+            </Animated.View>
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       </KeyboardAvoidingView>
 
       {/* ── Footer ── */}
@@ -368,23 +420,29 @@ export default function RevisionScreen() {
               ? 'rgba(26,23,18,0.92)'
               : 'rgba(251,247,241,0.92)',
             borderTopColor: W.border,
-            paddingBottom: insets.bottom + 12,
+            paddingBottom: Math.max(tabClearance, insets.bottom + 12),
           },
         ]}
       >
         <View style={wideWrapperStyle}>
           {saved ? (
-            <View style={styles.savedRow}>
+            <Animated.View
+              entering={FadeIn.duration(220)}
+              style={styles.savedRow}
+            >
               <MaterialIcons name="check-circle" size={22} color={W.green} />
               <Text style={[styles.savedText, { color: W.green }]}>
                 Revisión guardada
               </Text>
-            </View>
+            </Animated.View>
           ) : (
             <View style={{ flexDirection: 'row', gap: 10 }}>
               {step > 0 && (
                 <TouchableOpacity
-                  onPress={() => setStep(step - 1)}
+                  onPress={() => {
+                    h.tap();
+                    setStep(step - 1);
+                  }}
                   style={[
                     styles.backBtn,
                     {
@@ -470,7 +528,12 @@ function GratefulStep({
           return (
             <TouchableOpacity
               key={id}
-              onPress={() => setMode(id)}
+              onPress={() => {
+                if (!active) h.select();
+                setMode(id);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
               style={[
                 styles.modeChip,
                 {
@@ -485,7 +548,7 @@ function GratefulStep({
             >
               <Text
                 style={{
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: '700',
                   color: active ? purple : W.textMuted,
                 }}
@@ -499,49 +562,72 @@ function GratefulStep({
 
       {mode === 'list' ? (
         <View style={{ gap: 10 }}>
-          {items.map((g, i) => (
-            <View key={i} style={styles.gratRow}>
-              <Text style={[styles.gratStar, { color: W.accent }]}>✦</Text>
-              <TextInput
-                value={g}
-                onChangeText={(v) => {
-                  const next = [...items];
-                  next[i] = v;
-                  setItems(next);
-                }}
-                placeholder="Gracias, Jesús por..."
-                placeholderTextColor={W.textMuted}
+          {items.map((g, i) => {
+            const filled = !!g.trim();
+            return (
+              <View
+                key={i}
                 style={[
-                  styles.input,
+                  styles.gratRow,
                   {
-                    color: W.text,
-                    borderColor: g.trim() ? purple + '55' : W.border,
+                    borderColor: filled ? purple + '55' : W.border,
                     backgroundColor: isDark
                       ? 'rgba(255,255,255,0.04)'
                       : 'rgba(0,0,0,0.02)',
                   },
                 ]}
-              />
-            </View>
-          ))}
-          {items.length > 3 && (
+              >
+                <Text
+                  style={[
+                    styles.gratStar,
+                    { color: filled ? purple : W.textMuted },
+                  ]}
+                >
+                  ✦
+                </Text>
+                <TextInput
+                  value={g}
+                  onChangeText={(v) => {
+                    const next = [...items];
+                    next[i] = v;
+                    setItems(next);
+                  }}
+                  placeholder="Gracias, Jesús por..."
+                  placeholderTextColor={W.textMuted}
+                  accessibilityLabel={`Agradecimiento ${i + 1}`}
+                  style={[styles.gratInput, { color: W.text }]}
+                />
+              </View>
+            );
+          })}
+          <View style={styles.listActions}>
             <TouchableOpacity
-              onPress={() => setItems(items.slice(0, -1))}
-              style={[styles.removeBtn, { borderColor: W.border }]}
+              onPress={() => {
+                h.add();
+                setItems([...items, '']);
+              }}
+              style={[styles.addBtn, { borderColor: W.border }]}
+              accessibilityRole="button"
             >
-              <Text style={{ color: W.textMuted, fontWeight: '600' }}>
-                − Quitar última
+              <MaterialIcons name="add" size={18} color={W.textSec} />
+              <Text style={[styles.listActionText, { color: W.textSec }]}>
+                Añadir otro
               </Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={() => setItems([...items, ''])}
-            style={[styles.addBtn, { borderColor: W.border }]}
-          >
-            <Text style={{ color: W.textMuted, fontWeight: '600' }}>
-              + Añadir otro
-            </Text>
-          </TouchableOpacity>
+            {items.length > 3 && (
+              <TouchableOpacity
+                onPress={() => {
+                  h.remove();
+                  setItems(items.slice(0, -1));
+                }}
+                style={[styles.removeBtn, { borderColor: W.border }]}
+                accessibilityRole="button"
+                accessibilityLabel="Quitar el último agradecimiento"
+              >
+                <MaterialIcons name="remove" size={18} color={W.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       ) : (
         <TextInput
@@ -686,6 +772,13 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   stepDot: { height: 4, borderRadius: 2 },
+  stepLabel: {
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    marginTop: 2,
+  },
 
   h2: {
     fontSize: 21,
@@ -701,40 +794,41 @@ const styles = StyleSheet.create({
   },
   modeRow: { flexDirection: 'row', gap: 6, marginBottom: 18 },
   modeChip: {
-    height: 30,
+    height: 34,
     paddingHorizontal: 14,
     borderRadius: 10,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gratRow: { position: 'relative' },
-  gratStar: {
-    position: 'absolute',
-    left: 14,
-    top: 0,
-    bottom: 0,
-    fontSize: 13,
-    fontWeight: '800',
-    textAlignVertical: 'center',
-    lineHeight: 50,
-  },
-  input: {
-    height: 50,
+  // La fila ES la caja: el borde y el fondo viven aquí, y la estrella y el
+  // input son hermanos centrados en flex. Antes la estrella iba absoluta con un
+  // `lineHeight: 50` a mano y el texto quedaba descuadrado.
+  gratRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 52,
     borderRadius: 14,
     borderWidth: 1.5,
     paddingHorizontal: 14,
-    paddingLeft: 36,
-    fontSize: 14,
+    gap: 10,
   },
+  gratStar: {
+    fontSize: 13,
+    fontWeight: '800',
+    includeFontPadding: false,
+  },
+  gratInput: {
+    flex: 1,
+    ...WRITING_FONT,
+    // Sin esto Android reserva su propio padding vertical y el texto se va
+    // hacia arriba dentro de la caja.
+    paddingVertical: 0,
+  },
+  listActions: { flexDirection: 'row', gap: 10 },
+  listActionText: { fontSize: 14, fontWeight: '600' },
   removeBtn: {
-    height: 36,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtn: {
+    width: 46,
     height: 46,
     borderRadius: 14,
     borderWidth: 1.5,
@@ -742,14 +836,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  addBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
   textarea: {
     minHeight: 200,
     borderRadius: 16,
     borderWidth: 1.5,
-    padding: 14,
-    fontSize: 15,
-    fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
-    lineHeight: 24,
+    padding: 16,
+    ...WRITING_FONT,
+    lineHeight: 26,
   },
 
   footer: {

@@ -5,16 +5,23 @@ import {
   View,
   Platform,
   Dimensions,
-  Animated,
   TouchableOpacity,
 } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import SongDisplay from '@/components/SongDisplay';
 import { useSongProcessor } from '@/hooks/useSongProcessor';
+import { useForceCompact } from '@/components/tabs/tabBarController';
+import { trackEvent } from '@/utils/analytics';
 import SongControls from '@/components/SongControls';
-import { RouteProp, NavigationProp } from '@react-navigation/native';
+import { RouteProp, NavigationProp } from 'expo-router/react-navigation';
 import { RootStackParamList } from '../(tabs)/cancionero';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import { useChoirSession } from '@/contexts/ChoirSessionContext';
@@ -70,6 +77,10 @@ export default function SongDetailScreen({
   route,
   navigation,
 }: SongDetailScreenProps) {
+  // La barra de pestañas se queda COMPACTA mientras se lee una canción: aquí
+  // lo que importa es que quepa la mayor cantidad de letra posible.
+  useForceCompact(true);
+
   const {
     filename,
     title: _navScreenTitle,
@@ -83,6 +94,23 @@ export default function SongDetailScreen({
     source,
     firebaseCategory,
   } = route.params;
+
+  // Analítica: una canción abierta por navegación, no por render. `source` lo
+  // pone quien navega: 'category' desde una categoría, 'selection' desde la
+  // playlist, y sin valor cuando se llega por la búsqueda global.
+  useEffect(() => {
+    trackEvent('cancion_abierta', {
+      categoria: firebaseCategory ?? 'desconocida',
+      origen:
+        source === 'selection'
+          ? 'playlist'
+          : source === 'category'
+            ? 'lista'
+            : 'busqueda',
+    });
+    // Solo al cambiar de canción, no en cada re-render de la misma.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content]);
   const {
     addSong,
     removeSong,
@@ -112,8 +140,19 @@ export default function SongDetailScreen({
   const [arrSaving, setArrSaving] = useState(false);
   const [arrError, setArrError] = useState<string | null>(null);
 
-  const [isFileLoading, setIsFileLoading] = useState(true);
-  const [originalChordPro, setOriginalChordPro] = useState<string | null>(null);
+  // El ChordPro VIVO: el que llega con la canción, salvo que se haya editado
+  // aquí mismo (arreglos del admin). La edición se guarda JUNTO al fichero al
+  // que pertenece, así que al pasar a otra canción deja de contar sola — antes
+  // hacía falta un efecto que volcara `content` en estado en cada cambio.
+  const [edited, setEdited] = useState<{
+    filename?: string;
+    text: string;
+  } | null>(null);
+  const originalChordPro =
+    edited && filename !== undefined && edited.filename === filename
+      ? edited.text
+      : (content ?? null);
+  const setOriginalChordPro = (text: string) => setEdited({ filename, text });
   // Si la canción está en la selección, su `transpose` vive en el contexto
   // (single source of truth). Si no, usamos este estado local efímero.
   const selectedMeta = getSelectedSong(filename);
@@ -156,7 +195,7 @@ export default function SongDetailScreen({
   const effectiveCapo =
     currentCapoOverride !== null ? currentCapoOverride : capo;
 
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useSharedValue(0);
   const screenWidth = Dimensions.get('window').width;
 
   const {
@@ -222,11 +261,23 @@ export default function SongDetailScreen({
   const [floatingMedia, setFloatingMedia] =
     useState<FloatingMediaSource | null>(null);
 
-  // Al cambiar de canción (swipe), cerramos el cajón pero conservamos el
-  // reproductor flotante (sobrevive porque es la misma instancia montada).
-  useEffect(() => {
+  // Al cambiar de canción (swipe) se resetean los estados efímeros: se cierra
+  // el cajón de multimedia —el reproductor flotante NO, que sobrevive porque es
+  // la misma instancia montada— y vuelven a su sitio transposición, cejilla y
+  // visibilidad de arreglos. Se ajusta DURANTE el render (el patrón que
+  // documenta React para "cambiar estado cuando cambia una prop"), así la
+  // canción nueva ya sale con sus valores en el primer render en vez de pintar
+  // uno intermedio con los de la anterior.
+  const [lastSong, setLastSong] = useState({ filename, content });
+  if (lastSong.filename !== filename) {
     setShowMediaSheet(false);
-  }, [filename]);
+  }
+  if (lastSong.filename !== filename || lastSong.content !== content) {
+    setLastSong({ filename, content });
+    setLocalTranspose(0);
+    setLocalCapoOverride(null);
+    setArrangementsVisible(true);
+  }
 
   // Header NATIVO transparente, HEREDANDO la config del stack del cantoral
   // (headerTransparent + glass en iOS 26), igual que Categorías y dentro de una
@@ -293,23 +344,12 @@ export default function SongDetailScreen({
   ]);
 
   useEffect(() => {
-    setIsFileLoading(true);
-    if (content) {
-      setOriginalChordPro(content);
-      setIsFileLoading(false);
-    } else if (filename) {
-      logger.error('Error: Contenido de la canción no proporcionado.');
-      setOriginalChordPro(null);
-      setIsFileLoading(false);
-    } else {
-      logger.error('Error: Sin contenido ni filename.');
-      setOriginalChordPro(null);
-      setIsFileLoading(false);
-    }
-    // Al cambiar de canción reseteamos los estados efímeros locales.
-    setLocalTranspose(0);
-    setLocalCapoOverride(null);
-    setArrangementsVisible(true);
+    if (content) return;
+    logger.error(
+      filename
+        ? 'Error: Contenido de la canción no proporcionado.'
+        : 'Error: Sin contenido ni filename.',
+    );
   }, [filename, content]);
 
   // Modo coro - MAESTRO: cuando entro a una canción, lo publico para los
@@ -490,18 +530,16 @@ export default function SongDetailScreen({
 
   const animateAndSet = (params: any, direction: 'next' | 'prev') => {
     const toValue = direction === 'next' ? -screenWidth : screenWidth;
-    Animated.timing(slideAnim, {
-      toValue,
-      duration: durations.quick,
-      useNativeDriver: true,
-    }).start(() => {
+    // La canción actual se va por un lado; al terminar se cambian los params y
+    // la nueva entra desde el lado contrario.
+    const swapAndSlideIn = () => {
       navigation.setParams(params);
-      slideAnim.setValue(-toValue);
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: durations.quick,
-        useNativeDriver: true,
-      }).start();
+      slideAnim.value = -toValue;
+      slideAnim.value = withTiming(0, { duration: durations.quick });
+    };
+    slideAnim.value = withTiming(toValue, { duration: durations.quick }, () => {
+      'worklet';
+      runOnJS(swapAndSlideIn)();
     });
   };
 
@@ -544,20 +582,20 @@ export default function SongDetailScreen({
   // fondo (sin el efecto de "dos fondos").
   const screenBg = isDark ? '#2C2C2E' : '#FFFFFF';
 
+  const slideStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: slideAnim.value }],
+  }));
+
   const contentView = (
     <Animated.View
-      style={[
-        styles.container,
-        { transform: [{ translateX: slideAnim }] },
-        { backgroundColor: screenBg },
-      ]}
+      style={[styles.container, { backgroundColor: screenBg }, slideStyle]}
     >
       <ChoirSessionBanner />
       {/* Letra a pantalla completa: scrollea bajo el header transparente (en
           iOS, vía contentInset = altura del header). */}
       <SongDisplay
         songHtml={songHtml}
-        isLoading={isFileLoading || isSongProcessing || isLoadingSettings}
+        isLoading={isSongProcessing || isLoadingSettings}
         styleState={styleState}
         onMessage={isAdmin ? handleSongMessage : undefined}
         fullBleed

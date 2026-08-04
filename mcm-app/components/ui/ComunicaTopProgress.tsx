@@ -4,10 +4,15 @@
 // al entrar; al pulsar un enlace dentro del portal basta una barra fina arriba
 // (patrón navegador) para no tapar lo que el usuario ya estaba viendo.
 
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import brand from '@/constants/colors';
-import { durations, easings } from '@/constants/animations';
+import { durations, reaEasings } from '@/constants/animations';
 
 interface ComunicaTopProgressProps {
   scheme: 'light' | 'dark';
@@ -25,39 +30,41 @@ export default function ComunicaTopProgress({
   top = 0,
 }: ComunicaTopProgressProps) {
   const accent = scheme === 'dark' ? brand.info : brand.primary;
-  const width = useRef(new Animated.Value(0.02)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const width = useSharedValue(0.02);
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
-    Animated.timing(width, {
-      toValue: Math.max(0.02, Math.min(progress, 1)),
+    width.value = withTiming(Math.max(0.02, Math.min(progress, 1)), {
       duration: 300,
-      easing: easings.standard,
-      useNativeDriver: true,
-    }).start();
+      easing: reaEasings.standard,
+    });
   }, [width, progress]);
 
   useEffect(() => {
-    Animated.timing(opacity, {
-      toValue: visible ? 1 : 0,
-      duration: visible ? 120 : durations.slow,
-      easing: easings.standard,
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished && !visible) width.setValue(0.02);
-    });
+    opacity.value = withTiming(
+      visible ? 1 : 0,
+      { duration: visible ? 120 : durations.slow, easing: reaEasings.standard },
+      (finished) => {
+        'worklet';
+        // Al acabar de irse, el hilo vuelve a cero para que la próxima carga
+        // no arranque desde donde se quedó la anterior.
+        if (finished && !visible) width.value = 0.02;
+      },
+    );
   }, [opacity, visible, width]);
+
+  const trackStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const fillStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: width.value }],
+  }));
 
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.track, { top, opacity }]}
+      style={[styles.track, { top }, trackStyle]}
     >
       <Animated.View
-        style={[
-          styles.fill,
-          { backgroundColor: accent, transform: [{ scaleX: width }] },
-        ]}
+        style={[styles.fill, { backgroundColor: accent }, fillStyle]}
       />
     </Animated.View>
   );

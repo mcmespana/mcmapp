@@ -1,4 +1,6 @@
 import { logger } from '@/utils/logger';
+import { trackEvent } from '@/utils/analytics';
+import { tramoTamano } from '@/constants/analyticsEvents';
 import React, {
   useCallback,
   useEffect,
@@ -27,9 +29,12 @@ import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useHeaderHeight } from '@react-navigation/elements';
+import {
+  useNavigation,
+  useRoute,
+  useHeaderHeight,
+} from 'expo-router/react-navigation';
+import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import {
@@ -586,6 +591,10 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleShareText = useCallback(() => {
     const text = buildShareText();
+    trackEvent('playlist_usada', {
+      accion: 'compartida',
+      tamano: tramoTamano(flatSelectedSongs.length),
+    });
     const desktopLike =
       Platform.OS === 'web' ||
       Platform.OS === 'windows' ||

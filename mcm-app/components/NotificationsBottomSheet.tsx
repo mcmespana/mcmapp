@@ -71,22 +71,25 @@ export default function NotificationsBottomSheet({
   const [selectedNotification, setSelectedNotification] =
     useState<Notification | null>(null);
 
-  // Al abrir: si viene una notificación inicial, mostramos su detalle en grande
-  // (y la marcamos como leída). Al cerrar: reseteamos la vista de detalle.
+  // Al abrir: si viene una notificación inicial, mostramos su detalle en grande.
+  // Al cerrar: reseteamos la vista de detalle. Se ajusta durante el render (el
+  // patrón que documenta React para "cambiar estado cuando cambia una prop"),
+  // así el detalle ya sale pintado en el primer render con el sheet abierto.
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (visible !== lastVisible) {
+    setLastVisible(visible);
+    setSelectedNotification(visible ? (initialNotification ?? null) : null);
+  }
+
+  // Marcarla como leída sí es un efecto de verdad: escribe fuera de React.
   useEffect(() => {
-    if (visible) {
-      setSelectedNotification(initialNotification ?? null);
-      if (initialNotification) {
-        markNotificationAsRead(initialNotification.id)
-          .then(() => {
-            loadLocalData();
-            refreshCount();
-          })
-          .catch(() => {});
-      }
-    } else {
-      setSelectedNotification(null);
-    }
+    if (!visible || !initialNotification) return;
+    markNotificationAsRead(initialNotification.id)
+      .then(() => {
+        loadLocalData();
+        refreshCount();
+      })
+      .catch(() => {});
   }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

@@ -18,22 +18,29 @@ import type { RemoteEventMeta } from '@/utils/mergeEventMeta';
  * registry hardcodeado (`constants/events.ts`) vía `mergeEventMeta`.
  */
 export function useEventMeta(eventId: string | null): RemoteEventMeta | null {
-  const [meta, setMeta] = useState<RemoteEventMeta | null>(null);
+  // Lo cargado se guarda JUNTO al evento al que pertenece, así que al cambiar
+  // de evento (o quedarse sin ninguno) el valor viejo deja de contar solo, sin
+  // un efecto que lo ponga a null a mano. De paso se evita el parpadeo en el
+  // que el hub del evento nuevo mostraba un instante el título del anterior.
+  const [loaded, setLoaded] = useState<{
+    eventId: string;
+    meta: RemoteEventMeta;
+  } | null>(null);
 
   useEffect(() => {
-    if (!eventId) {
-      setMeta(null);
-      return;
-    }
+    if (!eventId) return;
     let isMounted = true;
     const cacheKey = `eventMeta_${eventId}`;
+    const remember = (meta: RemoteEventMeta) => {
+      if (isMounted) setLoaded({ eventId, meta });
+    };
 
     async function load() {
       // 1) Caché local inmediata.
       try {
         const cached = await AsyncStorage.getItem(cacheKey);
-        if (cached && cached !== 'undefined' && isMounted) {
-          setMeta(JSON.parse(cached) as RemoteEventMeta);
+        if (cached && cached !== 'undefined') {
+          remember(JSON.parse(cached) as RemoteEventMeta);
         }
       } catch {
         // Caché corrupta: se ignora y se sigue con el fetch remoto.
@@ -45,8 +52,8 @@ export function useEventMeta(eventId: string | null): RemoteEventMeta | null {
         const snap = await get(ref(db, `activities/${eventId}/_meta`));
         if (!snap.exists()) return;
         const val = snap.val();
-        if (val && typeof val === 'object' && isMounted) {
-          setMeta(val as RemoteEventMeta);
+        if (val && typeof val === 'object') {
+          remember(val as RemoteEventMeta);
           await AsyncStorage.setItem(cacheKey, JSON.stringify(val));
         }
       } catch (e) {
@@ -60,5 +67,5 @@ export function useEventMeta(eventId: string | null): RemoteEventMeta | null {
     };
   }, [eventId]);
 
-  return meta;
+  return loaded?.eventId === eventId ? loaded.meta : null;
 }

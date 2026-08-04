@@ -6,7 +6,7 @@
 
 MCM App es la aplicación de MCM España (Misioneros y Misioneras Claretianos). Proporciona cantoral/cancionero con acordes, calendario de eventos, fotos, grupos, reflexiones, materiales, juego Wordle y notificaciones push.
 
-**Stack:** Expo 55 · React Native 0.83 · React 19.2 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
+**Stack:** Expo 57 · React Native 0.86 · React 19.2 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
 
 ## Comandos de desarrollo
 
@@ -187,16 +187,25 @@ RootLayout (Stack)
 └── notifications              ← Lista de notificaciones
 ```
 
-**Tabs implementación dual:**
+**Tabs — tres implementaciones (ver `docs/desarrollo/TABS_MAINTENANCE.md`):**
 
-- **iOS**: `NativeTabs` (expo-router/unstable-native-tabs) para liquid glass
-- **Android/Web**: `Tabs` tradicionales (expo-router)
+- **iOS y Android**: barra flotante nativa `CompactTabBar`
+  (`expo-native-compact-tabs`), que al compactarse con el scroll mantiene todos
+  los iconos visibles. iOS usa `NativeTabs` de navegador con la barra del
+  sistema oculta; Android usa `Tabs` con `tabBar={() => null}` (así conserva los
+  headers, que salen de las options de cada `Tabs.Screen`)
+- **Web**: `Tabs` tradicionales de expo-router, sin cambios
 - Config centralizada en `TABS_CONFIG` (`constants/tabsCatalog.ts`); el **orden
   de la barra** lo da ese array, NO la lista `tabs` del perfil
+- Iconos: PNGs en `assets/tab-icons/`, generados con `npm run icons:tabs` y
+  registrados en `constants/tabIcons.ts` (la librería no admite SF Symbols)
 - Qué tabs se ven: `hooks/useVisibleTabs.ts` = `tabs` del perfil resuelto menos
   el tab del evento en curso si está archivado (`status: 'archived'`)
-- En iOS sólo caben 5 triggers: `splitTabsForIOS` deja los 4 primeros + "Más", y
+- Caben 6 (`MAX_TAB_BAR_ITEMS`): `splitTabsForBar` deja los 5 primeros + "Más" y
   el resto se ve como tarjetas en `MasHomeScreen`
+- **La barra FLOTA**: no ocupa layout. Cada pantalla de tab engancha su scroller
+  con `components/tabs/useTabScroll.ts`, que da el `onScroll` del colapso y el
+  `paddingBottom` que hay que reservar
 
 ## Sistema de Perfiles (reemplaza a los feature flags)
 
@@ -306,11 +315,13 @@ danger: '#9D1E74'; // Morado LC
 1. Crear archivo en `app/(tabs)/nuevoTab.tsx` — **imprescindible**: sin la ruta,
    meter el ID en `TABS_CONFIG`/`tabs` no muestra nada (le pasaba a `comunica`)
 2. Añadir objeto a `TABS_CONFIG` en `constants/tabsCatalog.ts`, en la posición
-   que deba ocupar en la barra (ese array define el orden)
+   que deba ocupar en la barra (ese array define el orden), y generar su icono
+   PNG (`npm run icons:tabs`) registrándolo en `constants/tabIcons.ts`
 3. Añadir el ID a `KNOWN_TABS` en `constants/profileCatalog.ts`
 4. Añadir el ID a `profiles.*.tabs` en `firebase-seed/profileConfig.json` y en `/profileConfig` en Firebase
 5. Definir color en `TabHeaderColors` si aplica (en `constants/colors.ts`)
-6. Usar `TabScreenWrapper` en el componente del tab
+6. Usar `TabScreenWrapper` en el componente del tab y enganchar su scroller con
+   `useTabScroll` / `useTabListScroll` (la barra flota: sin eso tapa el final)
 7. Documentar en CHANGELOG.md
 
 ### Añadir pantalla nueva
@@ -380,8 +391,8 @@ Documentar NO:
 - **Android Package**: `com.mcmespana.mcmapp`
 - **Apple Team ID**: `5P53S6QB23`
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
-- **App version**: 2.0.0
-- **Runtime version**: 2.0.0
+- **App version**: 2.1.0
+- **Runtime version**: 2.1.0
 
 ## HeroUI Native — UI Library
 

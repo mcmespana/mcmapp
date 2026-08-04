@@ -1,3 +1,13 @@
+> ## 📦 ARCHIVADO (2026-08-03)
+>
+> **Los ocho planes tácticos están cerrados**: siete DONE y uno REJECTED. Se
+> movieron aquí desde `plans/` en la raíz del monorepo porque ya no son trabajo
+> pendiente — son historia, y ocupaban el sitio de entrada del repo como si lo
+> fueran.
+>
+> Siguen aquí por si hace falta consultar el porqué de una decisión. El trabajo
+> vivo está en **`docs/planes/BACKLOG.md`**.
+
 # Implementation Plans
 
 Generados por la skill `improve` (auditoría **deep**) el 2026-07-18, sobre el

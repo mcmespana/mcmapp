@@ -1,5 +1,10 @@
 // app/_layout.tsx
 
+// Sentry el PRIMERO de todos los imports: se arranca como efecto de cargar el
+// módulo, así que cuanto antes se importe, más crashes de arranque captura.
+// Sin `EXPO_PUBLIC_SENTRY_DSN` no hace absolutamente nada.
+import { wrapRoot } from '@/utils/sentry';
+
 import '../notifications/NotificationHandler'; // Inicializa el handler de notificaciones
 import usePushNotifications from '../notifications/usePushNotifications'; // Hook para notificaciones push
 
@@ -13,7 +18,7 @@ import {
   ThemeProvider as NavThemeProvider,
   DarkTheme,
   DefaultTheme,
-} from '@react-navigation/native';
+} from 'expo-router/react-navigation';
 import { usePathname, useSegments, router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -31,6 +36,9 @@ import {
 import { ChoirSessionProvider } from '@/contexts/ChoirSessionContext';
 import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
 import { useRegisterServiceWorker } from '@/hooks/useRegisterServiceWorker';
+import { useScreenTracking } from '@/hooks/useScreenTracking';
+import { trackEvent } from '@/utils/analytics';
+import { tramoTamano } from '@/constants/analyticsEvents';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { isAppVersionSupported } from '@/utils/resolveProfileConfig';
 import { HelloWave } from '@/components/HelloWave';
@@ -58,7 +66,7 @@ import { ActiveEventProvider } from '@/contexts/ActiveEventContext';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -137,6 +145,10 @@ function InnerLayout() {
   const handleIncomingPlaylist = useCallback(
     (songs: string[]) => {
       songs.forEach((fn) => addSong(fn));
+      trackEvent('playlist_usada', {
+        accion: 'importada',
+        tamano: tramoTamano(songs.length),
+      });
       toast.show({
         label: `Playlist importada (${songs.length} ${songs.length === 1 ? 'canción' : 'canciones'})`,
         actionLabel: 'OK',
@@ -148,6 +160,9 @@ function InnerLayout() {
   useIncomingPlaylist(handleIncomingPlaylist);
 
   useStatusBarTheme(pathname);
+  // Analítica: arranca Aptabase y registra cada cambio de pantalla. Sin
+  // EXPO_PUBLIC_APTABASE_KEY no hace nada.
+  useScreenTracking();
 
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
@@ -290,3 +305,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2E',
   },
 });
+
+// `wrapRoot` es la identidad cuando Sentry está apagado (sin DSN), así que el
+// árbol de componentes no cambia en absoluto en ese caso.
+export default wrapRoot(RootLayout);

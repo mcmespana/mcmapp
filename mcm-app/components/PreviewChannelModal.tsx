@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1230',
   },
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.18)',
   },
   scrollContent: {

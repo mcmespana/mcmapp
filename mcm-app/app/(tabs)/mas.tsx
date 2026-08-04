@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Platform } from 'react-native';
 import { useNavigation } from 'expo-router';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTabReselect } from '@/components/tabs/tabBarController';
+import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -56,6 +57,19 @@ export default function MasTab() {
 
   const navigation = useNavigation();
 
+  // Re-tap del tab activo → volver a la pantalla raíz del stack. Antes esto lo
+  // daba el evento `tabPress` del navegador, pero con la barra del sistema
+  // oculta ya no se dispara: ahora lo emite la barra flotante. Devolver `true`
+  // le dice a la barra que el gesto ya está gestionado y que NO haga además
+  // scroll-arriba.
+  useTabReselect('mas', () => {
+    if (stackNavRef.current?.canGoBack()) {
+      stackNavRef.current.popToTop();
+      return true;
+    }
+    return false;
+  });
+
   useEffect(() => {
     const unsubscribeBlur = navigation.addListener('blur' as any, () => {
       wasBlurredRef.current = true;
@@ -72,23 +86,9 @@ export default function MasTab() {
       }, 0);
     });
 
-    // Same-tab re-tap: ahora SEGURO porque `disablePopToTop` (en _layout.tsx)
-    // bloquea el popToRootViewController nativo que antes desincronizaba JS
-    // y nativo. Hacemos el pop manualmente desde JS para preservar la UX iOS
-    // de "tap tab activo → vuelve a la raíz".
-    const unsubscribeTabPress = navigation
-      .getParent()
-      ?.addListener('tabPress' as any, () => {
-        if (!(navigation as any).isFocused?.()) return;
-        if (stackNavRef.current?.canGoBack()) {
-          stackNavRef.current.popToTop();
-        }
-      });
-
     return () => {
       unsubscribeBlur();
       unsubscribeFocus();
-      unsubscribeTabPress?.();
     };
   }, [navigation]);
 

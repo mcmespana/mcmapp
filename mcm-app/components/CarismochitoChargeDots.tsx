@@ -1,6 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 
 const DOT_SIZE = 10;
 const DOT_GAP = 8;
@@ -8,35 +14,28 @@ const G_GLOW = '#5AE08A';
 const G_DIM = 'rgba(90, 224, 138, 0.25)';
 
 function Dot({ filled, index }: { filled: boolean; index: number }) {
-  const scale = useRef(new Animated.Value(filled ? 0.4 : 1)).current;
-  const opacity = useRef(new Animated.Value(filled ? 0 : 0.25)).current;
+  const scale = useSharedValue(filled ? 0.4 : 1);
+  const opacity = useSharedValue(filled ? 0 : 0.25);
 
   useEffect(() => {
     if (filled) {
-      scale.setValue(0.4);
-      opacity.setValue(0.3);
-      Animated.parallel([
-        Animated.spring(scale, {
-          toValue: 1,
-          tension: 200,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Al encenderse, el punto entra de golpe desde pequeño y transparente.
+      scale.value = 0.4;
+      opacity.value = 0.3;
+      // `tension: 200, friction: 8` de RN Animated equivale a este muelle:
+      // `stiffness` es la tensión y `damping` la fricción.
+      scale.value = withSpring(1, { stiffness: 200, damping: 8, mass: 1 });
+      opacity.value = withTiming(1, { duration: 150 });
     } else {
-      Animated.timing(opacity, {
-        toValue: 0.25,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-      scale.setValue(1);
+      opacity.value = withTiming(0.25, { duration: 300 });
+      scale.value = 1;
     }
   }, [filled, scale, opacity, index]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
 
   return (
     <Animated.View
@@ -44,10 +43,9 @@ function Dot({ filled, index }: { filled: boolean; index: number }) {
         styles.dot,
         {
           backgroundColor: filled ? G_GLOW : G_DIM,
-          transform: [{ scale }],
-          opacity,
           shadowColor: filled ? G_GLOW : 'transparent',
         },
+        style,
       ]}
     />
   );
@@ -60,24 +58,22 @@ export default function CarismochitoChargeDots({
   count: number;
   total: number;
 }) {
-  const insets = useSafeAreaInsets();
-  const containerOpacity = useRef(new Animated.Value(0)).current;
+  // Los puntos se dibujan sobre la barra de pestañas flotante.
+  const tabBarClearance = useTabBarClearance();
+  const containerOpacity = useSharedValue(0);
 
   useEffect(() => {
-    Animated.timing(containerOpacity, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
+    containerOpacity.value = withTiming(1, { duration: 200 });
   }, [containerOpacity]);
+
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: containerOpacity.value,
+  }));
 
   return (
     <Animated.View
       pointerEvents="none"
-      style={[
-        styles.root,
-        { bottom: insets.bottom + 80, opacity: containerOpacity },
-      ]}
+      style={[styles.root, { bottom: tabBarClearance + 8 }, containerStyle]}
     >
       <View style={styles.row}>
         {Array.from({ length: total }).map((_, i) => (

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 
 export const SECTION_FONT_MIN = 0.85;
@@ -40,7 +40,14 @@ export interface SectionFontScale {
  */
 export default function useSectionFontScale(key: string): SectionFontScale {
   const { settings, setSettings } = useAppSettings();
-  const overrides = settings.sectionFontScales ?? {};
+  // El `?? {}` iba suelto en el cuerpo, así que cuando no había overrides
+  // creaba un objeto NUEVO en cada render y los useCallback de abajo cambiaban
+  // de identidad siempre — la memoización no servía de nada. Memoizado sobre el
+  // ajuste real, ahora sí es estable.
+  const overrides = useMemo(
+    () => settings.sectionFontScales ?? {},
+    [settings.sectionFontScales],
+  );
   const hasOverride = Object.prototype.hasOwnProperty.call(overrides, key);
   const globalScale = settings.fontScale;
   const scale = hasOverride ? overrides[key] : globalScale;

@@ -1,6 +1,6 @@
 // app/(tabs)/fotos.tsx
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   FlatList,
@@ -9,19 +9,19 @@ import {
   useWindowDimensions,
   ViewStyle,
   Alert,
-  Platform,
 } from 'react-native';
-import { Button, Spinner } from 'heroui-native';
+import Animated from 'react-native-reanimated';
+import { useTabListScroll } from '@/components/tabs/useTabScroll';
+import { Button } from 'heroui-native';
 import TabScreenWrapper from '@/components/ui/TabScreenWrapper';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useAlbumPagination } from '@/hooks/useAlbumPagination';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-
-const ALBUMS_PER_PAGE = 4;
 
 interface Album {
   id: string;
@@ -60,6 +60,8 @@ interface FotosScreenStyles {
 }
 
 export default function FotosScreen() {
+  const { listRef, onScroll, contentPaddingBottom } =
+    useTabListScroll<FlatList>('fotos');
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
@@ -76,43 +78,8 @@ export default function FotosScreen() {
     // Orden inverso por ID (más nuevos primero).
     return visible.sort((a, b) => b.id.localeCompare(a.id));
   }, [allAlbumsData, resolved.albumTags]);
-  const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(0);
-  const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
-  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
-  useEffect(() => {
-    const initialAlbums = sortedAlbums.slice(0, ALBUMS_PER_PAGE);
-    setDisplayedAlbums(initialAlbums);
-    setCurrentPage(0);
-    setAllAlbumsLoaded(
-      initialAlbums.length < ALBUMS_PER_PAGE ||
-        sortedAlbums.length <= ALBUMS_PER_PAGE,
-    );
-  }, [sortedAlbums]);
-
-  const loadMoreAlbums = () => {
-    if (allAlbumsLoaded || isLoadingMore) return;
-
-    setIsLoadingMore(true);
-    const nextPage = currentPage + 1;
-    const startIndex = nextPage * ALBUMS_PER_PAGE;
-    const endIndex = startIndex + ALBUMS_PER_PAGE;
-    const newAlbums = sortedAlbums.slice(startIndex, endIndex);
-
-    if (newAlbums.length > 0) {
-      setDisplayedAlbums((prevAlbums) => [...prevAlbums, ...newAlbums]);
-      setCurrentPage(nextPage);
-      if (
-        newAlbums.length < ALBUMS_PER_PAGE ||
-        displayedAlbums.length + newAlbums.length === sortedAlbums.length
-      ) {
-        setAllAlbumsLoaded(true);
-      }
-    } else {
-      setAllAlbumsLoaded(true);
-    }
-    setIsLoadingMore(false);
-  };
+  const { displayedAlbums, allAlbumsLoaded, loadMoreAlbums } =
+    useAlbumPagination(sortedAlbums);
 
   const handleAlbumPress = async (albumUrl: string) => {
     const supported = await Linking.canOpenURL(albumUrl);
@@ -133,15 +100,6 @@ export default function FotosScreen() {
   };
 
   const renderFooter = () => {
-    if (isLoadingMore) {
-      return (
-        <Spinner
-          size="lg"
-          color={ThemeColors[scheme ?? 'light'].tint}
-          style={{ marginVertical: 20 }}
-        />
-      );
-    }
     if (allAlbumsLoaded) {
       return null;
     }
@@ -149,7 +107,6 @@ export default function FotosScreen() {
       <Button
         variant="outline"
         onPress={loadMoreAlbums}
-        isDisabled={isLoadingMore}
         style={styles.loadMoreButton}
       >
         <Button.Label>Cargar más...</Button.Label>
@@ -174,7 +131,10 @@ export default function FotosScreen() {
   return (
     <TabScreenWrapper style={styles.container} edges={['top']}>
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
-      <FlatList
+      <Animated.FlatList
+        ref={listRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         data={displayedAlbums}
         renderItem={({ item }) => (
           <View style={columnContainerStyle}>
@@ -185,6 +145,11 @@ export default function FotosScreen() {
           </View>
         )}
         keyExtractor={(item) => item.id}
+        // SIN título: la pestaña ya se llama Fotos y las portadas se explican
+        // solas, así que un hero de dos líneas solo robaba una pantalla entera
+        // de álbumes. El `TabScreenWrapper` con `edges={['top']}` ya deja el
+        // hueco de la barra de estado; el contenido arranca ahí y se va con el
+        // scroll, sin nada fijo que lo tape.
         numColumns={numColumns}
         key={`COLS_${numColumns}`} // Important for re-render on column change
         contentContainerStyle={[
@@ -193,7 +158,7 @@ export default function FotosScreen() {
             maxWidth: width > 1200 ? 1600 : 1200,
             alignSelf: 'center',
           },
-          Platform.OS === 'ios' && { paddingBottom: 100 },
+          { paddingBottom: contentPaddingBottom },
         ]}
         onEndReached={loadMoreAlbums}
         onEndReachedThreshold={0.5}
@@ -213,7 +178,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
 
     listContentContainer: {
       paddingTop: 12,
-      paddingBottom: 20,
     },
     albumCardContainerOneColumn: {
       width: '100%',

@@ -181,6 +181,56 @@ export function removeHighlight(
   return ranges.flatMap((r) => subtract(text, r, c.start, c.end));
 }
 
+/** Qué subrayado hay ya bajo una selección. */
+export interface SelectionHighlight {
+  /** Color del subrayado que domina la selección. */
+  color: HighlightColorKey;
+  /** `true` si TODA la selección está subrayada de ese color. */
+  full: boolean;
+}
+
+/**
+ * Mira si la selección [start,end) cae sobre texto que YA está subrayado.
+ *
+ * Sirve para que al seleccionar un tramo subrayado la barra de acciones no lo
+ * trate como texto nuevo: puede marcar el color actual y ofrecer cambiarlo o
+ * quitarlo. Si la selección pisa varios colores gana el que cubra más
+ * caracteres; si no toca ninguno, devuelve `null`.
+ */
+export function selectionHighlight(
+  ranges: HighlightRange[],
+  start: number,
+  end: number,
+): SelectionHighlight | null {
+  if (end <= start || !ranges.length) return null;
+
+  const covered = new Map<HighlightColorKey, number>();
+  let total = 0;
+
+  for (const r of ranges) {
+    const from = Math.max(r.start, start);
+    const to = Math.min(r.end, end);
+    if (to <= from) continue; // sin solape
+    const length = to - from;
+    total += length;
+    covered.set(r.color, (covered.get(r.color) ?? 0) + length);
+  }
+
+  if (!covered.size) return null;
+
+  let best: HighlightColorKey | null = null;
+  let bestLength = 0;
+  for (const [color, length] of covered) {
+    if (length > bestLength) {
+      best = color;
+      bestLength = length;
+    }
+  }
+  if (!best) return null;
+
+  return { color: best, full: total >= end - start };
+}
+
 export interface HighlightSpan {
   text: string;
   color: HighlightColorKey | null;

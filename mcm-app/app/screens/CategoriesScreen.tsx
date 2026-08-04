@@ -6,7 +6,7 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import {
   useLayoutEffect,
   useMemo,
@@ -14,6 +14,8 @@ import {
   useCallback,
   useEffect,
 } from 'react';
+import Animated from 'react-native-reanimated';
+import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -68,6 +70,10 @@ export default function CategoriesScreen({
 }) {
   const scheme = useColorScheme();
   const layout = useResponsiveLayout();
+  // Pantalla raíz del tab Cantoral: colapsa la barra flotante al scrollear y
+  // reserva su hueco al final de la lista.
+  const { listRef, onScroll, contentPaddingBottom } =
+    useTabListScroll<FlatList>('cancionero');
   const styles = useMemo(
     () => createStyles(scheme, layout.isWide, layout.contentMaxWidth),
     [scheme, layout.isWide, layout.contentMaxWidth],
@@ -327,10 +333,16 @@ export default function CategoriesScreen({
   return (
     <View style={styles.container}>
       {/* Old topColorBar removed to clean up inline custom header */}
-      <FlatList
+      <Animated.FlatList
+        ref={listRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         data={gridData}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: contentPaddingBottom },
+        ]}
         contentInsetAdjustmentBehavior="automatic"
         initialNumToRender={10}
         maxToRenderPerBatch={15}
@@ -457,7 +469,6 @@ const createStyles = (
     },
     listContent: {
       paddingHorizontal: isWide ? 24 : 16,
-      paddingBottom: isIOS ? 100 : 80,
       ...(isWide
         ? {
             maxWidth: contentMaxWidth,

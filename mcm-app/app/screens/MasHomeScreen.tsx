@@ -1,24 +1,16 @@
 import React, { useCallback, useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  ScrollView,
-  Platform,
-  TouchableOpacity,
-} from 'react-native';
+import { View, StyleSheet, Text, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
+import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
-import { VersionDisplay } from '@/components/VersionDisplay';
-import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
+import MasFooter from '@/components/mas/MasFooter';
 import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -28,7 +20,9 @@ import { takePendingMasScreen } from '@/utils/masNavigation';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { splitTabsForIOS } from '@/constants/tabsCatalog';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
+import { splitTabsForBar } from '@/constants/tabsCatalog';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 
@@ -102,6 +96,7 @@ const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
 };
 
 export default function MasHomeScreen() {
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('mas');
   const navigation =
     useNavigation<NativeStackNavigationProp<MasStackParamList>>();
   const scheme = useColorScheme();
@@ -117,10 +112,12 @@ export default function MasHomeScreen() {
   const navigationItems = React.useMemo(() => {
     const items: NavigationItem[] = [];
 
-    // En iOS la barra nativa sólo admite 5 triggers; los tabs que no caben
-    // se exponen aquí como tarjetas para evitar el "More" automático del sistema.
-    if (Platform.OS === 'ios') {
-      const { overflowTabs } = splitTabsForIOS(visibleTabs);
+    // La barra flotante muestra como mucho MAX_TAB_BAR_ITEMS tabs; los que no
+    // caben se exponen aquí como tarjetas. Aplica a iOS y Android, que
+    // comparten esa barra. En web sigue la barra clásica, que los muestra
+    // todos, así que ahí no hay overflow que recoger.
+    if (Platform.OS !== 'web') {
+      const { overflowTabs } = splitTabsForBar(visibleTabs);
       // Tabs cuyo screen está registrado en el stack de Más (no accesibles vía router.navigate en iOS)
       const OVERFLOW_STACK_TARGETS: Partial<
         Record<string, keyof MasStackParamList>
@@ -129,7 +126,7 @@ export default function MasHomeScreen() {
         calendario: 'Calendario',
       };
       for (const tab of overflowTabs) {
-        // 'mas' nunca debería estar en overflow (splitTabsForIOS lo garantiza),
+        // 'mas' nunca debería estar en overflow (splitTabsForBar lo garantiza),
         // pero filtramos defensivamente para no auto-referenciar esta pantalla.
         if (tab.name === 'mas') continue;
         const stackTarget = OVERFLOW_STACK_TARGETS[tab.name];
@@ -183,13 +180,12 @@ export default function MasHomeScreen() {
         onClose={() => setFeedbackVisible(false)}
       />
       <PageContainer>
-        <ScrollView
+        <Animated.ScrollView
+          ref={scrollRef}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           style={styles.container}
-          contentContainerStyle={
-            Platform.OS === 'ios'
-              ? { paddingBottom: 140 }
-              : { paddingBottom: spacing.xl }
-          }
+          contentContainerStyle={{ paddingBottom: contentPaddingBottom }}
           showsVerticalScrollIndicator={false}
         >
           <ScreenHero title="Más" subtitle="Atajos y secciones de la app" />
@@ -300,36 +296,11 @@ export default function MasHomeScreen() {
             ))}
           </View>
 
-          {/* ── Pie ── */}
-          <View style={styles.footer}>
-            <VersionDisplay />
-            <TouchableOpacity
-              onPress={() => setFeedbackVisible(true)}
-              style={styles.feedbackLink}
-              accessibilityRole="button"
-              accessibilityLabel="Reportar un fallo o sugerencia"
-            >
-              <Text
-                style={[
-                  styles.feedbackText,
-                  { color: isDark ? '#8E8E93' : '#6B7280' },
-                ]}
-              >
-                ¿Algún fallo? Cuéntanoslo
-              </Text>
-            </TouchableOpacity>
-            <SecretMenuTrigger>
-              <Text
-                style={[
-                  styles.tagline,
-                  { color: isDark ? '#8E8E93' : '#6B7280' },
-                ]}
-              >
-                Movimiento Consolación para el Mundo
-              </Text>
-            </SecretMenuTrigger>
-          </View>
-        </ScrollView>
+          <MasFooter
+            isDark={isDark}
+            onFeedbackPress={() => setFeedbackVisible(true)}
+          />
+        </Animated.ScrollView>
       </PageContainer>
     </SafeAreaView>
   );
@@ -405,24 +376,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
-  },
-  footer: {
-    alignItems: 'center',
-    paddingTop: spacing.xs,
-  },
-  feedbackLink: {
-    padding: spacing.sm,
-    marginTop: 4,
-  },
-  feedbackText: {
-    fontSize: 12,
-    opacity: 0.6,
-  },
-  tagline: {
-    fontSize: 11,
-    opacity: 0.3,
-    marginTop: spacing.sm,
-    letterSpacing: 0.2,
-    fontStyle: 'italic',
   },
 });

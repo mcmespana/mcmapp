@@ -45,12 +45,14 @@ describe('useFirebaseData', () => {
       }),
     });
 
-    const { result } = renderHook(() => useFirebaseData('songs', 'test_songs'));
+    const { result } = await renderHook(() =>
+      useFirebaseData('songs', 'test_songs'),
+    );
 
-    // Al principio está cargando
-    expect(result.current.loading).toBe(true);
-
-    // Esperar a que cargue
+    // El estado inicial `loading === true` ya no es observable: desde RNTL 14
+    // `renderHook` es asíncrono y envuelve el render en `act`, así que cuando
+    // devuelve el control los efectos ya han corrido. Lo que se comprueba es
+    // que acaba en `loading === false` con los datos puestos.
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
@@ -70,7 +72,9 @@ describe('useFirebaseData', () => {
       }),
     });
 
-    const { result } = renderHook(() => useFirebaseData('test', 'cache_test'));
+    const { result } = await renderHook(() =>
+      useFirebaseData('test', 'cache_test'),
+    );
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -99,7 +103,7 @@ describe('useFirebaseData', () => {
     // Transformación: duplicar cada número
     const transform = (data: number[]) => data.map((n) => n * 2);
 
-    const { result } = renderHook(() =>
+    const { result } = await renderHook(() =>
       useFirebaseData('test', 'transform_test', transform),
     );
 
@@ -120,7 +124,7 @@ describe('useFirebaseData', () => {
     // Firebase falla porque no hay red
     (get as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
-    const { result } = renderHook(() =>
+    const { result } = await renderHook(() =>
       useFirebaseData('test', 'offline_test'),
     );
 
@@ -151,7 +155,9 @@ describe('useFirebaseData', () => {
         val: () => false,
       });
 
-    const { result } = renderHook(() => useFirebaseData('test', 'same_ts'));
+    const { result } = await renderHook(() =>
+      useFirebaseData('test', 'same_ts'),
+    );
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -167,7 +173,9 @@ describe('useFirebaseData', () => {
       val: () => null,
     });
 
-    const { result } = renderHook(() => useFirebaseData('empty', 'empty_test'));
+    const { result } = await renderHook(() =>
+      useFirebaseData('empty', 'empty_test'),
+    );
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -184,7 +192,7 @@ describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
       val: () => ({ updatedAt: '100', data: { n: 1 } }),
     });
 
-    const { result } = renderHook(() => ({
+    const { result } = await renderHook(() => ({
       a: useFirebaseData<{ n: number }>('songs', 'shared'),
       b: useFirebaseData<{ n: number }>('songs', 'shared'),
     }));
@@ -211,7 +219,9 @@ describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
       .mockResolvedValueOnce({ exists: () => true, val: () => '100' }) // updatedAt
       .mockResolvedValueOnce({ exists: () => true, val: () => false }); // hidden
 
-    const a = renderHook(() => useFirebaseData<{ n: number }>('songs', 'warm'));
+    const a = await renderHook(() =>
+      useFirebaseData<{ n: number }>('songs', 'warm'),
+    );
     await waitFor(() => expect(a.result.current.loading).toBe(false));
 
     const getItemForData = () =>
@@ -220,7 +230,9 @@ describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
       ).length;
     const callsAfterA = getItemForData();
 
-    const b = renderHook(() => useFirebaseData<{ n: number }>('songs', 'warm'));
+    const b = await renderHook(() =>
+      useFirebaseData<{ n: number }>('songs', 'warm'),
+    );
     await waitFor(() => expect(b.result.current.loading).toBe(false));
 
     // B no vuelve a leer `warm_data` de AsyncStorage: lo sirve la caché de módulo.
@@ -237,7 +249,7 @@ describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
     const doble = (d: number[]) => d.map((n) => n * 2);
     const cuenta = (d: number[]) => d.length;
 
-    const { result } = renderHook(() => ({
+    const { result } = await renderHook(() => ({
       a: useFirebaseData<number[]>('songs', 'shared', doble),
       b: useFirebaseData<number>('songs', 'shared', cuenta),
     }));

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import liturgicalCalendar from '@/assets/calendario-liturgico.json';
 import { getBrightness } from '@/components/ui/glass';
@@ -87,12 +87,11 @@ export function getLiturgicalInfo(dateStr: string) {
 }
 
 export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
-  const [info, setInfo] = useState(() => getLiturgicalInfo(dateStr));
+  // Estado DERIVADO de la fecha: se calcula, no se guarda en estado y se
+  // sincroniza con un efecto (eso obligaba a un render de más en cada cambio de
+  // día, y es lo que señala `react-hooks/set-state-in-effect`).
+  const info = useMemo(() => getLiturgicalInfo(dateStr), [dateStr]);
   const isDark = useColorScheme() === 'dark';
-
-  useEffect(() => {
-    setInfo(getLiturgicalInfo(dateStr));
-  }, [dateStr]);
 
   // Tiempo Ordinario: SIN color de fondo, solo texto (legible en claro y
   // oscuro). El resto de tiempos sí llevan su color litúrgico de fondo con

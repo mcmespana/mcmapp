@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomSheet from './BottomSheet';
 import AppTextField from '@/components/ui/AppTextField';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -42,13 +42,21 @@ export default function ArrangementInputModal({
   const [text, setText] = useState('');
   const inputRef = useRef<TextInput>(null);
 
+  // El campo se vacía al ABRIR, ajustando el estado durante el render (el
+  // patrón que documenta React para "cambiar estado cuando cambia una prop").
+  // Antes lo hacía un efecto, que pintaba un render con el texto anterior.
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (visible !== lastVisible) {
+    setLastVisible(visible);
+    if (visible) setText('');
+  }
+
+  // El foco sí es un efecto de verdad: toca el input nativo, y con un pequeño
+  // retardo para que el sheet termine de montar antes.
   useEffect(() => {
-    if (visible) {
-      setText('');
-      // Pequeño retardo para que el sheet termine de montar antes del focus.
-      const t = setTimeout(() => inputRef.current?.focus(), 250);
-      return () => clearTimeout(t);
-    }
+    if (!visible) return;
+    const t = setTimeout(() => inputRef.current?.focus(), 250);
+    return () => clearTimeout(t);
   }, [visible]);
 
   const canSave = text.trim().length > 0 && !saving;
@@ -110,28 +118,15 @@ export default function ArrangementInputModal({
               Cancelar
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.btn,
-              styles.saveBtn,
-              {
-                backgroundColor: canSave ? '#E15C62' : theme.icon,
-                opacity: canSave ? 1 : 0.6,
-              },
-            ]}
+          <AppPrimaryButton
+            label={saving ? 'Guardando…' : 'Añadir'}
+            icon="check"
+            color="#E15C62"
             onPress={() => onSave(text)}
             disabled={!canSave}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons
-              name={saving ? 'hourglass-empty' : 'check'}
-              size={18}
-              color="#fff"
-            />
-            <Text style={styles.saveText}>
-              {saving ? 'Guardando…' : 'Añadir'}
-            </Text>
-          </TouchableOpacity>
+            loading={saving}
+            style={styles.btn}
+          />
         </View>
       </View>
     </BottomSheet>
@@ -196,14 +191,5 @@ const styles = StyleSheet.create({
   cancelText: {
     fontSize: 15,
     fontWeight: '600',
-  },
-  saveBtn: {
-    minWidth: 110,
-  },
-  saveText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginLeft: 6,
   },
 });

@@ -5,6 +5,11 @@
 // ficheros de prueba. Ver docs/planes/PLAN_CALIDAD.md §4.2.
 {
   "extends": "./tsconfig.json",
+  // TypeScript 6 (que entra con el SDK 56) ya no arrastra solo los globales de
+  // @types/jest aquí, así que hay que declararlos explícitamente.
+  "compilerOptions": {
+    "types": ["jest", "node"]
+  },
   "include": [
     "app/**/*.ts",
     "app/**/*.tsx",

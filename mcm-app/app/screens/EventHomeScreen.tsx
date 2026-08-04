@@ -6,7 +6,6 @@ import {
   ViewStyle,
   TextStyle,
   useWindowDimensions,
-  ScrollView,
   Platform,
   Linking,
   Image,
@@ -14,10 +13,13 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
+import { trackEvent } from '@/utils/analytics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
+import { useNavigation } from 'expo-router/react-navigation';
+import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -59,6 +61,10 @@ export default function EventHomeScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const event = useCurrentEvent();
+
+  React.useEffect(() => {
+    trackEvent('evento_abierto', { evento: event.id });
+  }, [event.id]);
   const eventSurveys = useActiveSurveys('event-banner', event.id);
 
   // ── Suscripción opt-in a avisos del evento ──
@@ -145,6 +151,12 @@ export default function EventHomeScreen() {
   const stackIndex =
     (navigation.getState?.() as { index?: number } | undefined)?.index ?? 0;
   const isPushed = stackIndex > 0;
+  // Esta pantalla es el tab "Visita Papa" cuando se abre como tab, pero
+  // también se apila desde Más (Jubileo). Apilada NO se registra como scroller
+  // del tab: el del tab es el de MasHomeScreen.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll(
+    isPushed ? null : 'visitapapa',
+  );
 
   const tint = event.tintColor;
   const tintIsLight = getBrightness(tint) > 175;
@@ -162,10 +174,17 @@ export default function EventHomeScreen() {
   // apilado, lo que hacía que la campana se viera distinta entre eventos.)
   return (
     <SafeAreaView style={styles.container} edges={isPushed ? [] : ['top']}>
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[
           styles.scrollContent,
-          { padding: containerPadding, rowGap: gap },
+          {
+            padding: containerPadding,
+            rowGap: gap,
+            paddingBottom: contentPaddingBottom,
+          },
         ]}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -277,7 +296,7 @@ export default function EventHomeScreen() {
             ]}
           />
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
@@ -441,7 +460,6 @@ const createStyles = (isDark: boolean) =>
     scrollContent: {
       flexGrow: 1,
       alignItems: 'center',
-      paddingBottom: Platform.OS === 'ios' ? 100 : spacing.xl,
     },
     hero: {
       width: '100%',

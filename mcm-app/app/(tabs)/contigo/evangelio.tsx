@@ -1,7 +1,6 @@
 import { logger } from '@/utils/logger';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  ScrollView,
   View,
   Text,
   StyleSheet,
@@ -18,6 +17,8 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
+import Animated from 'react-native-reanimated';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useSectionFontScale from '@/hooks/useSectionFontScale';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
@@ -38,6 +39,11 @@ import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
 import { useAvailableReadingDates } from '@/hooks/useAvailableReadingDates';
 import { segmentReading } from '@/utils/readingSegments';
 import { useReadingHighlights } from '@/hooks/useReadingHighlights';
+import {
+  HIGHLIGHT_SOURCES,
+  type HighlightSource,
+} from '@/utils/contigoBookmarks';
+import type { ReadingSelection } from '@/components/contigo/HighlightableReading';
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 
@@ -101,6 +107,9 @@ function addDays(dateStr: string, offset: number): string {
 }
 
 export default function EvangelioScreen() {
+  // Subruta de Contigo: se registra con la clave del tab (gana el último
+  // montado), así el re-tap sube el scroll de la pantalla que se está viendo.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('contigo');
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
@@ -157,6 +166,27 @@ export default function EvangelioScreen() {
     bookmark,
     setHighlights,
   );
+
+  /**
+   * "Subrayar" desde el menú NATIVO de selección: se guarda la selección y se
+   * enciende el modo lápiz para que aparezca la barra de colores de siempre.
+   *
+   * El modo lápiz NO desaparece: sigue siendo el único camino en web y el
+   * respaldo si el menú nativo no llega a montarse.
+   */
+  const onNativeHighlight = useMemo(() => {
+    const entries = HIGHLIGHT_SOURCES.map((source) => [
+      source,
+      (sel: ReadingSelection) => {
+        hl.onSelectionChange[source](sel);
+        setHighlightMode(true);
+      },
+    ]);
+    return Object.fromEntries(entries) as Record<
+      HighlightSource,
+      (sel: ReadingSelection) => void
+    >;
+  }, [hl.onSelectionChange]);
 
   const exitHighlightMode = () => {
     setHighlightMode(false);
@@ -300,14 +330,19 @@ export default function EvangelioScreen() {
         }}
       />
 
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[
           styles.scrollContent,
           {
             paddingTop: insets.top + (Platform.OS === 'android' ? 68 : 56),
+            paddingBottom: contentPaddingBottom,
           },
-          // Hueco para la barra flotante de subrayado
-          highlightMode && { paddingBottom: 170 },
+          // Hueco extra para la barra flotante de subrayado, que se pone por
+          // encima de la de pestañas.
+          highlightMode && { paddingBottom: contentPaddingBottom + 90 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -624,6 +659,9 @@ export default function EvangelioScreen() {
                             ranges={hl.ranges.evangelio}
                             penMode={highlightMode}
                             onSelectionChange={hl.onSelectionChange.evangelio}
+                            onNativeHighlightRequest={
+                              onNativeHighlight.evangelio
+                            }
                             color={theme.text}
                             fontSize={18 * fontScale}
                             lineHeight={28 * fontScale}
@@ -640,6 +678,9 @@ export default function EvangelioScreen() {
                             ranges={hl.ranges.comentario}
                             penMode={highlightMode}
                             onSelectionChange={hl.onSelectionChange.comentario}
+                            onNativeHighlightRequest={
+                              onNativeHighlight.comentario
+                            }
                             color={theme.text}
                             fontSize={18 * fontScale}
                             lineHeight={28 * fontScale}
@@ -715,6 +756,7 @@ export default function EvangelioScreen() {
                       ranges={hl.ranges.evangelio}
                       penMode={highlightMode}
                       onSelectionChange={hl.onSelectionChange.evangelio}
+                      onNativeHighlightRequest={onNativeHighlight.evangelio}
                       color={theme.text}
                       fontSize={18 * fontScale}
                       lineHeight={28 * fontScale}
@@ -828,6 +870,7 @@ export default function EvangelioScreen() {
                       penMode={highlightMode}
                       ranges={hl.ranges.lectura1}
                       onSelectionChange={hl.onSelectionChange.lectura1}
+                      onNativeHighlightRequest={onNativeHighlight.lectura1}
                     />
                   )}
 
@@ -841,6 +884,7 @@ export default function EvangelioScreen() {
                       penMode={highlightMode}
                       ranges={hl.ranges.salmo}
                       onSelectionChange={hl.onSelectionChange.salmo}
+                      onNativeHighlightRequest={onNativeHighlight.salmo}
                     />
                   )}
 
@@ -854,6 +898,7 @@ export default function EvangelioScreen() {
                       penMode={highlightMode}
                       ranges={hl.ranges.lectura2}
                       onSelectionChange={hl.onSelectionChange.lectura2}
+                      onNativeHighlightRequest={onNativeHighlight.lectura2}
                     />
                   )}
                 </View>
@@ -881,7 +926,7 @@ export default function EvangelioScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Celebration burst animation */}
       <CelebrationAnimation visible={showCheck} isDark={isDark} />
@@ -901,6 +946,7 @@ export default function EvangelioScreen() {
       <HighlightActionBar
         visible={highlightMode}
         hasSelection={hl.hasSelection}
+        selection={hl.selection}
         onPickColor={hl.applyColor}
         onErase={hl.erase}
         onDone={exitHighlightMode}
@@ -967,9 +1013,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scrollContent: {
-    paddingBottom: 80,
-  },
+  scrollContent: {},
   // Custom Segmented Control
   segmentedContainer: {
     flexDirection: 'row',
@@ -1185,7 +1229,7 @@ const styles = StyleSheet.create({
   },
   // Checkmark overlay
   checkOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 100,

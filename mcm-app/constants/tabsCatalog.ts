@@ -97,7 +97,10 @@ export const TABS_CONFIG: TabConfig[] = [
     androidIcon: 'calendar-today',
     tintColor: TabHeaderColors.calendario,
     headerColor: TabHeaderColors.calendario,
-    headerShown: true,
+    // Sin barra opaca fija: el conmutador Calendario/Agenda hace de
+    // ancla visual y el contenido se va con el scroll, como en Fotos y el
+    // cantoral.
+    headerShown: false,
   },
   {
     name: 'fotos',
@@ -108,7 +111,9 @@ export const TABS_CONFIG: TabConfig[] = [
     androidIcon: 'photo-library',
     tintColor: TabHeaderColors.fotos,
     headerColor: TabHeaderColors.fotos,
-    headerShown: true,
+    // Sin header fijo: el título va dentro de la lista (ScreenHero) y se va con
+    // el scroll, como en el hub de eventos.
+    headerShown: false,
   },
   {
     name: 'mas',
@@ -123,35 +128,39 @@ export const TABS_CONFIG: TabConfig[] = [
 ];
 
 /**
- * UITabBarController en iPhone sólo muestra 5 items; con 6+ añade un "More"
- * automático del sistema que rompe el estilo de la app. Para evitarlo limitamos
- * la barra nativa a 5 triggers como máximo: los 4 primeros del orden definido
- * más el tab "mas" siempre como 5º (si está visible). El resto se navega desde
- * MasHomeScreen como tarjetas.
+ * Cuántos items caben en la barra de pestañas.
  *
- * Las rutas que quedan sin Trigger siguen siendo navegables programáticamente
- * (expo-router las mantiene en el navigation state aunque no tengan tab item).
+ * Antes el tope era 5 y venía impuesto por iOS: `UITabBarController` en iPhone
+ * sólo muestra 5 items y con 6+ añade un "More" automático del sistema que
+ * rompía el estilo de la app. Con la barra flotante propia
+ * (`components/tabs/CompactTabBar.tsx`) esa limitación desaparece, así que el
+ * tope pasa a ser una decisión de diseño —6 iconos siguen entrando cómodos en
+ * el ancho del modo compacto— y se aplica por igual en iOS y en Android.
+ *
+ * Los tabs que no caben se muestran como tarjetas en MasHomeScreen. Sus rutas
+ * siguen siendo navegables programáticamente (expo-router las mantiene en el
+ * navigation state aunque no tengan item en la barra).
  */
-export const IOS_MAX_NATIVE_TABS = 5;
+export const MAX_TAB_BAR_ITEMS = 6;
 
-export interface IOSTabSplit {
-  /** Tabs que se mostrarán como triggers nativos (≤ IOS_MAX_NATIVE_TABS). */
+export interface TabBarSplit {
+  /** Tabs que se mostrarán en la barra (≤ MAX_TAB_BAR_ITEMS). */
   mainTabs: TabConfig[];
   /** Tabs visibles según el perfil pero que no caben en la barra. */
   overflowTabs: TabConfig[];
 }
 
 /**
- * Divide la lista de tabs visibles en (mainTabs, overflowTabs) para iOS,
- * garantizando que el tab `mas` (si está visible) sea siempre el último de la
- * barra nativa para que actúe como puerta hacia los overflow.
+ * Divide la lista de tabs visibles en (mainTabs, overflowTabs), garantizando
+ * que el tab `mas` (si está visible) sea siempre el último de la barra para
+ * que actúe como puerta hacia los overflow.
  */
-export function splitTabsForIOS(
+export function splitTabsForBar(
   visibleTabNames: ReadonlySet<string>,
-): IOSTabSplit {
+): TabBarSplit {
   const visible = TABS_CONFIG.filter((tab) => visibleTabNames.has(tab.name));
 
-  if (visible.length <= IOS_MAX_NATIVE_TABS) {
+  if (visible.length <= MAX_TAB_BAR_ITEMS) {
     return { mainTabs: visible, overflowTabs: [] };
   }
 
@@ -159,16 +168,16 @@ export function splitTabsForIOS(
   const nonMas = visible.filter((tab) => tab.name !== 'mas');
 
   if (!masTab) {
-    // Sin "mas" visible: simplemente recortamos a los primeros 5. El resto se
-    // pierde porque no hay un sitio razonable donde mostrarlos (no hay MasHome).
+    // Sin "mas" visible: simplemente recortamos. El resto se pierde porque no
+    // hay un sitio razonable donde mostrarlos (no hay MasHome).
     return {
-      mainTabs: nonMas.slice(0, IOS_MAX_NATIVE_TABS),
-      overflowTabs: nonMas.slice(IOS_MAX_NATIVE_TABS),
+      mainTabs: nonMas.slice(0, MAX_TAB_BAR_ITEMS),
+      overflowTabs: nonMas.slice(MAX_TAB_BAR_ITEMS),
     };
   }
 
   // Hueco para tabs principales = total - 1 (mas siempre al final).
-  const mainSlots = IOS_MAX_NATIVE_TABS - 1;
+  const mainSlots = MAX_TAB_BAR_ITEMS - 1;
   return {
     mainTabs: [...nonMas.slice(0, mainSlots), masTab],
     overflowTabs: nonMas.slice(mainSlots),
