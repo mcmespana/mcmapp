@@ -4,3 +4,6 @@
 ## 2026-07-08 - [Split useMemo for O(1) state updates]
 **Learning:** [Combining large dataset processing (O(N log N) sorting and O(N) mapping) with frequently changing scalar dependencies (like `selectedSongs.length`) inside a single `useMemo` causes massive unnecessary re-computations when the scalar value changes.]
 **Action:** [Always split such `useMemo` hooks. Compute and memoize the expensive heavy-lifting using only the large dataset as a dependency, then use a second, lightweight `useMemo` to combine the pre-computed array with the scalar state.]
+## 2026-07-25 - [Firebase Dictionary Iteration Bottleneck]
+**Learning:** [Using chained array methods like `Object.entries(statsData).map()` and `Object.entries().reduce()` to iterate over unbounded Firebase collections (which return as large nested dictionaries) creates extreme Garbage Collection pressure on React Native clients due to the allocation of thousands of intermediate tuple arrays.]
+**Action:** [Always parse unbounded dictionary payloads using native `for...in` loops combined with `hasOwnProperty` checks. Push processed data into a pre-allocated or statically bound array instead of mapping intermediate structures.]
