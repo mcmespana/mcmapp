@@ -107,3 +107,18 @@ describe('mergeRemoteBookmarks', () => {
     expect(merged[0].readings?.evangelio?.texto).toBe('local');
   });
 });
+
+describe('escrituras concurrentes (Plan 006 — withStorageLock)', () => {
+  it('dos upsertLocalBookmark sin await entre ellos NO se pisan: ambos quedan guardados', async () => {
+    const a = upsertLocalBookmark(mk('2026-01-01', 100));
+    const b = upsertLocalBookmark(mk('2026-01-02', 200));
+
+    await Promise.all([a, b]);
+
+    const stored = await loadLocalBookmarks();
+    expect(stored.map((x) => x.date).sort()).toEqual([
+      '2026-01-01',
+      '2026-01-02',
+    ]);
+  });
+});

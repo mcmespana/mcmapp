@@ -18,6 +18,27 @@
 
 ---
 
+## 2026-08-06 18:10 — Fix: serializa las escrituras concurrentes de historial de notificaciones y subrayados (Plan 006)
+
+Varios módulos hacían el ciclo `getItem → mutar → setItem` sobre la misma
+clave de AsyncStorage sin ninguna serialización: dos pushes casi
+simultáneos, o el merge remoto de bookmarks al iniciar sesión corriendo
+mientras el usuario subraya, podían intercalar sus escrituras — el segundo
+`setItem` pisaba con una copia obsoleta y el cambio del primero
+desaparecía en silencio (notificaciones que se esfuman del historial,
+subrayados perdidos).
+
+- Nuevo `utils/storageMutex.ts` (`withStorageLock`): mutex por clave, una
+  cadena de promesas por detrás de los helpers de escritura.
+- Envuelve `saveReceivedNotificationLocally`, `markNotificationAsRead` y
+  `markAllNotificationsAsRead` (clave `@mcm_notifications_history`) y
+  `upsertLocalBookmark`, `removeLocalBookmark`, `mergeRemoteBookmarks`
+  (clave `@contigo_bookmarks`). Las firmas públicas no cambian.
+- Tests de concurrencia real: dos escrituras sin `await` entre ellas ya no
+  se pierden ninguna (`__tests__/storageMutex.test.ts`,
+  `__tests__/contigoBookmarks.test.ts`,
+  `__tests__/pushNotificationServiceStorage.test.ts`).
+
 ## 2026-08-06 17:50 — Tests de `cloudPlaylistService` + movimiento de playlist atómico (Plan 005)
 
 `cloudPlaylistService` es el único sitio de la app donde se borran datos de

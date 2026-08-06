@@ -27,7 +27,7 @@ conditions, and update your row when done.
 | 003 | Corregir la expansión de eventos multi-día del calendario (DST) e investigar la zona horaria del ICS | P1 | S-M | — | ✅ DONE (2026-08-06) — B: feed real emite `Z` sin `TZID`, se implementó la normalización UTC→local |
 | 004 | Un solo dueño para los hábitos de Contigo (provider) — las 4 pantallas dejan de pisarse | P2 | M | — | ✅ DONE (2026-08-06) |
 | 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | ✅ DONE (2026-08-06) |
-| 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | TODO |
+| 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | ✅ DONE (2026-08-06) |
 | 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | TODO |
 | 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | TODO |
 | 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | TODO |
