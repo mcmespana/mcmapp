@@ -36,7 +36,7 @@ conditions, and update your row when done.
 | 012 | Podar la caché de lecturas diarias (crecía sin tope) | P3 | S | — | ✅ DONE (2026-08-06) |
 | 013 | Scraper: el exit code distingue fuente caída de fechas sueltas fallidas | P3 | S | — | ✅ DONE (2026-08-06) |
 | 014 | Costura `services/firebaseWrites.ts`: las escrituras de UI ganan retry y una sola forma | P3 | M | — | ✅ DONE (2026-08-06) — SecretPanelModal se dejó fuera (gigante, >10 líneas por uso) |
-| 015 | Limpieza de módulos muertos y dependencias sin uso | P3 | S | — | TODO |
+| 015 | Limpieza de módulos muertos y dependencias sin uso | P3 | S | — | ✅ DONE (2026-08-06) — incluyó Step 3 (expo-insights/expo-system-ui), commit con `[skip-ota]`: **requiere build de producción antes de mergear a `production`** |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 

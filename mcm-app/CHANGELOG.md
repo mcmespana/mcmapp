@@ -18,6 +18,22 @@
 
 ---
 
+## 2026-08-06 20:10 — Limpieza: 6 módulos sin importador y deps sin uso (Plan 015)
+
+- Borrados `components/SongSearch.tsx`, `components/ExternalLink.tsx`,
+  `components/ui/AppIconButton.tsx`, `components/ui/CloseIconButton.tsx`,
+  `components/ui/GlassCard.tsx`, `hooks/useUnreadNotificationsCount.ts` —
+  cero imports verificados. `TODO.md` tenía trabajo pendiente asignado a
+  `AppIconButton` (inejecutable, nadie lo montaba); quitada la referencia.
+  `CLAUDE.md` ya no los lista como vivos.
+- Manifest: fuera `ts-jest`, `copy-webpack-plugin`, `tailwind-merge`,
+  `tailwind-variants` (sin uso); `@expo/config` movido a devDependencies
+  (solo build-time, `app.config.ts`).
+- **⚠️ Cambio nativo**: `expo-insights` y `expo-system-ui` también se
+  quitaron (sin uso, confirmado contra `expo-doctor` y `expo config`) —
+  este paso requiere **build de producción** antes del próximo merge a
+  `production` (el commit lleva `[skip-ota]`).
+
 ## 2026-08-06 19:45 — Refactor: las escrituras de UI a Firebase ganan retry (Plan 014)
 
 Las escrituras estaban repartidas por ~10 archivos, cada uno repitiendo el
