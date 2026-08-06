@@ -5,18 +5,65 @@ on:
   push:
     branches: [production]
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Saltar el guard de cambios nativos (usar con cuidado)'
+        type: boolean
+        default: false
 
 concurrency:
   group: ota-production
   cancel-in-progress: false
 
 jobs:
+  # Detecta cambios en rutas nativas (package.json, app.json, patches/,
+  # plugins/, modules/, targets/...) en TODO el rango del push, no solo el
+  # último commit. Si hay diff nativo:
+  #   - con [skip-ota] en algún commit del rango → se salta la OTA (output skip=true)
+  #   - sin [skip-ota] → el guard FALLA en rojo (antes esto pasaba desapercibido
+  #     y crasheaba la base instalada, porque una OTA solo manda el bundle JS)
+  # En workflow_dispatch corre igual sobre HEAD^..HEAD, con un input `force`
+  # para saltárselo explícitamente (el dispatch ya no es un bypass silencioso).
+  guard-native:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.force != 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Comprobar cambios en rutas nativas
+        id: check
+        run: |
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            BEFORE="$(git rev-parse "$AFTER"^)"
+          fi
+          NATIVE_CHANGES=$(git diff --name-only "$BEFORE" "$AFTER" -- \
+            mcm-app/package.json mcm-app/package-lock.json mcm-app/app.json \
+            mcm-app/app.config.ts mcm-app/eas.json \
+            mcm-app/patches/ mcm-app/plugins/ mcm-app/modules/ mcm-app/targets/)
+          if [ -n "$NATIVE_CHANGES" ]; then
+            if git log --format=%B "$BEFORE".."$AFTER" | grep -q '\[skip-ota\]'; then
+              echo "Cambios en rutas nativas + [skip-ota] presente en el push → se salta la OTA."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error::Cambios en rutas nativas SIN [skip-ota] en ningún commit del push:"
+              echo "$NATIVE_CHANGES"
+              exit 1
+            fi
+          fi
+
+  verify:
+    uses: ./.github/workflows/verify.yml
+
   publish-prod:
-    # Salta si el mensaje del commit contiene [skip-ota] (p.ej. cuando se añaden paquetes nativos)
-    # En workflow_dispatch siempre corre (el usuario lo lanzó explícitamente)
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      !contains(github.event.head_commit.message, '[skip-ota]')
+    needs: [guard-native, verify]
+    if: needs.guard-native.outputs.skip != 'true'
     runs-on: ubuntu-latest
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line

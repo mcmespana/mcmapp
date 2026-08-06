@@ -18,6 +18,26 @@
 
 ---
 
+## 2026-08-06 16:45 — CI: guard de cambios nativos en todo el push + gate de tests antes de publicar (Plan 002)
+
+Los workflows de OTA solo miraban el último commit del push para detectar
+`[skip-ota]`, y ni la OTA ni el deploy web corrían tests/typecheck/lint —
+solo `ci.yml` en pull requests. Un push directo con cambios nativos sin
+`[skip-ota]` en el último commit (o un `workflow_dispatch`, que se lo saltaba
+siempre) podía crashear la base instalada entera.
+
+- Nuevo job `guard-native` en `ota-production.yml` y `ota-preview.yml`:
+  compara TODO el rango del push (`github.event.before`..`github.sha`)
+  contra las rutas nativas del repo. Si hay diff nativo sin `[skip-ota]` en
+  ningún commit del rango, el guard falla en rojo y no publica.
+  `workflow_dispatch` ahora acepta un input `force` explícito para saltárselo
+  a propósito (ya no es un bypass silencioso).
+- Nuevo workflow reutilizable `verify.yml` (typecheck + typecheck:tests +
+  lint + test) que ahora usan `ci.yml`, `ota-production.yml`,
+  `ota-preview.yml` y `deploy-web.yml` — una sola fuente de verdad para los
+  pasos de verificación.
+- Archivos: `.github/workflows/{ci,ota-production,ota-preview,deploy-web,verify}.yml`.
+
 ## 2026-08-06 16:30 — Fix: los `off()` de coro y notificaciones no quitaban el listener (Plan 001)
 
 `subscribeChoirSession` y `subscribeToNotifications` devolvían una función de

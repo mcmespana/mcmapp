@@ -23,7 +23,7 @@ conditions, and update your row when done.
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
 | 001 | Arreglar los `off()` que nunca quitan los listeners de Firebase | P1 | S | — | ✅ DONE (2026-08-06) |
-| 002 | Blindar los workflows de OTA: diff nativo + `[skip-ota]` en todo el push + gate de tests | P1 | S | — | TODO |
+| 002 | Blindar los workflows de OTA: diff nativo + `[skip-ota]` en todo el push + gate de tests | P1 | S | — | ✅ DONE (2026-08-06) |
 | 003 | Corregir la expansión de eventos multi-día del calendario (DST) e investigar la zona horaria del ICS | P1 | S-M | — | TODO |
 | 004 | Un solo dueño para los hábitos de Contigo (provider) — las 4 pantallas dejan de pisarse | P2 | M | — | TODO |
 | 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | TODO |
