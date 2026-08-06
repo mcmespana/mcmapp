@@ -18,6 +18,27 @@
 
 ---
 
+## 2026-08-06 17:05 — Fix: expansión multi-día del calendario ante DST + horas UTC normalizadas (Plan 003)
+
+**Parte A:** el bucle que expande eventos multi-día mezclaba `Date` en UTC
+(parseo), `setDate()` en hora local (incremento) y `toISOString()` en UTC
+(formato). Al cruzar el cambio de hora de Europa/Madrid, el instante se
+desplazaba 1h y el día formateado saltaba o se duplicaba — un evento del
+28-mar al 2-abr podía pintar `28, 29, 29 (dup), 31…`. Justo la ventana de
+Semana Santa/retiros. Sustituido por aritmética de calendario pura
+(`addDaysISO`, en UTC de punta a punta, sin pasar por hora local en ningún
+punto). El mismo fix se aplicó al ajuste del `DTEND` exclusivo de eventos de
+día completo (usaba `setDate` igual).
+
+**Parte B:** verificado contra el feed real (`basic.ics`) — emite las horas
+en UTC con sufijo `Z`, sin `TZID`. Los eventos con hora se mostraban 1-2h
+antes de lo real. Ahora `DTSTART`/`DTEND` con `Z` se convierten a fecha/hora
+local; los valores flotantes (sin `Z`) se dejan exactamente como estaban.
+
+- Tests nuevos: `__tests__/useCalendarEvents.test.ts` (rango DST
+  primavera/otoño, `addDaysISO`, parseo de horas UTC vs flotantes).
+- Archivo: `hooks/useCalendarEvents.ts`.
+
 ## 2026-08-06 16:45 — CI: guard de cambios nativos en todo el push + gate de tests antes de publicar (Plan 002)
 
 Los workflows de OTA solo miraban el último commit del push para detectar

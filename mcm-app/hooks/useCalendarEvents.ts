@@ -19,10 +19,38 @@ export interface CalendarEvent {
   isSingleDay?: boolean; // Track if this is effectively a single day event (after corrections)
 }
 
+/** Suma `n` días a una fecha 'YYYY-MM-DD' sin pasar por la hora local (evita
+ * que un cambio de hora DST duplique o salte un día al iterar). */
+export function addDaysISO(iso: string, n: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const t = Date.UTC(y, m - 1, d + n);
+  const nd = new Date(t);
+  const mm = String(nd.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(nd.getUTCDate()).padStart(2, '0');
+  return `${nd.getUTCFullYear()}-${mm}-${dd}`;
+}
+
+/** Convierte una fecha+hora en UTC (sufijo `Z` del ICS) a fecha/hora local del
+ * dispositivo. El feed real (`basic.ics`, ver useCalendarConfigs.ts) emite
+ * SIEMPRE `Z` para eventos con hora, sin `TZID` — verificado contra el feed
+ * en vivo. Valores flotantes (sin `Z`) no pasan por aquí y se muestran tal
+ * cual, como hoy. */
+function utcToLocal(
+  dateISO: string,
+  timeHHMM: string,
+): { date: string; time: string } {
+  const [y, m, d] = dateISO.split('-').map(Number);
+  const [hh, mm] = timeHHMM.split(':').map(Number);
+  const local = new Date(Date.UTC(y, m - 1, d, hh, mm));
+  const date = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}`;
+  const time = `${String(local.getHours()).padStart(2, '0')}:${String(local.getMinutes()).padStart(2, '0')}`;
+  return { date, time };
+}
+
 const CONFERENCE_URL_REGEX =
   /https?:\/\/(?:[\w-]+\.)*(?:meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com|webex\.com|gotomeeting\.com|whereby\.com|jit\.si|meet\.jit\.si)\/[^\s<>"')]+/i;
 
-function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
+export function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
   // Unfold lines that start with a space as specified in RFC 5545
   const unfolded: string[] = [];
   for (const rawLine of text.split(/\r?\n/)) {
@@ -47,9 +75,7 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
         if (current.isAllDay && current.endDate) {
           // For all-day events, DTEND is exclusive (next day)
           // So we need to subtract one day from endDate
-          const endDate = new Date(current.endDate + 'T12:00:00'); // Use noon to avoid timezone issues
-          endDate.setDate(endDate.getDate() - 1);
-          const adjustedEndDate = endDate.toISOString().split('T')[0];
+          const adjustedEndDate = addDaysISO(current.endDate, -1);
 
           // If after adjustment the end date equals start date,
           // it's a single-day event, remove endDate completely
@@ -112,34 +138,54 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
         }
 
         const datePart = value.replace(/T.*$/, '');
+        let startDate: string | undefined;
         if (/^\d{8}$/.test(datePart)) {
           const year = datePart.substring(0, 4);
           const month = datePart.substring(4, 6);
           const day = datePart.substring(6, 8);
-          current.startDate = `${year}-${month}-${day}`;
+          startDate = `${year}-${month}-${day}`;
         }
 
         const timeMatch = value.match(/T(\d{2})(\d{2})/);
+        let startTime: string | undefined;
         if (timeMatch && !isDateOnly) {
-          current.startTime = `${timeMatch[1]}:${timeMatch[2]}`;
+          startTime = `${timeMatch[1]}:${timeMatch[2]}`;
         }
+
+        // El feed emite las horas en UTC (sufijo Z) — convertir a local.
+        if (startDate && startTime && value.endsWith('Z')) {
+          ({ date: startDate, time: startTime } = utcToLocal(
+            startDate,
+            startTime,
+          ));
+        }
+        if (startDate) current.startDate = startDate;
+        if (startTime) current.startTime = startTime;
       }
     } else if (line.startsWith('DTEND')) {
       const idx = line.indexOf(':');
       if (idx !== -1) {
         const value = line.slice(idx + 1).trim();
         const datePart = value.replace(/T.*$/, '');
+        let endDate: string | undefined;
         if (/^\d{8}$/.test(datePart)) {
           const year = datePart.substring(0, 4);
           const month = datePart.substring(4, 6);
           const day = datePart.substring(6, 8);
-          current.endDate = `${year}-${month}-${day}`;
+          endDate = `${year}-${month}-${day}`;
         }
 
         const timeMatch = value.match(/T(\d{2})(\d{2})/);
+        let endTime: string | undefined;
         if (timeMatch && !value.match(/^\d{8}$/)) {
-          current.endTime = `${timeMatch[1]}:${timeMatch[2]}`;
+          endTime = `${timeMatch[1]}:${timeMatch[2]}`;
         }
+
+        if (endDate && endTime && value.endsWith('Z')) {
+          ({ date: endDate, time: endTime } = utcToLocal(endDate, endTime));
+        }
+        if (endDate) current.endDate = endDate;
+        if (endTime) current.endTime = endTime;
       }
     }
   }
@@ -203,17 +249,16 @@ function fetchAndParseCalendars(
             if (!map[dateStr]) map[dateStr] = [];
             map[dateStr].push(withCal);
           } else {
-            // For multi-day events, iterate through the range
-            const start = new Date(ev.startDate);
-            const end = new Date(ev.endDate);
+            // For multi-day events, iterate through the range using pure
+            // calendar arithmetic (UTC de punta a punta) — evita el bug de
+            // duplicar/saltar un día al cruzar un cambio de hora DST.
             for (
-              let d = new Date(start);
-              d <= end;
-              d.setDate(d.getDate() + 1)
+              let cur = ev.startDate;
+              cur <= ev.endDate;
+              cur = addDaysISO(cur, 1)
             ) {
-              const dateStr = d.toISOString().split('T')[0];
-              if (!map[dateStr]) map[dateStr] = [];
-              map[dateStr].push(withCal);
+              if (!map[cur]) map[cur] = [];
+              map[cur].push(withCal);
             }
           }
         });
