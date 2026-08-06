@@ -30,7 +30,7 @@ conditions, and update your row when done.
 | 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | ✅ DONE (2026-08-06) |
 | 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | ✅ DONE (2026-08-06) |
 | 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | ✅ DONE (2026-08-06) |
-| 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | TODO |
+| 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | ✅ DONE (2026-08-06) — extraídos a `components/materiales/` (el módulo-level in-file superaba 400 líneas, según la cláusula del propio plan) |
 | 010 | Virtualizar el muro de "Compartiendo" con `FlatList` | P3 | S | — | TODO |
 | 011 | Calendario litúrgico: ventana rodante (−280 KB de bundle) + generador con test de vigencia | P3 | S | — | TODO |
 | 012 | Podar la caché de lecturas diarias (crecía sin tope) | P3 | S | — | TODO |
