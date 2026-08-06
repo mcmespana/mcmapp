@@ -124,5 +124,12 @@
         ]
       }
     }
+  },
+  "allowScripts": {
+    "@sentry/cli@2.58.4": true,
+    "protobufjs@7.6.5": true,
+    "unrs-resolver@1.11.1": true,
+    "@firebase/util@1.15.2": true,
+    "fsevents@2.3.3": true
   }
 }
