@@ -282,7 +282,12 @@ Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`:
 2. Muestra datos cacheados inmediatamente
 3. Consulta Firebase por `updatedAt`
 4. Si cambió, descarga `data` y actualiza caché
-5. Único punto de escritura: `ReflexionesScreen` (reflexiones)
+5. Escrituras: las de UI pasan por `services/firebaseWrites.ts`
+   (`pushWithRetry`/`setWithRetry`, con reintento) — feedback, reportes de
+   fallos, sugerencias de canción, evaluaciones, encuestas, reflexiones y
+   ediciones del cantoral. Coro, playlists compartidas y push tienen sus
+   propios servicios dedicados (`choirSessionService.ts`,
+   `cloudPlaylistService.ts`, `pushNotificationService.ts`)
 
 ## Colores de marca
 

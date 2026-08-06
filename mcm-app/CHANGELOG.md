@@ -18,6 +18,28 @@
 
 ---
 
+## 2026-08-06 19:45 — Refactor: las escrituras de UI a Firebase ganan retry (Plan 014)
+
+Las escrituras estaban repartidas por ~10 archivos, cada uno repitiendo el
+ritual `getDatabase(getFirebaseApp())` → `ref` → `push`/`set` a mano, sin
+ningún reintento — a diferencia de las lecturas (`useFirebaseData`), que ya
+tenían `withRetry` con backoff. Una evaluación o un reporte de bug enviados
+con wifi flojo se perdían con un toast de error, sin más.
+
+- Nueva costura `services/firebaseWrites.ts`: `pushWithRetry`/`setWithRetry`.
+  La key de `push()` se genera UNA vez y solo se reintenta el `set`
+  (idempotente).
+- Migrados: `AppFeedbackModal`, `ReportBugsModal`, `SuggestSongModal`,
+  `EvaluacionScreen`, `EvaluacionAppScreen`, `SurveyScreen`, `SongDetailScreen`
+  (fallitos + ediciones de arreglos), `ReflexionesScreen` (su `update()`
+  multi-path se conserva tal cual, solo gana retry). Rutas y payloads
+  idénticos a los previos.
+- `WordleScreen` (congelado) y `SecretPanelModal` (lógica de escritura
+  demasiado grande para la primitiva sin reordenar el archivo — gigante ya
+  planificado en `PLAN_CALIDAD.md`) quedan fuera, a propósito.
+- Corregida la frase falsa de `CLAUDE.md` ("Único punto de escritura:
+  ReflexionesScreen").
+
 ## 2026-08-06 19:20 — Fix: poda la caché de lecturas diarias (crecía sin tope) (Plan 012)
 
 `useDailyReadings` cacheaba cada día bajo su propia clave AsyncStorage y
