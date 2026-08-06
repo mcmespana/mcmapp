@@ -18,6 +18,24 @@
 
 ---
 
+## 2026-08-06 19:05 — Perf: calendario litúrgico recortado a ventana rodante (−280 KB de bundle) (Plan 011)
+
+`components/contigo/LiturgicalBadge.tsx` importaba estáticamente
+`assets/calendario-liturgico.json`: 318 KB cubriendo 2025→2100, de los que
+más del 95% no se usará en años. Metro inlinea ese JSON en el bundle JS, así
+que cada OTA lo descargaba entero y cada arranque lo evaluaba.
+
+- La tabla completa se preserva en `assets/calendario-liturgico-completo.json`
+  (sin ningún import — no pesa en el bundle).
+- `assets/calendario-liturgico.json` (el que sí importa el badge, mismo
+  nombre) ahora es una ventana rodante de 5 años (actual −1 … actual +3):
+  20,9 KB.
+- Nuevo `npm run liturgical:window` (`scripts/generate-liturgical-window.js`)
+  regenera la ventana; idempotente.
+- Test de vigencia (`__tests__/liturgicalWindow.test.ts`): falla en CI con
+  instrucciones si la ventana está a punto de caducar.
+- `LiturgicalBadge.tsx` no cambia — mismo import, mismo nombre de archivo.
+
 ## 2026-08-06 18:45 — Perf: ICS del calendario en paralelo + ventana de frescura de 5 min (Plan 008)
 
 Los calendarios ICS se descargaban en SERIE (`await fetch` dentro de un

@@ -17,6 +17,7 @@
     "eas:build:android": "npx rimraf .agent .agents && cross-env GIT_CLONE_PROTECTION_ACTIVE=false npx eas-cli@latest build -p android",
     "icons:tabs": "node scripts/generate-tab-icons.js",
     "icons:alt": "node scripts/generate-alt-icons.js",
+    "liturgical:window": "node scripts/generate-liturgical-window.js",
     "postinstall": "patch-package"
   },
   "dependencies": {
