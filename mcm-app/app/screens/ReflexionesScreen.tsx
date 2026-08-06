@@ -31,7 +31,7 @@ import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { getBrightness } from '@/components/ui/glass';
-import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useFirebaseData, withRetry } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { getDatabase, ref, push, update } from 'firebase/database';
@@ -254,11 +254,11 @@ export default function ReflexionesScreen() {
       // eran dos set() separados — si el segundo fallaba (o la app moría
       // entre medias) la reflexión quedaba escrita pero invisible para el
       // resto de dispositivos, porque useFirebaseData solo redescarga
-      // `data` cuando `updatedAt` cambia.
-      await update(
-        ref(db, compartiendoPath),
-        buildReflexionUpdate(newRef.key, nuevo, Date.now()),
-      );
+      // `data` cuando `updatedAt` cambia. Con retry (Plan 014): la key ya se
+      // generó una vez arriba, así que reintentar solo este update() es
+      // idempotente (misma key, mismo valor).
+      const updatePayload = buildReflexionUpdate(newRef.key, nuevo, Date.now());
+      await withRetry(() => update(ref(db, compartiendoPath), updatePayload));
       setJustPublished((prev) => [nuevo, ...prev]);
       h.formSuccess();
       setCelebrate(true);
