@@ -18,6 +18,26 @@
 
 ---
 
+## 2026-08-06 17:30 — Fix: un solo dueño del mapa de hábitos de Contigo (Plan 004)
+
+`useContigoHabits` guardaba TODO el mapa de hábitos desde el estado propio
+de CADA instancia del hook, y hay 4 pantallas de Contigo montadas a la vez
+(index, evangelio, oración, revisión). Si dos pantallas escribían sin
+remontarse entre medias, la segunda pisaba el mapa entero con su copia
+desactualizada — el usuario veía des-completarse en silencio un hábito que
+acababa de marcar (racha y contadores incluidos).
+
+- Nuevo `ContigoHabitsContext`/`ContigoHabitsProvider`: único dueño del
+  estado, montado en `app/(tabs)/contigo/_layout.tsx`. Las mutaciones parten
+  siempre de `recordsRef.current` (nunca de un closure de render viejo) y la
+  persistencia a AsyncStorage se serializa con una cola de promesas.
+  `useContigoHabits` pasa a ser una fachada de una línea — las 4 pantallas
+  no cambian ni un import.
+- El formato de `@contigo_habits` en AsyncStorage no cambia.
+- Test de regresión: `__tests__/contigoHabitsContext.test.ts`.
+- Archivos: `contexts/ContigoHabitsContext.tsx` (nuevo),
+  `hooks/useContigoHabits.ts`, `app/(tabs)/contigo/_layout.tsx`.
+
 ## 2026-08-06 17:05 — Fix: expansión multi-día del calendario ante DST + horas UTC normalizadas (Plan 003)
 
 **Parte A:** el bucle que expande eventos multi-día mezclaba `Date` en UTC
