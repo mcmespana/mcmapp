@@ -18,6 +18,22 @@
 
 ---
 
+## 2026-08-06 16:30 — Fix: los `off()` de coro y notificaciones no quitaban el listener (Plan 001)
+
+`subscribeChoirSession` y `subscribeToNotifications` devolvían una función de
+limpieza que llamaba a `off(ref, 'value', <valor devuelto por onValue>)` — pero
+ese valor es el `Unsubscribe`, no el callback, así que `off` no encontraba
+coincidencia y la suscripción quedaba viva para siempre (listeners acumulados
+en "modo Coro" al cambiar de código, e igual en el historial de
+notificaciones).
+
+- Ambos servicios ahora devuelven directamente el `Unsubscribe` que da
+  `onValue` — el patrón correcto del SDK modular de Firebase.
+- Nuevo test de regresión en `choirSessionService.test.ts` que fija el
+  contrato.
+- Archivos: `services/choirSessionService.ts`, `services/pushNotificationService.ts`,
+  `__tests__/choirSessionService.test.ts`.
+
 ## 2026-08-04 03:00 — Red: reintentos y resincronización al volver online
 
 `useFirebaseData` se tragaba los fallos de red con un `logger.error` y ya: sin

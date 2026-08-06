@@ -23,7 +23,6 @@ import {
   update,
   remove,
   onValue,
-  off,
 } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import type { SelectedSong } from '@/contexts/SelectedSongsContext';
@@ -160,14 +159,14 @@ export function subscribeChoirSession(
   onError?: (err: Error) => void,
 ): () => void {
   const r = getRef(code);
-  const handler = onValue(
+  const unsubscribe = onValue(
     r,
     (snap) => {
       onChange(snap.exists() ? (snap.val() as ChoirSession) : null);
     },
     (err) => onError?.(err),
   );
-  return () => off(r, 'value', handler);
+  return unsubscribe;
 }
 
 /** Borra la sesión (cierre manual por el maestro). */

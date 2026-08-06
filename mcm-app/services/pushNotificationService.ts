@@ -1,14 +1,6 @@
 // services/pushNotificationService.ts
 import { logger } from '@/utils/logger';
-import {
-  getDatabase,
-  ref,
-  set,
-  get,
-  update,
-  onValue,
-  off,
-} from 'firebase/database';
+import { getDatabase, ref, set, get, update, onValue } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -304,8 +296,8 @@ export const subscribeToNotifications = (
       }
     });
 
-    // Retornar función de cleanup
-    return () => off(notificationsRef, 'value', unsubscribe);
+    // Retornar función de cleanup: el propio Unsubscribe de onValue
+    return unsubscribe;
   } catch (error) {
     logger.error('Error suscribiéndose a notificaciones:', error);
     return () => {};
