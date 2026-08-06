@@ -18,6 +18,24 @@
 
 ---
 
+## 2026-08-06 19:20 — Fix: poda la caché de lecturas diarias (crecía sin tope) (Plan 012)
+
+`useDailyReadings` cacheaba cada día bajo su propia clave AsyncStorage y
+nada la podaba nunca: un usuario diario acumulaba una clave por día para
+siempre (varios MB al año), degradando el SQLite de AsyncStorage en Android.
+El nodo remoto además se purga a 30 días, así que la copia local vieja podía
+servir lecturas que el scraper ya había corregido.
+
+- Nuevo `utils/dailyReadingsCache.ts`: `selectKeysToPrune` (pura) +
+  `pruneDailyReadingsCache` (IO, se traga errores — la poda nunca rompe la
+  carga de lecturas). Retención de 60 días.
+- `useDailyReadings` dispara la poda UNA vez por sesión (fire-and-forget,
+  sin bloquear el primer render) y gana el guard `isMounted` que le faltaba
+  en el camino de caché.
+- Los guardados del usuario no dependen de esta caché (los bookmarks llevan
+  su propia copia del texto) — la poda no puede perder datos.
+- Archivos: `hooks/useDailyReadings.ts`, `utils/dailyReadingsCache.ts`.
+
 ## 2026-08-06 19:05 — Perf: calendario litúrgico recortado a ventana rodante (−280 KB de bundle) (Plan 011)
 
 `components/contigo/LiturgicalBadge.tsx` importaba estáticamente
