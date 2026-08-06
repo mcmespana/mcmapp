@@ -34,7 +34,7 @@ conditions, and update your row when done.
 | 010 | Virtualizar el muro de "Compartiendo" con `FlatList` | P3 | S | — | ✅ DONE (2026-08-06) |
 | 011 | Calendario litúrgico: ventana rodante (−280 KB de bundle) + generador con test de vigencia | P3 | S | — | ✅ DONE (2026-08-06) |
 | 012 | Podar la caché de lecturas diarias (crecía sin tope) | P3 | S | — | ✅ DONE (2026-08-06) |
-| 013 | Scraper: el exit code distingue fuente caída de fechas sueltas fallidas | P3 | S | — | TODO |
+| 013 | Scraper: el exit code distingue fuente caída de fechas sueltas fallidas | P3 | S | — | ✅ DONE (2026-08-06) |
 | 014 | Costura `services/firebaseWrites.ts`: las escrituras de UI ganan retry y una sola forma | P3 | M | — | TODO |
 | 015 | Limpieza de módulos muertos y dependencias sin uso | P3 | S | — | TODO |
 
