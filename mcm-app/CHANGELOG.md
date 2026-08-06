@@ -18,6 +18,52 @@
 
 ---
 
+## 2026-08-07 00:50 — Accesos directos a prueba de cambios de barra + header del Calendario
+
+Los accesos de la Home tenían la ruta cableada de cuando en la barra solo cabían
+5 tabs: **Fotos** y **Calendario** entraban siempre por "Más", y **Comunica**
+decidía con `resolved.tabs`. Con la barra flotante actual (6 huecos) esos tabs ya
+están en la barra y no en "Más", así que el atajo llevaba a "Más" a buscar una
+pantalla que ya no estaba ahí — "quizá te carga o quizá no". Lo mismo al tocar
+una tarjeta de "Próximos eventos".
+
+- **Nuevo `utils/tabNavigation.ts` + `hooks/useTabNavigator`**: los llamadores ya
+  no eligen ruta, solo declaran el tab destino. `resolveTabTarget` decide con la
+  composición REAL de la barra en ese momento: (1) ruta directa si el tab está en
+  la barra; (2) su gemelo dentro del stack de "Más" (Fotos, Calendario, Comunica
+  y el hub de cualquier evento están registrados ahí); (3) ruta directa igual en
+  Android/web, que registran todas las rutas de `app/(tabs)/`; (4) si no hay vía,
+  se avisa al usuario con un toast en vez de dejar el botón mudo.
+- **Usado en**: accesos rápidos y banners de la Home (evento, "Evalúa la
+  actividad", tarjetas de calendario), tarjetas de overflow de "Más",
+  deep-links de notificación (push, bandeja, bottom sheet, detalle) y paleta de
+  comandos. Se elimina de la Home la copia duplicada de `normalizeRoute` y
+  `ROUTE_LABELS` (ahora usa la de `components/notifications`).
+- **Destinos pendientes más robustos** (`masNavigation`, `eventNavigation`,
+  nuevo `calendarNavigation`): caducan a los 15 s (si la navegación no llega a
+  ocurrir ya no saltan "a destiempo" en la siguiente visita), se limpian al
+  navegar a otro sitio y se pueden consumir en el acto si la pantalla destino ya
+  está montada y con foco. La fecha del calendario viaja por ese store, el único
+  canal que funciona por las dos vías (tab y stack de "Más") en las tres
+  plataformas.
+- **Header del Calendario arreglado**: el stack pinta un header transparente en
+  iOS (el contenido va DEBAJO) pero la pantalla solo reservaba `insets.top`, así
+  que el conmutador Mes/Agenda se solapaba con el título y con el botón de
+  calendarios. Ahora reserva la altura real del header (`useHeaderHeight`), y 0
+  en Android/web, donde el header es opaco y el navegador ya deja el hueco (ahí
+  antes sobraba un hueco de más).
+- Un deep-link `?date=` al calendario ahora también salta de mes (antes
+  seleccionaba el día pero seguía pintando el mes anterior).
+- Tests nuevos: `__tests__/tabNavigation.test.ts` (13 casos de resolución de
+  destino por plataforma y composición de barra).
+- Archivos: `utils/tabNavigation.ts`, `hooks/useTabNavigator.ts`,
+  `utils/calendarNavigation.ts`, `utils/masNavigation.ts`,
+  `utils/eventNavigation.ts`, `constants/events.ts`, `app/(tabs)/index.tsx`,
+  `app/(tabs)/calendario.tsx`, `app/screens/MasHomeScreen.tsx`,
+  `app/notifications.tsx`, `components/NotificationsBottomSheet.tsx`,
+  `components/notifications/NotificationDetail.tsx`,
+  `components/CommandPalette.tsx`, `notifications/usePushNotifications.ts`.
+
 ## 2026-08-04 03:00 — Red: reintentos y resincronización al volver online
 
 `useFirebaseData` se tragaba los fallos de red con un `logger.error` y ya: sin

@@ -9,13 +9,13 @@ import {
   Pressable,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import colors, { Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { getRouteLabel, normalizeRoute } from './notificationDisplay';
+import { useTabNavigator } from '@/hooks/useTabNavigator';
 
 /**
  * Vista "en grande" de una notificación concreta (título, imagen, cuerpo y
@@ -33,6 +33,7 @@ export default function NotificationDetail({
   bottomInset: number;
 }) {
   const theme = Colors[scheme];
+  const { goToRoute } = useTabNavigator();
   const date = new Date(
     'receivedAt' in notification
       ? notification.receivedAt
@@ -45,11 +46,9 @@ export default function NotificationDetail({
   const navigateTo = (route: string) => {
     onClose();
     const clean = normalizeRoute(route);
-    setTimeout(() => {
-      try {
-        router.push(clean as any);
-      } catch {}
-    }, 320);
+    // `goToRoute` decide la vía según dónde esté el tab de esa ruta ahora
+    // mismo (barra o stack de "Más").
+    setTimeout(() => goToRoute(clean), 320);
   };
 
   return (

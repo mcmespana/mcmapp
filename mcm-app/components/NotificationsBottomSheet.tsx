@@ -12,7 +12,6 @@ import {
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import colors, { Colors } from '@/constants/colors';
 import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -33,6 +32,7 @@ import BottomSheet from './BottomSheet';
 import NotificationDetail from './notifications/NotificationDetail';
 import NotificationListItem from './notifications/NotificationListItem';
 import { normalizeRoute } from './notifications/notificationDisplay';
+import { useTabNavigator } from '@/hooks/useTabNavigator';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_GAP = 80; // space below safe-area (notch / Dynamic Island)
@@ -61,6 +61,7 @@ export default function NotificationsBottomSheet({
   const theme = Colors[scheme];
   const insets = useSafeAreaInsets();
   const { firebaseNotifications, refreshCount } = useNotifications();
+  const { goToRoute } = useTabNavigator();
 
   const [localNotifications, setLocalNotifications] = useState<
     ReceivedNotification[]
@@ -192,14 +193,12 @@ export default function NotificationsBottomSheet({
       onClose();
       const clean = normalizeRoute(route);
       setTimeout(() => {
-        try {
-          router.push(clean as any);
-        } catch (e) {
-          logger.error('Error navegando:', e);
-        }
+        // `goToRoute` resuelve el tab de la ruta con la barra actual (puede no
+        // estar en ella y tener que entrar por "Más").
+        goToRoute(clean);
       }, 320);
     },
-    [onClose],
+    [onClose, goToRoute],
   );
 
   const handleActionButtonPress = useCallback(
@@ -207,15 +206,13 @@ export default function NotificationsBottomSheet({
       onClose();
       setTimeout(() => {
         if (btn.isInternal) {
-          try {
-            router.push(normalizeRoute(btn.url) as any);
-          } catch {}
+          goToRoute(normalizeRoute(btn.url));
         } else {
           Linking.openURL(btn.url).catch(logger.error);
         }
       }, 320);
     },
-    [onClose],
+    [onClose, goToRoute],
   );
 
   const renderNotification = ({ item }: { item: Notification }) => (

@@ -14,7 +14,6 @@ import {
   TouchableOpacity,
   Pressable,
   Linking,
-  Platform,
   ViewStyle,
   TextStyle,
   useWindowDimensions,
@@ -49,14 +48,21 @@ import { VersionDisplay } from '@/components/VersionDisplay';
 import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
-import { setPendingMasScreen } from '@/utils/masNavigation';
+import { useTabNavigator } from '@/hooks/useTabNavigator';
+import {
+  getRouteLabel,
+  normalizeRoute,
+} from '@/components/notifications/notificationDisplay';
+import {
+  clearPendingCalendarDate,
+  setPendingCalendarDate,
+} from '@/utils/calendarNavigation';
 import { localISO } from '@/utils/localDate';
 import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
 import GlassActionGroup from '@/components/ui/GlassActionGroup';
 import PressableScale from '@/components/ui/PressableScale';
-import { setPendingEventScreen } from '@/utils/eventNavigation';
 import {
   DEFAULT_APP_EVALUATION,
   DEFAULT_EVENT_EVALUATION,
@@ -195,7 +201,14 @@ interface QuickItem {
   icon: ComponentProps<typeof MaterialIcons>['name'];
   iconBg: string;
   iconColor: string;
-  href?: string;
+  /**
+   * Tab al que pertenece el destino. NO se navega a pelo: `useTabNavigator`
+   * decide la vía según dónde esté ese tab ahora mismo (barra, stack de "Más"
+   * o inalcanzable). Ver `utils/tabNavigation.ts`.
+   */
+  tab: string;
+  /** Sub-ruta dentro del tab, si el destino no es su raíz. */
+  path?: string;
   dashed?: boolean;
 }
 
@@ -208,6 +221,8 @@ export default function Home() {
   // Color neutro de los iconos en la cápsula glass (igual que EventActionButtons).
   const glassFg = scheme === 'dark' ? '#EDEDED' : '#3A3A3C';
   const resolved = useResolvedProfileConfig();
+  // Navegación a tabs resiliente a la composición actual de la barra.
+  const { goToTab, goToRoute } = useTabNavigator();
   const { profile } = useUserProfile();
   const fontScale = useFontScale();
   const { width: windowWidth } = useWindowDimensions();
@@ -416,11 +431,10 @@ export default function Home() {
     (g) => g.events.length > 0,
   );
 
-  // ¿El perfil tiene Comunica como tab propia? Cambia a dónde apunta el botón
-  // de la Home (tab vs. pantalla dentro del stack de "Más").
-  const comunicaIsTab = resolved.tabs.includes('comunica');
-
-  // Quick grid items — filtrados por la config del perfil resuelto
+  // Quick grid items — filtrados por la config del perfil resuelto.
+  // Cada botón declara SÓLO su tab destino: cómo llegar hasta él (ruta directa
+  // o rodeo por el stack de "Más") lo decide `goToTab` con la barra que haya en
+  // ese momento, así el atajo no se rompe cuando cambia la composición de tabs.
   const quickItems = useMemo<QuickItem[]>(() => {
     const visible = new Set(resolved.homeButtons);
     const catalog: Record<string, QuickItem> = {
@@ -430,9 +444,7 @@ export default function Home() {
         icon: 'forum',
         iconBg: scheme === 'dark' ? '#3A2200' : '#FFF0E0',
         iconColor: '#E08A3C',
-        // Con Comunica como tab propia vamos directos a la tab; si el perfil no
-        // la tiene, se sigue abriendo la pantalla dentro del stack de "Más".
-        href: comunicaIsTab ? '/comunica' : '/mas',
+        tab: 'comunica',
       },
       cancionero: {
         key: 'cancionero',
@@ -440,7 +452,7 @@ export default function Home() {
         icon: 'music-note',
         iconBg: scheme === 'dark' ? '#1A1A3A' : '#E8E0FF',
         iconColor: '#6366F1',
-        href: '/cancionero',
+        tab: 'cancionero',
       },
       visitapapa: {
         key: 'visitapapa',
@@ -448,7 +460,7 @@ export default function Home() {
         icon: 'church',
         iconBg: scheme === 'dark' ? '#332B00' : '#FFF8D6',
         iconColor: '#C9A800',
-        href: '/visitapapa',
+        tab: 'visitapapa',
       },
       fotos: {
         key: 'fotos',
@@ -456,7 +468,7 @@ export default function Home() {
         icon: 'image',
         iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
         iconColor: '#34D399',
-        href: '/mas',
+        tab: 'fotos',
       },
       evangelio: {
         key: 'evangelio',
@@ -464,7 +476,8 @@ export default function Home() {
         icon: 'menu-book',
         iconBg: scheme === 'dark' ? '#3A2A1A' : '#FFF8E1',
         iconColor: '#F59E0B',
-        href: '/(tabs)/contigo/evangelio',
+        tab: 'contigo',
+        path: '/(tabs)/contigo/evangelio',
       },
       mas: {
         key: 'mas',
@@ -472,7 +485,7 @@ export default function Home() {
         icon: 'add',
         iconBg: 'transparent',
         iconColor: theme.icon,
-        href: '/mas',
+        tab: 'mas',
         dashed: true,
       },
     };
@@ -481,14 +494,7 @@ export default function Home() {
       .filter((id) => visible.has(id) && catalog[id])
       .filter((id) => !(eventArchived && id === activeTabId))
       .map((id) => catalog[id]);
-  }, [
-    resolved.homeButtons,
-    scheme,
-    theme.icon,
-    comunicaIsTab,
-    eventArchived,
-    activeTabId,
-  ]);
+  }, [resolved.homeButtons, scheme, theme.icon, eventArchived, activeTabId]);
 
   // Hide the tab navigator header — we render our own
   useLayoutEffect(() => {
@@ -503,60 +509,23 @@ export default function Home() {
     ? latestNotification.body
     : 'En esta sección te mostraremos las últimas notificaciones';
 
-  const normalizeRoute = (route: string): string => {
-    if (!route) return '';
-    let clean = route.trim();
-    if (clean.startsWith('http')) return clean;
+  // Aviso único para cuando un atajo no tiene forma de llegar a su destino
+  // (perfil sin ese tab y sin equivalente en "Más"): mejor decirlo que dejar
+  // el botón mudo.
+  const warnUnreachable = useCallback(() => {
+    toast.show({
+      variant: 'warning',
+      label: 'Esa sección no está disponible en tu perfil',
+      actionLabel: 'Cerrar',
+      onActionPress: ({ hide }) => hide(),
+    });
+  }, [toast]);
 
-    clean = clean.replace(/\/+/g, '/');
-
-    const hasSlash = clean.startsWith('/');
-    const naked = hasSlash ? clean.substring(1) : clean;
-
-    if (naked.startsWith('(tabs)/')) {
-      return '/' + naked;
-    }
-
-    const tabPaths = [
-      'cancionero',
-      'calendario',
-      'fotos',
-      'mas',
-      'index',
-      'contigo',
-    ];
-
-    const isTab = tabPaths.some(
-      (p) => naked === p || naked.startsWith(p + '/'),
-    );
-    if (isTab) {
-      return '/(tabs)/' + naked;
-    }
-
-    return '/' + naked;
-  };
-
-  // Mapeo de rutas internas a etiquetas + iconos (coherente con notifications.tsx)
-  const ROUTE_LABELS: Record<
-    string,
-    { label: string; icon: ComponentProps<typeof MaterialIcons>['name'] }
-  > = {
-    '/(tabs)/calendario': { label: 'Calendario', icon: 'calendar-today' },
-    '/(tabs)/fotos': { label: 'Fotos', icon: 'photo-library' },
-    '/(tabs)/cancionero': { label: 'Cantoral', icon: 'music-note' },
-    '/(tabs)/mas': { label: 'Más', icon: 'more-horiz' },
-    '/(tabs)/index': { label: 'Inicio', icon: 'home' },
-    '/wordle': { label: 'Wordle', icon: 'games' },
-    '/(tabs)/contigo': { label: 'Contigo', icon: 'favorite' },
-    '/(tabs)/contigo/evangelio': { label: 'Evangelio', icon: 'menu-book' },
-    '/(tabs)/contigo/oracion': { label: 'Oración', icon: 'brightness-3' },
-    '/(tabs)/contigo/revision': { label: 'Revisión', icon: 'rate-review' },
-    '/(tabs)/contigo/bookmarks': { label: 'Favoritos', icon: 'bookmark' },
-  };
+  // Etiqueta + icono del destino interno de la notificación. El mapeo y la
+  // normalización de rutas viven en `components/notifications` (una sola copia
+  // para la Home, el bottom sheet y la pantalla de notificaciones).
   const internalRouteInfo = latestNotification?.internalRoute
-    ? (ROUTE_LABELS[normalizeRoute(latestNotification.internalRoute)] ??
-      ROUTE_LABELS[latestNotification.internalRoute] ??
-      null)
+    ? getRouteLabel(latestNotification.internalRoute)
     : null;
   const internalRouteLabel = internalRouteInfo?.label ?? null;
 
@@ -564,26 +533,25 @@ export default function Home() {
     const btn = latestNotification?.actionButton;
     if (!btn) return;
     if (btn.isInternal) {
-      router.push(normalizeRoute(btn.url) as any);
+      // `goToRoute` resuelve el tab de la ruta con la barra actual: si ese tab
+      // no está en la barra, entra por su equivalente en "Más".
+      if (!goToRoute(normalizeRoute(btn.url))) warnUnreachable();
     } else {
       Linking.openURL(btn.url).catch((e) => logger.error(e));
     }
   };
 
   // Navega al calendario (opcionalmente saltando a una fecha concreta).
-  // En iOS `calendario` es un tab "overflow" SIN trigger nativo (solo caben 5
-  // en la barra), por lo que `router.push('/calendario')` no funciona: hay que
-  // alcanzarlo a través del stack de "Más" igual que hace el acceso de Fotos.
-  // En Android/Web `calendario` es un tab real, así que navegamos directo.
+  // `goToTab` elige la vía —tab de la barra o pantalla dentro de "Más"— según
+  // dónde esté el calendario ahora mismo. La fecha viaja por un store one-shot
+  // (`calendarNavigation`) porque es el único canal que funciona por las dos
+  // vías y en las tres plataformas.
   const navigateToCalendar = (date?: string) => {
     h.tap();
-    if (Platform.OS === 'ios') {
-      setPendingMasScreen('Calendario', date ? { date } : undefined);
-      router.push('/mas');
-    } else if (date) {
-      router.push({ pathname: '/calendario', params: { date } } as any);
-    } else {
-      router.push('/calendario');
+    if (date) setPendingCalendarDate(date);
+    if (!goToTab('calendario')) {
+      clearPendingCalendarDate();
+      warnUnreachable();
     }
   };
 
@@ -776,7 +744,9 @@ export default function Home() {
                 ]}
                 onPress={() => {
                   h.tap();
-                  router.push('/visitapapa');
+                  // El tab del evento puede no estar en la barra: `goToTab` cae
+                  // al hub del evento dentro del stack de "Más" si hace falta.
+                  if (!goToTab(activeTabId)) warnUnreachable();
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={activeEvent.title}
@@ -830,10 +800,11 @@ export default function Home() {
                 style={[styles.evalCta, { backgroundColor: colors.accent }]}
                 onPress={() => {
                   h.tap();
-                  setPendingEventScreen('Evaluacion', {
-                    eventId: activeEvent.id,
+                  const opened = goToTab(activeTabId, {
+                    stackScreen: 'Evaluacion',
+                    stackParams: { eventId: activeEvent.id },
                   });
-                  router.push(`/${activeTabId}` as any);
+                  if (!opened) warnUnreachable();
                 }}
                 activeOpacity={0.9}
                 accessibilityRole="button"
@@ -1077,12 +1048,9 @@ export default function Home() {
                     accessibilityRole="button"
                     onPress={() => {
                       h.tap();
-                      if (item.key === 'comunica' && !comunicaIsTab) {
-                        setPendingMasScreen('Comunica');
-                      } else if (item.key === 'fotos') {
-                        setPendingMasScreen('Fotos');
+                      if (!goToTab(item.tab, { path: item.path })) {
+                        warnUnreachable();
                       }
-                      if (item.href) router.push(item.href as any);
                     }}
                   >
                     <View

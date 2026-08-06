@@ -49,6 +49,7 @@ import { getEvent } from '@/constants/events';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import { useContextMenu } from '@/hooks/useContextMenu';
+import { useTabNavigator } from '@/hooks/useTabNavigator';
 import ContextMenuSheet, {
   ContextMenuAction,
 } from '@/components/ContextMenuSheet';
@@ -322,6 +323,7 @@ export default function NotificationsScreen() {
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
   const { firebaseNotifications, refreshCount } = useNotifications();
+  const { goToRoute } = useTabNavigator();
   // Deep-link: al tocar una notificación push (desde la bandeja del sistema) la
   // app abre esta pantalla con `openId` para mostrar esa notificación en grande.
   const { openId } = useLocalSearchParams<{ openId?: string }>();
@@ -447,23 +449,24 @@ export default function NotificationsScreen() {
     [],
   );
 
-  const safePushRoute = useCallback((route: string) => {
-    if (!route) return;
-    const clean = normalizeRoute(route);
-    try {
-      router.push(clean as any);
-    } catch (e) {
+  const safePushRoute = useCallback(
+    (route: string) => {
+      if (!route) return;
+      const clean = normalizeRoute(route);
+      // `goToRoute` resuelve el tab de la ruta con la barra actual (puede haber
+      // que entrar por "Más"); si aun así no hay vía, se prueba la ruta cruda.
+      if (goToRoute(clean)) return;
       logger.warn(
         'Navigation failed for ' + clean + ', trying direct route...',
-        e,
       );
       try {
         router.push(route as any);
       } catch (err) {
         logger.error('All navigation fallbacks failed:', err);
       }
-    }
-  }, []);
+    },
+    [goToRoute],
+  );
 
   const handleActionButtonPress = useCallback(
     (
@@ -684,6 +687,7 @@ function NotificationDetailModal({
   scheme: 'light' | 'dark';
 }) {
   const theme = Colors[scheme ?? 'light'];
+  const { goToRoute } = useTabNavigator();
   const date = notification
     ? new Date(
         'receivedAt' in notification
@@ -708,18 +712,14 @@ function NotificationDetailModal({
   const safePushRoute = (route: string) => {
     if (!route) return;
     const clean = normalizeRoute(route);
+    // `goToRoute` resuelve el tab de la ruta con la barra actual (puede haber
+    // que entrar por "Más"); si aun así no hay vía, se prueba la ruta cruda.
+    if (goToRoute(clean)) return;
+    logger.warn('Navigation failed for ' + clean + ', trying direct route...');
     try {
-      router.push(clean as any);
-    } catch (e) {
-      logger.warn(
-        'Navigation failed for ' + clean + ', trying direct route...',
-        e,
-      );
-      try {
-        router.push(route as any);
-      } catch (err) {
-        logger.error('All navigation fallbacks failed:', err);
-      }
+      router.push(route as any);
+    } catch (err) {
+      logger.error('All navigation fallbacks failed:', err);
     }
   };
 

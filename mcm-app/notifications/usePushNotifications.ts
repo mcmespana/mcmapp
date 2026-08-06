@@ -37,6 +37,8 @@ import { syncAndroidNotificationChannels } from '@/notifications/androidChannels
 import { trackEvent } from '@/utils/analytics';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useVisibleTabs } from '@/hooks/useVisibleTabs';
+import { navigateToInternalRoute } from '@/utils/tabNavigation';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useEventSubscriptions } from '@/contexts/EventSubscriptionsContext';
 import { router } from 'expo-router';
@@ -137,6 +139,15 @@ export default function usePushNotifications() {
   // más reciente sin recrearse (evita duplicar listeners y reescribir el token).
   const metadataRef = useRef(profileMetadata);
   const didRegisterRef = useRef(false);
+
+  // Igual que arriba: el listener de "notificación tocada" se registra una vez,
+  // pero necesita los tabs visibles ACTUALES para decidir cómo abrir la ruta.
+  const visibleTabs = useVisibleTabs();
+  const visibleTabsRef = useRef(visibleTabs);
+  useEffect(() => {
+    visibleTabsRef.current = visibleTabs;
+  }, [visibleTabs]);
+
   useEffect(() => {
     metadataRef.current = profileMetadata;
     // Espejo a nivel de módulo para `tryRegisterPushToken()`.
@@ -261,7 +272,9 @@ export default function usePushNotifications() {
               params: { openId: notificationId },
             } as any);
           } else {
-            router.navigate(normalized as any);
+            // Resiliente a la composición de la barra: si el tab de esa ruta
+            // no está en la barra, se entra por su equivalente en "Más".
+            navigateToInternalRoute(normalized, visibleTabsRef.current);
           }
         } catch {}
 

@@ -4,7 +4,6 @@ import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
-import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 
@@ -16,7 +15,14 @@ import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useVisibleTabs } from '@/hooks/useVisibleTabs';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
-import { takePendingMasScreen } from '@/utils/masNavigation';
+import {
+  subscribePendingMasScreen,
+  takePendingMasScreen,
+} from '@/utils/masNavigation';
+import { MAS_STACK_SCREENS } from '@/utils/tabNavigation';
+import { useTabNavigator } from '@/hooks/useTabNavigator';
+import { useToast } from '@/contexts/AppToastContext';
+import { logger } from '@/utils/logger';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -31,8 +37,8 @@ interface NavigationItem {
   subtitle: string;
   emoji: string;
   materialIcon: ComponentProps<typeof MaterialIcons>['name'];
-  /** Si está definido, navega a una ruta expo-router (overflow de tab). */
-  routePath?: string;
+  /** Si está definido, es un tab de overflow: la vía la resuelve `goToTab`. */
+  tabName?: string;
   /** Si está definido, navega a una pantalla dentro del stack de Mas. */
   target?: keyof MasStackParamList;
   tintColor: string;
@@ -108,6 +114,8 @@ export default function MasHomeScreen() {
   const useTwoColumns = layout.isWide;
   const resolved = useResolvedProfileConfig();
   const visibleTabs = useVisibleTabs();
+  const { goToTab } = useTabNavigator();
+  const { toast } = useToast();
   const { isAdmin } = useAdminStatus();
   const navigationItems = React.useMemo(() => {
     const items: NavigationItem[] = [];
@@ -118,27 +126,20 @@ export default function MasHomeScreen() {
     // todos, así que ahí no hay overflow que recoger.
     if (Platform.OS !== 'web') {
       const { overflowTabs } = splitTabsForBar(visibleTabs);
-      // Tabs cuyo screen está registrado en el stack de Más (no accesibles vía router.navigate en iOS)
-      const OVERFLOW_STACK_TARGETS: Partial<
-        Record<string, keyof MasStackParamList>
-      > = {
-        fotos: 'Fotos',
-        calendario: 'Calendario',
-      };
       for (const tab of overflowTabs) {
         // 'mas' nunca debería estar en overflow (splitTabsForBar lo garantiza),
         // pero filtramos defensivamente para no auto-referenciar esta pantalla.
         if (tab.name === 'mas') continue;
-        const stackTarget = OVERFLOW_STACK_TARGETS[tab.name];
         items.push({
           label: tab.label,
           subtitle: tab.subtitle,
           emoji: tab.emoji,
           materialIcon: tab.androidIcon,
           tintColor: tab.tintColor,
-          ...(stackTarget
-            ? { target: stackTarget }
-            : { routePath: `/${tab.name}` }),
+          // Sin ruta cableada: `goToTab` decide si el tab se abre directo o por
+          // su gemelo dentro de este mismo stack (Fotos, Calendario, Comunica,
+          // hub de evento…). Ver `utils/tabNavigation.ts`.
+          tabName: tab.name,
         });
       }
     }
@@ -155,15 +156,29 @@ export default function MasHomeScreen() {
     return items;
   }, [resolved.masItems, visibleTabs, isAdmin]);
 
-  // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
+  // Deep-link desde fuera (Home, tarjetas de overflow…): si hay una pantalla
+  // pendiente, navegar a ella. Se consume al recibir el foco Y mientras se
+  // tiene: si esta pantalla ya estaba enfocada (p.ej. el destino se guarda
+  // desde una de sus propias tarjetas), `useFocusEffect` no volvería a
+  // dispararse y el destino se quedaría colgado.
   useFocusEffect(
     useCallback(() => {
-      const pending = takePendingMasScreen();
-      if (pending) {
+      const consume = () => {
+        const pending = takePendingMasScreen();
+        if (!pending) return;
+        if (!MAS_STACK_SCREENS.has(pending.screen)) {
+          logger.warn(
+            `[MasHome] Destino pendiente desconocido: ${pending.screen}`,
+          );
+          return;
+        }
         // navigate() overloads no aceptan tipos unión ni un screen con params
         // `undefined` + params — usamos `as any` como escape hatch idiomático.
         (navigation.navigate as any)(pending.screen, pending.params);
-      }
+      };
+
+      consume();
+      return subscribePendingMasScreen(consume);
     }, [navigation]),
   );
 
@@ -220,10 +235,18 @@ export default function MasHomeScreen() {
                       },
                 ]}
                 onPress={() => {
-                  if (item.routePath) {
-                    // Overflow de tab: salta al tab sibling vía expo-router.
-                    // La ruta sigue existiendo aunque no tenga NativeTabs.Trigger.
-                    router.navigate(item.routePath as any);
+                  if (item.tabName) {
+                    // Overflow de tab: `goToTab` salta al tab sibling si la
+                    // plataforma lo tiene registrado, o abre su gemelo dentro
+                    // de este stack (que es donde acabamos ya estando).
+                    if (!goToTab(item.tabName)) {
+                      toast.show({
+                        variant: 'warning',
+                        label: 'Esa sección no está disponible ahora mismo',
+                        actionLabel: 'Cerrar',
+                        onActionPress: ({ hide }) => hide(),
+                      });
+                    }
                     return;
                   }
                   if (item.target) {

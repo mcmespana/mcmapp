@@ -31,7 +31,12 @@ import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useLocalSearchParams } from 'expo-router';
-import { useRoute, useNavigation } from 'expo-router/react-navigation';
+import {
+  useRoute,
+  useNavigation,
+  useFocusEffect,
+  useHeaderHeight,
+} from 'expo-router/react-navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -40,6 +45,10 @@ import { localISO } from '@/utils/localDate';
 import CalendarSubscribeBottomSheet from '@/components/CalendarSubscribeBottomSheet';
 import EventDetailsBottomSheet from '@/components/EventDetailsBottomSheet';
 import EmptyState from '@/components/ui/EmptyState';
+import {
+  subscribePendingCalendarDate,
+  takePendingCalendarDate,
+} from '@/utils/calendarNavigation';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -119,11 +128,13 @@ export function CalendarScreen() {
         alignSelf: 'center' as const,
       }
     : null;
+  // Deep-link con fecha. Hay tres canales posibles y ninguno cubre todos los
+  // caminos por los que se llega aquí, así que se leen los tres:
+  //   · `useLocalSearchParams` → URL de expo-router (`/calendario?date=…`).
+  //   · `useRoute().params`    → params de React Navigation (stack de "Más").
+  //   · store one-shot         → el que usa la Home (`calendarNavigation`), el
+  //     único que funciona igual por las dos vías y en las tres plataformas.
   const params = useLocalSearchParams<{ date?: string }>();
-  // En iOS, `calendario` es un tab "overflow" sin trigger nativo: se navega
-  // desde el stack de Más (React Navigation), cuyos params NO llegan a
-  // `useLocalSearchParams` (que sólo lee la URL de expo-router). Leemos también
-  // los params de React Navigation para soportar el salto a fecha desde Home.
   const navRoute = useRoute();
   const navParamDate = (navRoute.params as { date?: string } | undefined)?.date;
   const dateParam = params.date ?? navParamDate;
@@ -149,6 +160,15 @@ export function CalendarScreen() {
   // bar item. Antes el botón vivía en el cuerpo, junto al switcher Mes/Agenda.
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  // Hueco superior del contenido. El header del stack (tanto el propio del tab
+  // como el de "Más") es TRANSPARENTE en iOS: el contenido se pinta DEBAJO, así
+  // que hay que reservar su altura entera —que ya incluye la safe area— o el
+  // conmutador Mes/Agenda acaba solapado con el título y el botón de
+  // calendarios. En Android/web el header es opaco y el navegador ya deja el
+  // hueco. Sin header (headerHeight 0) basta con la safe area.
+  const headerHeight = useHeaderHeight();
+  const contentPaddingTop =
+    headerHeight > 0 ? (Platform.OS === 'ios' ? headerHeight : 0) : insets.top;
   const showSubscribe = !configsLoading && calendarConfigs.length > 0;
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -174,17 +194,6 @@ export function CalendarScreen() {
         : undefined,
     });
   }, [navigation, showSubscribe, isDark]);
-
-  // Un deep-link con `?date=` salta a ese día. Se ajusta DURANTE el render (el
-  // patrón que documenta React para "cambiar estado cuando cambia una prop"),
-  // no en un efecto: así no hay un render intermedio pintando el día anterior.
-  const [lastDateParam, setLastDateParam] = useState(dateParam);
-  if (dateParam !== lastDateParam) {
-    setLastDateParam(dateParam);
-    if (dateParam && typeof dateParam === 'string') {
-      setSelectedDate(dateParam);
-    }
-  }
 
   const { eventsByDate, loading: eventsLoading } =
     useCalendarEvents(calendarConfigs);
@@ -222,6 +231,20 @@ export function CalendarScreen() {
   // (react-native-calendars trata `current` como valor inicial, no reactivo)
   const [calendarKey, setCalendarKey] = useState(0);
 
+  // Un deep-link con `?date=` salta a ese día. Se ajusta DURANTE el render (el
+  // patrón que documenta React para "cambiar estado cuando cambia una prop"),
+  // no en un efecto: así no hay un render intermedio pintando el día anterior.
+  // La `calendarKey` sube con él: sin eso el día quedaba seleccionado pero el
+  // calendario seguía pintando el mes anterior.
+  const [lastDateParam, setLastDateParam] = useState(dateParam);
+  if (dateParam !== lastDateParam) {
+    setLastDateParam(dateParam);
+    if (dateParam && typeof dateParam === 'string') {
+      setSelectedDate(dateParam);
+      setCalendarKey((k) => k + 1);
+    }
+  }
+
   // 'T12:00:00' evita que el offset UTC+2 (España) desplace el día 1
   // al último día del mes anterior cuando hacemos new Date(...).toISOString()
   const dateToStr = (d: Date): string => {
@@ -246,6 +269,23 @@ export function CalendarScreen() {
     // posicionarse en el mes de hoy aunque el usuario estuviera en otro mes
     setCalendarKey((k) => k + 1);
   }, [todayStr]);
+
+  // Fecha pendiente guardada por quien nos abrió (tarjetas de "Próximos
+  // eventos" de la Home). Se consume al recibir el foco Y mientras se tiene:
+  // si la pantalla ya estaba montada y enfocada, `useFocusEffect` no volvería
+  // a dispararse y el salto se perdería.
+  useFocusEffect(
+    useCallback(() => {
+      const consume = () => {
+        const pendingDate = takePendingCalendarDate();
+        if (!pendingDate) return;
+        setSelectedDate(pendingDate);
+        setCalendarKey((k) => k + 1);
+      };
+      consume();
+      return subscribePendingCalendarDate(consume);
+    }, []),
+  );
 
   // Ref del X inicial para detectar swipes cross-platform (funciona en web y nativo)
   const swipeTouchX = useRef(0);
@@ -472,15 +512,7 @@ export function CalendarScreen() {
 
   return (
     <View
-      style={[
-        styles.container,
-        { flex: 1 },
-        // Ya no hay header de navegación (`headerShown: false` en
-        // TABS_CONFIG): solo hace falta el hueco de la barra de estado, igual
-        // en las dos plataformas. Antes se reservaban 44pt extra para un
-        // header que en Android además era una barra opaca fija.
-        { paddingTop: insets.top },
-      ]}
+      style={[styles.container, { flex: 1 }, { paddingTop: contentPaddingTop }]}
     >
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
 

@@ -311,6 +311,17 @@ export function getEvent(id?: string | null): EventConfig {
   return EVENTS[id] ?? EVENTS[DEFAULT_EVENT_ID];
 }
 
+/**
+ * Evento cuyo `tabId` coincide con el nombre de tab dado (ej. `'visitapapa'`).
+ * Null si ese tab no es de evento. Lo usa la navegación resiliente
+ * (`utils/tabNavigation.ts`) para saber que un tab de evento se puede abrir
+ * también desde el stack de "Más" (que registra las mismas sub-pantallas).
+ */
+export function getEventByTabId(tabId?: string | null): EventConfig | null {
+  if (!tabId) return null;
+  return Object.values(EVENTS).find((event) => event.tabId === tabId) ?? null;
+}
+
 /** True si el evento es pasado: no se destaca en la app (tab/botón/banner). */
 export function isEventArchived(event: EventConfig): boolean {
   return event.status === 'archived';

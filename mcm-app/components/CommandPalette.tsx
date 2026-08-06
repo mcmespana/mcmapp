@@ -9,10 +9,10 @@ import {
 } from 'react-native';
 import { Dialog, SearchField } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { router } from 'expo-router';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useTabNavigator } from '@/hooks/useTabNavigator';
 import { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 
@@ -23,8 +23,8 @@ interface Command {
   title: string;
   subtitle?: string;
   icon: MaterialIconName;
-  /** Path passed to `router.push`. Top-level routes only — sub-screens of
-   *  nested non-router stacks (cancionero / mas) aren't reachable directly. */
+  /** Ruta del comando. Solo rutas de primer nivel — las sub-pantallas de
+   *  los stacks propios (cancionero / mas) no se alcanzan directamente. */
   path: string;
   /** Extra search terms (synonyms, abbreviations, related concepts). */
   keywords?: string[];
@@ -111,6 +111,7 @@ export default function CommandPalette() {
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const { goToRoute } = useTabNavigator();
 
   const handleOpen = useCallback(() => {
     setQuery('');
@@ -127,13 +128,16 @@ export default function CommandPalette() {
     [query],
   );
 
-  const handleSelect = useCallback((path: string) => {
-    setOpen(false);
-    setQuery('');
-    // expo-router accepts string paths; cast required because the typed
-    // Href union doesn't include arbitrary tab-internal routes.
-    router.push(path as never);
-  }, []);
+  const handleSelect = useCallback(
+    (path: string) => {
+      setOpen(false);
+      setQuery('');
+      // `goToRoute` resuelve el tab de la ruta con la barra actual: si el
+      // perfil no tiene ese tab, entra por su equivalente en "Más".
+      goToRoute(path);
+    },
+    [goToRoute],
+  );
 
   if (Platform.OS !== 'web') return null;
 
