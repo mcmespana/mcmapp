@@ -18,6 +18,24 @@
 
 ---
 
+## 2026-08-06 17:50 — Tests de `cloudPlaylistService` + movimiento de playlist atómico (Plan 005)
+
+`cloudPlaylistService` es el único sitio de la app donde se borran datos de
+usuario en la nube (playlists compartidas por código de 4 dígitos) y no
+tenía ningún test, a diferencia de su gemelo `choirSessionService`. Además
+`changeCloudPlaylistCode` movía la playlist en dos pasos no atómicos
+(subir al nuevo código, luego borrar el viejo): si el borrado fallaba
+quedaban dos copias vivas.
+
+- 13 tests nuevos (`__tests__/cloudPlaylistService.test.ts`): validación de
+  código, borrado perezoso de caducadas (incluido el caso "vigente → NO se
+  borra", centinela de la regresión destructiva), limpieza de `undefined` y
+  el cambio de código con sus errores.
+- `changeCloudPlaylistCode` ahora mueve con un solo `update()` multi-path
+  (destino=payload, origen=`null`) en vez de `set` + `remove` separados —
+  un fallo a medias ya no puede dejar dos copias vivas.
+- Archivos: `services/cloudPlaylistService.ts`.
+
 ## 2026-08-06 17:30 — Fix: un solo dueño del mapa de hábitos de Contigo (Plan 004)
 
 `useContigoHabits` guardaba TODO el mapa de hábitos desde el estado propio
