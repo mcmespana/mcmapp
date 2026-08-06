@@ -12,10 +12,11 @@ conditions, and update your row when done.
 > la categoría de seguridad. Estos planes son candidatos a la "bolsa
 > oportunista" del backlog.
 
-> **Selección por defecto**: el operador pidió ejecutar la skill sin elegir
-> hallazgos, así que se planificaron los 5-6 de mayor palanca (impacto ÷
-> esfuerzo). El resto de hallazgos confirmados queda listado abajo sin plan;
-> pedir `improve plan <hallazgo>` para convertir cualquiera en plan.
+> **Selección**: primera tanda (001-005) = los 6 hallazgos de mayor palanca.
+> Segunda tanda (006-015) a petición del operador: todos los hallazgos de
+> bugs, rendimiento y deuda restantes. Quedan sin plan, a propósito, los de
+> tests-solo y documentación (lista al final) — el operador los considera
+> ejecutables por cualquier agente sin plan.
 
 ## Execution order & status
 
@@ -26,33 +27,38 @@ conditions, and update your row when done.
 | 003 | Corregir la expansión de eventos multi-día del calendario (DST) e investigar la zona horaria del ICS | P1 | S-M | — | TODO |
 | 004 | Un solo dueño para los hábitos de Contigo (provider) — las 4 pantallas dejan de pisarse | P2 | M | — | TODO |
 | 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | TODO |
+| 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | TODO |
+| 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | TODO |
+| 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | TODO |
+| 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | TODO |
+| 010 | Virtualizar el muro de "Compartiendo" con `FlatList` | P3 | S | — | TODO |
+| 011 | Calendario litúrgico: ventana rodante (−280 KB de bundle) + generador con test de vigencia | P3 | S | — | TODO |
+| 012 | Podar la caché de lecturas diarias (crecía sin tope) | P3 | S | — | TODO |
+| 013 | Scraper: el exit code distingue fuente caída de fechas sueltas fallidas | P3 | S | — | TODO |
+| 014 | Costura `services/firebaseWrites.ts`: las escrituras de UI ganan retry y una sola forma | P3 | M | — | TODO |
+| 015 | Limpieza de módulos muertos y dependencias sin uso | P3 | S | — | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
 ## Dependency notes
 
-- Ninguna dependencia dura entre los cinco. 001 y 005 tocan `services/` pero
-  archivos distintos. Si se ejecutan en paralelo, no combinar 003 y 004 en la
-  misma rama (ambos tocan pantallas de Contigo/Home indirectamente).
+- **008 requiere 003** (mismo archivo, `useCalendarEvents.ts`): ejecutar 003
+  primero; 008 incluye instrucciones de drift para el caso.
+- 004 y 006 son independientes pero vecinos (Contigo): 006 excluye a
+  propósito `@contigo_habits`, que es dominio de 004.
+- 001, 005 y 014 tocan `services/` en archivos distintos; 014 anota el roce
+  trivial de imports con 001 si se cruzan.
+- 009, 010, 011, 012, 013, 015 no dependen de nada.
+- Paralelizables sin riesgo: {001, 002, 013}, {005, 007}, {009, 010, 011, 012}.
 
-## Hallazgos confirmados SIN plan (candidatos a una segunda tanda)
+## Hallazgos confirmados SIN plan (a propósito — tests/docs, ejecutables sin plan)
 
-- **[BUG-02]** Lecturas-modificaciones-escrituras concurrentes de AsyncStorage sin serializar (`pushNotificationService.ts:319-357,394-425`, `utils/contigoBookmarks.ts:83-130`) — notificaciones o subrayados perdidos en silencio si dos escritores se cruzan. Esfuerzo M (mutex por clave detrás de los helpers).
-- **[BUG-06]** El scraper confunde errores-por-fecha con scrapers caídos: `scraper-lecturas/main.py:127` suma fallos por fecha y `_exit_code` (`:249-257`) lo compara con el nº de scrapers → 3 fechas malas de una sola fuente reportan "TODAS las fuentes fallaron". Esfuerzo S.
-- **[BUG-07]** La caché de lecturas diarias crece una clave AsyncStorage por día para siempre (`hooks/useDailyReadings.ts:33,51,155`, nada la poda). Esfuerzo S.
 - **[TEST-02]** `__tests__/firebaseRetry.test.ts` no comprueba las esperas que su comentario dice comprobar (quitar el `setTimeout` de `withRetry` y los 4 tests siguen pasando). Esfuerzo S.
-- **[PERF-01]** Los ICS se descargan en serie y se re-descargan en cada montaje (`hooks/useCalendarEvents.ts:175-227`, sin TTL). Esfuerzo S. *(Si se hace, hacerlo DESPUÉS del plan 003 — mismo archivo.)*
-- **[PERF-02]** `useFirebaseData` re-ejecuta el `transform` y estrena identidad de objeto tras cada refresh aunque no cambiara nada (`hooks/useFirebaseData.ts:190-197,256-257`) → re-renders del cantoral entero. Esfuerzo S.
-- **[PERF-03]** `assets/calendario-liturgico.json` (318 KB, años 2025-2100) importado estático en `components/contigo/LiturgicalBadge.tsx:3`; >95% es peso muerto del bundle. Esfuerzo S.
-- **[PERF-04]** `IntroPageItem`/`ContentPageItem` definidos DENTRO del render de `app/screens/MaterialPagesScreen.tsx:70,114` → remontaje de cada página en cada render (la misma clase de bug que el `ActionButton` que ya se coló una vez). Esfuerzo S.
-- **[PERF-05]** El muro de Reflexiones monta todas las reflexiones a la vez (`app/screens/ReflexionesScreen.tsx:328-421`, `ScrollView` + `.map`); pasar a `FlatList`. Esfuerzo S.
-- **[DEBT-01]** Escrituras de Firebase repartidas por ~11 archivos de UI mientras `mcm-app/CLAUDE.md` afirma "Único punto de escritura: ReflexionesScreen". Ninguna escritura se beneficia del `withRetry` que ya existe. Esfuerzo M (el arreglo del doc es gratis y va incluido en la nota de mantenimiento del plan 002).
-- **[DEBT-02]** Seis módulos muertos sin ningún importador: `components/SongSearch.tsx`, `components/ExternalLink.tsx`, `components/ui/AppIconButton.tsx`, `components/ui/CloseIconButton.tsx`, `components/ui/GlassCard.tsx`, `hooks/useUnreadNotificationsCount.ts` — y TODO.md asigna trabajo pendiente a uno de ellos. Decisión de mantenedor: borrar o adoptar.
-- **[DEPS-01]** Dependencias sin uso real: `ts-jest`, `copy-webpack-plugin`, `tailwind-merge`, `tailwind-variants` (transitivas de heroui), y `@expo/config` en `dependencies` siendo build-time. `expo-insights`/`expo-system-ui` requieren `npx expo-doctor` antes de tocar. Esfuerzo S.
-- **[DOCS-01]** `mcm-app/CLAUDE.md` desfasado 2-3× en TODOS los directorios (131 componentes reales vs "~40", 16 contexts vs 5, 44 hooks vs 15, 45 utils vs 7, 28 pantallas vs 20, 3 services vs 1). Es el mapa que usan los agentes: enseña que `AuthContext` o `cloudPlaylistService` no existen.
-- **[DOCS-02]** `docs/planes/BACKLOG.md` y `BUILD_AGOSTO_2026.md` siguen describiendo la rama `claude/compact-tabs-bar-uxxaoz` como viva; se mergeó a `main` en la PR #313 (2026-08-04) y ya no existe.
+- **[DOCS-01]** `mcm-app/CLAUDE.md` desfasado 2-3× en TODOS los directorios (131 componentes reales vs "~40", 16 contexts vs 5, 44 hooks vs 15, 45 utils vs 7, 28 pantallas vs 20, 3 services vs 1). Es el mapa que usan los agentes.
+- **[DOCS-02]** `docs/planes/BACKLOG.md` y `BUILD_AGOSTO_2026.md` siguen describiendo la rama `claude/compact-tabs-bar-uxxaoz` como viva; se mergeó a `main` en la PR #313 (2026-08-04).
 - **[DOCS-03]** El README no menciona `npm test` ni `npm run typecheck`, que son justo lo que bloquea los PRs en CI.
 - **[DX-03]** No hay medición de cobertura (`jest.config.js` sin `collectCoverageFrom`, sin script `test:coverage`) — la priorización de tests se hace a ciegas.
+- Nota: la corrección puntual de la frase falsa "Único punto de escritura" de CLAUDE.md SÍ está dentro del plan 014 (Step 4), porque es inseparable de esa migración.
 
 ## Findings considered and rejected
 
