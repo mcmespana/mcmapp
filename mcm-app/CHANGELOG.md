@@ -18,6 +18,61 @@
 
 ---
 
+## 2026-08-06 12:30 — El modo tester (Laboratorio Alpha) por fin recibe OTAs de `preview`
+
+El modo alpha nunca llegó a funcionar. El intento anterior (2026-07-22) lo dejó
+dependiendo de una build de tienda que no salió, y aun con ella habría seguido
+sin funcionar bien. **Esta vez el arreglo va entero por OTA**: no hace falta
+build nativa.
+
+- **Causa raíz — API equivocada.** Se usaba
+  `Updates.setUpdateURLAndRequestHeadersOverride()`, que (1) exige
+  `updates.disableAntiBrickingMeasures: true` **en el binario** —config nativa,
+  imposible de activar por OTA— y (2) aun con el flag, el override no surte
+  efecto hasta cerrar y reabrir la app del todo, así que el
+  `checkForUpdateAsync()` de esa sesión seguía yendo a `production`.
+- **Fix — `Updates.setUpdateRequestHeadersOverride()`** (expo-updates ≥ 29;
+  aquí 57.x). Sobreescribe solo la cabecera `expo-channel-name`, que es todo lo
+  que hace falta. No necesita `disableAntiBrickingMeasures`, **muta la
+  configuración viva** (el check inmediato ya va al canal nuevo) y se persiste
+  en nativo, así que el chequeo del arranque también sale por `preview`.
+  Funciona en cualquier build de EAS, incluida la que ya está en las tiendas.
+- **`updates.disableAntiBrickingMeasures` eliminado de `app.json`.** Ya no hace
+  falta y era un riesgo real: quita la protección que garantiza poder publicar
+  un update que arregle un update roto. Expo desaconseja activarlo en tienda.
+  (Cambio de config nativa: aplica en la próxima build, sin prisa.)
+- **Se acabó el fallo silencioso.** Antes todos los errores morían en un
+  `logger.warn`: la palanca se movía, el pie ponía "· alpha" y el dispositivo
+  seguía en `production`, sin ninguna señal. Ahora el modal cuenta qué ha pasado
+  (cambiando / descargado / sin conexión / no soportado y por qué) y enseña un
+  bloque de diagnóstico con el **canal realmente en uso** (`Updates.channel`),
+  el canal tras reiniciar, la runtime version y el bundle. Si no se puede
+  aplicar el canal, el flag **se revierte** en vez de mentir.
+- **Se busca y descarga el update al momento**, con botón de "reiniciar y
+  estrenarlo" en el propio modal, en vez de esperar al siguiente arranque.
+- **Reconciliación en cada arranque, en las dos direcciones**: con el flag
+  apagado se limpia el override explícitamente, para que nadie se quede
+  atrapado en `preview` por un override heredado. También se limpia, si el
+  binario lo permite, el override de URL que dejaba la versión antigua.
+- **`OTAProvider` espera a que el canal esté reconciliado** antes de su primera
+  comprobación (`useOTAUpdate({ ready })`): si no, la búsqueda de updates podía
+  ganarle la carrera al override y pedirle el bundle a `production`.
+- **La palanca ahora se mueve de verdad.** Era un shared value mutado desde un
+  `useEffect`, justo el patrón que el linter del React Compiler
+  (`react-hooks/immutability`, y el proyecto tiene `experiments.reactCompiler`)
+  marca como no fiable. Pasa a ser un `useDerivedValue` declarativo de la prop
+  `active`, con el estado cambiando de forma optimista antes de tocar la red, y
+  respuesta táctil al pulsar. Si el cambio se revierte, la palanca vuelve sola —
+  esa vuelta ES la señal de que no ha cuajado.
+- **Nuevos**: `services/previewChannel.ts` (mecánica aislada y testeable),
+  `components/preview-channel/LabStatusPanel.tsx`,
+  `__tests__/previewChannel.test.ts` (15 tests), y
+  `docs/funcionalidades/CANAL_PREVIEW.md` con la prueba de humo y el porqué del
+  fallo anterior. Suite completa: 42 ficheros, 405 tests verdes.
+- **Modificados**: `contexts/PreviewChannelContext.tsx`, `contexts/OTAContext.tsx`,
+  `hooks/useOTAUpdate.ts`, `components/PreviewChannelModal.tsx`,
+  `components/preview-channel/GiantLever.tsx`, `app.json`, `docs/README.md`.
+
 ## 2026-08-04 03:00 — Red: reintentos y resincronización al volver online
 
 `useFirebaseData` se tragaba los fallos de red con un `logger.error` y ya: sin
@@ -1588,7 +1643,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

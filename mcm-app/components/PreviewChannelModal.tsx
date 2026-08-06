@@ -28,6 +28,7 @@ import {
   Sparkles,
   WobblingTitle,
 } from '@/components/preview-channel/LabDecorations';
+import { LabStatusPanel } from '@/components/preview-channel/LabStatusPanel';
 
 /**
  * Modal "Laboratorio Alpha" — UI deliberadamente exagerada, festiva y opuesta
@@ -39,8 +40,16 @@ import {
  * adornos de texto) viven en `components/preview-channel/`.
  */
 export function PreviewChannelModal() {
-  const { isSecretMenuOpen, closeSecretMenu, enabled, setEnabled } =
-    usePreviewChannel();
+  const {
+    isSecretMenuOpen,
+    closeSecretMenu,
+    enabled,
+    setEnabled,
+    status,
+    diagnostics,
+    restart,
+  } = usePreviewChannel();
+  const busy = status.kind === 'switching';
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const phase = useSharedValue(0);
@@ -64,6 +73,7 @@ export function PreviewChannelModal() {
   }, [isSecretMenuOpen, phase]);
 
   const handleToggle = useCallback(async () => {
+    if (busy) return;
     const next = !enabled;
     if (Platform.OS !== 'web') {
       Haptics.notificationAsync(
@@ -75,7 +85,7 @@ export function PreviewChannelModal() {
     setBurstVariant(next ? 'explode' : 'puff');
     setBurstKey(Date.now());
     await setEnabled(next);
-  }, [enabled, setEnabled]);
+  }, [busy, enabled, setEnabled]);
 
   const handleClose = useCallback(() => {
     if (Platform.OS !== 'web') {
@@ -140,9 +150,17 @@ export function PreviewChannelModal() {
             <Text style={styles.statusValue} allowFontScaling={false}>
               {enabled ? '⚡  ZONA ALPHA  ⚡' : '☁️  Mundano  ☁️'}
             </Text>
-            <GiantLever active={enabled} onToggle={handleToggle} />
+            <GiantLever active={enabled} busy={busy} onToggle={handleToggle} />
             <RotatingPhrases />
           </View>
+
+          {/* Qué ha pasado de verdad al mover la palanca */}
+          <LabStatusPanel
+            status={status}
+            enabled={enabled}
+            diagnostics={diagnostics}
+            onRestart={restart}
+          />
 
           {/* Pergamino: el pacto */}
           <View style={styles.scrollCard}>
@@ -158,13 +176,15 @@ export function PreviewChannelModal() {
               Cosas que pueden fallar. Cosas brillantes y nuevas.
             </Text>
             <Text style={styles.scrollBody}>
-              Cuando lo desactives, en el próximo arranque volverás al canal{' '}
+              Cuando lo desactives volverás al canal{' '}
               <Text style={styles.scrollMono}>production</Text>, como el resto
-              del mundo.
+              del mundo, y la app se descargará de vuelta la versión estable.
             </Text>
             <Text style={styles.scrollFootnote}>
-              Funciona en versiones instaladas desde la store. Si algo se rompe,
-              cierra y vuelve a abrir la app, o desactiva este modo.
+              Funciona en la app instalada desde la tienda. El cambio es
+              inmediato: se aplica a la siguiente búsqueda de novedades, sin
+              esperar a reinstalar nada. Si algo se rompe, desactiva este modo y
+              reinicia.
             </Text>
           </View>
 
