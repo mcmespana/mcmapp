@@ -18,6 +18,24 @@
 
 ---
 
+## 2026-08-06 18:25 — Perf: `useFirebaseData` deja de re-transformar y re-renderizar sin cambios (Plan 007)
+
+Tras la fase remota, el hook releía la caché y aplicaba `transform`
+incondicionalmente, aunque el refresh hubiera salido por la vía rápida (el
+`updatedAt` remoto coincide con el local, `parsed` es el MISMO objeto). Como
+el transform crea un objeto nuevo, cada ciclo de navegación disparaba un
+re-render y recomputaba todo `useMemo` aguas abajo para cero cambio visible
+— en el cantoral, con 3 consumidores vivos del nodo `songs` y dos pasando
+`filterSongsData` (copia + filtra el corpus entero), el coste es real.
+
+- Memo por instancia (`useRef`, no en la caché de módulo compartida): si el
+  `parsed` crudo no cambió de identidad entre la fase caché y la
+  post-refresh, se reutiliza el resultado del transform en vez de
+  re-ejecutarlo.
+- Test de regresión: `__tests__/useFirebaseData.test.ts` (verificado que
+  falla contra el código anterior).
+- Archivo: `hooks/useFirebaseData.ts`.
+
 ## 2026-08-06 18:10 — Fix: serializa las escrituras concurrentes de historial de notificaciones y subrayados (Plan 006)
 
 Varios módulos hacían el ciclo `getItem → mutar → setItem` sobre la misma
