@@ -18,6 +18,24 @@
 
 ---
 
+## 2026-08-06 18:45 — Perf: ICS del calendario en paralelo + ventana de frescura de 5 min (Plan 008)
+
+Los calendarios ICS se descargaban en SERIE (`await fetch` dentro de un
+`for`), así que el tiempo hasta calendario fresco era la suma de los
+round-trips en vez del máximo — con el proxy caído, el doble. Además el
+hook revalidaba TODO en cada montaje sin ninguna ventana de frescura: un
+paseo Home→Calendario→Home re-descargaba y re-parseaba todos los ICS.
+
+- Descarga con `Promise.allSettled` en paralelo, preservando el índice
+  posicional de `calendarIndex` (el merge recorre `results` en orden).
+- Ventana de frescura de 5 min por lista de URLs: un resultado completo
+  reciente evita relanzar la descarga; un resultado parcial NO cuenta como
+  fresco (el siguiente montaje sí revalida).
+- La semántica de persistencia (completo→disco, parcial→según caché) no
+  cambia.
+- Tests nuevos en `__tests__/useCalendarEvents.test.ts`.
+- Archivo: `hooks/useCalendarEvents.ts`.
+
 ## 2026-08-06 18:25 — Perf: `useFirebaseData` deja de re-transformar y re-renderizar sin cambios (Plan 007)
 
 Tras la fase remota, el hook releía la caché y aplicaba `transform`

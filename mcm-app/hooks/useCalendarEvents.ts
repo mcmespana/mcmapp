@@ -203,9 +203,40 @@ type CalendarFetchResult = {
 // concurrentes con la misma lista comparten un único ciclo fetch+parse.
 const calendarInflight = new Map<string, Promise<CalendarFetchResult>>();
 
-/** Solo para tests: vacía el coalescer de calendarios. */
+/** Solo para tests: vacía el coalescer de calendarios y la ventana de frescura. */
 export function __resetCalendarCacheForTests() {
   calendarInflight.clear();
+  lastFullFetch.clear();
+}
+
+// Última descarga COMPLETA por lista de URLs. Dentro de la ventana, los
+// montajes nuevos sirven caché sin relanzar la descarga (Home→Calendario→
+// Home re-descargaba y re-parseaba todos los ICS). 5 min: los calendarios
+// cambian a ritmo humano. Solo se registra cuando el fetch fue completo
+// (`!anyFailed`) — un resultado parcial no cuenta como fresco.
+const FRESH_WINDOW_MS = 5 * 60 * 1000;
+const lastFullFetch = new Map<string, number>();
+
+/** Descarga (con proxy + fallback directo) y parsea UN calendario. */
+async function fetchOneCalendar(
+  cfg: CalendarConfig,
+): Promise<Omit<CalendarEvent, 'calendarIndex'>[]> {
+  const proxyBase = process.env.EXPO_PUBLIC_CORS_PROXY_URL;
+  const proxyUrl = proxyBase ? proxyBase + encodeURIComponent(cfg.url) : null;
+  let res: Response | null = null;
+  if (proxyUrl) {
+    try {
+      res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error('Proxy request failed');
+    } catch {
+      // Fallback to direct fetch if proxy fails
+      res = await fetch(cfg.url);
+    }
+  } else {
+    res = await fetch(cfg.url);
+  }
+  const text = await res.text();
+  return parseICS(text);
 }
 
 function fetchAndParseCalendars(
@@ -218,29 +249,19 @@ function fetchAndParseCalendars(
   const run = async (): Promise<CalendarFetchResult> => {
     const map: Record<string, CalendarEvent[]> = {};
     let anyFailed = false;
-    for (let i = 0; i < calendars.length; i++) {
-      const cfg = calendars[i];
-      try {
-        const proxyBase = process.env.EXPO_PUBLIC_CORS_PROXY_URL;
-        const proxyUrl = proxyBase
-          ? proxyBase + encodeURIComponent(cfg.url)
-          : null;
-        let res: Response | null = null;
-        if (proxyUrl) {
-          try {
-            res = await fetch(proxyUrl);
-            if (!res.ok) throw new Error('Proxy request failed');
-          } catch {
-            // Fallback to direct fetch if proxy fails
-            res = await fetch(cfg.url);
-          }
-        } else {
-          res = await fetch(cfg.url);
-        }
-        const text = await res.text();
-        const events = parseICS(text);
 
-        events.forEach((ev) => {
+    // Descarga en PARALELO (antes en serie: el tiempo total era la suma de
+    // los round-trips en vez del máximo). `Promise.allSettled` preserva el
+    // índice posicional de cada calendario en `results[i]`, imprescindible
+    // para `calendarIndex` — el merge recorre `results` en orden, así que
+    // el orden de eventos por calendario dentro de cada fecha no cambia.
+    const results = await Promise.allSettled(
+      calendars.map((cfg) => fetchOneCalendar(cfg)),
+    );
+
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') {
+        r.value.forEach((ev) => {
           const withCal: CalendarEvent = { ...ev, calendarIndex: i };
 
           // If no endDate or it's a single-day event, only add to the start date
@@ -262,14 +283,21 @@ function fetchAndParseCalendars(
             }
           }
         });
-      } catch (e) {
+      } else {
         // Antes este catch era vacío: un calendario roto (o su fuente caída)
         // desaparecía sin rastro. Marcamos el fallo para no pisar la caché
         // buena con un resultado parcial (ver más abajo).
         anyFailed = true;
-        logger.error('[calendar] fallo cargando calendario', i, cfg.url, e);
+        logger.error(
+          '[calendar] fallo cargando calendario',
+          i,
+          calendars[i].url,
+          r.reason,
+        );
       }
-    }
+    });
+
+    if (!anyFailed) lastFullFetch.set(key, Date.now());
     return { map, anyFailed };
   };
 
@@ -317,6 +345,17 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
 
       // 2. Offline: nos quedamos con la caché (o con nada si no la había).
       if (!connected) {
+        if (mounted) setLoading(false);
+        return;
+      }
+
+      // 2.5. Ventana de frescura: si ya hubo una descarga COMPLETA reciente
+      // para esta misma lista de calendarios, la caché ya pintada (paso 1)
+      // es suficiente — evita que un paseo Home→Calendario→Home
+      // re-descargue y re-parsee todos los ICS en cada montaje.
+      const freshnessKey = calendars.map((c) => c.url).join('|');
+      const lastFetchAt = lastFullFetch.get(freshnessKey) ?? 0;
+      if (Date.now() - lastFetchAt < FRESH_WINDOW_MS) {
         if (mounted) setLoading(false);
         return;
       }
