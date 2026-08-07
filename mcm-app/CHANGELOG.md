@@ -18,6 +18,53 @@
 
 ---
 
+## 2026-08-07 11:45 — Los `unsubscribe` de coro y notificaciones no quitaban el listener
+
+Dos servicios devolvían una función de limpieza que en realidad no limpiaba
+nada: le pasaban a `off(ref, 'value', …)` el `Unsubscribe` que devuelve
+`onValue`, no el callback que se registró. `off` solo borra la inscripción cuya
+identidad de callback coincide, así que era un no-op silencioso y **cada
+suscripción quedaba viva para siempre**. En "Modo Coro", cambiar el código de
+sesión dejaba el listener del código viejo disparando `setRemote` con datos
+obsoletos, y cada entrada/salida apilaba otro listener sobre el mismo nodo:
+ancho de banda y batería en la wifi saturada de un encuentro.
+
+- `services/choirSessionService.ts` y `services/pushNotificationService.ts`
+  devuelven ahora directamente el `Unsubscribe` de `onValue`. `off` sale de
+  ambos imports (el patrón `off(ref, 'value', unsubscribe)` es el antipatrón:
+  cualquier `onValue` nuevo debe devolver su propio `Unsubscribe`).
+- Test de regresión en `__tests__/choirSessionService.test.ts` que fija el
+  contrato ("la limpieza devuelta ES el `Unsubscribe`") y comprueba que ya no
+  se usa `off`.
+- Plan: `plans/001-firebase-listener-unsubscribe.md`.
+
+## 2026-08-07 11:45 — Release: guard de cambios nativos y tests antes de cada OTA
+
+Una OTA manda solo el bundle JS: si referencia módulos nativos que el binario
+instalado no lleva, la app **crashea en toda la base instalada** y no hay forma
+de arreglarlo por OTA. La única protección era un `[skip-ota]` a mano
+comprobado sobre **un solo commit** (`head_commit`), así que en un push de N
+commits solo se miraba el último y `workflow_dispatch` se lo saltaba siempre.
+Además ni las OTA ni el deploy web corrían tests: el CI solo se disparaba en
+`pull_request`, de modo que un push directo llegaba a los dispositivos sin
+ninguna verificación.
+
+- **`guard-native`** (nuevo job en `ota-production.yml` y `ota-preview.yml`):
+  diffea el **push entero** (`github.event.before`..`github.sha`, con fallback
+  al commit padre si `before` no existe — rama nueva o force-push) contra las
+  rutas que implican código nativo (`package.json`, `package-lock.json`,
+  `app.json`, `app.config.ts`, `eas.json`, `patches/`, `plugins/`, `modules/`,
+  `targets/`). Diff nativo + `[skip-ota]` en cualquier commit del rango → se
+  salta la OTA; diff nativo **sin** `[skip-ota]` → falla en rojo. El
+  `workflow_dispatch` deja de ser un bypass silencioso: ahora pasa por el guard
+  salvo que se pida el input `force`.
+- **`verify.yml`** (nuevo, `workflow_call`): typecheck + typecheck:tests + lint
+  + tests como fuente única. Lo llaman `ci.yml` (que ya solo delega),
+  `ota-production.yml`, `ota-preview.yml` y `deploy-web.yml`.
+- Mantenimiento: la lista de rutas nativas está duplicada en los dos workflows
+  de OTA — si aparece un directorio nativo nuevo hay que añadirlo en **ambos**.
+- Plan: `plans/002-ota-workflow-guard.md`.
+
 ## 2026-08-04 03:00 — Red: reintentos y resincronización al volver online
 
 `useFirebaseData` se tragaba los fallos de red con un `logger.error` y ya: sin
