@@ -10,7 +10,7 @@
  * jest.config.js); aquí controlamos las respuestas por llamada con
  * `mockResolvedValueOnce`.
  */
-import { get, set, update, remove } from 'firebase/database';
+import { get, set, update, remove, onValue, off } from 'firebase/database';
 import {
   createChoirSession,
   fetchChoirSession,
@@ -19,6 +19,7 @@ import {
   publishChoirPlaylist,
   changeChoirSessionCode,
   closeChoirSession,
+  subscribeChoirSession,
 } from '@/services/choirSessionService';
 import type { SelectedSong } from '@/contexts/SelectedSongsContext';
 
@@ -171,5 +172,38 @@ describe('closeChoirSession', () => {
   it('borra la sesión', async () => {
     await closeChoirSession(VALID);
     expect(remove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('subscribeChoirSession', () => {
+  it('la limpieza devuelta ES el Unsubscribe de onValue (y no usa off)', () => {
+    const mockUnsubscribe = jest.fn();
+    (onValue as jest.Mock).mockReturnValueOnce(mockUnsubscribe);
+
+    const cleanup = subscribeChoirSession(VALID, jest.fn());
+    expect(mockUnsubscribe).not.toHaveBeenCalled();
+
+    cleanup();
+
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+    // `off(ref, 'value', unsubscribe)` era el no-op que dejaba el listener vivo.
+    expect(off).not.toHaveBeenCalled();
+  });
+
+  it('propaga el snapshot al callback (null cuando no existe)', () => {
+    const onChange = jest.fn();
+    (onValue as jest.Mock).mockImplementationOnce((_ref, cb) => {
+      cb(snapshot({ v: 1, master: { deviceId: 'x' } }));
+      cb(snapshot(null));
+      return jest.fn();
+    });
+
+    subscribeChoirSession(VALID, onChange);
+
+    expect(onChange).toHaveBeenNthCalledWith(1, {
+      v: 1,
+      master: { deviceId: 'x' },
+    });
+    expect(onChange).toHaveBeenNthCalledWith(2, null);
   });
 });

@@ -7,7 +7,6 @@ import {
   get,
   update,
   onValue,
-  off,
 } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -304,8 +303,10 @@ export const subscribeToNotifications = (
       }
     });
 
-    // Retornar función de cleanup
-    return () => off(notificationsRef, 'value', unsubscribe);
+    // El Unsubscribe que devuelve `onValue` ES la función de cleanup.
+    // Pasárselo a `off(notificationsRef, 'value', ...)` no quitaba nada (off
+    // compara identidad de callback) y el listener quedaba vivo para siempre.
+    return unsubscribe;
   } catch (error) {
     logger.error('Error suscribiéndose a notificaciones:', error);
     return () => {};
