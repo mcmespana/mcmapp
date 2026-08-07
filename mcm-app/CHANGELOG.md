@@ -18,6 +18,36 @@
 
 ---
 
+## 2026-08-07 15:05 — Contigo: los hábitos completados se des-completaban solos
+
+`useContigoHabits` guardaba **todo** el mapa de hábitos desde el estado de CADA
+instancia del hook, y en el stack de Contigo hay **cuatro instancias vivas** a la
+vez (index, evangelio, oración, revisión). Cada setter construía
+`{...records, [date]: …}` sobre el `records` cerrado en el closure de *su*
+instancia y lo escribía entero en AsyncStorage. Secuencia real: marcas el
+evangelio leído en `evangelio`, luego completas la revisión en `revision` sin que
+esa pantalla se haya remontado → la instancia de `revision` escribía su mapa (que
+no vio el cambio) y **el `readingDone` desaparecía del disco**, llevándose la
+racha y los contadores del mes. El re-sync remoto tampoco salvaba, porque
+`syncContigoHabit` solo sube la fecha cambiada. Todo en silencio.
+
+- **`contexts/ContigoHabitsContext.tsx`** (nuevo): dueño único del mapa. Un solo
+  camino de escritura (`mutateRecords`) que corre dentro de
+  `withStorageLock('@contigo_habits', …)` y lee el mapa **vigente** (vía ref), no
+  el del closure. Montado en `app/(tabs)/contigo/_layout.tsx`: los únicos
+  consumidores son las pantallas de ese stack.
+- `hooks/useContigoHabits.ts` pasa a ser la fachada del context y re-exporta los
+  tipos, así que **las cuatro pantallas no se han tocado**. El formato de
+  `@contigo_habits` en AsyncStorage tampoco cambia: los datos ya guardados se
+  leen tal cual (lo fija un test con fixture).
+- Mejoras colaterales: la hidratación remota (RTDB) corre **una vez por sesión de
+  auth en vez de cuatro**, y dos taps rápidos ya no intercalan sus `setItem`.
+- 4 tests nuevos. El del bug original se comprobó contra el hook viejo:
+  `readingDone` quedaba en `false` en disco.
+- Follow-up anotado: con un solo dueño, `reloadRecords()` (el reload al enfocar)
+  ya no hace falta; se mantiene a propósito, no se retira aquí.
+- Plan: `plans/004-contigo-habits-single-writer.md`.
+
 ## 2026-08-07 14:25 — Notificaciones y subrayados que desaparecían: escrituras concurrentes
 
 Varios módulos hacían el ciclo `getItem → parse → mutar → setItem` sobre la misma
