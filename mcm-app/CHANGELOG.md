@@ -29,10 +29,15 @@
 - Manifest: fuera `ts-jest`, `copy-webpack-plugin`, `tailwind-merge`,
   `tailwind-variants` (sin uso); `@expo/config` movido a devDependencies
   (solo build-time, `app.config.ts`).
-- **⚠️ Cambio nativo**: `expo-insights` y `expo-system-ui` también se
-  quitaron (sin uso, confirmado contra `expo-doctor` y `expo config`) —
-  este paso requiere **build de producción** antes del próximo merge a
-  `production` (el commit lleva `[skip-ota]`).
+- **⚠️ Cambio nativo**: `expo-system-ui` se quitó (sin uso, confirmado
+  contra `expo-doctor` y `expo config`) — este paso requiere **build de
+  producción** antes del próximo merge a `production` (el commit lleva
+  `[skip-ota]`).
+- `expo-insights` (EAS Insights) se quitó primero por el mismo motivo
+  (sin uso), pero se decidió reincorporarlo: no necesita ningún código —
+  con el paquete instalado, EAS manda automáticamente eventos de
+  cold-start del app al dashboard "Insights" en el próximo build. También
+  es cambio nativo, mismo aviso de build de producción.
 
 ## 2026-08-06 19:45 — Refactor: las escrituras de UI a Firebase ganan retry (Plan 014)
 
