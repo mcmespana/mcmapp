@@ -15,8 +15,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
-import { getDatabase, ref, push, set } from 'firebase/database';
-import { getFirebaseApp } from '@/utils/firebaseApp';
+import { pushWithRetry } from '@/services/firebaseWrites';
 import {
   getCategoryFromFirebaseCategory,
   cleanSongTitle,
@@ -64,14 +63,11 @@ export default function ReportBugsModal({
     if (!bugDescription.trim()) return;
     setIsSubmitting(true);
     try {
-      const db = getDatabase(getFirebaseApp());
       const category = firebaseCategory
         ? getCategoryFromFirebaseCategory(firebaseCategory)
         : 'catZotros';
       const cleanTitle = songTitle ? cleanSongTitle(songTitle) : 'Sin título';
-      const fallitosRef = ref(db, `songs/fallitos/${category}/${cleanTitle}`);
-      const newFallitoRef = push(fallitosRef);
-      await set(newFallitoRef, {
+      await pushWithRetry(`songs/fallitos/${category}/${cleanTitle}`, {
         description: bugDescription.trim(),
         timestamp: Date.now(),
         songTitle: songTitle || 'Sin título',

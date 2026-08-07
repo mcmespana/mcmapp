@@ -14,8 +14,7 @@ import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { getDatabase, ref, push, set } from 'firebase/database';
-import { getFirebaseApp } from '@/utils/firebaseApp';
+import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 
@@ -61,11 +60,9 @@ export default function SuggestSongModal({
     setIsSubmitting(true);
 
     try {
-      const db = getDatabase(getFirebaseApp());
-      const newRef = push(ref(db, 'songs/solicitudes'));
       const contenido = `{title: ${titulo}}\n{author: ${artista}}\n\n${letra}`;
 
-      await set(newRef, {
+      await pushWithRetry('songs/solicitudes', {
         title: titulo,
         author: artista,
         category: categoria,
@@ -79,7 +76,7 @@ export default function SuggestSongModal({
         userDelegation: resolved.delegationLabel || 'Sin delegación',
       });
 
-      await set(ref(db, 'songs/updatedAt'), Date.now().toString());
+      await setWithRetry('songs/updatedAt', Date.now().toString());
 
       setTitulo('');
       setArtista('');
