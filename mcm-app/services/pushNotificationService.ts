@@ -1,14 +1,8 @@
 // services/pushNotificationService.ts
 import { logger } from '@/utils/logger';
-import {
-  getDatabase,
-  ref,
-  set,
-  get,
-  update,
-  onValue,
-} from 'firebase/database';
+import { getDatabase, ref, set, get, update, onValue } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
+import { withStorageLock } from '@/utils/storageMutex';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
@@ -319,43 +313,46 @@ export const subscribeToNotifications = (
  */
 export const saveReceivedNotificationLocally = async (
   notification: ReceivedNotification,
-): Promise<void> => {
-  try {
-    const existingData = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
-    const notifications: ReceivedNotification[] = existingData
-      ? JSON.parse(existingData)
-      : [];
-
-    // Evitar duplicados por ID o por contenido (título + cuerpo) si llegaron casi al mismo tiempo
-    const isDuplicate = notifications.some((n) => {
-      // Dedup por ID explícito del backend (no IDs locales generados)
-      if (n.id === notification.id) return true;
-      // Dedup por contenido — ventana de 5 minutos (captura entregas duplicadas casi simultáneas)
-      if (n.title === notification.title && n.body === notification.body) {
-        const timeA = new Date(n.receivedAt).getTime();
-        const timeB = new Date(notification.receivedAt).getTime();
-        if (Math.abs(timeA - timeB) < 5 * 60 * 1000) {
-          return true;
-        }
-      }
-      return false;
-    });
-
-    if (!isDuplicate) {
-      notifications.unshift(notification); // Añadir al principio
-
-      // Limitar a 100 notificaciones más recientes
-      const limited = notifications.slice(0, 100);
-
-      await AsyncStorage.setItem(
+): Promise<void> =>
+  withStorageLock(NOTIFICATIONS_HISTORY_KEY, async () => {
+    try {
+      const existingData = await AsyncStorage.getItem(
         NOTIFICATIONS_HISTORY_KEY,
-        JSON.stringify(limited),
       );
+      const notifications: ReceivedNotification[] = existingData
+        ? JSON.parse(existingData)
+        : [];
+
+      // Evitar duplicados por ID o por contenido (título + cuerpo) si llegaron casi al mismo tiempo
+      const isDuplicate = notifications.some((n) => {
+        // Dedup por ID explícito del backend (no IDs locales generados)
+        if (n.id === notification.id) return true;
+        // Dedup por contenido — ventana de 5 minutos (captura entregas duplicadas casi simultáneas)
+        if (n.title === notification.title && n.body === notification.body) {
+          const timeA = new Date(n.receivedAt).getTime();
+          const timeB = new Date(notification.receivedAt).getTime();
+          if (Math.abs(timeA - timeB) < 5 * 60 * 1000) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      if (!isDuplicate) {
+        notifications.unshift(notification); // Añadir al principio
+
+        // Limitar a 100 notificaciones más recientes
+        const limited = notifications.slice(0, 100);
+
+        await AsyncStorage.setItem(
+          NOTIFICATIONS_HISTORY_KEY,
+          JSON.stringify(limited),
+        );
+      }
+    } catch (error) {
+      logger.error('Error guardando notificación localmente:', error);
     }
-  } catch (error) {
-    logger.error('Error guardando notificación localmente:', error);
-  }
-};
+  });
 
 /**
  * Obtiene el historial local de notificaciones recibidas
@@ -390,89 +387,97 @@ export const getReadNotificationIds = async (): Promise<Set<string>> => {
  */
 export const markNotificationAsRead = async (
   notificationId: string,
-): Promise<void> => {
-  try {
-    // Actualizar notificaciones locales si existe
-    const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
-    if (data) {
-      const notifications: ReceivedNotification[] = JSON.parse(data);
+): Promise<void> =>
+  // Toca DOS claves (historial y leídas), pero el lock del historial basta:
+  // los únicos sitios que escriben READ_NOTIFICATIONS_KEY son esta función y
+  // `markAllNotificationsAsRead`, y ambas pasan por aquí.
+  withStorageLock(NOTIFICATIONS_HISTORY_KEY, async () => {
+    try {
+      // Actualizar notificaciones locales si existe
+      const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
+      if (data) {
+        const notifications: ReceivedNotification[] = JSON.parse(data);
 
-      // Encontrar la notificación para obtener su contenido
-      const target = notifications.find((n) => n.id === notificationId);
+        // Encontrar la notificación para obtener su contenido
+        const target = notifications.find((n) => n.id === notificationId);
 
-      const updated = notifications.map((n) => {
-        // Marcar por ID exacto
-        if (n.id === notificationId) return { ...n, isRead: true };
-        // También marcar por contenido idéntico (cubre IDs inconsistentes entre fuentes)
-        if (target && n.title === target.title && n.body === target.body) {
-          return { ...n, isRead: true };
-        }
-        return n;
-      });
+        const updated = notifications.map((n) => {
+          // Marcar por ID exacto
+          if (n.id === notificationId) return { ...n, isRead: true };
+          // También marcar por contenido idéntico (cubre IDs inconsistentes entre fuentes)
+          if (target && n.title === target.title && n.body === target.body) {
+            return { ...n, isRead: true };
+          }
+          return n;
+        });
+        await AsyncStorage.setItem(
+          NOTIFICATIONS_HISTORY_KEY,
+          JSON.stringify(updated),
+        );
+      }
+
+      // Añadir a la lista de notificaciones leídas (para Firebase también)
+      const readIds = await getReadNotificationIds();
+      readIds.add(notificationId);
       await AsyncStorage.setItem(
-        NOTIFICATIONS_HISTORY_KEY,
-        JSON.stringify(updated),
+        READ_NOTIFICATIONS_KEY,
+        JSON.stringify(Array.from(readIds)),
       );
+    } catch (error) {
+      logger.error('Error marcando notificación como leída:', error);
     }
-
-    // Añadir a la lista de notificaciones leídas (para Firebase también)
-    const readIds = await getReadNotificationIds();
-    readIds.add(notificationId);
-    await AsyncStorage.setItem(
-      READ_NOTIFICATIONS_KEY,
-      JSON.stringify(Array.from(readIds)),
-    );
-  } catch (error) {
-    logger.error('Error marcando notificación como leída:', error);
-  }
-};
+  });
 
 /**
  * Marca varias notificaciones como leídas a la vez
  */
 export const markAllNotificationsAsRead = async (
   notificationIds: string[],
-): Promise<void> => {
-  try {
-    // Actualizar notificaciones locales
-    const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
-    if (data) {
-      const notifications: ReceivedNotification[] = JSON.parse(data);
-      const idsSet = new Set(notificationIds);
+): Promise<void> =>
+  withStorageLock(NOTIFICATIONS_HISTORY_KEY, async () => {
+    try {
+      // Actualizar notificaciones locales
+      const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
+      if (data) {
+        const notifications: ReceivedNotification[] = JSON.parse(data);
+        const idsSet = new Set(notificationIds);
 
-      // Buscar el contenido de las notificaciones a marcar para poder
-      // también marcar sus equivalentes con ID diferente.
-      const contentKeys = new Set<string>();
-      for (const notif of notifications) {
-        if (idsSet.has(notif.id)) {
-          contentKeys.add(`${notif.title}|${notif.body}`);
+        // Buscar el contenido de las notificaciones a marcar para poder
+        // también marcar sus equivalentes con ID diferente.
+        const contentKeys = new Set<string>();
+        for (const notif of notifications) {
+          if (idsSet.has(notif.id)) {
+            contentKeys.add(`${notif.title}|${notif.body}`);
+          }
         }
+
+        const updated = notifications.map((n) => {
+          if (idsSet.has(n.id)) return { ...n, isRead: true };
+          // También marcar por contenido idéntico
+          if (contentKeys.has(`${n.title}|${n.body}`))
+            return { ...n, isRead: true };
+          return n;
+        });
+        await AsyncStorage.setItem(
+          NOTIFICATIONS_HISTORY_KEY,
+          JSON.stringify(updated),
+        );
       }
 
-      const updated = notifications.map((n) => {
-        if (idsSet.has(n.id)) return { ...n, isRead: true };
-        // También marcar por contenido idéntico
-        if (contentKeys.has(`${n.title}|${n.body}`))
-          return { ...n, isRead: true };
-        return n;
-      });
+      // Añadir todos a la lista de leídas
+      const readIds = await getReadNotificationIds();
+      notificationIds.forEach((id) => readIds.add(id));
       await AsyncStorage.setItem(
-        NOTIFICATIONS_HISTORY_KEY,
-        JSON.stringify(updated),
+        READ_NOTIFICATIONS_KEY,
+        JSON.stringify(Array.from(readIds)),
+      );
+    } catch (error) {
+      logger.error(
+        'Error marcando todas las notificaciones como leídas:',
+        error,
       );
     }
-
-    // Añadir todos a la lista de leídas
-    const readIds = await getReadNotificationIds();
-    notificationIds.forEach((id) => readIds.add(id));
-    await AsyncStorage.setItem(
-      READ_NOTIFICATIONS_KEY,
-      JSON.stringify(Array.from(readIds)),
-    );
-  } catch (error) {
-    logger.error('Error marcando todas las notificaciones como leídas:', error);
-  }
-};
+  });
 
 /**
  * Cuenta las notificaciones sin leer
@@ -544,13 +549,16 @@ export const getUnreadNotificationsCount = async (
 /**
  * Limpia el historial local de notificaciones
  */
-export const clearLocalNotifications = async (): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem(NOTIFICATIONS_HISTORY_KEY);
-  } catch (error) {
-    logger.error('Error limpiando historial local:', error);
-  }
-};
+export const clearLocalNotifications = async (): Promise<void> =>
+  // También pasa por el lock: si se limpiara entre el read y el write de otra
+  // operación sobre el historial, esa otra lo resucitaría.
+  withStorageLock(NOTIFICATIONS_HISTORY_KEY, async () => {
+    try {
+      await AsyncStorage.removeItem(NOTIFICATIONS_HISTORY_KEY);
+    } catch (error) {
+      logger.error('Error limpiando historial local:', error);
+    }
+  });
 
 /**
  * Clave de contenido usada para deduplicar/descartar notificaciones cuando los
@@ -582,36 +590,41 @@ export const getDismissedNotificationKeys = async (): Promise<Set<string>> => {
  */
 export const dismissNotification = async (
   notification: NotificationData | ReceivedNotification,
-): Promise<void> => {
-  try {
-    const contentKey = notificationContentKey(notification);
+): Promise<void> =>
+  // Cuarto ciclo read-modify-write sobre el historial: protegerlo a medias sería
+  // peor que no protegerlo. De paso serializa DISMISSED_NOTIFICATIONS_KEY, cuyo
+  // único escritor es esta función.
+  withStorageLock(NOTIFICATIONS_HISTORY_KEY, async () => {
+    try {
+      const contentKey = notificationContentKey(notification);
 
-    // 1) Quitar del historial local (por id o por contenido equivalente).
-    const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
-    if (data) {
-      const notifications: ReceivedNotification[] = JSON.parse(data);
-      const filtered = notifications.filter(
-        (n) =>
-          n.id !== notification.id && notificationContentKey(n) !== contentKey,
-      );
+      // 1) Quitar del historial local (por id o por contenido equivalente).
+      const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
+      if (data) {
+        const notifications: ReceivedNotification[] = JSON.parse(data);
+        const filtered = notifications.filter(
+          (n) =>
+            n.id !== notification.id &&
+            notificationContentKey(n) !== contentKey,
+        );
+        await AsyncStorage.setItem(
+          NOTIFICATIONS_HISTORY_KEY,
+          JSON.stringify(filtered),
+        );
+      }
+
+      // 2) Registrar como descartada (id + clave de contenido).
+      const dismissed = await getDismissedNotificationKeys();
+      if (notification.id) dismissed.add(notification.id);
+      dismissed.add(contentKey);
       await AsyncStorage.setItem(
-        NOTIFICATIONS_HISTORY_KEY,
-        JSON.stringify(filtered),
+        DISMISSED_NOTIFICATIONS_KEY,
+        JSON.stringify(Array.from(dismissed)),
       );
+    } catch (error) {
+      logger.error('Error eliminando notificación:', error);
     }
-
-    // 2) Registrar como descartada (id + clave de contenido).
-    const dismissed = await getDismissedNotificationKeys();
-    if (notification.id) dismissed.add(notification.id);
-    dismissed.add(contentKey);
-    await AsyncStorage.setItem(
-      DISMISSED_NOTIFICATIONS_KEY,
-      JSON.stringify(Array.from(dismissed)),
-    );
-  } catch (error) {
-    logger.error('Error eliminando notificación:', error);
-  }
-};
+  });
 
 const NOTIFICATIONS_INITIALIZED_KEY = '@mcm_notifications_initialized';
 

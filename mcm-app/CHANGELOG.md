@@ -18,6 +18,35 @@
 
 ---
 
+## 2026-08-07 14:25 — Notificaciones y subrayados que desaparecían: escrituras concurrentes
+
+Varios módulos hacían el ciclo `getItem → parse → mutar → setItem` sobre la misma
+clave de AsyncStorage **sin ninguna serialización**. Si dos ciclos se intercalan
+—dos pushes casi simultáneos, un push llegando mientras el usuario toca otro, o
+el merge remoto de subrayados al iniciar sesión mientras el usuario guarda uno—
+el segundo `setItem` escribe una copia obsoleta y el cambio del primero
+desaparece. Y **en silencio**, porque cada `catch` loguea y sigue: notificaciones
+que se esfuman del historial, notificaciones que reaparecen como no leídas,
+subrayados perdidos.
+
+- **`utils/storageMutex.ts`** (nuevo): `withStorageLock(clave, fn)` encadena las
+  operaciones por clave. Claves distintas no se bloquean entre sí, y un fallo no
+  rompe la cadena (pero sí llega a su propio caller).
+- `services/pushNotificationService.ts`: **cinco** funciones envueltas —
+  `saveReceivedNotificationLocally`, `markNotificationAsRead`,
+  `markAllNotificationsAsRead`, `dismissNotification` y
+  `clearLocalNotifications`. Las dos últimas no estaban en el plan, pero tocan la
+  misma clave del historial: dejarla protegida a medias sería peor que no
+  protegerla. El lock del historial cubre también `@mcm_read_notifications` y
+  `@mcm_dismissed_notifications`, porque todos sus escritores pasan por él.
+- `utils/contigoBookmarks.ts`: `upsertLocalBookmark`, `removeLocalBookmark` y
+  `mergeRemoteBookmarks`.
+- El lock se coge **dentro** de los helpers, no en los callers, así que no hay
+  forma de olvidarlo en un sitio nuevo. Regla añadida a `CLAUDE.md`
+  §Convenciones.
+- 7 tests nuevos; los 3 de concurrencia real fallan si se quita el lock.
+- Plan: `plans/006-asyncstorage-write-serialization.md`.
+
 ## 2026-08-07 13:45 — `useFirebaseData` deja de re-transformar y re-renderizar sin cambios
 
 El hook aplicaba el `transform` **dos veces por ciclo** (al servir la caché y

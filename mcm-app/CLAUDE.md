@@ -307,6 +307,7 @@ danger: '#9D1E74'; // Morado LC
 - **Plataforma**: usar `Platform.OS` para diferencias, archivos `.ios.tsx` para componentes iOS-only
 - **Tamaño de archivo (anti-gigantes)**: ningún archivo **nuevo** debe superar las **400 líneas** (ESLint avisa con `max-lines`). Si una pantalla supera las **600 líneas**, extraer subcomponentes a `components/<área>/` y la lógica a un hook `use<Pantalla>.ts` **ANTES** de añadir la feature. No engordar un archivo ya grande: el saneamiento de los gigantes está en `docs/planes/PLAN_CALIDAD.md` (Fase 1).
 - **Logging**: nunca `console.*` (ESLint lo bloquea como error). Usar el logger central `@/utils/logger` (`logger.debug/info/warn/error`).
+- **Escrituras en AsyncStorage**: todo ciclo `getItem → mutar → setItem` sobre una clave compartida va dentro de `withStorageLock(CLAVE, …)` (`@/utils/storageMutex`). Sin él, dos ciclos que se intercalan hacen que el segundo escriba una copia obsoleta y el cambio del primero desaparezca en silencio. El lock se coge DENTRO del helper de escritura, nunca en el caller.
 
 ## Patrones comunes
 
