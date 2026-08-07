@@ -152,8 +152,10 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 
 - [ ] **Pulido del glass (iOS 26) — fino, con dispositivo delante**: botones del
       header de la canción "justos" dentro de la cápsula, seam/línea del header
-      sobre letra blanca, y acercar `AppIconButton`/`GlassSurface` al bar item
-      nativo. Difícil a ciegas. (`components/ui/AppIconButton.tsx`, `GlassSurface.ios.tsx`)
+      sobre letra blanca, y acercar `GlassSurface` al bar item nativo. Difícil a
+      ciegas. (`components/ui/GlassSurface.ios.tsx`) — la parte de
+      `AppIconButton` se cayó: ese componente no lo montaba nadie y se borró el
+      2026-08-07
 - [ ] **Headers de evento (hub + sub-pantallas) transparentes** como el cantoral:
       hoy usan el "floating header" opaco (`eventScreenOptions` con
       `FloatingHeaderBackground`). Unificar al glass del sistema — cambio mayor,
