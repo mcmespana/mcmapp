@@ -3,6 +3,11 @@ import { useState, useEffect } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { localISO } from '@/utils/localDate';
+import {
+  DAILY_READINGS_PREFIX,
+  pruneDailyReadingsCache,
+} from '@/utils/dailyReadingsCache';
 
 export interface DailyReadings {
   evangelio?: {
@@ -30,7 +35,11 @@ export interface DailyReadings {
   };
 }
 
-const CACHE_PREFIX = '@daily_readings_';
+// La poda corre UNA vez por proceso: recorrer todas las claves de AsyncStorage
+// no es gratis y lo que se limpia (entradas de hace más de dos meses) no cambia
+// dentro de una misma sesión. Fire-and-forget a propósito: no debe retrasar el
+// primer render de las lecturas, y `pruneDailyReadingsCache` nunca lanza.
+let prunedThisSession = false;
 
 export function useDailyReadings(dateStr: string) {
   const [readings, setReadings] = useState<DailyReadings | null>(null);
@@ -43,12 +52,17 @@ export function useDailyReadings(dateStr: string) {
     async function load() {
       if (!dateStr) return;
 
+      if (!prunedThisSession) {
+        prunedThisSession = true;
+        void pruneDailyReadingsCache(localISO());
+      }
+
       try {
         setIsLoading(true);
         setError(null);
 
         // 1. Check local cache first
-        const cacheKey = `${CACHE_PREFIX}${dateStr}`;
+        const cacheKey = `${DAILY_READINGS_PREFIX}${dateStr}`;
         let cached = await AsyncStorage.getItem(cacheKey);
 
         let foundInBookmarks: any = null;
@@ -69,8 +83,12 @@ export function useDailyReadings(dateStr: string) {
         }
 
         if (cached) {
-          if (isMounted) setReadings(foundInBookmarks || JSON.parse(cached));
-          setIsLoading(false); // We can show cached data while we might re-fetch
+          if (isMounted) {
+            setReadings(foundInBookmarks || JSON.parse(cached));
+            // Mostramos la caché mientras revalidamos. Con guard: era la única
+            // escritura de estado del efecto sin comprobar `isMounted`.
+            setIsLoading(false);
+          }
         }
 
         // 2. Fetch from Firebase

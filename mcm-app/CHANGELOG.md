@@ -18,6 +18,28 @@
 
 ---
 
+## 2026-08-07 15:50 — Contigo: la caché de lecturas diarias ya se poda
+
+`useDailyReadings` guardaba cada día bajo su propia clave
+(`@daily_readings_YYYY-MM-DD`, 5-15 KB con evangelio, comentario, dos lecturas y
+salmo) y **nada la podaba jamás**: un usuario diario acumulaba una clave por día
+sin tope — varios MB al año que la app no reclamaba nunca, degradando el SQLite
+de AsyncStorage en Android sin remedio salvo reinstalar. Y como el nodo remoto se
+purga a 30 días, una copia local vieja podía además servir lecturas que el
+scraper corrigió después.
+
+- **`utils/dailyReadingsCache.ts`** (nuevo): `selectKeysToPrune` (pura) +
+  `pruneDailyReadingsCache` (IO). Retención de 60 días, que cubre de sobra el
+  selector de fechas. La poda corre **una vez por proceso** y en
+  fire-and-forget: no retrasa el primer render, y nunca lanza.
+- El literal del prefijo vive ahora en un solo sitio; el hook lo importa.
+- **No puede perder datos del usuario**: los guardados llevan su propia copia del
+  texto en `@contigo_bookmarks`, y el regex solo casa prefijo + fecha ISO exacta.
+  Hay un test centinela con `@contigo_bookmarks` y otras claves ajenas.
+- De paso, el `setIsLoading(false)` del camino de caché era la única escritura de
+  estado del efecto sin guard `isMounted`; ya lo tiene.
+- 10 tests nuevos. Plan: `plans/012-daily-readings-cache-prune.md`.
+
 ## 2026-08-07 15:05 — Contigo: los hábitos completados se des-completaban solos
 
 `useContigoHabits` guardaba **todo** el mapa de hábitos desde el estado de CADA
