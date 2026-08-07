@@ -18,6 +18,37 @@
 
 ---
 
+## 2026-08-07 16:40 — Bundle: calendario litúrgico recortado y limpieza de módulos muertos
+
+**Calendario litúrgico (−290 KB de bundle).**
+`components/contigo/LiturgicalBadge.tsx` importaba estáticamente
+`assets/calendario-liturgico.json`, y Metro inlinea el JSON en el bundle: eran
+**318 KB cubriendo 2025→2100** que cada OTA descargaba y cada arranque evaluaba,
+cuando las consultas solo tocan el año de la fecha mostrada. Ahora ese fichero es
+una **ventana rodante de cinco años** (año actual −1 … +3, hoy 2025-2029, 20,9 KB)
+generada con `npm run liturgical:window` desde
+`assets/calendario-liturgico-completo.json`, que preserva la tabla entera fuera
+del bundle. El badge no cambia: mismo nombre de fichero, misma lógica, y el
+fallback a "Tiempo Ordinario" ya existía para años fuera de rango.
+`__tests__/liturgicalWindow.test.ts` pone el CI en rojo —con el comando a
+ejecutar— cuando la ventana esté a punto de caducar, para que el recorte no
+caduque en silencio. **Cadencia: una vez al año.**
+
+**Módulos y dependencias muertas.** Borrados seis módulos sin ningún importador
+(`components/SongSearch.tsx`, `components/ExternalLink.tsx`,
+`components/ui/AppIconButton.tsx`, `components/ui/CloseIconButton.tsx`,
+`components/ui/GlassCard.tsx`, `hooks/useUnreadNotificationsCount.ts`) que
+tipaban, lintaban y se mantenían para nada — y dos documentos los anunciaban como
+vivos, con un TODO asignado a `AppIconButton` que era literalmente inejecutable.
+Fuera del manifest: `ts-jest` y `copy-webpack-plugin` (Jest usa `jest-expo`; no
+hay webpack, el bundler es Metro) y `tailwind-merge`/`tailwind-variants`
+(transitivas de heroui-native que la app pineaba sin necesidad). `@expo/config`
+pasa a `devDependencies`: solo lo usan `app.config.ts` y el config plugin de la
+extensión de notificaciones, ambos build-time. `expo-doctor` queda igual que
+antes (18/20, los dos mismos fallos preexistentes).
+
+Plan: `plans/011-liturgical-json-window.md`, `plans/015-dead-code-and-deps-cleanup.md`.
+
 ## 2026-08-07 15:50 — Contigo: la caché de lecturas diarias ya se poda
 
 `useDailyReadings` guardaba cada día bajo su propia clave

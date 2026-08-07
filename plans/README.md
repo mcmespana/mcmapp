@@ -32,11 +32,11 @@ conditions, and update your row when done.
 | 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | DONE (2026-08-07) — hecho justo tras 003, mismo fichero. No se añadió `force`: ninguna pantalla tiene pull-to-refresh que pase por el hook |
 | 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | DONE (2026-08-07) — al hoistar, el fichero pasaba de 400 líneas, así que (como manda el plan) se extrajo a `components/materiales/MaterialPageItems.tsx`: la pantalla queda en 128 líneas. **Smoke manual del Step 3 NO ejecutado** (sin navegador interactivo en el entorno) |
 | 010 | Virtualizar el muro de "Compartiendo" con `FlatList` | P3 | S | — | DONE (2026-08-07) — `ScreenHero` se queda FUERA del scroller (como estaba); la pantalla no engancha `useTabScroll`, así que no hubo props que migrar. **Smoke manual del Step 3 NO ejecutado** (sin navegador interactivo) |
-| 011 | Calendario litúrgico: ventana rodante (−280 KB de bundle) + generador con test de vigencia | P3 | S | — | TODO |
+| 011 | Calendario litúrgico: ventana rodante (−280 KB de bundle) + generador con test de vigencia | P3 | S | — | DONE (2026-08-07) — 318 KB → 20.9 KB (5 años, 2025-2029). No había tests previos del badge, así que no hubo fixtures fuera de ventana. Generador idempotente |
 | 012 | Podar la caché de lecturas diarias (crecía sin tope) | P3 | S | — | DONE (2026-08-07) — 10 tests. La retención es inclusiva: el corte es `fecha < hoy − 60d`, así que el día 60 exacto se conserva |
 | 013 | Scraper: el exit code distingue fuente caída de fechas sueltas fallidas | P3 | S | — | DONE (2026-08-07) — 6 tests nuevos (111 en total). El workflow no condiciona nada al exit 2 (solo `if: failure()`), así que el cambio de semántica no rompe pasos |
 | 014 | Costura `services/firebaseWrites.ts`: las escrituras de UI ganan retry y una sola forma | P3 | M | — | TODO |
-| 015 | Limpieza de módulos muertos y dependencias sin uso | P3 | S | — | TODO |
+| 015 | Limpieza de módulos muertos y dependencias sin uso | P3 | S | — | DONE hasta el Step 2 (2026-08-07). **Step 3 NO ejecutado a propósito**: `expo-system-ui` lo exige `userInterfaceStyle: "automatic"` de `app.json` (la condición que el propio plan marca para conservarlo), y `expo-insights` sale limpio en `expo config` + `expo-doctor` (comprobado) pero es telemetría de EAS Insights **y** un cambio nativo a días de la build de tienda: se deja para que lo decida el operador. `expo-doctor` idéntico a la línea base (18/20) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
