@@ -13,9 +13,10 @@ import {
   HabitKey,
   WEEKDAYS,
   buildCalendar,
-  getWeekDates,
+  getRollingDays,
   habitColor,
   warm,
+  weekdayLetter,
 } from './theme';
 import type { DayRecord } from '@/hooks/useContigoHabits';
 
@@ -365,23 +366,28 @@ export function EvangelioTeaserCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WeekStrip — current ISO week Mon–Sun w/ habit dots
+// WeekStrip — ventana móvil de los últimos 7 días (hoy el último), con puntos
+// por hábito. Cada día es pulsable y abre lo que haya guardado.
 // ─────────────────────────────────────────────────────────────────────────────
 export function WeekStrip({
   records,
   todayStr,
   isDark,
+  onDayPress,
 }: {
   records: Record<string, DayRecord>;
   todayStr: string;
   isDark: boolean;
+  onDayPress?: (date: string, rec: DayRecord | null) => void;
 }) {
   const W = warm(isDark);
-  const week = getWeekDates(todayStr);
+  // Últimos 7 días, NO de lunes a domingo: así el lunes por la mañana la tira
+  // no aparece vacía y siempre se ve la semana real que llevas.
+  const week = getRollingDays(todayStr, 7);
   return (
     <View>
       <View style={styles.weekRow}>
-        {week.map((ds, i) => {
+        {week.map((ds) => {
           const rec = records[ds];
           const isToday = ds === todayStr;
           const isFuture = ds > todayStr;
@@ -414,15 +420,27 @@ export function WeekStrip({
               ? 'rgba(167,139,250,0.14)'
               : 'rgba(124,58,237,0.09)';
 
+          const tappable = !!onDayPress && !isFuture;
+
           return (
-            <View key={ds} style={styles.weekCol}>
+            <TouchableOpacity
+              key={ds}
+              style={styles.weekCol}
+              activeOpacity={tappable ? 0.6 : 1}
+              disabled={!tappable}
+              onPress={() => onDayPress?.(ds, rec || null)}
+              accessibilityRole={tappable ? 'button' : undefined}
+              accessibilityLabel={
+                tappable ? `Ver el día ${day}` : `Día ${day}, aún por llegar`
+              }
+            >
               <Text
                 style={[
                   styles.weekHdr,
                   { color: isToday ? W.accent : W.textMuted },
                 ]}
               >
-                {WEEKDAYS[i]}
+                {weekdayLetter(ds)}
               </Text>
               <View
                 style={[
@@ -490,7 +508,7 @@ export function WeekStrip({
                   ]}
                 />
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
       </View>
@@ -635,7 +653,9 @@ export function MonthHeatmap({
           else if (rv)
             bg = isDark ? 'rgba(167,139,250,0.20)' : 'rgba(124,58,237,0.14)';
           if (isFuture) bg = 'transparent';
-          const tappable = !!onDayPress && !isFuture && doneCount > 0;
+          // Cualquier día pasado se puede abrir: si no hay nada guardado,
+          // siempre queda el evangelio de ese día.
+          const tappable = !!onDayPress && !isFuture;
           const inner = (
             <View
               style={[
