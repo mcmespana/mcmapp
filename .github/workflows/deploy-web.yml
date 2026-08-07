@@ -10,7 +10,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # La web no tiene binario de tienda, así que no necesita el guard de nativos;
+  # pero sí necesita no desplegar un bundle que no pasa typecheck/lint/tests
+  # (antes este workflow no verificaba nada).
+  verify:
+    uses: ./.github/workflows/verify.yml
+
   build-and-deploy-web:
+    needs: verify
     runs-on: ubuntu-latest
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line

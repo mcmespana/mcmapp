@@ -1,0 +1,37 @@
+# .github/workflows/verify.yml
+# Verificación reutilizable (typecheck + lint + tests).
+#
+# Fuente ÚNICA de verdad de "qué se comprueba antes de publicar". La llaman:
+#   - ci.yml            (pull_request)
+#   - ota-preview.yml   (push a preview)
+#   - ota-production.yml(push a production)
+#   - deploy-web.yml    (push a production)
+#
+# Si añades o quitas un paso, se hace AQUÍ y lo heredan los cuatro. Antes
+# solo ci.yml verificaba, y solo en PRs: un push directo a production llegaba
+# a todos los dispositivos por OTA sin pasar por ningún test.
+name: Verify
+
+on:
+  workflow_call:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mcm-app/package-lock.json
+      - run: npm ci
+        working-directory: ./mcm-app
+      - run: npm run typecheck
+        working-directory: ./mcm-app
+      - run: npm run typecheck:tests
+        working-directory: ./mcm-app
+      - run: npm run lint
+        working-directory: ./mcm-app
+      - run: npm test -- --ci
+        working-directory: ./mcm-app

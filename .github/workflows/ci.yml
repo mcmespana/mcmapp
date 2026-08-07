@@ -5,22 +5,7 @@ on:
     branches: [main, production, preview]
 
 jobs:
+  # Delega en el workflow reutilizable para no mantener dos listas de pasos que
+  # se separan con el tiempo (los workflows de OTA y de web llaman al mismo).
   ci:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: mcm-app/package-lock.json
-      - run: npm ci
-        working-directory: ./mcm-app
-      - run: npm run typecheck
-        working-directory: ./mcm-app
-      - run: npm run typecheck:tests
-        working-directory: ./mcm-app
-      - run: npm run lint
-        working-directory: ./mcm-app
-      - run: npm test -- --ci
-        working-directory: ./mcm-app
+    uses: ./.github/workflows/verify.yml

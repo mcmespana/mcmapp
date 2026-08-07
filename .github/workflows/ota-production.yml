@@ -5,18 +5,96 @@ on:
   push:
     branches: [production]
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Saltar el guard de cambios nativos (usar solo si sabes lo que haces)'
+        type: boolean
+        default: false
 
 concurrency:
   group: ota-production
   cancel-in-progress: false
 
 jobs:
+  # Una OTA manda solo el bundle JS. Si el bundle referencia módulos nativos que
+  # el binario instalado no lleva, la app CRASHEA en toda la base instalada y no
+  # se puede arreglar por OTA (hace falta release de tienda). Este job es la red:
+  #
+  #   - Diff nativo + [skip-ota] en CUALQUIER commit del push → skip=true, no se
+  #     publica (comportamiento deseado, pero ahora mira el push entero y no solo
+  #     el mensaje del último commit, como hacía el `if:` que había aquí antes).
+  #   - Diff nativo SIN [skip-ota] → el guard falla en ROJO. Es exactamente la
+  #     situación que antes pasaba desapercibida.
+  #   - Sin diff nativo → adelante.
+  #   - workflow_dispatch: el guard corre igual (comparando HEAD^..HEAD), así que
+  #     deja de ser un bypass silencioso; para saltárselo hay que pedirlo con el
+  #     input `force`.
+  guard-native:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.guard.outputs.skip }}
+    steps:
+      - name: Checkout código (historia completa para poder diffear el push)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detectar cambios en rutas nativas
+        id: guard
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+
+          if [ "${FORCE}" = "true" ]; then
+            echo "Dispatch manual con force=true → se salta el guard de nativos."
+            exit 0
+          fi
+
+          AFTER="${AFTER_SHA}"
+          BEFORE="${BEFORE_SHA:-}"
+          # Rama nueva, primer push o force-push: `before` no existe en el repo.
+          # Se compara entonces con el commit anterior (o con el árbol vacío si
+          # no hay padre, p. ej. commit inicial).
+          if [ -z "${BEFORE}" ] \
+            || [ "${BEFORE}" = "0000000000000000000000000000000000000000" ] \
+            || ! git cat-file -e "${BEFORE}" 2>/dev/null; then
+            BEFORE="$(git rev-parse "${AFTER}^" 2>/dev/null \
+              || git hash-object -t tree /dev/null)"
+          fi
+          echo "Rango del push: ${BEFORE}..${AFTER}"
+
+          # MANTENIMIENTO: si aparece un directorio nativo nuevo (p. ej.
+          # mcm-app/widgets/), hay que añadirlo aquí Y en ota-preview.yml.
+          NATIVE_CHANGES=$(git diff --name-only "${BEFORE}" "${AFTER}" -- \
+            mcm-app/package.json mcm-app/package-lock.json mcm-app/app.json \
+            mcm-app/app.config.ts mcm-app/eas.json \
+            mcm-app/patches/ mcm-app/plugins/ mcm-app/modules/ mcm-app/targets/)
+
+          if [ -z "${NATIVE_CHANGES}" ]; then
+            echo "Sin cambios en rutas nativas → la OTA puede publicarse."
+            exit 0
+          fi
+
+          if git log --format=%B "${BEFORE}".."${AFTER}" | grep -q '\[skip-ota\]'; then
+            echo "Cambios en rutas nativas + [skip-ota] presente en el push → se salta la OTA."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "::error::Cambios en rutas nativas SIN [skip-ota] en ningún commit del push. Publicar esta OTA puede crashear la base instalada: haz build de tienda, o marca el commit con [skip-ota]."
+          echo "${NATIVE_CHANGES}"
+          exit 1
+
+  # Nada llega a los dispositivos sin pasar typecheck + lint + tests.
+  verify:
+    uses: ./.github/workflows/verify.yml
+
   publish-prod:
-    # Salta si el mensaje del commit contiene [skip-ota] (p.ej. cuando se añaden paquetes nativos)
-    # En workflow_dispatch siempre corre (el usuario lo lanzó explícitamente)
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      !contains(github.event.head_commit.message, '[skip-ota]')
+    needs: [guard-native, verify]
+    if: needs.guard-native.outputs.skip != 'true'
     runs-on: ubuntu-latest
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line
