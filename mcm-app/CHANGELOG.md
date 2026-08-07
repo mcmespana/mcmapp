@@ -18,6 +18,28 @@
 
 ---
 
+## 2026-08-07 12:55 — Calendario: ICS en paralelo y ventana de frescura de 5 min
+
+Los ICS se descargaban **en serie** (`await fetch` dentro de un `for`), así que
+el tiempo hasta calendario fresco era la SUMA de los round-trips en vez del
+máximo — y con el proxy CORS caído, cada calendario pagaba dos timeouts
+seguidos. Además el efecto revalidaba **todo en cada montaje**, con el hook
+montado a la vez en Home y en Calendario: un paseo Home→Calendario→Home
+re-descargaba y re-parseaba todos los ICS.
+
+- `Promise.allSettled` sobre `fetchOneCalendar`, recorriendo los resultados en
+  orden para preservar los dos invariantes: `calendarIndex` sigue siendo
+  **posicional** (de él depende el color del evento) y el orden de eventos
+  dentro de cada fecha sigue el de la lista de calendarios.
+- **Ventana de frescura de 5 min** por lista de URLs: si ya hay caché pintada y
+  la última descarga completa es reciente, el montaje no relanza nada. Un
+  resultado **parcial no cuenta como fresco** (el siguiente montaje reintenta),
+  igual que ya no se persistía. La ventana exige tener caché pintada: sin datos
+  en pantalla, ahorrar la descarga dejaría el calendario vacío.
+- 4 tests nuevos, incluidos los centinelas de los dos invariantes
+  (`calendarIndex` con un calendario caído, y parcial → no fresco).
+- Plan: `plans/008-calendar-parallel-fetch-ttl.md`.
+
 ## 2026-08-07 12:20 — Calendario: días duplicados/perdidos en Semana Santa y horas 1-2 h antes
 
 Dos bugs de fechas en `useCalendarEvents`, los dos visibles en pantalla:

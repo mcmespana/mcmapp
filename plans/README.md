@@ -29,7 +29,7 @@ conditions, and update your row when done.
 | 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | TODO |
 | 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | TODO |
 | 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | TODO |
-| 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | TODO |
+| 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | DONE (2026-08-07) — hecho justo tras 003, mismo fichero. No se añadió `force`: ninguna pantalla tiene pull-to-refresh que pase por el hook |
 | 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | TODO |
 | 010 | Virtualizar el muro de "Compartiendo" con `FlatList` | P3 | S | — | TODO |
 | 011 | Calendario litúrgico: ventana rodante (−280 KB de bundle) + generador con test de vigencia | P3 | S | — | TODO |

@@ -27,13 +27,19 @@
  *   - para la conversión UTC→local (bug 2), un oráculo independiente con `Intl`
  *     en la zona del proceso, en vez de reimplementar la misma aritmética.
  */
+import { renderHook, waitFor } from '@testing-library/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   addDaysISO,
   eventDateKeys,
   parseIcsDateTimeValue,
   MAX_EVENT_DAYS,
 } from '@/utils/calendarDates';
-import { parseICS } from '@/hooks/useCalendarEvents';
+import useCalendarEvents, {
+  parseICS,
+  __resetCalendarCacheForTests,
+} from '@/hooks/useCalendarEvents';
+import type { CalendarConfig } from '@/hooks/useCalendarConfigs';
 
 /**
  * Oráculo independiente: formatea un instante en la zona horaria del proceso
@@ -310,5 +316,158 @@ describe('parseICS', () => {
     const [ev] = parseICS(ics);
     expect(ev.description).toContain('Segunda, con coma');
     expect(ev.description).toContain('y continuacion plegada');
+  });
+});
+
+/**
+ * Descarga de los calendarios (plan `plans/008-calendar-parallel-fetch-ttl.md`).
+ *
+ * Los ICS se bajaban EN SERIE (`await fetch` dentro de un `for`), así que el
+ * tiempo hasta calendario fresco era la suma de los round-trips en vez del
+ * máximo; y el efecto revalidaba todo en cada montaje, sin ventana de frescura,
+ * con el hook montado a la vez en Home y en Calendario.
+ *
+ * Dos invariantes que estos tests vigilan: `calendarIndex` es POSICIONAL (el
+ * color de cada evento depende de él) y un resultado parcial no cuenta ni como
+ * fresco ni como persistible.
+ */
+describe('useCalendarEvents · descarga', () => {
+  const cal = (name: string): CalendarConfig => ({
+    name,
+    url: `https://example.test/${name}.ics`,
+    color: '#000000',
+  });
+
+  const icsWith = (title: string, date = '20260315') =>
+    [
+      'BEGIN:VCALENDAR\r',
+      'BEGIN:VEVENT\r',
+      `SUMMARY:${title}\r`,
+      `DTSTART;VALUE=DATE:${date}\r`,
+      'END:VEVENT\r',
+      'END:VCALENDAR\r',
+    ].join('\n');
+
+  const okResponse = (body: string) =>
+    ({ ok: true, text: () => Promise.resolve(body) }) as unknown as Response;
+
+  let fetchMock: jest.Mock;
+  const originalFetch = global.fetch;
+  const originalProxy = process.env.EXPO_PUBLIC_CORS_PROXY_URL;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    await AsyncStorage.clear();
+    __resetCalendarCacheForTests();
+    // El mock de expo-network arranca conectado, y cada fichero de test tiene
+    // su propio registro de módulos, así que no hay que forzar nada.
+    // Sin proxy: la ruta con proxy añade un fetch de fallback que confundiría
+    // el conteo de llamadas de estos tests.
+    delete process.env.EXPO_PUBLIC_CORS_PROXY_URL;
+    fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+    if (originalProxy === undefined) {
+      delete process.env.EXPO_PUBLIC_CORS_PROXY_URL;
+    } else {
+      process.env.EXPO_PUBLIC_CORS_PROXY_URL = originalProxy;
+    }
+  });
+
+  it('lanza todas las descargas en paralelo, sin esperar a la primera', async () => {
+    // Cada fetch queda "en vuelo" hasta que lo liberamos a mano: así se puede
+    // afirmar que los tres arrancaron ANTES de que resolviera ninguno. Con el
+    // bucle serial de antes solo habría uno en vuelo.
+    const pending: ((r: Response) => void)[] = [];
+    fetchMock.mockImplementation(
+      () => new Promise<Response>((resolve) => pending.push(resolve)),
+    );
+
+    const calendars = [cal('uno'), cal('dos'), cal('tres')];
+    const { result } = await renderHook(() => useCalendarEvents(calendars));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(pending).toHaveLength(3);
+
+    pending.forEach((resolve, i) => resolve(okResponse(icsWith(`Evento ${i}`))));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    // Los tres calendarios acabaron en el mapa, cada uno con su índice.
+    await waitFor(() =>
+      expect(result.current.eventsByDate['2026-03-15']).toHaveLength(3),
+    );
+    expect(
+      result.current.eventsByDate['2026-03-15'].map((e) => e.calendarIndex),
+    ).toEqual([0, 1, 2]);
+  });
+
+  it('un calendario caído no desplaza el calendarIndex de los demás', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      url.includes('roto')
+        ? Promise.reject(new Error('fuente caída'))
+        : Promise.resolve(okResponse(icsWith('Evento bueno'))),
+    );
+
+    // La lista se crea FUERA del callback: el efecto depende de su identidad,
+    // así que un array nuevo en cada render lo relanzaría en bucle.
+    const calendars = [cal('roto'), cal('bueno')];
+    const { result } = await renderHook(() => useCalendarEvents(calendars));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() =>
+      expect(result.current.eventsByDate['2026-03-15']).toBeDefined(),
+    );
+
+    const [ev] = result.current.eventsByDate['2026-03-15'];
+    expect(ev.title).toBe('Evento bueno');
+    // El evento es del SEGUNDO calendario: su índice debe ser 1, no 0.
+    expect(ev.calendarIndex).toBe(1);
+    // Resultado parcial: no se persiste.
+    expect(await AsyncStorage.getItem('calendar_events')).toBeNull();
+  });
+
+  it('dentro de la ventana de frescura, un montaje nuevo no vuelve a descargar', async () => {
+    fetchMock.mockResolvedValue(okResponse(icsWith('Evento')));
+    const calendars = [cal('uno')];
+
+    const first = await renderHook(() => useCalendarEvents(calendars));
+    await waitFor(() => expect(first.result.current.loading).toBe(false));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // La descarga completa se persiste: es lo que pinta el segundo montaje.
+    await waitFor(async () =>
+      expect(await AsyncStorage.getItem('calendar_events')).not.toBeNull(),
+    );
+
+    const second = await renderHook(() => useCalendarEvents(calendars));
+    await waitFor(() => expect(second.result.current.loading).toBe(false));
+    expect(fetchMock).toHaveBeenCalledTimes(1); // ← sin segunda descarga
+    expect(second.result.current.eventsByDate['2026-03-15']).toBeDefined();
+
+    // Fuera de la ventana (se simula limpiando el estado de módulo): sí baja.
+    __resetCalendarCacheForTests();
+    const third = await renderHook(() => useCalendarEvents(calendars));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(third.result.current.loading).toBe(false));
+  });
+
+  it('un resultado parcial NO cuenta como fresco: el siguiente montaje reintenta', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      url.includes('roto')
+        ? Promise.reject(new Error('fuente caída'))
+        : Promise.resolve(okResponse(icsWith('Evento bueno'))),
+    );
+    const calendars = [cal('roto'), cal('bueno')];
+
+    const first = await renderHook(() => useCalendarEvents(calendars));
+    await waitFor(() => expect(first.result.current.loading).toBe(false));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    const second = await renderHook(() => useCalendarEvents(calendars));
+    await waitFor(() => expect(second.result.current.loading).toBe(false));
+    // Cuatro llamadas: los dos calendarios, dos veces. Si el parcial hubiera
+    // registrado frescura, se habría quedado en dos.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
   });
 });
