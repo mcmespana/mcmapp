@@ -11,16 +11,18 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-08-03.
+> Última actualización: 2026-08-07.
 
 ---
 
 ## 🧭 Puntero rápido
 
-> **Todo gira ahora mismo alrededor de la build de tienda de agosto.** La rama
-> `claude/compact-tabs-bar-uxxaoz` lleva SDK 57, la barra flotante, Reanimated 4,
-> NSE de iOS, Sentry, analítica, icono de Carismochito y el subrayado nativo.
-> Nada de eso puede salir por OTA.
+> **Todo gira ahora mismo alrededor de la build de tienda de agosto.** Lo nativo
+> —SDK 57, la barra flotante, Reanimated 4, NSE de iOS, Sentry, analítica, icono
+> de Carismochito y el subrayado nativo— **ya está en `main`**: la rama
+> `claude/compact-tabs-bar-uxxaoz` se mergeó en la
+> [PR #313](https://github.com/mcmespana/mcmapp/pull/313) el 2026-08-04, así que
+> no hay ninguna rama en vuelo que esperar. Nada de eso puede salir por OTA.
 >
 > **Si el usuario dice "seguimos"**: lo que toca es sacar la build adelante —
 > paso a paso completo en `docs/desarrollo/BUILD_AGOSTO_2026.md`. La Cola
@@ -33,6 +35,7 @@
 | **Bloqueado fuera** | Que el Panel mande `channelId` y `mutableContent` · política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) |
 | **Después de la build** | Integración D → **Build 2.2 (nov-dic): Widget + App Check** → Carismochito + Panel Pañuelo |
 | **Oportunista** | Calidad Fase 1 (gigantes), Integraciones resto |
+| **Cerrado hoy** | Los 15 planes de la auditoría `/improve` (`plans/001`–`015`), ejecutados el 2026-08-07 — ver §2.A-bis |
 | **Cerrado** | Los 8 planes tácticos (archivados en `archivo/tacticos/`), UI Nativa Fase 1, PR #298 |
 
 > **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
@@ -109,6 +112,35 @@
 - **Detalle:** `docs/planes/PLAN_CALIDAD.md` Fase 1 (`SelectedSongsScreen`,
   `onboarding.tsx`, `(tabs)/index.tsx`…).
 
+### A-bis. Auditoría `/improve` (`plans/001`–`015`) — ✅ HECHA (2026-08-07)
+
+Los 15 planes de la auditoría del 2026-08-05 (los que este documento marcaba como
+"candidatos a la bolsa oportunista") se ejecutaron de una tirada en la rama
+`claude/backlog-tokens-burn-ofndhx`. Estado y desviaciones de cada uno en
+`plans/README.md`. Resumen de lo que arreglaron, por si hace falta el contexto:
+
+- **Bugs de datos visibles**: listeners de Firebase que nunca se quitaban; días
+  duplicados/perdidos del calendario al cruzar el cambio de hora y horas del ICS
+  1-2 h desfasadas; hábitos de Contigo que se des-completaban solos porque cuatro
+  pantallas se pisaban el mapa; notificaciones y subrayados que desaparecían por
+  escrituras concurrentes en AsyncStorage; playlists compartidas duplicadas al
+  cambiar de código.
+- **Release**: guard de cambios nativos y gate de tests antes de cada OTA
+  (`verify.yml` como fuente única), y el exit code del scraper deja de decir
+  "fallaron todas las fuentes" cuando fallan tres fechas de una.
+- **Rendimiento**: ICS en paralelo con ventana de frescura, `useFirebaseData` sin
+  re-transformar de balde, muro de Compartiendo virtualizado, páginas del pager de
+  materiales sin remontarse, y −290 KB de bundle recortando el calendario
+  litúrgico.
+- **Deuda**: costura `services/firebaseWrites.ts` (todas las escrituras de UI con
+  reintentos y una sola forma), poda de la caché de lecturas, y limpieza de seis
+  módulos muertos y cuatro dependencias sin uso.
+
+**Dos cosas quedan pendientes de ti**: quitar `expo-insights` (es nativo y es
+telemetría de EAS Insights — sale limpio en `expo-doctor`, pero es tu decisión) y
+`npx expo export --platform web`, que está **roto** y lo ejecuta `deploy-web.yml`
+en cada push a `production` (detalle en `mcm-app/TODO.md` §1-bis).
+
 ### B. Integraciones — resto (A2, C1–C4, E1)
 
 - **Trigger:** "cuando estén" — oportunista, sin fecha fija; hacerlo cuando
@@ -119,10 +151,11 @@
 
 ### C. Bolsa nativa — la build de tienda de agosto de 2026
 
-> **Estado: la build YA está en marcha.** La rama
-> `claude/compact-tabs-bar-uxxaoz` es la "súper rama" que se lleva todo lo
-> nativo acumulado. Ya no es una lista de espera: es el **contenido de esta
-> build** más lo que aún se puede meter antes de compilar. Revisión: 2026-08-03.
+> **Estado: la build YA está en marcha y su contenido está en `main`.** La
+> "súper rama" `claude/compact-tabs-bar-uxxaoz` se mergeó en la PR #313
+> (2026-08-04); esta sección ya no es una lista de espera, es el **contenido de
+> esta build** más lo que aún se puede meter antes de compilar. Revisión:
+> 2026-08-07.
 
 #### C.1 — Ya dentro de la rama (se publica con esta build)
 

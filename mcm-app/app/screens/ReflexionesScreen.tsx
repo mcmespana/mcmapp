@@ -158,7 +158,9 @@ export default function ReflexionesScreen() {
     getEventCacheKey(event, 'grupos'),
   );
 
-  const grupos = gruposData?.['Conso+'] ?? [];
+  // Memoizado: `getGrupoLabel` depende de él y un array nuevo en cada render
+  // haría que su memo (y con él el `renderItem` del muro) no sirviera de nada.
+  const grupos = useMemo(() => gruposData?.['Conso+'] ?? [], [gruposData]);
 
   // Lo que hay en Firebase, normalizado a array (el nodo llega como objeto
   // indexado por la key de push, o como array en los datos antiguos).
@@ -279,15 +281,21 @@ export default function ReflexionesScreen() {
     setSaving(false);
   }
 
-  const getGrupoLabel = (nombre?: string) => {
-    if (!nombre) return '';
-    const g = grupos.find((gr) => gr.nombre === nombre);
-    return g
-      ? g.subtitulo
-        ? `${g.nombre} - ${g.subtitulo}`
-        : g.nombre
-      : nombre;
-  };
+  // Memoizada porque `renderReflexion` la usa: si cambiara de identidad en cada
+  // render, el `renderItem` del FlatList cambiaría con ella y las filas se
+  // repintarían enteras.
+  const getGrupoLabel = useCallback(
+    (nombre?: string) => {
+      if (!nombre) return '';
+      const g = grupos.find((gr) => gr.nombre === nombre);
+      return g
+        ? g.subtitulo
+          ? `${g.nombre} - ${g.subtitulo}`
+          : g.nombre
+        : nombre;
+    },
+    [grupos],
+  );
 
   const sortedList = useMemo(
     () =>
@@ -390,7 +398,7 @@ export default function ReflexionesScreen() {
         </LongPressable>
       );
     },
-    [scheme, styles],
+    [scheme, styles, getGrupoLabel],
   );
 
   return (

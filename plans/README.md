@@ -18,6 +18,18 @@ conditions, and update your row when done.
 > tests-solo y documentación (lista al final) — el operador los considera
 > ejecutables por cualquier agente sin plan.
 
+> **Estado: los 15 planes están DONE (2026-08-07).** Ejecutados de una tirada en
+> la rama `claude/backlog-tokens-burn-ofndhx`. Lo único deliberadamente sin hacer
+> es el Step 3 del plan 015 (quitar `expo-insights`/`expo-system-ui`, nativo) y
+> los smoke tests manuales de los planes 009 y 010, que piden un navegador o un
+> dispositivo interactivo. Detalle de cada desviación en la columna Status.
+>
+> Hallazgo nuevo surgido al verificar, anotado en `mcm-app/TODO.md`:
+> `npx expo export --platform web` está roto (el renderizado estático carga los
+> módulos nativos en Node) y `deploy-web.yml` ejecuta ese comando en cada push a
+> `production`. Comprobado que falla igual en el commit base, así que no lo
+> introduce nada de esta rama.
+
 ## Execution order & status
 
 | Plan | Title | Priority | Effort | Depends on | Status |
