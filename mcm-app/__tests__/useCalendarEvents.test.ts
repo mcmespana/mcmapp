@@ -149,6 +149,7 @@ const icsWith = (summary: string, date: string) =>
   ].join('\n');
 
 const cal = (name: string, url: string): CalendarConfig => ({
+  id: name,
   name,
   url,
   color: '#000',

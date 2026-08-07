@@ -18,6 +18,35 @@
 
 ---
 
+## 2026-08-07 12:40 — Calendario deslizable, racha de 7 días interactiva y header de Fotos
+
+- **Calendario (tab):** el mes ahora se desliza de verdad. El mes visible pasa a
+  ser estado propio (`visibleMonth`), separado del día seleccionado; el swipe
+  sigue al dedo y, al soltar, la rejilla sale por un lado mientras la nueva
+  entra por el otro (`components/calendar/SwipeableMonthCalendar.tsx`, con
+  `react-native-gesture-handler` + reanimated). Antes el gesto movía la lista de
+  eventos pero la rejilla se quedaba clavada: `react-native-calendars` trata
+  `current` como valor inicial, no reactivo. Las flechas del header usan la
+  misma animación. La vista Agenda gana también swipe de mes.
+- **Orden de calendarios:** el calendario de la delegación del perfil sale
+  SIEMPRE el primero (los IDs de delegación y de calendario coinciden), después
+  los `defaultCalendars` del perfil y luego el resto en el orden de Firebase.
+  `CalendarConfig` incorpora `id` (`hooks/useCalendarConfigs.ts`).
+- **Contigo — racha semanal:** la tira pasa de "lunes a domingo" a los
+  **últimos 7 días** terminando en hoy (`getRollingDays`), así el lunes por la
+  mañana ya no aparece vacía. Cada día es pulsable.
+- **Contigo — días interactivos:** pulsar un día (en la racha o en el
+  calendario del mes) abre lo que haya guardado; si hay varias cosas, sale un
+  submenú (`components/contigo/DayActionSheet.tsx` + `hooks/useContigoDayMenu.ts`)
+  para elegir entre revisión, oración y evangelio. Si no hay nada guardado va
+  directo al evangelio de ese día, y ahora cualquier día pasado del calendario
+  es pulsable (antes solo los que tenían algo marcado).
+- **Fotos:** header nativo transparente (blur en iOS, barra semitransparente en
+  Android/Web) SIN texto de título; las portadas pasan por debajo y se funden
+  con él al deslizar, como en el cantoral.
+
+---
+
 ## 2026-08-06 20:10 — Limpieza: 6 módulos sin importador y deps sin uso (Plan 015)
 
 - Borrados `components/SongSearch.tsx`, `components/ExternalLink.tsx`,

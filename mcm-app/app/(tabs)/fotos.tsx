@@ -6,14 +6,16 @@ import {
   FlatList,
   StyleSheet,
   Linking,
+  Platform,
   useWindowDimensions,
   ViewStyle,
   Alert,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import { Button } from 'heroui-native';
-import TabScreenWrapper from '@/components/ui/TabScreenWrapper';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
@@ -59,9 +61,12 @@ interface FotosScreenStyles {
   loadMoreButton: ViewStyle;
 }
 
-export default function FotosScreen() {
+export function FotosScreen() {
   const { listRef, onScroll, contentPaddingBottom } =
     useTabListScroll<FlatList>('fotos');
+  // El header es transparente y las portadas pasan POR DEBAJO: la lista
+  // arranca justo bajo la barra y se funde con ella al deslizar.
+  const headerHeight = useHeaderHeight();
   const { width } = useWindowDimensions();
   const scheme = useColorScheme();
   const styles = React.useMemo(() => createStyles(scheme), [scheme]);
@@ -129,8 +134,14 @@ export default function FotosScreen() {
   }
 
   return (
-    <TabScreenWrapper style={styles.container} edges={['top']}>
-      {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
+    <View style={styles.container}>
+      {/* El header flota sobre el contenido: el aviso de "sin conexión" tiene
+          que bajar hasta debajo de la barra para no quedar tapado. */}
+      {offline && (
+        <View style={{ marginTop: headerHeight }}>
+          <OfflineBanner text="Mostrando datos sin conexión" />
+        </View>
+      )}
       <Animated.FlatList
         ref={listRef}
         onScroll={onScroll}
@@ -158,13 +169,59 @@ export default function FotosScreen() {
             maxWidth: width > 1200 ? 1600 : 1200,
             alignSelf: 'center',
           },
-          { paddingBottom: contentPaddingBottom },
+          {
+            paddingTop: offline ? 12 : headerHeight + 12,
+            paddingBottom: contentPaddingBottom,
+          },
         ]}
+        // El contenido ya reserva el hueco del header; sin esto iOS lo suma
+        // otra vez y deja una franja vacía.
+        contentInsetAdjustmentBehavior="never"
         onEndReached={loadMoreAlbums}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
       />
-    </TabScreenWrapper>
+    </View>
+  );
+}
+
+/**
+ * Tab de Fotos: stack propio para tener un header NATIVO transparente —
+ * las portadas pasan por debajo y se funden con él al deslizar, igual que en
+ * el cantoral, pero SIN texto de título (la pestaña ya se llama Fotos).
+ */
+const FotosStack = createNativeStackNavigator();
+export default function FotosTab() {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+  const isIOS = Platform.OS === 'ios';
+  return (
+    <FotosStack.Navigator
+      screenOptions={{
+        title: '',
+        headerShadowVisible: false,
+        headerTransparent: true,
+        headerTintColor: isDark ? '#FFFFFF' : '#1a1a1a',
+        // iOS <26 necesita el blur explícito; en iOS 26+ lo pone el sistema
+        // (combinarlo provoca solape, ver cancionero.tsx).
+        ...(isIOS && parseInt(String(Platform.Version), 10) < 26
+          ? { headerBlurEffect: 'systemChromeMaterial' as const }
+          : {}),
+        // Android/Web no tienen blur nativo: una barra semitransparente del
+        // color del fondo deja intuir las fotos por debajo.
+        ...(isIOS
+          ? {}
+          : {
+              headerStyle: {
+                backgroundColor: isDark
+                  ? 'rgba(21,23,24,0.72)'
+                  : 'rgba(255,255,255,0.72)',
+              },
+            }),
+      }}
+    >
+      <FotosStack.Screen name="FotosMain" component={FotosScreen} />
+    </FotosStack.Navigator>
   );
 }
 

@@ -1,11 +1,5 @@
 // app/(tabs)/calendario.tsx
-import React, {
-  useState,
-  useMemo,
-  useCallback,
-  useRef,
-  useLayoutEffect,
-} from 'react';
+import React, { useState, useMemo, useCallback, useLayoutEffect } from 'react';
 import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import {
   View,
@@ -16,11 +10,12 @@ import {
   Platform,
   Text,
 } from 'react-native';
-import { Calendar, CalendarProps, LocaleConfig } from 'react-native-calendars';
+import { CalendarProps, LocaleConfig } from 'react-native-calendars';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
-import Animated from 'react-native-reanimated';
+import Animated, { runOnJS } from 'react-native-reanimated';
 import type { SectionListProps } from 'react-native';
 import { useTabScroll, useTabListScroll } from '@/components/tabs/useTabScroll';
 import SegmentedControl from '@/components/ui/SegmentedControl';
@@ -37,6 +32,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import { localISO } from '@/utils/localDate';
+import SwipeableMonthCalendar from '@/components/calendar/SwipeableMonthCalendar';
 import CalendarSubscribeBottomSheet from '@/components/CalendarSubscribeBottomSheet';
 import EventDetailsBottomSheet from '@/components/EventDetailsBottomSheet';
 import EmptyState from '@/components/ui/EmptyState';
@@ -92,6 +88,24 @@ const AnimatedSectionList = Animated.createAnimatedComponent(
   >,
 );
 
+/** 'YYYY-MM-DD' de un Date, en hora LOCAL (nada de toISOString, que en
+ *  España desplaza el día 1 al último del mes anterior). */
+const dateToStr = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+/** Día 1 del mes al que pertenece la fecha dada. */
+const monthStart = (dateStr: string): string => `${dateStr.slice(0, 7)}-01`;
+
+/** Suma meses al mes de una fecha y devuelve su día 1. */
+const addMonths = (dateStr: string, delta: number): string => {
+  const [y, m] = dateStr.split('-').map(Number);
+  return dateToStr(new Date(y, m - 1 + delta, 1));
+};
+
 export function CalendarScreen() {
   const scheme = useColorScheme();
   // Modo agenda: es el scroller que representa al tab (re-tap → arriba).
@@ -141,6 +155,11 @@ export function CalendarScreen() {
   const todayStr = localISO();
 
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  // El MES visible es estado propio, independiente del día seleccionado: es lo
+  // que comparten la rejilla del mes y la agenda, y lo que mueve el swipe.
+  const [visibleMonth, setVisibleMonth] = useState<string>(() =>
+    monthStart(todayStr),
+  );
   const [viewMode, setViewMode] = useState<'calendar' | 'agenda'>('calendar');
   const [subscribeOpen, setSubscribeOpen] = useState(false);
   const [detailsEvent, setDetailsEvent] = useState<CalendarEvent | null>(null);
@@ -183,6 +202,7 @@ export function CalendarScreen() {
     setLastDateParam(dateParam);
     if (dateParam && typeof dateParam === 'string') {
       setSelectedDate(dateParam);
+      setVisibleMonth(monthStart(dateParam));
     }
   }
 
@@ -210,45 +230,64 @@ export function CalendarScreen() {
   };
 
   const monthLabel = useMemo(() => {
-    const d = new Date(selectedDate + 'T00:00:00');
+    const d = new Date(visibleMonth + 'T00:00:00');
     const label = d.toLocaleDateString('es-ES', {
       month: 'long',
       year: 'numeric',
     });
     return label.charAt(0).toUpperCase() + label.slice(1);
-  }, [selectedDate]);
+  }, [visibleMonth]);
 
-  // Estado extra para forzar que Calendar navegue al mes correcto
-  // (react-native-calendars trata `current` como valor inicial, no reactivo)
-  const [calendarKey, setCalendarKey] = useState(0);
-
-  // 'T12:00:00' evita que el offset UTC+2 (España) desplace el día 1
-  // al último día del mes anterior cuando hacemos new Date(...).toISOString()
-  const dateToStr = (d: Date): string => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  };
+  // Al cambiar de mes, el día seleccionado se mueve con él: hoy si el mes es
+  // el actual, y si no el día 1. Así la ficha de "eventos del día" nunca se
+  // queda hablando de un mes que ya no está en pantalla.
+  const goToMonth = useCallback(
+    (monthISO: string) => {
+      setVisibleMonth(monthISO);
+      setSelectedDate(
+        monthISO.slice(0, 7) === todayStr.slice(0, 7) ? todayStr : monthISO,
+      );
+    },
+    [todayStr],
+  );
 
   const changeMonth = useCallback(
     (delta: number) => {
-      const d = new Date(selectedDate + 'T12:00:00');
-      const newDate = new Date(d.getFullYear(), d.getMonth() + delta, 1);
-      setSelectedDate(dateToStr(newDate));
+      goToMonth(addMonths(visibleMonth, delta));
     },
-    [selectedDate],
+    [visibleMonth, goToMonth],
   );
 
   const goToToday = useCallback(() => {
     setSelectedDate(todayStr);
-    // Incrementar la key fuerza al componente Calendar a remontarse y
-    // posicionarse en el mes de hoy aunque el usuario estuviera en otro mes
-    setCalendarKey((k) => k + 1);
+    setVisibleMonth(monthStart(todayStr));
   }, [todayStr]);
 
-  // Ref del X inicial para detectar swipes cross-platform (funciona en web y nativo)
-  const swipeTouchX = useRef(0);
+  const selectDay = useCallback(
+    (dateString: string) => {
+      if (dateString === selectedDate) return;
+      h.select();
+      setSelectedDate(dateString);
+      setVisibleMonth(monthStart(dateString));
+    },
+    [selectedDate],
+  );
+
+  // Swipe horizontal para la agenda (la rejilla del mes trae el suyo, con
+  // animación, dentro de SwipeableMonthCalendar). `failOffsetY` deja pasar el
+  // scroll vertical de la lista sin pelearse con el gesto.
+  const agendaSwipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-18, 18])
+        .failOffsetY([-16, 16])
+        .onEnd((e) => {
+          if (Math.abs(e.translationX) > 60 || Math.abs(e.velocityX) > 700) {
+            runOnJS(changeMonth)(e.translationX < 0 ? 1 : -1);
+          }
+        }),
+    [changeMonth],
+  );
 
   const filteredByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
@@ -262,7 +301,7 @@ export function CalendarScreen() {
   }, [eventsByDate, visibleCalendars]);
 
   const agendaSections = useMemo(() => {
-    const d0 = new Date(selectedDate + 'T12:00:00');
+    const d0 = new Date(visibleMonth + 'T12:00:00');
     const firstDay = new Date(d0.getFullYear(), d0.getMonth(), 1);
     const lastDay = new Date(d0.getFullYear(), d0.getMonth() + 1, 0);
     const sections: { title: string; data: CalendarEvent[] }[] = [];
@@ -271,7 +310,7 @@ export function CalendarScreen() {
       sections.push({ title: dateStr, data: filteredByDate[dateStr] || [] });
     }
     return sections;
-  }, [filteredByDate, selectedDate]);
+  }, [filteredByDate, visibleMonth]);
 
   // Solo secciones CON eventos — así ListEmptyComponent se activa cuando no hay nada
   const agendaSectionsFiltered = useMemo(
@@ -513,49 +552,15 @@ export function CalendarScreen() {
           >
             <View style={isLandscapeWide ? styles.monthRowTwoPane : undefined}>
               <View style={isLandscapeWide ? styles.monthLeftPane : undefined}>
-                {/* Wrapper para detectar swipes horizontales (cross-platform) */}
-                <View
-                  onTouchStart={(e) => {
-                    swipeTouchX.current = e.nativeEvent.pageX;
-                  }}
-                  onTouchEnd={(e) => {
-                    const dx = e.nativeEvent.pageX - swipeTouchX.current;
-                    if (Math.abs(dx) > 60) changeMonth(dx < 0 ? 1 : -1);
-                  }}
-                >
-                  <View style={styles.calendarCardContainer}>
-                    <Calendar
-                      key={`${calendarKey}-${scheme ?? 'light'}`}
-                      current={selectedDate}
-                      onDayPress={(day) => {
-                        if (day.dateString !== selectedDate) {
-                          h.select();
-                          setSelectedDate(day.dateString);
-                        }
-                      }}
-                      onMonthChange={(month) => {
-                        setSelectedDate(month.dateString);
-                      }}
-                      markedDates={markedDates}
-                      markingType="multi-period"
-                      firstDay={1}
-                      style={{ borderRadius: 20 }}
-                      theme={{
-                        calendarBackground: isDark ? '#2C2C2E' : '#FFFFFF',
-                        dayTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
-                        monthTextColor: isDark ? '#FFFFFF' : '#1C1C1E',
-                        textSectionTitleColor: isDark ? '#8E8E93' : '#8E8E93',
-                        selectedDayBackgroundColor: colors.info,
-                        selectedDayTextColor: colors.white,
-                        arrowColor: colors.info,
-                        todayTextColor: colors.info,
-                        textDayFontWeight: '500',
-                        textMonthFontWeight: '700',
-                        textDayHeaderFontWeight: '600',
-                        textMonthFontSize: 18,
-                      }}
-                    />
-                  </View>
+                <View style={styles.calendarCardContainer}>
+                  <SwipeableMonthCalendar
+                    key={scheme ?? 'light'}
+                    visibleMonth={visibleMonth}
+                    markedDates={markedDates}
+                    onDayPress={selectDay}
+                    onChangeMonth={changeMonth}
+                    isDark={isDark}
+                  />
                 </View>
 
                 {/* Filter chips */}
@@ -637,96 +642,98 @@ export function CalendarScreen() {
             {/* Filter chips */}
             {renderFilterChips()}
 
-            {selectedDate.slice(0, 7) !== todayStr.slice(0, 7) && (
+            {visibleMonth.slice(0, 7) !== todayStr.slice(0, 7) && (
               <View style={styles.agendaBackToTodayRow}>
                 <BackToTodayPill onPress={goToToday} styles={styles} />
               </View>
             )}
 
-            <AnimatedSectionList
-              ref={agendaRef}
-              onScroll={onAgendaScroll}
-              scrollEventThrottle={16}
-              sections={agendaSectionsFiltered}
-              keyExtractor={(item, index) => `${item.title}-${index}`}
-              style={styles.agendaList}
-              contentContainerStyle={[
-                styles.agendaContent,
-                { paddingBottom: contentPaddingBottom },
-              ]}
-              stickySectionHeadersEnabled={false}
-              renderSectionHeader={({ section: { title, data } }) => {
-                const isPast = title < todayStr;
-                const isToday = title === todayStr;
-                const isTomorrow =
-                  new Date(title + 'T00:00:00').getTime() ===
-                  new Date(todayStr + 'T00:00:00').getTime() +
-                    24 * 60 * 60 * 1000;
+            <GestureDetector gesture={agendaSwipe}>
+              <AnimatedSectionList
+                ref={agendaRef}
+                onScroll={onAgendaScroll}
+                scrollEventThrottle={16}
+                sections={agendaSectionsFiltered}
+                keyExtractor={(item, index) => `${item.title}-${index}`}
+                style={styles.agendaList}
+                contentContainerStyle={[
+                  styles.agendaContent,
+                  { paddingBottom: contentPaddingBottom },
+                ]}
+                stickySectionHeadersEnabled={false}
+                renderSectionHeader={({ section: { title, data } }) => {
+                  const isPast = title < todayStr;
+                  const isToday = title === todayStr;
+                  const isTomorrow =
+                    new Date(title + 'T00:00:00').getTime() ===
+                    new Date(todayStr + 'T00:00:00').getTime() +
+                      24 * 60 * 60 * 1000;
 
-                const { day, weekday } = formatDateShort(title);
+                  const { day, weekday } = formatDateShort(title);
 
-                return (
-                  <View
-                    style={[
-                      styles.sectionHeader,
-                      isToday && styles.todaySectionHeader,
-                      isPast && styles.pastSectionHeader,
-                    ]}
-                  >
-                    <View style={styles.sectionDateColumn}>
-                      <Text
-                        style={[
-                          styles.sectionDay,
-                          isToday && styles.todayAccent,
-                          isPast && styles.pastText,
-                        ]}
-                      >
-                        {day}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.sectionWeekday,
-                          isToday && styles.todayAccent,
-                          isPast && styles.pastText,
-                        ]}
-                      >
-                        {isToday ? 'HOY' : isTomorrow ? 'MAÑANA' : weekday}
-                      </Text>
+                  return (
+                    <View
+                      style={[
+                        styles.sectionHeader,
+                        isToday && styles.todaySectionHeader,
+                        isPast && styles.pastSectionHeader,
+                      ]}
+                    >
+                      <View style={styles.sectionDateColumn}>
+                        <Text
+                          style={[
+                            styles.sectionDay,
+                            isToday && styles.todayAccent,
+                            isPast && styles.pastText,
+                          ]}
+                        >
+                          {day}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.sectionWeekday,
+                            isToday && styles.todayAccent,
+                            isPast && styles.pastText,
+                          ]}
+                        >
+                          {isToday ? 'HOY' : isTomorrow ? 'MAÑANA' : weekday}
+                        </Text>
+                      </View>
+                      <View style={styles.sectionDivider} />
+                      <View style={styles.sectionBadge}>
+                        <Text
+                          style={[
+                            styles.sectionBadgeText,
+                            isPast && styles.pastText,
+                          ]}
+                        >
+                          {data.length}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.sectionDivider} />
-                    <View style={styles.sectionBadge}>
-                      <Text
-                        style={[
-                          styles.sectionBadgeText,
-                          isPast && styles.pastText,
-                        ]}
-                      >
-                        {data.length}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              }}
-              renderItem={({ item, section }) => {
-                const isPast = section.title < todayStr;
-                return renderEventCard(item, 0, isPast);
-              }}
-              ListEmptyComponent={
-                <EmptyState
-                  icon={allCalendarsHidden ? 'visibility-off' : 'event-busy'}
-                  title={
-                    allCalendarsHidden
-                      ? 'Todos los calendarios ocultos'
-                      : 'Sin eventos este mes'
-                  }
-                  subtitle={
-                    allCalendarsHidden
-                      ? 'Activa algún calendario desde los filtros de arriba'
-                      : 'No hay eventos programados para ' + monthLabel
-                  }
-                />
-              }
-            />
+                  );
+                }}
+                renderItem={({ item, section }) => {
+                  const isPast = section.title < todayStr;
+                  return renderEventCard(item, 0, isPast);
+                }}
+                ListEmptyComponent={
+                  <EmptyState
+                    icon={allCalendarsHidden ? 'visibility-off' : 'event-busy'}
+                    title={
+                      allCalendarsHidden
+                        ? 'Todos los calendarios ocultos'
+                        : 'Sin eventos este mes'
+                    }
+                    subtitle={
+                      allCalendarsHidden
+                        ? 'Activa algún calendario desde los filtros de arriba'
+                        : 'No hay eventos programados para ' + monthLabel
+                    }
+                  />
+                }
+              />
+            </GestureDetector>
           </View>
         )}
       </View>

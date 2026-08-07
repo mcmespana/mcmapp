@@ -14,7 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useContigoHabits, type DayRecord } from '@/hooks/useContigoHabits';
+import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
 import { warm, formatDateLong, MONTHS_CAP } from '@/components/contigo/theme';
 import {
@@ -25,7 +25,9 @@ import {
   StatCard,
   MonthHeatmap,
 } from '@/components/contigo/HomeWidgets';
+import DayActionSheet from '@/components/contigo/DayActionSheet';
 import { LiturgicalBadge } from '@/components/contigo/LiturgicalBadge';
+import { useContigoDayMenu } from '@/hooks/useContigoDayMenu';
 import LoginNudgeBanner from '@/components/LoginNudgeBanner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -81,30 +83,10 @@ export default function ContigoScreen() {
   const year = todayStr.split('-')[0];
   const monthLabel = `${MONTHS_CAP[mNum - 1]} ${year}`;
 
-  // Tapping a calendar day opens the matching record screen.
-  // Priority: revision → oración → evangelio (most reflective first).
-  const handleDayPress = useCallback(
-    (date: string, rec: DayRecord | null) => {
-      if (!rec) return;
-      if (rec.revisionDone) {
-        router.push({
-          pathname: '/(tabs)/contigo/revision' as never,
-          params: { date },
-        });
-      } else if (rec.prayerDone) {
-        router.push({
-          pathname: '/(tabs)/contigo/oracion' as never,
-          params: { date },
-        });
-      } else if (rec.readingDone) {
-        router.push({
-          pathname: '/(tabs)/contigo/evangelio' as never,
-          params: { date },
-        });
-      }
-    },
-    [router],
-  );
+  // Pulsar un día (racha o calendario) abre lo que haya guardado; si hay
+  // varias cosas, pregunta. Ver `useContigoDayMenu`.
+  const { dayMenu, handleDayPress, openDay, closeDayMenu } =
+    useContigoDayMenu();
 
   const bgGradient = isDark
     ? (['#1A1712', '#100F0C'] as const)
@@ -234,7 +216,7 @@ export default function ContigoScreen() {
           {/* ── Esta semana ────────────────────────────── */}
           <View style={[styles.section, { paddingTop: 18 }]}>
             <Text style={[styles.smallLabel, { color: W.textMuted }]}>
-              ESTA SEMANA
+              ÚLTIMOS 7 DÍAS
             </Text>
             <View
               style={[
@@ -250,6 +232,7 @@ export default function ContigoScreen() {
                 records={records}
                 todayStr={todayStr}
                 isDark={isDark}
+                onDayPress={handleDayPress}
               />
             </View>
           </View>
@@ -321,6 +304,14 @@ export default function ContigoScreen() {
           </View>
         </View>
       </Animated.ScrollView>
+
+      <DayActionSheet
+        visible={!!dayMenu}
+        onClose={closeDayMenu}
+        date={dayMenu?.date ?? null}
+        record={dayMenu?.rec ?? null}
+        onSelect={openDay}
+      />
     </View>
   );
 }
