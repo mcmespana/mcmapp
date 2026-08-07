@@ -10,7 +10,7 @@
  * jest.config.js); aquí controlamos las respuestas por llamada con
  * `mockResolvedValueOnce`.
  */
-import { get, set, update, remove } from 'firebase/database';
+import { get, set, update, remove, onValue } from 'firebase/database';
 import {
   createChoirSession,
   fetchChoirSession,
@@ -19,6 +19,7 @@ import {
   publishChoirPlaylist,
   changeChoirSessionCode,
   closeChoirSession,
+  subscribeChoirSession,
 } from '@/services/choirSessionService';
 import type { SelectedSong } from '@/contexts/SelectedSongsContext';
 
@@ -164,6 +165,18 @@ describe('changeChoirSessionCode', () => {
     expect(moved.master.deviceId).toBe('x');
     expect(set).toHaveBeenCalledTimes(1);
     expect(remove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('subscribeChoirSession', () => {
+  it('la limpieza devuelta ES el Unsubscribe de onValue (no un no-op)', () => {
+    const mockUnsubscribe = jest.fn();
+    (onValue as jest.Mock).mockReturnValueOnce(mockUnsubscribe);
+
+    const cleanup = subscribeChoirSession(VALID, jest.fn());
+    cleanup();
+
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
   });
 });
 

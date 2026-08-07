@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '@/utils/logger';
 import type { DailyReadings } from '@/hooks/useDailyReadings';
 import type { StoredHighlight } from '@/utils/highlightRanges';
+import { withStorageLock } from '@/utils/storageMutex';
 
 export const BOOKMARKS_KEY = '@contigo_bookmarks';
 
@@ -83,22 +84,27 @@ async function saveLocalBookmarks(list: StoredBookmark[]): Promise<void> {
 export async function upsertLocalBookmark(
   bookmark: StoredBookmark,
 ): Promise<StoredBookmark[]> {
-  const list = await loadLocalBookmarks();
-  const next = [bookmark, ...list.filter((b) => b.date !== bookmark.date)].sort(
-    (a, b) => b.bookmarkedAt - a.bookmarkedAt,
-  );
-  await saveLocalBookmarks(next);
-  return next;
+  return withStorageLock(BOOKMARKS_KEY, async () => {
+    const list = await loadLocalBookmarks();
+    const next = [
+      bookmark,
+      ...list.filter((b) => b.date !== bookmark.date),
+    ].sort((a, b) => b.bookmarkedAt - a.bookmarkedAt);
+    await saveLocalBookmarks(next);
+    return next;
+  });
 }
 
 /** Elimina un bookmark por fecha y persiste. Devuelve la lista resultante. */
 export async function removeLocalBookmark(
   date: string,
 ): Promise<StoredBookmark[]> {
-  const list = await loadLocalBookmarks();
-  const next = list.filter((b) => b.date !== date);
-  await saveLocalBookmarks(next);
-  return next;
+  return withStorageLock(BOOKMARKS_KEY, async () => {
+    const list = await loadLocalBookmarks();
+    const next = list.filter((b) => b.date !== date);
+    await saveLocalBookmarks(next);
+    return next;
+  });
 }
 
 /** Funde los bookmarks remotos (RTDB, con texto completo) con los locales.
@@ -108,23 +114,25 @@ export async function removeLocalBookmark(
 export async function mergeRemoteBookmarks(
   remote: StoredBookmark[],
 ): Promise<StoredBookmark[]> {
-  const local = await loadLocalBookmarks();
-  const byDate = new Map<string, StoredBookmark>();
-  for (const b of local) byDate.set(b.date, b);
-  for (const r of remote) {
-    const existing = byDate.get(r.date);
-    if (!existing || (r.bookmarkedAt ?? 0) >= (existing.bookmarkedAt ?? 0)) {
-      // Preferimos el remoto, pero conservamos las readings locales si el
-      // remoto no las trae (por si un guardado antiguo iba sin texto).
-      byDate.set(r.date, {
-        ...r,
-        readings: r.readings ?? existing?.readings ?? null,
-      });
+  return withStorageLock(BOOKMARKS_KEY, async () => {
+    const local = await loadLocalBookmarks();
+    const byDate = new Map<string, StoredBookmark>();
+    for (const b of local) byDate.set(b.date, b);
+    for (const r of remote) {
+      const existing = byDate.get(r.date);
+      if (!existing || (r.bookmarkedAt ?? 0) >= (existing.bookmarkedAt ?? 0)) {
+        // Preferimos el remoto, pero conservamos las readings locales si el
+        // remoto no las trae (por si un guardado antiguo iba sin texto).
+        byDate.set(r.date, {
+          ...r,
+          readings: r.readings ?? existing?.readings ?? null,
+        });
+      }
     }
-  }
-  const next = Array.from(byDate.values()).sort(
-    (a, b) => b.bookmarkedAt - a.bookmarkedAt,
-  );
-  await saveLocalBookmarks(next);
-  return next;
+    const next = Array.from(byDate.values()).sort(
+      (a, b) => b.bookmarkedAt - a.bookmarkedAt,
+    );
+    await saveLocalBookmarks(next);
+    return next;
+  });
 }

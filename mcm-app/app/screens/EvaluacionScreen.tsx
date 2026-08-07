@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { Platform } from 'react-native';
-import { getDatabase, get, ref, set } from 'firebase/database';
+import { getDatabase, get, ref } from 'firebase/database';
 
 import EvaluationWizard, {
   EvaluationAnswers,
@@ -15,6 +15,7 @@ import {
 } from '@/constants/evaluation';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { getFirebaseApp } from '@/utils/firebaseApp';
+import { setWithRetry } from '@/services/firebaseWrites';
 import { getDeviceId } from '@/services/pushNotificationService';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -59,8 +60,7 @@ export default function EvaluacionScreen() {
   const handleSubmit = useCallback(
     async (answers: EvaluationAnswers) => {
       const deviceId = await getDeviceId();
-      const db = getDatabase(getFirebaseApp());
-      await set(ref(db, `${path}/respuestas/${deviceId}`), {
+      await setWithRetry(`${path}/respuestas/${deviceId}`, {
         answers,
         deviceId,
         timestamp: Date.now(),
@@ -74,7 +74,7 @@ export default function EvaluacionScreen() {
           delegationLabel: resolved.delegationLabel,
         }),
       });
-      await set(ref(db, `${path}/updatedAt`), Date.now().toString());
+      await setWithRetry(`${path}/updatedAt`, Date.now().toString());
       if (uid) await markUserAnswered(uid, scope);
     },
     [

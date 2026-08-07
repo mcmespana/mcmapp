@@ -31,6 +31,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 # Load .env if running locally (ignored in GitHub Actions)
 if Path(".env").exists():
@@ -124,13 +125,17 @@ def run(
 
     scrapers = build_scrapers(backfill_dominicos=backfill_dominicos, target_date=target_date)
     results = [(s.__class__.__name__, _run_one(s, dry_run=dry_run)) for s in scrapers]
-    errors = sum(n for _, n in results)
+
+    # Unidades de scraper (no de fecha): cuántas FUENTES no produjeron nada
+    # vs. cuántas fechas sueltas fallaron dentro de fuentes que sí escribieron.
+    dead_scrapers = sum(1 for _, r in results if not r.wrote_any)
+    date_errors = sum(r.date_errors for _, r in results)
 
     # Always run cleanup at end of nightly cycle
     deleted = cleanup_old_dates(dry_run=dry_run)
 
     log.info("=" * 60)
-    exit_code = _exit_code(errors, len(scrapers))
+    exit_code = _exit_code(dead_scrapers, date_errors, len(scrapers))
     _append_step_summary(
         _build_summary_markdown(
             target_date=target_date,
@@ -143,21 +148,37 @@ def run(
     return exit_code
 
 
-def _run_one(scraper: BaseScraper, *, dry_run: bool) -> int:
-    """Run a single scraper and write results. Returns error count."""
+class ScraperResult(NamedTuple):
+    """Resultado de correr UN scraper.
+
+    `date_errors` cuenta fechas sueltas con validación o escritura fallida
+    (rutinario: p. ej. Dominicos aún no publica fechas futuras). `wrote_any`
+    distingue eso de una fuente que no produjo NADA (fetch caído, o ningún
+    dato) — es la señal real de "esta fuente está muerta", y es la unidad
+    que debe compararse contra el número de scrapers en `_exit_code`, no la
+    suma de errores por fecha.
+    """
+
+    date_errors: int
+    wrote_any: bool
+
+
+def _run_one(scraper: BaseScraper, *, dry_run: bool) -> ScraperResult:
+    """Run a single scraper and write results."""
     name = scraper.__class__.__name__
     errors = 0
+    wrote_any = False
 
     try:
         log.info(f"[{name}] Iniciando…")
         data_list = scraper.fetch()
     except Exception as e:
         log.error(f"[{name}] Error inesperado en fetch: {e}", exc_info=True)
-        return 1
+        return ScraperResult(date_errors=1, wrote_any=False)
 
     if not any(data is not None for data in data_list):
         log.error(f"[{name}] fetch() no devolvió ningún dato")
-        return 1
+        return ScraperResult(date_errors=1, wrote_any=False)
 
     writes = scraper.WRITES_NODES
 
@@ -186,11 +207,12 @@ def _run_one(scraper: BaseScraper, *, dry_run: bool) -> int:
 
         try:
             _write_nodes(scraper, data, writes, dry_run=dry_run)
+            wrote_any = True
         except Exception as e:
             log.error(f"[{name}] Error escribiendo {data.fecha}: {e}", exc_info=True)
             errors += 1
 
-    return errors
+    return ScraperResult(date_errors=errors, wrote_any=wrote_any)
 
 
 def _write_nodes(
@@ -246,15 +268,18 @@ def _write_or_log(node: str, fecha: str, payload: dict, dry_run: bool) -> None:
         log.info(f"  ✓ {node}/{fecha} guardado ({len(payload)} campos)")
 
 
-def _exit_code(errors: int, total_scrapers: int) -> int:
-    if errors == 0:
+def _exit_code(dead_scrapers: int, date_errors: int, total_scrapers: int) -> int:
+    if dead_scrapers == 0 and date_errors == 0:
         log.info("Completado sin errores.")
         return 0
-    if errors < total_scrapers:
-        log.warning(f"{errors}/{total_scrapers} scrapers fallaron (éxito parcial).")
-        return 1
-    log.error("TODOS los scrapers fallaron.")
-    return 2
+    if dead_scrapers == total_scrapers:
+        log.error("TODOS los scrapers fallaron.")
+        return 2
+    log.warning(
+        f"{dead_scrapers}/{total_scrapers} fuentes sin datos; "
+        f"{date_errors} fechas con errores (éxito parcial)."
+    )
+    return 1
 
 
 def _append_step_summary(markdown: str) -> None:
@@ -276,7 +301,7 @@ def _build_summary_markdown(
     *,
     target_date: str,
     dry_run: bool,
-    results: list[tuple[str, int]],
+    results: list[tuple[str, ScraperResult]],
     deleted: int,
     exit_code: int,
 ) -> str:
@@ -298,10 +323,14 @@ def _build_summary_markdown(
         "| Fuente | Estado |",
         "| --- | --- |",
     ]
-    for name, errs in results:
-        lines.append(
-            f"| {name} | {'✅ OK' if errs == 0 else f'❌ {errs} error(es)'} |"
-        )
+    for name, result in results:
+        if not result.wrote_any:
+            estado = "❌ sin datos"
+        elif result.date_errors == 0:
+            estado = "✅ OK"
+        else:
+            estado = f"⚠️ {result.date_errors} fecha(s) con error"
+        lines.append(f"| {name} | {estado} |")
     lines.append("")
     lines.append(f"Fechas antiguas borradas en la limpieza: {deleted}")
     return "\n".join(lines)

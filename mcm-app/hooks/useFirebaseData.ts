@@ -183,13 +183,31 @@ export function useFirebaseData<T>(
   // conexión" de "el listener ha vuelto a emitir estando ya conectado".
   const wasOfflineRef = useRef(false);
 
+  // Última aplicación del transform de ESTA instancia: si el `parsed` crudo
+  // no cambió de identidad (p. ej. `refreshRemote` salió por la vía rápida
+  // porque el updatedAt remoto coincide con el local), reutilizamos el
+  // resultado en vez de re-ejecutar `transform` y estrenar una identidad
+  // nueva. Sin esto, `applyParsed` se llama dos veces por carga (caché +
+  // post-refresh) y la segunda siempre entregaba un objeto nuevo aunque los
+  // datos fueran idénticos: React re-renderizaba y todo `useMemo` aguas
+  // abajo recomputaba para cero cambio visible. Memo POR INSTANCIA (no en
+  // `nodeCache`): transforms distintos por consumidor del mismo path siguen
+  // aislados (ver el comentario de cabecera sobre `nodeCache`).
+  const lastApplied = useRef<{ src: unknown; out: T } | null>(null);
+
   useEffect(() => {
     let isMounted = true;
 
     // Aplica el transform de ESTA instancia a los datos crudos de la caché.
     const applyParsed = (parsed: unknown, isHidden: boolean) => {
       if (parsed === undefined) return;
-      const transformed = transform ? transform(parsed) : (parsed as T);
+      let transformed: T;
+      if (lastApplied.current && lastApplied.current.src === parsed) {
+        transformed = lastApplied.current.out;
+      } else {
+        transformed = transform ? transform(parsed) : (parsed as T);
+        lastApplied.current = { src: parsed, out: transformed };
+      }
       if (isMounted) {
         setData(transformed);
         setHidden(isHidden);

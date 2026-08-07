@@ -29,6 +29,27 @@ Es lo que desbloquea el resto: la rama `claude/compact-tabs-bar-uxxaoz` lleva
 SDK 57, barra flotante, Reanimated 4, NSE de iOS, Sentry, analítica, icono de
 Carismochito y subrayado nativo. Todo NATIVO, nada sale por OTA.
 
+### 1-bis. `expo export --platform web` está ROTO (bloquea el deploy web)
+
+- [ ] **`npx expo export --platform web` falla** con
+      `The method or property expo-modules-core.requireNativeViewManager is not
+      available on web`. Es el **renderizado estático** (activado en la config)
+      intentando cargar `app/(tabs)/_layout.tsx` en un entorno Node, donde los
+      módulos nativos nuevos (`expo-native-compact-tabs`,
+      `modules/highlight-menu`) no existen. La exportación no genera ni
+      `index.html` ni el bundle: solo `manifest.json`, `sw.js` e iconos.
+- **Por qué importa ahora**: `.github/workflows/deploy-web.yml` ejecuta ese
+      comando en cada push a `production`. Cuando lo nativo llegue a
+      `production`, **el deploy web deja de funcionar**.
+- **Comprobado el 2026-08-07**: falla igual en el commit base `7682615`, así que
+      NO lo introduce ningún cambio reciente de código de app — viene con los
+      módulos nativos de la build de agosto. El bundle del grafo de la app sí se
+      construye; lo que revienta es el paso de render estático.
+- Caminos posibles (a decidir): desactivar el static rendering para web, dar un
+      shim `.web.ts` a los módulos nativos que se cargan desde el layout de tabs,
+      o mover su import a un punto que el SSG no toque. Verificar con
+      `npx expo export --platform web` en local antes de publicar.
+
 ### 2. React Compiler — lo que SÍ merece la pena
 
 > Contexto: el React Compiler está ACTIVADO (`experiments.reactCompiler: true`
@@ -127,13 +148,13 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 
 > Hecho en la pasada del 2026-06-21 (ver CHANGELOG): headers nativos de Contigo,
 > headers transparentes en Calendario/Eventos Pasados, búsqueda nativa en todas
-> las categorías, canción con letra full-bleed, `GlassActionGroup`/`AppIconButton`/
+> las categorías, canción con letra full-bleed, `GlassActionGroup`/
 > `AppTextField`. Pendiente de la review de componentes:
 
 - [ ] **Pulido del glass (iOS 26) — fino, con dispositivo delante**: botones del
       header de la canción "justos" dentro de la cápsula, seam/línea del header
-      sobre letra blanca, y acercar `AppIconButton`/`GlassSurface` al bar item
-      nativo. Difícil a ciegas. (`components/ui/AppIconButton.tsx`, `GlassSurface.ios.tsx`)
+      sobre letra blanca, y acercar el glass al bar item nativo. Difícil a
+      ciegas. (`GlassSurface.ios.tsx`)
 - [ ] **Headers de evento (hub + sub-pantallas) transparentes** como el cantoral:
       hoy usan el "floating header" opaco (`eventScreenOptions` con
       `FloatingHeaderBackground`). Unificar al glass del sistema — cambio mayor,

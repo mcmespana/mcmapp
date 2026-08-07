@@ -108,7 +108,7 @@ components/                     # ~40 componentes
 │   ├── TopColorBar.ios.tsx       # Barra de color superior (iOS)
 │   ├── IconSymbol.tsx / .ios.tsx  # Iconos por plataforma
 │   └── TabBarBackground.tsx / .ios.tsx
-├── Song*.tsx                   # SongControls, SongDisplay, SongFontBottomSheet, SongListItem, SongSearch
+├── Song*.tsx                   # SongControls, SongDisplay, SongFontBottomSheet, SongListItem
 ├── Toast.tsx                   # Sistema de toasts
 ├── SettingsBottomSheet.tsx     # Bottom sheet de ajustes (Home, Mas, Contigo)
 ├── AppFeedbackModal.tsx        # Modal de feedback/bugs
@@ -138,8 +138,7 @@ hooks/                          # Custom hooks
 ├── useWordleGame.ts           # Lógica del Wordle
 ├── useWordleStats.ts          # Estadísticas Wordle
 ├── useWordleLeaderboard.ts    # Leaderboard Wordle
-├── useWordleWords.ts          # Palabras del Wordle
-└── useUnreadNotificationsCount.ts
+└── useWordleWords.ts          # Palabras del Wordle
 
 constants/
 ├── defaultProfileConfig.ts    # Fallback hardcoded del sistema de perfiles (importa firebase-seed/profileConfig.json)
@@ -282,7 +281,12 @@ Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`:
 2. Muestra datos cacheados inmediatamente
 3. Consulta Firebase por `updatedAt`
 4. Si cambió, descarga `data` y actualiza caché
-5. Único punto de escritura: `ReflexionesScreen` (reflexiones)
+5. Escrituras: las de UI pasan por `services/firebaseWrites.ts`
+   (`pushWithRetry`/`setWithRetry`, con reintento) — feedback, reportes de
+   fallos, sugerencias de canción, evaluaciones, encuestas, reflexiones y
+   ediciones del cantoral. Coro, playlists compartidas y push tienen sus
+   propios servicios dedicados (`choirSessionService.ts`,
+   `cloudPlaylistService.ts`, `pushNotificationService.ts`)
 
 ## Colores de marca
 

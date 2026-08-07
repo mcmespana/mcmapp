@@ -265,3 +265,75 @@ describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
     expect((get as jest.Mock).mock.calls.length).toBe(1);
   });
 });
+
+describe('useFirebaseData — memo del transform por instancia (Plan 007)', () => {
+  it('identidad estable: updatedAt remoto igual al local → transform se llama UNA sola vez', async () => {
+    const transformSpy = jest.fn((d: { old: string }) => ({ ...d }));
+
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'memo_stable_data') return Promise.resolve('{"old":"data"}');
+      if (key === 'memo_stable_updatedAt') return Promise.resolve('500');
+      return Promise.resolve(null);
+    });
+
+    // Caché local presente; el refresh remoto confirma el mismo updatedAt
+    // (la vía rápida de refreshRemote) → parsed NO cambia de identidad.
+    (get as jest.Mock)
+      .mockResolvedValueOnce({ exists: () => true, val: () => '500' }) // updatedAt
+      .mockResolvedValueOnce({ exists: () => true, val: () => false }); // hidden
+
+    const { result } = await renderHook(() =>
+      useFirebaseData('memo_stable_path', 'memo_stable', transformSpy),
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // Sin el memo, applyParsed llama a transform dos veces (fase caché +
+    // post-refresh) aunque `parsed` sea el MISMO objeto crudo.
+    expect(transformSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('datos nuevos (updatedAt distinto) → transform se llama de nuevo', async () => {
+    const transformSpy = jest.fn((d: { v: number }) => ({ v: d.v }));
+
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'memo_changed_data') return Promise.resolve('{"v":1}');
+      if (key === 'memo_changed_updatedAt') return Promise.resolve('1');
+      return Promise.resolve(null);
+    });
+
+    (get as jest.Mock)
+      .mockResolvedValueOnce({ exists: () => true, val: () => '2' }) // updatedAt distinto
+      .mockResolvedValueOnce({ exists: () => true, val: () => false }) // hidden
+      .mockResolvedValueOnce({ exists: () => true, val: () => ({ v: 2 }) }); // data nueva
+
+    const { result } = await renderHook(() =>
+      useFirebaseData('memo_changed_path', 'memo_changed', transformSpy),
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // Cache (v:1) + post-refresh con datos genuinamente nuevos (v:2): el
+    // memo NO debe esconder este caso.
+    expect(transformSpy).toHaveBeenCalledTimes(2);
+    expect(result.current.data).toEqual({ v: 2 });
+  });
+
+  it('sin transform: sigue funcionando devolviendo los datos crudos', async () => {
+    (get as jest.Mock).mockResolvedValueOnce({
+      exists: () => true,
+      val: () => ({ updatedAt: '1', data: { raw: true } }),
+    });
+
+    const { result } = await renderHook(() =>
+      useFirebaseData<{ raw: boolean }>(
+        'memo_no_transform_path',
+        'memo_no_transform',
+      ),
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.data).toEqual({ raw: true });
+  });
+});

@@ -35,8 +35,7 @@ import * as Clipboard from 'expo-clipboard';
 import brandColors from '@/constants/colors';
 import { durations } from '@/constants/animations';
 import { h } from '@/utils/haptics';
-import { getDatabase, ref, push, set } from 'firebase/database';
-import { getFirebaseApp } from '@/utils/firebaseApp';
+import { pushWithRetry } from '@/services/firebaseWrites';
 import { hasSongMedia } from '@/types/songMedia';
 import SongMediaSheet from '@/components/song-media/SongMediaSheet';
 import FloatingMediaPlayer, {
@@ -232,9 +231,7 @@ export default function SongDetailScreen({
     reportedFallitoRef.current = reportKey;
     (async () => {
       try {
-        const db = getDatabase(getFirebaseApp());
-        const fallitoRef = push(ref(db, 'songs/fallitos'));
-        await set(fallitoRef, {
+        await pushWithRetry('songs/fallitos', {
           filename,
           category: firebaseCategory ?? null,
           title: _navScreenTitle ?? null,
@@ -501,9 +498,7 @@ export default function SongDetailScreen({
       // 2) Proponer la edición a Firebase (songs/ediciones). Solo si tenemos
       //    los identificadores necesarios; si no, el cambio local ya está hecho.
       if (firebaseCategory && filename) {
-        const db = getDatabase(getFirebaseApp());
-        const edicionRef = push(ref(db, 'songs/ediciones'));
-        await set(edicionRef, {
+        await pushWithRetry('songs/ediciones', {
           filename,
           category: firebaseCategory,
           contentOld: before,

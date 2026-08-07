@@ -6,7 +6,7 @@
  * Las playlists incluyen `expiresAt` con +6 meses sobre el momento de
  * creación; la purga real se hace por backend más adelante.
  */
-import { getDatabase, ref, get, set, remove } from 'firebase/database';
+import { getDatabase, ref, get, set, remove, update } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import type { SelectedSong } from '@/contexts/SelectedSongsContext';
 import { CODE_LENGTH, isValidCode } from '@/utils/playlistCodes';
@@ -102,10 +102,24 @@ export async function changeCloudPlaylistCode(
   }
   const cur = await fetchCloudPlaylist(oldCode);
   if (!cur) throw new Error('La playlist original ya no existe');
-  const moved = await uploadCloudPlaylist(newCode, cur.songs, {
+
+  // Escritura atómica: sube al nuevo código y borra el viejo en la MISMA
+  // operación (update multi-path), así un fallo a medias no puede dejar dos
+  // copias vivas ni un estado intermedio.
+  const now = Date.now();
+  const moved: CloudPlaylist = {
+    v: 2,
+    songs: cur.songs,
     name: cur.name,
     createdAt: cur.createdAt,
+    updatedAt: now,
+    expiresAt: now + SIX_MONTHS_MS,
+  };
+  const cleanMoved = JSON.parse(JSON.stringify(moved));
+  const db = getDatabase(getFirebaseApp());
+  await update(ref(db, ROOT), {
+    [newCode]: cleanMoved,
+    [oldCode]: null,
   });
-  await deleteCloudPlaylist(oldCode);
   return moved;
 }

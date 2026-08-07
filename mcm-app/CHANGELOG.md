@@ -18,7 +18,7 @@
 
 ---
 
-## 2026-08-06 12:30 — El modo tester (Laboratorio Alpha) por fin recibe OTAs de `preview`
+## 2026-08-08 01:55 — El modo tester (Laboratorio Alpha) por fin recibe OTAs de `preview`
 
 El modo alpha nunca llegó a funcionar. El intento anterior (2026-07-22) lo dejó
 dependiendo de una build de tienda que no salió, y aun con ella habría seguido
@@ -72,6 +72,266 @@ build nativa.
 - **Modificados**: `contexts/PreviewChannelContext.tsx`, `contexts/OTAContext.tsx`,
   `hooks/useOTAUpdate.ts`, `components/PreviewChannelModal.tsx`,
   `components/preview-channel/GiantLever.tsx`, `app.json`, `docs/README.md`.
+
+## 2026-08-07 12:40 — Calendario deslizable, racha de 7 días interactiva y header de Fotos
+
+- **Calendario (tab):** el mes ahora se desliza de verdad. El mes visible pasa a
+  ser estado propio (`visibleMonth`), separado del día seleccionado; el swipe
+  sigue al dedo y, al soltar, la rejilla sale por un lado mientras la nueva
+  entra por el otro (`components/calendar/SwipeableMonthCalendar.tsx`, con
+  `react-native-gesture-handler` + reanimated). Antes el gesto movía la lista de
+  eventos pero la rejilla se quedaba clavada: `react-native-calendars` trata
+  `current` como valor inicial, no reactivo. Las flechas del header usan la
+  misma animación. La vista Agenda gana también swipe de mes.
+- **Orden de calendarios:** el calendario de la delegación del perfil sale
+  SIEMPRE el primero (los IDs de delegación y de calendario coinciden), después
+  los `defaultCalendars` del perfil y luego el resto en el orden de Firebase.
+  `CalendarConfig` incorpora `id` (`hooks/useCalendarConfigs.ts`).
+- **Contigo — racha semanal:** la tira pasa de "lunes a domingo" a los
+  **últimos 7 días** terminando en hoy (`getRollingDays`), así el lunes por la
+  mañana ya no aparece vacía. Cada día es pulsable.
+- **Contigo — días interactivos:** pulsar un día (en la racha o en el
+  calendario del mes) abre lo que haya guardado; si hay varias cosas, sale un
+  submenú (`components/contigo/DayActionSheet.tsx` + `hooks/useContigoDayMenu.ts`)
+  para elegir entre revisión, oración y evangelio. Si no hay nada guardado va
+  directo al evangelio de ese día, y ahora cualquier día pasado del calendario
+  es pulsable (antes solo los que tenían algo marcado).
+- **Fotos:** header nativo transparente (blur en iOS, barra semitransparente en
+  Android/Web) SIN texto de título; las portadas pasan por debajo y se funden
+  con él al deslizar, como en el cantoral.
+
+---
+
+## 2026-08-06 20:10 — Limpieza: 6 módulos sin importador y deps sin uso (Plan 015)
+
+- Borrados `components/SongSearch.tsx`, `components/ExternalLink.tsx`,
+  `components/ui/AppIconButton.tsx`, `components/ui/CloseIconButton.tsx`,
+  `components/ui/GlassCard.tsx`, `hooks/useUnreadNotificationsCount.ts` —
+  cero imports verificados. `TODO.md` tenía trabajo pendiente asignado a
+  `AppIconButton` (inejecutable, nadie lo montaba); quitada la referencia.
+  `CLAUDE.md` ya no los lista como vivos.
+- Manifest: fuera `ts-jest`, `copy-webpack-plugin`, `tailwind-merge`,
+  `tailwind-variants` (sin uso); `@expo/config` movido a devDependencies
+  (solo build-time, `app.config.ts`).
+- **⚠️ Cambio nativo**: `expo-system-ui` se quitó (sin uso, confirmado
+  contra `expo-doctor` y `expo config`) — este paso requiere **build de
+  producción** antes del próximo merge a `production` (el commit lleva
+  `[skip-ota]`).
+- `expo-insights` (EAS Insights) se quitó primero por el mismo motivo
+  (sin uso), pero se decidió reincorporarlo: no necesita ningún código —
+  con el paquete instalado, EAS manda automáticamente eventos de
+  cold-start del app al dashboard "Insights" en el próximo build. También
+  es cambio nativo, mismo aviso de build de producción.
+
+## 2026-08-06 19:45 — Refactor: las escrituras de UI a Firebase ganan retry (Plan 014)
+
+Las escrituras estaban repartidas por ~10 archivos, cada uno repitiendo el
+ritual `getDatabase(getFirebaseApp())` → `ref` → `push`/`set` a mano, sin
+ningún reintento — a diferencia de las lecturas (`useFirebaseData`), que ya
+tenían `withRetry` con backoff. Una evaluación o un reporte de bug enviados
+con wifi flojo se perdían con un toast de error, sin más.
+
+- Nueva costura `services/firebaseWrites.ts`: `pushWithRetry`/`setWithRetry`.
+  La key de `push()` se genera UNA vez y solo se reintenta el `set`
+  (idempotente).
+- Migrados: `AppFeedbackModal`, `ReportBugsModal`, `SuggestSongModal`,
+  `EvaluacionScreen`, `EvaluacionAppScreen`, `SurveyScreen`, `SongDetailScreen`
+  (fallitos + ediciones de arreglos), `ReflexionesScreen` (su `update()`
+  multi-path se conserva tal cual, solo gana retry). Rutas y payloads
+  idénticos a los previos.
+- `WordleScreen` (congelado) y `SecretPanelModal` (lógica de escritura
+  demasiado grande para la primitiva sin reordenar el archivo — gigante ya
+  planificado en `PLAN_CALIDAD.md`) quedan fuera, a propósito.
+- Corregida la frase falsa de `CLAUDE.md` ("Único punto de escritura:
+  ReflexionesScreen").
+
+## 2026-08-06 19:20 — Fix: poda la caché de lecturas diarias (crecía sin tope) (Plan 012)
+
+`useDailyReadings` cacheaba cada día bajo su propia clave AsyncStorage y
+nada la podaba nunca: un usuario diario acumulaba una clave por día para
+siempre (varios MB al año), degradando el SQLite de AsyncStorage en Android.
+El nodo remoto además se purga a 30 días, así que la copia local vieja podía
+servir lecturas que el scraper ya había corregido.
+
+- Nuevo `utils/dailyReadingsCache.ts`: `selectKeysToPrune` (pura) +
+  `pruneDailyReadingsCache` (IO, se traga errores — la poda nunca rompe la
+  carga de lecturas). Retención de 60 días.
+- `useDailyReadings` dispara la poda UNA vez por sesión (fire-and-forget,
+  sin bloquear el primer render) y gana el guard `isMounted` que le faltaba
+  en el camino de caché.
+- Los guardados del usuario no dependen de esta caché (los bookmarks llevan
+  su propia copia del texto) — la poda no puede perder datos.
+- Archivos: `hooks/useDailyReadings.ts`, `utils/dailyReadingsCache.ts`.
+
+## 2026-08-06 19:05 — Perf: calendario litúrgico recortado a ventana rodante (−280 KB de bundle) (Plan 011)
+
+`components/contigo/LiturgicalBadge.tsx` importaba estáticamente
+`assets/calendario-liturgico.json`: 318 KB cubriendo 2025→2100, de los que
+más del 95% no se usará en años. Metro inlinea ese JSON en el bundle JS, así
+que cada OTA lo descargaba entero y cada arranque lo evaluaba.
+
+- La tabla completa se preserva en `assets/calendario-liturgico-completo.json`
+  (sin ningún import — no pesa en el bundle).
+- `assets/calendario-liturgico.json` (el que sí importa el badge, mismo
+  nombre) ahora es una ventana rodante de 5 años (actual −1 … actual +3):
+  20,9 KB.
+- Nuevo `npm run liturgical:window` (`scripts/generate-liturgical-window.js`)
+  regenera la ventana; idempotente.
+- Test de vigencia (`__tests__/liturgicalWindow.test.ts`): falla en CI con
+  instrucciones si la ventana está a punto de caducar.
+- `LiturgicalBadge.tsx` no cambia — mismo import, mismo nombre de archivo.
+
+## 2026-08-06 18:45 — Perf: ICS del calendario en paralelo + ventana de frescura de 5 min (Plan 008)
+
+Los calendarios ICS se descargaban en SERIE (`await fetch` dentro de un
+`for`), así que el tiempo hasta calendario fresco era la suma de los
+round-trips en vez del máximo — con el proxy caído, el doble. Además el
+hook revalidaba TODO en cada montaje sin ninguna ventana de frescura: un
+paseo Home→Calendario→Home re-descargaba y re-parseaba todos los ICS.
+
+- Descarga con `Promise.allSettled` en paralelo, preservando el índice
+  posicional de `calendarIndex` (el merge recorre `results` en orden).
+- Ventana de frescura de 5 min por lista de URLs: un resultado completo
+  reciente evita relanzar la descarga; un resultado parcial NO cuenta como
+  fresco (el siguiente montaje sí revalida).
+- La semántica de persistencia (completo→disco, parcial→según caché) no
+  cambia.
+- Tests nuevos en `__tests__/useCalendarEvents.test.ts`.
+- Archivo: `hooks/useCalendarEvents.ts`.
+
+## 2026-08-06 18:25 — Perf: `useFirebaseData` deja de re-transformar y re-renderizar sin cambios (Plan 007)
+
+Tras la fase remota, el hook releía la caché y aplicaba `transform`
+incondicionalmente, aunque el refresh hubiera salido por la vía rápida (el
+`updatedAt` remoto coincide con el local, `parsed` es el MISMO objeto). Como
+el transform crea un objeto nuevo, cada ciclo de navegación disparaba un
+re-render y recomputaba todo `useMemo` aguas abajo para cero cambio visible
+— en el cantoral, con 3 consumidores vivos del nodo `songs` y dos pasando
+`filterSongsData` (copia + filtra el corpus entero), el coste es real.
+
+- Memo por instancia (`useRef`, no en la caché de módulo compartida): si el
+  `parsed` crudo no cambió de identidad entre la fase caché y la
+  post-refresh, se reutiliza el resultado del transform en vez de
+  re-ejecutarlo.
+- Test de regresión: `__tests__/useFirebaseData.test.ts` (verificado que
+  falla contra el código anterior).
+- Archivo: `hooks/useFirebaseData.ts`.
+
+## 2026-08-06 18:10 — Fix: serializa las escrituras concurrentes de historial de notificaciones y subrayados (Plan 006)
+
+Varios módulos hacían el ciclo `getItem → mutar → setItem` sobre la misma
+clave de AsyncStorage sin ninguna serialización: dos pushes casi
+simultáneos, o el merge remoto de bookmarks al iniciar sesión corriendo
+mientras el usuario subraya, podían intercalar sus escrituras — el segundo
+`setItem` pisaba con una copia obsoleta y el cambio del primero
+desaparecía en silencio (notificaciones que se esfuman del historial,
+subrayados perdidos).
+
+- Nuevo `utils/storageMutex.ts` (`withStorageLock`): mutex por clave, una
+  cadena de promesas por detrás de los helpers de escritura.
+- Envuelve `saveReceivedNotificationLocally`, `markNotificationAsRead` y
+  `markAllNotificationsAsRead` (clave `@mcm_notifications_history`) y
+  `upsertLocalBookmark`, `removeLocalBookmark`, `mergeRemoteBookmarks`
+  (clave `@contigo_bookmarks`). Las firmas públicas no cambian.
+- Tests de concurrencia real: dos escrituras sin `await` entre ellas ya no
+  se pierden ninguna (`__tests__/storageMutex.test.ts`,
+  `__tests__/contigoBookmarks.test.ts`,
+  `__tests__/pushNotificationServiceStorage.test.ts`).
+
+## 2026-08-06 17:50 — Tests de `cloudPlaylistService` + movimiento de playlist atómico (Plan 005)
+
+`cloudPlaylistService` es el único sitio de la app donde se borran datos de
+usuario en la nube (playlists compartidas por código de 4 dígitos) y no
+tenía ningún test, a diferencia de su gemelo `choirSessionService`. Además
+`changeCloudPlaylistCode` movía la playlist en dos pasos no atómicos
+(subir al nuevo código, luego borrar el viejo): si el borrado fallaba
+quedaban dos copias vivas.
+
+- 13 tests nuevos (`__tests__/cloudPlaylistService.test.ts`): validación de
+  código, borrado perezoso de caducadas (incluido el caso "vigente → NO se
+  borra", centinela de la regresión destructiva), limpieza de `undefined` y
+  el cambio de código con sus errores.
+- `changeCloudPlaylistCode` ahora mueve con un solo `update()` multi-path
+  (destino=payload, origen=`null`) en vez de `set` + `remove` separados —
+  un fallo a medias ya no puede dejar dos copias vivas.
+- Archivos: `services/cloudPlaylistService.ts`.
+
+## 2026-08-06 17:30 — Fix: un solo dueño del mapa de hábitos de Contigo (Plan 004)
+
+`useContigoHabits` guardaba TODO el mapa de hábitos desde el estado propio
+de CADA instancia del hook, y hay 4 pantallas de Contigo montadas a la vez
+(index, evangelio, oración, revisión). Si dos pantallas escribían sin
+remontarse entre medias, la segunda pisaba el mapa entero con su copia
+desactualizada — el usuario veía des-completarse en silencio un hábito que
+acababa de marcar (racha y contadores incluidos).
+
+- Nuevo `ContigoHabitsContext`/`ContigoHabitsProvider`: único dueño del
+  estado, montado en `app/(tabs)/contigo/_layout.tsx`. Las mutaciones parten
+  siempre de `recordsRef.current` (nunca de un closure de render viejo) y la
+  persistencia a AsyncStorage se serializa con una cola de promesas.
+  `useContigoHabits` pasa a ser una fachada de una línea — las 4 pantallas
+  no cambian ni un import.
+- El formato de `@contigo_habits` en AsyncStorage no cambia.
+- Test de regresión: `__tests__/contigoHabitsContext.test.ts`.
+- Archivos: `contexts/ContigoHabitsContext.tsx` (nuevo),
+  `hooks/useContigoHabits.ts`, `app/(tabs)/contigo/_layout.tsx`.
+
+## 2026-08-06 17:05 — Fix: expansión multi-día del calendario ante DST + horas UTC normalizadas (Plan 003)
+
+**Parte A:** el bucle que expande eventos multi-día mezclaba `Date` en UTC
+(parseo), `setDate()` en hora local (incremento) y `toISOString()` en UTC
+(formato). Al cruzar el cambio de hora de Europa/Madrid, el instante se
+desplazaba 1h y el día formateado saltaba o se duplicaba — un evento del
+28-mar al 2-abr podía pintar `28, 29, 29 (dup), 31…`. Justo la ventana de
+Semana Santa/retiros. Sustituido por aritmética de calendario pura
+(`addDaysISO`, en UTC de punta a punta, sin pasar por hora local en ningún
+punto). El mismo fix se aplicó al ajuste del `DTEND` exclusivo de eventos de
+día completo (usaba `setDate` igual).
+
+**Parte B:** verificado contra el feed real (`basic.ics`) — emite las horas
+en UTC con sufijo `Z`, sin `TZID`. Los eventos con hora se mostraban 1-2h
+antes de lo real. Ahora `DTSTART`/`DTEND` con `Z` se convierten a fecha/hora
+local; los valores flotantes (sin `Z`) se dejan exactamente como estaban.
+
+- Tests nuevos: `__tests__/useCalendarEvents.test.ts` (rango DST
+  primavera/otoño, `addDaysISO`, parseo de horas UTC vs flotantes).
+- Archivo: `hooks/useCalendarEvents.ts`.
+
+## 2026-08-06 16:45 — CI: guard de cambios nativos en todo el push + gate de tests antes de publicar (Plan 002)
+
+Los workflows de OTA solo miraban el último commit del push para detectar
+`[skip-ota]`, y ni la OTA ni el deploy web corrían tests/typecheck/lint —
+solo `ci.yml` en pull requests. Un push directo con cambios nativos sin
+`[skip-ota]` en el último commit (o un `workflow_dispatch`, que se lo saltaba
+siempre) podía crashear la base instalada entera.
+
+- Nuevo job `guard-native` en `ota-production.yml` y `ota-preview.yml`:
+  compara TODO el rango del push (`github.event.before`..`github.sha`)
+  contra las rutas nativas del repo. Si hay diff nativo sin `[skip-ota]` en
+  ningún commit del rango, el guard falla en rojo y no publica.
+  `workflow_dispatch` ahora acepta un input `force` explícito para saltárselo
+  a propósito (ya no es un bypass silencioso).
+- Nuevo workflow reutilizable `verify.yml` (typecheck + typecheck:tests +
+  lint + test) que ahora usan `ci.yml`, `ota-production.yml`,
+  `ota-preview.yml` y `deploy-web.yml` — una sola fuente de verdad para los
+  pasos de verificación.
+- Archivos: `.github/workflows/{ci,ota-production,ota-preview,deploy-web,verify}.yml`.
+
+## 2026-08-06 16:30 — Fix: los `off()` de coro y notificaciones no quitaban el listener (Plan 001)
+
+`subscribeChoirSession` y `subscribeToNotifications` devolvían una función de
+limpieza que llamaba a `off(ref, 'value', <valor devuelto por onValue>)` — pero
+ese valor es el `Unsubscribe`, no el callback, así que `off` no encontraba
+coincidencia y la suscripción quedaba viva para siempre (listeners acumulados
+en "modo Coro" al cambiar de código, e igual en el historial de
+notificaciones).
+
+- Ambos servicios ahora devuelven directamente el `Unsubscribe` que da
+  `onValue` — el patrón correcto del SDK modular de Firebase.
+- Nuevo test de regresión en `choirSessionService.test.ts` que fija el
+  contrato.
+- Archivos: `services/choirSessionService.ts`, `services/pushNotificationService.ts`,
+  `__tests__/choirSessionService.test.ts`.
 
 ## 2026-08-04 03:00 — Red: reintentos y resincronización al volver online
 
