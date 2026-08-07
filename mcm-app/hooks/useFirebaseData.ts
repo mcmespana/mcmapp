@@ -182,6 +182,27 @@ export function useFirebaseData<T>(
   // Estado de red de la última comprobación, para distinguir "he recuperado la
   // conexión" de "el listener ha vuelto a emitir estando ya conectado".
   const wasOfflineRef = useRef(false);
+  // Última aplicación del transform de ESTA instancia, como par (crudo →
+  // resultado). `applyParsed` se llama dos veces por ciclo: al servir la caché y
+  // otra vez tras el refresco remoto. Cuando `refreshRemote` sale por la vía
+  // rápida ("el updatedAt remoto es igual al local", que es el caso común), el
+  // crudo es el MISMO objeto, pero el transform creaba uno nuevo: `setData`
+  // recibía una identidad nueva para datos idénticos, React re-renderizaba y
+  // todos los `useMemo` aguas abajo recomputaban. En el cantoral hay 3
+  // consumidores vivos del nodo `songs` y dos pasan `filterSongsData`, que copia
+  // todas las categorías y filtra todas las canciones: ~6 pasadas por el corpus
+  // entero por ciclo de navegación, para cero cambio visible.
+  //
+  // El memo es POR INSTANCIA (no en `nodeCache`) a propósito: dos consumidores
+  // del mismo path pueden tener transforms distintos (ver la nota de la caché de
+  // módulo arriba). Se guarda también el `transform` usado, para que un
+  // transform nuevo (una arrow inline con closure cambiante) recompute en vez de
+  // quedar escondido hasta el siguiente cambio de datos.
+  const lastApplied = useRef<{
+    src: unknown;
+    fn: ((data: any) => T) | undefined;
+    out: T;
+  } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -189,7 +210,14 @@ export function useFirebaseData<T>(
     // Aplica el transform de ESTA instancia a los datos crudos de la caché.
     const applyParsed = (parsed: unknown, isHidden: boolean) => {
       if (parsed === undefined) return;
-      const transformed = transform ? transform(parsed) : (parsed as T);
+      let transformed: T;
+      const prev = lastApplied.current;
+      if (prev && prev.src === parsed && prev.fn === transform) {
+        transformed = prev.out;
+      } else {
+        transformed = transform ? transform(parsed) : (parsed as T);
+        lastApplied.current = { src: parsed, fn: transform, out: transformed };
+      }
       if (isMounted) {
         setData(transformed);
         setHidden(isHidden);

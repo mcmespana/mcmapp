@@ -265,3 +265,105 @@ describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
     expect((get as jest.Mock).mock.calls.length).toBe(1);
   });
 });
+
+/**
+ * Memo del transform por instancia (plan `plans/007-usefirebasedata-transform-memo.md`).
+ *
+ * `applyParsed` corre dos veces por ciclo: al servir la caché y otra vez tras el
+ * refresco remoto. Cuando el `updatedAt` remoto coincide con el local —la vía
+ * común— el crudo es el MISMO objeto, pero el transform creaba uno nuevo: React
+ * re-renderizaba y los `useMemo` aguas abajo recomputaban para nada.
+ */
+describe('useFirebaseData · memo del transform', () => {
+  // Arnés propio a propósito. El test "no actualiza datos si el timestamp no
+  // cambió" reemplaza la implementación de `AsyncStorage.getItem` con
+  // `mockImplementation` (no `...Once`), y `jest.clearAllMocks()` NO restaura
+  // implementaciones: sin esto, aquí `getItem` devolvería null para todo. Lo
+  // mismo con las colas de `mockResolvedValueOnce` de `get`, que `clearAllMocks`
+  // tampoco drena.
+  let store: Record<string, string>;
+
+  beforeEach(() => {
+    store = {};
+    (get as jest.Mock).mockReset();
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((k: string) =>
+      Promise.resolve(store[k] ?? null),
+    );
+    (AsyncStorage.setItem as jest.Mock).mockImplementation(
+      (k: string, v: string) => {
+        store[k] = v;
+        return Promise.resolve();
+      },
+    );
+  });
+
+  it('updatedAt sin cambios: el transform corre una vez y `data` conserva identidad', async () => {
+    // Caché local presente y remoto con el MISMO updatedAt → vía rápida de
+    // `refreshRemote`, que no toca `parsed`.
+    store.memo_data = JSON.stringify([1, 2, 3]);
+    store.memo_updatedAt = '100';
+    (get as jest.Mock).mockResolvedValue({
+      exists: () => true,
+      val: () => '100', // updatedAt remoto = local (y `hidden` no es true)
+    });
+
+    const transform = jest.fn((d: number[]) => d.map((n) => n * 2));
+
+    const { result } = await renderHook(() =>
+      useFirebaseData<number[]>('songs', 'memo', transform),
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const first = result.current.data;
+    expect(first).toEqual([2, 4, 6]);
+
+    // Fase remota completada, y sigue todo igual: una sola pasada del transform
+    // y la MISMA referencia (antes había dos pasadas y una identidad nueva, que
+    // re-renderizaba y recomputaba los useMemo aguas abajo para nada).
+    await waitFor(() => expect(get as jest.Mock).toHaveBeenCalled());
+    expect(transform).toHaveBeenCalledTimes(1);
+    expect(result.current.data).toBe(first);
+  });
+
+  it('datos nuevos: el transform vuelve a correr y la identidad cambia', async () => {
+    store.memo2_data = JSON.stringify([1]);
+    store.memo2_updatedAt = '100';
+    (get as jest.Mock)
+      // updatedAt remoto distinto…
+      .mockResolvedValueOnce({ exists: () => true, val: () => '200' })
+      // …hidden…
+      .mockResolvedValueOnce({ exists: () => false, val: () => undefined })
+      // …y el data nuevo.
+      .mockResolvedValueOnce({ exists: () => true, val: () => [1, 2] });
+
+    const transform = jest.fn((d: number[]) => d.map((n) => n * 2));
+
+    const { result } = await renderHook(() =>
+      useFirebaseData<number[]>('songs', 'memo2', transform),
+    );
+    await waitFor(() => expect(result.current.data).toEqual([2, 4]));
+
+    // Dos aplicaciones: la de la caché y la de los datos nuevos. El memo no
+    // esconde los cambios reales.
+    expect(transform).toHaveBeenCalledTimes(2);
+  });
+
+  it('sin transform: `data` es el crudo y tampoco estrena identidad', async () => {
+    store.memo3_data = JSON.stringify({ n: 1 });
+    store.memo3_updatedAt = '100';
+    (get as jest.Mock).mockResolvedValue({
+      exists: () => true,
+      val: () => '100',
+    });
+
+    const { result } = await renderHook(() =>
+      useFirebaseData<{ n: number }>('songs', 'memo3'),
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const first = result.current.data;
+    expect(first).toEqual({ n: 1 });
+    await waitFor(() => expect(get as jest.Mock).toHaveBeenCalled());
+    expect(result.current.data).toBe(first);
+  });
+});

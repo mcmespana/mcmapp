@@ -18,6 +18,27 @@
 
 ---
 
+## 2026-08-07 13:45 — `useFirebaseData` deja de re-transformar y re-renderizar sin cambios
+
+El hook aplicaba el `transform` **dos veces por ciclo** (al servir la caché y
+otra vez tras el refresco remoto), incluso cuando `refreshRemote` salía por la
+vía rápida "el `updatedAt` remoto es igual al local" — el caso común del día a
+día — y los datos crudos eran literalmente el mismo objeto. Como el transform
+crea un objeto nuevo, `setData` recibía una **identidad nueva para datos
+idénticos**: React re-renderizaba y todos los `useMemo` aguas abajo recomputaban.
+En el cantoral hay 3 consumidores vivos del nodo `songs` y dos pasan
+`filterSongsData` (copia todas las categorías y filtra todas las canciones), así
+que cada ciclo de navegación pagaba ~6 pasadas por el corpus entero para cero
+cambio visible.
+
+Ahora cada instancia memoiza su última aplicación como par (crudo, transform) →
+resultado: si ni los datos ni la función cambiaron, se devuelve la misma
+referencia y React se salta el re-render. El memo es **por instancia**, no en la
+caché de módulo, porque dos consumidores del mismo path pueden tener transforms
+distintos. Comportamiento visible: idéntico. 3 tests nuevos; el centinela falla
+contra el código viejo con el síntoma exacto. Plan:
+`plans/007-usefirebasedata-transform-memo.md`.
+
 ## 2026-08-07 13:20 — Playlists compartidas: cambiar el código ya no puede dejar dos copias
 
 Mover una playlist compartida a otro código eran **dos escrituras**: subir al

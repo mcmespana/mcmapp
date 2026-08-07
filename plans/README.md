@@ -28,7 +28,7 @@ conditions, and update your row when done.
 | 004 | Un solo dueño para los hábitos de Contigo (provider) — las 4 pantallas dejan de pisarse | P2 | M | — | TODO |
 | 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | DONE (2026-08-07) — 19 tests; los 17 de caracterización pasaban contra el código viejo y los 2 del `update()` atómico fallaban, como exige el plan |
 | 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | TODO |
-| 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | TODO |
+| 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | DONE (2026-08-07) — el test centinela falla contra el código viejo con el síntoma exacto (2 pasadas del transform en vez de 1). El memo compara también el `transform`, no solo el crudo |
 | 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | DONE (2026-08-07) — hecho justo tras 003, mismo fichero. No se añadió `force`: ninguna pantalla tiene pull-to-refresh que pase por el hook |
 | 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | TODO |
 | 010 | Virtualizar el muro de "Compartiendo" con `FlatList` | P3 | S | — | TODO |
