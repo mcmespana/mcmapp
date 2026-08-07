@@ -21,6 +21,14 @@ export interface CalendarEvent {
 
 /** Suma `n` días a una fecha 'YYYY-MM-DD' sin pasar por la hora local (evita
  * que un cambio de hora DST duplique o salte un día al iterar). */
+/**
+ * Tope de días que se expanden de UN evento. Un ICS corrupto con un `DTEND` en
+ * el año 3000 hacía un bucle de cientos de miles de iteraciones metiendo el
+ * mismo evento en cada fecha; ningún evento real de este calendario dura más de
+ * un año.
+ */
+export const MAX_EVENT_DAYS = 366;
+
 export function addDaysISO(iso: string, n: number): string {
   const [y, m, d] = iso.split('-').map(Number);
   const t = Date.UTC(y, m - 1, d + n);
@@ -273,13 +281,24 @@ function fetchAndParseCalendars(
             // For multi-day events, iterate through the range using pure
             // calendar arithmetic (UTC de punta a punta) — evita el bug de
             // duplicar/saltar un día al cruzar un cambio de hora DST.
+            // Acotado a MAX_EVENT_DAYS: un DTEND corrupto no puede colgar el
+            // parseo.
+            let days = 0;
             for (
               let cur = ev.startDate;
-              cur <= ev.endDate;
-              cur = addDaysISO(cur, 1)
+              cur <= ev.endDate && days < MAX_EVENT_DAYS;
+              cur = addDaysISO(cur, 1), days++
             ) {
               if (!map[cur]) map[cur] = [];
               map[cur].push(withCal);
+            }
+            if (days >= MAX_EVENT_DAYS) {
+              logger.warn(
+                '[calendar] evento con rango absurdo, truncado',
+                ev.startDate,
+                ev.endDate,
+                ev.title,
+              );
             }
           }
         });

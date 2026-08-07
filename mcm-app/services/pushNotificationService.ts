@@ -548,11 +548,15 @@ export const getUnreadNotificationsCount = async (
  * Limpia el historial local de notificaciones
  */
 export const clearLocalNotifications = async (): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem(NOTIFICATIONS_HISTORY_KEY);
-  } catch (error) {
-    logger.error('Error limpiando historial local:', error);
-  }
+  // También pasa por la cola: si el borrado cayera entre el read y el write de
+  // otra operación sobre el historial, esa otra lo resucitaría entero.
+  await withStorageLock(NOTIFICATIONS_HISTORY_KEY, async () => {
+    try {
+      await AsyncStorage.removeItem(NOTIFICATIONS_HISTORY_KEY);
+    } catch (error) {
+      logger.error('Error limpiando historial local:', error);
+    }
+  });
 };
 
 /**
@@ -586,34 +590,42 @@ export const getDismissedNotificationKeys = async (): Promise<Set<string>> => {
 export const dismissNotification = async (
   notification: NotificationData | ReceivedNotification,
 ): Promise<void> => {
-  try {
-    const contentKey = notificationContentKey(notification);
+  // Cuarto ciclo read-modify-write sobre el historial: dejar la clave con solo
+  // tres de sus cuatro escritores serializados es peor que no serializarla,
+  // porque el lock da una falsa sensación de seguridad. De paso queda
+  // serializado DISMISSED_NOTIFICATIONS_KEY, cuyo único escritor es esta
+  // función: dos descartes rápidos ya no se pisan.
+  await withStorageLock(NOTIFICATIONS_HISTORY_KEY, async () => {
+    try {
+      const contentKey = notificationContentKey(notification);
 
-    // 1) Quitar del historial local (por id o por contenido equivalente).
-    const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
-    if (data) {
-      const notifications: ReceivedNotification[] = JSON.parse(data);
-      const filtered = notifications.filter(
-        (n) =>
-          n.id !== notification.id && notificationContentKey(n) !== contentKey,
-      );
+      // 1) Quitar del historial local (por id o por contenido equivalente).
+      const data = await AsyncStorage.getItem(NOTIFICATIONS_HISTORY_KEY);
+      if (data) {
+        const notifications: ReceivedNotification[] = JSON.parse(data);
+        const filtered = notifications.filter(
+          (n) =>
+            n.id !== notification.id &&
+            notificationContentKey(n) !== contentKey,
+        );
+        await AsyncStorage.setItem(
+          NOTIFICATIONS_HISTORY_KEY,
+          JSON.stringify(filtered),
+        );
+      }
+
+      // 2) Registrar como descartada (id + clave de contenido).
+      const dismissed = await getDismissedNotificationKeys();
+      if (notification.id) dismissed.add(notification.id);
+      dismissed.add(contentKey);
       await AsyncStorage.setItem(
-        NOTIFICATIONS_HISTORY_KEY,
-        JSON.stringify(filtered),
+        DISMISSED_NOTIFICATIONS_KEY,
+        JSON.stringify(Array.from(dismissed)),
       );
+    } catch (error) {
+      logger.error('Error eliminando notificación:', error);
     }
-
-    // 2) Registrar como descartada (id + clave de contenido).
-    const dismissed = await getDismissedNotificationKeys();
-    if (notification.id) dismissed.add(notification.id);
-    dismissed.add(contentKey);
-    await AsyncStorage.setItem(
-      DISMISSED_NOTIFICATIONS_KEY,
-      JSON.stringify(Array.from(dismissed)),
-    );
-  } catch (error) {
-    logger.error('Error eliminando notificación:', error);
-  }
+  });
 };
 
 const NOTIFICATIONS_INITIALIZED_KEY = '@mcm_notifications_initialized';

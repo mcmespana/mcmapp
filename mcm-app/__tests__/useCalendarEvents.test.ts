@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import useCalendarEvents, {
   addDaysISO,
   parseICS,
+  MAX_EVENT_DAYS,
   __resetCalendarCacheForTests,
 } from '@/hooks/useCalendarEvents';
 import type { CalendarConfig } from '@/hooks/useCalendarConfigs';
@@ -264,5 +265,55 @@ describe('useCalendarEvents — descarga en paralelo (Plan 008)', () => {
     expect((global.fetch as jest.Mock).mock.calls.length).toBeGreaterThan(
       callsAfterFirst,
     );
+  });
+});
+
+describe('expansión multi-día acotada', () => {
+  it('un DTEND corrupto no expande medio milenio de fechas', async () => {
+    // Sin tope, un rango 2026 → 3000 metía el mismo evento en ~355.000 claves,
+    // colgando el parseo del ICS entero.
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'BEGIN:VEVENT',
+      'SUMMARY:Evento con DTEND roto',
+      'DTSTART;VALUE=DATE:20260101',
+      'DTEND;VALUE=DATE:30000101',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ]
+      .map((l) => `${l}\r`)
+      .join('\n');
+
+    const [ev] = parseICS(ics);
+    expect(ev.startDate).toBe('2026-01-01');
+
+    __resetCalendarCacheForTests();
+    const calendars: CalendarConfig[] = [
+      {
+        id: 'roto',
+        name: 'roto',
+        url: 'https://example.test/roto.ics',
+        color: '#000000',
+      },
+    ];
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, text: () => Promise.resolve(ics) }),
+    ) as unknown as typeof fetch;
+
+    try {
+      const { result } = await renderHook(() => useCalendarEvents(calendars));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      await waitFor(() =>
+        expect(Object.keys(result.current.eventsByDate).length).toBeGreaterThan(
+          0,
+        ),
+      );
+      expect(Object.keys(result.current.eventsByDate).length).toBe(
+        MAX_EVENT_DAYS,
+      );
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });
