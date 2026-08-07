@@ -12,8 +12,13 @@
  * (duplicaría la entrada). `pushWithRetry` genera la key una vez y reintenta
  * solo el `set`.
  */
-import { push, set } from 'firebase/database';
-import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
+import { push, set, update } from 'firebase/database';
+import {
+  pushWithRetry,
+  setWithRetry,
+  updateWithRetry,
+  pushKey,
+} from '@/services/firebaseWrites';
 
 // El backoff de `withRetry` son esperas reales de 0,4 s y 1,2 s. Con timers
 // falsos el test no las paga; `advanceTimersByTimeAsync` deja además correr las
@@ -30,6 +35,8 @@ beforeEach(() => {
   (push as jest.Mock).mockImplementation(() => ({
     key: `mock-key-${++keyCounter}`,
   }));
+  (update as jest.Mock).mockReset();
+  (update as jest.Mock).mockResolvedValue(undefined);
   jest.useFakeTimers();
 });
 
@@ -127,6 +134,56 @@ describe('setWithRetry', () => {
     (set as jest.Mock).mockRejectedValue(new Error('sin red'));
 
     const promise = setWithRetry('app/config/algo', { valor: 1 });
+    const assertion = expect(promise).rejects.toThrow('sin red');
+    await runOutBackoff();
+    await assertion;
+  });
+});
+
+describe('pushKey / updateWithRetry (escrituras atómicas)', () => {
+  it('pushKey devuelve una key sin escribir nada', () => {
+    const key = pushKey('jubileo/compartiendo/data');
+    expect(key).toMatch(/^mock-key-/);
+    expect(set).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('updateWithRetry escribe el payload multi-path en una sola operación', async () => {
+    const promise = updateWithRetry('jubileo/compartiendo', {
+      'data/abc': { titulo: 'hola' },
+      updatedAt: '123',
+    });
+    await runOutBackoff();
+    await promise;
+
+    expect(update).toHaveBeenCalledTimes(1);
+    expect((update as jest.Mock).mock.calls[0][1]).toEqual({
+      'data/abc': { titulo: 'hola' },
+      updatedAt: '123',
+    });
+  });
+
+  it('reintenta el update con el MISMO payload (las keys ya venían dadas)', async () => {
+    (update as jest.Mock)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(undefined);
+
+    const promise = updateWithRetry('jubileo/compartiendo', {
+      'data/abc': { titulo: 'hola' },
+      updatedAt: '123',
+    });
+    await runOutBackoff();
+    await promise;
+
+    expect(update).toHaveBeenCalledTimes(2);
+    expect((update as jest.Mock).mock.calls[0][1]).toEqual(
+      (update as jest.Mock).mock.calls[1][1],
+    );
+  });
+
+  it('relanza si el update no llega a escribir', async () => {
+    (update as jest.Mock).mockRejectedValue(new Error('sin red'));
+    const promise = updateWithRetry('jubileo/compartiendo', { updatedAt: '1' });
     const assertion = expect(promise).rejects.toThrow('sin red');
     await runOutBackoff();
     await assertion;

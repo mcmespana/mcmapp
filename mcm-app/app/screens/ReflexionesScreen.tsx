@@ -34,8 +34,7 @@ import { getBrightness } from '@/components/ui/glass';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
-import { getDatabase, ref, push, update } from 'firebase/database';
-import { getFirebaseApp } from '@/utils/firebaseApp';
+import { pushKey, updateWithRetry } from '@/services/firebaseWrites';
 import { h } from '@/utils/haptics';
 import { localISO } from '@/utils/localDate';
 import { buildReflexionUpdate } from '@/utils/reflexiones';
@@ -247,17 +246,17 @@ export default function ReflexionesScreen() {
       autor,
     };
     try {
-      const db = getDatabase(getFirebaseApp());
-      const newRef = push(ref(db, `${compartiendoPath}/data`));
-      if (!newRef.key) throw new Error('push() sin key');
+      // La key se genera antes de construir el payload, así el reintento de
+      // `updateWithRetry` escribe exactamente lo mismo.
+      const key = pushKey(`${compartiendoPath}/data`);
       // Un único update() multi-path: data/<key> + updatedAt a la vez. Antes
       // eran dos set() separados — si el segundo fallaba (o la app moría
       // entre medias) la reflexión quedaba escrita pero invisible para el
       // resto de dispositivos, porque useFirebaseData solo redescarga
       // `data` cuando `updatedAt` cambia.
-      await update(
-        ref(db, compartiendoPath),
-        buildReflexionUpdate(newRef.key, nuevo, Date.now()),
+      await updateWithRetry(
+        compartiendoPath,
+        buildReflexionUpdate(key, nuevo, Date.now()),
       );
       setJustPublished((prev) => [nuevo, ...prev]);
       h.formSuccess();

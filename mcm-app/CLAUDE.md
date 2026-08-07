@@ -159,6 +159,9 @@ utils/
 └── fontUtils.ts               # Utilidades de fuentes
 
 services/
+├── firebaseWrites.ts          # Costura de TODAS las escrituras de UI (retry + limpieza)
+├── choirSessionService.ts     # Modo Coro (sesiones bajo código de 4 dígitos)
+├── cloudPlaylistService.ts    # Playlists compartidas bajo código
 └── pushNotificationService.ts # Servicio de notificaciones push
 
 notifications/
@@ -281,7 +284,18 @@ Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`:
 2. Muestra datos cacheados inmediatamente
 3. Consulta Firebase por `updatedAt`
 4. Si cambió, descarga `data` y actualiza caché
-5. Único punto de escritura: `ReflexionesScreen` (reflexiones)
+5. `useFirebaseData` es solo LECTURA. Las **escrituras** de la UI van por
+   `services/firebaseWrites.ts` (`pushWithRetry` / `setWithRetry` /
+   `updateWithRetry` / `pushKey`), que centraliza la limpieza de `undefined`, los
+   reintentos con espera creciente y el log del fallo: feedback de la app,
+   fallitos y ediciones del cantoral, sugerencias de canción, evaluaciones,
+   encuestas, reflexiones y el panel secreto. Cada caller sigue decidiendo su
+   ruta y su payload — el panel los lee, así que no se cambian.
+   Los dominios con estado propio tienen su servicio dedicado:
+   `choirSessionService` (Modo Coro), `cloudPlaylistService` (playlists
+   compartidas), `pushNotificationService` (tokens e historial) y
+   `utils/authHelpers` (hábitos y marcadores de Contigo). Única excepción:
+   `WordleScreen`, congelado a propósito.
 
 ## Colores de marca
 

@@ -18,6 +18,34 @@
 
 ---
 
+## 2026-08-07 17:30 — Todas las escrituras a Firebase pasan por una costura con reintentos
+
+Las escrituras estaban repartidas por ~10 archivos de UI, cada uno repitiendo el
+ritual completo (`getDatabase(getFirebaseApp())` → `ref` → `push`/`set`) y
+re-decidiendo por su cuenta el manejo de error. Mientras `useFirebaseData` ganaba
+reintentos con espera creciente, **ninguna escritura se beneficiaba**: una
+evaluación, una encuesta o un reporte de bug enviados con el wifi flojo se perdían
+con un toast de error y sin reintento. Y `CLAUDE.md` afirmaba "único punto de
+escritura: `ReflexionesScreen`" — falso, y ES el mapa que leen los agentes, así que
+cada escritura nueva se copiaba del primer ejemplo que se abriera.
+
+- **`services/firebaseWrites.ts`** (nuevo), sin lógica de dominio:
+  `pushWithRetry`, `setWithRetry`, `updateWithRetry` y `pushKey`. Centralizan la
+  limpieza de `undefined`, los reintentos y el log del fallo (sin el payload: puede
+  llevar texto escrito por el usuario).
+- **Idempotencia**: reintentar un `push` + `set` sería incorrecto si la key se
+  regenerara en cada intento — duplicaría la entrada. La key se genera **una vez**
+  y se reintenta solo el `set`. Igual con `updateWithRetry`: las keys se piden
+  antes con `pushKey`, así que el reintento escribe exactamente lo mismo. Hay un
+  test centinela de cada cosa.
+- Migrados: `AppFeedbackModal`, `ReportBugsModal`, `SuggestSongModal`,
+  `EvaluacionScreen`, `EvaluacionAppScreen`, `SurveyScreen`, `ReflexionesScreen`
+  (conservando su `update()` multi-path atómico), `SongDetailScreen` (fallitos y
+  ediciones) y `SecretPanelModal`. **Ni una ruta ni un byte de payload cambian** —
+  el panel los lee. `WordleScreen` queda fuera a propósito (congelado).
+- `CLAUDE.md`: corregida la frase falsa y añadido el mapa real de `services/`.
+- 11 tests nuevos. Plan: `plans/014-firebase-writes-service-seam.md`.
+
 ## 2026-08-07 16:40 — Bundle: calendario litúrgico recortado y limpieza de módulos muertos
 
 **Calendario litúrgico (−290 KB de bundle).**

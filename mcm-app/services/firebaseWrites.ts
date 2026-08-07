@@ -17,7 +17,7 @@
  * `pushWithRetry` genera la key UNA vez y reintenta solo el `set`, que sí es
  * idempotente: misma key, mismo valor.
  */
-import { getDatabase, ref, push, set } from 'firebase/database';
+import { getDatabase, ref, push, set, update } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { withRetry } from '@/hooks/useFirebaseData';
 import { logger } from '@/utils/logger';
@@ -73,6 +73,46 @@ export async function setWithRetry(
     });
   } catch (error) {
     logger.error(`[firebaseWrites] fallo escribiendo en ${path}`, error);
+    throw error;
+  }
+}
+
+/**
+ * Genera una key nueva bajo `path` SIN escribir nada.
+ *
+ * La necesitan las escrituras multi-path: hay que conocer la key antes de
+ * construir el payload de `update`. Sacarla de aquí es lo que permite que los
+ * callers no importen nada de `firebase/database`.
+ */
+export function pushKey(path: string): string {
+  const db = getDatabase(getFirebaseApp());
+  const key = push(ref(db, path)).key;
+  if (!key) throw new Error(`push() no devolvió key para ${path}`);
+  return key;
+}
+
+/**
+ * `update` multi-path con reintentos. Es la primitiva de las escrituras
+ * ATÓMICAS: un solo `update` con claves con `/` escribe (y borra, con `null`)
+ * varias rutas a la vez, que es lo que evita, por ejemplo, que una reflexión
+ * quede escrita pero invisible porque el `updatedAt` no llegó a cambiar.
+ *
+ * Reintentar es seguro porque el payload es fijo: las keys se generan antes
+ * (ver `pushKey`), así que el segundo intento escribe exactamente lo mismo.
+ */
+export async function updateWithRetry(
+  path: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const db = getDatabase(getFirebaseApp());
+  const target = ref(db, path);
+  const value = clean(payload);
+  try {
+    await withRetry(async () => {
+      await update(target, value);
+    });
+  } catch (error) {
+    logger.error(`[firebaseWrites] fallo actualizando ${path}`, error);
     throw error;
   }
 }

@@ -6,7 +6,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { getDatabase, get, ref, set } from 'firebase/database';
+import { getDatabase, get, ref } from 'firebase/database';
+import { setWithRetry } from '@/services/firebaseWrites';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import EvaluationWizard, {
@@ -75,9 +76,8 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
   const handleSubmit = useCallback(
     async (answers: EvaluationAnswers) => {
       const deviceId = await getDeviceId();
-      const db = getDatabase(getFirebaseApp());
       // Anónima → sin datos de perfil ni userId. Si no, se ata el userId.
-      await set(ref(db, surveyAnswerPath(surveyId, deviceId)), {
+      await setWithRetry(surveyAnswerPath(surveyId, deviceId), {
         answers,
         deviceId,
         surveyId,
@@ -92,7 +92,7 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
           delegationLabel: resolved.delegationLabel,
         }),
       });
-      await set(ref(db, `${surveyPath(surveyId)}/updatedAt`), Date.now());
+      await setWithRetry(`${surveyPath(surveyId)}/updatedAt`, Date.now());
       // Dedup entre dispositivos solo si hay sesión y no es anónima.
       if (uid && !config.anonymous)
         await markUserAnswered(uid, scope, surveyId);

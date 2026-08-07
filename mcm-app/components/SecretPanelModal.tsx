@@ -18,7 +18,10 @@ import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toYouTubeEmbedUrl } from '@/utils/youtube';
-import { getDatabase, ref, set, push, get } from 'firebase/database';
+// `getDatabase`/`ref`/`get` se quedan: este modal también LEE
+// (`songs/data/...`). Las escrituras van por `services/firebaseWrites`.
+import { getDatabase, ref, get } from 'firebase/database';
+import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 
 /** Enlace multimedia (YouTube o audio) editable en el panel. */
@@ -376,8 +379,8 @@ export default function SecretPanelModal({
       if (Object.keys(fieldsToUpdate).length > 0) {
         await Promise.all(
           Object.entries(fieldsToUpdate).map(([field, value]) =>
-            set(
-              ref(db, `songs/data/${category}/songs/${songIndex}/${field}`),
+            setWithRetry(
+              `songs/data/${category}/songs/${songIndex}/${field}`,
               value,
             ),
           ),
@@ -385,9 +388,6 @@ export default function SecretPanelModal({
       }
 
       // 3. Guardar rastro de cambios en ediciones (solo los campos que cambiaron)
-      const edicionesRef = ref(db, 'songs/ediciones');
-      const nuevaEdicionRef = push(edicionesRef);
-
       const edicionData = {
         filename: songFilename,
         category: firebaseCategory, // ej: "adoracion"
@@ -399,10 +399,10 @@ export default function SecretPanelModal({
         status: 'applied', // Ya se aplicó directamente
       };
 
-      await set(nuevaEdicionRef, edicionData);
+      await pushWithRetry('songs/ediciones', edicionData);
 
       // 4. Actualizar el timestamp general
-      await set(ref(db, 'songs/updatedAt'), Date.now().toString());
+      await setWithRetry('songs/updatedAt', Date.now().toString());
 
       // Cerrar modal y notificar éxito
       setIsAuthenticated(false);
