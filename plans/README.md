@@ -22,21 +22,21 @@ conditions, and update your row when done.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001 | Arreglar los `off()` que nunca quitan los listeners de Firebase | P1 | S | — | TODO |
-| 002 | Blindar los workflows de OTA: diff nativo + `[skip-ota]` en todo el push + gate de tests | P1 | S | — | TODO |
-| 003 | Corregir la expansión de eventos multi-día del calendario (DST) e investigar la zona horaria del ICS | P1 | S-M | — | TODO |
-| 004 | Un solo dueño para los hábitos de Contigo (provider) — las 4 pantallas dejan de pisarse | P2 | M | — | TODO |
-| 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | TODO |
-| 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | TODO |
-| 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | TODO |
-| 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | TODO |
-| 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | TODO |
-| 010 | Virtualizar el muro de "Compartiendo" con `FlatList` | P3 | S | — | TODO |
-| 011 | Calendario litúrgico: ventana rodante (−280 KB de bundle) + generador con test de vigencia | P3 | S | — | TODO |
-| 012 | Podar la caché de lecturas diarias (crecía sin tope) | P3 | S | — | TODO |
-| 013 | Scraper: el exit code distingue fuente caída de fechas sueltas fallidas | P3 | S | — | TODO |
-| 014 | Costura `services/firebaseWrites.ts`: las escrituras de UI ganan retry y una sola forma | P3 | M | — | TODO |
-| 015 | Limpieza de módulos muertos y dependencias sin uso | P3 | S | — | TODO |
+| 001 | Arreglar los `off()` que nunca quitan los listeners de Firebase | P1 | S | — | ✅ DONE (2026-08-06) |
+| 002 | Blindar los workflows de OTA: diff nativo + `[skip-ota]` en todo el push + gate de tests | P1 | S | — | ✅ DONE (2026-08-06) |
+| 003 | Corregir la expansión de eventos multi-día del calendario (DST) e investigar la zona horaria del ICS | P1 | S-M | — | ✅ DONE (2026-08-06) — B: feed real emite `Z` sin `TZID`, se implementó la normalización UTC→local |
+| 004 | Un solo dueño para los hábitos de Contigo (provider) — las 4 pantallas dejan de pisarse | P2 | M | — | ✅ DONE (2026-08-06) |
+| 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | ✅ DONE (2026-08-06) |
+| 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | ✅ DONE (2026-08-06) |
+| 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | ✅ DONE (2026-08-06) |
+| 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | ✅ DONE (2026-08-06) |
+| 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | ✅ DONE (2026-08-06) — extraídos a `components/materiales/` (el módulo-level in-file superaba 400 líneas, según la cláusula del propio plan) |
+| 010 | Virtualizar el muro de "Compartiendo" con `FlatList` | P3 | S | — | ✅ DONE (2026-08-06) |
+| 011 | Calendario litúrgico: ventana rodante (−280 KB de bundle) + generador con test de vigencia | P3 | S | — | ✅ DONE (2026-08-06) |
+| 012 | Podar la caché de lecturas diarias (crecía sin tope) | P3 | S | — | ✅ DONE (2026-08-06) |
+| 013 | Scraper: el exit code distingue fuente caída de fechas sueltas fallidas | P3 | S | — | ✅ DONE (2026-08-06) |
+| 014 | Costura `services/firebaseWrites.ts`: las escrituras de UI ganan retry y una sola forma | P3 | M | — | ✅ DONE (2026-08-06) — SecretPanelModal se dejó fuera (gigante, >10 líneas por uso) |
+| 015 | Limpieza de módulos muertos y dependencias sin uso | P3 | S | — | ✅ DONE (2026-08-06) — Step 3: `expo-system-ui` fuera (sin uso); `expo-insights` se reincorporó a petición del operador (EAS Insights, cero código). Ambos cambios nativos con `[skip-ota]`: **requiere build de producción antes de mergear a `production`** |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 

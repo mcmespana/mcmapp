@@ -4,6 +4,7 @@ import {
   View,
   StyleSheet,
   ScrollView,
+  FlatList,
   Platform,
   Share,
   Text,
@@ -30,7 +31,7 @@ import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { getBrightness } from '@/components/ui/glass';
-import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useFirebaseData, withRetry } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
 import { getDatabase, ref, push, update } from 'firebase/database';
@@ -253,11 +254,11 @@ export default function ReflexionesScreen() {
       // eran dos set() separados — si el segundo fallaba (o la app moría
       // entre medias) la reflexión quedaba escrita pero invisible para el
       // resto de dispositivos, porque useFirebaseData solo redescarga
-      // `data` cuando `updatedAt` cambia.
-      await update(
-        ref(db, compartiendoPath),
-        buildReflexionUpdate(newRef.key, nuevo, Date.now()),
-      );
+      // `data` cuando `updatedAt` cambia. Con retry (Plan 014): la key ya se
+      // generó una vez arriba, así que reintentar solo este update() es
+      // idempotente (misma key, mismo valor).
+      const updatePayload = buildReflexionUpdate(newRef.key, nuevo, Date.now());
+      await withRetry(() => update(ref(db, compartiendoPath), updatePayload));
       setJustPublished((prev) => [nuevo, ...prev]);
       h.formSuccess();
       setCelebrate(true);
@@ -317,6 +318,79 @@ export default function ReflexionesScreen() {
     Share.share({ message: reflexionText(r) });
   };
 
+  // Función normal (no useCallback): recreada cada render, igual que el
+  // `.map` anterior — no memoizamos aquí porque captura `getGrupoLabel` y
+  // `formatFecha`, que tampoco lo están, y forzar deps parciales solo
+  // arriesgaría un closure obsoleto sin ganancia real de perf.
+  const renderReflexion = ({
+    item: r,
+    index: i,
+  }: {
+    item: Reflexion;
+    index: number;
+  }) => {
+    const color = pickCardColor(r.id);
+    // Alterna dos diseños para que el muro "fluya": tarjeta con fondo
+    // tintado (par) y tarjeta limpia con barra de color a la izquierda
+    // (impar). Cada una con su color generado del id.
+    const filled = i % 2 === 0;
+    const name = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
+    const initials = getInitials(name);
+    const onColor = getBrightness(color) > 150 ? '#1a1a1a' : '#fff';
+    return (
+      <LongPressable key={r.id} onLongPress={() => setMenuReflexion(r)}>
+        <View
+          style={[
+            styles.card,
+            filled
+              ? { backgroundColor: color + (scheme === 'dark' ? '26' : '1A') }
+              : styles.cardSurface,
+          ]}
+        >
+          {!filled && (
+            <View style={[styles.accentBar, { backgroundColor: color }]} />
+          )}
+          <MaterialIcons
+            name="format-quote"
+            size={66}
+            color={color + (scheme === 'dark' ? '26' : '1F')}
+            style={styles.quoteMark}
+          />
+          <View
+            style={[
+              styles.cardInner,
+              !filled && { paddingLeft: spacing.md + 8 },
+            ]}
+          >
+            <View style={styles.cardHead}>
+              <View style={[styles.avatar, { backgroundColor: color }]}>
+                {initials ? (
+                  <Text style={[styles.avatarText, { color: onColor }]}>
+                    {initials}
+                  </Text>
+                ) : (
+                  <MaterialIcons
+                    name="auto-stories"
+                    size={16}
+                    color={onColor}
+                  />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardAuthor} numberOfLines={1}>
+                  {name || 'Anónimo'}
+                </Text>
+                <Text style={styles.cardDate}>{formatFecha(r.fecha)}</Text>
+              </View>
+            </View>
+            {r.titulo ? <Text style={styles.cardTitle}>{r.titulo}</Text> : null}
+            <Text style={styles.cardContent}>{r.contenido}</Text>
+          </View>
+        </View>
+      </LongPressable>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <ScreenHero
@@ -325,100 +399,26 @@ export default function ReflexionesScreen() {
         floatingHeaderInset
       />
       <PageContainer>
-        <ScrollView
+        <FlatList
+          data={sortedList}
+          keyExtractor={(r) => r.id}
+          renderItem={renderReflexion}
           contentContainerStyle={[
             styles.list,
             { paddingBottom: insets.bottom + 20 },
           ]}
-        >
-          {sortedList.length === 0 ? (
+          ListEmptyComponent={
             <EmptyState
               icon="auto-stories"
               title="Aún no hay reflexiones"
               subtitle="Pulsa el botón + de arriba para compartir la primera."
               accentColor={colors.success}
             />
-          ) : (
-            sortedList.map((r, i) => {
-              const color = pickCardColor(r.id);
-              // Alterna dos diseños para que el muro "fluya": tarjeta con
-              // fondo tintado (par) y tarjeta limpia con barra de color a la
-              // izquierda (impar). Cada una con su color generado del id.
-              const filled = i % 2 === 0;
-              const name = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
-              const initials = getInitials(name);
-              const onColor = getBrightness(color) > 150 ? '#1a1a1a' : '#fff';
-              return (
-                <LongPressable
-                  key={r.id}
-                  onLongPress={() => setMenuReflexion(r)}
-                >
-                  <View
-                    style={[
-                      styles.card,
-                      filled
-                        ? {
-                            backgroundColor:
-                              color + (scheme === 'dark' ? '26' : '1A'),
-                          }
-                        : styles.cardSurface,
-                    ]}
-                  >
-                    {!filled && (
-                      <View
-                        style={[styles.accentBar, { backgroundColor: color }]}
-                      />
-                    )}
-                    <MaterialIcons
-                      name="format-quote"
-                      size={66}
-                      color={color + (scheme === 'dark' ? '26' : '1F')}
-                      style={styles.quoteMark}
-                    />
-                    <View
-                      style={[
-                        styles.cardInner,
-                        !filled && { paddingLeft: spacing.md + 8 },
-                      ]}
-                    >
-                      <View style={styles.cardHead}>
-                        <View
-                          style={[styles.avatar, { backgroundColor: color }]}
-                        >
-                          {initials ? (
-                            <Text
-                              style={[styles.avatarText, { color: onColor }]}
-                            >
-                              {initials}
-                            </Text>
-                          ) : (
-                            <MaterialIcons
-                              name="auto-stories"
-                              size={16}
-                              color={onColor}
-                            />
-                          )}
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.cardAuthor} numberOfLines={1}>
-                            {name || 'Anónimo'}
-                          </Text>
-                          <Text style={styles.cardDate}>
-                            {formatFecha(r.fecha)}
-                          </Text>
-                        </View>
-                      </View>
-                      {r.titulo ? (
-                        <Text style={styles.cardTitle}>{r.titulo}</Text>
-                      ) : null}
-                      <Text style={styles.cardContent}>{r.contenido}</Text>
-                    </View>
-                  </View>
-                </LongPressable>
-              );
-            })
-          )}
-        </ScrollView>
+          }
+          initialNumToRender={12}
+          windowSize={9}
+          removeClippedSubviews={Platform.OS !== 'web'}
+        />
       </PageContainer>
 
       {/* Form bottom sheet */}

@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { getDatabase, push, ref, set } from 'firebase/database';
 
 import BottomSheet from './BottomSheet';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
@@ -19,7 +18,7 @@ import { Colors, FeedbackCategoryColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import { getFirebaseApp } from '@/utils/firebaseApp';
+import { pushWithRetry } from '@/services/firebaseWrites';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
 
@@ -103,11 +102,7 @@ export default function AppFeedbackModal({
     setIsSubmitting(true);
 
     try {
-      const db = getDatabase(getFirebaseApp());
-      const feedbackRef = ref(db, `app/feedback/${selectedCategory}`);
-      const newFeedbackRef = push(feedbackRef);
-
-      await set(newFeedbackRef, {
+      await pushWithRetry(`app/feedback/${selectedCategory}`, {
         text: feedbackText.trim(),
         timestamp: Date.now(),
         platform: Platform.OS,

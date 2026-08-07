@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { Platform } from 'react-native';
-import { getDatabase, get, ref, set } from 'firebase/database';
+import { getDatabase, get, ref } from 'firebase/database';
 
 import EvaluationWizard, {
   EvaluationAnswers,
@@ -14,6 +14,7 @@ import {
 } from '@/constants/evaluation';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { getFirebaseApp } from '@/utils/firebaseApp';
+import { setWithRetry } from '@/services/firebaseWrites';
 import { getDeviceId } from '@/services/pushNotificationService';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -52,8 +53,7 @@ export default function EvaluacionAppScreen() {
   const handleSubmit = useCallback(
     async (answers: EvaluationAnswers) => {
       const deviceId = await getDeviceId();
-      const db = getDatabase(getFirebaseApp());
-      await set(ref(db, `app/evaluations/${deviceId}`), {
+      await setWithRetry(`app/evaluations/${deviceId}`, {
         answers,
         deviceId,
         timestamp: Date.now(),

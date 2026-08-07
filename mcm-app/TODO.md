@@ -127,13 +127,13 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 
 > Hecho en la pasada del 2026-06-21 (ver CHANGELOG): headers nativos de Contigo,
 > headers transparentes en Calendario/Eventos Pasados, búsqueda nativa en todas
-> las categorías, canción con letra full-bleed, `GlassActionGroup`/`AppIconButton`/
+> las categorías, canción con letra full-bleed, `GlassActionGroup`/
 > `AppTextField`. Pendiente de la review de componentes:
 
 - [ ] **Pulido del glass (iOS 26) — fino, con dispositivo delante**: botones del
       header de la canción "justos" dentro de la cápsula, seam/línea del header
-      sobre letra blanca, y acercar `AppIconButton`/`GlassSurface` al bar item
-      nativo. Difícil a ciegas. (`components/ui/AppIconButton.tsx`, `GlassSurface.ios.tsx`)
+      sobre letra blanca, y acercar el glass al bar item nativo. Difícil a
+      ciegas. (`GlassSurface.ios.tsx`)
 - [ ] **Headers de evento (hub + sub-pantallas) transparentes** como el cantoral:
       hoy usan el "floating header" opaco (`eventScreenOptions` con
       `FloatingHeaderBackground`). Unificar al glass del sistema — cambio mayor,

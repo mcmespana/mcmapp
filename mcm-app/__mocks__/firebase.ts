@@ -24,6 +24,8 @@ export const update = jest.fn(() => Promise.resolve());
 export const remove = jest.fn(() => Promise.resolve());
 export const onValue = jest.fn(() => jest.fn());
 export const off = jest.fn();
+let pushKeyCounter = 0;
+export const push = jest.fn(() => ({ key: `mock-key-${++pushKeyCounter}` }));
 
 // Helper para cambiar lo que devuelve Firebase en cada test
 export const __setMockSnapshot = (data: any) => {
