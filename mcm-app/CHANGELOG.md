@@ -18,6 +18,38 @@
 
 ---
 
+## 2026-08-07 12:20 — Calendario: días duplicados/perdidos en Semana Santa y horas 1-2 h antes
+
+Dos bugs de fechas en `useCalendarEvents`, los dos visibles en pantalla:
+
+- **Expansión multi-día.** El bucle mezclaba tres sistemas horarios: parseaba
+  `'YYYY-MM-DD'` como medianoche **UTC**, avanzaba días con `setDate()` (hora de
+  pared **local**) y formateaba con `toISOString()` (**UTC** otra vez). Al cruzar
+  el cambio de hora el instante retrocedía una hora y la fecha UTC caía en el día
+  anterior: un evento del 28-mar al 2-abr se pintaba en `28, 29, 29, 30, 31,
+  01` — **el 29 duplicado y sin el 2 de abril**; en otoño se comía el último día.
+  Es exactamente la ventana de Semana Santa y los retiros, y afecta tanto a la
+  pestaña Calendario como a Home. Ahora la aritmética va entera en el calendario
+  civil (`eventDateKeys`/`addDaysISO` en `utils/calendarDates.ts`), sin tocar la
+  hora local en ningún punto. Lo mismo con el `DTEND` exclusivo de los eventos de
+  día entero, que usaba `new Date(iso + 'T12:00:00')` + `toISOString()`.
+- **Zona horaria del ICS.** El parser ignoraba el sufijo `Z` y pintaba el `HHMM`
+  literal. Comprobado contra el feed real (`basic.ics` de MCM Europa): de 149
+  eventos, **18 vienen con hora en UTC (`…T173000Z`)** y 131 son de día entero
+  (`VALUE=DATE`); no hay `TZID` ni `VTIMEZONE`. Es decir, las horas se venían
+  mostrando **1-2 h antes de la real** (según invierno/verano), y un evento a
+  partir de las 22:00 UTC salía además en el día equivocado. Ahora se convierten
+  a fecha+hora locales. **Las horas de esos eventos cambian en pantalla: es la
+  corrección, no una regresión.** Los valores "flotantes" (sin `Z`) se siguen
+  tomando literales, que es lo único seguro sin implementar zonas IANA a mano.
+
+22 tests nuevos en `__tests__/useCalendarEvents.test.ts` (rangos de primavera y
+otoño, `addDaysISO` en fin de mes/año/bisiesto, conversión UTC→local con un
+oráculo `Intl` independiente, y un test que verifica que la expansión no llama a
+ninguna API de hora local). También se añadió un tope de 366 días por evento:
+un ICS corrupto con un `DTEND` en el año 3000 hacía un bucle de cientos de miles
+de iteraciones. Plan: `plans/003-calendar-multiday-dst.md`.
+
 ## 2026-08-07 11:45 — Los `unsubscribe` de coro y notificaciones no quitaban el listener
 
 Dos servicios devolvían una función de limpieza que en realidad no limpiaba

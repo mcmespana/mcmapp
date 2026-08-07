@@ -2,6 +2,11 @@ import { logger } from '@/utils/logger';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Network from 'expo-network';
+import {
+  addDaysISO,
+  eventDateKeys,
+  parseIcsDateTimeValue,
+} from '@/utils/calendarDates';
 import type { CalendarConfig } from './useCalendarConfigs';
 
 export interface CalendarEvent {
@@ -22,7 +27,7 @@ export interface CalendarEvent {
 const CONFERENCE_URL_REGEX =
   /https?:\/\/(?:[\w-]+\.)*(?:meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com|webex\.com|gotomeeting\.com|whereby\.com|jit\.si|meet\.jit\.si)\/[^\s<>"')]+/i;
 
-function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
+export function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
   // Unfold lines that start with a space as specified in RFC 5545
   const unfolded: string[] = [];
   for (const rawLine of text.split(/\r?\n/)) {
@@ -45,11 +50,12 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
       if (current.startDate && current.title) {
         // Post-process to handle all-day events correctly
         if (current.isAllDay && current.endDate) {
-          // For all-day events, DTEND is exclusive (next day)
-          // So we need to subtract one day from endDate
-          const endDate = new Date(current.endDate + 'T12:00:00'); // Use noon to avoid timezone issues
-          endDate.setDate(endDate.getDate() - 1);
-          const adjustedEndDate = endDate.toISOString().split('T')[0];
+          // En los eventos de día entero el DTEND es EXCLUSIVO (el día
+          // siguiente), así que hay que restarle un día. Se hace con
+          // aritmética de calendario pura: el viejo `new Date(iso + 'T12:00')`
+          // + `toISOString()` mezclaba hora local y UTC y se desplazaba un día
+          // en dispositivos con offset grande.
+          const adjustedEndDate = addDaysISO(current.endDate, -1);
 
           // If after adjustment the end date equals start date,
           // it's a single-day event, remove endDate completely
@@ -101,45 +107,24 @@ function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
     } else if (line.startsWith('URL:')) {
       current.url = line.slice('URL:'.length).trim();
     } else if (line.startsWith('DTSTART')) {
-      // Soporta DTSTART:YYYYMMDD y DTSTART;VALUE=DATE:YYYYMMDD y variantes
+      // Soporta DTSTART:YYYYMMDD, DTSTART;VALUE=DATE:YYYYMMDD y el instante
+      // UTC (DTSTART:YYYYMMDDTHHMMSSZ) que es lo que emite el basic.ics de
+      // Google. Ver `parseIcsDateTimeValue` para el criterio de conversión.
       const idx = line.indexOf(':');
       if (idx !== -1) {
-        const value = line.slice(idx + 1).trim();
-        // Check if this is a date-only value (all-day event)
-        const isDateOnly = !value.includes('T') && /^\d{8}$/.test(value);
-        if (isDateOnly) {
-          current.isAllDay = true;
-        }
-
-        const datePart = value.replace(/T.*$/, '');
-        if (/^\d{8}$/.test(datePart)) {
-          const year = datePart.substring(0, 4);
-          const month = datePart.substring(4, 6);
-          const day = datePart.substring(6, 8);
-          current.startDate = `${year}-${month}-${day}`;
-        }
-
-        const timeMatch = value.match(/T(\d{2})(\d{2})/);
-        if (timeMatch && !isDateOnly) {
-          current.startTime = `${timeMatch[1]}:${timeMatch[2]}`;
-        }
+        const { date, time, isDateOnly } = parseIcsDateTimeValue(
+          line.slice(idx + 1),
+        );
+        if (isDateOnly) current.isAllDay = true;
+        if (date) current.startDate = date;
+        if (time) current.startTime = time;
       }
     } else if (line.startsWith('DTEND')) {
       const idx = line.indexOf(':');
       if (idx !== -1) {
-        const value = line.slice(idx + 1).trim();
-        const datePart = value.replace(/T.*$/, '');
-        if (/^\d{8}$/.test(datePart)) {
-          const year = datePart.substring(0, 4);
-          const month = datePart.substring(4, 6);
-          const day = datePart.substring(6, 8);
-          current.endDate = `${year}-${month}-${day}`;
-        }
-
-        const timeMatch = value.match(/T(\d{2})(\d{2})/);
-        if (timeMatch && !value.match(/^\d{8}$/)) {
-          current.endTime = `${timeMatch[1]}:${timeMatch[2]}`;
-        }
+        const { date, time } = parseIcsDateTimeValue(line.slice(idx + 1));
+        if (date) current.endDate = date;
+        if (time) current.endTime = time;
       }
     }
   }
@@ -196,25 +181,12 @@ function fetchAndParseCalendars(
 
         events.forEach((ev) => {
           const withCal: CalendarEvent = { ...ev, calendarIndex: i };
-
-          // If no endDate or it's a single-day event, only add to the start date
-          if (!ev.endDate || ev.isSingleDay) {
-            const dateStr = ev.startDate;
+          // Una clave por día del rango (o solo la de inicio si es de un día).
+          // `eventDateKeys` hace la aritmética entera en el calendario civil,
+          // así que el cambio de hora ya no duplica ni se salta días.
+          for (const dateStr of eventDateKeys(ev)) {
             if (!map[dateStr]) map[dateStr] = [];
             map[dateStr].push(withCal);
-          } else {
-            // For multi-day events, iterate through the range
-            const start = new Date(ev.startDate);
-            const end = new Date(ev.endDate);
-            for (
-              let d = new Date(start);
-              d <= end;
-              d.setDate(d.getDate() + 1)
-            ) {
-              const dateStr = d.toISOString().split('T')[0];
-              if (!map[dateStr]) map[dateStr] = [];
-              map[dateStr].push(withCal);
-            }
           }
         });
       } catch (e) {
