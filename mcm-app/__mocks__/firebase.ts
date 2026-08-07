@@ -20,6 +20,11 @@ export const getDatabase = jest.fn(() => ({}));
 export const ref = jest.fn(() => ({}));
 export const get = jest.fn(() => Promise.resolve(mockSnapshot));
 export const set = jest.fn(() => Promise.resolve());
+// `push` devuelve una referencia hija con `key`, como el SDK real. Lo usa
+// `services/firebaseWrites.ts` (la key se genera una vez y el retry reintenta
+// solo el `set`, así que los tests necesitan poder mirar cuántas veces se llamó).
+let pushCounter = 0;
+export const push = jest.fn(() => ({ key: `mock-key-${++pushCounter}` }));
 export const update = jest.fn(() => Promise.resolve());
 export const remove = jest.fn(() => Promise.resolve());
 export const onValue = jest.fn(() => jest.fn());
@@ -32,6 +37,7 @@ export const __setMockSnapshot = (data: any) => {
 };
 
 export const __resetMocks = () => {
+  pushCounter = 0;
   initializeApp.mockClear();
   getApps.mockClear();
   getDatabase.mockClear();
