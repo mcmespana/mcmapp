@@ -26,7 +26,7 @@ conditions, and update your row when done.
 | 002 | Blindar los workflows de OTA: diff nativo + `[skip-ota]` en todo el push + gate de tests | P1 | S | — | DONE (2026-08-07) |
 | 003 | Corregir la expansión de eventos multi-día del calendario (DST) e investigar la zona horaria del ICS | P1 | S-M | — | DONE (2026-08-07) — B: el feed real SÍ emite `Z` (18 eventos con hora en UTC, 131 `VALUE=DATE`, sin `TZID` ni `VTIMEZONE`), así que se implementó la conversión UTC→local |
 | 004 | Un solo dueño para los hábitos de Contigo (provider) — las 4 pantallas dejan de pisarse | P2 | M | — | TODO |
-| 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | TODO |
+| 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | DONE (2026-08-07) — 19 tests; los 17 de caracterización pasaban contra el código viejo y los 2 del `update()` atómico fallaban, como exige el plan |
 | 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | TODO |
 | 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | TODO |
 | 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | DONE (2026-08-07) — hecho justo tras 003, mismo fichero. No se añadió `force`: ninguna pantalla tiene pull-to-refresh que pase por el hook |

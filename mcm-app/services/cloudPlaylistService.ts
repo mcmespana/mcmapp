@@ -6,7 +6,7 @@
  * Las playlists incluyen `expiresAt` con +6 meses sobre el momento de
  * creación; la purga real se hace por backend más adelante.
  */
-import { getDatabase, ref, get, set, remove } from 'firebase/database';
+import { getDatabase, ref, get, set, update, remove } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import type { SelectedSong } from '@/contexts/SelectedSongsContext';
 import { CODE_LENGTH, isValidCode } from '@/utils/playlistCodes';
@@ -87,6 +87,12 @@ export async function deleteCloudPlaylist(code: string): Promise<void> {
 /**
  * Mueve la playlist de `oldCode` a `newCode`. Preserva createdAt.
  * Si `newCode` ya existe, lanza error (el caller decide qué hacer).
+ *
+ * La escritura es UNA sola operación multi-path: antes era subir al destino y
+ * después borrar el origen, así que si el borrado fallaba quedaban dos copias
+ * vivas de la misma playlist. La ventana de carrera entre la comprobación de
+ * existencia y la escritura sigue siendo la de siempre (no empeora), pero el
+ * fallo a medias desaparece.
  */
 export async function changeCloudPlaylistCode(
   oldCode: string,
@@ -102,10 +108,22 @@ export async function changeCloudPlaylistCode(
   }
   const cur = await fetchCloudPlaylist(oldCode);
   if (!cur) throw new Error('La playlist original ya no existe');
-  const moved = await uploadCloudPlaylist(newCode, cur.songs, {
+
+  const now = Date.now();
+  const moved: CloudPlaylist = {
+    v: 2,
+    songs: cur.songs,
     name: cur.name,
     createdAt: cur.createdAt,
+    updatedAt: now,
+    expiresAt: now + SIX_MONTHS_MS,
+  };
+  // RTDB rechaza `undefined`: hay que limpiarlo igual que en la subida normal.
+  const clean = JSON.parse(JSON.stringify(moved));
+  const db = getDatabase(getFirebaseApp());
+  await update(ref(db, ROOT), {
+    [newCode]: clean,
+    [oldCode]: null, // borrar el origen en la MISMA operación
   });
-  await deleteCloudPlaylist(oldCode);
   return moved;
 }

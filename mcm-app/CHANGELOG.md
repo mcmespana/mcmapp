@@ -18,6 +18,20 @@
 
 ---
 
+## 2026-08-07 13:20 — Playlists compartidas: cambiar el código ya no puede dejar dos copias
+
+Mover una playlist compartida a otro código eran **dos escrituras**: subir al
+código nuevo y después borrar el viejo. Si el borrado fallaba (permisos, red),
+quedaban **dos copias vivas** de la misma playlist. Ahora es un solo `update()`
+multi-path sobre `playlistShares` (`{ [nuevo]: payload, [viejo]: null }`), que
+RTDB aplica de forma atómica. La firma pública y el valor devuelto no cambian.
+
+`cloudPlaylistService` —el único sitio de la app donde se borran datos de
+usuario en la nube— no tenía ningún test; ahora tiene 19, incluido el centinela
+de la regresión destructiva ("playlist vigente → NO se borra"), que es lo que
+protege el borrado perezoso de caducadas. Plan:
+`plans/005-cloud-playlist-tests-atomic-move.md`.
+
 ## 2026-08-07 12:55 — Calendario: ICS en paralelo y ventana de frescura de 5 min
 
 Los ICS se descargaban **en serie** (`await fetch` dentro de un `for`), así que
