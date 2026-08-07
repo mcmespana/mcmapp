@@ -4,6 +4,7 @@ import {
   View,
   StyleSheet,
   ScrollView,
+  FlatList,
   Platform,
   Share,
   Text,
@@ -317,6 +318,82 @@ export default function ReflexionesScreen() {
     Share.share({ message: reflexionText(r) });
   };
 
+  // El muro es contenido generado por los usuarios y sin límite: crece durante
+  // todo un encuentro. Antes era un `ScrollView` con `sortedList.map(...)`, así
+  // que montaba y re-renderizaba TODAS las reflexiones al entrar y en cada
+  // re-render de la pantalla. Con `FlatList` el coste es solo el de las filas
+  // visibles. El diseño alterno sigue usando el índice, que ahora lo da
+  // `renderItem` (ojo a un off-by-one: invertiría par e impar).
+  const renderReflexion = useCallback(
+    ({ item: r, index }: { item: Reflexion; index: number }) => {
+      const color = pickCardColor(r.id);
+      // Alterna dos diseños para que el muro "fluya": tarjeta con fondo tintado
+      // (par) y tarjeta limpia con barra de color a la izquierda (impar). Cada
+      // una con su color generado del id.
+      const filled = index % 2 === 0;
+      const name = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
+      const initials = getInitials(name);
+      const onColor = getBrightness(color) > 150 ? '#1a1a1a' : '#fff';
+      return (
+        <LongPressable onLongPress={() => setMenuReflexion(r)}>
+          <View
+            style={[
+              styles.card,
+              filled
+                ? {
+                    backgroundColor: color + (scheme === 'dark' ? '26' : '1A'),
+                  }
+                : styles.cardSurface,
+            ]}
+          >
+            {!filled && (
+              <View style={[styles.accentBar, { backgroundColor: color }]} />
+            )}
+            <MaterialIcons
+              name="format-quote"
+              size={66}
+              color={color + (scheme === 'dark' ? '26' : '1F')}
+              style={styles.quoteMark}
+            />
+            <View
+              style={[
+                styles.cardInner,
+                !filled && { paddingLeft: spacing.md + 8 },
+              ]}
+            >
+              <View style={styles.cardHead}>
+                <View style={[styles.avatar, { backgroundColor: color }]}>
+                  {initials ? (
+                    <Text style={[styles.avatarText, { color: onColor }]}>
+                      {initials}
+                    </Text>
+                  ) : (
+                    <MaterialIcons
+                      name="auto-stories"
+                      size={16}
+                      color={onColor}
+                    />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardAuthor} numberOfLines={1}>
+                    {name || 'Anónimo'}
+                  </Text>
+                  <Text style={styles.cardDate}>{formatFecha(r.fecha)}</Text>
+                </View>
+              </View>
+              {r.titulo ? (
+                <Text style={styles.cardTitle}>{r.titulo}</Text>
+              ) : null}
+              <Text style={styles.cardContent}>{r.contenido}</Text>
+            </View>
+          </View>
+        </LongPressable>
+      );
+    },
+    [scheme, styles],
+  );
+
   return (
     <View style={styles.container}>
       <ScreenHero
@@ -325,100 +402,27 @@ export default function ReflexionesScreen() {
         floatingHeaderInset
       />
       <PageContainer>
-        <ScrollView
+        <FlatList
+          data={sortedList}
+          keyExtractor={(r) => r.id}
+          renderItem={renderReflexion}
           contentContainerStyle={[
             styles.list,
             { paddingBottom: insets.bottom + 20 },
           ]}
-        >
-          {sortedList.length === 0 ? (
+          ListEmptyComponent={
             <EmptyState
               icon="auto-stories"
               title="Aún no hay reflexiones"
               subtitle="Pulsa el botón + de arriba para compartir la primera."
               accentColor={colors.success}
             />
-          ) : (
-            sortedList.map((r, i) => {
-              const color = pickCardColor(r.id);
-              // Alterna dos diseños para que el muro "fluya": tarjeta con
-              // fondo tintado (par) y tarjeta limpia con barra de color a la
-              // izquierda (impar). Cada una con su color generado del id.
-              const filled = i % 2 === 0;
-              const name = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
-              const initials = getInitials(name);
-              const onColor = getBrightness(color) > 150 ? '#1a1a1a' : '#fff';
-              return (
-                <LongPressable
-                  key={r.id}
-                  onLongPress={() => setMenuReflexion(r)}
-                >
-                  <View
-                    style={[
-                      styles.card,
-                      filled
-                        ? {
-                            backgroundColor:
-                              color + (scheme === 'dark' ? '26' : '1A'),
-                          }
-                        : styles.cardSurface,
-                    ]}
-                  >
-                    {!filled && (
-                      <View
-                        style={[styles.accentBar, { backgroundColor: color }]}
-                      />
-                    )}
-                    <MaterialIcons
-                      name="format-quote"
-                      size={66}
-                      color={color + (scheme === 'dark' ? '26' : '1F')}
-                      style={styles.quoteMark}
-                    />
-                    <View
-                      style={[
-                        styles.cardInner,
-                        !filled && { paddingLeft: spacing.md + 8 },
-                      ]}
-                    >
-                      <View style={styles.cardHead}>
-                        <View
-                          style={[styles.avatar, { backgroundColor: color }]}
-                        >
-                          {initials ? (
-                            <Text
-                              style={[styles.avatarText, { color: onColor }]}
-                            >
-                              {initials}
-                            </Text>
-                          ) : (
-                            <MaterialIcons
-                              name="auto-stories"
-                              size={16}
-                              color={onColor}
-                            />
-                          )}
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.cardAuthor} numberOfLines={1}>
-                            {name || 'Anónimo'}
-                          </Text>
-                          <Text style={styles.cardDate}>
-                            {formatFecha(r.fecha)}
-                          </Text>
-                        </View>
-                      </View>
-                      {r.titulo ? (
-                        <Text style={styles.cardTitle}>{r.titulo}</Text>
-                      ) : null}
-                      <Text style={styles.cardContent}>{r.contenido}</Text>
-                    </View>
-                  </View>
-                </LongPressable>
-              );
-            })
-          )}
-        </ScrollView>
+          }
+          // Mismos valores que las listas de GruposScreen.
+          initialNumToRender={20}
+          windowSize={11}
+          removeClippedSubviews={Platform.OS !== 'web'}
+        />
       </PageContainer>
 
       {/* Form bottom sheet */}
