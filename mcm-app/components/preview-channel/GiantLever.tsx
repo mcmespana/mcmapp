@@ -12,12 +12,16 @@ import Animated, {
 // Extraído de PreviewChannelModal.
 //
 // La posición es un `useDerivedValue` de la prop `active`, no un shared value
-// mutado dentro de un `useEffect` como antes. Con el React Compiler activado
-// (`experiments.reactCompiler`) escribir en un shared value desde un efecto es
-// justo el patrón que el propio linter señala como no fiable, y era la razón
-// más probable de que la palanca se quedase clavada al pulsar. Derivar es
-// declarativo: en cuanto `active` cambia —y el contexto lo cambia de forma
-// optimista, antes de tocar la red— el muelle arranca solo.
+// escrito desde un `useEffect` como antes. Es la forma canónica de animar a
+// partir de una prop en Reanimated, sin efecto de por medio: en cuanto `active`
+// cambia —y el contexto lo cambia de forma optimista, antes de tocar la red— el
+// mapper se recrea `dirty` y el muelle arranca en el frame siguiente.
+//
+// Ojo: el fallo original ("la palanca no se mueve") no se llegó a reproducir,
+// así que esto NO es un arreglo con causa confirmada. Lo que sí quita es toda la
+// fragilidad de la versión anterior: la animación dependía de que el estado
+// diera la vuelta completa por el contexto, y el knob dependía de cómo resuelve
+// Yoga un hijo absoluto sin `left`. Si vuelve a pasar, empezar por ahí.
 //
 // Y si el cambio de canal se revierte porque el binario lo rechaza, la palanca
 // vuelve sola: esa vuelta ES la señal de que no ha cuajado (antes se quedaba

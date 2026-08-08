@@ -37,10 +37,16 @@ build nativa.
   configuración viva** (el check inmediato ya va al canal nuevo) y se persiste
   en nativo, así que el chequeo del arranque también sale por `preview`.
   Funciona en cualquier build de EAS, incluida la que ya está en las tiendas.
-- **`updates.disableAntiBrickingMeasures` eliminado de `app.json`.** Ya no hace
-  falta y era un riesgo real: quita la protección que garantiza poder publicar
-  un update que arregle un update roto. Expo desaconseja activarlo en tienda.
-  (Cambio de config nativa: aplica en la próxima build, sin prisa.)
+- **`updates.disableAntiBrickingMeasures` se queda en `app.json` de momento, a
+  propósito.** Ya no hace falta y conviene quitarlo (quita la protección que
+  garantiza poder publicar un update que arregle un update roto; Expo
+  desaconseja activarlo en tienda), pero **tocar `app.json` dispara el
+  `guard-native` de `ota-production.yml`**, que obliga a `[skip-ota]` y con eso
+  se saltaría la OTA entera — es decir, este arreglo no llegaría a los móviles
+  ya instalados, que es justo el fallo que venimos a corregir. Quitarlo no tiene
+  ningún efecto hasta la próxima build nativa, así que va a la bolsa nativa de
+  `TODO.md` en vez de viajar con este cambio. El código funciona igual con el
+  flag puesto o quitado.
 - **Se acabó el fallo silencioso.** Antes todos los errores morían en un
   `logger.warn`: la palanca se movía, el pie ponía "· alpha" y el dispositivo
   seguía en `production`, sin ninguna señal. Ahora el modal cuenta qué ha pasado
@@ -57,13 +63,16 @@ build nativa.
 - **`OTAProvider` espera a que el canal esté reconciliado** antes de su primera
   comprobación (`useOTAUpdate({ ready })`): si no, la búsqueda de updates podía
   ganarle la carrera al override y pedirle el bundle a `production`.
-- **La palanca ahora se mueve de verdad.** Era un shared value mutado desde un
-  `useEffect`, justo el patrón que el linter del React Compiler
-  (`react-hooks/immutability`, y el proyecto tiene `experiments.reactCompiler`)
-  marca como no fiable. Pasa a ser un `useDerivedValue` declarativo de la prop
-  `active`, con el estado cambiando de forma optimista antes de tocar la red, y
-  respuesta táctil al pulsar. Si el cambio se revierte, la palanca vuelve sola —
-  esa vuelta ES la señal de que no ha cuajado.
+- **La palanca.** No se ha podido reproducir el fallo sin dispositivo, así que
+  la causa exacta no está confirmada. Lo que había: un `useSharedValue` escrito
+  desde un `useEffect` colgado de la prop `active`, o sea que la palanca solo se
+  movía cuando el estado del contexto daba la vuelta completa. Pasa a un
+  `useDerivedValue` declarativo de `active` —la forma canónica de animar desde
+  una prop en Reanimated, sin efecto de por medio—, el estado cambia de forma
+  optimista antes de tocar la red, y el press da respuesta táctil inmediata.
+  Además el knob deja de depender de cómo resuelve Yoga un hijo absoluto sin
+  `left`. Si el cambio de canal se revierte, la palanca vuelve sola: esa vuelta
+  ES la señal de que no ha cuajado.
 - **Nuevos**: `services/previewChannel.ts` (mecánica aislada y testeable),
   `components/preview-channel/LabStatusPanel.tsx`,
   `__tests__/previewChannel.test.ts` (15 tests), y
@@ -71,7 +80,8 @@ build nativa.
   fallo anterior. Suite completa: 42 ficheros, 405 tests verdes.
 - **Modificados**: `contexts/PreviewChannelContext.tsx`, `contexts/OTAContext.tsx`,
   `hooks/useOTAUpdate.ts`, `components/PreviewChannelModal.tsx`,
-  `components/preview-channel/GiantLever.tsx`, `app.json`, `docs/README.md`.
+  `components/preview-channel/GiantLever.tsx`, `TODO.md`, `docs/README.md`.
+  **Ni un solo fichero de ruta nativa**: el arreglo sale entero por OTA.
 
 ## 2026-08-07 12:40 — Calendario deslizable, racha de 7 días interactiva y header de Fotos
 

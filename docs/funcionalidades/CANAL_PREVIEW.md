@@ -78,8 +78,15 @@ Usaba `Updates.setUpdateURLAndRequestHeadersOverride()`, que:
 
 Y de propina, `disableAntiBrickingMeasures` es peligroso en producción: quita la
 protección que garantiza que siempre se pueda publicar un update que arregle un
-update roto. Expo desaconseja explícitamente activarlo en builds de tienda. Al
-no necesitarlo ya, se ha quitado de `app.json`.
+update roto. Expo desaconseja explícitamente activarlo en builds de tienda.
+
+**Sigue puesto en `app.json`, a propósito.** Ya no hace falta y hay que quitarlo,
+pero tocar `app.json` dispara el `guard-native` de `ota-production.yml`, que
+obliga a poner `[skip-ota]` en el push — y eso saltaría la OTA entera, dejando
+este arreglo sin llegar a los móviles ya instalados. Como quitarlo no surte
+efecto hasta la siguiente build nativa, va apuntado en la bolsa nativa de
+`mcm-app/TODO.md` para hacerlo junto a la build. El código de aquí funciona
+igual con el flag puesto o quitado.
 
 ## Cómo comprobar que funciona
 
