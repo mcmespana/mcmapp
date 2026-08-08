@@ -196,6 +196,22 @@ Y que el módulo local del subrayado se autolinka:
 npx expo-modules-autolinking search -p apple --json | grep highlight-menu
 ```
 
+> ⚠️ **Ojo: que autolinke AQUÍ no basta.** Lo anterior mira tu carpeta local; lo
+> que compila EAS es lo que le SUBE, y eso lo decide `.easignore` — que cuando
+> existe **sustituye** a `.gitignore`. Tuvo el mismo agujero que tuvo el
+> `.gitignore` (reglas `ios/` y `android/` sin barra inicial, que casan a
+> cualquier profundidad) y se llevaba por delante
+> `modules/highlight-menu/{ios,android}`: el módulo subía con su
+> `expo-module.config.json` y su JS pero SIN Swift ni Kotlin, autolinking lo
+> saltaba en silencio y la app salía sin el ítem "Subrayar" del menú del sistema.
+> Comprobación de que no ha vuelto (no debe imprimir nada):
+>
+> ```bash
+> git -c core.excludesFile=.easignore check-ignore -v --no-index \
+>   modules/highlight-menu/ios/HighlightMenuView.swift \
+>   modules/highlight-menu/android/build.gradle
+> ```
+
 Lo mismo para Android (**necesita `google-services.json` en `mcm-app/`**, que
 está gitignoreado — cógelo de la consola de Firebase si no lo tienes):
 

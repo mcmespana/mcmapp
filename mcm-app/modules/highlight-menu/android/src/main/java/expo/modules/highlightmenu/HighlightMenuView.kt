@@ -39,6 +39,7 @@ class HighlightMenuView(context: Context, appContext: AppContext) :
   var menuEnabled: Boolean = true
 
   private var attachedTextView: TextView? = null
+  private var attachedCallback: HighlightActionModeCallback? = null
 
   override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
     super.onLayout(changed, l, t, r, b)
@@ -47,17 +48,46 @@ class HighlightMenuView(context: Context, appContext: AppContext) :
   }
 
   override fun onDetachedFromWindow() {
-    attachedTextView?.customSelectionActionModeCallback = null
-    attachedTextView = null
+    detach()
     super.onDetachedFromWindow()
   }
 
+  /** Devuelve al TextView el callback que tuviera antes del nuestro. */
+  private fun detach() {
+    val textView = attachedTextView
+    val callback = attachedCallback
+    if (textView != null && textView.customSelectionActionModeCallback === callback) {
+      textView.customSelectionActionModeCallback = callback?.original
+    }
+    attachedTextView = null
+    attachedCallback = null
+  }
+
   private fun attachIfNeeded() {
-    if (attachedTextView != null) return
     val textView = findTextView(this) ?: return
-    textView.customSelectionActionModeCallback =
-      HighlightActionModeCallback(textView, textView.customSelectionActionModeCallback)
+
+    // Ya enganchado a ESTE TextView y con nuestro callback en su sitio.
+    if (textView === attachedTextView &&
+      textView.customSelectionActionModeCallback === attachedCallback
+    ) {
+      return
+    }
+
+    // Llegar aquí significa que el TextView cambió o que alguien reasignó el
+    // callback (React Native lo hace al recrear el Text/TextInput). Sin el
+    // reintento, el ítem del menú desaparecía al remontarse el texto —cambio de
+    // día, de fuente, de modo— y no volvía.
+    detach()
+
+    val previous = textView.customSelectionActionModeCallback
+    // Nunca encadenar callbacks nuestros: si el que hay ya es uno nuestro, nos
+    // quedamos con el original que él envolvía.
+    val original =
+      if (previous is HighlightActionModeCallback) previous.original else previous
+    val callback = HighlightActionModeCallback(textView, original)
+    textView.customSelectionActionModeCallback = callback
     attachedTextView = textView
+    attachedCallback = callback
   }
 
   private fun findTextView(view: View): TextView? {
@@ -75,7 +105,7 @@ class HighlightMenuView(context: Context, appContext: AppContext) :
    */
   private inner class HighlightActionModeCallback(
     private val target: TextView,
-    private val original: ActionMode.Callback?,
+    val original: ActionMode.Callback?,
   ) : ActionMode.Callback {
 
     override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {

@@ -91,14 +91,32 @@ export function useReadingHighlights(
     sel: ReadingSelection;
   } | null>(null);
 
-  // "Pegajosa": nos quedamos con la ÚLTIMA selección no vacía. Al tocar un chip
-  // de color, iOS puede colapsar la selección nativa antes de que llegue el
-  // onPress — si la vaciáramos aquí, el color no tendría a qué aplicarse.
+  // "Pegajosa": nos quedamos con la ÚLTIMA selección no vacía. Dos motivos:
+  //  1. Al tocar un chip de color, iOS puede colapsar la selección nativa antes
+  //     de que llegue el onPress — si la vaciáramos aquí, el color no tendría a
+  //     qué aplicarse.
+  //  2. El texto reporta su selección TAMBIÉN fuera del modo lápiz, así que al
+  //     tocar el botón de subrayar ya sabemos qué había seleccionado aunque el
+  //     propio toque en el botón haya deshecho la selección nativa.
+  //
+  // Si la selección no ha cambiado devolvemos el MISMO objeto: arrastrar las
+  // asas dispara el evento decenas de veces y así no se re-renderiza de más.
   const onSelectionChange = useMemo(
     () =>
       bySource(
         (source) => (sel: ReadingSelection | null) =>
-          setActiveSel((prev) => (sel ? { source, sel } : prev)),
+          setActiveSel((prev) => {
+            if (!sel) return prev;
+            if (
+              prev &&
+              prev.source === source &&
+              prev.sel.start === sel.start &&
+              prev.sel.end === sel.end
+            ) {
+              return prev;
+            }
+            return { source, sel };
+          }),
       ),
     [],
   );

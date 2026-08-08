@@ -28,6 +28,13 @@ interface SongMediaSheetProps {
   songTitle?: string;
   /** Abre el reproductor flotante con la fuente indicada (vídeo o audio). */
   onPlayMedia: (source: FloatingMediaSource) => void;
+  /**
+   * Se llama cuando la hoja ya está DESMONTADA del todo (no solo cerrándose).
+   * Es el gancho para mostrar el reproductor: en iOS la hoja es un `Modal` de
+   * verdad, presentado en su propia ventana, así que cualquier cosa que aparezca
+   * mientras sigue montado nace tapada.
+   */
+  onCloseComplete?: () => void;
 }
 
 const YT_RED = '#FF3B30';
@@ -52,6 +59,7 @@ export default function SongMediaSheet({
   media,
   songTitle,
   onPlayMedia,
+  onCloseComplete,
 }: SongMediaSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -195,7 +203,12 @@ export default function SongMediaSheet({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="Multimedia y ficha">
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      onCloseComplete={onCloseComplete}
+      title="Multimedia y ficha"
+    >
       <ScrollView
         style={{ maxHeight: SCREEN_HEIGHT * 0.62 }}
         showsVerticalScrollIndicator={false}

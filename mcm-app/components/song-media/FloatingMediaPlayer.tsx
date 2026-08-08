@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   LayoutAnimation,
   Linking,
   Platform,
@@ -39,10 +40,13 @@ const YT_RED = '#FF3B30';
 const PLAYER_WIDTH = 208;
 // 16:9 → 208 * 9 / 16 ≈ 117 (igual que `.ytf-screen` del diseño).
 const VIDEO_HEIGHT = Math.round((PLAYER_WIDTH * 9) / 16);
-// Audio de Drive: barra de reproducción compacta, no necesita tanto alto
-// como el vídeo pero sí casi todo el ancho disponible (el player de Drive
-// se ve apretado en un ancho tan estrecho como el del PiP de vídeo).
-const AUDIO_HEIGHT = 64;
+// Audio de Drive: no necesita tanto alto como el vídeo, pero sí casi todo el
+// ancho disponible (el player de Drive se ve apretado en un ancho tan estrecho
+// como el del PiP de vídeo) y bastante más de 64pt: el iframe de `/preview` de
+// Drive pinta su propia cabecera encima de los controles, así que con 64 se veía
+// una franja negra SIN el botón de play — o sea, indistinguible de "no pasa
+// nada".
+const AUDIO_HEIGHT = 116;
 const SIDE_MARGIN = 14;
 
 /**
@@ -71,6 +75,15 @@ function isYouTubeWatchUrl(url: string): boolean {
 }
 
 /**
+ * URL para abrir un audio FUERA de la app. El embed de Drive es `/preview`, que
+ * fuera del iframe no siempre resuelve; `/view` es la página normal del fichero
+ * y la captura la app de Drive por universal link.
+ */
+function toDriveViewUrl(previewUrl: string): string {
+  return previewUrl.replace(/\/preview(\?.*)?$/, '/view');
+}
+
+/**
  * Reproductor flotante multimedia (estilo PiP de iOS) que se superpone a la
  * letra sin taparla del todo y se puede arrastrar por la pantalla. Reproduce
  * vídeos de YouTube (embed con Referer real) y audios de Google Drive
@@ -90,6 +103,12 @@ export default function FloatingMediaPlayer({
   // Se apoya sobre la barra de pestañas flotante, que ya incluye el inset.
   const tabBarClearance = useTabBarClearance();
   const [fullscreen, setFullscreen] = useState(false);
+  // Estado de carga del embed. Sin esto, un embed que tarda o que falla se ve
+  // como un rectángulo negro y no hay forma de distinguir "cargando" de "roto"
+  // ni salida posible: ahora se avisa y se ofrece abrirlo fuera.
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  );
 
   // Drag (arrastre) + animación de entrada.
   const panX = useSharedValue(0);
@@ -113,6 +132,16 @@ export default function FloatingMediaPlayer({
       panX.value = startX.value + e.translationX;
       panY.value = startY.value + e.translationY;
     });
+
+  // Fuente nueva → vuelta a "cargando". Se ajusta DURANTE el render (el patrón
+  // que documenta React para "cambiar estado cuando cambia una prop") en vez de
+  // en el efecto de abajo: así no hay un render intermedio mostrando el estado
+  // de la fuente anterior.
+  const [lastUrl, setLastUrl] = useState(source?.url);
+  if (source?.url !== lastUrl) {
+    setLastUrl(source?.url);
+    setLoadState('loading');
+  }
 
   // Al abrir una nueva fuente: reset de posición + animación de entrada.
   useEffect(() => {
@@ -167,6 +196,19 @@ export default function FloatingMediaPlayer({
     setFullscreen((f) => !f);
   }, []);
 
+  /** Abre la fuente fuera de la app: YouTube o Drive, según el tipo. */
+  const openOutside = useCallback(() => {
+    if (!source) return;
+    h.tap();
+    if (source.kind === 'youtube') {
+      void openInYouTube(extractYouTubeId(source.url));
+      return;
+    }
+    Linking.openURL(toDriveViewUrl(source.url)).catch(() => {
+      /* sin Drive ni navegador no hay nada que hacer */
+    });
+  }, [source, openInYouTube]);
+
   if (!source) return null;
 
   const isVideo = source.kind === 'youtube';
@@ -204,6 +246,8 @@ export default function FloatingMediaPlayer({
         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         allowFullScreen
         title={source.label}
+        onLoad={() => setLoadState('ready')}
+        onError={() => setLoadState('error')}
       />
     ) : (
       <WebView
@@ -221,6 +265,12 @@ export default function FloatingMediaPlayer({
         javaScriptEnabled
         domStorageEnabled
         setSupportMultipleWindows={false}
+        // Una vez que el embed ha cargado ya no se degrada a error: algunos
+        // subrecursos del player de YouTube/Drive devuelven 4xx sin que la
+        // reproducción se vea afectada.
+        onLoadEnd={() => setLoadState((s) => (s === 'error' ? s : 'ready'))}
+        onError={() => setLoadState((s) => (s === 'ready' ? s : 'error'))}
+        onHttpError={() => setLoadState((s) => (s === 'ready' ? s : 'error'))}
         onShouldStartLoadWithRequest={(req) => {
           // Cualquier intento de salir del embed hacia la página de vídeo
           // (p.ej. tocar el logo o el "Ver en YouTube" del propio player) se
@@ -239,19 +289,23 @@ export default function FloatingMediaPlayer({
       <Text style={styles.barLabel} numberOfLines={1}>
         {source.label}
       </Text>
-      {isVideo && (
-        <TouchableOpacity
-          onPress={() => {
-            h.tap();
-            void openInYouTube(videoId);
-          }}
-          style={styles.barBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Abrir en la app de YouTube"
-        >
-          <MaterialIcons name="smart-display" size={13} color={YT_RED} />
-        </TouchableOpacity>
-      )}
+      {/* Salida a la app externa: YouTube para vídeo, Drive para audio. El
+          audio no la tenía, así que si el embed de Drive no arrancaba no había
+          ninguna forma de llegar a la pista. */}
+      <TouchableOpacity
+        onPress={openOutside}
+        style={styles.barBtn}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel={
+          isVideo ? 'Abrir en la app de YouTube' : 'Abrir en Google Drive'
+        }
+      >
+        <MaterialIcons
+          name={isVideo ? 'smart-display' : 'open-in-new'}
+          size={isVideo ? 13 : 14}
+          color={isVideo ? YT_RED : '#fff'}
+        />
+      </TouchableOpacity>
       {isVideo && (
         <TouchableOpacity
           onPress={toggleFullscreen}
@@ -315,6 +369,31 @@ export default function FloatingMediaPlayer({
       >
         <View style={fullscreen ? styles.fsVideoInner : styles.videoFill}>
           {videoSurface}
+          {/* Cargando / no se pudo cargar. Va ENCIMA del embed (no en su lugar)
+              para no desmontarlo: si termina de cargar, el overlay se va y la
+              reproducción sigue. */}
+          {loadState !== 'ready' && (
+            <View style={styles.stateOverlay} pointerEvents="box-none">
+              {loadState === 'loading' ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <TouchableOpacity
+                  onPress={openOutside}
+                  style={styles.errorBtn}
+                  accessibilityLabel={
+                    isVideo
+                      ? 'No se pudo cargar aquí: abrir en YouTube'
+                      : 'No se pudo cargar aquí: abrir en Drive'
+                  }
+                >
+                  <MaterialIcons name="open-in-new" size={16} color="#fff" />
+                  <Text style={styles.errorText} numberOfLines={2}>
+                    No se pudo cargar aquí.{'\n'}Toca para abrirlo fuera.
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
       </View>
     </Animated.View>
@@ -374,6 +453,25 @@ const styles = StyleSheet.create({
   },
   videoFill: {
     flex: 1,
+  },
+  stateOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  errorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  errorText: {
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 15,
+    color: '#fff',
   },
   fsVideoArea: {
     flex: 1,

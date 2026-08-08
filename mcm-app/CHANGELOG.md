@@ -18,6 +18,97 @@
 
 ---
 
+## 2026-08-08 18:15 — Cuatro cosas pedidas que seguían sin estar `[skip-ota]`
+
+### El ítem "Subrayar" del menú nativo NUNCA llegó a un binario (causa raíz)
+
+El código estaba desde el 3 de agosto, pero **`.easignore` se comía las fuentes
+nativas del módulo**. Es el mismo agujero que se arregló en `.gitignore` el 3 de
+agosto (`a280e9d`) y que allí se quedó: reglas `ios/` y `android/` **sin barra
+inicial**, que casan con cualquier carpeta con ese nombre a cualquier
+profundidad. Y `.easignore`, cuando existe, **sustituye** a `.gitignore` para
+decidir qué sube a EAS, así que arreglarlo allí no arreglaba esto.
+
+Resultado: `modules/highlight-menu/` subía con su `expo-module.config.json` y su
+JS pero **sin Swift, sin Kotlin, sin podspec ni `build.gradle`**. Autolinking lo
+saltaba en silencio y todas las builds salieron sin el ítem del menú.
+Comprobación de que no vuelve (no debe imprimir nada), añadida a
+`docs/desarrollo/BUILD_AGOSTO_2026.md` §3:
+
+```bash
+git -c core.excludesFile=.easignore check-ignore -v --no-index \
+  modules/highlight-menu/ios/HighlightMenuView.swift \
+  modules/highlight-menu/android/build.gradle
+```
+
+Encima, tres cosas más del módulo:
+
+- **Degradación limpia si el módulo no está en el binario.**
+  `requireNativeView` NO lanza cuando falta: devuelve un componente cuyo nombre
+  de vista nativa no existe y React Native lo sustituye por su placeholder de
+  "componente sin implementar" — y como esta vista **envuelve** el texto de la
+  lectura, eso se llevaba por delante el render del texto. Ahora se pregunta con
+  `requireOptionalNativeModule` y sin módulo se renderiza un `View` pelado.
+- **Reenganche en iOS y Android.** React Native se reasigna el delegate (iOS) y
+  el `customSelectionActionModeCallback` (Android) al recrear el texto, así que
+  con el enganche de una sola vez el ítem desaparecía en cuanto el texto se
+  volvía a montar (cambio de día, de tamaño de letra, de modo) y no volvía hasta
+  reiniciar la app. `attachIfNeeded` compara ahora con lo que hay puesto y nunca
+  encadena dos proxies nuestros.
+
+### Subrayar: seleccionas, tocas el lápiz y salen los colores
+
+`HighlightableReading` solo reportaba la selección **dentro** del modo lápiz, así
+que al entrar en el modo la barra decía "selecciona un texto" aunque hubiera
+texto seleccionado, y no reaccionaba hasta mover las asas un pelo. Ahora la
+reporta siempre que el texto sea un `TextInput` (en iOS, los dos modos). En
+Android leyendo sigue siendo un `Text selectable`, que no da offsets: allí el
+atajo es el ítem del menú nativo.
+
+De paso, un bug que sacó el test nuevo: una selección hecha **de derecha a
+izquierda** se descartaba como vacía (`end > start` en vez de `end !== start`; el
+`Math.min`/`Math.max` de al lado era código muerto).
+
+### Calendario: fuera el título del header
+
+Volvió en la pasada del 7 de agosto y se comía el sitio del conmutador
+Mes/Agenda, chocando con el botón de suscribirse. El **título lo pone ahora cada
+anfitrión**, no la pantalla: en el tab no hay (`headerTitle: ''`), en el stack de
+"Más" sí, porque allí es una pantalla apilada con su back. Y el cuerpo reserva la
+altura real del header (`useHeaderHeight()`) en iOS, donde es transparente: antes
+solo dejaba el hueco de la barra de estado y el contenido se metía debajo.
+
+### Reproductor de audio/vídeo del cantoral
+
+Cadena revisada de punta a punta y cubierta con tests (`songMediaFlow.test.tsx`):
+la hoja avisa bien y el reproductor monta el embed correcto. Encima, tres cosas
+que sí podían dejarlo en "no hace nada":
+
+- **El reproductor nace cuando la hoja ya está DESMONTADA** (`onCloseComplete`,
+  el gancho que el propio `BottomSheet` documenta para esto). En iOS la hoja es
+  un `Modal` en su propia ventana: aparecer por debajo dejaba el reproductor
+  tapado y el WebView arrancando en una ventana que no se ve.
+- **El PiP de audio pasa de 64 a 116pt de alto.** El iframe de `/preview` de
+  Drive pinta su propia cabecera encima de los controles: con 64 se veía una
+  franja negra **sin el botón de play**.
+- **Nunca es un callejón sin salida.** Se muestra "cargando", y si el embed falla
+  (`onError`/`onHttpError`) sale un "toca para abrirlo fuera". El audio gana
+  además su botón de abrir en Drive en la barra, que solo tenía el vídeo.
+
+**Modificados**: `.easignore`, `modules/highlight-menu/` (JS + Swift + Kotlin),
+`components/contigo/HighlightableReading.tsx`, `hooks/useReadingHighlights.ts`,
+`app/(tabs)/calendario.tsx`, `app/screens/SongDetailScreen.tsx`,
+`components/song-media/{SongMediaSheet,FloatingMediaPlayer}.tsx`,
+`__tests__/{highlightSelection,songMediaFlow}.test.tsx`,
+`docs/funcionalidades/SUBRAYADO.md`, `docs/desarrollo/BUILD_AGOSTO_2026.md`.
+Suite: 55 ficheros, 491 tests en verde.
+
+> ⚠️ **El ítem "Subrayar" del menú nativo necesita BUILD DE TIENDA.** Es código
+> nativo: por OTA no va. El commit lleva `[skip-ota]`. Lo demás (lápiz,
+> calendario, reproductor) sí sale por OTA.
+
+---
+
 ## 2026-08-08 02:20 — Escáner de QR para importar playlists y unirse al coro `[skip-ota]`
 
 Hasta ahora los QR que genera la app (`ShareQrModal`) solo se podían leer con la

@@ -257,6 +257,8 @@ export default function SongDetailScreen({
   const [showMediaSheet, setShowMediaSheet] = useState(false);
   const [floatingMedia, setFloatingMedia] =
     useState<FloatingMediaSource | null>(null);
+  // Fuente elegida en la hoja que espera a que la hoja termine de cerrarse.
+  const pendingMediaRef = useRef<FloatingMediaSource | null>(null);
 
   // Al cambiar de canción (swipe) se resetean los estados efímeros: se cierra
   // el cajón de multimedia —el reproductor flotante NO, que sobrevive porque es
@@ -656,9 +658,20 @@ export default function SongDetailScreen({
         onClose={() => setShowMediaSheet(false)}
         media={media}
         songTitle={_navScreenTitle}
+        // Al pulsar reproducir NO se abre el reproductor todavía: se apunta la
+        // fuente y se cierra la hoja. El reproductor nace cuando la hoja ya está
+        // desmontada (`onCloseComplete`), porque en iOS la hoja es un Modal en
+        // su propia ventana: aparecer por debajo de él dejaba el reproductor
+        // tapado y el WebView arrancando en una ventana que no se ve.
         onPlayMedia={(source) => {
+          pendingMediaRef.current = source;
           setShowMediaSheet(false);
-          setFloatingMedia(source);
+        }}
+        onCloseComplete={() => {
+          const pending = pendingMediaRef.current;
+          if (!pending) return;
+          pendingMediaRef.current = null;
+          setFloatingMedia(pending);
         }}
       />
       <FloatingMediaPlayer
