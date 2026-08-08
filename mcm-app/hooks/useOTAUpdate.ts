@@ -27,7 +27,19 @@ export interface OTAUpdateState {
 const CHECK_DELAY_MS = 2500; // dar tiempo a que arranque la app antes de pedir red
 const POLL_INTERVAL_MS = 15 * 60 * 1000; // 15 min periodic check
 
-export default function useOTAUpdate(): OTAUpdateState {
+export interface OTAUpdateOptions {
+  /**
+   * Si es `false`, no se comprueba nada todavía. Lo usa `OTAProvider` para
+   * esperar a que `PreviewChannelProvider` haya reconciliado el canal: un
+   * tester en modo alpha debe pedir su update a `preview`, y si la
+   * comprobación se adelantara al override iría a `production`.
+   */
+  ready?: boolean;
+}
+
+export default function useOTAUpdate({
+  ready = true,
+}: OTAUpdateOptions = {}): OTAUpdateState {
   const [isReady, setIsReady] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -58,6 +70,8 @@ export default function useOTAUpdate(): OTAUpdateState {
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
+
     const timer = setTimeout(() => {
       checkAndFetch();
     }, CHECK_DELAY_MS);
@@ -85,7 +99,7 @@ export default function useOTAUpdate(): OTAUpdateState {
       clearInterval(poll);
       sub.remove();
     };
-  }, [checkAndFetch]);
+  }, [checkAndFetch, ready]);
 
   const applyUpdate = useCallback(async () => {
     try {

@@ -939,6 +939,32 @@ const SelectedSongsScreen: React.FC = () => {
     [askMergeOrReplace],
   );
 
+  /**
+   * QR offline escaneado desde el diálogo de importar: la playlist viene
+   * entera dentro del propio código, así que no hay descarga — se resuelve
+   * contra el catálogo cacheado igual que el deep link `?d=`.
+   */
+  const handleScannedOfflinePlaylist = useCallback(
+    (payload: string) => {
+      const { songs, missing } = decodeOfflinePlaylist(
+        payload,
+        offlineFilenameResolver,
+      );
+      if (songs.length === 0) {
+        toast.show({ label: 'No se pudo leer la playlist del QR' });
+        return;
+      }
+      setCodeDialog(null);
+      askMergeOrReplace(songs);
+      if (missing > 0) {
+        toast.show({
+          label: `${missing} canción(es) del QR no están en este dispositivo`,
+        });
+      }
+    },
+    [askMergeOrReplace, offlineFilenameResolver, toast],
+  );
+
   const handleChangeCloudCode = useCallback(
     async (newCode: string) => {
       if (!lastUploadCode) return;
@@ -1587,6 +1613,11 @@ const SelectedSongsScreen: React.FC = () => {
           variant={codeDialog.variant}
           initialCode={codeDialog.initial}
           onClose={() => setCodeDialog(null)}
+          onScanOffline={
+            codeDialog.variant === 'cloud-download'
+              ? handleScannedOfflinePlaylist
+              : undefined
+          }
           onSubmit={async (code, name) => {
             const fn = submitForVariant(codeDialog.variant);
             try {
