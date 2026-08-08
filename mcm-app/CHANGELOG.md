@@ -18,6 +18,59 @@
 
 ---
 
+## 2026-08-08 23:15 — Inicio de sesión en Android: Google nativo, ya de verdad
+
+Android llevaba desde el 5 de junio con el cartel de **"Inicio de sesión
+próximamente"**: los botones estaban ocultos y el onboarding se saltaba el paso
+de login entero. Se acabó — **entrar con Google funciona en Android** igual que
+en iOS, y de paso la capa de auth queda mejor en las tres plataformas.
+
+**Lo que se ha hecho:**
+
+- **Fuera el aviso de "próximamente"**: `SocialLoginSection` pinta el botón de
+  Google en Android, y el onboarding vuelve a incluir el paso de login para los
+  perfiles monitor y miembro (el indicador de pasos vuelve a marcar 3).
+- **Apple no se pinta en Android** (no existe como proveedor nativo allí). La
+  disponibilidad se pregunta de verdad con `isAppleSignInAvailable()` en lugar
+  de deducirla de la plataforma, así que un iOS antiguo sin Apple Sign-In
+  tampoco vería un botón que no funciona.
+- **`utils/authErrors.ts` (nuevo)**: una sola tabla que traduce los códigos de
+  las tres capas —`12501`/`10`/`7` del módulo nativo de Google,
+  `ERR_REQUEST_CANCELED` de Apple, `auth/...` de Firebase— a códigos propios
+  con mensaje de usuario. Antes cualquier fallo era un genérico "No se pudo
+  iniciar sesión"; ahora el toast dice si falta conexión, si falta Google Play
+  Services, o si ese correo ya tiene cuenta con otro proveedor. Y una
+  cancelación sigue sin mostrar nada, que no es un error.
+- **La configuración de Google se garantiza antes del `signIn()`**
+  (`ensureGoogleSignInConfigured`), en vez de depender de que el efecto de
+  arranque de `AuthContext` hubiera terminado. En Android eso importa: sin
+  `webClientId` aplicado no llega `idToken` y Firebase no puede crear la
+  sesión. Si la variable falta directamente en el build, ahora falla con un
+  error explícito en lugar de en silencio.
+- **Carga perezosa del módulo nativo con `require`** en vez de `import()`
+  dinámico: mismo comportamiento en la app (Metro no hace code splitting) y
+  además testeable. Si el binario no trae el módulo, el mensaje es "actualiza
+  la app" en lugar de un fallo mudo.
+- **Logo real de Google** (SVG en sus cuatro colores) sustituyendo la "G" de
+  texto azul, y feedback háptico al entrar/fallar.
+- **28 tests nuevos** (`authErrors.test.ts`, `platformAuthNative.test.ts`):
+  suite en 579.
+
+**Configuración pendiente fuera del código:** hay que registrar en Firebase las
+huellas **SHA-1** del keystore de EAS y de Play App Signing, o Android falla con
+`DEVELOPER_ERROR`. Paso a paso en
+`docs/funcionalidades/LOGIN.md` (nuevo) y resumen en el §2.6 del documento de
+build de agosto.
+
+- Archivos: `utils/authErrors.ts` (nuevo), `utils/platformAuth.native.ts`,
+  `utils/platformAuth.ts`, `contexts/AuthContext.tsx`,
+  `components/SocialLoginSection.tsx`, `app/onboarding.tsx`,
+  `__tests__/authErrors.test.ts`, `__tests__/platformAuthNative.test.ts`,
+  `docs/funcionalidades/LOGIN.md`, `docs/desarrollo/BUILD_AGOSTO_2026.md`.
+- **Sin paquetes nativos nuevos**: todo lo que usa ya estaba en el binario.
+
+---
+
 ## 2026-08-08 20:25 — Navegación a tabs: un hueco más y 50 tests nuevos
 
 Repaso del arreglo anterior. **Un hueco real que quedaba**: si el camino

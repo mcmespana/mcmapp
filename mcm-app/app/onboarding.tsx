@@ -1729,11 +1729,10 @@ export default function OnboardingScreen() {
     go('delegation');
   };
 
-  // Monitor y miembro van al paso de login antes del éxito.
-  // En Android el login está temporalmente deshabilitado (proveedores nativos
-  // en reparación), así que saltamos este paso por completo.
+  // Monitor y miembro van al paso de login antes del éxito. Desde agosto de
+  // 2026 también en Android (Google Sign-In nativo ya funciona allí).
   const needsLoginStep = (p: OnboardingProfileId | null) =>
-    Platform.OS !== 'android' && (p === 'monitor' || p === 'miembro');
+    p === 'monitor' || p === 'miembro';
 
   const handleFinishToSuccess = () => {
     if (needsLoginStep(profileType)) {

@@ -24,6 +24,12 @@
       qué variables configurar y dónde, el checklist de pruebas completo y el
       orden de publicación. No se duplica aquí para que no haya dos listas que
       se contradigan.
+- [ ] **Huellas SHA-1 de Android en Firebase** (§2.6 de ese documento) — el
+      login con Google en Android ya está en el código, pero sin registrar la
+      huella del keystore de EAS **y** la de Play App Signing, el botón falla
+      con `DEVELOPER_ERROR`. Son dos momentos: la primera antes del build de
+      desarrollo, la segunda después de subir el AAB a la Play Console. Detalle
+      y diagnóstico en `docs/funcionalidades/LOGIN.md`.
 
 Es lo que desbloquea el resto: la rama `claude/compact-tabs-bar-uxxaoz` lleva
 SDK 57, barra flotante, Reanimated 4, NSE de iOS, Sentry, analítica, icono de

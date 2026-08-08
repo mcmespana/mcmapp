@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import { useAuth, type AuthUser } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -22,6 +23,9 @@ import { radii } from '@/constants/uiStyles';
 import spacing from '@/constants/spacing';
 import { writeUserOnLogin } from '@/utils/authHelpers';
 import { useToast } from '@/contexts/AppToastContext';
+import { authErrorMessage } from '@/utils/authErrors';
+import { isAppleSignInAvailable } from '@/utils/platformAuth';
+import { h } from '@/utils/haptics';
 
 /** Pide confirmación para eliminar la cuenta. Multiplataforma: usa Alert en
  *  nativo y window.confirm en web. Devuelve true si el usuario confirma. */
@@ -160,6 +164,26 @@ export default function SocialLoginSection({
   const { toast } = useToast();
   const [signingIn, setSigningIn] = useState<'google' | 'apple' | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Apple solo existe en iPhone/iPad y en web (popup de Firebase). En Android
+  // el botón no se pinta: el proveedor no está disponible y ofrecerlo sería
+  // un callejón sin salida.
+  const [appleAvailable, setAppleAvailable] = useState(
+    () => Platform.OS !== 'android',
+  );
+
+  useEffect(() => {
+    let alive = true;
+    isAppleSignInAvailable()
+      .then((available) => {
+        if (alive) setAppleAvailable(available);
+      })
+      .catch(() => {
+        if (alive) setAppleAvailable(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Auto-fill name from auth if local profile name is empty
   useEffect(() => {
@@ -186,30 +210,36 @@ export default function SocialLoginSection({
   };
 
   const handleGoogleSignIn = async () => {
+    if (signingIn) return;
     setSigningIn('google');
     try {
       const authUser = await signInWithGoogle();
       if (authUser) {
         persistLogin(authUser, 'google');
+        h.formSuccess();
         toast.show({ variant: 'success', label: 'Sesión iniciada con Google' });
       }
-    } catch {
-      toast.show({ variant: 'danger', label: 'No se pudo iniciar sesión' });
+    } catch (err) {
+      h.error();
+      toast.show({ variant: 'danger', label: authErrorMessage(err) });
     } finally {
       setSigningIn(null);
     }
   };
 
   const handleAppleSignIn = async () => {
+    if (signingIn) return;
     setSigningIn('apple');
     try {
       const authUser = await signInWithApple();
       if (authUser) {
         persistLogin(authUser, 'apple');
+        h.formSuccess();
         toast.show({ variant: 'success', label: 'Sesión iniciada con Apple' });
       }
-    } catch {
-      toast.show({ variant: 'danger', label: 'No se pudo iniciar sesión' });
+    } catch (err) {
+      h.error();
+      toast.show({ variant: 'danger', label: authErrorMessage(err) });
     } finally {
       setSigningIn(null);
     }
@@ -372,36 +402,6 @@ export default function SocialLoginSection({
     );
   }
 
-  // ── Android: inicio de sesión "próximamente" ──────────────────────
-  // El login con proveedores nativos está temporalmente deshabilitado en
-  // Android mientras se repara. Mostramos un aviso en lugar de los botones.
-  if (Platform.OS === 'android') {
-    const csBg = onDarkBackground
-      ? 'rgba(255,255,255,0.10)'
-      : scheme === 'dark'
-        ? 'rgba(255,255,255,0.06)'
-        : hexAlpha(brandColors.primary, '10');
-    const csIcon = onDarkBackground
-      ? 'rgba(255,255,255,0.85)'
-      : brandColors.primary;
-    const csTitle = onDarkBackground ? '#fff' : theme.text;
-    const csBody = onDarkBackground ? 'rgba(255,255,255,0.75)' : theme.icon;
-    return (
-      <View style={styles.container}>
-        <View style={[styles.comingSoonCard, { backgroundColor: csBg }]}>
-          <MaterialIcons name="schedule" size={26} color={csIcon} />
-          <Text style={[styles.comingSoonTitle, { color: csTitle }]}>
-            Inicio de sesión próximamente
-          </Text>
-          <Text style={[styles.comingSoonBody, { color: csBody }]}>
-            Estamos preparando el acceso con cuenta en Android. Mientras tanto
-            puedes seguir usando la app con normalidad. ¡Muy pronto!
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
   // ── Estado: no autenticado ─────────────────────────────────────────
   const googleBg = onDarkBackground ? 'rgba(255,255,255,0.12)' : theme.card;
   const googleBorder = onDarkBackground
@@ -471,57 +471,57 @@ export default function SocialLoginSection({
         </Text>
       </TouchableOpacity>
 
-      {/* Apple — iOS y web (Android ya salió antes con su aviso propio) */}
-      <TouchableOpacity
-        style={[
-          styles.socialBtn,
-          styles.appleBtn,
-          !onDarkBackground && scheme === 'dark'
-            ? { borderColor: 'rgba(255,255,255,0.18)' }
-            : null,
-          ...(signingIn && signingIn !== 'apple' ? [styles.btnDisabled] : []),
-        ]}
-        onPress={handleAppleSignIn}
-        disabled={!!signingIn}
-        accessibilityRole="button"
-        accessibilityLabel="Continuar con Apple"
-      >
-        {signingIn === 'apple' ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <MaterialIcons name="apple" size={20} color="#fff" />
-        )}
-        <Text style={[styles.socialBtnLabel, { color: '#fff' }]}>
-          Continuar con Apple
-        </Text>
-      </TouchableOpacity>
+      {/* Apple — solo donde el proveedor existe (iOS y web) */}
+      {appleAvailable ? (
+        <TouchableOpacity
+          style={[
+            styles.socialBtn,
+            styles.appleBtn,
+            !onDarkBackground && scheme === 'dark'
+              ? { borderColor: 'rgba(255,255,255,0.18)' }
+              : null,
+            ...(signingIn && signingIn !== 'apple' ? [styles.btnDisabled] : []),
+          ]}
+          onPress={handleAppleSignIn}
+          disabled={!!signingIn}
+          accessibilityRole="button"
+          accessibilityLabel="Continuar con Apple"
+        >
+          {signingIn === 'apple' ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <MaterialIcons name="apple" size={20} color="#fff" />
+          )}
+          <Text style={[styles.socialBtnLabel, { color: '#fff' }]}>
+            Continuar con Apple
+          </Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
 
-/** Icono "G" de Google (SVG en colores oficiales, sin assets externos). */
+/** Logo "G" de Google en sus cuatro colores oficiales (SVG, sin assets). */
 function GoogleIcon({ size = 20 }: { size?: number }) {
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text
-        style={{
-          fontSize: size * 0.9,
-          fontWeight: '700',
-          color: '#4285F4',
-          lineHeight: size,
-          includeFontPadding: false,
-        }}
-      >
-        G
-      </Text>
-    </View>
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      />
+      <Path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <Path
+        fill="#FBBC05"
+        d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"
+      />
+      <Path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
+      />
+    </Svg>
   );
 }
 
@@ -533,24 +533,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
   } as ViewStyle,
-  comingSoonCard: {
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-    borderRadius: radii.md,
-  } as ViewStyle,
-  comingSoonTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    textAlign: 'center',
-  } as TextStyle,
-  comingSoonBody: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '500',
-    textAlign: 'center',
-  } as TextStyle,
   hintCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
