@@ -195,7 +195,14 @@
       "expo-font",
       "expo-image",
       "expo-sharing",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "MCM App usa la cámara para escanear los códigos QR de playlists y sesiones de coro.",
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
