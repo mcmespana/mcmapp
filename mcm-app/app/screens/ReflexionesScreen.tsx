@@ -181,10 +181,6 @@ export default function ReflexionesScreen() {
     return pending.length > 0 ? [...pending, ...remoteList] : remoteList;
   }, [justPublished, remoteList]);
 
-  useEffect(() => {
-    setAutor(getDefaultAuthor());
-  }, [getDefaultAuthor]);
-
   const [showForm, setShowForm] = useState(false);
   const [titulo, setTitulo] = useState('');
   const [contenido, setContenido] = useState('');
@@ -193,6 +189,22 @@ export default function ReflexionesScreen() {
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [saving, setSaving] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+
+  // El autor por defecto sale del perfil (nombre · delegación). Cuando ese
+  // perfil cambia, el campo se re-siembra; pero el usuario puede editarlo, así
+  // que no vale con derivarlo.
+  //
+  // Se ajusta DURANTE el render, el mismo patrón que usa `openFormNonce` unas
+  // líneas más abajo y que documenta React para "cambiar estado cuando cambia
+  // una prop". Antes era un `useEffect` que llamaba a `setAutor`: además del
+  // render intermedio con el autor viejo, dejaba el componente entero sin
+  // compilar por el React Compiler (leía `setAutor` antes de declararlo).
+  const defaultAuthor = getDefaultAuthor();
+  const [lastDefaultAuthor, setLastDefaultAuthor] = useState(defaultAuthor);
+  if (defaultAuthor !== lastDefaultAuthor) {
+    setLastDefaultAuthor(defaultAuthor);
+    setAutor(defaultAuthor);
+  }
 
   // El burst se auto-apaga para poder relanzarse en la siguiente publicación.
   useEffect(() => {

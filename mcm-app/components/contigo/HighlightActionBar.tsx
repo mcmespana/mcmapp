@@ -1,11 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
   interpolate,
   useAnimatedStyle,
