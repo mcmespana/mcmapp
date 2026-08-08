@@ -528,7 +528,10 @@ const SelectedSongsScreen: React.FC = () => {
         logger.error(e);
       }
     }
-  }, [buildShareText, toast]);
+    // `flatSelectedSongs.length` va en las deps aunque hoy `buildShareText` ya
+    // cambie con la lista: sin él, el día que ese memo cambie de dependencias
+    // la analítica empezaría a reportar el tamaño de una playlist vieja.
+  }, [buildShareText, toast, flatSelectedSongs.length]);
 
   const handleStartExportFile = useCallback(() => {
     const monthNames = [
