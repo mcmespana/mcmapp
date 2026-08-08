@@ -457,18 +457,24 @@ export default function SongsListScreen({
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: Song }) => (
-      <SongListItem
-        song={item}
-        onPress={handleSongPress}
-        onLongPress={handleSongLongPress}
-        isSearchAllMode={isSearchAll}
-        isSelected={isSongSelected(item.filename)}
-        selectedTranspose={getSelectedSong(item.filename)?.transpose ?? 0}
-        onAddSong={addSong}
-        onRemoveSong={removeSong}
-      />
-    ),
+    ({ item }: { item: Song }) => {
+      // ⚡ Bolt: Short-circuit optimization. We check the O(1) boolean `isSongSelected` first.
+      // If false, we skip the `getSelectedSong` lookup entirely, avoiding redundant object mapping
+      // for the vast majority of unselected songs during list re-renders.
+      const isSelected = isSongSelected(item.filename);
+      return (
+        <SongListItem
+          song={item}
+          onPress={handleSongPress}
+          onLongPress={handleSongLongPress}
+          isSearchAllMode={isSearchAll}
+          isSelected={isSelected}
+          selectedTranspose={isSelected ? (getSelectedSong(item.filename)?.transpose ?? 0) : 0}
+          onAddSong={addSong}
+          onRemoveSong={removeSong}
+        />
+      );
+    },
     [
       handleSongPress,
       handleSongLongPress,

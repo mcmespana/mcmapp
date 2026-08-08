@@ -1440,27 +1440,33 @@ const SelectedSongsScreen: React.FC = () => {
     [visibleCount, lastUploadCode, viewMode, setViewMode, styles],
   );
 
-  const renderCategoryGroup = ({ item }: { item: CategorizedSongs }) => (
-    <View style={styles.categoryContainer}>
-      <Text style={styles.categoryTitle}>{item.categoryTitle}</Text>
-      {item.data.map((song) => {
-        const isNow = choir.session?.current?.filename === song.filename;
-        return (
-          <PlaylistRow
-            key={song.filename}
-            song={song}
-            transpose={song.transpose}
-            capoOverride={song.capoOverride}
-            isNowPlaying={isNow}
-            onPress={() => handleSongPress(song)}
-            onRemove={() => removeSong(song.filename)}
-          />
-        );
-      })}
-    </View>
+  // ⚡ Bolt: Memoized render functions for FlatList items using `useCallback`.
+  // This preserves referential equality across parent renders, preventing the entire list
+  // from unnecessarily unmounting and remounting its child components when state changes.
+  const renderCategoryGroup = useCallback(
+    ({ item }: { item: CategorizedSongs }) => (
+      <View style={styles.categoryContainer}>
+        <Text style={styles.categoryTitle}>{item.categoryTitle}</Text>
+        {item.data.map((song) => {
+          const isNow = choir.session?.current?.filename === song.filename;
+          return (
+            <PlaylistRow
+              key={song.filename}
+              song={song}
+              transpose={song.transpose}
+              capoOverride={song.capoOverride}
+              isNowPlaying={isNow}
+              onPress={() => handleSongPress(song)}
+              onRemove={() => removeSong(song.filename)}
+            />
+          );
+        })}
+      </View>
+    ),
+    [choir.session?.current?.filename, handleSongPress, removeSong, styles.categoryContainer, styles.categoryTitle]
   );
 
-  const manualRowProps = (
+  const manualRowProps = useCallback((
     item: (typeof flatSelectedSongs)[number],
     index: number,
   ): React.ComponentProps<typeof PlaylistRow> => ({
@@ -1477,23 +1483,31 @@ const SelectedSongsScreen: React.FC = () => {
     isNowPlaying: choir.session?.current?.filename === item.filename,
     onPress: () => handleSongPress(item),
     onRemove: () => removeSong(item.filename),
-  });
+  }), [flatSelectedSongs.length, handleMoveUp, handleMoveDown, handleSongPress, removeSong, choir.session?.current?.filename, setMenuFilename]);
 
-  const renderManualItem = ({
-    item,
-    index,
-  }: {
-    item: (typeof flatSelectedSongs)[number];
-    index: number;
-  }) => <PlaylistRow {...manualRowProps(item, index)} />;
+  const renderManualItem = useCallback(
+    ({
+      item,
+      index,
+    }: {
+      item: (typeof flatSelectedSongs)[number];
+      index: number;
+    }) => <PlaylistRow {...manualRowProps(item, index)} />,
+    [manualRowProps]
+  );
 
-  const renderDraggableManualItem = ({
-    item,
-    index,
-  }: {
-    item: (typeof flatSelectedSongs)[number];
-    index: number;
-  }) => <DraggableManualRow {...manualRowProps(item, index)} />;
+  const renderDraggableManualItem = useCallback(
+    ({
+      item,
+      index,
+      drag
+    }: {
+      item: (typeof flatSelectedSongs)[number];
+      index: number;
+      drag?: () => void;
+    }) => <DraggableManualRow {...manualRowProps(item, index)} drag={drag} />,
+    [manualRowProps]
+  );
 
   const handleReorder = ({ from, to }: ReorderableListReorderEvent) => {
     const song = flatSelectedSongs[from];
