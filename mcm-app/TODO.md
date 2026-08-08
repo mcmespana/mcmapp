@@ -43,22 +43,22 @@ Carismochito y subrayado nativo. Todo NATIVO, nada sale por OTA.
 
 - [ ] **`npx expo export --platform web` falla** con
       `The method or property expo-modules-core.requireNativeViewManager is not
-    available on web`. Es el **renderizado estático** (activado en la config)
+      available on web`. Es el **renderizado estático** (activado en la config)
       intentando cargar `app/(tabs)/_layout.tsx` en un entorno Node, donde los
       módulos nativos nuevos (`expo-native-compact-tabs`,
       `modules/highlight-menu`) no existen. La exportación no genera ni
       `index.html` ni el bundle: solo `manifest.json`, `sw.js` e iconos.
 - **Por qué importa ahora**: `.github/workflows/deploy-web.yml` ejecuta ese
-  comando en cada push a `production`. Cuando lo nativo llegue a
-  `production`, **el deploy web deja de funcionar**.
+      comando en cada push a `production`. Cuando lo nativo llegue a
+      `production`, **el deploy web deja de funcionar**.
 - **Comprobado el 2026-08-07**: falla igual en el commit base `7682615`, así que
-  NO lo introduce ningún cambio reciente de código de app — viene con los
-  módulos nativos de la build de agosto. El bundle del grafo de la app sí se
-  construye; lo que revienta es el paso de render estático.
+      NO lo introduce ningún cambio reciente de código de app — viene con los
+      módulos nativos de la build de agosto. El bundle del grafo de la app sí se
+      construye; lo que revienta es el paso de render estático.
 - Caminos posibles (a decidir): desactivar el static rendering para web, dar un
-  shim `.web.ts` a los módulos nativos que se cargan desde el layout de tabs,
-  o mover su import a un punto que el SSG no toque. Verificar con
-  `npx expo export --platform web` en local antes de publicar.
+      shim `.web.ts` a los módulos nativos que se cargan desde el layout de tabs,
+      o mover su import a un punto que el SSG no toque. Verificar con
+      `npx expo export --platform web` en local antes de publicar.
 
 ### 2. React Compiler — lo que SÍ merece la pena
 
@@ -71,38 +71,38 @@ Carismochito y subrayado nativo. Todo NATIVO, nada sale por OTA.
       arreglados el 2026-08-02 con dos patrones, ninguno de ellos `key={visible}`:
 
       - **Estado DERIVADO** donde el efecto solo copiaba algo calculable:
-                        `useAdminStatus`, `useEventMeta` y `ChoirSessionContext` guardan ahora el
-                        resultado JUNTO a la clave a la que pertenece (uid / eventId / código),
-                        así lo viejo deja de contar solo; `SongListScreen` construye la lista con
-                        una función pura + `useMemo` (el efecto era `async` sin esperar a nada);
-                        `fotos.tsx` y `AlbumListScreen` comparten `hooks/useAlbumPagination.ts`;
-                        `useColorScheme.web.ts` usa `useSyncExternalStore` para el flag de
-                        hidratación.
-                      - **Ajuste durante el render** (el patrón que documenta React para «cambiar
-                        estado cuando cambia una prop») en los modales que se resetean al abrir y
-                        en las pantallas que reaccionan a un parámetro de navegación. Es
-                        equivalente al efecto pero sin el render intermedio con los datos
-                        anteriores, y **no cambia el comportamiento** (a diferencia de
-                        `key={visible}`, que además habría matado la animación de salida del
-                        `BottomSheet`).
+                    `useAdminStatus`, `useEventMeta` y `ChoirSessionContext` guardan ahora el
+                    resultado JUNTO a la clave a la que pertenece (uid / eventId / código),
+                    así lo viejo deja de contar solo; `SongListScreen` construye la lista con
+                    una función pura + `useMemo` (el efecto era `async` sin esperar a nada);
+                    `fotos.tsx` y `AlbumListScreen` comparten `hooks/useAlbumPagination.ts`;
+                    `useColorScheme.web.ts` usa `useSyncExternalStore` para el flag de
+                    hidratación.
+                  - **Ajuste durante el render** (el patrón que documenta React para «cambiar
+                    estado cuando cambia una prop») en los modales que se resetean al abrir y
+                    en las pantallas que reaccionan a un parámetro de navegación. Es
+                    equivalente al efecto pero sin el render intermedio con los datos
+                    anteriores, y **no cambia el comportamiento** (a diferencia de
+                    `key={visible}`, que además habría matado la animación de salida del
+                    `BottomSheet`).
 
-              Los **6 que quedan NO son deuda pendiente, son decisiones**; no vayas a por el
-              número:
+          Los **6 que quedan NO son deuda pendiente, son decisiones**; no vayas a por el
+          número:
 
-              - `WordleScreen` (×2) y `useWordleGame` — **código congelado**, CLAUDE.md
-                        prohíbe refactorizarlo.
-                      - `notifications.tsx:568` — auto-abrir por deep-link. Es una ACCIÓN
-                        disparada por la navegación, no estado que derivar: un efecto es
-                        justamente la herramienta correcta.
-                      - `AddToHomeBanner:30` — lee `window`/`localStorage`, que solo existen en
-                        cliente. Moverlo al render rompería la hidratación del render estático de
-                        web.
-                      - `useSongProcessor:523` — el efecto entero es síncrono y se podría pasar a
-                        `useMemo`, pero eso mete ~500 líneas de formateo ChordPro→HTML DENTRO del
-                        render en la pantalla más usada de la app. Hoy la pantalla pinta primero y
-                        formatea después; cambiarlo es una decisión de rendimiento **que hay que
-                        medir en dispositivo**.
-                      - ~~`ComunicaScreen`~~ — hecho al migrarlo a Reanimated.
+          - `WordleScreen` (×2) y `useWordleGame` — **código congelado**, CLAUDE.md
+                    prohíbe refactorizarlo.
+                  - `notifications.tsx:568` — auto-abrir por deep-link. Es una ACCIÓN
+                    disparada por la navegación, no estado que derivar: un efecto es
+                    justamente la herramienta correcta.
+                  - `AddToHomeBanner:30` — lee `window`/`localStorage`, que solo existen en
+                    cliente. Moverlo al render rompería la hidratación del render estático de
+                    web.
+                  - `useSongProcessor:523` — el efecto entero es síncrono y se podría pasar a
+                    `useMemo`, pero eso mete ~500 líneas de formateo ChordPro→HTML DENTRO del
+                    render en la pantalla más usada de la app. Hoy la pantalla pinta primero y
+                    formatea después; cambiarlo es una decisión de rendimiento **que hay que
+                    medir en dispositivo**.
+                  - ~~`ComunicaScreen`~~ — hecho al migrarlo a Reanimated.
 
 - [ ] **`react-hooks/preserve-manual-memoization` — quedan 5** (de 12). Los 7
       mecánicos ya están hechos (el patrón era: usar `user?.uid` dentro de un
@@ -175,11 +175,11 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       Grupos migrados de sus versiones a mano).
 
       **Los `TextInput` que quedan NO se migran, y está decidido**: los
-          buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
-          de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
-          celdas del código; y los de Revisión quedaron, tras el refactor del examen
-          del día, como campos SIN borde dentro de una fila que sí lo tiene —
-          `AppTextField` les metería un borde dentro de otro.
+      buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
+      de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
+      celdas del código; y los de Revisión quedaron, tras el refactor del examen
+      del día, como campos SIN borde dentro de una fila que sí lo tiene —
+      `AppTextField` les metería un borde dentro de otro.
 
 ## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
 
@@ -232,22 +232,22 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       cada render) lo habría cazado un render test.
 
       Por dónde empezar, en orden de rentabilidad:
-                                  1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-                                     Más): que monten sin reventar con datos vacíos, con datos y offline.
-                                  2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
-                                     hook con sus contextos).
-                                  3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
-                                     releer del bookmark.
-                                  4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
+                              1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+                                 Más): que monten sin reventar con datos vacíos, con datos y offline.
+                              2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+                                 hook con sus contextos).
+                              3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+                                 releer del bookmark.
+                              4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-                                  Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
-                                  lee la suite entera para tocar código: lee los tests del área que toca. Lo
-                                  que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-                                  de en una build de 20 minutos— y evita iteraciones enteras como la del
-                                  tamaño de los iconos. El coste real de una suite grande es de
-                                  MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
-                                  detalles internos) que hay que reescribir en cada refactor. Por eso la
-                                  lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
+                              Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+                              lee la suite entera para tocar código: lee los tests del área que toca. Lo
+                              que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+                              de en una build de 20 minutos— y evita iteraciones enteras como la del
+                              tamaño de los iconos. El coste real de una suite grande es de
+                              MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+                              detalles internos) que hay que reescribir en cada refactor. Por eso la
+                              lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales, y (jun-2026) Fotos (`AlbumListScreen`/`AlbumCard`), Materiales, Comida, MasHome y `EventItem`. Horario es de solo lectura (sin interactivos). Pendiente: validar en dispositivo con VoiceOver/TalkBack y revisar pantallas/flujos secundarios.
 
