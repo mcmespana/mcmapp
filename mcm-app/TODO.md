@@ -29,26 +29,21 @@ Es lo que desbloquea el resto: la rama `claude/compact-tabs-bar-uxxaoz` lleva
 SDK 57, barra flotante, Reanimated 4, NSE de iOS, Sentry, analítica, icono de
 Carismochito y subrayado nativo. Todo NATIVO, nada sale por OTA.
 
-### 1-bis. `expo export --platform web` está ROTO (bloquea el deploy web)
+### 1-bis. `expo export --platform web` — ✅ ARREGLADO (2026-08-08)
 
-- [ ] **`npx expo export --platform web` falla** con
-      `The method or property expo-modules-core.requireNativeViewManager is not
-      available on web`. Es el **renderizado estático** (activado en la config)
-      intentando cargar `app/(tabs)/_layout.tsx` en un entorno Node, donde los
-      módulos nativos nuevos (`expo-native-compact-tabs`,
-      `modules/highlight-menu`) no existen. La exportación no genera ni
-      `index.html` ni el bundle: solo `manifest.json`, `sw.js` e iconos.
-- **Por qué importa ahora**: `.github/workflows/deploy-web.yml` ejecuta ese
-      comando en cada push a `production`. Cuando lo nativo llegue a
-      `production`, **el deploy web deja de funcionar**.
-- **Comprobado el 2026-08-07**: falla igual en el commit base `7682615`, así que
-      NO lo introduce ningún cambio reciente de código de app — viene con los
-      módulos nativos de la build de agosto. El bundle del grafo de la app sí se
-      construye; lo que revienta es el paso de render estático.
-- Caminos posibles (a decidir): desactivar el static rendering para web, dar un
-      shim `.web.ts` a los módulos nativos que se cargan desde el layout de tabs,
-      o mover su import a un punto que el SSG no toque. Verificar con
-      `npx expo export --platform web` en local antes de publicar.
+Fallaba con `The method or property expo-modules-core.requireNativeViewManager
+is not available on web` y no generaba ni `index.html` ni el bundle. La causa no
+era el renderizado estático en sí: `app/(tabs)/_layout.tsx` importaba
+**estáticamente** los tres layouts de pestañas, así que el grafo de módulos de
+web llegaba a `expo-native-compact-tabs` — que llama a
+`requireNativeViewManager()` al cargarse y no trae shim web. Con importarlo
+bastaba, aunque la rama de `Platform.OS` no llegara a ejecutarse nunca.
+
+Arreglado con resolución por plataforma (`components/tabs/PlatformTabsLayout.tsx`
++ `.web.tsx`), que es la convención que ya usa el repo: en web Metro empaqueta el
+shim y el paquete nativo no entra en el bundle. Candado en
+`__tests__/tabsLayoutWebSafety.test.ts` para que un `import` directo no lo vuelva
+a romper — el fallo solo se vería al desplegar.
 
 ### 2. React Compiler — lo que SÍ merece la pena
 
