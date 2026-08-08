@@ -18,6 +18,38 @@
 
 ---
 
+## 2026-08-08 02:20 — Escáner de QR para importar playlists y unirse al coro `[skip-ota]`
+
+Hasta ahora los QR que genera la app (`ShareQrModal`) solo se podían leer con la
+cámara del sistema. Ahora se escanean **desde dentro**, en los dos diálogos en
+los que se teclea un código: "Importar playlist con código" y "Unirse al coro".
+
+- **Botón "Escanear QR"** en `CodeInputModal`, solo en las variantes
+  `cloud-download` y `choir-join` (en las que uno GENERA el código no hay nada
+  que escanear). Al leerlo se rellena y se envía solo: cero toques extra.
+- **Lee los tres formatos** que produce la app: playlist en la nube
+  (`/playlist?p=`), sesión de coro (`/coro?c=`) y playlist **sin conexión**
+  (`mcmapp://playlist?d=`, con las canciones embebidas — se resuelve contra el
+  catálogo cacheado, igual que el deep link). También acepta un QR con solo los
+  4 dígitos.
+- **Si el QR es del otro flujo** (enseñas el del coro en "importar playlist") no
+  se cierra la cámara: sale un aviso y se sigue escaneando.
+- **Animaciones**: el marco se dibuja esquina a esquina al abrir, un láser
+  barre el hueco mientras busca, y al encontrarlo hay fogonazo verde, check,
+  confeti (`CelebrationBurst`) y háptica de éxito antes de continuar.
+- **Nueva dependencia NATIVA: `expo-camera`** → este cambio **NO puede ir por
+  OTA**, necesita build de tienda. El commit lleva `[skip-ota]`. Aun así el
+  módulo se carga con `require` dentro de un try/catch: si una OTA llegase a un
+  binario antiguo, el botón simplemente no aparece en lugar de crashear.
+- **Sin escáner en web**: ahí `expo-camera` depende del navegador y el enlace
+  del QR se puede pinchar directamente.
+- Archivos: `components/playlist/QrScannerModal.tsx`,
+  `components/playlist/QrScanFrame.tsx`,
+  `components/playlist/qrScannerStyles.ts`, `utils/qrScan.ts` (+ tests),
+  `components/playlist/CodeInputModal.tsx` (estilos extraídos a
+  `codeInputModalStyles.ts` para no pasar de 400 líneas),
+  `app/screens/SelectedSongsScreen.tsx`, `app.json`.
+
 ## 2026-08-08 01:55 — El modo tester (Laboratorio Alpha) por fin recibe OTAs de `preview`
 
 El modo alpha nunca llegó a funcionar. El intento anterior (2026-07-22) lo dejó
