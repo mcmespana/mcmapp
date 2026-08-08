@@ -23,8 +23,11 @@ import { useCalendarConfig } from '@/contexts/CalendarConfigContext';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useLocalSearchParams } from 'expo-router';
-import { useRoute, useNavigation } from 'expo-router/react-navigation';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  useRoute,
+  useNavigation,
+  useHeaderHeight,
+} from 'expo-router/react-navigation';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
@@ -162,14 +165,18 @@ export function CalendarScreen() {
   const [subscribeOpen, setSubscribeOpen] = useState(false);
   const [detailsEvent, setDetailsEvent] = useState<CalendarEvent | null>(null);
 
-  // Header NATIVO: título "Calendario" + botón de calendarios (suscribirse) como
-  // bar item. Antes el botón vivía en el cuerpo, junto al switcher Mes/Agenda.
+  // Header NATIVO: solo el botón de calendarios (suscribirse) como bar item. El
+  // TÍTULO lo pone cada anfitrión, no esta pantalla: en el tab no hay título (la
+  // pestaña ya se llama Calendario y el texto se comía el sitio del conmutador
+  // Mes/Agenda, chocando además con este botón), y en el stack de "Más" sí,
+  // porque allí es una pantalla apilada con su back.
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+  // Altura REAL del header del anfitrión (incluye la barra de estado y baja a
+  // 32pt en horizontal), en vez de los 44 a ojo de antes.
+  const headerHeight = useHeaderHeight();
   const showSubscribe = !configsLoading && calendarConfigs.length > 0;
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: 'Calendario',
       headerRight: showSubscribe
         ? () => (
             <TouchableOpacity
@@ -512,11 +519,13 @@ export function CalendarScreen() {
       style={[
         styles.container,
         { flex: 1 },
-        // Ya no hay header de navegación (`headerShown: false` en
-        // TABS_CONFIG): solo hace falta el hueco de la barra de estado, igual
-        // en las dos plataformas. Antes se reservaban 44pt extra para un
-        // header que en Android además era una barra opaca fija.
-        { paddingTop: insets.top },
+        // El header del stack es TRANSPARENTE en iOS (glass del sistema) en los
+        // dos anfitriones —el tab y el stack de "Más"—: el contenido pasa por
+        // debajo, así que hay que reservar su altura. Sin ella el conmutador
+        // Mes/Agenda se metía DEBAJO del header y chocaba con el botón de
+        // suscribirse. En Android y web el header es opaco y ya ocupa su sitio
+        // en el layout, así que aquí no se reserva nada.
+        { paddingTop: Platform.OS === 'ios' ? headerHeight : 0 },
       ]}
     >
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
@@ -755,8 +764,9 @@ export function CalendarScreen() {
 }
 
 // Tab del calendario: envuelve la pantalla en un stack para tener header nativo
-// ("Calendario" + botón de calendarios). Reusa el mismo CalendarScreen que el
-// stack de "Más" (donde ya hay header propio).
+// (SIN título — solo el botón de calendarios, que CalendarScreen añade como bar
+// item). Reusa el mismo CalendarScreen que el stack de "Más", donde sí lleva
+// título porque allí es una pantalla apilada.
 const CalStack = createNativeStackNavigator();
 export default function CalendarioTab() {
   const scheme = useColorScheme();
@@ -781,7 +791,10 @@ export default function CalendarioTab() {
       <CalStack.Screen
         name="CalendarMain"
         component={CalendarScreen}
-        options={{ title: 'Calendario' }}
+        // Sin título: la pestaña ya se llama Calendario. `headerTitle: ''` deja
+        // la barra vacía (transparente en iOS) para que el botón de
+        // suscribirse conviva con el conmutador Mes/Agenda de debajo.
+        options={{ headerTitle: '' }}
       />
     </CalStack.Navigator>
   );

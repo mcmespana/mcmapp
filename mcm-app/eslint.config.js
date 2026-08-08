@@ -18,12 +18,15 @@ module.exports = defineConfig([
       // console internamente (excepción abajo). Migración completada (0
       // console.* en el código), así que ya bloquea como error.
       'no-console': 'error',
-      // Señala archivos nuevos demasiado grandes SIN bloquear los legacy
-      // (es 'warn', no 'error'). Ver docs/planes/PLAN_CALIDAD.md §0.1: cuando
-      // la Fase 1 termine de trocear los gigantes, subir a 'error' con max 800.
+      // Techo de tamaño de archivo. Subido de 400 a 1000 el 2026-08-08: con
+      // agentes de IA leyendo y editando el código, un archivo largo pero
+      // coherente cuesta menos que la misma lógica repartida en seis ficheros
+      // que hay que reconstruir mentalmente. Los gigantes que ya había se
+      // quedan como están; el aviso ahora solo salta cuando un archivo se va
+      // DE VERDAD de las manos. Sigue siendo 'warn', no 'error'.
       'max-lines': [
         'warn',
-        { max: 400, skipBlankLines: true, skipComments: true },
+        { max: 1000, skipBlankLines: true, skipComments: true },
       ],
     },
   },

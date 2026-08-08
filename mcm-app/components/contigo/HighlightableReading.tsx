@@ -24,9 +24,13 @@ interface HighlightableReadingProps {
   text: string;
   /** Rangos subrayados (offsets sobre el texto canónico). */
   ranges?: HighlightRange[];
-  /** Modo subrayar: activa el reporte de selección para pintar. */
+  /** Modo subrayar: en Android cambia a TextInput para conocer los offsets. */
   penMode?: boolean;
-  /** Selección nativa actual (null si no hay o es vacía). */
+  /**
+   * Selección nativa actual (null si no hay o es vacía). Se reporta SIEMPRE que
+   * el texto sea un `TextInput` (en iOS, los dos modos), no solo en modo lápiz:
+   * así el botón de subrayar puede usar la selección que ya hubiera hecha.
+   */
   onSelectionChange?: (sel: ReadingSelection | null) => void;
   /**
    * "Subrayar" desde el menú NATIVO de selección, sin pasar por el modo lápiz.
@@ -66,10 +70,14 @@ interface HighlightableReadingProps {
  *
  * ## Por plataforma
  *
- * - **iOS**: `TextInput` de solo lectura en los dos modos.
+ * - **iOS**: `TextInput` de solo lectura en los dos modos. Como la capa es la
+ *   misma, la selección se conoce SIEMPRE: se puede seleccionar y tocar después
+ *   el botón de subrayar, sin tener que entrar antes en el modo lápiz.
  * - **Android**: `Text selectable` al leer (menú nativo de copiar sin riesgo de
  *   pegar dentro) y `TextInput` al subrayar (única forma de conocer los
- *   offsets exactos de la selección).
+ *   offsets exactos de la selección). Ahí el camino de "selecciono y luego toco
+ *   el lápiz" no puede funcionar —un `Text` no reporta offsets—; el atajo bueno
+ *   en Android es el ítem "Subrayar" del propio menú de selección.
  * - **Web**: `Text` seleccionable al leer (selección del navegador) y
  *   `TextInput` con `value` al subrayar — RNW no admite hijos en el textarea,
  *   así que ahí el color se ve al salir del modo subrayar.
@@ -97,13 +105,12 @@ export function HighlightableReading({
   // que crezca como un texto normal dentro del scroll.
   const [inputHeight, setInputHeight] = useState<number | undefined>(undefined);
 
-  // Al salir del modo subrayar (o desmontar), la selección deja de existir.
+  // Al desmontar, la selección deja de existir. (Al SALIR del modo lápiz no se
+  // toca: la selección es "pegajosa" a propósito, ver useReadingHighlights, y
+  // quien la limpia de verdad es `exitHighlightMode` en la pantalla.)
   const onSelRef = useRef(onSelectionChange);
   onSelRef.current = onSelectionChange;
-  useEffect(() => {
-    if (!penMode) onSelRef.current?.(null);
-    return () => onSelRef.current?.(null);
-  }, [penMode]);
+  useEffect(() => () => onSelRef.current?.(null), []);
 
   const textStyle = {
     color,
@@ -187,10 +194,17 @@ export function HighlightableReading({
         setInputHeight(Math.ceil(e.nativeEvent.contentSize.height))
       }
       onSelectionChange={(e) => {
-        if (!penMode) return;
+        // Se reporta SIEMPRE, también fuera del modo lápiz. Es lo que permite
+        // seleccionar primero y tocar el lápiz después: si solo escucháramos
+        // dentro del modo, la selección que ya había era invisible para JS y la
+        // barra salía pidiendo "selecciona un texto" hasta que la movías un pelo.
         const { start, end } = e.nativeEvent.selection;
+        // `end !== start`, no `end > start`: arrastrando de derecha a izquierda
+        // Android reporta los offsets al revés, y con el `>` la selección se
+        // descartaba como vacía (el Math.min/Math.max de al lado nunca llegaba
+        // a ejecutarse).
         onSelRef.current?.(
-          end > start
+          end !== start
             ? { start: Math.min(start, end), end: Math.max(start, end) }
             : null,
         );

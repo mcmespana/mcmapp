@@ -14,7 +14,6 @@ import {
   TouchableOpacity,
   Pressable,
   Linking,
-  Platform,
   useWindowDimensions,
 } from 'react-native';
 import Animated, {
@@ -45,14 +44,13 @@ import { VersionDisplay } from '@/components/VersionDisplay';
 import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useUserProfile } from '@/contexts/UserProfileContext';
-import { setPendingMasScreen } from '@/utils/masNavigation';
+import { useTabNavigation } from '@/hooks/useTabNavigation';
 import { localISO } from '@/utils/localDate';
 import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
 import GlassActionGroup from '@/components/ui/GlassActionGroup';
 import PressableScale from '@/components/ui/PressableScale';
-import { setPendingEventScreen } from '@/utils/eventNavigation';
 import {
   DEFAULT_APP_EVALUATION,
   DEFAULT_EVENT_EVALUATION,
@@ -192,6 +190,13 @@ interface QuickItem {
   icon: ComponentProps<typeof MaterialIcons>['name'];
   iconBg: string;
   iconColor: string;
+  /**
+   * Nombre del TAB al que lleva. El camino (directo o entrando por "Más") lo
+   * resuelve `goToTab`, que sabe si el tab está en la barra. Antes cada entrada
+   * llevaba un `href` fijo y acertaba solo con algunos perfiles.
+   */
+  tab?: string;
+  /** Ruta literal, para destinos que no son un tab (sub-rutas, "Más"…). */
   href?: string;
   dashed?: boolean;
 }
@@ -200,6 +205,9 @@ export default function Home() {
   const navigation = useNavigation();
   // Compacta la barra de pestañas flotante al scrollear y reserva su hueco.
   const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('index');
+  // Navegación a tabs que tiene en cuenta si el tab está en la barra o en el
+  // overflow de "Más" (ver utils/tabNavigation.ts).
+  const { goToTab, goToEventScreen } = useTabNavigation();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
   // Color neutro de los iconos en la cápsula glass (igual que EventActionButtons).
@@ -413,10 +421,6 @@ export default function Home() {
     (g) => g.events.length > 0,
   );
 
-  // ¿El perfil tiene Comunica como tab propia? Cambia a dónde apunta el botón
-  // de la Home (tab vs. pantalla dentro del stack de "Más").
-  const comunicaIsTab = resolved.tabs.includes('comunica');
-
   // Quick grid items — filtrados por la config del perfil resuelto
   const quickItems = useMemo<QuickItem[]>(() => {
     const visible = new Set(resolved.homeButtons);
@@ -427,9 +431,7 @@ export default function Home() {
         icon: 'forum',
         iconBg: scheme === 'dark' ? '#3A2200' : '#FFF0E0',
         iconColor: '#E08A3C',
-        // Con Comunica como tab propia vamos directos a la tab; si el perfil no
-        // la tiene, se sigue abriendo la pantalla dentro del stack de "Más".
-        href: comunicaIsTab ? '/comunica' : '/mas',
+        tab: 'comunica',
       },
       cancionero: {
         key: 'cancionero',
@@ -437,7 +439,7 @@ export default function Home() {
         icon: 'music-note',
         iconBg: scheme === 'dark' ? '#1A1A3A' : '#E8E0FF',
         iconColor: '#6366F1',
-        href: '/cancionero',
+        tab: 'cancionero',
       },
       visitapapa: {
         key: 'visitapapa',
@@ -445,7 +447,8 @@ export default function Home() {
         icon: 'church',
         iconBg: scheme === 'dark' ? '#332B00' : '#FFF8D6',
         iconColor: '#C9A800',
-        href: '/visitapapa',
+        // El tab del evento en curso; su nombre lo pone el perfil, no está fijo.
+        tab: activeTabId || 'visitapapa',
       },
       fotos: {
         key: 'fotos',
@@ -453,7 +456,7 @@ export default function Home() {
         icon: 'image',
         iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
         iconColor: '#34D399',
-        href: '/mas',
+        tab: 'fotos',
       },
       evangelio: {
         key: 'evangelio',
@@ -478,14 +481,7 @@ export default function Home() {
       .filter((id) => visible.has(id) && catalog[id])
       .filter((id) => !(eventArchived && id === activeTabId))
       .map((id) => catalog[id]);
-  }, [
-    resolved.homeButtons,
-    scheme,
-    theme.icon,
-    comunicaIsTab,
-    eventArchived,
-    activeTabId,
-  ]);
+  }, [resolved.homeButtons, scheme, theme.icon, eventArchived, activeTabId]);
 
   // Hide the tab navigator header — we render our own
   useLayoutEffect(() => {
@@ -568,20 +564,16 @@ export default function Home() {
   };
 
   // Navega al calendario (opcionalmente saltando a una fecha concreta).
-  // En iOS `calendario` es un tab "overflow" SIN trigger nativo (solo caben 5
-  // en la barra), por lo que `router.push('/calendario')` no funciona: hay que
-  // alcanzarlo a través del stack de "Más" igual que hace el acceso de Fotos.
-  // En Android/Web `calendario` es un tab real, así que navegamos directo.
+  //
+  // El camino lo decide `goToTab` mirando si `calendario` está DE VERDAD en la
+  // barra (ver utils/tabNavigation.ts). Antes esto miraba solo `Platform.OS`
+  // === 'ios' y entraba SIEMPRE por "Más": cuando el calendario sí cabía en la
+  // barra —que depende del perfil y de si hay evento en curso— se aterrizaba en
+  // el tab equivocado, y si el perfil no tenía "Más" no se llegaba a ninguna
+  // parte.
   const navigateToCalendar = (date?: string) => {
     h.tap();
-    if (Platform.OS === 'ios') {
-      setPendingMasScreen('Calendario', date ? { date } : undefined);
-      router.push('/mas');
-    } else if (date) {
-      router.push({ pathname: '/calendario', params: { date } } as any);
-    } else {
-      router.push('/calendario');
-    }
+    goToTab('calendario', date ? { date } : undefined);
   };
 
   return (
@@ -773,7 +765,11 @@ export default function Home() {
                 ]}
                 onPress={() => {
                   h.tap();
-                  router.push('/visitapapa');
+                  // El tab del evento lo dice el perfil (`tabId`), y puede estar
+                  // en la barra o en overflow: antes esto era un '/visitapapa'
+                  // fijo que no llevaba a ninguna parte en cuanto el evento no
+                  // cabía en la barra.
+                  goToTab(activeTabId || 'visitapapa');
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={activeEvent.title}
@@ -827,10 +823,10 @@ export default function Home() {
                 style={[styles.evalCta, { backgroundColor: colors.accent }]}
                 onPress={() => {
                   h.tap();
-                  setPendingEventScreen('Evaluacion', {
-                    eventId: activeEvent.id,
-                  });
-                  router.push(`/${activeTabId}` as any);
+                  // Entra por el tab del evento si tiene ruta propia y por
+                  // "Más" si está en overflow (allí están registradas las
+                  // mismas pantallas de evento).
+                  goToEventScreen('Evaluacion', { eventId: activeEvent.id });
                 }}
                 activeOpacity={0.9}
                 accessibilityRole="button"
@@ -1074,12 +1070,10 @@ export default function Home() {
                     accessibilityRole="button"
                     onPress={() => {
                       h.tap();
-                      if (item.key === 'comunica' && !comunicaIsTab) {
-                        setPendingMasScreen('Comunica');
-                      } else if (item.key === 'fotos') {
-                        setPendingMasScreen('Fotos');
-                      }
-                      if (item.href) router.push(item.href as any);
+                      // `goToTab` resuelve el camino según la barra real; los
+                      // destinos que no son un tab siguen con su ruta literal.
+                      if (item.tab) goToTab(item.tab);
+                      else if (item.href) router.push(item.href as any);
                     }}
                   >
                     <View

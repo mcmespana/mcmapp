@@ -7,7 +7,10 @@
 //
 // Ver `docs/funcionalidades/SUBRAYADO.md`.
 
-export { default as HighlightMenuView } from './src/HighlightMenuView';
+export {
+  default as HighlightMenuView,
+  isHighlightMenuAvailable,
+} from './src/HighlightMenuView';
 export type {
   HighlightMenuViewProps,
   HighlightRequest,

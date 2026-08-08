@@ -54,16 +54,38 @@ final class HighlightMenuView: ExpoView {
   deinit {
     // Devolver el delegate original: si esta vista se va y dejamos el proxy
     // puesto, el text view quedaría hablando con un objeto muerto.
+    detach()
+  }
+
+  /// Suelta el text view al que estuviéramos enganchados, devolviéndole su
+  /// delegate original si el nuestro sigue puesto.
+  private func detach() {
     if let textView = attachedTextView, textView.delegate === proxy {
       textView.delegate = proxy?.original
     }
+    attachedTextView = nil
+    proxy = nil
   }
 
   private func attachIfNeeded() {
-    guard attachedTextView == nil, let textView = Self.findTextView(in: self) else { return }
+    guard let textView = Self.findTextView(in: self) else { return }
+
+    // Ya enganchado a ESTE text view y con el proxy todavía en su sitio.
+    if textView === attachedTextView, let proxy = proxy, textView.delegate === proxy {
+      return
+    }
+
+    // Llegar aquí con algo enganchado significa que el text view cambió o que
+    // React Native se REASIGNÓ el delegate (lo hace al recrear o reconfigurar
+    // el TextInput). Sin este reintento, el ítem del menú desaparecía en cuanto
+    // el texto se volvía a montar —cambio de día, de fuente, de modo— y no
+    // volvía hasta reiniciar la app.
+    detach()
 
     let proxy = TextViewDelegateProxy()
-    proxy.original = textView.delegate
+    // Nunca encadenar proxies: si el delegate que hay ya es uno nuestro (de una
+    // vista que se está desmontando), nos quedamos con SU original.
+    proxy.original = (textView.delegate as? TextViewDelegateProxy)?.original ?? textView.delegate
     proxy.makeMenu = { [weak self] range, base in
       guard let self = self, self.menuEnabled, range.length > 0 else { return base }
       let action = UIAction(

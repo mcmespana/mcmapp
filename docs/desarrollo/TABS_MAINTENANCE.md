@@ -89,6 +89,27 @@ impuesto por `UITabBarController`; con barra propia es una decisión de diseño 
 se aplica igual en iOS y Android. Los que no caben se muestran como tarjetas en
 `MasHomeScreen` vía `splitTabsForBar`. En web se ven todos.
 
+#### ⚠️ En iOS, un tab de overflow NO TIENE RUTA
+
+`IOSTabsLayout` crea un `NativeTabs.Trigger` **solo por cada tab de la barra**,
+así que para los de overflow `router.push('/calendario')` no falla: no hace
+nada. En Android y web están registrados TODOS los tabs visibles del perfil
+(solo la barra está recortada), y allí el push directo siempre vale.
+
+Y **qué tabs caben depende del perfil y de si hay un evento en curso**, así que
+no se puede decidir el camino con un `Platform.OS === 'ios'` ni con un `href`
+fijo: es justo lo que hacía que los botones de la Home llevaran al tab
+equivocado —o a ninguno— según el día. **Para navegar a un tab desde cualquier
+sitio, usa `hooks/useTabNavigation.ts` (`goToTab`)**, que pregunta si el tab está
+de verdad en la barra y, si no, entra por su pantalla espejo del stack de "Más".
+
+El mapa de espejos vive en `utils/tabNavigation.ts` (`MAS_STACK_MIRROR`) y es
+**fuente única**: lo usan tanto `goToTab` como las tarjetas de overflow de
+`MasHomeScreen`. Si añades un tab que pueda quedar en overflow (o reordenas
+`TABS_CONFIG` y cambias quién se queda fuera), **regístrale su pantalla espejo en
+`mas.tsx` y su entrada en `MAS_STACK_MIRROR`** — si no, en iOS será inalcanzable.
+Cubierto por `__tests__/tabNavigation.test.ts`.
+
 ### La barra FLOTA: hay que reservarle hueco
 
 No ocupa layout en iOS ni en Android, así que cada pantalla de tab tiene que

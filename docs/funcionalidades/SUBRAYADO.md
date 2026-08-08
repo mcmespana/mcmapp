@@ -85,10 +85,44 @@ pasa a `HighlightActionBar`.
 
 Está cubierto por tests en `__tests__/highlightRanges.test.ts`.
 
+## Seleccionar primero, tocar el lápiz después
+
+El botón de subrayar de la cabecera **usa la selección que ya hubiera hecha**.
+Para eso `HighlightableReading` reporta `onSelectionChange` SIEMPRE que el texto
+sea un `TextInput` (en iOS, leyendo y subrayando), no solo dentro del modo lápiz:
+si solo escuchara dentro del modo, la selección que había era invisible para JS y
+la barra salía pidiendo "selecciona un texto" hasta que movías las asas un pelo.
+
+La selección es "pegajosa" (`useReadingHighlights`): se conserva la última no
+vacía. Hace falta por dos motivos —iOS colapsa la selección nativa antes de que
+llegue el `onPress` del chip de color, y el propio toque en el botón del lápiz
+puede deshacerla—. Quien la limpia de verdad es `exitHighlightMode` (al salir del
+modo, al cambiar de día o al elegir otra fecha).
+
+**En Android este camino no existe**: leyendo, el texto es un `Text selectable`
+y un `Text` no reporta offsets. El atajo bueno en Android es el ítem "Subrayar"
+del propio menú de selección.
+
 ## "Subrayar" en el menú nativo del sistema
 
 > Implementado el 2026-08-03 (build de tienda de agosto). **Requiere binario
 > nuevo**: no sale por OTA.
+>
+> ⚠️ **Nunca ha llegado a un binario todavía.** El código estaba, pero
+> `.easignore` —que cuando existe SUSTITUYE a `.gitignore` para decidir qué sube
+> a EAS— conservaba las reglas `ios/` y `android/` sin barra inicial, que casan a
+> cualquier profundidad y se llevaban por delante
+> `modules/highlight-menu/{ios,android}`. El módulo subía con su
+> `expo-module.config.json` y su JS pero sin Swift, sin Kotlin, sin podspec ni
+> `build.gradle`: autolinking lo saltaba en silencio y la app se construía sin el
+> ítem. Arreglado el 2026-08-08; la comprobación de que no vuelve está en
+> `docs/desarrollo/BUILD_AGOSTO_2026.md` §3.
+>
+> Mientras el binario no lo lleve, `HighlightMenuView` detecta que el módulo no
+> está (`requireOptionalNativeModule`) y renderiza un `View` pelado. Antes
+> montaba la vista nativa inexistente, que React Native sustituye por su
+> placeholder de "componente sin implementar" — y como esta vista ENVUELVE el
+> texto de la lectura, eso se llevaba por delante el render del texto.
 
 Al seleccionar texto en cualquier lectura, el menú del sistema trae un ítem
 **"Subrayar"** junto a Copiar / Traducir / Buscar / Herramientas de escritura.
@@ -127,6 +161,14 @@ propia se antepone con `replacingChildren`.
 **Offsets**: el `NSRange` de iOS y el `selectionStart/End` de Android van en
 unidades UTF-16, que es exactamente cómo indexa JavaScript las cadenas. Los
 offsets casan con el texto canónico sin convertir nada.
+
+**Reenganche**: las dos plataformas reintentan el enganche en cada layout, y no
+solo la primera vez. React Native se reasigna el delegate (iOS) / el
+`customSelectionActionModeCallback` (Android) al recrear o reconfigurar el
+texto, así que con un enganche único el ítem desaparecía en cuanto el texto se
+volvía a montar —cambio de día, de tamaño de letra, de modo— y no volvía hasta
+reiniciar. `attachIfNeeded` compara con lo que hay puesto y nunca encadena dos
+proxies nuestros.
 
 ### Lo que NO cambió
 

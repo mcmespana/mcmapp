@@ -18,6 +18,180 @@
 
 ---
 
+## 2026-08-08 20:25 — Navegación a tabs: un hueco más y 50 tests nuevos
+
+Repaso del arreglo anterior. **Un hueco real que quedaba**: si el camino
+resuelto era "entra por Más" pero **"Más" tampoco tenía ruta** —el perfil no lo
+trae, o en iOS no cabe en la barra—, `router.push('/mas')` era otro no-op y el
+botón volvía a no hacer nada. Ahora `resolveTabRoute` comprueba que "Más" sea
+alcanzable antes de mandar por ahí y, si no lo es, devuelve el intento directo:
+en Android/web funciona y en iOS no había camino de todas formas.
+
+De paso, la condición "¿tiene ruta este tab?" se unificó en un solo predicado
+(`hasRoute`) en vez de repartirse entre tres ramas: en iOS los tabs de la barra,
+en Android/web los visibles del perfil.
+
+**Cobertura: +50 tests en 4 ficheros nuevos**, con barridos exhaustivos en vez de
+casos sueltos —el bug original vivía justo en una combinación que nadie había
+recorrido—:
+
+- `__tests__/tabNavigationInvariants.test.ts` (16): los **2^8 = 256 perfiles
+  posibles × 3 plataformas**, comprobando que ningún tab visible se queda sin
+  camino. Y dos invariantes atadas al código real: que cada espejo de
+  `MAS_STACK_MIRROR` esté **registrado de verdad** en `mas.tsx` (se lee el
+  fuente, incluido lo que entra por `renderEventScreens`), y que **todo tab que
+  pueda caer en overflow tenga espejo** — sin él, en iOS es inalcanzable.
+- `__tests__/useTabNavigation.test.tsx` (14): el cableado del hook con `router`
+  mockeado — qué `push` sale y qué destino pendiente queda apuntado, incluido que
+  no se ensucien los buzones.
+- `__tests__/pendingNavigation.test.ts` (9): el contrato de los dos buzones de
+  navegación pendiente (un solo uso, el nuevo pisa al viejo, independientes).
+- `__tests__/splitTabsForBar.test.ts` (11): la premisa de todo, que no tenía
+  tests propios — barra + overflow = los visibles sin perder ni duplicar, "mas"
+  nunca en overflow, el orden lo manda `TABS_CONFIG` y no el perfil.
+
+Suite: 60 ficheros, **551 tests** en verde (antes 56 / 501).
+
+---
+
+## 2026-08-08 19:40 — La Home ya no se equivoca de camino al ir a un tab
+
+**Bug:** desde la Home, la tarjeta de un evento próximo y el botón "Ver
+calendario" no llevaban al calendario. La causa: `navigateToCalendar` decidía el
+camino con `Platform.OS === 'ios'` y entraba **siempre** por el stack de "Más".
+
+Y eso solo acierta a veces. En iOS `IOSTabsLayout` crea un `NativeTabs.Trigger`
+**solo por cada tab que cabe en la barra**, así que para un tab de overflow
+`router.push('/calendario')` no falla: no hace nada. En Android y web están
+registrados TODOS los tabs visibles del perfil, y allí el push directo siempre
+vale. Y **qué tabs caben depende del perfil y de si hay evento en curso**: con
+evento el calendario cae en overflow (y pasar por "Más" es lo correcto), sin
+evento está en la barra (y pasar por "Más" aterriza en el tab equivocado, o en
+ningún sitio si el perfil no tiene "Más").
+
+Ahora eso lo resuelve un sitio, no cada botón a su manera:
+
+- **`utils/tabNavigation.ts`** (puro, con tests): `resolveTabRoute` responde
+  "¿ruta propia o entro por Más?" mirando el reparto REAL de la barra
+  (`splitTabsForBar`), y `MAS_STACK_MIRROR` es la **fuente única** de qué tab
+  tiene pantalla espejo en "Más".
+- **`hooks/useTabNavigation.ts`**: `goToTab(tab, params?)` y
+  `goToEventScreen(pantalla, params?)`.
+- **Home**: el botón de calendario, las tarjetas de eventos próximos, el banner
+  del evento activo y el CTA "Evalúa la actividad" pasan por ahí. De paso, dos
+  cosas que estaban a fuego: el banner del evento hacía `router.push('/visitapapa')`
+  ignorando el `tabId` del perfil, y el acceso de Fotos entraba por "Más" incluso
+  siendo Fotos un tab de la barra.
+- **`MasHomeScreen`**: sus tarjetas de overflow usaban su propia lista de espejos
+  (`OVERFLOW_STACK_TARGETS`, sin `comunica`) — ahora usan la compartida, y el tab
+  del evento resuelve al hub con su `eventId` en vez de a una ruta que en iOS no
+  existe.
+
+**Umbral de `max-lines`: 400 → 1.000** (y la guía de "trocear de verdad" 600 →
+1.500), en `eslint.config.js` y `CLAUDE.md`. Con agentes de IA leyendo el código,
+un archivo largo pero coherente cuesta menos que la misma lógica repartida en
+seis ficheros. **Los gigantes se quedan**: la Fase 1 de `PLAN_CALIDAD.md` se
+cierra por decisión, no por completada. Avisos de lint: 88 → 60.
+
+**Nuevos**: `utils/tabNavigation.ts`, `hooks/useTabNavigation.ts`,
+`__tests__/tabNavigation.test.ts` (10 tests). **Modificados**:
+`app/(tabs)/index.tsx`, `app/screens/MasHomeScreen.tsx`, `eslint.config.js`,
+`CLAUDE.md`, `docs/desarrollo/TABS_MAINTENANCE.md`, `docs/planes/PLAN_CALIDAD.md`.
+Suite: 56 ficheros, 501 tests en verde.
+
+---
+
+## 2026-08-08 18:15 — Cuatro cosas pedidas que seguían sin estar `[skip-ota]`
+
+### El ítem "Subrayar" del menú nativo NUNCA llegó a un binario (causa raíz)
+
+El código estaba desde el 3 de agosto, pero **`.easignore` se comía las fuentes
+nativas del módulo**. Es el mismo agujero que se arregló en `.gitignore` el 3 de
+agosto (`a280e9d`) y que allí se quedó: reglas `ios/` y `android/` **sin barra
+inicial**, que casan con cualquier carpeta con ese nombre a cualquier
+profundidad. Y `.easignore`, cuando existe, **sustituye** a `.gitignore` para
+decidir qué sube a EAS, así que arreglarlo allí no arreglaba esto.
+
+Resultado: `modules/highlight-menu/` subía con su `expo-module.config.json` y su
+JS pero **sin Swift, sin Kotlin, sin podspec ni `build.gradle`**. Autolinking lo
+saltaba en silencio y todas las builds salieron sin el ítem del menú.
+Comprobación de que no vuelve (no debe imprimir nada), añadida a
+`docs/desarrollo/BUILD_AGOSTO_2026.md` §3:
+
+```bash
+git -c core.excludesFile=.easignore check-ignore -v --no-index \
+  modules/highlight-menu/ios/HighlightMenuView.swift \
+  modules/highlight-menu/android/build.gradle
+```
+
+Encima, tres cosas más del módulo:
+
+- **Degradación limpia si el módulo no está en el binario.**
+  `requireNativeView` NO lanza cuando falta: devuelve un componente cuyo nombre
+  de vista nativa no existe y React Native lo sustituye por su placeholder de
+  "componente sin implementar" — y como esta vista **envuelve** el texto de la
+  lectura, eso se llevaba por delante el render del texto. Ahora se pregunta con
+  `requireOptionalNativeModule` y sin módulo se renderiza un `View` pelado.
+- **Reenganche en iOS y Android.** React Native se reasigna el delegate (iOS) y
+  el `customSelectionActionModeCallback` (Android) al recrear el texto, así que
+  con el enganche de una sola vez el ítem desaparecía en cuanto el texto se
+  volvía a montar (cambio de día, de tamaño de letra, de modo) y no volvía hasta
+  reiniciar la app. `attachIfNeeded` compara ahora con lo que hay puesto y nunca
+  encadena dos proxies nuestros.
+
+### Subrayar: seleccionas, tocas el lápiz y salen los colores
+
+`HighlightableReading` solo reportaba la selección **dentro** del modo lápiz, así
+que al entrar en el modo la barra decía "selecciona un texto" aunque hubiera
+texto seleccionado, y no reaccionaba hasta mover las asas un pelo. Ahora la
+reporta siempre que el texto sea un `TextInput` (en iOS, los dos modos). En
+Android leyendo sigue siendo un `Text selectable`, que no da offsets: allí el
+atajo es el ítem del menú nativo.
+
+De paso, un bug que sacó el test nuevo: una selección hecha **de derecha a
+izquierda** se descartaba como vacía (`end > start` en vez de `end !== start`; el
+`Math.min`/`Math.max` de al lado era código muerto).
+
+### Calendario: fuera el título del header
+
+Volvió en la pasada del 7 de agosto y se comía el sitio del conmutador
+Mes/Agenda, chocando con el botón de suscribirse. El **título lo pone ahora cada
+anfitrión**, no la pantalla: en el tab no hay (`headerTitle: ''`), en el stack de
+"Más" sí, porque allí es una pantalla apilada con su back. Y el cuerpo reserva la
+altura real del header (`useHeaderHeight()`) en iOS, donde es transparente: antes
+solo dejaba el hueco de la barra de estado y el contenido se metía debajo.
+
+### Reproductor de audio/vídeo del cantoral
+
+Cadena revisada de punta a punta y cubierta con tests (`songMediaFlow.test.tsx`):
+la hoja avisa bien y el reproductor monta el embed correcto. Encima, tres cosas
+que sí podían dejarlo en "no hace nada":
+
+- **El reproductor nace cuando la hoja ya está DESMONTADA** (`onCloseComplete`,
+  el gancho que el propio `BottomSheet` documenta para esto). En iOS la hoja es
+  un `Modal` en su propia ventana: aparecer por debajo dejaba el reproductor
+  tapado y el WebView arrancando en una ventana que no se ve.
+- **El PiP de audio pasa de 64 a 116pt de alto.** El iframe de `/preview` de
+  Drive pinta su propia cabecera encima de los controles: con 64 se veía una
+  franja negra **sin el botón de play**.
+- **Nunca es un callejón sin salida.** Se muestra "cargando", y si el embed falla
+  (`onError`/`onHttpError`) sale un "toca para abrirlo fuera". El audio gana
+  además su botón de abrir en Drive en la barra, que solo tenía el vídeo.
+
+**Modificados**: `.easignore`, `modules/highlight-menu/` (JS + Swift + Kotlin),
+`components/contigo/HighlightableReading.tsx`, `hooks/useReadingHighlights.ts`,
+`app/(tabs)/calendario.tsx`, `app/screens/SongDetailScreen.tsx`,
+`components/song-media/{SongMediaSheet,FloatingMediaPlayer}.tsx`,
+`__tests__/{highlightSelection,songMediaFlow}.test.tsx`,
+`docs/funcionalidades/SUBRAYADO.md`, `docs/desarrollo/BUILD_AGOSTO_2026.md`.
+Suite: 55 ficheros, 491 tests en verde.
+
+> ⚠️ **El ítem "Subrayar" del menú nativo necesita BUILD DE TIENDA.** Es código
+> nativo: por OTA no va. El commit lleva `[skip-ota]`. Lo demás (lápiz,
+> calendario, reproductor) sí sale por OTA.
+
+---
+
 ## 2026-08-08 02:20 — Escáner de QR para importar playlists y unirse al coro `[skip-ota]`
 
 Hasta ahora los QR que genera la app (`ShareQrModal`) solo se podían leer con la
