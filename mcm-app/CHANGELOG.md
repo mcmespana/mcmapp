@@ -18,6 +18,53 @@
 
 ---
 
+## 2026-08-08 19:40 — La Home ya no se equivoca de camino al ir a un tab
+
+**Bug:** desde la Home, la tarjeta de un evento próximo y el botón "Ver
+calendario" no llevaban al calendario. La causa: `navigateToCalendar` decidía el
+camino con `Platform.OS === 'ios'` y entraba **siempre** por el stack de "Más".
+
+Y eso solo acierta a veces. En iOS `IOSTabsLayout` crea un `NativeTabs.Trigger`
+**solo por cada tab que cabe en la barra**, así que para un tab de overflow
+`router.push('/calendario')` no falla: no hace nada. En Android y web están
+registrados TODOS los tabs visibles del perfil, y allí el push directo siempre
+vale. Y **qué tabs caben depende del perfil y de si hay evento en curso**: con
+evento el calendario cae en overflow (y pasar por "Más" es lo correcto), sin
+evento está en la barra (y pasar por "Más" aterriza en el tab equivocado, o en
+ningún sitio si el perfil no tiene "Más").
+
+Ahora eso lo resuelve un sitio, no cada botón a su manera:
+
+- **`utils/tabNavigation.ts`** (puro, con tests): `resolveTabRoute` responde
+  "¿ruta propia o entro por Más?" mirando el reparto REAL de la barra
+  (`splitTabsForBar`), y `MAS_STACK_MIRROR` es la **fuente única** de qué tab
+  tiene pantalla espejo en "Más".
+- **`hooks/useTabNavigation.ts`**: `goToTab(tab, params?)` y
+  `goToEventScreen(pantalla, params?)`.
+- **Home**: el botón de calendario, las tarjetas de eventos próximos, el banner
+  del evento activo y el CTA "Evalúa la actividad" pasan por ahí. De paso, dos
+  cosas que estaban a fuego: el banner del evento hacía `router.push('/visitapapa')`
+  ignorando el `tabId` del perfil, y el acceso de Fotos entraba por "Más" incluso
+  siendo Fotos un tab de la barra.
+- **`MasHomeScreen`**: sus tarjetas de overflow usaban su propia lista de espejos
+  (`OVERFLOW_STACK_TARGETS`, sin `comunica`) — ahora usan la compartida, y el tab
+  del evento resuelve al hub con su `eventId` en vez de a una ruta que en iOS no
+  existe.
+
+**Umbral de `max-lines`: 400 → 1.000** (y la guía de "trocear de verdad" 600 →
+1.500), en `eslint.config.js` y `CLAUDE.md`. Con agentes de IA leyendo el código,
+un archivo largo pero coherente cuesta menos que la misma lógica repartida en
+seis ficheros. **Los gigantes se quedan**: la Fase 1 de `PLAN_CALIDAD.md` se
+cierra por decisión, no por completada. Avisos de lint: 88 → 60.
+
+**Nuevos**: `utils/tabNavigation.ts`, `hooks/useTabNavigation.ts`,
+`__tests__/tabNavigation.test.ts` (10 tests). **Modificados**:
+`app/(tabs)/index.tsx`, `app/screens/MasHomeScreen.tsx`, `eslint.config.js`,
+`CLAUDE.md`, `docs/desarrollo/TABS_MAINTENANCE.md`, `docs/planes/PLAN_CALIDAD.md`.
+Suite: 56 ficheros, 501 tests en verde.
+
+---
+
 ## 2026-08-08 18:15 — Cuatro cosas pedidas que seguían sin estar `[skip-ota]`
 
 ### El ítem "Subrayar" del menú nativo NUNCA llegó a un binario (causa raíz)

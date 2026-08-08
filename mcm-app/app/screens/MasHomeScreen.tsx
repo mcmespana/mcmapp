@@ -15,8 +15,10 @@ import AppFeedbackModal from '@/components/AppFeedbackModal';
 import { MasStackParamList } from '../(tabs)/mas';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { useVisibleTabs } from '@/hooks/useVisibleTabs';
+import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { takePendingMasScreen } from '@/utils/masNavigation';
+import { MAS_EVENT_HUB_SCREEN, MAS_STACK_MIRROR } from '@/utils/tabNavigation';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -108,6 +110,8 @@ export default function MasHomeScreen() {
   const useTwoColumns = layout.isWide;
   const resolved = useResolvedProfileConfig();
   const visibleTabs = useVisibleTabs();
+  const { activeEvent } = useActiveMeta();
+  const eventTabId = activeEvent.tabId;
   const { isAdmin } = useAdminStatus();
   const navigationItems = React.useMemo(() => {
     const items: NavigationItem[] = [];
@@ -118,18 +122,20 @@ export default function MasHomeScreen() {
     // todos, así que ahí no hay overflow que recoger.
     if (Platform.OS !== 'web') {
       const { overflowTabs } = splitTabsForBar(visibleTabs);
-      // Tabs cuyo screen está registrado en el stack de Más (no accesibles vía router.navigate en iOS)
-      const OVERFLOW_STACK_TARGETS: Partial<
-        Record<string, keyof MasStackParamList>
-      > = {
-        fotos: 'Fotos',
-        calendario: 'Calendario',
-      };
       for (const tab of overflowTabs) {
         // 'mas' nunca debería estar en overflow (splitTabsForBar lo garantiza),
         // pero filtramos defensivamente para no auto-referenciar esta pantalla.
         if (tab.name === 'mas') continue;
-        const stackTarget = OVERFLOW_STACK_TARGETS[tab.name];
+        // Espejos en el stack de "Más" — el MISMO mapa que usa `goToTab` desde
+        // la Home (`utils/tabNavigation.ts`). Tener dos listas era pedir que
+        // divergieran: un tab con espejo aquí y sin él allí (o al revés) es un
+        // botón que no lleva a ninguna parte en iOS, donde los tabs de overflow
+        // NO tienen ruta registrada.
+        const stackTarget = (MAS_STACK_MIRROR[tab.name] ??
+          // El tab del evento en curso no puede estar en el mapa (su nombre lo
+          // pone el perfil): su espejo es el hub genérico + su eventId.
+          (tab.name === eventTabId ? MAS_EVENT_HUB_SCREEN : undefined)) as
+          keyof MasStackParamList | undefined;
         items.push({
           label: tab.label,
           subtitle: tab.subtitle,
@@ -137,7 +143,10 @@ export default function MasHomeScreen() {
           materialIcon: tab.androidIcon,
           tintColor: tab.tintColor,
           ...(stackTarget
-            ? { target: stackTarget }
+            ? {
+                target: stackTarget,
+                ...(tab.name === eventTabId ? { eventId: activeEvent.id } : {}),
+              }
             : { routePath: `/${tab.name}` }),
         });
       }
@@ -153,7 +162,7 @@ export default function MasHomeScreen() {
     }
 
     return items;
-  }, [resolved.masItems, visibleTabs, isAdmin]);
+  }, [resolved.masItems, visibleTabs, isAdmin, eventTabId, activeEvent.id]);
 
   // Deep-link desde la Home: si hay una pantalla pendiente, navegar a ella
   useFocusEffect(
@@ -221,8 +230,12 @@ export default function MasHomeScreen() {
                 ]}
                 onPress={() => {
                   if (item.routePath) {
-                    // Overflow de tab: salta al tab sibling vía expo-router.
-                    // La ruta sigue existiendo aunque no tenga NativeTabs.Trigger.
+                    // Último recurso: saltar al tab sibling por expo-router.
+                    // OJO en iOS: un tab de overflow NO tiene ruta registrada
+                    // (IOSTabsLayout solo crea un NativeTabs.Trigger por tab de
+                    // la barra), así que esto solo funciona en Android/web. Por
+                    // eso lo normal es tener `target` — un espejo en este mismo
+                    // stack. Ver utils/tabNavigation.ts.
                     router.navigate(item.routePath as any);
                     return;
                   }

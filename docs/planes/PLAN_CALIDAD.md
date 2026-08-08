@@ -52,19 +52,29 @@ Objetivo: que el problema deje de crecer mientras se arregla el resto.
 - [x] **0.1 — ESLint como muro** (`mcm-app/eslint.config.js`): _hecho 2026-06-28._
   - [x] `'prettier/prettier': 'error'`.
   - [x] `'no-console': 'error'` — con override solo para `utils/logger.ts` (la migración de `console.*` está completa, 0 en el código).
-  - [x] `'max-lines': ['warn', { max: 400, skipBlankLines: true, skipComments: true }]` — `warn` a propósito (señala 13 gigantes + archivos nuevos sin bloquear los legacy en CI). Cuando la Fase 1 termine, subir a `error` con `max: 800`.
+  - [x] `'max-lines': ['warn', { max: 1000, skipBlankLines: true, skipComments: true }]` — **umbral subido de 400 a 1000 el 2026-08-08** por decisión del usuario: con agentes de IA leyendo el código, un archivo largo pero coherente cuesta menos que la misma lógica repartida en seis ficheros que hay que reconstruir mentalmente. Sigue en `warn`. **Los gigantes que ya hay SE QUEDAN**: la Fase 1 deja de ser trabajo pendiente por tamaño (sí sigue valiendo trocear cuando el motivo sea otro — acoplamiento, reutilización, un módulo que se toca a la vez desde varios sitios).
   - [ ] `'@typescript-eslint/no-explicit-any': 'warn'` → pendiente: hay 66 `: any` en archivos grandes; con `lint-staged --max-warnings=0` activar el `warn` bloquearía cualquier commit que toque esos archivos. Activar al limpiarlos (Fase 4.1) o, si se quiere ya, hacerlo a la vez que se eliminan.
 - [x] **0.2 — Logger central** (`mcm-app/utils/logger.ts`): _hecho._ Niveles `debug/info/log/warn/error`; `debug`/`info`/`log` silenciados en producción (gate por `__DEV__`); enganche `setReporter` listo para Sentry (Fase 6). **Migración completada: 0 `console.*` en el código** (test en `__tests__/logger.test.ts`).
 - [x] **0.3 — `lint-staged` con ESLint** (raíz `package.json`): _hecho._ Corre `prettier --write` + `eslint --max-warnings=0 --fix` para `mcm-app/**/*.{js,jsx,ts,tsx}`. `.husky/pre-commit` (`npx lint-staged`) restaurado.
-- [ ] **0.4 — Regla escrita en `mcm-app/CLAUDE.md`**: _hecho 2026-06-28_ (sección «Convenciones de código»): «Ningún archivo nuevo > 400 líneas; si una pantalla supera 600, extraer componentes/hooks ANTES de añadir la feature.»
+- [ ] **0.4 — Regla escrita en `mcm-app/CLAUDE.md`**: _hecho 2026-06-28, actualizado 2026-08-08_ (sección «Convenciones de código»): techo de 1.000 líneas; a partir de 1.500 trocear de verdad antes de añadir la feature.
 
 **Criterio de salida:** ✅ lint en CI bloquea formato y `console.*`; CI corre `typecheck` + `typecheck:tests` + `lint` + `test` en PRs; regla anti-gigantes documentada. Pendiente solo el `no-explicit-any: warn` (atado a Fase 4.1).
 
 ---
 
-## Fase 1 — Descuartizar los 9 gigantes (~2-3 semanas · 1-2 archivos por PR)
+## Fase 1 — Descuartizar los 9 gigantes ⏸️ CERRADA POR DECISIÓN (2026-08-08)
 
-Objetivo: ninguna pantalla > 800 líneas; cada pantalla = composición de componentes + un hook de lógica.
+> **Los gigantes se quedan.** Decisión del usuario: con agentes de IA leyendo y
+> editando el código, un archivo largo pero coherente cuesta menos que la misma
+> lógica repartida en seis ficheros que hay que reconstruir mentalmente. El
+> umbral de `max-lines` pasó a 1.000 (avisar) / 1.500 (trocear de verdad).
+>
+> Lo que sigue valiendo de esta fase: trocear cuando el motivo **no** sea el
+> tamaño — acoplamiento, código que se reutiliza desde varios sitios, o lógica
+> pura que gana un test propio al salir del componente. Lo ya hecho (estilos y
+> subcomponentes extraídos) se queda como está.
+
+Objetivo original: ninguna pantalla > 800 líneas; cada pantalla = composición de componentes + un hook de lógica.
 
 **Patrón por archivo** (igual en todos, sin cambiar comportamiento):
 

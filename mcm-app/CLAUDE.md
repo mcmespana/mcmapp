@@ -309,7 +309,7 @@ danger: '#9D1E74'; // Morado LC
 - **Nombres**: PascalCase componentes, camelCase hooks/utils, kebab-case archivos de assets
 - **Importaciones**: usar `@/` siempre, no rutas relativas largas
 - **Plataforma**: usar `Platform.OS` para diferencias, archivos `.ios.tsx` para componentes iOS-only
-- **Tamaño de archivo (anti-gigantes)**: ningún archivo **nuevo** debe superar las **400 líneas** (ESLint avisa con `max-lines`). Si una pantalla supera las **600 líneas**, extraer subcomponentes a `components/<área>/` y la lógica a un hook `use<Pantalla>.ts` **ANTES** de añadir la feature. No engordar un archivo ya grande: el saneamiento de los gigantes está en `docs/planes/PLAN_CALIDAD.md` (Fase 1).
+- **Tamaño de archivo**: el techo son **1.000 líneas** (ESLint avisa con `max-lines`); a partir de **1.500** hay que trocear de verdad — extraer subcomponentes a `components/<área>/` y la lógica a un hook `use<Pantalla>.ts` **ANTES** de añadir la feature. Umbrales subidos desde 400/600 el 2026-08-08: con agentes de IA leyendo el código, un archivo largo pero coherente cuesta menos que la misma lógica repartida en seis ficheros que hay que reconstruir mentalmente. Los gigantes que ya hay **se quedan**: no hace falta trocearlos por tamaño.
 - **Logging**: nunca `console.*` (ESLint lo bloquea como error). Usar el logger central `@/utils/logger` (`logger.debug/info/warn/error`).
 
 ## Patrones comunes
