@@ -20,6 +20,7 @@ import {
   doGoogleSignOut,
 } from '@/utils/platformAuth';
 import { deleteUserData } from '@/utils/authHelpers';
+import { isCancelledAuthError } from '@/utils/authErrors';
 
 /** Resultado de un intento de eliminación de cuenta. */
 export type DeleteAccountResult = 'success' | 'cancelled' | 'error';
@@ -137,11 +138,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
     } catch (err: any) {
       // El usuario canceló el flujo — no es un error real
-      const cancelled =
-        err?.code === 'auth/cancelled-popup-request' ||
-        err?.code === 'auth/popup-closed-by-user' ||
-        err?.code === 'ERR_CANCELED';
-      if (cancelled) return null;
+      if (isCancelledAuthError(err)) return null;
       // Error real: propagar para que la UI muestre feedback (toast) en vez
       // de fallar en silencio.
       logger.error('[AuthContext] signInWithGoogle:', err);
@@ -162,9 +159,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         provider: 'apple',
       };
     } catch (err: any) {
-      const cancelled =
-        err?.code === 'ERR_CANCELED' || String(err?.message).includes('cancel');
-      if (cancelled) return null;
+      if (isCancelledAuthError(err)) return null;
       logger.error('[AuthContext] signInWithApple:', err);
       throw err;
     }
@@ -208,12 +203,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await doGoogleSignIn(auth);
           }
         } catch (reauthErr: any) {
-          const cancelled =
-            reauthErr?.code === 'ERR_CANCELED' ||
-            reauthErr?.code === 'auth/popup-closed-by-user' ||
-            reauthErr?.code === 'auth/cancelled-popup-request' ||
-            String(reauthErr?.message ?? '').includes('cancel');
-          return cancelled ? 'cancelled' : 'error';
+          return isCancelledAuthError(reauthErr) ? 'cancelled' : 'error';
         }
         try {
           await runDelete();

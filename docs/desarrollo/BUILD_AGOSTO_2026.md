@@ -164,6 +164,35 @@ lo lances y te vayas: quédate los dos primeros minutos.
 Para comprobarlo antes de compilar: `npx eas-cli credentials` → iOS → el perfil
 → tienen que salir **dos** targets, la app y `MCMNotificationService`.
 
+### 2.6 Huellas SHA-1 de Android (para el inicio de sesión con Google)
+
+Esta build es la primera que trae **login con Google en Android**. El código ya
+está, pero Google identifica la app por la pareja `com.mcmespana.mcmapp` +
+**huella SHA-1 del certificado que firma el binario**, y esa pareja hay que
+darla de alta a mano. Si falta, el botón falla con *"El inicio de sesión no
+está disponible ahora mismo"* (`DEVELOPER_ERROR`).
+
+Son **dos momentos distintos**:
+
+1. **Antes del build de desarrollo** — huella del keystore de EAS:
+   `npx eas-cli credentials -p android` → Keystore → copiar el `SHA1
+   Fingerprint`.
+2. **Después de subir el AAB a la Play Console** — huella de Play App Signing,
+   que es distinta porque Google vuelve a firmar el paquete: Play Console →
+   Prueba y lanzamiento → Configuración → **Firma de aplicaciones** → SHA-1 de
+   la clave de firma **y** de la clave de carga.
+
+Las dos se pegan en Firebase Console → Configuración del proyecto → Tus apps →
+app Android → **Añadir huella digital**. Después, descargar el
+`google-services.json` actualizado y volver a subirlo a la variable de entorno
+`GOOGLE_SERVICES_JSON` de EAS.
+
+> ⚠️ Registrar solo la primera huella hace que el login funcione en tu móvil de
+> pruebas **y falle para todo el que instale desde la tienda**. Las dos.
+
+Paso a paso completo y tabla de diagnóstico:
+[`docs/funcionalidades/LOGIN.md`](../funcionalidades/LOGIN.md).
+
 ---
 
 ## 3. Antes de compilar — comprobaciones en frío
@@ -277,6 +306,20 @@ npx eas-cli submit -p android --latest
 - [ ] Re-tapea la pestaña activa: vuelve a la raíz / sube el scroll.
 - [ ] **Pasando por el onboarding**: completa el onboarding y mira la barra al
       llegar a Inicio — las etiquetas tienen que verse enteras, no cortadas.
+
+**Inicio de sesión en Android** (nuevo — antes salía "próximamente"; hace falta
+haber registrado la huella SHA-1, §2.6):
+
+- [ ] Más → tu cuenta: se ven **el botón de Google y solo ese** (Apple no
+      existe en Android).
+- [ ] "Continuar con Google" → sale el selector de cuentas del sistema; al
+      elegir una, la tarjeta muestra nombre, correo y "via Google".
+- [ ] **Cancela** el selector → **no** aparece ningún mensaje de error.
+- [ ] Cierra sesión y vuelve a entrar sin reiniciar la app.
+- [ ] Mata la app y ábrela: la sesión **sigue puesta**.
+- [ ] Onboarding con perfil monitor o miembro → ahora aparece el paso de login
+      (antes se saltaba en Android) y el indicador marca 3 pasos.
+- [ ] "Eliminar cuenta" → pide confirmación y la borra.
 
 **Notificaciones — canales de Android** (hace falta un Android **real**, no
 emulador, y mandar pushes desde el Panel):
