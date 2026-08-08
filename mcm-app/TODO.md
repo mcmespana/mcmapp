@@ -29,6 +29,16 @@ Es lo que desbloquea el resto: la rama `claude/compact-tabs-bar-uxxaoz` lleva
 SDK 57, barra flotante, Reanimated 4, NSE de iOS, Sentry, analítica, icono de
 Carismochito y subrayado nativo. Todo NATIVO, nada sale por OTA.
 
+- [ ] **Quitar `updates.disableAntiBrickingMeasures: true` de `app.json`.** Ya
+      no lo usa nadie: el modo tester pasó a `setUpdateRequestHeadersOverride`,
+      que no lo necesita (ver `docs/funcionalidades/CANAL_PREVIEW.md`). Dejarlo
+      puesto quita la protección que garantiza poder publicar un update que
+      arregle un update roto — Expo lo desaconseja explícitamente en builds de
+      tienda. **Hay que hacerlo aquí y no antes**: tocar `app.json` dispara el
+      `guard-native` de `ota-production.yml`, que obliga a `[skip-ota]` y con
+      eso se saltaría la OTA. Como el flag solo se hornea al compilar, quitarlo
+      no cambia nada hasta esta build.
+
 ### 1-bis. `expo export --platform web` está ROTO (bloquea el deploy web)
 
 - [ ] **`npx expo export --platform web` falla** con

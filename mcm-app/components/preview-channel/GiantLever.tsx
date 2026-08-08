@@ -1,35 +1,59 @@
-import { useEffect } from 'react';
+import { useCallback } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   interpolate,
   useAnimatedStyle,
-  useSharedValue,
+  useDerivedValue,
   withSpring,
 } from 'react-native-reanimated';
 
 // Palanca gigante MUNDANO ↔ ALPHA que activa/desactiva el canal preview.
 // Extraído de PreviewChannelModal.
+//
+// La posición es un `useDerivedValue` de la prop `active`, no un shared value
+// escrito desde un `useEffect` como antes. Es la forma canónica de animar a
+// partir de una prop en Reanimated, sin efecto de por medio: en cuanto `active`
+// cambia —y el contexto lo cambia de forma optimista, antes de tocar la red— el
+// mapper se recrea `dirty` y el muelle arranca en el frame siguiente.
+//
+// Ojo: el fallo original ("la palanca no se mueve") no se llegó a reproducir,
+// así que esto NO es un arreglo con causa confirmada. Lo que sí quita es toda la
+// fragilidad de la versión anterior: la animación dependía de que el estado
+// diera la vuelta completa por el contexto, y el knob dependía de cómo resuelve
+// Yoga un hijo absoluto sin `left`. Si vuelve a pasar, empezar por ahí.
+//
+// Y si el cambio de canal se revierte porque el binario lo rechaza, la palanca
+// vuelve sola: esa vuelta ES la señal de que no ha cuajado (antes se quedaba
+// donde el usuario la había dejado, mintiendo).
 
 const LEVER_WIDTH = 280;
 const LEVER_HEIGHT = 88;
 const KNOB = 76;
+const KNOB_MARGIN = 6;
+const TRAVEL = LEVER_WIDTH - KNOB - KNOB_MARGIN * 2;
+const SPRING = { damping: 12, stiffness: 110 } as const;
 
 export function GiantLever({
   active,
+  busy = false,
   onToggle,
 }: {
   active: boolean;
+  /** Cambio en curso: se bloquean pulsaciones para no encolar toggles. */
+  busy?: boolean;
   onToggle: () => void;
 }) {
-  const t = useSharedValue(active ? 1 : 0);
-  useEffect(() => {
-    t.value = withSpring(active ? 1 : 0, { damping: 12, stiffness: 110 });
-  }, [active, t]);
+  const t = useDerivedValue(() => withSpring(active ? 1 : 0, SPRING), [active]);
+
+  const handlePress = useCallback(() => {
+    if (busy) return;
+    onToggle();
+  }, [busy, onToggle]);
 
   const knobStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: t.value * (LEVER_WIDTH - KNOB - 12) + 6 },
+      { translateX: t.value * TRAVEL },
       { rotate: `${interpolate(t.value, [0, 1], [-12, 12])}deg` },
       { scale: 1 + Math.abs(t.value - 0.5) * 0.05 },
     ],
@@ -38,10 +62,17 @@ export function GiantLever({
 
   return (
     <Pressable
-      onPress={onToggle}
-      style={styles.leverContainer}
+      onPress={handlePress}
+      disabled={busy}
+      // Respuesta táctil por CSS, no por shared value: el React Compiler marca
+      // como no fiable mutar un shared value desde un handler de evento.
+      style={({ pressed }) => [
+        styles.leverContainer,
+        busy && styles.leverBusy,
+        pressed && styles.leverPressed,
+      ]}
       accessibilityRole="switch"
-      accessibilityState={{ checked: active }}
+      accessibilityState={{ checked: active, disabled: busy }}
       accessibilityLabel="Activar modo laboratorio (canal preview)"
     >
       <View style={styles.leverTrackBase}>
@@ -71,6 +102,12 @@ const styles = StyleSheet.create({
   leverContainer: {
     width: LEVER_WIDTH,
     alignItems: 'center',
+  },
+  leverBusy: {
+    opacity: 0.75,
+  },
+  leverPressed: {
+    transform: [{ scale: 0.97 }],
   },
   leverTrackBase: {
     width: LEVER_WIDTH,
@@ -108,6 +145,10 @@ const styles = StyleSheet.create({
   },
   leverKnob: {
     position: 'absolute',
+    // `left` explícito: sin él la posición de partida dependía de cómo Yoga
+    // resuelve un hijo absoluto sin offset horizontal, y el `translateX` tenía
+    // que compensarlo con un `+6` a mano.
+    left: KNOB_MARGIN,
     top: (LEVER_HEIGHT - KNOB) / 2,
     width: KNOB,
     height: KNOB,
