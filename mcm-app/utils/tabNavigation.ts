@@ -79,7 +79,24 @@ export function resolveTabRoute(
     ...(params && { params }),
   };
 
+  const { mainTabs } = splitTabsForBar(visibleTabs);
+
+  /**
+   * ¿Ese tab tiene ruta registrada AQUÍ? En iOS solo los de la barra
+   * (`NativeTabs.Trigger`); en Android y web, todos los visibles del perfil.
+   */
+  const hasRoute = (name: string) =>
+    platform === 'ios'
+      ? mainTabs.some((tab) => tab.name === name)
+      : visibleTabs.has(name);
+
   const viaMas = (): TabRoute => {
+    // Entrar por "Más" exige que "Más" TENGA ruta: si el perfil no lo trae, o no
+    // cabe en la barra en iOS, `router.push('/mas')` es otro no-op. En ese caso
+    // el intento directo es lo mejor que hay — en Android/web funciona, y en iOS
+    // no hay ningún camino, así que no se pierde nada.
+    if (!hasRoute('mas')) return direct;
+
     const mirror = MAS_STACK_MIRROR[tabName];
     if (mirror)
       return { via: 'masScreen', screen: mirror, ...(params && { params }) };
@@ -93,15 +110,11 @@ export function resolveTabRoute(
     return { via: 'masRoot' };
   };
 
-  // El perfil no muestra ese tab: no hay ruta que pushear ni en Android/web.
-  // Aun así el espejo de "Más" puede existir (mas.tsx registra Fotos,
-  // Calendario y Comunica siempre), y es mejor eso que quedarse quieto.
-  if (!visibleTabs.has(tabName)) return viaMas();
-
-  if (platform !== 'ios') return direct;
-
-  const { mainTabs } = splitTabsForBar(visibleTabs);
-  return mainTabs.some((tab) => tab.name === tabName) ? direct : viaMas();
+  // Un tab sin ruta aquí puede ser de overflow (iOS) o directamente no estar en
+  // el perfil (evento archivado, calendario apagado…). En los dos casos el
+  // espejo de "Más" es la salida: `mas.tsx` registra Fotos, Calendario, Comunica
+  // y las pantallas de evento SIEMPRE, mire el perfil lo que mire.
+  return hasRoute(tabName) ? direct : viaMas();
 }
 
 /**

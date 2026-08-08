@@ -18,6 +18,42 @@
 
 ---
 
+## 2026-08-08 20:25 — Navegación a tabs: un hueco más y 50 tests nuevos
+
+Repaso del arreglo anterior. **Un hueco real que quedaba**: si el camino
+resuelto era "entra por Más" pero **"Más" tampoco tenía ruta** —el perfil no lo
+trae, o en iOS no cabe en la barra—, `router.push('/mas')` era otro no-op y el
+botón volvía a no hacer nada. Ahora `resolveTabRoute` comprueba que "Más" sea
+alcanzable antes de mandar por ahí y, si no lo es, devuelve el intento directo:
+en Android/web funciona y en iOS no había camino de todas formas.
+
+De paso, la condición "¿tiene ruta este tab?" se unificó en un solo predicado
+(`hasRoute`) en vez de repartirse entre tres ramas: en iOS los tabs de la barra,
+en Android/web los visibles del perfil.
+
+**Cobertura: +50 tests en 4 ficheros nuevos**, con barridos exhaustivos en vez de
+casos sueltos —el bug original vivía justo en una combinación que nadie había
+recorrido—:
+
+- `__tests__/tabNavigationInvariants.test.ts` (16): los **2^8 = 256 perfiles
+  posibles × 3 plataformas**, comprobando que ningún tab visible se queda sin
+  camino. Y dos invariantes atadas al código real: que cada espejo de
+  `MAS_STACK_MIRROR` esté **registrado de verdad** en `mas.tsx` (se lee el
+  fuente, incluido lo que entra por `renderEventScreens`), y que **todo tab que
+  pueda caer en overflow tenga espejo** — sin él, en iOS es inalcanzable.
+- `__tests__/useTabNavigation.test.tsx` (14): el cableado del hook con `router`
+  mockeado — qué `push` sale y qué destino pendiente queda apuntado, incluido que
+  no se ensucien los buzones.
+- `__tests__/pendingNavigation.test.ts` (9): el contrato de los dos buzones de
+  navegación pendiente (un solo uso, el nuevo pisa al viejo, independientes).
+- `__tests__/splitTabsForBar.test.ts` (11): la premisa de todo, que no tenía
+  tests propios — barra + overflow = los visibles sin perder ni duplicar, "mas"
+  nunca en overflow, el orden lo manda `TABS_CONFIG` y no el perfil.
+
+Suite: 60 ficheros, **551 tests** en verde (antes 56 / 501).
+
+---
+
 ## 2026-08-08 19:40 — La Home ya no se equivoca de camino al ir a un tab
 
 **Bug:** desde la Home, la tarjeta de un evento próximo y el botón "Ver
