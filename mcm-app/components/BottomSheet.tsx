@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -112,6 +112,30 @@ export default function BottomSheet({
   // encendería `closing` y montaría el Modal para nada).
   const prevVisible = useRef(visible);
 
+  // `onCloseComplete` se llama UNA sola vez por cierre, venga de donde venga
+  // (el `onDismiss` de iOS o el temporizador de respaldo). Sin este pestillo,
+  // una acción diferida podría ejecutarse dos veces.
+  const completePendingRef = useRef(false);
+  const dismissFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fireCloseComplete = useCallback(() => {
+    if (dismissFallbackRef.current) {
+      clearTimeout(dismissFallbackRef.current);
+      dismissFallbackRef.current = null;
+    }
+    if (!completePendingRef.current) return;
+    completePendingRef.current = false;
+    onCloseCompleteRef.current?.();
+  }, []);
+
+  // Al desmontar, ni temporizador vivo ni callback a destiempo.
+  useEffect(
+    () => () => {
+      if (dismissFallbackRef.current) clearTimeout(dismissFallbackRef.current);
+    },
+    [],
+  );
+
   useEffect(() => {
     const wasVisible = prevVisible.current;
     prevVisible.current = visible;
@@ -139,6 +163,7 @@ export default function BottomSheet({
 
     if (!wasVisible) return;
 
+    completePendingRef.current = true;
     setClosing(true);
     Animated.parallel([
       Animated.timing(slideAnim, {
@@ -154,15 +179,28 @@ export default function BottomSheet({
     ]).start(() => {
       setClosing(false);
       // Android / Web: call directly — no native sequencing concern.
-      // iOS: onDismiss on the Modal fires instead, after UIKit confirms the
-      // view controller is gone. Calling here on iOS would batch this with
-      // unmounting the Modal, making the new Modal appear in the same render
-      // cycle — which iOS rejects silently.
+      // iOS: lo normal es que lo dispare `onDismiss` del Modal, cuando UIKit
+      // confirma que el view controller ya no está; llamarlo aquí lo agruparía
+      // con desmontar el Modal y el modal nuevo aparecería en el mismo ciclo de
+      // render, cosa que iOS rechaza en silencio. Pero NO se puede depender solo
+      // de `onDismiss`: si no llega, la acción pendiente se pierde sin ruido —y
+      // es justo el caso del menú "..." del cantoral, donde cada opción es
+      // "cierra la hoja y abre otra cosa", así que sin callback el menú entero
+      // parece muerto. De ahí la red de seguridad de abajo.
       if (Platform.OS !== 'ios') {
-        onCloseCompleteRef.current?.();
+        fireCloseComplete();
+        return;
       }
+      dismissFallbackRef.current = setTimeout(fireCloseComplete, 400);
     });
-  }, [visible, slideAnim, opacityAnim, dragAnim, keyboardOffsetAnim]);
+  }, [
+    visible,
+    slideAnim,
+    opacityAnim,
+    dragAnim,
+    keyboardOffsetAnim,
+    fireCloseComplete,
+  ]);
 
   // Shift the sheet up when the keyboard appears (iOS only).
   // Uses a separate Animated.Value so it can share the native driver with
@@ -277,7 +315,7 @@ export default function BottomSheet({
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
-      onDismiss={() => onCloseCompleteRef.current?.()}
+      onDismiss={fireCloseComplete}
     >
       {/* Backdrop */}
       <Animated.View

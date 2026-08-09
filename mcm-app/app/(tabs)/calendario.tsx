@@ -37,6 +37,8 @@ import CalendarSubscribeBottomSheet from '@/components/CalendarSubscribeBottomSh
 import EventDetailsBottomSheet from '@/components/EventDetailsBottomSheet';
 import EmptyState from '@/components/ui/EmptyState';
 import { createStyles } from '@/components/calendar/calendarioStyles';
+import TabTintBar from '@/components/ui/TabTintBar';
+import { TabHeaderColors } from '@/constants/colors';
 
 LocaleConfig.locales['es'] = {
   monthNames: [
@@ -818,31 +820,36 @@ export default function CalendarioTab() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   return (
-    <CalStack.Navigator
-      screenOptions={{
-        headerShadowVisible: false,
-        headerTintColor: isDark ? '#FFFFFF' : '#1a1a1a',
-        headerTitleStyle: {
-          fontWeight: '700',
-          fontSize: 17,
-          color: isDark ? '#FFFFFF' : '#1a1a1a',
-        },
-        // Header transparente (como el cantoral): glass del sistema en iOS.
-        headerTransparent: Platform.OS === 'ios',
-        ...(Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) < 26
-          ? { headerBlurEffect: 'systemChromeMaterial' as const }
-          : {}),
-      }}
-    >
-      <CalStack.Screen
-        name="CalendarMain"
-        component={CalendarScreen}
-        // Sin título: la pestaña ya se llama Calendario. `headerTitle: ''` deja
-        // la barra vacía (transparente en iOS) para que el botón de
-        // suscribirse conviva con el conmutador Mes/Agenda de debajo.
-        options={{ headerTitle: '' }}
-      />
-    </CalStack.Navigator>
+    <>
+      {/* Raya celeste del calendario pegada arriba, como la roja de Fotos. */}
+      <TabTintBar color={TabHeaderColors.calendario} />
+      <CalStack.Navigator
+        screenOptions={{
+          headerShadowVisible: false,
+          headerTintColor: isDark ? '#FFFFFF' : '#1a1a1a',
+          headerTitleStyle: {
+            fontWeight: '700',
+            fontSize: 17,
+            color: isDark ? '#FFFFFF' : '#1a1a1a',
+          },
+          // Header transparente (como el cantoral): glass del sistema en iOS.
+          headerTransparent: Platform.OS === 'ios',
+          ...(Platform.OS === 'ios' &&
+          parseInt(String(Platform.Version), 10) < 26
+            ? { headerBlurEffect: 'systemChromeMaterial' as const }
+            : {}),
+        }}
+      >
+        <CalStack.Screen
+          name="CalendarMain"
+          component={CalendarScreen}
+          // Sin título: la pestaña ya se llama Calendario. `headerTitle: ''` deja
+          // la barra vacía (transparente en iOS) para que el botón de
+          // suscribirse conviva con el conmutador Mes/Agenda de debajo.
+          options={{ headerTitle: '' }}
+        />
+      </CalStack.Navigator>
+    </>
   );
 }
 

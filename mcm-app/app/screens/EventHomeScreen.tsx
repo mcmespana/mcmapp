@@ -42,6 +42,7 @@ import {
   EventSection,
   getEventCacheKey,
   getEventFirebasePath,
+  isEventArchived,
 } from '@/constants/events';
 
 const WIDE_BREAKPOINT = 700;
@@ -83,8 +84,14 @@ export default function EventHomeScreen() {
   // automáticamente. `wasPrompted` marca que ya se hizo una vez por evento, así
   // que si el usuario se desuscribe luego con la campana, NO le volvemos a
   // suscribir al reentrar.
+  //
+  // Los eventos ARCHIVADOS quedan fuera: entrar a mirar un encuentro que ya
+  // pasó (desde "Más > Eventos pasados") no es pedir que te avisen de él. La
+  // campana sigue ahí por si alguien la quiere activar a mano.
+  const archived = isEventArchived(event);
   React.useEffect(() => {
     if (subsLoading) return;
+    if (archived) return;
     if (wasPrompted(event.id)) return;
     subscribe(event.id);
     markPrompted(event.id);
@@ -94,6 +101,7 @@ export default function EventHomeScreen() {
     });
   }, [
     subsLoading,
+    archived,
     event.id,
     event.title,
     wasPrompted,

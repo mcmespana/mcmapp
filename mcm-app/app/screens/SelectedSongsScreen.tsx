@@ -1106,6 +1106,8 @@ const SelectedSongsScreen: React.FC = () => {
 
   // --- Acciones del sheet ---------------------------------------------------
 
+  const hasSongs = flatSelectedSongs.length > 0;
+
   const sheetSections = useMemo<PlaylistActionSection[]>(() => {
     const exportar: PlaylistAction[] = [
       {
@@ -1296,14 +1298,26 @@ const SelectedSongsScreen: React.FC = () => {
       },
     ];
 
+    // Sin canciones no se puede compartir, exportar, subir ni vaciar NADA: esas
+    // opciones se quitan en vez de dejarse muertas (una lista llena de cosas
+    // que no hacen nada es peor que una lista corta). Se quedan las de IMPORTAR
+    // —que son justo las que tienen sentido con la playlist vacía— y el modo
+    // coro, donde las canciones las pone el maestro después.
+    const soloImportar = <T extends PlaylistAction>(as: T[]) =>
+      as.filter((a) => a.id.startsWith('import') || a.id === 'download-cloud');
+
     return [
-      { title: 'Exportar y compartir', actions: exportar },
-      { title: 'Playlist en la nube', actions: nube },
-      { title: 'Archivo', actions: archivo },
+      { title: 'Exportar y compartir', actions: hasSongs ? exportar : [] },
+      {
+        title: 'Playlist en la nube',
+        actions: hasSongs ? nube : soloImportar(nube),
+      },
+      { title: 'Archivo', actions: hasSongs ? archivo : soloImportar(archivo) },
       { title: 'Modo coro', actions: coro },
-      { actions: peligro },
+      { actions: hasSongs ? peligro : [] },
     ];
   }, [
+    hasSongs,
     handleShareText,
     handleStartExportFile,
     handleStartExportPdf,

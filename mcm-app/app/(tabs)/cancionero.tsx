@@ -14,6 +14,7 @@ import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 
 import { SettingsProvider } from '../../contexts/SettingsContext';
 import { TabHeaderColors } from '@/constants/colors';
+import TabTintBar from '@/components/ui/TabTintBar';
 import { useChoirSession } from '../../contexts/ChoirSessionContext';
 import { extractSongMedia, type SongMedia } from '@/types/songMedia';
 
@@ -132,6 +133,8 @@ export default function CancioneroTab() {
 
   return (
     <SettingsProvider>
+      {/* Raya amarilla del cantoral pegada arriba, como la roja de Fotos. */}
+      <TabTintBar color={TabHeaderColors.cancionero} />
       <Stack.Navigator
         initialRouteName="Categories"
         screenOptions={({ navigation }) => {

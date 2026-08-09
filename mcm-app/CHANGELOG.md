@@ -18,6 +18,34 @@
 
 ---
 
+## 2026-08-09 16:40 — Menú "..." del cantoral, eventos pasados y raya de sección
+
+- **El menú "..." del cantoral ya no se traga las opciones.** Cada opción es
+  "cierra la hoja y abre otra cosa" (código, coro, selector de archivos),
+  porque iOS no presenta dos modales a la vez: la acción viaja diferida hasta
+  que la hoja está cerrada del todo. Ese eslabón dependía en exclusiva del
+  `onDismiss` del `Modal`, y si no llegaba, la acción se perdía **en silencio**
+  — el menú entero parecía muerto (desde el estado vacío, sin hoja de por
+  medio, funcionaba: por eso el contraste). Ahora `BottomSheet` garantiza
+  `onCloseComplete` exactamente una vez por cierre, con red de seguridad si
+  `onDismiss` no aparece.
+- **Sin canciones seleccionadas, el menú deja de ofrecer lo imposible**:
+  desaparecen compartir mensaje, exportar PDF, subir playlist, exportar
+  archivo y vaciar. Se quedan las de IMPORTAR (código y archivo) y el modo
+  coro, que son las que tienen sentido con la playlist vacía.
+- **Entrar en un evento ARCHIVADO ya no te suscribe a sus avisos.** La
+  auto-suscripción es para eventos vivos; mirar un encuentro que ya pasó desde
+  "Más > Eventos pasados" no es pedir que te avisen. La campana sigue ahí para
+  activarlo a mano.
+- **Cantoral y Calendario estrenan su raya de color arriba** (amarilla y
+  celeste), como la roja de Fotos: identifica la sección aunque el header sea
+  transparente y no lleve título. `components/ui/TabTintBar.tsx`, iOS.
+- **+10 tests** sobre lo que se rompió sin que nadie se enterara: ciclo de vida
+  del `BottomSheet` (monta el Modal en el mismo render en que se abre, sigue
+  montado mientras se cierra, `onCloseComplete` una sola vez) y el menú de
+  acciones (ejecuta después de cerrar, respeta `disabled`, no pinta secciones
+  vacías). Suite en **593**.
+
 ## 2026-08-09 04:10 — La hoja de multimedia se abre y el reproductor se VE
 
 Dos secuelas del arreglo de los bottom sheets, las dos reproducidas y
