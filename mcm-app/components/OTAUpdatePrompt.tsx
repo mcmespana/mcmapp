@@ -1,5 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
+  Animated,
+  Easing,
   Modal,
   Platform,
   Pressable,
@@ -8,16 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, {
-  Easing,
-  cancelAnimation,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -53,22 +45,23 @@ export default function OTAUpdatePrompt({
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
 
-  const opacity = useSharedValue(0);
-  const scale = useSharedValue(0.92);
-  const rotate = useSharedValue(0);
-  const sparkle = useSharedValue(0);
+  // Con el `Animated` de React Native, NO con Reanimated: este diálogo vive
+  // dentro de un `Modal` y ahí las animaciones de Reanimated no corren (ver el
+  // aviso de `components/BottomSheet.tsx`). Y aquí eso no era un detalle
+  // estético: el fondo nace a opacidad 0, así que sin animación el aviso de
+  // actualización salía INVISIBLE — tapando la pantalla y con sus botones
+  // imposibles de ver.
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.92)).current;
+  const rotate = useRef(new Animated.Value(0)).current;
+  const sparkle = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visible) {
-      // Al cerrarse hay que PARAR los bucles: en Reanimated siguen corriendo en
-      // el hilo de UI aunque nadie los mire (con `Animated.loop` bastaba el
-      // `.stop()` del cleanup).
-      cancelAnimation(rotate);
-      cancelAnimation(sparkle);
-      opacity.value = 0;
-      scale.value = 0.92;
-      rotate.value = 0;
-      sparkle.value = 0;
+      opacity.setValue(0);
+      scale.setValue(0.92);
+      rotate.setValue(0);
+      sparkle.setValue(0);
       return;
     }
 
@@ -78,41 +71,82 @@ export default function OTAUpdatePrompt({
       // Sin haptics — ignorar.
     }
 
-    opacity.value = withTiming(1, { duration: 220 });
-    // `tension: 120, friction: 11` de RN Animated → mismo muelle aquí.
-    scale.value = withSpring(1, { stiffness: 120, damping: 11, mass: 1 });
+    const nativeDriver = Platform.OS !== 'web';
+
+    Animated.timing(opacity, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: nativeDriver,
+    }).start();
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: nativeDriver,
+      tension: 120,
+      friction: 11,
+    }).start();
 
     // Rotación continua suave del icono de update.
-    rotate.value = withRepeat(
-      withTiming(1, { duration: 2800, easing: Easing.linear }),
-      -1,
-      false,
+    const spin = Animated.loop(
+      Animated.timing(rotate, {
+        toValue: 1,
+        duration: 2800,
+        easing: Easing.linear,
+        useNativeDriver: nativeDriver,
+      }),
     );
+    spin.start();
 
-    // Pulso suave del halo decorativo (ida y vuelta, de ahí el `reverse`).
-    sparkle.value = withRepeat(
-      withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true,
+    // Pulso suave del halo decorativo (ida y vuelta).
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(sparkle, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: nativeDriver,
+        }),
+        Animated.timing(sparkle, {
+          toValue: 0,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: nativeDriver,
+        }),
+      ]),
     );
+    pulse.start();
 
     return () => {
-      cancelAnimation(rotate);
-      cancelAnimation(sparkle);
+      spin.stop();
+      pulse.stop();
     };
   }, [visible, opacity, scale, rotate, sparkle]);
 
-  const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  const cardStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-  const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotate.value * 360}deg` }],
-  }));
-  const haloStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(sparkle.value, [0, 1], [0.35, 0.7]),
-    transform: [{ scale: interpolate(sparkle.value, [0, 1], [0.85, 1.08]) }],
-  }));
+  const backdropStyle = { opacity };
+  const cardStyle = { transform: [{ scale }] };
+  const iconStyle = {
+    transform: [
+      {
+        rotate: rotate.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '360deg'],
+        }),
+      },
+    ],
+  };
+  const haloStyle = {
+    opacity: sparkle.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.35, 0.7],
+    }),
+    transform: [
+      {
+        scale: sparkle.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.85, 1.08],
+        }),
+      },
+    ],
+  };
 
   const cardBg = isDark ? '#1F1F22' : '#FFFFFF';
   const subtleText = isDark ? '#B5B7BD' : '#5B6168';

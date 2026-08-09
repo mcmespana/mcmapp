@@ -30,6 +30,7 @@ import { LiturgicalBadge } from '@/components/contigo/LiturgicalBadge';
 import { useContigoDayMenu } from '@/hooks/useContigoDayMenu';
 import LoginNudgeBanner from '@/components/LoginNudgeBanner';
 import { useAuth } from '@/contexts/AuthContext';
+import { h } from '@/utils/haptics';
 
 export default function ContigoScreen() {
   const insets = useSafeAreaInsets();
@@ -77,11 +78,29 @@ export default function ContigoScreen() {
   const prayStreak = getStreak('prayer');
   const totalMins = getTotalMinutesWeek(todayStr);
   const totalReads = getReadingsMonth(todayStr);
-  const activeDays = getActiveDaysMonth(todayStr);
 
-  const [, mNum] = todayStr.split('-').map(Number);
-  const year = todayStr.split('-')[0];
-  const monthLabel = `${MONTHS_CAP[mNum - 1]} ${year}`;
+  // Mes que se ve en el calendario de abajo. Arranca en el de hoy y se mueve
+  // con las flechas: el calendario ya no está clavado al mes en curso, así se
+  // puede volver a un evangelio de hace dos meses (o ir al de la semana que
+  // viene) sin entrar antes en la pantalla del evangelio.
+  const [monthKey, setMonthKey] = React.useState(() => todayStr.slice(0, 7));
+  const [mYear, mMonth] = monthKey.split('-').map(Number);
+  const monthLabel = `${MONTHS_CAP[mMonth - 1]} ${mYear}`;
+  const isCurrentMonth = monthKey === todayStr.slice(0, 7);
+  const daysInMonth = new Date(mYear, mMonth, 0).getDate();
+  // `getActiveDaysMonth` corta en el día que se le pasa: hoy si es el mes en
+  // curso (no cuenta días que aún no han pasado) y el mes entero si es otro.
+  const monthAnchor = isCurrentMonth
+    ? todayStr
+    : `${monthKey}-${String(daysInMonth).padStart(2, '0')}`;
+  const shiftMonth = (delta: number) => {
+    h.select();
+    const d = new Date(mYear, mMonth - 1 + delta, 1);
+    setMonthKey(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+    );
+  };
+  const activeDays = getActiveDaysMonth(monthAnchor);
 
   // Pulsar un día (racha o calendario) abre lo que haya guardado; si hay
   // varias cosas, pregunta. Ver `useContigoDayMenu`.
@@ -265,9 +284,51 @@ export default function ContigoScreen() {
           {/* ── Calendario completo ────────────────────── */}
           <View style={[styles.section, { paddingTop: 18 }]}>
             <View style={styles.monthHdr}>
-              <Text style={[styles.smallLabel, { color: W.textMuted }]}>
-                {monthLabel.toUpperCase()}
-              </Text>
+              <View style={styles.monthNavGroup}>
+                <TouchableOpacity
+                  onPress={() => shiftMonth(-1)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 6 }}
+                  accessibilityLabel="Mes anterior"
+                >
+                  <MaterialIcons
+                    name="chevron-left"
+                    size={20}
+                    color={W.textMuted}
+                  />
+                </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.smallLabel,
+                    styles.monthNavLabel,
+                    { color: W.textMuted },
+                  ]}
+                >
+                  {monthLabel.toUpperCase()}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => shiftMonth(1)}
+                  hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
+                  accessibilityLabel="Mes siguiente"
+                >
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={20}
+                    color={W.textMuted}
+                  />
+                </TouchableOpacity>
+                {!isCurrentMonth ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      h.select();
+                      setMonthKey(todayStr.slice(0, 7));
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                    accessibilityLabel="Volver al mes de hoy"
+                  >
+                    <MaterialIcons name="today" size={16} color={W.accent} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
               <View
                 style={[
                   styles.monthBadge,
@@ -297,6 +358,7 @@ export default function ContigoScreen() {
               <MonthHeatmap
                 records={records}
                 todayStr={todayStr}
+                monthDate={`${monthKey}-01`}
                 isDark={isDark}
                 onDayPress={handleDayPress}
               />
@@ -391,6 +453,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  monthNavGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  // `smallLabel` lleva un `marginBottom` pensado para cuando va suelto encima
+  // de una tarjeta; dentro de la fila de flechas ese hueco descuadraba el mes
+  // respecto a los chevrones.
+  monthNavLabel: {
+    marginBottom: 0,
   },
   monthBadge: {
     borderRadius: 999,

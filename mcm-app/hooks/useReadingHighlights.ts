@@ -35,7 +35,18 @@ export interface ReadingHighlights {
    * cero.
    */
   selection: SelectionHighlight | null;
-  applyColor: (color: HighlightColorKey) => void;
+  /**
+   * Pinta la selección. Normalmente la actual, pero se puede pasar una
+   * explícita (`target`) para subrayar en el mismo gesto en que llega, sin
+   * esperar a que el estado de selección se actualice — es lo que hace el ítem
+   * "Subrayar" del menú nativo. Con `target`, la selección se CONSERVA marcada
+   * para que la barra de colores salga con el color puesto y cambiarlo sea un
+   * toque.
+   */
+  applyColor: (
+    color: HighlightColorKey,
+    target?: { source: HighlightSource; sel: ReadingSelection },
+  ) => void;
   erase: () => void;
   clearSelection: () => void;
 }
@@ -130,9 +141,13 @@ export function useReadingHighlights(
   }, [activeSel, ranges]);
 
   const applyColor = useCallback(
-    (color: HighlightColorKey) => {
-      if (!activeSel) return;
-      const { source, sel } = activeSel;
+    (
+      color: HighlightColorKey,
+      target?: { source: HighlightSource; sel: ReadingSelection },
+    ) => {
+      const applied = target ?? activeSel;
+      if (!applied) return;
+      const { source, sel } = applied;
       setHighlights(
         date,
         source,
@@ -145,7 +160,7 @@ export function useReadingHighlights(
         ),
         readings,
       );
-      setActiveSel(null);
+      setActiveSel(target ? target : null);
     },
     [activeSel, canonical, ranges, date, readings, setHighlights],
   );

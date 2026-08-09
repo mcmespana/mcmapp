@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -6,25 +6,29 @@ import {
   Pressable,
   View,
   Text,
+  Animated,
   StyleSheet,
   Dimensions,
   Keyboard,
 } from 'react-native';
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UIColors, Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 
-// `tension: 180, friction: 20` de RN Animated → el mismo muelle en Reanimated.
-const SPRING_BACK = { stiffness: 180, damping: 20, mass: 1 } as const;
+// ⚠️ Estas animaciones van con el `Animated` de React Native A PROPÓSITO, NO
+// con Reanimated. Dentro de un `Modal` TRANSPARENTE de RN los estilos animados
+// de Reanimated 4 no se aplican (comprobado con una vista de prueba que anima
+// su opacidad de 0 a 1 y se queda invisible; en un Modal opaco, como el del
+// escáner de QR, sí funcionan). Aquí eso era fatal: la hoja se quedaba en su
+// posición inicial —fuera de pantalla, con el fondo a opacidad 0— y el callback
+// de la animación de cierre, que es quien desmonta el `Modal`, no se disparaba
+// nunca. Resultado: un modal invisible a pantalla completa que se comía todos
+// los toques y dejaba la pestaña muerta hasta reiniciar (calendarios, sugerir
+// canción, multimedia, calendario de evangelios…). Si alguien vuelve a migrar
+// esto a Reanimated, hay que comprobar ANTES que la hoja aparece de verdad.
+const nativeDriver = Platform.OS !== 'web';
 
 const OFF_SCREEN = Dimensions.get('window').height;
 const DURATION = 300;
@@ -77,15 +81,17 @@ export default function BottomSheet({
   onCloseRef.current = onClose;
 
   // El `Modal` de RN tiene que seguir MONTADO mientras se reproduce la
-  // animación de salida: por eso no basta con `visible`. Se enciende durante el
-  // render (el patrón que documenta React para "cambiar estado cuando cambia
-  // una prop") y se apaga en el callback de la animación de cierre.
-  const [modalVisible, setModalVisible] = useState(visible);
-  const [lastVisible, setLastVisible] = useState(visible);
-  if (visible !== lastVisible) {
-    setLastVisible(visible);
-    if (visible) setModalVisible(true);
-  }
+  // animación de salida: por eso no basta con `visible`.
+  //
+  // `modalVisible` es DERIVADO —`visible || closing`— y no un estado que se
+  // encendía con un setState EN FASE DE RENDER. Ese patrón fallaba en pantallas
+  // que a su vez hacen su propio setState en fase de render (el detalle de
+  // canción, sin ir más lejos): el `setModalVisible(true)` se perdía por el
+  // camino, la hoja se quedaba con `visible` a true pero sin `Modal` montado, y
+  // no aparecía hasta que algo ajeno forzaba otro render. Derivado no se puede
+  // perder: en el mismo render en que `visible` es true, el Modal se monta.
+  const [closing, setClosing] = useState(false);
+  const modalVisible = visible || closing;
 
   const [kbHeight, setKbHeight] = useState(0);
   const insets = useSafeAreaInsets();
@@ -94,44 +100,69 @@ export default function BottomSheet({
   // si el teclado está abierto, para el teclado. Así la hoja nunca se sale por
   // arriba al subir, y el ScrollView interno scrollea al campo enfocado.
   const sheetMaxHeight = screenHeight - insets.top - kbHeight - 8;
+  const slideAnim = useRef(new Animated.Value(OFF_SCREEN)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const dragAnim = useRef(new Animated.Value(0)).current;
+  // Keyboard offset: negative value moves the sheet up. Kept separate from
+  // translateY so both can use useNativeDriver without a driver conflict.
+  const keyboardOffsetAnim = useRef(new Animated.Value(0)).current;
 
-  // Los gestos siguen siendo `PanResponder` (ver abajo por qué), pero escriben
-  // en shared values: el muelle de vuelta y el deslizamiento corren ya en el
-  // hilo de UI. El arrastre en sí iba por JS también antes (`useNativeDriver`
-  // estaba a false para poder usar `setValue`), así que no se pierde nada.
-  const slide = useSharedValue(OFF_SCREEN);
-  const opacity = useSharedValue(0);
-  const drag = useSharedValue(0);
-  // Desplazamiento por teclado: negativo sube la hoja. Va aparte de `translateY`
-  // porque se anima desde los eventos de `Keyboard`, no desde el gesto.
-  const keyboardOffset = useSharedValue(0);
-
-  // Android / Web: se llama directamente — no hay secuencia nativa que respetar.
-  // iOS: dispara `onDismiss` del Modal, después de que UIKit confirme que el
-  // view controller ya no está. Llamarlo aquí en iOS lo agruparía con
-  // `setModalVisible(false)`, haciendo aparecer el Modal nuevo en el mismo ciclo
-  // de render — cosa que iOS rechaza en silencio.
-  const finishClose = useCallback(() => {
-    setModalVisible(false);
-    if (Platform.OS !== 'ios') {
-      onCloseCompleteRef.current?.();
-    }
-  }, []);
+  // `visible` del render anterior: al montar con `visible` a false no hay nada
+  // que cerrar, así que no se dispara la animación de salida (que además
+  // encendería `closing` y montaría el Modal para nada).
+  const prevVisible = useRef(visible);
 
   useEffect(() => {
+    const wasVisible = prevVisible.current;
+    prevVisible.current = visible;
+
     if (visible) {
-      drag.value = 0;
-      keyboardOffset.value = 0;
-      slide.value = withTiming(0, { duration: DURATION });
-      opacity.value = withTiming(1, { duration: DURATION });
-    } else {
-      opacity.value = withTiming(0, { duration: DURATION });
-      slide.value = withTiming(OFF_SCREEN, { duration: DURATION }, () => {
-        'worklet';
-        runOnJS(finishClose)();
-      });
+      setClosing(false);
+      dragAnim.setValue(0);
+      keyboardOffsetAnim.setValue(0);
+      slideAnim.setValue(OFF_SCREEN);
+      opacityAnim.setValue(0);
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: DURATION,
+          useNativeDriver: nativeDriver,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: DURATION,
+          useNativeDriver: nativeDriver,
+        }),
+      ]).start();
+      return;
     }
-  }, [visible, slide, opacity, drag, keyboardOffset, finishClose]);
+
+    if (!wasVisible) return;
+
+    setClosing(true);
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: OFF_SCREEN,
+        duration: DURATION,
+        useNativeDriver: nativeDriver,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: DURATION,
+        useNativeDriver: nativeDriver,
+      }),
+    ]).start(() => {
+      setClosing(false);
+      // Android / Web: call directly — no native sequencing concern.
+      // iOS: onDismiss on the Modal fires instead, after UIKit confirms the
+      // view controller is gone. Calling here on iOS would batch this with
+      // unmounting the Modal, making the new Modal appear in the same render
+      // cycle — which iOS rejects silently.
+      if (Platform.OS !== 'ios') {
+        onCloseCompleteRef.current?.();
+      }
+    });
+  }, [visible, slideAnim, opacityAnim, dragAnim, keyboardOffsetAnim]);
 
   // Shift the sheet up when the keyboard appears (iOS only).
   // Uses a separate Animated.Value so it can share the native driver with
@@ -146,58 +177,57 @@ export default function BottomSheet({
         // quepa encima del teclado) y que su tope no se salga de pantalla al
         // subir. El scroll interno lleva el campo enfocado a la vista.
         setKbHeight(e.endCoordinates.height);
-        keyboardOffset.value = withTiming(-e.endCoordinates.height, {
+        Animated.timing(keyboardOffsetAnim, {
+          toValue: -e.endCoordinates.height,
           duration: e.duration ?? 250,
-        });
+          useNativeDriver: nativeDriver,
+        }).start();
       },
     );
     const hideSub = Keyboard.addListener(
       'keyboardWillHide',
       (e: { duration: number }) => {
         setKbHeight(0);
-        keyboardOffset.value = withTiming(0, { duration: e.duration ?? 250 });
+        Animated.timing(keyboardOffsetAnim, {
+          toValue: 0,
+          duration: e.duration ?? 250,
+          useNativeDriver: nativeDriver,
+        }).start();
       },
     );
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, [keyboardOffset]);
-
-  // El gesto sigue en `PanResponder` A PROPÓSITO. Este sheet lo comparten una
-  // decena de modales y muchos llevan un ScrollView dentro; pasarlo a
-  // gesture-handler cambiaría cómo compiten los dos por el toque, que es
-  // justo lo delicado aquí. Lo que sí gana Reanimated es la ANIMACIÓN: el
-  // muelle de vuelta ya no depende de que JS vaya suelto.
-  const onDragMove = useCallback(
-    (dy: number) => {
-      if (dy > 0) drag.value = dy;
-    },
-    [drag],
-  );
-
-  const onDragEnd = useCallback(
-    (dy: number, vy: number) => {
-      if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
-        onCloseRef.current();
-      } else {
-        drag.value = withSpring(0, SPRING_BACK);
-      }
-    },
-    [drag],
-  );
-
-  const onDragCancel = useCallback(() => {
-    drag.value = withSpring(0, SPRING_BACK);
-  }, [drag]);
+  }, [keyboardOffsetAnim]);
 
   const headerPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: (_, { dy }) => onDragMove(dy),
-      onPanResponderRelease: (_, { dy, vy }) => onDragEnd(dy, vy),
-      onPanResponderTerminate: onDragCancel,
+      onPanResponderMove: (_, { dy }) => {
+        if (dy > 0) dragAnim.setValue(dy);
+      },
+      onPanResponderRelease: (_, { dy, vy }) => {
+        if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
+          onCloseRef.current();
+        } else {
+          Animated.spring(dragAnim, {
+            toValue: 0,
+            useNativeDriver: nativeDriver,
+            tension: 180,
+            friction: 20,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(dragAnim, {
+          toValue: 0,
+          useNativeDriver: nativeDriver,
+          tension: 180,
+          friction: 20,
+        }).start();
+      },
     }),
   ).current;
 
@@ -206,23 +236,34 @@ export default function BottomSheet({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, { dy, dx }) =>
         Math.abs(dy) > Math.abs(dx) && dy > 5,
-      onPanResponderMove: (_, { dy }) => onDragMove(dy),
-      onPanResponderRelease: (_, { dy, vy }) => onDragEnd(dy, vy),
-      onPanResponderTerminate: onDragCancel,
+      onPanResponderMove: (_, { dy }) => {
+        if (dy > 0) dragAnim.setValue(dy);
+      },
+      onPanResponderRelease: (_, { dy, vy }) => {
+        if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
+          onCloseRef.current();
+        } else {
+          Animated.spring(dragAnim, {
+            toValue: 0,
+            useNativeDriver: nativeDriver,
+            tension: 180,
+            friction: 20,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(dragAnim, {
+          toValue: 0,
+          useNativeDriver: nativeDriver,
+          tension: 180,
+          friction: 20,
+        }).start();
+      },
     }),
   ).current;
 
   const handleColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.18)';
-
-  const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  const positionerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: keyboardOffset.value }],
-  }));
-  // El deslizamiento de entrada y el arrastre se suman (antes,
-  // `Animated.add(slideAnim, dragAnim)`).
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: slide.value + drag.value }],
-  }));
+  const translateY = Animated.add(slideAnim, dragAnim);
 
   const hasHeader =
     title !== undefined ||
@@ -242,8 +283,7 @@ export default function BottomSheet({
       <Animated.View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: UIColors.modalOverlay },
-          backdropStyle,
+          { backgroundColor: UIColors.modalOverlay, opacity: opacityAnim },
         ]}
         pointerEvents="none"
       />
@@ -252,7 +292,12 @@ export default function BottomSheet({
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
       {/* Outer: keyboard avoidance — moves the whole sheet up via transform */}
-      <Animated.View style={[styles.sheetPositioner, positionerStyle]}>
+      <Animated.View
+        style={[
+          styles.sheetPositioner,
+          { transform: [{ translateY: keyboardOffsetAnim }] },
+        ]}
+      >
         {/* Inner: slide-in / drag animation */}
         <Animated.View
           style={[
@@ -260,10 +305,10 @@ export default function BottomSheet({
             {
               backgroundColor: bgColor,
               paddingBottom: 8,
+              transform: [{ translateY }],
               maxHeight: sheetMaxHeight,
               ...(height !== undefined && { height }),
             },
-            sheetStyle,
           ]}
         >
           {/* Handle capsule serves as a drag target */}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Card, PressableFeedback } from 'heroui-native';
 import { Colors } from '@/constants/colors';
@@ -54,16 +54,11 @@ export function ReadingCard({
   const globalScale = useFontScale();
   const fontScale = scale ?? globalScale;
 
+  // Entrar en modo subrayar NO abre las tarjetas: si las tenías cerradas, se
+  // quedan cerradas. Abrirlas todas de golpe desplegaba media pantalla de texto
+  // que no habías pedido, y encima costaba encontrar la lectura que sí querías
+  // subrayar. Quien quiera subrayar una lectura la abre y ya.
   const [expanded, setExpanded] = useState(defaultExpanded);
-  // Al ENTRAR en modo subrayar la tarjeta subrayable se abre una vez, para que
-  // haya texto que seleccionar. A partir de ahí manda el usuario: si la cierra
-  // se queda cerrada (antes `isOpen` la forzaba abierta y el toggle no hacía
-  // nada visible — parecía que la tarjeta se volvía loca).
-  const prevPenMode = useRef(penMode);
-  useEffect(() => {
-    if (highlightable && penMode && !prevPenMode.current) setExpanded(true);
-    prevPenMode.current = penMode;
-  }, [penMode, highlightable]);
 
   const isOpen = expanded;
 

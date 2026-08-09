@@ -51,6 +51,13 @@ final class HighlightMenuView: ExpoView {
     attachIfNeeded()
   }
 
+  override func didAddSubview(_ subview: UIView) {
+    super.didAddSubview(subview)
+    // El texto se monta como hijo DESPUÉS de que esta vista tenga su frame, así
+    // que el `layoutSubviews` de arriba puede haber pasado ya cuando aparece.
+    attachIfNeeded()
+  }
+
   deinit {
     // Devolver el delegate original: si esta vista se va y dejamos el proxy
     // puesto, el text view quedaría hablando con un objeto muerto.
@@ -61,10 +68,41 @@ final class HighlightMenuView: ExpoView {
   /// delegate original si el nuestro sigue puesto.
   private func detach() {
     if let textView = attachedTextView, textView.delegate === proxy {
-      textView.delegate = proxy?.original
+      Self.forceSetDelegate(proxy?.original, on: textView)
     }
     attachedTextView = nil
     proxy = nil
+  }
+
+  /// Pone el delegate saltándose el `setDelegate:` de `RCTUITextView`.
+  ///
+  /// React Native **bloquea** el cambio de delegate desde fuera:
+  ///
+  /// ```objc
+  /// - (void)setDelegate:(id<UITextViewDelegate>)delegate {
+  ///   if (super.delegate) { return; }   // ← se ignora en silencio
+  ///   [super setDelegate:delegate];
+  /// }
+  /// ```
+  ///
+  /// (`RCTUITextView.mm`, con el comentario "it cannot be changed from
+  /// outside"). Como el adaptador de RN ya está puesto desde el `init`, la
+  /// asignación normal NO hacía nada: el proxy no llegaba a instalarse nunca y
+  /// el ítem "Subrayar" no aparecía en el menú por mucho que se reintentara.
+  ///
+  /// Llamamos directamente a la implementación de `UITextView`, que es
+  /// exactamente lo que haría un `super.delegate = …`. El proxy reenvía todo lo
+  /// que no sea la construcción del menú al delegate de React Native, así que
+  /// para RN nada cambia (`onSelectionChange` incluido).
+  private static func forceSetDelegate(_ delegate: (any UITextViewDelegate)?, on textView: UITextView) {
+    let selector = #selector(setter: UITextView.delegate)
+    guard let method = class_getInstanceMethod(UITextView.self, selector) else {
+      textView.delegate = delegate
+      return
+    }
+    typealias SetDelegate = @convention(c) (AnyObject, Selector, AnyObject?) -> Void
+    let imp = unsafeBitCast(method_getImplementation(method), to: SetDelegate.self)
+    imp(textView, selector, delegate)
   }
 
   private func attachIfNeeded() {
@@ -103,7 +141,7 @@ final class HighlightMenuView: ExpoView {
       return base.replacingChildren([action] + base.children)
     }
 
-    textView.delegate = proxy
+    Self.forceSetDelegate(proxy, on: textView)
     self.proxy = proxy
     self.attachedTextView = textView
   }

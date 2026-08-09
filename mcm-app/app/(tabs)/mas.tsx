@@ -46,11 +46,6 @@ export default function MasTab() {
     undefined,
   );
   const stackNavRef = useRef<any>(null);
-  // Tracks whether we left this tab (blur) so focus knows to pop to root.
-  // We only pop when returning FROM another tab, never on same-tab re-tap.
-  // On iOS, NativeTabs (UITabBarController) handles same-tab press natively;
-  // our JS handler would conflict with that native behavior and freeze the tab.
-  const wasBlurredRef = useRef(false);
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
   const isDark = useColorScheme() === 'dark';
@@ -70,27 +65,9 @@ export default function MasTab() {
     return false;
   });
 
-  useEffect(() => {
-    const unsubscribeBlur = navigation.addListener('blur' as any, () => {
-      wasBlurredRef.current = true;
-    });
-
-    // Cross-tab return (blur → focus): pop to root from JS.
-    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
-      if (!wasBlurredRef.current) return;
-      wasBlurredRef.current = false;
-      setTimeout(() => {
-        if (stackNavRef.current?.canGoBack()) {
-          stackNavRef.current.popToTop();
-        }
-      }, 0);
-    });
-
-    return () => {
-      unsubscribeBlur();
-      unsubscribeFocus();
-    };
-  }, [navigation]);
+  // Igual que en el cantoral: salir a otro tab y volver ya NO reinicia el
+  // stack. Se sale un momento a mirar otra cosa y se vuelve a donde se estaba.
+  // Para volver a la raíz, re-pulsar el tab (`useTabReselect`, justo arriba).
 
   return (
     <>

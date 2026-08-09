@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Platform,
   StyleSheet,
@@ -101,10 +101,6 @@ export function HighlightableReading({
 }: HighlightableReadingProps) {
   const spans = useMemo(() => computeSpans(text, ranges), [text, ranges]);
 
-  // Altura del TextInput multilínea: seguimos el tamaño de su contenido para
-  // que crezca como un texto normal dentro del scroll.
-  const [inputHeight, setInputHeight] = useState<number | undefined>(undefined);
-
   // Al desmontar, la selección deja de existir. (Al SALIR del modo lápiz no se
   // toca: la selección es "pegajosa" a propósito, ver useReadingHighlights, y
   // quien la limpia de verdad es `exitHighlightMode` en la pantalla.)
@@ -171,14 +167,14 @@ export function HighlightableReading({
 
   return withMenu(
     <TextInput
-      style={[
-        styles.base,
-        styles.input,
-        textStyle,
-        style,
-        { minHeight: lineHeight, height: inputHeight },
-      ]}
+      style={[styles.base, styles.input, textStyle, style]}
       multiline
+      // Con `scrollEnabled={false}` el propio React Native mide el texto y da
+      // al campo la altura que le toca. Antes se le imponía a mano la altura
+      // medida en `onContentSizeChange`, y eso se retroalimentaba: cada medida
+      // volvía a incluir el inset del UITextView, así que la lectura crecía
+      // sola poco a poco, y al cambiar de día se quedaba con la altura del
+      // texto anterior (el salmo, corto, aparecía con medio folio en blanco).
       scrollEnabled={false}
       // iOS: un UITextView de solo lectura sigue siendo seleccionable con asas
       // nativas y menú completo. Android necesita editable para poder
@@ -190,9 +186,6 @@ export function HighlightableReading({
       autoCorrect={false}
       spellCheck={false}
       textBreakStrategy="highQuality"
-      onContentSizeChange={(e) =>
-        setInputHeight(Math.ceil(e.nativeEvent.contentSize.height))
-      }
       onSelectionChange={(e) => {
         // Se reporta SIEMPRE, también fuera del modo lápiz. Es lo que permite
         // seleccionar primero y tocar el lápiz después: si solo escucháramos

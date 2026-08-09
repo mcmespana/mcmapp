@@ -11,6 +11,13 @@
  * eso lo cargamos con `require` dentro de un try/catch en vez de importarlo
  * arriba — si una OTA llegase a una build antigua, el botón de escanear
  * simplemente no aparece en lugar de reventar la pantalla entera.
+ *
+ * ## Sobre Reanimated dentro de este `Modal`
+ *
+ * Comprobado en simulador iOS el 2026-08-09: aquí Reanimated SÍ corre (el
+ * láser barre, las esquinas entran, los `entering={FadeIn}` acaban visibles).
+ * No comparte el fallo de `BottomSheet.tsx`, así que no hay que migrarlo a
+ * `Animated`.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -245,7 +252,6 @@ const QrScannerModal: React.FC<Props> = ({
             {/* Penumbra alrededor del hueco: cuatro paneles en vez de una
                 máscara, que es lo único que se ve igual en iOS, Android y web. */}
             <View style={styles.dimTop} />
-            <View style={styles.dimBottom} />
             <View style={styles.dimRow} pointerEvents="box-none">
               <View style={styles.dimSide} />
               <View style={styles.frameSlot} pointerEvents="none">
@@ -264,6 +270,7 @@ const QrScannerModal: React.FC<Props> = ({
               </View>
               <View style={styles.dimSide} />
             </View>
+            <View style={styles.dimBottom} />
 
             <Animated.View
               entering={FadeIn.delay(150)}

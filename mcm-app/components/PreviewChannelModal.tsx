@@ -38,6 +38,10 @@ import { LabStatusPanel } from '@/components/preview-channel/LabStatusPanel';
  *
  * Las piezas decorativas animadas (gradientes, partículas, confeti, palanca y
  * adornos de texto) viven en `components/preview-channel/`.
+ *
+ * Comprobado en simulador iOS el 2026-08-09: el bucle de `phase` (Reanimated)
+ * corre con normalidad dentro de este `Modal` — gradientes y partículas se
+ * mueven. No comparte el fallo de `BottomSheet.tsx`.
  */
 export function PreviewChannelModal() {
   const {

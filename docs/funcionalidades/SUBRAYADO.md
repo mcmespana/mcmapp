@@ -126,8 +126,16 @@ del propio menú de selección.
 
 Al seleccionar texto en cualquier lectura, el menú del sistema trae un ítem
 **"Subrayar"** junto a Copiar / Traducir / Buscar / Herramientas de escritura.
-Tocarlo guarda la selección y enciende la barra de colores de siempre. **No hay
-que entrar antes en el modo lápiz.**
+**No hay que entrar antes en el modo lápiz.**
+
+Tocarlo **subraya en el acto**, sin preguntar color: usa el "color de turno"
+(`utils/stickyHighlightColor.ts`), uno al azar que se mantiene unos 8 minutos —
+así varias frases seguidas salen del mismo color y de un día para otro cambia
+solo. La barra de colores aparece igualmente, con el color puesto marcado, así
+que cambiarlo o quitarlo sigue siendo un toque; simplemente ya no es obligatorio.
+Por dentro es `applyColor(color, { source, sel })`: el segundo argumento existe
+para poder pintar en el mismo gesto en que llega la selección, sin esperar a que
+el estado se actualice.
 
 ### Cómo está montado
 
@@ -157,6 +165,16 @@ El proxy implementa SOLO ese método y reenvía todo lo demás al delegate origi
 con `forwardingTarget(for:)`, así que para React Native no cambia nada. El menú
 base sigue siendo el que devuelva RN —o el sugerido por el sistema— y la acción
 propia se antepone con `replacingChildren`.
+
+> ⚠️ **Poner ese delegate hay que hacerlo a la brava** (arreglado el
+> 2026-08-09). `RCTUITextView` sobreescribe `setDelegate:` con un
+> `if (super.delegate) { return; }` y el comentario "it cannot be changed from
+> outside": como el adaptador de RN se pone en el `init`, la asignación normal
+> **se ignora en silencio** y el proxy no llegaba a instalarse nunca — por eso
+> el ítem no salía ni con el módulo dentro del binario. `forceSetDelegate` llama
+> a la implementación de `UITextView` (lo que haría un `super.delegate = …`).
+> El enganche se reintenta además en `didAddSubview`, porque el texto se monta
+> como hijo después de que la vista contenedora tenga su frame.
 
 **Offsets**: el `NSRange` de iOS y el `selectionStart/End` de Android van en
 unidades UTF-16, que es exactamente cómo indexa JavaScript las cadenas. Los
@@ -190,8 +208,12 @@ proxies nuestros.
 
 - Al aplicar un color NO se sale del modo subrayar: como el subrayado ya se ve
   dentro del modo, se pueden marcar varias frases seguidas.
+- El texto se renderiza SIN altura impuesta a mano: con `scrollEnabled={false}`
+  la mide React Native. Antes se fijaba con `onContentSizeChange` y eso se
+  retroalimentaba (la lectura crecía sola) y dejaba la altura del día anterior
+  al cambiar de fecha.
 - La selección es "pegajosa": se conserva la última selección no vacía porque
   iOS puede colapsar la selección nativa antes de que llegue el `onPress` del
   chip de color.
-- Al entrar en modo subrayar, las tarjetas de lecturas se abren una vez; a
-  partir de ahí manda el usuario (el toggle de la tarjeta funciona normal).
+- Entrar en modo subrayar NO abre las tarjetas de lecturas: las que estuvieran
+  cerradas se quedan cerradas (antes se desplegaban todas de golpe).

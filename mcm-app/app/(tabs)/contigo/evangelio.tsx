@@ -41,6 +41,7 @@ import {
   HIGHLIGHT_SOURCES,
   type HighlightSource,
 } from '@/utils/contigoBookmarks';
+import { pickStickyHighlightColor } from '@/utils/stickyHighlightColor';
 import type { ReadingSelection } from '@/components/contigo/HighlightableReading';
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
@@ -167,8 +168,12 @@ export default function EvangelioScreen() {
   );
 
   /**
-   * "Subrayar" desde el menú NATIVO de selección: se guarda la selección y se
-   * enciende el modo lápiz para que aparezca la barra de colores de siempre.
+   * "Subrayar" desde el menú NATIVO de selección: subraya YA, con el color de
+   * turno (`pickStickyHighlightColor`), y enciende el modo lápiz con la barra de
+   * colores marcando el color puesto. Así el gesto entero es "selecciono →
+   * Subrayar" y se acabó: elegir color pasa a ser opcional, no un toque de
+   * peaje. El color se mantiene unos minutos, para que varias frases seguidas
+   * salgan del mismo color.
    *
    * El modo lápiz NO desaparece: sigue siendo el único camino en web y el
    * respaldo si el menú nativo no llega a montarse.
@@ -177,7 +182,9 @@ export default function EvangelioScreen() {
     const entries = HIGHLIGHT_SOURCES.map((source) => [
       source,
       (sel: ReadingSelection) => {
-        hl.onSelectionChange[source](sel);
+        hl.applyColor(pickStickyHighlightColor(), { source, sel });
+        if (Platform.OS !== 'web')
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setHighlightMode(true);
       },
     ]);
@@ -185,7 +192,7 @@ export default function EvangelioScreen() {
       HighlightSource,
       (sel: ReadingSelection) => void
     >;
-  }, [hl.onSelectionChange]);
+  }, [hl.applyColor]);
 
   const exitHighlightMode = () => {
     setHighlightMode(false);
@@ -218,6 +225,13 @@ export default function EvangelioScreen() {
   const changeDate = (offset: number) => {
     exitHighlightMode();
     setSelectedDate(addDays(selectedDate, offset));
+  };
+
+  const goToToday = () => {
+    if (Platform.OS !== 'web')
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    exitHighlightMode();
+    setSelectedDate(todayStr);
   };
 
   const handleToggleDone = async () => {
@@ -379,6 +393,33 @@ export default function EvangelioScreen() {
               <Text style={[styles.dateText, { color: theme.text }]}>
                 {formatDateDisplay(selectedDate)}
               </Text>
+
+              {/* Volver a hoy: diminuto y solo cuando hace falta (estás en
+                  otro día). Estando en hoy no se pinta nada. */}
+              {selectedDate !== todayStr ? (
+                <TouchableOpacity
+                  onPress={goToToday}
+                  style={[
+                    styles.todayMiniPill,
+                    {
+                      backgroundColor: hexAlpha(warm.accent, '12'),
+                      borderColor: hexAlpha(warm.accent, '30'),
+                    },
+                  ]}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Volver a hoy"
+                >
+                  <MaterialIcons
+                    name="undo"
+                    size={12}
+                    color={warm.accent}
+                  />
+                  <Text style={[styles.todayMiniLabel, { color: warm.accent }]}>
+                    Volver a hoy
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
 
               {/* Liturgical badge */}
               <View style={styles.badgeRow}>

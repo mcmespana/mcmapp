@@ -34,6 +34,16 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       marginTop: 12,
       marginBottom: 8,
     },
+    // El mismo conmutador, pero metido en el título del header nativo. El hueco
+    // del título va centrado, así que el ancho útil es el que dejan los bar
+    // items a los dos lados (aunque a la izquierda no haya ninguno): de ahí los
+    // 290, que es casi todo el ancho sin llegar a pisar el botón de la derecha.
+    // El alto lo marca el header, por eso el conmutador va en versión `compact`.
+    headerSwitcher: {
+      flexDirection: 'row',
+      width: 290,
+      height: 34,
+    },
     // En ancho, el switcher Mes/Agenda no debe estirarse a todo lo ancho.
     switcherWrapperWide: {
       alignSelf: 'center',

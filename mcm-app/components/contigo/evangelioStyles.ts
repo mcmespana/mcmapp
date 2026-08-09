@@ -101,6 +101,24 @@ export const styles = StyleSheet.create({
   badgeRow: {
     marginTop: 8,
   },
+  // "Hoy" en pequeñito: solo sale cuando estás mirando otro día, y ocupa lo
+  // justo para no competir con la fecha ni con el badge litúrgico.
+  todayMiniPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    alignSelf: 'center',
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+  },
+  todayMiniLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
   diaLiturgico: {
     fontSize: 12,
     marginTop: 6,

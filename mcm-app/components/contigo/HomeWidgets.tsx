@@ -592,16 +592,19 @@ const EMOTION_HEAT: Record<string, string> = {
 export function MonthHeatmap({
   records,
   todayStr,
+  monthDate,
   isDark,
   onDayPress,
 }: {
   records: Record<string, DayRecord>;
   todayStr: string;
+  /** Día cualquiera del mes que se pinta. Por defecto, el mes de hoy. */
+  monthDate?: string;
   isDark: boolean;
   onDayPress?: (date: string, rec: DayRecord | null) => void;
 }) {
   const W = warm(isDark);
-  const { cells, year, month } = buildCalendar(todayStr);
+  const { cells, year, month } = buildCalendar(monthDate || todayStr);
   return (
     <View>
       <View style={styles.heatmapHdr}>
@@ -648,9 +651,11 @@ export function MonthHeatmap({
           else if (rv)
             bg = isDark ? 'rgba(167,139,250,0.20)' : 'rgba(124,58,237,0.14)';
           if (isFuture) bg = 'transparent';
-          // Cualquier día pasado se puede abrir: si no hay nada guardado,
-          // siempre queda el evangelio de ese día.
-          const tappable = !!onDayPress && !isFuture;
+          // Cualquier día se puede abrir, también los que aún no han llegado:
+          // las lecturas se publican con antelación y se puede rezar el
+          // evangelio de mañana. Si ese día todavía no tiene texto, la pantalla
+          // del evangelio lo dice y ofrece volver a hoy.
+          const tappable = !!onDayPress;
           const inner = (
             <View
               style={[
@@ -658,7 +663,9 @@ export function MonthHeatmap({
                 {
                   backgroundColor: bg,
                   borderColor: isToday ? W.accent : 'transparent',
-                  opacity: isFuture ? 0.3 : 1,
+                  // Los días que no han llegado se ven apagados, pero no tan
+                  // apagados como para parecer desactivados: se pueden abrir.
+                  opacity: isFuture ? 0.55 : 1,
                 },
               ]}
             >

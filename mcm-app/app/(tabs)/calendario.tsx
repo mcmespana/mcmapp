@@ -98,6 +98,11 @@ const dateToStr = (d: Date): string => {
   return `${y}-${m}-${day}`;
 };
 
+/** Hueco que ocupa el botón de suscribirse (icono + su padding) en el header. */
+const SUBSCRIBE_SLOT = 56;
+/** Margen lateral del header nativo. */
+const HEADER_SIDE_PADDING = 16;
+
 /** Día 1 del mes al que pertenece la fecha dada. */
 const monthStart = (dateStr: string): string => `${dateStr.slice(0, 7)}-01`;
 
@@ -165,12 +170,24 @@ export function CalendarScreen() {
   const [subscribeOpen, setSubscribeOpen] = useState(false);
   const [detailsEvent, setDetailsEvent] = useState<CalendarEvent | null>(null);
 
-  // Header NATIVO: solo el botón de calendarios (suscribirse) como bar item. El
-  // TÍTULO lo pone cada anfitrión, no esta pantalla: en el tab no hay título (la
-  // pestaña ya se llama Calendario y el texto se comía el sitio del conmutador
-  // Mes/Agenda, chocando además con este botón), y en el stack de "Más" sí,
-  // porque allí es una pantalla apilada con su back.
+  // Header NATIVO: el botón de calendarios (suscribirse) como bar item y, en el
+  // TAB, el conmutador Mes/Agenda ocupando el sitio del título. El header estaba
+  // casi vacío (la pestaña ya se llama Calendario) y el conmutador se comía una
+  // fila entera justo debajo: metiéndolo dentro se recupera ese alto para la
+  // rejilla del mes. En el stack de "Más" NO se hace: allí es una pantalla
+  // apilada, con su back y su título, y el conmutador se queda en el cuerpo.
   const navigation = useNavigation();
+  const switcherInHeader =
+    Platform.OS !== 'web' && navRoute.name !== 'Calendario';
+  // Ancho del conmutador dentro del header: TODO lo que hay desde el borde
+  // hasta el botón de suscribirse. Se calcula desde el ancho real de la
+  // ventana (no un número a ojo) para que cuadre igual en un iPhone pequeño,
+  // en uno grande, en iPad y al girar la pantalla; en pantallas anchas se capa
+  // para que no se convierta en una barra de medio metro.
+  const switcherWidth = Math.min(
+    Math.max(layout.width - HEADER_SIDE_PADDING * 2 - SUBSCRIBE_SLOT, 160),
+    420,
+  );
   // Altura REAL del header del anfitrión (incluye la barra de estado y baja a
   // 32pt en horizontal), en vez de los 44 a ojo de antes.
   const headerHeight = useHeaderHeight();
@@ -196,8 +213,34 @@ export function CalendarScreen() {
             </TouchableOpacity>
           )
         : undefined,
+      ...(switcherInHeader
+        ? {
+            headerTitle: () => (
+              <View style={[styles.headerSwitcher, { width: switcherWidth }]}>
+                <SegmentedControl
+                  value={viewMode}
+                  onChange={setViewMode}
+                  compact
+                  accessibilityLabel="Vista del calendario"
+                  options={[
+                    { value: 'calendar', label: 'Mes', icon: 'calendar-month' },
+                    { value: 'agenda', label: 'Agenda', icon: 'view-agenda' },
+                  ]}
+                />
+              </View>
+            ),
+          }
+        : {}),
     });
-  }, [navigation, showSubscribe, isDark]);
+  }, [
+    navigation,
+    showSubscribe,
+    isDark,
+    switcherInHeader,
+    switcherWidth,
+    viewMode,
+    styles,
+  ]);
 
   // Un deep-link con `?date=` salta a ese día. Se ajusta DURANTE el render (el
   // patrón que documenta React para "cambiar estado cuando cambia una prop"),
@@ -531,23 +574,26 @@ export function CalendarScreen() {
       {offline && <OfflineBanner text="Mostrando datos sin conexión" />}
 
       <View style={[styles.bodyWrap, wideContentStyle]}>
-        {/* View mode switcher */}
-        <View
-          style={[
-            styles.switcherWrapper,
-            layout.isWide && styles.switcherWrapperWide,
-          ]}
-        >
-          <SegmentedControl
-            value={viewMode}
-            onChange={setViewMode}
-            accessibilityLabel="Vista del calendario"
-            options={[
-              { value: 'calendar', label: 'Mes', icon: 'calendar-month' },
-              { value: 'agenda', label: 'Agenda', icon: 'view-agenda' },
+        {/* Conmutador Mes/Agenda: solo aquí cuando NO va en el header (stack de
+            "Más" y web). En el tab vive dentro del header, ver arriba. */}
+        {!switcherInHeader && (
+          <View
+            style={[
+              styles.switcherWrapper,
+              layout.isWide && styles.switcherWrapperWide,
             ]}
-          />
-        </View>
+          >
+            <SegmentedControl
+              value={viewMode}
+              onChange={setViewMode}
+              accessibilityLabel="Vista del calendario"
+              options={[
+                { value: 'calendar', label: 'Mes', icon: 'calendar-month' },
+                { value: 'agenda', label: 'Agenda', icon: 'view-agenda' },
+              ]}
+            />
+          </View>
+        )}
 
         {viewMode === 'calendar' ? (
           <Animated.ScrollView

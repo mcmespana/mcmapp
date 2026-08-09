@@ -61,11 +61,6 @@ const isWeb = Platform.OS === 'web';
 
 export default function CancioneroTab() {
   const stackNavRef = useRef<any>(null);
-  // Tracks whether we left this tab (blur) so focus knows to pop to root.
-  // We only pop when returning FROM another tab, never on same-tab re-tap.
-  // On iOS, NativeTabs (UITabBarController) handles same-tab press natively;
-  // our JS handler would conflict with that native behavior and freeze the tab.
-  const wasBlurredRef = useRef(false);
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = isWeb ? insets.top : undefined;
   const scheme = useColorScheme();
@@ -86,27 +81,11 @@ export default function CancioneroTab() {
   });
   const choir = useChoirSession();
 
-  useEffect(() => {
-    const unsubscribeBlur = navigation.addListener('blur' as any, () => {
-      wasBlurredRef.current = true;
-    });
-
-    // Cross-tab return (blur → focus): pop to root from JS.
-    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
-      if (!wasBlurredRef.current) return;
-      wasBlurredRef.current = false;
-      setTimeout(() => {
-        if (stackNavRef.current?.canGoBack()) {
-          stackNavRef.current.popToTop();
-        }
-      }, 0);
-    });
-
-    return () => {
-      unsubscribeBlur();
-      unsubscribeFocus();
-    };
-  }, [navigation]);
+  // Irse a otro tab y volver YA NO reinicia el stack. Antes un `focus` tras un
+  // `blur` hacía `popToTop()`, así que salir un momento a Contigo y volver te
+  // dejaba en la lista de categorías con la canción que estabas mirando
+  // perdida. Volver a la raíz sigue estando a un toque: re-pulsar el tab activo
+  // (`useTabReselect`, justo arriba).
 
   // Modo coro - ESCLAVO: cuando el maestro cambia la canción actual,
   // navegamos automáticamente a SongDetail con los metadatos publicados.

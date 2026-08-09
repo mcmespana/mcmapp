@@ -38,6 +38,8 @@ interface SegmentedControlProps<T extends string> {
   accentColor?: string;
   /** Háptica al cambiar (por defecto sí). */
   haptic?: boolean;
+  /** Versión baja, para sitios con poco alto (p. ej. dentro de un header). */
+  compact?: boolean;
   style?: ViewStyle;
   /** Etiqueta del grupo para lectores de pantalla. */
   accessibilityLabel?: string;
@@ -49,6 +51,7 @@ export default function SegmentedControl<T extends string>({
   onChange,
   accentColor = colors.info,
   haptic = true,
+  compact = false,
   style,
   accessibilityLabel,
 }: SegmentedControlProps<T>) {
@@ -74,7 +77,11 @@ export default function SegmentedControl<T extends string>({
               if (haptic) h.select();
               onChange(option.value);
             }}
-            style={[styles.segment, active && { backgroundColor: accentColor }]}
+            style={[
+              styles.segment,
+              compact && styles.segmentCompact,
+              active && { backgroundColor: accentColor },
+            ]}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             accessibilityLabel={option.label}
@@ -87,7 +94,11 @@ export default function SegmentedControl<T extends string>({
               />
             ) : null}
             <Text
-              style={[styles.label, active ? styles.labelActive : null]}
+              style={[
+                styles.label,
+                compact && styles.labelCompact,
+                active ? styles.labelActive : null,
+              ]}
               numberOfLines={1}
             >
               {option.label}
@@ -115,10 +126,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
+  segmentCompact: {
+    paddingVertical: 4,
+    gap: 5,
+  },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#8E8E93',
+  },
+  labelCompact: {
+    fontSize: 13,
   },
   labelActive: {
     color: '#FFFFFF',

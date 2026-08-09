@@ -18,6 +18,80 @@
 
 ---
 
+## 2026-08-09 02:33 — El marco del escáner de QR vuelve al centro de la pantalla
+
+La "ventana" por la que se apunta al QR estaba pegada al **borde inferior** de
+la pantalla, con las esquinas de abajo cortadas: en el JSX los paneles de
+penumbra iban en el orden `arriba` → `abajo` → `fila del hueco`, así que la fila
+con el hueco caía la última de la columna. Ahora van `arriba` → `hueco` →
+`abajo` y el marco queda centrado. Verificado en el simulador iOS.
+
+De paso, **revisados los dos ficheros que quedaban con Reanimated dentro de un
+`Modal`** tras el arreglo de los bottom sheets, y **los dos están bien**:
+`QrScannerModal` (el láser barre, las esquinas entran, los `entering={FadeIn}`
+de cabecera y pie acaban visibles) y `PreviewChannelModal` (el bucle de `phase`
+mueve gradientes y partículas). No hace falta migrarlos a `Animated`; queda
+anotado en la cabecera de cada uno. Es decir, el fallo del 02:14 **no** es "en
+un `Modal` no corre Reanimated" a secas — algo más específico le pasaba a
+`BottomSheet`, y conviene volver sobre ello antes de generalizar la regla.
+
+**Archivos**: `components/playlist/QrScannerModal.tsx`,
+`components/PreviewChannelModal.tsx`.
+
+## 2026-08-09 02:14 — Los bottom sheets vuelven a abrirse (y dejan de matar la pestaña)
+
+El fallo gordo: **cualquier hoja inferior de la app abría un `Modal` invisible
+que se comía todos los toques y dejaba la sección muerta hasta reiniciar** —
+suscribirse a calendarios, sugerir canción, la ficha multimedia del cantoral, el
+calendario de evangelios… Se reprodujo en simulador con binario nuevo, así que
+no era cuestión de una build vieja.
+
+**Causa**: la migración de `BottomSheet` a Reanimated (2026-08-03). Dentro de un
+`Modal` de React Native, las animaciones de Reanimated 4 **no llegan a correr**:
+la hoja se quedaba donde nacía (fuera de pantalla, fondo a opacidad 0) y el
+callback de la animación de cierre —que es quien desmonta el `Modal`— no se
+disparaba nunca. Las animaciones vuelven al `Animated` de React Native, con un
+aviso en el fichero para que no se vuelva a migrar sin comprobarlo.
+
+**Además:**
+
+- **"Subrayar" ya sale en el menú nativo de iOS.** Nunca había salido, y no era
+  (solo) el `.easignore`: `RCTUITextView` **ignora en silencio** cualquier
+  `setDelegate:` de fuera ("it cannot be changed from outside"), así que el
+  proxy del módulo `highlight-menu` no llegaba a instalarse. Ahora se pone
+  llamando a la implementación de `UITextView`, y se reintenta también en
+  `didAddSubview`. **Requiere binario nuevo** (no sale por OTA).
+- **Subrayar desde el menú nativo pinta ya**, con un color al azar que se
+  mantiene ~8 min (`utils/stickyHighlightColor.ts`): la barra de colores sale
+  con ese color marcado, así que elegir otro es opcional en vez de un toque de
+  peaje. 4 tests nuevos; suite en 583.
+- **Entrar en modo subrayar ya no despliega todas las lecturas**: las tarjetas
+  que tuvieras cerradas se quedan cerradas.
+- **Las lecturas ya no crecen solas.** El `TextInput` del texto llevaba una
+  altura puesta a mano desde `onContentSizeChange`, que se retroalimentaba (el
+  evangelio se hacía grande poco a poco) y al cambiar de día conservaba la
+  altura anterior (el salmo, corto, con medio folio en blanco). Ahora la mide
+  React Native con `scrollEnabled={false}`.
+- **Calendario de Contigo con meses.** El calendario de la home de Contigo
+  estaba clavado en el mes en curso y con los días futuros bloqueados: ahora
+  navega por meses (con atajo para volver al mes de hoy) y deja abrir días de
+  más adelante, que las lecturas se publican con antelación. Y en el evangelio,
+  un "Hoy" diminuto que solo aparece cuando estás mirando otro día.
+- **Mes/Agenda pasa al header** del tab Calendario (con el botón de
+  suscribirse), en vez de comerse una fila entera debajo. En el stack de "Más"
+  se queda como estaba (allí hay título y back).
+- **Cambiar de pestaña ya no reinicia el cantoral ni "Más"**: salías un momento
+  a Contigo y volvías a la lista de categorías con la canción perdida. Volver a
+  la raíz sigue siendo re-pulsar la pestaña activa. De paso desaparecen los
+  `POP_TO_TOP was not handled by any navigator` de la consola.
+
+**Archivos**: `components/BottomSheet.tsx`,
+`modules/highlight-menu/ios/HighlightMenuView.swift`,
+`utils/stickyHighlightColor.ts`, `hooks/useReadingHighlights.ts`,
+`components/contigo/{ReadingCard,HighlightableReading,HomeWidgets}.tsx`,
+`app/(tabs)/contigo/{index,evangelio}.tsx`, `app/(tabs)/calendario.tsx`,
+`app/(tabs)/{cancionero,mas}.tsx`, `components/ui/SegmentedControl.tsx`.
+
 ## 2026-08-08 23:15 — Inicio de sesión en Android: Google nativo, ya de verdad
 
 Android llevaba desde el 5 de junio con el cartel de **"Inicio de sesión
