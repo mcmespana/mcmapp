@@ -43,6 +43,7 @@ import NotificationPermissionBanner from '@/components/NotificationPermissionBan
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useVersionGate } from '@/contexts/VersionGateContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useTabNavigation } from '@/hooks/useTabNavigation';
 import { localISO } from '@/utils/localDate';
@@ -319,6 +320,11 @@ export default function Home() {
     applyUpdate: otaApply,
   } = useOTAContext();
   const showUpdateBadge = otaReady && otaDismissed;
+
+  // Store update badge (show in header after the user skips the mandatory
+  // "actualiza la app" screen — tapping opens the store directly, no dialog)
+  const { updateRequired, updateSkipped, openStore } = useVersionGate();
+  const showStoreUpdateBadge = updateRequired && updateSkipped;
 
   // Notifications
   const { firebaseNotifications, readIds, unreadCount } = useNotifications();
@@ -627,6 +633,23 @@ export default function Home() {
           right={
             <GlassActionGroup
               items={[
+                ...(showStoreUpdateBadge
+                  ? [
+                      {
+                        key: 'store-update',
+                        onPress: openStore,
+                        accessibilityLabel:
+                          'Tienes que actualizar la app. Toca para ir a la tienda',
+                        children: (
+                          <MaterialIcons
+                            name="system-update"
+                            size={22}
+                            color={colors.accent}
+                          />
+                        ),
+                      },
+                    ]
+                  : []),
                 ...(showUpdateBadge
                   ? [
                       {

@@ -18,6 +18,37 @@
 
 ---
 
+## 2026-08-09 00:00 — Pantalla de "actualiza la app" rediseñada, con escape de gracia
+
+La pantalla de bloqueo por versión mínima (`MaintenanceScreen`, `mode="update"`)
+abría la Play Store en iOS cuando la app corría en web/PWA (`Platform.OS` daba
+`'web'`, no `'ios'`) y siempre enlazaba a la ficha web de la tienda en vez de
+abrir la app de la tienda directamente.
+
+**Lo que se ha hecho:**
+
+- **`utils/storeLinks.ts` (nuevo)**: `openAppStore()` detecta la plataforma
+  correcta también en web (mira el user-agent) y abre primero el esquema
+  nativo (`itms-apps://` / `market://`) para ir directo a la app de la tienda;
+  si no está disponible, cae al enlace https.
+- **`components/MaintenanceScreen.tsx`**: rediseño con animaciones
+  (Reanimated: halo pulsante, icono con rebote) y botón "Ir a la tienda ya"
+  más vistoso. Para `mode="update"` aparece a los 500ms un segundo botón
+  ("Voy pa'dentro") con emojis revoloteando que deja pasar sin actualizar
+  **por esta sesión** (`onSkip`).
+- **`contexts/VersionGateContext.tsx` (nuevo)**: centraliza `updateRequired` /
+  `updateSkipped` / `skipUpdate` / `openStore` para que tanto `_layout.tsx`
+  (decide si bloquea) como el header de Home puedan compartir el estado.
+- **`app/(tabs)/index.tsx`**: si el usuario salta la actualización obligatoria,
+  aparece un icono de "tienes que actualizar" en el header (mismo patrón que
+  el aviso de update OTA saltado) que abre la tienda directamente al tocarlo,
+  sin diálogo de por medio.
+
+**Archivos**: `utils/storeLinks.ts`, `contexts/VersionGateContext.tsx`,
+`components/MaintenanceScreen.tsx`, `app/_layout.tsx`, `app/(tabs)/index.tsx`
+
+---
+
 ## 2026-08-08 23:15 — Inicio de sesión en Android: Google nativo, ya de verdad
 
 Android llevaba desde el 5 de junio con el cartel de **"Inicio de sesión
