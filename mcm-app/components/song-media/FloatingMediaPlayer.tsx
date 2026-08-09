@@ -48,6 +48,8 @@ const VIDEO_HEIGHT = Math.round((PLAYER_WIDTH * 9) / 16);
 // nada".
 const AUDIO_HEIGHT = 116;
 const SIDE_MARGIN = 14;
+/** Alto de la barra de navegación del sistema, sin contar la barra de estado. */
+const HEADER_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 56;
 
 /**
  * Referer que mandamos al cargar la página de embed de YouTube.
@@ -98,10 +100,10 @@ export default function FloatingMediaPlayer({
   source,
   onClose,
 }: FloatingMediaPlayerProps) {
-  const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   // Se apoya sobre la barra de pestañas flotante, que ya incluye el inset.
   const tabBarClearance = useTabBarClearance();
+  const insets = useSafeAreaInsets();
   const [fullscreen, setFullscreen] = useState(false);
   // Estado de carga del embed. Sin esto, un embed que tarda o que falla se ve
   // como un rectángulo negro y no hay forma de distinguir "cargando" de "roto"
@@ -291,7 +293,18 @@ export default function FloatingMediaPlayer({
     );
 
   const bar = (
-    <View style={[styles.bar, fullscreen && { paddingTop: insets.top + 8 }]}>
+    <View
+      style={[
+        styles.bar,
+        // En pantalla completa el reproductor tapa toda la pantalla, pero el
+        // header del stack es NATIVO y se pinta ENCIMA: sin reservar su alto,
+        // los botones de la barra (YouTube, salir de pantalla completa,
+        // cerrar) caían debajo del back y no se podían tocar. No se usa
+        // `useHeaderHeight()` a propósito: revienta si el reproductor se monta
+        // fuera de una pantalla con header (los tests, sin ir más lejos).
+        fullscreen && { paddingTop: insets.top + HEADER_BAR_HEIGHT + 8 },
+      ]}
+    >
       <Text style={styles.barLabel} numberOfLines={1}>
         {source.label}
       </Text>

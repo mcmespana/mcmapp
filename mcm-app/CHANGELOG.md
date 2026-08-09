@@ -31,6 +31,13 @@ verificadas en el simulador iOS:
   perdía: la hoja se quedaba con `visible` a true, sin `Modal`, y no aparecía
   hasta que algo ajeno forzaba otro render. Ahora `modalVisible` es **derivado**
   (`visible || closing`), que no se puede perder.
+- **En pantalla completa, los botones del reproductor quedaban debajo del
+  header.** El reproductor tapa toda la pantalla, pero el header del stack es
+  NATIVO y se pinta ENCIMA: la barra con YouTube / salir de pantalla completa /
+  cerrar caía justo debajo del botón de atrás y no había forma de tocarla. Ahora
+  reserva el alto de la barra de navegación además del inset. (No se usa
+  `useHeaderHeight()`: revienta si el reproductor se monta fuera de una pantalla
+  con header.)
 - **El reproductor flotante sonaba pero no se veía.** Nace justo cuando se está
   desmontando el `Modal` de la hoja, y su estilo animado (que empieza en
   `opacity: 0`) puede no llegar a aplicarse nunca: vídeo sonando, reproductor
