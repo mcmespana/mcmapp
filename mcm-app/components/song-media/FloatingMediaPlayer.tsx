@@ -155,8 +155,14 @@ export default function FloatingMediaPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.url]);
 
+  // OJO: la opacidad NO va aquí. El reproductor nace justo cuando se está
+  // desmontando el `Modal` de la hoja de multimedia, y en ese momento el estilo
+  // animado de Reanimated puede no llegar a aplicarse nunca: con `opacity:
+  // enter.value` (que empieza en 0) el vídeo se quedaba sonando con el
+  // reproductor INVISIBLE, sin forma de pararlo ni de verlo. La entrada se
+  // queda en el desplazamiento y la escala, que si no se animan dejan el
+  // reproductor visible igualmente.
   const pipStyle = useAnimatedStyle(() => ({
-    opacity: enter.value,
     transform: [
       { translateX: panX.value },
       // La entrada sube 14pt y el arrastre se suma encima.

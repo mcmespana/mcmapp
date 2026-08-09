@@ -410,11 +410,7 @@ export default function EvangelioScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Volver a hoy"
                 >
-                  <MaterialIcons
-                    name="undo"
-                    size={12}
-                    color={warm.accent}
-                  />
+                  <MaterialIcons name="undo" size={12} color={warm.accent} />
                   <Text style={[styles.todayMiniLabel, { color: warm.accent }]}>
                     Volver a hoy
                   </Text>

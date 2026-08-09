@@ -18,6 +18,47 @@
 
 ---
 
+## 2026-08-09 04:10 — La hoja de multimedia se abre y el reproductor se VE
+
+Dos secuelas del arreglo de los bottom sheets, las dos reproducidas y
+verificadas en el simulador iOS:
+
+- **La ficha de multimedia del cantoral no se abría** (y era la única que
+  seguía sin hacerlo). No era la animación: el `Modal` no llegaba a montarse.
+  `BottomSheet` encendía `modalVisible` con un **setState en fase de render**, y
+  en pantallas que a su vez hacen su propio setState en fase de render —como el
+  detalle de canción, que resetea estado al cambiar de canción— ese update se
+  perdía: la hoja se quedaba con `visible` a true, sin `Modal`, y no aparecía
+  hasta que algo ajeno forzaba otro render. Ahora `modalVisible` es **derivado**
+  (`visible || closing`), que no se puede perder.
+- **El reproductor flotante sonaba pero no se veía.** Nace justo cuando se está
+  desmontando el `Modal` de la hoja, y su estilo animado (que empieza en
+  `opacity: 0`) puede no llegar a aplicarse nunca: vídeo sonando, reproductor
+  invisible y sin forma de pararlo. La opacidad sale del estilo animado; la
+  entrada se queda en desplazamiento y escala, que si no se animan dejan el
+  reproductor perfectamente visible.
+
+**Sobre la duda que dejaba anotada la entrada de las 02:33** ("no es que en un
+`Modal` no corra Reanimated a secas"): confirmado con una vista de prueba que
+anima su opacidad de 0 a 1 dentro del propio `BottomSheet` —se queda invisible
+tras un reinicio limpio de la app—. La regla que encaja con todo lo visto es
+**`Modal` TRANSPARENTE**: ahí los estilos animados de Reanimated no se aplican;
+en un `Modal` opaco (el escáner de QR) sí. Está escrito en la cabecera de
+`BottomSheet.tsx`.
+
+**Y de la ronda de ajustes de UI**: el chip de "Hoy" del evangelio ahora dice
+**"Volver a hoy"** (parecía una etiqueta que anunciaba el día, no un botón), el
+mes y sus flechas en el calendario de Contigo van alineados (el `smallLabel`
+traía un `marginBottom` que descuadraba la fila) y el conmutador **Mes/Agenda
+ocupa todo el ancho** hasta el botón de suscribirse, calculado desde el ancho
+real de la ventana en vez de un número a ojo — así cuadra en cualquier pantalla
+y al girar.
+
+**Archivos**: `components/BottomSheet.tsx`,
+`components/song-media/FloatingMediaPlayer.tsx`,
+`app/(tabs)/contigo/{index,evangelio}.tsx`, `app/(tabs)/calendario.tsx`,
+`components/ui/SegmentedControl.tsx`.
+
 ## 2026-08-09 02:33 — El marco del escáner de QR vuelve al centro de la pantalla
 
 La "ventana" por la que se apunta al QR estaba pegada al **borde inferior** de
