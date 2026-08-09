@@ -317,7 +317,7 @@ const QrScannerModal: React.FC<Props> = ({
                 </Animated.Text>
               ) : (
                 <Animated.Text entering={FadeIn.delay(400)} style={styles.help}>
-                  Apunta al QR · se lee solo
+                  Apunta al QR · se lee solo · está muuy guaaapoooo
                 </Animated.Text>
               )}
             </View>
