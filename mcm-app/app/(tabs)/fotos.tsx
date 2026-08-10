@@ -86,7 +86,9 @@ export function FotosScreen() {
   const { displayedAlbums, allAlbumsLoaded, loadMoreAlbums } =
     useAlbumPagination(sortedAlbums);
 
-  const handleAlbumPress = async (albumUrl: string) => {
+  // ⚡ Bolt Optimization: Memoize the press handler to prevent re-creating the function
+  // on every render, which in turn prevents re-rendering all AlbumCard items in the list.
+  const handleAlbumPress = React.useCallback(async (albumUrl: string) => {
     const supported = await Linking.canOpenURL(albumUrl);
     if (supported) {
       try {
@@ -102,7 +104,7 @@ export function FotosScreen() {
       logger.warn(`Don't know how to open this URL: ${albumUrl}`);
       Alert.alert('Invalid Link', `Esta URL es un poco raruna: ${albumUrl}`);
     }
-  };
+  }, []);
 
   const renderFooter = () => {
     if (allAlbumsLoaded) {
@@ -129,6 +131,21 @@ export function FotosScreen() {
         ? styles.albumCardContainerTwoColumns
         : styles.albumCardContainerOneColumn;
 
+  // ⚡ Bolt Optimization: Extract renderItem and memoize it to prevent re-renders of the FlatList.
+  // This ensures that when the parent component re-renders (e.g., due to scroll events),
+  // the FlatList doesn't unnecessarily re-render all of its items.
+  const renderItem = React.useCallback(
+    ({ item }: { item: Album }) => (
+      <View style={columnContainerStyle}>
+        <AlbumCard
+          album={item}
+          onPress={() => handleAlbumPress(item.albumUrl)}
+        />
+      </View>
+    ),
+    [columnContainerStyle, handleAlbumPress],
+  );
+
   if (loading && displayedAlbums.length === 0) {
     return <ProgressWithMessage message="Cargando álbumes..." />;
   }
@@ -147,15 +164,14 @@ export function FotosScreen() {
         onScroll={onScroll}
         scrollEventThrottle={16}
         data={displayedAlbums}
-        renderItem={({ item }) => (
-          <View style={columnContainerStyle}>
-            <AlbumCard
-              album={item}
-              onPress={() => handleAlbumPress(item.albumUrl)}
-            />
-          </View>
-        )}
+        renderItem={renderItem}
         keyExtractor={(item) => item.id}
+        // ⚡ Bolt Optimization: Virtualization props added to improve performance.
+        // Impact: Reduces initial render time and memory usage by only rendering
+        // a small subset of items initially and limiting batch sizes.
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={5}
         // SIN título: la pestaña ya se llama Fotos y las portadas se explican
         // solas, así que un hero de dos líneas solo robaba una pantalla entera
         // de álbumes. El `TabScreenWrapper` con `edges={['top']}` ya deja el

@@ -4,3 +4,6 @@
 ## 2026-07-08 - [Split useMemo for O(1) state updates]
 **Learning:** [Combining large dataset processing (O(N log N) sorting and O(N) mapping) with frequently changing scalar dependencies (like `selectedSongs.length`) inside a single `useMemo` causes massive unnecessary re-computations when the scalar value changes.]
 **Action:** [Always split such `useMemo` hooks. Compute and memoize the expensive heavy-lifting using only the large dataset as a dependency, then use a second, lightweight `useMemo` to combine the pre-computed array with the scalar state.]
+## 2026-08-10 - [Extracting renderItem from React Native FlatList]
+**Learning:** [In-lining a `renderItem` function directly in a React Native `FlatList` creates a new function reference on every re-render of the parent component, forcing all list items to re-render unnecessarily, degrading performance significantly on long lists.]
+**Action:** [Always extract `renderItem` and any child event handlers (like `onPress`) outside the `FlatList` component call and wrap them with `React.useCallback` with correct dependencies.]
