@@ -47,7 +47,7 @@ interface ChoirSessionContextValue {
   startAsMaster: (
     code: string,
     playlist: SelectedSong[],
-    opts?: { name?: string },
+    opts?: { name?: string; choirId?: string; choirName?: string },
   ) => Promise<void>;
   joinAsSlave: (code: string) => Promise<void>;
   leave: () => Promise<void>;
@@ -194,6 +194,7 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
         newCode,
         { deviceId, name: opts?.name },
         playlist,
+        { choirId: opts?.choirId, choirName: opts?.choirName },
       );
       setMode('master');
       setCode(newCode);

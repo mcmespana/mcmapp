@@ -245,8 +245,11 @@
     },
 
     /* ------------------------------------------------------------------ *
-     *  SESIONES DE CORO EN VIVO  (/choirSessions/<code>)
+     *  SESIONES DE CORO EN VIVO  (/choirSessions/<clave>)
      *  Misma lógica que playlistShares (sincronización en tiempo real).
+     *  La <clave> es el id de un coro (`consolacion-castellon-4f2a`) o, en las
+     *  sesiones sueltas, un código de 4 dígitos. La sesión caduca sola a las
+     *  24 h (`expiresAt`); el cliente ignora las caducadas.
      * ------------------------------------------------------------------ */
     "choirSessions": {
       ".read": false,
@@ -255,6 +258,29 @@
         ".read": true,
         ".write": true,
         ".validate": "newData.hasChild('expiresAt') && newData.child('expiresAt').isNumber()"
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  COROS  (/choirs/<choirId>)
+     *  La "entidad" de la que cuelgan las playlists históricas. Se espera un
+     *  puñado (5-10), así que la lista SÍ es enumerable: la app la lee entera
+     *  para que cada uno elija el suyo.
+     *
+     *  Cualquiera puede crear un coro y subirle playlists (misma confianza que
+     *  `playlistShares`); guardamos `createdBy` para que el panel sepa quién lo
+     *  creó y pueda borrarlo. La raíz no se puede machacar de una sentada:
+     *  solo se escribe coro a coro.
+     *
+     *  El CONTENIDO de las playlists sigue en `/playlistShares/<code>`: aquí
+     *  solo vive el índice (nombre, fechas, nº de canciones, código).
+     * ------------------------------------------------------------------ */
+    "choirs": {
+      ".read": true,
+      ".write": false,
+      "$choirId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['name'])"
       }
     },
 

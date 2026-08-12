@@ -63,6 +63,7 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Notificaciones push (sistema completo) | `docs/funcionalidades/NOTIFICACIONES.md` |
 | Contrato de notificaciones con el panel | `docs/contratos/NOTIFICACIONES_CONTRATO.md` |
 | Eventos (Jubileo, encuentros, retiros…) | `docs/funcionalidades/EVENTOS.md` |
+| Coros y playlists compartidas | `docs/funcionalidades/COROS.md` |
 | Encuestas/evaluaciones | `docs/funcionalidades/ENCUESTAS.md` + `docs/contratos/ENCUESTAS_CONTRATO.md` |
 | Sistema de perfiles (App ↔ Panel) | `docs/contratos/PANEL_PERFILES.md` |
 | Seguridad y reglas Firebase | `docs/SEGURIDAD.md` |

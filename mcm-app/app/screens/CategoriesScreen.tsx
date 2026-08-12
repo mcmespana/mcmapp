@@ -32,6 +32,7 @@ import {
   consumePendingCloudPlaylistCode,
   consumePendingChoirCode,
   consumePendingOfflinePlaylist,
+  consumePendingChoirImport,
 } from '@/utils/pendingCloudPlaylist';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
@@ -122,17 +123,20 @@ export default function CategoriesScreen({
     toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
 
-  // Deep link: si llegamos con un código pendiente de la nube
-  // (proveniente de /playlist?p=1234 o /coro?c=1234), saltamos a la pantalla de
-  // seleccionadas con ese código para que dispare el autoimport o auto-join.
+  // Deep link: si llegamos con algo pendiente de la nube (de /playlist?p=1234,
+  // /playlist?coro=<id> o /coro?coro=<id>), saltamos a la pantalla de
+  // seleccionadas con ese parámetro para que dispare el autoimport o auto-join.
   useEffect(() => {
     const pendingPlaylist = consumePendingCloudPlaylistCode();
     const pendingChoir = consumePendingChoirCode();
     const pendingOffline = consumePendingOfflinePlaylist();
+    const pendingChoirImport = consumePendingChoirImport();
 
     if (pendingOffline) {
       // setParams no funciona para una nueva pantalla; usamos navigate.
       navigation.navigate('SelectedSongs', { d: pendingOffline } as any);
+    } else if (pendingChoirImport) {
+      navigation.navigate('SelectedSongs', { coro: pendingChoirImport } as any);
     } else if (pendingPlaylist) {
       navigation.navigate('SelectedSongs', { p: pendingPlaylist } as any);
     } else if (pendingChoir) {

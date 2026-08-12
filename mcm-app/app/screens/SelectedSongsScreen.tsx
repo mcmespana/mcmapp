@@ -23,7 +23,6 @@ import { PressableFeedback } from 'heroui-native';
 import AppTextField from '@/components/ui/AppTextField';
 import { useToast } from '@/contexts/AppToastContext';
 import { extractSongMedia } from '@/types/songMedia';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -76,18 +75,29 @@ import ConfirmChoiceModal from '@/components/playlist/ConfirmChoiceModal';
 import ShareQrModal from '@/components/playlist/ShareQrModal';
 import PasswordPromptModal from '@/components/playlist/PasswordPromptModal';
 import ChoirSessionBanner from '@/components/playlist/ChoirSessionBanner';
+import ChoirSheet from '@/components/playlist/ChoirSheet';
 
 import {
-  cloudPlaylistExists,
   fetchCloudPlaylist,
   uploadCloudPlaylist,
   changeCloudPlaylistCode,
   deleteCloudPlaylist,
 } from '@/services/cloudPlaylistService';
 import {
+  removeChoirPlaylist,
+  upsertChoirPlaylist,
+} from '@/services/choirDirectoryService';
+import {
   choirSessionExists,
   fetchChoirSession,
+  fetchLiveChoirSession,
 } from '@/services/choirSessionService';
+import {
+  usePlaylistSharing,
+  SHARED_PASSWORD,
+} from '@/hooks/usePlaylistSharing';
+import { playlistSignature } from '@/utils/playlistSync';
+import { isChoirId } from '@/utils/choirIds';
 import { transposeLabel, transposeKey } from '@/utils/transposeKey';
 import { convertChord } from '@/utils/chordNotation';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -128,19 +138,9 @@ const WEB_BASE_URL = 'https://mcm.expo.app';
 /** Esquema propio para deep links offline (playlist embebida en la URL). */
 const APP_SCHEME = 'mcmapp://';
 
-/** Contraseña para sobrescribir una playlist en la nube que ya existe. */
-const OVERWRITE_PASSWORD = 'coco';
-
 const SelectedSongsScreen: React.FC = () => {
-  const {
-    selectedSongs,
-    isHydrated,
-    clearSelection,
-    addSong,
-    removeSong,
-    moveSong,
-    replaceAll,
-  } = useSelectedSongs();
+  const { selectedSongs, isHydrated, addSong, removeSong, moveSong } =
+    useSelectedSongs();
   const choir = useChoirSession();
   const { settings } = useSettings();
 
@@ -207,40 +207,52 @@ const SelectedSongsScreen: React.FC = () => {
     name?: string;
   } | null>(null);
 
-  // Código de la última subida a la nube (para "cambiar código" / "borrar").
-  // Persistido para sobrevivir al cierre de la app.
-  const [lastUploadCode, setLastUploadCodeState] = useState<string | null>(
-    null,
-  );
-  const LAST_UPLOAD_CODE_KEY = '@mcm_last_upload_code';
-  useEffect(() => {
-    AsyncStorage.getItem(LAST_UPLOAD_CODE_KEY).then((v) => {
-      if (v) setLastUploadCodeState(v);
-    });
-  }, []);
-  const setLastUploadCode = useCallback((code: string | null) => {
-    setLastUploadCodeState(code);
-    if (code) {
-      AsyncStorage.setItem(LAST_UPLOAD_CODE_KEY, code).catch(() => {});
-    } else {
-      AsyncStorage.removeItem(LAST_UPLOAD_CODE_KEY).catch(() => {});
-    }
-  }, []);
+  // Estado de "compartir": coro elegido, enlace con la nube, deshacer,
+  // contraseña… todo vive en su propio hook (ver `usePlaylistSharing`).
+  const sharing = usePlaylistSharing({
+    onShowQr: (l) =>
+      setQrModal({
+        title: l.name ? `${l.name} · #${l.code}` : `Playlist · #${l.code}`,
+        url: `${WEB_BASE_URL}/playlist?p=${l.code}`,
+        code: l.code,
+      }),
+  });
+  const link = sharing.link;
 
-  // Auto-import / auto-join si llegamos con ?p=XXXX o ?c=YYYY en web (deep link).
+  // Auto-import / auto-join al llegar por un enlace:
+  //   ?p=1234    → playlist por código
+  //   ?coro=id   → la ÚLTIMA playlist de ese coro (siempre la de hoy)
+  //   ?c=1234|id → sesión de coro en vivo
+  // En los tres casos se reemplaza la selección directamente y el toast deja
+  // 10 s para deshacer: venir de un enlace y que te pregunten tres cosas antes
+  // de enseñarte nada era el peor momento posible para un diálogo.
   const autoImportAttempted = useRef(false);
   useEffect(() => {
     if (autoImportAttempted.current) return;
     const params: any = (route?.params as any) || {};
     const playlistCode = params.p ?? params.code;
-    const choirCode = params.c;
+    const choirParam = params.coro;
+    const liveKey = params.c;
 
     if (typeof playlistCode === 'string' && /^\d{4}$/.test(playlistCode)) {
       autoImportAttempted.current = true;
-      void handleDownloadFromCloud(playlistCode);
-    } else if (typeof choirCode === 'string' && /^\d{4}$/.test(choirCode)) {
+      void sharing.importByCode(playlistCode).catch((e: any) => {
+        toast.show({
+          variant: 'danger',
+          label: e?.message ?? 'No se ha podido importar',
+        });
+      });
+    } else if (typeof choirParam === 'string' && isChoirId(choirParam)) {
       autoImportAttempted.current = true;
-      void handleJoinChoir(choirCode);
+      void sharing.importLatestFromChoir(choirParam).catch((e: any) => {
+        toast.show({
+          variant: 'danger',
+          label: e?.message ?? 'No se ha podido importar',
+        });
+      });
+    } else if (typeof liveKey === 'string' && liveKey) {
+      autoImportAttempted.current = true;
+      void handleJoinChoir(liveKey);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -262,7 +274,7 @@ const SelectedSongsScreen: React.FC = () => {
         toast.show({ label: 'No se pudo leer la playlist del QR' });
         return;
       }
-      askMergeOrReplace(songs);
+      sharing.replaceWithUndo(songs, 'Playlist del QR importada', null);
       if (missing > 0) {
         toast.show({
           label: `${missing} canción(es) del QR no están en este dispositivo`,
@@ -731,14 +743,21 @@ const SelectedSongsScreen: React.FC = () => {
     }
   }, []);
 
-  /** Muestra el confirmador "reemplazar / añadir / cancelar" tras una importación. */
+  /**
+   * Importación desde ARCHIVO (.mcm). Es el único sitio donde seguimos
+   * preguntando "reemplazar o añadir": un archivo suele ser un trozo de
+   * repertorio que quieres juntar con lo tuyo, mientras que una playlist del
+   * coro o de un enlace es "la lista de hoy" y ahí reemplazar y ofrecer
+   * deshacer es más rápido y menos confuso.
+   */
   const askMergeOrReplace = useCallback(
     (imported: SelectedSong[]) => {
       if (selectedSongs.length === 0) {
-        replaceAll(imported);
-        toast.show({
-          label: `Playlist importada (${imported.length} canciones)`,
-        });
+        sharing.replaceWithUndo(
+          imported,
+          `Playlist importada (${imported.length} canciones)`,
+          null,
+        );
         return;
       }
       setConfirmDialog({
@@ -750,8 +769,7 @@ const SelectedSongsScreen: React.FC = () => {
             variant: 'primary',
             onPress: () => {
               setConfirmDialog(null);
-              replaceAll(imported);
-              toast.show({ label: 'Playlist reemplazada' });
+              sharing.replaceWithUndo(imported, 'Playlist reemplazada', null);
             },
           },
           {
@@ -779,7 +797,7 @@ const SelectedSongsScreen: React.FC = () => {
         ],
       });
     },
-    [selectedSongs, replaceAll, addSong, toast],
+    [selectedSongs, sharing, addSong, toast],
   );
 
   const handleImportFile = useCallback(async () => {
@@ -835,24 +853,53 @@ const SelectedSongsScreen: React.FC = () => {
 
   // --- Nube -----------------------------------------------------------------
 
+  /** Guarda el enlace local tras subir con código suelto (sin coro). */
+  const rememberUpload = useCallback(
+    (code: string, name?: string) => {
+      sharing.setLink({
+        code,
+        name,
+        choirId: link?.code === code ? link.choirId : undefined,
+        choirName: link?.code === code ? link.choirName : undefined,
+        signature: playlistSignature(selectedSongs),
+        syncedAt: Date.now(),
+        owned: true,
+      });
+    },
+    [sharing, link, selectedSongs],
+  );
+
+  /**
+   * Subida por CÓDIGO (opción secundaria; lo normal es subir al coro).
+   *
+   * Si el código está ocupado ya no es un callejón sin salida: cualquiera
+   * puede machacarlo escribiendo la contraseña, y si la playlist la subiste tú
+   * desde este mismo dispositivo ni siquiera se pide.
+   */
   const handleUploadToCloud = useCallback(
     async (code: string, name?: string) => {
-      const exists = await cloudPlaylistExists(code);
-      if (exists) {
-        // El código ya tiene contenido (tuyo o de otra persona). Para
-        // machacarlo pedimos la contraseña; también se puede elegir otro
-        // código. Cerramos el diálogo de código para no apilar modales.
+      const existing = await fetchCloudPlaylist(code);
+      const mine =
+        !!existing &&
+        ((!!existing.ownerDeviceId &&
+          existing.ownerDeviceId === sharing.identity.deviceId) ||
+          (link?.code === code && link.owned));
+      if (existing && !mine) {
+        // Ocupado por otra persona: se puede machacar con la contraseña o
+        // coger otro código. Cerramos el diálogo para no apilar modales.
         setCodeDialog(null);
         setConfirmDialog({
-          title: 'Código ocupado',
-          description: `Ya hay una playlist subida con el código ${code}. Para sobrescribirla necesitas la contraseña.`,
+          title: 'Ese código ya está ocupado',
+          description: `Hay una playlist${
+            existing.name ? ` («${existing.name}»)` : ''
+          } en el código ${code}. Puedes machacarla con la contraseña del coro o subir la tuya con otro código.`,
           actions: [
             {
-              label: 'Sobrescribir…',
+              label: 'Sobrescribirla…',
               variant: 'danger',
               onPress: () => {
                 setConfirmDialog(null);
-                setPendingOverwrite({ code, name });
+                setPendingOverwrite({ code, name: name ?? existing.name });
               },
             },
             {
@@ -860,7 +907,7 @@ const SelectedSongsScreen: React.FC = () => {
               variant: 'primary',
               onPress: () => {
                 setConfirmDialog(null);
-                setCodeDialog({ variant: 'cloud-upload', initial: undefined });
+                setCodeDialog({ variant: 'cloud-upload' });
               },
             },
             {
@@ -873,13 +920,20 @@ const SelectedSongsScreen: React.FC = () => {
         // Lanzamos error para que el diálogo no se cierre automáticamente.
         throw new Error('__handled__');
       }
-      await uploadCloudPlaylist(code, selectedSongs, { name });
-      setLastUploadCode(code);
+      await uploadCloudPlaylist(code, selectedSongs, {
+        name,
+        createdAt: existing?.createdAt,
+        choirId: existing?.choirId,
+        choirName: existing?.choirName,
+        by: sharing.identity.name,
+        ownerDeviceId: sharing.identity.deviceId,
+      });
+      rememberUpload(code, name);
       setCodeDialog(null);
       showUploadSuccess(code, name);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedSongs],
+    [selectedSongs, link, sharing.identity, rememberUpload],
   );
 
   /** Subida tras validar la contraseña de sobrescritura. */
@@ -888,16 +942,22 @@ const SelectedSongsScreen: React.FC = () => {
     setPendingOverwrite(null);
     if (!pending) return;
     try {
+      const existing = await fetchCloudPlaylist(pending.code);
       await uploadCloudPlaylist(pending.code, selectedSongs, {
         name: pending.name,
+        createdAt: existing?.createdAt,
+        choirId: existing?.choirId,
+        choirName: existing?.choirName,
+        by: sharing.identity.name,
+        ownerDeviceId: sharing.identity.deviceId,
       });
-      setLastUploadCode(pending.code);
+      rememberUpload(pending.code, pending.name);
       showUploadSuccess(pending.code, pending.name);
     } catch (e: any) {
       toast.show({ label: e?.message ?? 'Error al subir' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingOverwrite, selectedSongs]);
+  }, [pendingOverwrite, selectedSongs, sharing.identity, rememberUpload]);
 
   const showUploadSuccess = useCallback(
     (code: string, name?: string) => {
@@ -929,14 +989,10 @@ const SelectedSongsScreen: React.FC = () => {
 
   const handleDownloadFromCloud = useCallback(
     async (code: string) => {
-      const data = await fetchCloudPlaylist(code);
-      if (!data) {
-        throw new Error('No existe ninguna playlist con ese código');
-      }
+      await sharing.importByCode(code);
       setCodeDialog(null);
-      askMergeOrReplace(data.songs);
     },
-    [askMergeOrReplace],
+    [sharing],
   );
 
   /**
@@ -955,32 +1011,65 @@ const SelectedSongsScreen: React.FC = () => {
         return;
       }
       setCodeDialog(null);
-      askMergeOrReplace(songs);
+      sharing.replaceWithUndo(songs, 'Playlist del QR importada', null);
       if (missing > 0) {
         toast.show({
           label: `${missing} canción(es) del QR no están en este dispositivo`,
         });
       }
     },
-    [askMergeOrReplace, offlineFilenameResolver, toast],
+    [sharing, offlineFilenameResolver, toast],
+  );
+
+  /** QR de coro escaneado desde "importar": traemos su última playlist. */
+  const handleScannedChoirQr = useCallback(
+    (choirId: string) => {
+      setCodeDialog(null);
+      void sharing.importLatestFromChoir(choirId).catch((e: any) => {
+        toast.show({
+          variant: 'danger',
+          label: e?.message ?? 'No se ha podido importar',
+        });
+      });
+    },
+    [sharing, toast],
   );
 
   const handleChangeCloudCode = useCallback(
     async (newCode: string) => {
-      if (!lastUploadCode) return;
-      await changeCloudPlaylistCode(lastUploadCode, newCode);
-      setLastUploadCode(newCode);
+      if (!link) return;
+      await changeCloudPlaylistCode(link.code, newCode);
+      // El índice del coro va por código, así que hay que rehacer la entrada.
+      if (link.choirId) {
+        try {
+          await removeChoirPlaylist(link.choirId, link.code);
+          await upsertChoirPlaylist(link.choirId, {
+            code: newCode,
+            name: link.name ?? `Playlist ${newCode}`,
+            createdAt: link.syncedAt,
+            updatedAt: Date.now(),
+            songCount: selectedSongs.length,
+            ownerDeviceId: sharing.identity.deviceId,
+          });
+        } catch (e) {
+          logger.error('reindex choir playlist error', e);
+        }
+      }
+      sharing.setLink({ ...link, code: newCode });
       setCodeDialog(null);
       toast.show({ label: `Código cambiado a ${newCode}` });
     },
-    [lastUploadCode, toast, setLastUploadCode],
+    [link, toast, sharing, selectedSongs.length],
   );
 
   const handleDeleteFromCloud = useCallback(async () => {
-    if (!lastUploadCode) return;
+    if (!link) return;
+    const { code, choirId, name } = link;
     setConfirmDialog({
-      title: `Borrar playlist ${lastUploadCode} de la nube`,
-      description: 'Cualquiera con el código dejará de poder importarla.',
+      title: `Borrar «${name ?? code}» de la nube`,
+      description: choirId
+        ? 'Desaparece del histórico del coro y nadie podrá importarla.'
+        : 'Cualquiera con el código dejará de poder importarla.',
       actions: [
         {
           label: 'Borrar de la nube',
@@ -988,8 +1077,9 @@ const SelectedSongsScreen: React.FC = () => {
           onPress: async () => {
             setConfirmDialog(null);
             try {
-              await deleteCloudPlaylist(lastUploadCode);
-              setLastUploadCode(null);
+              await deleteCloudPlaylist(code);
+              if (choirId) await removeChoirPlaylist(choirId, code);
+              sharing.setLink(null);
               toast.show({ label: 'Borrada de la nube' });
             } catch (e: any) {
               toast.show({ label: e?.message ?? 'Error al borrar' });
@@ -1003,7 +1093,7 @@ const SelectedSongsScreen: React.FC = () => {
         },
       ],
     });
-  }, [lastUploadCode, toast, setLastUploadCode]);
+  }, [link, toast, sharing]);
 
   // --- Coro -----------------------------------------------------------------
 
@@ -1025,7 +1115,9 @@ const SelectedSongsScreen: React.FC = () => {
               onPress: async () => {
                 setConfirmDialog(null);
                 try {
-                  await choir.startAsMaster(code, selectedSongs);
+                  await choir.startAsMaster(code, selectedSongs, {
+                    name: sharing.identity.name,
+                  });
                   showChoirSuccess(code);
                 } catch (e: any) {
                   toast.show({ label: e?.message ?? 'Error al iniciar' });
@@ -1049,26 +1141,36 @@ const SelectedSongsScreen: React.FC = () => {
         });
         throw new Error('__handled__');
       }
-      await choir.startAsMaster(code, selectedSongs);
+      await choir.startAsMaster(code, selectedSongs, {
+        name: sharing.identity.name,
+      });
       setCodeDialog(null);
       showChoirSuccess(code);
     },
-    [choir, selectedSongs, toast, showChoirSuccess],
+    [choir, selectedSongs, toast, showChoirSuccess, sharing.identity.name],
   );
 
   const handleJoinChoir = useCallback(
-    async (code: string) => {
-      const session = await fetchChoirSession(code);
+    async (key: string) => {
+      // `fetchLive…` ignora las caducadas (24 h): mejor decir "no hay sesión"
+      // que meter al usuario en una que va a expulsarle en el siguiente tic.
+      const session = await fetchLiveChoirSession(key);
       if (!session) {
-        throw new Error('No existe sesión con ese código');
+        throw new Error('No hay ninguna sesión de coro abierta ahí');
       }
-      // Importamos la playlist del maestro como nuestra selección base.
-      replaceAll(session.playlist || []);
-      await choir.joinAsSlave(code);
+      // La playlist del líder pasa a ser la nuestra — con 10 s para deshacer,
+      // que unirse al coro no debería costarte tu propia lista.
+      sharing.replaceWithUndo(
+        session.playlist || [],
+        `Sigues a ${session.master?.name || 'el líder'}${
+          session.choirName ? ` en ${session.choirName}` : ''
+        }`,
+        null,
+      );
+      await choir.joinAsSlave(key);
       setCodeDialog(null);
-      toast.show({ label: `Conectado al coro ${code}` });
     },
-    [choir, replaceAll, toast],
+    [choir, sharing],
   );
 
   const handleChangeChoirCode = useCallback(
@@ -1131,22 +1233,53 @@ const SelectedSongsScreen: React.FC = () => {
       },
     ];
 
+    // El coro es ahora la vía principal: nadie tiene que acordarse de códigos.
+    const coroPlaylists: PlaylistAction[] = [
+      {
+        id: 'choir-hub',
+        icon: 'groups',
+        label: sharing.myChoir
+          ? `Coro: ${sharing.myChoir.name}`
+          : 'Elegir mi coro',
+        description: sharing.myChoir
+          ? 'Importar la última, ver el histórico o dirigir en vivo'
+          : 'Las playlists cuelgan del coro. Elígelo una vez y listo.',
+        onPress: () => sharing.openSheet(sharing.myChoir ? 'home' : 'choose'),
+      },
+    ];
+    if (hasSongs) {
+      coroPlaylists.push({
+        id: 'choir-save',
+        icon: 'cloud-upload',
+        label: link
+          ? 'Guardar cambios en el coro'
+          : 'Subir esta playlist al coro',
+        description: link
+          ? sharing.isSynced
+            ? `«${link.name ?? link.code}» ya está al día`
+            : `Actualizar «${link.name ?? link.code}» o subir una nueva`
+          : `${flatSelectedSongs.length} canciones para todo el coro`,
+        onPress: () => sharing.openSheet(sharing.myChoir ? 'save' : 'choose'),
+      });
+    }
+
+    // Códigos y QR: se mantienen, pero como opción secundaria.
     const nube: PlaylistAction[] = [
+      {
+        id: 'download-cloud',
+        icon: 'pin',
+        label: 'Importar con un código',
+        description: 'Los 4 dígitos que te han pasado (o escanear un QR)',
+        onPress: () => setCodeDialog({ variant: 'cloud-download' }),
+      },
       {
         id: 'upload-cloud',
         icon: 'cloud-upload',
-        label: 'Subir playlist (compartir código)',
-        description: lastUploadCode
-          ? `Código actual: ${lastUploadCode}`
-          : 'Cualquiera con el código podrá importarla',
+        label: 'Subir con un código suelto',
+        description: link
+          ? `Sin coro. Código actual: ${link.code}`
+          : 'Sin coro: solo quien tenga el código podrá importarla',
         onPress: () => setCodeDialog({ variant: 'cloud-upload' }),
-      },
-      {
-        id: 'download-cloud',
-        icon: 'cloud-download',
-        label: 'Importar playlist con código',
-        description: 'Introduce el código de 4 dígitos que te han pasado',
-        onPress: () => setCodeDialog({ variant: 'cloud-download' }),
       },
     ];
     if (offlineUrl) {
@@ -1160,29 +1293,43 @@ const SelectedSongsScreen: React.FC = () => {
         description: 'Dos pestañas: con código (internet) o sin conexión',
         onPress: () =>
           setQrModal({
-            title: lastUploadCode
-              ? `Playlist · Código ${lastUploadCode}`
+            title: link
+              ? `${link.name ?? 'Playlist'} · #${link.code}`
               : 'Compartir playlist',
-            url: lastUploadCode
-              ? `${WEB_BASE_URL}/playlist?p=${lastUploadCode}`
-              : undefined,
-            code: lastUploadCode ?? undefined,
+            url: link ? `${WEB_BASE_URL}/playlist?p=${link.code}` : undefined,
+            code: link?.code,
             offlineUrl,
-            defaultMode: lastUploadCode ? 'online' : 'offline',
+            defaultMode: link ? 'online' : 'offline',
           }),
       });
     }
-    if (lastUploadCode) {
+    if (sharing.myChoir) {
+      nube.push({
+        id: 'share-choir-link',
+        icon: 'link',
+        label: 'Enlace del coro (siempre la última)',
+        description: `Quien lo abra importa la última playlist de ${sharing.myChoir.name}`,
+        onPress: () =>
+          setQrModal({
+            title: `${sharing.myChoir!.name} · última playlist`,
+            url: `${WEB_BASE_URL}/playlist?coro=${sharing.myChoir!.id}`,
+          }),
+      });
+    }
+    // Cambiar el código o borrar de la nube solo tiene sentido sobre una
+    // playlist que subiste tú: sobre la de otra persona sería un destrozo
+    // silencioso (para eso está "actualizar", que sí pide la contraseña).
+    if (link?.owned) {
       nube.push(
         {
           id: 'change-cloud-code',
           icon: 'edit',
           label: 'Cambiar código de la playlist',
-          description: `Actual: ${lastUploadCode}`,
+          description: `Actual: ${link.code}`,
           onPress: () =>
             setCodeDialog({
               variant: 'change-code',
-              initial: lastUploadCode,
+              initial: link.code,
             }),
         },
         {
@@ -1215,17 +1362,26 @@ const SelectedSongsScreen: React.FC = () => {
       choir.mode === 'off'
         ? [
             {
-              id: 'choir-start',
+              id: 'choir-live-hub',
               icon: 'campaign',
-              label: 'Iniciar sesión de coro (ser líder)',
-              description:
-                'Otros dispositivos te siguen con un código de 4 dígitos',
+              label: 'Dirigir o seguir a mi coro',
+              description: sharing.myChoir
+                ? `Sin códigos: se entra por ${sharing.myChoir.name}`
+                : 'Elige tu coro y dirige (o síguele) en vivo',
+              onPress: () =>
+                sharing.openSheet(sharing.myChoir ? 'home' : 'choose'),
+            },
+            {
+              id: 'choir-start',
+              icon: 'pin',
+              label: 'Sesión suelta con código',
+              description: 'Para un ensayo puntual fuera de tu coro',
               onPress: () => setCodeDialog({ variant: 'choir-start' }),
             },
             {
               id: 'choir-join',
               icon: 'headphones',
-              label: 'Unirse a sesión de coro',
+              label: 'Unirse con un código',
               description:
                 'Introduces un código y sigues las canciones del líder',
               onPress: () => setCodeDialog({ variant: 'choir-join' }),
@@ -1268,33 +1424,17 @@ const SelectedSongsScreen: React.FC = () => {
             },
           ];
 
+    // Vaciar ya no pasa por un diálogo de confirmación: se vacía y el toast
+    // deja 10 s para deshacerlo. Empezar una lista de cero es de las cosas que
+    // más se hacen y era de las más pesadas (menú → confirmar → aceptar).
     const peligro: PlaylistAction[] = [
       {
         id: 'clear',
         icon: 'delete-outline',
-        label: 'Vaciar playlist',
+        label: 'Vaciar playlist y empezar de cero',
+        description: 'Se puede deshacer justo después',
         variant: 'danger',
-        onPress: () => {
-          setConfirmDialog({
-            title: '¿Vaciar la playlist?',
-            description: 'Se quitarán todas las canciones seleccionadas.',
-            actions: [
-              {
-                label: 'Vaciar',
-                variant: 'danger',
-                onPress: () => {
-                  clearSelection();
-                  setConfirmDialog(null);
-                },
-              },
-              {
-                label: 'Cancelar',
-                variant: 'secondary',
-                onPress: () => setConfirmDialog(null),
-              },
-            ],
-          });
-        },
+        onPress: sharing.clearWithUndo,
       },
     ];
 
@@ -1304,16 +1444,22 @@ const SelectedSongsScreen: React.FC = () => {
     // —que son justo las que tienen sentido con la playlist vacía— y el modo
     // coro, donde las canciones las pone el maestro después.
     const soloImportar = <T extends PlaylistAction>(as: T[]) =>
-      as.filter((a) => a.id.startsWith('import') || a.id === 'download-cloud');
+      as.filter(
+        (a) =>
+          a.id.startsWith('import') ||
+          a.id === 'download-cloud' ||
+          a.id === 'choir-hub',
+      );
 
     return [
+      { title: 'Mi coro', actions: coroPlaylists },
       { title: 'Exportar y compartir', actions: hasSongs ? exportar : [] },
+      { title: 'Coro en vivo', actions: coro },
+      { title: 'Archivo', actions: hasSongs ? archivo : soloImportar(archivo) },
       {
-        title: 'Playlist en la nube',
+        title: 'Códigos y QR',
         actions: hasSongs ? nube : soloImportar(nube),
       },
-      { title: 'Archivo', actions: hasSongs ? archivo : soloImportar(archivo) },
-      { title: 'Modo coro', actions: coro },
       { actions: hasSongs ? peligro : [] },
     ];
   }, [
@@ -1322,14 +1468,22 @@ const SelectedSongsScreen: React.FC = () => {
     handleStartExportFile,
     handleStartExportPdf,
     handleImportFile,
-    lastUploadCode,
+    link,
+    sharing,
+    flatSelectedSongs.length,
     offlineUrl,
     choir,
     handleDeleteFromCloud,
-    clearSelection,
   ]);
 
   // --- Header ---------------------------------------------------------------
+
+  /** Abre la hoja del coro por el paso que toque según si ya hay coro elegido. */
+  const openChoirSheet = useCallback(
+    (step: 'home' | 'save' = 'home') =>
+      sharing.openSheet(sharing.myChoir ? step : 'choose'),
+    [sharing],
+  );
 
   const headerIconColor =
     Platform.OS === 'ios' || Platform.OS === 'web'
@@ -1342,6 +1496,16 @@ const SelectedSongsScreen: React.FC = () => {
     navigation.setOptions({
       headerRight: () => (
         <View style={styles.headerActions}>
+          {/* El coro a un toque: es el camino principal para traer y dejar
+              playlists, así que no puede vivir escondido en el menú. */}
+          <TouchableOpacity
+            onPress={() => openChoirSheet()}
+            style={styles.headerIconBtn}
+            hitSlop={6}
+            accessibilityLabel="Playlists del coro"
+          >
+            <MaterialIcons name="groups" size={24} color={headerIconColor} />
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setShowActions(true)}
             style={styles.headerIconBtn}
@@ -1357,12 +1521,13 @@ const SelectedSongsScreen: React.FC = () => {
         </View>
       ),
     });
-  }, [navigation, headerIconColor, styles]);
+  }, [navigation, headerIconColor, styles, openChoirSheet]);
 
   // --- Render ---------------------------------------------------------------
 
   const submitForVariant = (
     variant: CodeDialogVariant,
+    initial?: string,
   ): ((code: string, name?: string) => Promise<void>) => {
     switch (variant) {
       case 'cloud-upload':
@@ -1374,10 +1539,13 @@ const SelectedSongsScreen: React.FC = () => {
       case 'choir-join':
         return handleJoinChoir;
       case 'change-code':
-        return lastUploadCode
-          ? handleChangeCloudCode
-          : choir.mode === 'master'
-            ? handleChangeChoirCode
+        // El mismo diálogo sirve para renombrar el código de la playlist y el
+        // de la sesión de coro. Lo desambigua el código con el que se abrió:
+        // si es el de la sesión en curso, estamos cambiando el del coro.
+        return initial && initial === choir.code && choir.mode === 'master'
+          ? handleChangeChoirCode
+          : link
+            ? handleChangeCloudCode
             : async () => {};
     }
   };
@@ -1399,31 +1567,35 @@ const SelectedSongsScreen: React.FC = () => {
         </Text>
       </View>
       <View style={{ gap: 10, marginBottom: Platform.OS === 'ios' ? 100 : 20 }}>
+        {/* Con la lista vacía, lo primero que quiere casi todo el mundo es
+            traerse la del coro: va la primera y sin pedir ningún código. */}
+        <PressableFeedback
+          onPress={() => openChoirSheet()}
+          style={styles.importButton}
+        >
+          <PressableFeedback.Highlight />
+          <MaterialIcons
+            name="groups"
+            size={20}
+            color={isDark ? '#7AB3FF' : '#253883'}
+          />
+          <Text style={styles.importButtonText}>
+            {sharing.myChoir
+              ? `Traer la playlist de ${sharing.myChoir.name}`
+              : 'Elegir mi coro e importar'}
+          </Text>
+        </PressableFeedback>
         <PressableFeedback
           onPress={() => setCodeDialog({ variant: 'cloud-download' })}
           style={styles.importButton}
         >
           <PressableFeedback.Highlight />
           <MaterialIcons
-            name="cloud-download"
+            name="pin"
             size={20}
             color={isDark ? '#7AB3FF' : '#253883'}
           />
-          <Text style={styles.importButtonText}>
-            Importar playlist con código
-          </Text>
-        </PressableFeedback>
-        <PressableFeedback
-          onPress={() => setCodeDialog({ variant: 'choir-join' })}
-          style={styles.importButton}
-        >
-          <PressableFeedback.Highlight />
-          <MaterialIcons
-            name="headphones"
-            size={20}
-            color={isDark ? '#7AB3FF' : '#253883'}
-          />
-          <Text style={styles.importButtonText}>Unirme a un coro</Text>
+          <Text style={styles.importButtonText}>Tengo un código o un QR</Text>
         </PressableFeedback>
         <PressableFeedback
           onPress={handleImportFile}
@@ -1445,13 +1617,25 @@ const SelectedSongsScreen: React.FC = () => {
     () => (
       <PlaylistHeaderBar
         visibleCount={visibleCount}
-        lastUploadCode={lastUploadCode}
+        link={link}
+        isSynced={sharing.isSynced}
+        onPressStatus={() => openChoirSheet('save')}
+        onClear={sharing.clearWithUndo}
         viewMode={viewMode}
         setViewMode={setViewMode}
         styles={styles}
       />
     ),
-    [visibleCount, lastUploadCode, viewMode, setViewMode, styles],
+    [
+      visibleCount,
+      link,
+      sharing.isSynced,
+      sharing.clearWithUndo,
+      openChoirSheet,
+      viewMode,
+      setViewMode,
+      styles,
+    ],
   );
 
   const renderCategoryGroup = ({ item }: { item: CategorizedSongs }) => (
@@ -1632,8 +1816,13 @@ const SelectedSongsScreen: React.FC = () => {
               ? handleScannedOfflinePlaylist
               : undefined
           }
+          onScanChoir={
+            codeDialog.variant === 'cloud-download'
+              ? handleScannedChoirQr
+              : undefined
+          }
           onSubmit={async (code, name) => {
-            const fn = submitForVariant(codeDialog.variant);
+            const fn = submitForVariant(codeDialog.variant, codeDialog.initial);
             try {
               await fn(code, name);
             } catch (e: any) {
@@ -1667,12 +1856,48 @@ const SelectedSongsScreen: React.FC = () => {
         />
       ) : null}
 
+      {/* Hoja del coro: elegir coro, importar la última, histórico, guardar y
+          dirigir/seguir en vivo. Es el camino principal; los códigos quedan
+          como opción secundaria dentro del menú de acciones. */}
+      <ChoirSheet
+        visible={sharing.sheetStep !== null}
+        initialStep={sharing.sheetStep ?? 'home'}
+        myChoir={sharing.myChoir}
+        onChooseChoir={sharing.setMyChoir}
+        songCount={flatSelectedSongs.length}
+        link={link}
+        identity={sharing.identity}
+        liveMode={choir.mode}
+        liveKey={choir.code}
+        onImport={(entry, c) => void sharing.importEntry(entry, c)}
+        onSaveNew={(name, c) => void sharing.saveNew(name, c)}
+        onSaveUpdate={sharing.saveUpdate}
+        onLead={sharing.lead}
+        onJoinLive={(c, session) => void sharing.joinLive(c, session)}
+        onLeaveLive={sharing.leaveLive}
+        onClose={sharing.closeSheet}
+      />
+
+      {/* Contraseña compartida ('coco'): machacar la playlist de otra persona
+          o quitarle el mando al líder de un coro. */}
+      {sharing.passwordRequest ? (
+        <PasswordPromptModal
+          visible
+          title={sharing.passwordRequest.title}
+          description={sharing.passwordRequest.description}
+          expectedPassword={SHARED_PASSWORD}
+          confirmLabel={sharing.passwordRequest.confirmLabel}
+          onSuccess={sharing.passwordRequest.onSuccess}
+          onClose={sharing.dismissPassword}
+        />
+      ) : null}
+
       {pendingOverwrite ? (
         <PasswordPromptModal
           visible
           title="Sobrescribir playlist"
-          description={`Vas a machacar la playlist con código ${pendingOverwrite.code}. Escribe la contraseña para confirmar.`}
-          expectedPassword={OVERWRITE_PASSWORD}
+          description={`Ya hay una playlist en el código ${pendingOverwrite.code}. Cualquiera puede machacarla con la contraseña del coro.`}
+          expectedPassword={SHARED_PASSWORD}
           confirmLabel="Sobrescribir"
           onSuccess={() => void handleConfirmOverwrite()}
           onClose={() => setPendingOverwrite(null)}

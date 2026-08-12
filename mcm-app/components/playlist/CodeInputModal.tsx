@@ -63,6 +63,11 @@ interface Props {
    * resuelve la pantalla. Si no se pasa, esos QR se rechazan con un aviso.
    */
   onScanOffline?: (payload: string) => void;
+  /**
+   * Se llama cuando el QR escaneado era el de un CORO (`?coro=<id>`): no hay
+   * código que descargar, hay que traerse la última playlist de ese coro.
+   */
+  onScanChoir?: (choirId: string) => void;
 }
 
 interface VariantCopy {
@@ -158,6 +163,7 @@ const CodeInputModal: React.FC<Props> = ({
   onClose,
   onSubmit,
   onScanOffline,
+  onScanChoir,
 }) => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -228,6 +234,11 @@ const CodeInputModal: React.FC<Props> = ({
   const handleScannedOffline = (payload: string) => {
     setScan('closing');
     onScanOffline?.(payload);
+  };
+
+  const handleScannedChoir = (choirId: string) => {
+    setScan('closing');
+    onScanChoir?.(choirId);
   };
 
   const handleChangeText = (txt: string) => {
@@ -395,6 +406,7 @@ const CodeInputModal: React.FC<Props> = ({
           onDismissed={() => setScan('idle')}
           onCode={handleScannedCode}
           onOffline={onScanOffline ? handleScannedOffline : undefined}
+          onChoir={onScanChoir ? handleScannedChoir : undefined}
         />
       ) : null}
     </>
