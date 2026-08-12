@@ -23,7 +23,7 @@ import {
 } from '@/services/choirSessionService';
 import type { SelectedSong } from '@/contexts/SelectedSongsContext';
 
-const TWO_WEEKS_MS = 1000 * 60 * 60 * 24 * 14;
+const ONE_DAY_MS = 1000 * 60 * 60 * 24;
 const VALID = '1234';
 const OTHER = '5678';
 
@@ -46,7 +46,7 @@ describe('validación de código', () => {
     ['12', 'demasiado corto'],
     ['123456', 'demasiado largo'],
     ['', 'vacío'],
-  ])('rechaza el código "%s" (%s)', async (code) => {
+  ])('rechaza la clave "%s" (%s)', async (code) => {
     await expect(choirSessionExists(code)).rejects.toThrow(/inválido/i);
   });
 
@@ -57,7 +57,7 @@ describe('validación de código', () => {
 });
 
 describe('createChoirSession', () => {
-  it('construye el payload con expiración a 2 semanas y current nulo', async () => {
+  it('construye el payload con expiración a 24 h y current nulo', async () => {
     const now = 1_700_000_000_000;
     jest.spyOn(Date, 'now').mockReturnValue(now);
 
@@ -72,7 +72,8 @@ describe('createChoirSession', () => {
     expect(result.master.deviceId).toBe('dev-1');
     expect(result.current).toBeNull();
     expect(result.createdAt).toBe(now);
-    expect(result.expiresAt).toBe(now + TWO_WEEKS_MS);
+    expect(result.startedAt).toBe(now);
+    expect(result.expiresAt).toBe(now + ONE_DAY_MS);
     expect(result.playlist).toHaveLength(2);
     expect(set).toHaveBeenCalledTimes(1);
   });
@@ -112,7 +113,9 @@ describe('publicaciones del maestro', () => {
     expect(payload.current.transpose).toBe(2);
     expect(payload.current.updatedAt).toBe(now);
     expect(payload['master/lastSeen']).toBe(now);
-    expect(payload.expiresAt).toBe(now + TWO_WEEKS_MS);
+    // La caducidad NO se estira al publicar: la sesión muere 24 h después de
+    // empezar, aunque el líder siga cantando.
+    expect(payload).not.toHaveProperty('expiresAt');
   });
 
   it('publishChoirPlaylist actualiza la playlist y la actividad', async () => {

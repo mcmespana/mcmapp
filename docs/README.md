@@ -13,6 +13,7 @@ Cómo funciona cada sistema de la app, de principio a fin.
 | [NOTIFICACIONES.md](funcionalidades/NOTIFICACIONES.md) | Sistema de notificaciones push: cliente implementado, backend, plan de pruebas |
 | [EVENTOS.md](funcionalidades/EVENTOS.md) | Sistema de eventos (Jubileo, encuentros, retiros…): paths de Firebase y cómo añadir un evento nuevo |
 | [ENCUESTAS.md](funcionalidades/ENCUESTAS.md) | Sistema de encuestas y evaluaciones (guía funcional) |
+| [COROS.md](funcionalidades/COROS.md) | Coros, playlists compartidas y coro en vivo: `/choirs`, importar «la última», actualizar vs subir nueva, contraseña y caducidad de 24 h |
 | [ARREGLOS.md](funcionalidades/ARREGLOS.md) | Directiva `{arr:}` del cantoral (anotaciones de arreglos) + prompt del generador ChordPro |
 | [SUBRAYADO.md](funcionalidades/SUBRAYADO.md) | Subrayado de las lecturas de Contigo: rangos, componente de texto nativo y qué falta (build nativa) para el ítem "Subrayar" del menú del sistema |
 | [CANAL_PREVIEW.md](funcionalidades/CANAL_PREVIEW.md) | Modo tester ("Laboratorio Alpha"): cómo un dispositivo recibe los OTA de `preview` en vez de los de `production`, y cómo comprobarlo |

@@ -55,6 +55,23 @@ describe('parseScannedQr', () => {
     expect(parseScannedQr('')).toBeNull();
   });
 
+  it('reconoce el enlace de un coro en los dos flujos', () => {
+    expect(
+      parseScannedQr('https://mcm.expo.app/playlist?coro=consolacion-4f2a'),
+    ).toEqual({
+      kind: 'choir',
+      target: 'playlist',
+      choirId: 'consolacion-4f2a',
+    });
+    expect(
+      parseScannedQr('https://mcm.expo.app/coro?coro=consolacion-4f2a'),
+    ).toEqual({ kind: 'choir', target: 'choir', choirId: 'consolacion-4f2a' });
+    // `?c=` con un id de coro (en vez de 4 dígitos) también es una sesión.
+    expect(
+      parseScannedQr('https://mcm.expo.app/coro?c=consolacion-4f2a'),
+    ).toEqual({ kind: 'choir', target: 'choir', choirId: 'consolacion-4f2a' });
+  });
+
   it('ignora códigos mal formados dentro de un enlace nuestro', () => {
     expect(parseScannedQr('https://mcm.expo.app/playlist?p=12')).toBeNull();
     expect(parseScannedQr('https://mcm.expo.app/coro?c=abcd')).toBeNull();
@@ -71,6 +88,16 @@ describe('describeMismatch', () => {
   const choirCode = { kind: 'code', target: 'choir', code: '1234' } as const;
   const loose = { kind: 'code', target: null, code: '1234' } as const;
   const offline = { kind: 'offline', payload: '1~D5' } as const;
+  const choirLink = {
+    kind: 'choir',
+    target: 'playlist',
+    choirId: 'consolacion-4f2a',
+  } as const;
+  const choirLive = {
+    kind: 'choir',
+    target: 'choir',
+    choirId: 'consolacion-4f2a',
+  } as const;
 
   it('deja pasar el QR del flujo correcto', () => {
     expect(describeMismatch(playlistCode, 'playlist')).toBeNull();
@@ -81,6 +108,13 @@ describe('describeMismatch', () => {
   it('un código suelto vale para cualquiera de los dos flujos', () => {
     expect(describeMismatch(loose, 'playlist')).toBeNull();
     expect(describeMismatch(loose, 'choir')).toBeNull();
+  });
+
+  it('distingue el QR "última playlist del coro" del de sesión en vivo', () => {
+    expect(describeMismatch(choirLink, 'playlist')).toBeNull();
+    expect(describeMismatch(choirLive, 'choir')).toBeNull();
+    expect(describeMismatch(choirLive, 'playlist')).toMatch(/en vivo/i);
+    expect(describeMismatch(choirLink, 'choir')).toMatch(/playlist/i);
   });
 
   it('avisa cuando el QR es del otro flujo', () => {

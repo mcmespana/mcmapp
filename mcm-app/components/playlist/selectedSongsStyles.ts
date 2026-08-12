@@ -58,6 +58,24 @@ export const createStyles = (
       marginTop: 3,
       fontWeight: '600',
     },
+    /** Mismo sitio, color de aviso: hay cambios que no están subidos. */
+    subInfoDirty: {
+      color: isDark ? '#F0B429' : '#B26B00',
+    },
+    clearBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingVertical: 5,
+      paddingHorizontal: 8,
+      borderRadius: 8,
+      backgroundColor: isDark ? '#2C2C2E' : '#EFEFF4',
+    },
+    clearBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#8E8E93',
+    },
     viewToggle: {
       flexDirection: 'row',
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',

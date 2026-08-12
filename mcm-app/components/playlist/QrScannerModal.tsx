@@ -92,6 +92,12 @@ interface Props {
    * se presenta en el mismo ciclo de render en que otro se cierra.
    */
   onDismissed?: () => void;
+  /**
+   * QR de coro (`?coro=<id>`) leído desde el flujo de playlists: no hay nada
+   * que descargar por código, hay que traerse la ÚLTIMA playlist de ese coro.
+   * Si no se pasa, esos QR se rechazan con un aviso.
+   */
+  onChoir?: (choirId: string) => void;
 }
 
 const QrScannerModal: React.FC<Props> = ({
@@ -101,6 +107,7 @@ const QrScannerModal: React.FC<Props> = ({
   onCode,
   onOffline,
   onDismissed,
+  onChoir,
 }) => {
   const insets = useSafeAreaInsets();
   const camera = getCamera();
@@ -179,7 +186,12 @@ const QrScannerModal: React.FC<Props> = ({
       celebrationRef.current = setTimeout(() => {
         celebrationRef.current = null;
         if (result.kind === 'offline') onOffline?.(result.payload);
-        else onCode(result.code);
+        else if (result.kind === 'choir') {
+          // Para unirse en vivo, el id del coro ES la clave de la sesión, así
+          // que va por el mismo camino que un código de 4 dígitos.
+          if (result.target === 'choir') onCode(result.choirId);
+          else onChoir?.(result.choirId);
+        } else onCode(result.code);
       }, CELEBRATION_MS);
     },
     [onCode, onOffline],
@@ -216,9 +228,13 @@ const QrScannerModal: React.FC<Props> = ({
         showHint('Ese QR lleva la playlist entera; ábrelo con la cámara');
         return;
       }
+      if (result.kind === 'choir' && result.target === 'playlist' && !onChoir) {
+        showHint('Ese QR es de un coro; ábrelo desde «Mi coro»');
+        return;
+      }
       resolve(result);
     },
-    [expected, onOffline, resolve, showHint],
+    [expected, onOffline, onChoir, resolve, showHint],
   );
 
   if (!camera) return null;
