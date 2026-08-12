@@ -19,15 +19,20 @@ import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
-import { getArchivedEvents, isEventArchived } from '@/constants/events';
+import { isEventArchived } from '@/constants/events';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { MasStackParamList } from '../(tabs)/mas';
 
 /**
  * "Eventos pasados": lista los eventos archivados como tarjetas que abren su
- * hub. Son archivados los que tienen `status: 'archived'` en
- * `constants/events.ts` y también el evento en curso cuando el panel MCM lo
- * archiva en caliente (`activities/<id>/_meta.status`), sin publicar la app.
+ * hub. Son archivados los que tienen `status: 'archived'` una vez aplicado el
+ * `_meta` del panel (`activities/<id>/_meta.status`) sobre el registry.
+ *
+ * B1: antes esta lista salía de `getArchivedEvents()`, que lee SOLO
+ * `constants/events.ts`. Resultado: archivar o desarchivar desde el panel
+ * cualquier evento que no fuera el activo no hacía absolutamente nada, y el
+ * título/color de los pasados ignoraba lo que dijera el panel. Ahora la lista
+ * se construye de los eventos ya mergeados que publica `ActiveEventContext`.
  */
 export default function EventosPasadosScreen() {
   const navigation =
@@ -36,21 +41,13 @@ export default function EventosPasadosScreen() {
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
 
-  const { activeEvent } = useActiveMeta();
-  const events = React.useMemo(() => {
-    const list = getArchivedEvents();
-    // El evento en curso puede estar archivado sólo en remoto: en ese caso el
-    // registry aún lo da como activo y hay que añadirlo (o sustituirlo, para
-    // quedarnos con el título/color que trae el panel).
-    if (!isEventArchived(activeEvent)) {
-      return list.filter((e) => e.id !== activeEvent.id);
-    }
-    const i = list.findIndex((e) => e.id === activeEvent.id);
-    if (i === -1) return [...list, activeEvent];
-    const merged = [...list];
-    merged[i] = activeEvent;
-    return merged;
-  }, [activeEvent]);
+  const { events: allEvents } = useActiveMeta();
+  // Ya vienen con el `_meta` del panel aplicado (incluido el evento en curso,
+  // que puede estar archivado sólo en remoto), así que basta con filtrar.
+  const events = React.useMemo(
+    () => allEvents.filter(isEventArchived),
+    [allEvents],
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>

@@ -147,20 +147,27 @@ del flujo equivocado.
 
 ---
 
-## Panel de administración (lo que falta fuera de este repo)
+## Panel de administración — ✅ hecho (sección «Coros» de mcmpanel)
 
-El nodo `/choirs` está pensado para poder gestionarse desde `mcmpanel`:
+El nodo `/choirs` se gestiona desde `mcmpanel` → **Coros**
+(`src/components/sections/ChoirsSection.tsx` + `src/lib/choirs.ts`):
 
 - **Listar coros** con `name`, `createdAt`, `createdBy.deviceId/name` y número
   de playlists.
 - **Borrar un coro** (`remove /choirs/{id}`). El contenido de sus playlists
   sigue en `/playlistShares` hasta que caduca a los 6 meses.
-- **Renombrar** un coro (`name` + `nameKey`, que debe recalcularse con las
-  mismas reglas de `choirNameKey`: sin acentos, minúsculas, guiones).
+- **Renombrar** un coro: recalcula `nameKey` con `choirNameKey()`, que es
+  **espejo exacto** del de `utils/choirIds.ts` (mismo recorte a
+  `MAX_CHOIR_NAME_LENGTH = 60`, misma normalización NFD). Si algún día cambian
+  las reglas aquí, hay que cambiarlas en los dos sitios o el anti-duplicados de
+  la app deja de detectar los nombres repetidos.
 - **Retocar playlists**: cambiar `name` y, sobre todo, `updatedAt` — que es lo
   que ordena el histórico y decide cuál es «la última».
+- **Cerrar sesiones de coro en vivo** (`/choirSessions/<clave>`).
 
-Se esperan **5-10 coros**, así que la lista se lee entera sin paginar.
+Se esperan **5-10 coros**, así que la lista se lee entera sin paginar. El panel
+escribe con `update()`/`remove()` granular, nunca por el guardado de nodo
+completo del JSONManager.
 
 ## Reglas de seguridad
 

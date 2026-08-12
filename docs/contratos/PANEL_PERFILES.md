@@ -65,7 +65,8 @@ edita JSON. El cliente combina perfil + delegación + overrides al arrancar.
   "showChangeNameButton": false,    // legacy, dejar en false
   "maintenanceMode": false,         // ⚠ true → toda la app muestra MaintenanceScreen
   "maintenanceMessage": "",         // mensaje opcional durante mantenimiento
-  "minAppVersion": "0.0.0"          // semver mínima soportada. "0.0.0" = sin bloqueo
+  "minAppVersion": "0.0.0",         // semver mínima soportada. "0.0.0" = sin bloqueo
+  "appReviewMode": false            // modo revisión de tiendas — lo gestiona el panel (§1.6)
 }
 ```
 
@@ -208,6 +209,35 @@ de `ProfileBase` que **reemplaza** los campos que defina:
 **UX recomendada**: tabla con columnas `Perfil`, `Delegación`, `Campos
 sobreescritos`. El admin elige perfil + delegación de selectores poblados con
 los valores reales y luego marca qué campos quiere reemplazar.
+
+### 1.6. `data.global.appReviewMode` + `data.appReviewBackup` — modo revisión
+
+Mecanismo **del panel**, no de la app. Sirve para las revisiones de App Store y
+Play Store: mientras dura la revisión conviene que el Cantoral y Comunica no
+estén a la vista.
+
+Al encender el interruptor, el panel:
+
+1. Pone `global.appReviewMode = true`.
+2. **Reescribe las `tabs`** (y botones/items equivalentes) de todos los
+   perfiles, delegaciones y overrides quitando Cantoral y Comunica.
+3. Guarda lo que había en `data.appReviewBackup` (con `enabledAt` y las listas
+   originales por perfil/delegación/override).
+
+Al apagarlo, restaura desde ese backup y borra el flag.
+
+> **La app no lee ninguno de los dos campos.** El efecto le llega ya aplicado
+> dentro de `tabs`, que es lo único que resuelve. Están tipados como opcionales
+> en `mcm-app/types/profileConfig.ts` para que el contrato esté completo y para
+> que nadie los borre al serializar el nodo.
+
+Implicaciones prácticas:
+
+- **No edites perfiles con el modo revisión encendido**: lo que guardes se verá
+  como "lo original" cuando se apague, o se perderá al restaurar el backup.
+- Si el backup se pierde (borrado manual del nodo), apagar el modo deja las
+  tabs recortadas: hay que volver a añadir Cantoral y Comunica a mano.
+- Implementación: `mcmpanel/src/lib/appReviewMode.ts`.
 
 ---
 
@@ -424,13 +454,24 @@ sin querer.
 
 | Check                                                                                                            | Severidad | Acción                                                                                            |
 | ---------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------- |
-| `tabs` no contiene `index`                                                                                       | warning   | Aviso: "El usuario no podrá volver a Inicio". Permitir guardar.                                   |
-| `tabs` está vacío                                                                                                | error     | Bloquear. La app caería al fallback.                                                              |
-| `defaultCalendars` referencia un ID que ya no está en `/calendars`                                                | warning   | Avisar y ofrecer limpiar.                                                                         |
-| `notificationTopic` con caracteres raros (espacios, mayúsculas)                                                   | warning   | Auto-slugify (`"MCM Castellón"` → `"mcm-castellon"`).                                             |
-| `overrides[k]` con clave malformada (no `perfil:delegacion`)                                                      | error     | Bloquear.                                                                                         |
-| `minAppVersion` no es semver válido                                                                                | error     | Bloquear. La app interpretaría `0.0.0` y no bloquearía nada.                                      |
-| Cambios en `/profileConfig` sin actualizar `updatedAt`                                                            | error     | El panel debe forzar `updatedAt = new Date().toISOString()` en cada guardado.                     |
+| `tabs` no contiene `index`                                                                                       | warning   | ✅ Avisa. Permite guardar.                                                                        |
+| `tabs` está vacío                                                                                                | warning   | ✅ Avisa. (No bloquea: ver nota abajo.)                                                           |
+| `defaultCalendars` referencia un ID que ya no está en `/calendars`                                                | warning   | ✅ Avisa.                                                                                         |
+| `notificationTopic` con caracteres raros (espacios, mayúsculas)                                                   | error     | ✅ El editor auto-slugifica al guardar; si llega sucio por JSON importado, lo marca como problema. |
+| `overrides[k]` con clave malformada (no `perfil:delegacion`, perfil o delegación inexistentes)                     | error     | ✅ Lo marca como problema: la app lo ignoraría en silencio.                                       |
+| `minAppVersion` no es semver válido                                                                                | error     | ✅ Lo marca. La app es *fail-open*: un valor inválido no bloquea a nadie (ver nota).              |
+| Cambios en `/profileConfig` sin actualizar `updatedAt`                                                            | error     | ✅ El panel fuerza `updatedAt` en cada guardado.                                                  |
+
+> **Por qué "avisa" y no "bloquea"** (C4, 2026-08-12): la sección de Perfiles del
+> panel no tiene botón de guardar — cada edición se encola y se escribe sola. No
+> hay un punto donde bloquear, así que los checks se muestran en dos cajas: los
+> **problemas** (rojo: configuración que la app va a ignorar en silencio) y los
+> **avisos** (ámbar: sospechoso pero puede ser intencionado).
+>
+> **Matiz de `minAppVersion`**: `isAppVersionSupported()` es deliberadamente
+> *fail-open* — un semver corrupto se parsea como `0.0.0` y NO deja a nadie
+> fuera. Un kill-switch mal escrito no bloquea a la gente; simplemente no
+> funciona, que es el riesgo real a vigilar.
 
 ---
 

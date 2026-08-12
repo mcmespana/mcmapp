@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-08-03.
+> Última actualización: 2026-08-12.
 
 ---
 
@@ -30,9 +30,9 @@
 | --- | --- |
 | **Ahora mismo** | **Build de tienda 2.1 — agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6) |
 | **Bloqueado por ti** | Integración D2 (modelo de auth del panel) · Panel Pañuelo (falta plan funcional) |
-| **Bloqueado fuera** | Que el Panel mande `channelId` y `mutableContent` · política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) |
+| **Bloqueado fuera** | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real |
 | **Después de la build** | Integración D → **Build 2.2 (nov-dic): Widget + App Check** → Carismochito + Panel Pañuelo |
-| **Oportunista** | Calidad Fase 1 (gigantes), Integraciones resto |
+| **Oportunista** | Calidad Fase 1 (gigantes) |
 | **Cerrado** | Los 8 planes tácticos (archivados en `archivo/tacticos/`), UI Nativa Fase 1, PR #298 |
 
 > **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
@@ -78,7 +78,7 @@
 | 2   | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/005-…`                                   |
 | 3   | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate   | **Opus**                                     | No                                                                      | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `archivo/tacticos/008-…`                      |
 | 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70% (`AppTextField`/`EmptyState` mayormente hechos, `AppPrimaryButton` parcial, `SegmentedControl`/chips/tokens sin empezar)                                                                                                                        | `docs/planes/PLAN_UI_NATIVA.md`                                          |
-| 5   | **Integración D** — Seguridad Firebase                                                  | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                  | ⏳ Pendiente, importante pero no urgente                                                                                                                                                                                                                                                | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                     |
+| 5   | **Integración D** — Seguridad Firebase (+ A2)                                           | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                  | ⏳ Pendiente, importante pero no urgente. **Es lo único que queda de PLAN_INTEGRACIONES**: el resto (A, B, C, E) se cerró el 2026-08-12                                                                                                                                                 | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                     |
 | 6   | **Widget de Contigo**                                                                   | Opus                                         | **Sí** — ¿release de tienda ya? (ver §4)                                | ⏳ Al final                                                                                                                                                                                                                                                                             | `docs/planes/PLAN_WIDGET_CONTIGO.md`                                     |
 | 7   | **Carismochito** (ejecutar bien §1–4) + **Panel Pañuelo** (concepto nuevo)              | Sonnet (Opus solo el icono nativo §5)        | Panel Pañuelo: **sí**, falta el plan funcional                          | ⏳ Cierre final                                                                                                                                                                                                                                                                         | `docs/planes/PLAN_CARISMOCHITO.md` + `docs/planes/PLAN_PANEL_PANUELO.md` |
 
@@ -109,13 +109,19 @@
 - **Detalle:** `docs/planes/PLAN_CALIDAD.md` Fase 1 (`SelectedSongsScreen`,
   `onboarding.tsx`, `(tabs)/index.tsx`…).
 
-### B. Integraciones — resto (A2, C1–C4, E1)
+### B. ~~Integraciones — resto (A2, C1–C4, E1)~~ ✅ CERRADO (2026-08-12)
 
-- **Trigger:** "cuando estén" — oportunista, sin fecha fija; hacerlo cuando
-  haya hueco o cuando el resto de piezas cross-repo estén listas. No bloquea
-  nada ni es prioritario.
-- **Modelo:** Sonnet (Fable para C2/C3, son copiar/documentar).
-- **Detalle:** `docs/planes/PLAN_INTEGRACIONES.md` secciones A2, C, E1.
+Se ejecutaron **B1 completo** (archivar/renombrar eventos desde el panel ya
+funciona para todos los eventos, no solo el activo), **C1**, **C3**, **C4** y
+**E1**, más un bug de pérdida de datos en `/app` que no estaba en ningún plan (la
+sección App del panel borraba `app/evaluations` y `app/evaluationConfig` en cada
+guardado). **C2** queda fuera a propósito: los seeds los sincroniza el usuario a
+mano. **B4** (smoke test) descartado por improbable.
+
+Lo único que sobrevive de ese plan es **A2** (proteger los endpoints de envío),
+que se absorbe en la Integración D de la Cola Principal — es el mismo problema.
+
+Detalle en `docs/planes/PLAN_INTEGRACIONES.md`.
 
 ### C. Bolsa nativa — la build de tienda de agosto de 2026
 
@@ -148,7 +154,7 @@
 | --- | ----- | ------ |
 | **Política de privacidad + fichas de las tiendas** | Usuario | La analítica obliga a actualizar la política de privacidad, la ficha de privacidad de App Store y el formulario de Data Safety de Play **antes** de publicar. Aptabase no manda identificadores persistentes, lo que simplifica la declaración, pero hay que hacerla |
 | **Cuenta de Sentry y de Aptabase** | Usuario | Crear proyecto, copiar claves y meterlas como secrets de EAS y de GitHub. §2 de `BUILD_AGOSTO_2026.md` |
-| **`channelId` en el push** | MCM Panel | El Panel debe mandar `channelId` top-level con el mismo valor que `data.category` (`general` → `default`). Sin él todo cae en `default` como hasta ahora; **con un `channelId` que la app no declare, Android no entrega la notificación**. Tabla cerrada en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8 |
+| ~~**`channelId` en el push**~~ | MCM Panel | ✅ **Hecho.** El Panel manda `channelId` top-level derivado de `data.category` (`general` → `default`) contra una lista cerrada (`api/_lib/push.ts`), verificada contra los 7 canales que declara la app. También manda `mutableContent`. Tabla en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8 |
 | **Probar los channels en un Android real** | Usuario | Requisito que ya fijaba `TODO.md`: verificar heads-up/sonido por canal antes de mergear a `production`. Los canales aparecen en los ajustes del sistema de todos los Android y sus preferencias no se pueden revertir a mano |
 
 ### C-bis. Build 2.2 — noviembre/diciembre de 2026

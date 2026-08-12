@@ -160,39 +160,72 @@ de notificaciones.
 
 ---
 
-## Qué falta del PLAN (estado a 2026-07-07)
+## Qué falta del PLAN (estado a 2026-08-12)
 
 Resumen para retomar. ✅ hecho · ⏳ pendiente.
+
+> **Repaso del 2026-08-12** (auditoría contra el código real de los dos repos,
+> no contra este documento). Lo que había cambiado sin actualizarse aquí:
+>
+> - **A4.2 (channels Android)** ✅ **hecho a ambos lados**: la app declara 7
+>   canales (`constants/notificationChannels.ts` + `notifications/androidChannels.ts`)
+>   y el panel manda `channelId` con lista cerrada (`api/_lib/push.ts`). Los dos
+>   vocabularios coinciden, incluido `general → default`. También manda
+>   `mutableContent`.
+> - **A4.4 (NSE de iOS)** ✅ existe (`plugins/withNotificationServiceExtension.js`
+>   + `targets/notification-service/`), entra con la build de agosto.
+> - **D3 (reglas)** ◐ parcial: `/scheduledNotifications` ya está declarado.
+> - **Coros**: el panel ya tiene la sección entera (no estaba cuando se escribió
+>   este plan).
+>
+> Y lo que se hizo en esa misma sesión: **B1 completo**, **C1**, **C3**, **C4**,
+> **E1**, más un bug de pérdida de datos en `/app` que no estaba en ningún plan
+> (ver abajo). **C2** queda fuera del plan a propósito: el usuario sincroniza los
+> seeds a mano. **B4** (smoke test) se descarta: ver su sección.
 
 **Integración A — Notificaciones**
 - ✅ A1 · filtrar historial in-app por audiencia · [app]
 - ⏳ A2 · proteger endpoints de envío (`x-panel-key` + `PANEL_API_KEY`) · [panel]
   · prioridad ALTA · **sin empezar** (la solución real es la Integración D)
 - ✅ A3 · poblar selector de eventos desde `/activities` · [panel]
-- ◐ A4 · **parcial**: hechos el uso visual de `data.category` (A4.1) y el deep
-  link a un evento vía `data.eventId` (A4.3); pendientes channels Android por
-  tipo (A4.2, OTA pero no de impacto cero, necesita prueba en dispositivo) y NSE
-  de iOS (A4.4, nativo, requiere build de tienda) · [app]
+- ✅ A4 · los cuatro: uso visual de `data.category` (A4.1), channels Android por
+  tipo (A4.2, con el panel mandando `channelId`), deep link a un evento vía
+  `data.eventId` (A4.3) y NSE de iOS (A4.4, entra con la build de agosto) · [app]
+  · ⚠️ queda **probar los channels en un Android real** (heads-up/sonido por
+  canal), que es cosa de dispositivo, no de código
 
 **Integración B — Eventos**
 - ✅ B1 · consumir `activities/<id>/_meta` en la app (title/tint/banner/status)
-  · [app] · **para el evento activo** (banner/hub) — ver nota abajo
+  · [app] · **completo desde 2026-08-12**: se mergea el `_meta` de TODOS los
+  eventos del registry, no solo el activo (antes archivar cualquier otro evento
+  desde el panel no hacía nada)
 - ✅ B2 · sincerar la UI de metadatos del panel · [panel] (aviso preciso en el
   card, no bloqueante)
 - ✅ B3 · aviso al crear actividad ("no aparece hasta registrarla en
   `events.ts`") · [panel]
 - ✅ B4 · guardar `/activities` con escrituras granulares (no pisar
   `evaluacion/respuestas` ni `compartiendo`) · [panel] — implementado con
-  `update()` multi-path por subruta editada. ⚠️ **Pendiente un smoke test contra
-  Firebase real** (guardar mientras llega una respuesta de evaluación) — ver nota
-  en la sección B4 abajo.
+  `update()` multi-path por subruta editada. El smoke test contra Firebase real
+  se **descarta** (decisión del 2026-08-12): la ventana de carrera es de
+  milisegundos y el panel lo usan una o dos personas. La lógica pura está
+  verificada con tests.
+- ✅ B5 (nuevo, 2026-08-12) · `/app` ya no se guarda con `set()` de nodo
+  completo · [panel] — ver "Bug encontrado" abajo.
 
-**Integración C — Perfiles** (todo pendiente)
-- ⏳ C1 · retirar gestión manual de `delegationList` (derivarla) · [panel] · MEDIA
-- ⏳ C2 · unificar seeds de `profileConfig` (app como fuente) · [panel] · BAJA
-- ⏳ C3 · documentar `appReviewMode` en el contrato + tipar opcionales · [app] · BAJA
-- ⏳ C4 · completar validaciones del §5 (override, semver, slug, tabs sin
-  `index`) · [panel] · BAJA
+**Integración C — Perfiles**
+- ✅ C1 · retirar gestión manual de `delegationList` (derivarla) · [panel] —
+  fuera el flag "mostrar en el selector" (no hacía nada en la app) y fuera las
+  dos validaciones de desincronización, que ya no pueden dispararse
+- 🚫 C2 · unificar seeds de `profileConfig` · **fuera de alcance a propósito**:
+  el usuario los sincroniza a mano descargando el JSON desde el panel. Recordar
+  que `firebase-seed/profileConfig.json` no es solo una semilla — es el fallback
+  compilado en el binario (`constants/defaultProfileConfig.ts` lo importa), así
+  que conviene no dejarlo envejecer
+- ✅ C3 · documentar `appReviewMode` en el contrato + tipar opcionales · [app] —
+  `PANEL_PERFILES.md` §1.6
+- ✅ C4 · validaciones del §5 (override, semver, slug, tabs sin `index`) ·
+  [panel] — separadas en "problemas" (la app lo ignora en silencio) y "avisos".
+  No bloquean el guardado porque esta sección no tiene botón de guardar
 
 **Integración D — Seguridad Firebase** (todo pendiente · prioridad MÁXIMA)
 - ⏳ D1 · credencial de servidor en `api/_lib/push.ts` (`?auth=`) · [panel]
@@ -205,15 +238,25 @@ Resumen para retomar. ✅ hecho · ⏳ pendiente.
 - ⚠️ **No desplegar las reglas** (`deploy-firebase-rules.yml`) hasta completar
   D1–D3: hoy romperían el panel entero (ver `docs/SEGURIDAD.md`).
 
-**Integración E — Cantoral** (pendiente)
-- ⏳ E1 · proteger ediciones del panel frente al uploader (opción a: cantoral
-  del panel solo-lectura) · [panel]/[cantoral] · MEDIA
+**Integración E — Cantoral**
+- ✅ E1 · resuelto con una variante de la opción (a): la edición NO se bloquea,
+  pero hay un aviso a pantalla completa antes de entrar a una categoría
+  explicando que el repo `mcmapp-cantoral` sobrescribe `songs/data` entero en
+  cada push. Quien entra, asume el riesgo · [panel]
 - ✅ E2 · nota de coherencia `updatedAt` · sin acción
 
-**Orden sugerido para continuar:** D (seguridad, único con riesgo de incidente)
-→ A2 → C1/C2 → E1 → resto de prioridad baja. Pendientes de verificación en
-entorno real: **B4** (smoke test en Firebase). Dejar A4.4 (NSE iOS) y A4.2
-(channels Android) para cuando se decida/haya dispositivo de prueba.
+**Orden sugerido para continuar:** solo queda **seguridad** — A2 (proteger
+`send`/`schedule`) y la Integración D entera, que sigue bloqueada por la
+decisión D2 (modelo de auth del panel). Aplazado a propósito el 2026-08-12.
+
+**Bug encontrado fuera de plan (2026-08-12) — `/app`.** La sección App del panel
+mandaba al guardar solo `{ feedback, updatedAt }`, y `JSONManager` lo escribía
+con `set('/app', …)` de nodo completo: cada guardado **borraba de Firebase**
+`app/evaluations` (todas las respuestas de la evaluación de la app) y
+`app/evaluationConfig` (que gestiona la sección Encuestas y que la app lee en
+`EvaluacionAppScreen`). No era una carrera: pasaba siempre. Arreglado por los dos
+lados — la sección conserva el resto del nodo y el guardado de `/app` es
+granular (`app/feedback` + `app/updatedAt`), nunca `set()` del nodo entero.
 
 ---
 

@@ -18,6 +18,25 @@
 
 ---
 
+## 2026-08-12 21:40 — Archivar un evento desde el panel ya funciona de verdad
+
+- **B1 completo.** La app solo aplicaba el `_meta` que edita el MCM Panel
+  (`title`/`tintColor`/`bannerText`/`status`) al **evento activo**. Todo lo
+  demás salía del registry hardcodeado, así que archivar o desarchivar
+  cualquier otro evento desde el panel no tenía ningún efecto, y la lista de
+  "Eventos pasados" ignoraba también el título y el color que dijera el panel.
+- Ahora se leen los `_meta` de **todos** los eventos del registry y se mergean;
+  "Eventos pasados" se construye de esa lista ya mergeada, así que el estado
+  archivado sale siempre de lo que diga el panel, sin publicar versión.
+- **C3**: tipados `global.appReviewMode` y `data.appReviewBackup` como
+  opcionales (el modo revisión de las tiendas que gestiona el panel) y
+  documentado el mecanismo en `docs/contratos/PANEL_PERFILES.md` §1.6. La app
+  no los lee: el efecto le llega ya aplicado en las `tabs`.
+- Archivos: `hooks/useEventMeta.ts` (nuevo `useEventsMeta`),
+  `contexts/ActiveEventContext.tsx` (expone `events` mergeados),
+  `app/screens/EventosPasadosScreen.tsx`, `types/profileConfig.ts`.
+- Docs: `PANEL_PERFILES.md`, `PLAN_INTEGRACIONES.md`, `BACKLOG.md`, `COROS.md`.
+
 ## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
 
 - **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles

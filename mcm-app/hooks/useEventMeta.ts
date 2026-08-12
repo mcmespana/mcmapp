@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,37 +10,48 @@ import type { RemoteEventMeta } from '@/utils/mergeEventMeta';
  * el panel: `{ status, title, tintColor, bannerText, updatedAt }`, NO
  * `{ updatedAt, data }`, por eso no se usa `useFirebaseData`).
  *
- * El nodo es diminuto (unos pocos campos), así que se descarga entero en cada
- * arranque sin la optimización por `updatedAt` de `useFirebaseData`. Se cachea
- * en AsyncStorage para funcionar offline y mostrar algo al instante.
+ * Cada nodo es diminuto (unos pocos campos), así que se descargan enteros en
+ * cada arranque sin la optimización por `updatedAt` de `useFirebaseData`. Se
+ * cachean en AsyncStorage para funcionar offline y mostrar algo al instante.
  *
- * Devuelve `null` mientras no hay valor (o si falla): el llamante cae al
- * registry hardcodeado (`constants/events.ts`) vía `mergeEventMeta`.
+ * Devuelve un mapa `id -> meta` con SOLO los eventos que ya han contestado (o
+ * tenían caché). El llamante cae al registry hardcodeado
+ * (`constants/events.ts`) vía `mergeEventMeta` para los que falten.
+ *
+ * B1: se leen TODOS los eventos, no solo el activo. El panel puede archivar,
+ * renombrar o recolorear cualquier evento —incluidos los pasados— y hasta que
+ * esto existió la app solo hacía caso al activo: archivar un evento que no
+ * fuera el en curso no tenía ningún efecto visible.
  */
-export function useEventMeta(eventId: string | null): RemoteEventMeta | null {
-  // Lo cargado se guarda JUNTO al evento al que pertenece, así que al cambiar
-  // de evento (o quedarse sin ninguno) el valor viejo deja de contar solo, sin
-  // un efecto que lo ponga a null a mano. De paso se evita el parpadeo en el
-  // que el hub del evento nuevo mostraba un instante el título del anterior.
-  const [loaded, setLoaded] = useState<{
-    eventId: string;
-    meta: RemoteEventMeta;
-  } | null>(null);
+export function useEventsMeta(
+  eventIds: string[],
+): Record<string, RemoteEventMeta> {
+  const [metas, setMetas] = useState<Record<string, RemoteEventMeta>>({});
+
+  // Los arrays se recrean en cada render; la clave estable evita que el efecto
+  // se dispare en bucle.
+  const idsKey = useMemo(
+    () => Array.from(new Set(eventIds.filter(Boolean))).sort().join(','),
+    [eventIds],
+  );
 
   useEffect(() => {
-    if (!eventId) return;
+    const ids = idsKey ? idsKey.split(',') : [];
+    if (ids.length === 0) return;
     let isMounted = true;
-    const cacheKey = `eventMeta_${eventId}`;
-    const remember = (meta: RemoteEventMeta) => {
-      if (isMounted) setLoaded({ eventId, meta });
+
+    const remember = (eventId: string, meta: RemoteEventMeta) => {
+      if (isMounted) setMetas((prev) => ({ ...prev, [eventId]: meta }));
     };
 
-    async function load() {
+    async function load(eventId: string) {
+      const cacheKey = `eventMeta_${eventId}`;
+
       // 1) Caché local inmediata.
       try {
         const cached = await AsyncStorage.getItem(cacheKey);
         if (cached && cached !== 'undefined') {
-          remember(JSON.parse(cached) as RemoteEventMeta);
+          remember(eventId, JSON.parse(cached) as RemoteEventMeta);
         }
       } catch {
         // Caché corrupta: se ignora y se sigue con el fetch remoto.
@@ -53,7 +64,7 @@ export function useEventMeta(eventId: string | null): RemoteEventMeta | null {
         if (!snap.exists()) return;
         const val = snap.val();
         if (val && typeof val === 'object') {
-          remember(val as RemoteEventMeta);
+          remember(eventId, val as RemoteEventMeta);
           await AsyncStorage.setItem(cacheKey, JSON.stringify(val));
         }
       } catch (e) {
@@ -61,11 +72,21 @@ export function useEventMeta(eventId: string | null): RemoteEventMeta | null {
       }
     }
 
-    load();
+    ids.forEach(load);
     return () => {
       isMounted = false;
     };
-  }, [eventId]);
+  }, [idsKey]);
 
-  return loaded?.eventId === eventId ? loaded.meta : null;
+  return metas;
+}
+
+/**
+ * Versión de un solo evento. Devuelve `null` mientras no hay valor (o si
+ * falla): el llamante cae al registry hardcodeado vía `mergeEventMeta`.
+ */
+export function useEventMeta(eventId: string | null): RemoteEventMeta | null {
+  const ids = useMemo(() => (eventId ? [eventId] : []), [eventId]);
+  const metas = useEventsMeta(ids);
+  return eventId ? (metas[eventId] ?? null) : null;
 }
