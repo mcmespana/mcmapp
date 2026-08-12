@@ -32,7 +32,7 @@
 | **Bloqueado por ti** | Integración D2 (modelo de auth del panel) · Panel Pañuelo (falta plan funcional) |
 | **Bloqueado fuera** | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real |
 | **Después de la build** | Integración D → **Build 2.2 (nov-dic): Widget + App Check** → Carismochito + Panel Pañuelo |
-| **Oportunista** | Calidad Fase 1 (gigantes) |
+| **Oportunista** | Calidad Fase 1 (gigantes), Integraciones resto, Etiquetas del cantoral (§2.C-ter, plan escrito y pendiente de 3 decisiones) |
 | **Cerrado** | Los 8 planes tácticos (archivados en `archivo/tacticos/`), UI Nativa Fase 1, PR #298 |
 
 > **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
@@ -190,6 +190,21 @@ guardan para la siguiente build de tienda.
 > enfoque de esta rama con `expo-native-compact-tabs`, que mantiene el
 > `UITabBarController` nativo y todos los iconos visibles al compactarse. El
 > resto de PRs abiertas son de Bolt/Jules (`bolt-*`, `jules-*`) y se ignoran.
+
+### C-ter. Etiquetas del cantoral (`PLAN_TAGS.md`)
+
+- **Estado:** plan escrito el 2026-08-12, **sin empezar**. Idea del usuario:
+  etiquetas libres y transversales ("viejunas", "domingo de ramos",
+  "infantiles", "animación") que se van añadiendo con el uso.
+- **Trigger:** decisión del usuario. **No entra en la Cola Principal** ni la
+  avanza "seguimos" mientras no se resuelvan las 3 decisiones de §7 del plan
+  (¿etiquetas compartidas o también personales? ¿emoji por etiqueta?
+  ¿etiquetado desde la app en la fase 1?).
+- **Cross-repo:** la fase 1 vive en `mcmapp-cantoral` (directiva `{tags:}` +
+  `tags.json` + generador), que normalmente NO está en el scope de la sesión —
+  hay que pedir al usuario que lo añada (`add_repo`).
+- **OTA-safe:** sí, la parte de app no lleva nada nativo.
+- **Detalle:** `docs/planes/PLAN_TAGS.md`.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
