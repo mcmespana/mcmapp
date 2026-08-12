@@ -205,11 +205,19 @@ const ChoirSheet: React.FC<Props> = ({
     fn?.();
   }, []);
 
+  /**
+   * Paso al que ir después de elegir/crear coro. Si la hoja se abrió para
+   * guardar y no había coro elegido, se pasa por la lista y se VUELVE a
+   * guardar: obligar a empezar otra vez desde el menú era un toque tonto.
+   */
+  const stepAfterChoosing = (): ChoirSheetStep =>
+    initialStep === 'choose' || initialStep === 'create' ? 'home' : initialStep;
+
   const pickChoir = (c: Choir) => {
     h.tap();
     onChooseChoir({ id: c.id, name: c.name });
     setChoir(c);
-    setStep('home');
+    setStep(stepAfterChoosing());
   };
 
   const handleCreate = async () => {
@@ -221,7 +229,7 @@ const ChoirSheet: React.FC<Props> = ({
       onChooseChoir({ id: created.id, name: created.name });
       setChoir(created);
       setLive(null);
-      setStep('home');
+      setStep(stepAfterChoosing());
     } catch (e: any) {
       setError(e?.message ?? 'No se ha podido crear el coro');
     } finally {
@@ -448,14 +456,12 @@ const ChoirSheet: React.FC<Props> = ({
 
         {renderRow(
           'cloud-upload',
-          linkedEntry
-            ? `Guardar en ${choir?.name ?? 'el coro'}`
-            : 'Subir esta playlist',
-          linkedEntry
-            ? `Actualizar «${linkedEntry.name}» o subir una nueva`
-            : songCount > 0
-              ? `${songCount} ${songCount === 1 ? 'canción' : 'canciones'} · queda para todo el coro`
-              : 'Tu selección está vacía',
+          linkedEntry ? `Guardar «${linkedEntry.name}»` : 'Subir mi playlist',
+          songCount === 0
+            ? 'Tu selección está vacía'
+            : linkedEntry
+              ? 'Actualizar la del coro o subir una nueva'
+              : `${songCount} ${songCount === 1 ? 'canción' : 'canciones'} para todo el coro`,
           () => {
             setNewPlaylistName(link?.name || defaultPlaylistName());
             setStep('save');

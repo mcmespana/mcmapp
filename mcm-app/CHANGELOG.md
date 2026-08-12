@@ -18,6 +18,22 @@
 
 ---
 
+## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
+
+- **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
+  las de importar, el hub del coro y el enlace del coro (que no depende de tu
+  selección) — antes ese enlace desaparecía sin motivo. Vaciar, exportar, subir
+  y compartir siguen ocultándose.
+- **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
+  Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
+- **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
+  «cambiar el código» — la clave *es* el coro, así que cambiarla la desataba de
+  él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
+- **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
+  elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
+- Archivos: `app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/ChoirSheet.tsx`.
+
 ## 2026-08-12 19:40 — Rediseño de «Tu selección»: las playlists cuelgan de un coro
 
 - **Concepto nuevo: el coro es la entidad**. Se crea un coro («Coro Consolación

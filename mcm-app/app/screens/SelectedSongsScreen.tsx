@@ -1387,42 +1387,55 @@ const SelectedSongsScreen: React.FC = () => {
               onPress: () => setCodeDialog({ variant: 'choir-join' }),
             },
           ]
-        : [
-            {
-              id: 'show-qr-choir',
-              icon: 'qr-code-2',
-              label: 'Ver QR del coro',
-              description: 'Quien lo escanee se une al coro directamente',
-              onPress: () =>
-                setQrModal({
-                  title: `Coro · Código ${choir.code}`,
-                  url: `${WEB_BASE_URL}/coro?c=${choir.code}`,
-                  code: choir.code ?? '',
-                }),
-            },
-            {
-              id: 'choir-change-code',
-              icon: 'edit',
-              label: 'Cambiar código del coro',
-              description: `Actual: ${choir.code}${choir.mode === 'slave' ? ' (solo el líder puede cambiarlo)' : ''}`,
-              onPress: () =>
-                setCodeDialog({
-                  variant: 'change-code',
-                  initial: choir.code ?? undefined,
-                }),
-              disabled: choir.mode !== 'master',
-            },
-            {
+        : (() => {
+            // La sesión puede colgar de un coro (clave = id del coro) o ser
+            // suelta (clave = 4 dígitos). No es lo mismo: a una sesión de coro
+            // NO se le puede cambiar el código, porque la clave *es* el coro —
+            // hacerlo la desataría de él y nadie del coro la encontraría.
+            const key = choir.code ?? '';
+            const esCoro = isChoirId(key);
+            const nombre = choir.session?.choirName ?? sharing.myChoir?.name;
+            const acciones: PlaylistAction[] = [
+              {
+                id: 'show-qr-choir',
+                icon: 'qr-code-2',
+                label: 'Ver QR de la sesión',
+                description: 'Quien lo escanee entra directamente',
+                onPress: () =>
+                  setQrModal({
+                    title: esCoro
+                      ? `${nombre ?? 'Coro'} · en vivo`
+                      : `Coro · Código ${key}`,
+                    url: esCoro
+                      ? `${WEB_BASE_URL}/coro?coro=${key}`
+                      : `${WEB_BASE_URL}/coro?c=${key}`,
+                    code: esCoro ? undefined : key,
+                  }),
+              },
+            ];
+            if (!esCoro) {
+              acciones.push({
+                id: 'choir-change-code',
+                icon: 'edit',
+                label: 'Cambiar código de la sesión',
+                description: `Actual: ${key}${choir.mode === 'slave' ? ' (solo el líder puede cambiarlo)' : ''}`,
+                onPress: () =>
+                  setCodeDialog({ variant: 'change-code', initial: key }),
+                disabled: choir.mode !== 'master',
+              });
+            }
+            acciones.push({
               id: 'choir-leave',
               icon: 'logout',
               label:
                 choir.mode === 'master'
-                  ? 'Cerrar sesión de coro'
-                  : 'Salir del coro',
+                  ? 'Cerrar la sesión en vivo'
+                  : 'Salir del coro en vivo',
               variant: 'danger',
               onPress: () => choir.leave(),
-            },
-          ];
+            });
+            return acciones;
+          })();
 
     // Vaciar ya no pasa por un diálogo de confirmación: se vacía y el toast
     // deja 10 s para deshacerlo. Empezar una lista de cero es de las cosas que
@@ -1440,26 +1453,33 @@ const SelectedSongsScreen: React.FC = () => {
 
     // Sin canciones no se puede compartir, exportar, subir ni vaciar NADA: esas
     // opciones se quitan en vez de dejarse muertas (una lista llena de cosas
-    // que no hacen nada es peor que una lista corta). Se quedan las de IMPORTAR
-    // —que son justo las que tienen sentido con la playlist vacía— y el modo
-    // coro, donde las canciones las pone el maestro después.
+    // que no hacen nada es peor que una lista corta). Se quedan las que SÍ
+    // funcionan con la lista vacía: importar, el hub del coro, compartir el
+    // enlace del coro (que no depende de tu selección) y el modo coro en vivo,
+    // donde las canciones las pone el líder después.
+    const VIVAS_SIN_CANCIONES = new Set([
+      'download-cloud',
+      'choir-hub',
+      'share-choir-link',
+    ]);
     const soloImportar = <T extends PlaylistAction>(as: T[]) =>
       as.filter(
-        (a) =>
-          a.id.startsWith('import') ||
-          a.id === 'download-cloud' ||
-          a.id === 'choir-hub',
+        (a) => a.id.startsWith('import') || VIVAS_SIN_CANCIONES.has(a.id),
       );
 
+    // Orden por frecuencia de uso real: traer/guardar la del coro es lo que se
+    // hace cada semana; exportar el mensaje de WhatsApp o el PDF, casi igual de
+    // a menudo; el coro en vivo, los domingos; y los códigos, los QR y los
+    // archivos son la trastienda para casos raros.
     return [
       { title: 'Mi coro', actions: coroPlaylists },
       { title: 'Exportar y compartir', actions: hasSongs ? exportar : [] },
       { title: 'Coro en vivo', actions: coro },
-      { title: 'Archivo', actions: hasSongs ? archivo : soloImportar(archivo) },
       {
         title: 'Códigos y QR',
         actions: hasSongs ? nube : soloImportar(nube),
       },
+      { title: 'Archivo', actions: hasSongs ? archivo : soloImportar(archivo) },
       { actions: hasSongs ? peligro : [] },
     ];
   }, [
