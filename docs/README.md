@@ -47,6 +47,7 @@ Si cambias uno de estos formatos, actualiza el contrato.
 | [PLAN_CARISMOCHITO.md](planes/PLAN_CARISMOCHITO.md) | Modo Carismochito: onboarding, colección, comportamiento |
 | [PLAN_WIDGET_CONTIGO.md](planes/PLAN_WIDGET_CONTIGO.md) | Widget nativo de hábitos diarios de Contigo |
 | [PLAN_PANEL_PANUELO.md](planes/PLAN_PANEL_PANUELO.md) | Concepto nuevo (sin plan funcional aún): colección de chapas en un pañuelo 3D |
+| [PLAN_TAGS.md](planes/PLAN_TAGS.md) | Etiquetas libres y transversales del cantoral: directiva `{tags:}`, catálogo opcional y flujo de búsqueda/descubrimiento |
 | [`planes/archivo/tacticos/`](planes/archivo/tacticos/README.md) | Planes tácticos 001–008 — **todos cerrados**, archivados |
 | [archivo/MEJORAS.md](planes/archivo/MEJORAS.md) | 🗄️ Archivado — análisis técnico de mayo 2026, superseded por lo de arriba |
 
