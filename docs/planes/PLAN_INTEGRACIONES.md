@@ -224,8 +224,10 @@ Resumen para retomar. ✅ hecho · ⏳ pendiente.
 - ✅ C3 · documentar `appReviewMode` en el contrato + tipar opcionales · [app] —
   `PANEL_PERFILES.md` §1.6
 - ✅ C4 · validaciones del §5 (override, semver, slug, tabs sin `index`) ·
-  [panel] — separadas en "problemas" (la app lo ignora en silencio) y "avisos".
-  No bloquean el guardado porque esta sección no tiene botón de guardar
+  [panel] — separadas en "problemas" (bloquean el guardado: son configuración
+  que la app ignoraría en silencio) y "avisos" (solo informan). Lógica pura en
+  `src/lib/profileConfigValidation.ts`, compartida por el resumen y la puerta de
+  guardado
 
 **Integración D — Seguridad Firebase** (todo pendiente · prioridad MÁXIMA)
 - ⏳ D1 · credencial de servidor en `api/_lib/push.ts` (`?auth=`) · [panel]

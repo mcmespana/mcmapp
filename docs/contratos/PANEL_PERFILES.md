@@ -455,18 +455,27 @@ sin querer.
 | Check                                                                                                            | Severidad | Acción                                                                                            |
 | ---------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------- |
 | `tabs` no contiene `index`                                                                                       | warning   | ✅ Avisa. Permite guardar.                                                                        |
-| `tabs` está vacío                                                                                                | warning   | ✅ Avisa. (No bloquea: ver nota abajo.)                                                           |
+| `tabs` está vacío                                                                                                | warning   | ✅ Avisa. Permite guardar.                                                                        |
 | `defaultCalendars` referencia un ID que ya no está en `/calendars`                                                | warning   | ✅ Avisa.                                                                                         |
-| `notificationTopic` con caracteres raros (espacios, mayúsculas)                                                   | error     | ✅ El editor auto-slugifica al guardar; si llega sucio por JSON importado, lo marca como problema. |
-| `overrides[k]` con clave malformada (no `perfil:delegacion`, perfil o delegación inexistentes)                     | error     | ✅ Lo marca como problema: la app lo ignoraría en silencio.                                       |
-| `minAppVersion` no es semver válido                                                                                | error     | ✅ Lo marca. La app es *fail-open*: un valor inválido no bloquea a nadie (ver nota).              |
+| `notificationTopic` con caracteres raros (espacios, mayúsculas)                                                   | error     | ✅ **Bloquea.** El editor auto-slugifica al guardar; si llega sucio por JSON importado, para el guardado. |
+| `overrides[k]` con clave malformada (no `perfil:delegacion`, perfil o delegación inexistentes)                     | error     | ✅ **Bloquea.**                                                                                   |
+| `minAppVersion` no es semver válido                                                                                | error     | ✅ **Bloquea.**                                                                                   |
 | Cambios en `/profileConfig` sin actualizar `updatedAt`                                                            | error     | ✅ El panel fuerza `updatedAt` en cada guardado.                                                  |
 
-> **Por qué "avisa" y no "bloquea"** (C4, 2026-08-12): la sección de Perfiles del
-> panel no tiene botón de guardar — cada edición se encola y se escribe sola. No
-> hay un punto donde bloquear, así que los checks se muestran en dos cajas: los
-> **problemas** (rojo: configuración que la app va a ignorar en silencio) y los
-> **avisos** (ámbar: sospechoso pero puede ser intencionado).
+> **Cómo bloquea** (C4, 2026-08-12). La sección de Perfiles no tiene botón de
+> guardar: cada edición se encola y se escribe sola. El bloqueo se hace en
+> `handleChange` — si `validateProfileConfig()` devuelve errores, el cambio se
+> queda en el borrador local y **no llega a Firebase**. Los editores siguen
+> funcionando (escriben sobre el borrador), así que el admin puede arreglar el
+> problema; en cuanto la validación queda limpia, esa edición persiste el
+> borrador entero, incluido lo que se bloqueó por el camino. Mientras esté en
+> pausa, el aviso rojo dice explícitamente que no se está guardando, y el
+> refresco en tiempo real deja de pisar el borrador para no llevarse los
+> cambios a medio arreglar.
+>
+> La validación vive en `mcmpanel/src/lib/profileConfigValidation.ts`, aparte de
+> la UI y sin React, porque la usan dos sitios que no pueden discrepar: lo que
+> se pinta y lo que se bloquea.
 >
 > **Matiz de `minAppVersion`**: `isAppVersionSupported()` es deliberadamente
 > *fail-open* — un semver corrupto se parsea como `0.0.0` y NO deja a nadie
