@@ -21,6 +21,7 @@ import ContextMenuSheet from '@/components/ContextMenuSheet';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
+import EmptyState from '@/components/ui/EmptyState';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
@@ -291,12 +292,11 @@ export default function ContactosScreen() {
           renderItem={renderItem}
           ListEmptyComponent={
             query.trim().length >= 2 ? (
-              <View style={styles.emptyContainer}>
-                <MaterialIcons name="search-off" size={40} color="#999" />
-                <Text style={styles.emptyText}>
-                  No hay contactos que coincidan con &quot;{query}&quot;.
-                </Text>
-              </View>
+              <EmptyState
+                icon="search-off"
+                title="Sin coincidencias"
+                subtitle={`No hay contactos que coincidan con "${query}".`}
+              />
             ) : null
           }
           contentContainerStyle={styles.content}
@@ -446,16 +446,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       height: StyleSheet.hairlineWidth,
       backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)',
       marginLeft: 70,
-    },
-    emptyContainer: {
-      padding: 32,
-      alignItems: 'center',
-      gap: 8,
-    },
-    emptyText: {
-      fontSize: 15,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
-      textAlign: 'center',
     },
   });
 };

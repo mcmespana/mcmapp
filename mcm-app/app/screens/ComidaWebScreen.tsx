@@ -4,7 +4,11 @@ import { WebView } from 'react-native-webview';
 import { Spinner, Button, PressableFeedback } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import {
+  useRoute,
+  useNavigation,
+  RouteProp,
+} from 'expo-router/react-navigation';
 import { MasStackParamList } from '../(tabs)/mas';
 import spacing from '@/constants/spacing';
 import { Colors as ThemeColors } from '@/constants/colors';
@@ -158,7 +162,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       overflow: 'hidden',
     } as any,
     loadingContainer: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor:

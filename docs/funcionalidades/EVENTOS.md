@@ -36,6 +36,52 @@ activities/
     └── …
 ```
 
+### 3. Evento activo global — `activities/_meta`
+
+La app decide qué evento está "destacado" (tab propia + botón Home + banner)
+leyendo este nodo (`contexts/ActiveEventContext.tsx`), con fallback al
+`ACTIVE_EVENT_ID` hardcodeado en `constants/events.ts`:
+
+```
+activities/_meta
+├── updatedAt: "2026-07-06T..."          (ISO — invalida la caché)
+└── data
+    └── activeEventId: "visitapapa26"    (id del registry de events.ts)
+```
+
+> ⚠️ La forma es `{ updatedAt, data: {...} }` (patrón `useFirebaseData`), NO
+> campos en plano. El panel MCM escribe este nodo desde Actividades → "Modo
+> evento global".
+
+**Metadatos por evento** (`activities/<evento>/_meta` con `status`, `title`,
+`tintColor`, `bannerText`): desde 2026-07-07 (B1 del PLAN_INTEGRACIONES) la app
+**sí los lee para el evento activo** y los mergea sobre el registry
+(`utils/mergeEventMeta.ts` + `hooks/useEventMeta.ts`, aplicado en
+`ActiveEventContext`). Así el panel puede cambiar título/color/banner del evento
+activo, o archivarlo, sin publicar la app. ⚠️ Nota de forma: este nodo `_meta`
+per-evento es **plano** (`{ status, title, tintColor, bannerText, updatedAt }`),
+NO `{ updatedAt, data }` como el `activities/_meta` global. **Pendiente**: los
+eventos NO activos siguen tomando `status` del registry (la lista "Eventos
+pasados" no refleja aún un `archived` puesto desde el panel a un evento no
+activo). Ver `docs/planes/PLAN_INTEGRACIONES.md`, Integración B.
+
+**Qué hace `status: 'archived'` en la app** (desde 2026-07-29): archivar el
+evento activo lo saca de todos los sitios donde estaba destacado y lo deja sólo
+en "Más > Eventos pasados":
+
+| Sitio                            | Quién lo filtra                               |
+| -------------------------------- | --------------------------------------------- |
+| Tab propia (`tabId`)             | `hooks/useVisibleTabs.ts` → `(tabs)/_layout`  |
+| Tarjeta de overflow en iOS       | `useVisibleTabs` → `MasHomeScreen`            |
+| Botón del grid de la Home        | `app/(tabs)/index.tsx` (`quickItems`)         |
+| Banner "modo evento" de la Home  | `app/(tabs)/index.tsx` (`showEventBanner`)    |
+| Lista "Eventos pasados"          | `EventosPasadosScreen` (lo AÑADE)             |
+
+Ojo: el `status` es lo único que decide si un evento se destaca. `tabId` puede
+seguir en la lista `tabs` del perfil (`/profileConfig`) sin que el tab aparezca,
+y `ACTIVE_EVENT_ID` puede apuntar a un evento archivado (sigue siendo el evento
+por defecto para routing/caché, simplemente no se destaca).
+
 ### Forma de cada sección
 
 Cada sección (nodo hijo del evento) tiene siempre:

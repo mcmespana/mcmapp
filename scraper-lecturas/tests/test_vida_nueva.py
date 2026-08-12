@@ -110,7 +110,8 @@ def test_evangelio_payload_keys(scraper, html_content):
     data = scraper.fetch()[0]
     payload = scraper.to_evangelio_payload(data)
 
-    assert payload["activo"] == "vidaNueva"
+    assert payload["activoTexto"] == "vidaNueva"
+    assert payload["activoComentario"] == "vidaNueva"
     assert "vidaNuevaCita" in payload
     assert "vidaNuevaComentario" in payload
     assert "vidaNuevaComentarista" in payload

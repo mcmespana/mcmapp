@@ -48,12 +48,20 @@ GoogleService-Info.plist
 firebase.json
 
 # prebuilds (CNG/Prebuild generated folders)
+#
+# OJO: SOLO con barra inicial (el mismo agujero que tuvo `.gitignore`, ver el
+# comentario allí). Sin ancla, `ios/` y `android/` casan con CUALQUIER carpeta
+# con ese nombre a cualquier profundidad, así que se llevaban por delante el
+# código nativo de `modules/highlight-menu/{ios,android}`: el módulo subía a EAS
+# con su `expo-module.config.json` y su JS pero SIN Swift, sin Kotlin, sin
+# podspec ni build.gradle. Autolinking lo saltaba en silencio y la app se
+# construía sin el ítem "Subrayar" del menú del sistema.
+#
+# `.easignore`, cuando existe, SUSTITUYE a `.gitignore` para decidir qué sube a
+# EAS: arreglarlo allí no arregla esto. Estas dos carpetas solo existen en la
+# raíz de `mcm-app/`, así que con la barra inicial basta.
 /android/
 /ios/
-android/
-ios/
-android/**
-ios/**
 
 # builds
 *.apk

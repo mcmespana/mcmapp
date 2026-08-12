@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { Platform } from 'react-native';
-import { getDatabase, get, ref, set } from 'firebase/database';
+import { getDatabase, get, ref } from 'firebase/database';
 
 import EvaluationWizard, {
   EvaluationAnswers,
@@ -15,6 +15,7 @@ import {
 } from '@/constants/evaluation';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { getFirebaseApp } from '@/utils/firebaseApp';
+import { setWithRetry } from '@/services/firebaseWrites';
 import { getDeviceId } from '@/services/pushNotificationService';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
@@ -50,11 +51,16 @@ export default function EvaluacionScreen() {
   );
   const config = mergeEvaluationConfig(DEFAULT_EVENT_EVALUATION, remoteConfig);
 
+  // El uid se saca a una variable ANTES de los callbacks a propósito: si se
+  // usa `user?.uid` dentro, el React Compiler infiere `user` entero como
+  // dependencia, no coincide con la lista declarada y se salta el componente
+  // entero (regla `preserve-manual-memoization`).
+  const uid = user?.uid;
+
   const handleSubmit = useCallback(
     async (answers: EvaluationAnswers) => {
       const deviceId = await getDeviceId();
-      const db = getDatabase(getFirebaseApp());
-      await set(ref(db, `${path}/respuestas/${deviceId}`), {
+      await setWithRetry(`${path}/respuestas/${deviceId}`, {
         answers,
         deviceId,
         timestamp: Date.now(),
@@ -62,20 +68,20 @@ export default function EvaluacionScreen() {
         platform: Platform.OS,
         eventId: event.id,
         ...buildIdentityFields({
-          authUid: user?.uid,
+          authUid: uid,
           name: profile.name,
           profileType: profile.profileType,
           delegationLabel: resolved.delegationLabel,
         }),
       });
-      await set(ref(db, `${path}/updatedAt`), Date.now().toString());
-      if (user?.uid) await markUserAnswered(user.uid, scope);
+      await setWithRetry(`${path}/updatedAt`, Date.now().toString());
+      if (uid) await markUserAnswered(uid, scope);
     },
     [
       path,
       event.id,
       scope,
-      user?.uid,
+      uid,
       profile.name,
       profile.profileType,
       resolved.delegationLabel,
@@ -84,7 +90,7 @@ export default function EvaluacionScreen() {
 
   const checkSubmitted = useCallback(async () => {
     try {
-      if (user?.uid && (await hasUserAnswered(user.uid, scope))) return true;
+      if (uid && (await hasUserAnswered(uid, scope))) return true;
       const deviceId = await getDeviceId();
       const db = getDatabase(getFirebaseApp());
       const snap = await get(ref(db, `${path}/respuestas/${deviceId}`));
@@ -92,7 +98,7 @@ export default function EvaluacionScreen() {
     } catch {
       return false;
     }
-  }, [path, scope, user?.uid]);
+  }, [path, scope, uid]);
 
   return (
     <EvaluationWizard

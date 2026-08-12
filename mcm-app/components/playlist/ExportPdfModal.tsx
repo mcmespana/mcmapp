@@ -18,19 +18,19 @@
  * (pista clara sobre tarjeta blanca / estilos Tailwind sin resolver).
  */
 import { radii } from '@/constants/uiStyles';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Modal,
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   Platform,
   ActivityIndicator,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 
@@ -136,13 +136,19 @@ const ExportPdfModal: React.FC<Props> = ({
   const [lyricsFontPt, setLyricsFontPt] = useState(13);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  // Al ABRIR se recupera el nombre de la playlist y se refresca la fecha de
+  // impresión. Se ajusta durante el render (el patrón que documenta React para
+  // "cambiar estado cuando cambia una prop"), no con un efecto: así el diálogo
+  // no llega a pintarse con el nombre de la exportación anterior.
+  const [lastOpen, setLastOpen] = useState({ visible, initialName });
+  if (lastOpen.visible !== visible || lastOpen.initialName !== initialName) {
+    setLastOpen({ visible, initialName });
     if (visible) {
       setName(initialName);
       setPrintedDate(todayPrintedDate());
       setSubmitting(false);
     }
-  }, [visible, initialName]);
+  }
 
   const handleSubmit = async () => {
     if (!name.trim() || submitting) return;
@@ -185,25 +191,27 @@ const ExportPdfModal: React.FC<Props> = ({
               </Text>
 
               <Text style={styles.label}>Título del PDF</Text>
-              <TextInput
+              <AppTextField
                 value={name}
                 onChangeText={setName}
                 placeholder="Mi playlist"
-                placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
                 style={styles.input}
                 selectTextOnFocus
                 returnKeyType="done"
+                accentColor={isDark ? '#FF8A80' : '#C62828'}
+                accentWhenFilled
               />
 
               <Text style={styles.label}>Fecha en la portada</Text>
-              <TextInput
+              <AppTextField
                 value={printedDate}
                 onChangeText={setPrintedDate}
                 placeholder="Déjalo vacío para no imprimir fecha"
-                placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
                 style={styles.input}
                 selectTextOnFocus
                 returnKeyType="done"
+                accentColor={isDark ? '#FF8A80' : '#C62828'}
+                accentWhenFilled
               />
 
               <View style={styles.row}>
@@ -348,14 +356,6 @@ const createStyles = (isDark: boolean) =>
       marginTop: 4,
     },
     input: {
-      borderWidth: 1,
-      borderColor: isDark ? '#3A3A3C' : '#D1D1D6',
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-      fontSize: 15,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
       marginBottom: 14,
     },
     row: {

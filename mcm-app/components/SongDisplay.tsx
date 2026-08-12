@@ -193,7 +193,14 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
     >
       <WebView
         ref={webViewRef}
-        originWhitelist={['*']}
+        // El HTML se carga inline (`source={{html}}`) → resuelve como
+        // about:blank; no hay navegación legítima dentro de la canción
+        // (sin <a>/window.location). `/songs/data` es escribible
+        // públicamente, así que el contenido es no confiable: no ampliar
+        // este whitelist ni quitar el guard de abajo sin repasar
+        // docs/SEGURIDAD.md §3.1.
+        originWhitelist={['about:blank']}
+        onShouldStartLoadWithRequest={(req) => req.url === 'about:blank'}
         source={{ html: songHtml }}
         style={[
           styles.webView,

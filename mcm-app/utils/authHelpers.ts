@@ -2,6 +2,7 @@ import { logger } from '@/utils/logger';
 import { getDatabase, ref, update, get, set, remove } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import type { DayRecord } from '@/hooks/useContigoHabits';
+import type { StoredBookmark } from '@/utils/contigoBookmarks';
 
 function db() {
   return getDatabase(getFirebaseApp());
@@ -9,7 +10,7 @@ function db() {
 
 /** RTDB rechaza valores `undefined`. Elimina recursivamente las claves cuyo
  *  valor sea `undefined` antes de escribir. */
-function stripUndefined<T>(value: T): T {
+export function stripUndefined<T>(value: T): T {
   if (Array.isArray(value)) {
     return value.map((v) => stripUndefined(v)) as unknown as T;
   }
@@ -104,16 +105,40 @@ export async function syncContigoHabit(
   }
 }
 
-/** Sincroniza los metadatos de un bookmark de evangelio con RTDB. Solo guarda
- *  la cita y la fecha, NO el texto completo del evangelio. */
+/** Descarga todos los hábitos diarios de CONTIGO del usuario desde RTDB. Se
+ *  usa para hidratar el almacenamiento local tras iniciar sesión o cambiar
+ *  de dispositivo (antes solo subían, nunca se leían de vuelta). */
+export async function fetchContigoHabits(
+  uid: string,
+): Promise<Record<string, DayRecord>> {
+  try {
+    const habitsRef = ref(db(), `users/${uid}/contigo/habits`);
+    const snap = await get(habitsRef);
+    if (!snap.exists()) return {};
+    const val = snap.val() as Record<string, DayRecord>;
+    const out: Record<string, DayRecord> = {};
+    for (const [date, record] of Object.entries(val)) {
+      if (record && typeof record === 'object') out[date] = record;
+    }
+    return out;
+  } catch (err) {
+    logger.error('[authHelpers] fetchContigoHabits:', err);
+    return {};
+  }
+}
+
+/** Sincroniza un bookmark de evangelio con RTDB.
+ *
+ *  A diferencia del nodo global `seccion_oracion/lecturas/*` (que un Job limpia
+ *  pasados 30 días), este bookmark guarda el TEXTO COMPLETO de las lecturas bajo
+ *  el subárbol del propio usuario. El crecimiento es acotado (solo los días que
+ *  el usuario guarda, y por usuario), así que se conserva para siempre sin
+ *  hinchar la base común: el bookmark sobrevive al borrado a 30 días y se puede
+ *  restaurar en otro dispositivo. Pasa `null` para eliminarlo. */
 export async function syncContigoBookmark(
   uid: string,
   date: string,
-  bookmark: {
-    bookmarkedAt: number;
-    cita: string;
-    diaLiturgico?: string;
-  } | null,
+  bookmark: StoredBookmark | null,
 ): Promise<void> {
   try {
     const bookmarkRef = ref(db(), `users/${uid}/contigo/bookmarks/${date}`);
@@ -124,6 +149,27 @@ export async function syncContigoBookmark(
     }
   } catch (err) {
     logger.error('[authHelpers] syncContigoBookmark:', err);
+  }
+}
+
+/** Descarga todos los bookmarks de CONTIGO del usuario desde RTDB (con texto
+ *  completo). Se usa para hidratar el almacenamiento local tras iniciar sesión
+ *  o cambiar de dispositivo, de forma que los guardados no se pierdan aunque el
+ *  nodo global de lecturas ya se haya limpiado. */
+export async function fetchContigoBookmarks(
+  uid: string,
+): Promise<StoredBookmark[]> {
+  try {
+    const bookmarksRef = ref(db(), `users/${uid}/contigo/bookmarks`);
+    const snap = await get(bookmarksRef);
+    if (!snap.exists()) return [];
+    const val = snap.val() as Record<string, StoredBookmark>;
+    return Object.values(val).filter(
+      (b): b is StoredBookmark => !!b && typeof b === 'object' && !!b.date,
+    );
+  } catch (err) {
+    logger.error('[authHelpers] fetchContigoBookmarks:', err);
+    return [];
   }
 }
 
@@ -141,5 +187,35 @@ export async function syncContigoRevision(
     await set(revisionRef, stripUndefined(data));
   } catch (err) {
     logger.error('[authHelpers] syncContigoRevision:', err);
+  }
+}
+
+export interface StoredContigoRevision {
+  date: string;
+  type: string;
+  grateful: { mode: string; items: string[]; revision: string };
+}
+
+/** Descarga todas las revisiones diarias de CONTIGO del usuario desde RTDB.
+ *  Se usa para hidratar el texto guardado localmente tras iniciar sesión o
+ *  cambiar de dispositivo. */
+export async function fetchContigoRevisions(
+  uid: string,
+): Promise<Record<string, StoredContigoRevision>> {
+  try {
+    const revisionsRef = ref(db(), `users/${uid}/contigo/revisions`);
+    const snap = await get(revisionsRef);
+    if (!snap.exists()) return {};
+    const val = snap.val() as Record<string, StoredContigoRevision>;
+    const out: Record<string, StoredContigoRevision> = {};
+    for (const [date, record] of Object.entries(val)) {
+      if (record && typeof record === 'object' && record.grateful) {
+        out[date] = record;
+      }
+    }
+    return out;
+  } catch (err) {
+    logger.error('[authHelpers] fetchContigoRevisions:', err);
+    return {};
   }
 }

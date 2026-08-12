@@ -10,21 +10,29 @@ import {
 } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from 'expo-router/react-navigation';
+import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
-import { getArchivedEvents } from '@/constants/events';
+import { isEventArchived } from '@/constants/events';
+import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { MasStackParamList } from '../(tabs)/mas';
 
 /**
- * "Eventos pasados": lista los eventos archivados (`status: 'archived'` en
- * `constants/events.ts`) como tarjetas que abren su hub. Hoy muestra Jubileo;
- * cuando un evento activo se archive aparecerá aquí automáticamente.
+ * "Eventos pasados": lista los eventos archivados como tarjetas que abren su
+ * hub. Son archivados los que tienen `status: 'archived'` una vez aplicado el
+ * `_meta` del panel (`activities/<id>/_meta.status`) sobre el registry.
+ *
+ * B1: antes esta lista salía de `getArchivedEvents()`, que lee SOLO
+ * `constants/events.ts`. Resultado: archivar o desarchivar desde el panel
+ * cualquier evento que no fuera el activo no hacía absolutamente nada, y el
+ * título/color de los pasados ignoraba lo que dijera el panel. Ahora la lista
+ * se construye de los eventos ya mergeados que publica `ActiveEventContext`.
  */
 export default function EventosPasadosScreen() {
   const navigation =
@@ -33,7 +41,13 @@ export default function EventosPasadosScreen() {
   const isDark = scheme === 'dark';
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
 
-  const events = React.useMemo(() => getArchivedEvents(), []);
+  const { events: allEvents } = useActiveMeta();
+  // Ya vienen con el `_meta` del panel aplicado (incluido el evento en curso,
+  // que puede estar archivado sólo en remoto), así que basta con filtrar.
+  const events = React.useMemo(
+    () => allEvents.filter(isEventArchived),
+    [allEvents],
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -50,7 +64,7 @@ export default function EventosPasadosScreen() {
         showsVerticalScrollIndicator={false}
       >
         {events.length === 0 ? (
-          <Text style={styles.empty}>Todavía no hay eventos pasados.</Text>
+          <EmptyState icon="history" title="Todavía no hay eventos pasados" />
         ) : (
           events.map((event) => (
             <PressableFeedback
@@ -126,7 +140,6 @@ export default function EventosPasadosScreen() {
 interface Styles {
   safeArea: ViewStyle;
   container: ViewStyle;
-  empty: TextStyle;
   card: ViewStyle;
   accentBar: ViewStyle;
   cardBody: ViewStyle;
@@ -143,12 +156,6 @@ const createStyles = (isDark: boolean) =>
     },
     container: {
       flex: 1,
-    },
-    empty: {
-      textAlign: 'center',
-      marginTop: spacing.xl,
-      color: isDark ? '#8E8E93' : '#6B7280',
-      fontSize: 15,
     },
     card: {
       borderRadius: radii.xl,

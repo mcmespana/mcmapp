@@ -45,84 +45,108 @@ export default function OTAUpdatePrompt({
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
 
+  // Con el `Animated` de React Native, NO con Reanimated: este diálogo vive
+  // dentro de un `Modal` y ahí las animaciones de Reanimated no corren (ver el
+  // aviso de `components/BottomSheet.tsx`). Y aquí eso no era un detalle
+  // estético: el fondo nace a opacidad 0, así que sin animación el aviso de
+  // actualización salía INVISIBLE — tapando la pantalla y con sus botones
+  // imposibles de ver.
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.92)).current;
   const rotate = useRef(new Animated.Value(0)).current;
   const sparkle = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (visible) {
-      try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch {
-        // Sin haptics — ignorar.
-      }
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scale, {
-          toValue: 1,
-          tension: 120,
-          friction: 11,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      // Rotación continua suave del icono de update.
-      const rotationLoop = Animated.loop(
-        Animated.timing(rotate, {
-          toValue: 1,
-          duration: 2800,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      );
-      rotationLoop.start();
-
-      // Pulso suave del halo decorativo.
-      const sparkleLoop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(sparkle, {
-            toValue: 1,
-            duration: 1400,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(sparkle, {
-            toValue: 0,
-            duration: 1400,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-      sparkleLoop.start();
-
-      return () => {
-        rotationLoop.stop();
-        sparkleLoop.stop();
-      };
-    } else {
+    if (!visible) {
       opacity.setValue(0);
       scale.setValue(0.92);
+      rotate.setValue(0);
+      sparkle.setValue(0);
+      return;
     }
+
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      // Sin haptics — ignorar.
+    }
+
+    const nativeDriver = Platform.OS !== 'web';
+
+    Animated.timing(opacity, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: nativeDriver,
+    }).start();
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: nativeDriver,
+      tension: 120,
+      friction: 11,
+    }).start();
+
+    // Rotación continua suave del icono de update.
+    const spin = Animated.loop(
+      Animated.timing(rotate, {
+        toValue: 1,
+        duration: 2800,
+        easing: Easing.linear,
+        useNativeDriver: nativeDriver,
+      }),
+    );
+    spin.start();
+
+    // Pulso suave del halo decorativo (ida y vuelta).
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(sparkle, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: nativeDriver,
+        }),
+        Animated.timing(sparkle, {
+          toValue: 0,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: nativeDriver,
+        }),
+      ]),
+    );
+    pulse.start();
+
+    return () => {
+      spin.stop();
+      pulse.stop();
+    };
   }, [visible, opacity, scale, rotate, sparkle]);
 
-  const rotateInterpolate = rotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-  const sparkleScale = sparkle.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.85, 1.08],
-  });
-  const sparkleOpacity = sparkle.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.35, 0.7],
-  });
+  const backdropStyle = { opacity };
+  const cardStyle = { transform: [{ scale }] };
+  const iconStyle = {
+    transform: [
+      {
+        rotate: rotate.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '360deg'],
+        }),
+      },
+    ],
+  };
+  const haloStyle = {
+    opacity: sparkle.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.35, 0.7],
+    }),
+    transform: [
+      {
+        scale: sparkle.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.85, 1.08],
+        }),
+      },
+    ],
+  };
 
   const cardBg = isDark ? '#1F1F22' : '#FFFFFF';
   const subtleText = isDark ? '#B5B7BD' : '#5B6168';
@@ -136,7 +160,7 @@ export default function OTAUpdatePrompt({
       statusBarTranslucent
       onRequestClose={onLater}
     >
-      <Animated.View style={[styles.backdrop, { opacity }]}>
+      <Animated.View style={[styles.backdrop, backdropStyle]}>
         {Platform.OS === 'ios' ? (
           <BlurView
             tint={isDark ? 'dark' : 'systemUltraThinMaterialDark'}
@@ -158,29 +182,12 @@ export default function OTAUpdatePrompt({
           accessibilityLabel="Cerrar diálogo de actualización"
         />
 
-        <Animated.View
-          style={[
-            styles.cardWrap,
-            {
-              transform: [{ scale }],
-            },
-          ]}
-        >
+        <Animated.View style={[styles.cardWrap, cardStyle]}>
           <View style={[styles.card, { backgroundColor: cardBg }]}>
             <View style={styles.hero}>
-              <Animated.View
-                style={[
-                  styles.heroHalo,
-                  {
-                    opacity: sparkleOpacity,
-                    transform: [{ scale: sparkleScale }],
-                  },
-                ]}
-              />
+              <Animated.View style={[styles.heroHalo, haloStyle]} />
               <View style={styles.heroBadge}>
-                <Animated.View
-                  style={{ transform: [{ rotate: rotateInterpolate }] }}
-                >
+                <Animated.View style={iconStyle}>
                   <MaterialIcons name="autorenew" size={36} color="#FFFFFF" />
                 </Animated.View>
               </View>

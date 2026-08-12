@@ -1,6 +1,7 @@
 import { useNavigation } from 'expo-router';
+import { useTabReselect } from '@/components/tabs/tabBarController';
 import { useRef, useEffect } from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -13,6 +14,7 @@ import SelectedSongsScreen from '../screens/SelectedSongsScreen';
 
 import { SettingsProvider } from '../../contexts/SettingsContext';
 import { TabHeaderColors } from '@/constants/colors';
+import TabTintBar from '@/components/ui/TabTintBar';
 import { useChoirSession } from '../../contexts/ChoirSessionContext';
 import { extractSongMedia, type SongMedia } from '@/types/songMedia';
 
@@ -60,53 +62,31 @@ const isWeb = Platform.OS === 'web';
 
 export default function CancioneroTab() {
   const stackNavRef = useRef<any>(null);
-  // Tracks whether we left this tab (blur) so focus knows to pop to root.
-  // We only pop when returning FROM another tab, never on same-tab re-tap.
-  // On iOS, NativeTabs (UITabBarController) handles same-tab press natively;
-  // our JS handler would conflict with that native behavior and freeze the tab.
-  const wasBlurredRef = useRef(false);
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = isWeb ? insets.top : undefined;
   const scheme = useColorScheme();
 
   const navigation = useNavigation();
+
+  // Re-tap del tab activo → volver a la pantalla raíz del stack. Antes esto lo
+  // daba el evento `tabPress` del navegador, pero con la barra del sistema
+  // oculta ya no se dispara: ahora lo emite la barra flotante. Devolver `true`
+  // le dice a la barra que el gesto ya está gestionado y que NO haga además
+  // scroll-arriba.
+  useTabReselect('cancionero', () => {
+    if (stackNavRef.current?.canGoBack()) {
+      stackNavRef.current.popToTop();
+      return true;
+    }
+    return false;
+  });
   const choir = useChoirSession();
 
-  useEffect(() => {
-    const unsubscribeBlur = navigation.addListener('blur' as any, () => {
-      wasBlurredRef.current = true;
-    });
-
-    // Cross-tab return (blur → focus): pop to root from JS.
-    const unsubscribeFocus = navigation.addListener('focus' as any, () => {
-      if (!wasBlurredRef.current) return;
-      wasBlurredRef.current = false;
-      setTimeout(() => {
-        if (stackNavRef.current?.canGoBack()) {
-          stackNavRef.current.popToTop();
-        }
-      }, 0);
-    });
-
-    // Same-tab re-tap: ahora SEGURO porque `disablePopToTop` (en _layout.tsx)
-    // bloquea el popToRootViewController nativo que antes desincronizaba JS
-    // y nativo. Hacemos el pop manualmente desde JS para preservar la UX iOS
-    // de "tap tab activo → vuelve a la raíz".
-    const unsubscribeTabPress = navigation
-      .getParent()
-      ?.addListener('tabPress' as any, () => {
-        if (!(navigation as any).isFocused?.()) return;
-        if (stackNavRef.current?.canGoBack()) {
-          stackNavRef.current.popToTop();
-        }
-      });
-
-    return () => {
-      unsubscribeBlur();
-      unsubscribeFocus();
-      unsubscribeTabPress?.();
-    };
-  }, [navigation]);
+  // Irse a otro tab y volver YA NO reinicia el stack. Antes un `focus` tras un
+  // `blur` hacía `popToTop()`, así que salir un momento a Contigo y volver te
+  // dejaba en la lista de categorías con la canción que estabas mirando
+  // perdida. Volver a la raíz sigue estando a un toque: re-pulsar el tab activo
+  // (`useTabReselect`, justo arriba).
 
   // Modo coro - ESCLAVO: cuando el maestro cambia la canción actual,
   // navegamos automáticamente a SongDetail con los metadatos publicados.
@@ -153,6 +133,8 @@ export default function CancioneroTab() {
 
   return (
     <SettingsProvider>
+      {/* Raya amarilla del cantoral pegada arriba, como la roja de Fotos. */}
+      <TabTintBar color={TabHeaderColors.cancionero} />
       <Stack.Navigator
         initialRouteName="Categories"
         screenOptions={({ navigation }) => {

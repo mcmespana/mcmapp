@@ -57,7 +57,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onPress }) => {
         <View style={activeStyles.imageBackground}>
           <Image
             source={{ uri: album.imageUrl }}
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
             contentFit="cover"
             transition={300}
             onError={(event) =>
@@ -138,7 +138,7 @@ const createStyles = (screenWidth: number) =>
       justifyContent: 'flex-end',
     },
     gradient: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
     },
     textContainer: {
       padding: 16,

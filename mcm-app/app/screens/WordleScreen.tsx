@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from 'expo-router/react-navigation';
 import { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/useColorScheme';

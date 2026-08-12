@@ -6,7 +6,7 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/native-stack';
 import {
   useLayoutEffect,
   useMemo,
@@ -14,6 +14,8 @@ import {
   useCallback,
   useEffect,
 } from 'react';
+import Animated from 'react-native-reanimated';
+import { useTabListScroll } from '@/components/tabs/useTabScroll';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -30,6 +32,7 @@ import {
   consumePendingCloudPlaylistCode,
   consumePendingChoirCode,
   consumePendingOfflinePlaylist,
+  consumePendingChoirImport,
 } from '@/utils/pendingCloudPlaylist';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
@@ -68,6 +71,10 @@ export default function CategoriesScreen({
 }) {
   const scheme = useColorScheme();
   const layout = useResponsiveLayout();
+  // Pantalla raíz del tab Cantoral: colapsa la barra flotante al scrollear y
+  // reserva su hueco al final de la lista.
+  const { listRef, onScroll, contentPaddingBottom } =
+    useTabListScroll<FlatList>('cancionero');
   const styles = useMemo(
     () => createStyles(scheme, layout.isWide, layout.contentMaxWidth),
     [scheme, layout.isWide, layout.contentMaxWidth],
@@ -78,7 +85,10 @@ export default function CategoriesScreen({
     { categoryTitle: string; songs: any[] }
   > | null>('songs', 'songs', filterSongsData);
   const { selectedSongs } = useSelectedSongs();
-  const { sortedCategories, displayCategories } = useMemo(() => {
+  // ⚡ Bolt Optimization:
+  // Split the useMemo to prevent re-sorting and re-mapping all categories
+  // every time `selectedSongs.length` changes (O(N log N) -> O(1) on selection change).
+  const { sortedCategories, baseCategoryItems } = useMemo(() => {
     const actualCategories = songsData ? Object.keys(songsData) : [];
     const sortedCats = actualCategories.sort((a, b) => {
       const titleA = songsData?.[a]?.categoryTitle ?? a;
@@ -86,21 +96,25 @@ export default function CategoriesScreen({
       return titleA.localeCompare(titleB);
     });
 
-    const displayCats = [
+    const mappedCats = sortedCats.map((cat) => ({
+      id: cat,
+      name: songsData?.[cat]?.categoryTitle ?? cat,
+      songCount: songsData?.[cat]?.songs?.length || 0,
+    }));
+
+    return { sortedCategories: sortedCats, baseCategoryItems: mappedCats };
+  }, [songsData]);
+
+  const displayCategories = useMemo(() => {
+    return [
       {
         id: SELECTED_SONGS_CATEGORY_ID,
         name: 'Tu selección',
         songCount: selectedSongs.length,
       },
-      ...sortedCats.map((cat) => ({
-        id: cat,
-        name: songsData?.[cat]?.categoryTitle ?? cat,
-        songCount: songsData?.[cat]?.songs?.length || 0,
-      })),
+      ...baseCategoryItems,
     ];
-
-    return { sortedCategories: sortedCats, displayCategories: displayCats };
-  }, [songsData, selectedSongs.length]);
+  }, [baseCategoryItems, selectedSongs.length]);
 
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
@@ -109,17 +123,20 @@ export default function CategoriesScreen({
     toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
 
-  // Deep link: si llegamos con un código pendiente de la nube
-  // (proveniente de /playlist?p=1234 o /coro?c=1234), saltamos a la pantalla de
-  // seleccionadas con ese código para que dispare el autoimport o auto-join.
+  // Deep link: si llegamos con algo pendiente de la nube (de /playlist?p=1234,
+  // /playlist?coro=<id> o /coro?coro=<id>), saltamos a la pantalla de
+  // seleccionadas con ese parámetro para que dispare el autoimport o auto-join.
   useEffect(() => {
     const pendingPlaylist = consumePendingCloudPlaylistCode();
     const pendingChoir = consumePendingChoirCode();
     const pendingOffline = consumePendingOfflinePlaylist();
+    const pendingChoirImport = consumePendingChoirImport();
 
     if (pendingOffline) {
       // setParams no funciona para una nueva pantalla; usamos navigate.
       navigation.navigate('SelectedSongs', { d: pendingOffline } as any);
+    } else if (pendingChoirImport) {
+      navigation.navigate('SelectedSongs', { coro: pendingChoirImport } as any);
     } else if (pendingPlaylist) {
       navigation.navigate('SelectedSongs', { p: pendingPlaylist } as any);
     } else if (pendingChoir) {
@@ -320,10 +337,16 @@ export default function CategoriesScreen({
   return (
     <View style={styles.container}>
       {/* Old topColorBar removed to clean up inline custom header */}
-      <FlatList
+      <Animated.FlatList
+        ref={listRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         data={gridData}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: contentPaddingBottom },
+        ]}
         contentInsetAdjustmentBehavior="automatic"
         initialNumToRender={10}
         maxToRenderPerBatch={15}
@@ -450,7 +473,6 @@ const createStyles = (
     },
     listContent: {
       paddingHorizontal: isWide ? 24 : 16,
-      paddingBottom: isIOS ? 100 : 80,
       ...(isWide
         ? {
             maxWidth: contentMaxWidth,

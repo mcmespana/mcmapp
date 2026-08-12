@@ -6,14 +6,29 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { radii, shadows } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
+import {
+  HighlightableReading,
+  type ReadingSelection,
+} from '@/components/contigo/HighlightableReading';
+import type { HighlightRange } from '@/utils/highlightRanges';
 
 import useFontScale from '@/hooks/useFontScale';
 
 interface ReadingCardProps {
   title: string;
   cita: string;
+  /** Texto de la lectura. Si es subrayable debe ser el texto CANÓNICO. */
   texto: string;
   defaultExpanded?: boolean;
+  /** Escala de letra a aplicar. Si se omite, usa la global de la app. */
+  scale?: number;
+  /** Habilita subrayado con selección nativa en el cuerpo. */
+  highlightable?: boolean;
+  penMode?: boolean;
+  ranges?: HighlightRange[];
+  onSelectionChange?: (sel: ReadingSelection | null) => void;
+  /** "Subrayar" desde el menú nativo de selección. */
+  onNativeHighlightRequest?: (sel: ReadingSelection) => void;
 }
 
 // Warm amber accent for Contigo section
@@ -25,14 +40,27 @@ export function ReadingCard({
   cita,
   texto,
   defaultExpanded = false,
+  scale,
+  highlightable = false,
+  penMode = false,
+  ranges = [],
+  onSelectionChange,
+  onNativeHighlightRequest,
 }: ReadingCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
   const accent = isDark ? WARM_ACCENT_DARK : WARM_ACCENT_LIGHT;
-  const fontScale = useFontScale();
+  const globalScale = useFontScale();
+  const fontScale = scale ?? globalScale;
 
+  // Entrar en modo subrayar NO abre las tarjetas: si las tenías cerradas, se
+  // quedan cerradas. Abrirlas todas de golpe desplegaba media pantalla de texto
+  // que no habías pedido, y encima costaba encontrar la lectura que sí querías
+  // subrayar. Quien quiera subrayar una lectura la abre y ya.
   const [expanded, setExpanded] = useState(defaultExpanded);
+
+  const isOpen = expanded;
 
   if (!texto) return null;
 
@@ -73,14 +101,14 @@ export function ReadingCard({
                 </View>
               </View>
               <MaterialIcons
-                name={expanded ? 'expand-less' : 'expand-more'}
+                name={isOpen ? 'expand-less' : 'expand-more'}
                 size={22}
                 color={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)'}
               />
             </View>
           </PressableFeedback>
 
-          {expanded && (
+          {isOpen && (
             <View
               style={[
                 styles.body,
@@ -91,20 +119,24 @@ export function ReadingCard({
                 },
               ]}
             >
-              <Text
-                style={[
-                  styles.bodyText,
-                  {
-                    color: theme.text,
-                    fontSize: 16 * fontScale,
-                    lineHeight: 24 * fontScale,
-                    fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
-                  },
-                ]}
-                selectable
-              >
-                {texto}
-              </Text>
+              {/* Siempre el mismo componente de texto: así se copia igual de
+                  bien sea o no subrayable la lectura. */}
+              <HighlightableReading
+                text={texto}
+                ranges={highlightable ? ranges : []}
+                penMode={highlightable && penMode}
+                onNativeHighlightRequest={
+                  highlightable ? onNativeHighlightRequest : undefined
+                }
+                onSelectionChange={
+                  highlightable ? onSelectionChange : undefined
+                }
+                color={theme.text}
+                fontSize={17 * fontScale}
+                lineHeight={26 * fontScale}
+                fontFamily={Platform.OS === 'ios' ? 'Palatino' : 'serif'}
+                isDark={isDark}
+              />
             </View>
           )}
         </View>
@@ -160,10 +192,5 @@ const styles = StyleSheet.create({
     padding: 14,
     paddingTop: 10,
     borderTopWidth: 1,
-  },
-  bodyText: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '400',
   },
 });

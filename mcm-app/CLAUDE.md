@@ -6,7 +6,7 @@
 
 MCM App es la aplicación de MCM España (Misioneros y Misioneras Claretianos). Proporciona cantoral/cancionero con acordes, calendario de eventos, fotos, grupos, reflexiones, materiales, juego Wordle y notificaciones push.
 
-**Stack:** Expo 55 · React Native 0.83 · React 19.2 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
+**Stack:** Expo 57 · React Native 0.86 · React 19.2 · TypeScript · Firebase Realtime Database · **heroui-native** · ChordSheetJS
 
 ## Comandos de desarrollo
 
@@ -18,7 +18,8 @@ npm run android        # App en Android
 npm run ios            # App en iOS
 npm run lint           # ESLint
 npm run format         # Prettier
-npm test               # Jest (10 ficheros en __tests__/)
+npm test               # Jest (suite completa en __tests__/ — 28+ ficheros)
+npm run typecheck:tests # Typecheck incluyendo __tests__ (tsconfig.test.json)
 npx tsc --noEmit       # Verificar tipos TypeScript
 ```
 
@@ -68,11 +69,12 @@ app/
 │   ├── _layout.tsx             # Tabs: plataforma iOS (NativeTabs) vs Android/Web (Tabs)
 │   ├── index.tsx               # Home: grid de botones de navegación
 │   ├── cancionero.tsx          # Cantoral: stack navigator interno (Categories → Songs → Detail → Fullscreen)
+│   ├── contigo/                # Contigo: acompañamiento y oración (rutas anidadas)
+│   ├── comunica.tsx            # Comunica: WebView del portal (envuelve ComunicaScreen)
+│   ├── visitapapa.tsx          # Tab del evento Visita Papa (oculta: evento archivado)
 │   ├── calendario.tsx          # Calendario: eventos ICS
 │   ├── fotos.tsx               # Galería de fotos
 │   └── mas.tsx                 # Más opciones (JubileoHome, Grupos, Materiales, etc.)
-├── (disabled)/
-│   └── comunica.tsx            # Tab desactivada (movida fuera de tabs activos)
 ├── screens/                    # 20 pantallas individuales
 │   ├── CategoriesScreen.tsx    # Lista de categorías del cantoral
 │   ├── SongListScreen.tsx      # Lista de canciones por categoría
@@ -106,7 +108,7 @@ components/                     # ~40 componentes
 │   ├── TopColorBar.ios.tsx       # Barra de color superior (iOS)
 │   ├── IconSymbol.tsx / .ios.tsx  # Iconos por plataforma
 │   └── TabBarBackground.tsx / .ios.tsx
-├── Song*.tsx                   # SongControls, SongDisplay, SongFontBottomSheet, SongListItem, SongSearch
+├── Song*.tsx                   # SongControls, SongDisplay, SongFontBottomSheet, SongListItem
 ├── Toast.tsx                   # Sistema de toasts
 ├── SettingsBottomSheet.tsx     # Bottom sheet de ajustes (Home, Mas, Contigo)
 ├── AppFeedbackModal.tsx        # Modal de feedback/bugs
@@ -136,8 +138,7 @@ hooks/                          # Custom hooks
 ├── useWordleGame.ts           # Lógica del Wordle
 ├── useWordleStats.ts          # Estadísticas Wordle
 ├── useWordleLeaderboard.ts    # Leaderboard Wordle
-├── useWordleWords.ts          # Palabras del Wordle
-└── useUnreadNotificationsCount.ts
+└── useWordleWords.ts          # Palabras del Wordle
 
 constants/
 ├── defaultProfileConfig.ts    # Fallback hardcoded del sistema de perfiles (importa firebase-seed/profileConfig.json)
@@ -175,18 +176,35 @@ RootLayout (Stack)
 ├── (tabs) ← Bottom Tabs
 │   ├── index (Home)           ← Grid de botones
 │   ├── cancionero             ← Stack interno: Categories → SongsList → SongDetail → SongFullscreen
+│   ├── contigo                ← Acompañamiento y oración
+│   ├── comunica               ← WebView del portal de comunicación
 │   ├── calendario             ← Eventos ICS
 │   ├── fotos                  ← Galería
+│   ├── visitapapa             ← Stack del evento (oculto mientras esté archivado)
 │   └── mas                    ← Stack interno: MasHome → Jubileo/Grupos/Materiales/etc.
 ├── wordle                     ← Juego
 └── notifications              ← Lista de notificaciones
 ```
 
-**Tabs implementación dual:**
+**Tabs — tres implementaciones (ver `docs/desarrollo/TABS_MAINTENANCE.md`):**
 
-- **iOS**: `NativeTabs` (expo-router/unstable-native-tabs) para liquid glass
-- **Android/Web**: `Tabs` tradicionales (expo-router)
-- Config centralizada en `TABS_CONFIG` array en `app/(tabs)/_layout.tsx`
+- **iOS y Android**: barra flotante nativa `CompactTabBar`
+  (`expo-native-compact-tabs`), que al compactarse con el scroll mantiene todos
+  los iconos visibles. iOS usa `NativeTabs` de navegador con la barra del
+  sistema oculta; Android usa `Tabs` con `tabBar={() => null}` (así conserva los
+  headers, que salen de las options de cada `Tabs.Screen`)
+- **Web**: `Tabs` tradicionales de expo-router, sin cambios
+- Config centralizada en `TABS_CONFIG` (`constants/tabsCatalog.ts`); el **orden
+  de la barra** lo da ese array, NO la lista `tabs` del perfil
+- Iconos: PNGs en `assets/tab-icons/`, generados con `npm run icons:tabs` y
+  registrados en `constants/tabIcons.ts` (la librería no admite SF Symbols)
+- Qué tabs se ven: `hooks/useVisibleTabs.ts` = `tabs` del perfil resuelto menos
+  el tab del evento en curso si está archivado (`status: 'archived'`)
+- Caben 6 (`MAX_TAB_BAR_ITEMS`): `splitTabsForBar` deja los 5 primeros + "Más" y
+  el resto se ve como tarjetas en `MasHomeScreen`
+- **La barra FLOTA**: no ocupa layout. Cada pantalla de tab engancha su scroller
+  con `components/tabs/useTabScroll.ts`, que da el `onScroll` del colapso y el
+  `paddingBottom` que hay que reservar
 
 ## Sistema de Perfiles (reemplaza a los feature flags)
 
@@ -232,7 +250,7 @@ Edita `/profileConfig/data/*` en Firebase RTDB (desde `mcmpanel` o consola). Los
 
 - Credenciales en `.env.local` (no commiteado), template en `.env.example`
 - Todas las variables con prefijo `EXPO_PUBLIC_`
-- Config en `constants/firebase.ts`, app inicializada en `hooks/firebaseApp.ts`
+- Config en `constants/firebase.ts`, app inicializada en `utils/firebaseApp.ts`
 
 ### Estructura de la base de datos
 
@@ -263,7 +281,12 @@ Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`:
 2. Muestra datos cacheados inmediatamente
 3. Consulta Firebase por `updatedAt`
 4. Si cambió, descarga `data` y actualiza caché
-5. Único punto de escritura: `ReflexionesScreen` (reflexiones)
+5. Escrituras: las de UI pasan por `services/firebaseWrites.ts`
+   (`pushWithRetry`/`setWithRetry`, con reintento) — feedback, reportes de
+   fallos, sugerencias de canción, evaluaciones, encuestas, reflexiones y
+   ediciones del cantoral. Coro, playlists compartidas y push tienen sus
+   propios servicios dedicados (`choirSessionService.ts`,
+   `cloudPlaylistService.ts`, `pushNotificationService.ts`)
 
 ## Colores de marca
 
@@ -286,17 +309,23 @@ danger: '#9D1E74'; // Morado LC
 - **Nombres**: PascalCase componentes, camelCase hooks/utils, kebab-case archivos de assets
 - **Importaciones**: usar `@/` siempre, no rutas relativas largas
 - **Plataforma**: usar `Platform.OS` para diferencias, archivos `.ios.tsx` para componentes iOS-only
+- **Tamaño de archivo**: el techo son **1.000 líneas** (ESLint avisa con `max-lines`); a partir de **1.500** hay que trocear de verdad — extraer subcomponentes a `components/<área>/` y la lógica a un hook `use<Pantalla>.ts` **ANTES** de añadir la feature. Umbrales subidos desde 400/600 el 2026-08-08: con agentes de IA leyendo el código, un archivo largo pero coherente cuesta menos que la misma lógica repartida en seis ficheros que hay que reconstruir mentalmente. Los gigantes que ya hay **se quedan**: no hace falta trocearlos por tamaño.
+- **Logging**: nunca `console.*` (ESLint lo bloquea como error). Usar el logger central `@/utils/logger` (`logger.debug/info/warn/error`).
 
 ## Patrones comunes
 
 ### Añadir nuevo tab
 
-1. Crear archivo en `app/(tabs)/nuevoTab.tsx`
-2. Añadir objeto a `TABS_CONFIG` en `app/(tabs)/_layout.tsx`
+1. Crear archivo en `app/(tabs)/nuevoTab.tsx` — **imprescindible**: sin la ruta,
+   meter el ID en `TABS_CONFIG`/`tabs` no muestra nada (le pasaba a `comunica`)
+2. Añadir objeto a `TABS_CONFIG` en `constants/tabsCatalog.ts`, en la posición
+   que deba ocupar en la barra (ese array define el orden), y generar su icono
+   PNG (`npm run icons:tabs`) registrándolo en `constants/tabIcons.ts`
 3. Añadir el ID a `KNOWN_TABS` en `constants/profileCatalog.ts`
 4. Añadir el ID a `profiles.*.tabs` en `firebase-seed/profileConfig.json` y en `/profileConfig` en Firebase
 5. Definir color en `TabHeaderColors` si aplica (en `constants/colors.ts`)
-6. Usar `TabScreenWrapper` en el componente del tab
+6. Usar `TabScreenWrapper` en el componente del tab y enganchar su scroller con
+   `useTabScroll` / `useTabListScroll` (la barra flota: sin eso tapa el final)
 7. Documentar en CHANGELOG.md
 
 ### Añadir pantalla nueva
@@ -366,8 +395,8 @@ Documentar NO:
 - **Android Package**: `com.mcmespana.mcmapp`
 - **Apple Team ID**: `5P53S6QB23`
 - **EAS Project ID**: `aa9f2d3a-b74a-4169-bad4-e851015e30c6`
-- **App version**: 2.0.0
-- **Runtime version**: 2.0.0
+- **App version**: 2.1.0
+- **Runtime version**: 2.1.0
 
 ## HeroUI Native — UI Library
 

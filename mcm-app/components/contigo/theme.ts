@@ -154,21 +154,20 @@ export function formatDateLong(ds: string): string {
   return `${DAYS_ES[dt.getDay()]}, ${d} de ${MONTHS_ES[m - 1]}`;
 }
 
-export function getWeekDates(todayStr: string): string[] {
-  const [y, m, d] = todayStr.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  const dow = (dt.getDay() + 6) % 7; // Mon = 0
-  const monday = new Date(dt);
-  monday.setDate(dt.getDate() - dow);
-  return Array.from({ length: 7 }, (_, i) => {
-    const dd = new Date(monday);
-    dd.setDate(monday.getDate() + i);
-    return [
-      dd.getFullYear(),
-      String(dd.getMonth() + 1).padStart(2, '0'),
-      String(dd.getDate()).padStart(2, '0'),
-    ].join('-');
-  });
+/**
+ * Últimos `n` días TERMINANDO en `todayStr` (hoy siempre el último).
+ * No se reinicia cada lunes: la racha se lee
+ * como una ventana móvil, que es lo que de verdad refleja el hábito.
+ */
+export function getRollingDays(todayStr: string, n = 7): string[] {
+  return Array.from({ length: n }, (_, i) => offsetDate(todayStr, i - (n - 1)));
+}
+
+/** Inicial del día de la semana (L M X J V S D) de una fecha 'YYYY-MM-DD'. */
+export function weekdayLetter(ds: string): string {
+  const [y, m, d] = ds.split('-').map(Number);
+  const dow = new Date(y, m - 1, d).getDay(); // 0 = domingo
+  return WEEKDAYS[(dow + 6) % 7];
 }
 
 export function buildCalendar(ds: string) {

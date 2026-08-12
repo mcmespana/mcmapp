@@ -33,10 +33,19 @@
    `fotos`. Mandar `evento`/`actividad`/`cantoral`/`jubileo`/`urgente` como
    `categoryId` no aporta botones (se ignora). Conviene **desacoplar** `categoryId`
    (solo iOS action buttons) de `data.category` (etiqueta de negocio).
-5. **Imagen en iOS**: **no hay Notification Service Extension**. `richContent.image`
-   + `mutableContent` NO pintan imagen en la notificación del sistema iOS. La imagen
-   solo se ve dentro de la app (modal de detalle) vía `data.imageUrl`. En Android sí
-   se ve. Mantener `data.imageUrl` siempre.
+5. **`channelId` (Android)**: la app pasa de un channel a **siete**, uno por
+   categoría, para que el usuario pueda silenciar el cantoral sin silenciar los
+   avisos urgentes. El Panel debe mandar `channelId` top-level con el mismo valor
+   que `data.category` (y `default` para `general`). Lista cerrada en §8 — un
+   `channelId` que la app no declare **no se entrega** en Android.
+6. **Imagen en iOS**: ✅ **RESUELTO en la build de tienda de agosto de 2026.** La app
+   ya lleva Notification Service Extension, así que `richContent.image` /
+   `data.imageUrl` **sí** pintan imagen en la notificación del sistema de iOS —
+   pero **solo si el push trae `mutableContent: true`**. Sin ese flag iOS ni
+   siquiera arranca la extensión. Mantener `data.imageUrl` siempre; la extensión
+   busca la URL en `data.imageUrl`, `richContent.image` y `attachment-url`, por ese
+   orden. En versiones anteriores de la app la imagen sigue viéndose solo dentro de
+   la app (el flag no molesta).
 
 ---
 
@@ -102,12 +111,24 @@ stack de **"Más"** (`app/screens/EventHomeScreen.tsx`), al que se llega navegan
 `visitapapa26`). En Firebase los eventos están bajo `activities/<nombre>/` (y el
 legacy `jubileo/`).
 
-### Deep link a UNA actividad concreta
+### Deep link a UNA actividad/evento concreto (`data.eventId`)
 
-**Hoy no hay** un deep link estable tipo `/(tabs)/mas/evento/<id>`. El destino
-navegable es `/(tabs)/mas`. Abrir directamente un evento por `id/slug` requeriría
-trabajo nuevo en la app (registrar una ruta con parámetro y propagar `eventId`).
-Si el Panel lo necesita, lo dejamos como mejora pendiente — ver §"Mejoras".
+**Disponible desde 2026-07-07.** El Panel puede enviar `data.eventId` con el id
+del evento en el registry de la app (`constants/events.ts`), p. ej. `jubileo` o
+`visitapapa26` (el mismo id que el sufijo del topic `event-<id>`). Al tocar la
+notificación, la app abre el **hub de ese evento**:
+
+- Evento con tab propia (p. ej. `visitapapa26` → `visitapapa`) → abre su tab.
+- Evento sin tab propia (p. ej. Jubileo, archivado) → abre "Más".
+- Id no registrado en la app → se ignora y se cae al comportamiento normal
+  (centro de notificaciones o `internalRoute`).
+
+`data.eventId` **tiene prioridad** sobre `internalRoute` cuando resuelve.
+Además, el modal de detalle in-app muestra un botón "Ir a <evento>". El evento
+debe existir en `constants/events.ts` (crear el nodo en `/activities` NO basta,
+ver regla de oro 5 en `mcmpanel/CLAUDE.md`). Implementación app:
+`utils/notificationEventRoute.ts`. En el composer del panel: opción "🎉 Abrir un
+evento…" del selector de acción al tocar.
 
 ## 3. Categorías / botones de acción
 
@@ -206,11 +227,18 @@ Dónde mandarlo:
 
 - **Android**: la imagen de `richContent.image` se muestra en la notificación del
   sistema automáticamente. ✅
-- **iOS**: **NO** hay Notification Service Extension configurada. `mutableContent` +
-  `richContent.image` **no** adjuntan imagen a la notificación del sistema. La imagen
-  solo aparece **dentro de la app** (modal de detalle) leyendo **`data.imageUrl`**. ⚠️
-- **Acción**: enviad siempre `data.imageUrl` (es lo que usa la app). Añadir NSE en
-  iOS es una mejora futura (requiere build nativo, no OTA).
+- **iOS**: ✅ desde la build de tienda de **agosto de 2026** hay Notification Service
+  Extension (`MCMNotificationService`), así que la imagen **sí** se adjunta a la
+  notificación del sistema. **Condición imprescindible: el push tiene que llevar
+  `mutableContent: true`.** Sin ese flag iOS no ejecuta la extensión y la
+  notificación llega sin foto (no falla, simplemente no hay imagen).
+- **Dónde busca la URL la extensión**, por orden: `data.imageUrl` →
+  `richContent.image` → `attachment-url`. Solo `https`. Si la descarga falla o
+  tarda más de ~30 s, la notificación se entrega **sin** imagen: nunca se pierde.
+- **Acción**: enviad siempre `data.imageUrl` (es lo que usa además el modal de
+  detalle dentro de la app) **y** `mutableContent: true` cuando haya imagen.
+- **Versiones antiguas de la app**: `mutableContent` no les molesta — sin extensión
+  el flag simplemente no hace nada.
 
 ## 5. Icono (`data.icon`)
 
@@ -220,12 +248,18 @@ opcional.
 
 ## 6. Categoría de negocio (`data.category`)
 
-Se **guarda** en la notificación local, pero **hoy no dispara** color/icono/filtro/
-agrupación en la UI (es una etiqueta a futuro). No rechaza valores desconocidos.
+Se **guarda** y, desde 2026-07-07, la app pinta un **chip de color con icono** en
+la tarjeta del centro de notificaciones y en el modal de detalle (helper
+`utils/notificationCategory.ts`). No rechaza valores desconocidos.
+
+**Cuándo se ve el chip:** solo para las categorías con significado propio. La
+categoría `general`, la ausente y cualquier valor desconocido **no** pintan chip
+(para no llenar la lista de ruido). Es puramente visual: no filtra ni agrupa
+todavía.
 
 Vocabulario que entiende el tipo de la app (`types/notifications.ts`):
 `general`, `eventos`, `cancionero`, `fotos`, `urgente`, `mantenimiento`,
-`celebraciones`.
+`celebraciones`. De estas, pintan chip todas menos `general`.
 
 > El contrato usaba `evento`/`actividad`/`jubileo`/`cantoral`. Para no divergir,
 > recomendamos converger al vocabulario de arriba (p. ej. `eventos` en vez de
@@ -331,24 +365,97 @@ un evento**.
 > Convención del id de topic: `event-` + `eventId` tal cual (kebab/slug). No
 > añadáis prefijos `activities/`; el id del evento ya es el slug final.
 
+## 7.ter. Filtrado del historial in-app por `audience`
+
+La app pinta el nodo `/notifications` completo en el centro de notificaciones (la
+campana), no solo lo que llegó como push a ESE dispositivo. Para que un aviso
+segmentado ("solo monitores de Madrid") **no** lo vea cualquiera que abra la
+campana, la app filtra cada registro contra el usuario actual usando el objeto
+`audience` que el Panel ya guarda en el registro (`/notifications/<id>.audience`,
+ver `api/_lib/push.ts → dispatchNotification`).
+
+- El match replica exactamente la semántica de envío del Panel
+  (`mcmpanel/src/lib/audience.ts → tokenMatchesAudience`): 4 ejes
+  (`todos`/`perfiles`/`delegaciones`/`eventId`) combinados con `match`
+  (`all` = AND, `any` = OR). El "usuario" es `profileType` + `delegationId` +
+  la unión de `notificationTopics` (perfil/delegación) y los topics
+  `event-<id>` de las suscripciones opt-in — la MISMA metadata que se guarda en
+  `/pushTokens`. Así, un registro visible en la campana es exactamente uno que
+  ese dispositivo habría recibido como push.
+- **Registro sin `audience` (o con `audience: null` / sin ejes activos) → visible
+  para todos.** Esto preserva el histórico anterior a la segmentación.
+- **Qué debe hacer el Panel:** seguir escribiendo `audience` en el registro tal
+  cual hasta ahora. Ningún cambio nuevo. Si algún día se envía sin `audience`,
+  el aviso se considera "para todos" en la campana.
+- Implementación app: `utils/notificationAudience.ts` (lógica pura + tests en
+  `__tests__/notificationAudience.test.ts`), aplicada en
+  `contexts/NotificationsContext.tsx` (lista visible **y** contador del badge).
+
 ## 8. (c) Channels Android
 
-Solo uno, creado en runtime (`usePushNotifications.ts`):
+> **Cambiado en la build de tienda de agosto de 2026.** Antes había un único
+> channel `default` con importancia `MAX`: todo salía igual de agresivo y
+> silenciar el cantoral significaba silenciarlo todo. Ahora hay **siete**.
 
-| `channelId` | Nombre              | Importancia |
-| ----------- | ------------------- | ----------- |
-| `default`   | "Notificaciones MCM" | `MAX` (heads-up) |
+En Android 8+ el "cómo suena" una notificación (heads-up, sonido, vibración) NO
+lo decide el payload: lo decide el **channel**, y el usuario puede silenciar cada
+uno por separado desde los ajustes del sistema.
 
-El Panel puede (a futuro) mandar `channelId`, pero hoy solo existe `default`. Crear
-channels por prioridad/tipo (p. ej. `urgente`) es una mejora futura (ver §Mejoras).
+Los ids de channel son **exactamente los valores de `data.category`** que el
+Panel ya manda, con una única traducción: `general` → `default` (es el channel
+que ya existe en las instalaciones actuales; el id de un channel es inmutable y
+renombrarlo perdería los ajustes del usuario).
+
+| `channelId`     | `data.category` | Nombre en ajustes        | Importancia | Efecto |
+| --------------- | --------------- | ------------------------ | ----------- | ------ |
+| `default`       | `general`       | Avisos generales         | `MAX`       | Heads-up + sonido |
+| `urgente`       | `urgente`       | Urgente                  | `MAX`       | Heads-up + sonido |
+| `eventos`       | `eventos`       | Eventos y calendario     | `HIGH`      | Heads-up + sonido |
+| `celebraciones` | `celebraciones` | Celebraciones            | `HIGH`      | Heads-up + sonido |
+| `cancionero`    | `cancionero`    | Cantoral                 | `DEFAULT`   | Sonido, sin heads-up |
+| `fotos`         | `fotos`         | Fotos                    | `DEFAULT`   | Sonido, sin heads-up |
+| `mantenimiento` | `mantenimiento` | Mantenimiento de la app  | `LOW`       | Silencioso, solo bandeja |
+
+Catálogo en la app: `constants/notificationChannels.ts` (puro, con tests en
+`__tests__/notificationChannels.test.ts`); alta en el sistema en
+`notifications/androidChannels.ts`.
+
+### Qué tiene que hacer el Panel
+
+**Mandar `channelId` top-level en el push, con el mismo valor que `data.category`
+(y `default` cuando la categoría sea `general` o no haya).** Un ejemplo:
+
+```jsonc
+{
+  "to": "ExponentPushToken[...]",
+  "title": "Cambio de horario",
+  "body": "El encuentro empieza a las 18:00",
+  "channelId": "eventos",          // ← NUEVO (Android)
+  "priority": "high",
+  "data": { "id": "...", "category": "eventos" }
+}
+```
+
+Sin `channelId` todo sigue llegando al channel `default` (`MAX`), igual que
+antes: el cambio es retrocompatible, pero entonces el usuario no puede silenciar
+por categoría. **Si el Panel manda un `channelId` que la app no declara, Android
+NO entrega la notificación** — de ahí que la lista de arriba sea cerrada y que
+convenga derivarla de `category` en vez de escribirla a mano.
+
+`channelId` es **solo Android**; iOS lo ignora.
+
+### Canales que ya no existen
+
+Al arrancar, la app borra del sistema cualquier channel que no esté en la tabla.
+Si el Panel usaba alguno inventado, deja de funcionar: usad los siete de arriba.
 
 ## 9. Prioridad
 
 La app **no** lee `priority` para configurar nada por notificación. En Android el
-"heads-up" lo decide la **importancia del channel** (`MAX`), así que **todas** salen
-como heads-up independientemente de `priority`. `priority` (top-level) sí lo usa Expo
-para la **velocidad de entrega** (FCM). Para diferenciar visualmente `high` vs
-`normal` haría falta channels separados (mejora futura).
+"heads-up" lo decide la **importancia del channel**, así que ahora sí se
+diferencia: `default`/`urgente` se asoman, `cancionero`/`fotos` solo suenan y
+`mantenimiento` es silencioso. `priority` (top-level) sí lo usa Expo para la
+**velocidad de entrega** (FCM); mantenedlo.
 
 > Detalle menor: el tipo de la app usaba `high|normal|low`; Expo/top-level usa
 > `default|normal|high`. Mantened `default|normal|high` en el campo top-level.
@@ -364,15 +471,16 @@ para la **velocidad de entrega** (FCM). Para diferenciar visualmente `high` vs
 | `sound`                  | ✅ | Sonido (foreground y SO) |
 | `priority` (top-level)   | 🟡 | Solo entrega (FCM). Display fijo por channel MAX |
 | `categoryId`             | 🟡 | Solo iOS, ids `general`/`eventos`/`fotos`; resto ignorado |
-| `richContent.image`      | 🟡 | Android sí; **iOS no** (sin NSE) |
-| `mutableContent`         | 🟡 | iOS lo ignora en la práctica (sin NSE) |
+| `richContent.image`      | ✅ | Android e iOS (iOS necesita `mutableContent`) |
+| `mutableContent`         | ✅ | **Obligatorio en iOS** para que se vea la imagen |
 | `data.id`                | ✅ | **Crítico**: dedup / marca leído |
 | `data.internalRoute`     | ✅ | Navegación (con normalización + alias) |
+| `data.eventId`           | ✅ | Deep link al hub del evento (prioritario sobre internalRoute) |
 | `data.actionButtons[]`   | ✅ | **Hasta 3** CTA en tarjeta + modal (formato recomendado) |
 | `data.actionButton`      | ✅ | Legacy (un botón) → se trata como array de uno |
 | `data.imageUrl`          | ✅ | Imagen en el modal de detalle in-app |
 | `data.icon`              | ✅ | Miniatura en la tarjeta in-app |
-| `data.category`          | 🟡 | Se guarda; sin efecto visual todavía |
+| `data.category`          | ✅ | Chip de color + icono en tarjeta y modal (salvo `general`) |
 | `data.priority`          | ❌ | No se usa (usad el top-level) |
 
 ✅ procesa · 🟡 parcial/limitado · ❌ ignora
@@ -396,7 +504,7 @@ Todo es **JS puro → compatible con OTA** (sin código nativo, sin `[skip-ota]`
 
 ## Mejoras futuras sugeridas (requieren build nativo o trabajo nuevo)
 
-1. **NSE iOS** para imagen en la notificación del sistema (`richContent.image`). Nativo → `[skip-ota]`.
-2. **Deep link a un evento concreto** (`/(tabs)/mas` + `eventId` por parámetro de ruta).
-3. **Channels Android por tipo/prioridad** (`urgente`, `eventos`) para heads-up/sonido diferenciados.
-4. **Usar `data.category`** para color/icono/agrupación en el centro de notificaciones.
+Ya no queda ninguna de las que había. Hechas desde entonces: deep link a un
+evento concreto (`data.eventId`, §2), chip de color/icono por `data.category` en
+el centro de notificaciones (§6), channels Android por categoría (§8) y la
+Notification Service Extension de iOS para la imagen (§TL;DR punto 6).

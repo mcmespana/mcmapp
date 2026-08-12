@@ -9,12 +9,21 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Appearance, Platform } from 'react-native';
 
 export type ThemeScheme = 'light' | 'dark' | 'system';
 
 interface AppSettings {
   fontScale: number;
   theme: ThemeScheme;
+  /**
+   * Overrides de tamaño de letra por sección (p.ej. 'contigo').
+   * Si una sección NO tiene entrada aquí, hereda del `fontScale` global — así
+   * el usuario nota una transición suave. En cuanto configura un tamaño
+   * específico para la sección, esta pasa a ser independiente del global.
+   * Reutilizable para otras secciones de lectura (materiales de eventos…).
+   */
+  sectionFontScales: Record<string, number>;
 }
 
 interface AppSettingsContextType {
@@ -26,6 +35,7 @@ interface AppSettingsContextType {
 const defaultSettings: AppSettings = {
   fontScale: 1,
   theme: 'system',
+  sectionFontScales: {},
 };
 
 const STORAGE_KEY = '@app_settings';
@@ -60,6 +70,23 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
       logger.error('Failed saving app settings', e);
     });
   }, [settings, loading]);
+
+  // Alinea la apariencia NATIVA con el tema elegido en la app.
+  //
+  // Sin esto, todo lo que pinta el sistema (tab bar nativa de iOS, materiales
+  // glass, fondo por defecto de los WebView, teclado, menús contextuales) sigue
+  // al modo del SISTEMA OPERATIVO y no al selector de la app: con la app en
+  // Oscuro y el móvil en Claro se veía la franja del notch y la barra de
+  // pestañas en claro sobre contenido oscuro — y no cambiaban nunca.
+  //
+  // `'unspecified'` devuelve el control al sistema (opción «Sistema»).
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    if (loading) return; // aún no se sabe el tema guardado
+    Appearance.setColorScheme(
+      settings.theme === 'system' ? 'unspecified' : settings.theme,
+    );
+  }, [settings.theme, loading]);
 
   const update = useCallback((values: Partial<AppSettings>) => {
     setSettingsState((prev) => ({ ...prev, ...values }));

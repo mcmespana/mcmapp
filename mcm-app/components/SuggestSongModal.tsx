@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,14 @@ import {
   StyleSheet,
   Platform,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
 import AppTextField from '@/components/ui/AppTextField';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { radii } from '@/constants/uiStyles';
-import { getDatabase, ref, push, set } from 'firebase/database';
-import { getFirebaseApp } from '@/utils/firebaseApp';
+import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 
@@ -44,15 +42,14 @@ export default function SuggestSongModal({
   const [titulo, setTitulo] = useState('');
   const [artista, setArtista] = useState('');
   const [letra, setLetra] = useState('');
-  const [categoria, setCategoria] = useState('');
+  const [pickedCategoria, setCategoria] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  useEffect(() => {
-    if (!categoria && availableCategories.length > 0) {
-      setCategoria(availableCategories[0]);
-    }
-  }, [availableCategories, categoria]);
+  // Mientras el usuario no elija, vale la primera categoría disponible. Es un
+  // valor por defecto DERIVADO: antes lo sembraba un efecto, que además volvía
+  // a dispararse cada vez que cambiaba la lista de categorías.
+  const categoria = pickedCategoria || (availableCategories[0] ?? '');
 
   const handleSubmit = async () => {
     if (!titulo.trim() || !artista.trim()) {
@@ -63,11 +60,9 @@ export default function SuggestSongModal({
     setIsSubmitting(true);
 
     try {
-      const db = getDatabase(getFirebaseApp());
-      const newRef = push(ref(db, 'songs/solicitudes'));
       const contenido = `{title: ${titulo}}\n{author: ${artista}}\n\n${letra}`;
 
-      await set(newRef, {
+      await pushWithRetry('songs/solicitudes', {
         title: titulo,
         author: artista,
         category: categoria,
@@ -81,7 +76,7 @@ export default function SuggestSongModal({
         userDelegation: resolved.delegationLabel || 'Sin delegación',
       });
 
-      await set(ref(db, 'songs/updatedAt'), Date.now().toString());
+      await setWithRetry('songs/updatedAt', Date.now().toString());
 
       setTitulo('');
       setArtista('');
@@ -242,39 +237,14 @@ export default function SuggestSongModal({
         ) : null}
 
         {/* Botón enviar */}
-        <TouchableOpacity
-          style={[
-            styles.submitBtn,
-            {
-              backgroundColor: canSubmit
-                ? '#007AFF'
-                : isDark
-                  ? '#3A3A3C'
-                  : '#E5E5EA',
-            },
-          ]}
+        <AppPrimaryButton
+          label={isSubmitting ? 'Enviando...' : 'Enviar sugerencia'}
+          icon="send"
           onPress={handleSubmit}
           disabled={!canSubmit}
-          activeOpacity={0.8}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <MaterialIcons
-              name="send"
-              size={18}
-              color={canSubmit ? '#fff' : theme.icon}
-            />
-          )}
-          <Text
-            style={[
-              styles.submitBtnText,
-              { color: canSubmit ? '#fff' : theme.icon },
-            ]}
-          >
-            {isSubmitting ? 'Enviando...' : 'Enviar sugerencia'}
-          </Text>
-        </TouchableOpacity>
+          loading={isSubmitting}
+          style={styles.submitBtn}
+        />
 
         <Text style={[styles.disclaimer, { color: theme.icon }]}>
           Recibiremos tu sugerencia y, con algo de tiempo y suerte, la
@@ -342,18 +312,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 15,
-    borderRadius: radii.md,
     marginTop: 20,
     marginBottom: 16,
-  },
-  submitBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
   },
   disclaimer: {
     fontSize: 12,

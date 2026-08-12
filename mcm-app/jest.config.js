@@ -1,5 +1,13 @@
 module.exports = {
   preset: 'jest-expo',
+  // Reanimated arranca su módulo nativo (react-native-worklets) nada más
+  // importarse, y bajo Jest eso revienta con `Cannot read properties of
+  // undefined (reading 'loadUnpackers')`: no hay TurboModule que instalar.
+  // `react-native-worklets` trae su propio resolver para tests, que hace que se
+  // resuelvan los ficheros NO `.native` de la librería. Sin esto, cualquier
+  // fichero que acabe importando Reanimated —aunque sea de rebote, a través de
+  // un contexto— tumba su suite entera.
+  resolver: './node_modules/react-native-worklets/jest/resolver.js',
   transformIgnorePatterns: [
     'node_modules/(?!(jest-)?react-native|@react-native|expo(nent)?|@expo(nent)?|expo-router|@expo-google-fonts/.*|react-clone-referenced-element|@react-navigation/.*|chordsheetjs)',
   ],

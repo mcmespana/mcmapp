@@ -204,24 +204,60 @@ acciones de evento). Clasificación:
 ## 5. Fase 2 — cola de trabajo (componentes ya creados y por crear)
 
 Ya creados (reutilizar): `GlassActionGroup`, `AppIconButton`, `AppTextField`,
-`EmptyState`, `ScreenHero`.
+`AppPrimaryButton`, `EmptyState`, `ScreenHero`.
 
-- [ ] Migrar los **~13 `TextInput`** restantes a `AppTextField` (hecho:
-      SuggestSongModal). Lote a lote: AppFeedbackModal, ReportBugsModal,
-      SuggestSong (✓), CodeInput, PasswordPrompt, Arrangement, Evaluation,
-      Grupos, Reflexiones, Revisión, SelectedSongs, SecretPanel (admin, último).
-- [ ] **`AppPrimaryButton`** (CTA "Enviar/Guardar/Aceptar") — ~10 modales cada
-      uno con su botón. Crear y migrar.
+> **Pulsación estándar decidida (§4): `PressableFeedback` (heroui).** Los
+> componentes nuevos de Fase 2 la usan; prohibido `TouchableOpacity`/`Pressable`
+> sueltos NUEVOS.
+
+- [~] Migrar los **~13 `TextInput`** restantes a `AppTextField`. Hechos:
+      SuggestSong (✓), AppFeedbackModal (✓), ReportBugsModal (✓),
+      PasswordPromptModal (✓), ArrangementInputModal (✓) (2026-07-22),
+      **Evaluation (QuestionInput, texto libre), SelectedSongs (nombre de
+      fichero al exportar), Reflexiones (título/contenido/autor),
+      CodeInputModal (campo `name`), ExportPdfModal (título/fecha)**
+      (2026-07-24). `AppTextField` ganó props `error` (borde rojo) y
+      `accentColor` (para respetar paletas propias — Arrangement usa el rojo
+      de marca, PDF el rojo, Reflexiones el verde).
+      Pendientes: Revisión de Contigo (paleta warm propia — como Evangelio,
+      requiere verificación en dispositivo antes de tocar el color de fondo),
+      Grupos (`SearchBar` es un compound component deliberadamente custom, no
+      un `TextInput` simple — descartado), SecretPanel (panel admin, 16
+      campos, superficie grande — último).
+- [~] **`AppPrimaryButton`** (CTA "Enviar/Guardar/Aceptar") — **creado**
+      (`components/ui/AppPrimaryButton.tsx`, usa `PressableFeedback` + `Scale`,
+      prop `color` para paletas propias de Contigo/eventos). Migrados: **SuggestSong,
+      AppFeedback, ReportBugs** (2026-07-22). Pendientes: el resto de modales con
+      CTA (Evaluation, SecretPanel, export PDF, login…) — estructura distinta, uno
+      a uno.
 - [ ] **`SegmentedControl`** — unificar Mes/Agenda (Calendario), toggles de
       ajustes, Evangelio, SongFullscreen (4-5 versiones distintas).
-- [ ] **`EmptyState`** — adoptarlo en los ~20 sitios que reinventan "no hay…".
+- [~] **`EmptyState`** — adoptarlo en los ~20 sitios que reinventan "no hay…".
+      Hechos: SelectedSongs, Home (previos) + ReflexionesScreen,
+      notifications.tsx, NotificationsBottomSheet, EventosPasadosScreen,
+      ContactosScreen (2026-07-22/23), **Calendario (día seleccionado +
+      vista agenda, con icono dinámico según filtros)** (2026-07-24).
+      Pendientes: evangelio "no se encontraron lecturas" (paleta warm de
+      Contigo — requiere verificación en dispositivo), SongList "no se
+      encontraron canciones" (es un estado de ERROR en rojo con diagnóstico,
+      no un vacío neutro — descartado, no migrar). **NO** en
+      `CommandPalette` (dropdown compacto — el padding de EmptyState lo
+      desbordaría).
 - [ ] **Chips/pills** — estandarizar (mezcla de heroui `Chip` + pills custom).
 - [ ] **Tokens** (`radii`/`shadows`/`typography`) — migrar números mágicos.
 
-## 4. Decisiones de producto pendientes (bloquean algunas fases)
+## 4. Decisiones de producto — ✅ TOMADAS (2026-07-22)
 
-- [ ] ¿Contigo y Eventos mantienen su paleta propia o se alinean a marca? (Fase 4)
-- [ ] ¿Qué pantallas de Contigo/eventos pasan a header nativo plano y cuáles
-      conservan el floating glass? (Fase 1)
-- [ ] ¿Componente estándar de pulsación: `PressableFeedback` (heroui) o wrapper
-      propio? (Fase 2)
+- [x] **Color (Fase 4)**: Contigo (warm) y Eventos (color por evento) **mantienen
+      su paleta propia**. Es identidad intencional, no una divergencia a corregir.
+      Acción: documentarlas como temas con nombre en `constants/colors.ts` cuando
+      se toque; NO alinear a marca.
+- [x] **Headers (Fase 1)**: **nativo plano** en las pantallas "lista + detalle"
+      (Revisión, Materiales, Horario y sub-pantallas de evento); **floating glass**
+      solo donde aporta identidad (hero de evento). Es la recomendación del §1 de
+      este plan.
+- [x] **Pulsación (Fase 2)**: primitiva única de contenido = **`PressableFeedback`
+      (heroui)** — feedback nativo consistente y soportado por la librería (ya en
+      24 ficheros). Las barras de navegación siguen con bar items nativos.
+      Prohibido `TouchableOpacity`/`Pressable` sueltos NUEVOS; migración
+      incremental de los existentes.

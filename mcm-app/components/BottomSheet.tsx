@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -17,6 +17,17 @@ import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 
+// ⚠️ Estas animaciones van con el `Animated` de React Native A PROPÓSITO, NO
+// con Reanimated. Dentro de un `Modal` TRANSPARENTE de RN los estilos animados
+// de Reanimated 4 no se aplican (comprobado con una vista de prueba que anima
+// su opacidad de 0 a 1 y se queda invisible; en un Modal opaco, como el del
+// escáner de QR, sí funcionan). Aquí eso era fatal: la hoja se quedaba en su
+// posición inicial —fuera de pantalla, con el fondo a opacidad 0— y el callback
+// de la animación de cierre, que es quien desmonta el `Modal`, no se disparaba
+// nunca. Resultado: un modal invisible a pantalla completa que se comía todos
+// los toques y dejaba la pestaña muerta hasta reiniciar (calendarios, sugerir
+// canción, multimedia, calendario de evangelios…). Si alguien vuelve a migrar
+// esto a Reanimated, hay que comprobar ANTES que la hoja aparece de verdad.
 const nativeDriver = Platform.OS !== 'web';
 
 const OFF_SCREEN = Dimensions.get('window').height;
@@ -64,7 +75,24 @@ export default function BottomSheet({
   const onCloseCompleteRef = useRef(onCloseComplete);
   onCloseCompleteRef.current = onCloseComplete;
 
-  const [modalVisible, setModalVisible] = useState(false);
+  // Igual con `onClose`: los `PanResponder` se crean UNA vez, así que sin este
+  // ref se quedarían con el `onClose` del primer render.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // El `Modal` de RN tiene que seguir MONTADO mientras se reproduce la
+  // animación de salida: por eso no basta con `visible`.
+  //
+  // `modalVisible` es DERIVADO —`visible || closing`— y no un estado que se
+  // encendía con un setState EN FASE DE RENDER. Ese patrón fallaba en pantallas
+  // que a su vez hacen su propio setState en fase de render (el detalle de
+  // canción, sin ir más lejos): el `setModalVisible(true)` se perdía por el
+  // camino, la hoja se quedaba con `visible` a true pero sin `Modal` montado, y
+  // no aparecía hasta que algo ajeno forzaba otro render. Derivado no se puede
+  // perder: en el mismo render en que `visible` es true, el Modal se monta.
+  const [closing, setClosing] = useState(false);
+  const modalVisible = visible || closing;
+
   const [kbHeight, setKbHeight] = useState(0);
   const insets = useSafeAreaInsets();
   const screenHeight = Dimensions.get('window').height;
@@ -79,11 +107,45 @@ export default function BottomSheet({
   // translateY so both can use useNativeDriver without a driver conflict.
   const keyboardOffsetAnim = useRef(new Animated.Value(0)).current;
 
+  // `visible` del render anterior: al montar con `visible` a false no hay nada
+  // que cerrar, así que no se dispara la animación de salida (que además
+  // encendería `closing` y montaría el Modal para nada).
+  const prevVisible = useRef(visible);
+
+  // `onCloseComplete` se llama UNA sola vez por cierre, venga de donde venga
+  // (el `onDismiss` de iOS o el temporizador de respaldo). Sin este pestillo,
+  // una acción diferida podría ejecutarse dos veces.
+  const completePendingRef = useRef(false);
+  const dismissFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fireCloseComplete = useCallback(() => {
+    if (dismissFallbackRef.current) {
+      clearTimeout(dismissFallbackRef.current);
+      dismissFallbackRef.current = null;
+    }
+    if (!completePendingRef.current) return;
+    completePendingRef.current = false;
+    onCloseCompleteRef.current?.();
+  }, []);
+
+  // Al desmontar, ni temporizador vivo ni callback a destiempo.
+  useEffect(
+    () => () => {
+      if (dismissFallbackRef.current) clearTimeout(dismissFallbackRef.current);
+    },
+    [],
+  );
+
   useEffect(() => {
+    const wasVisible = prevVisible.current;
+    prevVisible.current = visible;
+
     if (visible) {
+      setClosing(false);
       dragAnim.setValue(0);
       keyboardOffsetAnim.setValue(0);
-      setModalVisible(true);
+      slideAnim.setValue(OFF_SCREEN);
+      opacityAnim.setValue(0);
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -96,31 +158,49 @@ export default function BottomSheet({
           useNativeDriver: nativeDriver,
         }),
       ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: OFF_SCREEN,
-          duration: DURATION,
-          useNativeDriver: nativeDriver,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: DURATION,
-          useNativeDriver: nativeDriver,
-        }),
-      ]).start(() => {
-        setModalVisible(false);
-        // Android / Web: call directly — no native sequencing concern.
-        // iOS: onDismiss on the Modal fires instead, after UIKit confirms the
-        // view controller is gone. Calling here on iOS would batch this with
-        // setModalVisible(false), making the new Modal appear in the same
-        // render cycle — which iOS rejects silently.
-        if (Platform.OS !== 'ios') {
-          onCloseCompleteRef.current?.();
-        }
-      });
+      return;
     }
-  }, [visible, slideAnim, opacityAnim, dragAnim, keyboardOffsetAnim]);
+
+    if (!wasVisible) return;
+
+    completePendingRef.current = true;
+    setClosing(true);
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: OFF_SCREEN,
+        duration: DURATION,
+        useNativeDriver: nativeDriver,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: DURATION,
+        useNativeDriver: nativeDriver,
+      }),
+    ]).start(() => {
+      setClosing(false);
+      // Android / Web: call directly — no native sequencing concern.
+      // iOS: lo normal es que lo dispare `onDismiss` del Modal, cuando UIKit
+      // confirma que el view controller ya no está; llamarlo aquí lo agruparía
+      // con desmontar el Modal y el modal nuevo aparecería en el mismo ciclo de
+      // render, cosa que iOS rechaza en silencio. Pero NO se puede depender solo
+      // de `onDismiss`: si no llega, la acción pendiente se pierde sin ruido —y
+      // es justo el caso del menú "..." del cantoral, donde cada opción es
+      // "cierra la hoja y abre otra cosa", así que sin callback el menú entero
+      // parece muerto. De ahí la red de seguridad de abajo.
+      if (Platform.OS !== 'ios') {
+        fireCloseComplete();
+        return;
+      }
+      dismissFallbackRef.current = setTimeout(fireCloseComplete, 400);
+    });
+  }, [
+    visible,
+    slideAnim,
+    opacityAnim,
+    dragAnim,
+    keyboardOffsetAnim,
+    fireCloseComplete,
+  ]);
 
   // Shift the sheet up when the keyboard appears (iOS only).
   // Uses a separate Animated.Value so it can share the native driver with
@@ -168,7 +248,7 @@ export default function BottomSheet({
       },
       onPanResponderRelease: (_, { dy, vy }) => {
         if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
-          onClose();
+          onCloseRef.current();
         } else {
           Animated.spring(dragAnim, {
             toValue: 0,
@@ -199,7 +279,7 @@ export default function BottomSheet({
       },
       onPanResponderRelease: (_, { dy, vy }) => {
         if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
-          onClose();
+          onCloseRef.current();
         } else {
           Animated.spring(dragAnim, {
             toValue: 0,
@@ -235,7 +315,7 @@ export default function BottomSheet({
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
-      onDismiss={() => onCloseCompleteRef.current?.()}
+      onDismiss={fireCloseComplete}
     >
       {/* Backdrop */}
       <Animated.View

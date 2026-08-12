@@ -8,6 +8,8 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setCarismochitoTheme } from '@/utils/heroUIRuntimeTheme';
+import { syncAppIcon } from '@/utils/appIcon';
+import { trackEvent } from '@/utils/analytics';
 import { h } from '@/utils/haptics';
 
 export type CarismochitoState = 'idle' | 'countingDown' | 'active';
@@ -131,6 +133,9 @@ export function CarismochitoProvider({
         setCarismochitoTheme(true);
         // Recordar el modo activo para mantenerlo al reabrir la app.
         AsyncStorage.setItem(STORAGE_KEY, '1').catch(() => {});
+        // Y el icono del launcher, que vive fuera de la app.
+        syncAppIcon(true);
+        trackEvent('carismochito_activado');
         h.carismoOn();
         // Primera vez: abrir la explicación/onboarding justo tras la cuenta
         // atrás. Las siguientes veces solo confeti + badge.
@@ -163,6 +168,7 @@ export function CarismochitoProvider({
     setFreshlyActivated(false);
     setCarismochitoTheme(false);
     AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+    syncAppIcon(false);
     h.carismoOff();
   }, [stopTimer, resetCharge]);
 
@@ -237,10 +243,16 @@ export function CarismochitoProvider({
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((v) => {
-        if (v === '1') {
+        const active = v === '1';
+        if (active) {
           setState('active');
           setCarismochitoTheme(true);
         }
+        // Reparación: el icono del launcher persiste fuera de la app, así que
+        // puede haber quedado descolgado del estado real (reinstalación,
+        // borrado de datos, build sin el icono alternativo). `syncAppIcon` no
+        // hace nada si ya coincide, así que esto no molesta en el caso normal.
+        syncAppIcon(active);
       })
       .catch(() => {});
     AsyncStorage.getItem(ONBOARDING_KEY)

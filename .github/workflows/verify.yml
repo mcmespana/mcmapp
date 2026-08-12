@@ -1,0 +1,29 @@
+# .github/workflows/verify.yml
+# Job reutilizable de verificación (typecheck + lint + tests). Única fuente
+# de verdad: ci.yml y los workflows de publicación (OTA, deploy web) llaman
+# a este workflow en vez de duplicar la lista de pasos.
+name: Verify
+
+on:
+  workflow_call:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mcm-app/package-lock.json
+      - run: npm ci
+        working-directory: ./mcm-app
+      - run: npm run typecheck
+        working-directory: ./mcm-app
+      - run: npm run typecheck:tests
+        working-directory: ./mcm-app
+      - run: npm run lint
+        working-directory: ./mcm-app
+      - run: npm test -- --ci
+        working-directory: ./mcm-app

@@ -10,6 +10,7 @@ import {
   onAuthStateChanged,
   signOut as firebaseSignOut,
   deleteUser,
+  type Auth,
 } from 'firebase/auth';
 import { getFirebaseAuth } from '@/utils/firebaseAuth';
 import {
@@ -19,6 +20,7 @@ import {
   doGoogleSignOut,
 } from '@/utils/platformAuth';
 import { deleteUserData } from '@/utils/authHelpers';
+import { isCancelledAuthError } from '@/utils/authErrors';
 
 /** Resultado de un intento de eliminación de cuenta. */
 export type DeleteAccountResult = 'success' | 'cancelled' | 'error';
@@ -69,49 +71,58 @@ function providerFromFirebase(firebaseUser: {
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  // `getFirebaseAuth()` puede reventar en seco si falta la config de Firebase.
+  // Se resuelve UNA vez, aquí, para que ese fallo sea un VALOR desde el primer
+  // render en vez de un setState dentro del efecto (que costaba un render extra
+  // y dejaba la app un instante en "cargando" cuando ya se sabía que no iba).
+  const [init] = useState<{ auth: Auth | null; error: string | null }>(() => {
+    try {
+      return { auth: getFirebaseAuth(), error: null };
+    } catch (error: any) {
+      return { auth: null, error: error?.message ?? String(error) };
+    }
+  });
+
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [configError, setConfigError] = useState<string | null>(null);
+  // Sin auth no hay ninguna sesión que esperar: se arranca ya resuelto.
+  const [loading, setLoading] = useState(init.auth !== null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const configError = init.error ?? authError;
 
   useEffect(() => {
     configureGoogleSignIn().catch(() => {});
   }, []);
 
   useEffect(() => {
-    let unsub: (() => void) | undefined;
-    try {
-      const auth = getFirebaseAuth();
-      unsub = onAuthStateChanged(
-        auth,
-        (firebaseUser) => {
-          if (firebaseUser) {
-            setUser({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName,
-              photoURL: firebaseUser.photoURL,
-              provider: providerFromFirebase(firebaseUser),
-            });
-          } else {
-            setUser(null);
-          }
-          setLoading(false);
-        },
-        (error: any) => {
-          logger.error('[AuthContext] onAuthStateChanged error:', error);
-          setConfigError(error?.message ?? String(error));
-          setUser(null);
-          setLoading(false);
-        },
-      );
-    } catch (error: any) {
-      logger.error('[AuthContext] Firebase Auth init failed:', error);
-      setConfigError(error?.message ?? String(error));
-      setUser(null);
-      setLoading(false);
+    if (!init.auth) {
+      logger.error('[AuthContext] Firebase Auth init failed:', init.error);
+      return;
     }
-    return () => unsub?.();
-  }, []);
+    const unsub = onAuthStateChanged(
+      init.auth,
+      (firebaseUser) => {
+        if (firebaseUser) {
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            provider: providerFromFirebase(firebaseUser),
+          });
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      },
+      (error: any) => {
+        logger.error('[AuthContext] onAuthStateChanged error:', error);
+        setAuthError(error?.message ?? String(error));
+        setUser(null);
+        setLoading(false);
+      },
+    );
+    return () => unsub();
+  }, [init]);
 
   const signInWithGoogle = useCallback(async (): Promise<AuthUser | null> => {
     try {
@@ -127,11 +138,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
     } catch (err: any) {
       // El usuario canceló el flujo — no es un error real
-      const cancelled =
-        err?.code === 'auth/cancelled-popup-request' ||
-        err?.code === 'auth/popup-closed-by-user' ||
-        err?.code === 'ERR_CANCELED';
-      if (cancelled) return null;
+      if (isCancelledAuthError(err)) return null;
       // Error real: propagar para que la UI muestre feedback (toast) en vez
       // de fallar en silencio.
       logger.error('[AuthContext] signInWithGoogle:', err);
@@ -152,9 +159,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         provider: 'apple',
       };
     } catch (err: any) {
-      const cancelled =
-        err?.code === 'ERR_CANCELED' || String(err?.message).includes('cancel');
-      if (cancelled) return null;
+      if (isCancelledAuthError(err)) return null;
       logger.error('[AuthContext] signInWithApple:', err);
       throw err;
     }
@@ -198,12 +203,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await doGoogleSignIn(auth);
           }
         } catch (reauthErr: any) {
-          const cancelled =
-            reauthErr?.code === 'ERR_CANCELED' ||
-            reauthErr?.code === 'auth/popup-closed-by-user' ||
-            reauthErr?.code === 'auth/cancelled-popup-request' ||
-            String(reauthErr?.message ?? '').includes('cancel');
-          return cancelled ? 'cancelled' : 'error';
+          return isCancelledAuthError(reauthErr) ? 'cancelled' : 'error';
         }
         try {
           await runDelete();

@@ -1,5 +1,10 @@
 // app/_layout.tsx
 
+// Sentry el PRIMERO de todos los imports: se arranca como efecto de cargar el
+// módulo, así que cuanto antes se importe, más crashes de arranque captura.
+// Sin `EXPO_PUBLIC_SENTRY_DSN` no hace absolutamente nada.
+import { wrapRoot } from '@/utils/sentry';
+
 import '../notifications/NotificationHandler'; // Inicializa el handler de notificaciones
 import usePushNotifications from '../notifications/usePushNotifications'; // Hook para notificaciones push
 
@@ -7,13 +12,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, StyleSheet, Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   ThemeProvider as NavThemeProvider,
   DarkTheme,
   DefaultTheme,
-} from '@react-navigation/native';
+} from 'expo-router/react-navigation';
 import { usePathname, useSegments, router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -31,8 +35,10 @@ import {
 import { ChoirSessionProvider } from '@/contexts/ChoirSessionContext';
 import { useIncomingPlaylist } from '@/hooks/useIncomingPlaylist';
 import { useRegisterServiceWorker } from '@/hooks/useRegisterServiceWorker';
+import { useScreenTracking } from '@/hooks/useScreenTracking';
+import { trackEvent } from '@/utils/analytics';
+import { tramoTamano } from '@/constants/analyticsEvents';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
-import { isAppVersionSupported } from '@/utils/resolveProfileConfig';
 import { HelloWave } from '@/components/HelloWave';
 import AddToHomeBanner from '@/components/AddToHomeBanner';
 import CommandPalette from '@/components/CommandPalette';
@@ -55,10 +61,14 @@ import FirebaseConfigErrorScreen from '@/components/FirebaseConfigErrorScreen';
 import { CarismochitoProvider } from '@/contexts/CarismochitoContext';
 import CarismochitoOverlay from '@/components/CarismochitoOverlay';
 import { ActiveEventProvider } from '@/contexts/ActiveEventContext';
+import {
+  VersionGateProvider,
+  useVersionGate,
+} from '@/contexts/VersionGateContext';
 // Importar iconos para asegurar que se incluyan en el build
 import '@/constants/iconAssets';
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -82,7 +92,9 @@ export default function RootLayout() {
                                     <OTAProvider>
                                       <CarismochitoProvider>
                                         <ActiveEventProvider>
-                                          <InnerLayout />
+                                          <VersionGateProvider>
+                                            <InnerLayout />
+                                          </VersionGateProvider>
                                         </ActiveEventProvider>
                                       </CarismochitoProvider>
                                     </OTAProvider>
@@ -115,6 +127,13 @@ function InnerLayout() {
   const { profile, loading: profileLoading } = useUserProfile();
   const { user: authUser, configError: firebaseConfigError } = useAuth();
   const resolved = useResolvedProfileConfig();
+  const {
+    updateRequired,
+    updateSkipped,
+    skipUpdate,
+    currentVersion: appVersion,
+    minAppVersion,
+  } = useVersionGate();
 
   // Sync MCM profile data to RTDB whenever user is logged in and profile changes
   useEffect(() => {
@@ -137,6 +156,10 @@ function InnerLayout() {
   const handleIncomingPlaylist = useCallback(
     (songs: string[]) => {
       songs.forEach((fn) => addSong(fn));
+      trackEvent('playlist_usada', {
+        accion: 'importada',
+        tamano: tramoTamano(songs.length),
+      });
       toast.show({
         label: `Playlist importada (${songs.length} ${songs.length === 1 ? 'canción' : 'canciones'})`,
         actionLabel: 'OK',
@@ -148,6 +171,9 @@ function InnerLayout() {
   useIncomingPlaylist(handleIncomingPlaylist);
 
   useStatusBarTheme(pathname);
+  // Analítica: arranca Aptabase y registra cada cambio de pantalla. Sin
+  // EXPO_PUBLIC_APTABASE_KEY no hace nada.
+  useScreenTracking();
 
   const navigationTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
 
@@ -224,13 +250,13 @@ function InnerLayout() {
       />
     );
   }
-  const currentVersion = String(Constants.expoConfig?.version ?? '0.0.0');
-  if (!isAppVersionSupported(currentVersion, resolved.minAppVersion)) {
+  if (updateRequired && !updateSkipped) {
     return (
       <MaintenanceScreen
         mode="update"
-        minVersion={resolved.minAppVersion}
-        currentVersion={currentVersion}
+        minVersion={minAppVersion}
+        currentVersion={appVersion}
+        onSkip={skipUpdate}
       />
     );
   }
@@ -290,3 +316,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2E',
   },
 });
+
+// `wrapRoot` es la identidad cuando Sentry está apagado (sin DSN), así que el
+// árbol de componentes no cambia en absoluto en ese caso.
+export default wrapRoot(RootLayout);

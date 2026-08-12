@@ -8,7 +8,7 @@ App de MCM España. Expo / React Native para iOS, Android y Web.
 
 ```bash
 # Requisitos: Node.js LTS
-npm install -g expo-cli eas-cli
+npm install -g eas-cli   # (el viejo expo-cli global está deprecado; usa `npx expo`)
 
 # Clonar e instalar
 git clone https://github.com/mcmespana/mcmapp.git
@@ -35,13 +35,15 @@ npm run format                     Prettier
 ```
 
 ### Builds
-```
-eas build -p android --profile preview              APK de prueba
-eas build -p android --profile production            AAB para Play Store
-eas build -p android --profile development --local   Build local dev
 
-eas build -p ios --profile production                Build para App Store
-eas build -p ios --profile production --auto-submit  Build + subir a TestFlight
+> ⚠️ Usa SIEMPRE los scripts `npm run eas:build*` (limpian los symlinks
+> `.agent/.agents` de skills antes de comprimir; `eas build` directo falla
+> en Windows con `EPERM ... symlink`). Detalle en `mcm-app/CLAUDE.md`.
+
+```
+npm run eas:build:android -- --profile preview       APK de prueba
+npm run eas:build:android -- --profile production    AAB para Play Store
+npm run eas:build:ios -- --profile production        Build para App Store
 
 eas submit -p android                                Subir a Play Store
 eas submit -p ios --latest                           Subir a TestFlight

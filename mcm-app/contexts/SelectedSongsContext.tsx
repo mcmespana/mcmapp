@@ -1,4 +1,5 @@
 import { logger } from '@/utils/logger';
+import { trackEvent } from '@/utils/analytics';
 import React, {
   createContext,
   useState,
@@ -193,6 +194,11 @@ export const SelectedSongsProvider: React.FC<SelectedSongsProviderProps> = ({
     (filename, opts) => {
       setSelectedSongsState((prev) => {
         if (prev.some((s) => s.filename === filename)) return prev;
+        // "Creada" = la primera canción que entra en una selección vacía. Es el
+        // único momento inequívoco: no hay un botón de "crear playlist".
+        if (prev.length === 0) {
+          trackEvent('playlist_usada', { accion: 'creada', tamano: '1-5' });
+        }
         const next: SelectedSong = {
           filename,
           transpose: opts?.transpose ?? 0,

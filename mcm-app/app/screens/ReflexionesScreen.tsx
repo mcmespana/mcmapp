@@ -4,19 +4,24 @@ import {
   View,
   StyleSheet,
   ScrollView,
+  FlatList,
   Platform,
   Share,
   Text,
   Pressable,
-  TextInput,
   Modal,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRoute, RouteProp } from '@react-navigation/native';
-import { Spinner, BottomSheet, useToast } from 'heroui-native';
+import { useRoute, RouteProp } from 'expo-router/react-navigation';
+import { Spinner, BottomSheet } from 'heroui-native';
+// Toast de la app (mismo API que el de heroui) — el resto del repo usa este.
+import { useToast } from '@/contexts/AppToastContext';
 import ContextMenuSheet from '@/components/ContextMenuSheet';
+import CelebrationBurst from '@/components/ui/CelebrationBurst';
+import EmptyState from '@/components/ui/EmptyState';
+import AppTextField from '@/components/ui/AppTextField';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import DateTimePicker, {
   DateTimePickerAndroid,
@@ -26,12 +31,14 @@ import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { getBrightness } from '@/components/ui/glass';
-import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useFirebaseData, withRetry } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
-import { getDatabase, ref, push, set } from 'firebase/database';
+import { getDatabase, ref, push, update } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { h } from '@/utils/haptics';
+import { localISO } from '@/utils/localDate';
+import { buildReflexionUpdate } from '@/utils/reflexiones';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import PageContainer from '@/components/ui/PageContainer';
@@ -154,20 +161,25 @@ export default function ReflexionesScreen() {
 
   const grupos = gruposData?.['Conso+'] ?? [];
 
-  const [list, setList] = useState<Reflexion[]>([]);
-
-  useEffect(() => {
-    if (dataRef) {
-      const arrayData = Array.isArray(dataRef)
-        ? dataRef
-        : Object.values(dataRef as Record<string, Reflexion>);
-      setList(arrayData);
-    }
+  // Lo que hay en Firebase, normalizado a array (el nodo llega como objeto
+  // indexado por la key de push, o como array en los datos antiguos).
+  const remoteList = useMemo<Reflexion[]>(() => {
+    if (!dataRef) return [];
+    return Array.isArray(dataRef)
+      ? dataRef
+      : Object.values(dataRef as Record<string, Reflexion>);
   }, [dataRef]);
 
-  useEffect(() => {
-    setAutor(getDefaultAuthor());
-  }, [getDefaultAuthor]);
+  // Las que se acaban de publicar desde aquí se pintan al instante, sin esperar
+  // a que Firebase devuelva la lista con ellas dentro. Se dejan de añadir a
+  // mano en cuanto llegan ya en la lista remota (se casan por id).
+  const [justPublished, setJustPublished] = useState<Reflexion[]>([]);
+  const list = useMemo(() => {
+    if (justPublished.length === 0) return remoteList;
+    const remoteIds = new Set(remoteList.map((r) => r.id));
+    const pending = justPublished.filter((r) => !remoteIds.has(r.id));
+    return pending.length > 0 ? [...pending, ...remoteList] : remoteList;
+  }, [justPublished, remoteList]);
 
   const [showForm, setShowForm] = useState(false);
   const [titulo, setTitulo] = useState('');
@@ -176,14 +188,43 @@ export default function ReflexionesScreen() {
   const [autor, setAutor] = useState(getDefaultAuthor());
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+
+  // El autor por defecto sale del perfil (nombre · delegación). Cuando ese
+  // perfil cambia, el campo se re-siembra; pero el usuario puede editarlo, así
+  // que no vale con derivarlo.
+  //
+  // Se ajusta DURANTE el render, el mismo patrón que usa `openFormNonce` unas
+  // líneas más abajo y que documenta React para "cambiar estado cuando cambia
+  // una prop". Antes era un `useEffect` que llamaba a `setAutor`: además del
+  // render intermedio con el autor viejo, dejaba el componente entero sin
+  // compilar por el React Compiler (leía `setAutor` antes de declararlo).
+  const defaultAuthor = getDefaultAuthor();
+  const [lastDefaultAuthor, setLastDefaultAuthor] = useState(defaultAuthor);
+  if (defaultAuthor !== lastDefaultAuthor) {
+    setLastDefaultAuthor(defaultAuthor);
+    setAutor(defaultAuthor);
+  }
+
+  // El burst se auto-apaga para poder relanzarse en la siguiente publicación.
+  useEffect(() => {
+    if (!celebrate) return;
+    const t = setTimeout(() => setCelebrate(false), 1600);
+    return () => clearTimeout(t);
+  }, [celebrate]);
 
   // El botón "+" vive ahora en la barra superior (EventActionButtons). Al
   // pulsarlo, el tab renavega a esta pantalla con un `openFormNonce` nuevo;
   // ese cambio abre el formulario aquí.
+  // Se ajusta DURANTE el render (el patrón que documenta React para "cambiar
+  // estado cuando cambia una prop"): así el formulario ya sale abierto en el
+  // primer render tras renavegar, sin el parpadeo de un render intermedio.
   const openFormNonce = route.params?.openFormNonce;
-  useEffect(() => {
+  const [lastOpenFormNonce, setLastOpenFormNonce] = useState(openFormNonce);
+  if (openFormNonce !== lastOpenFormNonce) {
+    setLastOpenFormNonce(openFormNonce);
     if (openFormNonce) setShowForm(true);
-  }, [openFormNonce]);
+  }
 
   const showDatePicker = () => {
     if (Platform.OS === 'android') {
@@ -213,28 +254,41 @@ export default function ReflexionesScreen() {
       id: Date.now().toString(),
       titulo: titulo.trim(),
       contenido,
-      fecha: fecha.toISOString().slice(0, 10),
+      fecha: localISO(fecha),
       grupal: false,
       autor,
     };
     try {
       const db = getDatabase(getFirebaseApp());
       const newRef = push(ref(db, `${compartiendoPath}/data`));
-      await set(newRef, nuevo);
-      await set(
-        ref(db, `${compartiendoPath}/updatedAt`),
-        Date.now().toString(),
-      );
-      setList([nuevo, ...list]);
+      if (!newRef.key) throw new Error('push() sin key');
+      // Un único update() multi-path: data/<key> + updatedAt a la vez. Antes
+      // eran dos set() separados — si el segundo fallaba (o la app moría
+      // entre medias) la reflexión quedaba escrita pero invisible para el
+      // resto de dispositivos, porque useFirebaseData solo redescarga
+      // `data` cuando `updatedAt` cambia. Con retry (Plan 014): la key ya se
+      // generó una vez arriba, así que reintentar solo este update() es
+      // idempotente (misma key, mismo valor).
+      const updatePayload = buildReflexionUpdate(newRef.key, nuevo, Date.now());
+      await withRetry(() => update(ref(db, compartiendoPath), updatePayload));
+      setJustPublished((prev) => [nuevo, ...prev]);
       h.formSuccess();
+      setCelebrate(true);
+      setShowForm(false);
+      setTitulo('');
+      setContenido('');
+      setFecha(new Date());
+      setAutor(getDefaultAuthor());
     } catch (e) {
       logger.error('Error adding post', e);
+      // No limpiar el formulario: si falla el guardado (offline es habitual
+      // en los eventos donde se usa esta pantalla) el usuario no debe
+      // perder lo que escribió ni creer que se compartió.
+      toast.show({
+        variant: 'danger',
+        label: 'No se pudo compartir. Revisa tu conexión e inténtalo de nuevo.',
+      });
     }
-    setShowForm(false);
-    setTitulo('');
-    setContenido('');
-    setFecha(new Date());
-    setAutor(getDefaultAuthor());
     setSaving(false);
   }
 
@@ -276,6 +330,79 @@ export default function ReflexionesScreen() {
     Share.share({ message: reflexionText(r) });
   };
 
+  // Función normal (no useCallback): recreada cada render, igual que el
+  // `.map` anterior — no memoizamos aquí porque captura `getGrupoLabel` y
+  // `formatFecha`, que tampoco lo están, y forzar deps parciales solo
+  // arriesgaría un closure obsoleto sin ganancia real de perf.
+  const renderReflexion = ({
+    item: r,
+    index: i,
+  }: {
+    item: Reflexion;
+    index: number;
+  }) => {
+    const color = pickCardColor(r.id);
+    // Alterna dos diseños para que el muro "fluya": tarjeta con fondo
+    // tintado (par) y tarjeta limpia con barra de color a la izquierda
+    // (impar). Cada una con su color generado del id.
+    const filled = i % 2 === 0;
+    const name = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
+    const initials = getInitials(name);
+    const onColor = getBrightness(color) > 150 ? '#1a1a1a' : '#fff';
+    return (
+      <LongPressable key={r.id} onLongPress={() => setMenuReflexion(r)}>
+        <View
+          style={[
+            styles.card,
+            filled
+              ? { backgroundColor: color + (scheme === 'dark' ? '26' : '1A') }
+              : styles.cardSurface,
+          ]}
+        >
+          {!filled && (
+            <View style={[styles.accentBar, { backgroundColor: color }]} />
+          )}
+          <MaterialIcons
+            name="format-quote"
+            size={66}
+            color={color + (scheme === 'dark' ? '26' : '1F')}
+            style={styles.quoteMark}
+          />
+          <View
+            style={[
+              styles.cardInner,
+              !filled && { paddingLeft: spacing.md + 8 },
+            ]}
+          >
+            <View style={styles.cardHead}>
+              <View style={[styles.avatar, { backgroundColor: color }]}>
+                {initials ? (
+                  <Text style={[styles.avatarText, { color: onColor }]}>
+                    {initials}
+                  </Text>
+                ) : (
+                  <MaterialIcons
+                    name="auto-stories"
+                    size={16}
+                    color={onColor}
+                  />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardAuthor} numberOfLines={1}>
+                  {name || 'Anónimo'}
+                </Text>
+                <Text style={styles.cardDate}>{formatFecha(r.fecha)}</Text>
+              </View>
+            </View>
+            {r.titulo ? <Text style={styles.cardTitle}>{r.titulo}</Text> : null}
+            <Text style={styles.cardContent}>{r.contenido}</Text>
+          </View>
+        </View>
+      </LongPressable>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <ScreenHero
@@ -284,105 +411,26 @@ export default function ReflexionesScreen() {
         floatingHeaderInset
       />
       <PageContainer>
-        <ScrollView
+        <FlatList
+          data={sortedList}
+          keyExtractor={(r) => r.id}
+          renderItem={renderReflexion}
           contentContainerStyle={[
             styles.list,
             { paddingBottom: insets.bottom + 20 },
           ]}
-        >
-          {sortedList.length === 0 ? (
-            <View style={styles.emptyState}>
-              <MaterialIcons
-                name="auto-stories"
-                size={40}
-                color={colors.success}
-              />
-              <Text style={styles.emptyTitle}>Aún no hay reflexiones</Text>
-              <Text style={styles.emptyText}>
-                Pulsa el botón + de arriba para compartir la primera.
-              </Text>
-            </View>
-          ) : (
-            sortedList.map((r, i) => {
-              const color = pickCardColor(r.id);
-              // Alterna dos diseños para que el muro "fluya": tarjeta con
-              // fondo tintado (par) y tarjeta limpia con barra de color a la
-              // izquierda (impar). Cada una con su color generado del id.
-              const filled = i % 2 === 0;
-              const name = r.grupal ? getGrupoLabel(r.grupo) : r.autor;
-              const initials = getInitials(name);
-              const onColor = getBrightness(color) > 150 ? '#1a1a1a' : '#fff';
-              return (
-                <LongPressable
-                  key={r.id}
-                  onLongPress={() => setMenuReflexion(r)}
-                >
-                  <View
-                    style={[
-                      styles.card,
-                      filled
-                        ? {
-                            backgroundColor:
-                              color + (scheme === 'dark' ? '26' : '1A'),
-                          }
-                        : styles.cardSurface,
-                    ]}
-                  >
-                    {!filled && (
-                      <View
-                        style={[styles.accentBar, { backgroundColor: color }]}
-                      />
-                    )}
-                    <MaterialIcons
-                      name="format-quote"
-                      size={66}
-                      color={color + (scheme === 'dark' ? '26' : '1F')}
-                      style={styles.quoteMark}
-                    />
-                    <View
-                      style={[
-                        styles.cardInner,
-                        !filled && { paddingLeft: spacing.md + 8 },
-                      ]}
-                    >
-                      <View style={styles.cardHead}>
-                        <View
-                          style={[styles.avatar, { backgroundColor: color }]}
-                        >
-                          {initials ? (
-                            <Text
-                              style={[styles.avatarText, { color: onColor }]}
-                            >
-                              {initials}
-                            </Text>
-                          ) : (
-                            <MaterialIcons
-                              name="auto-stories"
-                              size={16}
-                              color={onColor}
-                            />
-                          )}
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.cardAuthor} numberOfLines={1}>
-                            {name || 'Anónimo'}
-                          </Text>
-                          <Text style={styles.cardDate}>
-                            {formatFecha(r.fecha)}
-                          </Text>
-                        </View>
-                      </View>
-                      {r.titulo ? (
-                        <Text style={styles.cardTitle}>{r.titulo}</Text>
-                      ) : null}
-                      <Text style={styles.cardContent}>{r.contenido}</Text>
-                    </View>
-                  </View>
-                </LongPressable>
-              );
-            })
-          )}
-        </ScrollView>
+          ListEmptyComponent={
+            <EmptyState
+              icon="auto-stories"
+              title="Aún no hay reflexiones"
+              subtitle="Pulsa el botón + de arriba para compartir la primera."
+              accentColor={colors.success}
+            />
+          }
+          initialNumToRender={12}
+          windowSize={9}
+          removeClippedSubviews={Platform.OS !== 'web'}
+        />
       </PageContainer>
 
       {/* Form bottom sheet */}
@@ -422,25 +470,24 @@ export default function ReflexionesScreen() {
 
               <View style={styles.field}>
                 <Text style={styles.inputLabel}>Título (opcional)</Text>
-                <TextInput
+                <AppTextField
                   value={titulo}
                   onChangeText={setTitulo}
                   placeholder="Un título breve"
-                  placeholderTextColor={theme.icon}
-                  style={styles.input}
+                  accentColor={colors.success}
+                  accentWhenFilled
                 />
               </View>
 
               <View style={styles.field}>
                 <Text style={styles.inputLabel}>Compartiendo…</Text>
-                <TextInput
+                <AppTextField
                   value={contenido}
                   onChangeText={setContenido}
                   placeholder="Escribe aquí lo que quieras"
-                  placeholderTextColor={theme.icon}
                   multiline
-                  textAlignVertical="top"
-                  style={[styles.input, styles.textArea]}
+                  accentColor={colors.success}
+                  accentWhenFilled
                 />
               </View>
 
@@ -467,12 +514,12 @@ export default function ReflexionesScreen() {
                 <Text style={styles.inputLabel}>
                   ¿Quién la envía? (opcional)
                 </Text>
-                <TextInput
+                <AppTextField
                   value={autor}
                   onChangeText={setAutor}
                   placeholder="Cómo quieres firmar"
-                  placeholderTextColor={theme.icon}
-                  style={styles.input}
+                  accentColor={colors.success}
+                  accentWhenFilled
                 />
               </View>
 
@@ -571,6 +618,7 @@ export default function ReflexionesScreen() {
             : []
         }
       />
+      <CelebrationBurst visible={celebrate} emoji="💬" />
     </View>
   );
 }
@@ -686,17 +734,6 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       letterSpacing: 0.2,
       marginBottom: 6,
     },
-    input: {
-      borderWidth: 1,
-      borderColor: scheme === 'dark' ? '#48484A' : '#D8DCC8',
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      fontSize: 16,
-      color: theme.text,
-      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
-    },
-    textArea: { minHeight: 120, paddingTop: 12 },
     dateField: {
       flexDirection: 'row',
       alignItems: 'center',

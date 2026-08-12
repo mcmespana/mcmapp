@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   FlatList,
@@ -8,17 +8,16 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { Button, Spinner } from 'heroui-native';
-import TabScreenWrapper from '@/components/ui/TabScreenWrapper.ios';
+import { Button } from 'heroui-native';
+import TabScreenWrapper from '@/components/ui/TabScreenWrapper';
 import AlbumCard from '@/components/AlbumCard';
 import ProgressWithMessage from '@/components/ProgressWithMessage';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
+import { useAlbumPagination } from '@/hooks/useAlbumPagination';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { Colors as ThemeColors, TabHeaderColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-
-const ALBUMS_PER_PAGE = 4;
 
 interface Album {
   id: string;
@@ -58,50 +57,8 @@ export default function AlbumListScreen() {
     });
     return visible.sort((a, b) => b.id.localeCompare(a.id));
   }, [allAlbumsData, resolved.albumTags]);
-  const [displayedAlbums, setDisplayedAlbums] = useState<Album[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(0);
-  const [allAlbumsLoaded, setAllAlbumsLoaded] = useState<boolean>(false);
-  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
-
-  useEffect(() => {
-    const initialAlbums = sortedAlbums.slice(0, ALBUMS_PER_PAGE);
-    setDisplayedAlbums(initialAlbums);
-    setCurrentPage(0);
-    setAllAlbumsLoaded(
-      initialAlbums.length < ALBUMS_PER_PAGE ||
-        sortedAlbums.length <= ALBUMS_PER_PAGE,
-    );
-  }, [sortedAlbums]);
-
-  const loadMoreAlbums = useCallback(() => {
-    if (allAlbumsLoaded || isLoadingMore) return;
-    setIsLoadingMore(true);
-    const nextPage = currentPage + 1;
-    const startIndex = nextPage * ALBUMS_PER_PAGE;
-    const newAlbums = sortedAlbums.slice(
-      startIndex,
-      startIndex + ALBUMS_PER_PAGE,
-    );
-    if (newAlbums.length > 0) {
-      setDisplayedAlbums((prev) => [...prev, ...newAlbums]);
-      setCurrentPage(nextPage);
-      if (
-        newAlbums.length < ALBUMS_PER_PAGE ||
-        displayedAlbums.length + newAlbums.length === sortedAlbums.length
-      ) {
-        setAllAlbumsLoaded(true);
-      }
-    } else {
-      setAllAlbumsLoaded(true);
-    }
-    setIsLoadingMore(false);
-  }, [
-    allAlbumsLoaded,
-    isLoadingMore,
-    currentPage,
-    sortedAlbums,
-    displayedAlbums.length,
-  ]);
+  const { displayedAlbums, allAlbumsLoaded, loadMoreAlbums } =
+    useAlbumPagination(sortedAlbums);
 
   const handleAlbumPress = useCallback(async (albumUrl: string) => {
     const supported = await Linking.canOpenURL(albumUrl);
@@ -117,21 +74,11 @@ export default function AlbumListScreen() {
   }, []);
 
   const listFooterComponent = useMemo(() => {
-    if (isLoadingMore) {
-      return (
-        <Spinner
-          size="lg"
-          color={ThemeColors[scheme ?? 'light'].tint}
-          style={{ marginVertical: 20 }}
-        />
-      );
-    }
     if (allAlbumsLoaded) return null;
     return (
       <Button
         variant="outline"
         onPress={loadMoreAlbums}
-        isDisabled={isLoadingMore}
         style={styles.loadMoreButton}
         accessibilityRole="button"
         accessibilityLabel="Cargar más álbumes"
@@ -139,7 +86,7 @@ export default function AlbumListScreen() {
         <Button.Label>Cargar Más</Button.Label>
       </Button>
     );
-  }, [isLoadingMore, allAlbumsLoaded, scheme, loadMoreAlbums]);
+  }, [allAlbumsLoaded, loadMoreAlbums]);
 
   const renderItem = useCallback(
     ({ item }: { item: Album }) => (

@@ -50,8 +50,14 @@ export default function Root({ children }: { children: React.ReactNode }) {
           media="(prefers-color-scheme: dark)"
         />
 
-        {/* Open Graph / Twitter — para compartir en redes */}
+        {/* Open Graph / Twitter — para compartir en redes.
+            NOTA: og:image/twitter:image deberían ser URL absolutas (los
+            scrapers de redes no resuelven rutas relativas) y falta
+            og:url/canonical — pendiente de fijar el dominio público
+            definitivo del deploy web (EAS Hosting). */}
         <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="MCM España" />
+        <meta property="og:locale" content="es_ES" />
         <meta property="og:title" content="MCM España" />
         <meta
           property="og:description"

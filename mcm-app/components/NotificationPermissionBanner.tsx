@@ -64,6 +64,18 @@ async function isWithinCooldown(): Promise<boolean> {
   }
 }
 
+/**
+ * Qué variante del banner toca mostrar. Solo CALCULA: no toca estado de React,
+ * así que sirve tanto para la consulta inicial como para refrescar a mano.
+ */
+async function resolveStatus(): Promise<Status> {
+  if (Platform.OS === 'web') return 'hidden';
+  const perm = await readPermissionStatus();
+  if (perm === 'granted' || perm === 'hidden') return perm;
+  if (await isWithinCooldown()) return 'hidden';
+  return perm;
+}
+
 export default function NotificationPermissionBanner({
   placement = 'home',
 }: {
@@ -71,37 +83,34 @@ export default function NotificationPermissionBanner({
 }) {
   const scheme = useColorScheme() || 'light';
   const theme = Colors[scheme];
-  const [status, setStatus] = useState<Status>('loading');
+  // En web no hay permisos de push que pedir, así que el banner no se muestra
+  // nunca: se sabe desde el primer render y no hace falta consultar nada.
+  const [status, setStatus] = useState<Status>(
+    Platform.OS === 'web' ? 'hidden' : 'loading',
+  );
 
   const refresh = useCallback(async () => {
-    if (Platform.OS === 'web') {
-      setStatus('hidden');
-      return;
-    }
-    const perm = await readPermissionStatus();
-    if (perm === 'granted' || perm === 'hidden') {
-      setStatus(perm);
-      return;
-    }
-    if (await isWithinCooldown()) {
-      setStatus('hidden');
-      return;
-    }
-    setStatus(perm);
+    setStatus(await resolveStatus());
   }, []);
 
+  // Consulta inicial, y otra al volver al foreground: cubre el caso de "vuelvo
+  // de Ajustes tras conceder permisos" sin tener que reiniciar la app.
   useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  // Reconsultar al volver al foreground: cubre el caso de "vuelvo de Ajustes
-  // tras conceder permisos" sin tener que reiniciar la app.
-  useEffect(() => {
+    let alive = true;
+    const apply = () => {
+      resolveStatus().then((next) => {
+        if (alive) setStatus(next);
+      });
+    };
+    apply();
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
-      if (next === 'active') refresh();
+      if (next === 'active') apply();
     });
-    return () => sub.remove();
-  }, [refresh]);
+    return () => {
+      alive = false;
+      sub.remove();
+    };
+  }, []);
 
   const handleActivate = useCallback(async () => {
     if (status === 'undetermined') {

@@ -3,6 +3,10 @@
  *
  *  - `https://mcm.expo.app/playlist?p=1234` → playlist "en la nube": persiste el
  *    código de 4 dígitos para que SelectedSongs lo descargue de Firebase.
+ *  - `https://mcm.expo.app/playlist?coro=<id>` → **la última playlist de ese
+ *    coro**. Es el enlace que se comparte una vez y sirve para siempre: quien
+ *    lo abra se trae la lista de hoy sin que nadie tenga que pasar un código
+ *    nuevo cada domingo.
  *  - `mcmapp://playlist?d=<payload>` → playlist **offline**: el payload lleva la
  *    playlist entera embebida (categoría + número + tono/cejilla). Se persiste
  *    tal cual y se resuelve sin conexión en SelectedSongs contra el catálogo
@@ -15,16 +19,19 @@ import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
+  setPendingChoirImport,
   setPendingCloudPlaylistCode,
   setPendingOfflinePlaylist,
 } from '@/utils/pendingCloudPlaylist';
 import { isValidCode } from '@/utils/playlistCodes';
+import { isChoirId } from '@/utils/choirIds';
 
 export default function PlaylistDeepLink() {
   const params = useLocalSearchParams<{
     p?: string;
     code?: string;
     d?: string;
+    coro?: string;
   }>();
   const code =
     typeof params.p === 'string'
@@ -33,10 +40,13 @@ export default function PlaylistDeepLink() {
         ? params.code
         : undefined;
   const offline = typeof params.d === 'string' ? params.d : undefined;
+  const choirId = typeof params.coro === 'string' ? params.coro : undefined;
 
   useEffect(() => {
     if (offline) {
       setPendingOfflinePlaylist(offline);
+    } else if (choirId && isChoirId(choirId)) {
+      setPendingChoirImport(choirId);
     } else if (code && isValidCode(code)) {
       setPendingCloudPlaylistCode(code);
     }
@@ -49,7 +59,7 @@ export default function PlaylistDeepLink() {
       }
     }
     router.replace('/(tabs)/cancionero' as any);
-  }, [code, offline]);
+  }, [code, offline, choirId]);
 
   return (
     <View style={styles.container}>

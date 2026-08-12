@@ -5,17 +5,17 @@
  * coincide, se llama a `onSuccess`.
  */
 import { radii } from '@/constants/uiStyles';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
+import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 
@@ -46,12 +46,17 @@ const PasswordPromptModal: React.FC<Props> = ({
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
-  useEffect(() => {
+  // Se limpia al ABRIR, ajustando el estado durante el render (el patrón que
+  // documenta React para "cambiar estado cuando cambia una prop"): así el
+  // modal nunca llega a pintar un render con la contraseña del intento anterior.
+  const [lastVisible, setLastVisible] = useState(visible);
+  if (visible !== lastVisible) {
+    setLastVisible(visible);
     if (visible) {
       setPassword('');
       setError(false);
     }
-  }, [visible]);
+  }
 
   const handleConfirm = () => {
     if (password.trim().toLowerCase() === expectedPassword.toLowerCase()) {
@@ -78,15 +83,15 @@ const PasswordPromptModal: React.FC<Props> = ({
               {description ? (
                 <Text style={styles.description}>{description}</Text>
               ) : null}
-              <TextInput
+              <AppTextField
                 value={password}
                 onChangeText={(t) => {
                   setPassword(t);
                   setError(false);
                 }}
                 placeholder="Contraseña"
-                placeholderTextColor={isDark ? '#636366' : '#A0A0A8'}
-                style={[styles.input, error && styles.inputError]}
+                error={error}
+                style={styles.input}
                 autoFocus
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -162,18 +167,7 @@ const createStyles = (isDark: boolean) =>
       marginTop: 6,
     },
     input: {
-      borderWidth: 1,
-      borderColor: isDark ? '#3A3A3C' : '#D1D1D6',
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-      fontSize: 15,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
       marginTop: 14,
-    },
-    inputError: {
-      borderColor: '#FF453A',
     },
     errorText: {
       color: '#FF453A',

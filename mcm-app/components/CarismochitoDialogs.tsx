@@ -18,26 +18,40 @@ const G_LIGHT = '#9DE86B';
 const G_GLOW = '#5AE08A';
 const G_DARK = '#06210F';
 
-/** Tarjeta central con animación de entrada (escala + fade). */
+/**
+ * Tarjeta central con animación de entrada (escala + fade).
+ *
+ * Con el `Animated` de React Native, NO con Reanimated: esto vive dentro de un
+ * `Modal` y ahí las animaciones de Reanimated no corren (ver el aviso de
+ * `components/BottomSheet.tsx`). Como la tarjeta nace a opacidad 0, quedarse
+ * sin animación no era "sale de golpe": era una tarjeta invisible.
+ */
 function PopCard({ children }: { children: React.ReactNode }) {
   const enter = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.spring(enter, {
       toValue: 1,
+      useNativeDriver: Platform.OS !== 'web',
       tension: 90,
       friction: 9,
-      useNativeDriver: true,
     }).start();
   }, [enter]);
-  const scale = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.85, 1],
-  });
+
+  const cardStyle = {
+    opacity: enter,
+    transform: [
+      {
+        scale: enter.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.85, 1],
+        }),
+      },
+    ],
+  };
+
   return (
     <View style={styles.backdrop}>
-      <Animated.View
-        style={[styles.card, { opacity: enter, transform: [{ scale }] }]}
-      >
+      <Animated.View style={[styles.card, cardStyle]}>
         <LinearGradient
           colors={['#0C3D1C', G_DARK]}
           start={{ x: 0, y: 0 }}

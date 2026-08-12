@@ -58,6 +58,17 @@ export interface GlobalConfig {
   maintenanceMessage?: string;
   /** Versión semver mínima soportada. Si la app es inferior, fuerza actualización. `0.0.0` = sin bloqueo. */
   minAppVersion: string;
+  /**
+   * Modo revisión de las tiendas. Lo escribe y lo gestiona el MCM Panel: al
+   * activarlo reescribe las `tabs` de todos los perfiles para ocultar Cantoral
+   * y Comunica mientras Apple/Google revisan una build, y guarda las originales
+   * en `appReviewBackup` para restaurarlas al apagarlo.
+   *
+   * La app NO lee este flag: el efecto le llega ya aplicado en las `tabs`. Se
+   * tipa para que el contrato esté completo y para no perderlo al serializar.
+   * Ver `docs/contratos/PANEL_PERFILES.md`.
+   */
+  appReviewMode?: boolean;
 }
 
 /**
@@ -81,6 +92,12 @@ export interface ProfileConfigData {
   delegations: Record<string, Delegation> & { _default: Delegation };
   delegationList: DelegationListItem[];
   overrides?: Partial<Record<OverrideKey, Partial<ProfileBase>>>;
+  /**
+   * Copia de seguridad de las tabs/botones que el modo revisión sobrescribió,
+   * para poder devolverlas al apagarlo. Lo escribe y lo consume el MCM Panel;
+   * la app lo ignora. Ver `global.appReviewMode`.
+   */
+  appReviewBackup?: unknown;
 }
 
 /**

@@ -5,18 +5,65 @@ on:
   push:
     branches: [production]
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Saltar el guard de cambios nativos (usar con cuidado)'
+        type: boolean
+        default: false
 
 concurrency:
   group: ota-production
   cancel-in-progress: false
 
 jobs:
+  # Detecta cambios en rutas nativas (package.json, app.json, patches/,
+  # plugins/, modules/, targets/...) en TODO el rango del push, no solo el
+  # último commit. Si hay diff nativo:
+  #   - con [skip-ota] en algún commit del rango → se salta la OTA (output skip=true)
+  #   - sin [skip-ota] → el guard FALLA en rojo (antes esto pasaba desapercibido
+  #     y crasheaba la base instalada, porque una OTA solo manda el bundle JS)
+  # En workflow_dispatch corre igual sobre HEAD^..HEAD, con un input `force`
+  # para saltárselo explícitamente (el dispatch ya no es un bypass silencioso).
+  guard-native:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.force != 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Comprobar cambios en rutas nativas
+        id: check
+        run: |
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            BEFORE="$(git rev-parse "$AFTER"^)"
+          fi
+          NATIVE_CHANGES=$(git diff --name-only "$BEFORE" "$AFTER" -- \
+            mcm-app/package.json mcm-app/package-lock.json mcm-app/app.json \
+            mcm-app/app.config.ts mcm-app/eas.json \
+            mcm-app/patches/ mcm-app/plugins/ mcm-app/modules/ mcm-app/targets/)
+          if [ -n "$NATIVE_CHANGES" ]; then
+            if git log --format=%B "$BEFORE".."$AFTER" | grep -q '\[skip-ota\]'; then
+              echo "Cambios en rutas nativas + [skip-ota] presente en el push → se salta la OTA."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error::Cambios en rutas nativas SIN [skip-ota] en ningún commit del push:"
+              echo "$NATIVE_CHANGES"
+              exit 1
+            fi
+          fi
+
+  verify:
+    uses: ./.github/workflows/verify.yml
+
   publish-prod:
-    # Salta si el mensaje del commit contiene [skip-ota] (p.ej. cuando se añaden paquetes nativos)
-    # En workflow_dispatch siempre corre (el usuario lo lanzó explícitamente)
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      !contains(github.event.head_commit.message, '[skip-ota]')
+    needs: [guard-native, verify]
+    if: needs.guard-native.outputs.skip != 'true'
     runs-on: ubuntu-latest
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }} # yamllint disable-line
@@ -34,6 +81,14 @@ jobs:
       # secretos: van embebidos en la app igualmente).
       EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: 333436090762-mimunbdpp07nv2hr8mvc2u52ncgrlsr3.apps.googleusercontent.com
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 333436090762-tl5ltg6f1ad7lrqtbs3jq3ae2uu3v0sr.apps.googleusercontent.com
+      # Sentry: por lo mismo. El DSN se hornea en el bundle, así que si falta
+      # aquí la primera OTA APAGA el crash reporting de la build de tienda sin
+      # avisar. El DSN no es un secreto (va dentro de la app igualmente), pero
+      # se guarda como secret de GitHub para no publicarlo en el repo.
+      EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
+      # Aptabase: idéntico razonamiento — si falta aquí, la primera OTA apaga
+      # la analítica en toda la base instalada.
+      EXPO_PUBLIC_APTABASE_KEY: ${{ secrets.EXPO_PUBLIC_APTABASE_KEY }}
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -55,7 +110,11 @@ jobs:
           fi
 
       - name: Instalar EAS CLI
-        run: npm install -g eas-cli@latest
+        # Pineado a propósito — subir deliberadamente, no usar @latest (una
+        # major nueva del CLI podría romper esta OTA de PRODUCCIÓN sin
+        # ningún cambio en el repo, y dos runs del mismo commit se
+        # comportarían distinto).
+        run: npm install -g eas-cli@21.0.2
 
       - name: Instalar dependencias
         working-directory: ./mcm-app

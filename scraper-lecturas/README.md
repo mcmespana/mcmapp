@@ -11,7 +11,8 @@ seccion_oracion/
   lecturas/
     YYYY-MM-DD/
       evangelio/
-        activo: "vidaNueva"              ← fuente preferida (para el frontend)
+        activoTexto: "vidaNueva"         ← fuente de cita+texto (para el frontend)
+        activoComentario: "vidaNueva"    ← fuente de comentario+comentarista
         vidaNuevaCita: "Juan 11,1-45..."
         vidaNuevaComentario: "..."
         vidaNuevaComentarista: "..."

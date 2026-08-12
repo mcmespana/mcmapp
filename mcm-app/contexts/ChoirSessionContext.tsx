@@ -47,7 +47,7 @@ interface ChoirSessionContextValue {
   startAsMaster: (
     code: string,
     playlist: SelectedSong[],
-    opts?: { name?: string },
+    opts?: { name?: string; choirId?: string; choirName?: string },
   ) => Promise<void>;
   joinAsSlave: (code: string) => Promise<void>;
   leave: () => Promise<void>;
@@ -87,7 +87,13 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
   const [deviceId, setDeviceId] = useState<string>('');
   const [mode, setMode] = useState<ChoirMode>('off');
   const [code, setCode] = useState<string | null>(null);
-  const [session, setSession] = useState<ChoirSession | null>(null);
+  // Lo último recibido de Firebase, JUNTO al código al que pertenece: así, al
+  // cambiar de sesión o salir, el valor viejo deja de contar solo y no hace
+  // falta ponerlo a null a mano antes de resuscribirse.
+  const [remote, setRemote] = useState<{
+    code: string;
+    session: ChoirSession | null;
+  } | null>(null);
   const [overrideTranspose, setOverrideTranspose] = useState<number | null>(
     null,
   );
@@ -146,17 +152,22 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
     );
   }, [mode, code]);
 
+  // La sesión que ve la app: solo cuenta lo recibido para el código actual y
+  // con una sesión activa. Cualquier otra cosa (acabamos de cambiar de código,
+  // o hemos salido) es `null` sin esperar a la primera respuesta de Firebase.
+  const session =
+    code && mode !== 'off' && remote?.code === code ? remote.session : null;
+
   // Suscripción a Firebase mientras haya sesión activa.
   useEffect(() => {
     unsubRef.current?.();
     unsubRef.current = null;
-    setSession(null);
     if (!code || mode === 'off') return;
     try {
       unsubRef.current = subscribeChoirSession(
         code,
         (s) => {
-          setSession(s);
+          setRemote({ code, session: s });
           if (!s) {
             // El maestro la borró → todos a 'off'.
             setMode('off');
@@ -183,6 +194,7 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
         newCode,
         { deviceId, name: opts?.name },
         playlist,
+        { choirId: opts?.choirId, choirName: opts?.choirName },
       );
       setMode('master');
       setCode(newCode);

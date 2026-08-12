@@ -1,5 +1,7 @@
 // types/notifications.ts
 
+import type { NotificationAudience } from '@/utils/notificationAudience';
+
 /**
  * Botón de acción de una notificación: un call-to-action con texto propio que
  * abre una URL externa o navega a una ruta interna de la app.
@@ -38,6 +40,18 @@ export interface NotificationData {
 
   // Para notificaciones internas (deep linking)
   internalRoute?: string; // Ruta dentro de la app, ej: "/calendario", "/(tabs)/fotos"
+
+  // Deep link a un evento concreto del registry de la app (constants/events.ts),
+  // p. ej. "jubileo" o "visitapapa26". Al tocar la notificación, la app abre el
+  // hub de ese evento (ver utils/notificationEventRoute.ts). Tiene prioridad
+  // sobre internalRoute cuando resuelve. Ausente = comportamiento normal.
+  eventId?: string;
+
+  // Segmentación de audiencia con la que el panel envió esta notificación (4
+  // ejes + AND/OR). La app la usa para filtrar el historial in-app y no mostrar
+  // avisos dirigidos a otros perfiles/delegaciones/eventos. Ausente o null =
+  // enviada a todos (retrocompatible con el histórico).
+  audience?: NotificationAudience | null;
 
   // Data adicional que puede usar la app
   data?: Record<string, any>;
@@ -91,6 +105,7 @@ export interface ReceivedNotification {
   isRead: boolean;
   category?: NotificationCategory;
   internalRoute?: string;
+  eventId?: string; // Deep link a un evento (ver NotificationData.eventId)
   data?: Record<string, any>;
 }
 

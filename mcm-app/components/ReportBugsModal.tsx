@@ -3,20 +3,19 @@ import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Platform,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import BottomSheet from './BottomSheet';
+import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
+import AppTextField from '@/components/ui/AppTextField';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
-import { getDatabase, ref, push, set } from 'firebase/database';
-import { getFirebaseApp } from '@/utils/firebaseApp';
+import { pushWithRetry } from '@/services/firebaseWrites';
 import {
   getCategoryFromFirebaseCategory,
   cleanSongTitle,
@@ -64,14 +63,11 @@ export default function ReportBugsModal({
     if (!bugDescription.trim()) return;
     setIsSubmitting(true);
     try {
-      const db = getDatabase(getFirebaseApp());
       const category = firebaseCategory
         ? getCategoryFromFirebaseCategory(firebaseCategory)
         : 'catZotros';
       const cleanTitle = songTitle ? cleanSongTitle(songTitle) : 'Sin título';
-      const fallitosRef = ref(db, `songs/fallitos/${category}/${cleanTitle}`);
-      const newFallitoRef = push(fallitosRef);
-      await set(newFallitoRef, {
+      await pushWithRetry(`songs/fallitos/${category}/${cleanTitle}`, {
         description: bugDescription.trim(),
         timestamp: Date.now(),
         songTitle: songTitle || 'Sin título',
@@ -140,27 +136,15 @@ export default function ReportBugsModal({
           Acordes incorrectos, letra con errores, formato roto...
         </Text>
 
-        <TextInput
-          style={[
-            styles.textArea,
-            {
-              backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
-              color: theme.text,
-              borderColor: bugDescription.trim()
-                ? '#34C759'
-                : isDark
-                  ? '#3A3A3C'
-                  : '#E5E5EA',
-            },
-          ]}
+        <AppTextField
+          accentWhenFilled
+          style={styles.textArea}
           placeholder="Describe los fallos que has encontrado..."
-          placeholderTextColor={theme.icon}
           value={bugDescription}
           onChangeText={setBugDescription}
           maxLength={500}
           multiline
           numberOfLines={5}
-          textAlignVertical="top"
           returnKeyType="default"
           editable={!isSubmitting}
         />
@@ -169,39 +153,15 @@ export default function ReportBugsModal({
         </Text>
 
         {/* Botón principal */}
-        <TouchableOpacity
-          style={[
-            styles.submitBtn,
-            {
-              backgroundColor: canSubmit
-                ? '#FF3B30'
-                : isDark
-                  ? '#3A3A3C'
-                  : '#E5E5EA',
-            },
-          ]}
+        <AppPrimaryButton
+          label={isSubmitting ? 'Enviando...' : 'Notificar fallitos'}
+          icon="bug-report"
+          color="#FF3B30"
           onPress={handleSubmit}
           disabled={!canSubmit}
-          activeOpacity={0.8}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <MaterialIcons
-              name="bug-report"
-              size={18}
-              color={canSubmit ? '#fff' : theme.icon}
-            />
-          )}
-          <Text
-            style={[
-              styles.submitBtnText,
-              { color: canSubmit ? '#fff' : theme.icon },
-            ]}
-          >
-            {isSubmitting ? 'Enviando...' : 'Notificar fallitos'}
-          </Text>
-        </TouchableOpacity>
+          loading={isSubmitting}
+          style={styles.submitBtn}
+        />
 
         {/* Divisor */}
         <View style={styles.divider}>
@@ -281,10 +241,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   textArea: {
-    borderWidth: 1.5,
-    borderRadius: radii.md,
-    padding: 14,
-    fontSize: 15,
     minHeight: 120,
     lineHeight: 22,
   },
@@ -295,17 +251,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 15,
-    borderRadius: radii.md,
     marginBottom: 4,
-  },
-  submitBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
   },
   divider: {
     flexDirection: 'row',

@@ -11,13 +11,9 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Pressable,
   Linking,
-  Platform,
-  ViewStyle,
-  TextStyle,
   useWindowDimensions,
 } from 'react-native';
 import Animated, {
@@ -30,14 +26,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors, { Colors } from '@/constants/colors';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
+import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import spacing from '@/constants/spacing';
-import { radii, shadows } from '@/constants/uiStyles';
 import useFontScale from '@/hooks/useFontScale';
 import { Skeleton } from 'heroui-native';
 import { useToast } from '@/contexts/AppToastContext';
@@ -48,14 +43,15 @@ import NotificationPermissionBanner from '@/components/NotificationPermissionBan
 import { VersionDisplay } from '@/components/VersionDisplay';
 import { SecretMenuTrigger } from '@/components/SecretMenuTrigger';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import { useVersionGate } from '@/contexts/VersionGateContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
-import { setPendingMasScreen } from '@/utils/masNavigation';
+import { useTabNavigation } from '@/hooks/useTabNavigation';
+import { localISO } from '@/utils/localDate';
 import { hexAlpha } from '@/utils/colorUtils';
 import ScreenHero from '@/components/ui/ScreenHero';
 import EmptyState from '@/components/ui/EmptyState';
 import GlassActionGroup from '@/components/ui/GlassActionGroup';
 import PressableScale from '@/components/ui/PressableScale';
-import { setPendingEventScreen } from '@/utils/eventNavigation';
 import {
   DEFAULT_APP_EVALUATION,
   DEFAULT_EVENT_EVALUATION,
@@ -67,7 +63,11 @@ import {
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useActiveSurveys } from '@/hooks/useActiveSurveys';
 import SurveyBanner from '@/components/SurveyBanner';
-import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import {
+  getEventCacheKey,
+  getEventFirebasePath,
+  isEventArchived,
+} from '@/constants/events';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import {
   getLocalNotificationsHistory,
@@ -80,6 +80,7 @@ import { useCarismochito } from '@/contexts/CarismochitoContext';
 import { h } from '@/utils/haptics';
 import useCalendarEvents from '@/hooks/useCalendarEvents';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { styles } from '@/components/home/homeStyles';
 
 const MONTHS_SHORT = [
   'Ene',
@@ -126,9 +127,11 @@ function getUpcomingEventsByWeek(
   maxEvents: number,
   visibleCalendars: boolean[],
 ): EventGroup[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split('T')[0];
+  // `localISO()` (hora local) — antes usaba `toISOString()`, que convierte a
+  // UTC: en España (UTC+1/+2) "hoy" resultaba ser AYER las 365 noches del
+  // año, colando los eventos de ayer como "próximos".
+  const todayStr = localISO();
+  const today = parseLocalDate(todayStr); // medianoche local, para getWeekLabel
   const seen = new Set<string>();
   const eventsByWeek: Map<string, CalendarEvent[]> = new Map();
 
@@ -188,12 +191,24 @@ interface QuickItem {
   icon: ComponentProps<typeof MaterialIcons>['name'];
   iconBg: string;
   iconColor: string;
+  /**
+   * Nombre del TAB al que lleva. El camino (directo o entrando por "Más") lo
+   * resuelve `goToTab`, que sabe si el tab está en la barra. Antes cada entrada
+   * llevaba un `href` fijo y acertaba solo con algunos perfiles.
+   */
+  tab?: string;
+  /** Ruta literal, para destinos que no son un tab (sub-rutas, "Más"…). */
   href?: string;
   dashed?: boolean;
 }
 
 export default function Home() {
   const navigation = useNavigation();
+  // Compacta la barra de pestañas flotante al scrollear y reserva su hueco.
+  const { scrollRef, onScroll, contentPaddingBottom } = useTabScroll('index');
+  // Navegación a tabs que tiene en cuenta si el tab está en la barra o en el
+  // overflow de "Más" (ver utils/tabNavigation.ts).
+  const { goToTab, goToEventScreen } = useTabNavigation();
   const scheme = useColorScheme();
   const theme = Colors[scheme ?? 'light'];
   // Color neutro de los iconos en la cápsula glass (igual que EventActionButtons).
@@ -235,7 +250,13 @@ export default function Home() {
   // valor hardcoded en `constants/events.ts`.
   const { activeEvent } = useActiveMeta();
   const activeTabId = activeEvent.tabId ?? '';
+  // Un evento archivado (`status: 'archived'`, ya sea en el registry o puesto
+  // desde el panel MCM) deja de destacarse: sin banner, sin botón en la Home y
+  // sin tab (esto último lo filtra `useVisibleTabs`). Se sigue viendo en
+  // "Más > Eventos pasados".
+  const eventArchived = isEventArchived(activeEvent);
   const hasEventAccess =
+    !eventArchived &&
     activeTabId !== '' &&
     (resolved.tabs.includes(activeTabId) ||
       resolved.homeButtons.includes(activeTabId));
@@ -300,45 +321,64 @@ export default function Home() {
   } = useOTAContext();
   const showUpdateBadge = otaReady && otaDismissed;
 
+  // Store update badge (show in header after the user skips the mandatory
+  // "actualiza la app" screen — tapping opens the store directly, no dialog)
+  const { updateRequired, updateSkipped, openStore } = useVersionGate();
+  const showStoreUpdateBadge = updateRequired && updateSkipped;
+
   // Notifications
   const { firebaseNotifications, readIds, unreadCount } = useNotifications();
   const latestNotification = firebaseNotifications[0] ?? null;
 
-  const [isUnread, setIsUnread] = useState(false);
-
-  useEffect(() => {
-    if (!latestNotification) {
-      setIsUnread(false);
-      return;
-    }
-    if (readIds.has(latestNotification.id)) {
-      setIsUnread(false);
-      return;
-    }
+  // Lo que se sabe sin preguntar a disco: sin notificación, ya leída o de hace
+  // más de 60 días, no hay nada que marcar. Solo lo que sobrevive a este filtro
+  // merece la comprobación cruzada de abajo.
+  const candidate = useMemo(() => {
+    if (!latestNotification) return null;
+    if (readIds.has(latestNotification.id)) return null;
     const dateStr = (
       'receivedAt' in latestNotification
         ? latestNotification.receivedAt
         : latestNotification.createdAt
     ) as string | undefined;
-    if (isNotificationOlderThan60Days(dateStr)) {
-      setIsUnread(false);
-      return;
-    }
-
-    // Comprobación cruzada asíncrona: ver si ya se leyó la versión local
-    getLocalNotificationsHistory().then((localData) => {
-      const match = localData.find(
-        (n) =>
-          n.title === latestNotification.title &&
-          n.body === latestNotification.body,
-      );
-      if (match && (match.isRead || readIds.has(match.id))) {
-        setIsUnread(false);
-      } else {
-        setIsUnread(true);
-      }
-    });
+    if (isNotificationOlderThan60Days(dateStr)) return null;
+    return latestNotification;
   }, [latestNotification, readIds]);
+
+  // Comprobación cruzada asíncrona: la misma notificación puede constar ya
+  // leída en su copia local, con otro id (se casan por título + cuerpo). El
+  // resultado se guarda JUNTO al id comprobado, así que al llegar otra
+  // notificación deja de contar solo, sin resetearlo a mano.
+  const [crossCheck, setCrossCheck] = useState<{
+    id: string;
+    unread: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!candidate) return;
+    let alive = true;
+    getLocalNotificationsHistory().then((localData) => {
+      if (!alive) return;
+      const match = localData.find(
+        (n) => n.title === candidate.title && n.body === candidate.body,
+      );
+      const unread = !(match && (match.isRead || readIds.has(match.id)));
+      setCrossCheck((prev) =>
+        prev && prev.id === candidate.id && prev.unread === unread
+          ? prev
+          : { id: candidate.id, unread },
+      );
+    });
+    return () => {
+      alive = false;
+    };
+  }, [candidate, readIds]);
+
+  // Como antes: no se enciende hasta que la comprobación cruzada responde.
+  const isUnread =
+    candidate !== null && crossCheck !== null && crossCheck.id === candidate.id
+      ? crossCheck.unread
+      : false;
 
   // Ping animation for the notification badge (Reanimated 3).
   const pingScale = useSharedValue(1);
@@ -397,7 +437,7 @@ export default function Home() {
         icon: 'forum',
         iconBg: scheme === 'dark' ? '#3A2200' : '#FFF0E0',
         iconColor: '#E08A3C',
-        href: '/mas',
+        tab: 'comunica',
       },
       cancionero: {
         key: 'cancionero',
@@ -405,7 +445,7 @@ export default function Home() {
         icon: 'music-note',
         iconBg: scheme === 'dark' ? '#1A1A3A' : '#E8E0FF',
         iconColor: '#6366F1',
-        href: '/cancionero',
+        tab: 'cancionero',
       },
       visitapapa: {
         key: 'visitapapa',
@@ -413,7 +453,8 @@ export default function Home() {
         icon: 'church',
         iconBg: scheme === 'dark' ? '#332B00' : '#FFF8D6',
         iconColor: '#C9A800',
-        href: '/visitapapa',
+        // El tab del evento en curso; su nombre lo pone el perfil, no está fijo.
+        tab: activeTabId || 'visitapapa',
       },
       fotos: {
         key: 'fotos',
@@ -421,7 +462,7 @@ export default function Home() {
         icon: 'image',
         iconBg: scheme === 'dark' ? '#0A2A1A' : '#D5F5E3',
         iconColor: '#34D399',
-        href: '/mas',
+        tab: 'fotos',
       },
       evangelio: {
         key: 'evangelio',
@@ -441,10 +482,12 @@ export default function Home() {
         dashed: true,
       },
     };
+    // El botón del evento en curso desaparece cuando el evento se archiva.
     return resolved.homeButtons
       .filter((id) => visible.has(id) && catalog[id])
+      .filter((id) => !(eventArchived && id === activeTabId))
       .map((id) => catalog[id]);
-  }, [resolved.homeButtons, scheme, theme.icon]);
+  }, [resolved.homeButtons, scheme, theme.icon, eventArchived, activeTabId]);
 
   // Hide the tab navigator header — we render our own
   useLayoutEffect(() => {
@@ -527,20 +570,16 @@ export default function Home() {
   };
 
   // Navega al calendario (opcionalmente saltando a una fecha concreta).
-  // En iOS `calendario` es un tab "overflow" SIN trigger nativo (solo caben 5
-  // en la barra), por lo que `router.push('/calendario')` no funciona: hay que
-  // alcanzarlo a través del stack de "Más" igual que hace el acceso de Fotos.
-  // En Android/Web `calendario` es un tab real, así que navegamos directo.
+  //
+  // El camino lo decide `goToTab` mirando si `calendario` está DE VERDAD en la
+  // barra (ver utils/tabNavigation.ts). Antes esto miraba solo `Platform.OS`
+  // === 'ios' y entraba SIEMPRE por "Más": cuando el calendario sí cabía en la
+  // barra —que depende del perfil y de si hay evento en curso— se aterrizaba en
+  // el tab equivocado, y si el perfil no tenía "Más" no se llegaba a ninguna
+  // parte.
   const navigateToCalendar = (date?: string) => {
     h.tap();
-    if (Platform.OS === 'ios') {
-      setPendingMasScreen('Calendario', date ? { date } : undefined);
-      router.push('/mas');
-    } else if (date) {
-      router.push({ pathname: '/calendario', params: { date } } as any);
-    } else {
-      router.push('/calendario');
-    }
+    goToTab('calendario', date ? { date } : undefined);
   };
 
   return (
@@ -594,6 +633,23 @@ export default function Home() {
           right={
             <GlassActionGroup
               items={[
+                ...(showStoreUpdateBadge
+                  ? [
+                      {
+                        key: 'store-update',
+                        onPress: openStore,
+                        accessibilityLabel:
+                          'Tienes que actualizar la app. Toca para ir a la tienda',
+                        children: (
+                          <MaterialIcons
+                            name="system-update"
+                            size={22}
+                            color={colors.accent}
+                          />
+                        ),
+                      },
+                    ]
+                  : []),
                 ...(showUpdateBadge
                   ? [
                       {
@@ -661,12 +717,15 @@ export default function Home() {
         />
       </View>
 
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         style={{ backgroundColor: theme.background }}
         contentContainerStyle={[
           styles.scrollContent,
           isWide && styles.scrollContentWide,
-          Platform.OS === 'ios' && { paddingBottom: 120 },
+          { paddingBottom: contentPaddingBottom },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -729,7 +788,11 @@ export default function Home() {
                 ]}
                 onPress={() => {
                   h.tap();
-                  router.push('/visitapapa');
+                  // El tab del evento lo dice el perfil (`tabId`), y puede estar
+                  // en la barra o en overflow: antes esto era un '/visitapapa'
+                  // fijo que no llevaba a ninguna parte en cuanto el evento no
+                  // cabía en la barra.
+                  goToTab(activeTabId || 'visitapapa');
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={activeEvent.title}
@@ -783,10 +846,10 @@ export default function Home() {
                 style={[styles.evalCta, { backgroundColor: colors.accent }]}
                 onPress={() => {
                   h.tap();
-                  setPendingEventScreen('Evaluacion', {
-                    eventId: activeEvent.id,
-                  });
-                  router.push(`/${activeTabId}` as any);
+                  // Entra por el tab del evento si tiene ruta propia y por
+                  // "Más" si está en overflow (allí están registradas las
+                  // mismas pantallas de evento).
+                  goToEventScreen('Evaluacion', { eventId: activeEvent.id });
                 }}
                 activeOpacity={0.9}
                 accessibilityRole="button"
@@ -1030,12 +1093,10 @@ export default function Home() {
                     accessibilityRole="button"
                     onPress={() => {
                       h.tap();
-                      if (item.key === 'comunica') {
-                        setPendingMasScreen('Comunica');
-                      } else if (item.key === 'fotos') {
-                        setPendingMasScreen('Fotos');
-                      }
-                      if (item.href) router.push(item.href as any);
+                      // `goToTab` resuelve el camino según la barra real; los
+                      // destinos que no son un tab siguen con su ruta literal.
+                      if (item.tab) goToTab(item.tab);
+                      else if (item.href) router.push(item.href as any);
                     }}
                   >
                     <View
@@ -1280,403 +1341,7 @@ export default function Home() {
             </Text>
           </SecretMenuTrigger>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 } as ViewStyle,
-
-  // ── Header ──
-  headerWide: {
-    maxWidth: 900,
-    alignSelf: 'center',
-    width: '100%',
-  } as ViewStyle,
-  logoBox: {
-    backgroundColor: colors.primary,
-    padding: spacing.sm,
-    borderRadius: radii.sm + 2, // 10
-  } as ViewStyle,
-  logoText: {
-    fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: -1.4,
-    lineHeight: 38,
-  } as TextStyle,
-  headerIconBtn: { padding: spacing.sm } as ViewStyle,
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    overflow: 'hidden',
-  } as ViewStyle,
-  bellWrap: { position: 'relative' } as ViewStyle,
-  dotWrap: {
-    position: 'absolute',
-    top: -1,
-    right: -1,
-    width: 12,
-    height: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  dotPing: {
-    position: 'absolute',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.primary,
-  } as ViewStyle,
-  dot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-  } as ViewStyle,
-
-  // ── ScrollView ──
-  scrollContent: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.xl,
-  } as ViewStyle,
-  scrollContentWide: {
-    maxWidth: 900,
-    alignSelf: 'center',
-    width: '100%',
-    paddingHorizontal: spacing.lg,
-  } as ViewStyle,
-
-  // ── Responsive columns ──
-  wideRow: {
-    flexDirection: 'row',
-    gap: spacing.lg,
-  } as ViewStyle,
-  wideColLeft: {
-    flex: 1,
-  } as ViewStyle,
-  wideColRight: {
-    flex: 1,
-  } as ViewStyle,
-
-  section: { marginBottom: spacing.lg + 4 } as ViewStyle,
-  sectionLabel: {
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: spacing.sm,
-  } as TextStyle,
-
-  // ── Notification card ──
-  notifCard: {
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    padding: spacing.md + 2,
-    ...shadows.md,
-  } as ViewStyle,
-  notifRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm + 2,
-  } as ViewStyle,
-  notifContent: {
-    flex: 1,
-    gap: 5,
-  } as ViewStyle,
-  newBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  } as ViewStyle,
-  newBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  } as TextStyle,
-  notifTitle: {
-    fontWeight: '700',
-    lineHeight: 22,
-  } as TextStyle,
-  notifDescription: {
-    lineHeight: 19,
-  } as TextStyle,
-  notifIconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-    marginTop: 2,
-  } as ViewStyle,
-  notifCtaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: spacing.sm + 2,
-    flexWrap: 'wrap',
-  } as ViewStyle,
-  destinationChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-  } as ViewStyle,
-  destinationChipText: {
-    fontSize: 10,
-    fontWeight: '700',
-  } as TextStyle,
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: radii.pill,
-  } as ViewStyle,
-  actionBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-  } as TextStyle,
-  arrowPill: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  } as ViewStyle,
-
-  // ── Quick grid ──
-  quickGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  } as ViewStyle,
-  // En ancho (iPad) los accesos rápidos se agrupan centrados y envuelven en
-  // varias filas en vez de separarse a los extremos de la columna.
-  quickGridWide: {
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.lg,
-  } as ViewStyle,
-  quickItem: {
-    alignItems: 'center',
-    gap: 7,
-    width: 70,
-  } as ViewStyle,
-  quickIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.full,
-    justifyContent: 'center',
-    alignItems: 'center',
-  } as ViewStyle,
-  quickLabel: {
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    textAlign: 'center',
-  } as TextStyle,
-
-  // ── Event cards ──
-  eventCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderLeftWidth: 4,
-    padding: spacing.sm + 4,
-    marginBottom: spacing.sm,
-    ...shadows.sm,
-  } as ViewStyle,
-  eventDateBox: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.sm,
-    flexShrink: 0,
-  } as ViewStyle,
-  eventMonth: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  } as TextStyle,
-  eventDay: {
-    fontSize: 16,
-    fontWeight: '800',
-    lineHeight: 18,
-    fontVariant: ['tabular-nums'],
-  } as TextStyle,
-  eventInfo: {
-    flex: 1,
-    overflow: 'hidden',
-    gap: 3,
-  } as ViewStyle,
-  eventTitle: {
-    fontWeight: '700',
-  } as TextStyle,
-  calBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: radii.xs,
-    alignSelf: 'flex-start',
-    maxWidth: 110,
-  } as ViewStyle,
-  calBadgeText: {
-    fontSize: 8,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.2,
-  } as TextStyle,
-  eventMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  } as ViewStyle,
-  eventMetaText: { flex: 1 } as TextStyle,
-  eventsSkeletonWrap: {
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  } as ViewStyle,
-  eventSkeleton: {
-    height: 78,
-    borderRadius: radii.lg,
-  } as ViewStyle,
-  weekSeparator: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: spacing.sm + 2,
-    marginBottom: spacing.xs,
-    marginLeft: spacing.xs,
-    opacity: 0.7,
-  } as TextStyle,
-  calendarButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-    paddingVertical: 11,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-  } as ViewStyle,
-  calendarButtonText: {
-    fontWeight: '700',
-  } as TextStyle,
-
-  // ── Onboarding banner ──
-  onboardingBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.sm + 4,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-  } as ViewStyle,
-  onboardingBannerTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-  } as TextStyle,
-  onboardingBannerBody: {
-    fontSize: 11,
-    marginTop: 2,
-    lineHeight: 15,
-    opacity: 0.8,
-  } as TextStyle,
-
-  // ── CTA "Evalúa la actividad" (destacado) ──
-  evalCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm + 2,
-    padding: spacing.md,
-    borderRadius: radii.xl,
-    marginBottom: spacing.md,
-    ...shadows.md,
-  } as ViewStyle,
-  evalCtaIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    flexShrink: 0,
-  } as ViewStyle,
-  evalCtaTextWrap: { flex: 1 } as ViewStyle,
-  evalCtaTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: -0.2,
-  } as TextStyle,
-  evalCtaBody: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
-    color: 'rgba(255,255,255,0.9)',
-  } as TextStyle,
-  evalCtaBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#fff',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: radii.pill,
-    flexShrink: 0,
-  } as ViewStyle,
-  evalCtaBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-  } as TextStyle,
-
-  // ── Banner del evento activo (modo evento) ──
-  eventBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.sm + 4,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-  } as ViewStyle,
-  eventBannerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-  eventBannerTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-  } as TextStyle,
-  eventBannerBody: {
-    fontSize: 11,
-    marginTop: 2,
-    lineHeight: 15,
-    opacity: 0.8,
-  } as TextStyle,
-
-  // ── Footer ──
-  footer: { alignItems: 'center', paddingTop: spacing.xs } as ViewStyle,
-  feedbackLink: { padding: spacing.sm, marginTop: 4 } as ViewStyle,
-  feedbackText: { fontSize: 12, opacity: 0.6 } as TextStyle,
-  tagline: {
-    fontSize: 11,
-    opacity: 0.3,
-    marginTop: spacing.sm,
-    letterSpacing: 0.2,
-    fontStyle: 'italic',
-  } as TextStyle,
-});

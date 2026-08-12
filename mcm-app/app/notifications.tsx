@@ -17,14 +17,14 @@ import { BottomSheet, Button } from 'heroui-native';
 // dentro de Swipeable para que los toques anidados funcionen correctamente.
 import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from 'expo-router/react-navigation';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import colors, { Colors } from '@/constants/colors';
+import EmptyState from '@/components/ui/EmptyState';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
-import typography from '@/constants/typography';
 import { radii, shadows } from '@/constants/uiStyles';
 import {
   getLocalNotificationsHistory,
@@ -42,12 +42,16 @@ import {
   ReceivedNotification,
 } from '@/types/notifications';
 import { normalizeNotificationRoute } from '@/utils/notificationRoutes';
+import { categoryVisual } from '@/utils/notificationCategory';
+import { routeForEventId } from '@/utils/notificationEventRoute';
+import { getEvent } from '@/constants/events';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import ContextMenuSheet, {
   ContextMenuAction,
 } from '@/components/ContextMenuSheet';
+import { createStyles } from '@/components/notifications/notificationsStyles';
 
 // Mapeo de rutas internas a nombres legibles
 const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
@@ -147,6 +151,7 @@ function NotificationRow({
   const routeInfo = notification.internalRoute
     ? getRouteLabel(notification.internalRoute)
     : null;
+  const category = categoryVisual(notification.category);
   const actionButtons = getActionButtons(notification);
 
   const renderRightActions = (
@@ -244,6 +249,34 @@ function NotificationRow({
             <View style={styles.notificationFooter}>
               <Text style={styles.notificationDate}>{formatDate(date)}</Text>
               <View style={styles.chipsRow}>
+                {/* Chip de categoría de negocio (data.category). Solo para
+                    categorías con significado propio; "general"/desconocida no
+                    pinta chip. */}
+                {category && (
+                  <View
+                    style={[
+                      styles.categoryChip,
+                      {
+                        borderColor: hexAlpha(category.color, '60'),
+                        backgroundColor: hexAlpha(category.color, '14'),
+                      },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={category.icon as any}
+                      size={11}
+                      color={category.color}
+                    />
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        { color: category.color },
+                      ]}
+                    >
+                      {category.label}
+                    </Text>
+                  </View>
+                )}
                 {/* Chip de destino interno */}
                 {routeInfo && (
                   <View style={styles.destinationChip}>
@@ -578,17 +611,11 @@ export default function NotificationsScreen() {
           <Text style={styles.emptyText}>Cargando...</Text>
         </View>
       ) : allNotifications.length === 0 ? (
-        <View style={styles.emptyState}>
-          <MaterialIcons
-            name="notifications-none"
-            size={64}
-            color={Colors[scheme ?? 'light'].icon}
-          />
-          <Text style={styles.emptyTitle}>No hay notificaciones</Text>
-          <Text style={styles.emptyText}>
-            Aquí aparecerán tus notificaciones cuando las tengas.
-          </Text>
-        </View>
+        <EmptyState
+          icon="notifications-none"
+          title="No hay notificaciones"
+          subtitle="Aquí aparecerán tus notificaciones cuando las tengas."
+        />
       ) : (
         <FlatList
           data={allNotifications}
@@ -667,6 +694,16 @@ function NotificationDetailModal({
   const routeInfo = notification?.internalRoute
     ? getRouteLabel(notification.internalRoute)
     : null;
+  const category = categoryVisual(notification?.category);
+  // Deep link a un evento concreto (data.eventId): si resuelve a una ruta del
+  // registry, ofrecemos un botón "Ir a <evento>".
+  const eventRoute = notification?.eventId
+    ? routeForEventId(notification.eventId)
+    : null;
+  const eventTitle =
+    eventRoute && notification?.eventId
+      ? getEvent(notification.eventId).title
+      : null;
 
   const safePushRoute = (route: string) => {
     if (!route) return;
@@ -692,6 +729,12 @@ function NotificationDetailModal({
     if (!notification) return;
     onClose();
     safePushRoute(notification.internalRoute ?? '');
+  };
+
+  const handleEventRoute = () => {
+    if (!eventRoute) return;
+    onClose();
+    safePushRoute(eventRoute);
   };
 
   const handleActionButton = (button: NotificationActionButtonData) => {
@@ -749,6 +792,33 @@ function NotificationDetailModal({
                   })}
                 </Text>
 
+                {/* Chip de categoría de negocio (data.category) */}
+                {category && (
+                  <View
+                    style={[
+                      dStyles.categoryChip,
+                      {
+                        borderColor: hexAlpha(category.color, '60'),
+                        backgroundColor: hexAlpha(category.color, '14'),
+                      },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={category.icon as any}
+                      size={13}
+                      color={category.color}
+                    />
+                    <Text
+                      style={[
+                        dStyles.categoryChipText,
+                        { color: category.color },
+                      ]}
+                    >
+                      {category.label}
+                    </Text>
+                  </View>
+                )}
+
                 {/* Imagen grande */}
                 {notification.imageUrl && (
                   <Image
@@ -766,13 +836,41 @@ function NotificationDetailModal({
                 </Text>
 
                 {/* Separador si hay acciones */}
-                {(notification.internalRoute || actionButtons.length > 0) && (
+                {(notification.internalRoute ||
+                  eventRoute ||
+                  actionButtons.length > 0) && (
                   <View
                     style={[
                       dStyles.divider,
                       { backgroundColor: hexAlpha(theme.icon, '30') },
                     ]}
                   />
+                )}
+
+                {/* Botón de deep link a un evento (data.eventId) */}
+                {eventRoute && (
+                  <Button
+                    variant="outline"
+                    onPress={handleEventRoute}
+                    style={[
+                      dStyles.routeButton,
+                      { borderColor: colors.primary },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name="event"
+                      size={20}
+                      color={colors.primary}
+                    />
+                    <Button.Label style={{ color: colors.primary, flex: 1 }}>
+                      {eventTitle ? `Ir a ${eventTitle}` : 'Ir al evento'}
+                    </Button.Label>
+                    <MaterialIcons
+                      name="arrow-forward-ios"
+                      size={14}
+                      color={colors.primary}
+                    />
+                  </Button>
                 )}
 
                 {/* Botón de destino interno (internalRoute) */}
@@ -853,6 +951,19 @@ const dStyles = StyleSheet.create({
   },
   title: { fontSize: 22, fontWeight: '700', marginBottom: spacing.sm },
   date: { fontSize: 13, marginBottom: spacing.lg, textTransform: 'capitalize' },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  categoryChipText: { fontSize: 12, fontWeight: '600' },
   image: {
     width: '100%',
     height: 200,
@@ -929,173 +1040,3 @@ function formatDate(date: Date): string {
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
   });
 }
-
-const createStyles = (scheme: 'light' | 'dark') => {
-  const theme = Colors[scheme ?? 'light'];
-  return StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: scheme === 'dark' ? '#3A3A3C' : colors.border,
-      backgroundColor: theme.background,
-    },
-    backButton: { marginRight: spacing.md },
-    headerRight: { width: 32 },
-    markAllButton: { padding: 4 },
-    title: {
-      ...(typography.h1 as any),
-      fontSize: 18,
-      flex: 1,
-      textAlign: 'center',
-      color: theme.text,
-    },
-    content: { padding: spacing.md },
-    emptyState: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: spacing.xl,
-    },
-    emptyTitle: {
-      ...(typography.h2 as any),
-      fontSize: 16,
-      marginTop: spacing.lg,
-      marginBottom: spacing.sm,
-      textAlign: 'center',
-      color: theme.text,
-    },
-    emptyText: {
-      ...(typography.body as any),
-      textAlign: 'center',
-      color: theme.icon,
-      lineHeight: 22,
-    },
-    notificationCard: {
-      flexDirection: 'row',
-      backgroundColor: theme.background,
-      borderRadius: radii.md,
-      padding: spacing.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      ...shadows.sm,
-    },
-    unreadCard: {
-      backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
-      borderColor: colors.primary,
-    },
-    notificationIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      marginRight: spacing.md,
-      backgroundColor: colors.border,
-      alignSelf: 'flex-start',
-      marginTop: 2,
-    },
-    notificationContent: { flex: 1 },
-    notificationHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 4,
-    },
-    notificationHeaderRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      flexShrink: 0,
-    },
-    notificationTitle: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: theme.text,
-      flex: 1,
-      marginRight: spacing.xs,
-    },
-    notificationTitleRead: {
-      fontWeight: '500',
-    },
-    unreadBadge: {
-      width: 8,
-      height: 8,
-      borderRadius: radii.xs,
-      backgroundColor: colors.primary,
-    },
-    markAsReadButton: { padding: 2 },
-    rightAction: {
-      backgroundColor: colors.success,
-      justifyContent: 'center',
-      alignItems: 'flex-end',
-      borderRadius: radii.md,
-      height: '100%',
-      paddingRight: spacing.md,
-      minWidth: 90,
-    },
-    actionContent: { alignItems: 'center', justifyContent: 'center' },
-    actionText: {
-      color: '#fff',
-      fontWeight: '600',
-      marginTop: 4,
-      fontSize: 12,
-    },
-    notificationBody: {
-      fontSize: 13,
-      color: theme.icon,
-      lineHeight: 19,
-      marginBottom: 8,
-    },
-    notificationFooter: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      flexWrap: 'wrap',
-      gap: 6,
-    },
-    notificationDate: {
-      fontSize: 11,
-      color: theme.icon,
-    },
-    chipsRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      flexShrink: 1,
-      flexWrap: 'wrap',
-    },
-    destinationChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 3,
-      paddingVertical: 3,
-      paddingHorizontal: 7,
-      borderRadius: radii.pill,
-      borderWidth: 1,
-      borderColor: hexAlpha(colors.primary, '60'),
-      backgroundColor: hexAlpha(colors.primary, '12'),
-    },
-    destinationChipText: {
-      fontSize: 10,
-      color: colors.primary,
-      fontWeight: '600',
-    },
-    actionChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 3,
-      paddingVertical: 3,
-      paddingHorizontal: 8,
-      borderRadius: radii.pill,
-      backgroundColor: colors.primary,
-      maxWidth: 140,
-    },
-    actionChipText: {
-      fontSize: 10,
-      color: '#fff',
-      fontWeight: '600',
-      flexShrink: 1,
-    },
-  });
-};

@@ -20,7 +20,7 @@ type LogArgs = unknown[];
 
 /**
  * Enganche opcional para crash reporting. Cuando se integre Sentry (ver
- * `docs/planes/MEJORAS.md` §8.1) basta con llamar a `setReporter` una vez en
+ * `docs/planes/archivo/MEJORAS.md` §8.1) basta con llamar a `setReporter` una vez en
  * el arranque para que todos los `logger.warn`/`logger.error` se reporten.
  */
 export interface LogReporter {

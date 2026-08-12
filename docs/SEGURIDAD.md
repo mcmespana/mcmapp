@@ -20,9 +20,26 @@ Firestore ni Storage de forma activa. La autenticación es Google/Apple Sign-In
    login (reportes del cantoral, reflexiones, tokens push, evaluaciones, juego,
    playlists/coros compartidos).
 4. **Datos personales** (`/users/$uid`) requieren login y ser el dueño.
-5. El **backend/panel** (mcmpanel) y el **scraper de lecturas** escriben con el
-   **Admin SDK**, que **ignora** estas reglas. Por eso `notifications`,
-   `seccion_oracion`, `profileConfig`, etc. son solo-lectura desde la app.
+5. La **intención** es que el backend/panel (mcmpanel) y el scraper de lecturas
+   escriban con credencial de servidor (Admin SDK / token), que ignora estas
+   reglas. Por eso `notifications`, `seccion_oracion`, `profileConfig`, etc.
+   son solo-lectura desde la app.
+
+> ### ⚠️ NO DESPLIEGUES ESTAS REGLAS TODAVÍA — romperían mcmpanel
+>
+> A fecha 2026-07: **mcmpanel NO usa Admin SDK**. El panel escribe con el SDK
+> cliente de Firebase **sin autenticación**, y sus funciones serverless
+> (`api/_lib/push.ts`) usan la API REST **sin token** (`.json` sin `?auth=`).
+> Solo el uploader del cantoral (`mcmapp-cantoral/scripts/update_firebase.py`)
+> usa token. Con estas reglas desplegadas, el panel perdería: la lectura de la
+> raíz (usa `onValue('/')`), todas las escrituras de secciones
+> (`/albums`, `/calendars`, `/profileConfig`, `/activities`, `/surveys`,
+> `/users/*/isAdmin`…), la lectura de `/pushTokens` para enviar push y la
+> escritura de `/notifications` y `/scheduledNotifications` (este último nodo
+> ni siquiera aparece en las reglas). **Prerequisito para desplegar**: dar al
+> panel auth real (Firebase Auth + allowlist `/admins`) o mover sus escrituras
+> a las funciones de `api/` con credencial de servidor. Ver
+> `docs/planes/PLAN_INTEGRACIONES.md` (Integración D).
 
 El fichero está **dividido por secciones comentadas**. Para **desactivar** una
 sección concreta (por si algo se descontrola), pon su `.read`/`.write` a `false`
@@ -54,7 +71,8 @@ o borra el bloque: el resto sigue funcionando.
 | `/app/feedback`                      |    —    | Sí (reportar bug)                               | Usuario                 |
 | `/app/evaluations/<id>`              | Por id  | Sí (encuesta de la app)                         | Usuario                 |
 | `/playlistShares/<code>`             | Por código | Sí (compartir playlist)                      | Usuario                 |
-| `/choirSessions/<code>`              | Por código | Sí (coro en vivo)                            | Usuario                 |
+| `/choirSessions/<clave>`             | Por clave  | Sí (coro en vivo; clave = id de coro o código) | Usuario               |
+| `/choirs/<choirId>`                  | Pública    | Sí (crear coro y subirle playlists)          | Usuario                 |
 | `/users/<uid>/**`                    | Solo dueño (auth) | Solo dueño (auth)                     | Usuario autenticado     |
 
 Notas:
@@ -62,6 +80,13 @@ Notas:
 - **Raíz no enumerable**: en `pushTokens`, `playlistShares` y `choirSessions` la
   raíz tiene `.read: false`; solo se accede a un nodo concreto si conoces su
   id/código. Así nadie puede listar todos los tokens ni todas las playlists.
+- **`choirs` SÍ es enumerable, a propósito**: la app necesita listar los coros
+  para que cada uno elija el suyo. Lo que se publica ahí es el nombre del coro
+  y el índice de sus playlists (nombre, fecha, código), nunca el contenido —
+  las canciones siguen en `/playlistShares/<code>`, que no es enumerable. La
+  escritura es por coro (`$choirId`), nunca en la raíz, así que nadie puede
+  borrar el directorio entero de una sentada. Ver
+  `docs/funcionalidades/COROS.md`.
 - **`notifications` es solo-lectura**: ningún cliente puede crear/borrar
   notificaciones; solo el panel con Admin SDK.
 

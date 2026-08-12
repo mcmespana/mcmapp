@@ -9,10 +9,14 @@ Cómo funciona cada sistema de la app, de principio a fin.
 
 | Documento | Qué cubre |
 | --------- | --------- |
+| [LOGIN.md](funcionalidades/LOGIN.md) | Inicio de sesión con Google y Apple en iOS, Android y web: arquitectura, variables de entorno, **huellas SHA-1 de Android** y diagnóstico de errores |
 | [NOTIFICACIONES.md](funcionalidades/NOTIFICACIONES.md) | Sistema de notificaciones push: cliente implementado, backend, plan de pruebas |
 | [EVENTOS.md](funcionalidades/EVENTOS.md) | Sistema de eventos (Jubileo, encuentros, retiros…): paths de Firebase y cómo añadir un evento nuevo |
 | [ENCUESTAS.md](funcionalidades/ENCUESTAS.md) | Sistema de encuestas y evaluaciones (guía funcional) |
+| [COROS.md](funcionalidades/COROS.md) | Coros, playlists compartidas y coro en vivo: `/choirs`, importar «la última», actualizar vs subir nueva, contraseña y caducidad de 24 h |
 | [ARREGLOS.md](funcionalidades/ARREGLOS.md) | Directiva `{arr:}` del cantoral (anotaciones de arreglos) + prompt del generador ChordPro |
+| [SUBRAYADO.md](funcionalidades/SUBRAYADO.md) | Subrayado de las lecturas de Contigo: rangos, componente de texto nativo y qué falta (build nativa) para el ítem "Subrayar" del menú del sistema |
+| [CANAL_PREVIEW.md](funcionalidades/CANAL_PREVIEW.md) | Modo tester ("Laboratorio Alpha"): cómo un dispositivo recibe los OTA de `preview` en vez de los de `production`, y cómo comprobarlo |
 
 ## Contratos de datos (App ↔ MCM Panel)
 
@@ -24,13 +28,28 @@ Si cambias uno de estos formatos, actualiza el contrato.
 | [NOTIFICACIONES_CONTRATO.md](contratos/NOTIFICACIONES_CONTRATO.md) | Payload de notificaciones push: rutas, `actionButtons[]`, segmentación |
 | [ENCUESTAS_CONTRATO.md](contratos/ENCUESTAS_CONTRATO.md) | Estructura de encuestas/evaluaciones en Firebase |
 | [PANEL_PERFILES.md](contratos/PANEL_PERFILES.md) | Sistema de perfiles: nodo `/profileConfig`, delegaciones, visibilidad |
+| [COMUNICA_WEBVIEW.md](contratos/COMUNICA_WEBVIEW.md) | Comunica embebido: `?app=1`, tema claro/oscuro (`?theme=` + cookie), zona segura, enlaces de acceso del correo |
 
 ## Planes técnicos
 
+> ★ **Empieza por [`BACKLOG.md`](planes/BACKLOG.md)** — es la fuente única de
+> verdad del orden de ejecución de todos los planes, qué está bloqueado por
+> una decisión pendiente,
+> y el protocolo de trabajo ("seguimos", "me sobran tokens"). Consúltalo
+> antes de priorizar nada.
+
 | Documento | Qué cubre |
 | --------- | --------- |
-| [MEJORAS.md](planes/MEJORAS.md) | Análisis técnico transversal (rendimiento, arquitectura, seguridad, DX, CI) con plan priorizado |
+| [BACKLOG.md](planes/BACKLOG.md) | ★ Orden de ejecución, decisiones pendientes, protocolo de trabajo |
 | [PLAN_CALIDAD.md](planes/PLAN_CALIDAD.md) | Plan de saneamiento de código por fases (archivos gigantes, contexts, tipos, tests) |
+| [PLAN_INTEGRACIONES.md](planes/PLAN_INTEGRACIONES.md) | Auditoría de integraciones app ↔ panel ↔ cantoral (2026-07): arreglos aplicados y acciones pendientes ejecutables una a una |
+| [PLAN_UI_NATIVA.md](planes/PLAN_UI_NATIVA.md) | Unificación de UI y componentes nativos (headers, botones, inputs, color) |
+| [PLAN_CARISMOCHITO.md](planes/PLAN_CARISMOCHITO.md) | Modo Carismochito: onboarding, colección, comportamiento |
+| [PLAN_WIDGET_CONTIGO.md](planes/PLAN_WIDGET_CONTIGO.md) | Widget nativo de hábitos diarios de Contigo |
+| [PLAN_PANEL_PANUELO.md](planes/PLAN_PANEL_PANUELO.md) | Concepto nuevo (sin plan funcional aún): colección de chapas en un pañuelo 3D |
+| [PLAN_TAGS.md](planes/PLAN_TAGS.md) | Etiquetas libres y transversales del cantoral: directiva `{tags:}`, catálogo opcional y flujo de búsqueda/descubrimiento |
+| [`planes/archivo/tacticos/`](planes/archivo/tacticos/README.md) | Planes tácticos 001–008 — **todos cerrados**, archivados |
+| [archivo/MEJORAS.md](planes/archivo/MEJORAS.md) | 🗄️ Archivado — análisis técnico de mayo 2026, superseded por lo de arriba |
 
 Las tareas accionables derivadas de estos planes están en
 [`mcm-app/TODO.md`](../mcm-app/TODO.md).
@@ -43,6 +62,8 @@ Referencia técnica sobre cómo está construida la app por dentro.
 | --------- | --------- |
 | [DESIGN.md](desarrollo/DESIGN.md) | Sistema de diseño (tokens, colores, tipografía, glass, componentes) |
 | [TABS_MAINTENANCE.md](desarrollo/TABS_MAINTENANCE.md) | Implementación dual de tabs (iOS NativeTabs vs Android/Web) |
+| [FIREBASE_REGLAS.md](desarrollo/FIREBASE_REGLAS.md) | Reglas de la base de datos: qué falta, qué debe cambiar el Panel y cómo desplegarlas |
+| [BUILD_AGOSTO_2026.md](desarrollo/BUILD_AGOSTO_2026.md) | ★ Paso a paso de la build de tienda: variables de Sentry, credenciales, pruebas |
 
 ## Seguridad
 

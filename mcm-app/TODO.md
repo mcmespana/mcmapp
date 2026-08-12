@@ -4,21 +4,153 @@
 > Agentes IA: consultad esta lista antes de trabajar. Al terminar una tarea,
 > **eliminadla de aquí** y documentad el cambio en `CHANGELOG.md` (las tareas
 > completadas no se acumulan en este archivo).
+>
+> Para saber **en qué orden** abordar los planes grandes (Calidad, UI Nativa,
+> Integraciones, Carismochito, Widget…) y qué decisiones están pendientes de
+> confirmación, ver `docs/planes/BACKLOG.md` — esta lista es el detalle de
+> tareas sueltas, no el orden global.
 
 ---
 
 ## Prioridad alta
 
+> Orden propuesto (repriorízalo si no lo ves). Los 1-3 están atados entre sí:
+> la rama de la barra de tabs no se mergea hasta validarla, y hay cosas que
+> sólo se pueden hacer con la build nativa delante.
+
+### 1. Sacar la build de tienda de agosto
+
+- [ ] **Todo el paso a paso está en `docs/desarrollo/BUILD_AGOSTO_2026.md`** —
+      qué variables configurar y dónde, el checklist de pruebas completo y el
+      orden de publicación. No se duplica aquí para que no haya dos listas que
+      se contradigan.
+- [ ] **Huellas SHA-1 de Android en Firebase** (§2.6 de ese documento) — el
+      login con Google en Android ya está en el código, pero sin registrar la
+      huella del keystore de EAS **y** la de Play App Signing, el botón falla
+      con `DEVELOPER_ERROR`. Son dos momentos: la primera antes del build de
+      desarrollo, la segunda después de subir el AAB a la Play Console. Detalle
+      y diagnóstico en `docs/funcionalidades/LOGIN.md`.
+
+Es lo que desbloquea el resto: la rama `claude/compact-tabs-bar-uxxaoz` lleva
+SDK 57, barra flotante, Reanimated 4, NSE de iOS, Sentry, analítica, icono de
+Carismochito y subrayado nativo. Todo NATIVO, nada sale por OTA.
+
+- [ ] **Quitar `updates.disableAntiBrickingMeasures: true` de `app.json`.** Ya
+      no lo usa nadie: el modo tester pasó a `setUpdateRequestHeadersOverride`,
+      que no lo necesita (ver `docs/funcionalidades/CANAL_PREVIEW.md`). Dejarlo
+      puesto quita la protección que garantiza poder publicar un update que
+      arregle un update roto — Expo lo desaconseja explícitamente en builds de
+      tienda. **Hay que hacerlo aquí y no antes**: tocar `app.json` dispara el
+      `guard-native` de `ota-production.yml`, que obliga a `[skip-ota]` y con
+      eso se saltaría la OTA. Como el flag solo se hornea al compilar, quitarlo
+      no cambia nada hasta esta build.
+
+### 1-bis. `expo export --platform web` — ✅ ARREGLADO (2026-08-08)
+
+Fallaba con `The method or property expo-modules-core.requireNativeViewManager
+is not available on web` y no generaba ni `index.html` ni el bundle. La causa no
+era el renderizado estático en sí: `app/(tabs)/_layout.tsx` importaba
+**estáticamente** los tres layouts de pestañas, así que el grafo de módulos de
+web llegaba a `expo-native-compact-tabs` — que llama a
+`requireNativeViewManager()` al cargarse y no trae shim web. Con importarlo
+bastaba, aunque la rama de `Platform.OS` no llegara a ejecutarse nunca.
+
+Arreglado con resolución por plataforma (`components/tabs/PlatformTabsLayout.tsx`
++ `.web.tsx`), que es la convención que ya usa el repo: en web Metro empaqueta el
+shim y el paquete nativo no entra en el bundle. Candado en
+`__tests__/tabsLayoutWebSafety.test.ts` para que un `import` directo no lo vuelva
+a romper — el fallo solo se vería al desplegar.
+
+### 2. React Compiler — lo que SÍ merece la pena
+
+> Contexto: el React Compiler está ACTIVADO (`experiments.reactCompiler: true`
+> en `app.json`). Estas reglas son su linter: marcan sitios donde NO puede
+> optimizar, así que esos componentes se quedan sin memoización automática. No
+> son bugs. Están en `warn` en `eslint.config.js`.
+
+- [ ] **`react-hooks/set-state-in-effect` — quedan 6** (eran 35). Los 29
+      arreglados el 2026-08-02 con dos patrones, ninguno de ellos `key={visible}`:
+
+      - **Estado DERIVADO** donde el efecto solo copiaba algo calculable:
+                    `useAdminStatus`, `useEventMeta` y `ChoirSessionContext` guardan ahora el
+                    resultado JUNTO a la clave a la que pertenece (uid / eventId / código),
+                    así lo viejo deja de contar solo; `SongListScreen` construye la lista con
+                    una función pura + `useMemo` (el efecto era `async` sin esperar a nada);
+                    `fotos.tsx` y `AlbumListScreen` comparten `hooks/useAlbumPagination.ts`;
+                    `useColorScheme.web.ts` usa `useSyncExternalStore` para el flag de
+                    hidratación.
+                  - **Ajuste durante el render** (el patrón que documenta React para «cambiar
+                    estado cuando cambia una prop») en los modales que se resetean al abrir y
+                    en las pantallas que reaccionan a un parámetro de navegación. Es
+                    equivalente al efecto pero sin el render intermedio con los datos
+                    anteriores, y **no cambia el comportamiento** (a diferencia de
+                    `key={visible}`, que además habría matado la animación de salida del
+                    `BottomSheet`).
+
+          Los **6 que quedan NO son deuda pendiente, son decisiones**; no vayas a por el
+          número:
+
+          - `WordleScreen` (×2) y `useWordleGame` — **código congelado**, CLAUDE.md
+                    prohíbe refactorizarlo.
+                  - `notifications.tsx:568` — auto-abrir por deep-link. Es una ACCIÓN
+                    disparada por la navegación, no estado que derivar: un efecto es
+                    justamente la herramienta correcta.
+                  - `AddToHomeBanner:30` — lee `window`/`localStorage`, que solo existen en
+                    cliente. Moverlo al render rompería la hidratación del render estático de
+                    web.
+                  - `useSongProcessor:523` — el efecto entero es síncrono y se podría pasar a
+                    `useMemo`, pero eso mete ~500 líneas de formateo ChordPro→HTML DENTRO del
+                    render en la pantalla más usada de la app. Hoy la pantalla pinta primero y
+                    formatea después; cambiarlo es una decisión de rendimiento **que hay que
+                    medir en dispositivo**.
+                  - ~~`ComunicaScreen`~~ — hecho al migrarlo a Reanimated.
+
+- [ ] **`react-hooks/preserve-manual-memoization` — quedan 5** (de 12). Los 7
+      mecánicos ya están hechos (el patrón era: usar `user?.uid` dentro de un
+      `useCallback` hace que el compilador infiera `user` entero y se salte el
+      componente; se arregla sacando `const uid = user?.uid` fuera). Los 5 que
+      quedan son de otra clase ("memoized in source but not in compilation
+      output"): `useMemo` que mutan un `Map` por dentro, o callbacks async con
+      setState. `app/notifications.tsx:511`, `SelectedSongsScreen` (×3),
+      `NotificationsBottomSheet:100`. Piden reestructurar cada caso y el premio
+      es pequeño: **hacerlo sólo de pasada si se toca ese fichero por otra
+      cosa**.
+- [ ] **NO tocar: `react-hooks/immutability` (26, eran 14)** — son `sharedValue.value =
+…`, o sea LA api de Reanimated. No tiene arreglo por diseño.
+- [ ] **NO tocar: `react-hooks/purity` (3)** — revisados uno a uno, los tres son
+      falsos positivos (`Date.now()` en un handler async de `ReflexionesScreen`,
+      `Math.random()` en un `useMemo` del Wordle, que además es código
+      congelado).
+- [ ] **Subir `react-hooks/refs` a `error`** en `eslint.config.js`: con la
+      migración hecha, los 34 que quedan son refs legítimas y habría que darles
+      su `eslint-disable-next-line` con el motivo antes de subir la regla.
+      `set-state-in-effect` tampoco puede subir tal cual — mismos 6 casos
+      justificados arriba. Hacerlo cuando la build de tienda esté validada, no
+      antes: son cambios que solo añaden ruido si hay que revertir algo.
+
+### 3. Headers que se esconden al hacer scroll — ✅ CERRADO (2026-08-03)
+
+Ya no queda ninguna pantalla con barra opaca fija. Fotos (sin hero) y Calendario
+(`headerShown: false`) fueron las dos últimas. **Los headers de evento ya eran
+transparentes con glass en iOS** desde junio — este TODO decía lo contrario y
+estaba desfasado; en Android/web siguen opacos a propósito, porque allí no hay
+glass del sistema que usar.
+
+Pendiente de mirar en dispositivo: que en Fotos y Calendario el contenido no
+quede pegado a la barra de estado ni le falte respiro arriba.
+
+### 4. Varios de prioridad alta
+
+- [ ] **Revisar las 4 dependencias que se quedaron atrás** (2026-08-01). No se
+      subieron por incompatibilidad REAL comprobada, no por prudencia — hay que
+      esperar a que el ecosistema se mueva. Ninguna afecta al binario que
+      instalan los usuarios: - `eslint` 9 → 10: rompe el `eslint-plugin-react` que trae
+      `eslint-config-expo` (`contextOrFilename.getFilename is not a function`).
+      Reintentar cuando salga `eslint-config-expo` con soporte de ESLint 10. - `jest` 29 → 30 (+ `@types/jest` 30): `jest-expo` 57 está construido
+      contra jest 29; mezclarlos rompe el runtime entero
+      (`_moduleMocker.clearMocksOnScope is not a function`). Va atado al SDK. - `typescript` 6 → 7, `@babel/core` 7 → 8: los fija Expo, no se tocan a
+      mano. Entrarán con el SDK 58.
 - [ ] **PDF — número de página y pie por canción**: parcial. Hecho: pie con nombre de playlist + "Página N" vía margin boxes de `@page` (funciona en web Chrome ≥131 y Android; iOS/WebKit no los soporta → validar y, si se quiere también en iOS, haría falta paginación JS). Pendiente: el "1 de 3" por canción multipágina — no viable con CSS de impresión, requeriría paginar por JS midiendo alturas.
-- [ ] **iPad: habilitar landscape a nivel nativo** — añadir
-      `UISupportedInterfaceOrientations~ipad` (las 4 orientaciones) en
-      `ios.infoPlist` de `app.json` para que iPad rote (iPhone se queda en
-      portrait). ⚠️ Cambio NATIVO → **build de tienda + commit `[skip-ota]`**, no
-      OTA. Hacerlo en la próxima release de tienda. Los layouts de iPad (pasada
-      del 2026-06-21, ver CHANGELOG) ya están listos para cuando se active.
-- [ ] **iPad: verificar en dispositivo real (9/10)** en horizontal y vertical
-      todas las pantallas y modales/bottom sheets (la pasada de layouts no se ha
-      probado en iPad físico). Posibles ajustes finos tras la prueba.
 - [ ] **Command Palette v2: deep-link a contenidos** — el palette actual (`CommandPalette.tsx`) solo navega a tabs/pantallas top-level. Para saltar a una canción concreta o a un punto dentro de los stacks anidados hay que exponer un `navigation ref` (p.ej. `CancioneroNavRefContext`). Después indexar canciones (`songs/data`), reflexiones (`compartiendo/data`) y eventos del calendario.
 
 ---
@@ -27,21 +159,28 @@
 
 > Hecho en la pasada del 2026-06-21 (ver CHANGELOG): headers nativos de Contigo,
 > headers transparentes en Calendario/Eventos Pasados, búsqueda nativa en todas
-> las categorías, canción con letra full-bleed, `GlassActionGroup`/`AppIconButton`/
+> las categorías, canción con letra full-bleed, `GlassActionGroup`/
 > `AppTextField`. Pendiente de la review de componentes:
 
 - [ ] **Pulido del glass (iOS 26) — fino, con dispositivo delante**: botones del
       header de la canción "justos" dentro de la cápsula, seam/línea del header
-      sobre letra blanca, y acercar `AppIconButton`/`GlassSurface` al bar item
-      nativo. Difícil a ciegas. (`components/ui/AppIconButton.tsx`, `GlassSurface.ios.tsx`)
+      sobre letra blanca, y acercar el glass al bar item nativo. Difícil a
+      ciegas. (`GlassSurface.ios.tsx`)
 - [ ] **Headers de evento (hub + sub-pantallas) transparentes** como el cantoral:
       hoy usan el "floating header" opaco (`eventScreenOptions` con
       `FloatingHeaderBackground`). Unificar al glass del sistema — cambio mayor,
       revisar el inset de cada hero. (`app/screens/eventStackScreens.tsx`)
-- [ ] **Seguir Fase 2 (componentes unificados)**: migrar más `TextInput` a
-      `AppTextField` (quedan ~13); crear `AppPrimaryButton` (CTA de modales) y
-      `SegmentedControl`; adoptar `EmptyState` en los ~20 sitios que reinventan
-      el "no hay…". Ver §2 de `PLAN_UI_NATIVA.md`.
+- [x] **Fase 2 (componentes unificados) — CERRADA (2026-08-03)**:
+      `SegmentedControl` creado y adoptado en el calendario, `AppPrimaryButton`
+      en `ArrangementInputModal`, `EmptyState` en 11 pantallas (SongList y
+      Grupos migrados de sus versiones a mano).
+
+      **Los `TextInput` que quedan NO se migran, y está decidido**: los
+      buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
+      de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
+      celdas del código; y los de Revisión quedaron, tras el refactor del examen
+      del día, como campos SIN borde dentro de una fila que sí lo tiene —
+      `AppTextField` les metería un borde dentro de otro.
 
 ## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
 
@@ -54,13 +193,6 @@
 - [ ] **Colección + contador** al tocar la mascota (animación especial); guardado
       por usuario y **solo con sesión iniciada** (si no, avisar de pérdida de
       progreso).
-- [ ] **Icono de la app en verde/Carismochito** al activar el modo → iconos
-      alternativos (iOS `setAlternateIconName`, Android `activity-alias`). ⚠️
-      NATIVO (build de tienda, no OTA); persiste fuera de la app; en Android el
-      swap es tosco. (Ya estaba en "Prioridad baja"; detalle en el plan.)
-
-## Widget de Contigo (ver `docs/planes/PLAN_WIDGET_CONTIGO.md`)
-
 - [ ] **Widget de los 3 hábitos diarios** (Evangelio/Oración/Revisión) con marca,
       deep-link y recordatorio (notificación local / Carismochito). ⚠️ NATIVO
       (WidgetKit iOS / App Widget Android) → build de tienda + App Group para
@@ -73,22 +205,18 @@
 > Estas mejoras requieren build nativo o trabajo nuevo y por eso quedaron fuera
 > de la entrega OTA de 2026-06-02.
 
-- [ ] **NSE iOS para imágenes en la notificación del sistema** — hoy `richContent.image`
-  - `mutableContent` NO pintan imagen en iOS (no hay Notification Service Extension);
-    la imagen solo se ve in-app vía `data.imageUrl`. Añadir NSE (Android ya funciona).
-    ⚠️ Código nativo → requiere build de producción y commit con `[skip-ota]`.
-- [ ] **Deep link a un evento/actividad concreto** — hoy el destino navegable es
-      `/(tabs)/mas`; no hay ruta estable tipo `/(tabs)/mas/evento/<id>`. Registrar una
-      ruta con parámetro `eventId` y propagarla para que una notificación abra el evento
-      directamente (Jubileo, visitapapa26, `activities/<nombre>`).
-- [ ] **Channels Android por tipo/prioridad** — hoy solo existe el channel `default`
-      (importancia MAX), así que `priority` no diferencia el display. Crear channels
-      (`urgente`, `eventos`…) para heads-up/sonido diferenciados y permitir que el panel
-      mande `channelId`. ⚠️ Puede requerir build nativo.
-- [ ] **Usar `data.category` en el centro de notificaciones** — hoy se guarda pero no
-      dispara color/icono/agrupación/filtro. Diseñar el tratamiento visual por categoría
-      y converger el vocabulario con el panel (`eventos` vs `evento`, `cancionero` vs
-      `cantoral`).
+- [ ] **Channels Android — probar en dispositivo real antes de production** ⚠️ los
+      canales YA están implementados (2026-08-03): siete, uno por categoría del Panel,
+      en `constants/notificationChannels.ts` + `notifications/androidChannels.ts`.
+      Queda lo que siempre fue requisito y no se puede hacer a ciegas:
+      (a) **verificar en un Android real** el heads-up y el sonido de cada canal —
+      aparecen en los ajustes del sistema de TODOS los Android y las preferencias que
+      el usuario toque ya no se pueden revertir desde la app
+      (`deleteNotificationChannelAsync` no las borra);
+      (b) **que el Panel mande `channelId`** (cross-repo) — sin él todo cae en
+      `default` como hasta ahora, y con un `channelId` que la app no declare Android
+      **no entrega** la notificación. Tabla cerrada en
+      `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8.
 - [ ] **(Panel) Corregir el contrato** — que el MCM Panel use las rutas reales,
       segmente por `topics`/`profileType`/`delegationId` (no `userType`/`delegacion`) y
       desacople `categoryId` (solo iOS) de `data.category`. Detalle en
@@ -98,22 +226,30 @@
 
 ## Mantenimiento
 
-- [ ] **Ampliar cobertura de tests**: ya hay 16 ficheros en `__tests__/` (entre ellos `logger` y `dismissNotification`, añadidos en jun-2026). Priorizar lo que falta: `useSongProcessor`, `useChoirSession`, `useResolvedProfileConfig`, y al menos una pantalla con render snapshot.
+- [ ] **Ampliar cobertura de tests — tarea ideal para "quemar tokens"** (anotado
+      2026-08-01). Hoy hay 325 tests en 34 ficheros, pero **casi todos son de
+      lógica pura**: no hay ni un test que renderice una pantalla. Justo el tipo
+      de bug que se coló con la barra de tabs (`ActionButton` remontándose en
+      cada render) lo habría cazado un render test.
 
----
+      Por dónde empezar, en orden de rentabilidad:
+                              1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+                                 Más): que monten sin reventar con datos vacíos, con datos y offline.
+                              2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+                                 hook con sus contextos).
+                              3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+                                 releer del bookmark.
+                              4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-## Prioridad baja
+                              Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+                              lee la suite entera para tocar código: lee los tests del área que toca. Lo
+                              que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+                              de en una build de 20 minutos— y evita iteraciones enteras como la del
+                              tamaño de los iconos. El coste real de una suite grande es de
+                              MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+                              detalles internos) que hay que reescribir en cada refactor. Por eso la
+                              lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
-- [ ] **Modo carismochito — cambiar el icono del launcher (icono "de fuera") a verde**:
-      hoy el modo solo tiñe la UI dentro de la app (incluido el cuadro-logo del
-      header de la Home). Cambiar el icono del móvil requiere **iconos
-      alternativos**: iOS `setAlternateIconName`, Android `activity-alias`
-      (vía `expo-dynamic-app-icon` o similar). Peros a valorar antes de hacerlo:
-      ⚠️ es **código nativo** → build de tienda, no OTA, y los iconos deben ir
-      empaquetados en el build; ⚠️ el cambio **persiste fuera de la app** (hay que
-      revertirlo al desactivar el modo); ⚠️ en Android el swap es tosco (ocurre al
-      pasar a segundo plano y puede reiniciar atajos). Encaja regular con un modo
-      efímero por agitado — decidir si compensa.
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales, y (jun-2026) Fotos (`AlbumListScreen`/`AlbumCard`), Materiales, Comida, MasHome y `EventItem`. Horario es de solo lectura (sin interactivos). Pendiente: validar en dispositivo con VoiceOver/TalkBack y revisar pantallas/flujos secundarios.
 
 ---
@@ -154,28 +290,22 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 
 ## Mejoras técnicas — rendimiento
 
-> Análisis técnico transversal completo en **`docs/planes/MEJORAS.md`** (raíz del monorepo). Cada item de abajo tiene su sección con archivo:línea y propuesta concreta. Los quick wins de aquella primera tanda ya están hechos.
+> Análisis técnico transversal completo en **`docs/planes/archivo/MEJORAS.md`** (raíz del monorepo). Cada item de abajo tiene su sección con archivo:línea y propuesta concreta. Los quick wins de aquella primera tanda ya están hechos.
 
-- [ ] **React Compiler** — activar `babel-plugin-react-compiler` (soportado en React 19). Memoiza automáticamente. Ver MEJORAS.md §1.6.
 - [ ] Auditar si `react-native-render-html` compensa (solo se usa en `FormattedContent.tsx`). Si BBCode simple bastara, ahorraría peso de bundle. Ver MEJORAS.md §1.10.
 - [ ] Cómo medir antes/después (cold start, transpose, bytes de red, memoria) → MEJORAS.md "Lo que NO se ha cubierto" §1.
-
----
-
-## Calidad de código y mantenibilidad
-
-- [ ] **Trocear ficheros enormes**: `SelectedSongsScreen.tsx` (1.750 líneas), `NotificationsBottomSheet.tsx` (908), `WordleScreen.tsx` (776), `SecretPanelModal.tsx` (660). Extraer subcomponentes, hooks y utilidades. Ver MEJORAS.md §2.1 y el plan por fases en `docs/planes/PLAN_CALIDAD.md`.
-- [ ] **Agrupar providers afines** en `app/_layout.tsx` (12 anidados). Por ejemplo, combinar `UserProfile` + `ProfileConfig`. Ver MEJORAS.md §2.2.
-- [ ] **Conectar el logger con Sentry**: `utils/logger.ts` ya expone `setReporter`; falta integrar `@sentry/react-native` y llamarlo en el arranque (ver «Crash reporting» abajo).
 
 ---
 
 ## Seguridad y observabilidad
 
 - [ ] **Firebase App Check** (DeviceCheck/Play Integrity) para evitar abuso de las API keys públicas (`EXPO_PUBLIC_*`). Ver MEJORAS.md §7.2.
-- [ ] **Crash reporting** — integrar Sentry (`@sentry/react-native`). Hoy `ErrorBoundary` muestra UI pero no reporta. Ver MEJORAS.md §8.1.
-- [ ] **Analítica de uso** — Firebase Analytics o PostHog, con eventos clave (`app_open`, `tab_view`, `song_open`, `playlist_create`, `notification_received`). Sin esto no se puede priorizar por datos reales. Ver MEJORAS.md §8.3.
-- [ ] **Política de privacidad / consentimiento** — revisar si está pendiente para stores europeas / notificaciones push. Ver MEJORAS.md §7.4.
+- [ ] **Fichas de privacidad de las tiendas** ⚠️ **bloquea publicar**: con la
+      analítica encendida hay que declarar "datos de uso" en App Store y en el
+      Data Safety de Play, y decirlo en la política de privacidad. Detalle y
+      salida (no poner la clave de Aptabase) en
+      `docs/desarrollo/BUILD_AGOSTO_2026.md` §6. Los tres enlaces legales ya
+      están dentro de la app (`constants/legalLinks.ts` → pie de "Más").
 
 ---
 
@@ -187,8 +317,6 @@ La home actual es un grid de botones estático. Opciones para hacerla más útil
 
 ## Offline / red / PWA
 
-- [ ] **Reintentos con backoff** en `useFirebaseData` cuando `get()` falla por red intermitente (hoy se traga el error). Ver MEJORAS.md §9.2.
-- [ ] **Sincronización en background** al volver a estar online (no esperar al próximo mount). Ver MEJORAS.md §9.2.
 - [ ] **Auditar política de caché PWA** (`useRegisterServiceWorker`): stale-while-revalidate, cabeceras correctas. Ver MEJORAS.md §9.3.
 
 ---
