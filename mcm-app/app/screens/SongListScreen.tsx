@@ -23,7 +23,25 @@ import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
 import SongListItem from '../../components/SongListItem';
 import BottomSheet from '@/components/BottomSheet';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { extractSongMedia, type MediaLink } from '@/types/songMedia';
+import {
+  extractSongMedia,
+  mediaKinds,
+  type MediaLink,
+} from '@/types/songMedia';
+import { useSongTagIndex } from '@/hooks/useSongTags';
+import TagContextBar from '@/components/song-tags/TagContextBar';
+import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
+import {
+  coOccurringTags,
+  parseTagCategoryId,
+  resolveTag,
+  songHasAllTags,
+  songTagSlugs,
+  tagsTitle,
+  type ResolvedTag,
+  type SongTagIndex,
+} from '@/utils/songTags';
+import { h } from '@/utils/haptics';
 
 interface Song {
   title: string;
@@ -45,12 +63,20 @@ interface Song {
   numericFilenamePart?: string;
   sortTitle?: string;
   searchableText?: string;
+  tags?: string[];
+  /** Solo en modo etiqueta: título de la categoría a la que pertenece. */
+  groupTitle?: string;
 }
 
 interface SongCategory {
   categoryTitle: string;
   songs: Song[];
 }
+
+/** Fila de la lista: una canción o la cabecera de una categoría. */
+type ListRow =
+  | { kind: 'section'; key: string; title: string; count: number }
+  | { kind: 'song'; key: string; song: Song };
 
 const getSongsData = (data: any): Record<string, SongCategory> => {
   try {
@@ -72,6 +98,106 @@ const getSongsData = (data: any): Record<string, SongCategory> => {
 const isIOS = Platform.OS === 'ios';
 
 /**
+ * Texto sobre el que busca el buscador. Además del título y el autor incluye
+ * los LABELS de las etiquetas de la canción, así buscar "ramos" saca también
+ * las canciones etiquetadas aunque no lleven la palabra en el título.
+ */
+function makeSearchableText(song: Song, tagIndex?: SongTagIndex): string {
+  const base = `${song.title || ''} ${song.author || ''}`;
+  if (!tagIndex) return base.toLowerCase();
+  const slugs = songTagSlugs(song, tagIndex.aliases);
+  if (slugs.length === 0) return base.toLowerCase();
+  const labels = slugs
+    .map((slug) => `${slug} ${resolveTag(slug, tagIndex).label}`)
+    .join(' ');
+  return `${base} ${labels}`.toLowerCase();
+}
+
+/**
+ * Lista de una ETIQUETA (o del cruce de varias, en AND): las canciones que la
+ * llevan, agrupadas por categoría y en el orden normal del cantoral.
+ *
+ * Precisamente porque una etiqueta es transversal, la categoría es el contexto
+ * que falta: sin ella la lista es un batiburrillo sin jerarquía.
+ */
+function buildTagSongList(
+  songsData: Record<string, SongCategory>,
+  slugs: string[],
+  tagIndex: SongTagIndex,
+): { songs: Song[]; error: string | null } {
+  const categoryKeys = Object.keys(songsData).sort((a, b) =>
+    (songsData[a]?.categoryTitle ?? a).localeCompare(
+      songsData[b]?.categoryTitle ?? b,
+    ),
+  );
+
+  const out: Song[] = [];
+  for (const categoryKey of categoryKeys) {
+    const category = songsData[categoryKey];
+    const categorySongs = Array.isArray(category?.songs) ? category.songs : [];
+    const matching = categorySongs
+      .filter((song) => songHasAllTags(song, slugs, tagIndex.aliases))
+      .map((song) => {
+        const titleMatch = song.title.match(/^(\d{1,3})\.\s*/);
+        let numericPart = '';
+        if (titleMatch && titleMatch[1]) {
+          numericPart = titleMatch[1].padStart(2, '0');
+        } else {
+          const filenameMatch = song.filename?.match(/_(\d+)\.html$/);
+          if (filenameMatch && filenameMatch[1]) {
+            numericPart = filenameMatch[1].padStart(2, '0');
+          }
+        }
+        return {
+          ...song,
+          // La categoría REAL (no la letra): la usa el detalle para saber de
+          // dónde viene la canción.
+          originalCategoryKey: categoryKey,
+          groupTitle: category.categoryTitle ?? categoryKey,
+          numericFilenamePart: numericPart,
+          searchableText: makeSearchableText(song, tagIndex),
+        };
+      });
+
+    matching.sort((a, b) => {
+      const numA = parseInt(a.numericFilenamePart, 10) || Infinity;
+      const numB = parseInt(b.numericFilenamePart, 10) || Infinity;
+      if (numA !== numB) return numA - numB;
+      return a.title.localeCompare(b.title);
+    });
+    out.push(...matching);
+  }
+
+  return { songs: out, error: null };
+}
+
+/** Corta una lista YA ordenada por categoría en filas de sección + canción. */
+function toGroupedRows(songs: Song[]): ListRow[] {
+  const rows: ListRow[] = [];
+  let currentTitle: string | null = null;
+  let headerIndex = -1;
+
+  songs.forEach((song) => {
+    const title = song.groupTitle ?? '';
+    if (title !== currentTitle) {
+      currentTitle = title;
+      headerIndex = rows.length;
+      rows.push({
+        kind: 'section',
+        key: `section-${song.originalCategoryKey ?? title}`,
+        title,
+        count: 0,
+      });
+    }
+    const header = rows[headerIndex];
+    if (header.kind === 'section') header.count += 1;
+    rows.push({ kind: 'song', key: song.filename, song });
+  });
+
+  return rows;
+}
+
+/**
  * Construye la lista de canciones de una categoría —o de TODAS, con
  * `__ALL__`— ya ordenada y con los campos derivados que usan el buscador y el
  * índice alfabético.
@@ -83,6 +209,7 @@ const isIOS = Platform.OS === 'ios';
 function buildSongList(
   songsData: Record<string, SongCategory>,
   categoryId: string,
+  tagIndex?: SongTagIndex,
 ): { songs: Song[]; error: string | null } {
   try {
     if (categoryId === '__ALL__') {
@@ -113,8 +240,7 @@ function buildSongList(
           }
           // Pre-calculate the clean title for sorting (Schwartzian transform)
           const sortTitle = song.title.replace(/^\d+\.\s*/, '').toLowerCase();
-          const searchableText =
-            `${song.title || ''} ${song.author || ''}`.toLowerCase();
+          const searchableText = makeSearchableText(song, tagIndex);
           return {
             ...song,
             originalCategoryKey: categoryLetter,
@@ -159,8 +285,7 @@ function buildSongList(
           numericPart = filenameMatch[1].padStart(2, '0');
         }
       }
-      const searchableText =
-        `${song.title || ''} ${song.author || ''}`.toLowerCase();
+      const searchableText = makeSearchableText(song, tagIndex);
       return { ...song, numericFilenamePart: numericPart, searchableText };
     });
     songsWithNumericPart.sort((a, b) => {
@@ -221,10 +346,77 @@ export default function SongsListScreen({
     useSelectedSongs();
   const [search, setSearch] = useState('');
   const [searchToggled, setSearchToggled] = useState(false);
-  const { songs, error } = useMemo(
-    () => buildSongList(songsData, categoryId),
-    [songsData, categoryId],
+
+  // ── Modo etiqueta ────────────────────────────────────────────────────────
+  // La categoría virtual `__TAG__:<slug>` (hermana de `__ALL__`) hereda gratis
+  // la lista, el buscador, el swipe para añadir a la playlist y el estado
+  // vacío. El cruce de etiquetas vive en estado LOCAL: cada refinamiento es un
+  // cambio dentro de la misma pantalla, no una pantalla nueva, así que "atrás"
+  // siempre devuelve al cantoral y no a un cruce intermedio.
+  const isTagMode = useMemo(
+    () => parseTagCategoryId(categoryId) !== null,
+    [categoryId],
   );
+  const [activeSlugs, setActiveSlugs] = useState<string[]>(
+    () => parseTagCategoryId(categoryId) ?? [],
+  );
+  // Ajuste de estado al cambiar de prop, no `useEffect`: si algún día se llega
+  // a esta misma pantalla con otra etiqueta sin remontarla, el cruce se
+  // reinicia en el MISMO render, sin un fotograma con la lista anterior.
+  const [prevCategoryId, setPrevCategoryId] = useState(categoryId);
+  if (prevCategoryId !== categoryId) {
+    setPrevCategoryId(categoryId);
+    setActiveSlugs(parseTagCategoryId(categoryId) ?? []);
+  }
+  const tagIndex = useSongTagIndex(songsData);
+  const [showTagSheet, setShowTagSheet] = useState(false);
+  const pendingTagRef = useRef<ResolvedTag | null>(null);
+
+  const { songs, error } = useMemo(
+    () =>
+      isTagMode
+        ? buildTagSongList(songsData, activeSlugs, tagIndex)
+        : buildSongList(songsData, categoryId, tagIndex),
+    [songsData, categoryId, isTagMode, activeSlugs, tagIndex],
+  );
+
+  const activeTags = useMemo(
+    () => activeSlugs.map((slug) => resolveTag(slug, tagIndex)),
+    [activeSlugs, tagIndex],
+  );
+  // Candidatas de refinamiento sobre el resultado SIN filtrar por el buscador:
+  // así la barra no baila mientras se escribe.
+  const candidateTags = useMemo(
+    () => (isTagMode ? coOccurringTags(songs, activeSlugs, tagIndex) : []),
+    [isTagMode, songs, activeSlugs, tagIndex],
+  );
+
+  const handleAddTag = useCallback((tag: ResolvedTag) => {
+    setActiveSlugs((prev) =>
+      prev.includes(tag.slug) ? prev : [...prev, tag.slug],
+    );
+  }, []);
+
+  // Soltar la última etiqueta activa es salir de la pantalla: una lista de
+  // etiqueta sin etiqueta no es nada.
+  const handleRemoveTag = useCallback(
+    (tag: ResolvedTag) => {
+      if (activeSlugs.length <= 1) {
+        navigation.goBack();
+        return;
+      }
+      setActiveSlugs((prev) => prev.filter((slug) => slug !== tag.slug));
+    },
+    [activeSlugs.length, navigation],
+  );
+
+  const handleTagSheetCloseComplete = useCallback(() => {
+    const tag = pendingTagRef.current;
+    if (!tag) return;
+    pendingTagRef.current = null;
+    setActiveSlugs([tag.slug]);
+    setSearch('');
+  }, []);
   const [menuSong, setMenuSong] = useState<Song | null>(null);
   // Message to share — stored in a ref so we can fire it after the sheet
   // Modal is fully dismissed (iOS can't present two Modals simultaneously).
@@ -244,8 +436,18 @@ export default function SongsListScreen({
   // Header: title + optional search toggle button
   useLayoutEffect(() => {
     const cleanCategoryName = categoryName.replace(/^🔎\s*/, '');
+    // En modo etiqueta el título lo manda el estado, no el parámetro: al
+    // cruzar o soltar etiquetas cambia sin salir de la pantalla.
+    const tagTitle = isTagMode
+      ? [
+          activeTags.length === 1 ? activeTags[0]?.emoji : undefined,
+          tagsTitle(activeSlugs, tagIndex),
+        ]
+          .filter(Boolean)
+          .join(' ')
+      : '';
     navigation.setOptions({
-      title: isSearchAll ? 'Buscar' : cleanCategoryName,
+      title: isTagMode ? tagTitle : isSearchAll ? 'Buscar' : cleanCategoryName,
       headerSearchBarOptions: nativeSearch
         ? {
             placeholder: 'Busca por título, autor...',
@@ -259,31 +461,51 @@ export default function SongsListScreen({
               setSearch(e.nativeEvent.text),
           }
         : undefined,
-      // El botón-lupa custom solo en web (donde no hay barra nativa). En
-      // iOS/Android la barra nativa lo sustituye.
-      headerRight: nativeSearch
-        ? undefined
-        : isSearchAll
+      // En modo etiqueta el header lleva además el botón de etiquetas, para
+      // saltar a otra sin volver al cantoral. En el resto, el botón-lupa
+      // custom solo en web (donde no hay barra nativa): en iOS/Android la
+      // barra nativa lo sustituye.
+      headerRight: isTagMode
+        ? () => (
+            <TouchableOpacity
+              onPress={() => {
+                h.tap();
+                setShowTagSheet(true);
+              }}
+              style={styles.headerButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityLabel="Cambiar de etiqueta"
+            >
+              <MaterialIcons
+                name="sell"
+                size={22}
+                color={isIOS ? '#f4c11e' : isDark ? '#FFFFFF' : '#1a1a1a'}
+              />
+            </TouchableOpacity>
+          )
+        : nativeSearch
           ? undefined
-          : () => (
-              <TouchableOpacity
-                onPress={() => setSearchToggled((v) => !v)}
-                style={styles.headerButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <MaterialIcons
-                  name={searchVisible ? 'search-off' : 'search'}
-                  size={24}
-                  color={
-                    isIOS
-                      ? '#f4c11e'
-                      : Platform.OS === 'web'
-                        ? '#1a1a1a'
-                        : '#1a1a1a'
-                  }
-                />
-              </TouchableOpacity>
-            ),
+          : isSearchAll
+            ? undefined
+            : () => (
+                <TouchableOpacity
+                  onPress={() => setSearchToggled((v) => !v)}
+                  style={styles.headerButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <MaterialIcons
+                    name={searchVisible ? 'search-off' : 'search'}
+                    size={24}
+                    color={
+                      isIOS
+                        ? '#f4c11e'
+                        : Platform.OS === 'web'
+                          ? '#1a1a1a'
+                          : '#1a1a1a'
+                    }
+                  />
+                </TouchableOpacity>
+              ),
     });
   }, [
     navigation,
@@ -293,6 +515,10 @@ export default function SongsListScreen({
     styles.headerButton,
     nativeSearch,
     isDark,
+    isTagMode,
+    activeSlugs,
+    activeTags,
+    tagIndex,
   ]);
 
   const filteredSongs = useMemo(() => {
@@ -305,9 +531,35 @@ export default function SongsListScreen({
     });
   }, [songs, search]);
 
-  // ¿Alguna canción de la lista tiene multimedia? Para mostrar la leyenda.
+  // En modo etiqueta la lista lleva cabeceras de categoría intercaladas; en el
+  // resto es la lista de canciones de siempre.
+  const listRows = useMemo<ListRow[]>(
+    () =>
+      isTagMode
+        ? toGroupedRows(filteredSongs)
+        : filteredSongs.map((song) => ({
+            kind: 'song' as const,
+            key: song.filename,
+            song,
+          })),
+    [isTagMode, filteredSongs],
+  );
+
+  const categoryCount = useMemo(
+    () =>
+      isTagMode ? listRows.filter((row) => row.kind === 'section').length : 0,
+    [isTagMode, listRows],
+  );
+
+  // ¿Alguna canción de la lista tiene vídeo o audio? La leyenda explica esos
+  // dos puntitos, así que se mira eso y no la ficha entera (que ahora también
+  // incluye las etiquetas).
   const hasAnyMedia = useMemo(
-    () => songs.some((s) => extractSongMedia(s) !== null),
+    () =>
+      songs.some((s) => {
+        const kinds = mediaKinds(extractSongMedia(s));
+        return kinds.video || kinds.audio;
+      }),
     [songs],
   );
 
@@ -356,6 +608,9 @@ export default function SongsListScreen({
         capo: song.capo,
         content: song.content || '',
         media: extractSongMedia(song) ?? undefined,
+        // En modo etiqueta la lista de navegación es la de la etiqueta: el
+        // swipe entre canciones se mueve dentro de la etiqueta, no de la
+        // categoría de la que salga cada canción.
         navigationList:
           categoryId === '__ALL__'
             ? undefined
@@ -371,10 +626,12 @@ export default function SongsListScreen({
         currentIndex: categoryId === '__ALL__' ? undefined : index,
         source: categoryId === '__ALL__' ? undefined : 'category',
         firebaseCategory:
-          categoryId === '__ALL__' ? song.originalCategoryKey : categoryId,
+          categoryId === '__ALL__' || isTagMode
+            ? song.originalCategoryKey
+            : categoryId,
       });
     },
-    [songs, categoryId, navigation],
+    [songs, categoryId, isTagMode, navigation],
   );
 
   // ListHeaderComponent: search bar + song count
@@ -422,6 +679,11 @@ export default function SongsListScreen({
             {filteredSongs.length}{' '}
             {filteredSongs.length === 1 ? 'canción' : 'canciones'}
             {search.length > 0 ? ' encontradas' : ''}
+            {isTagMode && categoryCount > 0
+              ? ` · ${categoryCount} ${
+                  categoryCount === 1 ? 'categoría' : 'categorías'
+                }`
+              : ''}
           </Text>
           {hasAnyMedia && (
             <View style={styles.legend}>
@@ -453,11 +715,24 @@ export default function SongsListScreen({
       styles,
       setSearch,
       isDark,
+      isTagMode,
+      categoryCount,
     ],
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: Song }) => {
+    ({ item: row }: { item: ListRow }) => {
+      if (row.kind === 'section') {
+        return (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionHeaderText} numberOfLines={1}>
+              {row.title}
+            </Text>
+            <Text style={styles.sectionHeaderCount}>{row.count}</Text>
+          </View>
+        );
+      }
+      const item = row.song;
       // ⚡ Bolt: Short-circuit optimization. We check the O(1) boolean `isSongSelected` first.
       // If false, we skip the `getSelectedSong` lookup entirely, avoiding redundant object mapping
       // for the vast majority of unselected songs during list re-renders.
@@ -485,6 +760,9 @@ export default function SongsListScreen({
       getSelectedSong,
       addSong,
       removeSong,
+      styles.sectionHeader,
+      styles.sectionHeaderText,
+      styles.sectionHeaderCount,
     ],
   );
 
@@ -553,12 +831,36 @@ export default function SongsListScreen({
           </TouchableOpacity>
         </View>
       </BottomSheet>
+      {isTagMode && (
+        <TagContextBar
+          activeTags={activeTags}
+          candidates={candidateTags}
+          isDark={isDark}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+        />
+      )}
+
+      {isTagMode && (
+        <TagCloudSheet
+          visible={showTagSheet}
+          onClose={() => setShowTagSheet(false)}
+          tags={tagIndex.tags}
+          activeSlugs={activeSlugs}
+          onSelectTag={(tag) => {
+            pendingTagRef.current = tag;
+            setShowTagSheet(false);
+          }}
+          onCloseComplete={handleTagSheetCloseComplete}
+        />
+      )}
+
       <Animated.FlatList
         ref={listRef}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        data={filteredSongs}
-        keyExtractor={(item) => item.filename}
+        data={listRows}
+        keyExtractor={(item: ListRow) => item.key}
         initialNumToRender={15}
         maxToRenderPerBatch={20}
         windowSize={5}
@@ -571,15 +873,23 @@ export default function SongsListScreen({
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <EmptyState
-            emoji="🔍"
-            title="No hemos encontrado esa canción"
-            subtitle={
-              search.length > 0
-                ? 'Prueba con otro título o nombre de autor'
-                : undefined
-            }
-          />
+          isTagMode && search.length === 0 ? (
+            <EmptyState
+              emoji="🏷️"
+              title="Ninguna canción con estas etiquetas"
+              subtitle="Suelta alguna de las etiquetas de arriba para ver más"
+            />
+          ) : (
+            <EmptyState
+              emoji="🔍"
+              title="No hemos encontrado esa canción"
+              subtitle={
+                search.length > 0
+                  ? 'Prueba con otro título o nombre de autor'
+                  : undefined
+              }
+            />
+          )
         }
       />
     </View>
@@ -649,6 +959,37 @@ const createStyles = (
       fontSize: 11,
       color: isDark ? '#48484A' : '#D1D1D6',
       marginHorizontal: 1,
+    },
+    // Cabecera de categoría dentro de una etiqueta. Mismo peso visual que las
+    // cabeceras de sección del resto de la app: la categoría es el contexto
+    // que le falta a una etiqueta, no un adorno.
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      paddingHorizontal: 16,
+      paddingVertical: 9,
+      marginTop: 8,
+      marginHorizontal: isWide ? 0 : -12,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+    },
+    sectionHeaderText: {
+      flex: 1,
+      fontSize: 13,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      color: isDark ? '#AEAEB2' : '#636366',
+    },
+    sectionHeaderCount: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: isDark ? '#8E8E93' : '#8E8E93',
+      fontVariant: ['tabular-nums'],
     },
     listContent: {
       paddingHorizontal: isWide ? 20 : 12,

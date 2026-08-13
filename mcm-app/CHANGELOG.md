@@ -18,6 +18,49 @@
 
 ---
 
+## 2026-08-13 21:40 — Etiquetas del cantoral (`{tags:}`): botón del header, nube y pantalla de etiqueta
+
+Sistema de **etiquetas libres y transversales** para las canciones ("viejunas",
+"domingo de ramos", "infantiles"…), sobre el diseño 1d de Claude Design. Una
+etiqueta no es un filtro: es una puerta de entrada al cantoral. Documentación
+completa en `docs/funcionalidades/ETIQUETAS.md`.
+
+Qué se ve:
+
+- **Botón 🏷️ en el header del cantoral**, junto a la lupa, como bar item nativo
+  (`CategoriesScreen`). **Solo aparece si hay canciones etiquetadas**: mientras
+  no las haya, el cantoral está exactamente igual que hoy.
+- **Hoja con la nube de etiquetas**, ordenadas por uso, con emoji opcional y el
+  recuento dentro del chip; el tamaño del chip cuenta el uso.
+- **Pantalla de una etiqueta** = `SongListScreen` con la categoría virtual
+  `__TAG__:<slug>` (hermana de `__ALL__`), **agrupada por categoría** con
+  cabeceras de sección, y una **barra de contexto** con la etiqueta activa (✕)
+  y las etiquetas que coexisten en el resultado, para cruzar en AND sin modal
+  de filtros. Nunca se ofrece una etiqueta que daría cero resultados.
+- **El buscador entiende etiquetas**: los labels y slugs entran en el
+  `searchableText`, así buscar "ramos" saca las canciones etiquetadas aunque no
+  lleven la palabra en el título.
+- **Chips de etiqueta en la ficha de la canción** (`SongMediaSheet`); tocarlos
+  abre la pantalla de esa etiqueta.
+
+Datos: las etiquetas nacen en `mcmapp-cantoral` como directiva `{tags:}` en el
+`.cho` y llegan como `tags: string[]` en `songs/data`; el catálogo de metadatos
+(label, emoji, alias) es **opcional** y vive en `songs/tags`. **No hay nodo
+nuevo que proteger** ni cambios en `database.rules.json` (`songs` ya es
+`.read: true`), ni caché nueva: el índice inverso se construye con un memo
+sobre los datos ya descargados. Una etiqueta que no está en el catálogo
+funciona igual, con el slug capitalizado.
+
+⏳ Falta la parte de `mcmapp-cantoral` (parsear `{tags:}` en el generador y
+publicar `songs/tags`); hasta entonces no se ve nada, por diseño.
+
+Archivos: `utils/songTags.ts` (nuevo), `hooks/useSongTags.ts` (nuevo),
+`components/song-tags/{TagChip,TagCloudSheet,TagContextBar}.tsx` (nuevos),
+`app/screens/CategoriesScreen.tsx`, `app/screens/SongListScreen.tsx`,
+`app/screens/SongDetailScreen.tsx`, `components/song-media/SongMediaSheet.tsx`,
+`types/songMedia.ts`, `utils/filterSongsData.ts`, `__tests__/songTags.test.ts`
+(nuevo). OTA-safe: sin dependencias nativas nuevas.
+
 ## 2026-08-13 18:20 — Reglas de Firebase listas para desplegar, con diagnóstico en ambos lados
 
 **Reglas** (`database.rules.json`, reescrito). Los permisos que el panel

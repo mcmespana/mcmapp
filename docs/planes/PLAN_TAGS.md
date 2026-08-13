@@ -1,14 +1,32 @@
 # PLAN_TAGS.md — Etiquetas del cantoral
 
-> **Estado:** 📝 Plan escrito, **sin empezar**. Bloqueado por 3 decisiones del
-> usuario (§7). No está en la Cola Principal del
-> [`BACKLOG.md`](BACKLOG.md) — vive en la bolsa oportunista hasta que se decida.
+> **Estado:** ✅ **Fase 2 (app) implementada** el 2026-08-13 sobre el diseño de
+> Claude Design **variante 1d** ("etiquetas desde el header del cantoral").
+> La documentación viva de lo que hay es
+> [`../funcionalidades/ETIQUETAS.md`](../funcionalidades/ETIQUETAS.md); este
+> plan se conserva como registro del razonamiento de diseño.
+>
+> ⏳ **Falta la fase 1 en `mcmapp-cantoral`** (directiva `{tags:}` en el
+> generador + `tags.json` → `songs/tags`). Hasta que llegue, la app no muestra
+> nada: sin canciones etiquetadas el botón del header ni se pinta. Ver §6 de
+> `ETIQUETAS.md` para el contrato exacto que espera la app.
+>
+> **Decisiones de §7, resueltas al ejecutar:** (1) etiquetas **compartidas**,
+> curadas desde el repo; (2) **emoji sí**, opcional por etiqueta; (3) el
+> etiquetado **desde la app** NO entra todavía (sigue en fase 4).
+>
+> **Desviaciones respecto a este plan** (todas del diseño 1d, que se hizo
+> después): la entrada principal es el **botón 🏷️ del header** y una nube
+> completa en una hoja, no la fila de destacadas en la portada (§4.2, que
+> metía una tercera fila horizontal compitiendo por el scroll); y el
+> `SegmentedControl` "Por categoría / A–Z" se sustituye por la **barra amarilla
+> de contexto** (una sola capa nueva sobre la lista en vez de dos).
 >
 > **Repos implicados:** `mcmapp` (este) + `mcmapp-cantoral` (fuente de verdad
 > del contenido; normalmente **no** está en el scope de la sesión, hay que
 > pedir `add_repo`).
 >
-> Creado: 2026-08-12.
+> Creado: 2026-08-12. Ejecutado (app): 2026-08-13.
 
 ---
 

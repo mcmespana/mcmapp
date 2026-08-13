@@ -9,6 +9,11 @@ export interface SongEntry {
   info?: string;
   content?: string;
   status?: string;
+  /**
+   * Etiquetas libres de la canción, en slug. Nacen como `{tags: ...}` en el
+   * `.cho` del repo del cantoral; ver `utils/songTags.ts`.
+   */
+  tags?: string[];
   // Campos multimedia (rellenados por el admin, mostrados en el cajón multimedia).
   album?: string;
   liturgicalTime?: string;

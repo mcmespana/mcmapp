@@ -193,18 +193,23 @@ guardan para la siguiente build de tienda.
 
 ### C-ter. Etiquetas del cantoral (`PLAN_TAGS.md`)
 
-- **Estado:** plan escrito el 2026-08-12, **sin empezar**. Idea del usuario:
-  etiquetas libres y transversales ("viejunas", "domingo de ramos",
-  "infantiles", "animación") que se van añadiendo con el uso.
-- **Trigger:** decisión del usuario. **No entra en la Cola Principal** ni la
-  avanza "seguimos" mientras no se resuelvan las 3 decisiones de §7 del plan
-  (¿etiquetas compartidas o también personales? ¿emoji por etiqueta?
-  ¿etiquetado desde la app en la fase 1?).
-- **Cross-repo:** la fase 1 vive en `mcmapp-cantoral` (directiva `{tags:}` +
-  `tags.json` + generador), que normalmente NO está en el scope de la sesión —
-  hay que pedir al usuario que lo añada (`add_repo`).
+- **Estado:** ✅ **parte de app HECHA** el 2026-08-13 (diseño 1d de Claude
+  Design: botón 🏷️ en el header, nube de etiquetas en una hoja, pantalla
+  `__TAG__:<slug>` agrupada por categoría con barra de refinamiento). Las 3
+  decisiones de §7 quedaron resueltas: compartidas, emoji opcional, y el
+  etiquetado desde la app NO entra todavía.
+- **Lo que queda:** la **fase 1 en `mcmapp-cantoral`** — parsear `{tags:}` en
+  el generador, `tags.json` y publicar `songs/tags`. Sin eso la app no enseña
+  nada (el botón del header no aparece si no hay canciones etiquetadas), así
+  que **no hay prisa ni riesgo**, pero la funcionalidad está muerta hasta
+  entonces. Ese repo normalmente NO está en el scope de la sesión: hay que
+  pedir al usuario que lo añada (`add_repo`).
+- **Después (fase 4, opcional):** etiquetar desde la propia app con long-press
+  y autocompletado, por la cola `songs/ediciones` (mismo circuito que los
+  arreglos); y `liturgicalTime` como etiqueta de sistema derivada.
 - **OTA-safe:** sí, la parte de app no lleva nada nativo.
-- **Detalle:** `docs/planes/PLAN_TAGS.md`.
+- **Detalle:** `docs/funcionalidades/ETIQUETAS.md` (lo implementado) y
+  `docs/planes/PLAN_TAGS.md` (razonamiento de diseño).
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
