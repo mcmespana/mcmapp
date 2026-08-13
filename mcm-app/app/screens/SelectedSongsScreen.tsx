@@ -1681,27 +1681,44 @@ const SelectedSongsScreen: React.FC = () => {
         })}
       </View>
     ),
-    [choir.session?.current?.filename, handleSongPress, removeSong, styles.categoryContainer, styles.categoryTitle]
+    [
+      choir.session?.current?.filename,
+      handleSongPress,
+      removeSong,
+      styles.categoryContainer,
+      styles.categoryTitle,
+    ],
   );
 
-  const manualRowProps = useCallback((
-    item: (typeof flatSelectedSongs)[number],
-    index: number,
-  ): React.ComponentProps<typeof PlaylistRow> => ({
-    song: item,
-    transpose: item.transpose,
-    capoOverride: item.capoOverride,
-    position: index + 1,
-    showReorderControls: true,
-    canMoveUp: index > 0,
-    canMoveDown: index < flatSelectedSongs.length - 1,
-    onMoveUp: () => handleMoveUp(item.filename),
-    onMoveDown: () => handleMoveDown(item.filename),
-    onContextMenu: () => setMenuFilename(item.filename),
-    isNowPlaying: choir.session?.current?.filename === item.filename,
-    onPress: () => handleSongPress(item),
-    onRemove: () => removeSong(item.filename),
-  }), [flatSelectedSongs.length, handleMoveUp, handleMoveDown, handleSongPress, removeSong, choir.session?.current?.filename, setMenuFilename]);
+  const manualRowProps = useCallback(
+    (
+      item: (typeof flatSelectedSongs)[number],
+      index: number,
+    ): React.ComponentProps<typeof PlaylistRow> => ({
+      song: item,
+      transpose: item.transpose,
+      capoOverride: item.capoOverride,
+      position: index + 1,
+      showReorderControls: true,
+      canMoveUp: index > 0,
+      canMoveDown: index < flatSelectedSongs.length - 1,
+      onMoveUp: () => handleMoveUp(item.filename),
+      onMoveDown: () => handleMoveDown(item.filename),
+      onContextMenu: () => setMenuFilename(item.filename),
+      isNowPlaying: choir.session?.current?.filename === item.filename,
+      onPress: () => handleSongPress(item),
+      onRemove: () => removeSong(item.filename),
+    }),
+    [
+      flatSelectedSongs.length,
+      handleMoveUp,
+      handleMoveDown,
+      handleSongPress,
+      removeSong,
+      choir.session?.current?.filename,
+      setMenuFilename,
+    ],
+  );
 
   const renderManualItem = useCallback(
     ({
@@ -1711,20 +1728,18 @@ const SelectedSongsScreen: React.FC = () => {
       item: (typeof flatSelectedSongs)[number];
       index: number;
     }) => <PlaylistRow {...manualRowProps(item, index)} />,
-    [manualRowProps]
+    [manualRowProps],
   );
 
   const renderDraggableManualItem = useCallback(
     ({
       item,
       index,
-      drag
     }: {
       item: (typeof flatSelectedSongs)[number];
       index: number;
-      drag?: () => void;
-    }) => <DraggableManualRow {...manualRowProps(item, index)} drag={drag} />,
-    [manualRowProps]
+    }) => <DraggableManualRow {...manualRowProps(item, index)} />,
+    [manualRowProps],
   );
 
   const handleReorder = ({ from, to }: ReorderableListReorderEvent) => {

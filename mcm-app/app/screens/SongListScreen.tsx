@@ -469,7 +469,9 @@ export default function SongsListScreen({
           onLongPress={handleSongLongPress}
           isSearchAllMode={isSearchAll}
           isSelected={isSelected}
-          selectedTranspose={isSelected ? (getSelectedSong(item.filename)?.transpose ?? 0) : 0}
+          selectedTranspose={
+            isSelected ? (getSelectedSong(item.filename)?.transpose ?? 0) : 0
+          }
           onAddSong={addSong}
           onRemoveSong={removeSong}
         />
