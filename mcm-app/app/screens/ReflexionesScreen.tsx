@@ -270,7 +270,10 @@ export default function ReflexionesScreen() {
       // generó una vez arriba, así que reintentar solo este update() es
       // idempotente (misma key, mismo valor).
       const updatePayload = buildReflexionUpdate(newRef.key, nuevo, Date.now());
-      await withRetry(() => update(ref(db, compartiendoPath), updatePayload));
+      await withRetry(() => update(ref(db, compartiendoPath), updatePayload), {
+        op: 'write',
+        path: compartiendoPath,
+      });
       setJustPublished((prev) => [nuevo, ...prev]);
       h.formSuccess();
       setCelebrate(true);

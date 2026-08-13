@@ -11,6 +11,7 @@
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import { withRetry } from '@/hooks/useFirebaseData';
+import { isPermissionDenied } from '@/utils/firebaseErrors';
 import { logger } from '@/utils/logger';
 
 /** RTDB rechaza `undefined`; lo quitamos igual que ya hacían los servicios
@@ -39,9 +40,13 @@ export async function pushWithRetry(
   const clean = cleanPayload(payload);
 
   try {
-    await withRetry(() => set(newRef, clean));
+    await withRetry(() => set(newRef, clean), { op: 'write', path });
   } catch (err) {
-    logger.error(`[firebaseWrites] pushWithRetry falló en ${path}:`, err);
+    // `withRetry` ya reportó la denegación de reglas con su path; aquí solo
+    // registramos los fallos que NO son de permisos, para no duplicar evento.
+    if (!isPermissionDenied(err)) {
+      logger.error(`[firebaseWrites] pushWithRetry falló en ${path}:`, err);
+    }
     throw err;
   }
   return newRef.key;
@@ -57,9 +62,11 @@ export async function setWithRetry(
   const clean = cleanPayload(payload);
 
   try {
-    await withRetry(() => set(targetRef, clean));
+    await withRetry(() => set(targetRef, clean), { op: 'write', path });
   } catch (err) {
-    logger.error(`[firebaseWrites] setWithRetry falló en ${path}:`, err);
+    if (!isPermissionDenied(err)) {
+      logger.error(`[firebaseWrites] setWithRetry falló en ${path}:`, err);
+    }
     throw err;
   }
 }

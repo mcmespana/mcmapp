@@ -18,6 +18,56 @@
 
 ---
 
+## 2026-08-13 18:20 — Reglas de Firebase listas para desplegar, con diagnóstico en ambos lados
+
+**Reglas** (`database.rules.json`, reescrito). Los permisos que el panel
+necesita cuelgan ahora de dos banderas en `/_config` (`legacyPanelWrites`,
+`legacyNotificationsOpen`): con ellas en `true` todo funciona igual que hoy y
+se apagan desde la consola sin desplegar. **Hay que sembrar `/_config` ANTES de
+desplegar** (`firebase-seed/config.json`) o el panel se queda sin permisos.
+Guía completa en `docs/desarrollo/FIREBASE_REGLAS.md`.
+
+Bugs de las reglas que habrían roto la app:
+
+- `activities/<ev>/evaluacion/updatedAt` lo escribe la app al enviar una
+  evaluación y estaba denegado — sin él, ningún dispositivo se entera de que
+  hay respuestas nuevas. Igual para `jubileo/evaluacion/**`, que no existía.
+- **Escalada de privilegios en `users/$uid/isAdmin`**: el `.write` del nodo
+  cascadeaba hasta el flag, así que cualquiera con sesión podía nombrarse admin
+  y abrirse el panel secreto del cantoral. Cortado con un `.validate` (un
+  `".write": false` debajo NO lo arregla: la cascada no se revoca).
+- Los `.validate` de `playlistShares`/`choirSessions` estaban en el padre, donde
+  los `update()` parciales no los reevalúan. Movidos a la hoja.
+
+Fugas cerradas: `surveys/<id>/respuestas` y `<evento>/evaluacion/respuestas`
+dejan de ser legibles en bloque (llevan `userName`, `userDelegation`, `userId`);
+cada dispositivo lee la suya.
+
+**App**:
+
+- `useFirebaseData` ya no hace `get()` del nodo entero en la primera carga. Se
+  traía las respuestas de todo el mundo para pintar un formulario. Ahora pide
+  siempre `updatedAt`/`hidden`/`data` por separado.
+- Acepta `path: null` para "sin nodo que mirar". `EventHomeScreen` consultaba un
+  path inventado (`__noop__/<slug>`) por cada tarjeta de sección; con reglas
+  cerradas eso es un `PERMISSION_DENIED` por render.
+- Nuevo `utils/firebaseErrors.ts`: un `PERMISSION_DENIED` ya no se reintenta
+  (nunca se arregla esperando) y **se reporta a Sentry** con la operación y el
+  path, deduplicado por sesión para no reventar la cuota. Buscar
+  `[firebase-rules]`.
+- Test de contrato de las reglas (`__tests__/databaseRules.test.ts`, 170 casos)
+  que las evalúa contra el inventario real de paths de la app y del panel, con
+  las banderas puestas, apagadas y sin sembrar.
+
+**Panel** (repo mcmpanel): deja de leer la raíz de la base de datos —
+imprescindible, porque conceder `.read` en `/` es conceder `/users`— y modal
+*ERROR DE REGLAS DE FIREBASE* con el path denegado y qué mirar.
+
+**Pendiente**: la sección Usuarios del panel y el contador de destinatarios del
+composer dejan de funcionar al desplegar. No tienen bandera a propósito
+(`/users` es el diario de Contigo; `/pushTokens` enumerable es poder mandar push
+a todos). Se arreglan con auth real en el panel — decisión D2.
+
 ## 2026-08-12 21:40 — Archivar un evento desde el panel ya funciona de verdad
 
 - **B1 completo.** La app solo aplicaba el `_meta` que edita el MCM Panel

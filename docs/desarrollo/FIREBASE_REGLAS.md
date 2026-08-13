@@ -1,165 +1,214 @@
-# Reglas de Firebase — qué falta y cómo desplegarlas
+# Reglas de Firebase — cómo se despliegan sin romper nada
 
-> **Estado: escritas, NO desplegadas.** Y desplegarlas hoy **rompería el MCM
-> Panel**. Este documento dice exactamente por qué, qué tiene que cambiar el
-> Panel antes, y qué comandos ejecutas tú el día que se pueda.
+> **Estado: listas para desplegar**, con una condición: hay que **sembrar el
+> nodo `/_config` ANTES**. Si se despliegan sin él, el panel se queda sin
+> permisos en el mismo instante.
 >
-> El fichero es `mcm-app/database.rules.json`. Revisión: 2026-08-04.
+> El fichero es `mcm-app/database.rules.json`. Revisión: 2026-08-13.
 
 ---
 
-## 1. El problema en una frase
+## 1. La idea en tres frases
 
-Las reglas del repo asumen que **el Panel escribe con credencial de servidor**
-(Admin SDK, que ignora las reglas). **Hoy no lo hace**: escribe con el SDK de
-cliente y sin autenticar, y sus funciones `api/` llaman por REST sin token.
+El panel escribe con el SDK de cliente **sin autenticar**, y sus funciones
+`api/` llaman por REST **sin token**. Unas reglas cerradas de verdad lo dejan
+inservible, así que sus permisos no están repartidos por el fichero: cuelgan de
+**dos banderas que viven en la propia base de datos**, en `/_config`.
 
-Las reglas que hay **activas en producción ahora mismo están abiertas**. Las del
-repo son mucho más estrictas. En cuanto se desplieguen, cada escritura del Panel
-que no vaya por Admin SDK empezará a fallar con `PERMISSION_DENIED`.
+Con las banderas en `true` el panel funciona exactamente igual que hoy. Cuando
+tenga auth real, se ponen en `false` **desde la consola de Firebase, sin
+desplegar reglas**.
 
-**Por eso están sin desplegar, y está bien que sigan así hasta el punto 3.**
-
----
-
-## 2. Qué he cambiado en esta revisión
-
-Una sola cosa: **`/scheduledNotifications` no estaba declarado**.
-
-En Firebase, un nodo que no aparece en las reglas queda **denegado** (la regla 1
-del fichero es "denegado por defecto"). O sea que ya estaba bloqueado — pero por
-omisión, no por decisión, y al leer el fichero no había forma de distinguir "lo
-hemos bloqueado a propósito" de "se nos olvidó".
-
-Ahora está declarado explícitamente como denegado en ambos sentidos, con el
-comentario de por qué. **No cambia el comportamiento**, cambia que se entienda.
-
-El resto del fichero lo he repasado entero y está bien: cubre cantoral, álbumes,
-Jubileo, actividades, perfiles, calendarios, oración, notificaciones, tokens
-push, Wordle, feedback, encuestas, playlists compartidas, sesiones de coro y
-datos de usuario autenticado.
-
-### Lo que sigue siendo el punto débil (y no toco)
-
-`/songs/data` tiene **escritura pública**. Cualquiera con la URL de la base de
-datos puede reescribir el cantoral entero. Es así porque el panel secreto de la
-app escribe ahí con una contraseña (`coco`), no con Auth.
-
-No lo arreglo aquí porque arreglarlo **es** la decisión D2 (abajo): o el panel
-pasa a escribir autenticado, o esas escrituras se mueven a una función de
-servidor. Cerrarlo antes dejaría el panel secreto sin funcionar.
+Lo que **no** depende de banderas es lo privado de verdad: `/users` (el diario
+de Contigo de cada persona) está cerrado y punto.
 
 ---
 
-## 3. Qué tiene que cambiar el Panel (repo `mcmpanel`)
+## 2. Las dos banderas
 
-Tres cosas, en este orden. Ninguna es de este repo.
+| Bandera | Qué abre | Cómo se apaga |
+| --- | --- | --- |
+| `_config/legacyPanelWrites` | Lo que el panel lee y escribe de contenido: `albums`, `calendars`, `songs`, `wordle`, `profileConfig`, `activities`, `jubileo`, `surveys`, `app`, `choirs`. También la lectura en bloque de las respuestas de encuestas. | Auth real en el panel (decisión D2) |
+| `_config/legacyNotificationsOpen` | `pushTokens` (lectura de la raíz), `notifications` (escritura) y `scheduledNotifications` (ambas). Lo necesitan las funciones `api/` y el contador de destinatarios del composer. | `FIREBASE_DB_SECRET` en Vercel **y** que el panel deje de leer esos nodos desde el navegador |
 
-### 3.1 Credencial de servidor en las funciones `api/`
+`/_config` **no es legible ni escribible por ningún cliente**. Las reglas lo
+leen con `root.child(...)`, que se evalúa en el servidor y no pasa por `.read`.
+Solo se toca desde la consola de Firebase o con Admin SDK — nadie puede abrirse
+los permisos a sí mismo.
 
-`api/_lib/push.ts` llama a la base de datos por REST **sin token**. Hay que
-añadirle `?auth=<FIREBASE_DB_SECRET>` (o un token de service account) y meter esa
-variable en Vercel.
+### Lo que NO cubren las banderas
 
-Es exactamente lo que ya hace el uploader del cantoral, así que hay un ejemplo
-funcionando dentro de casa.
+Estas dos cosas dejan de funcionar en el panel en cuanto se despliegue, y no
+hay interruptor para ellas porque abrirlas sería una fuga de datos personales:
 
-### 3.2 🔒 Auth real para las escrituras — **esto lo decides tú**
+- **Sección Usuarios** (`/users`). Leer la lista de usuarios es leer, por
+  cascada, `users/<uid>/contigo/{habits,bookmarks,revisions}`: el diario
+  espiritual de cada persona. `.read` en RTDB **no se puede revocar más abajo**,
+  así que no hay forma de enseñar solo el nombre y el email.
+- **Contador de destinatarios del composer** (`/pushTokens` entero). Poder
+  listar los tokens es poder mandar push a todo el mundo por tu cuenta con la
+  API de Expo.
 
-Dos caminos, y hay que elegir uno:
-
-| | Cómo | A favor | En contra |
-|---|---|---|---|
-| **A. Firebase Auth en el panel** | Login con Google + nodo `/admins/<uid>`, y reglas del tipo `".write": "auth != null && root.child('admins').child(auth.uid).val() === true"` | Es el modelo estándar; el panel sigue escribiendo directo | Hay que montar el login y mantener la lista de admins |
-| **B. Todo por funciones `api/`** | El frontend del panel pasa a **solo lectura**; cada escritura va a una función protegida con 3.1 + sesión | Las reglas quedan mucho más simples: nadie escribe desde el navegador | Hay que escribir una función por cada tipo de escritura |
-
-**Mi recomendación: A.** El panel ya tiene varias secciones que escriben, y B
-obliga a escribir y mantener una función por cada una. A es más trabajo de una
-vez y menos para siempre.
-
-### 3.3 `CRON_SECRET` en Vercel
-
-Verificar que está configurado en producción para `process-scheduled`. Sin él,
-cualquiera puede forzar el procesado de las notificaciones programadas.
+Las dos avisan con el modal **ERROR DE REGLAS DE FIREBASE** en vez de quedarse
+en blanco. Las dos se arreglan con lo mismo: auth real en el panel.
 
 ---
 
-## 4. Cómo se despliega (cuando el punto 3 esté hecho)
+## 3. Qué se arregló en esta revisión
 
-### 4.1 A mano, desde tu máquina
+**Bugs que habrían roto la app** el día del despliegue:
 
-Desde `mcm-app/`:
+| Path | Quién | Qué pasaba |
+| --- | --- | --- |
+| `activities/<ev>/evaluacion/updatedAt` | `EvaluacionScreen.tsx:77` | La app lo escribe al enviar una evaluación; solo había regla para `respuestas/$deviceId`. Sin `updatedAt` ningún dispositivo se entera de que hay respuestas nuevas |
+| `jubileo/evaluacion/**` | mismo código con el evento legacy | No existía la regla |
+| `__noop__/<slug>` | `EventHomeScreen.tsx` | Path inventado para las secciones sin nodo. Con reglas cerradas es un `PERMISSION_DENIED` por tarjeta renderizada. Se quitó el fetch (`useFirebaseData` ya acepta `null`) |
+| `users/$uid/isAdmin` | — | **Escalada de privilegios**: el `.write` de `users/$uid` cascadeaba hasta `isAdmin`, así que cualquiera con sesión podía nombrarse admin (y abrirse el panel secreto del cantoral). Un `".write": false` debajo NO lo arregla — `.read`/`.write` cascadean y no se revocan. Ahora lo corta un `.validate`, que sí se evalúa en el path escrito |
+| `playlistShares` / `choirSessions` | — | El `.validate` estaba en el padre (`hasChild('expiresAt')`). Los `update()` parciales no reevalúan el `.validate` de un ancestro, así que no validaba lo que parecía. Movido a la hoja |
+
+**Fugas cerradas** (efectivas al apagar `legacyPanelWrites`):
+
+- `surveys/<id>/respuestas` y `activities/<ev>/evaluacion/respuestas` ya no son
+  legibles en bloque. Llevan `userName`, `userDelegation` y `userId`. Cada
+  dispositivo lee la suya y nada más.
+- La app tampoco se los descargaba por gusto: `useFirebaseData` hacía
+  `get()` del nodo entero en la primera carga. Ahora pide siempre
+  `updatedAt` / `hidden` / `data` por separado.
+
+**El panel dejó de leer la raíz.** `JSONManager` hacía `onValue('/')`. Mientras
+eso siguiera, las reglas no se podían cerrar de ninguna manera, porque conceder
+`.read` en `/` es conceder `/users`. Ahora se suscribe a los 8 nodos que
+gestiona. De paso deja de bajarse la base entera cada vez que un móvil manda su
+heartbeat de `pushTokens`.
+
+---
+
+## 4. Cómo se comprueba que están bien
 
 ```bash
-# 1. Ver qué cambiaría, SIN aplicar nada
-npx firebase-tools@latest database:get / --project mcmapp-39b71 > /dev/null
-# (si esto falla por permisos, es que no has hecho login)
+cd mcm-app && npx jest __tests__/databaseRules.test.ts
+```
 
+`__tests__/databaseRules.test.ts` evalúa el fichero de reglas contra el
+inventario real de paths que tocan la app y el panel — cada caso dice de qué
+fichero y línea sale. Comprueba tres escenarios: banderas puestas, banderas
+apagadas y `/_config` sin sembrar.
+
+El evaluador (`__tests__/helpers/rulesEngine.ts`) reimplementa la semántica de
+RTDB que usamos: resolución del path (gana el nombre exacto sobre el `$comodín`),
+cascada de `.read`/`.write` y el hecho de que `.validate` **no** cascadea. No
+modela los `.validate` de forma (`isString()`, longitudes): para eso hace falta
+el emulador con datos de verdad.
+
+Si añades una expresión nueva al fichero de reglas, el evaluador **falla a
+propósito** en vez de aprobarla en silencio.
+
+---
+
+## 5. El despliegue, paso a paso
+
+### 5.1 Sembrar `/_config` — PRIMERO, sin excepción
+
+Consola de Firebase → Realtime Database → Datos → importar en la raíz, o crear
+a mano el nodo `_config`:
+
+```json
+{
+  "legacyPanelWrites": true,
+  "legacyNotificationsOpen": true
+}
+```
+
+El JSON está en `mcm-app/firebase-seed/config.json`.
+
+> Si las banderas no existen valen `null`, la comparación da `false` y el panel
+> se queda sin permisos **en el mismo segundo del despliegue**. La app aguanta
+> entera (no depende de ellas para nada), pero el panel no.
+
+### 5.2 Guardar las reglas actuales
+
+No hay "deshacer" con un comando:
+
+```
+Consola → Realtime Database → Reglas → copiar el contenido a un .txt
+```
+
+### 5.3 Desplegar
+
+```bash
+cd mcm-app
 npx firebase-tools@latest login
-
-# 2. Desplegar SOLO las reglas de la base de datos
 npx firebase-tools@latest deploy --only database --project mcmapp-39b71
 ```
 
-⚠️ **No hay "deshacer" con un comando.** Antes de lanzarlo, guarda las reglas
-actuales para poder volver:
+O automático: existe `.github/workflows/deploy-firebase-rules.yml`, que
+despliega **solo cuando cambia `database.rules.json`** y se mergea a
+`production`. Espera el secret `FIREBASE_SERVICE_ACCOUNT_MCMAPP` (Consola de
+Google Cloud → IAM → Cuentas de servicio, rol *Firebase Realtime Database
+Admin*, clave JSON entera como secret del repo). Mientras el secret no exista el
+workflow avisa y termina sin error.
 
-```bash
-# Consola de Firebase → Realtime Database → Reglas → copiar y guardar en un .txt
-```
+### 5.4 Probar las dos caras el mismo día
 
-### 4.2 Automático (ya está montado, solo falta una cosa)
+**App** — cantoral (abrir y buscar), un evento y sus secciones, notificaciones,
+escribir una reflexión, enviar una evaluación, login de Contigo, y que el token
+push siga apareciendo en `/pushTokens`.
 
-Existe `.github/workflows/deploy-firebase-rules.yml`, que despliega las reglas
-**solo cuando cambia `database.rules.json`** y se mergea a `production`. También
-se puede lanzar a mano desde la pestaña Actions.
+**Panel** — cada sección que guarde algo, envío de una notificación y una
+programada. Usuarios y el contador del composer **van a fallar**: eso es lo
+esperado, y sale el modal explicándolo.
 
-**Está esperando un secret y por eso no hace nada:**
-
-1. Consola de Google Cloud → IAM → **Cuentas de servicio** → crear una para el
-   proyecto `mcmapp-39b71`, con el rol **Firebase Realtime Database Admin**.
-2. Crear una clave JSON y descargarla.
-3. GitHub → repo `mcmespana/mcmapp` → **Settings → Secrets and variables →
-   Actions → New repository secret**:
-   - Nombre: `FIREBASE_SERVICE_ACCOUNT_MCMAPP`
-   - Valor: el contenido **entero** del JSON.
-
-Mientras el secret no exista, el workflow avisa y termina **sin error** — no
-bloquea ningún otro despliegue. Está hecho a propósito así.
-
-> **Ojo con el orden**: en cuanto pongas ese secret, el siguiente merge a
-> `production` que toque `database.rules.json` **desplegará las reglas de
-> verdad**. No lo pongas hasta que el punto 3 esté cerrado.
+Si algo más falla, el modal del panel te da el path exacto y en la app salta un
+evento de Sentry marcado `[firebase-rules]` con el path y la operación.
 
 ---
 
-## 5. Después de desplegar: qué probar
+## 6. Después: apagar las banderas
 
-Reglas mal puestas no dan error al desplegar; dan error a los usuarios. Prueba
-las dos caras el mismo día:
+### 6.1 `legacyNotificationsOpen`
 
-**App** — cantoral (abrir y buscar), eventos, notificaciones, reflexiones
-(escribir una), evaluaciones, login de Contigo, y que se registre el token push
-(mira que aparezca en `/pushTokens`).
+1. Consola de Firebase → Configuración del proyecto → Cuentas de servicio →
+   Secretos de base de datos → copiar el secret.
+2. Vercel → proyecto del panel → Settings → Environment Variables →
+   `FIREBASE_DB_SECRET` = ese secret. Redesplegar.
+3. Comprobar que se envía una notificación de prueba (los helpers REST ya
+   mandan `?auth=` en cuanto la variable existe; sin ella se comportan como
+   siempre).
+4. Quitar del panel la lectura de `/pushTokens` y `/scheduledNotifications`
+   desde el navegador (contador del composer y listado de programadas), o
+   moverlas a una función `api/`.
+5. Poner la bandera a `false` en la consola.
 
-**Panel** — cada sección que guarde algo, envío de una notificación, y una
-notificación programada.
+### 6.2 `legacyPanelWrites` — requiere la decisión D2
 
-Si algo falla, el error en consola será `PERMISSION_DENIED` y el path te dice
-qué regla falta.
+Es la decisión pendiente: **auth real en el panel**. Dos caminos, sin cambios
+desde la última revisión:
+
+| | Cómo | A favor | En contra |
+|---|---|---|---|
+| **A. Firebase Auth en el panel** | Login con Google + allowlist. Ya existe la pieza: `users/<uid>/isAdmin`, que la app lee en `useAdminStatus`. Las reglas pasarían a `".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true"` | Modelo estándar; el panel sigue escribiendo directo; **arregla también Usuarios y el composer** | Hay que montar el login |
+| **B. Todo por funciones `api/`** | El frontend pasa a solo lectura; cada escritura va a una función protegida | Reglas más simples: nadie escribe desde el navegador | Una función por cada tipo de escritura |
+
+**Recomendación: A**, y ahora más que antes: es lo único que devuelve la sección
+Usuarios y el contador de destinatarios, y la mitad del trabajo (el flag
+`isAdmin` con su `.validate`) ya está en las reglas.
 
 ---
 
-## 6. Resumen para el que solo lea esto
+## 7. Resumen
 
 | | Quién | Estado |
 |---|---|---|
-| Declarar `/scheduledNotifications` | app | ✅ hecho |
-| Credencial de servidor en `api/` | panel | ⏳ pendiente |
-| **Decidir modelo de auth (A o B)** | **tú** | 🔒 **bloquea todo lo demás** |
-| `CRON_SECRET` en Vercel | panel | ⏳ verificar |
-| Secret de GitHub para el despliegue automático | tú | ⏳ **no lo pongas todavía** |
-| Desplegar y probar | tú | ⏳ al final |
+| Arreglar los bugs de las reglas | app | ✅ hecho |
+| Test de contrato de las reglas | app | ✅ hecho (170 casos) |
+| Panel deja de leer la raíz | panel | ✅ hecho |
+| Modal de error de reglas | panel | ✅ hecho |
+| Sentry al denegar en la app | app | ✅ hecho |
+| Soporte `?auth=` en `api/` | panel | ✅ hecho (falta poner la variable) |
+| **Sembrar `/_config`** | **tú** | ⏳ **antes de desplegar** |
+| Desplegar y probar | tú | ⏳ |
+| `FIREBASE_DB_SECRET` en Vercel | tú | ⏳ |
+| **Decidir modelo de auth (A o B)** | **tú** | 🔒 desbloquea Usuarios y el composer |
 
-Contexto largo de cada punto: `docs/planes/PLAN_INTEGRACIONES.md` §"Integración
-D". Riesgos y filosofía de las reglas: `docs/SEGURIDAD.md`.
+Riesgos y filosofía de las reglas: `docs/SEGURIDAD.md`. Contexto largo:
+`docs/planes/PLAN_INTEGRACIONES.md` §"Integración D".
