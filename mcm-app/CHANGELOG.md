@@ -68,6 +68,56 @@ composer dejan de funcionar al desplegar. No tienen bandera a propósito
 (`/users` es el diario de Contigo; `/pushTokens` enumerable es poder mandar push
 a todos). Se arreglan con auth real en el panel — decisión D2.
 
+## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
+
+- **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
+  las de importar, el hub del coro y el enlace del coro (que no depende de tu
+  selección) — antes ese enlace desaparecía sin motivo. Vaciar, exportar, subir
+  y compartir siguen ocultándose.
+- **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
+  Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
+- **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
+  «cambiar el código» — la clave *es* el coro, así que cambiarla la desataba de
+  él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
+- **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
+  elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
+- Archivos: `app/screens/SelectedSongsScreen.tsx`,
+  `components/playlist/ChoirSheet.tsx`.
+
+## 2026-08-12 19:40 — Rediseño de «Tu selección»: las playlists cuelgan de un coro
+
+- **Concepto nuevo: el coro es la entidad**. Se crea un coro («Coro Consolación
+  Castellón»), se elige una vez en el dispositivo y a partir de ahí las
+  playlists cuelgan de él. Importar la del domingo es **un toque** («Importar la
+  última»); el histórico enseña nombre, fecha y el código en pequeñito. Los
+  códigos y QR pasan a ser una opción secundaria, y todos los antiguos siguen
+  funcionando (el contenido sigue en `/playlistShares/<code>`).
+- **Nuevo nodo `/choirs/<choirId>`** con el índice de playlists del coro y
+  `createdBy`, para que el panel pueda borrar coros y retocar nombres/fechas.
+  Reglas de RTDB añadidas (lectura pública enumerable, escritura por coro).
+- **Actualizar una playlist ya subida** deja de ser imposible: la app recuerda
+  el enlace con la nube (código + coro + firma de la lista) y ofrece
+  «Actualizar «X»» o «Subir como nueva». La cabecera dice si hay **cambios sin
+  guardar**. Cualquiera puede machacar la de otra persona con la contraseña
+  `coco`; si la subiste tú desde ese dispositivo, sin contraseña.
+- **Importar ya no interroga**: venir de un enlace, un QR o el coro reemplaza la
+  selección y deja **10 s de «Deshacer»** (canciones y enlace). El diálogo de
+  «reemplazar / añadir» se queda solo para los archivos `.mcm`. **Vaciar** pasa
+  a la cabecera, sin confirmación y con deshacer.
+- **Coro en vivo por coro, no por código**: se entra por el nombre del coro,
+  la sesión **caduca sola a las 24 h** desde que empezó (antes 2 semanas, y se
+  estiraba sola) y se puede tomar el mando — sin contraseña si eres el mismo
+  usuario desde otro dispositivo, con `coco` si es de otra persona.
+- **Enlaces nuevos**: `/playlist?coro=<id>` (importa siempre la última) y
+  `/coro?coro=<id>` (sesión en vivo). Reconocidos también por el escáner de QR.
+- Archivos: `utils/choirIds.ts`, `utils/playlistSync.ts`,
+  `services/choirDirectoryService.ts`, `services/choirSessionService.ts`,
+  `services/cloudPlaylistService.ts`, `hooks/usePlaylistSharing.ts`,
+  `hooks/useMyChoir.ts`, `hooks/usePlaylistLink.ts`,
+  `components/playlist/ChoirSheet.tsx`, `components/playlist/PlaylistHeaderBar.tsx`,
+  `app/screens/SelectedSongsScreen.tsx`, `app/playlist.tsx`, `app/coro.tsx`,
+  `database.rules.json`. Documentación: `docs/funcionalidades/COROS.md`.
+
 ## 2026-08-12 21:40 — Archivar un evento desde el panel ya funciona de verdad
 
 - **B1 completo.** La app solo aplicaba el `_meta` que edita el MCM Panel
@@ -576,6 +626,71 @@ los que se teclea un código: "Importar playlist con código" y "Unirse al coro"
   `components/playlist/CodeInputModal.tsx` (estilos extraídos a
   `codeInputModalStyles.ts` para no pasar de 400 líneas),
   `app/screens/SelectedSongsScreen.tsx`, `app.json`.
+
+## 2026-08-08 01:55 — El modo tester (Laboratorio Alpha) por fin recibe OTAs de `preview`
+
+El modo alpha nunca llegó a funcionar. El intento anterior (2026-07-22) lo dejó
+dependiendo de una build de tienda que no salió, y aun con ella habría seguido
+sin funcionar bien. **Esta vez el arreglo va entero por OTA**: no hace falta
+build nativa.
+
+- **Causa raíz — API equivocada.** Se usaba
+  `Updates.setUpdateURLAndRequestHeadersOverride()`, que (1) exige
+  `updates.disableAntiBrickingMeasures: true` **en el binario** —config nativa,
+  imposible de activar por OTA— y (2) aun con el flag, el override no surte
+  efecto hasta cerrar y reabrir la app del todo, así que el
+  `checkForUpdateAsync()` de esa sesión seguía yendo a `production`.
+- **Fix — `Updates.setUpdateRequestHeadersOverride()`** (expo-updates ≥ 29;
+  aquí 57.x). Sobreescribe solo la cabecera `expo-channel-name`, que es todo lo
+  que hace falta. No necesita `disableAntiBrickingMeasures`, **muta la
+  configuración viva** (el check inmediato ya va al canal nuevo) y se persiste
+  en nativo, así que el chequeo del arranque también sale por `preview`.
+  Funciona en cualquier build de EAS, incluida la que ya está en las tiendas.
+- **`updates.disableAntiBrickingMeasures` se queda en `app.json` de momento, a
+  propósito.** Ya no hace falta y conviene quitarlo (quita la protección que
+  garantiza poder publicar un update que arregle un update roto; Expo
+  desaconseja activarlo en tienda), pero **tocar `app.json` dispara el
+  `guard-native` de `ota-production.yml`**, que obliga a `[skip-ota]` y con eso
+  se saltaría la OTA entera — es decir, este arreglo no llegaría a los móviles
+  ya instalados, que es justo el fallo que venimos a corregir. Quitarlo no tiene
+  ningún efecto hasta la próxima build nativa, así que va a la bolsa nativa de
+  `TODO.md` en vez de viajar con este cambio. El código funciona igual con el
+  flag puesto o quitado.
+- **Se acabó el fallo silencioso.** Antes todos los errores morían en un
+  `logger.warn`: la palanca se movía, el pie ponía "· alpha" y el dispositivo
+  seguía en `production`, sin ninguna señal. Ahora el modal cuenta qué ha pasado
+  (cambiando / descargado / sin conexión / no soportado y por qué) y enseña un
+  bloque de diagnóstico con el **canal realmente en uso** (`Updates.channel`),
+  el canal tras reiniciar, la runtime version y el bundle. Si no se puede
+  aplicar el canal, el flag **se revierte** en vez de mentir.
+- **Se busca y descarga el update al momento**, con botón de "reiniciar y
+  estrenarlo" en el propio modal, en vez de esperar al siguiente arranque.
+- **Reconciliación en cada arranque, en las dos direcciones**: con el flag
+  apagado se limpia el override explícitamente, para que nadie se quede
+  atrapado en `preview` por un override heredado. También se limpia, si el
+  binario lo permite, el override de URL que dejaba la versión antigua.
+- **`OTAProvider` espera a que el canal esté reconciliado** antes de su primera
+  comprobación (`useOTAUpdate({ ready })`): si no, la búsqueda de updates podía
+  ganarle la carrera al override y pedirle el bundle a `production`.
+- **La palanca.** No se ha podido reproducir el fallo sin dispositivo, así que
+  la causa exacta no está confirmada. Lo que había: un `useSharedValue` escrito
+  desde un `useEffect` colgado de la prop `active`, o sea que la palanca solo se
+  movía cuando el estado del contexto daba la vuelta completa. Pasa a un
+  `useDerivedValue` declarativo de `active` —la forma canónica de animar desde
+  una prop en Reanimated, sin efecto de por medio—, el estado cambia de forma
+  optimista antes de tocar la red, y el press da respuesta táctil inmediata.
+  Además el knob deja de depender de cómo resuelve Yoga un hijo absoluto sin
+  `left`. Si el cambio de canal se revierte, la palanca vuelve sola: esa vuelta
+  ES la señal de que no ha cuajado.
+- **Nuevos**: `services/previewChannel.ts` (mecánica aislada y testeable),
+  `components/preview-channel/LabStatusPanel.tsx`,
+  `__tests__/previewChannel.test.ts` (15 tests), y
+  `docs/funcionalidades/CANAL_PREVIEW.md` con la prueba de humo y el porqué del
+  fallo anterior. Suite completa: 42 ficheros, 405 tests verdes.
+- **Modificados**: `contexts/PreviewChannelContext.tsx`, `contexts/OTAContext.tsx`,
+  `hooks/useOTAUpdate.ts`, `components/PreviewChannelModal.tsx`,
+  `components/preview-channel/GiantLever.tsx`, `TODO.md`, `docs/README.md`.
+  **Ni un solo fichero de ruta nativa**: el arreglo sale entero por OTA.
 
 ## 2026-08-08 01:55 — El modo tester (Laboratorio Alpha) por fin recibe OTAs de `preview`
 

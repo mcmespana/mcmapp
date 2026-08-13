@@ -4,3 +4,6 @@
 ## 2026-07-08 - [Split useMemo for O(1) state updates]
 **Learning:** [Combining large dataset processing (O(N log N) sorting and O(N) mapping) with frequently changing scalar dependencies (like `selectedSongs.length`) inside a single `useMemo` causes massive unnecessary re-computations when the scalar value changes.]
 **Action:** [Always split such `useMemo` hooks. Compute and memoize the expensive heavy-lifting using only the large dataset as a dependency, then use a second, lightweight `useMemo` to combine the pre-computed array with the scalar state.]
+## 2026-10-27 - [Short-circuit redundant Context queries in Render Loops]
+**Learning:** [When rendering list items that query multiple values from a centralized Context Map (like `isSongSelected` boolean check and `getSelectedSong` full object retrieval), always use the cheaper boolean check as a short-circuit to gate the expensive object retrieval if the item is unselected. In a FlatList with hundreds of items, performing an O(1) map lookup for *every* unselected item across multiple properties during a re-render accumulates into unnecessary computational overhead.]
+**Action:** [Gated `getSelectedSong` map lookups behind `isSongSelected` conditional checks inside list item renders.]
