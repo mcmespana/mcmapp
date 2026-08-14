@@ -8,8 +8,8 @@
 > Diseño y decisiones: [`../planes/PLAN_TAGS.md`](../planes/PLAN_TAGS.md)
 > (variante **1d**, "etiquetas desde el header del cantoral").
 >
-> Repos implicados: **`mcmapp`** (esta app, ✅ implementado) y
-> **`mcmapp-cantoral`** (fuente de verdad del contenido, ⏳ pendiente — ver §6).
+> Repos implicados: **`mcmapp`** (esta app) y **`mcmapp-cantoral`** (fuente de
+> verdad del contenido). Los dos ✅ implementados — ver §6.
 
 ---
 
@@ -177,8 +177,11 @@ pica la curiosidad y se ven las otras 33.
 Notas:
 
 - El índice inverso se construye con un `useMemo` sobre los datos ya
-  descargados. **No** hay `useFirebaseData` nuevo para las canciones, ni caché
-  nueva, ni cambios en `database.rules.json` (`songs` ya es `.read: true`).
+  descargados. **No** hay `useFirebaseData` nuevo para las canciones ni caché
+  nueva. La lectura de `songs/tags` tampoco necesitaba regla (`songs` ya es
+  `.read: true`); en `database.rules.json` solo se ha añadido el **permiso de
+  escritura** de `songs/tags`, con la misma bandera que `songs/data`, porque lo
+  publica el mismo CI del repo del cantoral.
 - `filterSongsData` descarta las canciones `pendiente`/`borrador`: **los
   recuentos que se ven son los de la app**, no los del generador.
 - Solo se muestran etiquetas con al menos una canción. Una etiqueta declarada
@@ -197,19 +200,32 @@ mano en los `.cho`.
 
 ---
 
-## 6. Lo que falta: `mcmapp-cantoral`
+## 6. El otro lado: `mcmapp-cantoral` ✅
 
-La app está lista y no rompe nada mientras no haya etiquetas. Para que se vean
-etiquetas de verdad, en el repo del cantoral hace falta:
+Implementado también (agosto 2026). Lo que hay allí:
 
-1. **Parsear `{tags:}`** en el generador de ChordPro → `tags: string[]` en cada
-   entrada de `songs-vX.json` (normalizado a slug, aunque la app renormaliza).
-2. **`tags.json` en el repo** con los metadatos opcionales, y publicarlo en
-   Firebase como `songs/tags` (`{ updatedAt, data }`, el mismo formato que
-   `songs`) en el mismo push que ya sube `songs/data`.
-3. **Documentar la directiva** en el prompt del generador, junto a `{arr:}`.
-4. Empezar a etiquetar unas cuantas canciones. Con que haya una, el botón
-   aparece solo.
+1. **`{tags:}` en el generador** — `scripts/chordpro.py` la parsea como una
+   directiva más de cabecera (se quita de `content`) y `crear_songs_json.py`
+   la vuelca a `tags: string[]`. Al generar imprime un **informe de etiquetas**
+   marcando las que aún no están declaradas: el momento barato de cazar un typo
+   es cuando la etiqueta aparece por primera vez.
+2. **`songs/tags.json`** — el catálogo, versionado en git.
+3. **`update_firebase.py`** publica el catálogo **resuelto** (declaradas +
+   descubiertas, con recuento) en `songs/tags`, en el mismo push que ya sube
+   `songs/data`.
+4. **Editor visual del admin** — se etiqueta desde donde uno ya está:
+   - editor de canción → pestaña **➕ Datos extra**, con autocompletado;
+   - **catálogo en bloque** (poner/quitar en las marcadas) + filtro por
+     etiqueta;
+   - **al importar**, sugerencias por canción (título · sección · letra) y una
+     fila de etiquetas para todo el lote;
+   - pestaña **🏷 Etiquetas** para gestionar el vocabulario: nombre, emoji,
+     destacada, alias, fundir (como alias o reescribiendo) y renombrar el slug.
+5. **Vuelta desde la app** — `sincronizaCambiosDeFirebase.py` entiende
+   `tagsNew`/`tagsOld`, así que la fase 4 (etiquetar desde la propia app) ya
+   tiene el circuito montado.
+
+Contrato completo: `docs/CAMPOS_CANCIONES.md` §6 de `mcmapp-cantoral`.
 
 Contrato mínimo que espera la app:
 

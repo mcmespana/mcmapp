@@ -101,6 +101,12 @@
       "hidden": {
         ".write": "root.child('_config/legacyPanelWrites').val() === true"
       },
+      /* Catálogo de etiquetas del cantoral. Lo publica el MISMO CI que
+       * `songs/data` (repo mcmapp-cantoral), así que va con la misma bandera.
+       * Ver docs/funcionalidades/ETIQUETAS.md. */
+      "tags": {
+        ".write": "root.child('_config/legacyPanelWrites').val() === true"
+      },
       "ediciones": {
         ".write": true
       },

@@ -51,6 +51,8 @@ describe('app: lecturas públicas', () => {
   const reads: [string, string][] = [
     ['songs/data', 'CategoriesScreen / SongListScreen'],
     ['songs/updatedAt', 'useFirebaseData'],
+    ['songs/tags/data', 'useSongTags — catálogo de etiquetas'],
+    ['songs/tags/updatedAt', 'useSongTags'],
     ['albums/data', 'AlbumListScreen'],
     ['calendars/data', 'useCalendarConfigs'],
     ['profileConfig/data', 'ProfileConfigContext'],
@@ -213,6 +215,7 @@ describe('panel: lo que necesita con las banderas puestas', () => {
     'calendars',
     'songs/data',
     'songs/updatedAt',
+    'songs/tags',
     'profileConfig',
     'wordle/daily-words',
     'wordle/updatedAt',
