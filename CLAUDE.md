@@ -72,4 +72,5 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 | Sistema de diseño / tabs | `docs/desarrollo/DESIGN.md` + `docs/desarrollo/TABS_MAINTENANCE.md` |
 | Build de tienda de agosto 2026 (paso a paso) | `docs/desarrollo/BUILD_AGOSTO_2026.md` |
 | Arreglos del cantoral (`{arr:}`) | `docs/funcionalidades/ARREGLOS.md` |
+| Etiquetas del cantoral (`{tags:}`) | `docs/funcionalidades/ETIQUETAS.md` |
 | Subrayado de lecturas (Contigo) | `docs/funcionalidades/SUBRAYADO.md` |
