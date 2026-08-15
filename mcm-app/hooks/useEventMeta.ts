@@ -31,7 +31,10 @@ export function useEventsMeta(
   // Los arrays se recrean en cada render; la clave estable evita que el efecto
   // se dispare en bucle.
   const idsKey = useMemo(
-    () => Array.from(new Set(eventIds.filter(Boolean))).sort().join(','),
+    () =>
+      Array.from(new Set(eventIds.filter(Boolean)))
+        .sort()
+        .join(','),
     [eventIds],
   );
 

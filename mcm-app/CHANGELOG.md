@@ -104,7 +104,7 @@ cada dispositivo lee la suya.
 
 **Panel** (repo mcmpanel): deja de leer la raíz de la base de datos —
 imprescindible, porque conceder `.read` en `/` es conceder `/users`— y modal
-*ERROR DE REGLAS DE FIREBASE* con el path denegado y qué mirar.
+_ERROR DE REGLAS DE FIREBASE_ con el path denegado y qué mirar.
 
 **Pendiente**: la sección Usuarios del panel y el contador de destinatarios del
 composer dejan de funcionar al desplegar. No tienen bandera a propósito
@@ -120,7 +120,7 @@ a todos). Se arreglan con auth real en el panel — decisión D2.
 - **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
   Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
 - **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
-  «cambiar el código» — la clave *es* el coro, así que cambiarla la desataba de
+  «cambiar el código» — la clave _es_ el coro, así que cambiarla la desataba de
   él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
 - **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
   elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
@@ -189,7 +189,7 @@ a todos). Se arreglan con auth real en el panel — decisión D2.
 - **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
   Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
 - **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
-  «cambiar el código» — la clave *es* el coro, así que cambiarla la desataba de
+  «cambiar el código» — la clave _es_ el coro, así que cambiarla la desataba de
   él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
 - **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
   elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
