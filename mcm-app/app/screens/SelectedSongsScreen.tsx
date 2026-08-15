@@ -224,70 +224,9 @@ const SelectedSongsScreen: React.FC = () => {
   });
   const link = sharing.link;
 
-  // Auto-import / auto-join al llegar por un enlace:
-  //   ?p=1234    → playlist por código
-  //   ?coro=id   → la ÚLTIMA playlist de ese coro (siempre la de hoy)
-  //   ?c=1234|id → sesión de coro en vivo
-  // En los tres casos se reemplaza la selección directamente y el toast deja
-  // 10 s para deshacer: venir de un enlace y que te pregunten tres cosas antes
-  // de enseñarte nada era el peor momento posible para un diálogo.
-  const autoImportAttempted = useRef(false);
-  useEffect(() => {
-    if (autoImportAttempted.current) return;
-    const params: any = (route?.params as any) || {};
-    const playlistCode = params.p ?? params.code;
-    const choirParam = params.coro;
-    const liveKey = params.c;
-
-    if (typeof playlistCode === 'string' && /^\d{4}$/.test(playlistCode)) {
-      autoImportAttempted.current = true;
-      void sharing.importByCode(playlistCode).catch((e: any) => {
-        toast.show({
-          variant: 'danger',
-          label: e?.message ?? 'No se ha podido importar',
-        });
-      });
-    } else if (typeof choirParam === 'string' && isChoirId(choirParam)) {
-      autoImportAttempted.current = true;
-      void sharing.importLatestFromChoir(choirParam).catch((e: any) => {
-        toast.show({
-          variant: 'danger',
-          label: e?.message ?? 'No se ha podido importar',
-        });
-      });
-    } else if (typeof liveKey === 'string' && liveKey) {
-      autoImportAttempted.current = true;
-      void handleJoinChoir(liveKey);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Auto-import de un QR offline (?d=<payload>). Esperamos a que el catálogo
-  // esté cargado para poder resolver categoría+número → filename.
-  const offlineImportAttempted = useRef(false);
-  useEffect(() => {
-    if (offlineImportAttempted.current) return;
-    const params: any = (route?.params as any) || {};
-    const payload = params.d;
-    if (typeof payload === 'string' && payload && allSongsData) {
-      offlineImportAttempted.current = true;
-      const { songs, missing } = decodeOfflinePlaylist(
-        payload,
-        offlineFilenameResolver,
-      );
-      if (songs.length === 0) {
-        toast.show({ label: 'No se pudo leer la playlist del QR' });
-        return;
-      }
-      sharing.replaceWithUndo(songs, 'Playlist del QR importada', null);
-      if (missing > 0) {
-        toast.show({
-          label: `${missing} canción(es) del QR no están en este dispositivo`,
-        });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allSongsData]);
+  // (Los dos efectos de auto-import por enlace viven más abajo, justo detrás de
+  // `handleJoinChoir` y `offlineFilenameResolver`: necesitan leerlos y aquí
+  // arriba quedaban en zona muerta.)
 
   // Mapa filename → datos completos de la canción (con categoría original).
   const allSongsMap = useMemo(() => {
@@ -1187,6 +1126,77 @@ const SelectedSongsScreen: React.FC = () => {
     },
     [choir, toast],
   );
+
+  // --- Auto-import al llegar por un enlace -----------------------------------
+  // Van AQUÍ, y no arriba con el resto de efectos, porque leen
+  // `handleJoinChoir` y `offlineFilenameResolver`, que se declaran justo antes.
+  // Declarados antes, el compilador los veía como acceso en zona muerta y
+  // dejaba de rastrear sus cambios. Son efectos de un solo disparo (pestillo en
+  // un ref), así que su orden relativo al resto da igual.
+  //
+  //   ?p=1234    → playlist por código
+  //   ?coro=id   → la ÚLTIMA playlist de ese coro (siempre la de hoy)
+  //   ?c=1234|id → sesión de coro en vivo
+  // En los tres casos se reemplaza la selección directamente y el toast deja
+  // 10 s para deshacer: venir de un enlace y que te pregunten tres cosas antes
+  // de enseñarte nada era el peor momento posible para un diálogo.
+  const autoImportAttempted = useRef(false);
+  useEffect(() => {
+    if (autoImportAttempted.current) return;
+    const params: any = (route?.params as any) || {};
+    const playlistCode = params.p ?? params.code;
+    const choirParam = params.coro;
+    const liveKey = params.c;
+
+    if (typeof playlistCode === 'string' && /^\d{4}$/.test(playlistCode)) {
+      autoImportAttempted.current = true;
+      void sharing.importByCode(playlistCode).catch((e: any) => {
+        toast.show({
+          variant: 'danger',
+          label: e?.message ?? 'No se ha podido importar',
+        });
+      });
+    } else if (typeof choirParam === 'string' && isChoirId(choirParam)) {
+      autoImportAttempted.current = true;
+      void sharing.importLatestFromChoir(choirParam).catch((e: any) => {
+        toast.show({
+          variant: 'danger',
+          label: e?.message ?? 'No se ha podido importar',
+        });
+      });
+    } else if (typeof liveKey === 'string' && liveKey) {
+      autoImportAttempted.current = true;
+      void handleJoinChoir(liveKey);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-import de un QR offline (?d=<payload>). Esperamos a que el catálogo
+  // esté cargado para poder resolver categoría+número → filename.
+  const offlineImportAttempted = useRef(false);
+  useEffect(() => {
+    if (offlineImportAttempted.current) return;
+    const params: any = (route?.params as any) || {};
+    const payload = params.d;
+    if (typeof payload === 'string' && payload && allSongsData) {
+      offlineImportAttempted.current = true;
+      const { songs, missing } = decodeOfflinePlaylist(
+        payload,
+        offlineFilenameResolver,
+      );
+      if (songs.length === 0) {
+        toast.show({ label: 'No se pudo leer la playlist del QR' });
+        return;
+      }
+      sharing.replaceWithUndo(songs, 'Playlist del QR importada', null);
+      if (missing > 0) {
+        toast.show({
+          label: `${missing} canción(es) del QR no están en este dispositivo`,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSongsData]);
 
   // --- Reorden manual -------------------------------------------------------
 
