@@ -18,6 +18,21 @@
 
 ---
 
+## 2026-08-15 21:30 — Aviso: el CI lleva parado desde abril
+
+Al arreglar los 4 errores de `typecheck:tests` de la #334 salió a la luz que
+**GitHub Actions no ejecuta nada en este repo desde el 2026-04-10**: por eso
+llevaban meses en `main` sin que saltara nadie. Ningún PR se está verificando de
+verdad, aunque el workflow siga en el repo.
+
+Anotado como tarea de prioridad máxima en `TODO.md` §0 y en el puntero rápido de
+`docs/planes/BACKLOG.md`. Mientras siga roto, los cuatro pasos de `verify.yml`
+(`typecheck`, `typecheck:tests`, `lint`, `test -- --ci`) hay que pasarlos en
+local antes de mergear.
+
+También en `CLAUDE.md`: una regla que se puede romper sin enterarse va en un
+test-guardarraíl, no en un documento (el modelo es `tabsLayoutWebSafety.test.ts`).
+
 ## 2026-08-15 20:15 — Repaso de warnings (111 → 51) y reordenación de los planes
 
 **Warnings del compilador de React, sin silenciar ninguno:**

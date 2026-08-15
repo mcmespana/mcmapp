@@ -38,6 +38,7 @@
 | **Ahora mismo** | **Build de tienda 2.1 — agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6) |
 | **Bloqueado por ti** | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`) |
 | **Bloqueado fuera** | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real |
+| **⚠️ Roto y sin dueño** | **El CI no ejecuta nada desde el 2026-04-10.** Ningún PR se verifica de verdad; hasta arreglarlo, pasa los 4 pasos de `verify.yml` en local antes de mergear. Detalle en `mcm-app/TODO.md` §0 |
 | **Después de la build** | UI Nativa Fase 2 → Integración D → Carismochito |
 | **Oportunista** | Integraciones resto. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado) |
 | **Futuro lejano, sin prisa** | Widget de Contigo · Panel Pañuelo (§1 notas) |
