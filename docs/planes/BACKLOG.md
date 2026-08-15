@@ -11,16 +11,23 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-08-12.
+> Última actualización: 2026-08-15.
+>
+> **Índice de qué plan está vivo y cuál archivado:**
+> [`docs/planes/README.md`](README.md). Si un plan está en `archivo/`, está
+> HECHO — no se re-ejecuta.
 
 ---
 
 ## 🧭 Puntero rápido
 
-> **Todo gira ahora mismo alrededor de la build de tienda de agosto.** La rama
-> `claude/compact-tabs-bar-uxxaoz` lleva SDK 57, la barra flotante, Reanimated 4,
-> NSE de iOS, Sentry, analítica, icono de Carismochito y el subrayado nativo.
-> Nada de eso puede salir por OTA.
+> **Todo gira ahora mismo alrededor de la build de tienda de agosto.** Todo lo
+> nativo (SDK 57, barra flotante, Reanimated 4, NSE de iOS, Sentry, analítica,
+> icono de Carismochito, subrayado nativo) **ya está en `main`**: la rama
+> `claude/compact-tabs-bar-uxxaoz` se mergeó en la
+> [#313](https://github.com/mcmespana/mcmapp/pull/313) el 2026-08-04 y ya no
+> existe — si un documento la menciona como viva, está desactualizado. Nada de
+> eso puede salir por OTA.
 >
 > **Si el usuario dice "seguimos"**: lo que toca es sacar la build adelante —
 > paso a paso completo en `docs/desarrollo/BUILD_AGOSTO_2026.md`. La Cola
@@ -29,11 +36,12 @@
 |  |  |
 | --- | --- |
 | **Ahora mismo** | **Build de tienda 2.1 — agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6) |
-| **Bloqueado por ti** | Integración D2 (modelo de auth del panel) · Panel Pañuelo (falta plan funcional) |
+| **Bloqueado por ti** | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`) |
 | **Bloqueado fuera** | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real |
-| **Después de la build** | Integración D → **Build 2.2 (nov-dic): Widget + App Check** → Carismochito + Panel Pañuelo |
-| **Oportunista** | Calidad Fase 1 (gigantes), Integraciones resto, Etiquetas del cantoral (§2.C-ter, plan escrito y pendiente de 3 decisiones) |
-| **Cerrado** | Los 8 planes tácticos (archivados en `archivo/tacticos/`), UI Nativa Fase 1, PR #298 |
+| **Después de la build** | UI Nativa Fase 2 → Integración D → Carismochito |
+| **Oportunista** | Integraciones resto. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado) |
+| **Futuro lejano, sin prisa** | Widget de Contigo · Panel Pañuelo (§1 notas) |
+| **Cerrado** | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298 |
 
 > **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
 > mueve hasta que las tiendas tengan el binario nuevo, o la gente recibe un
@@ -79,8 +87,15 @@
 | 3   | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate   | **Opus**                                     | No                                                                      | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `archivo/tacticos/008-…`                      |
 | 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70% (`AppTextField`/`EmptyState` mayormente hechos, `AppPrimaryButton` parcial, `SegmentedControl`/chips/tokens sin empezar)                                                                                                                        | `docs/planes/PLAN_UI_NATIVA.md`                                          |
 | 5   | **Integración D** — Seguridad Firebase (+ A2)                                           | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                  | ⏳ Pendiente, importante pero no urgente. **Es lo único que queda de PLAN_INTEGRACIONES**: el resto (A, B, C, E) se cerró el 2026-08-12                                                                                                                                                 | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                     |
-| 6   | **Widget de Contigo**                                                                   | Opus                                         | **Sí** — ¿release de tienda ya? (ver §4)                                | ⏳ Al final                                                                                                                                                                                                                                                                             | `docs/planes/PLAN_WIDGET_CONTIGO.md`                                     |
-| 7   | **Carismochito** (ejecutar bien §1–4) + **Panel Pañuelo** (concepto nuevo)              | Sonnet (Opus solo el icono nativo §5)        | Panel Pañuelo: **sí**, falta el plan funcional                          | ⏳ Cierre final                                                                                                                                                                                                                                                                         | `docs/planes/PLAN_CARISMOCHITO.md` + `docs/planes/PLAN_PANEL_PANUELO.md` |
+| 6   | **Carismochito** (ejecutar bien §1–4)                                                   | Sonnet (Opus solo el icono nativo §5)        | No                                                                      | ⏳ Cierre final                                                                                                                                                                                                                                                                         | `docs/planes/PLAN_CARISMOCHITO.md`                                       |
+
+**Fuera de la cola — futuro lejano (decisión del usuario, 2026-08-15):**
+**Widget de Contigo** y **Panel Pañuelo** salen de la Cola Principal. Son dos
+funcionalidades "muy futuras": _ya se hará, no hay prisa_. No las propongas al
+decir "seguimos", no las metas en la bolsa oportunista y **no preguntes por
+ellas** — la decisión de cuándo es del usuario y ya la ha tomado: todavía no.
+Sus planes siguen en `PLAN_WIDGET_CONTIGO.md` y `PLAN_PANEL_PANUELO.md` para
+cuando toque.
 
 **Notas de orden:**
 
@@ -92,22 +107,38 @@
   incidente inminente. Sigue siendo importante hacerlo bien antes de escalar
   a más usuarios — por eso se queda en la cola, pero sin prisa y bloqueado
   por D2.
-- El **6** (Widget) y el **7** (Carismochito + Panel Pañuelo) son
-  deliberadamente el cierre: los dos requieren decisión/plan previo y el
-  Widget además exige comprometer una build de tienda.
+- El **6** (Carismochito) es deliberadamente el cierre: no bloquea a nada y
+  nada lo bloquea a él.
 
 ---
 
 ## 2. Bolsa oportunista (fuera de la Cola Principal — no la avanza "seguimos")
 
-### A. Calidad · Fase 1 — descuartizar los gigantes
+### A. ~~Calidad · Fase 1 — descuartizar los gigantes~~ ❌ DESCARTADO (2026-08-15)
 
-- **Trigger exclusivo:** el usuario dice algo tipo _"me sobran tokens esta
-  semana, ¿por dónde seguimos?"_ (ver Protocolo §3). No se ejecuta por
-  iniciativa propia ni entra en la Cola Principal.
-- **Modelo:** Sonnet.
-- **Detalle:** `docs/planes/PLAN_CALIDAD.md` Fase 1 (`SelectedSongsScreen`,
-  `onboarding.tsx`, `(tabs)/index.tsx`…).
+**Decisión del usuario: los archivos grandes se quedan grandes.** No hay
+suficiente necesidad como para pagar el troceo, y el argumento que lo motivaba
+(un humano no se orienta en 1.800 líneas) ya no aplica: **quien edita este
+código es siempre una IA**, que lee el archivo entero de una vez y para la que
+la misma lógica repartida en seis ficheros es *más* cara, no menos.
+
+Concretamente:
+
+- `app/onboarding.tsx` (1.756 líneas) — **se queda como está**, literal: _"es
+  una chorrada"_. No lo trocees ni te ofrezcas a hacerlo.
+- `app/(tabs)/index.tsx` (1.196 líneas) — se queda.
+- `app/screens/SelectedSongsScreen.tsx` (~1.790 líneas) — **el único con
+  permiso para tocarse**, y solo si hay una mejora real de por medio (no
+  "trocear por trocear"). El 2026-08-15 ya se le movieron los dos efectos de
+  auto-import detrás de sus dependencias, que era un problema de verdad.
+
+Lo que SÍ sigue vivo de la calidad es lo que se paga solo: que `npm run lint`,
+`npx tsc --noEmit` y `npm test` estén en verde, y no dejar warnings nuevos
+(ver §2.F). El techo de `max-lines` del ESLint se queda en 1.000 **como aviso**,
+no como deuda a saldar: los tres gigantes actuales están exentos por decisión.
+
+El razonamiento largo sobre cómo organizar código que solo va a editar una IA
+está en `docs/planes/PLAN_CALIDAD.md` §0.
 
 ### B. ~~Integraciones — resto (A2, C1–C4, E1)~~ ✅ CERRADO (2026-08-12)
 
@@ -125,12 +156,13 @@ Detalle en `docs/planes/PLAN_INTEGRACIONES.md`.
 
 ### C. Bolsa nativa — la build de tienda de agosto de 2026
 
-> **Estado: la build YA está en marcha.** La rama
-> `claude/compact-tabs-bar-uxxaoz` es la "súper rama" que se lleva todo lo
-> nativo acumulado. Ya no es una lista de espera: es el **contenido de esta
-> build** más lo que aún se puede meter antes de compilar. Revisión: 2026-08-03.
+> **Estado: todo lo nativo YA está en `main`.** La "súper rama"
+> `claude/compact-tabs-bar-uxxaoz` se mergeó en la
+> [#313](https://github.com/mcmespana/mcmapp/pull/313) el 2026-08-04 y ya no
+> existe. Esto dejó de ser una lista de espera: es el **contenido de esta
+> build**, pendiente solo de compilar y publicar. Revisión: 2026-08-15.
 
-#### C.1 — Ya dentro de la rama (se publica con esta build)
+#### C.1 — Ya en `main` (se publica con esta build)
 
 | Qué | Dónde | Nota |
 | --- | ----- | ---- |
@@ -191,25 +223,41 @@ guardan para la siguiente build de tienda.
 > `UITabBarController` nativo y todos los iconos visibles al compactarse. El
 > resto de PRs abiertas son de Bolt/Jules (`bolt-*`, `jules-*`) y se ignoran.
 
-### C-ter. Etiquetas del cantoral (`PLAN_TAGS.md`)
+### C-ter. ~~Etiquetas del cantoral~~ ✅ CERRADO (2026-08-15)
 
-- **Estado:** ✅ **parte de app HECHA** el 2026-08-13 (diseño 1d de Claude
-  Design: botón 🏷️ en el header, nube de etiquetas en una hoja, pantalla
-  `__TAG__:<slug>` agrupada por categoría con barra de refinamiento). Las 3
-  decisiones de §7 quedaron resueltas: compartidas, emoji opcional, y el
-  etiquetado desde la app NO entra todavía.
-- **Lo que queda:** la **fase 1 en `mcmapp-cantoral`** — parsear `{tags:}` en
-  el generador, `tags.json` y publicar `songs/tags`. Sin eso la app no enseña
-  nada (el botón del header no aparece si no hay canciones etiquetadas), así
-  que **no hay prisa ni riesgo**, pero la funcionalidad está muerta hasta
-  entonces. Ese repo normalmente NO está en el scope de la sesión: hay que
-  pedir al usuario que lo añada (`add_repo`).
-- **Después (fase 4, opcional):** etiquetar desde la propia app con long-press
-  y autocompletado, por la cola `songs/ediciones` (mismo circuito que los
-  arreglos); y `liturgicalTime` como etiqueta de sistema derivada.
-- **OTA-safe:** sí, la parte de app no lleva nada nativo.
-- **Detalle:** `docs/funcionalidades/ETIQUETAS.md` (lo implementado) y
-  `docs/planes/PLAN_TAGS.md` (razonamiento de diseño).
+Completo de punta a punta:
+
+- **Fase 2 (app)** ✅ 2026-08-13 — diseño 1d de Claude Design: botón 🏷️ en el
+  header, nube de etiquetas en una hoja, pantalla `__TAG__:<slug>` agrupada por
+  categoría con barra de refinamiento. Las 3 decisiones de §7 se resolvieron:
+  compartidas, emoji opcional, y el etiquetado desde la app no entra todavía.
+- **Fase 1 (`mcmapp-cantoral`)** ✅ 2026-08-15 — el generador parsea `{tags:}` y
+  publica `songs/tags`. Era lo único que faltaba para que la funcionalidad
+  dejara de estar muerta.
+
+Queda **opcional y sin fecha** la fase 4 (etiquetar desde la propia app con
+long-press por la cola `songs/ediciones`, y `liturgicalTime` como etiqueta de
+sistema derivada). No está planificada: si se quiere, se decide entonces.
+
+Documentación viva: `docs/funcionalidades/ETIQUETAS.md`. El plan se archivó en
+`docs/planes/archivo/PLAN_TAGS.md`.
+
+### F. Warnings del compilador de React — lo que queda es irreducible
+
+Repaso completo el 2026-08-15: **111 → 51 warnings**, sin silenciar ninguno.
+Se arreglaron las asignaciones tiradas por render (`useRef(new Animated.Value())`
+→ `useAnimatedValue`, los `PanResponder` de `BottomSheet`), varios
+`exhaustive-deps` reales, un ajuste de estado que leía y escribía un ref en
+render, y los dos efectos de auto-import que leían en zona muerta.
+
+**Los 51 que quedan NO son deuda accionable.** Antes de "arreglarlos", lee
+`docs/desarrollo/WARNINGS.md`: están clasificados uno a uno con el motivo por
+el que cada grupo se queda. El grueso son falsos positivos estructurales —
+Reanimated (`sharedValue.value = …` es su API, no una mutación indebida) y el
+patrón oficial de "ref al último callback". Perseguirlos empeora el código.
+
+**Lo que sí se pide:** no añadir warnings NUEVOS. Si un cambio tuyo sube la
+cuenta por encima de 51, ese es tuyo y se arregla.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 

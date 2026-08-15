@@ -31,9 +31,9 @@
       desarrollo, la segunda después de subir el AAB a la Play Console. Detalle
       y diagnóstico en `docs/funcionalidades/LOGIN.md`.
 
-Es lo que desbloquea el resto: la rama `claude/compact-tabs-bar-uxxaoz` lleva
-SDK 57, barra flotante, Reanimated 4, NSE de iOS, Sentry, analítica, icono de
-Carismochito y subrayado nativo. Todo NATIVO, nada sale por OTA.
+Es lo que desbloquea el resto: `main` ya lleva SDK 57, barra flotante,
+Reanimated 4, NSE de iOS, Sentry, analítica, icono de Carismochito y subrayado
+nativo (entró en la #313 el 2026-08-04). Todo NATIVO, nada sale por OTA.
 
 - [ ] **Quitar `updates.disableAntiBrickingMeasures: true` de `app.json`.** Ya
       no lo usa nadie: el modo tester pasó a `setUpdateRequestHeadersOverride`,
@@ -62,72 +62,28 @@ Arreglado con resolución por plataforma (`components/tabs/PlatformTabsLayout.ts
   `__tests__/tabsLayoutWebSafety.test.ts` para que un `import` directo no lo vuelva
   a romper — el fallo solo se vería al desplegar.
 
-### 2. React Compiler — lo que SÍ merece la pena
+### 2. React Compiler — ✅ REPASADO A FONDO (2026-08-15)
 
-> Contexto: el React Compiler está ACTIVADO (`experiments.reactCompiler: true`
-> en `app.json`). Estas reglas son su linter: marcan sitios donde NO puede
-> optimizar, así que esos componentes se quedan sin memoización automática. No
-> son bugs. Están en `warn` en `eslint.config.js`.
+**No mantengas aquí una segunda lista de warnings.** El repaso completo está en
+[`docs/desarrollo/WARNINGS.md`](../docs/desarrollo/WARNINGS.md), que es la única
+referencia: cuenta actual, reparto por regla y el motivo por el que cada grupo
+se queda.
 
-- [ ] **`react-hooks/set-state-in-effect` — quedan 6** (eran 35). Los 29
-      arreglados el 2026-08-02 con dos patrones, ninguno de ellos `key={visible}`:
+Resumen: **111 → 51 warnings**, sin silenciar ninguno. Lo que quedaba de verdad
+(asignaciones tiradas por render, `exhaustive-deps` reales, un ajuste de estado
+que leía y escribía un ref en render, y dos efectos que leían en zona muerta)
+está arreglado. Los 51 restantes son irreducibles hoy: falsos positivos de
+Reanimated, el patrón oficial de "ref al último callback", código congelado
+(Wordle) y los tres gigantes exentos por decisión.
 
-      - **Estado DERIVADO** donde el efecto solo copiaba algo calculable:
-                        `useAdminStatus`, `useEventMeta` y `ChoirSessionContext` guardan ahora el
-                        resultado JUNTO a la clave a la que pertenece (uid / eventId / código),
-                        así lo viejo deja de contar solo; `SongListScreen` construye la lista con
-                        una función pura + `useMemo` (el efecto era `async` sin esperar a nada);
-                        `fotos.tsx` y `AlbumListScreen` comparten `hooks/useAlbumPagination.ts`;
-                        `useColorScheme.web.ts` usa `useSyncExternalStore` para el flag de
-                        hidratación.
-                      - **Ajuste durante el render** (el patrón que documenta React para «cambiar
-                        estado cuando cambia una prop») en los modales que se resetean al abrir y
-                        en las pantallas que reaccionan a un parámetro de navegación. Es
-                        equivalente al efecto pero sin el render intermedio con los datos
-                        anteriores, y **no cambia el comportamiento** (a diferencia de
-                        `key={visible}`, que además habría matado la animación de salida del
-                        `BottomSheet`).
+- [ ] **Cuando `useEffectEvent` deje de ser experimental**, migrar de golpe la
+      categoría `react-hooks/refs` (18 warnings). Es la única acción pendiente
+      real y no depende de nosotros.
+- [ ] **Subir `react-hooks/refs` a `error`** solo DESPUÉS de esa migración: hoy
+      obligaría a poner 18 `eslint-disable` que solo añaden ruido.
 
-              Los **6 que quedan NO son deuda pendiente, son decisiones**; no vayas a por el
-              número:
-
-              - `WordleScreen` (×2) y `useWordleGame` — **código congelado**, CLAUDE.md
-                        prohíbe refactorizarlo.
-                      - `notifications.tsx:568` — auto-abrir por deep-link. Es una ACCIÓN
-                        disparada por la navegación, no estado que derivar: un efecto es
-                        justamente la herramienta correcta.
-                      - `AddToHomeBanner:30` — lee `window`/`localStorage`, que solo existen en
-                        cliente. Moverlo al render rompería la hidratación del render estático de
-                        web.
-                      - `useSongProcessor:523` — el efecto entero es síncrono y se podría pasar a
-                        `useMemo`, pero eso mete ~500 líneas de formateo ChordPro→HTML DENTRO del
-                        render en la pantalla más usada de la app. Hoy la pantalla pinta primero y
-                        formatea después; cambiarlo es una decisión de rendimiento **que hay que
-                        medir en dispositivo**.
-                      - ~~`ComunicaScreen`~~ — hecho al migrarlo a Reanimated.
-
-- [ ] **`react-hooks/preserve-manual-memoization` — quedan 5** (de 12). Los 7
-      mecánicos ya están hechos (el patrón era: usar `user?.uid` dentro de un
-      `useCallback` hace que el compilador infiera `user` entero y se salte el
-      componente; se arregla sacando `const uid = user?.uid` fuera). Los 5 que
-      quedan son de otra clase ("memoized in source but not in compilation
-      output"): `useMemo` que mutan un `Map` por dentro, o callbacks async con
-      setState. `app/notifications.tsx:511`, `SelectedSongsScreen` (×3),
-      `NotificationsBottomSheet:100`. Piden reestructurar cada caso y el premio
-      es pequeño: **hacerlo sólo de pasada si se toca ese fichero por otra
-      cosa**.
-- [ ] **NO tocar: `react-hooks/immutability` (26, eran 14)** — son `sharedValue.value =
-…`, o sea LA api de Reanimated. No tiene arreglo por diseño.
-- [ ] **NO tocar: `react-hooks/purity` (3)** — revisados uno a uno, los tres son
-      falsos positivos (`Date.now()` en un handler async de `ReflexionesScreen`,
-      `Math.random()` en un `useMemo` del Wordle, que además es código
-      congelado).
-- [ ] **Subir `react-hooks/refs` a `error`** en `eslint.config.js`: con la
-      migración hecha, los 34 que quedan son refs legítimas y habría que darles
-      su `eslint-disable-next-line` con el motivo antes de subir la regla.
-      `set-state-in-effect` tampoco puede subir tal cual — mismos 6 casos
-      justificados arriba. Hacerlo cuando la build de tienda esté validada, no
-      antes: son cambios que solo añaden ruido si hay que revertir algo.
+Lo único que se pide en el día a día: **no añadir warnings nuevos**. Si tu
+cambio sube la cuenta por encima de 51, ese es tuyo.
 
 ### 3. Headers que se esconden al hacer scroll — ✅ CERRADO (2026-08-03)
 
@@ -177,11 +133,11 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       Grupos migrados de sus versiones a mano).
 
       **Los `TextInput` que quedan NO se migran, y está decidido**: los
-          buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
-          de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
-          celdas del código; y los de Revisión quedaron, tras el refactor del examen
-          del día, como campos SIN borde dentro de una fila que sí lo tiene —
-          `AppTextField` les metería un borde dentro de otro.
+                  buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
+                  de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
+                  celdas del código; y los de Revisión quedaron, tras el refactor del examen
+                  del día, como campos SIN borde dentro de una fila que sí lo tiene —
+                  `AppTextField` les metería un borde dentro de otro.
 
 ## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
 
@@ -234,22 +190,22 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       cada render) lo habría cazado un render test.
 
       Por dónde empezar, en orden de rentabilidad:
-                                  1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-                                     Más): que monten sin reventar con datos vacíos, con datos y offline.
-                                  2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
-                                     hook con sus contextos).
-                                  3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
-                                     releer del bookmark.
-                                  4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
+                                          1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+                                             Más): que monten sin reventar con datos vacíos, con datos y offline.
+                                          2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+                                             hook con sus contextos).
+                                          3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+                                             releer del bookmark.
+                                          4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-                                  Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
-                                  lee la suite entera para tocar código: lee los tests del área que toca. Lo
-                                  que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-                                  de en una build de 20 minutos— y evita iteraciones enteras como la del
-                                  tamaño de los iconos. El coste real de una suite grande es de
-                                  MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
-                                  detalles internos) que hay que reescribir en cada refactor. Por eso la
-                                  lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
+                                          Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+                                          lee la suite entera para tocar código: lee los tests del área que toca. Lo
+                                          que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+                                          de en una build de 20 minutos— y evita iteraciones enteras como la del
+                                          tamaño de los iconos. El coste real de una suite grande es de
+                                          MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+                                          detalles internos) que hay que reescribir en cada refactor. Por eso la
+                                          lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales, y (jun-2026) Fotos (`AlbumListScreen`/`AlbumCard`), Materiales, Comida, MasHome y `EventItem`. Horario es de solo lectura (sin interactivos). Pendiente: validar en dispositivo con VoiceOver/TalkBack y revisar pantallas/flujos secundarios.
 

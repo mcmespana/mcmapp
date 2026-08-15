@@ -18,6 +18,45 @@
 
 ---
 
+## 2026-08-15 20:15 — Repaso de warnings (111 → 51) y reordenación de los planes
+
+**Warnings del compilador de React, sin silenciar ninguno:**
+
+- `useRef(new Animated.Value(x)).current` → `useAnimatedValue(x)` en
+  `BottomSheet`, `OTAUpdatePrompt` y `CarismochitoDialogs` (9 sitios). El patrón
+  viejo construía un `Animated.Value` nuevo en cada render solo para tirarlo.
+- Los dos `PanResponder` de `BottomSheet` pasan a un único `useMemo`, con la
+  lógica de soltar/cancelar compartida en vez de duplicada (misma historia: se
+  creaban y se descartaban en cada render).
+- `ReadingCalendarSheet` re-centraba el mes leyendo y escribiendo un ref durante
+  el render; ahora usa el patrón oficial de ajuste de estado.
+- Los dos efectos de auto-import por enlace de `SelectedSongsScreen` (`?p=`,
+  `?coro=`, `?c=`, `?d=`) estaban ~900 líneas ANTES de `handleJoinChoir` y
+  `offlineFilenameResolver`, que es justo lo que leen: se mueven detrás de sus
+  dependencias.
+- `exhaustive-deps` reales: `onChoir` en `QrScannerModal`; `evangelio` y
+  `SelectedSongsScreen` capturaban un objeto entero donde bastaba un método o un
+  escalar. Y fuera imports muertos en `calendario`, `cancionero` y `mas`.
+
+Los **51 restantes son irreducibles** y están clasificados uno a uno en
+`docs/desarrollo/WARNINGS.md` (falsos positivos de Reanimated, patrón de "ref al
+último callback", código congelado y los tres gigantes exentos). 860 tests en
+verde, `tsc` limpio.
+
+**Documentación** — que se vea de un tirón qué plan está hecho:
+
+- `plans/` (los 15 planes de la auditoría, todos ejecutados) sale de la raíz del
+  repo y pasa a `docs/planes/archivo/auditoria-2026-08/`; `PLAN_TAGS.md` también
+  se archiva. Nuevo `docs/planes/README.md` con el estado de cada plan y la
+  regla: **lo que está en `archivo/` está hecho, no se re-ejecuta**.
+- Etiquetas del cantoral ✅ cerradas del todo (la fase del generador de
+  `mcmapp-cantoral` ya está). Widget y Panel Pañuelo salen de la cola a "futuro
+  lejano". La Fase 1 de calidad (trocear gigantes) queda descartada, con el
+  razonamiento de cómo organizar código que solo edita una IA en
+  `PLAN_CALIDAD.md` §0.
+- Corregidas las referencias a la rama `claude/compact-tabs-bar-uxxaoz`, que se
+  mergeó en la #313 y ya no existe.
+
 ## 2026-08-13 21:40 — Etiquetas del cantoral (`{tags:}`): botón del header, nube y pantalla de etiqueta
 
 Sistema de **etiquetas libres y transversales** para las canciones ("viejunas",

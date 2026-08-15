@@ -1,11 +1,96 @@
 # PLAN_CALIDAD.md — Plan de saneamiento de código de la MCM App
 
-> Plan de trabajo para mejorar la calidad del código, reducir la deuda técnica y frenar su crecimiento.
-> Complementa a `MEJORAS.md` (análisis transversal de 2026-05-21): aquel documento diagnostica; éste planifica la ejecución con fases, orden y criterios de salida.
+> ⚠️ **Parcialmente vigente.** La **Fase 0** (guardarraíles) está hecha y es la
+> parte que sigue mandando. La **Fase 1 (trocear los gigantes) está DESCARTADA**
+> por decisión del usuario del 2026-08-15 — el porqué está en §0, escrito abajo,
+> y es lo primero que hay que leer de este documento. El diagnóstico de junio se
+> conserva como foto histórica: **sus cifras ya no son ciertas** y su conclusión
+> sobre el tamaño de los archivos ya no es la política del repo.
 >
-> **Fecha:** 2026-06-10 · Datos medidos sobre el código actual de `main`, no heredados del análisis de mayo.
+> **Fecha original:** 2026-06-10.
 >
-> **Cómo usarlo:** las fases van en orden de impacto. La Fase 0 es barata y frena el deterioro; hacedla aunque no se haga nada más. Marcad cada ítem al completarlo y anotad el PR. Convenciones del repo: documentar cambios relevantes en `mcm-app/CHANGELOG.md` y mantener `mcm-app/TODO.md`.
+> **Cómo usarlo:** lee §0, luego la Fase 0. El resto es contexto.
+
+---
+
+## §0 — Cómo se organiza el código cuando quien lo edita es una IA
+
+_Escrito el 2026-08-15, a petición del usuario. Sustituye a la premisa de la
+Fase 1._
+
+La Fase 1 de este plan daba por sentado algo que en este repo ya no se cumple:
+que el código lo lee y lo edita una persona, con memoria de trabajo limitada,
+que se pierde en un archivo de 1.800 líneas y agradece que se lo partan en
+seis. **En este repo quien edita es siempre un agente**, y eso invierte varias
+de las conclusiones.
+
+### Qué cambia
+
+**El tamaño de un archivo casi da igual; lo que cuesta es la dispersión.** Un
+agente lee 1.800 líneas de una tacada y tiene el fichero entero en contexto. Lo
+que sí le cuesta caro es reconstruir una función repartida entre seis ficheros:
+son seis búsquedas, seis lecturas parciales y una reconstrucción mental que
+puede salir mal. Trocear un gigante coherente en nombre de la limpieza cambia
+un coste que la IA no paga por otro que sí. Por eso los umbrales de `max-lines`
+se subieron de 400/600 a 1.000/1.500 el 2026-08-08, y por eso los tres gigantes
+que quedan se quedan.
+
+El matiz: **coherente**. Un archivo grande está bien si es *una* cosa (una
+pantalla con sus piezas). Está mal si son tres cosas sin relación que
+comparten fichero por accidente histórico. El criterio deja de ser "cuántas
+líneas" y pasa a ser "¿esto se lee como un tema o como un cajón de sastre?".
+
+**El comentario que explica el PORQUÉ vale más que nunca.** Es la única forma
+de transmitir contexto que no se deduce del código: por qué estas animaciones
+van con `Animated` de RN y no con Reanimated (`BottomSheet.tsx`), por qué el
+Wordle no se toca, por qué las escrituras van por `firebaseWrites`. Un agente
+que no lo lee tiene muchas papeletas de "arreglar" justo eso. Los comentarios
+de este repo ya lo hacen y hay que mantenerlo: **no describas lo que hace la
+línea, describe la decisión y el accidente que la provocó**.
+
+**Lo que de verdad protege es lo ejecutable.** Un agente puede ignorar un
+documento; no puede ignorar un test en rojo. Por orden de eficacia real:
+
+1. **Tests** — 860 hoy. Son el único mecanismo que atrapa una regresión que
+   nadie previó.
+2. **Tipos** — `tsc --noEmit` en verde, y `: any` solo donde no queda otra.
+3. **Lint** — con el techo de warnings documentado (`WARNINGS.md`).
+4. **Tests-guardarraíl**, que valen doble: `tabsLayoutWebSafety.test.ts` no
+   comprueba una función, comprueba que **nadie vuelva a importar** el módulo
+   nativo de tabs en el grafo de web. Codifica una decisión de arquitectura en
+   algo que falla solo. Cada vez que un agente rompa algo por no saber una
+   regla, el arreglo correcto no es un párrafo en `CLAUDE.md`: es un test así.
+
+**La documentación tiene que decir el estado, no solo el contenido.** El fallo
+más caro de este repo en agosto de 2026 no fue de código: fue un índice de
+planes que seguía diciendo TODO cuando todo estaba hecho, y dos sesiones
+ejecutaron los mismos 15 planes en paralelo. Un humano habría sospechado; el
+agente se fía. De ahí `docs/planes/README.md` y la regla de mover a `archivo/`
+en el mismo commit que cierra el trabajo.
+
+**Un sitio para cada cosa, y que se diga cuál es.** Un agente encuentra por
+búsqueda, no por costumbre. Las convenciones que más rinden aquí son las que
+hacen la búsqueda determinista: `@/` siempre, `logger` y nunca `console.*`,
+estilos en `<pantalla>Styles.ts`, escrituras de UI por `services/firebaseWrites.ts`.
+Valen porque son **absolutas**: "casi siempre" obliga a comprobar, y comprobar
+es el coste que se quería evitar.
+
+### Qué NO cambia
+
+- Duplicar lógica sigue siendo malo, aquí por un motivo distinto: dos copias es
+  que el agente arregle una y deje la otra viva.
+- Las funciones puras extraídas a `utils/` siguen ganando, no por tamaño sino
+  porque **se pueden testear** (`songTags.ts`, `resolveProfileConfig.ts`,
+  `calendarDates`…). Esa extracción sí vale la pena siempre.
+- Los efectos y las dependencias siguen importando: son bugs de verdad, no
+  estética. De hecho es lo único que se arregló del repaso de warnings.
+
+### La regla práctica
+
+> **No trocees por tamaño. Trocea por testabilidad.** Si el trozo que sacas
+> puede tener un test propio, sácalo. Si solo va a ser "las líneas 800-1200 en
+> otro fichero", déjalo donde está y escribe un comentario que explique qué
+> hace ese bloque y por qué.
 
 ---
 
@@ -73,6 +158,19 @@ Objetivo: que el problema deje de crecer mientras se arregla el resto.
 > tamaño — acoplamiento, código que se reutiliza desde varios sitios, o lógica
 > pura que gana un test propio al salir del componente. Lo ya hecho (estilos y
 > subcomponentes extraídos) se queda como está.
+>
+> **Reconfirmado y cerrado del todo el 2026-08-15.** El usuario descartó
+> también la reserva que quedaba en la bolsa oportunista del backlog: esto ya
+> no se propone ni cuando "sobran tokens". Nominalmente:
+>
+> - `app/onboarding.tsx` — se queda **literal**, no se trocea ni se ofrece.
+> - `app/(tabs)/index.tsx` — se queda.
+> - `app/screens/SelectedSongsScreen.tsx` — único con permiso para tocarse, y
+>   solo con una mejora real de por medio. El 2026-08-15 se le movieron los dos
+>   efectos de auto-import detrás de sus dependencias (leían en zona muerta):
+>   ese es el tipo de cambio que sí procede.
+>
+> El razonamiento completo, actualizado a "quien edita es una IA", está en §0.
 
 Objetivo original: ninguna pantalla > 800 líneas; cada pantalla = composición de componentes + un hook de lógica.
 

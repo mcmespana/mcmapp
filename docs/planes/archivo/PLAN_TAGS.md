@@ -1,15 +1,20 @@
-# PLAN_TAGS.md — Etiquetas del cantoral
+# 🗄️ ARCHIVADO — PLAN_TAGS.md · Etiquetas del cantoral
 
-> **Estado:** ✅ **Fase 2 (app) implementada** el 2026-08-13 sobre el diseño de
-> Claude Design **variante 1d** ("etiquetas desde el header del cantoral").
-> La documentación viva de lo que hay es
-> [`../funcionalidades/ETIQUETAS.md`](../funcionalidades/ETIQUETAS.md); este
-> plan se conserva como registro del razonamiento de diseño.
+> # ⛔ COMPLETO. No re-ejecutar.
 >
-> ⏳ **Falta la fase 1 en `mcmapp-cantoral`** (directiva `{tags:}` en el
-> generador + `tags.json` → `songs/tags`). Hasta que llegue, la app no muestra
-> nada: sin canciones etiquetadas el botón del header ni se pinta. Ver §6 de
-> `ETIQUETAS.md` para el contrato exacto que espera la app.
+> - **Fase 2 (app)** ✅ 2026-08-13, sobre el diseño de Claude Design
+>   **variante 1d** ("etiquetas desde el header del cantoral").
+> - **Fase 1 (`mcmapp-cantoral`)** ✅ 2026-08-15 — el generador ya parsea
+>   `{tags:}` y publica `songs/tags`. Era lo último que faltaba: con eso la
+>   funcionalidad está viva de punta a punta.
+>
+> La documentación **viva** de lo que hay es
+> [`../../funcionalidades/ETIQUETAS.md`](../../funcionalidades/ETIQUETAS.md).
+> Este plan se conserva solo como registro del razonamiento de diseño.
+>
+> Queda **opcional y sin fecha** la fase 4: etiquetar desde la propia app
+> (long-press + autocompletado por la cola `songs/ediciones`) y
+> `liturgicalTime` como etiqueta de sistema derivada.
 >
 > **Decisiones de §7, resueltas al ejecutar:** (1) etiquetas **compartidas**,
 > curadas desde el repo; (2) **emoji sí**, opcional por etiqueta; (3) el
@@ -70,7 +75,7 @@ etiquetas libres, que es que **nadie recuerda qué etiquetas hay**.
 
 `songs/data` en Firebase lo **sobrescribe entero** cada push a `main` de
 `mcmapp-cantoral` (PUT completo — ver
-[`PLAN_INTEGRACIONES.md` §Integración E](PLAN_INTEGRACIONES.md)). Por tanto:
+[`PLAN_INTEGRACIONES.md` §Integración E](../PLAN_INTEGRACIONES.md)). Por tanto:
 
 - ❌ **No** escribir etiquetas directamente en Firebase desde el panel: se
   pierden en el siguiente push.
@@ -81,7 +86,7 @@ etiquetas libres, que es que **nadie recuerda qué etiquetas hay**.
 ### 3.2 Pertenencia — directiva `{tags:}` en el `.cho`
 
 Misma familia que la directiva propia `{arr:}` ya existente
-([`ARREGLOS.md`](../funcionalidades/ARREGLOS.md)):
+([`ARREGLOS.md`](../../funcionalidades/ARREGLOS.md)):
 
 ```
 {title: Alma misionera}
@@ -257,7 +262,7 @@ Y la fontanería ya está montada: modo admin (`isAdmin` en `SettingsContext`),
 `SecretPanelModal`, y sobre todo la cola `songs/ediciones` que
 `sincronizaCambiosDeFirebase.py` vuelca de vuelta a los `.cho`. Es **el mismo
 circuito** que ya se usó para los arreglos con long-press
-([`ARREGLOS.md`](../funcionalidades/ARREGLOS.md)).
+([`ARREGLOS.md`](../../funcionalidades/ARREGLOS.md)).
 
 Propuesta: una acción **"Etiquetas"** en el menú de long-press de la lista
 (el `BottomSheet` de "Añadir a la lista" / "Compartir"), con **autocompletado
