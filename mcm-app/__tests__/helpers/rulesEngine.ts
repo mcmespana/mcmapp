@@ -143,7 +143,10 @@ export function isAllowed(
     if (!node) break;
     let next: RuleNode | null = null;
 
-    const exact = node[segment];
+    // Anotado a mano: sin el tipo explícito, `node` se reasigna desde `next`,
+    // que sale de `exact`, que sale de `node` — TS ve la circularidad y lo
+    // infiere como `any` (TS7022).
+    const exact: RuleNode | RuleValue | undefined = node[segment];
     if (isRuleNode(exact)) {
       next = exact;
     } else {

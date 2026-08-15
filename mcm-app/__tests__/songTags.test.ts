@@ -128,12 +128,16 @@ describe('songTagSlugs', () => {
 
 describe('songHasAllTags', () => {
   const song = { tags: ['viejunas', 'infantiles'] };
+  // Una canción real que NO lleva etiquetas. El tipo se anota entero (con
+  // `tags` opcional) porque `{ title: string }` a secas no comparte ninguna
+  // propiedad con `{ tags?: unknown }` y TS lo rechaza por tipo débil.
+  const sinEtiquetas: { title: string; tags?: string[] } = { title: 'x' };
   it('cruza en AND', () => {
     expect(songHasAllTags(song, ['viejunas'])).toBe(true);
     expect(songHasAllTags(song, ['viejunas', 'infantiles'])).toBe(true);
     expect(songHasAllTags(song, ['viejunas', 'envio'])).toBe(false);
     expect(songHasAllTags(song, [])).toBe(false);
-    expect(songHasAllTags({ title: 'x' }, ['viejunas'])).toBe(false);
+    expect(songHasAllTags(sinEtiquetas, ['viejunas'])).toBe(false);
   });
 });
 

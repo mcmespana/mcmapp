@@ -15,7 +15,12 @@ import {
   __resetNodeCacheForTests,
 } from '@/hooks/useFirebaseData';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { get, __setMockNode, __resetMockDb } from 'firebase/database';
+import { get } from 'firebase/database';
+// Los helpers `__…` solo existen en el mock. Jest mapea `firebase/database` a
+// este mismo fichero (`moduleNameMapper` en jest.config.js), así que en tiempo
+// de ejecución es EL MISMO módulo; TypeScript, en cambio, solo conoce los tipos
+// del paquete real, y por eso hay que importarlos por su ruta.
+import { __setMockNode, __resetMockDb } from '@/__mocks__/firebase';
 import { getNetworkStateAsync } from 'expo-network';
 
 // Silenciar console.error en tests (esperamos errores controlados)
