@@ -311,6 +311,7 @@ danger: '#9D1E74'; // Morado LC
 - **Plataforma**: usar `Platform.OS` para diferencias, archivos `.ios.tsx` para componentes iOS-only
 - **Tamaño de archivo**: el techo son **1.000 líneas** (ESLint avisa con `max-lines`); a partir de **1.500** hay que trocear de verdad — extraer subcomponentes a `components/<área>/` y la lógica a un hook `use<Pantalla>.ts` **ANTES** de añadir la feature. Umbrales subidos desde 400/600 el 2026-08-08: con agentes de IA leyendo el código, un archivo largo pero coherente cuesta menos que la misma lógica repartida en seis ficheros que hay que reconstruir mentalmente. Los gigantes que ya hay **se quedan**: no hace falta trocearlos por tamaño.
 - **Logging**: nunca `console.*` (ESLint lo bloquea como error). Usar el logger central `@/utils/logger` (`logger.debug/info/warn/error`).
+- **Una regla que se puede romper sin enterarse va en un test, no en un documento.** Este código lo edita siempre una IA, y una IA puede no leer un párrafo — pero no puede ignorar un test en rojo. El modelo es `__tests__/tabsLayoutWebSafety.test.ts`: no comprueba una función, comprueba que **nadie vuelva a importar** el módulo nativo de tabs en el grafo de web (el fallo real solo se veía al desplegar). Cuando algo se rompa por no saber una regla, el arreglo correcto no es ampliar este archivo: es un test-guardarraíl que falle solo. Razonamiento completo en `docs/planes/PLAN_CALIDAD.md` §0.
 
 ## Patrones comunes
 
