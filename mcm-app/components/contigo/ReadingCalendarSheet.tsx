@@ -48,13 +48,17 @@ export function ReadingCalendarSheet({
   const [monthKey, setMonthKey] = useState(() => selectedDate.slice(0, 7));
   const slide = useSharedValue(0);
 
-  // Re-centrar el mes al abrir.
-  const wasVisible = useRef(false);
-  if (visible && !wasVisible.current) {
-    const target = selectedDate.slice(0, 7);
-    if (target !== monthKey) setMonthKey(target);
+  // Re-centrar el mes al abrir. Es el patrón oficial de "ajustar estado cuando
+  // cambia una prop" (estado espejo + comparación en render), NO un ref: leer y
+  // escribir un ref durante el render es justo lo que el compilador prohíbe.
+  const [wasVisible, setWasVisible] = useState(false);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) {
+      const target = selectedDate.slice(0, 7);
+      if (target !== monthKey) setMonthKey(target);
+    }
   }
-  wasVisible.current = visible;
 
   const bookmarkedSet = useMemo(
     () => new Set(bookmarks.map((b) => b.date)),

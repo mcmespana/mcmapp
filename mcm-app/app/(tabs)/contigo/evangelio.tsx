@@ -178,11 +178,17 @@ export default function EvangelioScreen() {
    * El modo lápiz NO desaparece: sigue siendo el único camino en web y el
    * respaldo si el menú nativo no llega a montarse.
    */
+  // Se saca el método fuera del memo: usar `hl.applyColor` dentro hace que el
+  // React Compiler infiera el objeto `hl` ENTERO como dependencia y se salte la
+  // memoización (mismo patrón que el `const uid = user?.uid` de TODO.md §2).
+  // `applyColor` es un `useCallback` del hook, así que su identidad es estable.
+  const applyHighlightColor = hl.applyColor;
+
   const onNativeHighlight = useMemo(() => {
     const entries = HIGHLIGHT_SOURCES.map((source) => [
       source,
       (sel: ReadingSelection) => {
-        hl.applyColor(pickStickyHighlightColor(), { source, sel });
+        applyHighlightColor(pickStickyHighlightColor(), { source, sel });
         if (Platform.OS !== 'web')
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setHighlightMode(true);
@@ -192,7 +198,7 @@ export default function EvangelioScreen() {
       HighlightSource,
       (sel: ReadingSelection) => void
     >;
-  }, [hl.applyColor]);
+  }, [applyHighlightColor]);
 
   const exitHighlightMode = () => {
     setHighlightMode(false);

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import {
   Animated,
   Modal,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useAnimatedValue,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
@@ -27,7 +28,7 @@ const G_DARK = '#06210F';
  * sin animación no era "sale de golpe": era una tarjeta invisible.
  */
 function PopCard({ children }: { children: React.ReactNode }) {
-  const enter = useRef(new Animated.Value(0)).current;
+  const enter = useAnimatedValue(0);
   useEffect(() => {
     Animated.spring(enter, {
       toValue: 1,

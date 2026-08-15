@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Modal,
   Platform,
@@ -10,6 +16,7 @@ import {
   StyleSheet,
   Dimensions,
   Keyboard,
+  useAnimatedValue,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UIColors, Colors } from '@/constants/colors';
@@ -100,12 +107,12 @@ export default function BottomSheet({
   // si el teclado está abierto, para el teclado. Así la hoja nunca se sale por
   // arriba al subir, y el ScrollView interno scrollea al campo enfocado.
   const sheetMaxHeight = screenHeight - insets.top - kbHeight - 8;
-  const slideAnim = useRef(new Animated.Value(OFF_SCREEN)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const dragAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useAnimatedValue(OFF_SCREEN);
+  const opacityAnim = useAnimatedValue(0);
+  const dragAnim = useAnimatedValue(0);
   // Keyboard offset: negative value moves the sheet up. Kept separate from
   // translateY so both can use useNativeDriver without a driver conflict.
-  const keyboardOffsetAnim = useRef(new Animated.Value(0)).current;
+  const keyboardOffsetAnim = useAnimatedValue(0);
 
   // `visible` del render anterior: al montar con `visible` a false no hay nada
   // que cerrar, así que no se dispara la animación de salida (que además
@@ -239,66 +246,54 @@ export default function BottomSheet({
     };
   }, [keyboardOffsetAnim]);
 
-  const headerPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: (_, { dy }) => {
+  // `useMemo` y no `useRef(...).current`: el patrón del ref construía un
+  // PanResponder NUEVO en cada render para tirarlo acto seguido. Los handlers
+  // solo cierran sobre `dragAnim` (estable) y sobre refs, así que una sola
+  // instancia vale para toda la vida del sheet.
+  const [headerPanResponder, contentPanResponder] = useMemo(() => {
+    const snapBack = () => {
+      Animated.spring(dragAnim, {
+        toValue: 0,
+        useNativeDriver: nativeDriver,
+        tension: 180,
+        friction: 20,
+      }).start();
+    };
+    // Soltar arrastrando lo bastante (o rápido) cierra; si no, vuelve a su sitio.
+    const onRelease = (dy: number, vy: number) => {
+      if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
+        onCloseRef.current();
+      } else {
+        snapBack();
+      }
+    };
+    const shared = {
+      onPanResponderMove: (_: unknown, { dy }: { dy: number }) => {
         if (dy > 0) dragAnim.setValue(dy);
       },
-      onPanResponderRelease: (_, { dy, vy }) => {
-        if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
-          onCloseRef.current();
-        } else {
-          Animated.spring(dragAnim, {
-            toValue: 0,
-            useNativeDriver: nativeDriver,
-            tension: 180,
-            friction: 20,
-          }).start();
-        }
-      },
-      onPanResponderTerminate: () => {
-        Animated.spring(dragAnim, {
-          toValue: 0,
-          useNativeDriver: nativeDriver,
-          tension: 180,
-          friction: 20,
-        }).start();
-      },
-    }),
-  ).current;
-
-  const contentPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, { dy, dx }) =>
-        Math.abs(dy) > Math.abs(dx) && dy > 5,
-      onPanResponderMove: (_, { dy }) => {
-        if (dy > 0) dragAnim.setValue(dy);
-      },
-      onPanResponderRelease: (_, { dy, vy }) => {
-        if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
-          onCloseRef.current();
-        } else {
-          Animated.spring(dragAnim, {
-            toValue: 0,
-            useNativeDriver: nativeDriver,
-            tension: 180,
-            friction: 20,
-          }).start();
-        }
-      },
-      onPanResponderTerminate: () => {
-        Animated.spring(dragAnim, {
-          toValue: 0,
-          useNativeDriver: nativeDriver,
-          tension: 180,
-          friction: 20,
-        }).start();
-      },
-    }),
-  ).current;
+      onPanResponderRelease: (
+        _: unknown,
+        { dy, vy }: { dy: number; vy: number },
+      ) => onRelease(dy, vy),
+      onPanResponderTerminate: snapBack,
+    };
+    return [
+      // La cabecera arrastra desde el primer toque: ahí no hay nada que scrollear.
+      PanResponder.create({
+        ...shared,
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+      }),
+      // El contenido solo secuestra el gesto si es claramente vertical y hacia
+      // abajo, para no robarle el scroll a la lista de dentro.
+      PanResponder.create({
+        ...shared,
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, { dy, dx }) =>
+          Math.abs(dy) > Math.abs(dx) && dy > 5,
+      }),
+    ];
+  }, [dragAnim]);
 
   const handleColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.18)';
   const translateY = Animated.add(slideAnim, dragAnim);

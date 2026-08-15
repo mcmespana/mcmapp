@@ -1,4 +1,3 @@
-import { useNavigation } from 'expo-router';
 import { useTabReselect } from '@/components/tabs/tabBarController';
 import { useRef, useEffect } from 'react';
 import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
@@ -65,8 +64,6 @@ export default function CancioneroTab() {
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = isWeb ? insets.top : undefined;
   const scheme = useColorScheme();
-
-  const navigation = useNavigation();
 
   // Re-tap del tab activo → volver a la pantalla raíz del stack. Antes esto lo
   // daba el evento `tabPress` del navegador, pero con la barra del sistema

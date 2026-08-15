@@ -142,6 +142,11 @@ const SelectedSongsScreen: React.FC = () => {
   const { selectedSongs, isHydrated, addSong, removeSong, moveSong } =
     useSelectedSongs();
   const choir = useChoirSession();
+  // Escalar suelto a propósito: leer `choir.session?.current?.filename` DENTRO
+  // de un callback hace que se infiera `choir.session` entera como dependencia,
+  // así que el memo se rehace en cada latido del líder aunque la canción en
+  // curso no cambie (mismo patrón que el `const uid = user?.uid` de TODO.md §2).
+  const nowPlayingFilename = choir.session?.current?.filename;
   const { settings } = useSettings();
 
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
@@ -1666,7 +1671,7 @@ const SelectedSongsScreen: React.FC = () => {
       <View style={styles.categoryContainer}>
         <Text style={styles.categoryTitle}>{item.categoryTitle}</Text>
         {item.data.map((song) => {
-          const isNow = choir.session?.current?.filename === song.filename;
+          const isNow = nowPlayingFilename === song.filename;
           return (
             <PlaylistRow
               key={song.filename}
@@ -1682,7 +1687,7 @@ const SelectedSongsScreen: React.FC = () => {
       </View>
     ),
     [
-      choir.session?.current?.filename,
+      nowPlayingFilename,
       handleSongPress,
       removeSong,
       styles.categoryContainer,
@@ -1705,7 +1710,7 @@ const SelectedSongsScreen: React.FC = () => {
       onMoveUp: () => handleMoveUp(item.filename),
       onMoveDown: () => handleMoveDown(item.filename),
       onContextMenu: () => setMenuFilename(item.filename),
-      isNowPlaying: choir.session?.current?.filename === item.filename,
+      isNowPlaying: nowPlayingFilename === item.filename,
       onPress: () => handleSongPress(item),
       onRemove: () => removeSong(item.filename),
     }),
@@ -1715,7 +1720,7 @@ const SelectedSongsScreen: React.FC = () => {
       handleMoveDown,
       handleSongPress,
       removeSong,
-      choir.session?.current?.filename,
+      nowPlayingFilename,
       setMenuFilename,
     ],
   );
