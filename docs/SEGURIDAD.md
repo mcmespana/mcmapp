@@ -2,7 +2,7 @@
 
 > Documentación de las reglas de seguridad de la **Realtime Database** del
 > proyecto `mcmapp-39b71` y de cómo desplegarlas. El fichero de reglas vive en
-> [`mcm-app/database.rules.json`](mcm-app/database.rules.json).
+> [`mcm-app/database.rules.json`](../mcm-app/database.rules.json).
 
 La app no tiene otro backend: **todo es Firebase Realtime Database**. No se usa
 Firestore ni Storage de forma activa. La autenticación es Google/Apple Sign-In
@@ -184,7 +184,7 @@ firebase deploy --only database --project mcmapp-pro
 ### 4.2. Automatizado (ligado a producción)
 
 Hay un workflow en
-[`.github/workflows/deploy-firebase-rules.yml`](.github/workflows/deploy-firebase-rules.yml)
+[`.github/workflows/deploy-firebase-rules.yml`](../.github/workflows/deploy-firebase-rules.yml)
 que despliega las reglas **al mergear a `production`**, pero solo si cambió
 `database.rules.json` o `firebase.json` (no redespliega en cada merge). También
 se puede lanzar a mano desde la pestaña *Actions* (`workflow_dispatch`).

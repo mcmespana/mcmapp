@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { CalendarProps, LocaleConfig } from 'react-native-calendars';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import colors from '@/constants/colors';
+import colors, { TabHeaderColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import Animated, { runOnJS } from 'react-native-reanimated';
 import type { SectionListProps } from 'react-native';
@@ -38,7 +38,6 @@ import EventDetailsBottomSheet from '@/components/EventDetailsBottomSheet';
 import EmptyState from '@/components/ui/EmptyState';
 import { createStyles } from '@/components/calendar/calendarioStyles';
 import TabTintBar from '@/components/ui/TabTintBar';
-import { TabHeaderColors } from '@/constants/colors';
 
 LocaleConfig.locales['es'] = {
   monthNames: [

@@ -194,7 +194,7 @@ const QrScannerModal: React.FC<Props> = ({
         } else onCode(result.code);
       }, CELEBRATION_MS);
     },
-    [onCode, onOffline],
+    [onCode, onOffline, onChoir],
   );
 
   // Si cierran la cámara a mano mientras corre la celebración, el código leído

@@ -4,7 +4,11 @@
 > por sabido. Lo que hay que configurar UNA vez está en §2; el día de la build
 > se hace §3 → §4 → §5 → §6.
 >
-> Rama: `claude/compact-tabs-bar-uxxaoz` · **App v2.1.0** · Expo SDK 57
+> Rama: **`main`** · **App v2.1.0** · Expo SDK 57
+>
+> (La rama `claude/compact-tabs-bar-uxxaoz`, que traía todo esto, se mergeó en
+> la [#313](https://github.com/mcmespana/mcmapp/pull/313) el 2026-08-04 y ya no
+> existe. Se compila desde `main`.)
 
 ---
 
@@ -197,11 +201,11 @@ Paso a paso completo y tabla de diagnóstico:
 
 ## 3. Antes de compilar — comprobaciones en frío
 
-Desde `mcm-app/`, con la rama `claude/compact-tabs-bar-uxxaoz` sacada:
+Desde `mcm-app/`, con `main` sacado y al día:
 
 ```bash
 npm ci                 # instala exactamente lo del package-lock
-npm run lint           # 0 errores (los ~88 warnings del React Compiler son conocidos)
+npm run lint           # 0 errores (los 51 warnings del React Compiler son conocidos: docs/desarrollo/WARNINGS.md)
 npx tsc --noEmit       # sin salida = bien
 npm test               # todo en verde
 ```
@@ -442,7 +446,7 @@ se dejó fuera de `production` a propósito porque toca el hook central de datos
 **El orden importa.** `production` dispara la OTA automáticamente, así que no
 puede tocarse hasta que las tiendas tengan el binario nuevo:
 
-1. Merge de `claude/compact-tabs-bar-uxxaoz` → `main`.
+1. ✅ Merge a `main` — hecho en la #313 (2026-08-04).
 2. Builds de producción iOS + Android (§4.2) desde `main`.
 3. Subir a App Store y Play Store, y **esperar a que estén aprobadas y
    publicadas**.

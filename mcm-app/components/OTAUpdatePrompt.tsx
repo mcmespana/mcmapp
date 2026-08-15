@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import {
   Animated,
   Easing,
@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useAnimatedValue,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
@@ -51,10 +52,10 @@ export default function OTAUpdatePrompt({
   // estético: el fondo nace a opacidad 0, así que sin animación el aviso de
   // actualización salía INVISIBLE — tapando la pantalla y con sus botones
   // imposibles de ver.
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.92)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
-  const sparkle = useRef(new Animated.Value(0)).current;
+  const opacity = useAnimatedValue(0);
+  const scale = useAnimatedValue(0.92);
+  const rotate = useAnimatedValue(0);
+  const sparkle = useAnimatedValue(0);
 
   useEffect(() => {
     if (!visible) {

@@ -5,8 +5,9 @@
 > "animación"… y poder ver de un tirón todas las canciones de una etiqueta,
 > **agrupadas por categoría**.
 >
-> Diseño y decisiones: [`../planes/PLAN_TAGS.md`](../planes/PLAN_TAGS.md)
-> (variante **1d**, "etiquetas desde el header del cantoral").
+> Diseño y decisiones: [`../planes/archivo/PLAN_TAGS.md`](../planes/archivo/PLAN_TAGS.md)
+> (variante **1d**, "etiquetas desde el header del cantoral") — 🗄️ archivado,
+> el plan está ejecutado; **este documento es la referencia viva**.
 >
 > Repos implicados: **`mcmapp`** (esta app) y **`mcmapp-cantoral`** (fuente de
 > verdad del contenido). Los dos ✅ implementados — ver §6.
