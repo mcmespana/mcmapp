@@ -18,25 +18,39 @@ conditions, and update your row when done.
 > tests-solo y documentación (lista al final) — el operador los considera
 > ejecutables por cualquier agente sin plan.
 
+> ## ⚠️ Estado: los 15 planes están HECHOS y en `main`
+>
+> Entraron por la [#317](https://github.com/mcmespana/mcmapp/pull/317) (2026-08-07)
+> y los huecos que dejaron, por la [#320](https://github.com/mcmespana/mcmapp/pull/320).
+> **No los vuelvas a ejecutar.**
+>
+> Este aviso existe porque ya pasó: dos sesiones ejecutaron los mismos 15 planes
+> en paralelo sin saberlo, y la segunda rama hubo que tirarla
+> ([#319](https://github.com/mcmespana/mcmapp/pull/319), cerrada). La tabla de
+> abajo seguía diciendo TODO mucho después de estar todo dentro.
+>
+> Si retomas trabajo de fondo, el orden lo manda `docs/planes/BACKLOG.md`, no
+> este directorio.
+
 ## Execution order & status
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001 | Arreglar los `off()` que nunca quitan los listeners de Firebase | P1 | S | — | TODO |
-| 002 | Blindar los workflows de OTA: diff nativo + `[skip-ota]` en todo el push + gate de tests | P1 | S | — | TODO |
-| 003 | Corregir la expansión de eventos multi-día del calendario (DST) e investigar la zona horaria del ICS | P1 | S-M | — | TODO |
-| 004 | Un solo dueño para los hábitos de Contigo (provider) — las 4 pantallas dejan de pisarse | P2 | M | — | TODO |
-| 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | TODO |
-| 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | TODO |
-| 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | TODO |
-| 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | TODO |
-| 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | TODO |
-| 010 | Virtualizar el muro de "Compartiendo" con `FlatList` | P3 | S | — | TODO |
-| 011 | Calendario litúrgico: ventana rodante (−280 KB de bundle) + generador con test de vigencia | P3 | S | — | TODO |
-| 012 | Podar la caché de lecturas diarias (crecía sin tope) | P3 | S | — | TODO |
-| 013 | Scraper: el exit code distingue fuente caída de fechas sueltas fallidas | P3 | S | — | TODO |
-| 014 | Costura `services/firebaseWrites.ts`: las escrituras de UI ganan retry y una sola forma | P3 | M | — | TODO |
-| 015 | Limpieza de módulos muertos y dependencias sin uso | P3 | S | — | TODO |
+| 001 | Arreglar los `off()` que nunca quitan los listeners de Firebase | P1 | S | — | ✅ DONE (2026-08) |
+| 002 | Blindar los workflows de OTA: diff nativo + `[skip-ota]` en todo el push + gate de tests | P1 | S | — | ✅ DONE (2026-08) |
+| 003 | Corregir la expansión de eventos multi-día del calendario (DST) e investigar la zona horaria del ICS | P1 | S-M | — | ✅ DONE (2026-08) |
+| 004 | Un solo dueño para los hábitos de Contigo (provider) — las 4 pantallas dejan de pisarse | P2 | M | — | ✅ DONE (2026-08) |
+| 005 | Tests para `cloudPlaylistService` y mover playlist con `update()` atómico | P2 | S | — | ✅ DONE (2026-08) |
+| 006 | Serializar las escrituras read-modify-write de AsyncStorage (historial, leídas, subrayados) | P2 | M | — | ✅ DONE (2026-08) |
+| 007 | `useFirebaseData`: no re-transformar ni estrenar identidad cuando nada cambió | P2 | S | — | ✅ DONE (2026-08) |
+| 008 | Descargar los ICS en paralelo + ventana de frescura de 5 min | P3 | S | 003 | ✅ DONE (2026-08) |
+| 009 | Sacar del render los componentes inline de `MaterialPagesScreen` | P3 | S | — | ✅ DONE (2026-08) |
+| 010 | Virtualizar el muro de "Compartiendo" con `FlatList` | P3 | S | — | ✅ DONE (2026-08) |
+| 011 | Calendario litúrgico: ventana rodante (−280 KB de bundle) + generador con test de vigencia | P3 | S | — | ✅ DONE (2026-08) |
+| 012 | Podar la caché de lecturas diarias (crecía sin tope) | P3 | S | — | ✅ DONE (2026-08) |
+| 013 | Scraper: el exit code distingue fuente caída de fechas sueltas fallidas | P3 | S | — | ✅ DONE (2026-08) |
+| 014 | Costura `services/firebaseWrites.ts`: las escrituras de UI ganan retry y una sola forma | P3 | M | — | ✅ DONE (2026-08) |
+| 015 | Limpieza de módulos muertos y dependencias sin uso | P3 | S | — | ✅ DONE (2026-08) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
