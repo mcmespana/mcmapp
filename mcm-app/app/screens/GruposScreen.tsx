@@ -105,9 +105,9 @@ export default function GruposScreen() {
 
   const isSearching = search.trim().length >= 2;
 
-  const openMap = (url?: string) => {
+  const openMap = useCallback((url?: string) => {
     if (url) Linking.openURL(url);
-  };
+  }, []);
 
   // ⚡ Bolt Optimization: Precompute normalized strings for all groups and members
   // to avoid running expensive normalize() operations on every keystroke during live search.
@@ -227,6 +227,44 @@ export default function GruposScreen() {
     setSearch(findMeQuery);
   }, [findMeQuery]);
 
+  // ⚡ Bolt Optimization: Memoize renderItem functions for all lists
+  // to prevent unnecessary unmounting and remounting of complex list items
+  // during parent component re-renders (like when typing in the search bar).
+  const renderMemberItem = useCallback(
+    ({ item }: { item: string }) => (
+      <MemberRow name={item} myName={myName} styles={styles} />
+    ),
+    [myName, styles],
+  );
+
+  const renderGroupItem = useCallback(
+    ({ item }: { item: Grupo }) => (
+      <GrupoCard
+        grupo={item}
+        myName={myName}
+        styles={styles}
+        onPress={() => setGrupo(item)}
+      />
+    ),
+    [myName, styles, setGrupo],
+  );
+
+  const renderSearchHitItem = useCallback(
+    ({ item }: { item: SearchHit }) => (
+      <SearchHitRow
+        hit={item}
+        query={search.trim()}
+        myName={myName}
+        styles={styles}
+        onPress={() => {
+          setCategoria(item.categoria);
+          setGrupo(item.grupo);
+        }}
+      />
+    ),
+    [search, myName, styles, setCategoria, setGrupo],
+  );
+
   // ──────────────────────────────────────────────────────────
   // 0) EMPTY STATE — sin grupos en Firebase (y ya no estamos cargando)
   // ──────────────────────────────────────────────────────────
@@ -245,71 +283,82 @@ export default function GruposScreen() {
   // 1) GROUP DETAIL VIEW (highest priority)
   // ──────────────────────────────────────────────────────────
   if (grupo) {
-    const ListHeader = (
-      <View style={styles.groupContainer}>
-        {grupo.subtitulo ? (
-          <View style={styles.quoteContainer}>
-            <View style={styles.quoteBorder} />
-            <Text style={styles.quoteText}>{grupo.subtitulo}</Text>
-          </View>
-        ) : null}
+    const ListHeader = useMemo(
+      () => (
+        <View style={styles.groupContainer}>
+          {grupo.subtitulo ? (
+            <View style={styles.quoteContainer}>
+              <View style={styles.quoteBorder} />
+              <Text style={styles.quoteText}>{grupo.subtitulo}</Text>
+            </View>
+          ) : null}
 
-        {grupo.mapa ? (
-          <Button
-            variant="secondary"
-            onPress={() => openMap(grupo.mapa)}
-            className="my-3"
-          >
-            <Button.Label>📍 Ubicación</Button.Label>
-          </Button>
-        ) : null}
-
-        {grupo.responsable ? (
-          <>
-            <Text style={styles.sectionHeader}>Acompaña…</Text>
-            <View
-              style={[
-                styles.memberRow,
-                isMe(grupo.responsable, myName) && styles.memberRowMe,
-              ]}
+          {grupo.mapa ? (
+            <Button
+              variant="secondary"
+              onPress={() => openMap(grupo.mapa)}
+              className="my-3"
             >
-              <View style={[styles.dot, { backgroundColor: colors.accent }]} />
-              <Text
+              <Button.Label>📍 Ubicación</Button.Label>
+            </Button>
+          ) : null}
+
+          {grupo.responsable ? (
+            <>
+              <Text style={styles.sectionHeader}>Acompaña…</Text>
+              <View
                 style={[
-                  styles.memberText,
-                  isMe(grupo.responsable, myName) && styles.memberTextMe,
+                  styles.memberRow,
+                  isMe(grupo.responsable, myName) && styles.memberRowMe,
                 ]}
               >
-                {grupo.responsable}
-              </Text>
-              {isMe(grupo.responsable, myName) ? (
-                <Text style={styles.youBadge}>tú</Text>
+                <View style={[styles.dot, { backgroundColor: colors.accent }]} />
+                <Text
+                  style={[
+                    styles.memberText,
+                    isMe(grupo.responsable, myName) && styles.memberTextMe,
+                  ]}
+                >
+                  {grupo.responsable}
+                </Text>
+                {isMe(grupo.responsable, myName) ? (
+                  <Text style={styles.youBadge}>tú</Text>
+                ) : null}
+              </View>
+            </>
+          ) : null}
+
+          <Text style={styles.sectionHeader}>
+            Forman parte… ({grupo.miembros?.length || 0})
+          </Text>
+
+          {grupo.miembros && grupo.miembros.length > 8 ? (
+            <View style={styles.inlineSearch}>
+              <SearchBar
+                value={memberFilter}
+                onChangeText={setMemberFilter}
+                placeholder="Filtrar en este grupo"
+                styles={styles}
+                isDark={isDark}
+              />
+              {memberFilter.length > 0 ? (
+                <Text style={styles.filterCount}>
+                  {filteredMiembros.length} de {grupo.miembros.length}
+                </Text>
               ) : null}
             </View>
-          </>
-        ) : null}
-
-        <Text style={styles.sectionHeader}>
-          Forman parte… ({grupo.miembros?.length || 0})
-        </Text>
-
-        {grupo.miembros && grupo.miembros.length > 8 ? (
-          <View style={styles.inlineSearch}>
-            <SearchBar
-              value={memberFilter}
-              onChangeText={setMemberFilter}
-              placeholder="Filtrar en este grupo"
-              styles={styles}
-              isDark={isDark}
-            />
-            {memberFilter.length > 0 ? (
-              <Text style={styles.filterCount}>
-                {filteredMiembros.length} de {grupo.miembros.length}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
-      </View>
+          ) : null}
+        </View>
+      ),
+      [
+        grupo,
+        styles,
+        myName,
+        memberFilter,
+        filteredMiembros.length,
+        isDark,
+        openMap,
+      ],
     );
 
     return (
@@ -332,9 +381,7 @@ export default function GruposScreen() {
           <FlatList
             data={filteredMiembros}
             keyExtractor={(item, index) => `${item}-${index}`}
-            renderItem={({ item }) => (
-              <MemberRow name={item} myName={myName} styles={styles} />
-            )}
+            renderItem={renderMemberItem}
             ListHeaderComponent={ListHeader}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={
@@ -392,14 +439,7 @@ export default function GruposScreen() {
             <FlatList
               data={groupsInCat}
               keyExtractor={(g, idx) => `${g.nombre}-${idx}`}
-              renderItem={({ item }) => (
-                <GrupoCard
-                  grupo={item}
-                  myName={myName}
-                  styles={styles}
-                  onPress={() => setGrupo(item)}
-                />
-              )}
+              renderItem={renderGroupItem}
               contentContainerStyle={styles.listContent}
               initialNumToRender={12}
               windowSize={9}
@@ -480,18 +520,7 @@ export default function GruposScreen() {
                 </Text>
               </View>
             )}
-            renderItem={({ item }) => (
-              <SearchHitRow
-                hit={item}
-                query={search.trim()}
-                myName={myName}
-                styles={styles}
-                onPress={() => {
-                  setCategoria(item.categoria);
-                  setGrupo(item.grupo);
-                }}
-              />
-            )}
+            renderItem={renderSearchHitItem}
             ListEmptyComponent={
               <EmptyState
                 icon="search-off"
