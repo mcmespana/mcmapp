@@ -24,4 +24,23 @@ module.exports = {
       '<rootDir>/__mocks__/@react-native-async-storage/async-storage.ts',
   },
   testMatch: ['**/__tests__/**/*.(test|spec).(ts|tsx|js|jsx)'],
+  /**
+   * Qué cuenta para la cobertura (`npm run test:coverage`).
+   *
+   * Solo la lógica: `utils/`, `hooks/`, `services/`, `contexts/` y
+   * `constants/`. Las pantallas (`app/`) y los componentes (`components/`) NO
+   * entran a propósito: testear render de UI es caro y frágil, y el objetivo
+   * aquí es blindar reglas que se pueden romper sin enterarse (ver
+   * `docs/desarrollo/COBERTURA.md`).
+   */
+  collectCoverageFrom: [
+    'utils/**/*.{ts,tsx}',
+    'hooks/**/*.{ts,tsx}',
+    'services/**/*.{ts,tsx}',
+    'contexts/**/*.{ts,tsx}',
+    'constants/**/*.{ts,tsx}',
+    // El Wordle está desactivado en la app y se conserva solo como referencia
+    // (ver CLAUDE.md): no se toca, así que tampoco cuenta para la cobertura.
+    '!hooks/useWordle*.{ts,tsx}',
+  ],
 };

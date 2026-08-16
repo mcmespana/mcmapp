@@ -62,23 +62,24 @@ npm run eas:build:android -- --profile production   # Android para Play Store
 
 ## Documentación por tema
 
-| Tema | Documento |
-| ---- | --------- |
-| Notificaciones push (sistema completo) | `docs/funcionalidades/NOTIFICACIONES.md` |
-| Contrato de notificaciones con el panel | `docs/contratos/NOTIFICACIONES_CONTRATO.md` |
-| Eventos (Jubileo, encuentros, retiros…) | `docs/funcionalidades/EVENTOS.md` |
-| Coros y playlists compartidas | `docs/funcionalidades/COROS.md` |
-| Encuestas/evaluaciones | `docs/funcionalidades/ENCUESTAS.md` + `docs/contratos/ENCUESTAS_CONTRATO.md` |
-| Sistema de perfiles (App ↔ Panel) | `docs/contratos/PANEL_PERFILES.md` |
-| Seguridad y reglas Firebase | `docs/SEGURIDAD.md` |
-| Orden de ejecución de planes (★ leer primero) | `docs/planes/BACKLOG.md` |
-| Qué plan está VIVO y cuál ya está HECHO (★★) | `docs/planes/README.md` |
-| Warnings del linter: cuáles quedan y por qué | `docs/desarrollo/WARNINGS.md` |
-| Cómo organizar código que solo edita una IA | `docs/planes/PLAN_CALIDAD.md` §0 |
-| Plan de saneamiento de código | `docs/planes/PLAN_CALIDAD.md` |
-| Etiquetas del cantoral (`{tags:}`) | `docs/funcionalidades/ETIQUETAS.md` |
-| Sistema de diseño / tabs | `docs/desarrollo/DESIGN.md` + `docs/desarrollo/TABS_MAINTENANCE.md` |
-| Build de tienda de agosto 2026 (paso a paso) | `docs/desarrollo/BUILD_AGOSTO_2026.md` |
-| Arreglos del cantoral (`{arr:}`) | `docs/funcionalidades/ARREGLOS.md` |
-| Etiquetas del cantoral (`{tags:}`) | `docs/funcionalidades/ETIQUETAS.md` |
-| Subrayado de lecturas (Contigo) | `docs/funcionalidades/SUBRAYADO.md` |
+| Tema                                                                     | Documento                                                                    |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| Notificaciones push (sistema completo)                                   | `docs/funcionalidades/NOTIFICACIONES.md`                                     |
+| Contrato de notificaciones con el panel                                  | `docs/contratos/NOTIFICACIONES_CONTRATO.md`                                  |
+| Eventos (Jubileo, encuentros, retiros…)                                  | `docs/funcionalidades/EVENTOS.md`                                            |
+| Coros y playlists compartidas                                            | `docs/funcionalidades/COROS.md`                                              |
+| Encuestas/evaluaciones                                                   | `docs/funcionalidades/ENCUESTAS.md` + `docs/contratos/ENCUESTAS_CONTRATO.md` |
+| Sistema de perfiles (App ↔ Panel)                                        | `docs/contratos/PANEL_PERFILES.md`                                           |
+| Seguridad y reglas Firebase                                              | `docs/SEGURIDAD.md`                                                          |
+| Orden de ejecución de planes (★ leer primero)                            | `docs/planes/BACKLOG.md`                                                     |
+| Qué plan está VIVO y cuál ya está HECHO (★★)                             | `docs/planes/README.md`                                                      |
+| **"Me sobran créditos"** → subir cobertura de tests (receta paso a paso) | `docs/desarrollo/COBERTURA.md`                                               |
+| Warnings del linter: cuáles quedan y por qué                             | `docs/desarrollo/WARNINGS.md`                                                |
+| Cómo organizar código que solo edita una IA                              | `docs/planes/PLAN_CALIDAD.md` §0                                             |
+| Plan de saneamiento de código                                            | `docs/planes/PLAN_CALIDAD.md`                                                |
+| Etiquetas del cantoral (`{tags:}`)                                       | `docs/funcionalidades/ETIQUETAS.md`                                          |
+| Sistema de diseño / tabs                                                 | `docs/desarrollo/DESIGN.md` + `docs/desarrollo/TABS_MAINTENANCE.md`          |
+| Build de tienda de agosto 2026 (paso a paso)                             | `docs/desarrollo/BUILD_AGOSTO_2026.md`                                       |
+| Arreglos del cantoral (`{arr:}`)                                         | `docs/funcionalidades/ARREGLOS.md`                                           |
+| Etiquetas del cantoral (`{tags:}`)                                       | `docs/funcionalidades/ETIQUETAS.md`                                          |
+| Subrayado de lecturas (Contigo)                                          | `docs/funcionalidades/SUBRAYADO.md`                                          |
