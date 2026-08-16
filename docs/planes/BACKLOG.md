@@ -33,16 +33,16 @@
 > paso a paso completo en `docs/desarrollo/BUILD_AGOSTO_2026.md`. La Cola
 > Principal (§1) se reanuda cuando la build esté publicada.
 
-|  |  |
-| --- | --- |
-| **Ahora mismo** | **Build de tienda 2.1 — agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6) |
-| **Bloqueado por ti** | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`) |
-| **Bloqueado fuera** | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real |
-| **⚠️ Roto y sin dueño** | **El CI no ejecuta nada desde el 2026-04-10.** Ningún PR se verifica de verdad; hasta arreglarlo, pasa los 4 pasos de `verify.yml` en local antes de mergear. Detalle en `mcm-app/TODO.md` §0 |
-| **Después de la build** | UI Nativa Fase 2 → Integración D → Carismochito |
-| **Oportunista** | Integraciones resto. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado) |
-| **Futuro lejano, sin prisa** | Widget de Contigo · Panel Pañuelo (§1 notas) |
-| **Cerrado** | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298 |
+|                              |                                                                                                                                                                                               |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ahora mismo**              | **Build de tienda 2.1 — agosto de 2026.** Falta: crear las cuentas de Sentry y Aptabase y meter las claves (§2 del doc de build), validar en dispositivo (§5), publicar (§6)                  |
+| **Bloqueado por ti**         | Integración D2 (modelo de auth del panel) · desplegar las reglas de Firebase (escritas y listas, ver `docs/SEGURIDAD.md`)                                                                     |
+| **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                              |
+| **⚠️ Roto y sin dueño**      | **El CI no ejecuta nada desde el 2026-04-10.** Ningún PR se verifica de verdad; hasta arreglarlo, pasa los 4 pasos de `verify.yml` en local antes de mergear. Detalle en `mcm-app/TODO.md` §0 |
+| **Después de la build**      | UI Nativa Fase 2 → Integración D → Carismochito                                                                                                                                               |
+| **Oportunista**              | Integraciones resto. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                        |
+| **Futuro lejano, sin prisa** | Widget de Contigo · Panel Pañuelo (§1 notas)                                                                                                                                                  |
+| **Cerrado**                  | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                              |
 
 > **Ojo con el orden al publicar**: `production` dispara la OTA sola. No se
 > mueve hasta que las tiendas tengan el binario nuevo, o la gente recibe un
@@ -62,13 +62,13 @@
    (la cabecera del `PLAN_*.md` correspondiente). Si hubo cambio de código real, entrada nueva en
    `mcm-app/CHANGELOG.md` (fecha+hora, arriba del todo — regla del CLAUDE.md
    raíz).
-3. **"Me sobran tokens [esta semana], ¿por dónde seguimos?"** (o cualquier
-   variante de "tengo hueco/capacidad de sobra") → **esto NO avanza la Cola
-   Principal**. Es una señal distinta: muestra el estado actual de este
-   backlog (Cola Principal + Bolsa Oportunista de §2) y deja que el usuario
-   reprioridad. La sugerencia por defecto para ese hueco es **Calidad · Fase
-   1** (descuartizar gigantes, §2.A), pero no la ejecutes sin confirmar — el
-   usuario puede preferir otra cosa de la bolsa.
+3. **"Me sobran tokens/créditos [esta semana]"** (o cualquier variante de
+   "tengo hueco/capacidad de sobra") → **esto NO avanza la Cola Principal**.
+   La tarea por defecto para ese hueco es **subir la cobertura de tests**:
+   abre `docs/desarrollo/COBERTURA.md` y sigue la receta tal cual, sin
+   preguntar. Es mecánica, segura (solo añade ficheros a `__tests__/`) y está
+   escrita para Sonnet. Si el usuario prefiere otra cosa, enséñale la Bolsa
+   Oportunista (§2) y que elija.
 4. **Nunca ejecutes un ítem 🔒 sin preguntar primero**, aunque parezca
    evidente qué elegir. Son decisiones de producto/seguridad del usuario, no
    del ejecutor.
@@ -81,14 +81,14 @@
 
 ## 1. Cola Principal (orden secuencial — "seguimos" avanza aquí)
 
-| #   | Ítem                                                                                    | Modelo                                       | 🔒 Decisión                                                             | Estado                                                                                                                                                                                                                                                                                  | Documento técnico                                                        |
-| --- | --------------------------------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| 1   | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers`  | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/004-…`                                |
-| 2   | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/005-…`                                   |
-| 3   | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate   | **Opus**                                     | No                                                                      | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `archivo/tacticos/008-…`                      |
-| 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70% (`AppTextField`/`EmptyState` mayormente hechos, `AppPrimaryButton` parcial, `SegmentedControl`/chips/tokens sin empezar)                                                                                                                        | `docs/planes/PLAN_UI_NATIVA.md`                                          |
-| 5   | **Integración D** — Seguridad Firebase (+ A2)                                           | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                  | ⏳ Pendiente, importante pero no urgente. **Es lo único que queda de PLAN_INTEGRACIONES**: el resto (A, B, C, E) se cerró el 2026-08-12                                                                                                                                                 | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D"                     |
-| 6   | **Carismochito** (ejecutar bien §1–4)                                                   | Sonnet (Opus solo el icono nativo §5)        | No                                                                      | ⏳ Cierre final                                                                                                                                                                                                                                                                         | `docs/planes/PLAN_CARISMOCHITO.md`                                       |
+| #   | Ítem                                                                                    | Modelo                                       | 🔒 Decisión                                                             | Estado                                                                                                                                                                                                                                                                                  | Documento técnico                                    |
+| --- | --------------------------------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 1   | **Plan 004** — Contigo: sync bidireccional de hábitos/revisiones + tests `authHelpers`  | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/004-…`                             |
+| 2   | **Plan 005** — Scraper: vacío=error, fecha vetada, pytest en CI, workflow sin inyección | Sonnet                                       | No                                                                      | ✅ **DONE** (2026-07-22)                                                                                                                                                                                                                                                                | `archivo/tacticos/005-…`                             |
+| 3   | **Plan 008** — Caché compartida `useFirebaseData` + calendario stale-while-revalidate   | **Opus**                                     | No                                                                      | ✅ **DONE** en `main` (2026-07-22). **NO cherry-pickeado a producción a propósito**: toca el hook central y cambia comportamiento visible del calendario; validar en dispositivo (vía `preview`, con la próxima build de tienda) antes de producción. No corre prisa (es perf, no bug). | `archivo/tacticos/008-…`                             |
+| 4   | **UI Nativa** — headers nativos + componentes unificados                                | Sonnet (Fable en la cola mecánica de Fase 2) | No — las 3 decisiones que bloqueaban partes ya están resueltas (ver §4) | 🟡 En curso — Fase 1 ✅, Fase 2 ~65-70% (`AppTextField`/`EmptyState` mayormente hechos, `AppPrimaryButton` parcial, `SegmentedControl`/chips/tokens sin empezar)                                                                                                                        | `docs/planes/PLAN_UI_NATIVA.md`                      |
+| 5   | **Integración D** — Seguridad Firebase (+ A2)                                           | Opus                                         | **Sí** — D2 + repo `mcmpanel` (ver §4)                                  | ⏳ Pendiente, importante pero no urgente. **Es lo único que queda de PLAN_INTEGRACIONES**: el resto (A, B, C, E) se cerró el 2026-08-12                                                                                                                                                 | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" |
+| 6   | **Carismochito** (ejecutar bien §1–4)                                                   | Sonnet (Opus solo el icono nativo §5)        | No                                                                      | ⏳ Cierre final                                                                                                                                                                                                                                                                         | `docs/planes/PLAN_CARISMOCHITO.md`                   |
 
 **Fuera de la cola — futuro lejano (decisión del usuario, 2026-08-15):**
 **Widget de Contigo** y **Panel Pañuelo** salen de la Cola Principal. Son dos
@@ -121,7 +121,7 @@ cuando toque.
 suficiente necesidad como para pagar el troceo, y el argumento que lo motivaba
 (un humano no se orienta en 1.800 líneas) ya no aplica: **quien edita este
 código es siempre una IA**, que lee el archivo entero de una vez y para la que
-la misma lógica repartida en seis ficheros es *más* cara, no menos.
+la misma lógica repartida en seis ficheros es _más_ cara, no menos.
 
 Concretamente:
 
@@ -165,45 +165,45 @@ Detalle en `docs/planes/PLAN_INTEGRACIONES.md`.
 
 #### C.1 — Ya en `main` (se publica con esta build)
 
-| Qué | Dónde | Nota |
-| --- | ----- | ---- |
-| ✅ **Expo SDK 55 → 57**, RN 0.83 → 0.86, React 19.2.3 | `package.json` | El cambio nativo más grande de la build; es lo que obliga a compilar de todas formas |
-| ✅ **Barra de pestañas flotante** (`expo-native-compact-tabs` 0.2.0) | `components/tabs/` | Módulo nativo NUEVO + `patch-package` (`postinstall`) |
-| ✅ **Parche del módulo de tabs** | `patches/expo-native-compact-tabs+0.2.0.patch` | Dos arreglos: escala de los iconos (`normalisedToIconBox`) y relayout de safe area al volver del onboarding (`didMoveToWindow`/`safeAreaInsetsDidChange`) |
-| ✅ **Reanimated 4.5.1 + `react-native-worklets`** | toda la app | Migración completa de `Animated`/`PanResponder`; nativo |
-| ✅ **iPad landscape** (`UISupportedInterfaceOrientations~ipad`) | `app.json` | Falta **probar en iPad físico** (ver `TODO.md` §1) |
-| ✅ **Fix modo alpha** (`disableAntiBrickingMeasures`) | [PR #298](https://github.com/mcmespana/mcmapp/pull/298) | Ya estaba en `main`; el toggle no surtía efecto hasta esta build |
-| ✅ **Reproductor multimedia** (YouTube con `Referer`, PiP de audio) | `components/song-media/` | Recuperado de `production` el 2026-08-03 |
-| ✅ **Channels Android por categoría** | `constants/notificationChannels.ts` | **No es nativo** (es runtime), pero se estrena aquí — ver C.3 |
-| ✅ **NSE iOS** — imagen en la notificación del sistema | `plugins/withNotificationServiceExtension.js` + `targets/notification-service/` | Target de Xcode nuevo, creado por config plugin propio. Bundle id `…​.MCMNotificationService`: EAS pide credenciales la primera vez |
-| ✅ **Sentry** (`@sentry/react-native`) | `utils/sentry.ts` | Sin `EXPO_PUBLIC_SENTRY_DSN` no reporta nada; el SDK nativo va en el binario para poder encenderlo luego por OTA |
-| ✅ **Icono alternativo Carismochito** | `expo-alternate-app-icons` + `utils/appIcon.ts` | Iconos generados con `npm run icons:alt` |
-| ✅ **Analítica** (`@aptabase/react-native`) | `utils/analytics.ts` + `constants/analyticsEvents.ts` | Sin identificadores persistentes, servidores UE. Sin `EXPO_PUBLIC_APTABASE_KEY` no manda nada |
-| ✅ **"Subrayar" en el menú nativo** | `modules/highlight-menu/` | Módulo local de Expo. El modo lápiz se mantiene como respaldo y para web |
+| Qué                                                                  | Dónde                                                                           | Nota                                                                                                                                                      |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅ **Expo SDK 55 → 57**, RN 0.83 → 0.86, React 19.2.3                | `package.json`                                                                  | El cambio nativo más grande de la build; es lo que obliga a compilar de todas formas                                                                      |
+| ✅ **Barra de pestañas flotante** (`expo-native-compact-tabs` 0.2.0) | `components/tabs/`                                                              | Módulo nativo NUEVO + `patch-package` (`postinstall`)                                                                                                     |
+| ✅ **Parche del módulo de tabs**                                     | `patches/expo-native-compact-tabs+0.2.0.patch`                                  | Dos arreglos: escala de los iconos (`normalisedToIconBox`) y relayout de safe area al volver del onboarding (`didMoveToWindow`/`safeAreaInsetsDidChange`) |
+| ✅ **Reanimated 4.5.1 + `react-native-worklets`**                    | toda la app                                                                     | Migración completa de `Animated`/`PanResponder`; nativo                                                                                                   |
+| ✅ **iPad landscape** (`UISupportedInterfaceOrientations~ipad`)      | `app.json`                                                                      | Falta **probar en iPad físico** (ver `TODO.md` §1)                                                                                                        |
+| ✅ **Fix modo alpha** (`disableAntiBrickingMeasures`)                | [PR #298](https://github.com/mcmespana/mcmapp/pull/298)                         | Ya estaba en `main`; el toggle no surtía efecto hasta esta build                                                                                          |
+| ✅ **Reproductor multimedia** (YouTube con `Referer`, PiP de audio)  | `components/song-media/`                                                        | Recuperado de `production` el 2026-08-03                                                                                                                  |
+| ✅ **Channels Android por categoría**                                | `constants/notificationChannels.ts`                                             | **No es nativo** (es runtime), pero se estrena aquí — ver C.3                                                                                             |
+| ✅ **NSE iOS** — imagen en la notificación del sistema               | `plugins/withNotificationServiceExtension.js` + `targets/notification-service/` | Target de Xcode nuevo, creado por config plugin propio. Bundle id `…​.MCMNotificationService`: EAS pide credenciales la primera vez                       |
+| ✅ **Sentry** (`@sentry/react-native`)                               | `utils/sentry.ts`                                                               | Sin `EXPO_PUBLIC_SENTRY_DSN` no reporta nada; el SDK nativo va en el binario para poder encenderlo luego por OTA                                          |
+| ✅ **Icono alternativo Carismochito**                                | `expo-alternate-app-icons` + `utils/appIcon.ts`                                 | Iconos generados con `npm run icons:alt`                                                                                                                  |
+| ✅ **Analítica** (`@aptabase/react-native`)                          | `utils/analytics.ts` + `constants/analyticsEvents.ts`                           | Sin identificadores persistentes, servidores UE. Sin `EXPO_PUBLIC_APTABASE_KEY` no manda nada                                                             |
+| ✅ **"Subrayar" en el menú nativo**                                  | `modules/highlight-menu/`                                                       | Módulo local de Expo. El modo lápiz se mantiene como respaldo y para web                                                                                  |
 
 #### C.3 — Cambios que exigen algo FUERA de la app
 
-| Qué | Quién | Estado |
-| --- | ----- | ------ |
-| **Política de privacidad + fichas de las tiendas** | Usuario | La analítica obliga a actualizar la política de privacidad, la ficha de privacidad de App Store y el formulario de Data Safety de Play **antes** de publicar. Aptabase no manda identificadores persistentes, lo que simplifica la declaración, pero hay que hacerla |
-| **Cuenta de Sentry y de Aptabase** | Usuario | Crear proyecto, copiar claves y meterlas como secrets de EAS y de GitHub. §2 de `BUILD_AGOSTO_2026.md` |
-| ~~**`channelId` en el push**~~ | MCM Panel | ✅ **Hecho.** El Panel manda `channelId` top-level derivado de `data.category` (`general` → `default`) contra una lista cerrada (`api/_lib/push.ts`), verificada contra los 7 canales que declara la app. También manda `mutableContent`. Tabla en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8 |
-| **Probar los channels en un Android real** | Usuario | Requisito que ya fijaba `TODO.md`: verificar heads-up/sonido por canal antes de mergear a `production`. Los canales aparecen en los ajustes del sistema de todos los Android y sus preferencias no se pueden revertir a mano |
+| Qué                                                | Quién     | Estado                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Política de privacidad + fichas de las tiendas** | Usuario   | La analítica obliga a actualizar la política de privacidad, la ficha de privacidad de App Store y el formulario de Data Safety de Play **antes** de publicar. Aptabase no manda identificadores persistentes, lo que simplifica la declaración, pero hay que hacerla                              |
+| **Cuenta de Sentry y de Aptabase**                 | Usuario   | Crear proyecto, copiar claves y meterlas como secrets de EAS y de GitHub. §2 de `BUILD_AGOSTO_2026.md`                                                                                                                                                                                            |
+| ~~**`channelId` en el push**~~                     | MCM Panel | ✅ **Hecho.** El Panel manda `channelId` top-level derivado de `data.category` (`general` → `default`) contra una lista cerrada (`api/_lib/push.ts`), verificada contra los 7 canales que declara la app. También manda `mutableContent`. Tabla en `docs/contratos/NOTIFICACIONES_CONTRATO.md` §8 |
+| **Probar los channels en un Android real**         | Usuario   | Requisito que ya fijaba `TODO.md`: verificar heads-up/sonido por canal antes de mergear a `production`. Los canales aparecen en los ajustes del sistema de todos los Android y sus preferencias no se pueden revertir a mano                                                                      |
 
 ### C-bis. Build 2.2 — noviembre/diciembre de 2026
 
 Decidido el 2026-08-03: estas dos son NATIVAS y **no entran en la 2.1**. Se
 guardan para la siguiente build de tienda.
 
-| Qué | Estado | Por qué se aplaza |
-| --- | ------ | ----------------- |
-| **Widget de Contigo** (WidgetKit iOS / App Widget Android + App Group) | 0% | Es una feature entera, no un extra. `docs/planes/PLAN_WIDGET_CONTIGO.md` |
-| **Firebase App Check** (DeviceCheck / Play Integrity) | 0% | Arrastra `@react-native-firebase` entero junto al SDK JS que ya se usa, y un *enforcement* mal configurado deja sin datos a toda la base instalada. Además la Integración D (reglas) sigue abierta, que es el agujero de verdad |
+| Qué                                                                    | Estado | Por qué se aplaza                                                                                                                                                                                                               |
+| ---------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Widget de Contigo** (WidgetKit iOS / App Widget Android + App Group) | 0%     | Es una feature entera, no un extra. `docs/planes/PLAN_WIDGET_CONTIGO.md`                                                                                                                                                        |
+| **Firebase App Check** (DeviceCheck / Play Integrity)                  | 0%     | Arrastra `@react-native-firebase` entero junto al SDK JS que ya se usa, y un _enforcement_ mal configurado deja sin datos a toda la base instalada. Además la Integración D (reglas) sigue abierta, que es el agujero de verdad |
 
 #### C.4 — Sigue bloqueado por una decisión tuya
 
-| Qué | Qué falta decidir |
-| --- | ----------------- |
+| Qué                                              | Qué falta decidir                                                                                |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | **Widget de Contigo** (`PLAN_WIDGET_CONTIGO.md`) | Es una build dedicada, no un extra de ésta: WidgetKit + App Group. ¿Se compromete y para cuándo? |
 
 > **Paso a paso del día de la build**: `docs/desarrollo/BUILD_AGOSTO_2026.md`
@@ -296,10 +296,10 @@ reabrir este plan tal cual, su premisa ya no aplica.
 
 ## 4. Decisiones pendientes — preguntar ANTES de ejecutar
 
-| Decisión                                                                                                               | Bloquea                        | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`)                             | Integración D                  | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?"                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| **Plan funcional del Panel Pañuelo**                                                                                   | Panel Pañuelo                  | `docs/planes/PLAN_PANEL_PANUELO.md` (stub)           | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o esperamos a después de Carismochito §1–4?"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Decisión                                                                                   | Bloquea       | Dónde consultar el contexto                          | Qué preguntar                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------ | ------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D2** — modelo de auth del panel (Firebase Auth + `/admins` vs mover escrituras a `api/`) | Integración D | `docs/planes/PLAN_INTEGRACIONES.md` §"Integración D" | "¿Qué modelo de auth para el panel — Firebase Auth+`/admins` o mover escrituras a funciones `api/`? Y ¿añado el repo `mcmpanel` a la sesión para poder tocarlo?" |
+| **Plan funcional del Panel Pañuelo**                                                       | Panel Pañuelo | `docs/planes/PLAN_PANEL_PANUELO.md` (stub)           | "¿Nos sentamos a diseñar la mecánica de chapas/modelo 3D, o esperamos a después de Carismochito §1–4?"                                                           |
 
 ---
 

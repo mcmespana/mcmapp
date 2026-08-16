@@ -382,9 +382,7 @@ describe('getUnreadNotificationsCount', () => {
   });
 
   it('no cuenta las de más de 60 días', async () => {
-    const vieja = new Date(
-      Date.now() - 70 * 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const vieja = new Date(Date.now() - 70 * 24 * 60 * 60 * 1000).toISOString();
     mGet.mockResolvedValueOnce(
       snap({ 1: { title: 'T', body: 'B', createdAt: vieja } }),
     );
@@ -426,7 +424,10 @@ describe('initializeNewUserReadStatus', () => {
   });
 
   it('las de más de 4 meses se marcan aunque estén entre las 3 primeras', async () => {
-    const notifs = [remota('vieja', reciente(200)), remota('nueva', reciente(1))];
+    const notifs = [
+      remota('vieja', reciente(200)),
+      remota('nueva', reciente(1)),
+    ];
     await initializeNewUserReadStatus(notifs);
     expect(await getReadNotificationIds()).toEqual(new Set(['vieja']));
   });

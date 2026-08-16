@@ -112,7 +112,9 @@ describe('añadir y quitar', () => {
   it('addSong añade con transpose 0 y orden al final', async () => {
     const { result } = await mountHydrated();
     await act(async () => result.current.addSong('a.txt'));
-    await act(async () => result.current.addSong('b.txt', { categoryHint: 'entrada' }));
+    await act(async () =>
+      result.current.addSong('b.txt', { categoryHint: 'entrada' }),
+    );
     expect(result.current.selectedFilenames).toEqual(['a.txt', 'b.txt']);
     expect(result.current.getSelectedSong('a.txt')?.transpose).toBe(0);
     expect(result.current.getSelectedSong('b.txt')?.categoryHint).toBe(

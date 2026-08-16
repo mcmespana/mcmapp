@@ -20,9 +20,10 @@ const LEGACY_KEY = '@mcm_calendar_settings';
 /** Datos que devuelve `useFirebaseData` en cada test. */
 let mockFirebaseCalendars: unknown = null;
 /** Config de perfil resuelta que ve el hook. */
-let mockResolved: { delegationId: string | null; defaultCalendars?: string[] } = {
-  delegationId: null,
-};
+let mockResolved: { delegationId: string | null; defaultCalendars?: string[] } =
+  {
+    delegationId: null,
+  };
 
 jest.mock('@/hooks/useFirebaseData', () => ({
   useFirebaseData: () => ({
@@ -72,7 +73,11 @@ describe('lista de calendarios', () => {
   });
 
   it('pone el calendario de mi delegación el primero', async () => {
-    mockFirebaseCalendars = [cal('mcm-europa'), cal('mcm-madrid'), cal('mcm-cast')];
+    mockFirebaseCalendars = [
+      cal('mcm-europa'),
+      cal('mcm-madrid'),
+      cal('mcm-cast'),
+    ];
     mockResolved = { delegationId: 'mcm-cast' };
     const { result } = await mount();
     expect(result.current.calendarConfigs.map((c) => c.id)).toEqual([

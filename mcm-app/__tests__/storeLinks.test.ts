@@ -10,7 +10,12 @@ import { Linking, Platform } from 'react-native';
 import { openAppStore } from '@/utils/storeLinks';
 
 jest.mock('@/utils/logger', () => ({
-  logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() },
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+  },
 }));
 
 const openURL = Linking.openURL as unknown as jest.Mock;

@@ -66,3 +66,6 @@ GoogleService-Info.plist
 /android/app/build/
 # heroui-agents-md
 .heroui-docs/
+
+# Cobertura de tests (npm run test:coverage)
+coverage/
