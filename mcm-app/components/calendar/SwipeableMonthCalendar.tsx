@@ -4,12 +4,12 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { Calendar, CalendarProps } from 'react-native-calendars';
 import colors from '@/constants/colors';
 import { h } from '@/utils/haptics';
@@ -74,7 +74,7 @@ export default function SwipeableMonthCalendar({
         { duration: 140 },
         (finished) => {
           'worklet';
-          if (finished) runOnJS(commitMonth)(dir);
+          if (finished) scheduleOnRN(commitMonth, dir);
         },
       );
     },
@@ -100,7 +100,7 @@ export default function SwipeableMonthCalendar({
           -dir * width * EXIT_RATIO,
           { duration: 130 },
           (finished) => {
-            if (finished) runOnJS(commitMonth)(dir);
+            if (finished) scheduleOnRN(commitMonth, dir);
           },
         );
       } else {

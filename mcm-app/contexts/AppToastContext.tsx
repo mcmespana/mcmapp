@@ -14,12 +14,13 @@ import {
   View,
 } from 'react-native';
 import Animated, {
-  runOnJS,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -133,31 +134,38 @@ function ToastItem({
   onHide: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  // Con "reducir movimiento" el toast solo aparece y desaparece: el fundido
+  // explica igual de bien que ha pasado algo, y es la traslación lo que marea.
+  const reducedMotion = useReducedMotion();
   const opacity = useSharedValue(0);
-  const translateY = useSharedValue(28);
-  const scale = useSharedValue(0.96);
+  const translateY = useSharedValue(reducedMotion ? 0 : 28);
+  const scale = useSharedValue(reducedMotion ? 1 : 0.96);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hide = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    translateY.value = withTiming(20, { duration: 200 });
-    scale.value = withTiming(0.97, { duration: 200 });
+    if (!reducedMotion) {
+      translateY.value = withTiming(20, { duration: 200 });
+      scale.value = withTiming(0.97, { duration: 200 });
+    }
     opacity.value = withTiming(0, { duration: 200 }, () => {
       'worklet';
-      runOnJS(onHide)();
+      scheduleOnRN(onHide);
     });
-  }, [opacity, translateY, scale, onHide]);
+  }, [opacity, translateY, scale, onHide, reducedMotion]);
 
   useEffect(() => {
     triggerHaptic(t.variant ?? 'default');
     // `tension/friction` de RN Animated → `stiffness/damping` aquí.
     opacity.value = withTiming(1, { duration: 220 });
-    translateY.value = withSpring(0, {
-      stiffness: 110,
-      damping: 11,
-      mass: 1,
-    });
-    scale.value = withSpring(1, { stiffness: 130, damping: 12, mass: 1 });
+    if (!reducedMotion) {
+      translateY.value = withSpring(0, {
+        stiffness: 110,
+        damping: 11,
+        mass: 1,
+      });
+      scale.value = withSpring(1, { stiffness: 130, damping: 12, mass: 1 });
+    }
 
     const duration = t.duration ?? (t.actionLabel ? 5200 : 3400);
     timerRef.current = setTimeout(hide, duration);

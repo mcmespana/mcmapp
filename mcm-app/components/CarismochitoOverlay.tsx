@@ -4,7 +4,6 @@ import Animated, {
   Easing,
   cancelAnimation,
   interpolate,
-  runOnJS,
   useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
@@ -14,6 +13,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
@@ -319,7 +319,7 @@ function SidePeekMascot() {
               { duration: 380, easing: Easing.in(Easing.cubic) },
               () => {
                 'worklet';
-                runOnJS(done)();
+                scheduleOnRN(done);
               },
             ),
           ),
@@ -380,7 +380,7 @@ function FloatingBadge({ onOpenInfo }: { onOpenInfo: () => void }) {
         { duration: 420, easing: Easing.in(Easing.cubic) },
         () => {
           'worklet';
-          runOnJS(setHidden)(true);
+          scheduleOnRN(setHidden, true);
         },
       );
     }, BADGE_VISIBLE_MS);

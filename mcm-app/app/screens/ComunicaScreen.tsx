@@ -20,11 +20,11 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Animated, {
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -146,7 +146,7 @@ export default function ComunicaScreen() {
       { duration: durations.slow, easing: reaEasings.exit },
       (finished) => {
         'worklet';
-        if (finished) runOnJS(setLoaderMounted)(false);
+        if (finished) scheduleOnRN(setLoaderMounted, false);
       },
     );
   }, [status, loaderOpacity]);

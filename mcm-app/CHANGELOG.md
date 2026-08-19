@@ -18,6 +18,23 @@
 
 ---
 
+## 2026-08-19 21:45 — Slider de lectura, `scheduleOnRN` y toasts
+
+- **`ReaderSettingsSheet`** (tamaño de letra de Contigo): el agarre de la barra
+  crece mientras el dedo está encima, háptica de tope al pasarse de los extremos
+  (una sola vez por llegada, no una por frame) y arrastrar después de tocar los
+  botones A/A vuelve a responder — el último valor no se resincronizaba, así que
+  volver con el dedo al mismo sitio no hacía nada.
+- **`runOnJS` → `scheduleOnRN`** (`react-native-worklets`) en los 9 ficheros que
+  lo usaban: `runOnJS` está deprecado en Reanimated 4.
+- **`AppToastContext`** respeta "reducir movimiento": el toast solo funde, sin
+  traslación ni escala.
+
+Archivos: `components/contigo/ReaderSettingsSheet.tsx`, `contexts/AppToastContext.tsx`,
+`components/tabs/tabBarController.ts`, `components/CarismochitoOverlay.tsx`,
+`components/calendar/SwipeableMonthCalendar.tsx`, `components/contigo/BreathingPhase.tsx`,
+`app/screens/{ComunicaScreen,SongDetailScreen,HorarioScreen}.tsx`, `app/(tabs)/calendario.tsx`.
+
 ## 2026-08-19 21:05 — Cantoral: tono y cejilla se sienten (y ya no rozan el borde)
 
 - **Todas las hojas** (`BottomSheet`) reservan ya el safe-area inferior. Antes

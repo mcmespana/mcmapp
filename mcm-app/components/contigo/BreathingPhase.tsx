@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import Animated, {
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { reaEasings } from '@/constants/animations';
 
 const BREATH_MS = 2100;
@@ -51,7 +51,7 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
     finished.current = true;
     opacity.value = withTiming(0, { duration: 380 }, () => {
       'worklet';
-      runOnJS(onDone)();
+      scheduleOnRN(onDone);
     });
   };
 

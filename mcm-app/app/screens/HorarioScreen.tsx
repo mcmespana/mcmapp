@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import Animated, {
   cancelAnimation,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -119,7 +119,7 @@ export default function HorarioScreen() {
           withTiming(1, { duration: 1500 }, () => {
             'worklet';
             // Repeat fade animation
-            runOnJS(scheduleFade)();
+            scheduleOnRN(scheduleFade);
           }),
         );
       };

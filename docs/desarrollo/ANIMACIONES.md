@@ -84,33 +84,37 @@ sí merece la pena, porque hoy cada frame del arrastre pasa por el hilo de JS.
 
 ## Pendiente, por orden de valor
 
-1. **Movimiento reducido en el resto de la app.** Era **cero** antes de esta
-   pasada: ni un `useReducedMotion` ni un `ReduceMotion.System` en todo el
-   código. Es la regla dura nº4 de la skill y además accesibilidad real.
-   Siguientes candidatos: `CarismochitoOverlay` (confeti + mascota + shake),
-   `contexts/AppToastContext.tsx`, `components/contigo/BreathingPhase.tsx`,
-   `components/evaluation/SuccessPhase.tsx`.
-2. **`components/contigo/ReaderSettingsSheet.tsx`** — el `PanResponder` del
-   slider de tamaño de letra. Más pequeño que el anterior; `Gesture.Pan()` +
-   `Haptics.selectionAsync()` en cada detente sería la versión correcta.
-3. **`runOnJS` → `scheduleOnRN`** (`react-native-worklets`). Deprecado en
-   Reanimated 4; aparece en ~12 ficheros. Migración mecánica y de bajo riesgo,
-   pero conviene hacerla de una vez y no a trozos.
-4. **`.value` → `.get()`/`.set()`** — ~254 usos. Misma API, pero el acceso
+1. **`.value` → `.get()`/`.set()`** — ~254 usos. Misma API, pero el acceso
    directo a `.value` es la forma que el React Compiler no puede seguir.
-   Mecánico también; candidato a un commit propio, sin mezclar con nada.
-5. **Core `Animated` de react-native** en 8 ficheros (`WordleScreen`,
-   `notifications`, `PlaylistRow`, `OTAUpdatePrompt`, `SongListItem`,
-   `NotificationListItem`, `CarismochitoDialogs`, `BottomSheet`). Los que no
-   tocan un dedo funcionan; el que sí (BottomSheet) está bloqueado por el
-   Modal transparente, ver arriba.
-6. **120fps en iPhones ProMotion** — `CADisableMinimumFrameDurationOnPhone` no
+   Mecánico; candidato a un commit propio, sin mezclar con nada.
+2. **Core `Animated` de react-native** en `WordleScreen`, `notifications`,
+   `PlaylistRow`, `OTAUpdatePrompt`, `SongListItem`, `NotificationListItem`,
+   `CarismochitoDialogs`. Ninguno tiene un dedo encima, así que funcionan; los
+   que están dentro de un `Modal` transparente (`BottomSheet`,
+   `TransposeBottomSheet`) se quedan en core `Animated` a propósito.
+3. **120fps en iPhones ProMotion** — `CADisableMinimumFrameDurationOnPhone` no
    está en `app.config.ts`. Los SDK recientes de Expo lo ponen por defecto, así
    que hay que **confirmarlo en el `Info.plist` generado** antes de añadirlo a
    mano; si se añade, es cambio nativo → `[skip-ota]` y build nueva.
+4. **Movimiento reducido**, si algún día se quiere completar: quedan
+   `SuccessPhase` y `BreathingPhase`. Carismochito se queda como está por
+   decisión del usuario — es un huevo de pascua que se activa a propósito.
 
-## Cómo se valida
+## Hecho después de la primera pasada
 
-Nada de esto se juzga en Expo Go ni en el simulador: build de release, en el
-Android más lento que soportemos, y probando el gesto de verdad — lanzarlo con
-un flick, interrumpirlo a mitad, invertirlo.
+- **`ReaderSettingsSheet`** (tamaño de letra de Contigo): el agarre de la barra
+  crece mientras el dedo está encima —la única forma en móvil de decir "esto lo
+  estás tocando tú" sin hover—, hay háptica de tope al pasarse por los extremos
+  (una vez, no una traca por frame) y arrastrar tras usar los botones A/A vuelve
+  a responder (el último valor no se resincronizaba).
+- **`TransposeBottomSheet`** (tono y cejilla del cantoral): pulsación animada en
+  los ±, pop del valor también en cejilla, mantener-pulsado para repetir también
+  en cejilla, háptica de tope + meneo al llegar al 0, háptica en los
+  restablecer. Las animaciones pasan a core `Animated` porque vive dentro del
+  Modal transparente.
+- **Safe-area inferior en TODAS las hojas** (`BottomSheet`), que solo ponía 8 px
+  fijos: los últimos controles caían encima de la barra de gestos.
+- **`runOnJS` → `scheduleOnRN`** en los 9 ficheros que lo usaban. `runOnJS` está
+  deprecado en Reanimated 4.
+- **Movimiento reducido** en `AppToastContext`: con la opción activada el toast
+  solo funde, sin traslación ni escala.

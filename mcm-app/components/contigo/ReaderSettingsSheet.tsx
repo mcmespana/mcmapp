@@ -1,11 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
+  Animated,
   View,
   Text,
   StyleSheet,
   Platform,
   PanResponder,
   TouchableOpacity,
+  useAnimatedValue,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from '@/components/BottomSheet';
@@ -73,18 +75,50 @@ export default function ReaderSettingsSheet({
   const boundsRef = useRef({ min, max });
   boundsRef.current = { min, max };
   const lastSnapped = useRef(scale);
+  // Si el valor cambia por los botones A/A, el arrastre tiene que partir de ahí:
+  // si no, volver con el dedo al mismo valor no disparaba ni háptica ni cambio.
+  useEffect(() => {
+    lastSnapped.current = scale;
+  }, [scale]);
+
+  // El tope solo suena UNA vez por llegada: arrastrando fuera de la barra
+  // seguiría entrando en `scrubTo` cada frame y sería una traca.
+  const atLimit = useRef(false);
+
+  // El agarre crece mientras el dedo está encima. Es la única forma en móvil de
+  // decir "esto lo estás tocando tú" sin un hover que no existe.
+  const knobScale = useAnimatedValue(1);
+  const grabKnob = (grabbed: boolean) => {
+    Animated.timing(knobScale, {
+      toValue: grabbed ? 1.35 : 1,
+      duration: grabbed ? 110 : 160,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  };
 
   const scrubTo = (x: number) => {
     const w = trackWidth.current;
     if (w <= 0) return;
     const { min: lo, max: hi } = boundsRef.current;
-    const progress = Math.max(0, Math.min(1, x / w));
+    const raw = x / w;
+    const progress = Math.max(0, Math.min(1, raw));
     // Paso fino de 5% al arrastrar
     const snapped = Math.round((lo + progress * (hi - lo)) * 20) / 20;
+
     if (snapped !== lastSnapped.current) {
       lastSnapped.current = snapped;
+      atLimit.current = false;
       h.select();
       setScaleRef.current(snapped);
+      return;
+    }
+
+    // Mismo valor y el dedo fuera de la barra: se ha llegado al tope. Un aviso
+    // seco, distinto del `select` de un paso que sí ha ocurrido.
+    const beyond = raw < 0 || raw > 1;
+    if (beyond && !atLimit.current) {
+      atLimit.current = true;
+      h.limit();
     }
   };
 
@@ -92,8 +126,19 @@ export default function ReaderSettingsSheet({
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (e) => scrubTo(e.nativeEvent.locationX),
+      onPanResponderGrant: (e) => {
+        grabKnob(true);
+        scrubTo(e.nativeEvent.locationX);
+      },
       onPanResponderMove: (e) => scrubTo(e.nativeEvent.locationX),
+      onPanResponderRelease: () => {
+        atLimit.current = false;
+        grabKnob(false);
+      },
+      onPanResponderTerminate: () => {
+        atLimit.current = false;
+        grabKnob(false);
+      },
     }),
   ).current;
 
@@ -163,13 +208,15 @@ export default function ReaderSettingsSheet({
                     },
                   ]}
                 />
-                <View
+                <Animated.View
                   style={[
                     styles.knob,
                     {
                       backgroundColor: W.accent,
                       left: `${progress * 100}%`,
                       borderColor: W.bgCard,
+                      // El centrado ya lo hace `marginLeft: -10` del estilo.
+                      transform: [{ scale: knobScale }],
                     },
                   ]}
                 />

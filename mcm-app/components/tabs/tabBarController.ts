@@ -22,10 +22,10 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import type { ScrollView } from 'react-native';
 import {
-  runOnJS,
   useAnimatedScrollHandler,
   useSharedValue,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { ARM_AT, collapseStep } from '@/components/tabs/collapseRule';
 
@@ -214,7 +214,7 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
       // con header grande arranca en negativo, y recortarlo era justo lo que
       // hacía que la barra tardara tanto en compactarse.
       const insetTop = event.contentInset?.top ?? 0;
-      if (insetTop > 0) runOnJS(rememberInset)(insetTop);
+      if (insetTop > 0) scheduleOnRN(rememberInset, insetTop);
 
       // Límites REALES del recorrido, para que `collapseStep` pueda descartar
       // el rebote elástico de los extremos.
@@ -243,7 +243,7 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
         // Se actualiza el espejo YA, sin esperar al salto al hilo de JS: si no,
         // los siguientes fotogramas seguirían decidiendo con el estado viejo.
         isCompact.value = next.compact;
-        runOnJS(setCompact)(next.compact);
+        scheduleOnRN(setCompact, next.compact);
       }
     },
   });

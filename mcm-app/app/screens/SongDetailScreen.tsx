@@ -8,11 +8,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Animated, {
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -548,7 +548,7 @@ export default function SongDetailScreen({
     };
     slideAnim.value = withTiming(toValue, { duration: durations.quick }, () => {
       'worklet';
-      runOnJS(swapAndSlideIn)();
+      scheduleOnRN(swapAndSlideIn);
     });
   };
 
