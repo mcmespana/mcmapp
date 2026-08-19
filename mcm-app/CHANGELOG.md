@@ -18,6 +18,27 @@
 
 ---
 
+## 2026-08-19 21:05 — Cantoral: tono y cejilla se sienten (y ya no rozan el borde)
+
+- **Todas las hojas** (`BottomSheet`) reservan ya el safe-area inferior. Antes
+  solo ponían 8 px fijos, así que en móviles con barra de gestos el último
+  control quedaba pegado al indicador. Nueva prop `safeAreaBottom` (por defecto
+  `true`); `NotificationsBottomSheet` la pone a `false` porque ya se come el
+  inset en su propia lista.
+- Los ±1 de TONO y los ± de CEJILLA animan la pulsación (90 ms de bajada,
+  140 ms de vuelta) en vez de saltar de golpe, y la CEJILLA gana el mismo "pop"
+  del valor que ya tenía el tono, además de mantener-pulsado para repetir.
+- Al tope de cejilla (0) el botón ya no es mudo: háptica de aviso (`h.limit`,
+  nueva en `utils/haptics.ts`) y un meneo corto del valor. Un botón que no hace
+  NADA se lee como app colgada, no como "hasta aquí".
+- Háptica también en los dos botones de restablecer, que no tenían.
+- Las animaciones de la hoja pasan de Reanimated al `Animated` de RN: viven
+  dentro del `Modal` transparente, donde los estilos de Reanimated 4 no se
+  aplican — o sea que el pop del tono probablemente no se veía nunca.
+
+Archivos: `components/TransposeBottomSheet.tsx`, `components/BottomSheet.tsx`,
+`components/NotificationsBottomSheet.tsx`, `utils/haptics.ts`.
+
 ## 2026-08-19 20:25 — BottomSheet: el arrastre se siente como debe
 
 El arrastre para descartar la hoja compartida (la usan una veintena de pantallas)
@@ -2725,7 +2746,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

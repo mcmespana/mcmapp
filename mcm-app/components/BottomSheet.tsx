@@ -107,6 +107,14 @@ interface BottomSheetProps {
   onCloseComplete?: () => void;
   paddingHorizontal?: number;
   dragFromContent?: boolean;
+  /**
+   * Reservar el safe-area inferior (barra de gestos / botón home) dentro de la
+   * hoja. Por defecto SÍ: sin esto el último control queda pegado al borde de
+   * abajo, encima del indicador, y se toca fatal. Ponlo a `false` solo si la
+   * hoja ya se come el inset por su cuenta (p. ej. en el `contentContainerStyle`
+   * de su propia lista), para no sumarlo dos veces.
+   */
+  safeAreaBottom?: boolean;
 }
 
 export default function BottomSheet({
@@ -120,6 +128,7 @@ export default function BottomSheet({
   onCloseComplete,
   paddingHorizontal = 16,
   dragFromContent = false,
+  safeAreaBottom = true,
 }: BottomSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -403,7 +412,7 @@ export default function BottomSheet({
             styles.sheet,
             {
               backgroundColor: bgColor,
-              paddingBottom: 8,
+              paddingBottom: safeAreaBottom ? 8 + insets.bottom : 8,
               transform: [{ translateY }],
               maxHeight: sheetMaxHeight,
               ...(height !== undefined && { height }),
