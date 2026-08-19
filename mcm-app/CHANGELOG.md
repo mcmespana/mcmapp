@@ -18,6 +18,21 @@
 
 ---
 
+## 2026-08-19 19:40 — Auditoría de animaciones con la skill `animate-expo`
+
+- Instalada la skill `animate-expo` de `emilkowalski/skills` (entrada nueva en
+  `skills-lock.json`).
+- Auditoría completa de las animaciones de la app contra ella en
+  `docs/desarrollo/ANIMACIONES.md`: qué ya está bien, qué eran falsos positivos
+  y qué queda pendiente por orden de valor (el gordo: `BottomSheet.tsx` sigue
+  con `PanResponder` + core `Animated`).
+- `constants/animations.ts`: nuevas curvas canónicas (`motionEasings`) y muelles
+  en la forma `duration` + `dampingRatio` (`springs`), añadidos AL LADO de
+  `reaEasings` para no cambiar el feel de lo ya afinado.
+- `components/ui/PressableScale.tsx` y `components/ui/CelebrationBurst.tsx`
+  respetan ya "reducir movimiento" del sistema — antes no lo hacía ningún
+  componente de la app. El emoji del burst deja de arrancar en `scale(0)`.
+
 ## 2026-08-15 21:30 — Aviso: el CI lleva parado desde abril
 
 Al arreglar los 4 errores de `typecheck:tests` de la #334 salió a la luz que

@@ -84,6 +84,7 @@ Referencia técnica sobre cómo está construida la app por dentro.
 | [FIREBASE_REGLAS.md](desarrollo/FIREBASE_REGLAS.md)     | Reglas de la base de datos: qué falta, qué debe cambiar el Panel y cómo desplegarlas                                                  |
 | [BUILD_AGOSTO_2026.md](desarrollo/BUILD_AGOSTO_2026.md) | ★ Paso a paso de la build de tienda: variables de Sentry, credenciales, pruebas                                                       |
 | [COBERTURA.md](desarrollo/COBERTURA.md)                 | ★ Receta para subir la cobertura de tests. **Es LA tarea cuando el usuario dice "me sobran créditos"**                                |
+| [ANIMACIONES.md](desarrollo/ANIMACIONES.md)             | Auditoría de las animaciones contra la skill `animate-expo`: qué está bien, qué queda pendiente y en qué orden                        |
 | [WARNINGS.md](desarrollo/WARNINGS.md)                   | Los 51 warnings del compilador de React: clasificados uno a uno y por qué cada grupo se queda. **Léelo antes de "arreglar warnings"** |
 
 ## Seguridad
