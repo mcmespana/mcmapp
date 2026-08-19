@@ -59,8 +59,8 @@ export default function SwipeableMonthCalendar({
     (dir: number) => {
       h.select();
       onChangeMonth(dir);
-      dx.value = dir * width * EXIT_RATIO;
-      dx.value = withSpring(0, { damping: 20, stiffness: 170, mass: 0.7 });
+      dx.set(dir * width * EXIT_RATIO);
+      dx.set(withSpring(0, { damping: 20, stiffness: 170, mass: 0.7 }));
     },
     [onChangeMonth, dx, width],
   );
@@ -69,13 +69,11 @@ export default function SwipeableMonthCalendar({
   // del header, así que las dos vías se sienten igual.
   const animateChange = useCallback(
     (dir: number) => {
-      dx.value = withTiming(
-        -dir * width * EXIT_RATIO,
-        { duration: 140 },
-        (finished) => {
+      dx.set(
+        withTiming(-dir * width * EXIT_RATIO, { duration: 140 }, (finished) => {
           'worklet';
           if (finished) scheduleOnRN(commitMonth, dir);
-        },
+        }),
       );
     },
     [dx, width, commitMonth],
@@ -88,7 +86,7 @@ export default function SwipeableMonthCalendar({
     .failOffsetY([-14, 14])
     .onUpdate((e) => {
       const max = width * 0.9;
-      dx.value = Math.max(-max, Math.min(max, e.translationX));
+      dx.set(Math.max(-max, Math.min(max, e.translationX)));
     })
     .onEnd((e) => {
       const commit =
@@ -96,22 +94,24 @@ export default function SwipeableMonthCalendar({
         Math.abs(e.velocityX) > VELOCITY_THRESHOLD;
       if (commit) {
         const dir = e.translationX < 0 ? 1 : -1;
-        dx.value = withTiming(
-          -dir * width * EXIT_RATIO,
-          { duration: 130 },
-          (finished) => {
-            if (finished) scheduleOnRN(commitMonth, dir);
-          },
+        dx.set(
+          withTiming(
+            -dir * width * EXIT_RATIO,
+            { duration: 130 },
+            (finished) => {
+              if (finished) scheduleOnRN(commitMonth, dir);
+            },
+          ),
         );
       } else {
-        dx.value = withSpring(0, { damping: 18, stiffness: 200 });
+        dx.set(withSpring(0, { damping: 18, stiffness: 200 }));
       }
     });
 
   const gridStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: dx.value }],
+    transform: [{ translateX: dx.get() }],
     opacity: interpolate(
-      Math.abs(dx.value),
+      Math.abs(dx.get()),
       [0, width * EXIT_RATIO],
       [1, 0.3],
       'clamp',

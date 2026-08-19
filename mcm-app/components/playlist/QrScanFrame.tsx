@@ -49,26 +49,27 @@ export default function QrScanFrame({ found }: Props) {
   const hit = useSharedValue(0);
 
   useEffect(() => {
-    open.value = withDelay(
-      120,
-      withSpring(1, { stiffness: 140, damping: 13, mass: 0.9 }),
+    open.set(
+      withDelay(120, withSpring(1, { stiffness: 140, damping: 13, mass: 0.9 })),
     );
   }, [open]);
 
   useEffect(() => {
     if (!found) return;
     // Golpe seco hacia fuera y vuelta: el marco "atrapa" el código.
-    hit.value = withSequence(
-      withTiming(1, { duration: 160, easing: Easing.out(Easing.quad) }),
-      withSpring(0.6, { stiffness: 200, damping: 12 }),
+    hit.set(
+      withSequence(
+        withTiming(1, { duration: 160, easing: Easing.out(Easing.quad) }),
+        withSpring(0.6, { stiffness: 200, damping: 12 }),
+      ),
     );
   }, [found, hit]);
 
   const wrapStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(open.value, [0, 0.4, 1], [0, 1, 1]),
+    opacity: interpolate(open.get(), [0, 0.4, 1], [0, 1, 1]),
     transform: [
-      { scale: interpolate(open.value, [0, 1], [0.78, 1]) },
-      { scale: interpolate(hit.value, [0, 1], [1, 1.08]) },
+      { scale: interpolate(open.get(), [0, 1], [0.78, 1]) },
+      { scale: interpolate(hit.get(), [0, 1], [1, 1.08]) },
     ],
   }));
 
@@ -98,18 +99,20 @@ function FrameCorner({
   const enter = useSharedValue(0);
 
   useEffect(() => {
-    enter.value = withDelay(
-      140 + index * 70,
-      withSpring(1, { stiffness: 170, damping: 12 }),
+    enter.set(
+      withDelay(
+        140 + index * 70,
+        withSpring(1, { stiffness: 170, damping: 12 }),
+      ),
     );
   }, [enter, index]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: enter.value,
+    opacity: enter.get(),
     transform: [
-      { scale: interpolate(enter.value, [0, 1], [0.4, 1]) },
+      { scale: interpolate(enter.get(), [0, 1], [0.4, 1]) },
       {
-        rotate: `${corner.rx + interpolate(enter.value, [0, 1], [-25, 0])}deg`,
+        rotate: `${corner.rx + interpolate(enter.get(), [0, 1], [-25, 0])}deg`,
       },
     ],
   }));
@@ -136,19 +139,21 @@ function ScanLaser() {
   const sweep = useSharedValue(0);
 
   useEffect(() => {
-    sweep.value = withRepeat(
-      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad) }),
-      -1,
-      true,
+    sweep.set(
+      withRepeat(
+        withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad) }),
+        -1,
+        true,
+      ),
     );
   }, [sweep]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(sweep.value, [0, 0.1, 0.9, 1], [0.2, 1, 1, 0.2]),
+    opacity: interpolate(sweep.get(), [0, 0.1, 0.9, 1], [0.2, 1, 1, 0.2]),
     transform: [
       {
         translateY: interpolate(
-          sweep.value,
+          sweep.get(),
           [0, 1],
           [BORDER, FRAME_SIZE - BORDER],
         ),
@@ -173,13 +178,15 @@ function FoundFlash() {
   const flash = useSharedValue(0);
 
   useEffect(() => {
-    flash.value = withSequence(
-      withTiming(1, { duration: 120 }),
-      withTiming(0.25, { duration: 320 }),
+    flash.set(
+      withSequence(
+        withTiming(1, { duration: 120 }),
+        withTiming(0.25, { duration: 320 }),
+      ),
     );
   }, [flash]);
 
-  const style = useAnimatedStyle(() => ({ opacity: flash.value * 0.55 }));
+  const style = useAnimatedStyle(() => ({ opacity: flash.get() * 0.55 }));
 
   return <Animated.View style={[styles.flash, style]} pointerEvents="none" />;
 }

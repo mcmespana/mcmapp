@@ -100,11 +100,13 @@ export default function HorarioScreen() {
       let fadeTimeout: ReturnType<typeof setTimeout> | undefined;
       // Subtle shake animation
       const shake = () => {
-        shakeAnim.value = withSequence(
-          withTiming(3, { duration: 100 }),
-          withTiming(-3, { duration: 100 }),
-          withTiming(3, { duration: 100 }),
-          withTiming(0, { duration: 100 }),
+        shakeAnim.set(
+          withSequence(
+            withTiming(3, { duration: 100 }),
+            withTiming(-3, { duration: 100 }),
+            withTiming(3, { duration: 100 }),
+            withTiming(0, { duration: 100 }),
+          ),
         );
       };
 
@@ -114,13 +116,15 @@ export default function HorarioScreen() {
         fadeTimeout = setTimeout(fade, 2000);
       };
       const fade = () => {
-        fadeAnim.value = withSequence(
-          withTiming(0.7, { duration: 1500 }),
-          withTiming(1, { duration: 1500 }, () => {
-            'worklet';
-            // Repeat fade animation
-            scheduleOnRN(scheduleFade);
-          }),
+        fadeAnim.set(
+          withSequence(
+            withTiming(0.7, { duration: 1500 }),
+            withTiming(1, { duration: 1500 }, () => {
+              'worklet';
+              // Repeat fade animation
+              scheduleOnRN(scheduleFade);
+            }),
+          ),
         );
       };
 
@@ -161,8 +165,8 @@ export default function HorarioScreen() {
 
   // El último día llama la atención con un temblor y un latido suaves.
   const attentionStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: shakeAnim.value }],
-    opacity: fadeAnim.value,
+    transform: [{ translateX: shakeAnim.get() }],
+    opacity: fadeAnim.get(),
   }));
 
   if (!dia) {

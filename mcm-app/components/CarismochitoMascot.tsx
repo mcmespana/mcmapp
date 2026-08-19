@@ -165,21 +165,31 @@ export default function CarismochitoMascot({
     const swayMs = dance === 2 ? 460 : 900;
     const bobMs = dance === 2 ? 300 : 700;
 
-    sway.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: swayMs, easing: Easing.inOut(Easing.quad) }),
-        withTiming(-1, { duration: swayMs, easing: Easing.inOut(Easing.quad) }),
+    sway.set(
+      withRepeat(
+        withSequence(
+          withTiming(1, {
+            duration: swayMs,
+            easing: Easing.inOut(Easing.quad),
+          }),
+          withTiming(-1, {
+            duration: swayMs,
+            easing: Easing.inOut(Easing.quad),
+          }),
+        ),
+        -1,
+        false,
       ),
-      -1,
-      false,
     );
-    bob.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: bobMs, easing: Easing.out(Easing.quad) }),
-        withTiming(0, { duration: bobMs, easing: Easing.in(Easing.quad) }),
+    bob.set(
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: bobMs, easing: Easing.out(Easing.quad) }),
+          withTiming(0, { duration: bobMs, easing: Easing.in(Easing.quad) }),
+        ),
+        -1,
+        false,
       ),
-      -1,
-      false,
     );
 
     // Los bucles de Reanimated corren en el hilo de UI y NO se paran solos al
@@ -195,13 +205,13 @@ export default function CarismochitoMascot({
     return {
       transform: [
         {
-          translateX: interpolate(sway.value, [-1, 1], big ? [-6, 6] : [-2, 2]),
+          translateX: interpolate(sway.get(), [-1, 1], big ? [-6, 6] : [-2, 2]),
         },
-        { translateY: interpolate(bob.value, [0, 1], [0, big ? -16 : -5]) },
+        { translateY: interpolate(bob.get(), [0, 1], [0, big ? -16 : -5]) },
         {
-          rotate: `${interpolate(sway.value, [-1, 1], big ? [-9, 9] : [-4, 4])}deg`,
+          rotate: `${interpolate(sway.get(), [-1, 1], big ? [-9, 9] : [-4, 4])}deg`,
         },
-        { scale: interpolate(bob.value, [0, 1], [1, big ? 1.08 : 1.03]) },
+        { scale: interpolate(bob.get(), [0, 1], [1, big ? 1.08 : 1.03]) },
       ],
     };
   });

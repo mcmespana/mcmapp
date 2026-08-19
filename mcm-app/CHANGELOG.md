@@ -18,6 +18,20 @@
 
 ---
 
+## 2026-08-19 22:30 — `.value` → `.get()`/`.set()` en todos los shared values
+
+Migración mecánica de los 229 accesos directos a `.value` de Reanimated en 32
+ficheros. Misma API, pero **el React Compiler no puede seguir `.value`** y le
+generaba un aviso a cada uno: **los warnings del linter bajan de 49 a 39**.
+
+También comprobado que **no hace falta tocar nada para los 120 fps**:
+`CADisableMinimumFrameDurationOnPhone: true` ya lo inyecta `@expo/config-plugins`
+en el `Info.plist` por defecto, así que en iPhones ProMotion el presupuesto de
+frame ya es de 8 ms. (Estaba anotado como pendiente en
+`docs/desarrollo/ANIMACIONES.md`; queda cerrado.)
+
+Sin cambios de comportamiento: 1042 tests en verde y typecheck limpio.
+
 ## 2026-08-19 21:45 — Slider de lectura, `scheduleOnRN` y toasts
 
 - **`ReaderSettingsSheet`** (tamaño de letra de Contigo): el agarre de la barra

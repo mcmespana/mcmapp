@@ -127,12 +127,12 @@ export default function FloatingMediaPlayer({
   const drag = Gesture.Pan()
     .minDistance(4)
     .onStart(() => {
-      startX.value = panX.value;
-      startY.value = panY.value;
+      startX.set(panX.get());
+      startY.set(panY.get());
     })
     .onUpdate((e) => {
-      panX.value = startX.value + e.translationX;
-      panY.value = startY.value + e.translationY;
+      panX.set(startX.get() + e.translationX);
+      panY.set(startY.get() + e.translationY);
     });
 
   // Fuente nueva → vuelta a "cargando". Se ajusta DURANTE el render (el patrón
@@ -148,11 +148,11 @@ export default function FloatingMediaPlayer({
   // Al abrir una nueva fuente: reset de posición + animación de entrada.
   useEffect(() => {
     if (!source) return;
-    panX.value = 0;
-    panY.value = 0;
-    enter.value = 0;
+    panX.set(0);
+    panY.set(0);
+    enter.set(0);
     // `tension: 90, friction: 11` de RN Animated → mismo muelle aquí.
-    enter.value = withSpring(1, { stiffness: 90, damping: 11, mass: 1 });
+    enter.set(withSpring(1, { stiffness: 90, damping: 11, mass: 1 }));
     // Solo cuando cambia la URL.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.url]);
@@ -160,16 +160,16 @@ export default function FloatingMediaPlayer({
   // OJO: la opacidad NO va aquí. El reproductor nace justo cuando se está
   // desmontando el `Modal` de la hoja de multimedia, y en ese momento el estilo
   // animado de Reanimated puede no llegar a aplicarse nunca: con `opacity:
-  // enter.value` (que empieza en 0) el vídeo se quedaba sonando con el
+  // enter.get()` (que empieza en 0) el vídeo se quedaba sonando con el
   // reproductor INVISIBLE, sin forma de pararlo ni de verlo. La entrada se
   // queda en el desplazamiento y la escala, que si no se animan dejan el
   // reproductor visible igualmente.
   const pipStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: panX.value },
+      { translateX: panX.get() },
       // La entrada sube 14pt y el arrastre se suma encima.
-      { translateY: panY.value + interpolate(enter.value, [0, 1], [14, 0]) },
-      { scale: interpolate(enter.value, [0, 1], [0.96, 1]) },
+      { translateY: panY.get() + interpolate(enter.get(), [0, 1], [14, 0]) },
+      { scale: interpolate(enter.get(), [0, 1], [0.96, 1]) },
     ],
   }));
 

@@ -543,13 +543,15 @@ export default function SongDetailScreen({
     // la nueva entra desde el lado contrario.
     const swapAndSlideIn = () => {
       navigation.setParams(params);
-      slideAnim.value = -toValue;
-      slideAnim.value = withTiming(0, { duration: durations.quick });
+      slideAnim.set(-toValue);
+      slideAnim.set(withTiming(0, { duration: durations.quick }));
     };
-    slideAnim.value = withTiming(toValue, { duration: durations.quick }, () => {
-      'worklet';
-      scheduleOnRN(swapAndSlideIn);
-    });
+    slideAnim.set(
+      withTiming(toValue, { duration: durations.quick }, () => {
+        'worklet';
+        scheduleOnRN(swapAndSlideIn);
+      }),
+    );
   };
 
   const handleSwipeLeft = () => {
@@ -592,7 +594,7 @@ export default function SongDetailScreen({
   const screenBg = isDark ? '#2C2C2E' : '#FFFFFF';
 
   const slideStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: slideAnim.value }],
+    transform: [{ translateX: slideAnim.get() }],
   }));
 
   const contentView = (

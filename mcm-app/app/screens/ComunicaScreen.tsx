@@ -138,21 +138,23 @@ export default function ComunicaScreen() {
 
   useEffect(() => {
     if (status !== 'ready') {
-      loaderOpacity.value = 1;
+      loaderOpacity.set(1);
       return;
     }
-    loaderOpacity.value = withTiming(
-      0,
-      { duration: durations.slow, easing: reaEasings.exit },
-      (finished) => {
-        'worklet';
-        if (finished) scheduleOnRN(setLoaderMounted, false);
-      },
+    loaderOpacity.set(
+      withTiming(
+        0,
+        { duration: durations.slow, easing: reaEasings.exit },
+        (finished) => {
+          'worklet';
+          if (finished) scheduleOnRN(setLoaderMounted, false);
+        },
+      ),
     );
   }, [status, loaderOpacity]);
 
   const loaderStyle = useAnimatedStyle(() => ({
-    opacity: loaderOpacity.value,
+    opacity: loaderOpacity.get(),
   }));
 
   // Texto de la status bar: oscuro sobre fondo claro, claro sobre fondo oscuro.

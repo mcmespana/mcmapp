@@ -24,14 +24,16 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
   const finished = useRef(false);
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 480 });
+    opacity.set(withTiming(1, { duration: 480 }));
 
     const breath = (to: number, label: 'inhale' | 'exhale') => {
       setPhaseLabel(label);
-      scale.value = withTiming(to, {
-        duration: BREATH_MS,
-        easing: reaEasings.cubic,
-      });
+      scale.set(
+        withTiming(to, {
+          duration: BREATH_MS,
+          easing: reaEasings.cubic,
+        }),
+      );
     };
 
     // inhale (already at 0.72) → exhale ↑ → inhale ↓ → done
@@ -49,23 +51,25 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
   const fade = () => {
     if (finished.current) return;
     finished.current = true;
-    opacity.value = withTiming(0, { duration: 380 }, () => {
-      'worklet';
-      scheduleOnRN(onDone);
-    });
+    opacity.set(
+      withTiming(0, { duration: 380 }, () => {
+        'worklet';
+        scheduleOnRN(onDone);
+      }),
+    );
   };
 
   // Los tres anillos siguen la MISMA respiración a distinta escala; antes eran
   // `Animated.multiply(scale, k)`.
-  const rootStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const rootStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
   const glowStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value * 1.35 }],
+    transform: [{ scale: scale.get() * 1.35 }],
   }));
   const ring2Style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.get() }],
   }));
   const ring1Style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value * 0.84 }],
+    transform: [{ scale: scale.get() * 0.84 }],
   }));
 
   return (

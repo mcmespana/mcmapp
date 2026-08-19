@@ -107,21 +107,23 @@ function BurstParticle({
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withDelay(
-      delay,
-      withTiming(1, {
-        duration: durations.hero + 100,
-        easing: reaEasings.bouncy,
-      }),
+    progress.set(
+      withDelay(
+        delay,
+        withTiming(1, {
+          duration: durations.hero + 100,
+          easing: reaEasings.bouncy,
+        }),
+      ),
     );
   }, [progress, delay]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 0.6, 1], [1, 1, 0]),
+    opacity: interpolate(progress.get(), [0, 0.6, 1], [1, 1, 0]),
     transform: [
-      { translateX: interpolate(progress.value, [0, 1], [0, tx]) },
-      { translateY: interpolate(progress.value, [0, 1], [0, ty]) },
-      { scale: interpolate(progress.value, [0, 1], [0, 1.2]) },
+      { translateX: interpolate(progress.get(), [0, 1], [0, tx]) },
+      { translateY: interpolate(progress.get(), [0, 1], [0, ty]) },
+      { scale: interpolate(progress.get(), [0, 1], [0, 1.2]) },
     ],
   }));
 
@@ -145,10 +147,12 @@ function BurstEmoji({
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withTiming(1, {
-      duration: durations.hero,
-      easing: reaEasings.bouncy,
-    });
+    progress.set(
+      withTiming(1, {
+        duration: durations.hero,
+        easing: reaEasings.bouncy,
+      }),
+    );
   }, [progress]);
 
   // Nunca se arranca desde `scale(0)`: nada en el mundo real aparece de la

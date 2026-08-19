@@ -80,12 +80,12 @@ export function ReadingCalendarSheet({
     const d = new Date(year, month - 1 + delta, 1);
     setMonthKey(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
     // Pequeño deslizamiento direccional al cambiar de mes.
-    slide.value = delta * 26;
-    slide.value = withSpring(0, { stiffness: 90, damping: 12, mass: 1 });
+    slide.set(delta * 26);
+    slide.set(withSpring(0, { stiffness: 90, damping: 12, mass: 1 }));
   };
 
   const gridStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: slide.value }],
+    transform: [{ translateX: slide.get() }],
   }));
 
   const roseDot = HIGHLIGHT_COLORS.rose.swatch;

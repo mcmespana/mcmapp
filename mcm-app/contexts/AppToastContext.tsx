@@ -145,26 +145,30 @@ function ToastItem({
   const hide = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (!reducedMotion) {
-      translateY.value = withTiming(20, { duration: 200 });
-      scale.value = withTiming(0.97, { duration: 200 });
+      translateY.set(withTiming(20, { duration: 200 }));
+      scale.set(withTiming(0.97, { duration: 200 }));
     }
-    opacity.value = withTiming(0, { duration: 200 }, () => {
-      'worklet';
-      scheduleOnRN(onHide);
-    });
+    opacity.set(
+      withTiming(0, { duration: 200 }, () => {
+        'worklet';
+        scheduleOnRN(onHide);
+      }),
+    );
   }, [opacity, translateY, scale, onHide, reducedMotion]);
 
   useEffect(() => {
     triggerHaptic(t.variant ?? 'default');
     // `tension/friction` de RN Animated → `stiffness/damping` aquí.
-    opacity.value = withTiming(1, { duration: 220 });
+    opacity.set(withTiming(1, { duration: 220 }));
     if (!reducedMotion) {
-      translateY.value = withSpring(0, {
-        stiffness: 110,
-        damping: 11,
-        mass: 1,
-      });
-      scale.value = withSpring(1, { stiffness: 130, damping: 12, mass: 1 });
+      translateY.set(
+        withSpring(0, {
+          stiffness: 110,
+          damping: 11,
+          mass: 1,
+        }),
+      );
+      scale.set(withSpring(1, { stiffness: 130, damping: 12, mass: 1 }));
     }
 
     const duration = t.duration ?? (t.actionLabel ? 5200 : 3400);
@@ -177,8 +181,8 @@ function ToastItem({
   }, []);
 
   const toastStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    opacity: opacity.get(),
+    transform: [{ translateY: translateY.get() }, { scale: scale.get() }],
   }));
 
   const v = VARIANT_STYLES[t.variant ?? 'default'];

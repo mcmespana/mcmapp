@@ -82,39 +82,46 @@ la New Architecture activa: si ya funciona, la migración completa (shared value
 `Gesture.Pan()` + `withSpring({ duration: 300, dampingRatio: 0.8, velocity })`)
 sí merece la pena, porque hoy cada frame del arrastre pasa por el hilo de JS.
 
-## Pendiente, por orden de valor
+## Pendiente
 
-1. **`.value` → `.get()`/`.set()`** — ~254 usos. Misma API, pero el acceso
-   directo a `.value` es la forma que el React Compiler no puede seguir.
-   Mecánico; candidato a un commit propio, sin mezclar con nada.
-2. **Core `Animated` de react-native** en `WordleScreen`, `notifications`,
-   `PlaylistRow`, `OTAUpdatePrompt`, `SongListItem`, `NotificationListItem`,
-   `CarismochitoDialogs`. Ninguno tiene un dedo encima, así que funcionan; los
-   que están dentro de un `Modal` transparente (`BottomSheet`,
-   `TransposeBottomSheet`) se quedan en core `Animated` a propósito.
-3. **120fps en iPhones ProMotion** — `CADisableMinimumFrameDurationOnPhone` no
-   está en `app.config.ts`. Los SDK recientes de Expo lo ponen por defecto, así
-   que hay que **confirmarlo en el `Info.plist` generado** antes de añadirlo a
-   mano; si se añade, es cambio nativo → `[skip-ota]` y build nueva.
-4. **Movimiento reducido**, si algún día se quiere completar: quedan
-   `SuccessPhase` y `BreathingPhase`. Carismochito se queda como está por
-   decisión del usuario — es un huevo de pascua que se activa a propósito.
+Poco, y nada urgente:
+
+- **Core `Animated` de react-native** en `WordleScreen`, `notifications`,
+  `PlaylistRow`, `OTAUpdatePrompt`, `SongListItem`, `NotificationListItem`,
+  `CarismochitoDialogs`. Ninguno tiene un dedo encima, así que funcionan; los
+  que viven dentro de un `Modal` transparente (`BottomSheet`,
+  `TransposeBottomSheet`) se quedan en core `Animated` **a propósito**.
+- **Volver a probar Reanimated dentro del `Modal` transparente** con la New
+  Architecture activa. Si ya funciona, migrar el arrastre del `BottomSheet` a
+  `Gesture.Pan()` + shared value pasa a merecer la pena: hoy cada frame del
+  arrastre va por el hilo de JS.
+- **Movimiento reducido**, si se quisiera completar: quedan `SuccessPhase` y
+  `BreathingPhase`. Carismochito se queda como está por decisión del usuario —
+  es un huevo de pascua que se activa a propósito agitando el móvil.
+
+**120fps: nada que hacer.** `CADisableMinimumFrameDurationOnPhone: true` lo
+inyecta ya `@expo/config-plugins` en el `Info.plist` por defecto (comprobado en
+`node_modules/@expo/config-plugins/build/plugins/withIosBaseMods.js`), así que
+en ProMotion el presupuesto de frame es de 8 ms sin tocar nada.
 
 ## Hecho después de la primera pasada
 
-- **`ReaderSettingsSheet`** (tamaño de letra de Contigo): el agarre de la barra
-  crece mientras el dedo está encima —la única forma en móvil de decir "esto lo
-  estás tocando tú" sin hover—, hay háptica de tope al pasarse por los extremos
-  (una vez, no una traca por frame) y arrastrar tras usar los botones A/A vuelve
-  a responder (el último valor no se resincronizaba).
+- **`BottomSheet`**: el flick para descartar no cerraba nunca (umbral de
+  velocidad en px/s contra un `vy` en px/ms), resistencia elástica hacia arriba,
+  velocidad arrastrada al muelle, háptica en el commit y safe-area inferior en
+  **todas** las hojas de la app.
 - **`TransposeBottomSheet`** (tono y cejilla del cantoral): pulsación animada en
-  los ±, pop del valor también en cejilla, mantener-pulsado para repetir también
-  en cejilla, háptica de tope + meneo al llegar al 0, háptica en los
-  restablecer. Las animaciones pasan a core `Animated` porque vive dentro del
-  Modal transparente.
-- **Safe-area inferior en TODAS las hojas** (`BottomSheet`), que solo ponía 8 px
-  fijos: los últimos controles caían encima de la barra de gestos.
-- **`runOnJS` → `scheduleOnRN`** en los 9 ficheros que lo usaban. `runOnJS` está
-  deprecado en Reanimated 4.
-- **Movimiento reducido** en `AppToastContext`: con la opción activada el toast
-  solo funde, sin traslación ni escala.
+  los ±, pop del valor también en cejilla, mantener-pulsado también en cejilla,
+  háptica de tope + meneo al llegar al 0, háptica en los restablecer. Y las
+  animaciones a core `Animated`, porque el pop del tono estaba con Reanimated
+  dentro del Modal transparente y probablemente no se veía nunca.
+- **`ReaderSettingsSheet`**: el agarre de la barra crece mientras el dedo está
+  encima, háptica de tope al pasarse de los extremos (una vez por llegada, no
+  una por frame) y arrastrar después de usar los botones A/A vuelve a responder.
+- **`runOnJS` → `scheduleOnRN`** en los 9 ficheros que lo usaban.
+- **`.value` → `.get()` / `.set()`** en los 32 ficheros que los usaban (229
+  sustituciones). No es cosmética: **los warnings del linter bajaron de 49 a
+  39**, porque el React Compiler no puede seguir el acceso directo a `.value` y
+  cada uno le generaba un aviso.
+- **Movimiento reducido** en `PressableScale`, `CelebrationBurst` y
+  `AppToastContext`.

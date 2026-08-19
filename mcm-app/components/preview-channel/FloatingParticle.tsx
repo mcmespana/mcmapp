@@ -47,7 +47,7 @@ export function FloatingParticle({
   const size = 22 + ((index * 3) % 18);
 
   const animatedStyle = useAnimatedStyle(() => {
-    const t = phase.value;
+    const t = phase.get();
     const x = baseX * width + Math.sin(t * speedX + index) * ampX;
     const y = baseY * height + Math.cos(t * speedY + index) * ampY;
     const rot = (t * rotSpeed + index * 50) % 360;

@@ -72,30 +72,32 @@ function CountdownScreen({
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    enter.value = withSpring(1, { stiffness: 90, damping: 10, mass: 1 });
+    enter.set(withSpring(1, { stiffness: 90, damping: 10, mass: 1 }));
     // El anillo se vacía suavemente durante toda la cuenta atrás.
-    progress.value = withTiming(1, {
-      duration: totalSeconds * 1000,
-      easing: Easing.linear,
-    });
+    progress.set(
+      withTiming(1, {
+        duration: totalSeconds * 1000,
+        easing: Easing.linear,
+      }),
+    );
   }, [enter, progress, totalSeconds]);
 
   useEffect(() => {
     // Cada segundo el número entra de golpe desde pequeño.
-    numberScale.value = 0.5;
-    numberScale.value = withSpring(1, { stiffness: 80, damping: 6, mass: 1 });
+    numberScale.set(0.5);
+    numberScale.set(withSpring(1, { stiffness: 80, damping: 6, mass: 1 }));
   }, [countdown, numberScale]);
 
-  const rootStyle = useAnimatedStyle(() => ({ opacity: enter.value }));
+  const rootStyle = useAnimatedStyle(() => ({ opacity: enter.get() }));
   const contentStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(enter.value, [0, 1], [0.9, 1]) }],
+    transform: [{ scale: interpolate(enter.get(), [0, 1], [0.9, 1]) }],
   }));
   const numberStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: numberScale.value }],
+    transform: [{ scale: numberScale.get() }],
   }));
   // El anillo es una prop de SVG, no un estilo: va por `useAnimatedProps`.
   const ringProps = useAnimatedProps(() => ({
-    strokeDashoffset: interpolate(progress.value, [0, 1], [0, RING_C]),
+    strokeDashoffset: interpolate(progress.get(), [0, 1], [0, RING_C]),
   }));
 
   return (
@@ -260,9 +262,9 @@ function PeekMascotBody({
   topPct: number;
 }) {
   const style = useAnimatedStyle(() => ({
-    opacity: slide.value,
+    opacity: slide.get(),
     transform: [
-      { translateX: interpolate(slide.value, [0, 1], [hiddenX, shownX]) },
+      { translateX: interpolate(slide.get(), [0, 1], [hiddenX, shownX]) },
       // Girada 90°: asoma tumbada de lado desde el borde.
       { rotate: isRight ? '-90deg' : '90deg' },
     ],
@@ -309,18 +311,20 @@ function SidePeekMascot() {
           setPeek(null);
           scheduleNext(randomGap());
         };
-        slide.value = 0;
-        slide.value = withSequence(
-          withSpring(1, { stiffness: 70, damping: 9, mass: 1 }),
-          withDelay(
-            PEEK_HOLD_MS,
-            withTiming(
-              0,
-              { duration: 380, easing: Easing.in(Easing.cubic) },
-              () => {
-                'worklet';
-                scheduleOnRN(done);
-              },
+        slide.set(0);
+        slide.set(
+          withSequence(
+            withSpring(1, { stiffness: 70, damping: 9, mass: 1 }),
+            withDelay(
+              PEEK_HOLD_MS,
+              withTiming(
+                0,
+                { duration: 380, easing: Easing.in(Easing.cubic) },
+                () => {
+                  'worklet';
+                  scheduleOnRN(done);
+                },
+              ),
             ),
           ),
         );
@@ -370,26 +374,28 @@ function FloatingBadge({ onOpenInfo }: { onOpenInfo: () => void }) {
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    enter.value = withSpring(1, { stiffness: 80, damping: 9, mass: 1 });
+    enter.set(withSpring(1, { stiffness: 80, damping: 9, mass: 1 }));
 
     // Se asoma para anunciar el modo y, pasados unos segundos, se desliza
     // hacia arriba y se desmonta para no estorbar (se sigue saliendo agitando).
     const t = setTimeout(() => {
-      enter.value = withTiming(
-        0,
-        { duration: 420, easing: Easing.in(Easing.cubic) },
-        () => {
-          'worklet';
-          scheduleOnRN(setHidden, true);
-        },
+      enter.set(
+        withTiming(
+          0,
+          { duration: 420, easing: Easing.in(Easing.cubic) },
+          () => {
+            'worklet';
+            scheduleOnRN(setHidden, true);
+          },
+        ),
       );
     }, BADGE_VISIBLE_MS);
     return () => clearTimeout(t);
   }, [enter]);
 
   const badgeStyle = useAnimatedStyle(() => ({
-    opacity: enter.value,
-    transform: [{ translateY: interpolate(enter.value, [0, 1], [-60, 0]) }],
+    opacity: enter.get(),
+    transform: [{ translateY: interpolate(enter.get(), [0, 1], [-60, 0]) }],
   }));
 
   if (hidden) return null;

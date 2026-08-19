@@ -53,12 +53,12 @@ export function GiantLever({
 
   const knobStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: t.value * TRAVEL },
-      { rotate: `${interpolate(t.value, [0, 1], [-12, 12])}deg` },
-      { scale: 1 + Math.abs(t.value - 0.5) * 0.05 },
+      { translateX: t.get() * TRAVEL },
+      { rotate: `${interpolate(t.get(), [0, 1], [-12, 12])}deg` },
+      { scale: 1 + Math.abs(t.get() - 0.5) * 0.05 },
     ],
   }));
-  const trackOnStyle = useAnimatedStyle(() => ({ opacity: t.value }));
+  const trackOnStyle = useAnimatedStyle(() => ({ opacity: t.get() }));
 
   return (
     <Pressable

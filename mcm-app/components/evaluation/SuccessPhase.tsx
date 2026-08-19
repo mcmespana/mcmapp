@@ -41,22 +41,24 @@ export default function SuccessPhase({
   const scale = useSharedValue(0);
   const ripple = useSharedValue(0);
   useEffect(() => {
-    scale.value = withSpring(1, { damping: 9, stiffness: 140 });
-    ripple.value = withDelay(
-      250,
-      withRepeat(
-        withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }),
-        -1,
-        false,
+    scale.set(withSpring(1, { damping: 9, stiffness: 140 }));
+    ripple.set(
+      withDelay(
+        250,
+        withRepeat(
+          withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }),
+          -1,
+          false,
+        ),
       ),
     );
   }, [scale, ripple]);
   const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.get() }],
   }));
   const rippleStyle = useAnimatedStyle(() => ({
-    opacity: 0.4 * (1 - ripple.value),
-    transform: [{ scale: 1 + ripple.value * 1.7 }],
+    opacity: 0.4 * (1 - ripple.get()),
+    transform: [{ scale: 1 + ripple.get() * 1.7 }],
   }));
 
   return (
