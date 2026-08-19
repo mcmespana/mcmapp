@@ -18,6 +18,32 @@
 
 ---
 
+## 2026-08-19 20:25 — BottomSheet: el arrastre se siente como debe
+
+El arrastre para descartar la hoja compartida (la usan una veintena de pantallas)
+tenía tres cosas mal, todas de "feel":
+
+- El umbral de velocidad estaba en `400` contra el `vy` de `PanResponder`, que va
+  en **px/ms**: eran 400.000 px/s, inalcanzable. La rama de velocidad no se
+  ejecutaba NUNCA, así que el flick corto y rápido hacia abajo —el gesto natural
+  para descartar— no cerraba la hoja. Ahora `0.5` px/ms.
+- Tirar hacia arriba no movía nada: la hoja se quedaba clavada bajo el dedo.
+  Ahora hay resistencia elástica (cede un 20%).
+- El muelle de vuelta arrancaba de velocidad cero, como si la hoja se hubiera
+  soltado sola. Ahora se le pasa la velocidad del gesto.
+
+Además: háptica ligera en el instante en que el gesto se compromete a cerrar, y
+`useWindowDimensions` en lugar de `Dimensions.get(...)` leído en el render (no se
+recalculaba al girar el móvil, y el tope de altura se quedaba en el de portrait).
+
+NO se migra a Reanimated pese a lo que pide la skill `animate-expo`: dentro de un
+`Modal` transparente los estilos de Reanimated 4 no se aplican (ver la cabecera
+de `components/BottomSheet.tsx`, incidente del 2026-08-09). Razonado en
+`docs/desarrollo/ANIMACIONES.md`.
+
+Archivos: `components/BottomSheet.tsx`, `__tests__/bottomSheetLifecycle.test.tsx`
+(6 tests nuevos sobre `shouldCloseOnRelease` / `dragOffsetFor`).
+
 ## 2026-08-19 19:40 — Auditoría de animaciones con la skill `animate-expo`
 
 - Instalada la skill `animate-expo` de `emilkowalski/skills` (entrada nueva en
@@ -2699,7 +2725,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

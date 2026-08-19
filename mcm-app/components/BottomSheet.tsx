@@ -17,7 +17,9 @@ import {
   Dimensions,
   Keyboard,
   useAnimatedValue,
+  useWindowDimensions,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UIColors, Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
@@ -35,13 +37,61 @@ import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 // los toques y dejaba la pestaña muerta hasta reiniciar (calendarios, sugerir
 // canción, multimedia, calendario de evangelios…). Si alguien vuelve a migrar
 // esto a Reanimated, hay que comprobar ANTES que la hoja aparece de verdad.
+//
+// Y por eso mismo el arrastre sigue con `PanResponder` en vez de con
+// `Gesture.Pan()` de gesture-handler, que es lo que pediría la skill
+// `animate-expo`: el gesto solo tiene sentido moviendo la MISMA
+// `Animated.Value` que la animación de entrada/salida, y esa no puede ser un
+// shared value de Reanimated mientras el Modal transparente siga sin aplicar
+// sus estilos. Lo que sí se ha traído de la skill —umbral por velocidad,
+// resistencia elástica arriba, velocidad arrastrada al muelle, háptica en el
+// commit— está abajo y no depende del hilo en el que corra.
 const nativeDriver = Platform.OS !== 'web';
 
+// Sitio de partida/salida de la hoja. Se mide una vez al cargar el módulo, así
+// que en horizontal puede quedar más grande que la pantalla: sobrar da igual
+// (la hoja acaba fuera de vista), faltar dejaría la hoja asomando.
 const OFF_SCREEN = Dimensions.get('window').height;
 const DURATION = 300;
-// Swipe down threshold to trigger close
+
+/** Arrastrar la hoja más de esto hacia abajo y soltar la cierra. */
 const CLOSE_THRESHOLD = 80;
-const VELOCITY_THRESHOLD = 400;
+/**
+ * Umbral de velocidad para cerrar de un flick, **en px/ms** — que son las
+ * unidades del `vy` de `PanResponder`, no px/s.
+ *
+ * Aquí decía `400`, o sea 400 px/ms = 400.000 px/s: inalcanzable con un dedo
+ * humano, así que la rama de velocidad era código muerto y solo cerraba el
+ * umbral de distancia. Efecto para el usuario: un flick corto y rápido hacia
+ * abajo —el gesto natural para descartar una hoja— no cerraba nada y la hoja
+ * volvía a su sitio. Un flick de verdad va sobre 1–3 px/ms; 0,5 deja fuera el
+ * arrastre lento (que es el que sí quiere el umbral de distancia).
+ */
+const VELOCITY_THRESHOLD = 0.5;
+/**
+ * Cuánto "cede" la hoja al tirar hacia ARRIBA, donde no hay nada que
+ * descubrir. Antes se ignoraba el movimiento hacia arriba por completo: el
+ * dedo se movía y la hoja se quedaba clavada, que es lo que se siente como
+ * que la app se ha colgado. Con resistencia elástica sigue el dedo un poco y
+ * se nota que el tope es un tope.
+ */
+const UPWARD_RESISTANCE = 0.2;
+
+/**
+ * ¿Cierra el gesto al soltar? Velocidad **o** distancia: un flick es
+ * suficiente aunque haya recorrido poco.
+ *
+ * @param dy desplazamiento vertical acumulado, px (positivo = hacia abajo)
+ * @param vy velocidad vertical al soltar, px/ms (positiva = hacia abajo)
+ */
+export function shouldCloseOnRelease(dy: number, vy: number): boolean {
+  return dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD;
+}
+
+/** Posición de la hoja para un arrastre de `dy` px, con tope elástico arriba. */
+export function dragOffsetFor(dy: number): number {
+  return dy > 0 ? dy : dy * UPWARD_RESISTANCE;
+}
 
 interface BottomSheetProps {
   visible: boolean;
@@ -102,7 +152,10 @@ export default function BottomSheet({
 
   const [kbHeight, setKbHeight] = useState(0);
   const insets = useSafeAreaInsets();
-  const screenHeight = Dimensions.get('window').height;
+  // `useWindowDimensions` y no `Dimensions.get(...)`: leído a pelo en el render
+  // no se recalcula al girar el dispositivo, y la hoja se quedaba con el tope
+  // de altura del portrait estando en horizontal.
+  const { height: screenHeight } = useWindowDimensions();
   // Altura máxima de la hoja: siempre deja sitio para el safe-area superior y,
   // si el teclado está abierto, para el teclado. Así la hoja nunca se sale por
   // arriba al subir, y el ScrollView interno scrollea al campo enfocado.
@@ -251,31 +304,44 @@ export default function BottomSheet({
   // solo cierran sobre `dragAnim` (estable) y sobre refs, así que una sola
   // instancia vale para toda la vida del sheet.
   const [headerPanResponder, contentPanResponder] = useMemo(() => {
-    const snapBack = () => {
+    // La velocidad del gesto se ARRASTRA al muelle de vuelta (`velocity`): si
+    // no, el rebote arranca de cero y se siente como si la hoja se hubiera
+    // soltado sola en vez de haberla soltado tú. `velocity` va en px/s, y el
+    // `vy` de PanResponder en px/ms.
+    const snapBack = (vy = 0) => {
       Animated.spring(dragAnim, {
         toValue: 0,
         useNativeDriver: nativeDriver,
         tension: 180,
         friction: 20,
+        velocity: vy * 1000,
       }).start();
     };
     // Soltar arrastrando lo bastante (o rápido) cierra; si no, vuelve a su sitio.
     const onRelease = (dy: number, vy: number) => {
-      if (dy > CLOSE_THRESHOLD || vy > VELOCITY_THRESHOLD) {
+      if (shouldCloseOnRelease(dy, vy)) {
+        // Háptica en el instante en que el gesto se compromete, no al acabar la
+        // animación: un toque que llega tarde se lee como un fallo, no como
+        // respuesta. Y nunca es el único feedback — la hoja se va igual.
+        if (Platform.OS !== 'web') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+            () => {},
+          );
+        }
         onCloseRef.current();
       } else {
-        snapBack();
+        snapBack(vy);
       }
     };
     const shared = {
       onPanResponderMove: (_: unknown, { dy }: { dy: number }) => {
-        if (dy > 0) dragAnim.setValue(dy);
+        dragAnim.setValue(dragOffsetFor(dy));
       },
       onPanResponderRelease: (
         _: unknown,
         { dy, vy }: { dy: number; vy: number },
       ) => onRelease(dy, vy),
-      onPanResponderTerminate: snapBack,
+      onPanResponderTerminate: () => snapBack(),
     };
     return [
       // La cabecera arrastra desde el primer toque: ahí no hay nada que scrollear.

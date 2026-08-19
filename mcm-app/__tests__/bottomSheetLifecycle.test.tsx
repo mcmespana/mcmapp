@@ -17,7 +17,10 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Modal, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import BottomSheet from '@/components/BottomSheet';
+import BottomSheet, {
+  dragOffsetFor,
+  shouldCloseOnRelease,
+} from '@/components/BottomSheet';
 
 const INITIAL_METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -159,5 +162,41 @@ describe('BottomSheet', () => {
       );
     });
     expect(modalIsUp(tree)).toBe(true);
+  });
+});
+
+/**
+ * Decisión de cierre por arrastre y tope elástico.
+ *
+ * El umbral de velocidad estaba en `400` con el `vy` de `PanResponder`, que va
+ * en **px/ms**: 400 px/ms son 400.000 px/s, imposible con un dedo, así que la
+ * rama de velocidad no se ejecutaba nunca y un flick corto y rápido —el gesto
+ * natural para descartar una hoja— dejaba la hoja donde estaba.
+ */
+describe('gesto de arrastre del BottomSheet', () => {
+  it('cierra por distancia aunque el gesto sea lento', () => {
+    expect(shouldCloseOnRelease(120, 0.01)).toBe(true);
+  });
+
+  it('cierra por velocidad aunque el recorrido sea corto (el flick)', () => {
+    expect(shouldCloseOnRelease(20, 1.5)).toBe(true);
+  });
+
+  it('no cierra con un arrastre corto y lento', () => {
+    expect(shouldCloseOnRelease(20, 0.05)).toBe(false);
+  });
+
+  it('no cierra con un flick hacia ARRIBA', () => {
+    expect(shouldCloseOnRelease(-40, -1.5)).toBe(false);
+  });
+
+  it('sigue al dedo 1:1 hacia abajo', () => {
+    expect(dragOffsetFor(60)).toBe(60);
+  });
+
+  it('opone resistencia hacia arriba, pero se mueve algo', () => {
+    const up = dragOffsetFor(-100);
+    expect(up).toBeLessThan(0);
+    expect(up).toBeGreaterThan(-100);
   });
 });
