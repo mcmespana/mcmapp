@@ -19,9 +19,12 @@
  *     createdAt, startedAt, updatedAt, lastActivity, expiresAt
  *   }
  *
- * **La sesión caduca 24 h después de empezar** (`expiresAt = startedAt + 24h`)
- * y ese límite NO se estira al publicar: es un ensayo/celebración, no un canal
- * permanente. Quien quiera seguir, vuelve a tomar el mando y empieza otras 24 h.
+ * **La sesión caduca 12 h después de empezar** (`expiresAt = startedAt + 12h`):
+ * es un ensayo/celebración, no un canal permanente. Si hay actividad del
+ * líder (publica canción o playlist) dentro de las **2 h previas a esa
+ * caducidad**, la sesión se alarga **12 h más** desde ese momento — así una
+ * celebración larga no muere a media canción, pero una olvidada sin uso sí
+ * caduca a las 12 h en punto. Ver `shouldRenewChoirSession`/`extendChoirSession`.
  *
  * Sin permisos: cualquiera con la clave puede leer y escribir. Se asume un
  * grupo de confianza pequeño (20 dispositivos máx.) y baja frecuencia.
@@ -41,8 +44,14 @@ import { CODE_LENGTH, isValidCode } from '@/utils/playlistCodes';
 import { isChoirId } from '@/utils/choirIds';
 
 const ROOT = 'choirSessions';
-/** Una sesión de coro dura como mucho un día desde que arranca. */
-export const CHOIR_SESSION_TTL_MS = 1000 * 60 * 60 * 24;
+/** Una sesión de coro dura como mucho 12 h desde que arranca (o desde el
+ *  último alargue por actividad, ver `CHOIR_SESSION_EXTENSION_MS`). */
+export const CHOIR_SESSION_TTL_MS = 1000 * 60 * 60 * 12;
+/** Ventana previa a la caducidad en la que la actividad del líder cuenta
+ *  para alargar la sesión (últimas 2 h). */
+export const CHOIR_SESSION_RENEWAL_WINDOW_MS = 1000 * 60 * 60 * 2;
+/** Cuánto se alarga la sesión cuando hay actividad dentro de esa ventana. */
+export const CHOIR_SESSION_EXTENSION_MS = 1000 * 60 * 60 * 12;
 
 export interface ChoirCurrentSong {
   filename: string;
@@ -114,6 +123,41 @@ export function isSessionLive(
     session.expiresAt ??
     (session.startedAt ?? session.createdAt ?? 0) + CHOIR_SESSION_TTL_MS;
   return expires > now;
+}
+
+/**
+ * ¿Toca alargar la sesión? Solo si sigue viva y está dentro de las últimas
+ * `CHOIR_SESSION_RENEWAL_WINDOW_MS` antes de caducar — así una celebración en
+ * uso activo no se corta a media canción, pero una sesión abierta y olvidada
+ * caduca igualmente a las 12 h.
+ */
+export function shouldRenewChoirSession(
+  session: ChoirSession | null | undefined,
+  now = Date.now(),
+): boolean {
+  if (!isSessionLive(session, now)) return false;
+  const expires =
+    session!.expiresAt ??
+    (session!.startedAt ?? session!.createdAt ?? 0) + CHOIR_SESSION_TTL_MS;
+  return expires - now <= CHOIR_SESSION_RENEWAL_WINDOW_MS;
+}
+
+/**
+ * Alarga la sesión `CHOIR_SESSION_EXTENSION_MS` más desde ahora. Se llama
+ * tras una actividad del líder (publicar canción/playlist) cuando
+ * `shouldRenewChoirSession` ha dicho que sí.
+ */
+export async function extendChoirSession(
+  key: string,
+  now = Date.now(),
+): Promise<void> {
+  const updatePayload = {
+    expiresAt: now + CHOIR_SESSION_EXTENSION_MS,
+    updatedAt: now,
+    lastActivity: now,
+    'master/lastSeen': now,
+  };
+  await update(getRef(key), updatePayload);
 }
 
 /**
