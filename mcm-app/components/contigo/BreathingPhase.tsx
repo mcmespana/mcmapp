@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import Animated, {
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -16,6 +17,13 @@ const BREATH_MS = 2100;
  * Tap to skip.
  */
 export function BreathingPhase({ onDone }: { onDone: () => void }) {
+  // Con "reducir movimiento" los anillos no laten: el texto "Respira... /
+  // Inspira..." se sigue turnando al mismo ritmo, así que el ejercicio de
+  // respiración funciona igual sin el movimiento que marea. Esta pantalla es
+  // contemplativa y puntual (entra a propósito al abrir Revisión), así que se
+  // queda con opacidad y con el propio ciclo de la respiración: solo se quita
+  // el latido de escala.
+  const reducedMotion = useReducedMotion();
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.72);
   const [phaseLabel, setPhaseLabel] = React.useState<'inhale' | 'exhale'>(
@@ -28,6 +36,7 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
 
     const breath = (to: number, label: 'inhale' | 'exhale') => {
       setPhaseLabel(label);
+      if (reducedMotion) return;
       scale.set(
         withTiming(to, {
           duration: BREATH_MS,
@@ -46,7 +55,7 @@ export function BreathingPhase({ onDone }: { onDone: () => void }) {
       finished.current = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reducedMotion]);
 
   const fade = () => {
     if (finished.current) return;

@@ -18,6 +18,30 @@
 
 ---
 
+## 2026-08-20 10:15 — "Reducir movimiento" completo, cierre de la auditoría de animaciones
+
+Últimos dos huecos de la auditoría de `animate-expo` (ver
+`docs/planes/archivo/ANIMACIONES.md`):
+
+- **`SuccessPhase`** (pantalla de agradecimiento del wizard de evaluación): con
+  "reducir movimiento" el icono aparece directamente escalado a 1 (sin el
+  muelle con rebote) y el ripple —un bucle infinito de escala— no arranca. La
+  celebración se confirma con el icono y el texto, no con algo que se repite
+  solo de fondo.
+- **`BreathingPhase`** ("Para un momento..." al entrar en Revisión): se queda
+  con el ciclo de textos "Respira... / Inspira..." al mismo ritmo —es
+  contemplativa y puntual, decisión del usuario de no tocarle el sentido— pero
+  los tres anillos dejan de latir en escala.
+
+Con esto, "reducir movimiento" queda cubierto en toda la app **menos
+Carismochito**, que se deja tal cual a propósito: es un huevo de pascua que el
+usuario activa agitando el móvil, y quien entra ahí con esa opción activada es
+porque quiere.
+
+Archivos: `components/evaluation/SuccessPhase.tsx`,
+`components/contigo/BreathingPhase.tsx`. Sin cambios de comportamiento fuera de
+"reducir movimiento": typecheck limpio, 1042 tests en verde, mismos 39 warnings.
+
 ## 2026-08-19 22:30 — `.value` → `.get()`/`.set()` en todos los shared values
 
 Migración mecánica de los 229 accesos directos a `.value` de Reanimated en 32

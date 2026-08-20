@@ -5,6 +5,7 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -38,9 +39,15 @@ export default function SuccessPhase({
   thanksBody?: string;
   onDone: () => void;
 }) {
-  const scale = useSharedValue(0);
+  // Con "reducir movimiento" el icono aparece sin el muelle con rebote, y el
+  // ripple —un bucle infinito de escala, justo lo que la skill pide quitar—
+  // no arranca: la celebración se confirma con el fundido del icono y el
+  // texto, no con nada que se repita solo de fondo.
+  const reducedMotion = useReducedMotion();
+  const scale = useSharedValue(reducedMotion ? 1 : 0);
   const ripple = useSharedValue(0);
   useEffect(() => {
+    if (reducedMotion) return;
     scale.set(withSpring(1, { damping: 9, stiffness: 140 }));
     ripple.set(
       withDelay(
@@ -52,12 +59,12 @@ export default function SuccessPhase({
         ),
       ),
     );
-  }, [scale, ripple]);
+  }, [scale, ripple, reducedMotion]);
   const iconStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.get() }],
   }));
   const rippleStyle = useAnimatedStyle(() => ({
-    opacity: 0.4 * (1 - ripple.get()),
+    opacity: reducedMotion ? 0 : 0.4 * (1 - ripple.get()),
     transform: [{ scale: 1 + ripple.get() * 1.7 }],
   }));
 
