@@ -21,11 +21,12 @@
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import type { ScrollView } from 'react-native';
+import type { SharedValue } from 'react-native-reanimated';
 import {
-  runOnJS,
   useAnimatedScrollHandler,
   useSharedValue,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { ARM_AT, collapseStep } from '@/components/tabs/collapseRule';
 
@@ -51,7 +52,7 @@ const reselectHandlers = new Map<string, Set<ReselectHandler>>();
  * que pasaría con `useCompact()`: cada colapso repintaría la lista completa).
  * Se escriben desde el hilo de JS, que es donde vive el estado de verdad.
  */
-const compactMirrors = new Set<{ value: boolean }>();
+const compactMirrors = new Set<SharedValue<boolean>>();
 
 function notify() {
   listeners.forEach((listener) => listener());
@@ -61,7 +62,7 @@ function setCompact(next: boolean) {
   if (next === compact) return;
   compact = next;
   compactMirrors.forEach((mirror) => {
-    mirror.value = next;
+    mirror.set(next);
   });
   notify();
 }
@@ -190,7 +191,7 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
   }, [tabName]);
 
   useEffect(() => {
-    isCompact.value = compact;
+    isCompact.set(compact);
     compactMirrors.add(isCompact);
     return () => {
       compactMirrors.delete(isCompact);
@@ -206,15 +207,15 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
 
   const onScroll = useAnimatedScrollHandler({
     onBeginDrag: (event) => {
-      interacted.value = true;
-      anchor.value = event.contentOffset.y;
+      interacted.set(true);
+      anchor.set(event.contentOffset.y);
     },
     onScroll: (event) => {
       // OJO: se usa el offset TAL CUAL, sin recortarlo a 0. En las pantallas
       // con header grande arranca en negativo, y recortarlo era justo lo que
       // hacía que la barra tardara tanto en compactarse.
       const insetTop = event.contentInset?.top ?? 0;
-      if (insetTop > 0) runOnJS(rememberInset)(insetTop);
+      if (insetTop > 0) scheduleOnRN(rememberInset, insetTop);
 
       // Límites REALES del recorrido, para que `collapseStep` pueda descartar
       // el rebote elástico de los extremos.
@@ -222,9 +223,9 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
       const viewportHeight = event.layoutMeasurement?.height ?? 0;
       const next = collapseStep(
         {
-          anchor: anchor.value,
-          compact: isCompact.value,
-          interacted: interacted.value,
+          anchor: anchor.get(),
+          compact: isCompact.get(),
+          interacted: interacted.get(),
         },
         {
           y: event.contentOffset.y,
@@ -238,12 +239,12 @@ export function useCollapsingScroll({ tabName }: CollapsingScrollOptions) {
         },
       );
 
-      anchor.value = next.anchor;
-      if (next.compact !== isCompact.value) {
+      anchor.set(next.anchor);
+      if (next.compact !== isCompact.get()) {
         // Se actualiza el espejo YA, sin esperar al salto al hilo de JS: si no,
         // los siguientes fotogramas seguirían decidiendo con el estado viejo.
-        isCompact.value = next.compact;
-        runOnJS(setCompact)(next.compact);
+        isCompact.set(next.compact);
+        scheduleOnRN(setCompact, next.compact);
       }
     },
   });

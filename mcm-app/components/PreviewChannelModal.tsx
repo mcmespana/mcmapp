@@ -65,13 +65,15 @@ export function PreviewChannelModal() {
   // Bucle global de partículas — un solo shared value para todas.
   useEffect(() => {
     if (!isSecretMenuOpen) {
-      phase.value = 0;
+      phase.set(0);
       return;
     }
-    phase.value = withRepeat(
-      withTiming(Math.PI * 2, { duration: 14000, easing: Easing.linear }),
-      -1,
-      false,
+    phase.set(
+      withRepeat(
+        withTiming(Math.PI * 2, { duration: 14000, easing: Easing.linear }),
+        -1,
+        false,
+      ),
     );
     return () => cancelAnimation(phase);
   }, [isSecretMenuOpen, phase]);

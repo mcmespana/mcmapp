@@ -26,23 +26,25 @@ export function AnimatedGradients() {
   useEffect(() => {
     const totalCycle = GRADIENT_DURATION * 3 + GRADIENT_HOLD * 3;
     const breathe = (start: number, sv: typeof a) => {
-      sv.value = withDelay(
-        start,
-        withRepeat(
-          withSequence(
-            withTiming(1, { duration: GRADIENT_DURATION }),
-            withTiming(0, { duration: GRADIENT_DURATION }),
-            withTiming(0, { duration: totalCycle - GRADIENT_DURATION * 2 }),
+      sv.set(
+        withDelay(
+          start,
+          withRepeat(
+            withSequence(
+              withTiming(1, { duration: GRADIENT_DURATION }),
+              withTiming(0, { duration: GRADIENT_DURATION }),
+              withTiming(0, { duration: totalCycle - GRADIENT_DURATION * 2 }),
+            ),
+            -1,
+            false,
           ),
-          -1,
-          false,
         ),
       );
     };
     // A empieza ya visible; B y C entran escalonadas.
-    a.value = 1;
-    b.value = 0;
-    c.value = 0;
+    a.set(1);
+    b.set(0);
+    c.set(0);
     breathe(0, a);
     breathe(GRADIENT_DURATION, b);
     breathe(GRADIENT_DURATION * 2, c);
@@ -53,9 +55,9 @@ export function AnimatedGradients() {
     };
   }, [a, b, c]);
 
-  const styleA = useAnimatedStyle(() => ({ opacity: a.value }));
-  const styleB = useAnimatedStyle(() => ({ opacity: b.value }));
-  const styleC = useAnimatedStyle(() => ({ opacity: c.value }));
+  const styleA = useAnimatedStyle(() => ({ opacity: a.get() }));
+  const styleB = useAnimatedStyle(() => ({ opacity: b.get() }));
+  const styleC = useAnimatedStyle(() => ({ opacity: c.get() }));
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">

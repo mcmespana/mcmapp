@@ -1,10 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import React, { useCallback, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Platform,
+  Pressable,
+  Animated,
+  useAnimatedValue,
+} from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -28,20 +31,65 @@ interface Props {
 const HOLD_DELAY_MS = 380; // espera antes de empezar a repetir
 const HOLD_INTERVAL_MS = 130; // cadencia de repetición manteniendo pulsado
 
-/** Botón ±1 grande: un toque = un semitono; mantener pulsado repite. */
+// ⚠️ Todo lo animado de esta hoja va con el `Animated` de React Native, NO con
+// Reanimated: vive dentro del `Modal` transparente de `BottomSheet`, donde los
+// estilos animados de Reanimated 4 no se aplican (ver la cabecera de
+// `components/BottomSheet.tsx`). El pop del valor de tono estaba con
+// Reanimated y es MUY probable que no se viera nunca.
+
+/** Feedback de pulsación: baja a 0.94 al tocar y vuelve al soltar. */
+const PRESS_IN_MS = 90;
+const PRESS_OUT_MS = 140;
+const PRESS_SCALE = 0.94;
+
+/** Pop de confirmación del valor central cuando cambia. */
+const POP_SCALE = 1.18;
+
+function usePressScale(enabled: boolean) {
+  const scale = useAnimatedValue(1);
+  const press = useCallback(
+    (to: number, duration: number) => {
+      if (!enabled) return;
+      Animated.timing(scale, {
+        toValue: to,
+        duration,
+        useNativeDriver: Platform.OS !== 'web',
+      }).start();
+    },
+    [enabled, scale],
+  );
+  return {
+    scale,
+    onPressIn: () => press(PRESS_SCALE, PRESS_IN_MS),
+    onPressOut: () => press(1, PRESS_OUT_MS),
+  };
+}
+
+/**
+ * Botón ± grande: un toque = un paso; mantener pulsado repite.
+ *
+ * `disabled` no lo deja MUDO: sigue avisando (`onBlocked`) para poder dar
+ * háptica de tope y un meneo del valor. Un botón que no hace absolutamente
+ * nada al tocarlo se lee como app colgada, no como "hasta aquí".
+ */
 function HoldStepButton({
   onStep,
+  onBlocked,
+  disabled = false,
   style,
   children,
   accessibilityLabel,
 }: {
   onStep: () => void;
+  onBlocked?: () => void;
+  disabled?: boolean;
   style: object | object[];
   children: React.ReactNode;
   accessibilityLabel: string;
 }) {
   const delayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repeatTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { scale, onPressIn, onPressOut } = usePressScale(!disabled);
 
   const stop = () => {
     if (delayTimer.current) clearTimeout(delayTimer.current);
@@ -51,26 +99,93 @@ function HoldStepButton({
   };
 
   useEffect(() => stop, []);
+  // Si se deshabilita con el dedo encima (llegas al tope manteniendo pulsado),
+  // hay que cortar la repetición o sigue latiendo contra la pared.
+  useEffect(() => {
+    if (disabled) stop();
+  }, [disabled]);
 
   return (
-    <Pressable
-      onPressIn={() => {
-        onStep();
-        delayTimer.current = setTimeout(() => {
-          repeatTimer.current = setInterval(onStep, HOLD_INTERVAL_MS);
-        }, HOLD_DELAY_MS);
-      }}
-      onPressOut={stop}
-      style={({ pressed }) => [
-        ...(Array.isArray(style) ? style : [style]),
-        pressed && { transform: [{ scale: 0.94 }], opacity: 0.85 },
-      ]}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-    >
-      {children}
-    </Pressable>
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPressIn={() => {
+          if (disabled) {
+            onBlocked?.();
+            return;
+          }
+          onPressIn();
+          onStep();
+          delayTimer.current = setTimeout(() => {
+            repeatTimer.current = setInterval(onStep, HOLD_INTERVAL_MS);
+          }, HOLD_DELAY_MS);
+        }}
+        onPressOut={() => {
+          onPressOut();
+          stop();
+        }}
+        style={[
+          ...(Array.isArray(style) ? style : [style]),
+          disabled && styles.stepBtnDisabled,
+        ]}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        accessibilityLabel={accessibilityLabel}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
   );
+}
+
+/**
+ * Valor central: pega un pop cada vez que `token` cambia, y un meneo lateral
+ * corto cuando `nudge` sube (tope alcanzado).
+ */
+function useValueFeedback(token: unknown) {
+  const pop = useAnimatedValue(1);
+  const shake = useAnimatedValue(0);
+  const first = useRef(true);
+
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    pop.setValue(POP_SCALE);
+    Animated.spring(pop, {
+      toValue: 1,
+      useNativeDriver: Platform.OS !== 'web',
+      tension: 260,
+      friction: 9,
+    }).start();
+  }, [token, pop]);
+
+  const nudge = useCallback(() => {
+    shake.setValue(0);
+    Animated.sequence([
+      Animated.timing(shake, {
+        toValue: -6,
+        duration: 60,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.timing(shake, {
+        toValue: 4,
+        duration: 60,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.timing(shake, {
+        toValue: 0,
+        duration: 80,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+    ]).start();
+  }, [shake]);
+
+  return {
+    style: { transform: [{ translateX: shake }] },
+    popStyle: { transform: [{ scale: pop }] },
+    nudge,
+  };
 }
 
 export default function TransposeBottomSheet({
@@ -106,32 +221,28 @@ export default function TransposeBottomSheet({
     onSetTranspose(transposeRef.current);
   };
 
-  // Pop del valor central en cada cambio de tono.
-  const valuePop = useSharedValue(1);
-  const firstRender = useRef(true);
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-    valuePop.value = 1.18;
-    valuePop.value = withSpring(1, { stiffness: 260, damping: 9, mass: 1 });
-  }, [currentTranspose, valuePop]);
-
-  const valuePopStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: valuePop.value }],
-  }));
+  // Pop del valor central en cada cambio — el mismo para tono y para cejilla,
+  // que antes no tenía ninguno y se sentía como el hermano pobre.
+  const tone = useValueFeedback(currentTranspose);
+  const capo = useValueFeedback(effectiveCapo);
 
   const handleCapoMinus = () => {
     if (!onSetCapoOverride) return;
     const next = effectiveCapo - 1;
     if (next < 0) return;
+    h.select();
     onSetCapoOverride(next === (originalCapo ?? 0) ? null : next);
   };
   const handleCapoPlus = () => {
     if (!onSetCapoOverride) return;
     const next = effectiveCapo + 1;
+    h.select();
     onSetCapoOverride(next === (originalCapo ?? 0) ? null : next);
+  };
+  /** Cejilla al mínimo: no se puede bajar más, pero se avisa. */
+  const handleCapoBlocked = () => {
+    h.limit();
+    capo.nudge();
   };
 
   return (
@@ -140,7 +251,10 @@ export default function TransposeBottomSheet({
         style={[
           styles.container,
           {
-            paddingBottom: Platform.OS === 'web' ? 16 : 0,
+            // El safe-area inferior lo reserva ya el `BottomSheet`; esto es el
+            // aire visual entre el último botón y ese borde, que antes era 0 y
+            // dejaba la cejilla pegada al canto de abajo del móvil.
+            paddingBottom: 16,
           },
         ]}
       >
@@ -156,7 +270,10 @@ export default function TransposeBottomSheet({
                 styles.resetIconBtn,
                 !isTransposed && styles.resetIconBtnHidden,
               ]}
-              onPress={() => onSetTranspose(0)}
+              onPress={() => {
+                h.tap();
+                onSetTranspose(0);
+              }}
               isDisabled={!isTransposed}
               accessibilityLabel="Restablecer tono"
             >
@@ -190,9 +307,10 @@ export default function TransposeBottomSheet({
               </Text>
             </HoldStepButton>
 
-            <View
+            <Animated.View
               style={[
                 styles.toneDisplay,
+                tone.style,
                 isTransposed
                   ? isDark
                     ? styles.toneDisplayActiveDark
@@ -205,7 +323,7 @@ export default function TransposeBottomSheet({
               <Animated.Text
                 style={[
                   styles.toneDisplayValue,
-                  valuePopStyle,
+                  tone.popStyle,
                   {
                     color: isTransposed
                       ? isDark
@@ -229,7 +347,7 @@ export default function TransposeBottomSheet({
               >
                 {Math.abs(currentTranspose) === 1 ? 'semitono' : 'semitonos'}
               </Text>
-            </View>
+            </Animated.View>
 
             <HoldStepButton
               onStep={() => stepTone(1)}
@@ -285,7 +403,10 @@ export default function TransposeBottomSheet({
                   styles.resetIconBtn,
                   !isCapoOverridden && styles.resetIconBtnHidden,
                 ]}
-                onPress={() => onSetCapoOverride!(null)}
+                onPress={() => {
+                  h.tap();
+                  onSetCapoOverride!(null);
+                }}
                 isDisabled={!isCapoOverridden}
                 accessibilityLabel="Restablecer cejilla"
               >
@@ -299,19 +420,16 @@ export default function TransposeBottomSheet({
             </View>
 
             <View style={styles.capoRow}>
-              <PressableFeedback
+              <HoldStepButton
+                onStep={handleCapoMinus}
+                onBlocked={handleCapoBlocked}
+                disabled={effectiveCapo <= 0}
                 style={[
                   styles.capoStepBtn,
                   isDark ? styles.toneBtnDownDark : styles.toneBtnDown,
-                  effectiveCapo <= 0 && styles.capoStepBtnDisabled,
                 ]}
-                onPress={() => {
-                  h.select();
-                  handleCapoMinus();
-                }}
-                isDisabled={effectiveCapo <= 0}
+                accessibilityLabel="Bajar la cejilla un traste"
               >
-                <PressableFeedback.Highlight />
                 <MaterialIcons
                   name="remove"
                   size={26}
@@ -325,11 +443,12 @@ export default function TransposeBottomSheet({
                         : '#C62828'
                   }
                 />
-              </PressableFeedback>
+              </HoldStepButton>
 
-              <View
+              <Animated.View
                 style={[
                   styles.capoDisplay,
+                  capo.style,
                   isCapoOverridden
                     ? isDark
                       ? styles.capoDisplayOverriddenDark
@@ -339,9 +458,10 @@ export default function TransposeBottomSheet({
                       : null,
                 ]}
               >
-                <Text
+                <Animated.Text
                   style={[
                     styles.capoDisplayValue,
+                    capo.popStyle,
                     {
                       color: isCapoOverridden
                         ? isDark
@@ -356,7 +476,7 @@ export default function TransposeBottomSheet({
                   {effectiveCapo === 0
                     ? 'Sin cejilla'
                     : `Cejilla ${effectiveCapo}`}
-                </Text>
+                </Animated.Text>
                 <Text
                   style={[
                     styles.capoDisplayBadge,
@@ -365,25 +485,22 @@ export default function TransposeBottomSheet({
                 >
                   modificada
                 </Text>
-              </View>
+              </Animated.View>
 
-              <PressableFeedback
+              <HoldStepButton
+                onStep={handleCapoPlus}
                 style={[
                   styles.capoStepBtn,
                   isDark ? styles.toneBtnUpDark : styles.toneBtnUp,
                 ]}
-                onPress={() => {
-                  h.select();
-                  handleCapoPlus();
-                }}
+                accessibilityLabel="Subir la cejilla un traste"
               >
-                <PressableFeedback.Highlight />
                 <MaterialIcons
                   name="add"
                   size={26}
                   color={isDark ? '#81C784' : '#2E7D32'}
                 />
-              </PressableFeedback>
+              </HoldStepButton>
             </View>
           </View>
         )}
@@ -523,7 +640,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  capoStepBtnDisabled: {
+  stepBtnDisabled: {
     opacity: 0.35,
   },
   capoDisplay: {

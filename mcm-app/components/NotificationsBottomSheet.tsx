@@ -271,6 +271,8 @@ export default function NotificationsBottomSheet({
       headerLeft={headerLeft}
       headerRight={headerRight}
       dragFromContent={true}
+      /* La lista ya se come el inset en su `contentContainerStyle`. */
+      safeAreaBottom={false}
     >
       {selectedNotification ? (
         <NotificationDetail

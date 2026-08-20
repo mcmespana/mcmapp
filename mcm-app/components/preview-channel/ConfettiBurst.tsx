@@ -62,25 +62,27 @@ function ConfettiPiece({
       : ['💨', '·', '•'][index % 3];
 
   useEffect(() => {
-    t.value = withTiming(1, {
-      duration,
-      easing: Easing.out(Easing.cubic),
-    });
-    rot.value = withTiming(360 * (1 + (index % 3)), { duration });
+    t.set(
+      withTiming(1, {
+        duration,
+        easing: Easing.out(Easing.cubic),
+      }),
+    );
+    rot.set(withTiming(360 * (1 + (index % 3)), { duration }));
   }, [t, rot, duration, index]);
 
   const style = useAnimatedStyle(() => {
-    const tx = targetX * t.value;
+    const tx = targetX * t.get();
     const ty =
-      targetY * t.value + (variant === 'explode' ? t.value * t.value * 80 : 0); // gravedad leve
-    const opacity = variant === 'explode' ? 1 - t.value * 0.9 : 1 - t.value;
-    const scale = variant === 'explode' ? 1 - t.value * 0.3 : 0.4 + t.value;
+      targetY * t.get() + (variant === 'explode' ? t.get() * t.get() * 80 : 0); // gravedad leve
+    const opacity = variant === 'explode' ? 1 - t.get() * 0.9 : 1 - t.get();
+    const scale = variant === 'explode' ? 1 - t.get() * 0.3 : 0.4 + t.get();
     return {
       opacity,
       transform: [
         { translateX: centerX + tx },
         { translateY: centerY + ty },
-        { rotate: `${rot.value}deg` },
+        { rotate: `${rot.get()}deg` },
         { scale },
       ],
     };

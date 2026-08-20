@@ -1,11 +1,14 @@
 # Warnings del compilador de React — qué queda y por qué
 
-> **Antes de "arreglar los warnings", lee esto.** Los 51 que quedan están
+> **Antes de "arreglar los warnings", lee esto.** Los que quedan están
 > clasificados abajo uno a uno. La mayoría son falsos positivos estructurales:
 > perseguirlos empeora el código.
 >
-> Estado: **51 warnings, 0 errores**. Revisión completa: 2026-08-15 (se venía
-> de 111). 860 tests en verde, `tsc` limpio.
+> Estado: **39 warnings, 0 errores** (2026-08-19). Se venía de 51: la migración
+> de `.value` a `.get()`/`.set()` en los shared values de Reanimated se llevó 10
+> por delante —el React Compiler no puede seguir el acceso directo a `.value`—
+> y el resto salió de retoques de `TransposeBottomSheet`. Revisión completa
+> anterior: 2026-08-15 (se venía de 111). 1042 tests en verde, `tsc` limpio.
 
 ## Contexto
 
@@ -31,15 +34,15 @@ npm run lint 2>&1 | grep -oE 'react-hooks/[a-z-]+|max-lines' | sort | uniq -c | 
 
 ## Reparto actual (51)
 
-| Regla | Nº | Veredicto |
-| ----- | -- | --------- |
-| `react-hooks/immutability` | 19 | 12 falsos positivos de Reanimated · 7 a revisar caso a caso |
-| `react-hooks/refs` | 18 | Patrón oficial "ref al último callback" — se quedan |
-| `react-hooks/set-state-in-effect` | 6 | 2 de código congelado · 4 legítimos (sincronizar con algo externo) |
-| `react-hooks/preserve-manual-memoization` | 2 | Informativos |
-| `react-hooks/purity` | 3 | 1 de código congelado · 2 de `Date.now()` al construir un payload |
-| `max-lines` | 3 | **Exentos por decisión** del usuario (2026-08-15) |
-| `react-hooks/exhaustive-deps` | 2 | Deps ajustadas a mano a propósito, con `eslint-disable` y comentario |
+| Regla                                     | Nº  | Veredicto                                                            |
+| ----------------------------------------- | --- | -------------------------------------------------------------------- |
+| `react-hooks/immutability`                | 19  | 12 falsos positivos de Reanimated · 7 a revisar caso a caso          |
+| `react-hooks/refs`                        | 18  | Patrón oficial "ref al último callback" — se quedan                  |
+| `react-hooks/set-state-in-effect`         | 6   | 2 de código congelado · 4 legítimos (sincronizar con algo externo)   |
+| `react-hooks/preserve-manual-memoization` | 2   | Informativos                                                         |
+| `react-hooks/purity`                      | 3   | 1 de código congelado · 2 de `Date.now()` al construir un payload    |
+| `max-lines`                               | 3   | **Exentos por decisión** del usuario (2026-08-15)                    |
+| `react-hooks/exhaustive-deps`             | 2   | Deps ajustadas a mano a propósito, con `eslint-disable` y comentario |
 
 ---
 
@@ -70,7 +73,7 @@ El patrón es siempre el mismo:
 
 ```tsx
 const onCloseRef = useRef(onClose);
-onCloseRef.current = onClose;   // ← el warning apunta aquí
+onCloseRef.current = onClose; // ← el warning apunta aquí
 ```
 
 Sirve para que algo creado **una sola vez** (un `PanResponder`, un handler de

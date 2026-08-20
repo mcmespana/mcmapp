@@ -29,20 +29,22 @@ const FUN_PHRASES = [
 export function WobblingTitle({ children }: { children: React.ReactNode }) {
   const wobble = useSharedValue(0);
   useEffect(() => {
-    wobble.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 520, easing: Easing.inOut(Easing.quad) }),
-        withTiming(-1, { duration: 520, easing: Easing.inOut(Easing.quad) }),
+    wobble.set(
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 520, easing: Easing.inOut(Easing.quad) }),
+          withTiming(-1, { duration: 520, easing: Easing.inOut(Easing.quad) }),
+        ),
+        -1,
+        true,
       ),
-      -1,
-      true,
     );
     return () => cancelAnimation(wobble);
   }, [wobble]);
   const style = useAnimatedStyle(() => ({
     transform: [
-      { rotate: `${wobble.value * 2.5}deg` },
-      { scale: 1 + Math.abs(wobble.value) * 0.04 },
+      { rotate: `${wobble.get() * 2.5}deg` },
+      { scale: 1 + Math.abs(wobble.get()) * 0.04 },
     ],
   }));
   return (
@@ -65,10 +67,10 @@ export function Sparkles() {
         -1,
         true,
       );
-    o0.value = withDelay(0, seq());
-    o1.value = withDelay(220, seq());
-    o2.value = withDelay(440, seq());
-    o3.value = withDelay(660, seq());
+    o0.set(withDelay(0, seq()));
+    o1.set(withDelay(220, seq()));
+    o2.set(withDelay(440, seq()));
+    o3.set(withDelay(660, seq()));
     return () => {
       cancelAnimation(o0);
       cancelAnimation(o1);
@@ -76,10 +78,10 @@ export function Sparkles() {
       cancelAnimation(o3);
     };
   }, [o0, o1, o2, o3]);
-  const a0 = useAnimatedStyle(() => ({ opacity: o0.value }));
-  const a1 = useAnimatedStyle(() => ({ opacity: o1.value }));
-  const a2 = useAnimatedStyle(() => ({ opacity: o2.value }));
-  const a3 = useAnimatedStyle(() => ({ opacity: o3.value }));
+  const a0 = useAnimatedStyle(() => ({ opacity: o0.get() }));
+  const a1 = useAnimatedStyle(() => ({ opacity: o1.get() }));
+  const a2 = useAnimatedStyle(() => ({ opacity: o2.get() }));
+  const a3 = useAnimatedStyle(() => ({ opacity: o3.get() }));
   return (
     <View style={styles.sparklesRow} pointerEvents="none">
       <Animated.Text style={[styles.sparkle, a0]}>✦</Animated.Text>
@@ -96,9 +98,11 @@ export function RotatingPhrases() {
 
   useEffect(() => {
     const id = setInterval(() => {
-      opacity.value = withSequence(
-        withTiming(0, { duration: 350 }),
-        withTiming(1, { duration: 450 }),
+      opacity.set(
+        withSequence(
+          withTiming(0, { duration: 350 }),
+          withTiming(1, { duration: 450 }),
+        ),
       );
       setTimeout(() => {
         setIdx((p) => (p + 1) % FUN_PHRASES.length);
@@ -107,7 +111,7 @@ export function RotatingPhrases() {
     return () => clearInterval(id);
   }, [opacity]);
 
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const style = useAnimatedStyle(() => ({ opacity: opacity.get() }));
   return (
     <Animated.Text style={[styles.phrase, style]} numberOfLines={2}>
       {FUN_PHRASES[idx]}

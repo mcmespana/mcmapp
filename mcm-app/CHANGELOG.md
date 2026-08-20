@@ -18,6 +18,123 @@
 
 ---
 
+## 2026-08-20 10:15 — "Reducir movimiento" completo, cierre de la auditoría de animaciones
+
+Últimos dos huecos de la auditoría de `animate-expo` (ver
+`docs/planes/archivo/ANIMACIONES.md`):
+
+- **`SuccessPhase`** (pantalla de agradecimiento del wizard de evaluación): con
+  "reducir movimiento" el icono aparece directamente escalado a 1 (sin el
+  muelle con rebote) y el ripple —un bucle infinito de escala— no arranca. La
+  celebración se confirma con el icono y el texto, no con algo que se repite
+  solo de fondo.
+- **`BreathingPhase`** ("Para un momento..." al entrar en Revisión): se queda
+  con el ciclo de textos "Respira... / Inspira..." al mismo ritmo —es
+  contemplativa y puntual, decisión del usuario de no tocarle el sentido— pero
+  los tres anillos dejan de latir en escala.
+
+Con esto, "reducir movimiento" queda cubierto en toda la app **menos
+Carismochito**, que se deja tal cual a propósito: es un huevo de pascua que el
+usuario activa agitando el móvil, y quien entra ahí con esa opción activada es
+porque quiere.
+
+Archivos: `components/evaluation/SuccessPhase.tsx`,
+`components/contigo/BreathingPhase.tsx`. Sin cambios de comportamiento fuera de
+"reducir movimiento": typecheck limpio, 1042 tests en verde, mismos 39 warnings.
+
+## 2026-08-19 22:30 — `.value` → `.get()`/`.set()` en todos los shared values
+
+Migración mecánica de los 229 accesos directos a `.value` de Reanimated en 32
+ficheros. Misma API, pero **el React Compiler no puede seguir `.value`** y le
+generaba un aviso a cada uno: **los warnings del linter bajan de 49 a 39**.
+
+También comprobado que **no hace falta tocar nada para los 120 fps**:
+`CADisableMinimumFrameDurationOnPhone: true` ya lo inyecta `@expo/config-plugins`
+en el `Info.plist` por defecto, así que en iPhones ProMotion el presupuesto de
+frame ya es de 8 ms. (Estaba anotado como pendiente en
+`docs/planes/archivo/ANIMACIONES.md`; queda cerrado.)
+
+Sin cambios de comportamiento: 1042 tests en verde y typecheck limpio.
+
+## 2026-08-19 21:45 — Slider de lectura, `scheduleOnRN` y toasts
+
+- **`ReaderSettingsSheet`** (tamaño de letra de Contigo): el agarre de la barra
+  crece mientras el dedo está encima, háptica de tope al pasarse de los extremos
+  (una sola vez por llegada, no una por frame) y arrastrar después de tocar los
+  botones A/A vuelve a responder — el último valor no se resincronizaba, así que
+  volver con el dedo al mismo sitio no hacía nada.
+- **`runOnJS` → `scheduleOnRN`** (`react-native-worklets`) en los 9 ficheros que
+  lo usaban: `runOnJS` está deprecado en Reanimated 4.
+- **`AppToastContext`** respeta "reducir movimiento": el toast solo funde, sin
+  traslación ni escala.
+
+Archivos: `components/contigo/ReaderSettingsSheet.tsx`, `contexts/AppToastContext.tsx`,
+`components/tabs/tabBarController.ts`, `components/CarismochitoOverlay.tsx`,
+`components/calendar/SwipeableMonthCalendar.tsx`, `components/contigo/BreathingPhase.tsx`,
+`app/screens/{ComunicaScreen,SongDetailScreen,HorarioScreen}.tsx`, `app/(tabs)/calendario.tsx`.
+
+## 2026-08-19 21:05 — Cantoral: tono y cejilla se sienten (y ya no rozan el borde)
+
+- **Todas las hojas** (`BottomSheet`) reservan ya el safe-area inferior. Antes
+  solo ponían 8 px fijos, así que en móviles con barra de gestos el último
+  control quedaba pegado al indicador. Nueva prop `safeAreaBottom` (por defecto
+  `true`); `NotificationsBottomSheet` la pone a `false` porque ya se come el
+  inset en su propia lista.
+- Los ±1 de TONO y los ± de CEJILLA animan la pulsación (90 ms de bajada,
+  140 ms de vuelta) en vez de saltar de golpe, y la CEJILLA gana el mismo "pop"
+  del valor que ya tenía el tono, además de mantener-pulsado para repetir.
+- Al tope de cejilla (0) el botón ya no es mudo: háptica de aviso (`h.limit`,
+  nueva en `utils/haptics.ts`) y un meneo corto del valor. Un botón que no hace
+  NADA se lee como app colgada, no como "hasta aquí".
+- Háptica también en los dos botones de restablecer, que no tenían.
+- Las animaciones de la hoja pasan de Reanimated al `Animated` de RN: viven
+  dentro del `Modal` transparente, donde los estilos de Reanimated 4 no se
+  aplican — o sea que el pop del tono probablemente no se veía nunca.
+
+Archivos: `components/TransposeBottomSheet.tsx`, `components/BottomSheet.tsx`,
+`components/NotificationsBottomSheet.tsx`, `utils/haptics.ts`.
+
+## 2026-08-19 20:25 — BottomSheet: el arrastre se siente como debe
+
+El arrastre para descartar la hoja compartida (la usan una veintena de pantallas)
+tenía tres cosas mal, todas de "feel":
+
+- El umbral de velocidad estaba en `400` contra el `vy` de `PanResponder`, que va
+  en **px/ms**: eran 400.000 px/s, inalcanzable. La rama de velocidad no se
+  ejecutaba NUNCA, así que el flick corto y rápido hacia abajo —el gesto natural
+  para descartar— no cerraba la hoja. Ahora `0.5` px/ms.
+- Tirar hacia arriba no movía nada: la hoja se quedaba clavada bajo el dedo.
+  Ahora hay resistencia elástica (cede un 20%).
+- El muelle de vuelta arrancaba de velocidad cero, como si la hoja se hubiera
+  soltado sola. Ahora se le pasa la velocidad del gesto.
+
+Además: háptica ligera en el instante en que el gesto se compromete a cerrar, y
+`useWindowDimensions` en lugar de `Dimensions.get(...)` leído en el render (no se
+recalculaba al girar el móvil, y el tope de altura se quedaba en el de portrait).
+
+NO se migra a Reanimated pese a lo que pide la skill `animate-expo`: dentro de un
+`Modal` transparente los estilos de Reanimated 4 no se aplican (ver la cabecera
+de `components/BottomSheet.tsx`, incidente del 2026-08-09). Razonado en
+`docs/planes/archivo/ANIMACIONES.md`.
+
+Archivos: `components/BottomSheet.tsx`, `__tests__/bottomSheetLifecycle.test.tsx`
+(6 tests nuevos sobre `shouldCloseOnRelease` / `dragOffsetFor`).
+
+## 2026-08-19 19:40 — Auditoría de animaciones con la skill `animate-expo`
+
+- Instalada la skill `animate-expo` de `emilkowalski/skills` (entrada nueva en
+  `skills-lock.json`).
+- Auditoría completa de las animaciones de la app contra ella en
+  `docs/planes/archivo/ANIMACIONES.md`: qué ya está bien, qué eran falsos positivos
+  y qué queda pendiente por orden de valor (el gordo: `BottomSheet.tsx` sigue
+  con `PanResponder` + core `Animated`).
+- `constants/animations.ts`: nuevas curvas canónicas (`motionEasings`) y muelles
+  en la forma `duration` + `dampingRatio` (`springs`), añadidos AL LADO de
+  `reaEasings` para no cambiar el feel de lo ya afinado.
+- `components/ui/PressableScale.tsx` y `components/ui/CelebrationBurst.tsx`
+  respetan ya "reducir movimiento" del sistema — antes no lo hacía ningún
+  componente de la app. El emoji del burst deja de arrancar en `scale(0)`.
+
 ## 2026-08-15 21:30 — Aviso: el CI lleva parado desde abril
 
 Al arreglar los 4 errores de `typecheck:tests` de la #334 salió a la luz que

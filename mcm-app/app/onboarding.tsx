@@ -213,31 +213,33 @@ function PrimaryButton({
 
   const scale = useSharedValue(1);
   const aStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.get() }],
   }));
 
   const shimmerX = useSharedValue(-1);
   useEffect(() => {
     if (!shimmer) return;
-    shimmerX.value = withRepeat(
-      withSequence(
-        withTiming(-1, { duration: 0 }),
-        withDelay(
-          1200,
-          withTiming(1.2, {
-            duration: 1100,
-            easing: Easing.inOut(Easing.ease),
-          }),
+    shimmerX.set(
+      withRepeat(
+        withSequence(
+          withTiming(-1, { duration: 0 }),
+          withDelay(
+            1200,
+            withTiming(1.2, {
+              duration: 1100,
+              easing: Easing.inOut(Easing.ease),
+            }),
+          ),
+          withDelay(900, withTiming(-1, { duration: 0 })),
         ),
-        withDelay(900, withTiming(-1, { duration: 0 })),
+        -1,
+        false,
       ),
-      -1,
-      false,
     );
   }, [shimmer, shimmerX]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: shimmerX.value * 240 }, { rotate: '20deg' }],
+    transform: [{ translateX: shimmerX.get() * 240 }, { rotate: '20deg' }],
   }));
 
   return (
@@ -246,10 +248,10 @@ function PrimaryButton({
         accessibilityRole="button"
         disabled={disabled}
         onPressIn={() => {
-          scale.value = withTiming(0.97, { duration: 90 });
+          scale.set(withTiming(0.97, { duration: 90 }));
         }}
         onPressOut={() => {
-          scale.value = withTiming(1, { duration: 140 });
+          scale.set(withTiming(1, { duration: 140 }));
         }}
         onPress={onPress}
         style={[
@@ -369,48 +371,54 @@ function WelcomeScreen({
   const float = useSharedValue(0);
 
   useEffect(() => {
-    ripple1.value = withDelay(
-      400,
+    ripple1.set(
+      withDelay(
+        400,
+        withRepeat(
+          withTiming(1, { duration: 2400, easing: Easing.out(Easing.ease) }),
+          -1,
+          false,
+        ),
+      ),
+    );
+    ripple2.set(
+      withDelay(
+        900,
+        withRepeat(
+          withTiming(1, { duration: 2400, easing: Easing.out(Easing.ease) }),
+          -1,
+          false,
+        ),
+      ),
+    );
+    float.set(
       withRepeat(
-        withTiming(1, { duration: 2400, easing: Easing.out(Easing.ease) }),
+        withSequence(
+          withTiming(1, {
+            duration: 2200,
+            easing: Easing.inOut(Easing.quad),
+          }),
+          withTiming(0, {
+            duration: 2200,
+            easing: Easing.inOut(Easing.quad),
+          }),
+        ),
         -1,
         false,
       ),
-    );
-    ripple2.value = withDelay(
-      900,
-      withRepeat(
-        withTiming(1, { duration: 2400, easing: Easing.out(Easing.ease) }),
-        -1,
-        false,
-      ),
-    );
-    float.value = withRepeat(
-      withSequence(
-        withTiming(1, {
-          duration: 2200,
-          easing: Easing.inOut(Easing.quad),
-        }),
-        withTiming(0, {
-          duration: 2200,
-          easing: Easing.inOut(Easing.quad),
-        }),
-      ),
-      -1,
-      false,
     );
   }, [ripple1, ripple2, float]);
 
   const ripple1Style = useAnimatedStyle(() => ({
-    opacity: 0.35 * (1 - ripple1.value),
-    transform: [{ scale: 1 + ripple1.value * 1.4 }],
+    opacity: 0.35 * (1 - ripple1.get()),
+    transform: [{ scale: 1 + ripple1.get() * 1.4 }],
   }));
   const ripple2Style = useAnimatedStyle(() => ({
-    opacity: 0.28 * (1 - ripple2.value),
-    transform: [{ scale: 1 + ripple2.value * 1.4 }],
+    opacity: 0.28 * (1 - ripple2.get()),
+    transform: [{ scale: 1 + ripple2.get() * 1.4 }],
   }));
   const floatStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -6 * float.value }],
+    transform: [{ translateY: -6 * float.get() }],
   }));
 
   const padTop = applySafeArea ? insets.top : 0;
@@ -952,28 +960,32 @@ function SuccessScreen({
   const ripple = useSharedValue(0);
   const wiggle = useSharedValue(0);
   useEffect(() => {
-    ripple.value = withDelay(
-      300,
-      withRepeat(
-        withTiming(1, { duration: 2200, easing: Easing.out(Easing.ease) }),
-        -1,
-        false,
+    ripple.set(
+      withDelay(
+        300,
+        withRepeat(
+          withTiming(1, { duration: 2200, easing: Easing.out(Easing.ease) }),
+          -1,
+          false,
+        ),
       ),
     );
-    wiggle.value = withSequence(
-      withDelay(
-        120,
-        withTiming(1, { duration: 220, easing: Easing.out(Easing.back(2)) }),
+    wiggle.set(
+      withSequence(
+        withDelay(
+          120,
+          withTiming(1, { duration: 220, easing: Easing.out(Easing.back(2)) }),
+        ),
+        withTiming(0, { duration: 260, easing: Easing.inOut(Easing.quad) }),
       ),
-      withTiming(0, { duration: 260, easing: Easing.inOut(Easing.quad) }),
     );
   }, [ripple, wiggle]);
   const rippleStyle = useAnimatedStyle(() => ({
-    opacity: 0.4 * (1 - ripple.value),
-    transform: [{ scale: 1 + ripple.value * 1.6 }],
+    opacity: 0.4 * (1 - ripple.get()),
+    transform: [{ scale: 1 + ripple.get() * 1.6 }],
   }));
   const wiggleStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + wiggle.value * 0.08 }],
+    transform: [{ scale: 1 + wiggle.get() * 0.08 }],
   }));
 
   const padTop = applySafeArea ? insets.top : 0;

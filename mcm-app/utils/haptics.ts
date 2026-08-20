@@ -34,6 +34,18 @@ export const h = {
       () => {},
     ),
 
+  /**
+   * Tope alcanzado: el gesto era válido pero no se puede ir más allá (cejilla
+   * por debajo de 0, por ejemplo). Un golpe seco y corto, distinto del `select`
+   * de un paso que SÍ ha ocurrido — si no, el usuario no distingue "ha bajado"
+   * de "no puede bajar más".
+   */
+  limit: () =>
+    isNative &&
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(
+      () => {},
+    ),
+
   toggle: () =>
     isNative &&
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {}),

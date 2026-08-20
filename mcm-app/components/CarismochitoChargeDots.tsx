@@ -20,21 +20,21 @@ function Dot({ filled, index }: { filled: boolean; index: number }) {
   useEffect(() => {
     if (filled) {
       // Al encenderse, el punto entra de golpe desde pequeño y transparente.
-      scale.value = 0.4;
-      opacity.value = 0.3;
+      scale.set(0.4);
+      opacity.set(0.3);
       // `tension: 200, friction: 8` de RN Animated equivale a este muelle:
       // `stiffness` es la tensión y `damping` la fricción.
-      scale.value = withSpring(1, { stiffness: 200, damping: 8, mass: 1 });
-      opacity.value = withTiming(1, { duration: 150 });
+      scale.set(withSpring(1, { stiffness: 200, damping: 8, mass: 1 }));
+      opacity.set(withTiming(1, { duration: 150 }));
     } else {
-      opacity.value = withTiming(0.25, { duration: 300 });
-      scale.value = 1;
+      opacity.set(withTiming(0.25, { duration: 300 }));
+      scale.set(1);
     }
   }, [filled, scale, opacity, index]);
 
   const style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
+    transform: [{ scale: scale.get() }],
+    opacity: opacity.get(),
   }));
 
   return (
@@ -63,11 +63,11 @@ export default function CarismochitoChargeDots({
   const containerOpacity = useSharedValue(0);
 
   useEffect(() => {
-    containerOpacity.value = withTiming(1, { duration: 200 });
+    containerOpacity.set(withTiming(1, { duration: 200 }));
   }, [containerOpacity]);
 
   const containerStyle = useAnimatedStyle(() => ({
-    opacity: containerOpacity.value,
+    opacity: containerOpacity.get(),
   }));
 
   return (

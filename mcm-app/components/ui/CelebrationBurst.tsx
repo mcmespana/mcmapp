@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   interpolate,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
@@ -56,7 +57,20 @@ export default function CelebrationBurst({
 }: CelebrationBurstProps) {
   // Todo el burst se MONTA al hacerse visible y se desmonta al acabar, así que
   // cada pieza anima al montarse y no hace falta resetear nada a mano.
+  const reducedMotion = useReducedMotion();
+
   if (!visible) return null;
+
+  // Con "reducir movimiento" se queda solo el emoji apareciendo y yéndose:
+  // reducir movimiento es MENOS y MÁS SUAVE, no cero — la confirmación de que
+  // ha pasado algo bueno se mantiene, las 12 partículas volando no.
+  if (reducedMotion) {
+    return (
+      <View pointerEvents="none" style={styles.root}>
+        <BurstEmoji emoji={emoji} size={emojiSize} reduced />
+      </View>
+    );
+  }
 
   return (
     <View pointerEvents="none" style={styles.root}>
@@ -93,21 +107,23 @@ function BurstParticle({
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withDelay(
-      delay,
-      withTiming(1, {
-        duration: durations.hero + 100,
-        easing: reaEasings.bouncy,
-      }),
+    progress.set(
+      withDelay(
+        delay,
+        withTiming(1, {
+          duration: durations.hero + 100,
+          easing: reaEasings.bouncy,
+        }),
+      ),
     );
   }, [progress, delay]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 0.6, 1], [1, 1, 0]),
+    opacity: interpolate(progress.get(), [0, 0.6, 1], [1, 1, 0]),
     transform: [
-      { translateX: interpolate(progress.value, [0, 1], [0, tx]) },
-      { translateY: interpolate(progress.value, [0, 1], [0, ty]) },
-      { scale: interpolate(progress.value, [0, 1], [0, 1.2]) },
+      { translateX: interpolate(progress.get(), [0, 1], [0, tx]) },
+      { translateY: interpolate(progress.get(), [0, 1], [0, ty]) },
+      { scale: interpolate(progress.get(), [0, 1], [0, 1.2]) },
     ],
   }));
 
@@ -119,23 +135,40 @@ function BurstParticle({
 }
 
 /** El emoji del centro: entra girando y creciendo, y se va encogiendo. */
-function BurstEmoji({ emoji, size }: { emoji: string; size: number }) {
+function BurstEmoji({
+  emoji,
+  size,
+  reduced = false,
+}: {
+  emoji: string;
+  size: number;
+  reduced?: boolean;
+}) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withTiming(1, {
-      duration: durations.hero,
-      easing: reaEasings.bouncy,
-    });
+    progress.set(
+      withTiming(1, {
+        duration: durations.hero,
+        easing: reaEasings.bouncy,
+      }),
+    );
   }, [progress]);
 
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 0.3, 0.7, 1], [0, 1, 1, 0]),
-    transform: [
-      { scale: interpolate(progress.value, [0, 0.7, 1], [0, 1.4, 0.8]) },
-      { rotate: `${interpolate(progress.value, [0, 1], [-20, 5])}deg` },
-    ],
-  }));
+  // Nunca se arranca desde `scale(0)`: nada en el mundo real aparece de la
+  // nada. 0.9 + opacidad 0 es lo que hace que se lea como que "llega".
+  const style = useAnimatedStyle(() => {
+    const p = progress.get();
+    const opacity = interpolate(p, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
+    if (reduced) return { opacity, transform: [] };
+    return {
+      opacity,
+      transform: [
+        { scale: interpolate(p, [0, 0.7, 1], [0.9, 1.4, 0.8]) },
+        { rotate: `${interpolate(p, [0, 1], [-20, 5])}deg` },
+      ],
+    };
+  });
 
   return (
     <Animated.View style={[styles.starWrap, style]}>

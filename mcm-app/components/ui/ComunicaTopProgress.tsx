@@ -34,28 +34,35 @@ export default function ComunicaTopProgress({
   const opacity = useSharedValue(0);
 
   useEffect(() => {
-    width.value = withTiming(Math.max(0.02, Math.min(progress, 1)), {
-      duration: 300,
-      easing: reaEasings.standard,
-    });
+    width.set(
+      withTiming(Math.max(0.02, Math.min(progress, 1)), {
+        duration: 300,
+        easing: reaEasings.standard,
+      }),
+    );
   }, [width, progress]);
 
   useEffect(() => {
-    opacity.value = withTiming(
-      visible ? 1 : 0,
-      { duration: visible ? 120 : durations.slow, easing: reaEasings.standard },
-      (finished) => {
-        'worklet';
-        // Al acabar de irse, el hilo vuelve a cero para que la próxima carga
-        // no arranque desde donde se quedó la anterior.
-        if (finished && !visible) width.value = 0.02;
-      },
+    opacity.set(
+      withTiming(
+        visible ? 1 : 0,
+        {
+          duration: visible ? 120 : durations.slow,
+          easing: reaEasings.standard,
+        },
+        (finished) => {
+          'worklet';
+          // Al acabar de irse, el hilo vuelve a cero para que la próxima carga
+          // no arranque desde donde se quedó la anterior.
+          if (finished && !visible) width.set(0.02);
+        },
+      ),
     );
   }, [opacity, visible, width]);
 
-  const trackStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const trackStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
   const fillStyle = useAnimatedStyle(() => ({
-    transform: [{ scaleX: width.value }],
+    transform: [{ scaleX: width.get() }],
   }));
 
   return (

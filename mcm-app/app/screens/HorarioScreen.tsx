@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import Animated, {
   cancelAnimation,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { Skeleton } from 'heroui-native';
 import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -100,11 +100,13 @@ export default function HorarioScreen() {
       let fadeTimeout: ReturnType<typeof setTimeout> | undefined;
       // Subtle shake animation
       const shake = () => {
-        shakeAnim.value = withSequence(
-          withTiming(3, { duration: 100 }),
-          withTiming(-3, { duration: 100 }),
-          withTiming(3, { duration: 100 }),
-          withTiming(0, { duration: 100 }),
+        shakeAnim.set(
+          withSequence(
+            withTiming(3, { duration: 100 }),
+            withTiming(-3, { duration: 100 }),
+            withTiming(3, { duration: 100 }),
+            withTiming(0, { duration: 100 }),
+          ),
         );
       };
 
@@ -114,13 +116,15 @@ export default function HorarioScreen() {
         fadeTimeout = setTimeout(fade, 2000);
       };
       const fade = () => {
-        fadeAnim.value = withSequence(
-          withTiming(0.7, { duration: 1500 }),
-          withTiming(1, { duration: 1500 }, () => {
-            'worklet';
-            // Repeat fade animation
-            runOnJS(scheduleFade)();
-          }),
+        fadeAnim.set(
+          withSequence(
+            withTiming(0.7, { duration: 1500 }),
+            withTiming(1, { duration: 1500 }, () => {
+              'worklet';
+              // Repeat fade animation
+              scheduleOnRN(scheduleFade);
+            }),
+          ),
         );
       };
 
@@ -161,8 +165,8 @@ export default function HorarioScreen() {
 
   // El último día llama la atención con un temblor y un latido suaves.
   const attentionStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: shakeAnim.value }],
-    opacity: fadeAnim.value,
+    transform: [{ translateX: shakeAnim.get() }],
+    opacity: fadeAnim.get(),
   }));
 
   if (!dia) {

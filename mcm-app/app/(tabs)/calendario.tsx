@@ -13,7 +13,8 @@ import { CalendarProps, LocaleConfig } from 'react-native-calendars';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import colors, { TabHeaderColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import Animated, { runOnJS } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import type { SectionListProps } from 'react-native';
 import { useTabScroll, useTabListScroll } from '@/components/tabs/useTabScroll';
 import SegmentedControl from '@/components/ui/SegmentedControl';
@@ -332,7 +333,7 @@ export function CalendarScreen() {
         .failOffsetY([-16, 16])
         .onEnd((e) => {
           if (Math.abs(e.translationX) > 60 || Math.abs(e.velocityX) > 700) {
-            runOnJS(changeMonth)(e.translationX < 0 ? 1 : -1);
+            scheduleOnRN(changeMonth, e.translationX < 0 ? 1 : -1);
           }
         }),
     [changeMonth],
