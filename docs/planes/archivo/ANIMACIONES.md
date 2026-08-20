@@ -1,5 +1,12 @@
 # Animaciones — auditoría contra la skill `animate-expo`
 
+> 🗄️ **ARCHIVADO (2026-08-19). No se re-ejecuta.** Todo lo que salió de esta
+> auditoría está aplicado y en `CHANGELOG.md`. Los tres pendientes que
+> sobrevivieron viven en `mcm-app/TODO.md` → "Mejoras técnicas — rendimiento" →
+> "Animaciones". Este documento se queda como la explicación de **por qué** el
+> `BottomSheet` sigue con `PanResponder` y core `Animated`, y de qué avisos de
+> la skill eran falsos positivos aquí.
+
 > Fecha: 2026-08-19 · Skill: [`emilkowalski/skills` → `animate-expo`](https://github.com/emilkowalski/skills)
 > (instalada en el proyecto, entrada en `mcm-app/skills-lock.json`).
 

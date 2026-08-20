@@ -28,7 +28,7 @@ También comprobado que **no hace falta tocar nada para los 120 fps**:
 `CADisableMinimumFrameDurationOnPhone: true` ya lo inyecta `@expo/config-plugins`
 en el `Info.plist` por defecto, así que en iPhones ProMotion el presupuesto de
 frame ya es de 8 ms. (Estaba anotado como pendiente en
-`docs/desarrollo/ANIMACIONES.md`; queda cerrado.)
+`docs/planes/archivo/ANIMACIONES.md`; queda cerrado.)
 
 Sin cambios de comportamiento: 1042 tests en verde y typecheck limpio.
 
@@ -91,7 +91,7 @@ recalculaba al girar el móvil, y el tope de altura se quedaba en el de portrait
 NO se migra a Reanimated pese a lo que pide la skill `animate-expo`: dentro de un
 `Modal` transparente los estilos de Reanimated 4 no se aplican (ver la cabecera
 de `components/BottomSheet.tsx`, incidente del 2026-08-09). Razonado en
-`docs/desarrollo/ANIMACIONES.md`.
+`docs/planes/archivo/ANIMACIONES.md`.
 
 Archivos: `components/BottomSheet.tsx`, `__tests__/bottomSheetLifecycle.test.tsx`
 (6 tests nuevos sobre `shouldCloseOnRelease` / `dragOffsetFor`).
@@ -101,7 +101,7 @@ Archivos: `components/BottomSheet.tsx`, `__tests__/bottomSheetLifecycle.test.tsx
 - Instalada la skill `animate-expo` de `emilkowalski/skills` (entrada nueva en
   `skills-lock.json`).
 - Auditoría completa de las animaciones de la app contra ella en
-  `docs/desarrollo/ANIMACIONES.md`: qué ya está bien, qué eran falsos positivos
+  `docs/planes/archivo/ANIMACIONES.md`: qué ya está bien, qué eran falsos positivos
   y qué queda pendiente por orden de valor (el gordo: `BottomSheet.tsx` sigue
   con `PanResponder` + core `Animated`).
 - `constants/animations.ts`: nuevas curvas canónicas (`motionEasings`) y muelles
