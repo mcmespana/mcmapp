@@ -5,8 +5,10 @@
  * que un test de servicio no puede ver: la persistencia del deviceId y de
  * la sesión en curso en AsyncStorage, que `session` solo cuente el remoto
  * si corresponde al código actual (no al anterior, a medio cambiar), el
- * auto-expulsado a 'off' cuando el líder borra la sesión, y que
- * publish/leave/changeCode respeten quién puede hacer qué (solo el líder).
+ * auto-expulsado a 'off' cuando el líder borra la sesión, que
+ * publish/leave/changeCode respeten quién puede hacer qué (solo el líder), y
+ * que la actividad del líder cerca de la caducidad (12h) dispare el alargue
+ * de la sesión vía `shouldRenewChoirSession`/`extendChoirSession`.
  */
 import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
@@ -18,6 +20,8 @@ import {
   publishChoirPlaylist,
   subscribeChoirSession,
   changeChoirSessionCode,
+  extendChoirSession,
+  shouldRenewChoirSession,
 } from '@/services/choirSessionService';
 import {
   ChoirSessionProvider,
@@ -31,6 +35,8 @@ jest.mock('@/services/choirSessionService', () => ({
   publishChoirPlaylist: jest.fn(() => Promise.resolve()),
   subscribeChoirSession: jest.fn(() => jest.fn()),
   changeChoirSessionCode: jest.fn(() => Promise.resolve()),
+  extendChoirSession: jest.fn(() => Promise.resolve()),
+  shouldRenewChoirSession: jest.fn(() => false),
 }));
 
 const DEVICE_ID_KEY = '@mcm_device_id';
@@ -78,23 +84,52 @@ describe('deviceId', () => {
 
 describe('restaurar sesión persistida', () => {
   /**
-   * BUG conocido, NO corregido aquí (regla de COBERTURA.md: no se toca
-   * código de producción). El efecto que limpia AsyncStorage cuando
-   * `mode === 'off'` corre ya en el PRIMER render, con el estado inicial —
-   * y borra la clave `SESSION_PERSIST_KEY` antes de que el efecto de
-   * restauración (que espera a que `deviceId` esté listo, un tick después)
-   * llegue a leerla. Resultado real: una sesión guardada NUNCA se restaura
-   * al reabrir la app. Este test fija el comportamiento ACTUAL (no el
-   * deseado) para que salte si alguien lo cambia sin darse cuenta.
+   * Antes había un bug de carrera aquí: el efecto que limpia AsyncStorage
+   * cuando `mode === 'off'` corría ya en el primer render (con el estado
+   * inicial) y borraba la sesión guardada antes de que el efecto de
+   * restauración —que espera a `deviceId`— llegara a leerla. Se arregló con
+   * el flag `restored`, que hace esperar a la limpieza hasta que la
+   * restauración ha tenido su oportunidad. Estos tests cubren que de verdad
+   * restaura, y que ese arreglo no cuela un shape inválido.
    */
-  it('no restaura la sesión guardada al arrancar (bug de carrera con el efecto de limpieza)', async () => {
+  it('recupera mode + code guardados', async () => {
     await AsyncStorage.setItem(
       SESSION_PERSIST_KEY,
       JSON.stringify({ mode: 'slave', code: '1234' }),
     );
     const { result } = await mount();
+    await waitFor(() => expect(result.current.mode).toBe('slave'));
+    expect(result.current.code).toBe('1234');
+  });
+
+  it('ignora el JSON corrupto y arranca en off', async () => {
+    await AsyncStorage.setItem(SESSION_PERSIST_KEY, 'no-json');
+    const { result } = await mount();
     expect(result.current.mode).toBe('off');
     expect(result.current.code).toBeNull();
+  });
+
+  it('ignora un shape con mode "off" (no debería haberse guardado así)', async () => {
+    await AsyncStorage.setItem(
+      SESSION_PERSIST_KEY,
+      JSON.stringify({ mode: 'off', code: '1234' }),
+    );
+    const { result } = await mount();
+    expect(result.current.mode).toBe('off');
+    expect(result.current.code).toBeNull();
+  });
+
+  it('no persiste (ni borra) hasta que la restauración ha terminado', async () => {
+    await AsyncStorage.setItem(
+      SESSION_PERSIST_KEY,
+      JSON.stringify({ mode: 'master', code: '9999' }),
+    );
+    const { result } = await mount();
+    await waitFor(() => expect(result.current.mode).toBe('master'));
+    // Si la limpieza hubiera corrido antes de tiempo, esto ya no sería '9999'.
+    expect(await AsyncStorage.getItem(SESSION_PERSIST_KEY)).toBe(
+      JSON.stringify({ mode: 'master', code: '9999' }),
+    );
   });
 });
 
@@ -207,6 +242,57 @@ describe('publishCurrent / publishPlaylist', () => {
     (publishChoirCurrent as jest.Mock).mockRejectedValueOnce(
       new Error('sin red'),
     );
+    const { result } = await mount();
+    await act(async () => result.current.startAsMaster('1234', []));
+    await expect(
+      act(async () =>
+        result.current.publishCurrent({ filename: 'x', transpose: 0 }),
+      ),
+    ).resolves.not.toThrow();
+  });
+});
+
+describe('alargar la sesión por actividad cerca de la caducidad', () => {
+  it('publishCurrent llama a extendChoirSession si el servicio dice que toca', async () => {
+    (shouldRenewChoirSession as jest.Mock).mockReturnValueOnce(true);
+    const { result } = await mount();
+    await act(async () => result.current.startAsMaster('1234', []));
+    await act(async () =>
+      result.current.publishCurrent({ filename: 'x', transpose: 0 }),
+    );
+    expect(extendChoirSession).toHaveBeenCalledWith('1234');
+  });
+
+  it('publishPlaylist también puede disparar el alargue', async () => {
+    (shouldRenewChoirSession as jest.Mock).mockReturnValueOnce(true);
+    const { result } = await mount();
+    await act(async () => result.current.startAsMaster('1234', []));
+    await act(async () => result.current.publishPlaylist([]));
+    expect(extendChoirSession).toHaveBeenCalledWith('1234');
+  });
+
+  it('no alarga si el servicio dice que aún no toca (lejos de caducar)', async () => {
+    const { result } = await mount();
+    await act(async () => result.current.startAsMaster('1234', []));
+    await act(async () =>
+      result.current.publishCurrent({ filename: 'x', transpose: 0 }),
+    );
+    expect(extendChoirSession).not.toHaveBeenCalled();
+  });
+
+  it('un oyente (slave) nunca alarga la sesión: no es cosa suya', async () => {
+    const { result } = await mount();
+    await act(async () => result.current.joinAsSlave('1234'));
+    await act(async () =>
+      result.current.publishCurrent({ filename: 'x', transpose: 0 }),
+    );
+    expect(shouldRenewChoirSession).not.toHaveBeenCalled();
+    expect(extendChoirSession).not.toHaveBeenCalled();
+  });
+
+  it('no revienta si extendChoirSession falla', async () => {
+    (shouldRenewChoirSession as jest.Mock).mockReturnValueOnce(true);
+    (extendChoirSession as jest.Mock).mockRejectedValueOnce(new Error('boom'));
     const { result } = await mount();
     await act(async () => result.current.startAsMaster('1234', []));
     await expect(

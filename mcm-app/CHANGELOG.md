@@ -18,6 +18,26 @@
 
 ---
 
+## 2026-08-20 12:30 — Modo Coro: caducidad a 12h (antes 24h) con alargue por actividad, y arreglo de la restauración de sesión
+
+- **Caducidad más corta y con alargue**: una sesión de "modo Coro" ahora dura
+  **12h** desde que arranca (antes 24h). Si el líder publica canción o
+  playlist dentro de las **2h previas** a esa caducidad, la sesión se alarga
+  **12h más** desde ese momento — así una celebración larga no se corta a
+  media canción, pero una sesión olvidada sin uso caduca igual. Nuevo:
+  `shouldRenewChoirSession`/`extendChoirSession` en
+  `services/choirSessionService.ts`, conectados en
+  `contexts/ChoirSessionContext.tsx` (`publishCurrent`/`publishPlaylist`).
+- **Fix**: una sesión de coro guardada (para retomarla al reabrir la app)
+  nunca se restauraba. El efecto que limpia `AsyncStorage` cuando
+  `mode === 'off'` corría ya en el primer render, con el estado inicial, y
+  borraba la sesión persistida antes de que el efecto de restauración
+  (que espera a `deviceId`) llegara a leerla. Arreglado con un flag
+  `restored` que hace esperar la limpieza hasta que la restauración ha
+  tenido su oportunidad.
+- Tests: `__tests__/choirSessionService.test.ts`,
+  `__tests__/choirSessionContext.test.tsx`.
+
 ## 2026-08-20 10:15 — "Reducir movimiento" completo, cierre de la auditoría de animaciones
 
 Últimos dos huecos de la auditoría de `animate-expo` (ver

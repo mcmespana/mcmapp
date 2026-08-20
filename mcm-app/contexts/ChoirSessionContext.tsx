@@ -27,8 +27,10 @@ import {
   ChoirSession,
   closeChoirSession,
   createChoirSession,
+  extendChoirSession,
   publishChoirCurrent,
   publishChoirPlaylist,
+  shouldRenewChoirSession,
   subscribeChoirSession,
   changeChoirSessionCode,
 } from '@/services/choirSessionService';
@@ -97,6 +99,13 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
   const [overrideTranspose, setOverrideTranspose] = useState<number | null>(
     null,
   );
+  // La sesión guardada solo se restaura UNA vez, al arrancar. Hasta que eso
+  // termine (con o sin nada que restaurar), el efecto de abajo que limpia
+  // AsyncStorage cuando `mode === 'off'` debe esperar: si no, borra la
+  // sesión persistida —con el estado inicial 'off'— antes de que el efecto
+  // de restauración (que espera a `deviceId`) llegue a leerla, y la sesión
+  // guardada nunca se recupera al reabrir la app.
+  const [restored, setRestored] = useState(false);
   const unsubRef = useRef<(() => void) | null>(null);
 
   // Cargar deviceId persistente.
@@ -133,12 +142,16 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
         }
       } catch (e) {
         logger.error('choir session restore error', e);
+      } finally {
+        setRestored(true);
       }
     })();
   }, [deviceId]);
 
-  // Persistir la sesión en cuanto cambia.
+  // Persistir la sesión en cuanto cambia. Espera a que la restauración
+  // inicial termine (ver `restored` arriba).
   useEffect(() => {
+    if (!restored) return;
     if (mode === 'off' || !code) {
       AsyncStorage.removeItem(SESSION_PERSIST_KEY).catch(() => {});
       return;
@@ -150,7 +163,7 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
     AsyncStorage.setItem(SESSION_PERSIST_KEY, JSON.stringify(payload)).catch(
       () => {},
     );
-  }, [mode, code]);
+  }, [mode, code, restored]);
 
   // La sesión que ve la app: solo cuenta lo recibido para el código actual y
   // con una sesión activa. Cualquier otra cosa (acabamos de cambiar de código,
@@ -229,6 +242,19 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [mode, code]);
 
+  // Si la sesión está a menos de 2 h de caducar, la actividad del líder
+  // (publicar canción o playlist) la alarga 12 h más — ver
+  // `shouldRenewChoirSession` en el servicio.
+  const maybeRenewSession = useCallback(async () => {
+    if (mode !== 'master' || !code) return;
+    if (!shouldRenewChoirSession(session)) return;
+    try {
+      await extendChoirSession(code);
+    } catch (e) {
+      logger.error('extendChoirSession error', e);
+    }
+  }, [mode, code, session]);
+
   const publishCurrent = useCallback(
     async (current: Omit<ChoirCurrentSong, 'updatedAt'>) => {
       if (mode !== 'master' || !code) return;
@@ -237,8 +263,9 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
       } catch (e) {
         logger.error('publishCurrent error', e);
       }
+      await maybeRenewSession();
     },
-    [mode, code],
+    [mode, code, maybeRenewSession],
   );
 
   const publishPlaylist = useCallback(
@@ -249,8 +276,9 @@ export const ChoirSessionProvider: React.FC<{ children: ReactNode }> = ({
       } catch (e) {
         logger.error('publishPlaylist error', e);
       }
+      await maybeRenewSession();
     },
-    [mode, code],
+    [mode, code, maybeRenewSession],
   );
 
   const changeCode = useCallback(
