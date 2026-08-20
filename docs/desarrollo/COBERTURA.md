@@ -126,4 +126,5 @@ caro y frágil, y el valor está en blindar reglas que se pueden romper sin
 enterarse (el razonamiento largo, en `docs/planes/PLAN_CALIDAD.md` §0).
 
 Objetivo razonable: **70% de sentencias** — ya superado. Estado el
-2026-08-20: **72%** (partiendo del 44% en agosto, 59% el 2026-08-15).
+2026-08-20: **77%** (partiendo del 44% en agosto, 59% el 2026-08-15, 72%
+más tarde ese mismo día).
