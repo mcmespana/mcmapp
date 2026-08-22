@@ -224,3 +224,118 @@ describe('useSongProcessor — styleState', () => {
     expect(result.current.styleState.chordsVisible).toBe(false);
   });
 });
+
+describe('useSongProcessor — ChordPro con error de sintaxis', () => {
+  // ChordSheetJS lanza (peggy/PEG.js) con acordes/directivas sin cerrar; la
+  // pantalla de error amable es lo único que ve el usuario en ese caso, así
+  // que su contenido (línea, contexto, pista) importa tanto como el feliz.
+  const BROKEN = '{title: Rota}\n[C]Hola [D';
+
+  it('marca songError con línea/columna/mensaje del parser', async () => {
+    const { result } = await renderSong({ originalChordPro: BROKEN });
+    expect(result.current.songError).not.toBeNull();
+    expect(result.current.songError?.line).toBe(2);
+    expect(typeof result.current.songError?.message).toBe('string');
+  });
+
+  it('songHtml es la pantalla de error, no la canción', async () => {
+    const { result } = await renderSong({ originalChordPro: BROKEN });
+    expect(result.current.songHtml).toContain('err-sub');
+    expect(result.current.songHtml).toContain('📍 Línea 2');
+  });
+
+  it('incluye el contexto de línea y resalta la línea del error', async () => {
+    const { result } = await renderSong({ originalChordPro: BROKEN });
+    expect(result.current.songHtml).toContain('err-codecard');
+    expect(result.current.songHtml).toContain('is-error');
+  });
+
+  it('incluye el mensaje del parser como pista', async () => {
+    const { result } = await renderSong({ originalChordPro: BROKEN });
+    expect(result.current.songHtml).toContain('err-hint');
+  });
+
+  it('escapa el propio ChordPro roto dentro del bloque de contexto', async () => {
+    const { result } = await renderSong({
+      originalChordPro: `{title: Rota}\n[C]<script>alert(1)</script> [D`,
+    });
+    expect(result.current.songHtml).not.toContain('<script>alert(1)</script>');
+  });
+
+  it('respeta isDark en la propia pantalla de error', async () => {
+    const { result } = await renderSong({
+      originalChordPro: BROKEN,
+      isDark: true,
+    });
+    expect(result.current.songHtml).toContain('#1F1F21');
+  });
+
+  it('no marca isLoadingSong colgado tras el error', async () => {
+    const { result } = await renderSong({ originalChordPro: BROKEN });
+    expect(result.current.isLoadingSong).toBe(false);
+  });
+});
+
+describe('useSongProcessor — modo admin (índices de línea)', () => {
+  it('etiqueta las filas con data-line cuando adminMode es true', async () => {
+    const { result } = await renderSong({ adminMode: true });
+    expect(result.current.songHtml).toContain('data-line');
+  });
+
+  it('no etiqueta las filas cuando adminMode es false', async () => {
+    const { result } = await renderSong({ adminMode: false });
+    expect(result.current.songHtml).not.toContain('data-line');
+  });
+});
+
+describe('useSongProcessor — cabecera fullscreen con cejilla y transporte', () => {
+  it('incluye el badge de cejilla en fs-header', async () => {
+    const { result } = await renderSong({
+      isFullscreen: true,
+      capo: 3,
+    });
+    expect(result.current.songHtml).toContain('fs-badge-sm">Cejilla 3<');
+  });
+
+  it('incluye semitonos positivos con signo en fs-header', async () => {
+    const { result } = await renderSong({
+      isFullscreen: true,
+      currentTranspose: 2,
+    });
+    expect(result.current.songHtml).toContain('+2 semitonos');
+    expect(result.current.songHtml).toContain('fs-badge-accent');
+  });
+
+  it('incluye semitonos negativos sin signo extra en fs-header', async () => {
+    const { result } = await renderSong({
+      isFullscreen: true,
+      currentTranspose: -1,
+    });
+    expect(result.current.songHtml).toContain('-1 semitonos');
+  });
+
+  it('combina autor, tono y cejilla separados por el punto medio', async () => {
+    const { result } = await renderSong({
+      isFullscreen: true,
+      author: 'Autor',
+      key: 'C',
+    });
+    expect(result.current.songHtml).toContain('fs-sep');
+  });
+});
+
+describe('useSongProcessor — metadatos sin <h1> en el ChordPro formateado', () => {
+  it('antepone los metadatos si el formateador no genera un <h1>', async () => {
+    // Sin {title:} en el ChordPro, HtmlDivFormatter no emite <h1>: el bloque
+    // de autor/badges debe anteponerse al contenido en vez de insertarse tras
+    // el título (rama `else` de la búsqueda de `</h1>`).
+    const { result } = await renderSong({
+      originalChordPro: '[C]Hola [G]mundo',
+      title: undefined,
+      author: 'Autor Suelto',
+      isFullscreen: false,
+    });
+    expect(result.current.songHtml).toContain('song-meta-author');
+    expect(result.current.songHtml).toContain('Autor Suelto');
+  });
+});

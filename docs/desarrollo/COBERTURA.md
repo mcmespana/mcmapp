@@ -126,9 +126,15 @@ caro y frágil, y el valor está en blindar reglas que se pueden romper sin
 enterarse (el razonamiento largo, en `docs/planes/PLAN_CALIDAD.md` §0).
 
 Objetivo razonable: **70% de sentencias** — ya superado. Estado el
-2026-08-20: **79.5%** (partiendo del 44% en agosto, 59% el 2026-08-15, 72%
-y 77% más tarde ese mismo día). Lo que queda sin cubrir es en su mayoría
-justo lo que esta guía dice que hay que saltarse: animación de Reanimated
-(`useAutoScroller`, `AppToastContext`), WebView (`useComunicaWebView`), y
-utilidades de estilo/tema sin lógica real (`colorUtils`, `fontUtils`,
-`heroUIRuntimeTheme`).
+2026-08-22: **87.9%** (partiendo del 44% en agosto, 59% el 2026-08-15, 72%
+y 77% más tarde ese mismo día, 79.5% el 2026-08-20). Lo que queda sin cubrir
+es en su mayoría justo lo que esta guía dice que hay que saltarse: animación
+de Reanimated (`useAutoScroller`, `AppToastContext`), WebView
+(`useComunicaWebView`), y utilidades de estilo/tema sin lógica real
+(`colorUtils`, `fontUtils`, `heroUIRuntimeTheme`).
+
+`hooks/useShakeDetector.ts` se quedó parcial a propósito: su lógica real vive
+detrás de un `import('expo-sensors')` dinámico que, bajo Jest, no se
+transforma a CommonJS (mismo problema ya documentado en
+`platformAuthNative.test.ts`) y nunca resuelve al mock — solo se testean las
+guardas de plataforma/`enabled`.
