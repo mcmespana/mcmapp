@@ -18,6 +18,26 @@
 
 ---
 
+## 2026-08-22 19:00 — `useShakeDetector`: `expo-sensors` ahora se carga con `require` perezoso, no `import()` dinámico
+
+- **Motivo**: al subir la cobertura de tests, se detectó que bajo Jest el
+  `import('expo-sensors')` dinámico no se transforma a CommonJS y nunca
+  resuelve — ni siquiera con un mock. La lógica de detección de sacudidas
+  (picos de aceleración, ventana, cooldown) llevaba así desde siempre sin
+  ningún test que la ejerciera de verdad.
+- **Cambio**: mismo patrón perezoso que `getGoogleSignin` en
+  `utils/platformAuth.native.ts` — `require('expo-sensors')` dentro del
+  `useEffect`, envuelto en `try/catch` en vez de `.then()/.catch()`. Para
+  Metro (sin code splitting) el comportamiento es equivalente: lo único que
+  importaba era CUÁNDO se evaluaba el módulo, no si era `import()` o
+  `require`. Sin cambios de comportamiento para el usuario.
+- Ahora sí cubierto por tests: `__tests__/useShakeDetector.test.ts` (picos,
+  ventana, cooldown, ref del callback, re-suscripción por cambio de opciones,
+  degradación silenciosa si el módulo nativo no está).
+- Archivo: `hooks/useShakeDetector.ts`.
+
+---
+
 ## 2026-08-20 12:30 — Modo Coro: caducidad a 12h (antes 24h) con alargue por actividad, y arreglo de la restauración de sesión
 
 - **Caducidad más corta y con alargue**: una sesión de "modo Coro" ahora dura
