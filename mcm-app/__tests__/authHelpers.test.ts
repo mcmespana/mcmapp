@@ -15,10 +15,13 @@ import {
   stripUndefined,
   syncContigoHabit,
   syncContigoBookmark,
+  syncContigoRevision,
   writeUserOnLogin,
+  updateUserMCMData,
   deleteUserData,
   fetchContigoHabits,
   fetchContigoRevisions,
+  fetchContigoBookmarks,
 } from '@/utils/authHelpers';
 import type { DayRecord } from '@/hooks/useContigoHabits';
 
@@ -95,6 +98,91 @@ describe('syncContigoBookmark', () => {
     expect(remove).toHaveBeenCalledTimes(1);
     expect(set).not.toHaveBeenCalled();
   });
+
+  it('con un bookmark, lo guarda sin undefined y no borra nada', async () => {
+    await syncContigoBookmark('u1', '2026-07-18', {
+      date: '2026-07-18',
+      text: 'hola',
+    } as never);
+
+    expect(refPath()).toBe('users/u1/contigo/bookmarks/2026-07-18');
+    expect(set).toHaveBeenCalledWith(expect.anything(), {
+      date: '2026-07-18',
+      text: 'hola',
+    });
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('traga el error y lo loguea', async () => {
+    (set as jest.Mock).mockRejectedValueOnce(new Error('boom'));
+    await expect(
+      syncContigoBookmark('u1', '2026-07-18', { date: '2026-07-18' } as never),
+    ).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalled();
+  });
+});
+
+describe('syncContigoRevision', () => {
+  it('escribe en users/{uid}/contigo/revisions/{date} sin undefined', async () => {
+    await syncContigoRevision('u1', '2026-07-18', {
+      type: 'grateful',
+      grateful: { mode: 'list', items: ['a'], revision: '' },
+    });
+    expect(refPath()).toBe('users/u1/contigo/revisions/2026-07-18');
+    expect(set).toHaveBeenCalledTimes(1);
+  });
+
+  it('traga el error y lo loguea', async () => {
+    (set as jest.Mock).mockRejectedValueOnce(new Error('boom'));
+    await expect(
+      syncContigoRevision('u1', '2026-07-18', {
+        type: 'grateful',
+        grateful: { mode: 'list', items: [], revision: '' },
+      }),
+    ).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalled();
+  });
+});
+
+describe('updateUserMCMData', () => {
+  it('actualiza solo los campos MCM del usuario', async () => {
+    await updateUserMCMData('u1', {
+      profileType: 'joven',
+      delegationId: 'castellon',
+      onboardingCompleted: true,
+    });
+    expect(refPath()).toBe('users/u1');
+    expect(update).toHaveBeenCalledWith(expect.anything(), {
+      'mcm/profileType': 'joven',
+      'mcm/delegationId': 'castellon',
+      'mcm/onboardingCompleted': true,
+    });
+  });
+
+  it('usa null cuando faltan profileType/delegationId', async () => {
+    await updateUserMCMData('u1', {
+      profileType: null,
+      delegationId: null,
+      onboardingCompleted: false,
+    });
+    expect(update).toHaveBeenCalledWith(expect.anything(), {
+      'mcm/profileType': null,
+      'mcm/delegationId': null,
+      'mcm/onboardingCompleted': false,
+    });
+  });
+
+  it('traga el error y lo loguea', async () => {
+    (update as jest.Mock).mockRejectedValueOnce(new Error('boom'));
+    await expect(
+      updateUserMCMData('u1', {
+        profileType: null,
+        delegationId: null,
+        onboardingCompleted: false,
+      }),
+    ).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalled();
+  });
 });
 
 describe('writeUserOnLogin', () => {
@@ -133,6 +221,15 @@ describe('writeUserOnLogin', () => {
 
     expect(set).toHaveBeenCalledTimes(1);
     expect(set).toHaveBeenCalledWith(expect.anything(), 1_700_000_000_000);
+  });
+
+  it('traga el error si falla el update, sin lanzar', async () => {
+    (update as jest.Mock).mockRejectedValueOnce(new Error('boom'));
+    await expect(
+      writeUserOnLogin('u1', null, null, null, 'google', mcm),
+    ).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalled();
+    expect(get).not.toHaveBeenCalled();
   });
 });
 
@@ -192,5 +289,36 @@ describe('fetchContigoRevisions', () => {
     );
     const result = await fetchContigoRevisions('u1');
     expect(Object.keys(result)).toEqual(['2026-07-18']);
+  });
+
+  it('devuelve {} y loguea en error', async () => {
+    (get as jest.Mock).mockRejectedValueOnce(new Error('offline'));
+    await expect(fetchContigoRevisions('u1')).resolves.toEqual({});
+    expect(errorSpy).toHaveBeenCalled();
+  });
+});
+
+describe('fetchContigoBookmarks', () => {
+  it('devuelve [] si el nodo no existe', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(snapshot(null));
+    await expect(fetchContigoBookmarks('u1')).resolves.toEqual([]);
+  });
+
+  it('filtra entradas sin `date` o que no son objetos', async () => {
+    (get as jest.Mock).mockResolvedValueOnce(
+      snapshot({
+        a: { date: '2026-07-18', text: 'hola' },
+        b: { text: 'sin fecha' },
+        c: 'basura',
+      }),
+    );
+    const result = await fetchContigoBookmarks('u1');
+    expect(result).toEqual([{ date: '2026-07-18', text: 'hola' }]);
+  });
+
+  it('devuelve [] y loguea en error', async () => {
+    (get as jest.Mock).mockRejectedValueOnce(new Error('offline'));
+    await expect(fetchContigoBookmarks('u1')).resolves.toEqual([]);
+    expect(errorSpy).toHaveBeenCalled();
   });
 });
