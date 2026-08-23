@@ -18,6 +18,28 @@
 
 ---
 
+## 2026-08-23 19:35 — Mensaje de WhatsApp del coro: numeración correlativa, título dinámico y enlace a la nube
+
+- **Numeración de canciones**: cada línea del mensaje formateado empieza ahora
+  por `1. `, `2. `, `3. `… correlativos a lo largo de todo el mensaje (antes
+  usaba la inicial de la categoría o un `•`), para que WhatsApp lo reconozca
+  como lista numerada. El título de la canción va en negrita y el número de
+  canción (`#123`) se mueve al final de la línea con formato código+negrita
+  (`` *`#123`* ``).
+- **Enlace a la nube**: si la playlist está subida (`sharing.link`), el
+  mensaje cierra con el enlace (`☁️ https://mcm.expo.app/playlist?p=1234`) y
+  el código de 4 dígitos.
+- **Título del mensaje**: usa el nombre real de la playlist (`link.name`) en
+  mayúsculas si existe; si no, el nombre por defecto (ver debajo).
+- **Nombre por defecto de playlist**: `defaultPlaylistName()` (usada al
+  subir al coro, exportar `.mcm` y exportar PDF) ya no propone «Playlist
+  \<fecha\>» sino «Canciones \<fecha\>», y esa fecha ya no es la de hoy sino
+  la del **próximo fin de semana**: si hoy es sábado o domingo se queda esa
+  fecha, y de lunes a viernes salta al sábado que viene. Nueva función
+  `nextChoirDate()` en `utils/playlistCodes.ts`.
+- **Archivos**: `utils/playlistCodes.ts`, `app/screens/SelectedSongsScreen.tsx`,
+  `__tests__/playlistCodes.test.ts`.
+
 ## 2026-08-22 19:00 — `useShakeDetector`: `expo-sensors` ahora se carga con `require` perezoso, no `import()` dinámico
 
 - **Motivo**: al subir la cobertura de tests, se detectó que bajo Jest el
