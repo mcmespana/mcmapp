@@ -97,6 +97,7 @@ import {
   SHARED_PASSWORD,
 } from '@/hooks/usePlaylistSharing';
 import { playlistSignature } from '@/utils/playlistSync';
+import { defaultPlaylistName } from '@/utils/playlistCodes';
 import { isChoirId } from '@/utils/choirIds';
 import { transposeLabel, transposeKey } from '@/utils/transposeKey';
 import { convertChord } from '@/utils/chordNotation';
@@ -392,10 +393,6 @@ const SelectedSongsScreen: React.FC = () => {
 
   /** Texto formateado: usa el TONO TRANSPORTADO (no el original). */
   const buildShareText = useCallback(() => {
-    const date = new Date()
-      .toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-      .toUpperCase()
-      .replace('.', '');
     const musicalEmojis = [
       '🎹',
       '🎸',
@@ -409,26 +406,22 @@ const SelectedSongsScreen: React.FC = () => {
     ];
     const randomEmoji =
       musicalEmojis[Math.floor(Math.random() * musicalEmojis.length)];
-    const header = `*CANCIONES ${date} ${randomEmoji}*`;
+    const title = link?.name || defaultPlaylistName();
+    const header = `*${title.toUpperCase()} ${randomEmoji}*`;
     const lines: string[] = [];
 
     // Recorremos en el orden actualmente visible (manual o por categoría).
-    const visibleGroups: {
-      categoryTitle: string;
-      data: typeof flatSelectedSongs;
-    }[] =
+    const visibleGroups: { data: typeof flatSelectedSongs }[] =
       viewMode === 'manual'
-        ? [{ categoryTitle: '', data: flatSelectedSongs }]
-        : categorized.map((c) => ({
-            categoryTitle: c.categoryTitle,
-            data: c.data,
-          }));
+        ? [{ data: flatSelectedSongs }]
+        : categorized.map((c) => ({ data: c.data }));
 
+    // Numeración correlativa (1. 2. 3. …) para que WhatsApp la reconozca como
+    // lista, sin reiniciar entre categorías.
+    let songNumber = 0;
     visibleGroups.forEach((group) => {
-      const letter = group.categoryTitle
-        ? group.categoryTitle.charAt(0).toUpperCase()
-        : '';
       group.data.forEach((song) => {
+        songNumber += 1;
         const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
         let toneStr = '';
         if (song.key) {
@@ -452,16 +445,23 @@ const SelectedSongsScreen: React.FC = () => {
         }
         const idMatch = song.title.match(/^\d+/);
         const songId = idMatch ? idMatch[0] : '??';
-        let line = letter ? `*${letter}.* ${cleanTitle}` : `• ${cleanTitle}`;
+        let line = `${songNumber}. *${cleanTitle}*`;
         if (toneStr) line += ` · ${toneStr}`;
-        line += ` · *[#${songId}]*`;
         if (song.author) line += ` · ${song.author}`;
+        line += ` · *\`#${songId}\`*`;
         lines.push(line);
       });
     });
 
+    // Si está subida a la nube, cerramos con el enlace y el código.
+    if (link) {
+      lines.push('');
+      lines.push(`☁️ ${WEB_BASE_URL}/playlist?p=${link.code}`);
+      lines.push(`Código: *${link.code}*`);
+    }
+
     return [header, ...lines].join('\n');
-  }, [viewMode, flatSelectedSongs, categorized, settings.notation]);
+  }, [viewMode, flatSelectedSongs, categorized, settings.notation, link]);
 
   const handleShareText = useCallback(() => {
     const text = buildShareText();
@@ -490,23 +490,7 @@ const SelectedSongsScreen: React.FC = () => {
   }, [buildShareText, toast, flatSelectedSongs.length]);
 
   const handleStartExportFile = useCallback(() => {
-    const monthNames = [
-      'ene',
-      'feb',
-      'mar',
-      'abr',
-      'may',
-      'jun',
-      'jul',
-      'ago',
-      'sep',
-      'oct',
-      'nov',
-      'dic',
-    ];
-    const now = new Date();
-    const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
-    setExportFileName(`Playlist ${dateStr}`);
+    setExportFileName(defaultPlaylistName());
     setShowExportFileModal(true);
   }, []);
 
@@ -551,23 +535,7 @@ const SelectedSongsScreen: React.FC = () => {
   // --- Exportar a PDF -------------------------------------------------------
 
   const handleStartExportPdf = useCallback(() => {
-    const monthNames = [
-      'ene',
-      'feb',
-      'mar',
-      'abr',
-      'may',
-      'jun',
-      'jul',
-      'ago',
-      'sep',
-      'oct',
-      'nov',
-      'dic',
-    ];
-    const now = new Date();
-    const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
-    setExportPdfDefaultName(`Playlist ${dateStr}`);
+    setExportPdfDefaultName(defaultPlaylistName());
     setShowExportPdfModal(true);
   }, []);
 

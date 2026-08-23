@@ -12,6 +12,7 @@ import {
   isValidCode,
   generateRandomCode,
   todayCode,
+  nextChoirDate,
   defaultPlaylistName,
 } from '@/utils/playlistCodes';
 
@@ -74,22 +75,48 @@ describe('todayCode', () => {
   });
 });
 
+describe('nextChoirDate', () => {
+  it('de lunes a viernes salta al sábado siguiente', () => {
+    expect(nextChoirDate(new Date(2026, 3, 7)).getDate()).toBe(11); // martes → sábado 11 abr
+    expect(nextChoirDate(new Date(2026, 0, 15)).getDate()).toBe(17); // jueves → sábado 17 ene
+    expect(nextChoirDate(new Date(2026, 11, 25)).getDate()).toBe(26); // viernes → sábado 26 dic
+  });
+
+  it('si ya es sábado o domingo, se queda esa misma fecha', () => {
+    const saturday = new Date(2026, 3, 11);
+    const sunday = new Date(2026, 3, 12);
+    expect(nextChoirDate(saturday)).toBe(saturday);
+    expect(nextChoirDate(sunday)).toBe(sunday);
+  });
+});
+
 describe('defaultPlaylistName', () => {
-  it('formatea "Playlist <día> <mes abreviado>"', () => {
-    expect(defaultPlaylistName(new Date(2026, 3, 7))).toBe('Playlist 7 abr');
+  it('formatea "Canciones <día> <mes abreviado>" con la fecha del próximo fin de semana', () => {
+    expect(defaultPlaylistName(new Date(2026, 3, 7))).toBe('Canciones 11 abr'); // martes → sábado 11
   });
 
   it('usa el nombre correcto para cada mes', () => {
-    expect(defaultPlaylistName(new Date(2026, 0, 15))).toBe('Playlist 15 ene');
-    expect(defaultPlaylistName(new Date(2026, 11, 25))).toBe(
-      'Playlist 25 dic',
+    expect(defaultPlaylistName(new Date(2026, 0, 15))).toBe(
+      'Canciones 17 ene',
     );
+    expect(defaultPlaylistName(new Date(2026, 11, 25))).toBe(
+      'Canciones 26 dic',
+    );
+  });
+
+  it('si ya es fin de semana, mantiene esa fecha', () => {
+    expect(defaultPlaylistName(new Date(2026, 3, 11))).toBe(
+      'Canciones 11 abr',
+    ); // sábado
+    expect(defaultPlaylistName(new Date(2026, 3, 12))).toBe(
+      'Canciones 12 abr',
+    ); // domingo
   });
 
   it('usa "ahora" por defecto si no se pasa fecha', () => {
     jest.useFakeTimers();
-    jest.setSystemTime(new Date(2026, 5, 3));
-    expect(defaultPlaylistName()).toBe('Playlist 3 jun');
+    jest.setSystemTime(new Date(2026, 5, 3)); // miércoles → sábado 6 jun
+    expect(defaultPlaylistName()).toBe('Canciones 6 jun');
     jest.useRealTimers();
   });
 });
