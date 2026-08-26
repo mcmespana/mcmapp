@@ -18,6 +18,16 @@
 
 ---
 
+## 2026-08-26 09:21 — Añadida dependencia expo-observe (EAS Observe)
+
+- Instalado `expo-observe` (~57.0.16) vía `npx expo install expo-observe`
+  para poder enviar métricas de la app a EAS Observe.
+- Es un módulo nativo (trae código iOS/Android) sin config plugin: no
+  requiere cambios en `app.config.ts`, solo autolinking en el build nativo.
+- **Requiere build de tienda antes de mergear a `production`** — no se puede
+  entregar por OTA. Commit con `[skip-ota]`.
+- Archivos: `mcm-app/package.json`, `mcm-app/package-lock.json`.
+
 ## 2026-08-23 19:35 — Mensaje de WhatsApp del coro: numeración correlativa, título dinámico y enlace a la nube
 
 - **Numeración de canciones**: cada línea del mensaje formateado empieza ahora
