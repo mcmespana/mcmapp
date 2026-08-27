@@ -18,6 +18,52 @@
 
 ---
 
+## 2026-08-27 13:32 — Los calendarios ICS se precachean en Firebase (20× más rápidos)
+
+- **El problema, medido**: el `.ics` de Google Calendar se genera en caliente en
+  cada petición. Contra el feed real de MCM Europa, TTFB de 0,87–1,33 s y
+  transferencia de ~2 ms (81 KB en crudo, 21 KB con gzip, 149 eventos). El
+  99,8 % de la espera es Google generando el fichero, y manda
+  `Cache-Control: no-store` **sin ETag**: no hay caché HTTP ni revalidación
+  posible. Ninguna optimización de red en el cliente puede arreglarlo (se
+  evaluó `react-native-nitro-fetch` para esto y no aplica por este motivo).
+- **Nueva Cloud Function `cacheCalendarIcs`** (schedule cada 2 h): descarga y
+  parsea los ICS de `/calendars` y los deja en `/calendarEvents`. La app pasa de
+  ~1,2 s por calendario a una lectura de tres campos sobre la conexión que ya
+  tenía abierta con Firebase.
+- **Parser extraído a `utils/icsParser.ts`** (puro, sin RN) y partido en dos
+  fases: `parseICSPortable` (sin localizar → cacheable, la función corre en
+  `us-central1`) + `localizeEvents` (convierte a la hora del dispositivo). Sin
+  esa separación, cachear habría mostrado todos los eventos en hora de Chicago.
+  La igualdad `parseICS === localizeEvents ∘ parseICSPortable` está blindada con
+  un test.
+- **`updatedAt` solo cambia si el contenido cambió** (se compara un sha256): una
+  apertura normal de la app no descarga el nodo. `checkedAt`, que sí se escribe
+  en cada ejecución, es lo que indica si el cron sigue vivo.
+- **Fallback intacto**: si el nodo no cubre un calendario (delegación con
+  `extraCalendars` recién añadidos), o si `checkedAt` tiene más de 24 h, se baja
+  el ICS directamente como antes.
+- **Fix: el proxy CORS se usaba también en nativo**, donde no hay CORS que
+  sortear. Era un round-trip entero de más contra un feed que ya tarda 1 s, y si
+  el proxy fallaba se pagaban dos esperas. Ahora es exclusivo de web.
+- **Fix: la caché local se pinta antes de comprobar el estado de la red**
+  (`getNetworkStateAsync` es un salto nativo y no hace falta para leer disco).
+- Firebase: nodo nuevo `/calendarEvents` (lectura pública, escritura cerrada —
+  solo lo escribe el Admin SDK). **Para activarlo basta con desplegar la función**
+  (`cd mcm-app && firebase deploy --only functions`): las reglas vivas hoy son las
+  antiguas y ya permiten la lectura. El bloque añadido a `database.rules.json` es
+  para el día que se despliegue el fichero (que deniega por defecto en la raíz);
+  desplegarlo NO es parte de este cambio y tiene sus propios requisitos, ver
+  `docs/SEGURIDAD.md`. Ojo: el workflow `deploy-firebase-rules.yml` se dispara al
+  mergear a `production` si cambia `database.rules.json` — hoy se salta por falta
+  del secret, pero conviene saberlo.
+- Documentación completa en `docs/funcionalidades/CALENDARIOS.md`.
+- Archivos: `utils/icsParser.ts` (nuevo), `hooks/useCalendarEvents.ts`,
+  `functions/src/index.ts`, `functions/scripts/sync-ics-parser.mjs` (nuevo),
+  `functions/package.json`, `database.rules.json`,
+  `__tests__/icsParser.test.ts` y `__tests__/useCalendarEventsCache.test.ts`
+  (nuevos, +20 tests).
+
 ## 2026-08-26 09:21 — Añadida dependencia expo-observe (EAS Observe)
 
 - Instalado `expo-observe` (~57.0.16) vía `npx expo install expo-observe`
@@ -35,7 +81,7 @@
   usaba la inicial de la categoría o un `•`), para que WhatsApp lo reconozca
   como lista numerada. El título de la canción va en negrita y el número de
   canción (`#123`) se mueve al final de la línea con formato código+negrita
-  (`` *`#123`* ``).
+  (``*`#123`*``).
 - **Enlace a la nube**: si la playlist está subida (`sharing.link`), el
   mensaje cierra con el enlace (`☁️ https://mcm.expo.app/playlist?p=1234`) y
   el código de 4 dígitos.
@@ -2873,7 +2919,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

@@ -27,13 +27,16 @@ npx tsc --noEmit       # Verificar tipos TypeScript
 
 Los OTA updates (EAS Update) solo envían el **bundle JS** — no incluyen código nativo. Si añades un paquete con módulos nativos (`expo-*`, `react-native-*` con carpeta `ios/` o `android/`) y haces OTA, **la app crashea** porque el binario instalado no tiene ese módulo.
 
+**Esto es una restricción de despliegue, NO un argumento en contra de un cambio.** No uses "no es OTA" como riesgo, contra ni motivo para descartar una librería o una feature: el cambio entra igual y se queda esperando al siguiente build nativo. Quien decide si eso viene mal es el usuario.
+
 Cuando añadas un paquete nativo:
 
 1. Añade `[skip-ota]` al mensaje del commit → el workflow `ota-production.yml` se salta automáticamente
-2. Avisa al usuario de que necesita un **build de producción** antes de mergear a `production`:
+2. Cierra la respuesta con **una sola línea al final**, sin párrafos ni avisos repetidos:
    ```
-   ⚠️ Este cambio incluye paquetes nativos ([lista]). Requiere build de tienda antes del merge a production. El commit lleva [skip-ota] para no lanzar la OTA.
+   OTA: ❌ — requiere build nativo (paquetes: [lista]). Commit con [skip-ota].
    ```
+   Y cuando el cambio es solo JS: `OTA: ✅ — solo JS.`
 3. Comando para el build: `npm run eas:build -- --profile production`
 
 En `workflow_dispatch` manual la OTA siempre corre independientemente del flag.
@@ -262,6 +265,10 @@ Firebase Realtime Database
 ├── albums
 │   ├── updatedAt: timestamp
 │   └── data: { álbumes }
+├── calendars                  → { updatedAt, data }  (URLs de los .ics)
+├── calendarEvents             ← precacheado por la Cloud Function cacheCalendarIcs
+│   ├── meta: { updatedAt, checkedAt, hash, calendarIds }
+│   └── data: { <calendarId>: { events: PortableEvent[] } }
 └── jubileo
     ├── horario    → { updatedAt, data }
     ├── materiales → { updatedAt, data }  (contenido BBCode)
@@ -371,24 +378,25 @@ Documentar NO:
 
 ## Archivos clave (referencia rápida)
 
-| Qué necesitas             | Archivo                                                  |
-| ------------------------- | -------------------------------------------------------- |
-| Entry point               | `app/_layout.tsx`                                        |
-| Configuración de tabs     | `app/(tabs)/_layout.tsx`                                 |
-| Home screen               | `app/(tabs)/index.tsx`                                   |
-| Fallback de perfiles      | `constants/defaultProfileConfig.ts`                      |
-| Catálogo de IDs conocidos | `constants/profileCatalog.ts`                            |
-| Resolver de perfil        | `utils/resolveProfileConfig.ts`                          |
-| Seed JSON de Firebase     | `firebase-seed/profileConfig.json`                       |
-| Colores                   | `constants/colors.ts`                                    |
-| Firebase config           | `constants/firebase.ts`                                  |
-| Firebase app singleton    | `utils/firebaseApp.ts`                                   |
-| Fetch de datos            | `hooks/useFirebaseData.ts`                               |
-| Procesador de canciones   | `hooks/useSongProcessor.ts`                              |
-| Parser de calendario      | `hooks/useCalendarEvents.ts`                             |
-| BBCode → HTML             | `utils/formatText.ts`                                    |
-| Notificaciones            | `notifications/` + `services/pushNotificationService.ts` |
-| Env vars template         | `.env.example`                                           |
+| Qué necesitas             | Archivo                                                   |
+| ------------------------- | --------------------------------------------------------- |
+| Entry point               | `app/_layout.tsx`                                         |
+| Configuración de tabs     | `app/(tabs)/_layout.tsx`                                  |
+| Home screen               | `app/(tabs)/index.tsx`                                    |
+| Fallback de perfiles      | `constants/defaultProfileConfig.ts`                       |
+| Catálogo de IDs conocidos | `constants/profileCatalog.ts`                             |
+| Resolver de perfil        | `utils/resolveProfileConfig.ts`                           |
+| Seed JSON de Firebase     | `firebase-seed/profileConfig.json`                        |
+| Colores                   | `constants/colors.ts`                                     |
+| Firebase config           | `constants/firebase.ts`                                   |
+| Firebase app singleton    | `utils/firebaseApp.ts`                                    |
+| Fetch de datos            | `hooks/useFirebaseData.ts`                                |
+| Procesador de canciones   | `hooks/useSongProcessor.ts`                               |
+| Parser de calendario      | `utils/icsParser.ts` (puro, compartido con las functions) |
+| Hook de calendario        | `hooks/useCalendarEvents.ts`                              |
+| BBCode → HTML             | `utils/formatText.ts`                                     |
+| Notificaciones            | `notifications/` + `services/pushNotificationService.ts`  |
+| Env vars template         | `.env.example`                                            |
 
 ## Identificadores de la app
 

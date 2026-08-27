@@ -1,208 +1,74 @@
 import { logger } from '@/utils/logger';
 import { useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Network from 'expo-network';
+import { getDatabase, ref, get } from 'firebase/database';
+import { getFirebaseApp } from '@/utils/firebaseApp';
+import {
+  buildEventsByDate,
+  localizeEvents,
+  parseICS,
+  type CalendarEvent,
+  type ParsedEvent,
+  type PortableEvent,
+} from '@/utils/icsParser';
 import type { CalendarConfig } from './useCalendarConfigs';
 
-export interface CalendarEvent {
-  startDate: string; // YYYY-MM-DD
-  endDate?: string; // YYYY-MM-DD
-  startTime?: string; // HH:MM (only present for non all-day events)
-  endTime?: string; // HH:MM
-  title: string;
-  description?: string;
-  location?: string;
-  url?: string;
-  conferenceUrl?: string; // Detected Meet/Zoom/Teams link
-  calendarIndex: number;
-  isAllDay?: boolean; // Track if this is an all-day event
-  isSingleDay?: boolean; // Track if this is effectively a single day event (after corrections)
-}
+// El parser vive en `utils/icsParser.ts` (módulo puro, compartido con la Cloud
+// Function que precachea los ICS). Se re-exporta aquí porque media app —y los
+// tests— importan estos símbolos desde el hook desde antes de la extracción.
+export {
+  addDaysISO,
+  buildEventsByDate,
+  MAX_EVENT_DAYS,
+  parseICS,
+} from '@/utils/icsParser';
+export type { CalendarEvent } from '@/utils/icsParser';
 
-/** Suma `n` días a una fecha 'YYYY-MM-DD' sin pasar por la hora local (evita
- * que un cambio de hora DST duplique o salte un día al iterar). */
+const CACHE_KEY = 'calendar_events';
+/** Metadatos de la última expansión guardada en `CACHE_KEY`. */
+const CACHE_META_KEY = 'calendar_events_meta';
+
 /**
- * Tope de días que se expanden de UN evento. Un ICS corrupto con un `DTEND` en
- * el año 3000 hacía un bucle de cientos de miles de iteraciones metiendo el
- * mismo evento en cada fecha; ningún evento real de este calendario dura más de
- * un año.
+ * Nodo de Firebase que mantiene la Cloud Function `cacheCalendarIcs`
+ * (`functions/src/index.ts`): los ICS ya descargados y parseados, cada pocas
+ * horas. Ver `docs/funcionalidades/CALENDARIOS.md`.
+ *
+ *   /calendarEvents/meta = { updatedAt, checkedAt, calendarIds }
+ *   /calendarEvents/data = { <calendarId>: { events: PortableEvent[] } }
  */
-export const MAX_EVENT_DAYS = 366;
+const NODE = 'calendarEvents';
 
-export function addDaysISO(iso: string, n: number): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  const t = Date.UTC(y, m - 1, d + n);
-  const nd = new Date(t);
-  const mm = String(nd.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(nd.getUTCDate()).padStart(2, '0');
-  return `${nd.getUTCFullYear()}-${mm}-${dd}`;
-}
+/**
+ * Si el cron lleva más de esto sin dar señales de vida (`meta.checkedAt`), no
+ * nos fiamos del nodo y bajamos los ICS directamente. La función corre cada 2 h,
+ * así que 24 h son doce fallos seguidos: a esas alturas el problema es el cron,
+ * y es mejor un calendario lento que un calendario de la semana pasada.
+ *
+ * Ojo: se mira `checkedAt`, NO `updatedAt`. La función solo reescribe
+ * `updatedAt` cuando el contenido cambia de verdad (para no invalidar la caché
+ * de todo el mundo cada 2 h), así que un `updatedAt` viejo es lo NORMAL y no
+ * indica nada roto.
+ */
+const MAX_NODE_AGE_MS = 24 * 60 * 60 * 1000;
 
-/** Convierte una fecha+hora en UTC (sufijo `Z` del ICS) a fecha/hora local del
- * dispositivo. El feed real (`basic.ics`, ver useCalendarConfigs.ts) emite
- * SIEMPRE `Z` para eventos con hora, sin `TZID` — verificado contra el feed
- * en vivo. Valores flotantes (sin `Z`) no pasan por aquí y se muestran tal
- * cual, como hoy. */
-function utcToLocal(
-  dateISO: string,
-  timeHHMM: string,
-): { date: string; time: string } {
-  const [y, m, d] = dateISO.split('-').map(Number);
-  const [hh, mm] = timeHHMM.split(':').map(Number);
-  const local = new Date(Date.UTC(y, m - 1, d, hh, mm));
-  const date = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}`;
-  const time = `${String(local.getHours()).padStart(2, '0')}:${String(local.getMinutes()).padStart(2, '0')}`;
-  return { date, time };
-}
-
-const CONFERENCE_URL_REGEX =
-  /https?:\/\/(?:[\w-]+\.)*(?:meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com|webex\.com|gotomeeting\.com|whereby\.com|jit\.si|meet\.jit\.si)\/[^\s<>"')]+/i;
-
-export function parseICS(text: string): Omit<CalendarEvent, 'calendarIndex'>[] {
-  // Unfold lines that start with a space as specified in RFC 5545
-  const unfolded: string[] = [];
-  for (const rawLine of text.split(/\r?\n/)) {
-    if (rawLine.startsWith(' ')) {
-      if (unfolded.length) {
-        unfolded[unfolded.length - 1] += rawLine.slice(1);
-      }
-    } else {
-      unfolded.push(rawLine);
-    }
-  }
-
-  const events: Omit<CalendarEvent, 'calendarIndex'>[] = [];
-  let current: Partial<Omit<CalendarEvent, 'calendarIndex'>> = {};
-
-  for (const line of unfolded) {
-    if (line.startsWith('BEGIN:VEVENT')) {
-      current = {};
-    } else if (line.startsWith('END:VEVENT')) {
-      if (current.startDate && current.title) {
-        // Post-process to handle all-day events correctly
-        if (current.isAllDay && current.endDate) {
-          // For all-day events, DTEND is exclusive (next day)
-          // So we need to subtract one day from endDate
-          const adjustedEndDate = addDaysISO(current.endDate, -1);
-
-          // If after adjustment the end date equals start date,
-          // it's a single-day event, remove endDate completely
-          if (adjustedEndDate === current.startDate) {
-            current.endDate = undefined;
-            current.isSingleDay = true;
-          } else {
-            current.endDate = adjustedEndDate;
-            current.isSingleDay = false;
-          }
-        } else if (!current.endDate) {
-          // Events without endDate are single-day by default
-          current.isSingleDay = true;
-        }
-
-        events.push(current as Omit<CalendarEvent, 'calendarIndex'>);
-      }
-      current = {};
-    } else if (line.startsWith('SUMMARY:')) {
-      current.title = line.slice('SUMMARY:'.length).trim();
-    } else if (line.startsWith('DESCRIPTION:')) {
-      const raw = line
-        .slice('DESCRIPTION:'.length)
-        .replace(/\\n/g, '\n')
-        .replace(/\\,/g, ',')
-        .replace(/\\;/g, ';')
-        .trim();
-      current.description = raw || undefined;
-      // If we haven't found a conference URL yet, try to detect one in the description
-      if (!current.conferenceUrl && raw) {
-        const match = raw.match(CONFERENCE_URL_REGEX);
-        if (match) current.conferenceUrl = match[0];
-      }
-    } else if (line.startsWith('X-GOOGLE-CONFERENCE:')) {
-      current.conferenceUrl = line.slice('X-GOOGLE-CONFERENCE:'.length).trim();
-    } else if (line.startsWith('LOCATION:')) {
-      current.location =
-        line
-          .slice('LOCATION:'.length)
-          .replace(/\\n/gi, '\n')
-          .replace(/\\,/g, ',')
-          .replace(/\\;/g, ';')
-          .replace(/\\\\/g, '\\')
-          .trim()
-          .split('\n')
-          .filter((part) => part.trim().toLowerCase() !== 'españa')
-          .join('\n')
-          .trim() || undefined;
-    } else if (line.startsWith('URL:')) {
-      current.url = line.slice('URL:'.length).trim();
-    } else if (line.startsWith('DTSTART')) {
-      // Soporta DTSTART:YYYYMMDD y DTSTART;VALUE=DATE:YYYYMMDD y variantes
-      const idx = line.indexOf(':');
-      if (idx !== -1) {
-        const value = line.slice(idx + 1).trim();
-        // Check if this is a date-only value (all-day event)
-        const isDateOnly = !value.includes('T') && /^\d{8}$/.test(value);
-        if (isDateOnly) {
-          current.isAllDay = true;
-        }
-
-        const datePart = value.replace(/T.*$/, '');
-        let startDate: string | undefined;
-        if (/^\d{8}$/.test(datePart)) {
-          const year = datePart.substring(0, 4);
-          const month = datePart.substring(4, 6);
-          const day = datePart.substring(6, 8);
-          startDate = `${year}-${month}-${day}`;
-        }
-
-        const timeMatch = value.match(/T(\d{2})(\d{2})/);
-        let startTime: string | undefined;
-        if (timeMatch && !isDateOnly) {
-          startTime = `${timeMatch[1]}:${timeMatch[2]}`;
-        }
-
-        // El feed emite las horas en UTC (sufijo Z) — convertir a local.
-        if (startDate && startTime && value.endsWith('Z')) {
-          ({ date: startDate, time: startTime } = utcToLocal(
-            startDate,
-            startTime,
-          ));
-        }
-        if (startDate) current.startDate = startDate;
-        if (startTime) current.startTime = startTime;
-      }
-    } else if (line.startsWith('DTEND')) {
-      const idx = line.indexOf(':');
-      if (idx !== -1) {
-        const value = line.slice(idx + 1).trim();
-        const datePart = value.replace(/T.*$/, '');
-        let endDate: string | undefined;
-        if (/^\d{8}$/.test(datePart)) {
-          const year = datePart.substring(0, 4);
-          const month = datePart.substring(4, 6);
-          const day = datePart.substring(6, 8);
-          endDate = `${year}-${month}-${day}`;
-        }
-
-        const timeMatch = value.match(/T(\d{2})(\d{2})/);
-        let endTime: string | undefined;
-        if (timeMatch && !value.match(/^\d{8}$/)) {
-          endTime = `${timeMatch[1]}:${timeMatch[2]}`;
-        }
-
-        if (endDate && endTime && value.endsWith('Z')) {
-          ({ date: endDate, time: endTime } = utcToLocal(endDate, endTime));
-        }
-        if (endDate) current.endDate = endDate;
-        if (endTime) current.endTime = endTime;
-      }
-    }
-  }
-  return events;
-}
+type CacheMeta = {
+  /** `meta.updatedAt` del nodo con el que se construyó la caché pintada. */
+  nodeUpdatedAt: string | null;
+  /** IDs de calendario, en orden, con los que se construyó. */
+  calendarIds: string[];
+};
 
 type CalendarFetchResult = {
   map: Record<string, CalendarEvent[]>;
   anyFailed: boolean;
+};
+
+type NodeMeta = {
+  updatedAt?: unknown;
+  checkedAt?: unknown;
+  calendarIds?: unknown;
 };
 
 // Descarga + parseo de TODOS los calendarios, COALESCIDO por la lista de URLs:
@@ -225,11 +91,18 @@ export function __resetCalendarCacheForTests() {
 const FRESH_WINDOW_MS = 5 * 60 * 1000;
 const lastFullFetch = new Map<string, number>();
 
-/** Descarga (con proxy + fallback directo) y parsea UN calendario. */
-async function fetchOneCalendar(
-  cfg: CalendarConfig,
-): Promise<Omit<CalendarEvent, 'calendarIndex'>[]> {
-  const proxyBase = process.env.EXPO_PUBLIC_CORS_PROXY_URL;
+/**
+ * Descarga y parsea UN calendario desde su ICS de origen.
+ *
+ * El proxy CORS es EXCLUSIVO de web: en iOS/Android no hay política de mismo
+ * origen que sortear, y meter el salto igualmente costaba un round-trip entero
+ * de más (el ICS de Google tarda ~1 s en generarse, así que el salto extra no
+ * es gratis). Peor aún: si el proxy fallaba, el `catch` reintentaba directo y
+ * el usuario pagaba DOS esperas de ~1 s.
+ */
+async function fetchOneCalendar(cfg: CalendarConfig): Promise<ParsedEvent[]> {
+  const proxyBase =
+    Platform.OS === 'web' ? process.env.EXPO_PUBLIC_CORS_PROXY_URL : undefined;
   const proxyUrl = proxyBase ? proxyBase + encodeURIComponent(cfg.url) : null;
   let res: Response | null = null;
   if (proxyUrl) {
@@ -247,73 +120,142 @@ async function fetchOneCalendar(
   return parseICS(text);
 }
 
+/** `meta` del nodo → eventos localizados por ID de calendario, o `null`. */
+function readNodeEvents(
+  data: unknown,
+  ids: string[],
+): Record<string, ParsedEvent[]> {
+  const out: Record<string, ParsedEvent[]> = {};
+  if (!data || typeof data !== 'object') return out;
+  const byId = data as Record<string, unknown>;
+
+  for (const id of ids) {
+    const entry = byId[id];
+    if (!entry || typeof entry !== 'object') continue;
+    const events = (entry as { events?: unknown }).events;
+    if (!Array.isArray(events)) continue;
+    // El nodo guarda eventos PORTABLES (sin localizar): la conversión a la
+    // zona del dispositivo se hace aquí, nunca en el servidor.
+    out[id] = localizeEvents(events as PortableEvent[]);
+  }
+  return out;
+}
+
+/**
+ * Lee el nodo precacheado. Devuelve qué calendarios cubre y si hace falta
+ * bajarse `data` (o basta con la caché ya pintada).
+ *
+ * Coste en el caso normal: UNA lectura de `meta` (un objeto de tres campos).
+ * Si `meta.updatedAt` no ha cambiado desde la última expansión guardada y la
+ * lista de calendarios es la misma, no se descarga nada más.
+ */
+async function readCachedNode(
+  ids: string[],
+  localMeta: CacheMeta | null,
+): Promise<
+  | { kind: 'unusable' }
+  | { kind: 'cache-still-valid' }
+  | { kind: 'fresh'; events: Record<string, ParsedEvent[]>; updatedAt: string }
+> {
+  const db = getDatabase(getFirebaseApp());
+
+  const metaSnap = await get(ref(db, `${NODE}/meta`));
+  if (!metaSnap.exists()) return { kind: 'unusable' };
+  const meta = metaSnap.val() as NodeMeta;
+  if (!meta || typeof meta !== 'object') return { kind: 'unusable' };
+
+  const checkedAt =
+    typeof meta.checkedAt === 'string' ? Date.parse(meta.checkedAt) : NaN;
+  if (!Number.isFinite(checkedAt)) return { kind: 'unusable' };
+  if (Date.now() - checkedAt > MAX_NODE_AGE_MS) {
+    logger.warn(
+      '[calendar] el nodo precacheado lleva demasiado sin actualizarse, bajando ICS',
+      meta.checkedAt,
+    );
+    return { kind: 'unusable' };
+  }
+
+  // Sin `updatedAt` no hay forma de saber si la caché local sigue valiendo, y
+  // convertirlo a la cadena "undefined" sería peor que no tenerlo: dos nodos
+  // igual de rotos parecerían la misma versión y la caché nunca se refrescaría.
+  if (typeof meta.updatedAt !== 'string' || !meta.updatedAt) {
+    return { kind: 'unusable' };
+  }
+  const updatedAt = meta.updatedAt;
+
+  const covered = Array.isArray(meta.calendarIds)
+    ? meta.calendarIds.filter((x): x is string => typeof x === 'string')
+    : [];
+  // Si el nodo no cubre todos los calendarios que este usuario ve (p.ej. una
+  // delegación acaba de añadir un `extraCalendar` que el cron aún no conoce),
+  // no vale la vía rápida: hay que bajar los que falten por ICS.
+  const coversAll = ids.every((id) => covered.includes(id));
+
+  if (
+    coversAll &&
+    localMeta &&
+    localMeta.nodeUpdatedAt === updatedAt &&
+    localMeta.calendarIds.length === ids.length &&
+    localMeta.calendarIds.every((id, i) => id === ids[i])
+  ) {
+    return { kind: 'cache-still-valid' };
+  }
+
+  const dataSnap = await get(ref(db, `${NODE}/data`));
+  if (!dataSnap.exists()) return { kind: 'unusable' };
+  const events = readNodeEvents(dataSnap.val(), ids);
+  if (Object.keys(events).length === 0) return { kind: 'unusable' };
+
+  return { kind: 'fresh', events, updatedAt };
+}
+
+/**
+ * Consigue los eventos de todos los calendarios: nodo precacheado cuando
+ * cubre, ICS directo para el resto, coalescido entre montajes simultáneos.
+ */
 function fetchAndParseCalendars(
   calendars: CalendarConfig[],
+  prefetched: Record<string, ParsedEvent[]>,
 ): Promise<CalendarFetchResult> {
   const key = calendars.map((c) => c.url).join('|');
   const existing = calendarInflight.get(key);
   if (existing) return existing;
 
   const run = async (): Promise<CalendarFetchResult> => {
-    const map: Record<string, CalendarEvent[]> = {};
     let anyFailed = false;
 
     // Descarga en PARALELO (antes en serie: el tiempo total era la suma de
-    // los round-trips en vez del máximo). `Promise.allSettled` preserva el
-    // índice posicional de cada calendario en `results[i]`, imprescindible
-    // para `calendarIndex` — el merge recorre `results` en orden, así que
-    // el orden de eventos por calendario dentro de cada fecha no cambia.
+    // los round-trips en vez del máximo). Se preserva el índice posicional de
+    // cada calendario, imprescindible para `calendarIndex`.
     const results = await Promise.allSettled(
-      calendars.map((cfg) => fetchOneCalendar(cfg)),
+      calendars.map((cfg) => {
+        const ready = prefetched[cfg.id];
+        return ready ? Promise.resolve(ready) : fetchOneCalendar(cfg);
+      }),
     );
 
-    results.forEach((r, i) => {
-      if (r.status === 'fulfilled') {
-        r.value.forEach((ev) => {
-          const withCal: CalendarEvent = { ...ev, calendarIndex: i };
+    const perCalendar = results.map((r, i) => {
+      if (r.status === 'fulfilled') return r.value;
+      // Antes este catch era vacío: un calendario roto (o su fuente caída)
+      // desaparecía sin rastro. Marcamos el fallo para no pisar la caché
+      // buena con un resultado parcial (ver más abajo).
+      anyFailed = true;
+      logger.error(
+        '[calendar] fallo cargando calendario',
+        i,
+        calendars[i].url,
+        r.reason,
+      );
+      return undefined;
+    });
 
-          // If no endDate or it's a single-day event, only add to the start date
-          if (!ev.endDate || ev.isSingleDay) {
-            const dateStr = ev.startDate;
-            if (!map[dateStr]) map[dateStr] = [];
-            map[dateStr].push(withCal);
-          } else {
-            // For multi-day events, iterate through the range using pure
-            // calendar arithmetic (UTC de punta a punta) — evita el bug de
-            // duplicar/saltar un día al cruzar un cambio de hora DST.
-            // Acotado a MAX_EVENT_DAYS: un DTEND corrupto no puede colgar el
-            // parseo.
-            let days = 0;
-            for (
-              let cur = ev.startDate;
-              cur <= ev.endDate && days < MAX_EVENT_DAYS;
-              cur = addDaysISO(cur, 1), days++
-            ) {
-              if (!map[cur]) map[cur] = [];
-              map[cur].push(withCal);
-            }
-            if (days >= MAX_EVENT_DAYS) {
-              logger.warn(
-                '[calendar] evento con rango absurdo, truncado',
-                ev.startDate,
-                ev.endDate,
-                ev.title,
-              );
-            }
-          }
-        });
-      } else {
-        // Antes este catch era vacío: un calendario roto (o su fuente caída)
-        // desaparecía sin rastro. Marcamos el fallo para no pisar la caché
-        // buena con un resultado parcial (ver más abajo).
-        anyFailed = true;
-        logger.error(
-          '[calendar] fallo cargando calendario',
-          i,
-          calendars[i].url,
-          r.reason,
-        );
-      }
+    const map = buildEventsByDate(perCalendar, (ev) => {
+      logger.warn(
+        '[calendar] evento con rango absurdo, truncado',
+        ev.startDate,
+        ev.endDate,
+        ev.title,
+      );
     });
 
     if (!anyFailed) lastFullFetch.set(key, Date.now());
@@ -337,14 +279,15 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
     let mounted = true;
     async function load() {
       setLoading(true);
-      const state = await Network.getNetworkStateAsync();
-      const connected =
-        state.isConnected && state.isInternetReachable !== false;
 
       // 1. Caché primero SIEMPRE (online u offline): stale-while-revalidate.
-      //    Antes la caché solo se usaba offline; online el usuario esperaba a
-      //    que bajaran todos los ICS aunque hubiera datos válidos cacheados.
-      const cachedStr = await AsyncStorage.getItem('calendar_events');
+      //    Va ANTES de preguntar por el estado de la red: `getNetworkStateAsync`
+      //    es un salto al lado nativo y no hace ninguna falta para leer disco;
+      //    tenerlo delante solo retrasaba el primer pintado.
+      const [cachedStr, metaStr] = await Promise.all([
+        AsyncStorage.getItem(CACHE_KEY),
+        AsyncStorage.getItem(CACHE_META_KEY),
+      ]);
       let hadCache = false;
       if (cachedStr) {
         try {
@@ -362,7 +305,20 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
         }
       }
 
+      let localMeta: CacheMeta | null = null;
+      if (hadCache && metaStr) {
+        try {
+          const parsed = JSON.parse(metaStr) as CacheMeta;
+          if (parsed && Array.isArray(parsed.calendarIds)) localMeta = parsed;
+        } catch {
+          // Meta corrupta: se ignora y se revalida como si no hubiera.
+        }
+      }
+
       // 2. Offline: nos quedamos con la caché (o con nada si no la había).
+      const state = await Network.getNetworkStateAsync();
+      const connected =
+        state.isConnected && state.isInternetReachable !== false;
       if (!connected) {
         if (mounted) setLoading(false);
         return;
@@ -379,16 +335,67 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
         return;
       }
 
-      // 3. Online: revalidar en background (coalescido entre Home y Calendario).
-      const { map, anyFailed } = await fetchAndParseCalendars(calendars);
+      // 3. Nodo precacheado por la Cloud Function. En el caso normal esto es
+      //    UNA lectura de tres campos y se acabó: ni un solo ICS de por medio,
+      //    que es lo que convierte ~1,2 s por calendario en ~50 ms en total.
+      const ids = calendars.map((c) => c.id);
+      let prefetched: Record<string, ParsedEvent[]> = {};
+      try {
+        const node = await readCachedNode(ids, localMeta);
+        if (!mounted) return;
+
+        if (node.kind === 'cache-still-valid') {
+          // Lo pintado en el paso 1 ya es exactamente lo que hay. Cuenta como
+          // ciclo completo: nada que descargar, nada que persistir.
+          lastFullFetch.set(freshnessKey, Date.now());
+          setLoading(false);
+          return;
+        }
+        if (node.kind === 'fresh') {
+          prefetched = node.events;
+          const covered = ids.every((id) => prefetched[id]);
+          if (covered) {
+            const map = buildEventsByDate(
+              ids.map((id) => prefetched[id]),
+              (ev) =>
+                logger.warn(
+                  '[calendar] evento con rango absurdo, truncado',
+                  ev.startDate,
+                  ev.endDate,
+                  ev.title,
+                ),
+            );
+            setEventsByDate(map);
+            lastFullFetch.set(freshnessKey, Date.now());
+            setLoading(false);
+            await persist(map, {
+              nodeUpdatedAt: node.updatedAt,
+              calendarIds: ids,
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        // Nodo ilegible (reglas, red, forma inesperada): no es fatal, están
+        // los ICS. Se registra porque si pasa siempre, el precacheo no sirve.
+        logger.warn('[calendar] no se pudo leer el nodo precacheado', e);
+      }
+
+      // 4. ICS directo para lo que el nodo no haya cubierto (o para todo, si
+      //    no había nodo utilizable). Sigue siendo la red de seguridad.
+      const { map, anyFailed } = await fetchAndParseCalendars(
+        calendars,
+        prefetched,
+      );
       if (!mounted) return;
 
       if (!anyFailed) {
         // Resultado completo y autoritativo → actualiza vista y persiste.
         setEventsByDate(map);
-        AsyncStorage.setItem('calendar_events', JSON.stringify(map)).catch(
-          () => {},
-        );
+        // `nodeUpdatedAt: null` porque esta expansión NO viene del nodo: en el
+        // siguiente montaje hay que revalidar contra Firebase, no darla por
+        // buena por coincidencia de `updatedAt`.
+        persist(map, { nodeUpdatedAt: null, calendarIds: ids });
       } else if (!hadCache) {
         // Parcial pero no había caché: mostrar lo que sí llegó (mejor que nada).
         // NO se persiste: solo se guarda un resultado completo.
@@ -405,4 +412,17 @@ export default function useCalendarEvents(calendars: CalendarConfig[]) {
   }, [calendars]);
 
   return { eventsByDate, loading };
+}
+
+/** Guarda la expansión pintada y con qué versión del nodo se construyó. */
+function persist(
+  map: Record<string, CalendarEvent[]>,
+  meta: CacheMeta,
+): Promise<void> {
+  return Promise.all([
+    AsyncStorage.setItem(CACHE_KEY, JSON.stringify(map)),
+    AsyncStorage.setItem(CACHE_META_KEY, JSON.stringify(meta)),
+  ])
+    .then(() => undefined)
+    .catch(() => undefined);
 }

@@ -3,3 +3,6 @@ lib/
 *.log
 .firebase/
 .runtimeconfig.json
+
+# Copia generada por scripts/sync-ics-parser.mjs (fuente: ../utils/icsParser.ts)
+src/generated/

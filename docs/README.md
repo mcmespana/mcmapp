@@ -12,6 +12,7 @@ Cómo funciona cada sistema de la app, de principio a fin.
 | [LOGIN.md](funcionalidades/LOGIN.md)                   | Inicio de sesión con Google y Apple en iOS, Android y web: arquitectura, variables de entorno, **huellas SHA-1 de Android** y diagnóstico de errores |
 | [NOTIFICACIONES.md](funcionalidades/NOTIFICACIONES.md) | Sistema de notificaciones push: cliente implementado, backend, plan de pruebas                                                                       |
 | [EVENTOS.md](funcionalidades/EVENTOS.md)               | Sistema de eventos (Jubileo, encuentros, retiros…): paths de Firebase y cómo añadir un evento nuevo                                                  |
+| [CALENDARIOS.md](funcionalidades/CALENDARIOS.md)       | Calendarios ICS: por qué son lentos (medido), la Cloud Function que los precachea cada 2 h y el fallback                                             |
 | [ENCUESTAS.md](funcionalidades/ENCUESTAS.md)           | Sistema de encuestas y evaluaciones (guía funcional)                                                                                                 |
 | [COROS.md](funcionalidades/COROS.md)                   | Coros, playlists compartidas y coro en vivo: `/choirs`, importar «la última», actualizar vs subir nueva, contraseña y caducidad de 24 h              |
 | [ARREGLOS.md](funcionalidades/ARREGLOS.md)             | Directiva `{arr:}` del cantoral (anotaciones de arreglos) + prompt del generador ChordPro                                                            |
