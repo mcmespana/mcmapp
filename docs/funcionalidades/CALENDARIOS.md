@@ -153,12 +153,34 @@ firebase deploy --only functions
 Requiere plan Blaze (ya lo estaba por `purgeExpiredShares`) y `firebase use --add`
 hecho al menos una vez.
 
-Al desplegar hay que subir también las reglas, que son las que abren la lectura
-del nodo nuevo:
+**Eso es todo lo que hay que desplegar.** La función es lo que llena el nodo;
+sin ella nadie escribe `/calendarEvents` y la app se queda en el fallback ICS
+(funciona, pero sin la mejora).
 
-```bash
-firebase deploy --only database
-```
+### Las reglas NO hay que desplegarlas para esto
+
+A agosto de 2026 `database.rules.json` **no está desplegado**: las reglas vivas
+en la consola son las antiguas, más abiertas (ver `docs/SEGURIDAD.md` §4.1), así
+que `/calendarEvents` ya es legible sin tocar nada.
+
+Y desplegarlas **no es un paso menor ni relacionado con esto**: sustituyen por
+completo las reglas vivas, exigen sembrar `/_config` antes (si no, el panel se
+queda sin permisos en el mismo instante) y hay dos funciones del panel que dejan
+de funcionar para siempre. Todo eso está en `docs/SEGURIDAD.md` y es una
+decisión propia, no un trámite de esta feature.
+
+> ⚠️ **Ojo al desplegar a `production`.** El workflow
+> `.github/workflows/deploy-firebase-rules.yml` despliega las reglas solo cuando
+> cambia `database.rules.json`, y este cambio **lo cambió** (añade el bloque de
+> `/calendarEvents`). Hoy no pasa nada porque sin el secret
+> `FIREBASE_SERVICE_ACCOUNT_MCMAPP` el workflow se salta el despliegue — pero el
+> día que ese secret exista, mergear a `production` dispararía el primer
+> despliegue completo de reglas. Que sea una decisión consciente, con `/_config`
+> sembrado antes, no un efecto colateral.
+
+El bloque de `/calendarEvents` en el fichero es para ese día: las reglas deniegan
+por defecto en la raíz, así que sin él el nodo quedaría bloqueado y el calendario
+caería al fallback.
 
 > El parser se copia a `functions/src/generated/icsParser.ts` en el `build`
 > (script `sync:parser`, que lanza el `predeploy` de `firebase.json`). Ese

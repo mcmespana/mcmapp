@@ -49,8 +49,14 @@
 - **Fix: la caché local se pinta antes de comprobar el estado de la red**
   (`getNetworkStateAsync` es un salto nativo y no hace falta para leer disco).
 - Firebase: nodo nuevo `/calendarEvents` (lectura pública, escritura cerrada —
-  solo lo escribe el Admin SDK). Requiere desplegar reglas Y functions:
-  `firebase deploy --only database,functions`.
+  solo lo escribe el Admin SDK). **Para activarlo basta con desplegar la función**
+  (`cd mcm-app && firebase deploy --only functions`): las reglas vivas hoy son las
+  antiguas y ya permiten la lectura. El bloque añadido a `database.rules.json` es
+  para el día que se despliegue el fichero (que deniega por defecto en la raíz);
+  desplegarlo NO es parte de este cambio y tiene sus propios requisitos, ver
+  `docs/SEGURIDAD.md`. Ojo: el workflow `deploy-firebase-rules.yml` se dispara al
+  mergear a `production` si cambia `database.rules.json` — hoy se salta por falta
+  del secret, pero conviene saberlo.
 - Documentación completa en `docs/funcionalidades/CALENDARIOS.md`.
 - Archivos: `utils/icsParser.ts` (nuevo), `hooks/useCalendarEvents.ts`,
   `functions/src/index.ts`, `functions/scripts/sync-ics-parser.mjs` (nuevo),
@@ -2913,7 +2919,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`
