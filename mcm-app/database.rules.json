@@ -135,6 +135,19 @@
     },
 
     /* ------------------------------------------------------------------ *
+     *  CALENDARIOS PRECACHEADOS  (/calendarEvents)
+     *  Los ICS de /calendars ya descargados y parseados. Lectura pública
+     *  (es el mismo contenido público que los .ics). Lo escribe SOLO la
+     *  Cloud Function `cacheCalendarIcs` con el Admin SDK, que se salta
+     *  estas reglas → escritura cerrada a cal y canto para los clientes.
+     *  Ver docs/funcionalidades/CALENDARIOS.md.
+     * ------------------------------------------------------------------ */
+    "calendarEvents": {
+      ".read": true,
+      ".write": false
+    },
+
+    /* ------------------------------------------------------------------ *
      *  CONFIGURACIÓN DE PERFILES  (/profileConfig)
      *  Visibilidad de tabs/botones/mantenimiento. Lectura pública porque la
      *  app la necesita antes de cualquier login. La edita el panel.

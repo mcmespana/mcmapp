@@ -18,6 +18,46 @@
 
 ---
 
+## 2026-08-27 13:32 — Los calendarios ICS se precachean en Firebase (20× más rápidos)
+
+- **El problema, medido**: el `.ics` de Google Calendar se genera en caliente en
+  cada petición. Contra el feed real de MCM Europa, TTFB de 0,87–1,33 s y
+  transferencia de ~2 ms (81 KB en crudo, 21 KB con gzip, 149 eventos). El
+  99,8 % de la espera es Google generando el fichero, y manda
+  `Cache-Control: no-store` **sin ETag**: no hay caché HTTP ni revalidación
+  posible. Ninguna optimización de red en el cliente puede arreglarlo (se
+  evaluó `react-native-nitro-fetch` para esto y no aplica por este motivo).
+- **Nueva Cloud Function `cacheCalendarIcs`** (schedule cada 2 h): descarga y
+  parsea los ICS de `/calendars` y los deja en `/calendarEvents`. La app pasa de
+  ~1,2 s por calendario a una lectura de tres campos sobre la conexión que ya
+  tenía abierta con Firebase.
+- **Parser extraído a `utils/icsParser.ts`** (puro, sin RN) y partido en dos
+  fases: `parseICSPortable` (sin localizar → cacheable, la función corre en
+  `us-central1`) + `localizeEvents` (convierte a la hora del dispositivo). Sin
+  esa separación, cachear habría mostrado todos los eventos en hora de Chicago.
+  La igualdad `parseICS === localizeEvents ∘ parseICSPortable` está blindada con
+  un test.
+- **`updatedAt` solo cambia si el contenido cambió** (se compara un sha256): una
+  apertura normal de la app no descarga el nodo. `checkedAt`, que sí se escribe
+  en cada ejecución, es lo que indica si el cron sigue vivo.
+- **Fallback intacto**: si el nodo no cubre un calendario (delegación con
+  `extraCalendars` recién añadidos), o si `checkedAt` tiene más de 24 h, se baja
+  el ICS directamente como antes.
+- **Fix: el proxy CORS se usaba también en nativo**, donde no hay CORS que
+  sortear. Era un round-trip entero de más contra un feed que ya tarda 1 s, y si
+  el proxy fallaba se pagaban dos esperas. Ahora es exclusivo de web.
+- **Fix: la caché local se pinta antes de comprobar el estado de la red**
+  (`getNetworkStateAsync` es un salto nativo y no hace falta para leer disco).
+- Firebase: nodo nuevo `/calendarEvents` (lectura pública, escritura cerrada —
+  solo lo escribe el Admin SDK). Requiere desplegar reglas Y functions:
+  `firebase deploy --only database,functions`.
+- Documentación completa en `docs/funcionalidades/CALENDARIOS.md`.
+- Archivos: `utils/icsParser.ts` (nuevo), `hooks/useCalendarEvents.ts`,
+  `functions/src/index.ts`, `functions/scripts/sync-ics-parser.mjs` (nuevo),
+  `functions/package.json`, `database.rules.json`,
+  `__tests__/icsParser.test.ts` y `__tests__/useCalendarEventsCache.test.ts`
+  (nuevos, +20 tests).
+
 ## 2026-08-26 09:21 — Añadida dependencia expo-observe (EAS Observe)
 
 - Instalado `expo-observe` (~57.0.16) vía `npx expo install expo-observe`
@@ -35,7 +75,7 @@
   usaba la inicial de la categoría o un `•`), para que WhatsApp lo reconozca
   como lista numerada. El título de la canción va en negrita y el número de
   canción (`#123`) se mueve al final de la línea con formato código+negrita
-  (`` *`#123`* ``).
+  (``*`#123`*``).
 - **Enlace a la nube**: si la playlist está subida (`sharing.link`), el
   mensaje cierra con el enlace (`☁️ https://mcm.expo.app/playlist?p=1234`) y
   el código de 4 dígitos.

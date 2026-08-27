@@ -265,6 +265,10 @@ Firebase Realtime Database
 ├── albums
 │   ├── updatedAt: timestamp
 │   └── data: { álbumes }
+├── calendars                  → { updatedAt, data }  (URLs de los .ics)
+├── calendarEvents             ← precacheado por la Cloud Function cacheCalendarIcs
+│   ├── meta: { updatedAt, checkedAt, hash, calendarIds }
+│   └── data: { <calendarId>: { events: PortableEvent[] } }
 └── jubileo
     ├── horario    → { updatedAt, data }
     ├── materiales → { updatedAt, data }  (contenido BBCode)
@@ -374,24 +378,25 @@ Documentar NO:
 
 ## Archivos clave (referencia rápida)
 
-| Qué necesitas             | Archivo                                                  |
-| ------------------------- | -------------------------------------------------------- |
-| Entry point               | `app/_layout.tsx`                                        |
-| Configuración de tabs     | `app/(tabs)/_layout.tsx`                                 |
-| Home screen               | `app/(tabs)/index.tsx`                                   |
-| Fallback de perfiles      | `constants/defaultProfileConfig.ts`                      |
-| Catálogo de IDs conocidos | `constants/profileCatalog.ts`                            |
-| Resolver de perfil        | `utils/resolveProfileConfig.ts`                          |
-| Seed JSON de Firebase     | `firebase-seed/profileConfig.json`                       |
-| Colores                   | `constants/colors.ts`                                    |
-| Firebase config           | `constants/firebase.ts`                                  |
-| Firebase app singleton    | `utils/firebaseApp.ts`                                   |
-| Fetch de datos            | `hooks/useFirebaseData.ts`                               |
-| Procesador de canciones   | `hooks/useSongProcessor.ts`                              |
-| Parser de calendario      | `hooks/useCalendarEvents.ts`                             |
-| BBCode → HTML             | `utils/formatText.ts`                                    |
-| Notificaciones            | `notifications/` + `services/pushNotificationService.ts` |
-| Env vars template         | `.env.example`                                           |
+| Qué necesitas             | Archivo                                                   |
+| ------------------------- | --------------------------------------------------------- |
+| Entry point               | `app/_layout.tsx`                                         |
+| Configuración de tabs     | `app/(tabs)/_layout.tsx`                                  |
+| Home screen               | `app/(tabs)/index.tsx`                                    |
+| Fallback de perfiles      | `constants/defaultProfileConfig.ts`                       |
+| Catálogo de IDs conocidos | `constants/profileCatalog.ts`                             |
+| Resolver de perfil        | `utils/resolveProfileConfig.ts`                           |
+| Seed JSON de Firebase     | `firebase-seed/profileConfig.json`                        |
+| Colores                   | `constants/colors.ts`                                     |
+| Firebase config           | `constants/firebase.ts`                                   |
+| Firebase app singleton    | `utils/firebaseApp.ts`                                    |
+| Fetch de datos            | `hooks/useFirebaseData.ts`                                |
+| Procesador de canciones   | `hooks/useSongProcessor.ts`                               |
+| Parser de calendario      | `utils/icsParser.ts` (puro, compartido con las functions) |
+| Hook de calendario        | `hooks/useCalendarEvents.ts`                              |
+| BBCode → HTML             | `utils/formatText.ts`                                     |
+| Notificaciones            | `notifications/` + `services/pushNotificationService.ts`  |
+| Env vars template         | `.env.example`                                            |
 
 ## Identificadores de la app
 
