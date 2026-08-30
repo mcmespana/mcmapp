@@ -2,10 +2,12 @@ import React, { useRef } from 'react';
 import {
   View,
   Text,
+  ScrollView,
   StyleSheet,
   Platform,
   PanResponder,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from '@/components/BottomSheet';
@@ -50,6 +52,16 @@ export default function ReaderSettingsSheet({
   const isDark = scheme === 'dark';
   const W = warm(isDark);
   const { scale, setScale, min, max, step } = useSectionFontScale(sectionKey);
+  const { height: windowHeight } = useWindowDimensions();
+
+  // La hoja tiene `overflow: hidden` y un tope de altura: si el contenido crece
+  // más que eso, lo que sobra NO se ve ni se puede alcanzar. Con la letra al
+  // 220% la vista previa sola se comía la pantalla entera y la barra de tamaño
+  // quedaba fuera, sin forma de volver a bajarla. Dos topes lo evitan:
+  // el de la vista previa (que scrollea por dentro, así los controles nunca se
+  // van de la vista) y el del contenido entero (para pantallas bajas / apaisado).
+  const previewMaxHeight = Math.max(110, Math.min(240, windowHeight * 0.26));
+  const contentMaxHeight = windowHeight * 0.66;
 
   const canDecrease = scale > min + 0.001;
   const canIncrease = scale < max - 0.001;
@@ -92,6 +104,10 @@ export default function ReaderSettingsSheet({
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      // La barra vive dentro de un ScrollView: sin esto, en cuanto el dedo se
+      // desvía un poco en vertical el scroll reclama el gesto y el arrastre se
+      // corta a mitad.
+      onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: (e) => scrubTo(e.nativeEvent.locationX),
       onPanResponderMove: (e) => scrubTo(e.nativeEvent.locationX),
     }),
@@ -104,7 +120,13 @@ export default function ReaderSettingsSheet({
 
   return (
     <BottomSheet visible={visible} onClose={onClose} title="Ajustes de lectura">
-      <View style={styles.container}>
+      <ScrollView
+        style={{ maxHeight: contentMaxHeight }}
+        contentContainerStyle={styles.container}
+        // Indicadores a la vista: el fallo que arregla esto se sentía como
+        // "esto no scrollea", así que conviene que se note que sí.
+        showsVerticalScrollIndicator
+      >
         {/* ── Vista previa en vivo ── */}
         <View
           style={[
@@ -112,16 +134,23 @@ export default function ReaderSettingsSheet({
             { backgroundColor: surfaceBg, borderColor: W.border },
           ]}
         >
-          <Text
-            style={{
-              color: W.text,
-              fontSize: 18 * scale,
-              lineHeight: 28 * scale,
-              fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
-            }}
+          <ScrollView
+            style={{ maxHeight: previewMaxHeight }}
+            contentContainerStyle={styles.previewContent}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
           >
-            {previewText || DEFAULT_PREVIEW}
-          </Text>
+            <Text
+              style={{
+                color: W.text,
+                fontSize: 18 * scale,
+                lineHeight: 28 * scale,
+                fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
+              }}
+            >
+              {previewText || DEFAULT_PREVIEW}
+            </Text>
+          </ScrollView>
         </View>
 
         {/* ── Tamaño de letra ── */}
@@ -245,7 +274,7 @@ export default function ReaderSettingsSheet({
             );
           })}
         </View>
-      </View>
+      </ScrollView>
     </BottomSheet>
   );
 }
@@ -262,6 +291,10 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 22,
     minHeight: 96,
+    justifyContent: 'center',
+  },
+  previewContent: {
+    flexGrow: 1,
     justifyContent: 'center',
   },
   sectionLabel: {

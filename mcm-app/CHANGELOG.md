@@ -18,6 +18,23 @@
 
 ---
 
+## 2026-08-30 14:20 — OTA producción: los ajustes de lectura del evangelio se quedaban sin scroll (cherry-pick)
+
+- **El problema**: en "Ajustes de lectura" (Contigo → evangelio) el contenido
+  iba en un `View` a pelo. El `BottomSheet` compartido tiene tope de altura y
+  `overflow: hidden`, así que con la letra grande la vista previa —que se pinta
+  al tamaño elegido, hasta 220%— crecía hasta comerse la hoja entera: la barra
+  de tamaño y el selector de tema quedaban recortados fuera de pantalla, sin
+  scroll posible y sin forma de volver a bajar la letra.
+- **Arreglo**: dos topes. El contenido entero va en un `ScrollView` acotado
+  (66% de la ventana) y la vista previa scrollea dentro de su propia caja
+  (máximo 26% de la ventana, entre 110 y 240 px), de modo que los controles
+  quedan siempre a la vista sea cual sea el tamaño de letra.
+- Cherry-pick adaptado desde `main` (2bcf66f): allí el fichero ya tiene la
+  animación del agarre y la háptica de tope, que en esta rama todavía no están.
+- Archivos: `mcm-app/components/contigo/ReaderSettingsSheet.tsx`,
+  `mcm-app/__tests__/readerSettingsSheetScroll.test.tsx`.
+
 ## 2026-07-30 01:15 — Comunica: modo oscuro completo + pantalla de carga de marca
 
 - **Franjas de arriba y de abajo en claro con la app en oscuro (bug).** Las zonas
@@ -57,6 +74,7 @@
   `components/ui/GlassSurface{,.ios}.tsx`, `contexts/AppSettingsContext.tsx`,
   `__tests__/comunicaThemeBridge.test.ts`,
   `docs/contratos/COMUNICA_WEBVIEW.md`.
+
 ## 2026-07-29 19:20 — Visita Papa archivada y Comunica como tab (después de Contigo)
 
 - **Archivar un evento ahora hace algo.** El "archivar" del panel MCM
@@ -214,9 +232,9 @@
   así siempre es legible. En Android (sin cristal fiable) se usa una franja
   lisa blanca/oscura según el tema.
 - **Scroll inferior (iOS)**: se añade `contentInset` inferior (alto del tab bar
-  + margen) para poder arrastrar el contenido por encima del tab bar
-  translúcido — antes el último botón de la web (p. ej. «Guardar») quedaba
-  tapado. Además la web arranca en zona segura vía `contentInset` superior.
+  - margen) para poder arrastrar el contenido por encima del tab bar
+    translúcido — antes el último botón de la web (p. ej. «Guardar») quedaba
+    tapado. Además la web arranca en zona segura vía `contentInset` superior.
 - Archivo: `app/screens/ComunicaScreen.tsx`. Cambio OTA-safe (sin módulos
   nativos nuevos; `GlassSurface`/`expo-blur` ya están en el binario).
 
@@ -656,8 +674,8 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   base + incluye `__tests__`), script `npm run typecheck:tests`, y añadido como
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
-  >600) y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  > 600.  y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
+  >       Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`
