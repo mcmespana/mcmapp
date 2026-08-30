@@ -8,11 +8,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Animated, {
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -37,6 +37,8 @@ import { durations } from '@/constants/animations';
 import { h } from '@/utils/haptics';
 import { pushWithRetry } from '@/services/firebaseWrites';
 import { hasSongMedia } from '@/types/songMedia';
+import { useSongTags } from '@/hooks/useSongTags';
+import { resolveTag, tagCategoryId, type ResolvedTag } from '@/utils/songTags';
 import SongMediaSheet from '@/components/song-media/SongMediaSheet';
 import FloatingMediaPlayer, {
   type FloatingMediaSource,
@@ -65,6 +67,7 @@ type SongDetailScreenNavigationProp = NavigationProp<
   'SongDetail'
 > & {
   replace: (screen: keyof RootStackParamList, params: any) => void;
+  push: (screen: keyof RootStackParamList, params?: any) => void;
 };
 
 interface SongDetailScreenProps {
@@ -255,6 +258,15 @@ export default function SongDetailScreen({
   const media = useMemo(() => routeMedia ?? null, [routeMedia]);
   const songHasMedia = hasSongMedia(media);
   const [showMediaSheet, setShowMediaSheet] = useState(false);
+
+  // Etiquetas de la canción, resueltas contra el catálogo para pintarlas con
+  // su emoji y su nombre bonito en la ficha.
+  const tagIndex = useSongTags();
+  const songTags = useMemo(
+    () => (media?.tags ?? []).map((slug) => resolveTag(slug, tagIndex)),
+    [media?.tags, tagIndex],
+  );
+  const pendingTagRef = useRef<ResolvedTag | null>(null);
   const [floatingMedia, setFloatingMedia] =
     useState<FloatingMediaSource | null>(null);
   // Fuente elegida en la hoja que espera a que la hoja termine de cerrarse.
@@ -531,13 +543,15 @@ export default function SongDetailScreen({
     // la nueva entra desde el lado contrario.
     const swapAndSlideIn = () => {
       navigation.setParams(params);
-      slideAnim.value = -toValue;
-      slideAnim.value = withTiming(0, { duration: durations.quick });
+      slideAnim.set(-toValue);
+      slideAnim.set(withTiming(0, { duration: durations.quick }));
     };
-    slideAnim.value = withTiming(toValue, { duration: durations.quick }, () => {
-      'worklet';
-      runOnJS(swapAndSlideIn)();
-    });
+    slideAnim.set(
+      withTiming(toValue, { duration: durations.quick }, () => {
+        'worklet';
+        scheduleOnRN(swapAndSlideIn);
+      }),
+    );
   };
 
   const handleSwipeLeft = () => {
@@ -580,7 +594,7 @@ export default function SongDetailScreen({
   const screenBg = isDark ? '#2C2C2E' : '#FFFFFF';
 
   const slideStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: slideAnim.value }],
+    transform: [{ translateX: slideAnim.get() }],
   }));
 
   const contentView = (
@@ -658,6 +672,11 @@ export default function SongDetailScreen({
         onClose={() => setShowMediaSheet(false)}
         media={media}
         songTitle={_navScreenTitle}
+        tags={songTags}
+        onTagPress={(tag) => {
+          pendingTagRef.current = tag;
+          setShowMediaSheet(false);
+        }}
         // Al pulsar reproducir NO se abre el reproductor todavía: se apunta la
         // fuente y se cierra la hoja. El reproductor nace cuando la hoja ya está
         // desmontada (`onCloseComplete`), porque en iOS la hoja es un Modal en
@@ -668,6 +687,17 @@ export default function SongDetailScreen({
           setShowMediaSheet(false);
         }}
         onCloseComplete={() => {
+          // La hoja ya está desmontada: aquí es donde se puede navegar o
+          // presentar el reproductor sin que iOS se coma la transición.
+          const pendingTag = pendingTagRef.current;
+          if (pendingTag) {
+            pendingTagRef.current = null;
+            navigation.push('SongsList', {
+              categoryId: tagCategoryId([pendingTag.slug]),
+              categoryName: pendingTag.label,
+            });
+            return;
+          }
           const pending = pendingMediaRef.current;
           if (!pending) return;
           pendingMediaRef.current = null;

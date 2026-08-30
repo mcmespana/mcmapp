@@ -27,13 +27,16 @@ npx tsc --noEmit       # Verificar tipos TypeScript
 
 Los OTA updates (EAS Update) solo envían el **bundle JS** — no incluyen código nativo. Si añades un paquete con módulos nativos (`expo-*`, `react-native-*` con carpeta `ios/` o `android/`) y haces OTA, **la app crashea** porque el binario instalado no tiene ese módulo.
 
+**Esto es una restricción de despliegue, NO un argumento en contra de un cambio.** No uses "no es OTA" como riesgo, contra ni motivo para descartar una librería o una feature: el cambio entra igual y se queda esperando al siguiente build nativo. Quien decide si eso viene mal es el usuario.
+
 Cuando añadas un paquete nativo:
 
 1. Añade `[skip-ota]` al mensaje del commit → el workflow `ota-production.yml` se salta automáticamente
-2. Avisa al usuario de que necesita un **build de producción** antes de mergear a `production`:
+2. Cierra la respuesta con **una sola línea al final**, sin párrafos ni avisos repetidos:
    ```
-   ⚠️ Este cambio incluye paquetes nativos ([lista]). Requiere build de tienda antes del merge a production. El commit lleva [skip-ota] para no lanzar la OTA.
+   OTA: ❌ — requiere build nativo (paquetes: [lista]). Commit con [skip-ota].
    ```
+   Y cuando el cambio es solo JS: `OTA: ✅ — solo JS.`
 3. Comando para el build: `npm run eas:build -- --profile production`
 
 En `workflow_dispatch` manual la OTA siempre corre independientemente del flag.
@@ -262,6 +265,10 @@ Firebase Realtime Database
 ├── albums
 │   ├── updatedAt: timestamp
 │   └── data: { álbumes }
+├── calendars                  → { updatedAt, data }  (URLs de los .ics)
+├── calendarEvents             ← precacheado por la Cloud Function cacheCalendarIcs
+│   ├── meta: { updatedAt, checkedAt, hash, calendarIds }
+│   └── data: { <calendarId>: { events: PortableEvent[] } }
 └── jubileo
     ├── horario    → { updatedAt, data }
     ├── materiales → { updatedAt, data }  (contenido BBCode)
@@ -311,6 +318,7 @@ danger: '#9D1E74'; // Morado LC
 - **Plataforma**: usar `Platform.OS` para diferencias, archivos `.ios.tsx` para componentes iOS-only
 - **Tamaño de archivo**: el techo son **1.000 líneas** (ESLint avisa con `max-lines`); a partir de **1.500** hay que trocear de verdad — extraer subcomponentes a `components/<área>/` y la lógica a un hook `use<Pantalla>.ts` **ANTES** de añadir la feature. Umbrales subidos desde 400/600 el 2026-08-08: con agentes de IA leyendo el código, un archivo largo pero coherente cuesta menos que la misma lógica repartida en seis ficheros que hay que reconstruir mentalmente. Los gigantes que ya hay **se quedan**: no hace falta trocearlos por tamaño.
 - **Logging**: nunca `console.*` (ESLint lo bloquea como error). Usar el logger central `@/utils/logger` (`logger.debug/info/warn/error`).
+- **Una regla que se puede romper sin enterarse va en un test, no en un documento.** Este código lo edita siempre una IA, y una IA puede no leer un párrafo — pero no puede ignorar un test en rojo. El modelo es `__tests__/tabsLayoutWebSafety.test.ts`: no comprueba una función, comprueba que **nadie vuelva a importar** el módulo nativo de tabs en el grafo de web (el fallo real solo se veía al desplegar). Cuando algo se rompa por no saber una regla, el arreglo correcto no es ampliar este archivo: es un test-guardarraíl que falle solo. Razonamiento completo en `docs/planes/PLAN_CALIDAD.md` §0.
 
 ## Patrones comunes
 
@@ -370,24 +378,25 @@ Documentar NO:
 
 ## Archivos clave (referencia rápida)
 
-| Qué necesitas             | Archivo                                                  |
-| ------------------------- | -------------------------------------------------------- |
-| Entry point               | `app/_layout.tsx`                                        |
-| Configuración de tabs     | `app/(tabs)/_layout.tsx`                                 |
-| Home screen               | `app/(tabs)/index.tsx`                                   |
-| Fallback de perfiles      | `constants/defaultProfileConfig.ts`                      |
-| Catálogo de IDs conocidos | `constants/profileCatalog.ts`                            |
-| Resolver de perfil        | `utils/resolveProfileConfig.ts`                          |
-| Seed JSON de Firebase     | `firebase-seed/profileConfig.json`                       |
-| Colores                   | `constants/colors.ts`                                    |
-| Firebase config           | `constants/firebase.ts`                                  |
-| Firebase app singleton    | `utils/firebaseApp.ts`                                   |
-| Fetch de datos            | `hooks/useFirebaseData.ts`                               |
-| Procesador de canciones   | `hooks/useSongProcessor.ts`                              |
-| Parser de calendario      | `hooks/useCalendarEvents.ts`                             |
-| BBCode → HTML             | `utils/formatText.ts`                                    |
-| Notificaciones            | `notifications/` + `services/pushNotificationService.ts` |
-| Env vars template         | `.env.example`                                           |
+| Qué necesitas             | Archivo                                                   |
+| ------------------------- | --------------------------------------------------------- |
+| Entry point               | `app/_layout.tsx`                                         |
+| Configuración de tabs     | `app/(tabs)/_layout.tsx`                                  |
+| Home screen               | `app/(tabs)/index.tsx`                                    |
+| Fallback de perfiles      | `constants/defaultProfileConfig.ts`                       |
+| Catálogo de IDs conocidos | `constants/profileCatalog.ts`                             |
+| Resolver de perfil        | `utils/resolveProfileConfig.ts`                           |
+| Seed JSON de Firebase     | `firebase-seed/profileConfig.json`                        |
+| Colores                   | `constants/colors.ts`                                     |
+| Firebase config           | `constants/firebase.ts`                                   |
+| Firebase app singleton    | `utils/firebaseApp.ts`                                    |
+| Fetch de datos            | `hooks/useFirebaseData.ts`                                |
+| Procesador de canciones   | `hooks/useSongProcessor.ts`                               |
+| Parser de calendario      | `utils/icsParser.ts` (puro, compartido con las functions) |
+| Hook de calendario        | `hooks/useCalendarEvents.ts`                              |
+| BBCode → HTML             | `utils/formatText.ts`                                     |
+| Notificaciones            | `notifications/` + `services/pushNotificationService.ts`  |
+| Env vars template         | `.env.example`                                            |
 
 ## Identificadores de la app
 
@@ -574,4 +583,5 @@ npx heroui-cli@latest agents-md --native --output AGENTS.md
 - Sistema de notificaciones push: ver `docs/funcionalidades/NOTIFICACIONES.md` en la raíz del monorepo
 - **Wordle:** `app/screens/WordleScreen.tsx` y `app/wordle.tsx` no tienen uso activo, pero **se conservan a propósito** como código de referencia para recuperar el Wordle algún día. NO eliminar, NO refactorizar, NO añadirle funcionalidades hasta que se decida reactivarlo.
 - **Haptics:** `utils/haptics.ts` centraliza todo el feedback háptico. Usar las funciones semánticas de `h` (h.tap, h.add, h.remove, h.select, h.toggle, h.formSuccess…) en lugar de llamar a expo-haptics directamente.
+- **Etiquetas del cantoral:** directiva custom `{tags: a, b, c}` + catálogo opcional en `songs/tags`. Modelo puro en `utils/songTags.ts`, índice en `hooks/useSongTags.ts`, UI en `components/song-tags/` y categoría virtual `__TAG__:<slug>` en `SongListScreen`. El botón del header **solo aparece si hay canciones etiquetadas**. Ver `docs/funcionalidades/ETIQUETAS.md` (raíz del monorepo).
 - **Arreglos del cantoral:** directiva custom `{arr: texto}` para anotaciones de arreglo (render sutil alineado a la derecha, toggle ON-por-canción). Lógica en `utils/arrangements.ts`; ver `docs/funcionalidades/ARREGLOS.md` (raíz del monorepo) para sintaxis, comportamiento y el prompt del generador de ChordPro.

@@ -50,16 +50,18 @@ export function HighlightActionBar({
   const anim = useSharedValue(0);
 
   useEffect(() => {
-    anim.value = withSpring(visible ? 1 : 0, {
-      stiffness: 60,
-      damping: 10,
-      mass: 1,
-    });
+    anim.set(
+      withSpring(visible ? 1 : 0, {
+        stiffness: 60,
+        damping: 10,
+        mass: 1,
+      }),
+    );
   }, [visible, anim]);
 
   const barStyle = useAnimatedStyle(() => ({
-    opacity: anim.value,
-    transform: [{ translateY: interpolate(anim.value, [0, 1], [120, 0]) }],
+    opacity: anim.get(),
+    transform: [{ translateY: interpolate(anim.get(), [0, 1], [120, 0]) }],
   }));
 
   return (

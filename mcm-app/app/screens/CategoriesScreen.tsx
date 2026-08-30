@@ -10,6 +10,7 @@ import { NativeStackNavigationProp } from 'expo-router/build/react-navigation/na
 import {
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   useCallback,
   useEffect,
@@ -28,6 +29,10 @@ import { useToast } from '@/contexts/AppToastContext';
 import SuggestSongModal from '@/components/SuggestSongModal';
 import { filterSongsData } from '@/utils/filterSongsData';
 import { useSelectedSongs } from '@/contexts/SelectedSongsContext';
+import { useSongTagIndex } from '@/hooks/useSongTags';
+import TagCloudSheet from '@/components/song-tags/TagCloudSheet';
+import { tagCategoryId, type ResolvedTag } from '@/utils/songTags';
+import { h } from '@/utils/haptics';
 import {
   consumePendingCloudPlaylistCode,
   consumePendingChoirCode,
@@ -119,6 +124,28 @@ export default function CategoriesScreen({
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
 
+  // ── Etiquetas ────────────────────────────────────────────────────────────
+  // El índice se construye sobre los datos ya descargados; el catálogo de
+  // metadatos (`songs/tags`) es opcional. Si NO hay ninguna canción etiquetada
+  // el botón del header ni siquiera se pinta: nada de un botón que abre una
+  // hoja vacía.
+  const tagIndex = useSongTagIndex(songsData);
+  const hasTags = tagIndex.tags.length > 0;
+  const [showTags, setShowTags] = useState(false);
+  // La navegación espera a que la hoja esté DESMONTADA: en iOS es un Modal de
+  // verdad y empujar una pantalla con él vivo deja la transición a medias.
+  const pendingTagRef = useRef<ResolvedTag | null>(null);
+
+  const handleTagsCloseComplete = useCallback(() => {
+    const tag = pendingTagRef.current;
+    if (!tag) return;
+    pendingTagRef.current = null;
+    navigation.navigate('SongsList', {
+      categoryId: tagCategoryId([tag.slug]),
+      categoryName: tag.label,
+    });
+  }, [navigation]);
+
   const handleSuccessSubmit = () => {
     toast.show({ variant: 'success', label: '¡Sugerencia enviada!' });
   };
@@ -166,23 +193,41 @@ export default function CategoriesScreen({
           <MaterialIcons name="add" size={24} color={headerIconColor} />
         </TouchableOpacity>
       ),
+      // "Etiquetas" y "Buscar" van juntos a la derecha porque los dos son
+      // "entrar a buscar algo"; el "+" de sugerir se queda solo a la izquierda.
+      // El de etiquetas solo existe si hay etiquetas que enseñar.
       headerRight: () => (
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('SongsList', {
-              categoryId: ALL_SONGS_CATEGORY_ID,
-              categoryName: ALL_SONGS_CATEGORY_NAME,
-            })
-          }
-          style={styles.headerNativeButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityLabel="Buscar canción"
-        >
-          <MaterialIcons name="search" size={24} color={headerIconColor} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          {hasTags && (
+            <TouchableOpacity
+              onPress={() => {
+                h.tap();
+                setShowTags(true);
+              }}
+              style={styles.headerNativeButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityLabel="Ver etiquetas"
+            >
+              <MaterialIcons name="sell" size={22} color={headerIconColor} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('SongsList', {
+                categoryId: ALL_SONGS_CATEGORY_ID,
+                categoryName: ALL_SONGS_CATEGORY_NAME,
+              })
+            }
+            style={styles.headerNativeButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="Buscar canción"
+          >
+            <MaterialIcons name="search" size={24} color={headerIconColor} />
+          </TouchableOpacity>
+        </View>
       ),
     });
-  }, [navigation, styles, headerIconColor]);
+  }, [navigation, styles, headerIconColor, hasTags]);
 
   // En iPad/web amplio rendiriamos la "Tu selección" en una card destacada
   // de ancho completo arriba, y las categorías reales en un grid de 2-3 cols
@@ -360,6 +405,17 @@ export default function CategoriesScreen({
         key={`cats-${numColumns}`}
       />
 
+      <TagCloudSheet
+        visible={showTags}
+        onClose={() => setShowTags(false)}
+        tags={tagIndex.tags}
+        onSelectTag={(tag) => {
+          pendingTagRef.current = tag;
+          setShowTags(false);
+        }}
+        onCloseComplete={handleTagsCloseComplete}
+      />
+
       <SuggestSongModal
         visible={showForm}
         onClose={() => setShowForm(false)}
@@ -416,7 +472,7 @@ const createStyles = (
     headerActions: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 14,
+      gap: 4,
       marginRight: Platform.OS === 'web' ? 8 : 0,
     },
     headerNativeButton: {

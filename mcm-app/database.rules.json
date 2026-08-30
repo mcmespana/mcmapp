@@ -5,7 +5,8 @@
    * ============================================================================
    *
    *  Documentación completa, riesgos y guía para activar/desactivar secciones:
-   *      ../SEGURIDAD.md   (raíz del monorepo)
+   *      ../docs/SEGURIDAD.md          (filosofía y mapa de paths)
+   *      ../docs/desarrollo/FIREBASE_REGLAS.md   (cómo se despliega esto)
    *
    *  PRINCIPIOS
    *  ----------
@@ -17,9 +18,45 @@
    *  3. Lectura pública SOLO para contenido público (cantoral, eventos, etc.).
    *  4. Escritura pública SOLO en los nodos donde la app escribe sin login
    *     (reportes, reflexiones, tokens push, evaluaciones, juego). Todo lo
-   *     demás se escribe desde el panel/Admin SDK, que IGNORA estas reglas.
+   *     demás se escribe desde el panel o el scraper.
    *  5. Datos personales (`/users/$uid`) requieren estar autenticado y ser
    *     el dueño (`auth.uid === $uid`).
+   *
+   *  ┌──────────────────────────────────────────────────────────────────────┐
+   *  │  LOS DOS INTERRUPTORES  (`/_config`)                                  │
+   *  └──────────────────────────────────────────────────────────────────────┘
+   *
+   *  El MCM Panel escribe con el SDK de cliente SIN autenticar, y sus funciones
+   *  `api/` llaman por REST sin token. Cerrar eso de golpe deja el panel
+   *  inservible, así que sus permisos NO están repartidos por el fichero: están
+   *  colgados de dos banderas que se leen de la propia base de datos.
+   *
+   *    /_config/legacyPanelWrites     → permisos del panel (contenido)
+   *    /_config/legacyNotificationsOpen → /pushTokens, /notifications y
+   *                                       /scheduledNotifications
+   *
+   *  `/_config` NO es legible ni escribible por nadie: las reglas lo leen con
+   *  `root.child(...)`, que no pasa por `.read`. Solo se toca desde la consola
+   *  de Firebase o con Admin SDK. Es decir: nadie puede abrirse los permisos a
+   *  sí mismo desde un cliente.
+   *
+   *  ⚠️ AMBAS BANDERAS TIENEN QUE EXISTIR Y VALER `true` ANTES DE DESPLEGAR.
+   *     Si no existen valen `null`, la comparación da `false` y el panel se
+   *     queda sin permisos en el mismo instante del deploy. El nodo a importar
+   *     está en `firebase-seed/config.json`.
+   *
+   *  Mientras las banderas estén en `true`, la exposición es LA MISMA QUE HOY
+   *  en esos nodos (escritura pública de contenido, respuestas de encuestas
+   *  legibles). Lo que cambia es que apagarlas es un clic en la consola, sin
+   *  desplegar reglas, y que TODO LO DEMÁS (sobre todo `/users`) ya está
+   *  cerrado de verdad.
+   *
+   *  Para apagarlas hace falta, en este orden:
+   *    legacyNotificationsOpen → `FIREBASE_DB_SECRET` en Vercel (los helpers
+   *      REST de `api/_lib/push.ts` ya lo mandan como `?auth=` si existe) Y que
+   *      el panel deje de leer `/pushTokens` y `/scheduledNotifications` desde
+   *      el navegador.
+   *    legacyPanelWrites → auth real en el panel (decisión D2).
    *
    *  NOTA: este archivo usa comentarios estilo JS, permitidos por las reglas
    *  de Firebase RTDB. No es JSON estricto (no lo proceses con `jq`).
@@ -30,92 +67,94 @@
     ".write": false,
 
     /* ------------------------------------------------------------------ *
+     *  INTERRUPTORES  (/_config)
+     *  Cerrado a cal y canto. Las reglas lo leen con `root.child()`, que se
+     *  evalúa en el servidor y NO pasa por `.read`. Se edita solo desde la
+     *  consola de Firebase. Seed: `firebase-seed/config.json`.
+     * ------------------------------------------------------------------ */
+    "_config": {
+      ".read": false,
+      ".write": false
+    },
+
+    /* ------------------------------------------------------------------ *
      *  CANTORAL  (/songs)
-     *  - data:        catálogo de canciones (ChordPro).  Lectura pública.
-     *                 Escritura = panel secreto (contraseña 'coco', NO Auth).
-     *                 ⚠️ PUNTO MÁS DÉBIL: escritura pública. Ver SEGURIDAD.md
-     *                 sección "Endurecer el panel secreto".
-     *  - updatedAt:   timestamp para invalidar caché. Lo escribe el panel.
-     *  - ediciones / solicitudes / fallitos: colas de reportes de usuarios.
+     *  - data:        catálogo de canciones (ChordPro). Lectura pública.
+     *                 La escritura de verdad la hace el repo `mcmapp-cantoral`
+     *                 con token (Admin, ignora estas reglas). Queda abierta
+     *                 bajo la bandera del panel por el editor DEPRECADO del
+     *                 panel y por `SecretPanelModal` de la app (contraseña en
+     *                 el código, no Auth). Apagar la bandera se lleva por
+     *                 delante esos dos; el repo del cantoral sigue igual.
+     *  - ediciones / solicitudes / fallitos: colas que escribe la app sin
+     *                 login (reportes de usuarios). Las lee el panel.
      * ------------------------------------------------------------------ */
     "songs": {
+      ".read": true,
       "data": {
-        ".read": true,
-        ".write": true
+        ".write": "root.child('_config/legacyPanelWrites').val() === true"
       },
       "updatedAt": {
-        ".read": true,
-        ".write": true,
+        ".write": "root.child('_config/legacyPanelWrites').val() === true",
         ".validate": "newData.isString() || newData.isNumber()"
       },
+      "hidden": {
+        ".write": "root.child('_config/legacyPanelWrites').val() === true"
+      },
+      /* Catálogo de etiquetas del cantoral. Lo publica el MISMO CI que
+       * `songs/data` (repo mcmapp-cantoral), así que va con la misma bandera.
+       * Ver docs/funcionalidades/ETIQUETAS.md. */
+      "tags": {
+        ".write": "root.child('_config/legacyPanelWrites').val() === true"
+      },
       "ediciones": {
-        ".read": true,
         ".write": true
       },
       "solicitudes": {
-        ".read": true,
         ".write": true
       },
       "fallitos": {
-        ".read": true,
         ".write": true
       }
     },
 
     /* ------------------------------------------------------------------ *
-     *  ÁLBUMES / FOTOS  (/albums)   — solo lectura pública.
+     *  ÁLBUMES / FOTOS  (/albums)   — lectura pública, edita el panel.
      * ------------------------------------------------------------------ */
     "albums": {
-      ".read": true
-    },
-
-    /* ------------------------------------------------------------------ *
-     *  EVENTO JUBILEO  (/jubileo)
-     *  Todo el evento es de lectura pública. La única escritura desde la
-     *  app son las reflexiones de "Compartiendo".
-     * ------------------------------------------------------------------ */
-    "jubileo": {
       ".read": true,
-      "compartiendo": {
-        "data": { ".write": true },
-        "updatedAt": { ".write": true }
-      }
+      ".write": "root.child('_config/legacyPanelWrites').val() === true"
     },
 
     /* ------------------------------------------------------------------ *
-     *  EVENTOS NUEVOS  (/activities/<evento>)   p.ej. visitapapa26, _meta
-     *  Lectura pública de todo. Escritura pública SOLO en:
-     *    - <evento>/compartiendo (reflexiones)
-     *    - <evento>/evaluacion/respuestas/<deviceId> (encuesta del evento)
-     * ------------------------------------------------------------------ */
-    "activities": {
-      ".read": true,
-      "$event": {
-        "compartiendo": {
-          "data": { ".write": true },
-          "updatedAt": { ".write": true }
-        },
-        "evaluacion": {
-          "respuestas": {
-            "$deviceId": { ".write": true }
-          }
-        }
-      }
-    },
-
-    /* ------------------------------------------------------------------ *
-     *  CONFIGURACIÓN DE PERFILES  (/profileConfig)  — solo lectura.
-     *  Visibilidad de tabs/botones/mantenimiento. Se edita desde mcmpanel.
-     * ------------------------------------------------------------------ */
-    "profileConfig": {
-      ".read": true
-    },
-
-    /* ------------------------------------------------------------------ *
-     *  CALENDARIOS ICS  (/calendars)  — solo lectura (URLs de .ics).
+     *  CALENDARIOS ICS  (/calendars)  — lectura pública (URLs de .ics).
      * ------------------------------------------------------------------ */
     "calendars": {
-      ".read": true
+      ".read": true,
+      ".write": "root.child('_config/legacyPanelWrites').val() === true"
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  CALENDARIOS PRECACHEADOS  (/calendarEvents)
+     *  Los ICS de /calendars ya descargados y parseados. Lectura pública
+     *  (es el mismo contenido público que los .ics). Lo escribe SOLO la
+     *  Cloud Function `cacheCalendarIcs` con el Admin SDK, que se salta
+     *  estas reglas → escritura cerrada a cal y canto para los clientes.
+     *  Ver docs/funcionalidades/CALENDARIOS.md.
+     * ------------------------------------------------------------------ */
+    "calendarEvents": {
+      ".read": true,
+      ".write": false
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  CONFIGURACIÓN DE PERFILES  (/profileConfig)
+     *  Visibilidad de tabs/botones/mantenimiento. Lectura pública porque la
+     *  app la necesita antes de cualquier login. La edita el panel.
+     * ------------------------------------------------------------------ */
+    "profileConfig": {
+      ".read": true,
+      ".write": "root.child('_config/legacyPanelWrites').val() === true"
     },
 
     /* ------------------------------------------------------------------ *
@@ -128,74 +167,153 @@
     },
 
     /* ------------------------------------------------------------------ *
-     *  NOTIFICACIONES  (/notifications)
-     *  Lectura pública (historial in-app). La ESCRITURA queda denegada:
-     *  solo el backend/panel (Admin SDK) crea notificaciones.
-     * ------------------------------------------------------------------ */
-    "notifications": {
-      ".read": true,
-      ".write": false
-    },
-
-    /* ------------------------------------------------------------------ *
-     *  NOTIFICACIONES PROGRAMADAS  (/scheduledNotifications)
-     *  Las crea el panel y las procesa su cron (`process-scheduled`). La app
-     *  NO las lee ni las escribe nunca.
+     *  EVENTO JUBILEO  (/jubileo)   — evento legacy, en la raíz.
      *
-     *  Denegado en ambos sentidos A PROPÓSITO: quien las toque debe hacerlo con
-     *  el Admin SDK, que ignora estas reglas. Sin este bloque el nodo también
-     *  quedaría denegado (regla 1: lo no listado se bloquea), pero entonces
-     *  sería por olvido y no por decisión — y al leer el fichero no habría
-     *  forma de saber cuál de las dos cosas era.
-     *
-     *  ⚠️ Si el panel escribe aquí con el SDK de cliente, dejará de funcionar
-     *  en cuanto se desplieguen estas reglas. Ver docs/desarrollo/FIREBASE_REGLAS.md
+     *  El `.read` NO está en la raíz del nodo a propósito: colgarlo aquí
+     *  cascadearía hasta `evaluacion/respuestas`, que lleva nombre y
+     *  delegación de quien contesta. Se concede sección a sección.
      * ------------------------------------------------------------------ */
-    "scheduledNotifications": {
-      ".read": false,
-      ".write": false
-    },
+    "jubileo": {
+      ".read": "root.child('_config/legacyPanelWrites').val() === true",
+      ".write": "root.child('_config/legacyPanelWrites').val() === true",
 
-    /* ------------------------------------------------------------------ *
-     *  TOKENS PUSH  (/pushTokens/<tokenId>)
-     *  La raíz NO es enumerable (no se puede listar todos los tokens).
-     *  Cada dispositivo escribe/lee su propio nodo (registro + heartbeat).
-     *  El backend los lee con Admin SDK para enviar notificaciones.
-     * ------------------------------------------------------------------ */
-    "pushTokens": {
-      ".read": false,
-      ".write": false,
-      "$tokenId": {
+      /* Reflexiones: las escribe la app sin login. */
+      "compartiendo": {
         ".read": true,
-        ".write": true,
-        ".validate": "newData.hasChildren()"
+        "data": { ".write": true },
+        "updatedAt": { ".write": true }
+      },
+
+      /* Encuesta del evento: config pública, respuestas privadas. */
+      "evaluacion": {
+        "data": { ".read": true },
+        "hidden": { ".read": true },
+        "updatedAt": {
+          ".read": true,
+          ".write": true,
+          ".validate": "newData.isString() || newData.isNumber()"
+        },
+        "respuestas": {
+          "$deviceId": {
+            ".read": true,
+            ".write": true
+          }
+        }
+      },
+
+      /* horario, materiales, visitas, profundiza, grupos, contactos,
+       * calendarios… todo lo demás del evento es contenido público. */
+      "$section": {
+        ".read": true
       }
     },
 
     /* ------------------------------------------------------------------ *
-     *  JUEGO WORDLE  (/wordle)   (actualmente dormido)
-     *  Lectura pública. Escritura pública en stats, users y partidas del día.
-     *  daily-words es solo lectura (lo genera el backend).
+     *  EVENTOS NUEVOS  (/activities/<evento>)   p.ej. visitapapa26, _meta
+     *
+     *  Mismo criterio que Jubileo: el `.read` se concede por sección, nunca
+     *  en la raíz del evento, porque `evaluacion/respuestas` cuelga de ahí.
+     *
+     *  `activities/_meta/data.activeEventId` marca el evento activo global.
      * ------------------------------------------------------------------ */
-    "wordle": {
-      ".read": true,
-      "daily-words": { ".write": false },
-      "stats": { ".write": true },
-      "users": { ".write": true },
-      "$date": { ".write": true }
+    "activities": {
+      ".read": "root.child('_config/legacyPanelWrites').val() === true",
+      ".write": "root.child('_config/legacyPanelWrites').val() === true",
+
+      "_meta": {
+        ".read": true
+      },
+
+      "$event": {
+        /* Cabecera del evento que mergea la app: title, tintColor,
+         * bannerText, status ('archived' esconde la tab). */
+        "_meta": {
+          ".read": true
+        },
+
+        "compartiendo": {
+          ".read": true,
+          "data": { ".write": true },
+          "updatedAt": { ".write": true }
+        },
+
+        "evaluacion": {
+          "data": { ".read": true },
+          "hidden": { ".read": true },
+          "updatedAt": {
+            ".read": true,
+            ".write": true,
+            ".validate": "newData.isString() || newData.isNumber()"
+          },
+          "respuestas": {
+            "$deviceId": {
+              ".read": true,
+              ".write": true
+            }
+          }
+        },
+
+        "$section": {
+          ".read": true
+        }
+      }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  ENCUESTAS GENÉRICAS  (/surveys/<id>)
+     *  Config (preguntas, estado, audiencia) la escribe el panel. La app solo
+     *  escribe su propia respuesta en <id>/respuestas/<deviceId> y toca
+     *  `updatedAt`. `surveys/_index` es el índice ligero para los banners.
+     *
+     *  Igual que en los eventos: `respuestas` NO es legible en bloque, porque
+     *  cada respuesta lleva `userName`, `userDelegation` y `userId`. Cada
+     *  dispositivo lee la suya y nada más.
+     * ------------------------------------------------------------------ */
+    "surveys": {
+      ".read": "root.child('_config/legacyPanelWrites').val() === true",
+      ".write": "root.child('_config/legacyPanelWrites').val() === true",
+
+      "_index": {
+        ".read": true
+      },
+
+      "$surveyId": {
+        "data": { ".read": true },
+        "hidden": { ".read": true },
+        "updatedAt": {
+          ".read": true,
+          ".write": true,
+          ".validate": "newData.isString() || newData.isNumber()"
+        },
+        "respuestas": {
+          "$deviceId": {
+            ".read": true,
+            ".write": true
+          }
+        }
+      }
     },
 
     /* ------------------------------------------------------------------ *
      *  FEEDBACK Y EVALUACIÓN DE LA APP  (/app)
-     *  - feedback/<categoria>:  reportes de bugs (solo escritura).
-     *  - evaluations/<deviceId>: respuestas a la encuesta de la app.
+     *  - feedback/<categoria>:   reportes de bugs. Solo escritura desde la
+     *                            app; los lee el panel.
+     *  - evaluationConfig:       config de la encuesta de la app (panel).
+     *  - evaluations/<deviceId>: respuestas. Cada dispositivo, la suya.
      * ------------------------------------------------------------------ */
     "app": {
+      ".read": "root.child('_config/legacyPanelWrites').val() === true",
+
       "feedback": {
         ".write": true
       },
+      "updatedAt": {
+        ".read": true,
+        ".write": "root.child('_config/legacyPanelWrites').val() === true"
+      },
       "evaluationConfig": {
-        ".read": true
+        ".read": true,
+        ".write": "root.child('_config/legacyPanelWrites').val() === true"
       },
       "evaluations": {
         "$deviceId": {
@@ -206,25 +324,62 @@
     },
 
     /* ------------------------------------------------------------------ *
-     *  ENCUESTAS GENÉRICAS  (/surveys/<id>)
-     *  Config (preguntas, estado, audiencia) la escribe el panel (Admin SDK).
-     *  Lectura pública de la config. La app solo escribe su propia respuesta
-     *  en <id>/respuestas/<deviceId> (una por dispositivo) y toca updatedAt.
-     *  `surveys/_index` (índice ligero de encuestas activas para los banners) es
-     *  de lectura pública (cae bajo el .read del nodo) y solo lo escribe el panel.
+     *  JUEGO WORDLE  (/wordle)   (actualmente dormido)
+     *  Lectura pública. Escritura pública en stats, users y partidas del día.
+     *  `daily-words` lo genera el panel.
      * ------------------------------------------------------------------ */
-    "surveys": {
+    "wordle": {
       ".read": true,
-      "$surveyId": {
-        "updatedAt": {
-          ".write": true,
-          ".validate": "newData.isString() || newData.isNumber()"
-        },
-        "respuestas": {
-          "$deviceId": {
-            ".write": true
-          }
-        }
+      "daily-words": {
+        ".write": "root.child('_config/legacyPanelWrites').val() === true"
+      },
+      "updatedAt": {
+        ".write": "root.child('_config/legacyPanelWrites').val() === true"
+      },
+      "stats": { ".write": true },
+      "users": { ".write": true },
+      "$date": { ".write": true }
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  NOTIFICACIONES  (/notifications)
+     *  Lectura pública (historial in-app). La escritura la hacen las funciones
+     *  `api/notifications/*` del panel, hoy por REST SIN token: por eso cuelga
+     *  de `legacyNotificationsOpen` y no está simplemente cerrada.
+     * ------------------------------------------------------------------ */
+    "notifications": {
+      ".read": true,
+      ".write": "root.child('_config/legacyNotificationsOpen').val() === true"
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  NOTIFICACIONES PROGRAMADAS  (/scheduledNotifications)
+     *  Las crea el panel y las procesa su cron (`process-scheduled`). La app
+     *  NO las lee ni las escribe nunca. Bajo la bandera porque hoy las tocan
+     *  el navegador del panel (listado) y las funciones REST sin token.
+     * ------------------------------------------------------------------ */
+    "scheduledNotifications": {
+      ".read": "root.child('_config/legacyNotificationsOpen').val() === true",
+      ".write": "root.child('_config/legacyNotificationsOpen').val() === true"
+    },
+
+    /* ------------------------------------------------------------------ *
+     *  TOKENS PUSH  (/pushTokens/<tokenId>)
+     *  Cada dispositivo escribe/lee SU nodo (registro + heartbeat).
+     *
+     *  La RAÍZ es lo delicado: poder listarla es poder mandar push a todo el
+     *  mundo por tu cuenta a través de la API de Expo. La necesitan el envío
+     *  (`api/_lib/push.ts`) y el contador de destinatarios del composer, los
+     *  dos sin credencial → bandera. En cuanto `FIREBASE_DB_SECRET` esté en
+     *  Vercel, el envío deja de necesitarla.
+     * ------------------------------------------------------------------ */
+    "pushTokens": {
+      ".read": "root.child('_config/legacyNotificationsOpen').val() === true",
+      ".write": false,
+      "$tokenId": {
+        ".read": true,
+        ".write": true,
+        "token": { ".validate": "newData.isString()" }
       }
     },
 
@@ -232,7 +387,11 @@
      *  PLAYLISTS COMPARTIDAS  (/playlistShares/<code>)
      *  Se comparten por código corto. La raíz no es enumerable.
      *  Quien tiene el código puede leer y escribir su entrada.
-     *  La Cloud Function `purgeExpiredShares` borra las caducadas.
+     *
+     *  El `.validate` va en la HOJA `expiresAt`, no en el padre: los
+     *  `update()` parciales (renombrar, mover de código) no reevalúan el
+     *  `.validate` de un ancestro, así que un `hasChild('expiresAt')` arriba
+     *  daba una sensación de validación que no existía.
      * ------------------------------------------------------------------ */
     "playlistShares": {
       ".read": false,
@@ -240,7 +399,7 @@
       "$code": {
         ".read": true,
         ".write": true,
-        ".validate": "newData.hasChild('expiresAt') && newData.child('expiresAt').isNumber()"
+        "expiresAt": { ".validate": "newData.isNumber()" }
       }
     },
 
@@ -257,7 +416,7 @@
       "$code": {
         ".read": true,
         ".write": true,
-        ".validate": "newData.hasChild('expiresAt') && newData.child('expiresAt').isNumber()"
+        "expiresAt": { ".validate": "newData.isNumber()" }
       }
     },
 
@@ -280,19 +439,37 @@
       ".write": false,
       "$choirId": {
         ".write": true,
-        ".validate": "newData.hasChildren(['name'])"
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
+        }
       }
     },
 
     /* ------------------------------------------------------------------ *
      *  DATOS DE USUARIO AUTENTICADO  (/users/<uid>)
-     *  Perfil + sección "Contigo" (hábitos, bookmarks, revisiones).
-     *  REQUIERE login (Google/Apple) y solo el dueño accede a su nodo.
+     *  Perfil + sección "Contigo" (hábitos, bookmarks, revisiones) + el
+     *  marcador anti-duplicado de encuestas.
+     *
+     *  REQUIERE login (Google/Apple) y solo el dueño accede a su nodo. Esto
+     *  NO tiene bandera y no la va a tener: aquí está el diario de Contigo de
+     *  cada persona. La sección Usuarios del panel y el contador de admins
+     *  NO funcionan hasta que el panel tenga auth real (decisión D2).
+     *
+     *  `isAdmin` NO lo puede tocar el dueño: si cayera bajo el `.write` del
+     *  nodo, cualquiera con sesión se nombraría admin a sí mismo. Y no vale
+     *  ponerle `".write": false` debajo — `.read`/`.write` CASCADEAN y un
+     *  `false` más abajo NO revoca el `true` del padre (ese era el bug).
+     *  Lo que sí corta un `.write` heredado es un `.validate`, que no cascadea
+     *  y se evalúa en el path escrito: aquí exige que QUIEN ESCRIBE sea ya
+     *  admin. El primero se pone a mano desde la consola.
      * ------------------------------------------------------------------ */
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid",
+        "isAdmin": {
+          ".validate": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true"
+        }
       }
     }
   }

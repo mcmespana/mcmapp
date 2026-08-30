@@ -4,7 +4,49 @@
 > por sabido. Lo que hay que configurar UNA vez está en §2; el día de la build
 > se hace §3 → §4 → §5 → §6.
 >
-> Rama: `claude/compact-tabs-bar-uxxaoz` · **App v2.1.0** · Expo SDK 57
+> Rama: **`main`** · **App v2.1.0** · Expo SDK 57
+>
+> (La rama `claude/compact-tabs-bar-uxxaoz`, que traía todo esto, se mergeó en
+> la [#313](https://github.com/mcmespana/mcmapp/pull/313) el 2026-08-04 y ya no
+> existe. Se compila desde `main`.)
+
+---
+
+## 0. ⏳ PENDIENTE AHORA MISMO: desplegar la Cloud Function del calendario
+
+Lo de abajo está más o menos hecho. **Esto no**, y es un comando:
+
+```bash
+cd mcm-app && firebase deploy --only functions
+```
+
+**Qué es.** Los calendarios ICS iban lentísimos porque Google genera el `.ics` en
+caliente en cada petición (TTFB medido: 0,87–1,33 s; la transferencia son ~2 ms) y
+manda `no-store` sin `ETag`, así que no hay caché HTTP posible. Se añadió la
+función programada **`cacheCalendarIcs`** (cada 2 h) que los descarga, los parsea
+y los deja en `/calendarEvents`; la app los lee de ahí por la conexión que ya
+tiene abierta con Firebase. Detalle completo en
+[`../funcionalidades/CALENDARIOS.md`](../funcionalidades/CALENDARIOS.md).
+
+**Por qué no bloquea la build.** El cambio es solo JS y ya está en `main`. Sin
+desplegar la función la app **funciona igual que antes**: nadie escribe el nodo y
+cae al fallback de bajar los ICS directamente. Simplemente no se nota la mejora.
+Se puede desplegar antes o después de la build, en cualquier momento.
+
+**Las reglas NO hay que desplegarlas.** `database.rules.json` sigue sin
+desplegarse (las vivas son las antiguas, más abiertas), así que `/calendarEvents`
+ya es legible. El bloque que se añadió al fichero es para el día que se desplieguen
+de verdad, que es una decisión aparte con sus propios requisitos (sembrar
+`/_config` antes, y dos funciones del panel dejan de funcionar) — ver
+[`../SEGURIDAD.md`](../SEGURIDAD.md).
+
+> ⚠️ **Y un aviso para el §6 (merge a `production`).** El workflow
+> `deploy-firebase-rules.yml` despliega las reglas al mergear a `production` **si
+> cambió `database.rules.json`** — y este cambio lo cambió. Hoy se salta porque
+> no existe el secret `FIREBASE_SERVICE_ACCOUNT_MCMAPP`, pero si ese secret se
+> configura antes del merge, el merge dispararía el **primer despliegue completo
+> de reglas** de rebote. Que sea una decisión consciente, no un efecto colateral
+> de sacar la build.
 
 ---
 
@@ -41,7 +83,7 @@ binario que tienen no lleva esos módulos. Por eso los commits van con
    - El **slug de la organización** (sale en la URL: `sentry.io/organizations/<slug>/`)
 
 > El DSN **no es un secreto**. Va horneado dentro de la app, cualquiera puede
-> extraerlo; solo sirve para *enviar* eventos, no para leerlos. Se guarda como
+> extraerlo; solo sirve para _enviar_ eventos, no para leerlos. Se guarda como
 > secret igualmente por higiene, pero si se filtra no pasa nada.
 
 ### 2.2 Sentry — token para subir los source maps
@@ -59,12 +101,12 @@ Son **cuatro** variables de Sentry y van en **tres sitios distintos** (la de
 Aptabase está en §2.4). Es el punto donde más fácil es equivocarse, así que aquí
 está la tabla completa:
 
-| Variable | Qué es | EAS (builds) | GitHub (OTAs) | `.env.local` (dev) |
-| --- | --- | :---: | :---: | :---: |
-| `EXPO_PUBLIC_SENTRY_DSN` | A dónde se mandan los errores | ✅ | ✅ | opcional |
-| `SENTRY_ORG` | Slug de la organización | ✅ | ❌ | ❌ |
-| `SENTRY_PROJECT` | Slug del proyecto (`mcm-app`) | ✅ | ❌ | ❌ |
-| `SENTRY_AUTH_TOKEN` | Token para subir source maps | ✅ | ❌ | ❌ |
+| Variable                 | Qué es                        | EAS (builds) | GitHub (OTAs) | `.env.local` (dev) |
+| ------------------------ | ----------------------------- | :----------: | :-----------: | :----------------: |
+| `EXPO_PUBLIC_SENTRY_DSN` | A dónde se mandan los errores |      ✅      |      ✅       |      opcional      |
+| `SENTRY_ORG`             | Slug de la organización       |      ✅      |      ❌       |         ❌         |
+| `SENTRY_PROJECT`         | Slug del proyecto (`mcm-app`) |      ✅      |      ❌       |         ❌         |
+| `SENTRY_AUTH_TOKEN`      | Token para subir source maps  |      ✅      |      ❌       |         ❌         |
 
 **a) EAS** — desde `mcm-app/`, cuatro comandos:
 
@@ -107,9 +149,9 @@ EXPO_PUBLIC_SENTRY_DEBUG=1
 Igual que el DSN de Sentry: **no es un secreto** (va dentro del bundle) pero se
 guarda como secret para no publicarlo.
 
-| Variable | EAS (builds) | GitHub (OTAs) | `.env.local` (dev) |
-| --- | :---: | :---: | :---: |
-| `EXPO_PUBLIC_APTABASE_KEY` | ✅ | ✅ | opcional |
+| Variable                   | EAS (builds) | GitHub (OTAs) | `.env.local` (dev) |
+| -------------------------- | :----------: | :-----------: | :----------------: |
+| `EXPO_PUBLIC_APTABASE_KEY` |      ✅      |      ✅       |      opcional      |
 
 ```bash
 npx eas-cli secret:create --scope project --name EXPO_PUBLIC_APTABASE_KEY --value "A-EU-…"
@@ -169,14 +211,14 @@ Para comprobarlo antes de compilar: `npx eas-cli credentials` → iOS → el per
 Esta build es la primera que trae **login con Google en Android**. El código ya
 está, pero Google identifica la app por la pareja `com.mcmespana.mcmapp` +
 **huella SHA-1 del certificado que firma el binario**, y esa pareja hay que
-darla de alta a mano. Si falta, el botón falla con *"El inicio de sesión no
-está disponible ahora mismo"* (`DEVELOPER_ERROR`).
+darla de alta a mano. Si falta, el botón falla con _"El inicio de sesión no
+está disponible ahora mismo"_ (`DEVELOPER_ERROR`).
 
 Son **dos momentos distintos**:
 
 1. **Antes del build de desarrollo** — huella del keystore de EAS:
    `npx eas-cli credentials -p android` → Keystore → copiar el `SHA1
-   Fingerprint`.
+Fingerprint`.
 2. **Después de subir el AAB a la Play Console** — huella de Play App Signing,
    que es distinta porque Google vuelve a firmar el paquete: Play Console →
    Prueba y lanzamiento → Configuración → **Firma de aplicaciones** → SHA-1 de
@@ -197,11 +239,11 @@ Paso a paso completo y tabla de diagnóstico:
 
 ## 3. Antes de compilar — comprobaciones en frío
 
-Desde `mcm-app/`, con la rama `claude/compact-tabs-bar-uxxaoz` sacada:
+Desde `mcm-app/`, con `main` sacado y al día:
 
 ```bash
 npm ci                 # instala exactamente lo del package-lock
-npm run lint           # 0 errores (los ~88 warnings del React Compiler son conocidos)
+npm run lint           # 0 errores (los 51 warnings del React Compiler son conocidos: docs/desarrollo/WARNINGS.md)
 npx tsc --noEmit       # sin salida = bien
 npm test               # todo en verde
 ```
@@ -442,7 +484,7 @@ se dejó fuera de `production` a propósito porque toca el hook central de datos
 **El orden importa.** `production` dispara la OTA automáticamente, así que no
 puede tocarse hasta que las tiendas tengan el binario nuevo:
 
-1. Merge de `claude/compact-tabs-bar-uxxaoz` → `main`.
+1. ✅ Merge a `main` — hecho en la #313 (2026-08-04).
 2. Builds de producción iOS + Android (§4.2) desde `main`.
 3. Subir a App Store y Play Store, y **esperar a que estén aprobadas y
    publicadas**.
@@ -484,19 +526,19 @@ como hasta ahora — así que no hay prisa, pero sí cuidado al hacerlo.
 
 ## 7. Si algo se rompe
 
-| Síntoma | Causa casi seguro | Arreglo |
-| --- | --- | --- |
-| `No profiles for '…MCMNotificationService' were found` | Falta declarar la extensión en `extra.eas.build.experimental.ios.appExtensions` — en managed, EAS no la ve sola | Ya está en `app.json` (§2.5). Si sigue fallando: `npx eas-cli credentials` y genera el perfil de ese bundle id a mano |
-| App Store Connect rechaza el `.ipa` por versiones que no cuadran | La extensión y la app llevan `CFBundleVersion` distinto | Mira `plugins/withNotificationServiceExtension.js`: coge la versión de la misma config que la app, así que suele ser que se editó a mano |
-| App Store Connect rechaza el icono por canal alfa | Se regeneró `carismochito.png` sin `removeAlpha()` | `npm run icons:alt` (el script ya lo quita) |
-| El prebuild de iOS crea el target **dos veces** | Se lanzó `prebuild` sin `--clean` sobre un `ios/` viejo | `rm -rf ios` y repetir. El plugin ya se protege, pero con un proyecto a medias puede liarse |
-| No llega ningún evento a Sentry | Falta `EXPO_PUBLIC_SENTRY_DSN` en el build | `npx eas-cli secret:list` |
-| Sentry funcionaba y de repente dejó de reportar | Salió una OTA sin el secret de GitHub | Añade `EXPO_PUBLIC_SENTRY_DSN` en los secrets del repo (§2.3b) y relanza la OTA |
-| Los errores de Sentry salen minificados | Faltó el token al compilar | `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` en los secrets de EAS |
-| En iOS la notificación con foto llega sin foto | El Panel no mandó `mutableContent: true` | Sin ese flag iOS ni siquiera arranca la extensión |
-| No llega ningún evento a Aptabase | Falta `EXPO_PUBLIC_APTABASE_KEY` o la clave no es `A-EU-…` | `npx eas-cli secret:list`; la app avisa por consola si la clave tiene mal formato |
-| Se rompió algo del menú de selección de las lecturas | El proxy del delegate de iOS | `modules/highlight-menu/ios/HighlightMenuView.swift`. Quitar `onNativeHighlightRequest` en `evangelio.tsx` desactiva el módulo entero sin tocar el resto |
-| El icono de Android no cambia | El launcher tarda en refrescar la caché | Espera, o reinicia el launcher. En launchers con icono redondo antiguo (API < 26) el cambio no se aplica: es una limitación conocida |
+| Síntoma                                                          | Causa casi seguro                                                                                               | Arreglo                                                                                                                                                  |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `No profiles for '…MCMNotificationService' were found`           | Falta declarar la extensión en `extra.eas.build.experimental.ios.appExtensions` — en managed, EAS no la ve sola | Ya está en `app.json` (§2.5). Si sigue fallando: `npx eas-cli credentials` y genera el perfil de ese bundle id a mano                                    |
+| App Store Connect rechaza el `.ipa` por versiones que no cuadran | La extensión y la app llevan `CFBundleVersion` distinto                                                         | Mira `plugins/withNotificationServiceExtension.js`: coge la versión de la misma config que la app, así que suele ser que se editó a mano                 |
+| App Store Connect rechaza el icono por canal alfa                | Se regeneró `carismochito.png` sin `removeAlpha()`                                                              | `npm run icons:alt` (el script ya lo quita)                                                                                                              |
+| El prebuild de iOS crea el target **dos veces**                  | Se lanzó `prebuild` sin `--clean` sobre un `ios/` viejo                                                         | `rm -rf ios` y repetir. El plugin ya se protege, pero con un proyecto a medias puede liarse                                                              |
+| No llega ningún evento a Sentry                                  | Falta `EXPO_PUBLIC_SENTRY_DSN` en el build                                                                      | `npx eas-cli secret:list`                                                                                                                                |
+| Sentry funcionaba y de repente dejó de reportar                  | Salió una OTA sin el secret de GitHub                                                                           | Añade `EXPO_PUBLIC_SENTRY_DSN` en los secrets del repo (§2.3b) y relanza la OTA                                                                          |
+| Los errores de Sentry salen minificados                          | Faltó el token al compilar                                                                                      | `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` en los secrets de EAS                                                                              |
+| En iOS la notificación con foto llega sin foto                   | El Panel no mandó `mutableContent: true`                                                                        | Sin ese flag iOS ni siquiera arranca la extensión                                                                                                        |
+| No llega ningún evento a Aptabase                                | Falta `EXPO_PUBLIC_APTABASE_KEY` o la clave no es `A-EU-…`                                                      | `npx eas-cli secret:list`; la app avisa por consola si la clave tiene mal formato                                                                        |
+| Se rompió algo del menú de selección de las lecturas             | El proxy del delegate de iOS                                                                                    | `modules/highlight-menu/ios/HighlightMenuView.swift`. Quitar `onNativeHighlightRequest` en `evangelio.tsx` desactiva el módulo entero sin tocar el resto |
+| El icono de Android no cambia                                    | El launcher tarda en refrescar la caché                                                                         | Espera, o reinicia el launcher. En launchers con icono redondo antiguo (API < 26) el cambio no se aplica: es una limitación conocida                     |
 
 ---
 

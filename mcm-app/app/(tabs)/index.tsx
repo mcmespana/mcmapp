@@ -385,31 +385,35 @@ export default function Home() {
   const pingOpacity = useSharedValue(0.6);
   useEffect(() => {
     if (unreadCount > 0) {
-      pingScale.value = withRepeat(
-        withSequence(
-          withTiming(1.8, { duration: 800 }),
-          withTiming(1, { duration: 0 }),
+      pingScale.set(
+        withRepeat(
+          withSequence(
+            withTiming(1.8, { duration: 800 }),
+            withTiming(1, { duration: 0 }),
+          ),
+          -1,
         ),
-        -1,
       );
-      pingOpacity.value = withRepeat(
-        withSequence(
-          withTiming(0, { duration: 800 }),
-          withTiming(0.6, { duration: 0 }),
+      pingOpacity.set(
+        withRepeat(
+          withSequence(
+            withTiming(0, { duration: 800 }),
+            withTiming(0.6, { duration: 0 }),
+          ),
+          -1,
         ),
-        -1,
       );
       return () => {
         cancelAnimation(pingScale);
         cancelAnimation(pingOpacity);
       };
     }
-    pingScale.value = 1;
-    pingOpacity.value = 0.6;
+    pingScale.set(1);
+    pingOpacity.set(0.6);
   }, [unreadCount, pingScale, pingOpacity]);
   const animatedPingStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pingScale.value }],
-    opacity: pingOpacity.value,
+    transform: [{ scale: pingScale.get() }],
+    opacity: pingOpacity.get(),
   }));
 
   // Calendar events — filtered by user's visible calendars

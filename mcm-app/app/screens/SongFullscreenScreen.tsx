@@ -87,13 +87,15 @@ function AutoScrollControls({
   }, [scheduleHide]);
 
   useEffect(() => {
-    fadeAnim.value = withTiming(expanded ? 1 : 0, {
-      duration: expanded ? 180 : 240,
-    });
+    fadeAnim.set(
+      withTiming(expanded ? 1 : 0, {
+        duration: expanded ? 180 : 240,
+      }),
+    );
     if (!expanded) cancelHideTimer();
   }, [expanded, fadeAnim, cancelHideTimer]);
 
-  const panelStyle = useAnimatedStyle(() => ({ opacity: fadeAnim.value }));
+  const panelStyle = useAnimatedStyle(() => ({ opacity: fadeAnim.get() }));
 
   useEffect(() => () => cancelHideTimer(), [cancelHideTimer]);
 
@@ -336,10 +338,10 @@ export default function SongFullscreenScreen({
   // Fade-in de entrada
   const fadeAnim = useSharedValue(0);
   useEffect(() => {
-    fadeAnim.value = withTiming(1, { duration: 400 });
+    fadeAnim.set(withTiming(1, { duration: 400 }));
   }, [fadeAnim]);
 
-  const screenStyle = useAnimatedStyle(() => ({ opacity: fadeAnim.value }));
+  const screenStyle = useAnimatedStyle(() => ({ opacity: fadeAnim.get() }));
 
   const closeTop = Math.max(insets.top, 12) + 8;
   const controlsBottom = Math.max(insets.bottom, 12) + 16;

@@ -194,11 +194,11 @@ const SongControls: React.FC<SongControlsProps> = ({
       h.menuClose();
     }
     setShowActionButtons(toOpen);
-    rotateAnim.value = withSpring(toOpen ? 1 : 0, { damping: 6, mass: 1 });
+    rotateAnim.set(withSpring(toOpen ? 1 : 0, { damping: 6, mass: 1 }));
   };
 
   const fabIconStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotateAnim.value * 45}deg` }],
+    transform: [{ rotate: `${rotateAnim.get() * 45}deg` }],
   }));
 
   useEffect(() => {

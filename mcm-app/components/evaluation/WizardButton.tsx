@@ -26,15 +26,15 @@ export default function WizardButton({
 }) {
   const scale = useSharedValue(1);
   const aStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.get() }],
   }));
   return (
     <Animated.View style={aStyle}>
       <Pressable
         accessibilityRole="button"
         disabled={disabled}
-        onPressIn={() => (scale.value = withTiming(0.97, { duration: 90 }))}
-        onPressOut={() => (scale.value = withTiming(1, { duration: 140 }))}
+        onPressIn={() => scale.set(withTiming(0.97, { duration: 90 }))}
+        onPressOut={() => scale.set(withTiming(1, { duration: 140 }))}
         onPress={onPress}
         style={[
           btnStyles.btn,

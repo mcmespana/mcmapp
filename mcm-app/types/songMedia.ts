@@ -7,6 +7,7 @@
  * usuario final (cajón multimedia + indicadores de lista).
  */
 import { toYouTubeEmbedUrl } from '@/utils/youtube';
+import { songTagSlugs } from '@/utils/songTags';
 
 export interface MediaLink {
   label: string;
@@ -30,6 +31,11 @@ export interface SongMedia {
   youtubeLinks?: MediaLink[];
   /** Audios (normalmente enlaces de Google Drive). */
   audioLinks?: MediaLink[];
+  /**
+   * Etiquetas libres de la canción, en slug (ver `utils/songTags.ts`). Viajan
+   * con la ficha para que el detalle pueda pintarlas sin descargar nada.
+   */
+  tags?: string[];
 }
 
 function cleanString(value: unknown): string | undefined {
@@ -63,7 +69,9 @@ export function extractSongMedia(raw: unknown): SongMedia | null {
   const song = raw as Record<string, unknown>;
 
   const videoEmbedRaw = cleanString(song.videoEmbed);
+  const tags = songTagSlugs(song as { tags?: unknown });
   const media: SongMedia = {
+    tags: tags.length > 0 ? tags : undefined,
     album: cleanString(song.album),
     liturgicalTime: cleanString(song.liturgicalTime),
     source: cleanString(song.source),
@@ -89,6 +97,7 @@ export function hasSongMedia(media: SongMedia | null | undefined): boolean {
     media.source ||
     media.rhythm ||
     media.info ||
+    (media.tags && media.tags.length > 0) ||
     media.videoEmbed ||
     (media.youtubeLinks && media.youtubeLinks.length > 0) ||
     (media.audioLinks && media.audioLinks.length > 0),

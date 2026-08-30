@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Platform } from 'react-native';
-import { useNavigation } from 'expo-router';
 import { useTabReselect } from '@/components/tabs/tabBarController';
 import { createNativeStackNavigator } from 'expo-router/build/react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,8 +48,6 @@ export default function MasTab() {
   const insets = useSafeAreaInsets();
   const webStatusBarHeight = Platform.OS === 'web' ? insets.top : undefined;
   const isDark = useColorScheme() === 'dark';
-
-  const navigation = useNavigation();
 
   // Re-tap del tab activo → volver a la pantalla raíz del stack. Antes esto lo
   // daba el evento `tabPress` del navegador, pero con la barra del sistema

@@ -2,7 +2,7 @@
 
 > Documentación de las reglas de seguridad de la **Realtime Database** del
 > proyecto `mcmapp-39b71` y de cómo desplegarlas. El fichero de reglas vive en
-> [`mcm-app/database.rules.json`](mcm-app/database.rules.json).
+> [`mcm-app/database.rules.json`](../mcm-app/database.rules.json).
 
 La app no tiene otro backend: **todo es Firebase Realtime Database**. No se usa
 Firestore ni Storage de forma activa. La autenticación es Google/Apple Sign-In
@@ -25,21 +25,30 @@ Firestore ni Storage de forma activa. La autenticación es Google/Apple Sign-In
    reglas. Por eso `notifications`, `seccion_oracion`, `profileConfig`, etc.
    son solo-lectura desde la app.
 
-> ### ⚠️ NO DESPLIEGUES ESTAS REGLAS TODAVÍA — romperían mcmpanel
+> ### ⚠️ ANTES DE DESPLEGAR: siembra `/_config`
 >
-> A fecha 2026-07: **mcmpanel NO usa Admin SDK**. El panel escribe con el SDK
-> cliente de Firebase **sin autenticación**, y sus funciones serverless
-> (`api/_lib/push.ts`) usan la API REST **sin token** (`.json` sin `?auth=`).
-> Solo el uploader del cantoral (`mcmapp-cantoral/scripts/update_firebase.py`)
-> usa token. Con estas reglas desplegadas, el panel perdería: la lectura de la
-> raíz (usa `onValue('/')`), todas las escrituras de secciones
-> (`/albums`, `/calendars`, `/profileConfig`, `/activities`, `/surveys`,
-> `/users/*/isAdmin`…), la lectura de `/pushTokens` para enviar push y la
-> escritura de `/notifications` y `/scheduledNotifications` (este último nodo
-> ni siquiera aparece en las reglas). **Prerequisito para desplegar**: dar al
-> panel auth real (Firebase Auth + allowlist `/admins`) o mover sus escrituras
-> a las funciones de `api/` con credencial de servidor. Ver
-> `docs/planes/PLAN_INTEGRACIONES.md` (Integración D).
+> Los permisos que el MCM Panel necesita **no están repartidos por el fichero**:
+> cuelgan de dos banderas que viven en la propia base de datos,
+> `/_config/legacyPanelWrites` y `/_config/legacyNotificationsOpen`. Con las dos
+> en `true` el panel funciona exactamente igual que hoy; el día que tenga auth
+> real se ponen en `false` **desde la consola, sin desplegar reglas**.
+>
+> **Si `/_config` no existe, las banderas valen `null` y el panel se queda sin
+> permisos en el mismo instante del despliegue.** El nodo a importar está en
+> `mcm-app/firebase-seed/config.json`. La app no depende de ellas para nada.
+>
+> `/_config` no lo lee ni lo escribe ningún cliente: las reglas lo consultan con
+> `root.child(...)`, que se evalúa en el servidor. Solo se toca desde la consola.
+>
+> Dos cosas del panel **dejan de funcionar** al desplegar, y no tienen bandera
+> porque abrirlas sería una fuga: la sección **Usuarios** (leer `/users` es leer
+> el diario de Contigo de todo el mundo — `.read` cascadea y no se puede revocar
+> más abajo) y el **contador de destinatarios** del composer (listar
+> `/pushTokens` es poder mandar push a todos por tu cuenta). Las dos avisan con
+> el modal *ERROR DE REGLAS DE FIREBASE* y las dos se arreglan con auth real en
+> el panel (decisión D2).
+>
+> Guía completa de despliegue: `docs/desarrollo/FIREBASE_REGLAS.md`.
 
 El fichero está **dividido por secciones comentadas**. Para **desactivar** una
 sección concreta (por si algo se descontrola), pon su `.read`/`.write` a `false`
@@ -59,14 +68,18 @@ o borra el bloque: el resto sigue funcionando.
 | `/albums`                            | Pública | No                                              | Admin SDK               |
 | `/jubileo/*`                         | Pública | No (salvo `compartiendo`)                       | Admin SDK               |
 | `/jubileo/compartiendo`              | Pública | Sí (reflexiones)                                | Usuario                 |
-| `/activities/<evento>/*`             | Pública | No (salvo `compartiendo` y `evaluacion`)        | Admin SDK               |
+| `/activities/<evento>/*`             | Pública | No (salvo `compartiendo` y `evaluacion`)        | mcmpanel (bandera)      |
 | `/activities/<evento>/compartiendo`  | Pública | Sí (reflexiones)                                | Usuario                 |
-| `/activities/<evento>/evaluacion/respuestas/<id>` | Pública | Sí (encuesta del evento)            | Usuario                 |
-| `/profileConfig`                     | Pública | No                                              | mcmpanel (Admin SDK)    |
+| `/activities/<evento>/evaluacion/respuestas/<id>` | **Solo la suya** | Sí (encuesta del evento)   | Usuario                 |
+| `/profileConfig`                     | Pública | No                                              | mcmpanel (bandera)      |
 | `/calendars`                         | Pública | No                                              | Admin SDK               |
 | `/seccion_oracion`                   | Pública | No                                              | Scraper (Admin SDK)     |
-| `/notifications`                     | Pública | **No** (denegada)                               | mcmpanel (Admin SDK)    |
+| `/notifications`                     | Pública | No                                              | `api/` (bandera)        |
 | `/pushTokens/<tokenId>`              | Por token | Sí (registro + heartbeat del dispositivo)     | App                     |
+| `/scheduledNotifications`            | Bandera | No                                              | `api/` (bandera)        |
+| `/surveys/<id>/data`                 | Pública | No                                              | mcmpanel (bandera)      |
+| `/surveys/<id>/respuestas/<id>`      | **Solo la suya** | Sí (una por dispositivo)               | Usuario                 |
+| `/_config`                           | **Nadie** | **Nadie** (solo consola / Admin SDK)          | Tú                      |
 | `/wordle/*`                          | Pública | Sí (stats/users/partida); `daily-words` no      | App / Admin SDK         |
 | `/app/feedback`                      |    —    | Sí (reportar bug)                               | Usuario                 |
 | `/app/evaluations/<id>`              | Por id  | Sí (encuesta de la app)                         | Usuario                 |
@@ -96,11 +109,16 @@ Notas:
 
 ### 3.1. ⚠️ El punto más débil: el panel secreto del cantoral
 
-`/songs/data` es **escribible públicamente** porque el "panel secreto"
-(`components/SecretPanelModal.tsx`) se desbloquea con una **contraseña en el
-código** (`coco`) y **no usa Firebase Auth**. Las reglas de seguridad no pueden
-verificar esa contraseña, así que cualquiera con la URL de la base de datos
-podría, técnicamente, modificar o borrar el cantoral.
+`/songs/data` es **escribible mientras `legacyPanelWrites` esté en `true`**,
+porque el "panel secreto" (`components/SecretPanelModal.tsx`) se desbloquea con
+una **contraseña en el código** (`coco`) y **no usa Firebase Auth**. Las reglas
+no pueden verificar esa contraseña, así que cualquiera con la URL de la base de
+datos podría, técnicamente, modificar o borrar el cantoral.
+
+Apagar la bandera lo cierra, y **no afecta al pipeline de verdad**: el repo
+`mcmapp-cantoral` sube el cantoral con token (Admin SDK), que ignora las reglas.
+Lo único que se pierde es la edición desde el panel secreto de la app y desde el
+editor del panel, que ya está marcado como deprecado.
 
 **Mitigaciones recomendadas (en orden de esfuerzo):**
 
@@ -120,6 +138,17 @@ podría, técnicamente, modificar o borrar el cantoral.
    Esto **rompería el panel actual** hasta que los editores usen login, por eso
    se deja abierto por defecto y documentado aquí.
 3. Mantener backups/exports periódicos del nodo `songs` por si hay un borrado.
+
+### 3.1.bis. Arreglado: cualquiera podía nombrarse admin
+
+Hasta la revisión de 2026-08-13, `users/$uid` tenía `".write"` para su dueño y
+eso **cascadeaba hasta `users/$uid/isAdmin`**: cualquier usuario con sesión
+podía ponerse `isAdmin: true` y con ello abrirse el panel secreto del cantoral
+(escritura sobre `/songs/data`). Poner `".write": false` debajo no lo arregla —
+en RTDB `.read`/`.write` cascadean y un `false` más abajo **no revoca** el `true`
+del padre. Lo que sí corta es un `.validate`, que no cascadea y se evalúa en el
+path escrito; ahora exige que quien escribe sea ya admin. El primer admin se
+pone a mano desde la consola.
 
 ### 3.2. Otros nodos de escritura pública
 
@@ -155,7 +184,7 @@ firebase deploy --only database --project mcmapp-pro
 ### 4.2. Automatizado (ligado a producción)
 
 Hay un workflow en
-[`.github/workflows/deploy-firebase-rules.yml`](.github/workflows/deploy-firebase-rules.yml)
+[`.github/workflows/deploy-firebase-rules.yml`](../.github/workflows/deploy-firebase-rules.yml)
 que despliega las reglas **al mergear a `production`**, pero solo si cambió
 `database.rules.json` o `firebase.json` (no redespliega en cada merge). También
 se puede lanzar a mano desde la pestaña *Actions* (`workflow_dispatch`).

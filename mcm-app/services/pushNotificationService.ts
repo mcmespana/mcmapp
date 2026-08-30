@@ -1,5 +1,6 @@
 // services/pushNotificationService.ts
 import { logger } from '@/utils/logger';
+import { reportIfPermissionDenied } from '@/utils/firebaseErrors';
 import { getDatabase, ref, set, get, update, onValue } from 'firebase/database';
 import { getFirebaseApp } from '@/utils/firebaseApp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -161,7 +162,12 @@ export const saveTokenToFirebase = async (
 
     await set(ref(db, `pushTokens/${safeTokenId}`), tokenData);
   } catch (error: any) {
-    // Log detallado para diagnosticar errores de Firebase (reglas, serialización, etc.)
+    // Sin token registrado no llega ni una notificación, así que una
+    // denegación de reglas aquí es de las más caras: se reporta con su path.
+    if (reportIfPermissionDenied(error, 'write', 'pushTokens/<token>')) {
+      throw error;
+    }
+    // Log detallado para diagnosticar errores de Firebase (serialización, etc.)
     logger.error('❌ Error guardando token en Firebase:');
     logger.error('  message:', error?.message);
     logger.error('  code:', error?.code);
@@ -214,6 +220,7 @@ export const updateLastActive = async (
       // No hacer nada — evita crear nodos "zombi" con solo lastActive.
     }
   } catch (error) {
+    if (reportIfPermissionDenied(error, 'write', 'pushTokens/<token>')) return;
     logger.error('Error actualizando lastActive:', error);
   }
 };

@@ -1,11 +1,13 @@
 import React from 'react';
 import { Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+
+import { motionEasings } from '@/constants/animations';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -27,6 +29,10 @@ export interface PressableScaleProps extends Omit<PressableProps, 'style'> {
  * Principio de la skill make-interfaces-feel-better: usar exactamente `0.96` —
  * valores por debajo de `0.95` se sienten exagerados. Anima solo `transform`
  * (nunca `all`).
+ *
+ * Con "reducir movimiento" activado en el sistema no escala: el press sigue
+ * funcionando igual, simplemente sin transformación (la skill `animate-expo`
+ * pide que la accesibilidad viaje CON la animación, no como parche posterior).
  */
 export default function PressableScale({
   staticScale = false,
@@ -37,9 +43,11 @@ export default function PressableScale({
   children,
   ...rest
 }: PressableScaleProps) {
+  const reducedMotion = useReducedMotion();
+  const animate = !staticScale && !reducedMotion;
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.get() }],
   }));
 
   return (
@@ -47,20 +55,18 @@ export default function PressableScale({
       {...rest}
       style={[style, animatedStyle]}
       onPressIn={(e) => {
-        if (!staticScale) {
-          scale.value = withTiming(scaleTo, {
-            duration: 90,
-            easing: Easing.out(Easing.quad),
-          });
+        if (animate) {
+          scale.set(
+            withTiming(scaleTo, { duration: 90, easing: motionEasings.out }),
+          );
         }
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        if (!staticScale) {
-          scale.value = withTiming(1, {
-            duration: 140,
-            easing: Easing.out(Easing.quad),
-          });
+        if (animate) {
+          scale.set(
+            withTiming(1, { duration: 140, easing: motionEasings.out }),
+          );
         }
         onPressOut?.(e);
       }}

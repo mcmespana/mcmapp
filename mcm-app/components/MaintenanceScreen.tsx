@@ -69,19 +69,23 @@ export default function MaintenanceScreen({
   const bounce = useSharedValue(0);
 
   useEffect(() => {
-    scale.value = withSpring(1, { stiffness: 140, damping: 12, mass: 1 });
-    halo.value = withRepeat(
-      withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true,
-    );
-    bounce.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+    scale.set(withSpring(1, { stiffness: 140, damping: 12, mass: 1 }));
+    halo.set(
+      withRepeat(
+        withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true,
       ),
-      -1,
-      false,
+    );
+    bounce.set(
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
+        false,
+      ),
     );
     return () => {
       cancelAnimation(halo);
@@ -91,13 +95,13 @@ export default function MaintenanceScreen({
 
   const iconWrapStyle = useAnimatedStyle(() => ({
     transform: [
-      { scale: scale.value },
-      { translateY: interpolate(bounce.value, [0, 1], [0, -6]) },
+      { scale: scale.get() },
+      { translateY: interpolate(bounce.get(), [0, 1], [0, -6]) },
     ],
   }));
   const haloStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(halo.value, [0, 1], [0.3, 0.65]),
-    transform: [{ scale: interpolate(halo.value, [0, 1], [0.9, 1.15]) }],
+    opacity: interpolate(halo.get(), [0, 1], [0.3, 0.65]),
+    transform: [{ scale: interpolate(halo.get(), [0, 1], [0.9, 1.15]) }],
   }));
 
   const handleGoToStore = () => {
@@ -174,15 +178,15 @@ function SkipEscape({
 
   useEffect(() => {
     if (visible) {
-      reveal.value = withSpring(1, { stiffness: 160, damping: 14 });
+      reveal.set(withSpring(1, { stiffness: 160, damping: 14 }));
     }
   }, [visible, reveal]);
 
   const revealStyle = useAnimatedStyle(() => ({
-    opacity: reveal.value,
+    opacity: reveal.get(),
     transform: [
-      { translateY: interpolate(reveal.value, [0, 1], [10, 0]) },
-      { scale: interpolate(reveal.value, [0, 1], [0.96, 1]) },
+      { translateY: interpolate(reveal.get(), [0, 1], [10, 0]) },
+      { scale: interpolate(reveal.get(), [0, 1], [0.96, 1]) },
     ],
   }));
 
@@ -217,29 +221,33 @@ function FlyingEmoji({ emoji, index }: { emoji: string; index: number }) {
   const spin = useSharedValue(0);
 
   useEffect(() => {
-    drift.value = withDelay(
-      index * 180,
-      withRepeat(
-        withSequence(
-          withTiming(1, {
-            duration: 1100 + index * 150,
-            easing: Easing.inOut(Easing.ease),
-          }),
-          withTiming(0, {
-            duration: 1100 + index * 150,
-            easing: Easing.inOut(Easing.ease),
-          }),
+    drift.set(
+      withDelay(
+        index * 180,
+        withRepeat(
+          withSequence(
+            withTiming(1, {
+              duration: 1100 + index * 150,
+              easing: Easing.inOut(Easing.ease),
+            }),
+            withTiming(0, {
+              duration: 1100 + index * 150,
+              easing: Easing.inOut(Easing.ease),
+            }),
+          ),
+          -1,
+          false,
         ),
-        -1,
-        false,
       ),
     );
-    spin.value = withDelay(
-      index * 180,
-      withRepeat(
-        withTiming(1, { duration: 2600, easing: Easing.linear }),
-        -1,
-        false,
+    spin.set(
+      withDelay(
+        index * 180,
+        withRepeat(
+          withTiming(1, { duration: 2600, easing: Easing.linear }),
+          -1,
+          false,
+        ),
       ),
     );
     return () => {
@@ -250,16 +258,16 @@ function FlyingEmoji({ emoji, index }: { emoji: string; index: number }) {
 
   const style = useAnimatedStyle(() => ({
     transform: [
-      { translateY: interpolate(drift.value, [0, 1], [0, -10]) },
+      { translateY: interpolate(drift.get(), [0, 1], [0, -10]) },
       {
         translateX: interpolate(
-          drift.value,
+          drift.get(),
           [0, 1],
           [0, index % 2 === 0 ? 6 : -6],
         ),
       },
       {
-        rotate: `${interpolate(spin.value, [0, 1], [0, index % 2 === 0 ? 18 : -18])}deg`,
+        rotate: `${interpolate(spin.get(), [0, 1], [0, index % 2 === 0 ? 18 : -18])}deg`,
       },
     ],
   }));

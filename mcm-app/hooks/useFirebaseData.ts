@@ -1,4 +1,9 @@
 import { logger } from '@/utils/logger';
+import {
+  isPermissionDenied,
+  reportIfPermissionDenied,
+  type FirebaseOp,
+} from '@/utils/firebaseErrors';
 import { useEffect, useRef, useState } from 'react';
 import { getDatabase, ref, get } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -67,12 +72,25 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function withRetry(run: () => Promise<void>): Promise<void> {
+export async function withRetry(
+  run: () => Promise<void>,
+  /** Qué se estaba haciendo, para poder reportar una denegación de reglas. */
+  context?: { op: FirebaseOp; path: string },
+): Promise<void> {
   for (let attempt = 0; ; attempt += 1) {
     try {
       await run();
       return;
     } catch (error) {
+      // Una denegación de reglas NO es un fallo de red: no se arregla
+      // esperando. Se reporta con su path y se corta el bucle en el primer
+      // intento, en vez de gastar 1,6 s y tres peticiones para volver a fallar.
+      if (
+        context &&
+        reportIfPermissionDenied(error, context.op, context.path)
+      ) {
+        throw error;
+      }
       if (attempt >= RETRY_DELAYS_MS.length) throw error;
       logger.warn(
         `[firebase] fallo de red, reintento ${attempt + 1}/${RETRY_DELAYS_MS.length}`,
@@ -99,55 +117,37 @@ function refreshRemote(
   const run = async () => {
     const db = getDatabase(getFirebaseApp());
 
-    // Con caché válida, primero comprobamos solo el metadato (pocos bytes) y
-    // descargamos `data` únicamente si `updatedAt` cambió.
-    if (hasLocalCache && localUpdatedAt) {
-      const [metaSnap, hiddenSnap] = await Promise.all([
-        get(ref(db, `${path}/updatedAt`)),
-        get(ref(db, `${path}/hidden`)),
-      ]);
-      if (!metaSnap.exists()) return;
+    // SIEMPRE por hijos (`updatedAt` / `hidden` / `data`), nunca `get(path)`
+    // del nodo entero. Antes, la primera carga sin caché se traía el nodo
+    // completo, y en `surveys/<id>` o `<evento>/evaluacion` eso incluye
+    // `respuestas`: las respuestas de TODO el mundo, con nombre y delegación,
+    // descargadas a cada móvil para pintar un formulario. Además las reglas
+    // ya no lo permiten — `respuestas` solo es legible respuesta a respuesta.
+    const [metaSnap, hiddenSnap] = await Promise.all([
+      get(ref(db, `${path}/updatedAt`)),
+      get(ref(db, `${path}/hidden`)),
+    ]);
 
-      const remoteUpdatedAt = String(metaSnap.val() ?? '0');
-      const remoteHidden = hiddenSnap.exists() && hiddenSnap.val() === true;
-      await AsyncStorage.setItem(
-        `${storageKey}_hidden`,
-        remoteHidden ? 'true' : 'false',
-      );
-      mergeCacheEntry(storageKey, { hidden: remoteHidden });
-
-      if (localUpdatedAt === remoteUpdatedAt) return; // sin cambios remotos
-
-      const dataSnap = await get(ref(db, `${path}/data`));
-      if (!dataSnap.exists()) return;
-      const rawData = dataSnap.val();
-      // No persistir `undefined`: en web AsyncStorage lo guarda como el string
-      // "undefined" y luego JSON.parse revienta.
-      if (rawData !== undefined) {
-        await AsyncStorage.setItem(
-          `${storageKey}_data`,
-          JSON.stringify(rawData),
-        );
-        await AsyncStorage.setItem(`${storageKey}_updatedAt`, remoteUpdatedAt);
-      }
-      mergeCacheEntry(storageKey, {
-        parsed: rawData,
-        updatedAt: remoteUpdatedAt,
-      });
-      return;
-    }
-
-    // Sin caché local: descarga completa del nodo en una sola llamada.
-    const snapshot = await get(ref(db, path));
-    if (!snapshot.exists()) return;
-    const val = snapshot.val();
-    const remoteUpdatedAt = String(val.updatedAt ?? '0');
-    const remoteHidden = val.hidden === true;
+    const remoteHidden = hiddenSnap.exists() && hiddenSnap.val() === true;
     await AsyncStorage.setItem(
       `${storageKey}_hidden`,
       remoteHidden ? 'true' : 'false',
     );
-    const rawData = val.data;
+    mergeCacheEntry(storageKey, { hidden: remoteHidden });
+
+    // Con caché válida basta el metadato: si `updatedAt` no cambió (o el nodo
+    // ni siquiera lo tiene) no hay nada que descargar.
+    if (hasLocalCache && localUpdatedAt) {
+      if (!metaSnap.exists()) return;
+      if (localUpdatedAt === String(metaSnap.val() ?? '0')) return;
+    }
+
+    const remoteUpdatedAt = String(metaSnap.val() ?? '0');
+    const dataSnap = await get(ref(db, `${path}/data`));
+    if (!dataSnap.exists()) return;
+    const rawData = dataSnap.val();
+    // No persistir `undefined`: en web AsyncStorage lo guarda como el string
+    // "undefined" y luego JSON.parse revienta.
     if (rawData !== undefined) {
       await AsyncStorage.setItem(`${storageKey}_data`, JSON.stringify(rawData));
       await AsyncStorage.setItem(`${storageKey}_updatedAt`, remoteUpdatedAt);
@@ -155,11 +155,10 @@ function refreshRemote(
     mergeCacheEntry(storageKey, {
       parsed: rawData,
       updatedAt: remoteUpdatedAt,
-      hidden: remoteHidden,
     });
   };
 
-  const promise = withRetry(run).finally(() => {
+  const promise = withRetry(run, { op: 'read', path }).finally(() => {
     const entry = nodeCache.get(storageKey);
     if (entry) entry.inflight = null;
   });
@@ -167,8 +166,16 @@ function refreshRemote(
   return promise;
 }
 
+/**
+ * `path` admite `null` para "este consumidor no tiene nodo que mirar": no se
+ * consulta nada y se devuelve el estado vacío. Antes, quien no tenía nodo
+ * pasaba un path inventado (`__noop__/<slug>`) que sí llegaba a Firebase; con
+ * las reglas abiertas devolvía null sin más, pero con las reglas cerradas es un
+ * `PERMISSION_DENIED` por cada tarjeta de sección renderizada — es decir, un
+ * chorro de eventos en Sentry por algo que nunca hizo falta preguntar.
+ */
 export function useFirebaseData<T>(
-  path: string,
+  path: string | null,
   storageKey: string,
   transform?: (data: any) => T,
 ) {
@@ -196,6 +203,12 @@ export function useFirebaseData<T>(
   const lastApplied = useRef<{ src: unknown; out: T } | null>(null);
 
   useEffect(() => {
+    // Sin nodo que mirar no hay nada que hacer. `loading` se resuelve al
+    // devolver el estado, no con un `setState` aquí dentro.
+    if (path === null) return;
+    // Copia ya estrechada a `string`: TypeScript no conserva el narrowing del
+    // parámetro dentro de `fetchData`, que es una función anidada.
+    const nodePath = path;
     let isMounted = true;
 
     // Aplica el transform de ESTA instancia a los datos crudos de la caché.
@@ -267,14 +280,23 @@ export function useFirebaseData<T>(
         }
 
         // 2. Fase remota, coalescida entre instancias del mismo storageKey.
-        await refreshRemote(path, storageKey, hasLocalCache, localUpdatedAt);
+        await refreshRemote(
+          nodePath,
+          storageKey,
+          hasLocalCache,
+          localUpdatedAt,
+        );
 
         // Tras el refresco, releer la caché de módulo (ya con datos frescos si
         // los hubo) y aplicar el transform de esta instancia.
         const fresh = nodeCache.get(storageKey);
         if (fresh) applyParsed(fresh.parsed, fresh.hidden);
       } catch (e) {
-        logger.error('Error loading firebase data', e);
+        // Las denegaciones de reglas ya las reportó `withRetry` con su path;
+        // volver a registrarlas aquí solo duplicaría el evento en Sentry.
+        if (!isPermissionDenied(e)) {
+          logger.error('Error loading firebase data', e);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -306,5 +328,11 @@ export function useFirebaseData<T>(
     };
   }, [path, storageKey, transform]);
 
-  return { data, loading, offline, hidden } as const;
+  // Sin nodo no hay carga pendiente ni nada que esperar.
+  return {
+    data,
+    loading: path === null ? false : loading,
+    offline,
+    hidden,
+  } as const;
 }

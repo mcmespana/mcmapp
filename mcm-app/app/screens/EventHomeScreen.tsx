@@ -329,13 +329,15 @@ function SectionCard({
 }) {
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
   const sectionSlug = section.firebaseKey ?? section.target ?? section.label;
+  // Sin `firebaseKey` esta sección no vive en Firebase: no hay nada que mirar
+  // y `hidden` es siempre false. Se pasa `null` en vez de un path inventado.
   const { hidden: firebaseHidden } = useFirebaseData(
     section.firebaseKey
       ? getEventFirebasePath(event, section.firebaseKey)
-      : `__noop__/${sectionSlug}`,
+      : null,
     section.firebaseKey
       ? getEventCacheKey(event, section.firebaseKey)
-      : `__noop__${event.id}_${sectionSlug}`,
+      : `noop_${event.id}_${sectionSlug}`,
   );
 
   if (firebaseHidden) return null;

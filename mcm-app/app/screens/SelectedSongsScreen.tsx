@@ -97,6 +97,7 @@ import {
   SHARED_PASSWORD,
 } from '@/hooks/usePlaylistSharing';
 import { playlistSignature } from '@/utils/playlistSync';
+import { defaultPlaylistName } from '@/utils/playlistCodes';
 import { isChoirId } from '@/utils/choirIds';
 import { transposeLabel, transposeKey } from '@/utils/transposeKey';
 import { convertChord } from '@/utils/chordNotation';
@@ -142,6 +143,11 @@ const SelectedSongsScreen: React.FC = () => {
   const { selectedSongs, isHydrated, addSong, removeSong, moveSong } =
     useSelectedSongs();
   const choir = useChoirSession();
+  // Escalar suelto a propósito: leer `choir.session?.current?.filename` DENTRO
+  // de un callback hace que se infiera `choir.session` entera como dependencia,
+  // así que el memo se rehace en cada latido del líder aunque la canción en
+  // curso no cambie (mismo patrón que el `const uid = user?.uid` de TODO.md §2).
+  const nowPlayingFilename = choir.session?.current?.filename;
   const { settings } = useSettings();
 
   const navigation = useNavigation<SelectedSongsScreenNavigationProp>();
@@ -219,70 +225,9 @@ const SelectedSongsScreen: React.FC = () => {
   });
   const link = sharing.link;
 
-  // Auto-import / auto-join al llegar por un enlace:
-  //   ?p=1234    → playlist por código
-  //   ?coro=id   → la ÚLTIMA playlist de ese coro (siempre la de hoy)
-  //   ?c=1234|id → sesión de coro en vivo
-  // En los tres casos se reemplaza la selección directamente y el toast deja
-  // 10 s para deshacer: venir de un enlace y que te pregunten tres cosas antes
-  // de enseñarte nada era el peor momento posible para un diálogo.
-  const autoImportAttempted = useRef(false);
-  useEffect(() => {
-    if (autoImportAttempted.current) return;
-    const params: any = (route?.params as any) || {};
-    const playlistCode = params.p ?? params.code;
-    const choirParam = params.coro;
-    const liveKey = params.c;
-
-    if (typeof playlistCode === 'string' && /^\d{4}$/.test(playlistCode)) {
-      autoImportAttempted.current = true;
-      void sharing.importByCode(playlistCode).catch((e: any) => {
-        toast.show({
-          variant: 'danger',
-          label: e?.message ?? 'No se ha podido importar',
-        });
-      });
-    } else if (typeof choirParam === 'string' && isChoirId(choirParam)) {
-      autoImportAttempted.current = true;
-      void sharing.importLatestFromChoir(choirParam).catch((e: any) => {
-        toast.show({
-          variant: 'danger',
-          label: e?.message ?? 'No se ha podido importar',
-        });
-      });
-    } else if (typeof liveKey === 'string' && liveKey) {
-      autoImportAttempted.current = true;
-      void handleJoinChoir(liveKey);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Auto-import de un QR offline (?d=<payload>). Esperamos a que el catálogo
-  // esté cargado para poder resolver categoría+número → filename.
-  const offlineImportAttempted = useRef(false);
-  useEffect(() => {
-    if (offlineImportAttempted.current) return;
-    const params: any = (route?.params as any) || {};
-    const payload = params.d;
-    if (typeof payload === 'string' && payload && allSongsData) {
-      offlineImportAttempted.current = true;
-      const { songs, missing } = decodeOfflinePlaylist(
-        payload,
-        offlineFilenameResolver,
-      );
-      if (songs.length === 0) {
-        toast.show({ label: 'No se pudo leer la playlist del QR' });
-        return;
-      }
-      sharing.replaceWithUndo(songs, 'Playlist del QR importada', null);
-      if (missing > 0) {
-        toast.show({
-          label: `${missing} canción(es) del QR no están en este dispositivo`,
-        });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allSongsData]);
+  // (Los dos efectos de auto-import por enlace viven más abajo, justo detrás de
+  // `handleJoinChoir` y `offlineFilenameResolver`: necesitan leerlos y aquí
+  // arriba quedaban en zona muerta.)
 
   // Mapa filename → datos completos de la canción (con categoría original).
   const allSongsMap = useMemo(() => {
@@ -448,10 +393,6 @@ const SelectedSongsScreen: React.FC = () => {
 
   /** Texto formateado: usa el TONO TRANSPORTADO (no el original). */
   const buildShareText = useCallback(() => {
-    const date = new Date()
-      .toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-      .toUpperCase()
-      .replace('.', '');
     const musicalEmojis = [
       '🎹',
       '🎸',
@@ -465,26 +406,22 @@ const SelectedSongsScreen: React.FC = () => {
     ];
     const randomEmoji =
       musicalEmojis[Math.floor(Math.random() * musicalEmojis.length)];
-    const header = `*CANCIONES ${date} ${randomEmoji}*`;
+    const title = link?.name || defaultPlaylistName();
+    const header = `*${title.toUpperCase()} ${randomEmoji}*`;
     const lines: string[] = [];
 
     // Recorremos en el orden actualmente visible (manual o por categoría).
-    const visibleGroups: {
-      categoryTitle: string;
-      data: typeof flatSelectedSongs;
-    }[] =
+    const visibleGroups: { data: typeof flatSelectedSongs }[] =
       viewMode === 'manual'
-        ? [{ categoryTitle: '', data: flatSelectedSongs }]
-        : categorized.map((c) => ({
-            categoryTitle: c.categoryTitle,
-            data: c.data,
-          }));
+        ? [{ data: flatSelectedSongs }]
+        : categorized.map((c) => ({ data: c.data }));
 
+    // Numeración correlativa (1. 2. 3. …) para que WhatsApp la reconozca como
+    // lista, sin reiniciar entre categorías.
+    let songNumber = 0;
     visibleGroups.forEach((group) => {
-      const letter = group.categoryTitle
-        ? group.categoryTitle.charAt(0).toUpperCase()
-        : '';
       group.data.forEach((song) => {
+        songNumber += 1;
         const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
         let toneStr = '';
         if (song.key) {
@@ -508,16 +445,23 @@ const SelectedSongsScreen: React.FC = () => {
         }
         const idMatch = song.title.match(/^\d+/);
         const songId = idMatch ? idMatch[0] : '??';
-        let line = letter ? `*${letter}.* ${cleanTitle}` : `• ${cleanTitle}`;
+        let line = `${songNumber}. *${cleanTitle}*`;
         if (toneStr) line += ` · ${toneStr}`;
-        line += ` · *[#${songId}]*`;
         if (song.author) line += ` · ${song.author}`;
+        line += ` · *\`#${songId}\`*`;
         lines.push(line);
       });
     });
 
+    // Si está subida a la nube, cerramos con el enlace y el código.
+    if (link) {
+      lines.push('');
+      lines.push(`☁️ ${WEB_BASE_URL}/playlist?p=${link.code}`);
+      lines.push(`Código: *${link.code}*`);
+    }
+
     return [header, ...lines].join('\n');
-  }, [viewMode, flatSelectedSongs, categorized, settings.notation]);
+  }, [viewMode, flatSelectedSongs, categorized, settings.notation, link]);
 
   const handleShareText = useCallback(() => {
     const text = buildShareText();
@@ -546,23 +490,7 @@ const SelectedSongsScreen: React.FC = () => {
   }, [buildShareText, toast, flatSelectedSongs.length]);
 
   const handleStartExportFile = useCallback(() => {
-    const monthNames = [
-      'ene',
-      'feb',
-      'mar',
-      'abr',
-      'may',
-      'jun',
-      'jul',
-      'ago',
-      'sep',
-      'oct',
-      'nov',
-      'dic',
-    ];
-    const now = new Date();
-    const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
-    setExportFileName(`Playlist ${dateStr}`);
+    setExportFileName(defaultPlaylistName());
     setShowExportFileModal(true);
   }, []);
 
@@ -607,23 +535,7 @@ const SelectedSongsScreen: React.FC = () => {
   // --- Exportar a PDF -------------------------------------------------------
 
   const handleStartExportPdf = useCallback(() => {
-    const monthNames = [
-      'ene',
-      'feb',
-      'mar',
-      'abr',
-      'may',
-      'jun',
-      'jul',
-      'ago',
-      'sep',
-      'oct',
-      'nov',
-      'dic',
-    ];
-    const now = new Date();
-    const dateStr = `${now.getDate()}-${monthNames[now.getMonth()]}`;
-    setExportPdfDefaultName(`Playlist ${dateStr}`);
+    setExportPdfDefaultName(defaultPlaylistName());
     setShowExportPdfModal(true);
   }, []);
 
@@ -1183,6 +1095,77 @@ const SelectedSongsScreen: React.FC = () => {
     [choir, toast],
   );
 
+  // --- Auto-import al llegar por un enlace -----------------------------------
+  // Van AQUÍ, y no arriba con el resto de efectos, porque leen
+  // `handleJoinChoir` y `offlineFilenameResolver`, que se declaran justo antes.
+  // Declarados antes, el compilador los veía como acceso en zona muerta y
+  // dejaba de rastrear sus cambios. Son efectos de un solo disparo (pestillo en
+  // un ref), así que su orden relativo al resto da igual.
+  //
+  //   ?p=1234    → playlist por código
+  //   ?coro=id   → la ÚLTIMA playlist de ese coro (siempre la de hoy)
+  //   ?c=1234|id → sesión de coro en vivo
+  // En los tres casos se reemplaza la selección directamente y el toast deja
+  // 10 s para deshacer: venir de un enlace y que te pregunten tres cosas antes
+  // de enseñarte nada era el peor momento posible para un diálogo.
+  const autoImportAttempted = useRef(false);
+  useEffect(() => {
+    if (autoImportAttempted.current) return;
+    const params: any = (route?.params as any) || {};
+    const playlistCode = params.p ?? params.code;
+    const choirParam = params.coro;
+    const liveKey = params.c;
+
+    if (typeof playlistCode === 'string' && /^\d{4}$/.test(playlistCode)) {
+      autoImportAttempted.current = true;
+      void sharing.importByCode(playlistCode).catch((e: any) => {
+        toast.show({
+          variant: 'danger',
+          label: e?.message ?? 'No se ha podido importar',
+        });
+      });
+    } else if (typeof choirParam === 'string' && isChoirId(choirParam)) {
+      autoImportAttempted.current = true;
+      void sharing.importLatestFromChoir(choirParam).catch((e: any) => {
+        toast.show({
+          variant: 'danger',
+          label: e?.message ?? 'No se ha podido importar',
+        });
+      });
+    } else if (typeof liveKey === 'string' && liveKey) {
+      autoImportAttempted.current = true;
+      void handleJoinChoir(liveKey);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-import de un QR offline (?d=<payload>). Esperamos a que el catálogo
+  // esté cargado para poder resolver categoría+número → filename.
+  const offlineImportAttempted = useRef(false);
+  useEffect(() => {
+    if (offlineImportAttempted.current) return;
+    const params: any = (route?.params as any) || {};
+    const payload = params.d;
+    if (typeof payload === 'string' && payload && allSongsData) {
+      offlineImportAttempted.current = true;
+      const { songs, missing } = decodeOfflinePlaylist(
+        payload,
+        offlineFilenameResolver,
+      );
+      if (songs.length === 0) {
+        toast.show({ label: 'No se pudo leer la playlist del QR' });
+        return;
+      }
+      sharing.replaceWithUndo(songs, 'Playlist del QR importada', null);
+      if (missing > 0) {
+        toast.show({
+          label: `${missing} canción(es) del QR no están en este dispositivo`,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allSongsData]);
+
   // --- Reorden manual -------------------------------------------------------
 
   // Canción sobre la que está abierto el menú contextual (clic derecho en web).
@@ -1666,7 +1649,7 @@ const SelectedSongsScreen: React.FC = () => {
       <View style={styles.categoryContainer}>
         <Text style={styles.categoryTitle}>{item.categoryTitle}</Text>
         {item.data.map((song) => {
-          const isNow = choir.session?.current?.filename === song.filename;
+          const isNow = nowPlayingFilename === song.filename;
           return (
             <PlaylistRow
               key={song.filename}
@@ -1681,27 +1664,44 @@ const SelectedSongsScreen: React.FC = () => {
         })}
       </View>
     ),
-    [choir.session?.current?.filename, handleSongPress, removeSong, styles.categoryContainer, styles.categoryTitle]
+    [
+      nowPlayingFilename,
+      handleSongPress,
+      removeSong,
+      styles.categoryContainer,
+      styles.categoryTitle,
+    ],
   );
 
-  const manualRowProps = useCallback((
-    item: (typeof flatSelectedSongs)[number],
-    index: number,
-  ): React.ComponentProps<typeof PlaylistRow> => ({
-    song: item,
-    transpose: item.transpose,
-    capoOverride: item.capoOverride,
-    position: index + 1,
-    showReorderControls: true,
-    canMoveUp: index > 0,
-    canMoveDown: index < flatSelectedSongs.length - 1,
-    onMoveUp: () => handleMoveUp(item.filename),
-    onMoveDown: () => handleMoveDown(item.filename),
-    onContextMenu: () => setMenuFilename(item.filename),
-    isNowPlaying: choir.session?.current?.filename === item.filename,
-    onPress: () => handleSongPress(item),
-    onRemove: () => removeSong(item.filename),
-  }), [flatSelectedSongs.length, handleMoveUp, handleMoveDown, handleSongPress, removeSong, choir.session?.current?.filename, setMenuFilename]);
+  const manualRowProps = useCallback(
+    (
+      item: (typeof flatSelectedSongs)[number],
+      index: number,
+    ): React.ComponentProps<typeof PlaylistRow> => ({
+      song: item,
+      transpose: item.transpose,
+      capoOverride: item.capoOverride,
+      position: index + 1,
+      showReorderControls: true,
+      canMoveUp: index > 0,
+      canMoveDown: index < flatSelectedSongs.length - 1,
+      onMoveUp: () => handleMoveUp(item.filename),
+      onMoveDown: () => handleMoveDown(item.filename),
+      onContextMenu: () => setMenuFilename(item.filename),
+      isNowPlaying: nowPlayingFilename === item.filename,
+      onPress: () => handleSongPress(item),
+      onRemove: () => removeSong(item.filename),
+    }),
+    [
+      flatSelectedSongs.length,
+      handleMoveUp,
+      handleMoveDown,
+      handleSongPress,
+      removeSong,
+      nowPlayingFilename,
+      setMenuFilename,
+    ],
+  );
 
   const renderManualItem = useCallback(
     ({
@@ -1711,20 +1711,18 @@ const SelectedSongsScreen: React.FC = () => {
       item: (typeof flatSelectedSongs)[number];
       index: number;
     }) => <PlaylistRow {...manualRowProps(item, index)} />,
-    [manualRowProps]
+    [manualRowProps],
   );
 
   const renderDraggableManualItem = useCallback(
     ({
       item,
       index,
-      drag
     }: {
       item: (typeof flatSelectedSongs)[number];
       index: number;
-      drag?: () => void;
-    }) => <DraggableManualRow {...manualRowProps(item, index)} drag={drag} />,
-    [manualRowProps]
+    }) => <DraggableManualRow {...manualRowProps(item, index)} />,
+    [manualRowProps],
   );
 
   const handleReorder = ({ from, to }: ReorderableListReorderEvent) => {

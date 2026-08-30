@@ -18,6 +18,8 @@ import BottomSheet from '@/components/BottomSheet';
 import brand from '@/constants/colors';
 import { extractDriveFileId, toDrivePreviewUrl } from '@/utils/googleDrive';
 import type { MediaLink, SongMedia } from '@/types/songMedia';
+import TagChip from '@/components/song-tags/TagChip';
+import type { ResolvedTag } from '@/utils/songTags';
 import type { FloatingMediaSource } from '@/components/song-media/FloatingMediaPlayer';
 
 interface SongMediaSheetProps {
@@ -35,6 +37,13 @@ interface SongMediaSheetProps {
    * mientras sigue montado nace tapada.
    */
   onCloseComplete?: () => void;
+  /** Etiquetas de la canción, ya resueltas contra el catálogo. */
+  tags?: ResolvedTag[];
+  /**
+   * Navegar a la pantalla de una etiqueta. Como en iOS la hoja es un Modal de
+   * verdad, la navegación se difiere a `onCloseComplete`: aquí solo se apunta.
+   */
+  onTagPress?: (tag: ResolvedTag) => void;
 }
 
 const YT_RED = '#FF3B30';
@@ -60,11 +69,17 @@ export default function SongMediaSheet({
   songTitle,
   onPlayMedia,
   onCloseComplete,
+  tags = [],
+  onTagPress,
 }: SongMediaSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const { toast } = useToast();
   const styles = React.useMemo(() => createStyles(isDark), [isDark]);
+  const handleTagPress = React.useCallback(
+    (tag: ResolvedTag) => onTagPress?.(tag),
+    [onTagPress],
+  );
 
   if (!media) return null;
 
@@ -79,7 +94,9 @@ export default function SongMediaSheet({
       ? { label: 'T. litúrgico', value: media.liturgicalTime }
       : null,
   ].filter((x): x is { label: string; value: string } => x !== null);
-  const hasFicha = Boolean(fichaChips.length > 0 || media.info || media.source);
+  const hasFicha = Boolean(
+    fichaChips.length > 0 || media.info || media.source || tags.length > 0,
+  );
 
   const openExternal = async (url: string) => {
     h.tap();
@@ -277,6 +294,25 @@ export default function SongMediaSheet({
               </View>
             )}
 
+            {/* Etiquetas de la canción: se abre una canción, se ve que es
+                "viejuna", pica la curiosidad y se ven las otras 33. Este es el
+                bucle que sostiene todo el sistema de etiquetas. */}
+            {tags.length > 0 && (
+              <View style={styles.tagRow}>
+                {tags.map((tag) => (
+                  <TagChip
+                    key={tag.slug}
+                    tag={tag}
+                    variant="outline"
+                    isDark={isDark}
+                    hideCount
+                    onPress={onTagPress ? handleTagPress : undefined}
+                    accessibilityHint="Ver las canciones de esta etiqueta"
+                  />
+                ))}
+              </View>
+            )}
+
             {media.info && (
               <Text style={styles.fichaComment}>{media.info}</Text>
             )}
@@ -416,6 +452,13 @@ const createStyles = (isDark: boolean) =>
     },
     mGoExt: {},
     // ── ficha ──
+    tagRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginHorizontal: 4,
+      marginBottom: 12,
+    },
     fichaGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',

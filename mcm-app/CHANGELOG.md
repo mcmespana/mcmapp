@@ -18,6 +18,407 @@
 
 ---
 
+## 2026-08-30 13:49 — Los ajustes de lectura del evangelio se quedaban sin scroll (y sin control de tamaño)
+
+- **El problema**: en "Ajustes de lectura" (Contigo → evangelio) el contenido
+  iba en un `View` a pelo. El `BottomSheet` compartido tiene tope de altura y
+  `overflow: hidden`, así que con la letra grande la vista previa —que se pinta
+  al tamaño elegido, hasta 220%— crecía hasta comerse la hoja entera: la barra
+  de tamaño y el selector de tema quedaban recortados fuera de pantalla, sin
+  scroll posible y sin forma de volver a bajar la letra.
+- **Arreglo**: dos topes. El contenido entero va en un `ScrollView` acotado
+  (66% de la ventana) y la vista previa scrollea dentro de su propia caja
+  (máximo 26% de la ventana, entre 110 y 240 px), de modo que los controles
+  quedan siempre a la vista sea cual sea el tamaño de letra.
+- La barra de tamaño lleva ahora `onPanResponderTerminationRequest: () => false`
+  para que el `ScrollView` no le robe el gesto a mitad de arrastre.
+- Guardarraíl en `__tests__/readerSettingsSheetScroll.test.tsx`: si alguien
+  vuelve a poner un `View` sin acotar, el test falla.
+- Archivos: `components/contigo/ReaderSettingsSheet.tsx`,
+  `__tests__/readerSettingsSheetScroll.test.tsx`.
+
+## 2026-08-27 13:32 — Los calendarios ICS se precachean en Firebase (20× más rápidos)
+
+- **El problema, medido**: el `.ics` de Google Calendar se genera en caliente en
+  cada petición. Contra el feed real de MCM Europa, TTFB de 0,87–1,33 s y
+  transferencia de ~2 ms (81 KB en crudo, 21 KB con gzip, 149 eventos). El
+  99,8 % de la espera es Google generando el fichero, y manda
+  `Cache-Control: no-store` **sin ETag**: no hay caché HTTP ni revalidación
+  posible. Ninguna optimización de red en el cliente puede arreglarlo (se
+  evaluó `react-native-nitro-fetch` para esto y no aplica por este motivo).
+- **Nueva Cloud Function `cacheCalendarIcs`** (schedule cada 2 h): descarga y
+  parsea los ICS de `/calendars` y los deja en `/calendarEvents`. La app pasa de
+  ~1,2 s por calendario a una lectura de tres campos sobre la conexión que ya
+  tenía abierta con Firebase.
+- **Parser extraído a `utils/icsParser.ts`** (puro, sin RN) y partido en dos
+  fases: `parseICSPortable` (sin localizar → cacheable, la función corre en
+  `us-central1`) + `localizeEvents` (convierte a la hora del dispositivo). Sin
+  esa separación, cachear habría mostrado todos los eventos en hora de Chicago.
+  La igualdad `parseICS === localizeEvents ∘ parseICSPortable` está blindada con
+  un test.
+- **`updatedAt` solo cambia si el contenido cambió** (se compara un sha256): una
+  apertura normal de la app no descarga el nodo. `checkedAt`, que sí se escribe
+  en cada ejecución, es lo que indica si el cron sigue vivo.
+- **Fallback intacto**: si el nodo no cubre un calendario (delegación con
+  `extraCalendars` recién añadidos), o si `checkedAt` tiene más de 24 h, se baja
+  el ICS directamente como antes.
+- **Fix: el proxy CORS se usaba también en nativo**, donde no hay CORS que
+  sortear. Era un round-trip entero de más contra un feed que ya tarda 1 s, y si
+  el proxy fallaba se pagaban dos esperas. Ahora es exclusivo de web.
+- **Fix: la caché local se pinta antes de comprobar el estado de la red**
+  (`getNetworkStateAsync` es un salto nativo y no hace falta para leer disco).
+- Firebase: nodo nuevo `/calendarEvents` (lectura pública, escritura cerrada —
+  solo lo escribe el Admin SDK). **Para activarlo basta con desplegar la función**
+  (`cd mcm-app && firebase deploy --only functions`): las reglas vivas hoy son las
+  antiguas y ya permiten la lectura. El bloque añadido a `database.rules.json` es
+  para el día que se despliegue el fichero (que deniega por defecto en la raíz);
+  desplegarlo NO es parte de este cambio y tiene sus propios requisitos, ver
+  `docs/SEGURIDAD.md`. Ojo: el workflow `deploy-firebase-rules.yml` se dispara al
+  mergear a `production` si cambia `database.rules.json` — hoy se salta por falta
+  del secret, pero conviene saberlo.
+- Documentación completa en `docs/funcionalidades/CALENDARIOS.md`.
+- Archivos: `utils/icsParser.ts` (nuevo), `hooks/useCalendarEvents.ts`,
+  `functions/src/index.ts`, `functions/scripts/sync-ics-parser.mjs` (nuevo),
+  `functions/package.json`, `database.rules.json`,
+  `__tests__/icsParser.test.ts` y `__tests__/useCalendarEventsCache.test.ts`
+  (nuevos, +20 tests).
+
+## 2026-08-26 09:21 — Añadida dependencia expo-observe (EAS Observe)
+
+- Instalado `expo-observe` (~57.0.16) vía `npx expo install expo-observe`
+  para poder enviar métricas de la app a EAS Observe.
+- Es un módulo nativo (trae código iOS/Android) sin config plugin: no
+  requiere cambios en `app.config.ts`, solo autolinking en el build nativo.
+- **Requiere build de tienda antes de mergear a `production`** — no se puede
+  entregar por OTA. Commit con `[skip-ota]`.
+- Archivos: `mcm-app/package.json`, `mcm-app/package-lock.json`.
+
+## 2026-08-23 19:35 — Mensaje de WhatsApp del coro: numeración correlativa, título dinámico y enlace a la nube
+
+- **Numeración de canciones**: cada línea del mensaje formateado empieza ahora
+  por `1. `, `2. `, `3. `… correlativos a lo largo de todo el mensaje (antes
+  usaba la inicial de la categoría o un `•`), para que WhatsApp lo reconozca
+  como lista numerada. El título de la canción va en negrita y el número de
+  canción (`#123`) se mueve al final de la línea con formato código+negrita
+  (``*`#123`*``).
+- **Enlace a la nube**: si la playlist está subida (`sharing.link`), el
+  mensaje cierra con el enlace (`☁️ https://mcm.expo.app/playlist?p=1234`) y
+  el código de 4 dígitos.
+- **Título del mensaje**: usa el nombre real de la playlist (`link.name`) en
+  mayúsculas si existe; si no, el nombre por defecto (ver debajo).
+- **Nombre por defecto de playlist**: `defaultPlaylistName()` (usada al
+  subir al coro, exportar `.mcm` y exportar PDF) ya no propone «Playlist
+  \<fecha\>» sino «Canciones \<fecha\>», y esa fecha ya no es la de hoy sino
+  la del **próximo fin de semana**: si hoy es sábado o domingo se queda esa
+  fecha, y de lunes a viernes salta al sábado que viene. Nueva función
+  `nextChoirDate()` en `utils/playlistCodes.ts`.
+- **Archivos**: `utils/playlistCodes.ts`, `app/screens/SelectedSongsScreen.tsx`,
+  `__tests__/playlistCodes.test.ts`.
+
+## 2026-08-22 19:00 — `useShakeDetector`: `expo-sensors` ahora se carga con `require` perezoso, no `import()` dinámico
+
+- **Motivo**: al subir la cobertura de tests, se detectó que bajo Jest el
+  `import('expo-sensors')` dinámico no se transforma a CommonJS y nunca
+  resuelve — ni siquiera con un mock. La lógica de detección de sacudidas
+  (picos de aceleración, ventana, cooldown) llevaba así desde siempre sin
+  ningún test que la ejerciera de verdad.
+- **Cambio**: mismo patrón perezoso que `getGoogleSignin` en
+  `utils/platformAuth.native.ts` — `require('expo-sensors')` dentro del
+  `useEffect`, envuelto en `try/catch` en vez de `.then()/.catch()`. Para
+  Metro (sin code splitting) el comportamiento es equivalente: lo único que
+  importaba era CUÁNDO se evaluaba el módulo, no si era `import()` o
+  `require`. Sin cambios de comportamiento para el usuario.
+- Ahora sí cubierto por tests: `__tests__/useShakeDetector.test.ts` (picos,
+  ventana, cooldown, ref del callback, re-suscripción por cambio de opciones,
+  degradación silenciosa si el módulo nativo no está).
+- Archivo: `hooks/useShakeDetector.ts`.
+
+---
+
+## 2026-08-20 12:30 — Modo Coro: caducidad a 12h (antes 24h) con alargue por actividad, y arreglo de la restauración de sesión
+
+- **Caducidad más corta y con alargue**: una sesión de "modo Coro" ahora dura
+  **12h** desde que arranca (antes 24h). Si el líder publica canción o
+  playlist dentro de las **2h previas** a esa caducidad, la sesión se alarga
+  **12h más** desde ese momento — así una celebración larga no se corta a
+  media canción, pero una sesión olvidada sin uso caduca igual. Nuevo:
+  `shouldRenewChoirSession`/`extendChoirSession` en
+  `services/choirSessionService.ts`, conectados en
+  `contexts/ChoirSessionContext.tsx` (`publishCurrent`/`publishPlaylist`).
+- **Fix**: una sesión de coro guardada (para retomarla al reabrir la app)
+  nunca se restauraba. El efecto que limpia `AsyncStorage` cuando
+  `mode === 'off'` corría ya en el primer render, con el estado inicial, y
+  borraba la sesión persistida antes de que el efecto de restauración
+  (que espera a `deviceId`) llegara a leerla. Arreglado con un flag
+  `restored` que hace esperar la limpieza hasta que la restauración ha
+  tenido su oportunidad.
+- Tests: `__tests__/choirSessionService.test.ts`,
+  `__tests__/choirSessionContext.test.tsx`.
+
+## 2026-08-20 10:15 — "Reducir movimiento" completo, cierre de la auditoría de animaciones
+
+Últimos dos huecos de la auditoría de `animate-expo` (ver
+`docs/planes/archivo/ANIMACIONES.md`):
+
+- **`SuccessPhase`** (pantalla de agradecimiento del wizard de evaluación): con
+  "reducir movimiento" el icono aparece directamente escalado a 1 (sin el
+  muelle con rebote) y el ripple —un bucle infinito de escala— no arranca. La
+  celebración se confirma con el icono y el texto, no con algo que se repite
+  solo de fondo.
+- **`BreathingPhase`** ("Para un momento..." al entrar en Revisión): se queda
+  con el ciclo de textos "Respira... / Inspira..." al mismo ritmo —es
+  contemplativa y puntual, decisión del usuario de no tocarle el sentido— pero
+  los tres anillos dejan de latir en escala.
+
+Con esto, "reducir movimiento" queda cubierto en toda la app **menos
+Carismochito**, que se deja tal cual a propósito: es un huevo de pascua que el
+usuario activa agitando el móvil, y quien entra ahí con esa opción activada es
+porque quiere.
+
+Archivos: `components/evaluation/SuccessPhase.tsx`,
+`components/contigo/BreathingPhase.tsx`. Sin cambios de comportamiento fuera de
+"reducir movimiento": typecheck limpio, 1042 tests en verde, mismos 39 warnings.
+
+## 2026-08-19 22:30 — `.value` → `.get()`/`.set()` en todos los shared values
+
+Migración mecánica de los 229 accesos directos a `.value` de Reanimated en 32
+ficheros. Misma API, pero **el React Compiler no puede seguir `.value`** y le
+generaba un aviso a cada uno: **los warnings del linter bajan de 49 a 39**.
+
+También comprobado que **no hace falta tocar nada para los 120 fps**:
+`CADisableMinimumFrameDurationOnPhone: true` ya lo inyecta `@expo/config-plugins`
+en el `Info.plist` por defecto, así que en iPhones ProMotion el presupuesto de
+frame ya es de 8 ms. (Estaba anotado como pendiente en
+`docs/planes/archivo/ANIMACIONES.md`; queda cerrado.)
+
+Sin cambios de comportamiento: 1042 tests en verde y typecheck limpio.
+
+## 2026-08-19 21:45 — Slider de lectura, `scheduleOnRN` y toasts
+
+- **`ReaderSettingsSheet`** (tamaño de letra de Contigo): el agarre de la barra
+  crece mientras el dedo está encima, háptica de tope al pasarse de los extremos
+  (una sola vez por llegada, no una por frame) y arrastrar después de tocar los
+  botones A/A vuelve a responder — el último valor no se resincronizaba, así que
+  volver con el dedo al mismo sitio no hacía nada.
+- **`runOnJS` → `scheduleOnRN`** (`react-native-worklets`) en los 9 ficheros que
+  lo usaban: `runOnJS` está deprecado en Reanimated 4.
+- **`AppToastContext`** respeta "reducir movimiento": el toast solo funde, sin
+  traslación ni escala.
+
+Archivos: `components/contigo/ReaderSettingsSheet.tsx`, `contexts/AppToastContext.tsx`,
+`components/tabs/tabBarController.ts`, `components/CarismochitoOverlay.tsx`,
+`components/calendar/SwipeableMonthCalendar.tsx`, `components/contigo/BreathingPhase.tsx`,
+`app/screens/{ComunicaScreen,SongDetailScreen,HorarioScreen}.tsx`, `app/(tabs)/calendario.tsx`.
+
+## 2026-08-19 21:05 — Cantoral: tono y cejilla se sienten (y ya no rozan el borde)
+
+- **Todas las hojas** (`BottomSheet`) reservan ya el safe-area inferior. Antes
+  solo ponían 8 px fijos, así que en móviles con barra de gestos el último
+  control quedaba pegado al indicador. Nueva prop `safeAreaBottom` (por defecto
+  `true`); `NotificationsBottomSheet` la pone a `false` porque ya se come el
+  inset en su propia lista.
+- Los ±1 de TONO y los ± de CEJILLA animan la pulsación (90 ms de bajada,
+  140 ms de vuelta) en vez de saltar de golpe, y la CEJILLA gana el mismo "pop"
+  del valor que ya tenía el tono, además de mantener-pulsado para repetir.
+- Al tope de cejilla (0) el botón ya no es mudo: háptica de aviso (`h.limit`,
+  nueva en `utils/haptics.ts`) y un meneo corto del valor. Un botón que no hace
+  NADA se lee como app colgada, no como "hasta aquí".
+- Háptica también en los dos botones de restablecer, que no tenían.
+- Las animaciones de la hoja pasan de Reanimated al `Animated` de RN: viven
+  dentro del `Modal` transparente, donde los estilos de Reanimated 4 no se
+  aplican — o sea que el pop del tono probablemente no se veía nunca.
+
+Archivos: `components/TransposeBottomSheet.tsx`, `components/BottomSheet.tsx`,
+`components/NotificationsBottomSheet.tsx`, `utils/haptics.ts`.
+
+## 2026-08-19 20:25 — BottomSheet: el arrastre se siente como debe
+
+El arrastre para descartar la hoja compartida (la usan una veintena de pantallas)
+tenía tres cosas mal, todas de "feel":
+
+- El umbral de velocidad estaba en `400` contra el `vy` de `PanResponder`, que va
+  en **px/ms**: eran 400.000 px/s, inalcanzable. La rama de velocidad no se
+  ejecutaba NUNCA, así que el flick corto y rápido hacia abajo —el gesto natural
+  para descartar— no cerraba la hoja. Ahora `0.5` px/ms.
+- Tirar hacia arriba no movía nada: la hoja se quedaba clavada bajo el dedo.
+  Ahora hay resistencia elástica (cede un 20%).
+- El muelle de vuelta arrancaba de velocidad cero, como si la hoja se hubiera
+  soltado sola. Ahora se le pasa la velocidad del gesto.
+
+Además: háptica ligera en el instante en que el gesto se compromete a cerrar, y
+`useWindowDimensions` en lugar de `Dimensions.get(...)` leído en el render (no se
+recalculaba al girar el móvil, y el tope de altura se quedaba en el de portrait).
+
+NO se migra a Reanimated pese a lo que pide la skill `animate-expo`: dentro de un
+`Modal` transparente los estilos de Reanimated 4 no se aplican (ver la cabecera
+de `components/BottomSheet.tsx`, incidente del 2026-08-09). Razonado en
+`docs/planes/archivo/ANIMACIONES.md`.
+
+Archivos: `components/BottomSheet.tsx`, `__tests__/bottomSheetLifecycle.test.tsx`
+(6 tests nuevos sobre `shouldCloseOnRelease` / `dragOffsetFor`).
+
+## 2026-08-19 19:40 — Auditoría de animaciones con la skill `animate-expo`
+
+- Instalada la skill `animate-expo` de `emilkowalski/skills` (entrada nueva en
+  `skills-lock.json`).
+- Auditoría completa de las animaciones de la app contra ella en
+  `docs/planes/archivo/ANIMACIONES.md`: qué ya está bien, qué eran falsos positivos
+  y qué queda pendiente por orden de valor (el gordo: `BottomSheet.tsx` sigue
+  con `PanResponder` + core `Animated`).
+- `constants/animations.ts`: nuevas curvas canónicas (`motionEasings`) y muelles
+  en la forma `duration` + `dampingRatio` (`springs`), añadidos AL LADO de
+  `reaEasings` para no cambiar el feel de lo ya afinado.
+- `components/ui/PressableScale.tsx` y `components/ui/CelebrationBurst.tsx`
+  respetan ya "reducir movimiento" del sistema — antes no lo hacía ningún
+  componente de la app. El emoji del burst deja de arrancar en `scale(0)`.
+
+## 2026-08-15 21:30 — Aviso: el CI lleva parado desde abril
+
+Al arreglar los 4 errores de `typecheck:tests` de la #334 salió a la luz que
+**GitHub Actions no ejecuta nada en este repo desde el 2026-04-10**: por eso
+llevaban meses en `main` sin que saltara nadie. Ningún PR se está verificando de
+verdad, aunque el workflow siga en el repo.
+
+Anotado como tarea de prioridad máxima en `TODO.md` §0 y en el puntero rápido de
+`docs/planes/BACKLOG.md`. Mientras siga roto, los cuatro pasos de `verify.yml`
+(`typecheck`, `typecheck:tests`, `lint`, `test -- --ci`) hay que pasarlos en
+local antes de mergear.
+
+También en `CLAUDE.md`: una regla que se puede romper sin enterarse va en un
+test-guardarraíl, no en un documento (el modelo es `tabsLayoutWebSafety.test.ts`).
+
+## 2026-08-15 20:15 — Repaso de warnings (111 → 51) y reordenación de los planes
+
+**Warnings del compilador de React, sin silenciar ninguno:**
+
+- `useRef(new Animated.Value(x)).current` → `useAnimatedValue(x)` en
+  `BottomSheet`, `OTAUpdatePrompt` y `CarismochitoDialogs` (9 sitios). El patrón
+  viejo construía un `Animated.Value` nuevo en cada render solo para tirarlo.
+- Los dos `PanResponder` de `BottomSheet` pasan a un único `useMemo`, con la
+  lógica de soltar/cancelar compartida en vez de duplicada (misma historia: se
+  creaban y se descartaban en cada render).
+- `ReadingCalendarSheet` re-centraba el mes leyendo y escribiendo un ref durante
+  el render; ahora usa el patrón oficial de ajuste de estado.
+- Los dos efectos de auto-import por enlace de `SelectedSongsScreen` (`?p=`,
+  `?coro=`, `?c=`, `?d=`) estaban ~900 líneas ANTES de `handleJoinChoir` y
+  `offlineFilenameResolver`, que es justo lo que leen: se mueven detrás de sus
+  dependencias.
+- `exhaustive-deps` reales: `onChoir` en `QrScannerModal`; `evangelio` y
+  `SelectedSongsScreen` capturaban un objeto entero donde bastaba un método o un
+  escalar. Y fuera imports muertos en `calendario`, `cancionero` y `mas`.
+
+Los **51 restantes son irreducibles** y están clasificados uno a uno en
+`docs/desarrollo/WARNINGS.md` (falsos positivos de Reanimated, patrón de "ref al
+último callback", código congelado y los tres gigantes exentos). 860 tests en
+verde, `tsc` limpio.
+
+**Documentación** — que se vea de un tirón qué plan está hecho:
+
+- `plans/` (los 15 planes de la auditoría, todos ejecutados) sale de la raíz del
+  repo y pasa a `docs/planes/archivo/auditoria-2026-08/`; `PLAN_TAGS.md` también
+  se archiva. Nuevo `docs/planes/README.md` con el estado de cada plan y la
+  regla: **lo que está en `archivo/` está hecho, no se re-ejecuta**.
+- Etiquetas del cantoral ✅ cerradas del todo (la fase del generador de
+  `mcmapp-cantoral` ya está). Widget y Panel Pañuelo salen de la cola a "futuro
+  lejano". La Fase 1 de calidad (trocear gigantes) queda descartada, con el
+  razonamiento de cómo organizar código que solo edita una IA en
+  `PLAN_CALIDAD.md` §0.
+- Corregidas las referencias a la rama `claude/compact-tabs-bar-uxxaoz`, que se
+  mergeó en la #313 y ya no existe.
+
+## 2026-08-13 21:40 — Etiquetas del cantoral (`{tags:}`): botón del header, nube y pantalla de etiqueta
+
+Sistema de **etiquetas libres y transversales** para las canciones ("viejunas",
+"domingo de ramos", "infantiles"…), sobre el diseño 1d de Claude Design. Una
+etiqueta no es un filtro: es una puerta de entrada al cantoral. Documentación
+completa en `docs/funcionalidades/ETIQUETAS.md`.
+
+Qué se ve:
+
+- **Botón 🏷️ en el header del cantoral**, junto a la lupa, como bar item nativo
+  (`CategoriesScreen`). **Solo aparece si hay canciones etiquetadas**: mientras
+  no las haya, el cantoral está exactamente igual que hoy.
+- **Hoja con la nube de etiquetas**, ordenadas por uso, con emoji opcional y el
+  recuento dentro del chip; el tamaño del chip cuenta el uso.
+- **Pantalla de una etiqueta** = `SongListScreen` con la categoría virtual
+  `__TAG__:<slug>` (hermana de `__ALL__`), **agrupada por categoría** con
+  cabeceras de sección, y una **barra de contexto** con la etiqueta activa (✕)
+  y las etiquetas que coexisten en el resultado, para cruzar en AND sin modal
+  de filtros. Nunca se ofrece una etiqueta que daría cero resultados.
+- **El buscador entiende etiquetas**: los labels y slugs entran en el
+  `searchableText`, así buscar "ramos" saca las canciones etiquetadas aunque no
+  lleven la palabra en el título.
+- **Chips de etiqueta en la ficha de la canción** (`SongMediaSheet`); tocarlos
+  abre la pantalla de esa etiqueta.
+
+Datos: las etiquetas nacen en `mcmapp-cantoral` como directiva `{tags:}` en el
+`.cho` y llegan como `tags: string[]` en `songs/data`; el catálogo de metadatos
+(label, emoji, alias) es **opcional** y vive en `songs/tags`. **No hay nodo
+nuevo que proteger** ni cambios en `database.rules.json` (`songs` ya es
+`.read: true`), ni caché nueva: el índice inverso se construye con un memo
+sobre los datos ya descargados. Una etiqueta que no está en el catálogo
+funciona igual, con el slug capitalizado.
+
+⏳ Falta la parte de `mcmapp-cantoral` (parsear `{tags:}` en el generador y
+publicar `songs/tags`); hasta entonces no se ve nada, por diseño.
+
+Archivos: `utils/songTags.ts` (nuevo), `hooks/useSongTags.ts` (nuevo),
+`components/song-tags/{TagChip,TagCloudSheet,TagContextBar}.tsx` (nuevos),
+`app/screens/CategoriesScreen.tsx`, `app/screens/SongListScreen.tsx`,
+`app/screens/SongDetailScreen.tsx`, `components/song-media/SongMediaSheet.tsx`,
+`types/songMedia.ts`, `utils/filterSongsData.ts`, `__tests__/songTags.test.ts`
+(nuevo). OTA-safe: sin dependencias nativas nuevas.
+
+## 2026-08-13 18:20 — Reglas de Firebase listas para desplegar, con diagnóstico en ambos lados
+
+**Reglas** (`database.rules.json`, reescrito). Los permisos que el panel
+necesita cuelgan ahora de dos banderas en `/_config` (`legacyPanelWrites`,
+`legacyNotificationsOpen`): con ellas en `true` todo funciona igual que hoy y
+se apagan desde la consola sin desplegar. **Hay que sembrar `/_config` ANTES de
+desplegar** (`firebase-seed/config.json`) o el panel se queda sin permisos.
+Guía completa en `docs/desarrollo/FIREBASE_REGLAS.md`.
+
+Bugs de las reglas que habrían roto la app:
+
+- `activities/<ev>/evaluacion/updatedAt` lo escribe la app al enviar una
+  evaluación y estaba denegado — sin él, ningún dispositivo se entera de que
+  hay respuestas nuevas. Igual para `jubileo/evaluacion/**`, que no existía.
+- **Escalada de privilegios en `users/$uid/isAdmin`**: el `.write` del nodo
+  cascadeaba hasta el flag, así que cualquiera con sesión podía nombrarse admin
+  y abrirse el panel secreto del cantoral. Cortado con un `.validate` (un
+  `".write": false` debajo NO lo arregla: la cascada no se revoca).
+- Los `.validate` de `playlistShares`/`choirSessions` estaban en el padre, donde
+  los `update()` parciales no los reevalúan. Movidos a la hoja.
+
+Fugas cerradas: `surveys/<id>/respuestas` y `<evento>/evaluacion/respuestas`
+dejan de ser legibles en bloque (llevan `userName`, `userDelegation`, `userId`);
+cada dispositivo lee la suya.
+
+**App**:
+
+- `useFirebaseData` ya no hace `get()` del nodo entero en la primera carga. Se
+  traía las respuestas de todo el mundo para pintar un formulario. Ahora pide
+  siempre `updatedAt`/`hidden`/`data` por separado.
+- Acepta `path: null` para "sin nodo que mirar". `EventHomeScreen` consultaba un
+  path inventado (`__noop__/<slug>`) por cada tarjeta de sección; con reglas
+  cerradas eso es un `PERMISSION_DENIED` por render.
+- Nuevo `utils/firebaseErrors.ts`: un `PERMISSION_DENIED` ya no se reintenta
+  (nunca se arregla esperando) y **se reporta a Sentry** con la operación y el
+  path, deduplicado por sesión para no reventar la cuota. Buscar
+  `[firebase-rules]`.
+- Test de contrato de las reglas (`__tests__/databaseRules.test.ts`, 170 casos)
+  que las evalúa contra el inventario real de paths de la app y del panel, con
+  las banderas puestas, apagadas y sin sembrar.
+
+**Panel** (repo mcmpanel): deja de leer la raíz de la base de datos —
+imprescindible, porque conceder `.read` en `/` es conceder `/users`— y modal
+_ERROR DE REGLAS DE FIREBASE_ con el path denegado y qué mirar.
+
+**Pendiente**: la sección Usuarios del panel y el contador de destinatarios del
+composer dejan de funcionar al desplegar. No tienen bandera a propósito
+(`/users` es el diario de Contigo; `/pushTokens` enumerable es poder mandar push
+a todos). Se arreglan con auth real en el panel — decisión D2.
+
 ## 2026-08-12 20:35 — Menú de la playlist: opciones vivas, orden por uso y arreglos
 
 - **Solo se ofrece lo que se puede hacer**: con la lista vacía siguen visibles
@@ -27,7 +428,7 @@
 - **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
   Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
 - **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
-  «cambiar el código» — la clave *es* el coro, así que cambiarla la desataba de
+  «cambiar el código» — la clave _es_ el coro, así que cambiarla la desataba de
   él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
 - **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
   elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
@@ -96,7 +497,7 @@
 - **Orden por frecuencia real**: Mi coro → Exportar y compartir → Coro en vivo →
   Códigos y QR → Archivo → Vaciar (Archivo baja, que es lo más raro de usar).
 - **Arreglo**: en una sesión en vivo que cuelga de un coro ya no se ofrece
-  «cambiar el código» — la clave *es* el coro, así que cambiarla la desataba de
+  «cambiar el código» — la clave _es_ el coro, así que cambiarla la desataba de
   él y el resto del coro no la encontraba. Su QR usa ahora `?coro=<id>`.
 - **Un toque menos**: si abres «guardar» sin tener coro elegido, después de
   elegirlo la hoja vuelve a guardar en vez de dejarte en el inicio.
@@ -2537,7 +2938,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

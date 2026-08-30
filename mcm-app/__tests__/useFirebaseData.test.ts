@@ -16,6 +16,11 @@ import {
 } from '@/hooks/useFirebaseData';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { get } from 'firebase/database';
+// Los helpers `__…` solo existen en el mock. Jest mapea `firebase/database` a
+// este mismo fichero (`moduleNameMapper` en jest.config.js), así que en tiempo
+// de ejecución es EL MISMO módulo; TypeScript, en cambio, solo conoce los tipos
+// del paquete real, y por eso hay que importarlos por su ruta.
+import { __setMockNode, __resetMockDb } from '@/__mocks__/firebase';
 import { getNetworkStateAsync } from 'expo-network';
 
 // Silenciar console.error en tests (esperamos errores controlados)
@@ -30,19 +35,24 @@ afterAll(() => {
 // Reiniciar mocks y la caché de módulo del hook antes de cada test.
 beforeEach(() => {
   jest.clearAllMocks();
+  __resetMockDb();
   (AsyncStorage.clear as jest.Mock)();
   __resetNodeCacheForTests();
 });
 
+/** Cuántas veces se ha pedido el hijo `data` de algún nodo. */
+const dataFetches = () =>
+  (get as jest.Mock).mock.calls.filter((c) =>
+    String(c[0]?.path ?? '').endsWith('/data'),
+  ).length;
+
 describe('useFirebaseData', () => {
   it('descarga datos de Firebase y los devuelve', async () => {
-    // Configurar lo que "devuelve" Firebase
-    (get as jest.Mock).mockResolvedValueOnce({
-      exists: () => true,
-      val: () => ({
-        updatedAt: '100',
-        data: { songs: ['canción1', 'canción2'] },
-      }),
+    // Configurar lo que "devuelve" Firebase. El hook pide `songs/updatedAt`,
+    // `songs/hidden` y `songs/data` por separado, nunca el nodo entero.
+    __setMockNode('songs', {
+      updatedAt: '100',
+      data: { songs: ['canción1', 'canción2'] },
     });
 
     const { result } = await renderHook(() =>
@@ -64,13 +74,7 @@ describe('useFirebaseData', () => {
   });
 
   it('guarda datos en caché tras descargar de Firebase', async () => {
-    (get as jest.Mock).mockResolvedValueOnce({
-      exists: () => true,
-      val: () => ({
-        updatedAt: '200',
-        data: { cached: true },
-      }),
-    });
+    __setMockNode('test', { updatedAt: '200', data: { cached: true } });
 
     const { result } = await renderHook(() =>
       useFirebaseData('test', 'cache_test'),
@@ -92,13 +96,7 @@ describe('useFirebaseData', () => {
   });
 
   it('aplica la función de transformación a los datos', async () => {
-    (get as jest.Mock).mockResolvedValueOnce({
-      exists: () => true,
-      val: () => ({
-        updatedAt: '300',
-        data: [1, 2, 3],
-      }),
-    });
+    __setMockNode('test', { updatedAt: '300', data: [1, 2, 3] });
 
     // Transformación: duplicar cada número
     const transform = (data: number[]) => data.map((n) => n * 2);
@@ -168,10 +166,7 @@ describe('useFirebaseData', () => {
   });
 
   it('maneja el caso donde Firebase no tiene datos (snapshot vacío)', async () => {
-    (get as jest.Mock).mockResolvedValueOnce({
-      exists: () => false,
-      val: () => null,
-    });
+    __setMockNode('empty', null);
 
     const { result } = await renderHook(() =>
       useFirebaseData('empty', 'empty_test'),
@@ -187,10 +182,7 @@ describe('useFirebaseData', () => {
 
 describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
   it('coalesce el fetch remoto: dos hooks del mismo path hacen un solo get()', async () => {
-    (get as jest.Mock).mockResolvedValue({
-      exists: () => true,
-      val: () => ({ updatedAt: '100', data: { n: 1 } }),
-    });
+    __setMockNode('songs', { updatedAt: '100', data: { n: 1 } });
 
     const { result } = await renderHook(() => ({
       a: useFirebaseData<{ n: number }>('songs', 'shared'),
@@ -202,22 +194,17 @@ describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
       expect(result.current.b.loading).toBe(false);
     });
 
-    // Un único round-trip a Firebase pese a haber dos consumidores.
-    expect((get as jest.Mock).mock.calls.length).toBe(1);
+    // Un único refresco pese a haber dos consumidores: `data` se pide una
+    // sola vez (el hook pide además `updatedAt` y `hidden` del mismo nodo).
+    expect(dataFetches()).toBe(1);
     expect(result.current.a.data).toEqual({ n: 1 });
     expect(result.current.b.data).toEqual({ n: 1 });
   });
 
   it('un segundo mount se sirve de la caché de módulo (sin releer AsyncStorage)', async () => {
-    (get as jest.Mock)
-      // Mount A (sin caché): descarga completa del nodo.
-      .mockResolvedValueOnce({
-        exists: () => true,
-        val: () => ({ updatedAt: '100', data: { n: 1 } }),
-      })
-      // Mount B (caché de módulo caliente): solo comprueba metadatos, iguales.
-      .mockResolvedValueOnce({ exists: () => true, val: () => '100' }) // updatedAt
-      .mockResolvedValueOnce({ exists: () => true, val: () => false }); // hidden
+    // Mount A baja `data`; mount B solo comprueba `updatedAt`/`hidden`, que
+    // no han cambiado, y se sirve de la caché de módulo.
+    __setMockNode('songs', { updatedAt: '100', data: { n: 1 } });
 
     const a = await renderHook(() =>
       useFirebaseData<{ n: number }>('songs', 'warm'),
@@ -241,10 +228,7 @@ describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
   });
 
   it('aplica el transform de cada instancia sobre los mismos datos crudos', async () => {
-    (get as jest.Mock).mockResolvedValue({
-      exists: () => true,
-      val: () => ({ updatedAt: '100', data: [1, 2, 3] }),
-    });
+    __setMockNode('songs', { updatedAt: '100', data: [1, 2, 3] });
 
     const doble = (d: number[]) => d.map((n) => n * 2);
     const cuenta = (d: number[]) => d.length;
@@ -262,7 +246,7 @@ describe('useFirebaseData — caché de módulo compartida (dedupe)', () => {
     expect(result.current.a.data).toEqual([2, 4, 6]);
     expect(result.current.b.data).toBe(3);
     // Sigue siendo un único fetch pese a los transforms distintos.
-    expect((get as jest.Mock).mock.calls.length).toBe(1);
+    expect(dataFetches()).toBe(1);
   });
 });
 
@@ -320,9 +304,9 @@ describe('useFirebaseData — memo del transform por instancia (Plan 007)', () =
   });
 
   it('sin transform: sigue funcionando devolviendo los datos crudos', async () => {
-    (get as jest.Mock).mockResolvedValueOnce({
-      exists: () => true,
-      val: () => ({ updatedAt: '1', data: { raw: true } }),
+    __setMockNode('memo_no_transform_path', {
+      updatedAt: '1',
+      data: { raw: true },
     });
 
     const { result } = await renderHook(() =>

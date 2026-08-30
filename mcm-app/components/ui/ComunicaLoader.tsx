@@ -73,21 +73,23 @@ function WaveBar({
   const scale = useSharedValue(0.45);
 
   useEffect(() => {
-    scale.value = withRepeat(
-      withSequence(
-        withDelay(
-          delay,
-          withTiming(1, { duration: 480, easing: reaEasings.cubic }),
+    scale.set(
+      withRepeat(
+        withSequence(
+          withDelay(
+            delay,
+            withTiming(1, { duration: 480, easing: reaEasings.cubic }),
+          ),
+          withTiming(0.4, { duration: 480, easing: reaEasings.cubic }),
         ),
-        withTiming(0.4, { duration: 480, easing: reaEasings.cubic }),
+        -1,
+        false,
       ),
-      -1,
-      false,
     );
   }, [scale, delay]);
 
   const style = useAnimatedStyle(() => ({
-    transform: [{ scaleY: scale.value }],
+    transform: [{ scaleY: scale.get() }],
   }));
 
   return (
@@ -147,14 +149,18 @@ export default function ComunicaLoader({
   const entry = useSharedValue(0);
 
   useEffect(() => {
-    entry.value = withTiming(1, {
-      duration: durations.slow,
-      easing: reaEasings.bouncy,
-    });
-    ring.value = withRepeat(
-      withTiming(1, { duration: 2200, easing: Easing.out(Easing.ease) }),
-      -1,
-      false,
+    entry.set(
+      withTiming(1, {
+        duration: durations.slow,
+        easing: reaEasings.bouncy,
+      }),
+    );
+    ring.set(
+      withRepeat(
+        withTiming(1, { duration: 2200, easing: Easing.out(Easing.ease) }),
+        -1,
+        false,
+      ),
     );
   }, [ring, entry]);
 
@@ -164,40 +170,44 @@ export default function ComunicaLoader({
   // que la barra nunca parezca congelada del todo.
   const bar = useSharedValue(0.06);
   useEffect(() => {
-    bar.value = withTiming(Math.max(0.06, Math.min(progress, 1)), {
-      duration: 420,
-      easing: reaEasings.standard,
-    });
+    bar.set(
+      withTiming(Math.max(0.06, Math.min(progress, 1)), {
+        duration: 420,
+        easing: reaEasings.standard,
+      }),
+    );
   }, [bar, progress]);
 
   // ── Shimmer del esqueleto ─────────────────────────────────────────────────
   const shimmer = useSharedValue(0);
   useEffect(() => {
-    shimmer.value = withRepeat(
-      withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      false,
+    shimmer.set(
+      withRepeat(
+        withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        false,
+      ),
     );
   }, [shimmer]);
 
   // El mismo estilo se aplica a varias piezas del esqueleto: comparten un solo
   // shared value, así que laten a la vez.
   const shimmerStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(shimmer.value, [0, 0.5, 1], [0.45, 1, 0.45]),
+    opacity: interpolate(shimmer.get(), [0, 0.5, 1], [0.45, 1, 0.45]),
   }));
 
   const entryStyle = useAnimatedStyle(() => ({
-    opacity: entry.value,
-    transform: [{ translateY: interpolate(entry.value, [0, 1], [12, 0]) }],
+    opacity: entry.get(),
+    transform: [{ translateY: interpolate(entry.get(), [0, 1], [12, 0]) }],
   }));
 
   const ringStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(ring.value, [0, 0.15, 1], [0, 0.9, 0]),
-    transform: [{ scale: interpolate(ring.value, [0, 1], [0.85, 1.45]) }],
+    opacity: interpolate(ring.get(), [0, 0.15, 1], [0, 0.9, 0]),
+    transform: [{ scale: interpolate(ring.get(), [0, 1], [0.85, 1.45]) }],
   }));
 
   const barStyle = useAnimatedStyle(() => ({
-    transform: [{ scaleX: bar.value }],
+    transform: [{ scaleX: bar.get() }],
   }));
 
   const skeletonRow = (width: `${number}%`, height = 14) => (

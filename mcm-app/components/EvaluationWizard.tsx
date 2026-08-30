@@ -121,13 +121,15 @@ export default function EvaluationWizard({
   const progress = useSharedValue(0);
   useEffect(() => {
     const value = step < 0 ? 0 : (step + 1) / total;
-    progress.value = withTiming(value, {
-      duration: 380,
-      easing: Easing.out(Easing.cubic),
-    });
+    progress.set(
+      withTiming(value, {
+        duration: 380,
+        easing: Easing.out(Easing.cubic),
+      }),
+    );
   }, [step, total, progress]);
   const progressStyle = useAnimatedStyle(() => ({
-    width: `${progress.value * 100}%`,
+    width: `${progress.get() * 100}%`,
   }));
 
   const setAnswer = (id: string, value: number | string | boolean | string[]) =>

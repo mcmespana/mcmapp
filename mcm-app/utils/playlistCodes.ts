@@ -49,7 +49,21 @@ const MONTH_NAMES = [
   'dic',
 ];
 
-/** Nombre por defecto que se propone al subir una playlist: «Playlist 7 abr». */
+/**
+ * Fecha del "próximo fin de semana": si hoy es sábado o domingo, esa misma
+ * fecha (es el día del oficio); de lunes a viernes, el sábado que viene.
+ */
+export function nextChoirDate(now = new Date()): Date {
+  const day = now.getDay(); // 0 = domingo … 6 = sábado
+  if (day === 0 || day === 6) return now;
+  const daysUntilSaturday = 6 - day;
+  const target = new Date(now);
+  target.setDate(now.getDate() + daysUntilSaturday);
+  return target;
+}
+
+/** Nombre por defecto que se propone al subir una playlist: «Canciones 7 abr». */
 export function defaultPlaylistName(now = new Date()): string {
-  return `Playlist ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
+  const date = nextChoirDate(now);
+  return `Canciones ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
 }
