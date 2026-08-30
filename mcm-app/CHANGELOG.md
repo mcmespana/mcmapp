@@ -18,6 +18,25 @@
 
 ---
 
+## 2026-08-30 13:49 — Los ajustes de lectura del evangelio se quedaban sin scroll (y sin control de tamaño)
+
+- **El problema**: en "Ajustes de lectura" (Contigo → evangelio) el contenido
+  iba en un `View` a pelo. El `BottomSheet` compartido tiene tope de altura y
+  `overflow: hidden`, así que con la letra grande la vista previa —que se pinta
+  al tamaño elegido, hasta 220%— crecía hasta comerse la hoja entera: la barra
+  de tamaño y el selector de tema quedaban recortados fuera de pantalla, sin
+  scroll posible y sin forma de volver a bajar la letra.
+- **Arreglo**: dos topes. El contenido entero va en un `ScrollView` acotado
+  (66% de la ventana) y la vista previa scrollea dentro de su propia caja
+  (máximo 26% de la ventana, entre 110 y 240 px), de modo que los controles
+  quedan siempre a la vista sea cual sea el tamaño de letra.
+- La barra de tamaño lleva ahora `onPanResponderTerminationRequest: () => false`
+  para que el `ScrollView` no le robe el gesto a mitad de arrastre.
+- Guardarraíl en `__tests__/readerSettingsSheetScroll.test.tsx`: si alguien
+  vuelve a poner un `View` sin acotar, el test falla.
+- Archivos: `components/contigo/ReaderSettingsSheet.tsx`,
+  `__tests__/readerSettingsSheetScroll.test.tsx`.
+
 ## 2026-08-27 13:32 — Los calendarios ICS se precachean en Firebase (20× más rápidos)
 
 - **El problema, medido**: el `.ics` de Google Calendar se genera en caliente en
