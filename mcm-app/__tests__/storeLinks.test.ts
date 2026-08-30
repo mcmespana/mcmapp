@@ -83,12 +83,42 @@ describe('openAppStore en nativo', () => {
 });
 
 describe('openAppStore en web (PWA)', () => {
-  const uaSpy = () =>
-    jest.spyOn(navigator, 'userAgent', 'get') as jest.SpyInstance<string>;
+  // Estos tests espiaban el `navigator` GLOBAL, y ahí no hay ninguno que
+  // espiar: `navigator` como global de Node llegó en la 21, y la CI fija Node
+  // 20 (`verify.yml`). En local, con Node 22+, existía y los tests pasaban —
+  // por eso el fallo solo salía al subir. Montamos siempre el nuestro, así el
+  // test no depende de la versión de Node que le toque.
+  const realNavigator = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'navigator',
+  );
+  let userAgent = '';
+  const setUserAgent = (ua: string) => {
+    userAgent = ua;
+  };
+
+  beforeAll(() => {
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      get: () => ({
+        get userAgent() {
+          return userAgent;
+        },
+      }),
+    });
+  });
+
+  afterAll(() => {
+    if (realNavigator) {
+      Object.defineProperty(globalThis, 'navigator', realNavigator);
+    } else {
+      delete (globalThis as { navigator?: unknown }).navigator;
+    }
+  });
 
   it('manda a la App Store si el user-agent es de iPhone', async () => {
     setPlatform('web');
-    uaSpy().mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)');
+    setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)');
     await openAppStore();
     expect(openURL).toHaveBeenCalledWith(
       'https://apps.apple.com/app/id6745557177',
@@ -97,7 +127,7 @@ describe('openAppStore en web (PWA)', () => {
 
   it('manda a Play Store si el user-agent es de Android', async () => {
     setPlatform('web');
-    uaSpy().mockReturnValue('Mozilla/5.0 (Linux; Android 14; Pixel 8)');
+    setUserAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8)');
     await openAppStore();
     expect(openURL).toHaveBeenCalledWith(
       'https://play.google.com/store/apps/details?id=com.mcmespana.mcmapp',
@@ -106,7 +136,7 @@ describe('openAppStore en web (PWA)', () => {
 
   it('usa la App Store como destino por defecto en escritorio', async () => {
     setPlatform('web');
-    uaSpy().mockReturnValue('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)');
+    setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)');
     await openAppStore();
     expect(openURL).toHaveBeenCalledWith(
       'https://apps.apple.com/app/id6745557177',
