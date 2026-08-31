@@ -1,5 +1,13 @@
 # MCM App — Design System
 
+> **Este documento es el INVENTARIO** (qué valores existen y cuánto valen).
+> Las **reglas** —qué usar, en qué orden decidir, qué no enviar nunca— están en
+> [`design.md`](../../design.md), en la raíz del monorepo. Si vas a construir
+> interfaz, lee ese primero y vuelve aquí a por los números.
+>
+> Si el código y este documento discrepan, **manda el código**
+> (`mcm-app/constants/*.ts`) y hay que arreglar este documento.
+
 ## North Star: "Institucional Cálido"
 
 Serio pero cercano. Colores institucionales claros sobre fondos blancos, tipografía del sistema legible, esquinas redondeadas suaves y efectos glass en iOS. Diseñado para una comunidad religiosa: transmitir confianza y orden sin perder calidez.

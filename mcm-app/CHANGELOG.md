@@ -18,6 +18,38 @@
 
 ---
 
+## 2026-08-31 12:10 — `design.md`: guía de diseño prescriptiva para agentes (+ plan de unificación)
+
+- **Qué es**: nuevo [`design.md`](../design.md) en la raíz del monorepo,
+  inspirado en el `design.md` público de Vercel. No es un catálogo: es el
+  **criterio** con el que un agente construye interfaz — qué se prioriza cuando
+  dos requisitos chocan, los tres territorios visuales (institucional, Contigo,
+  evento) y qué se comparte entre ellos, la API de componentes que ya existen,
+  los antipatrones que no se envían y la checklist previa a dar una pantalla
+  por buena.
+- **Reparto de papeles**: `design.md` = reglas (prescriptivo) ·
+  `docs/desarrollo/DESIGN.md` = inventario de valores (descriptivo) ·
+  `mcm-app/constants/*.ts` = fuente de verdad. Anotado en la cabecera de ambos
+  documentos para que no vuelvan a divergir sin que se note.
+- **`mcmpanel/design.md`** (repo `mcmpanel`): el panel mantiene su estética
+  oscura tipo consola, pero queda por escrito lo que sí comparte con la app —
+  pintar con los colores reales de MCM lo que representa datos de la app,
+  espejar catálogos en vez de reinventarlos, vocabulario común y la forma de los
+  datos por encima de la estética.
+- **`docs/planes/PLAN_DISENO.md`** (nuevo): las incoherencias reales detectadas
+  con evidencia (entre otras: `accent`/`danger` significan cosas distintas en la
+  capa RN y en la capa CSS; 1.363 hex hardcodeados, casi todos grises de sistema
+  que no existen como token; los nombres de `shadows` no siguen el orden de
+  intensidad) más las mejoras propuestas, cada una con destino decidido y
+  ejecutable en un commit. Registrado en `BACKLOG.md` §2.G y en
+  `docs/planes/README.md`.
+- **Archivos**: `design.md`, `docs/planes/PLAN_DISENO.md`,
+  `docs/desarrollo/DESIGN.md`, `docs/README.md`, `docs/planes/README.md`,
+  `docs/planes/BACKLOG.md`, `CLAUDE.md`, `mcm-app/AGENTS.md`. Sin cambios de
+  código.
+
+---
+
 ## 2026-08-30 13:49 — Los ajustes de lectura del evangelio se quedaban sin scroll (y sin control de tamaño)
 
 - **El problema**: en "Ajustes de lectura" (Contigo → evangelio) el contenido

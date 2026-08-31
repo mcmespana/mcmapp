@@ -5,6 +5,12 @@
 
 ## Reglas críticas para agentes
 
+0. **Antes de escribir UI, lee [`../design.md`](../design.md)** — reglas de
+   diseño, territorios visuales, antipatrones y la lista de componentes que ya
+   existen (reinventar uno es error de revisión). Regla corta de motor de
+   estilo: **`StyleSheet` es el motor de esta app; `className` solo dentro de
+   componentes heroui o en web.** Y cero hex nuevos: los colores salen de
+   `constants/colors.ts`.
 1. **UI library: heroui-native** — La app usa `heroui-native` v1.0.0, NO react-native-paper (eliminado en marzo 2026). Siempre consulta el índice de docs abajo antes de implementar componentes UI.
 2. **Compound components** — HeroUI Native usa patrón compound: `<Card><Card.Body>…</Card.Body></Card>`, `<Button><Button.Label>…</Button.Label></Button>`, etc.
 3. **Toast imperativo** — Usa `const { toast } = useToast()` (dentro de `HeroUINativeProvider`). Nunca uses estado para toasts.

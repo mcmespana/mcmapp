@@ -11,7 +11,7 @@
 > este documento ENTERO antes de tocar nada. No re-derives prioridades desde
 > cero ni mires un `docs/planes/PLAN_*.md` suelto.
 >
-> Última actualización: 2026-08-15.
+> Última actualización: 2026-08-31 (añadido §2.G — diseño).
 >
 > **Índice de qué plan está vivo y cuál archivado:**
 > [`docs/planes/README.md`](README.md). Si un plan está en `archivo/`, está
@@ -40,7 +40,7 @@
 | **Bloqueado fuera**          | Política de privacidad y fichas de las tiendas (obligatorio antes de publicar, ver §6 del doc de build) · probar los channels en un Android real                                              |
 | **⚠️ Roto y sin dueño**      | **El CI no ejecuta nada desde el 2026-04-10.** Ningún PR se verifica de verdad; hasta arreglarlo, pasa los 4 pasos de `verify.yml` en local antes de mergear. Detalle en `mcm-app/TODO.md` §0 |
 | **Después de la build**      | UI Nativa Fase 2 → Integración D → Carismochito                                                                                                                                               |
-| **Oportunista**              | Integraciones resto. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                                        |
+| **Oportunista**              | Integraciones resto · **Diseño (§2.G)**. **Ya NO**: Calidad Fase 1 (descartada, ver §2.A) ni Etiquetas (§2.C-ter, cerrado)                                                                    |
 | **Futuro lejano, sin prisa** | Widget de Contigo · Panel Pañuelo (§1 notas)                                                                                                                                                  |
 | **Cerrado**                  | Etiquetas del cantoral (app + cantoral) · los 8 planes tácticos · los 15 de la auditoría `/improve` · UI Nativa Fase 1 · PR #298                                                              |
 
@@ -69,6 +69,10 @@
    preguntar. Es mecánica, segura (solo añade ficheros a `__tests__/`) y está
    escrita para Sonnet. Si el usuario prefiere otra cosa, enséñale la Bolsa
    Oportunista (§2) y que elija.
+   **Si dice "diseño"** (o "unificar la UI", "los colores", "los tokens") →
+   `docs/planes/PLAN_DISENO.md`, y empieza por su "Orden sugerido". Es la
+   segunda tarea mecánica de esta casa: tareas sueltas, cada una en un commit,
+   sin decisiones nuevas salvo las marcadas 🔒.
 4. **Nunca ejecutes un ítem 🔒 sin preguntar primero**, aunque parezca
    evidente qué elegir. Son decisiones de producto/seguridad del usuario, no
    del ejecutor.
@@ -259,6 +263,30 @@ patrón oficial de "ref al último callback". Perseguirlos empeora el código.
 
 **Lo que sí se pide:** no añadir warnings NUEVOS. Si un cambio tuyo sube la
 cuenta por encima de 51, ese es tuyo y se arregla.
+
+### G. Diseño — unificar tokens y quitar incoherencias
+
+**Documento: [`PLAN_DISENO.md`](PLAN_DISENO.md).** Creado el 2026-08-31 al
+escribir [`design.md`](../../design.md), que es ahora la guía prescriptiva de
+diseño para agentes.
+
+Es la **tarea por defecto cuando el usuario pide diseño** en un hueco
+oportunista. Ninguna de sus tareas necesita una decisión nueva salvo dos
+marcadas 🔒 (colapsar la escala de radios, y la jerarquía de la Home). Todas son
+independientes y caben en un commit.
+
+Lo gordo que hay dentro, por si hay que priorizar sin abrir el documento:
+
+- **A1** — `accent` y `danger` significan cosas **distintas** en la capa RN y en
+  la capa CSS de `global.css`. Es el único de la lista que produce bugs de color
+  invisibles en revisión.
+- **A5** — 1.363 hex hardcodeados; los más repetidos son grises de sistema que
+  **no existen como token**. Añadir la escala y migrar se lleva más de la mitad.
+- **D** — los nombres de `shadows` no siguen el orden de intensidad (`lg` es más
+  fuerte que `xl`).
+- **G1** — el panel pinta con su paleta neón cosas que en la app son de otro
+  color (calendarios, eventos, perfiles, previsualizaciones). Cross-repo:
+  necesita `mcmpanel` en el scope.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 
