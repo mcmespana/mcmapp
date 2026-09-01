@@ -558,7 +558,7 @@ export default function SongsListScreen({
     () =>
       songs.some((s) => {
         const kinds = mediaKinds(extractSongMedia(s));
-        return kinds.video || kinds.audio;
+        return kinds.video || kinds.audio || kinds.links;
       }),
     [songs],
   );
