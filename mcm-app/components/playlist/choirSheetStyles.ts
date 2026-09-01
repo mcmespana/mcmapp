@@ -5,8 +5,9 @@
  */
 import { StyleSheet } from 'react-native';
 import { radii } from '@/constants/uiStyles';
+import { KeyPillColors, SwipeColors, themeColors } from '@/constants/colors';
 
-export const accent = (isDark: boolean) => (isDark ? '#7AB3FF' : '#253883');
+export const accent = (isDark: boolean) => themeColors(isDark).link;
 
 export const createStyles = (isDark: boolean) =>
   StyleSheet.create({
@@ -22,7 +23,7 @@ export const createStyles = (isDark: boolean) =>
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderRadius: radii.md,
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     choirIcon: {
       width: 34,
@@ -38,12 +39,12 @@ export const createStyles = (isDark: boolean) =>
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
     },
     choirName: {
       fontSize: 16,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     linkBtn: {
       paddingVertical: 6,
@@ -102,7 +103,7 @@ export const createStyles = (isDark: boolean) =>
       borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     rowIconLive: {
       backgroundColor: isDark ? '#123A2A' : '#DFF5E9',
@@ -111,7 +112,7 @@ export const createStyles = (isDark: boolean) =>
     rowLabel: {
       fontSize: 15,
       fontWeight: '600',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     rowDescription: {
       fontSize: 13,
@@ -131,12 +132,12 @@ export const createStyles = (isDark: boolean) =>
       gap: 12,
     },
     listItemActive: {
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     listTitle: {
       fontSize: 15,
       fontWeight: '600',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     listMeta: {
       fontSize: 12,
@@ -157,7 +158,7 @@ export const createStyles = (isDark: boolean) =>
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       paddingHorizontal: 12,
       paddingTop: 6,
     },
@@ -170,12 +171,12 @@ export const createStyles = (isDark: boolean) =>
     description: {
       fontSize: 14,
       lineHeight: 20,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       paddingHorizontal: 12,
     },
     error: {
       fontSize: 13,
-      color: '#FF453A',
+      color: SwipeColors.remove,
       paddingHorizontal: 12,
       fontWeight: '600',
     },
@@ -196,7 +197,7 @@ export const createStyles = (isDark: boolean) =>
     fieldLabel: {
       fontSize: 13,
       fontWeight: '600',
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
@@ -218,7 +219,7 @@ export const createStyles = (isDark: boolean) =>
     btnDisabled: { opacity: 0.45 },
     btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '700' },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       fontSize: 15,
       fontWeight: '600',
     },

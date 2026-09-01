@@ -9,6 +9,7 @@
 import { StyleSheet } from 'react-native';
 import { radii } from '@/constants/uiStyles';
 import { FRAME_SIZE } from './QrScanFrame';
+import colors from '@/constants/colors';
 
 /** Penumbra que rodea el hueco de escaneo. */
 const DIM = 'rgba(0,0,0,0.62)';
@@ -56,7 +57,7 @@ export const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: '#A3BD31',
+    backgroundColor: colors.green,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -141,7 +142,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 22,
     borderRadius: radii.md,
-    backgroundColor: '#253883',
+    backgroundColor: colors.primary,
   },
   deniedBtnText: {
     color: '#FFFFFF',

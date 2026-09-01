@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useContigoHabits, Emotion } from '@/hooks/useContigoHabits';
-import { Colors } from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -455,12 +455,12 @@ export default function OracionScreen() {
             <MaterialIcons
               name="check-circle"
               size={15}
-              color={isDark ? '#A3BD31' : '#3A7D44'}
+              color={isDark ? colors.green : '#3A7D44'}
             />
             <Text
               style={[
                 styles.completedText,
-                { color: isDark ? '#A3BD31' : '#3A7D44' },
+                { color: isDark ? colors.green : '#3A7D44' },
               ]}
             >
               Día completado — puedes modificar tu registro
@@ -696,12 +696,12 @@ export default function OracionScreen() {
                 <MaterialIcons
                   name="check-circle"
                   size={22}
-                  color={isDark ? '#A3BD31' : '#3A7D44'}
+                  color={isDark ? colors.green : '#3A7D44'}
                 />
                 <Text
                   style={[
                     styles.saveBtnText,
-                    { color: isDark ? '#A3BD31' : '#3A7D44' },
+                    { color: isDark ? colors.green : '#3A7D44' },
                   ]}
                 >
                   Actualizar mi rato de oración

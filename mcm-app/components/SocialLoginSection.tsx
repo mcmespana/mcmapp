@@ -353,7 +353,7 @@ export default function SocialLoginSection({
               {
                 borderColor: onDarkBackground
                   ? 'rgba(255,255,255,0.25)'
-                  : hexAlpha('#E15C62', '50'),
+                  : hexAlpha(brandColors.accent, '50'),
               },
             ]}
             accessibilityRole="button"
@@ -363,7 +363,9 @@ export default function SocialLoginSection({
               style={[
                 styles.signOutLabel,
                 {
-                  color: onDarkBackground ? 'rgba(255,255,255,0.8)' : '#E15C62',
+                  color: onDarkBackground
+                    ? 'rgba(255,255,255,0.8)'
+                    : brandColors.accent,
                 },
               ]}
             >

@@ -26,6 +26,7 @@ import * as Clipboard from 'expo-clipboard';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
+import colors, { themeColors } from '@/constants/colors';
 
 interface Props {
   visible: boolean;
@@ -169,7 +170,7 @@ const ShareQrModal: React.FC<Props> = ({
                   <MaterialIcons
                     name="cloud-upload"
                     size={48}
-                    color={isDark ? '#7AB3FF' : '#253883'}
+                    color={themeColors(isDark).link}
                   />
                   <Text style={styles.uploadPromptText}>
                     Esta playlist aún no está en la nube
@@ -280,12 +281,12 @@ const createStyles = (isDark: boolean) =>
     title: {
       fontSize: 17,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       textAlign: 'center',
     },
     subtitle: {
       fontSize: 12.5,
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       textAlign: 'center',
       marginTop: 4,
       marginBottom: 14,
@@ -293,7 +294,7 @@ const createStyles = (isDark: boolean) =>
     toggle: {
       flexDirection: 'row',
       alignSelf: 'stretch',
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: 10,
       padding: 3,
       marginTop: 12,
@@ -321,10 +322,10 @@ const createStyles = (isDark: boolean) =>
     toggleText: {
       fontSize: 13,
       fontWeight: '600',
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
     },
     toggleTextActive: {
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
     },
     qrWrap: {
       backgroundColor: '#FFFFFF',
@@ -351,7 +352,7 @@ const createStyles = (isDark: boolean) =>
       fontSize: 30,
       fontWeight: '800',
       letterSpacing: 8,
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
       marginTop: 12,
       marginBottom: 14,
       fontVariant: ['tabular-nums'],
@@ -368,17 +369,17 @@ const createStyles = (isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    btnPrimary: { backgroundColor: '#253883' },
+    btnPrimary: { backgroundColor: colors.primary },
     btnPrimaryText: {
       color: '#fff',
       fontSize: 15,
       fontWeight: '700',
     },
     btnSecondary: {
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
     },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       fontSize: 15,
       fontWeight: '600',
     },

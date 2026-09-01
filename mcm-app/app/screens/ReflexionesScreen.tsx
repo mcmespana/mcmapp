@@ -27,7 +27,7 @@ import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { getBrightness } from '@/components/ui/glass';
@@ -80,10 +80,10 @@ const WEEKDAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 // forma DETERMINISTA según el id de cada reflexión, así cada tarjeta tiene
 // "su" color estable entre renders.
 const CARD_PALETTE = [
-  '#E15C62', // rojo MIC
+  colors.accent, // rojo MIC
   '#3478C7', // azul
   '#7B9A1E', // verde oliva
-  '#9D1E74', // morado
+  colors.purple, // morado
   '#E0702F', // naranja
   '#2F8FB3', // azul petróleo
   '#9C4FB0', // violeta
@@ -646,7 +646,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       ...(shadows.card as object),
     },
     cardSurface: {
-      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(scheme === 'dark').background,
     },
     accentBar: {
       position: 'absolute',
@@ -747,7 +747,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderRadius: 12,
       paddingHorizontal: 14,
       paddingVertical: 13,
-      backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(scheme === 'dark').background,
     },
     pressed: { opacity: 0.7 },
     dateFieldLabel: {

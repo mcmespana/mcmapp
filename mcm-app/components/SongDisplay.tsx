@@ -5,6 +5,7 @@ import { Spinner } from 'heroui-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import type { SongStyleState } from '@/hooks/useSongProcessor';
+import { themeColors } from '@/constants/colors';
 
 interface SongDisplayProps {
   songHtml: string;
@@ -165,7 +166,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
             height: '100%',
             border: 'none',
             display: 'block',
-            backgroundColor: isDark ? '#2C2C2E' : '#fff',
+            backgroundColor: themeColors(isDark).background,
           }}
           title="Song content"
         />
@@ -182,7 +183,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
               styles.fullBleedContainer,
               // Mismo color que el bodyBg del HTML (useSongProcessor) → un único
               // fondo continuo bajo el header transparente.
-              { backgroundColor: isDark ? '#2C2C2E' : '#ffffff' },
+              { backgroundColor: themeColors(isDark).background },
             ]
           : [
               styles.cardContainer,
@@ -204,7 +205,7 @@ const SongDisplay: React.FC<SongDisplayProps> = ({
         source={{ html: songHtml }}
         style={[
           styles.webView,
-          fullBleed && { backgroundColor: isDark ? '#2C2C2E' : '#ffffff' },
+          fullBleed && { backgroundColor: themeColors(isDark).background },
         ]}
         showsVerticalScrollIndicator={false}
         {...(useInset

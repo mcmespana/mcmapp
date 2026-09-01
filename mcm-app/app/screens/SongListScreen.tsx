@@ -42,6 +42,7 @@ import {
   type SongTagIndex,
 } from '@/utils/songTags';
 import { h } from '@/utils/haptics';
+import { SwipeColors, UIColors, themeColors } from '@/constants/colors';
 
 interface Song {
   title: string;
@@ -479,7 +480,9 @@ export default function SongsListScreen({
               <MaterialIcons
                 name="sell"
                 size={22}
-                color={isIOS ? '#f4c11e' : isDark ? '#FFFFFF' : '#1a1a1a'}
+                color={
+                  isIOS ? UIColors.accentYellow : isDark ? '#FFFFFF' : '#1a1a1a'
+                }
               />
             </TouchableOpacity>
           )
@@ -498,7 +501,7 @@ export default function SongsListScreen({
                     size={24}
                     color={
                       isIOS
-                        ? '#f4c11e'
+                        ? UIColors.accentYellow
                         : Platform.OS === 'web'
                           ? '#1a1a1a'
                           : '#1a1a1a'
@@ -803,12 +806,12 @@ export default function SongsListScreen({
             <MaterialIcons
               name={menuSongSelected ? 'playlist-remove' : 'playlist-add'}
               size={22}
-              color={isDark ? '#7AB3FF' : '#253883'}
+              color={themeColors(isDark).link}
             />
             <Text
               style={[
                 styles.menuActionText,
-                { color: isDark ? '#F5F5F7' : '#1C1C1E' },
+                { color: themeColors(isDark).textStrong },
               ]}
             >
               {menuSongSelected ? 'Quitar de la lista' : 'Añadir a la lista'}
@@ -818,12 +821,12 @@ export default function SongsListScreen({
             <MaterialIcons
               name="share"
               size={22}
-              color={isDark ? '#7AB3FF' : '#253883'}
+              color={themeColors(isDark).link}
             />
             <Text
               style={[
                 styles.menuActionText,
-                { color: isDark ? '#F5F5F7' : '#1C1C1E' },
+                { color: themeColors(isDark).textStrong },
               ]}
             >
               Compartir
@@ -906,7 +909,7 @@ const createStyles = (
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     headerButton: {
       padding: 8,
@@ -929,7 +932,7 @@ const createStyles = (
     searchInput: {
       flex: 1,
       fontSize: isWide ? 17 : 16,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       padding: 0,
       margin: 0,
     },
@@ -968,7 +971,7 @@ const createStyles = (
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 10,
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
       paddingHorizontal: 16,
       paddingVertical: 9,
       marginTop: 8,
@@ -983,12 +986,12 @@ const createStyles = (
       fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
     },
     sectionHeaderCount: {
       fontSize: 12,
       fontWeight: '600',
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
     },
     listContent: {
@@ -1003,14 +1006,14 @@ const createStyles = (
     },
     errorText: {
       fontSize: 16,
-      color: '#FF453A',
+      color: SwipeColors.remove,
       textAlign: 'center',
       margin: 20,
       fontWeight: '600',
     },
     debugText: {
       fontSize: 14,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: themeColors(isDark).textMuted,
       textAlign: 'center',
       margin: 10,
       fontFamily: 'monospace',

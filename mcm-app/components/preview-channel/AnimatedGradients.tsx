@@ -10,6 +10,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { UIColors } from '@/constants/colors';
 
 // Capa de gradientes morphing del "Laboratorio Alpha": tres gradientes que
 // respiran (fade in/out) escalonados para crear un fondo en movimiento
@@ -63,7 +64,7 @@ export function AnimatedGradients() {
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <Animated.View style={[StyleSheet.absoluteFill, styleA]}>
         <LinearGradient
-          colors={['#FF8E53', '#FE6B8B', '#F4C11E']}
+          colors={['#FF8E53', '#FE6B8B', UIColors.accentYellow]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}

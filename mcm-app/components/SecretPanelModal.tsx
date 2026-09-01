@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import BottomSheet from './BottomSheet';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Colors } from '@/constants/colors';
+import { Colors, SwipeColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toYouTubeEmbedUrl } from '@/utils/youtube';
@@ -489,7 +489,7 @@ export default function SecretPanelModal({
               style={[
                 styles.passwordInput,
                 {
-                  backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+                  backgroundColor: themeColors(isDark).background,
                   color: theme.text,
                   borderColor: password.trim() ? '#4CAF50' : theme.icon,
                 },
@@ -526,8 +526,8 @@ export default function SecretPanelModal({
 
   // Panel de edición
   const isDark = scheme === 'dark';
-  const inputBg = isDark ? '#2C2C2E' : '#F2F2F7';
-  const inputBorder = isDark ? '#3A3A3C' : '#E5E5EA';
+  const inputBg = themeColors(isDark).background;
+  const inputBorder = themeColors(isDark).separator;
 
   return (
     <BottomSheet
@@ -557,7 +557,7 @@ export default function SecretPanelModal({
               {
                 backgroundColor: inputBg,
                 color: theme.text,
-                borderColor: editTitle.trim() ? '#34C759' : inputBorder,
+                borderColor: editTitle.trim() ? SwipeColors.add : inputBorder,
               },
             ]}
             placeholder="Título de la canción"
@@ -575,7 +575,7 @@ export default function SecretPanelModal({
               {
                 backgroundColor: inputBg,
                 color: theme.text,
-                borderColor: editAuthor.trim() ? '#34C759' : inputBorder,
+                borderColor: editAuthor.trim() ? SwipeColors.add : inputBorder,
               },
             ]}
             placeholder="Autor de la canción"
@@ -595,7 +595,7 @@ export default function SecretPanelModal({
                   {
                     backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: editKey.trim() ? '#34C759' : inputBorder,
+                    borderColor: editKey.trim() ? SwipeColors.add : inputBorder,
                   },
                 ]}
                 placeholder="Ej: G, Am, C"
@@ -613,7 +613,9 @@ export default function SecretPanelModal({
                   {
                     backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: editCapo.trim() ? '#34C759' : inputBorder,
+                    borderColor: editCapo.trim()
+                      ? SwipeColors.add
+                      : inputBorder,
                   },
                 ]}
                 placeholder="0"
@@ -636,7 +638,7 @@ export default function SecretPanelModal({
               {
                 backgroundColor: inputBg,
                 color: theme.text,
-                borderColor: editInfo.trim() ? '#34C759' : inputBorder,
+                borderColor: editInfo.trim() ? SwipeColors.add : inputBorder,
               },
             ]}
             placeholder="Información adicional sobre la canción"
@@ -659,7 +661,7 @@ export default function SecretPanelModal({
               {
                 backgroundColor: inputBg,
                 color: theme.text,
-                borderColor: editContent.trim() ? '#34C759' : inputBorder,
+                borderColor: editContent.trim() ? SwipeColors.add : inputBorder,
               },
             ]}
             placeholder="Contenido completo de la canción (ChordPro format)"
@@ -693,7 +695,9 @@ export default function SecretPanelModal({
                   {
                     backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: editAlbum.trim() ? '#34C759' : inputBorder,
+                    borderColor: editAlbum.trim()
+                      ? SwipeColors.add
+                      : inputBorder,
                   },
                 ]}
                 placeholder="Ej: ¡Alégrate!, 2004"
@@ -711,7 +715,9 @@ export default function SecretPanelModal({
                   {
                     backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: editRhythm.trim() ? '#34C759' : inputBorder,
+                    borderColor: editRhythm.trim()
+                      ? SwipeColors.add
+                      : inputBorder,
                   },
                 ]}
                 placeholder="Ej: 4x4"
@@ -734,7 +740,7 @@ export default function SecretPanelModal({
                 backgroundColor: inputBg,
                 color: theme.text,
                 borderColor: editLiturgicalTime.trim()
-                  ? '#34C759'
+                  ? SwipeColors.add
                   : inputBorder,
               },
             ]}
@@ -753,7 +759,7 @@ export default function SecretPanelModal({
               {
                 backgroundColor: inputBg,
                 color: theme.text,
-                borderColor: editSource.trim() ? '#34C759' : inputBorder,
+                borderColor: editSource.trim() ? SwipeColors.add : inputBorder,
               },
             ]}
             placeholder="Ej: doceacordes.es"
@@ -773,7 +779,9 @@ export default function SecretPanelModal({
               {
                 backgroundColor: inputBg,
                 color: theme.text,
-                borderColor: editVideoInput.trim() ? '#34C759' : inputBorder,
+                borderColor: editVideoInput.trim()
+                  ? SwipeColors.add
+                  : inputBorder,
               },
             ]}
             placeholder="Pega una URL normal de YouTube"
@@ -821,7 +829,9 @@ export default function SecretPanelModal({
                   {
                     backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: link.url.trim() ? '#34C759' : inputBorder,
+                    borderColor: link.url.trim()
+                      ? SwipeColors.add
+                      : inputBorder,
                   },
                 ]}
                 placeholder="URL"
@@ -885,7 +895,9 @@ export default function SecretPanelModal({
                   {
                     backgroundColor: inputBg,
                     color: theme.text,
-                    borderColor: link.url.trim() ? '#34C759' : inputBorder,
+                    borderColor: link.url.trim()
+                      ? SwipeColors.add
+                      : inputBorder,
                   },
                 ]}
                 placeholder="URL"

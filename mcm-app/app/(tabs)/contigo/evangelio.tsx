@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -450,7 +450,7 @@ export default function EvangelioScreen() {
                     <Text
                       style={{
                         fontSize: 10,
-                        color: isDark ? '#A3BD31' : '#3A7D44',
+                        color: isDark ? colors.green : '#3A7D44',
                       }}
                     >
                       ✓
@@ -458,7 +458,7 @@ export default function EvangelioScreen() {
                     <Text
                       style={[
                         styles.statusChipText,
-                        { color: isDark ? '#A3BD31' : '#3A7D44' },
+                        { color: isDark ? colors.green : '#3A7D44' },
                       ]}
                     >
                       Leído
@@ -844,12 +844,12 @@ export default function EvangelioScreen() {
                         <MaterialIcons
                           name="check-circle"
                           size={22}
-                          color={isDark ? '#A3BD31' : '#3A7D44'}
+                          color={isDark ? colors.green : '#3A7D44'}
                         />
                         <Text
                           style={[
                             styles.trackerText,
-                            { color: isDark ? '#A3BD31' : '#3A7D44' },
+                            { color: isDark ? colors.green : '#3A7D44' },
                           ]}
                         >
                           ¡He rezado hoy con el Evangelio!

@@ -11,6 +11,7 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import BottomSheet from '@/components/BottomSheet';
+import { KeyPillColors, SwipeColors, themeColors } from '@/constants/colors';
 
 export interface PlaylistAction {
   id: string;
@@ -101,10 +102,8 @@ const PlaylistActionsBottomSheet: React.FC<Props> = ({
                       size={22}
                       color={
                         a.variant === 'danger'
-                          ? '#FF453A'
-                          : isDark
-                            ? '#7AB3FF'
-                            : '#253883'
+                          ? SwipeColors.remove
+                          : themeColors(isDark).link
                       }
                     />
                   </View>
@@ -153,7 +152,7 @@ const createStyles = (isDark: boolean) =>
       width: 38,
       height: 38,
       borderRadius: 19,
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -166,10 +165,10 @@ const createStyles = (isDark: boolean) =>
     itemLabel: {
       fontSize: 15,
       fontWeight: '600',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     itemLabelDanger: {
-      color: '#FF453A',
+      color: SwipeColors.remove,
     },
     itemDescription: {
       fontSize: 13,
@@ -187,7 +186,7 @@ const createStyles = (isDark: boolean) =>
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       paddingHorizontal: 12,
       paddingTop: 8,
       paddingBottom: 4,

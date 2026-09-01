@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useToast } from '@/contexts/AppToastContext';
-import { Colors as ThemeColors } from '@/constants/colors';
+import { Colors as ThemeColors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 // CSS module reutilizado del iframe (solo aplica en web)
@@ -44,7 +44,7 @@ export default function McmPanelScreen() {
   // no brille. En Android la tab bar es opaca y el contenido ya queda por
   // encima → no hace falta reservar nada (un spacer dejaría un hueco vacío).
   const tabBarSpace = Platform.OS === 'ios' ? insets.bottom + 49 : 0;
-  const screenBg = scheme === 'dark' ? '#1C1C1E' : '#F2F2F7';
+  const screenBg = themeColors(scheme === 'dark').backgroundSunken;
 
   const dynamicStyles = useMemo(
     () =>

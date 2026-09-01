@@ -13,7 +13,7 @@ import { router } from 'expo-router';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
+import { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
@@ -175,7 +175,7 @@ export default function CommandPalette() {
                     <MaterialIcons
                       name={cmd.icon}
                       size={20}
-                      color={isDark ? '#AEAEB2' : '#636366'}
+                      color={themeColors(isDark).textSecondary}
                     />
                   </View>
                   <View style={styles.itemText}>
@@ -253,7 +253,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     emptyText: {
       fontSize: 14,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: themeColors(isDark).textMuted,
       fontStyle: 'italic',
     },
     footer: {

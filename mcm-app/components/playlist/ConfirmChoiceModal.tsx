@@ -15,6 +15,7 @@ import {
   Platform,
 } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import colors, { SwipeColors, themeColors } from '@/constants/colors';
 
 export interface ConfirmChoiceAction {
   label: string;
@@ -103,7 +104,7 @@ const createStyles = (isDark: boolean) =>
     card: {
       width: '100%',
       maxWidth: 420,
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: 18,
       padding: 22,
       ...Platform.select({
@@ -120,12 +121,12 @@ const createStyles = (isDark: boolean) =>
     title: {
       fontSize: 18,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       marginBottom: 8,
     },
     description: {
       fontSize: 14,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       lineHeight: 20,
       marginBottom: 18,
     },
@@ -147,10 +148,10 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F2F2F7',
     },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     btnPrimary: {
-      backgroundColor: '#253883',
+      backgroundColor: colors.primary,
     },
     btnPrimaryText: {
       color: '#fff',
@@ -160,7 +161,7 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? '#3A1517' : '#FFE5E4',
     },
     btnDangerText: {
-      color: '#FF453A',
+      color: SwipeColors.remove,
       fontWeight: '700',
     },
   });

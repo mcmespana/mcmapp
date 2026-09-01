@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
-import { Colors } from '@/constants/colors';
+import { Colors, UIColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DEFAULT_FONT_SIZE_EM } from '@/contexts/SettingsContext';
@@ -82,9 +82,7 @@ export default function SongFontBottomSheet({
                       ? isDark
                         ? '#FFB74D'
                         : '#C77700'
-                      : isDark
-                        ? '#8E8E93'
-                        : '#8E8E93',
+                      : themeColors(isDark).textMuted,
                   },
                 ]}
               >
@@ -104,7 +102,7 @@ export default function SongFontBottomSheet({
               <MaterialIcons
                 name="refresh"
                 size={18}
-                color={isDark ? '#AEAEB2' : '#636366'}
+                color={themeColors(isDark).textSecondary}
               />
             </PressableFeedback>
           </View>
@@ -153,7 +151,7 @@ export default function SongFontBottomSheet({
                   {
                     color: isSizeModified
                       ? isDark
-                        ? '#F4C11E'
+                        ? UIColors.accentYellow
                         : '#7A5A00'
                       : isDark
                         ? '#EBEBF0'
@@ -182,7 +180,7 @@ export default function SongFontBottomSheet({
                   style={[
                     styles.previewText,
                     {
-                      color: isDark ? '#AEAEB2' : '#636366',
+                      color: themeColors(isDark).textSecondary,
                       ...(getNativeFontFamily(currentFontFamily) && {
                         fontFamily: getNativeFontFamily(currentFontFamily),
                       }),
@@ -234,9 +232,7 @@ export default function SongFontBottomSheet({
                       ? isDark
                         ? '#FFB74D'
                         : '#C77700'
-                      : isDark
-                        ? '#8E8E93'
-                        : '#8E8E93',
+                      : themeColors(isDark).textMuted,
                   },
                 ]}
               >
@@ -257,7 +253,7 @@ export default function SongFontBottomSheet({
               <MaterialIcons
                 name="refresh"
                 size={18}
-                color={isDark ? '#AEAEB2' : '#636366'}
+                color={themeColors(isDark).textSecondary}
               />
             </PressableFeedback>
           </View>
@@ -287,7 +283,7 @@ export default function SongFontBottomSheet({
                         ...(nativeFamily && { fontFamily: nativeFamily }),
                         color: isActive
                           ? isDark
-                            ? '#F4C11E'
+                            ? UIColors.accentYellow
                             : '#7A5A00'
                           : isDark
                             ? '#EBEBF0'
@@ -303,11 +299,9 @@ export default function SongFontBottomSheet({
                       {
                         color: isActive
                           ? isDark
-                            ? '#F4C11E'
+                            ? UIColors.accentYellow
                             : '#7A5A00'
-                          : isDark
-                            ? '#AEAEB2'
-                            : '#636366',
+                          : themeColors(isDark).textSecondary,
                         fontWeight: isActive ? '700' : '500',
                       },
                     ]}
@@ -330,12 +324,12 @@ export default function SongFontBottomSheet({
             <MaterialIcons
               name="refresh"
               size={16}
-              color={isDark ? '#AEAEB2' : '#636366'}
+              color={themeColors(isDark).textSecondary}
             />
             <Text
               style={[
                 styles.resetAllText,
-                { color: isDark ? '#AEAEB2' : '#636366' },
+                { color: themeColors(isDark).textSecondary },
               ]}
             >
               Restablecer todo
@@ -432,7 +426,7 @@ const styles = StyleSheet.create({
   },
   sizeDisplayActive: {
     backgroundColor: '#FFF4DA',
-    borderColor: '#F4C11E',
+    borderColor: UIColors.accentYellow,
   },
   sizeDisplayActiveDark: {
     backgroundColor: '#3A2D0A',
@@ -477,7 +471,7 @@ const styles = StyleSheet.create({
   },
   fontChipActive: {
     backgroundColor: '#FFF4DA',
-    borderColor: '#F4C11E',
+    borderColor: UIColors.accentYellow,
   },
   fontChipActiveDark: {
     backgroundColor: '#3A2D0A',

@@ -44,6 +44,7 @@ import {
   getEventFirebasePath,
   isEventArchived,
 } from '@/constants/events';
+import { themeColors } from '@/constants/colors';
 
 const WIDE_BREAKPOINT = 700;
 
@@ -348,7 +349,7 @@ function SectionCard({
         styles.card,
         {
           width,
-          backgroundColor: isDark ? '#2C2C2E' : '#fff',
+          backgroundColor: themeColors(isDark).background,
         },
         Platform.OS !== 'web'
           ? {
@@ -387,7 +388,7 @@ function SectionCard({
         </View>
 
         <Text
-          style={[styles.cardTitle, { color: isDark ? '#fff' : '#1C1C1E' }]}
+          style={[styles.cardTitle, { color: themeColors(isDark).textStrong }]}
           numberOfLines={1}
         >
           {section.label}
@@ -462,7 +463,7 @@ const createStyles = (isDark: boolean) =>
   StyleSheet.create<Styles>({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     scrollView: {
       flex: 1,
@@ -530,7 +531,7 @@ const createStyles = (isDark: boolean) =>
       paddingHorizontal: spacing.md,
       borderRadius: radii.lg,
       borderWidth: StyleSheet.hairlineWidth * 2,
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
     },
     suggestIcon: {
       width: 40,

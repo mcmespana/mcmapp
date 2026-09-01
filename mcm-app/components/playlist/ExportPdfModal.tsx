@@ -33,6 +33,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
+import { KeyPillColors, themeColors } from '@/constants/colors';
 
 export interface PdfExportConfig {
   playlistName: string;
@@ -338,11 +339,11 @@ const createStyles = (isDark: boolean) =>
     title: {
       fontSize: 18,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     subtitle: {
       fontSize: 12,
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       marginTop: 4,
       marginBottom: 14,
     },
@@ -364,17 +365,17 @@ const createStyles = (isDark: boolean) =>
       gap: 12,
       paddingVertical: 10,
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderTopColor: themeColors(isDark).separator,
     },
     rowText: { flex: 1 },
     rowTitle: {
       fontSize: 14,
       fontWeight: '600',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     rowDesc: {
       fontSize: 11.5,
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
     fontRow: {
@@ -386,18 +387,18 @@ const createStyles = (isDark: boolean) =>
       paddingVertical: 8,
       paddingHorizontal: 12,
       borderRadius: 10,
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
       borderWidth: 1,
       borderColor: 'transparent',
     },
     fontChipActive: {
-      backgroundColor: isDark ? '#1A2744' : '#E8EEFF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : '#E8EEFF',
       borderColor: '#0055A4',
     },
     fontChipText: {
       fontSize: 13,
       fontWeight: '600',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
     },
     fontChipTextActive: {
       color: isDark ? '#7AB3FF' : '#0055A4',
@@ -421,10 +422,10 @@ const createStyles = (isDark: boolean) =>
       fontWeight: '700',
     },
     btnSecondary: {
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
     },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       fontSize: 15,
       fontWeight: '600',
     },

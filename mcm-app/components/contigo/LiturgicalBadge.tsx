@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import liturgicalCalendar from '@/assets/calendario-liturgico.json';
 import { getBrightness } from '@/components/ui/glass';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { themeColors } from '@/constants/colors';
 
 interface LiturgicalBadgeProps {
   dateStr: string; // YYYY-MM-DD
@@ -102,7 +103,7 @@ export function LiturgicalBadge({ dateStr }: LiturgicalBadgeProps) {
     return (
       <View style={styles.pillPlain}>
         <Text
-          style={[styles.label, { color: isDark ? '#FFFFFF' : '#1C1C1E' }]}
+          style={[styles.label, { color: themeColors(isDark).textStrong }]}
           numberOfLines={1}
         >
           {info.name}

@@ -8,6 +8,7 @@ import {
   Appearance,
   TouchableOpacity,
 } from 'react-native';
+import colors, { themeColors } from '@/constants/colors';
 
 interface Props {
   children: ReactNode;
@@ -72,7 +73,7 @@ const getDynamicStyles = (isDark: boolean) =>
       justifyContent: 'center',
       alignItems: 'center',
       padding: 32,
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
     },
     subtitle: {
       fontSize: 16,
@@ -98,11 +99,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#253883',
+    color: colors.primary,
     marginBottom: 8,
   },
   button: {
-    backgroundColor: '#253883',
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,

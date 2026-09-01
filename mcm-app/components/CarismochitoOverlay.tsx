@@ -26,6 +26,7 @@ import {
   CarismochitoOnboarding,
   CarismochitoExitConfirm,
 } from '@/components/CarismochitoDialogs';
+import colors from '@/constants/colors';
 
 /* Verdes del HUD del modo (distintos tonos). */
 const G = '#1B9E4B'; // verde principal
@@ -38,11 +39,11 @@ const CONFETTI_COLORS = [
   '#1B9E4B',
   '#5AE08A',
   '#9DE86B',
-  '#A3BD31',
+  colors.green,
   '#7AC943',
-  '#FCD200',
-  '#31AADF',
-  '#E15C62',
+  colors.yellow,
+  colors.info,
+  colors.accent,
 ];
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);

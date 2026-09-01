@@ -27,6 +27,7 @@ import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { splitTabsForBar } from '@/constants/tabsCatalog';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
+import colors, { themeColors } from '@/constants/colors';
 
 interface NavigationItem {
   label: string;
@@ -75,7 +76,7 @@ const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
     materialIcon: 'celebration',
     target: 'JubileoHome',
     eventId: 'jubileo',
-    tintColor: '#A3BD31',
+    tintColor: colors.green,
   },
   'eventos-pasados': {
     label: 'Eventos pasados',
@@ -93,7 +94,7 @@ const MAS_ITEM_CATALOG: Record<string, NavigationItem> = {
   //     emoji: '✨',
   //     materialIcon: 'auto-awesome',
   //     target: 'JubileoHome',      // ← mismo hub genérico
-  //     tintColor: '#E15C62',
+  //     tintColor: colors.accent,
   //   });
 };
 
@@ -180,7 +181,7 @@ export default function MasHomeScreen() {
     <SafeAreaView
       style={[
         styles.safeArea,
-        { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+        { backgroundColor: themeColors(isDark).backgroundSunken },
       ]}
       edges={['top']}
     >
@@ -214,7 +215,7 @@ export default function MasHomeScreen() {
                   styles.card,
                   useTwoColumns && styles.cardGridItem,
                   {
-                    backgroundColor: isDark ? '#2C2C2E' : '#fff',
+                    backgroundColor: themeColors(isDark).background,
                   },
                   Platform.OS !== 'web'
                     ? {
@@ -274,7 +275,7 @@ export default function MasHomeScreen() {
                     <Text
                       style={[
                         styles.cardTitle,
-                        { color: isDark ? '#fff' : '#1C1C1E' },
+                        { color: themeColors(isDark).textStrong },
                       ]}
                       numberOfLines={1}
                     >

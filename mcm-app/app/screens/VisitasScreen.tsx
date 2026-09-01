@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Colors } from '@/constants/colors';
+import { Colors, KeyPillColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import PageContainer from '@/components/ui/PageContainer';
@@ -150,7 +150,7 @@ export default function VisitasScreen() {
                       <MaterialIcons
                         name="calendar-today"
                         size={14}
-                        color={isDark ? '#A0A0A8' : '#7B7B82'}
+                        color={themeColors(isDark).textSecondary}
                       />
                       <Text style={styles.dateText} numberOfLines={1}>
                         {formatDate(v.fecha)}
@@ -171,7 +171,7 @@ export default function VisitasScreen() {
                     <MaterialIcons
                       name="map"
                       size={20}
-                      color={isDark ? '#7AB3FF' : '#2563EB'}
+                      color={themeColors(isDark).link}
                     />
                   </TouchableOpacity>
                 ) : null}
@@ -219,7 +219,7 @@ export default function VisitasScreen() {
                         <MaterialIcons
                           name="calendar-today"
                           size={15}
-                          color={isDark ? '#A0A0A8' : '#7B7B82'}
+                          color={themeColors(isDark).textSecondary}
                         />
                         <Text style={styles.modalDateText} numberOfLines={1}>
                           {formatDate(selected.fecha)}
@@ -240,7 +240,11 @@ export default function VisitasScreen() {
                       <TouchableOpacity
                         style={[
                           styles.dialogMapBtn,
-                          { backgroundColor: isDark ? '#1A2744' : '#E8F0FE' },
+                          {
+                            backgroundColor: isDark
+                              ? KeyPillColors.bgDark
+                              : '#E8F0FE',
+                          },
                         ]}
                         onPress={() => {
                           const url = selected.mapa;
@@ -251,12 +255,12 @@ export default function VisitasScreen() {
                         <MaterialIcons
                           name="map"
                           size={18}
-                          color={isDark ? '#7AB3FF' : '#2563EB'}
+                          color={themeColors(isDark).link}
                         />
                         <Text
                           style={[
                             styles.dialogMapBtnText,
-                            { color: isDark ? '#7AB3FF' : '#2563EB' },
+                            { color: themeColors(isDark).link },
                           ]}
                         >
                           Ver en mapa
@@ -285,7 +289,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       gap: 14,
     },
     card: {
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: 16,
       overflow: 'hidden',
       ...Platform.select({
@@ -306,7 +310,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     image: {
       width: '100%',
       height: 160,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     cardContent: {
       flexDirection: 'row',
@@ -318,7 +322,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       fontSize: 16,
       fontWeight: '700',
       letterSpacing: -0.2,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       marginBottom: 4,
     },
     subtitle: {
@@ -336,14 +340,14 @@ const createStyles = (scheme: 'light' | 'dark') => {
     dateText: {
       fontSize: 13,
       fontWeight: '600',
-      color: isDark ? '#A0A0A8' : '#7B7B82',
+      color: themeColors(isDark).textSecondary,
       textTransform: 'capitalize',
     },
     mapBtn: {
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
+      backgroundColor: isDark ? KeyPillColors.bgDark : '#E8F0FE',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -374,7 +378,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     modalImage: {
       width: '100%',
       height: 170,
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
     },
     modalClose: {
       position: 'absolute',
@@ -395,7 +399,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       fontSize: 20,
       fontWeight: '700',
       letterSpacing: -0.3,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     modalSubtitle: {
       fontSize: 15,
@@ -411,7 +415,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     modalDateText: {
       fontSize: 13,
       fontWeight: '600',
-      color: isDark ? '#A0A0A8' : '#7B7B82',
+      color: themeColors(isDark).textSecondary,
       textTransform: 'capitalize',
     },
     modalText: {

@@ -9,7 +9,7 @@ import {
 import BottomSheet from './BottomSheet';
 import AppTextField from '@/components/ui/AppTextField';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
-import { Colors } from '@/constants/colors';
+import { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -72,7 +72,7 @@ export default function ArrangementInputModal({
           <View
             style={[
               styles.previewBox,
-              { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' },
+              { backgroundColor: themeColors(isDark).background },
             ]}
           >
             <Text

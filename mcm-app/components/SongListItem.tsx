@@ -17,9 +17,11 @@ import { transposeKey, transposeLabel } from '../utils/transposeKey';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import {
   Colors,
+  KeyPillColors,
   StateColors,
   SwipeColors,
-  KeyPillColors,
+  UIColors,
+  themeColors,
 } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 import { extractSongMedia, mediaKinds } from '@/types/songMedia';
@@ -337,7 +339,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     songTitle: {
       fontSize: 16,
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       fontWeight: '500',
       letterSpacing: -0.2,
     },
@@ -355,19 +357,19 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingHorizontal: 7,
       paddingVertical: 2,
       borderRadius: 100,
-      backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      backgroundColor: themeColors(isDark).separator,
       borderWidth: 1,
       borderColor: isDark ? '#48484A' : '#D1D1D6',
     },
     categoryPillText: {
       fontSize: 11,
       fontWeight: '700',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
     },
     numberText: {
       fontSize: 13,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
     },
     metaSeparator: {
@@ -400,7 +402,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     capoText: {
       fontSize: 11,
       fontWeight: '600',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
     },
     keyPill: {
@@ -412,7 +414,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     keyText: {
       fontSize: 13,
       fontWeight: '700',
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
     },
     toneTransposedWrap: {
       flexDirection: 'row',
@@ -433,7 +435,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderRadius: 6,
       backgroundColor: isDark ? '#3A2800' : '#FFF4DA',
       borderWidth: 1,
-      borderColor: '#F4C11E',
+      borderColor: UIColors.accentYellow,
     },
     keyTextTransposed: {
       fontSize: 13,

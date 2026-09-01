@@ -23,6 +23,7 @@ import { useChoirSession } from '@/contexts/ChoirSessionContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { transposeLabel } from '@/utils/transposeKey';
 import ShareQrModal from '@/components/playlist/ShareQrModal';
+import colors from '@/constants/colors';
 
 interface Props {
   /** Si true, el banner se muestra en posición fija arriba (no en flujo). */
@@ -176,7 +177,7 @@ const createStyles = (isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: '#253883',
+      backgroundColor: colors.primary,
       borderRadius: 12,
       paddingVertical: 8,
       paddingHorizontal: 12,

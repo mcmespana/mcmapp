@@ -5,6 +5,11 @@
  */
 import { Platform, StyleSheet } from 'react-native';
 import { radii } from '@/constants/uiStyles';
+import colors, {
+  KeyPillColors,
+  SwipeColors,
+  themeColors,
+} from '@/constants/colors';
 
 export const createStyles = (isDark: boolean) =>
   StyleSheet.create({
@@ -13,7 +18,7 @@ export const createStyles = (isDark: boolean) =>
     },
     description: {
       fontSize: 14,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       marginBottom: 18,
       lineHeight: 20,
     },
@@ -30,7 +35,7 @@ export const createStyles = (isDark: boolean) =>
     inputLabel: {
       fontSize: 13,
       fontWeight: '600',
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       marginBottom: 6,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -60,16 +65,16 @@ export const createStyles = (isDark: boolean) =>
       justifyContent: 'center',
     },
     cellFilled: {
-      borderColor: isDark ? '#7AB3FF' : '#253883',
+      borderColor: themeColors(isDark).link,
     },
     cellActive: {
-      borderColor: isDark ? '#7AB3FF' : '#253883',
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      borderColor: themeColors(isDark).link,
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     cellText: {
       fontSize: 26,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       fontVariant: ['tabular-nums'],
     },
     scanBtn: {
@@ -79,7 +84,7 @@ export const createStyles = (isDark: boolean) =>
       gap: 8,
       paddingVertical: 12,
       borderRadius: radii.md,
-      backgroundColor: isDark ? '#31AADF' : '#253883',
+      backgroundColor: isDark ? colors.info : colors.primary,
       marginBottom: 14,
     },
     scanBtnText: {
@@ -100,15 +105,15 @@ export const createStyles = (isDark: boolean) =>
       paddingVertical: 8,
       paddingHorizontal: 12,
       borderRadius: radii.sm,
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     suggestText: {
       fontSize: 13,
       fontWeight: '600',
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
     },
     error: {
-      color: '#FF453A',
+      color: SwipeColors.remove,
       fontSize: 13,
       marginBottom: 8,
       textAlign: 'center',
@@ -133,10 +138,10 @@ export const createStyles = (isDark: boolean) =>
     btnSecondaryText: {
       fontSize: 15,
       fontWeight: '600',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     btnPrimary: {
-      backgroundColor: '#253883',
+      backgroundColor: colors.primary,
     },
     btnPrimaryText: {
       fontSize: 15,

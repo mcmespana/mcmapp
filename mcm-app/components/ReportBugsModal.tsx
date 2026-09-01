@@ -12,7 +12,7 @@ import BottomSheet from './BottomSheet';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import AppTextField from '@/components/ui/AppTextField';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Colors } from '@/constants/colors';
+import { Colors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
 import { pushWithRetry } from '@/services/firebaseWrites';
@@ -118,7 +118,7 @@ export default function ReportBugsModal({
           <View
             style={[
               styles.songBadge,
-              { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' },
+              { backgroundColor: themeColors(isDark).background },
             ]}
           >
             <MaterialIcons name="music-note" size={14} color={theme.icon} />
@@ -168,14 +168,14 @@ export default function ReportBugsModal({
           <View
             style={[
               styles.dividerLine,
-              { backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA' },
+              { backgroundColor: themeColors(isDark).separator },
             ]}
           />
           <Text style={[styles.dividerLabel, { color: theme.icon }]}>o</Text>
           <View
             style={[
               styles.dividerLine,
-              { backgroundColor: isDark ? '#3A3A3C' : '#E5E5EA' },
+              { backgroundColor: themeColors(isDark).separator },
             ]}
           />
         </View>
@@ -184,7 +184,7 @@ export default function ReportBugsModal({
         <TouchableOpacity
           style={[
             styles.secretBtn,
-            { borderColor: isDark ? '#3A3A3C' : '#E5E5EA' },
+            { borderColor: themeColors(isDark).separator },
           ]}
           onPress={() => {
             openSecretAfterClose.current = true;

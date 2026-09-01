@@ -18,6 +18,7 @@ import {
 import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
+import colors, { SwipeColors, themeColors } from '@/constants/colors';
 
 interface Props {
   visible: boolean;
@@ -158,7 +159,7 @@ const createStyles = (isDark: boolean) =>
     title: {
       fontSize: 17,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     description: {
       fontSize: 13.5,
@@ -170,7 +171,7 @@ const createStyles = (isDark: boolean) =>
       marginTop: 14,
     },
     errorText: {
-      color: '#FF453A',
+      color: SwipeColors.remove,
       fontSize: 12.5,
       marginTop: 6,
     },
@@ -186,17 +187,17 @@ const createStyles = (isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    btnPrimary: { backgroundColor: '#253883' },
+    btnPrimary: { backgroundColor: colors.primary },
     btnPrimaryText: {
       color: '#fff',
       fontSize: 15,
       fontWeight: '700',
     },
     btnSecondary: {
-      backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).background,
     },
     btnSecondaryText: {
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       fontSize: 15,
       fontWeight: '600',
     },

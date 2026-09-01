@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router/react-navigation';
-import { Colors } from '@/constants/colors';
+import colors, { Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import BottomSheet from '@/components/BottomSheet';
@@ -160,7 +160,7 @@ export default function WordleScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'Wordle Jubileo',
-      headerStyle: { backgroundColor: '#A3BD31' },
+      headerStyle: { backgroundColor: colors.green },
       headerTintColor: '#fff',
       headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
       headerTitleAlign: 'center',
@@ -704,7 +704,7 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
       bottom: 60,
       left: 30,
       right: 30,
-      backgroundColor: '#A3BD31',
+      backgroundColor: colors.green,
       padding: 18,
       borderRadius: 25,
       alignItems: 'center',
@@ -745,21 +745,21 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
       alignItems: 'center',
     },
     tabItemActive: {
-      borderBottomColor: '#A3BD31',
+      borderBottomColor: colors.green,
     },
     tabText: {
       fontWeight: 'bold',
       color: theme.text,
     },
     tabTextActive: {
-      color: '#A3BD31',
+      color: colors.green,
     },
     lockedGameMessage: {
       position: 'absolute',
       top: '50%',
       left: 20,
       right: 20,
-      backgroundColor: '#A3BD31',
+      backgroundColor: colors.green,
       padding: 20,
       borderRadius: 15,
       alignItems: 'center',

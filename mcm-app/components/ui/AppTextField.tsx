@@ -1,7 +1,7 @@
 import React, { forwardRef, useState } from 'react';
 import { TextInput, TextInputProps, StyleSheet, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
+import { Colors, SwipeColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 
 /**
@@ -23,8 +23,8 @@ interface AppTextFieldProps extends TextInputProps {
   error?: boolean;
 }
 
-const ACCENT = '#34C759'; // verde "completado" de iOS
-const ERROR = '#FF453A'; // rojo de error de iOS
+const ACCENT = SwipeColors.add; // verde "completado" de iOS
+const ERROR = SwipeColors.remove; // rojo de error de iOS
 
 const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
   function AppTextField(
@@ -45,8 +45,8 @@ const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
     const [focused, setFocused] = useState(false);
     const theme = Colors[isDark ? 'dark' : 'light'];
 
-    const bg = isDark ? '#2C2C2E' : '#F2F2F7';
-    const neutralBorder = isDark ? '#3A3A3C' : '#E5E5EA';
+    const bg = themeColors(isDark).background;
+    const neutralBorder = themeColors(isDark).separator;
     const filled = accentWhenFilled && !!(value && String(value).trim());
     const borderColor = error
       ? ERROR

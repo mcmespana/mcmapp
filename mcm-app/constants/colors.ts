@@ -23,6 +23,18 @@
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
+/**
+ * Roles de superficie y texto por modo. Es la ÚNICA capa de roles: no hay un
+ * `Surfaces` aparte ni un `TextColors` aparte, porque tener dos familias para
+ * lo mismo es justo lo que se está quitando.
+ *
+ * Los seis roles de abajo del todo (`textStrong` … `separator`) se añadieron
+ * en 2026-08 porque no existían y por eso se escribían a mano: había ~110
+ * ternarios `isDark ? '#F5F5F7' : '#1C1C1E'` repartidos por la app, con la
+ * deriva típica de copiar y pegar (dos grises distintos para el mismo papel:
+ * `#A0A0A8`/`#6B6B70` y `#AEAEB2`/`#636366`). Se unificaron en el par con más
+ * contraste de los dos.
+ */
 export const Colors = {
   light: {
     text: '#11181C',
@@ -33,6 +45,19 @@ export const Colors = {
     tabIconSelected: tintColorLight,
     shadow: '#000000',
     card: '#FFFFFF',
+
+    /** Títulos y texto que tiene que destacar sobre el cuerpo. */
+    textStrong: '#1C1C1E',
+    /** Subtítulos, metadatos, texto de apoyo. */
+    textSecondary: '#636366',
+    /** Terciario: sellos de tiempo, ayudas. Igual en los dos modos (system gray). */
+    textMuted: '#8E8E93',
+    /** Enlaces y acciones en texto. En claro es el azul de marca. */
+    link: '#253883',
+    /** Fondo hundido: lo que va DEBAJO de las cards (listas, agrupaciones). */
+    backgroundSunken: '#F2F2F7',
+    /** Hairline entre filas. Más sutil que `border`, que es para cajas. */
+    separator: '#E5E5EA',
   },
   dark: {
     text: '#FFFFFF',
@@ -43,8 +68,50 @@ export const Colors = {
     tabIconSelected: tintColorDark,
     shadow: '#000000',
     card: '#3A3A3C',
+
+    textStrong: '#F5F5F7',
+    textSecondary: '#AEAEB2',
+    textMuted: '#8E8E93',
+    link: '#7AB3FF',
+    backgroundSunken: '#1C1C1E',
+    separator: '#3A3A3C',
   },
 };
+
+/**
+ * Resuelve los roles del modo activo.
+ *
+ * Mismo patrón que `warm(isDark)` de Contigo, para que las dos paletas se usen
+ * igual:  `themeColors(isDark).textSecondary`.
+ */
+export const themeColors = (isDark: boolean) =>
+  isDark ? Colors.dark : Colors.light;
+
+/**
+ * Grises del sistema de Apple, tal cual. La app ya los usaba —eran los hex más
+ * repetidos del repo—, solo que escritos a mano uno por uno.
+ *
+ * Para roles de texto y superficie usa `Colors`/`themeColors`: esto es la
+ * paleta cruda, para cuando de verdad necesitas un gris concreto.
+ */
+export const SystemGray = {
+  light: {
+    gray: '#8E8E93',
+    gray2: '#AEAEB2',
+    gray3: '#C7C7CC',
+    gray4: '#D1D1D6',
+    gray5: '#E5E5EA',
+    gray6: '#F2F2F7',
+  },
+  dark: {
+    gray: '#8E8E93',
+    gray2: '#636366',
+    gray3: '#48484A',
+    gray4: '#3A3A3C',
+    gray5: '#2C2C2E',
+    gray6: '#1C1C1E',
+  },
+} as const;
 
 // Colores de marca MCM.
 //
@@ -144,4 +211,20 @@ export const FeedbackCategoryColors = {
   bug: '#FF6B6B', // Error / bug
   idea: '#4ECDC4', // Sugerencia / idea
   praise: '#FFD93D', // Felicitación
+} as const;
+
+/**
+ * Destacado ámbar: la canción o playlist marcada. Vivía como cuatro hex
+ * sueltos repetidos en `PlaylistRow`, `SongListItem` y `TransposeBottomSheet`,
+ * con deriva entre ellos (`#3A2D0A` en uno, `#3A2800` en otro).
+ */
+export const HighlightColors = {
+  light: { bg: '#FFF4DA', fg: '#7A5A00', border: '#F4C11E' },
+  dark: { bg: '#3A2D0A', fg: '#F4C11E', border: '#7A5A00' },
+} as const;
+
+/** Verde de Carismochito. Estaba duplicado como constante en 3 ficheros. */
+export const CarismoColors = {
+  light: '#1B9E4B',
+  dark: '#9DE86B',
 } as const;

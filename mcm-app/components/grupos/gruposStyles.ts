@@ -1,5 +1,5 @@
 import { Platform, StyleSheet } from 'react-native';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 
 /**
@@ -64,7 +64,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       minHeight: 52,
       paddingHorizontal: 16,
       borderRadius: radii.xl,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: isDark ? '#48484A' : '#E0E0E5',
     },
@@ -106,7 +106,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingHorizontal: 18,
       paddingBottom: 6,
       fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       fontWeight: '500',
     },
     searchSectionHeader: {
@@ -115,18 +115,18 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       paddingHorizontal: 18,
       paddingVertical: 6,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     searchSectionHeaderText: {
       fontSize: 13,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       letterSpacing: 0.3,
       textTransform: 'uppercase',
     },
     searchSectionCount: {
       fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       fontWeight: '600',
     },
     hitRow: {
@@ -134,9 +134,9 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       paddingHorizontal: 16,
       paddingVertical: 12,
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(isDark).background,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderBottomColor: themeColors(isDark).separator,
       gap: 12,
     },
     hitRowMe: {
@@ -160,7 +160,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     hitMeta: {
       fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
     grupoCard: {
@@ -168,7 +168,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       padding: 14,
       borderRadius: radii.lg,
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(isDark).background,
       gap: 10,
       ...Platform.select({
         web: {
@@ -197,7 +197,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     grupoCardSubtitle: {
       fontSize: 13,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
     grupoCardMetaRow: {
@@ -208,7 +208,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     grupoCardMeta: {
       fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
     },
     memberRow: {
       flexDirection: 'row',
@@ -216,7 +216,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingHorizontal: 16,
       paddingVertical: 11,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: isDark ? '#3A3A3C' : '#E5E5EA',
+      borderBottomColor: themeColors(isDark).separator,
       gap: 12,
     },
     memberRowMe: {
@@ -272,14 +272,14 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     filterCount: {
       fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       paddingHorizontal: 4,
     },
     emptyInline: {
       paddingHorizontal: 16,
       paddingVertical: 24,
       textAlign: 'center',
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       fontStyle: 'italic',
     },
   });

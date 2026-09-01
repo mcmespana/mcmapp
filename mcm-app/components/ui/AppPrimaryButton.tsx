@@ -9,7 +9,7 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/colors';
+import { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
 
@@ -61,7 +61,7 @@ export default function AppPrimaryButton({
   const theme = Colors[isDark ? 'dark' : 'light'];
   const isDisabled = disabled || loading;
 
-  const bg = isDisabled ? (isDark ? '#3A3A3C' : '#E5E5EA') : color;
+  const bg = isDisabled ? themeColors(isDark).separator : color;
   const fg = isDisabled ? theme.icon : textColor;
 
   return (

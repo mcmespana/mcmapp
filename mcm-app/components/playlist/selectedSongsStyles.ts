@@ -9,7 +9,7 @@
  * factoría y la pantalla la memoiza.
  */
 import { Platform, StyleSheet } from 'react-native';
-import { Colors } from '@/constants/colors';
+import colors, { Colors, KeyPillColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 
 export const createStyles = (
@@ -21,7 +21,7 @@ export const createStyles = (
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     headerActions: {
       flexDirection: 'row',
@@ -48,13 +48,13 @@ export const createStyles = (
     selectionCount: {
       fontSize: 13,
       fontWeight: '700',
-      color: isDark ? '#8E8E93' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       letterSpacing: 0.5,
       textTransform: 'uppercase',
     },
     subInfo: {
       fontSize: 12,
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
       marginTop: 3,
       fontWeight: '600',
     },
@@ -88,7 +88,7 @@ export const createStyles = (
       borderRadius: 6,
     },
     viewToggleBtnActive: {
-      backgroundColor: isDark ? '#1A2744' : '#FFFFFF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : '#FFFFFF',
       ...Platform.select({
         web: { boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
         default: {
@@ -103,10 +103,10 @@ export const createStyles = (
     viewToggleText: {
       fontSize: 12,
       fontWeight: '600',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
     },
     viewToggleTextActive: {
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
       fontWeight: '700',
     },
     listContentContainer: {
@@ -116,7 +116,7 @@ export const createStyles = (
     categoryContainer: {
       marginTop: 12,
       marginHorizontal: 16,
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: radii.lg,
       overflow: 'hidden',
       ...Platform.select({
@@ -140,14 +140,14 @@ export const createStyles = (
       paddingHorizontal: 16,
       paddingVertical: 10,
       backgroundColor: isDark ? Colors.dark.card : '#F2F2F7',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
     emptyContainer: {
       flex: 1,
       padding: 20,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
       justifyContent: 'space-between',
       ...(isWide ? { maxWidth, width: '100%', alignSelf: 'center' } : null),
     },
@@ -161,7 +161,7 @@ export const createStyles = (
       width: 100,
       height: 100,
       borderRadius: radii.full,
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 24,
@@ -200,13 +200,13 @@ export const createStyles = (
       justifyContent: 'center',
       paddingVertical: 14,
       borderRadius: radii.lg,
-      backgroundColor: isDark ? '#1A2744' : '#E8F0FE',
+      backgroundColor: isDark ? KeyPillColors.bgDark : '#E8F0FE',
       gap: 8,
     },
     importButtonText: {
       fontSize: 16,
       fontWeight: '600',
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
     },
     modalBackdrop: {
       flex: 1,
@@ -218,7 +218,7 @@ export const createStyles = (
     modalCard: {
       width: '100%',
       maxWidth: 420,
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: 18,
       padding: 22,
       ...Platform.select({
@@ -235,13 +235,13 @@ export const createStyles = (
     modalTitle: {
       fontSize: 19,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       letterSpacing: -0.3,
       marginBottom: 6,
     },
     modalDescription: {
       fontSize: 14,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       marginBottom: 14,
     },
     modalInput: {
@@ -271,10 +271,10 @@ export const createStyles = (
     modalBtnSecondaryText: {
       fontSize: 15,
       fontWeight: '600',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     modalBtnPrimary: {
-      backgroundColor: '#253883',
+      backgroundColor: colors.primary,
     },
     modalBtnPrimaryText: {
       fontSize: 15,

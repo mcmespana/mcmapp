@@ -15,7 +15,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useToast } from '@/contexts/AppToastContext';
 import { h } from '@/utils/haptics';
 import BottomSheet from '@/components/BottomSheet';
-import brand from '@/constants/colors';
+import brand, { themeColors } from '@/constants/colors';
 import { extractDriveFileId, toDrivePreviewUrl } from '@/utils/googleDrive';
 import type { MediaLink, SongMedia } from '@/types/songMedia';
 import TagChip from '@/components/song-tags/TagChip';
@@ -238,7 +238,7 @@ export default function SongMediaSheet({
               <MaterialIcons
                 name="smart-display"
                 size={15}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.secHeadText}>Vídeos</Text>
             </View>
@@ -262,7 +262,7 @@ export default function SongMediaSheet({
               <MaterialIcons
                 name="headphones"
                 size={15}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.secHeadText}>Audios</Text>
               <Text style={styles.secHint}>reproductor flotante</Text>
@@ -278,7 +278,7 @@ export default function SongMediaSheet({
               <MaterialIcons
                 name="info-outline"
                 size={15}
-                color={isDark ? '#8E8E93' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.secHeadText}>Ficha</Text>
             </View>
@@ -331,7 +331,7 @@ export default function SongMediaSheet({
                   <MaterialIcons
                     name="open-in-new"
                     size={15}
-                    color={isDark ? '#8E8E93' : '#8E8E93'}
+                    color={themeColors(isDark).textMuted}
                   />
                 </TouchableOpacity>
               ) : (
@@ -424,7 +424,7 @@ const createStyles = (isDark: boolean) =>
       fontSize: 14.5,
       fontWeight: '600',
       letterSpacing: -0.2,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     mMeta: {
       fontSize: 11.5,
@@ -483,7 +483,7 @@ const createStyles = (isDark: boolean) =>
       fontSize: 13.5,
       fontWeight: '600',
       letterSpacing: -0.2,
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       marginTop: 2,
     },
     fichaComment: {

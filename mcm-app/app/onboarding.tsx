@@ -30,7 +30,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import colors from '@/constants/colors';
+import colors, { themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useProfileConfigContext } from '@/contexts/ProfileConfigContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -108,7 +108,7 @@ function useThemeT() {
     text: isDark ? '#FFFFFF' : '#11181C',
     muted: isDark ? '#8E8E93' : '#687076',
     bg: isDark ? '#1C1C1E' : '#ffffff',
-    card: isDark ? '#2C2C2E' : '#ffffff',
+    card: themeColors(isDark).background,
     border: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)',
     // Accent used for on-surface interactive elements (icons, selected text,
     // checks, links). In dark mode the deep primary blue is too low-contrast
@@ -281,7 +281,7 @@ const btnStyles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#253883',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 14,
     elevation: 4,
@@ -1236,7 +1236,7 @@ const cardStyles = StyleSheet.create({
   cardSelected: {
     borderColor: T.primary,
     backgroundColor: 'rgba(37,56,131,0.055)',
-    shadowColor: '#253883',
+    shadowColor: colors.primary,
     shadowOpacity: 0.18,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 3 },
@@ -1252,7 +1252,7 @@ const cardStyles = StyleSheet.create({
   } as ViewStyle,
   iconCircleSelected: {
     backgroundColor: T.primary,
-    shadowColor: '#253883',
+    shadowColor: colors.primary,
     shadowOpacity: 0.32,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 },
@@ -1286,7 +1286,7 @@ const delegStyles = StyleSheet.create({
     borderWidth: 2,
     borderColor: T.primary,
     backgroundColor: 'rgba(37,56,131,0.055)',
-    shadowColor: '#253883',
+    shadowColor: colors.primary,
     shadowOpacity: 0.14,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 2 },
@@ -1910,7 +1910,7 @@ const shellStyles = StyleSheet.create({
     flex: undefined,
     borderRadius: 22,
     overflow: 'hidden',
-    shadowColor: '#253883',
+    shadowColor: colors.primary,
     shadowOpacity: 0.14,
     shadowRadius: 48,
     shadowOffset: { width: 0, height: 16 },

@@ -22,6 +22,7 @@ import { radii } from '@/constants/uiStyles';
 import { isEventArchived } from '@/constants/events';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { MasStackParamList } from '../(tabs)/mas';
+import { themeColors } from '@/constants/colors';
 
 /**
  * "Eventos pasados": lista los eventos archivados como tarjetas que abren su
@@ -71,7 +72,7 @@ export default function EventosPasadosScreen() {
               key={event.id}
               style={[
                 styles.card,
-                { backgroundColor: isDark ? '#2C2C2E' : '#fff' },
+                { backgroundColor: themeColors(isDark).background },
                 Platform.OS !== 'web'
                   ? {
                       shadowColor: event.tintColor,
@@ -110,7 +111,7 @@ export default function EventosPasadosScreen() {
                 <Text
                   style={[
                     styles.cardTitle,
-                    { color: isDark ? '#fff' : '#1C1C1E' },
+                    { color: themeColors(isDark).textStrong },
                   ]}
                   numberOfLines={2}
                 >
@@ -152,7 +153,7 @@ const createStyles = (isDark: boolean) =>
   StyleSheet.create<Styles>({
     safeArea: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     container: {
       flex: 1,

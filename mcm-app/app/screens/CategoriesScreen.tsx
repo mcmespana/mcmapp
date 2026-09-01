@@ -21,7 +21,12 @@ import ProgressWithMessage from '@/components/ProgressWithMessage';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { Colors } from '@/constants/colors';
+import colors, {
+  Colors,
+  KeyPillColors,
+  UIColors,
+  themeColors,
+} from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { PressableFeedback } from 'heroui-native';
@@ -176,7 +181,11 @@ export default function CategoriesScreen({
   // liquid-glass del sistema (igual que el back/buscar de dentro de una
   // categoría). Antes vivían en un header inline dentro del scroll, por eso NO
   // tenían ese efecto. El título "Cantoral" lo pone el screenOptions del stack.
-  const headerIconColor = isIOS ? (isDark ? '#f4c11e' : '#3d79b9') : '#1a1a1a';
+  const headerIconColor = isIOS
+    ? isDark
+      ? UIColors.accentYellow
+      : '#3d79b9'
+    : '#1a1a1a';
   useLayoutEffect(() => {
     // Título pequeño nativo (centrado, heredado del stack) + los 2 botones
     // separados. "Sugerir" a la IZQUIERDA y "Buscar" a la DERECHA → son dos bar
@@ -350,7 +359,7 @@ export default function CategoriesScreen({
         <MaterialIcons
           name="chevron-right"
           size={24}
-          color={isDark ? '#7AB3FF' : '#253883'}
+          color={themeColors(isDark).link}
         />
       </PressableFeedback>
     );
@@ -465,7 +474,7 @@ const createStyles = (
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     // Botones del header NATIVO (sugerir/buscar). Minimal —solo padding, sin
     // fondo— para que iOS 26 los envuelva en su cápsula liquid-glass.
@@ -495,7 +504,7 @@ const createStyles = (
       fontWeight: '800',
       letterSpacing: -1.4,
       lineHeight: 38,
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
     },
     headerSubtitle: {
       fontSize: 13,
@@ -541,7 +550,7 @@ const createStyles = (
     card: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: radii.lg,
       paddingHorizontal: 14,
       paddingVertical: 11,
@@ -549,7 +558,7 @@ const createStyles = (
       ...cardShadow,
     },
     cardSpecial: {
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
       borderWidth: 1,
       borderColor: isDark ? '#2A3D66' : '#D4E2FF',
     },
@@ -563,7 +572,7 @@ const createStyles = (
       marginRight: 12,
     },
     cardEmojiSpecial: {
-      backgroundColor: isDark ? '#253883' : '#D4E2FF',
+      backgroundColor: isDark ? colors.primary : '#D4E2FF',
     },
     emojiText: {
       fontSize: 20,
@@ -574,11 +583,11 @@ const createStyles = (
     cardTitle: {
       fontSize: 16,
       fontWeight: '600',
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       letterSpacing: -0.2,
     },
     cardTitleSpecial: {
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
     },
     cardRight: {
       flexDirection: 'row',
@@ -602,7 +611,7 @@ const createStyles = (
       left: 0,
       right: 0,
       height: 4,
-      backgroundColor: '#f4c11e',
+      backgroundColor: UIColors.accentYellow,
       zIndex: 1000,
     },
     // ── iPad: hero + grid ───────────────────────────────────────────────
@@ -610,7 +619,7 @@ const createStyles = (
       fontSize: 11,
       fontWeight: '800',
       letterSpacing: 1.2,
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: themeColors(isDark).textMuted,
       marginTop: 22,
       marginBottom: 12,
       paddingLeft: 4,
@@ -618,7 +627,7 @@ const createStyles = (
     heroCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
       borderRadius: radii.lg + 6,
       paddingHorizontal: 22,
       paddingVertical: 20,
@@ -631,7 +640,7 @@ const createStyles = (
       width: 56,
       height: 56,
       borderRadius: 16,
-      backgroundColor: isDark ? '#253883' : '#D4E2FF',
+      backgroundColor: isDark ? colors.primary : '#D4E2FF',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -645,7 +654,7 @@ const createStyles = (
       fontSize: 22,
       fontWeight: '800',
       letterSpacing: -0.4,
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
       marginBottom: 4,
     },
     heroSubtitle: {
@@ -659,7 +668,7 @@ const createStyles = (
     },
     gridCard: {
       flex: 1,
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: radii.lg + 4,
       paddingVertical: 22,
       paddingHorizontal: 18,
@@ -683,7 +692,7 @@ const createStyles = (
       fontSize: 17,
       fontWeight: '700',
       letterSpacing: -0.3,
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       lineHeight: 21,
       marginBottom: 4,
     },

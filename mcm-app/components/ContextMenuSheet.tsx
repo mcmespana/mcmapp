@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomSheet from './BottomSheet';
-import { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
@@ -57,14 +57,14 @@ export default function ContextMenuSheet({
           const color = action.disabled
             ? theme.icon
             : action.destructive
-              ? '#E15C62'
+              ? colors.accent
               : theme.text;
           return (
             <TouchableOpacity
               key={action.key}
               style={[
                 styles.row,
-                { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' },
+                { backgroundColor: themeColors(isDark).background },
                 action.disabled && styles.rowDisabled,
               ]}
               activeOpacity={0.6}

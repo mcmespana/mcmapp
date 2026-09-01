@@ -26,6 +26,12 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import { convertChord } from '@/utils/chordNotation';
 import { transposeKey, transposeLabel } from '@/utils/transposeKey';
+import {
+  KeyPillColors,
+  SwipeColors,
+  UIColors,
+  themeColors,
+} from '@/constants/colors';
 
 interface Song {
   title: string;
@@ -251,9 +257,7 @@ const PlaylistRow: React.FC<Props> = ({
                 size={22}
                 color={
                   canMoveUp
-                    ? isDark
-                      ? '#7AB3FF'
-                      : '#253883'
+                    ? themeColors(isDark).link
                     : isDark
                       ? '#48484A'
                       : '#C7C7CC'
@@ -277,9 +281,7 @@ const PlaylistRow: React.FC<Props> = ({
                 size={22}
                 color={
                   canMoveDown
-                    ? isDark
-                      ? '#7AB3FF'
-                      : '#253883'
+                    ? themeColors(isDark).link
                     : isDark
                       ? '#48484A'
                       : '#C7C7CC'
@@ -296,7 +298,7 @@ const PlaylistRow: React.FC<Props> = ({
 const createStyles = (isDark: boolean) =>
   StyleSheet.create({
     outer: {
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
       flexDirection: 'row',
       alignItems: 'stretch',
     },
@@ -324,7 +326,7 @@ const createStyles = (isDark: boolean) =>
       width: 28,
       height: 28,
       borderRadius: 14,
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -334,14 +336,14 @@ const createStyles = (isDark: boolean) =>
     numberText: {
       fontSize: 13,
       fontWeight: '700',
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
       fontVariant: ['tabular-nums'],
     },
     dotPlaceholder: {
       width: 6,
       height: 6,
       borderRadius: 3,
-      backgroundColor: '#34C759',
+      backgroundColor: SwipeColors.add,
       marginHorizontal: 11,
     },
     songInfoContainer: {
@@ -349,7 +351,7 @@ const createStyles = (isDark: boolean) =>
     },
     songTitle: {
       fontSize: 16,
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       fontWeight: '500',
       letterSpacing: -0.2,
     },
@@ -373,27 +375,27 @@ const createStyles = (isDark: boolean) =>
     capoPillOverridden: {
       backgroundColor: isDark ? '#3A2D0A' : '#FFF4DA',
       borderWidth: 1,
-      borderColor: isDark ? '#7A5A00' : '#F4C11E',
+      borderColor: isDark ? '#7A5A00' : UIColors.accentYellow,
     },
     capoText: {
       fontSize: 11,
       fontWeight: '600',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
     },
     capoTextOverridden: {
-      color: isDark ? '#F4C11E' : '#7A5A00',
+      color: isDark ? UIColors.accentYellow : '#7A5A00',
     },
     keyPill: {
       paddingHorizontal: 8,
       paddingVertical: 3,
       borderRadius: 6,
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     keyText: {
       fontSize: 13,
       fontWeight: '700',
-      color: isDark ? '#7AB3FF' : '#253883',
+      color: themeColors(isDark).link,
     },
     toneTransposedWrap: {
       flexDirection: 'row',
@@ -414,7 +416,7 @@ const createStyles = (isDark: boolean) =>
       borderRadius: 6,
       backgroundColor: '#FFF4DA',
       borderWidth: 1,
-      borderColor: '#F4C11E',
+      borderColor: UIColors.accentYellow,
     },
     keyTextTransposed: {
       fontSize: 13,
@@ -424,7 +426,7 @@ const createStyles = (isDark: boolean) =>
     transposeParenLabel: {
       fontSize: 11,
       fontWeight: '700',
-      color: isDark ? '#8E8E93' : '#8E8E93',
+      color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
     },
     reorderRow: {
@@ -447,7 +449,7 @@ const createStyles = (isDark: boolean) =>
       opacity: 0.4,
     },
     leftAction: {
-      backgroundColor: '#FF453A',
+      backgroundColor: SwipeColors.remove,
       justifyContent: 'center',
       alignItems: 'center',
       width: 100,

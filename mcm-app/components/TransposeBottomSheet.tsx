@@ -12,7 +12,7 @@ import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
-import { Colors } from '@/constants/colors';
+import { Colors, UIColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -281,7 +281,7 @@ export default function TransposeBottomSheet({
               <MaterialIcons
                 name="refresh"
                 size={18}
-                color={isDark ? '#AEAEB2' : '#636366'}
+                color={themeColors(isDark).textSecondary}
               />
             </PressableFeedback>
           </View>
@@ -327,7 +327,7 @@ export default function TransposeBottomSheet({
                   {
                     color: isTransposed
                       ? isDark
-                        ? '#F4C11E'
+                        ? UIColors.accentYellow
                         : '#7A5A00'
                       : isDark
                         ? '#EBEBF0'
@@ -383,9 +383,7 @@ export default function TransposeBottomSheet({
                         ? isDark
                           ? '#FFB74D'
                           : '#C77700'
-                        : isDark
-                          ? '#8E8E93'
-                          : '#8E8E93',
+                        : themeColors(isDark).textMuted,
                     },
                   ]}
                 >
@@ -414,7 +412,7 @@ export default function TransposeBottomSheet({
                 <MaterialIcons
                   name="refresh"
                   size={18}
-                  color={isDark ? '#AEAEB2' : '#636366'}
+                  color={themeColors(isDark).textSecondary}
                 />
               </PressableFeedback>
             </View>
@@ -465,7 +463,7 @@ export default function TransposeBottomSheet({
                     {
                       color: isCapoOverridden
                         ? isDark
-                          ? '#F4C11E'
+                          ? UIColors.accentYellow
                           : '#7A5A00'
                         : isDark
                           ? '#EBEBF0'
@@ -605,7 +603,7 @@ const styles = StyleSheet.create({
   },
   toneDisplayActive: {
     backgroundColor: '#FFF4DA',
-    borderColor: '#F4C11E',
+    borderColor: UIColors.accentYellow,
   },
   toneDisplayActiveDark: {
     backgroundColor: '#3A2D0A',
@@ -660,7 +658,7 @@ const styles = StyleSheet.create({
   },
   capoDisplayOverridden: {
     backgroundColor: '#FFF4DA',
-    borderColor: '#F4C11E',
+    borderColor: UIColors.accentYellow,
   },
   capoDisplayOverriddenDark: {
     backgroundColor: '#3A2D0A',

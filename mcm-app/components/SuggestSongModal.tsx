@@ -12,7 +12,7 @@ import BottomSheet from './BottomSheet';
 import AppTextField from '@/components/ui/AppTextField';
 import AppPrimaryButton from '@/components/ui/AppPrimaryButton';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Colors } from '@/constants/colors';
+import { Colors, themeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -198,14 +198,10 @@ export default function SuggestSongModal({
                       ? isDark
                         ? '#1A3A6E'
                         : '#E8F0FE'
-                      : isDark
-                        ? '#2C2C2E'
-                        : '#F2F2F7',
+                      : themeColors(isDark).background,
                     borderColor: isSelected
                       ? '#4A90D9'
-                      : isDark
-                        ? '#3A3A3C'
-                        : '#E5E5EA',
+                      : themeColors(isDark).separator,
                   },
                 ]}
                 onPress={() => setCategoria(cat)}

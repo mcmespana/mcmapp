@@ -5,7 +5,7 @@
  * 1175 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.
  */
 import { Platform, StyleSheet } from 'react-native';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
@@ -17,7 +17,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+      backgroundColor: themeColors(isDark).backgroundSunken,
     },
     // Cuerpo centrado en pantallas anchas (iPad). En móvil ocupa todo el ancho.
     bodyWrap: {
@@ -80,7 +80,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       marginTop: 8,
       marginBottom: 12,
       borderRadius: 20,
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(isDark).background,
       overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
       ...Platform.select({
         ios: {
@@ -115,7 +115,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     filterChip: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: 100,
       paddingHorizontal: 12,
       paddingVertical: 7,
@@ -134,7 +134,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     chipLabel: {
       fontSize: 13,
       fontWeight: '500',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
     },
 
     // Event section (calendar view)
@@ -189,7 +189,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     eventSectionWeekday: {
       fontSize: 14,
       fontWeight: '500',
-      color: isDark ? '#AEAEB2' : '#636366',
+      color: themeColors(isDark).textSecondary,
       textTransform: 'capitalize',
     },
     eventSectionCount: {
@@ -202,7 +202,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     // Event card
     eventCard: {
       flexDirection: 'row',
-      backgroundColor: isDark ? '#2C2C2E' : '#fff',
+      backgroundColor: themeColors(isDark).background,
       borderRadius: radii.lg,
       marginBottom: 8,
       overflow: 'hidden',
@@ -243,7 +243,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     eventTitle: {
       fontSize: 16,
       fontWeight: '600',
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       flex: 1,
       letterSpacing: -0.2,
     },
@@ -306,7 +306,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     monthLabel: {
       fontSize: 20,
       fontWeight: '700',
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       minWidth: 180,
       textAlign: 'center',
       letterSpacing: -0.3,
@@ -335,7 +335,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     sectionDay: {
       fontSize: 26,
       fontWeight: '700',
-      color: isDark ? '#FFFFFF' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       lineHeight: 30,
       fontVariant: ['tabular-nums'],
     },

@@ -25,7 +25,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
-import colors, { Colors } from '@/constants/colors';
+import colors, { Colors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -358,14 +358,14 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     resultsMeta: {
       paddingHorizontal: 4,
       fontSize: 12,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       fontWeight: '500',
     },
     cardWrapper: {
       paddingHorizontal: 16,
     },
     card: {
-      backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+      backgroundColor: themeColors(isDark).background,
       overflow: 'hidden',
     },
     cardFirst: {
@@ -417,12 +417,12 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     name: {
       fontSize: 16,
       fontWeight: '700',
-      color: isDark ? '#F5F5F7' : '#1C1C1E',
+      color: themeColors(isDark).textStrong,
       letterSpacing: -0.2,
     },
     role: {
       fontSize: 13,
-      color: isDark ? '#A0A0A8' : '#6B6B70',
+      color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
     actions: {
