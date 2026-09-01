@@ -239,7 +239,7 @@ const detailStyles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: radii.lg,
     gap: 10,
-    ...shadows.lg,
+    ...shadows.overlay,
   },
   actionBtnText: {
     color: '#fff',

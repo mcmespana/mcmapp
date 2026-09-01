@@ -133,7 +133,7 @@ const ContactRow = React.memo(function ContactRow({
             <MaterialIcons
               name="chat"
               size={20}
-              color={isDark ? '#A8E0AB' : colors.success}
+              color={isDark ? '#A8E0AB' : colors.green}
             />
           </PressableFeedback>
         </View>

@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: 10,
     paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
   },
   retryLabel: {
     color: '#FFFFFF',
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   },
   skeletonButton: {
     height: 46,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     width: '55%',
   },
 });

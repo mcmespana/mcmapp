@@ -427,7 +427,7 @@ export default function ReflexionesScreen() {
               icon="auto-stories"
               title="Aún no hay reflexiones"
               subtitle="Pulsa el botón + de arriba para compartir la primera."
-              accentColor={colors.success}
+              accentColor={colors.green}
             />
           }
           initialNumToRender={12}
@@ -460,7 +460,7 @@ export default function ReflexionesScreen() {
                   <MaterialIcons
                     name="auto-stories"
                     size={20}
-                    color={colors.success}
+                    color={colors.green}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -477,7 +477,7 @@ export default function ReflexionesScreen() {
                   value={titulo}
                   onChangeText={setTitulo}
                   placeholder="Un título breve"
-                  accentColor={colors.success}
+                  accentColor={colors.green}
                   accentWhenFilled
                 />
               </View>
@@ -489,7 +489,7 @@ export default function ReflexionesScreen() {
                   onChangeText={setContenido}
                   placeholder="Escribe aquí lo que quieras"
                   multiline
-                  accentColor={colors.success}
+                  accentColor={colors.green}
                   accentWhenFilled
                 />
               </View>
@@ -503,7 +503,7 @@ export default function ReflexionesScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Elegir fecha"
               >
-                <MaterialIcons name="event" size={20} color={colors.success} />
+                <MaterialIcons name="event" size={20} color={colors.green} />
                 <Text style={styles.dateFieldLabel}>Fecha</Text>
                 <Text style={styles.dateValue}>{formatFecha(fecha)}</Text>
                 <MaterialIcons
@@ -521,7 +521,7 @@ export default function ReflexionesScreen() {
                   value={autor}
                   onChangeText={setAutor}
                   placeholder="Cómo quieres firmar"
-                  accentColor={colors.success}
+                  accentColor={colors.green}
                   accentWhenFilled
                 />
               </View>
@@ -592,7 +592,7 @@ export default function ReflexionesScreen() {
       {saving && (
         <View style={[StyleSheet.absoluteFill, styles.modalOverlay]}>
           <View style={styles.savingModal}>
-            <Spinner size="lg" color={colors.success} />
+            <Spinner size="lg" color={colors.green} />
             <Text style={styles.savingText}>Enviando...</Text>
           </View>
         </View>
@@ -643,7 +643,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: spacing.md,
       borderRadius: radii.xl,
       overflow: 'hidden',
-      ...(shadows.sm as object),
+      ...(shadows.card as object),
     },
     cardSurface: {
       backgroundColor: scheme === 'dark' ? '#2C2C2E' : '#FFFFFF',
@@ -732,7 +732,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     field: { marginBottom: spacing.md },
     inputLabel: {
       fontSize: 12,
-      color: colors.success,
+      color: colors.green,
       fontWeight: '700',
       letterSpacing: 0.2,
       marginBottom: 6,
@@ -756,7 +756,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '500',
       color: theme.text,
     },
-    dateValue: { fontSize: 15, fontWeight: '600', color: colors.success },
+    dateValue: { fontSize: 15, fontWeight: '600', color: colors.green },
     dateModalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.45)',
@@ -788,7 +788,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     datePicker: { alignSelf: 'stretch' },
     dateDoneBtn: {
       alignSelf: 'stretch',
-      backgroundColor: colors.success,
+      backgroundColor: colors.green,
       borderRadius: 14,
       paddingVertical: 13,
       alignItems: 'center',
@@ -800,7 +800,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 8,
-      backgroundColor: colors.success,
+      backgroundColor: colors.green,
       borderRadius: 14,
       paddingVertical: 15,
       marginTop: spacing.md,

@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
   } as TextStyle,
   signOutBtn: {
     borderWidth: 1,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     paddingHorizontal: 10,
     paddingVertical: 5,
   } as ViewStyle,

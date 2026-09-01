@@ -52,7 +52,7 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: radii.xl,
     borderWidth: 1,
-    ...shadows.sm,
+    ...shadows.card,
   },
   navBtn: {
     padding: 10,
@@ -79,7 +79,7 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     borderWidth: 1,
     gap: 8,
   },
@@ -101,7 +101,7 @@ export const styles = StyleSheet.create({
     borderRadius: radii.xl,
     borderWidth: 1,
     padding: 20,
-    ...shadows.sm,
+    ...shadows.card,
   },
   sectionLabel: {
     fontSize: 11,

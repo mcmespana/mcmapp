@@ -154,7 +154,7 @@ export default function FormattedContent({
       'color-primary': { color: colors.primary },
       'color-accent': { color: colors.accent },
       'color-info': { color: colors.info },
-      'color-success': { color: colors.success },
+      'color-success': { color: colors.green },
       // Estilos adicionales para mejor presentación
       'btn-outline-primary': {
         backgroundColor: 'transparent',

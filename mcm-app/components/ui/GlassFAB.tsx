@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     zIndex: 1000,
     ...((Platform.OS === 'android' || Platform.OS === 'web'
-      ? shadows.lg
+      ? shadows.overlay
       : null) as ViewStyle),
   },
   pill: {

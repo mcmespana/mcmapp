@@ -43,8 +43,8 @@ const CATEGORY_CONFIG: Record<
   { icon: MaterialIconName; color: string }
 > = {
   Movilidad: { icon: 'directions-walk', color: colors.info },
-  'Conso+': { icon: 'shopping-cart', color: colors.success },
-  Autobuses: { icon: 'directions-bus', color: colors.warning },
+  'Conso+': { icon: 'shopping-cart', color: colors.green },
+  Autobuses: { icon: 'directions-bus', color: colors.yellow },
   Alojamiento: { icon: 'home', color: colors.accent },
 };
 

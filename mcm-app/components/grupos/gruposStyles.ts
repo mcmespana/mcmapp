@@ -63,7 +63,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       gap: 10,
       minHeight: 52,
       paddingHorizontal: 16,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: isDark ? '#48484A' : '#E0E0E5',
@@ -85,7 +85,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: colors.primary,
       paddingHorizontal: 18,
       paddingVertical: 12,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       ...Platform.select({
         web: { boxShadow: '0 2px 8px rgba(37,56,131,0.35)' },
         default: {
@@ -242,7 +242,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '700',
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       overflow: 'hidden',
       textTransform: 'lowercase',
     },

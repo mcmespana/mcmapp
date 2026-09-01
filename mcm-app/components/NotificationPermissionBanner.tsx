@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
   } as ViewStyle,
   ctaText: {
     fontSize: 12,

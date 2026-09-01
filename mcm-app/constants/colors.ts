@@ -1,6 +1,23 @@
 /**
- * Design tokens de color para la app MCM.
- * Fuente única de verdad — no definir colores en otros archivos.
+ * Design tokens de color para la app MCM. **Fuente única de verdad.**
+ *
+ * Reglas (las largas están en `design.md`, raíz del monorepo):
+ *
+ * 1. No se escriben hex en componentes. Si falta un color, se añade aquí con
+ *    nombre semántico y comentario.
+ * 2. Un token se llama por lo que ES, no por dónde se usó primero. Si el
+ *    nombre semántico no es verdad en toda la app, se usa el nombre del color
+ *    (por eso `green`/`yellow`/`purple` y no `success`/`warning`/`danger`:
+ *    el verde pinta Reflexiones y el amarillo las estrellas de valoración —
+ *    no son estados).
+ * 3. Excepciones sancionadas — hay exactamente dos sitios más con color, y
+ *    ambos son identidad deliberada de un territorio (`design.md` §2):
+ *      · `components/contigo/theme.ts` — paleta cálida de Contigo.
+ *      · `constants/events.ts` — `tintColor` propio de cada evento.
+ *    Cualquier otro color fuera de este archivo es un bug.
+ * 4. `mcm-app/global.css` NO es una tercera paleta: son las variables del tema
+ *    de HeroUI, cuyos nombres pertenecen a HeroUI (su `--accent` es nuestro
+ *    `primary`). Se alimentan de los valores de aquí; no las renombres.
  */
 
 const tintColorLight = '#0a7ea4';
@@ -9,7 +26,7 @@ const tintColorDark = '#fff';
 export const Colors = {
   light: {
     text: '#11181C',
-    background: '#fff',
+    background: '#ffffff',
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
@@ -29,16 +46,20 @@ export const Colors = {
   },
 };
 
-// Colores de marca MCM
+// Colores de marca MCM.
+//
+// Es una paleta CROMÁTICA (los colores del logo), no semántica: el estado
+// («esto ha ido bien», «esto es un error») se expresa con `ToastColors` o
+// `SwipeColors`, que son los que sí significan eso en su contexto.
 const brand = {
-  primary: '#253883', // Azul fondo
+  primary: '#253883', // Azul fondo — identidad MCM
   secondary: '#95d2f2', // Azul letras
-  accent: '#E15C62', // Rojo MIC
-  info: '#31AADF', // Celeste
-  success: '#A3BD31', // Verde COM
-  warning: '#FCD200', // Amarillo COM
-  danger: '#9D1E74', // Morado LC
-  text: '#002B81', // Azul COM
+  accent: '#E15C62', // Rojo MIC — acento institucional (CTAs, badges)
+  info: '#31AADF', // Celeste — enlaces e informativos
+  green: '#A3BD31', // Verde COM — Reflexiones, Conso+, duraciones
+  yellow: '#FCD200', // Amarillo COM — estrellas de valoración, Autobuses
+  purple: '#9D1E74', // Morado LC — Comunica
+  text: '#002B81', // Azul COM — texto de marca
   background: '#ffffff', // Fondo blanco
   white: '#ffffff', // Blanco
   black: '#000000', // Negro

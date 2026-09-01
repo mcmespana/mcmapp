@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
   },
   ctaText: { fontSize: 14, fontWeight: '700' },
 });

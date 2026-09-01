@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
     zIndex: 1000,
-    ...(shadows.lg as ViewStyle),
+    ...(shadows.overlay as ViewStyle),
   },
   pill: {
     width: undefined,

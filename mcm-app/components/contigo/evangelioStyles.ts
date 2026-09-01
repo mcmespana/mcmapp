@@ -111,7 +111,7 @@ export const styles = StyleSheet.create({
     marginTop: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     borderWidth: 1,
   },
   todayMiniLabel: {
@@ -168,7 +168,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
     marginBottom: 20,
-    ...shadows.sm,
+    ...shadows.card,
   },
   cardContent: {
     padding: 20,

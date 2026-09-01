@@ -100,7 +100,7 @@ export const styles = StyleSheet.create({
     borderRadius: radii.xl,
     borderWidth: 1,
     padding: spacing.md + 2,
-    ...shadows.md,
+    ...shadows.raised,
   } as ViewStyle,
   notifRow: {
     flexDirection: 'row',
@@ -151,7 +151,7 @@ export const styles = StyleSheet.create({
     gap: 3,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     borderWidth: 1,
   } as ViewStyle,
   destinationChipText: {
@@ -164,7 +164,7 @@ export const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
   } as ViewStyle,
   actionBtnText: {
     fontSize: 12,
@@ -218,7 +218,7 @@ export const styles = StyleSheet.create({
     borderLeftWidth: 4,
     padding: spacing.sm + 4,
     marginBottom: spacing.sm,
-    ...shadows.sm,
+    ...shadows.card,
   } as ViewStyle,
   eventDateBox: {
     width: 44,
@@ -324,7 +324,7 @@ export const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radii.xl,
     marginBottom: spacing.md,
-    ...shadows.md,
+    ...shadows.raised,
   } as ViewStyle,
   evalCtaIcon: {
     width: 46,
@@ -355,7 +355,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     flexShrink: 0,
   } as ViewStyle,
   evalCtaBtnText: {

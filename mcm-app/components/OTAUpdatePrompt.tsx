@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     maxWidth: 420,
   },
   card: {
-    borderRadius: radii.xxl,
+    borderRadius: radii.xl,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 18,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: brand.primary,
     paddingVertical: 14,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     marginBottom: 6,
   },
   primaryButtonDisabled: {

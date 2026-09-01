@@ -474,14 +474,14 @@ const createStyles = (isDark: boolean) =>
     hero: {
       width: '100%',
       maxWidth: 1100,
-      borderRadius: radii.xxl,
+      borderRadius: radii.xl,
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.lg,
       marginBottom: spacing.xs,
       overflow: 'hidden',
       ...(Platform.OS === 'web'
         ? ({ boxShadow: '0 10px 30px rgba(0,0,0,0.16)' } as ViewStyle)
-        : (shadows.xl as ViewStyle)),
+        : (shadows.hero as ViewStyle)),
     },
     heroEmblem: {
       width: 52,

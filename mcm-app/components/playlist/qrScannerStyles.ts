@@ -112,7 +112,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,69,58,0.35)',
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     overflow: 'hidden',
   },
   foundText: {

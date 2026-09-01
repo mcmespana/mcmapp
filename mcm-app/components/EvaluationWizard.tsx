@@ -80,7 +80,7 @@ export default function EvaluationWizard({
         ? colors.secondary
         : colors.primary
       : accentColor;
-  const starColor = colors.warning;
+  const starColor = colors.yellow;
 
   const questions = config.questions;
   const total = questions.length;

@@ -155,7 +155,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 5,
       paddingHorizontal: 10,
       paddingVertical: 6,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       backgroundColor: hexAlpha(colors.info, '12'),
       borderWidth: 1,
       borderColor: hexAlpha(colors.info, '30'),
@@ -299,7 +299,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     agendaNavBtn: {
       width: 40,
       height: 40,
-      borderRadius: radii.pill,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
     },

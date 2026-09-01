@@ -64,7 +64,7 @@ export default function StatCard({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     paddingVertical: 14,
     paddingHorizontal: 8,
     alignItems: 'center',

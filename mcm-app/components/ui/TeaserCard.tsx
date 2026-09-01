@@ -163,7 +163,7 @@ export default function TeaserCard({
 
 const styles = StyleSheet.create({
   outer: {
-    borderRadius: radii.xxl,
+    borderRadius: radii.xl,
     backgroundColor: 'transparent',
     ...Platform.select({
       ios: {
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     }),
   },
   clip: {
-    borderRadius: radii.xxl,
+    borderRadius: radii.xl,
     overflow: 'hidden',
     borderWidth: 1,
   },

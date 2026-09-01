@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: radii.pill,
+    borderRadius: radii.xl,
     gap: 6,
   } as ViewStyle,
   calendarDot: {

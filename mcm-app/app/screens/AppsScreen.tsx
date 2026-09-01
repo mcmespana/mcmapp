@@ -318,7 +318,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: theme.card,
       borderRadius: radii.lg,
       marginBottom: spacing.sm,
-      ...shadows.sm,
+      ...shadows.card,
     } as any,
     iconContainer: {
       justifyContent: 'center',

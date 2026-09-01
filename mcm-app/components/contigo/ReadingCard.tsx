@@ -148,7 +148,7 @@ export function ReadingCard({
 const styles = StyleSheet.create({
   wrapper: {
     marginBottom: 10,
-    ...shadows.sm,
+    ...shadows.card,
   },
   card: {
     borderRadius: radii.lg,

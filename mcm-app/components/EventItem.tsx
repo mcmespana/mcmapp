@@ -146,7 +146,7 @@ const EventItem = React.memo(function EventItem({
                   <MaterialIcons
                     name="library-books"
                     size={15 * fontScale}
-                    color={colors.warning}
+                    color={colors.yellow}
                   />
                   <Button.Label style={styles.metaBtnLabel}>
                     Materiales
