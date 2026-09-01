@@ -43,6 +43,9 @@ import SongMediaSheet from '@/components/song-media/SongMediaSheet';
 import FloatingMediaPlayer, {
   type FloatingMediaSource,
 } from '@/components/song-media/FloatingMediaPlayer';
+import SongLinkViewer, {
+  type SongLinkSource,
+} from '@/components/song-media/SongLinkViewer';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
 // add/remove song button. Not part of the MCM brand palette: it's an
@@ -271,6 +274,10 @@ export default function SongDetailScreen({
     useState<FloatingMediaSource | null>(null);
   // Fuente elegida en la hoja que espera a que la hoja termine de cerrarse.
   const pendingMediaRef = useRef<FloatingMediaSource | null>(null);
+  // Enlace (partitura de Drive u otra web) a ver a pantalla completa. Mismo
+  // baile que el reproductor: se apunta y nace cuando la hoja se desmonta.
+  const [linkSource, setLinkSource] = useState<SongLinkSource | null>(null);
+  const pendingLinkRef = useRef<SongLinkSource | null>(null);
 
   // Al cambiar de canción (swipe) se resetean los estados efímeros: se cierra
   // el cajón de multimedia —el reproductor flotante NO, que sobrevive porque es
@@ -282,6 +289,12 @@ export default function SongDetailScreen({
   const [lastSong, setLastSong] = useState({ filename, content });
   if (lastSong.filename !== filename) {
     setShowMediaSheet(false);
+    // El visor de enlaces SÍ se cierra (a diferencia del reproductor): lo que
+    // hay abierto es la partitura de la canción que acabas de dejar atrás.
+    // El ref pendiente no se toca aquí (no se puede escribir un ref durante el
+    // render), igual que pendingMediaRef/pendingTagRef: lo limpia quien lo
+    // consume en `onCloseComplete`.
+    setLinkSource(null);
   }
   if (lastSong.filename !== filename || lastSong.content !== content) {
     setLastSong({ filename, content });
@@ -686,6 +699,10 @@ export default function SongDetailScreen({
           pendingMediaRef.current = source;
           setShowMediaSheet(false);
         }}
+        onOpenLink={(source) => {
+          pendingLinkRef.current = source;
+          setShowMediaSheet(false);
+        }}
         onCloseComplete={() => {
           // La hoja ya está desmontada: aquí es donde se puede navegar o
           // presentar el reproductor sin que iOS se coma la transición.
@@ -698,6 +715,12 @@ export default function SongDetailScreen({
             });
             return;
           }
+          const pendingLink = pendingLinkRef.current;
+          if (pendingLink) {
+            pendingLinkRef.current = null;
+            setLinkSource(pendingLink);
+            return;
+          }
           const pending = pendingMediaRef.current;
           if (!pending) return;
           pendingMediaRef.current = null;
@@ -708,6 +731,7 @@ export default function SongDetailScreen({
         source={floatingMedia}
         onClose={() => setFloatingMedia(null)}
       />
+      <SongLinkViewer source={linkSource} onClose={() => setLinkSource(null)} />
       {isAdmin && (
         <ArrangementInputModal
           visible={arrModalVisible}

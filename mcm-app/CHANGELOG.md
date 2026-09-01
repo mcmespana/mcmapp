@@ -18,6 +18,32 @@
 
 ---
 
+## 2026-09-01 20:30 — Enlaces de canción: Spotify, partituras de Drive y otras webs
+
+- **Qué**: soporte de los tres campos nuevos del cantoral (`spotifyLinks`,
+  `driveLinks`, `otherLinks`), que se pintan en una sección **Enlaces** de la
+  hoja de multimedia. Antes solo existían vídeos y audios, así que un enlace de
+  Spotify o una partitura no tenían dónde ir.
+- **La distinción que importa**: `spotifyLinks` es el único que SALE de la app
+  (con Spotify no hay embed posible: abre su app y el usuario vuelve a mano).
+  `driveLinks` y `otherLinks` se abren a **pantalla completa dentro** de la app,
+  en un visor nuevo. Un enlace de Drive en `audioLinks` sigue sonando en el
+  reproductor flotante: el tipo lo decide el campo, no la URL — no hay
+  auto-detección por dominio.
+- **Visor** (`SongLinkViewer`): `Modal` a pantalla completa con WebView (iframe
+  en web). Drive se carga por `/preview` (el `/view` de compartir no se deja
+  embeber) y al abrirlo fuera va la URL original, que es la que captura la app
+  de Drive. Si el embed falla, ofrece abrirlo fuera en vez de dejar la pantalla
+  en blanco. No usa el reproductor flotante a propósito: una partitura se lee
+  mientras se toca, y el PiP está pensado para lo contrario.
+- **Archivos**: `types/songMedia.ts`, `components/song-media/SongLinkViewer.tsx`
+  (nuevo), `components/song-media/SongMediaSheet.tsx`,
+  `app/screens/SongDetailScreen.tsx`, `components/SongListItem.tsx` (indicador
+  🔗 en la fila), `app/screens/SongListScreen.tsx`,
+  `__tests__/songLinks.test.tsx` (nuevo).
+- **Docs**: `docs/funcionalidades/ENLACES_CANCION.md`. Contrato de los campos:
+  `docs/CAMPOS_CANCIONES.md` §3.1 del repo `mcmapp-cantoral`.
+
 ## 2026-08-30 13:49 — Los ajustes de lectura del evangelio se quedaban sin scroll (y sin control de tamaño)
 
 - **El problema**: en "Ajustes de lectura" (Contigo → evangelio) el contenido
@@ -2938,7 +2964,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

@@ -155,7 +155,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
 
     const cleanTitle = song.title.replace(/^\d+\.\s*/, '');
 
-    // Indicador sutil de multimedia (▶ vídeo / 🎧 audio) en la fila.
+    // Indicador sutil de multimedia (▶ vídeo / 🎧 audio / 🔗 enlaces) en la fila.
     const kinds = useMemo(() => mediaKinds(extractSongMedia(song)), [song]);
     const mediaIconColor = isDark ? '#5A5A5E' : '#B7B7BC';
 
@@ -246,7 +246,7 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
               </View>
             </View>
             <View style={styles.rightSection}>
-              {(kinds.video || kinds.audio) && (
+              {(kinds.video || kinds.audio || kinds.links) && (
                 <View style={styles.mediaIndicators}>
                   {kinds.video && (
                     <MaterialIcons
@@ -258,6 +258,13 @@ const SongListItem: React.FC<SongListItemProps> = React.memo(
                   {kinds.audio && (
                     <MaterialIcons
                       name="headphones"
+                      size={12}
+                      color={mediaIconColor}
+                    />
+                  )}
+                  {kinds.links && (
+                    <MaterialIcons
+                      name="link"
                       size={12}
                       color={mediaIconColor}
                     />
