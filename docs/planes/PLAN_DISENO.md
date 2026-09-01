@@ -146,9 +146,13 @@ que ya era la capa de roles.
       `SystemGray`, `HighlightColors`, `CarismoColors` y `LiturgicalColors`.
 - [x] A5.2 Primera tanda: 202 ternarios + 126 literales + 50 de la paleta de
       Contigo. **De 1.363 hex a 793.**
-- [ ] A5.3 Falta el guardarraíl que impida hex NUEVOS. El test
-      `__tests__/designTokens.test.ts` ya blinda las invariantes de tokens;
-      falta la regla del hex (allowlist: `#fff`, `#000` y sus formas largas).
+- [x] A5.3 `__tests__/noNewHardcodedColors.test.ts`: **trinquete** con tope por
+      directorio que solo puede bajar (allowlist: blanco y negro puros; los
+      ficheros que DEFINEN tokens quedan fuera). Prohibirlos de golpe era
+      imposible con 570 de deuda; esto impide que el número suba y obliga a
+      bajar el tope cuando se migra. Verificado que se pone rojo al añadir uno.
+      Además `components/ui/` tiene su propio tope, porque es lo que todo lo
+      demás copia.
 - [ ] A5.4 Siguiente tanda, por los que más quedan: `SongFontBottomSheet`,
       `TransposeBottomSheet`, `SelectedSongsScreen`, `onboarding`.
 
@@ -162,6 +166,12 @@ que ya era la capa de roles.
       **destacado ámbar** y `#9DE86B`/`#1B9E4B` el verde de **Carismochito**.
 - [ ] A6-bis Queda `#1a1a1a` (19 usos): es un negro de fondo para exportar PDF
       y webviews, no un color de UI. Decidir si merece token o se queda.
+- [ ] **A6-ter. Dos azules de acción.** `UIColors.iosBlue` es `#007AFF` (el del
+      sistema, en `AppPrimaryButton`) y `UIColors.activePrimary` es `#007bff`
+      (un azul web, de Bootstrap, en FABs y elementos activos). Están a un punto
+      de tono y hacen el mismo papel. Conviven a propósito desde 2026-08-31
+      —antes uno de los dos estaba escrito a mano y no se veía— pero hay que
+      quedarse con uno. Recomendación: `#007AFF`, que es el del sistema.
 
 ---
 
@@ -365,8 +375,7 @@ Ninguna es urgente.
       valores de `constants/colors.ts` (claro y oscuro), que no hay dos tokens
       de marca con el mismo hex, que ningún token de marca se llame como un
       estado, y que spacing/radios/sombras siguen siendo escalas monótonas.
-- [ ] **H7-b. Lo que falta de ese test**: la regla del hex nuevo (§A5.3).
-      Enunciado original, para referencia: — Vercel mide su
+- [x] **H7-b. La regla del hex nuevo** — hecha en §A5.3. Vercel mide su
       design.md con escenarios de evaluación. El equivalente barato aquí: un
       test que compruebe las invariantes mecánicas (cero hex nuevos, tokens no
       duplicados entre capas, `global.css` sincronizado con `colors.ts`). Cierra

@@ -137,6 +137,13 @@ export default brand;
 
 // Colores de UI para componentes interactivos (FABs, botones, etc.)
 export const UIColors = {
+  /**
+   * Azul de acción del SISTEMA (iOS). Es el de los botones y enlaces nativos.
+   * Ojo, no confundir con `activePrimary`, que es un azul web (Bootstrap) y
+   * está 1 punto de tono más allá — conviven a propósito hasta que se decida
+   * cuál se queda (`PLAN_DISENO` §A6-ter).
+   */
+  iosBlue: '#007AFF',
   activePrimary: '#007bff', // Azul — elementos activos, bordes de FABs
   activePrimaryDark: '#0056b3', // Azul oscuro — bordes FABs activos
   accentYellow: '#f4c11e', // Amarillo — FAB principal

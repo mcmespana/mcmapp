@@ -1,0 +1,109 @@
+/**
+ * Trinquete de colores a mano.
+ *
+ * `design.md` dice que los colores salen de `constants/colors.ts` y que no se
+ * escriben hex en componentes. Un documento no impide que nadie lo haga; este
+ * test sí — y como hay una deuda de partida que no se salda en un día, en vez
+ * de prohibirlos de golpe pone un TOPE que solo puede bajar.
+ *
+ * Si esto te ha salido en rojo:
+ *
+ *   · Has AÑADIDO un color a mano → no lo hagas. Añádelo a
+ *     `constants/colors.ts` con nombre semántico, o usa `themeColors(isDark)`
+ *     si lo que quieres es un par claro/oscuro (que es lo que suele ser).
+ *   · Has QUITADO colores a mano → gracias: baja el número de abajo al que
+ *     diga el error, en el mismo commit.
+ *
+ * Nunca subas los topes. Ese es el trato entero.
+ */
+import fs from 'fs';
+import path from 'path';
+
+const ROOT = path.join(__dirname, '..');
+
+/**
+ * Blanco y negro puros. Escribir `'#fff'` es tan claro como `colors.white` y
+ * no induce a error, así que no cuentan.
+ */
+const ALLOWED = new Set(['#fff', '#ffffff', '#000', '#000000']);
+
+const COLOR_LITERAL = /'(#[0-9a-fA-F]{3,8})'/g;
+
+/**
+ * Ficheros que DEFINEN tokens. Ahí el hex es el sitio correcto: son la fuente.
+ * `constants/` entero queda fuera por no estar en los directorios que se miran.
+ */
+const TOKEN_FILES = new Set(['components/contigo/theme.ts']);
+
+function walk(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walk(full));
+    else if (/\.tsx?$/.test(entry.name)) out.push(full);
+  }
+  return out;
+}
+
+function countIn(relDir: string): {
+  total: number;
+  byFile: [string, number][];
+} {
+  const byFile: [string, number][] = [];
+  let total = 0;
+  for (const file of walk(path.join(ROOT, relDir))) {
+    const rel = path.relative(ROOT, file);
+    if (TOKEN_FILES.has(rel)) continue;
+    const src = fs.readFileSync(file, 'utf8');
+    const hits = [...src.matchAll(COLOR_LITERAL)].filter(
+      (m) => !ALLOWED.has(m[1].toLowerCase()),
+    ).length;
+    if (hits > 0) {
+      total += hits;
+      byFile.push([rel, hits]);
+    }
+  }
+  byFile.sort((a, b) => b[1] - a[1]);
+  return { total, byFile };
+}
+
+/**
+ * Tope actual. Bajar SIEMPRE que se migre algo; no subir nunca.
+ *
+ * Histórico: 1.363 hex en total antes de la unificación de agosto de 2026.
+ */
+const BUDGET = {
+  app: 231,
+  components: 436,
+};
+
+describe('no se añaden colores a mano', () => {
+  it.each(Object.entries(BUDGET))(
+    '%s se mantiene en su tope o por debajo',
+    (dir, budget) => {
+      const { total, byFile } = countIn(dir);
+      if (total > budget) {
+        const worst = byFile
+          .slice(0, 5)
+          .map(([f, n]) => `  ${f}: ${n}`)
+          .join('\n');
+        throw new Error(
+          `${dir}/ tiene ${total} colores a mano y el tope es ${budget}.\n` +
+            `Usa un token de constants/colors.ts (o themeColors(isDark) si es ` +
+            `un par claro/oscuro).\nLos ficheros con más:\n${worst}`,
+        );
+      }
+      // Si has migrado de más, baja el tope en este mismo commit: un tope que
+      // se queda muy por encima de la realidad deja de proteger nada.
+      expect(total).toBeGreaterThan(budget - 25);
+    },
+  );
+
+  it('components/ui/ no gana colores nuevos: es lo que todo lo demás copia', () => {
+    // Estos componentes son agnósticos de paleta por contrato (reciben el color
+    // por prop). Lo que queda son paletas locales con nombre —el confeti de
+    // `CelebrationBurst`, los tramos de `ProgressRing`— no colores de UI.
+    const { total } = countIn('components/ui');
+    expect(total).toBeLessThanOrEqual(36);
+  });
+});

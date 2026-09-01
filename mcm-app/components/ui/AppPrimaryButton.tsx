@@ -9,7 +9,7 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors, themeColors } from '@/constants/colors';
+import { UIColors, Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
 
@@ -43,7 +43,7 @@ interface AppPrimaryButtonProps {
   accessibilityLabel?: string;
 }
 
-const DEFAULT_COLOR = '#007AFF'; // azul de acción de iOS
+const DEFAULT_COLOR = UIColors.iosBlue;
 
 export default function AppPrimaryButton({
   label,
