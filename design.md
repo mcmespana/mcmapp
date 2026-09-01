@@ -113,36 +113,54 @@ comentario — no escribir el hex en el componente.
 Los hex que aparecen en `docs/desarrollo/DESIGN.md` son documentación. Si el
 código y el documento discrepan, **manda el código** y arreglas el documento.
 
-### Marca
+### Marca: es una paleta cromática, no semántica
 
+`brand` son **los colores del logo**, y se llaman por su color:
 `#253883` primary (azul MCM) · `#95d2f2` secondary · `#E15C62` accent (rojo MIC) ·
-`#31AADF` info · `#A3BD31` success (verde COM) · `#FCD200` warning (amarillo COM) ·
-`#9D1E74` danger (morado LC) · `#002B81` text (azul COM).
+`#31AADF` info · `#A3BD31` green (verde COM) · `#FCD200` yellow (amarillo COM) ·
+`#9D1E74` purple (morado LC) · `#002B81` text (azul COM).
+
+**El estado no está aquí.** Éxito, error y aviso viven donde significan eso:
+`ToastColors` (Material, para toasts) y `SwipeColors` (Apple, para el swipe).
+Cada uno en su contexto; no los mezcles — un toast usa `ToastColors`, punto.
+
+Por qué importa: hasta agosto de 2026 el verde se llamaba `success` y el
+amarillo `warning`, y se usaban por su nombre… para pintar la pantalla de
+Reflexiones y las estrellas de valoración. `brand.danger` era morado. Ahora hay
+un test que impide volver a llamar `success` a un color de marca.
 
 Son colores institucionales heredados, no una paleta de producto. **No los
 saturas, no los degradas, no los mezclas** fuera de Contigo.
 
-### ⚠️ Las dos trampas de nombres que ya han mordido
+### ⚠️ La trampa que queda: `global.css` no es tu vocabulario
 
-Están abiertas hoy; el arreglo está planificado en
-[`PLAN_DISENO.md`](docs/planes/PLAN_DISENO.md) §A. Mientras tanto, sabelo:
+`mcm-app/global.css` define ~70 variables CSS. **Sus nombres son el contrato de
+HeroUI, no el nuestro**, y no significan lo mismo:
 
-1. **`accent` y `danger` significan cosas distintas en cada capa.**
-   En RN, `brand.danger` es **morado** `#9D1E74` y `brand.accent` es **rojo**
-   `#E15C62`. En la capa CSS de `global.css`, `--danger` es el **rojo** y
-   `--accent` es el **azul primary**. Un `className="bg-danger"` y un
-   `colors.danger` **no pintan lo mismo**. Comprueba en qué capa estás antes de
-   nombrar un color.
-2. **Hay tres semánticas de éxito/error a la vez**: marca (`success` verde COM),
-   toasts (`ToastColors`, Material), y swipe (`SwipeColors`, Apple system).
-   Es intencionado —cada una vive en su contexto— pero no las mezcles: un toast
-   usa `ToastColors`, punto.
+- `--accent` es el **azul primary**, no `brand.accent` (el rojo).
+- `--danger` es el **rojo MIC**, no un morado.
+
+Así que `className="bg-danger"` te da el rojo, y `colors.purple` te da el
+morado. Comprueba en qué capa estás antes de nombrar un color. Los **valores**
+sí salen de `constants/colors.ts`, y `__tests__/designTokens.test.ts` comprueba
+que no se desincronizan.
+
+### Roles por modo
+
+`themeColors(isDark)` resuelve la capa de roles, igual que `warm(isDark)` en
+Contigo: `text`, `textStrong`, `textSecondary`, `textMuted`, `link`,
+`background`, `backgroundSunken`, `card`, `separator`, `icon`.
+
+**Úsalos.** Un `isDark ? '#F5F5F7' : '#1C1C1E'` escrito a mano es exactamente lo
+que llenó la app de 1.363 hex literales: se copia, y al copiarse deriva.
+
+Si de verdad necesitas un gris concreto y no un rol, está `SystemGray` (los seis
+de Apple, en sus dos modos).
 
 ### Modo oscuro
 
-`Colors.light` / `Colors.dark` cubren superficie y texto. **Los colores de
-marca no tienen variante oscura**: se usan tal cual, y por eso hay que
-comprobar el contraste a mano. Contigo sí tiene su par completo (`warm(isDark)`).
+**Los colores de marca no tienen variante oscura**: se usan tal cual, así que el
+contraste hay que comprobarlo a mano. Contigo sí tiene su par completo.
 
 Todo lo que escribas se comprueba en los dos modos. Un color que solo se define
 dentro de una rama `isDark` es un bug esperando.
@@ -184,23 +202,25 @@ capes por debajo de ×1.3.
 Separación entre bloques = `lg`. Si necesitas 10 o 20, estás compensando otro
 error de layout.
 
-**Radios** (`radii` en `constants/uiStyles.ts`): `sm 8` botones e inputs ·
-`md 12` modales y toasts · `lg 14` cards de contenido · `xl 18` cards
-destacadas · `pill 20` chips · `xxl 22` cards hero · `full 28` FABs ·
-`pillFull 999` **solo** badges circulares.
-Elige de la lista. Un `borderRadius: 16` es una respuesta incorrecta.
+**Radios** (`radii` en `constants/uiStyles.ts`), alineados a la misma rejilla de
+4 px que el spacing: `xs 4` badges · `sm 8` botones, inputs y controles ·
+`md 12` modales, toasts y sheets · `lg 16` cards de contenido · `xl 20` cards
+destacadas, chips y heroes · `full 28` FABs · `pillFull 999` **solo** badges
+circulares.
+Elige de la lista. Un `borderRadius: 18` es una respuesta incorrecta.
 
-**Sombras** (`shadows`): `sm` cards · `md` paneles elevados · `lg` toasts, FABs
-y overlays · `xl` heroes · `warm`/`cool` tintadas para destacar sin subir peso.
-
-> ⚠️ **El nombre no es el orden de intensidad.** `lg` (opacity 0.3) es más
-> fuerte que `xl` (0.18). Si buscas "la más fuerte", es `lg`. Está anotado para
-> renombrar en `PLAN_DISENO.md` §D — hasta entonces, no te fíes del nombre,
-> mira el valor.
+**Sombras** (`shadows`) — se llaman por su función, y el nombre sí dice la
+intensidad: `card` < `raised` < `hero` < `overlay`. Más `warm`/`cool`, tintadas,
+para destacar sin subir peso.
 
 Sombra de card por encima de opacity 0.1 = mal. Sombra de color solo vía
 `warm`/`cool`, o tintada con un color dinámico del propio contenido (esa es la
-única excepción aceptada a "nada de colores duros").
+única excepción aceptada a "nada de colores duros", junto con el blanco y el
+negro puros).
+
+**Foco** (`focusRing`): 2 px en `brand.info`. El foco **no puede distinguirse
+solo por color** — con teclado, en web y en iPad, hace falta que se vea el
+grosor.
 
 ---
 
@@ -236,34 +256,36 @@ celebración.
 Antes de escribir un componente, busca aquí. Reinventar uno de estos es un
 error de revisión, no una preferencia.
 
-| Necesitas                  | Usa                                                   |
-| -------------------------- | ----------------------------------------------------- |
-| Capa glass                 | `GlassSurface`                                        |
-| Card destacada             | `GlassCard` (compound Header/Body/Footer)             |
-| Card estándar              | Card local con `radii.lg` + `shadows.sm`              |
-| Card con preview y CTA     | `TeaserCard`                                          |
-| Hero de pantalla           | `ScreenHero`                                          |
-| Cabecera de sección        | `SectionHeader`                                       |
-| Métrica compacta           | `StatCard`                                            |
-| Progreso circular          | `ProgressRing`                                        |
-| "No hay nada aquí"         | `EmptyState` — **siempre**, ~20 sitios lo reinventan  |
-| Campo de texto             | `AppTextField` (props `error`, `accentColor`)         |
-| CTA principal              | `AppPrimaryButton` (prop `color`)                     |
-| Botón de icono             | `AppIconButton`                                       |
-| Grupo de acciones en barra | `GlassActionGroup`                                    |
-| Segmentado / toggle        | `SegmentedControl`                                    |
-| FAB                        | `GlassFAB`                                            |
-| Barra de color de tab      | `TopColorBar` / `TabTintBar`                          |
-| Ancho máximo en web        | `PageContainer`                                       |
-| Icono                      | `IconSymbol` (SF Symbols en iOS, Material en Android) |
-| Feedback positivo          | `CelebrationBurst`                                    |
-| Layout responsive          | hook `useResponsive()`                                |
+| Necesitas                  | Usa                                                           |
+| -------------------------- | ------------------------------------------------------------- |
+| Capa glass                 | `GlassSurface`                                                |
+| Card destacada             | `GlassCard` (compound Header/Body/Footer)                     |
+| Card estándar              | Card local con `radii.lg` + `shadows.sm`                      |
+| Card con preview y CTA     | `TeaserCard`                                                  |
+| Hero de pantalla           | `ScreenHero`                                                  |
+| Cabecera de sección        | `SectionHeader`                                               |
+| Métrica compacta           | `StatCard`                                                    |
+| Progreso circular          | `ProgressRing`                                                |
+| "No hay nada aquí"         | `EmptyState` — **siempre**, ~20 sitios lo reinventan          |
+| Campo de texto             | `AppTextField` (props `error`, `accentColor`)                 |
+| CTA principal              | `AppPrimaryButton` (prop `color`)                             |
+| Botón de icono             | `AppIconButton`                                               |
+| Grupo de acciones en barra | `GlassActionGroup`                                            |
+| Segmentado / toggle        | `SegmentedControl`                                            |
+| FAB                        | `GlassFAB`                                                    |
+| Barra de color de tab      | `TopColorBar` / `TabTintBar`                                  |
+| Ancho máximo en web        | `PageContainer`                                               |
+| Icono                      | `IconSymbol` (SF Symbols en iOS, Material en Android)         |
+| Feedback positivo          | `CelebrationBurst`                                            |
+| Layout responsive          | hook `useResponsiveLayout()` — **es el único**, no crees otro |
 
 Componentes de `components/ui/` reciben color por prop. Si el tuyo necesita
 saber en qué territorio está, va mal diseñado.
 
-**Web**: pantallas internas dentro de `PageContainer` (max 960; 1200 en
-dashboards). Dos columnas solo cuando `isWeb && isMd`. En nativo, una columna.
+**Pantalla ancha** (web y tablet): pantallas internas dentro de
+`PageContainer`. Dos columnas con el `isWide` de `useResponsiveLayout()`
+(≥ 720). Los cortes salen de `constants/breakpoints.ts` — no escribas un
+número de ancho a mano, y no te hagas un `WIDE_BREAKPOINT` propio: ya pasó.
 
 ---
 
@@ -320,7 +342,8 @@ Lo que **no** comparten: paleta, densidad, tipografía de UI, glass, animación.
 
 ## 10. Antes de dar por buena una pantalla
 
-- [ ] ¿Cero hex y cero números mágicos nuevos? (`grep` tu diff)
+- [ ] ¿Cero hex y cero números mágicos nuevos? (`grep` tu diff — blanco y negro
+      puros son la única excepción)
 - [ ] ¿Modo claro **y** oscuro?
 - [ ] ¿`fontScale` grande sin romper ni recortar?
 - [ ] ¿iOS, Android y web? Si diverge, ¿es deliberado y está en §6?
@@ -329,6 +352,8 @@ Lo que **no** comparten: paleta, densidad, tipografía de UI, glass, animación.
       (qué es título, qué es acción, qué es secundario) sin leer una palabra?
 - [ ] ¿Se parece a la pantalla de al lado, o he inventado un dialecto?
 - [ ] ¿Algún componente de §7 que debería haber usado y no usé?
+- [ ] `npx tsc --noEmit && npm run lint && npm test` — y en particular
+      `__tests__/designTokens.test.ts`, que es este documento en verde o rojo.
 
 ---
 

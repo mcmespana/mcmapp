@@ -297,15 +297,30 @@ Todo usa `useFirebaseData<T>(path, cacheKey, transform?)`:
 
 ## Colores de marca
 
+`brand` es una paleta **cromática** (los colores del logo), no semántica: el
+estado vive en `ToastColors` y `SwipeColors`. Si un token de marca se llama
+como un estado, se acaba usando por su nombre y pintando lo que no es — pasó
+con `success`/`warning`/`danger` y hay un test que ya no lo permite
+(`__tests__/designTokens.test.ts`).
+
 ```typescript
 primary: '#253883'; // Azul oscuro (fondo principal)
 secondary: '#95d2f2'; // Azul claro
-accent: '#E15C62'; // Rojo MIC
+accent: '#E15C62'; // Rojo MIC — acento institucional
 info: '#31AADF'; // Celeste
-success: '#A3BD31'; // Verde COM
-warning: '#FCD200'; // Amarillo COM
-danger: '#9D1E74'; // Morado LC
+green: '#A3BD31'; // Verde COM
+yellow: '#FCD200'; // Amarillo COM
+purple: '#9D1E74'; // Morado LC
 ```
+
+Roles por modo en `Colors.light`/`Colors.dark`, resueltos con
+`themeColors(isDark)`: `text`, `textStrong`, `textSecondary`, `textMuted`,
+`link`, `background`, `backgroundSunken`, `card`, `separator`, `icon`.
+Además: `SystemGray` (paleta cruda de Apple), `LiturgicalColors`,
+`HighlightColors`, `CarismoColors`, `EmotionColors`, `StateColors`.
+
+**Las reglas de uso están en `design.md`** (raíz del monorepo); el inventario
+completo, en `docs/desarrollo/DESIGN.md`.
 
 ## Convenciones de código
 

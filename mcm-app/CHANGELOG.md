@@ -18,6 +18,52 @@
 
 ---
 
+## 2026-08-31 18:40 — Unificación de tokens de diseño: los nombres ya no mienten
+
+Primera pasada de [`docs/planes/PLAN_DISENO.md`](../docs/planes/PLAN_DISENO.md).
+Sin cambios de comportamiento; los cambios visuales son tres, pequeños y
+deliberados, y están listados abajo para verificarlos en dispositivo.
+
+- **Colores de marca**: `brand` pasa a ser una paleta **cromática**
+  (`success`→`green`, `warning`→`yellow`, `danger`→`purple`). El código dictó el
+  alcance: el verde pintaba la pantalla de Reflexiones y el amarillo las
+  estrellas de valoración — no eran estados. `accent` se queda, porque sí se usa
+  como acento. El estado sigue en `ToastColors` y `SwipeColors`.
+- **Roles de color que faltaban**: `textStrong`, `textSecondary`, `textMuted`,
+  `link`, `backgroundSunken` y `separator` en `Colors.light`/`Colors.dark`, con
+  `themeColors(isDark)` para resolverlos (mismo patrón que `warm(isDark)` de
+  Contigo). Más `SystemGray`, `HighlightColors`, `CarismoColors` y
+  `LiturgicalColors` (los colores del tiempo litúrgico, que estaban escritos a
+  mano dentro de `LiturgicalBadge`).
+- **De 1.363 hex literales a 793**: 202 ternarios `isDark ? '#X' : '#Y'` a
+  roles, 126 literales a su token de siempre, 50 de la paleta cálida de Contigo.
+- **Sombras** renombradas por función (`card`/`raised`/`hero`/`overlay`): con
+  nombres de talla el orden mentía, `lg` (0.3) era más marcada que `xl` (0.18).
+- **Radios** colapsados de nueve escalones a siete, en la rejilla de 4 px.
+- **Responsive**: había **dos** hooks con umbrales distintos y el que
+  documentaba `DESIGN.md` tenía cero usos; borrado. `useResponsiveLayout` es el
+  único, y sus cortes salen ya de `constants/breakpoints.ts`.
+- **Foco**: nuevo `focusRing` y aplicado en `AppTextField` — el foco no puede
+  distinguirse solo por color.
+- **Panel** (repo `mcmpanel`): `src/lib/brandTokens.ts`, espejo de
+  `constants/colors.ts`, para que lo que representa datos de la app se pinte con
+  los colores de la app. Y el panel queda declarado oscuro-only.
+- **Guardarraíl**: `__tests__/designTokens.test.ts` comprueba que `global.css` no
+  se desincroniza de `constants/colors.ts`, que ningún token de marca se llame
+  como un estado, y que las escalas siguen siendo monótonas.
+
+**Pendiente de ver en un dispositivo** (`PLAN_DISENO` §H9): la sombra de toasts
+y FABs (0.30 → 0.22), los radios (`lg` 14→16, destacadas 18→20, hero 22→20) y el
+gris de texto secundario, unificado en el par con más contraste de los dos que
+había.
+
+- **Archivos**: `constants/colors.ts`, `constants/uiStyles.ts`,
+  `constants/breakpoints.ts`, `global.css`, `hooks/useResponsiveLayout.ts`
+  (borrado `hooks/useResponsive.ts`), `__tests__/designTokens.test.ts` y ~95
+  ficheros de `app/` y `components/`.
+
+---
+
 ## 2026-08-31 12:10 — `design.md`: guía de diseño prescriptiva para agentes (+ plan de unificación)
 
 - **Qué es**: nuevo [`design.md`](../design.md) en la raíz del monorepo,
@@ -2970,7 +3016,7 @@ lint-staged ya estaban hechos). Cambios de esta pasada:
   paso del workflow `ci.yml`. Antes los tests no se typecheckeaban.
 - **Docs al día**: regla anti-gigantes (≤400 líneas archivo nuevo, extraer si
   > 600. y nota del logger en `CLAUDE.md`; conteo de tests corregido (16/150);
-  >      Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
+  > Fase 0 y 4.2 marcadas en `PLAN_CALIDAD.md`.
 
 Sin cambios de comportamiento de la app (solo tooling/docs). Pendiente de la
 Fase 0: activar `no-explicit-any: warn` cuando se limpien los 66 `: any`

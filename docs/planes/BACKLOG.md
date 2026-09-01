@@ -271,22 +271,24 @@ escribir [`design.md`](../../design.md), que es ahora la guía prescriptiva de
 diseño para agentes.
 
 Es la **tarea por defecto cuando el usuario pide diseño** en un hueco
-oportunista. Ninguna de sus tareas necesita una decisión nueva salvo dos
-marcadas 🔒 (colapsar la escala de radios, y la jerarquía de la Home). Todas son
-independientes y caben en un commit.
+oportunista. Sus tareas son independientes y caben en un commit cada una.
 
-Lo gordo que hay dentro, por si hay que priorizar sin abrir el documento:
+**Primera pasada ejecutada el 2026-08-31**: renombrados los tokens de marca que
+mentían, sombras y radios renombrados/colapsados, los roles de color que
+faltaban (de 1.363 hex literales a 793), un solo hook responsive, espejo de
+tokens en el panel y `__tests__/designTokens.test.ts` para que no se
+desincronice otra vez.
 
-- **A1** — `accent` y `danger` significan cosas **distintas** en la capa RN y en
-  la capa CSS de `global.css`. Es el único de la lista que produce bugs de color
-  invisibles en revisión.
-- **A5** — 1.363 hex hardcodeados; los más repetidos son grises de sistema que
-  **no existen como token**. Añadir la escala y migrar se lleva más de la mitad.
-- **D** — los nombres de `shadows` no siguen el orden de intensidad (`lg` es más
-  fuerte que `xl`).
-- **G1** — el panel pinta con su paleta neón cosas que en la app son de otro
-  color (calendarios, eventos, perfiles, previsualizaciones). Cross-repo:
-  necesita `mcmpanel` en el scope.
+Lo que queda, por si hay que priorizar sin abrir el documento:
+
+- **A5.3** — el guardarraíl que impida hex NUEVOS (lo demás del test ya está).
+- **A5.4 / E2** — segunda tanda de hex y los `borderRadius` inline.
+- **C** — tipografía: `constants/typography.ts` sigue casi sin importarse y no
+  hay escala de pesos aplicada.
+- **F4** — cuatro anchuras máximas distintas conviviendo (640/760/960/1200).
+- **H8–H10** — hallazgos que necesitan **verse en un dispositivo**: en modo
+  oscuro las cards se pintan con el color de fondo (no hay capas), y hay tres
+  cambios ya hechos (sombra de toasts, radios, gris secundario) sin verificar.
 
 ### D. Deuda futura (no ejecutar salvo que se decida más adelante)
 

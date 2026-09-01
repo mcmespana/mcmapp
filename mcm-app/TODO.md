@@ -156,11 +156,11 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       Grupos migrados de sus versiones a mano).
 
       **Los `TextInput` que quedan NO se migran, y está decidido**: los
-                                  buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
-                                  de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
-                                  celdas del código; y los de Revisión quedaron, tras el refactor del examen
-                                  del día, como campos SIN borde dentro de una fila que sí lo tiene —
-                                  `AppTextField` les metería un borde dentro de otro.
+                                      buscadores del cantoral y de Grupos son otro patrón (icono dentro, botón
+                                      de limpiar); el de `CodeInputModal` es un input INVISIBLE detrás de las
+                                      celdas del código; y los de Revisión quedaron, tras el refactor del examen
+                                      del día, como campos SIN borde dentro de una fila que sí lo tiene —
+                                      `AppTextField` les metería un borde dentro de otro.
 
 ## Modo Carismochito (ver `docs/planes/PLAN_CARISMOCHITO.md`)
 
@@ -213,22 +213,22 @@ quede pegado a la barra de estado ni le falte respiro arriba.
       cada render) lo habría cazado un render test.
 
       Por dónde empezar, en orden de rentabilidad:
-                                                          1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
-                                                             Más): que monten sin reventar con datos vacíos, con datos y offline.
-                                                          2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
-                                                             hook con sus contextos).
-                                                          3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
-                                                             releer del bookmark.
-                                                          4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
+                                                              1. **Render tests de las pantallas de tab** (Home, Cantoral, Contigo,
+                                                                 Más): que monten sin reventar con datos vacíos, con datos y offline.
+                                                              2. `useResolvedProfileConfig` (el resolver puro ya está cubierto, falta el
+                                                                 hook con sus contextos).
+                                                              3. El flujo de subrayado de punta a punta: seleccionar → color → guardar →
+                                                                 releer del bookmark.
+                                                              4. `useReadingHighlights` y `useTabScroll`, que son hooks con estado.
 
-                                                          Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
-                                                          lee la suite entera para tocar código: lee los tests del área que toca. Lo
-                                                          que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
-                                                          de en una build de 20 minutos— y evita iteraciones enteras como la del
-                                                          tamaño de los iconos. El coste real de una suite grande es de
-                                                          MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
-                                                          detalles internos) que hay que reescribir en cada refactor. Por eso la
-                                                          lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
+                                                              Nota: tener muchos tests **no** encarece las features nuevas. Un agente no
+                                                              lee la suite entera para tocar código: lee los tests del área que toca. Lo
+                                                              que sí ahorra es tiempo de depuración —los fallos salen en segundos en vez
+                                                              de en una build de 20 minutos— y evita iteraciones enteras como la del
+                                                              tamaño de los iconos. El coste real de una suite grande es de
+                                                              MANTENIMIENTO: tests frágiles (snapshots enormes, aserciones sobre
+                                                              detalles internos) que hay que reescribir en cada refactor. Por eso la
+                                                              lista de arriba pide tests de COMPORTAMIENTO, no snapshots.
 
 - [ ] **Accesibilidad — completar cobertura restante**: ya cubren `accessibilityLabel` Home, Notificaciones, Cantoral (Categories/SongList/Detail/Fullscreen/Selected), Calendario (parcial vía Contigo), Contactos, Visitas, Grupos, Apps, EventHome, Profundiza, varios bottom sheets y modales, y (jun-2026) Fotos (`AlbumListScreen`/`AlbumCard`), Materiales, Comida, MasHome y `EventItem`. Horario es de solo lectura (sin interactivos). Pendiente: validar en dispositivo con VoiceOver/TalkBack y revisar pantallas/flujos secundarios.
 
@@ -236,23 +236,42 @@ quede pegado a la barra de estado ni le falte respiro arriba.
 
 ## Inconsistencias del Design System
 
-- [ ] **Tipografía no conectada a componentes**: `constants/typography.ts` define h1/h2/body/caption/button pero la mayoría de componentes usan fontSize inline. El archivo solo se importa en pocos sitios.
-- [ ] **Peso de fuente inconsistente**: section labels usan `fontWeight: '800'`, títulos de cards `'700'`, botones `'500'`/`'700'`. No hay guía clara de qué peso usar en cada nivel.
-- [ ] **Migrar componentes existentes a tokens**: `radii.*` y `shadows.*` están definidos pero los componentes siguen usando valores inline. Migrar gradualmente.
+> El sitio donde se llevan estas ahora es
+> **[`docs/planes/PLAN_DISENO.md`](../docs/planes/PLAN_DISENO.md)**, con la
+> evidencia y el destino de cada una. Lo de aquí abajo es lo que queda vivo.
+
+- [ ] **Tipografía no conectada a componentes** (`PLAN_DISENO` §C):
+      `constants/typography.ts` define h1/h2/body/caption/button pero la
+      mayoría de componentes usan `fontSize` inline. El archivo solo se
+      importa en pocos sitios.
+- [ ] **Peso de fuente inconsistente** (`PLAN_DISENO` §C): section labels usan
+      `fontWeight: '800'`, títulos de cards `'700'`, botones `'500'`/`'700'`.
+      La escala decidida está en `design.md` §4; falta aplicarla.
+- [x] ~~Migrar componentes existentes a tokens~~ — hecho en agosto de 2026 para
+      color (de 1.363 hex literales a 793), sombras y radios. Lo que queda de
+      hex está en `PLAN_DISENO` §A5/§A6.
 
 ---
 
 ## Ideas para la Home Screen
 
-La home actual es un grid de botones estático. Opciones para hacerla más útil:
+> ⚠️ **Esta sección estaba desactualizada** (revisado 2026-08-31). La Home ya
+> NO es "un grid de botones estático": tiene hero (`ScreenHero`), próximos
+> eventos agrupados por cercanía con skeleton y `EmptyState`, banner de
+> encuestas, avisos de actualización, campana de notificaciones con contador,
+> accesos rápidos filtrados por perfil y layout de dos columnas en pantalla
+> ancha. O sea, la Opción A ya está hecha casi entera.
+>
+> Lo único que sigue sin estar de la lista de abajo: **canción del día** y
+> **último contenido actualizado**. El Wordle está dormido a propósito.
 
-### Opción A: Home con contenido dinámico (recomendada)
+### Opción A: Home con contenido dinámico (recomendada) — ✅ mayormente hecha
 
-- Próximo evento del calendario (tarjeta destacada arriba)
-- Accesos rápidos más compactos
-- Canción del día (si el cantoral está activo)
-- Wordle pendiente con indicador más claro
-- Último contenido actualizado (materiales, reflexiones)
+- ✅ Próximo evento del calendario (tarjeta destacada arriba)
+- ✅ Accesos rápidos más compactos
+- [ ] Canción del día (si el cantoral está activo)
+- ~~Wordle pendiente con indicador más claro~~ (el Wordle está dormido)
+- [ ] Último contenido actualizado (materiales, reflexiones)
 
 ### Opción B: Home tipo dashboard
 

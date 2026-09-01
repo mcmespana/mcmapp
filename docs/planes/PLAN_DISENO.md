@@ -1,7 +1,8 @@
 # PLAN_DISENO.md — Unificar el diseño hacia un solo sitio
 
-> **Estado:** 🟢 vivo, sin empezar. Creado 2026-08-31 al escribir
-> [`design.md`](../../design.md).
+> **Estado:** 🟡 en curso. Creado 2026-08-31 al escribir
+> [`design.md`](../../design.md); primera pasada ejecutada el mismo día
+> (§A1, §A4, §A5 parcial, §D, §E, §F, §G1, §G2, §H1 parcial, §H7 parcial).
 >
 > **Qué es:** la lista de incoherencias reales de diseño detectadas con
 > evidencia en el código, más las mejoras que conviene meter de paso, con el
@@ -43,10 +44,22 @@ Cuando haya que elegir, el destino es este. No se abre debate en cada tarea:
 
 ### A1. `accent` y `danger` significan cosas distintas en RN y en CSS
 
+### ✅ A1. HECHO (2026-08-31) — con el alcance corregido por el código
+
 **Evidencia.** `constants/colors.ts`: `brand.accent = #E15C62` (rojo MIC),
 `brand.danger = #9D1E74` (morado LC). `global.css`: `--accent: #253883` (el
 azul primary), `--danger: #e15c62` (el rojo). Un componente heroui con
 `className="bg-danger"` sale rojo; el mismo concepto en RN sale morado.
+
+> **Lo que el código dijo al ejecutarlo.** El plan proponía renombrar `accent`
+> también, y estaba mal: mirando los 27 usos, `colors.accent` SÍ se usa como
+> acento (`accentColor` de `EventItem`, CTAs, badges). Los que mentían eran los
+> otros: `colors.success` pinta la pantalla de Reflexiones y `colors.warning`
+> las estrellas de valoración — no son estados. Y `brand.danger` tenía **cero
+> usos**.
+>
+> Y `global.css` no había que renombrarlo en absoluto: esos nombres son el
+> contrato de HeroUI, no nuestro vocabulario. Lo que faltaba era **decirlo**.
 
 **Impacto.** Un agente que trabaje en la capa equivocada pinta el color
 equivocado y el bug es invisible en revisión de código.
@@ -65,14 +78,13 @@ logo), y lo semántico (peligro/éxito/aviso) vive donde ya vive y funciona:
 `ToastColors` y `SwipeColors`. Alias exportados durante una versión para no
 romper los ~66 usos.
 
-**Cómo.** Añadir nombres nuevos + `/** @deprecated */` en los viejos, migrar por
-lotes con `grep`, quitar los alias al final. Sin cambios visuales: mismos hex.
+**Cómo se hizo.** Renombrado y migrados los 26 usos en el mismo commit (no hizo
+falta alias: eran pocos y tsc los caza todos). Sin cambios visuales: mismos hex.
 
-- [ ] A1.1 Añadir nombres nuevos y alias deprecados en `constants/colors.ts`
-- [ ] A1.2 Migrar usos (`grep -rn "brand.accent\|colors.danger" app components`)
-- [ ] A1.3 Alinear los comentarios de `global.css` para que digan a qué token de
-      marca corresponde cada variable CSS
-- [ ] A1.4 Retirar alias + nota en `design.md` §3 (quitar la advertencia de trampa)
+- [x] A1.1 Renombrar en `constants/colors.ts` + docblock con la regla de nombres
+- [x] A1.2 Migrar los usos
+- [x] A1.3 Cabecera de `global.css` mapeando cada variable a su token de marca
+- [x] A1.4 `design.md` §3 reescrito: la trampa que queda es solo la de las capas
 
 ### A2. Dos amarillos casi iguales sin regla
 
@@ -85,7 +97,9 @@ distintos a 4 puntos de diferencia y ninguna regla de cuándo usar cuál. Ademá
 cantoral** (identidad de sección). Se documenta así y se colapsan los usos
 hardcodeados al token correspondiente.
 
-- [ ] A2 Documentar la regla en `colors.ts` y migrar los 15 hardcodeos
+- [x] A2 Migrados los hardcodeos de `#f4c11e` a `UIColors.accentYellow`.
+- [ ] A2-bis Falta **documentar la regla** de cuándo va cada amarillo
+      (`#FCD200` marca vs `#f4c11e` cantoral) en `colors.ts`.
 
 ### A3. Tres dorados para Contigo
 
@@ -99,14 +113,14 @@ del mismo dorado que la pantalla que abre.
 
 - [ ] A3 Unificar (verificar en dispositivo: cambia un color visible)
 
-### A4. `colors.ts` se contradice a sí mismo
+### ✅ A4. HECHO (2026-08-31) — `colors.ts` se contradecía a sí mismo
 
 Su cabecera dice _"fuente única de verdad — no definir colores en otros
 archivos"_, y `components/contigo/theme.ts` define 20 colores. La excepción es
 correcta y está decidida; lo que falla es el comentario.
 
-- [ ] A4 Reescribir el docblock nombrando las dos excepciones sancionadas
-      (paleta de Contigo, `tintColor` por evento). 5 minutos.
+- [x] A4 Docblock reescrito con las dos excepciones sancionadas (paleta de
+      Contigo, `tintColor` por evento) y la regla de nombres.
 
 ### A5. Faltan neutros y por eso se hardcodean
 
@@ -116,23 +130,38 @@ token: `#8E8E93` (68), `#1C1C1E` (63), `#2C2C2E` (44), `#F2F2F7` (29),
 `#636366` (25), `#AEAEB2` (23), `#3A3A3C` (21), `#E5E5EA` (13), `#C7C7CC` (12).
 La gente no hardcodea por vicio: hardcodea porque **no hay token que usar**.
 
-**Destino.** Añadir una escala `SystemGray` (los 6 grises de Apple, claro y
-oscuro) y `Surfaces` (`base/raised/sunken` por modo) a `constants/colors.ts`, y
-migrar. Esto solo, bien hecho, se lleva por delante más de la mitad de los
-1.363 hardcodeos.
+**Destino.** ⚠️ El diagnóstico de arriba se quedaba corto, y al ejecutarlo se
+vio por qué: los hex no eran colores sueltos, eran **pares claro/oscuro**
+escritos a mano —`isDark ? '#F5F5F7' : '#1C1C1E'` aparecía 27 veces— porque el
+ROL no existía como token. Y al copiarse habían derivado: dos grises distintos
+para el mismo papel, dos ámbar de destacado, el verde de Carismochito como
+constante duplicada en tres ficheros.
 
-- [ ] A5.1 Definir `SystemGray` + `Surfaces` en `colors.ts`
-- [ ] A5.2 Migrar por tandas (empezar por los ficheros con más hex:
-      `SongFontBottomSheet` 50, `TransposeBottomSheet` 42, `contigo/evangelio`
-      38, `contigo/oracion` 36, `playlist/PlaylistRow` 30)
-- [ ] A5.3 Regla de lint o test que falle ante un hex nuevo en `app/` +
-      `components/` fuera de una allowlist
+Así que no se añadió un `Surfaces` aparte (habría sido una segunda familia para
+lo mismo, justo lo que se está quitando): se completó `Colors.light`/`Colors.dark`,
+que ya era la capa de roles.
+
+- [x] A5.1 `Colors` completado con `textStrong`, `textSecondary`, `textMuted`,
+      `link`, `backgroundSunken` y `separator`. Más `themeColors(isDark)`,
+      `SystemGray`, `HighlightColors`, `CarismoColors` y `LiturgicalColors`.
+- [x] A5.2 Primera tanda: 202 ternarios + 126 literales + 50 de la paleta de
+      Contigo. **De 1.363 hex a 793.**
+- [ ] A5.3 Falta el guardarraíl que impida hex NUEVOS. El test
+      `__tests__/designTokens.test.ts` ya blinda las invariantes de tokens;
+      falta la regla del hex (allowlist: `#fff`, `#000` y sus formas largas).
+- [ ] A5.4 Siguiente tanda, por los que más quedan: `SongFontBottomSheet`,
+      `TransposeBottomSheet`, `SelectedSongsScreen`, `onboarding`.
 
 ### A6. Colores sin nombre y sin dueño
 
 `#7AB3FF` (27 usos), `#7A5A00` (14), `#1a1a1a` (15). Nadie sabe qué son.
 
-- [ ] A6 Identificar, nombrar y tokenizar (o justificar por escrito)
+- [x] A6 Identificados y tokenizados casi todos: `#7AB3FF`/`#253883` era el par
+      de **enlace**, `#F5F5F7`/`#1C1C1E` el de **texto fuerte**,
+      `#A0A0A8`/`#6B6B70` el de **texto secundario**, `#7A5A00`/`#FFF4DA` el
+      **destacado ámbar** y `#9DE86B`/`#1B9E4B` el verde de **Carismochito**.
+- [ ] A6-bis Queda `#1a1a1a` (19 usos): es un negro de fondo para exportar PDF
+      y webviews, no un color de UI. Decidir si merece token o se queda.
 
 ---
 
@@ -148,12 +177,10 @@ de heroui, que están en 42 ficheros. Ni es Tailwind ni deja de serlo.
 heroui o en web; y se hace que `global.css` **derive** de `constants/colors.ts`
 en vez de repetir hex a mano.
 
-- [ ] B1 Documentar la regla en `AGENTS.md` de `mcm-app/` (ya está en
-      `design.md` §Norte, falta en la guía corta)
-- [ ] B2 Generar las variables de `global.css` desde `colors.ts` con un script
-      (`npm run tokens:css`) para que no se puedan desincronizar. Alternativa
-      barata si el script se complica: un test que compare ambos ficheros y
-      falle al divergir.
+- [x] B1 Regla documentada en `mcm-app/AGENTS.md` (regla 0) y en `design.md`.
+- [x] B2 Hecho por la vía barata y mejor: `__tests__/designTokens.test.ts`
+      compara `global.css` con `constants/colors.ts` y falla al divergir. Un
+      generador habría sido más frágil (esas variables las lee HeroUI).
 
 ---
 
@@ -176,7 +203,7 @@ normal cuerpo.
 
 ---
 
-## D. Los nombres de sombra mienten
+## ✅ D. HECHO (2026-08-31) — Los nombres de sombra mentían
 
 **Evidencia.** `shadows.lg` = opacity 0.3 / elevation 8. `shadows.xl` = opacity
 0.18 / elevation 6. El orden de nombres (`sm < md < lg < xl`) **no** es el
@@ -191,38 +218,59 @@ Además `shadows.lg` con opacity 0.3 choca de frente con el norte declarado de
 `shadows.overlay` (`lg`, y bajar de 0.3 a ~0.22) · `warm`/`cool` se quedan.
 Alias deprecados igual que en A1.
 
-- [ ] D1 Renombrar + alias
-- [ ] D2 Bajar `overlay` a 0.22 y verificar toasts/FABs en dispositivo
-- [ ] D3 Quitar la advertencia de `design.md` §5
+- [x] D1 Renombradas a `card` / `raised` / `hero` / `overlay` (sin alias: eran
+      20 usos y tsc los caza).
+- [x] D2 `overlay` bajada de 0.30 a 0.22. **Falta verlo en dispositivo** —
+      afecta a toasts y FABs.
+- [x] D3 Advertencia fuera de `design.md`; el orden lo blinda ahora un test.
 
 ---
 
-## E. Radios: nueve escalones para seis decisiones
+## ✅ E. HECHO (2026-08-31) — Radios: nueve escalones para seis decisiones
 
 `lg 14`, `xl 18`, `pill 20`, `xxl 22` son cuatro valores en 8px de rango. Nadie
 distingue 18 de 22 a ojo, pero sí duda al elegir — y esa duda acaba en
 `borderRadius: 16` hardcodeado (**69 ficheros hardcodean `borderRadius`** y solo
 44 importan `radii`).
 
-**Destino (mejora, no incoherencia).** Colapsar a seis con nombre de uso:
-`sm 8` control · `md 12` overlay · `lg 14` card · `xl 20` destacado/chip ·
-`hero 22` · `pillFull 999`. `xs 4` se mantiene para badges, `full 28` para FABs.
-`xl 18` se funde con `pill 20`.
+**Destino.** 🔒 → el usuario delegó la decisión ("lo que sea más coherente,
+lógico y normal", 2026-08-31). Lo normal en un sistema de diseño es que los
+radios vayan en la misma rejilla de 4 px que el spacing, así que:
 
-- [ ] E1 Colapsar + alias
-- [ ] E2 Migrar los 69 ficheros con `borderRadius` inline
+```
+xs 4 · sm 8 · md 12 · lg 16 · xl 20 · full 28 · pillFull 999
+```
 
-🔒 **Confirmar con el usuario antes de ejecutar E**: cambia radios visibles
-(18→20) en cards destacadas. Es un cambio pequeño pero se ve.
+`lg` pasa de 14 a 16, y `xl 18` + `pill 20` + `xxl 22` se funden en `xl 20`.
+
+- [x] E1 Colapsado de nueve escalones a siete y migrados los usos.
+- [ ] E2 Faltan los 69 ficheros con `borderRadius` inline (número anterior a la
+      migración; volver a contar antes de empezar).
 
 ---
 
-## F. Responsive con dos sistemas
+## 🟡 F. Responsive — la fuente ya es única; faltan las anchuras
 
-`breakpoints` (`sm/md/lg/xl`) conviven con `wideLayoutMinWidth = 700`, marcado
-como legacy y todavía vivo en Home.
+**Era peor de lo que decía este plan.** No era "una constante legacy": había
+**dos hooks** con umbrales distintos, y el que documentaba `DESIGN.md`
+(`useResponsive`, 640/768/1024/1280) tenía **cero usos** — solo seguía vivo
+porque tenía un test. El real es `useResponsiveLayout` (7 pantallas,
+480/720/1024). Y por encima, `EventHomeScreen` se había hecho su propio
+`WIDE_BREAKPOINT = 700` y `onboarding` usa dos `screenW >= 640` sueltos.
 
-- [ ] F Migrar Home a `useResponsive()` y borrar `wideLayoutMinWidth`
+- [x] F1 Borrado `useResponsive` y su test; el guardarraíl útil (que los cortes
+      salgan del fichero de constantes) portado al test del hook real.
+- [x] F2 `constants/breakpoints.ts` declara los números que la app usa de
+      verdad, y `useResponsiveLayout` los importa.
+- [x] F3 Fuera `wideLayoutMinWidth` y `WIDE_BREAKPOINT`.
+- [ ] **F4. Las dos escaleras de anchura máxima.** `readableMaxWidth`/
+      `contentMaxWidth` del hook (640/760 y 760/980) conviven con
+      `maxContentWidth`/`maxContentWidthWide` de `PageContainer` (960/1200):
+      la misma app limita el contenido a **cuatro anchos distintos** según en
+      qué pantalla estés. Unificarlas cambia el layout en tablet y web, así que
+      hay que verlo en un dispositivo. Destino propuesto: una sola escalera, la
+      del hook, y que `PageContainer` la use.
+- [ ] F5 Los dos `screenW >= 640` de `onboarding.tsx`.
 
 ---
 
@@ -244,11 +292,14 @@ viendo algo que **no se parece** a lo que verá la persona en el móvil.
 `mcm-app/constants/colors.ts` — exactamente la misma convención que ya existe
 con `profileCatalog.ts`. Las superficies de previsualización usan ese espejo.
 
-- [ ] G1.1 Crear `src/lib/brandTokens.ts` (espejo, con la nota de "espejo de…"
-      arriba, como `profileCatalog.ts`)
-- [ ] G1.2 Usarlo en los selectores de color de calendarios y en las
-      previsualizaciones de encuestas y notificaciones
-- [ ] G1.3 Documentar el espejo en `mcmpanel/CLAUDE.md` (tabla de archivos clave)
+- [x] G1.1 Creado `src/lib/brandTokens.ts` (espejo, misma convención que
+      `profileCatalog.ts`).
+- [x] G1.2 Usado en el selector de color de calendarios —que ofrecía veinte
+      pasteles con tres colores de MCM enterrados en medio— y en el acento por
+      defecto de las encuestas.
+- [x] G1.3 Documentado en `mcmpanel/CLAUDE.md`.
+- [ ] G1.4 Falta la **previsualización de notificaciones**: sigue pintándose con
+      la paleta del panel.
 
 ### G2. El panel es oscuro-only pero se declara conmutable
 
@@ -261,7 +312,9 @@ inversión que aquí no existe.
 `darkMode` de la config o dejar constancia en un comentario, y anotarlo en
 `mcmpanel/design.md` para que ningún agente intente "añadir modo claro".
 
-- [ ] G2 Declarar oscuro-only y limpiar la config
+- [x] G2 Declarado oscuro-only en `tailwind.config.ts` y en `index.css`, con el
+      aviso de que shadcn asume claro y de no añadir tema claro por iniciativa
+      propia.
 
 ### G3. Vocabulario
 
@@ -286,13 +339,15 @@ Ninguna es urgente.
       tarea de diseño con mejor relación coherencia/esfuerzo que queda viva
       (cola en `PLAN_UI_NATIVA.md` §5). Cuando alguien pregunte "¿qué hago de
       diseño?", esto primero.
-- [ ] **H3. Jerarquía de la Home.** Hoy es un grid estático de botones; las tres
-      opciones ya pensadas están en `mcm-app/TODO.md` §Ideas para la Home. La
-      recomendación desde diseño es la **Opción A** (contenido dinámico:
-      próximo evento arriba, accesos rápidos más compactos abajo): es la única
-      que aprovecha el `h0` y da a la pantalla de entrada una jerarquía real en
-      vez de una rejilla plana — justo lo que `design.md` §8 llama antipatrón.
-      🔒 Decisión de producto del usuario.
+- [x] **H3. Jerarquía de la Home** — ❌ **NO HAY NADA QUE HACER.** Este ítem
+      partía de una nota obsoleta de `TODO.md` ("la home actual es un grid de
+      botones estático"). Es falso desde hace tiempo: la Home ya tiene
+      `ScreenHero`, próximos eventos agrupados por cercanía con skeleton y
+      `EmptyState`, banner de encuestas, avisos de actualización, campana con
+      contador, accesos rápidos filtrados por perfil y dos columnas en pantalla
+      ancha. O sea, la "Opción A" ya está hecha. `TODO.md` corregido.
+      Lo único que sigue sin estar: canción del día y último contenido
+      actualizado. 🔒 si algún día se quieren, son decisión de producto.
 - [ ] **H4. Contraste de marca en modo oscuro.** Los colores de marca no tienen
       variante oscura y se usan tal cual sobre `#2C2C2E`. `brand.text #002B81`
       sobre fondo oscuro es ilegible. Auditar los pares reales y añadir
@@ -305,7 +360,13 @@ Ninguna es urgente.
       `TransposeBottomSheet` (42) por ser lo menos tokenizado del repo. Al
       migrarla (A5.2), revisar de paso altura de fila y jerarquía
       título/subtítulo/pill de tono.
-- [ ] **H7. Que el propio `design.md` se pueda verificar.** Vercel mide su
+- [x] **H7-a. Que el propio `design.md` se pueda verificar** —
+      `__tests__/designTokens.test.ts`: comprueba que `global.css` usa los
+      valores de `constants/colors.ts` (claro y oscuro), que no hay dos tokens
+      de marca con el mismo hex, que ningún token de marca se llame como un
+      estado, y que spacing/radios/sombras siguen siendo escalas monótonas.
+- [ ] **H7-b. Lo que falta de ese test**: la regla del hex nuevo (§A5.3).
+      Enunciado original, para referencia: — Vercel mide su
       design.md con escenarios de evaluación. El equivalente barato aquí: un
       test que compruebe las invariantes mecánicas (cero hex nuevos, tokens no
       duplicados entre capas, `global.css` sincronizado con `colors.ts`). Cierra
@@ -320,3 +381,28 @@ Ninguna es urgente.
 3. **B2** + **H7** (para que no vuelva a desincronizarse)
 4. **G1** (cross-repo: hace falta `mcmpanel` en el scope de la sesión)
 5. **E** y **H3** solo tras preguntar (🔒)
+
+---
+
+## Hallazgos nuevos (de la pasada del 2026-08-31)
+
+Cosas que aparecieron **al ejecutar**, no al planificar. Ninguna es urgente y
+ninguna se tocó, porque todas necesitan verse en un dispositivo.
+
+- [ ] **H8. En modo oscuro no hay capas de superficie.** 38 sitios pintan las
+      cards con `#2C2C2E`, que es exactamente `Colors.dark.background`: la card
+      y el fondo son el mismo color, y solo se distinguen por el borde. El token
+      correcto (`Colors.dark.card`, `#3A3A3C`) existe y no se usa. Cambiarlo es
+      una línea, pero se ve en media app, así que hay que mirarlo en un
+      dispositivo. Lo mismo con `backgroundSunken` (`#1C1C1E`), que en la
+      práctica se escribe como `#2C2C2E`, o sea igual que el fondo.
+      La migración de agosto se dejó **byte-idéntica** a propósito para no
+      colar este cambio de tapadillo.
+- [ ] **H9. Verificar en dispositivo lo que sí cambió.** Son tres cosas
+      pequeñas y deliberadas: la sombra de toasts y FABs (0.30 → 0.22), los
+      radios (`lg` 14→16, destacadas 18→20, hero 22→20) y el gris secundario
+      unificado en el par con más contraste.
+- [ ] **H10. `Colors.dark.text` es `#FFFFFF` puro.** Blanco puro sobre `#2C2C2E`
+      es más duro de lo necesario; el resto de la app ya se había ido a
+      `#F5F5F7` por su cuenta en 27 sitios. Candidato a unificar, con la misma
+      verificación.
