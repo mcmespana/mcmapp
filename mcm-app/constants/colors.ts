@@ -228,3 +228,21 @@ export const CarismoColors = {
   light: '#1B9E4B',
   dark: '#9DE86B',
 } as const;
+
+/**
+ * Colores litúrgicos. No son decoración: son los del tiempo litúrgico, y los
+ * fija la Iglesia, no nosotros. Estaban escritos a mano dentro de
+ * `LiturgicalBadge`, que es el único sitio donde se sabía cuál era cuál.
+ */
+export const LiturgicalColors = {
+  /** Tiempo Ordinario. */
+  green: '#3A7D44',
+  /** Adviento y Cuaresma. */
+  purple: '#6B3FA0',
+  /** Navidad y Pascua. */
+  gold: '#D4A070',
+  /** Semana Santa (Domingo de Ramos y Viernes Santo). */
+  red: '#C41E3A',
+  /** Gaudete y Laetare — el rosa de los dos domingos de alegría. */
+  rose: '#D4A0A7',
+} as const;

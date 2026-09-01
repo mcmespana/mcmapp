@@ -16,7 +16,13 @@ import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useContigoHabits } from '@/hooks/useContigoHabits';
 import { useDailyReadings } from '@/hooks/useDailyReadings';
-import { warm, formatDateLong, MONTHS_CAP } from '@/components/contigo/theme';
+import {
+  MONTHS_CAP,
+  WARM_DARK,
+  WARM_LIGHT,
+  formatDateLong,
+  warm,
+} from '@/components/contigo/theme';
 import {
   HabitTile,
   HeroCard,
@@ -108,8 +114,8 @@ export default function ContigoScreen() {
     useContigoDayMenu();
 
   const bgGradient = isDark
-    ? (['#1A1712', '#100F0C'] as const)
-    : (['#FAF6F0', '#F0E8D8'] as const);
+    ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
+    : ([WARM_LIGHT.bg, '#F0E8D8'] as const);
 
   return (
     <View style={styles.container}>
@@ -121,9 +127,9 @@ export default function ContigoScreen() {
           headerTitle: 'Contigo',
           headerTransparent: true,
           headerShadowVisible: false,
-          headerTintColor: isDark ? '#F5EFE3' : '#2A1E0E',
+          headerTintColor: isDark ? WARM_DARK.text : '#2A1E0E',
           headerTitleStyle: {
-            color: isDark ? '#F5EFE3' : '#2A1E0E',
+            color: isDark ? WARM_DARK.text : '#2A1E0E',
             fontWeight: '700',
             fontSize: 17,
           },

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import liturgicalCalendar from '@/assets/calendario-liturgico.json';
 import { getBrightness } from '@/components/ui/glass';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { themeColors } from '@/constants/colors';
+import { LiturgicalColors, themeColors } from '@/constants/colors';
 
 interface LiturgicalBadgeProps {
   dateStr: string; // YYYY-MM-DD
@@ -19,7 +19,7 @@ export function getLiturgicalInfo(dateStr: string) {
     return {
       color: 'success' as ChipColor,
       name: 'Tiempo Ordinario',
-      hex: '#3A7D44',
+      hex: LiturgicalColors.green,
     };
 
   // Check special dates first
@@ -55,7 +55,7 @@ export function getLiturgicalInfo(dateStr: string) {
         calYear.domingos_adviento?.[2] === dateStr
           ? 'Adviento (Gaudete)'
           : 'Cuaresma (Laetare)',
-      hex: '#D4A0A7',
+      hex: LiturgicalColors.rose,
     };
   }
 
@@ -63,18 +63,18 @@ export function getLiturgicalInfo(dateStr: string) {
   for (const tiempo of calYear.tiempos) {
     if (dateStr >= tiempo.inicio && dateStr <= tiempo.fin) {
       let color: ChipColor = 'success';
-      let hex = '#3A7D44';
+      let hex: string = LiturgicalColors.green;
       if (tiempo.id === 'adviento' || tiempo.id === 'cuaresma') {
         color = 'accent';
-        hex = '#6B3FA0';
+        hex = LiturgicalColors.purple;
       } else if (tiempo.id === 'navidad' || tiempo.id === 'pascua') {
         // 'warning' (golden) renders readable in both light and dark mode;
         // 'default' renders with dark foreground text that's invisible on dark backgrounds.
         color = 'warning';
-        hex = '#D4A070';
+        hex = LiturgicalColors.gold;
       } else if (tiempo.id === 'semana_santa') {
         color = 'danger';
-        hex = '#C41E3A';
+        hex = LiturgicalColors.red;
       }
       return { color, name: tiempo.nombre, hex };
     }
@@ -83,7 +83,7 @@ export function getLiturgicalInfo(dateStr: string) {
   return {
     color: 'success' as ChipColor,
     name: 'Tiempo Ordinario',
-    hex: '#3A7D44',
+    hex: LiturgicalColors.green,
   };
 }
 

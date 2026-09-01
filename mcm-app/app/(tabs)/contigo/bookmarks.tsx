@@ -15,7 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useTabScroll } from '@/components/tabs/useTabScroll';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { warm, formatDateLong } from '@/components/contigo/theme';
+import {
+  WARM_DARK,
+  WARM_LIGHT,
+  formatDateLong,
+  warm,
+} from '@/components/contigo/theme';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
 import { countHighlights } from '@/utils/contigoBookmarks';
 
@@ -67,8 +72,8 @@ export default function BookmarksScreen() {
       <LinearGradient
         colors={
           isDark
-            ? (['#1A1712', '#100F0C'] as const)
-            : (['#FAF6F0', '#F0E8D8'] as const)
+            ? ([WARM_DARK.bg, WARM_DARK.bgDeep] as const)
+            : ([WARM_LIGHT.bg, '#F0E8D8'] as const)
         }
         style={StyleSheet.absoluteFill}
       />
@@ -131,7 +136,7 @@ export default function BookmarksScreen() {
                   ]}
                 >
                   <LinearGradient
-                    colors={['#E8A838', '#C4922A']}
+                    colors={['#E8A838', WARM_LIGHT.accent]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.cardBar}

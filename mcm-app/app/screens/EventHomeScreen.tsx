@@ -45,8 +45,7 @@ import {
   isEventArchived,
 } from '@/constants/events';
 import { themeColors } from '@/constants/colors';
-
-const WIDE_BREAKPOINT = 700;
+import { breakpoints } from '@/constants/breakpoints';
 
 /**
  * Hub genérico de un evento (Jubileo, encuentros, retiros, etc.).
@@ -132,7 +131,7 @@ export default function EventHomeScreen() {
   ]);
 
   const { width } = useWindowDimensions();
-  const isWide = width >= WIDE_BREAKPOINT;
+  const isWide = width >= breakpoints.md;
   const columns = isWide ? 3 : 2;
   const containerPadding = spacing.md;
   const gap = spacing.md;

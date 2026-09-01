@@ -15,6 +15,7 @@ import {
 } from '@/utils/highlightRanges';
 import { h } from '@/utils/haptics';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
+import { WARM_DARK, warm } from '@/components/contigo/theme';
 
 interface HighlightActionBarProps {
   visible: boolean;
@@ -72,7 +73,7 @@ export function HighlightActionBar({
         barStyle,
         {
           bottom: tabBarClearance + 8,
-          backgroundColor: isDark ? '#26221C' : '#FFFFFF',
+          backgroundColor: isDark ? WARM_DARK.bgCard : '#FFFFFF',
           borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
           shadowColor: '#000',
         },
@@ -138,13 +139,13 @@ export function HighlightActionBar({
             <MaterialIcons
               name="format-color-reset"
               size={22}
-              color={isDark ? '#A09A8A' : '#7A6550'}
+              color={warm(isDark).textSec}
             />
           </TouchableOpacity>
         </View>
       ) : (
         <Text
-          style={[styles.hint, { color: isDark ? '#A09A8A' : '#7A6550' }]}
+          style={[styles.hint, { color: warm(isDark).textSec }]}
           numberOfLines={2}
         >
           Mantén pulsado y desliza para elegir inicio y fin
@@ -156,10 +157,7 @@ export function HighlightActionBar({
           h.tap();
           onDone();
         }}
-        style={[
-          styles.doneBtn,
-          { backgroundColor: isDark ? '#DAA520' : '#C4922A' },
-        ]}
+        style={[styles.doneBtn, { backgroundColor: warm(isDark).accent }]}
         accessibilityLabel="Terminar de subrayar"
       >
         <Text style={styles.doneText}>Listo</Text>

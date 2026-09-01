@@ -46,20 +46,21 @@ import type { ReadingSelection } from '@/components/contigo/HighlightableReading
 
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { styles } from '@/components/contigo/evangelioStyles';
+import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
 
 // ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
   light: {
-    accent: '#C4922A',
+    accent: WARM_LIGHT.accent,
     accentSoft: '#FFF8E7',
-    surface: '#FAF6F0',
-    warmGray: '#7A6550',
+    surface: WARM_LIGHT.bg,
+    warmGray: WARM_LIGHT.textSec,
   },
   dark: {
-    accent: '#DAA520',
+    accent: WARM_DARK.accent,
     accentSoft: '#2A2112',
-    surface: '#1A1712',
-    warmGray: '#A09A8A',
+    surface: WARM_DARK.bg,
+    warmGray: WARM_DARK.textSec,
   },
 };
 
@@ -450,7 +451,7 @@ export default function EvangelioScreen() {
                     <Text
                       style={{
                         fontSize: 10,
-                        color: isDark ? colors.green : '#3A7D44',
+                        color: isDark ? colors.green : WARM_LIGHT.green,
                       }}
                     >
                       ✓
@@ -458,7 +459,7 @@ export default function EvangelioScreen() {
                     <Text
                       style={[
                         styles.statusChipText,
-                        { color: isDark ? colors.green : '#3A7D44' },
+                        { color: isDark ? colors.green : WARM_LIGHT.green },
                       ]}
                     >
                       Leído
@@ -592,7 +593,7 @@ export default function EvangelioScreen() {
                           color={
                             viewMode === 'lectura'
                               ? isDark
-                                ? '#DAA520'
+                                ? WARM_DARK.accent
                                 : '#B8860B'
                               : isDark
                                 ? '#A09A94'
@@ -606,7 +607,7 @@ export default function EvangelioScreen() {
                               color:
                                 viewMode === 'lectura'
                                   ? isDark
-                                    ? '#DAA520'
+                                    ? WARM_DARK.accent
                                     : '#B8860B'
                                   : isDark
                                     ? '#A09A94'
@@ -642,7 +643,7 @@ export default function EvangelioScreen() {
                           color={
                             viewMode === 'comentario'
                               ? isDark
-                                ? '#DAA520'
+                                ? WARM_DARK.accent
                                 : '#B8860B'
                               : isDark
                                 ? '#A09A94'
@@ -656,7 +657,7 @@ export default function EvangelioScreen() {
                               color:
                                 viewMode === 'comentario'
                                   ? isDark
-                                    ? '#DAA520'
+                                    ? WARM_DARK.accent
                                     : '#B8860B'
                                   : isDark
                                     ? '#A09A94'
@@ -844,12 +845,12 @@ export default function EvangelioScreen() {
                         <MaterialIcons
                           name="check-circle"
                           size={22}
-                          color={isDark ? colors.green : '#3A7D44'}
+                          color={isDark ? colors.green : WARM_LIGHT.green}
                         />
                         <Text
                           style={[
                             styles.trackerText,
-                            { color: isDark ? colors.green : '#3A7D44' },
+                            { color: isDark ? colors.green : WARM_LIGHT.green },
                           ]}
                         >
                           ¡He rezado hoy con el Evangelio!

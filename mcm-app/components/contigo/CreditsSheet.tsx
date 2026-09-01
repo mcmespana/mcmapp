@@ -10,6 +10,7 @@ import BottomSheet from '@/components/BottomSheet';
 import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
+import { warm } from '@/components/contigo/theme';
 
 interface CreditsSheetProps {
   visible: boolean;
@@ -44,7 +45,7 @@ export function CreditsSheet({ visible, onClose }: CreditsSheetProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const theme = Colors[scheme ?? 'light'];
-  const accent = isDark ? '#DAA520' : '#C4922A';
+  const accent = warm(isDark).accent;
   const cardBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
 
   return (
