@@ -209,6 +209,12 @@ destacadas, chips y heroes · `full 28` FABs · `pillFull 999` **solo** badges
 circulares.
 Elige de la lista. Un `borderRadius: 18` es una respuesta incorrecta.
 
+**Con una excepción, que es geometría y no capricho: el radio interior es el
+exterior menos el hueco.** Una pastilla dentro de un carril de `radii.md` (12)
+con `padding: 2` lleva 10, no 8 — si le pones el mismo radio que al padre, las
+esquinas se ven torcidas. Ahí el número suelto es la respuesta correcta;
+déjalo, y si no es obvio, ponle el comentario.
+
 **Sombras** (`shadows`) — se llaman por su función, y el nombre sí dice la
 intensidad: `card` < `raised` < `hero` < `overlay`. Más `warm`/`cool`, tintadas,
 para destacar sin subir peso.
@@ -221,6 +227,13 @@ negro puros).
 **Foco** (`focusRing`): 2 px en `brand.info`. El foco **no puede distinguirse
 solo por color** — con teclado, en web y en iPad, hace falta que se vea el
 grosor.
+
+**Contraste.** Los roles de texto llegan a 4,5:1 sobre las superficies en las
+que se pintan, y hay un test que lo comprueba
+(`__tests__/designTokens.test.ts`). Si vas a "arreglar" un par claro/oscuro
+porque te parece que está del revés, **para**: los dos hex son deliberadamente
+distintos porque cada uno se mide contra SU fondo, y comparar uno con otro no
+dice nada. Mide la razón de contraste.
 
 ---
 

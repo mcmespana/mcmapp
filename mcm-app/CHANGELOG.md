@@ -18,6 +18,44 @@
 
 ---
 
+## 2026-08-31 23:10 — El texto tenue del cantoral ahora se lee, y tres decisiones cerradas
+
+**Corrijo un diagnóstico mío de la entrada anterior**: dije que tres pares
+claro/oscuro estaban "del revés" porque el hex de modo oscuro era más oscuro
+que el de modo claro. Eso no significa nada — cada color se mide contra SU
+fondo. Medidos bien estaban deliberadamente igualados (placeholder 2,92 en
+claro y 2,84 en oscuro; leyenda 2,16 y 2,67). No había ningún ternario
+intercambiado.
+
+Lo que sí era verdad, aunque no por el motivo que yo daba: **esos valores están
+por debajo del mínimo legible** (4,5:1), y es el buscador y la leyenda del
+cantoral, la pantalla más usada de la app.
+
+- `Colors.light.textMuted` sube de `#8E8E93` a `#6E6E73`, el primer gris de la
+  escala que pasa: 4,54:1 sobre el gris de los campos y 5,07 sobre blanco. En
+  oscuro `#8E8E93` ya pasaba y se queda. 10 sitios migrados al token.
+- `designTokens.test.ts` gana **tests de contraste** de todos los roles de
+  texto contra las superficies donde se pintan de verdad, y `design.md` §5 un
+  aviso para que nadie repita mi error de comparar los dos hex entre sí.
+- `UIColors`: `activePrimary`/`secondaryText` no eran "el azul activo" y "el
+  gris secundario" de la UI — están en el HTML que genera `useSongProcessor`,
+  pintando los acordes. Renombrados a `chordBlue` y `chordSecondaryText`.
+  Cuatro claves más no las usaba nadie: borradas.
+- `design.md` §5 recoge la **regla del radio anidado** (el interior es el
+  exterior menos el hueco), que es por qué `SegmentedControl` lleva un 10 con
+  `padding: 2` y por qué eso no es deuda.
+
+**Tres decisiones cerradas, para que no se vuelvan a proponer:**
+
+- **Anchuras máximas / layout de iPad: no se tocan.** Decisión del usuario.
+- **Capas de superficie en modo oscuro: no.** Dar color propio a las cards
+  (`#3A3A3C`) dejaría el texto terciario encima en 3,48:1. Lo de ahora —plano
+  con hairline— se lee. Queda un test que avisa si alguien lo intenta.
+- **`borderRadius: 10`: no es deuda, es geometría.** Es la regla del radio
+  anidado; ahora está escrita.
+
+---
+
 ## 2026-08-31 21:50 — Segunda tanda de colores, y un posible bug de contraste anotado
 
 PLAN_DISENO §A5.4 y §A5.5.

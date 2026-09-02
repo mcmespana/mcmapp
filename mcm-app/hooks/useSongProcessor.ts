@@ -433,8 +433,8 @@ const themeVarsFor = (isDark: boolean) => ({
   bodyText: isDark ? '#E5E5EA' : '#212529',
   titleText: isDark ? '#F5F5F7' : '#1C1C1E',
   authorText: isDark ? '#98989D' : '#8E8E93',
-  chordColor: isDark ? '#64B5F6' : UIColors.activePrimary,
-  commentText: isDark ? '#98989D' : UIColors.secondaryText,
+  chordColor: isDark ? '#64B5F6' : UIColors.chordBlue,
+  commentText: isDark ? '#98989D' : UIColors.chordSecondaryText,
   badgeBg: isDark ? 'rgba(244, 193, 30, 0.12)' : 'rgba(37, 56, 131, 0.06)',
   badgeText: isDark ? '#F4C11E' : '#253883',
   badgeAccentBg: isDark ? 'rgba(225, 92, 98, 0.15)' : 'rgba(225, 92, 98, 0.08)',
@@ -791,8 +791,8 @@ export const useSongProcessor = ({
             }
             body:not(.theme-dark) h1 { color: #1C1C1E; }
             body:not(.theme-dark) .song-meta-author { color: #8E8E93; }
-            body:not(.theme-dark) .chord-sheet .chord { color: ${UIColors.activePrimary}; }
-            body:not(.theme-dark) .comment, body:not(.theme-dark) .c { color: ${UIColors.secondaryText}; }
+            body:not(.theme-dark) .chord-sheet .chord { color: ${UIColors.chordBlue}; }
+            body:not(.theme-dark) .comment, body:not(.theme-dark) .c { color: ${UIColors.chordSecondaryText}; }
             body:not(.theme-dark) .arrangement { color: #E15C62; }
             body:not(.theme-dark) .meta-badge {
               background: rgba(37, 56, 131, 0.06);

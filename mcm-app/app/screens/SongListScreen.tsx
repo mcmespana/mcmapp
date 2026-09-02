@@ -650,12 +650,12 @@ export default function SongsListScreen({
               <MaterialIcons
                 name="search"
                 size={18}
-                color={isDark ? '#636366' : '#8E8E93'}
+                color={themeColors(isDark).textMuted}
               />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Busca por título, autor..."
-                placeholderTextColor={isDark ? '#636366' : '#8E8E93'}
+                placeholderTextColor={themeColors(isDark).textMuted}
                 value={search}
                 onChangeText={setSearch}
                 autoFocus={!isSearchAll}
@@ -670,7 +670,7 @@ export default function SongsListScreen({
                   <MaterialIcons
                     name="cancel"
                     size={16}
-                    color={isDark ? '#636366' : '#8E8E93'}
+                    color={themeColors(isDark).textMuted}
                   />
                 </TouchableOpacity>
               )}
@@ -694,14 +694,14 @@ export default function SongsListScreen({
               <MaterialIcons
                 name="play-arrow"
                 size={13}
-                color={isDark ? '#6C6C70' : '#B0B0B5'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.legendText}>vídeo</Text>
               <Text style={styles.legendDot}>·</Text>
               <MaterialIcons
                 name="headphones"
                 size={12}
-                color={isDark ? '#6C6C70' : '#B0B0B5'}
+                color={themeColors(isDark).textMuted}
               />
               <Text style={styles.legendText}>audio</Text>
             </View>
@@ -957,7 +957,7 @@ const createStyles = (
     },
     legendText: {
       ...typography.micro,
-      color: isDark ? '#6C6C70' : '#B0B0B5',
+      color: themeColors(isDark).textMuted,
     },
     legendDot: {
       ...typography.micro,

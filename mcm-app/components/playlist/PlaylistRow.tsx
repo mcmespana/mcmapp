@@ -410,7 +410,7 @@ const createStyles = (isDark: boolean) =>
     toneOriginalStriked: {
       ...typography.footnote,
       fontWeight: '500',
-      color: isDark ? '#636366' : '#A0A0A8',
+      color: themeColors(isDark).textMuted,
       textDecorationLine: 'line-through',
     },
     keyPillTransposed: {

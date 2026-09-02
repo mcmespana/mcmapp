@@ -50,8 +50,12 @@ export const Colors = {
     textStrong: '#1C1C1E',
     /** Subtítulos, metadatos, texto de apoyo. */
     textSecondary: '#636366',
-    /** Terciario: sellos de tiempo, ayudas. Igual en los dos modos (system gray). */
-    textMuted: '#8E8E93',
+    /**
+     * Terciario: placeholders, leyendas, sellos de tiempo. Lo más tenue que
+     * puede ser un TEXTO sin dejar de leerse: 4,5:1 sobre blanco y sobre el
+     * gris de los campos (#F2F2F7). Era `#8E8E93`, que se quedaba en 2,9:1.
+     */
+    textMuted: '#6E6E73',
     /** Enlaces y acciones en texto. En claro es el azul de marca. */
     link: '#253883',
     /** Fondo hundido: lo que va DEBAJO de las cards (listas, agrupaciones). */
@@ -71,6 +75,7 @@ export const Colors = {
 
     textStrong: '#F5F5F7',
     textSecondary: '#AEAEB2',
+    /** Terciario. En oscuro `#8E8E93` ya pasa (5,2:1 sobre el gris de campo). */
     textMuted: '#8E8E93',
     link: '#7AB3FF',
     backgroundSunken: '#1C1C1E',
@@ -135,23 +140,27 @@ const brand = {
 
 export default brand;
 
-// Colores de UI para componentes interactivos (FABs, botones, etc.)
+// Colores de UI para componentes interactivos.
+//
+// Tenía nueve claves y CUATRO no las usaba nadie (`activePrimaryDark`,
+// `textLight`, `textDark`, `backgroundLight`). Borradas en agosto de 2026: un
+// token muerto no es inofensivo, es una respuesta plausible a la pregunta
+// equivocada.
 export const UIColors = {
-  /**
-   * Azul de acción del SISTEMA (iOS). Es el de los botones y enlaces nativos.
-   * Ojo, no confundir con `activePrimary`, que es un azul web (Bootstrap) y
-   * está 1 punto de tono más allá — conviven a propósito hasta que se decida
-   * cuál se queda (`PLAN_DISENO` §A6-ter).
-   */
+  /** Azul de acción del sistema (iOS): botones y enlaces nativos. */
   iosBlue: '#007AFF',
-  activePrimary: '#007bff', // Azul — elementos activos, bordes de FABs
-  activePrimaryDark: '#0056b3', // Azul oscuro — bordes FABs activos
-  accentYellow: '#f4c11e', // Amarillo — FAB principal
-  textLight: '#ffffff', // Texto blanco
-  textDark: '#212529', // Texto oscuro
-  backgroundLight: '#ffffff', // Fondo blanco para FABs inactivos
+  /**
+   * Azul de los ACORDES del cantoral. Es un azul web (#007bff), 1 punto de
+   * tono por debajo del `iosBlue` del sistema — no son el mismo color ni el
+   * mismo papel, y el nombre lo escondía. Vive en el HTML que genera
+   * `useSongProcessor`, no en la UI nativa.
+   */
+  chordBlue: '#007bff',
+  /** Gris del texto secundario DENTRO del HTML de una canción. */
+  chordSecondaryText: '#6c757d',
+  /** Amarillo del cantoral — FAB principal y color de su tab. */
+  accentYellow: '#f4c11e',
   modalOverlay: 'rgba(0, 0, 0, 0.5)',
-  secondaryText: '#6c757d', // Gris secundario
 } as const;
 
 // Colores de tabs (cabecera)

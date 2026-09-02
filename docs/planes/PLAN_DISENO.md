@@ -1,3 +1,27 @@
+- [x] **H11. ❌ MI DIAGNÓSTICO ERA FALSO — y de paso salió una mejora real.**
+      Dije que tres pares claro/oscuro estaban "del revés" porque el hex de
+      modo oscuro era más oscuro que el de modo claro. **Eso no significa
+      nada**: cada uno se mide contra SU fondo. Medidos bien, estaban
+      deliberadamente igualados —placeholder 2,92 en claro y 2,84 en oscuro;
+      leyenda 2,16 y 2,67— o sea que alguien los eligió con cuidado. No había
+      ningún ternario intercambiado.
+
+      Lo que sí era verdad, y no lo era por el motivo que yo decía: **2,9:1 y
+          2,2:1 están por debajo del mínimo legible** (4,5:1 para texto), y esto
+          es el buscador y la leyenda del **cantoral**, la pantalla más usada de
+          la app, que se lee a menudo a contraluz.
+
+          Arreglado subiendo `Colors.light.textMuted` de `#8E8E93` a `#6E6E73`, el
+          primer gris de la escala que pasa (4,54:1 sobre el gris de los campos,
+          5,07 sobre blanco). En oscuro `#8E8E93` ya pasaba y se queda. Los 10
+          sitios tenues migrados al token.
+
+          Blindado con tests de contraste en `designTokens.test.ts`, y con un
+          aviso en `design.md` §5 para que nadie repita mi error de comparar los
+          dos hex entre sí.
+
+## Hallazgos nuevos (de la pasada del 2026-08-31)
+
 # PLAN_DISENO.md — Unificar el diseño hacia un solo sitio
 
 > **Estado:** 🟡 en curso. Creado 2026-08-31 al escribir
@@ -177,12 +201,15 @@ que ya era la capa de roles.
       **destacado ámbar** y `#9DE86B`/`#1B9E4B` el verde de **Carismochito**.
 - [ ] A6-bis Queda `#1a1a1a` (19 usos): es un negro de fondo para exportar PDF
       y webviews, no un color de UI. Decidir si merece token o se queda.
-- [ ] **A6-ter. Dos azules de acción.** `UIColors.iosBlue` es `#007AFF` (el del
-      sistema, en `AppPrimaryButton`) y `UIColors.activePrimary` es `#007bff`
-      (un azul web, de Bootstrap, en FABs y elementos activos). Están a un punto
-      de tono y hacen el mismo papel. Conviven a propósito desde 2026-08-31
-      —antes uno de los dos estaba escrito a mano y no se veía— pero hay que
-      quedarse con uno. Recomendación: `#007AFF`, que es el del sistema.
+- [x] **A6-ter. Resuelto: no hacían el mismo papel, el nombre lo escondía.**
+      `activePrimary` (#007bff) no está en FABs ni en "elementos activos" como
+      decía su comentario: está en el **HTML que genera `useSongProcessor`**,
+      pintando los acordes del cantoral. Es otro contexto y otro color.
+      Renombrados a `chordBlue` y `chordSecondaryText`, que es lo que son.
+      De paso, cuatro claves de `UIColors` no las usaba nadie
+      (`activePrimaryDark`, `textLight`, `textDark`, `backgroundLight`):
+      borradas. Un token muerto es una respuesta plausible a la pregunta
+      equivocada.
 
 ---
 
@@ -283,12 +310,13 @@ xs 4 · sm 8 · md 12 · lg 16 · xl 20 · full 28 · pillFull 999
       —14, 18, 22—. Estos últimos se migraron a propósito: dejarlos a mano
       creaba el peor de los mundos, la misma card con 14 px si el fichero
       hardcodeaba y 16 si usaba el token.
-- [ ] E3 Los 122 que quedan son valores que **no están en la escala**: 10 (23
-      usos), 3, 6, 100, 5, 2, 13, 26, 30, 19. Hay que mirarlos uno a uno —unos
-      son decorativos de un sitio concreto, otros son un escalón inventado que
-      debería caer al de al lado. El `100` es "haz un círculo" y funciona solo
-      porque los elementos son pequeños; `radii.pillFull` (999) es lo correcto.
-      Hay trinquete (`noNewMagicNumbers`) para que no crezcan.
+- [x] E3 Revisados. **El `10` (23 usos) NO es deuda: es geometría.**
+      `SegmentedControl` tiene `borderRadius: 10, padding: 2` — radio interior
+      = exterior menos el hueco. Ponerle 8 o 12 dejaría las esquinas torcidas.
+      Convertido en regla en `design.md` §5 en vez de en tarea.
+- [ ] E4 Quedan por mirar los sueltos de verdad: 3, 6, 100, 5, 2, 13, 26, 30, 19. El `100` es "haz un círculo" y solo funciona porque los elementos son
+      pequeños; lo correcto es `radii.pillFull` (999). Hay trinquete
+      (`noNewMagicNumbers`) para que no crezcan.
 
 ---
 
@@ -306,13 +334,19 @@ porque tenía un test. El real es `useResponsiveLayout` (7 pantallas,
 - [x] F2 `constants/breakpoints.ts` declara los números que la app usa de
       verdad, y `useResponsiveLayout` los importa.
 - [x] F3 Fuera `wideLayoutMinWidth` y `WIDE_BREAKPOINT`.
-- [ ] **F4. Las dos escaleras de anchura máxima.** `readableMaxWidth`/
-      `contentMaxWidth` del hook (640/760 y 760/980) conviven con
-      `maxContentWidth`/`maxContentWidthWide` de `PageContainer` (960/1200):
-      la misma app limita el contenido a **cuatro anchos distintos** según en
-      qué pantalla estés. Unificarlas cambia el layout en tablet y web, así que
-      hay que verlo en un dispositivo. Destino propuesto: una sola escalera, la
-      del hook, y que `PageContainer` la use.
+- [x] **F4. ❌ NO SE TOCA — decisión del usuario (2026-08-31):** _"no
+      destruyas el layout del iPad, me gusta como está"_. Las cuatro anchuras
+      se quedan como están. No lo propongas otra vez.
+
+      Enunciado original, para referencia:
+          **Las dos escaleras de anchura máxima.** `readableMaxWidth`/
+          `contentMaxWidth` del hook (640/760 y 760/980) conviven con
+          `maxContentWidth`/`maxContentWidthWide` de `PageContainer` (960/1200):
+          la misma app limita el contenido a **cuatro anchos distintos** según en
+          qué pantalla estés. Unificarlas cambia el layout en tablet y web, así que
+          hay que verlo en un dispositivo. Destino propuesto: una sola escalera, la
+          del hook, y que `PageContainer` la use.
+
 - [ ] F5 Los dos `screenW >= 640` de `onboarding.tsx`.
 
 ---
@@ -418,19 +452,22 @@ Ninguna es urgente.
 
 ## Orden sugerido si hay un hueco grande
 
-**Primera pasada hecha el 2026-08-31** (§A1, A2, A4, A5 parcial, A6, B, C
-parcial, D, E1, F1–F3, G1, G2, H1, H3, H7). Lo que queda, en el orden en que lo
-haría:
+**Pasada completa hecha el 2026-08-31.** Cerrado: §A1, A2, A4, A5, A6, A6-ter,
+B, C (parcial), D, E1–E3, F1–F3, G1, G2, H1, H3, H7, H11. Descartados con
+motivo: §F4 (decisión del usuario) y §H8 (el contraste lo desaconseja).
 
-1. **H9** — verificar en dispositivo lo que ya cambió (sombra de toasts,
-   radios, gris secundario). Es lo único que bloquea dar la pasada por buena.
-2. **H8** — las capas de superficie en modo oscuro. El hallazgo con más
-   impacto visual que queda, y también necesita dispositivo.
-3. **C4** — los 321 `fontSize` que quedan. Revisión, no mecánica.
-4. **A5.4** y **E2** — segunda tanda de hex y los `borderRadius` inline.
-5. **F4** — las cuatro anchuras máximas. Necesita dispositivo.
-6. **A6-ter**, **A2-bis**, **G1.4**, **H1-bis** — sueltos, cortos.
-7. **H2**, **H4**, **H5**, **H6**, **H10** — mejoras, sin prisa.
+Lo que queda, en el orden en que lo haría:
+
+1. **H9** — verificar en dispositivo lo que cambió. Es lo único que bloquea dar
+   la pasada por buena, y son 6 pantallas.
+2. **C4** — los 321 `fontSize` que quedan. Revisión uno a uno, no mecánica.
+3. **A5.5** y **E4** — lo que queda de hex y radios sueltos. Igual: hay que
+   abrir el fichero.
+4. **A2-bis**, **G1.4**, **H1-bis** — cortos.
+5. **H2**, **H4**, **H5**, **H6**, **H10** — mejoras, sin prisa.
+
+**No propongas** §F4 (anchuras / layout de iPad) ni §H8 (capas en oscuro): los
+dos están decididos que no, con su motivo escrito arriba.
 
 ---
 
@@ -441,31 +478,42 @@ haría:
       que el de modo claro, que es justo al revés de lo que pide el modo:
 
       | Dónde | Par (`isDark ? oscuro : claro`) | Contraste real |
-          | --- | --- | --- |
-          | `SongListScreen` (placeholder de búsqueda, ×4) | `#636366` : `#8E8E93` | oscuro ≈ 2,0:1 · claro ≈ 3,5:1 |
-          | `SongListScreen` (texto tenue, ×3) | `#6C6C70` : `#B0B0B5` | oscuro ≈ 2,2:1 · claro ≈ 2,2:1 |
-          | `PlaylistRow`, `SongListItem`, `CommandPalette` (×3) | `#636366` : `#A0A0A8` | oscuro ≈ 2,0:1 |
+              | --- | --- | --- |
+              | `SongListScreen` (placeholder de búsqueda, ×4) | `#636366` : `#8E8E93` | oscuro ≈ 2,0:1 · claro ≈ 3,5:1 |
+              | `SongListScreen` (texto tenue, ×3) | `#6C6C70` : `#B0B0B5` | oscuro ≈ 2,2:1 · claro ≈ 2,2:1 |
+              | `PlaylistRow`, `SongListItem`, `CommandPalette` (×3) | `#636366` : `#A0A0A8` | oscuro ≈ 2,0:1 |
 
-          Puede ser deliberado (un placeholder tenue lo es a propósito) o puede ser
-          que alguien intercambiara las ramas del ternario al copiar. Lo que no
-          encaja es que en **los dos** modos quede por debajo de 3:1 y que el modo
-          oscuro salga peor que el claro, cuando el resto de la app hace lo
-          contrario. Está en la pantalla más usada de la app, así que **hay que
-          mirarlo en un dispositivo antes de tocarlo**; no se cambió nada.
-          Si resulta ser un bug, el arreglo es `themeColors(isDark).textMuted`.
+              Puede ser deliberado (un placeholder tenue lo es a propósito) o puede ser
+              que alguien intercambiara las ramas del ternario al copiar. Lo que no
+              encaja es que en **los dos** modos quede por debajo de 3:1 y que el modo
+              oscuro salga peor que el claro, cuando el resto de la app hace lo
+              contrario. Está en la pantalla más usada de la app, así que **hay que
+              mirarlo en un dispositivo antes de tocarlo**; no se cambió nada.
+              Si resulta ser un bug, el arreglo es `themeColors(isDark).textMuted`.
 
 Cosas que aparecieron **al ejecutar**, no al planificar. Ninguna es urgente y
 ninguna se tocó, porque todas necesitan verse en un dispositivo.
 
-- [ ] **H8. En modo oscuro no hay capas de superficie.** 38 sitios pintan las
-      cards con `#2C2C2E`, que es exactamente `Colors.dark.background`: la card
-      y el fondo son el mismo color, y solo se distinguen por el borde. El token
-      correcto (`Colors.dark.card`, `#3A3A3C`) existe y no se usa. Cambiarlo es
-      una línea, pero se ve en media app, así que hay que mirarlo en un
-      dispositivo. Lo mismo con `backgroundSunken` (`#1C1C1E`), que en la
-      práctica se escribe como `#2C2C2E`, o sea igual que el fondo.
-      La migración de agosto se dejó **byte-idéntica** a propósito para no
-      colar este cambio de tapadillo.
+- [x] **H8. ❌ DECIDIDO QUE NO (2026-08-31).** Lo iba a hacer y el test de
+      contraste lo desaconsejó: si a las cards oscuras se les da su color
+      propio (`#3A3A3C`), el texto terciario encima cae a **3,48:1** y deja de
+      cumplir. O sea que no es un cambio de una línea: arrastra subir también
+      el terciario, y entonces ya no es "terciario". Lo de ahora —plano con
+      hairline— es coherente y se lee. Hay un test que lo deja anotado
+      (`designTokens.test.ts`, "avisa de que el terciario NO vale sobre una
+      card oscura") para que salte si alguien lo intenta.
+
+      Enunciado original, para referencia:
+          **En modo oscuro no hay capas de superficie.** 38 sitios pintan las
+          cards con `#2C2C2E`, que es exactamente `Colors.dark.background`: la card
+          y el fondo son el mismo color, y solo se distinguen por el borde. El token
+          correcto (`Colors.dark.card`, `#3A3A3C`) existe y no se usa. Cambiarlo es
+          una línea, pero se ve en media app, así que hay que mirarlo en un
+          dispositivo. Lo mismo con `backgroundSunken` (`#1C1C1E`), que en la
+          práctica se escribe como `#2C2C2E`, o sea igual que el fondo.
+          La migración de agosto se dejó **byte-idéntica** a propósito para no
+          colar este cambio de tapadillo.
+
 - [ ] **H9. Verificar en dispositivo lo que sí cambió.** Son tres cosas
       pequeñas y deliberadas: la sombra de toasts y FABs (0.30 → 0.22), los
       radios (`lg` 14→16, destacadas 18→20, hero 22→20) y el gris secundario

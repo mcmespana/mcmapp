@@ -137,3 +137,101 @@ describe('escalas ordenadas', () => {
     expect(values).toEqual([...values].sort((a, b) => a - b));
   });
 });
+
+/**
+ * Contraste mínimo de los roles de texto.
+ *
+ * Esto no es celo normativo: el gris terciario estaba en 2,9:1 sobre el gris de
+ * los campos y en 2,2:1 en la leyenda del cantoral —la pantalla más usada de la
+ * app— y ahí es donde la gente lee, a menudo a contraluz. `design.md` §1 pone
+ * la legibilidad la primera y dice que no se sacrifica; esto lo hace cumplir.
+ *
+ * Ojo con "arreglar" un par claro/oscuro comparando sus dos hex entre sí: son
+ * deliberadamente distintos porque cada uno se mide contra SU fondo. Lo que
+ * importa es la razón de contraste, que es lo que comprueba este test.
+ */
+function relativeLuminance(hex: string): number {
+  const h = hex.replace('#', '');
+  const channels = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+  const [r, g, b] = channels.map((c) =>
+    c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
+  );
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort(
+    (x, y) => y - x,
+  );
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+describe('contraste de los roles de texto', () => {
+  // 4.5:1 es el mínimo de texto normal. Los roles de texto se miden contra las
+  // superficies sobre las que se pintan de verdad.
+  const cases: [string, string, string][] = [
+    ['claro · text sobre fondo', Colors.light.text, Colors.light.background],
+    [
+      'claro · textStrong sobre fondo',
+      Colors.light.textStrong,
+      Colors.light.background,
+    ],
+    [
+      'claro · textSecondary sobre fondo',
+      Colors.light.textSecondary,
+      Colors.light.background,
+    ],
+    [
+      'claro · textMuted sobre fondo',
+      Colors.light.textMuted,
+      Colors.light.background,
+    ],
+    [
+      'claro · textMuted sobre hundido',
+      Colors.light.textMuted,
+      Colors.light.backgroundSunken,
+    ],
+    ['claro · textMuted sobre card', Colors.light.textMuted, Colors.light.card],
+    ['claro · link sobre fondo', Colors.light.link, Colors.light.background],
+    ['oscuro · text sobre fondo', Colors.dark.text, Colors.dark.background],
+    [
+      'oscuro · textStrong sobre fondo',
+      Colors.dark.textStrong,
+      Colors.dark.background,
+    ],
+    [
+      'oscuro · textSecondary sobre fondo',
+      Colors.dark.textSecondary,
+      Colors.dark.background,
+    ],
+    [
+      'oscuro · textMuted sobre hundido',
+      Colors.dark.textMuted,
+      Colors.dark.backgroundSunken,
+    ],
+    ['oscuro · link sobre fondo', Colors.dark.link, Colors.dark.background],
+  ];
+
+  it.each(cases)('%s llega a 4.5:1', (_label, fg, bg) => {
+    expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('el terciario oscuro sobre el fondo queda por encima de 4:1', () => {
+    // 4,27:1 — la leyenda del cantoral en modo oscuro, que se pinta sobre el
+    // fondo. Por debajo de 4,5 por poco, y muy por encima del 2,2 que tenía.
+    // Subirlo más lo convertiría en un secundario y perdería el papel de
+    // "leyenda tenue".
+    expect(
+      contrast(Colors.dark.textMuted, Colors.dark.background),
+    ).toBeGreaterThan(4);
+  });
+
+  it('avisa de que el terciario NO vale sobre una card oscura', () => {
+    // 3,48:1. Hoy no pasa nada porque en oscuro las cards se pintan con el
+    // color de FONDO (ver PLAN_DISENO §H8): si algún día se les da su color
+    // propio (#3A3A3C), este texto se queda corto y hay que subirlo a
+    // `textSecondary`. Este test está aquí para que eso salte entonces, no
+    // para que alguien lo "arregle" ahora.
+    expect(contrast(Colors.dark.textMuted, Colors.dark.card)).toBeLessThan(4.5);
+  });
+});

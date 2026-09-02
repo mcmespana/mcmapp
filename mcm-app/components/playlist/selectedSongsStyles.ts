@@ -250,7 +250,7 @@ export const createStyles = (
     },
     modalNote: {
       ...typography.footnote,
-      color: isDark ? '#636366' : '#8E8E93',
+      color: themeColors(isDark).textMuted,
       marginBottom: 18,
     },
     modalButtons: {

@@ -263,7 +263,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     footerHint: {
       ...typography.micro,
-      color: isDark ? '#636366' : '#A0A0A8',
+      color: themeColors(isDark).textMuted,
       letterSpacing: 0.3,
     },
   });
