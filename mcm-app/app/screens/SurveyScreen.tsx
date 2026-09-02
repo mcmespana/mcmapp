@@ -12,7 +12,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import EvaluationWizard, {
   EvaluationAnswers,
 } from '@/components/EvaluationWizard';
-import colors, { Colors } from '@/constants/colors';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import {
   isEvaluationOpen,
   mergeEvaluationConfig,
@@ -125,7 +125,10 @@ export default function SurveyScreen({ surveyId }: { surveyId: string }) {
   if (loading && !remoteConfig) {
     return (
       <View style={[styles.center, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator
+          size="large"
+          color={themeColors(scheme === 'dark').link}
+        />
       </View>
     );
   }

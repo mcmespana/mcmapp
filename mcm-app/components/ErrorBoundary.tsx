@@ -46,7 +46,9 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <View style={dynamicStyles.container}>
           <Text style={styles.emoji}>😵</Text>
-          <Text style={styles.title}>Algo ha ido mal</Text>
+          <Text style={[styles.title, { color: themeColors(isDark).link }]}>
+            Algo ha ido mal
+          </Text>
           <Text style={dynamicStyles.subtitle}>
             La app ha encontrado un error inesperado.
           </Text>
@@ -101,7 +103,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.h2,
     fontWeight: '700',
-    color: colors.primary,
+    // El color va inline: el azul de marca sobre el fondo oscuro es 1,3:1.
     marginBottom: 8,
   },
   button: {

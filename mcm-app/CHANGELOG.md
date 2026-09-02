@@ -45,9 +45,16 @@ sirve de primer plano en cada fondo: en oscuro valen `secondary` (8,5),
 `yellow` (9,5), `green` (6,6) e `info` (5,3), y NO valen `text` (1,1),
 `primary` (1,3) ni `purple` (1,9).
 
-Queda barrer los usos de marca como primer plano fuera de Notificaciones
-(`ErrorBoundary`, `SongControls`, `FormattedContent`, `GruposScreen`,
-`SurveyScreen`): §H4-bis.
+**El barrido del resto encontró tres sitios más con el mismo bug** (§H4-bis):
+el título de `ErrorBoundary` —la pantalla de error, ilegible justo cuando más
+falta hace leerla—, el spinner de `SurveyScreen`, y el icono y el texto de
+"Marcar todo" de `NotificationsBottomSheet`. Más `FormattedContent`, donde la
+clase `color-primary` del contenido en BBCode la elige **quien escribe desde el
+panel**, así que no podía quedarse fija.
+
+`SongControls` no era un bug: ya tenía el par a mano (`#253883`/`#7AB3FF`), que
+es exactamente `link`; tokenizado. Y `GruposScreen` tampoco: ahí el azul es un
+relleno de tarjeta con texto blanco encima, y como relleno está bien.
 
 ---
 

@@ -508,11 +508,11 @@ const styles = StyleSheet.create({
     color: '#EBEBF0',
   },
   actionButtonTextActive: {
-    color: colors.primary,
+    color: themeColors(false).link,
     fontWeight: '600',
   },
   actionButtonTextActiveDark: {
-    color: '#7AB3FF',
+    color: themeColors(true).link,
     fontWeight: '600',
   },
   fabMain: {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useWindowDimensions, TouchableOpacity, Text } from 'react-native';
 import RenderHTML from 'react-native-render-html';
-import colors, { Colors } from '@/constants/colors';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import { formatBBCodeToHtml } from '@/utils/formatText';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
@@ -152,14 +152,16 @@ export default function FormattedContent({
         // Mejor espaciado interno
         lineHeight: 20 * fontScale,
       },
-      'color-primary': { color: colors.primary },
+      // El azul de marca sobre fondo oscuro es 1,3:1, y este color lo elige
+      // quien escribe el contenido desde el panel: se adapta por modo.
+      'color-primary': { color: themeColors(scheme === 'dark').link },
       'color-accent': { color: colors.accent },
       'color-info': { color: colors.info },
       'color-success': { color: colors.green },
       // Estilos adicionales para mejor presentación
       'btn-outline-primary': {
         backgroundColor: 'transparent',
-        color: colors.primary,
+        color: themeColors(scheme === 'dark').link,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
         borderRadius: radii.sm,
