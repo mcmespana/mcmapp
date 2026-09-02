@@ -23,6 +23,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { h } from '@/utils/haptics';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { extractYouTubeId } from '@/utils/youtube';
+import typography from '@/constants/typography';
 
 export interface FloatingMediaSource {
   /** 'youtube' → URL de embed de YouTube · 'drive' → URL de preview de Drive. */
@@ -457,7 +458,7 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     flex: 1,
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
     color: '#fff',
   },
@@ -487,7 +488,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   errorText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
     lineHeight: 15,
     color: '#fff',

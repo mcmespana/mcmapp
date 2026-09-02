@@ -23,6 +23,7 @@ import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import { openAppStore } from '@/utils/storeLinks';
+import typography from '@/constants/typography';
 
 interface Props {
   mode: 'maintenance' | 'update';
@@ -336,13 +337,13 @@ const styles = StyleSheet.create({
     fontSize: 26,
   } as TextStyle,
   skipTaunt: {
-    fontSize: 13,
+    ...typography.caption,
     textAlign: 'center',
     maxWidth: 280,
     marginBottom: spacing.xs,
   } as TextStyle,
   skipButton: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '700',
     textDecorationLine: 'underline',
     paddingVertical: spacing.xs,

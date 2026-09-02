@@ -12,6 +12,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import BottomSheet from '@/components/BottomSheet';
 import { KeyPillColors, SwipeColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 export interface PlaylistAction {
   id: string;
@@ -171,7 +172,7 @@ const createStyles = (isDark: boolean) =>
       color: SwipeColors.remove,
     },
     itemDescription: {
-      fontSize: 13,
+      ...typography.caption,
       color: '#8E8E93',
       marginTop: 2,
     },
@@ -182,7 +183,7 @@ const createStyles = (isDark: boolean) =>
       marginHorizontal: 20,
     },
     sectionTitle: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',

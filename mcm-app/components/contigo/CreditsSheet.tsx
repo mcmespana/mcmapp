@@ -11,6 +11,7 @@ import { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { radii } from '@/constants/uiStyles';
 import { warm } from '@/components/contigo/theme';
+import typography from '@/constants/typography';
 
 interface CreditsSheetProps {
   visible: boolean;
@@ -87,7 +88,7 @@ export function CreditsSheet({ visible, onClose }: CreditsSheetProps) {
               <TouchableOpacity onPress={() => Linking.openURL(s.url)}>
                 <Text
                   style={{
-                    fontSize: 13,
+                    ...typography.caption,
                     color: accent,
                     textDecorationLine: 'underline',
                     marginTop: 4,

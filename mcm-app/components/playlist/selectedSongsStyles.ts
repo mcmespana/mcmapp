@@ -11,6 +11,7 @@
 import { Platform, StyleSheet } from 'react-native';
 import colors, { Colors, KeyPillColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 export const createStyles = (
   scheme: 'light' | 'dark' | null,
@@ -46,14 +47,14 @@ export const createStyles = (
       gap: 8,
     },
     selectionCount: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       color: themeColors(isDark).textSecondary,
       letterSpacing: 0.5,
       textTransform: 'uppercase',
     },
     subInfo: {
-      fontSize: 12,
+      ...typography.footnote,
       color: themeColors(isDark).link,
       marginTop: 3,
       fontWeight: '600',
@@ -72,7 +73,7 @@ export const createStyles = (
       backgroundColor: isDark ? '#2C2C2E' : '#EFEFF4',
     },
     clearBtnText: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '700',
       color: '#8E8E93',
     },
@@ -101,7 +102,7 @@ export const createStyles = (
       }),
     },
     viewToggleText: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
     },
@@ -135,7 +136,7 @@ export const createStyles = (
       }),
     },
     categoryTitle: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '700',
       paddingHorizontal: 16,
       paddingVertical: 10,
@@ -204,7 +205,7 @@ export const createStyles = (
       gap: 8,
     },
     importButtonText: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '600',
       color: themeColors(isDark).link,
     },
@@ -240,7 +241,7 @@ export const createStyles = (
       marginBottom: 6,
     },
     modalDescription: {
-      fontSize: 14,
+      ...typography.subhead,
       color: themeColors(isDark).textSecondary,
       marginBottom: 14,
     },
@@ -248,7 +249,7 @@ export const createStyles = (
       marginBottom: 8,
     },
     modalNote: {
-      fontSize: 12,
+      ...typography.footnote,
       color: isDark ? '#636366' : '#8E8E93',
       marginBottom: 18,
     },

@@ -6,6 +6,7 @@
  */
 import { StyleSheet } from 'react-native';
 import { radii, shadows } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 export const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -84,7 +85,7 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   completedText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
     flex: 1,
     lineHeight: 18,
@@ -104,7 +105,7 @@ export const styles = StyleSheet.create({
     ...shadows.card,
   },
   sectionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 18,
@@ -129,7 +130,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emotionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     letterSpacing: 0.1,
   },
 
@@ -149,7 +150,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bucketText: {
-    fontSize: 14,
+    ...typography.subhead,
     letterSpacing: -0.1,
   },
 
@@ -162,7 +163,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
   },
   customLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 18,
@@ -220,7 +221,7 @@ export const styles = StyleSheet.create({
     borderRadius: 100,
   },
   saveBtnText: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
@@ -248,7 +249,7 @@ export const styles = StyleSheet.create({
     marginTop: 2,
   },
   statText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
   },
   weekdayRow: {
@@ -260,7 +261,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   weekdayText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
@@ -275,10 +276,10 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   calDay: {
-    fontSize: 12,
+    ...typography.footnote,
   },
   calDayDone: {
-    fontSize: 12,
+    ...typography.footnote,
   },
 
   // Legend
@@ -300,7 +301,7 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
   },
   legendText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '500',
   },
 });

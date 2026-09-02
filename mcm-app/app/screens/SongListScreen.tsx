@@ -43,6 +43,7 @@ import {
 } from '@/utils/songTags';
 import { h } from '@/utils/haptics';
 import { SwipeColors, UIColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface Song {
   title: string;
@@ -945,7 +946,7 @@ const createStyles = (
       paddingBottom: 2,
     },
     songCount: {
-      fontSize: 12,
+      ...typography.footnote,
       color: isDark ? '#636366' : '#AEAEB2',
       letterSpacing: 0.2,
     },
@@ -955,11 +956,11 @@ const createStyles = (
       gap: 3,
     },
     legendText: {
-      fontSize: 11,
+      ...typography.micro,
       color: isDark ? '#6C6C70' : '#B0B0B5',
     },
     legendDot: {
-      fontSize: 11,
+      ...typography.micro,
       color: isDark ? '#48484A' : '#D1D1D6',
       marginHorizontal: 1,
     },
@@ -982,14 +983,14 @@ const createStyles = (
     },
     sectionHeaderText: {
       flex: 1,
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
       color: themeColors(isDark).textSecondary,
     },
     sectionHeaderCount: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
@@ -1005,14 +1006,14 @@ const createStyles = (
         : null),
     },
     errorText: {
-      fontSize: 16,
+      ...typography.body,
       color: SwipeColors.remove,
       textAlign: 'center',
       margin: 20,
       fontWeight: '600',
     },
     debugText: {
-      fontSize: 14,
+      ...typography.subhead,
       color: themeColors(isDark).textMuted,
       textAlign: 'center',
       margin: 10,
@@ -1030,7 +1031,7 @@ const createStyles = (
       borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
     },
     menuActionText: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '500',
     },
   });

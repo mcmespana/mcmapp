@@ -6,6 +6,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
 
 /**
  * Botón principal del wizard de evaluación, con micro-animación de pulsación.
@@ -69,7 +70,7 @@ const btnStyles = StyleSheet.create({
   },
   label: {
     color: '#fff',
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '800',
     letterSpacing: -0.2,
   },

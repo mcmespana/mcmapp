@@ -42,6 +42,7 @@ import {
 } from '@/constants/defaultProfileConfig';
 import type { ProfileType } from '@/types/profileConfig';
 import { setAnalyticsProfile, trackEvent } from '@/utils/analytics';
+import typography from '@/constants/typography';
 
 type Step = 'welcome' | 'profile' | 'delegation' | 'login' | 'success';
 
@@ -288,7 +289,7 @@ const btnStyles = StyleSheet.create({
     overflow: 'hidden',
   } as ViewStyle,
   label: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     letterSpacing: -0.2,
   } as TextStyle,
@@ -347,7 +348,7 @@ const skipBtnStyles = StyleSheet.create({
     backgroundColor: 'rgba(37,56,131,0.06)',
   } as ViewStyle,
   text: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '700',
     color: T.primary,
     letterSpacing: -0.1,
@@ -578,7 +579,7 @@ const welcomeStyles = StyleSheet.create({
   } as ViewStyle,
   badgeText: {
     color: '#ffffff',
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '600',
     letterSpacing: 0.2,
   } as TextStyle,
@@ -632,7 +633,7 @@ const welcomeStyles = StyleSheet.create({
   } as TextStyle,
   tagline: {
     color: T.secondary,
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
     fontStyle: 'italic',
     letterSpacing: 0.2,
@@ -1119,7 +1120,7 @@ const successStyles = StyleSheet.create({
     textAlign: 'center',
   } as TextStyle,
   sub: {
-    fontSize: 14,
+    ...typography.subhead,
     color: T.muted,
     lineHeight: 22,
     marginBottom: 28,
@@ -1142,7 +1143,7 @@ const successStyles = StyleSheet.create({
     borderColor: 'rgba(37,56,131,0.10)',
   } as ViewStyle,
   pillText: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     color: T.primary,
   } as TextStyle,
@@ -1195,7 +1196,7 @@ const stepStyles = StyleSheet.create({
     textAlign: 'center',
   } as TextStyle,
   heroSub: {
-    fontSize: 14,
+    ...typography.subhead,
     color: T.muted,
     lineHeight: 20,
     maxWidth: 280,
@@ -1263,7 +1264,7 @@ const cardStyles = StyleSheet.create({
     fontWeight: '700',
   } as TextStyle,
   cardDesc: {
-    fontSize: 12,
+    ...typography.footnote,
     color: T.muted,
     marginTop: 2,
     lineHeight: 16,
@@ -1293,11 +1294,11 @@ const delegStyles = StyleSheet.create({
     elevation: 2,
   } as ViewStyle,
   label: {
-    fontSize: 14,
+    ...typography.subhead,
     flex: 1,
   } as TextStyle,
   desc: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 2,
     lineHeight: 16,
   } as TextStyle,
@@ -1562,7 +1563,7 @@ const loginOnbStyles = StyleSheet.create({
   } as TextStyle,
   body: {
     color: 'rgba(255,255,255,0.72)',
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 21,
     textAlign: 'center',
     maxWidth: 280,
@@ -1604,7 +1605,7 @@ const loginOnbStyles = StyleSheet.create({
   } as ViewStyle,
   summaryPillText: {
     color: '#fff',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   } as TextStyle,
   skipWrap: {
@@ -1626,7 +1627,7 @@ const loginOnbStyles = StyleSheet.create({
   } as ViewStyle,
   skipText: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     letterSpacing: -0.1,
   } as TextStyle,

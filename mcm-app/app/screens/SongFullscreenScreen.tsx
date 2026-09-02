@@ -35,6 +35,7 @@ import {
   AUTO_SCROLL_CONTROLLER_JS,
   useAutoScroller,
 } from '@/hooks/useAutoScroller';
+import typography from '@/constants/typography';
 
 type SongFullscreenRouteProp = RouteProp<RootStackParamList, 'SongFullscreen'>;
 
@@ -476,7 +477,7 @@ const styles = StyleSheet.create({
   },
   speedHeading: {
     color: 'rgba(255,255,255,0.92)',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
@@ -504,7 +505,7 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     color: 'rgba(255,255,255,0.78)',
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
   },
   segmentTextSelected: {

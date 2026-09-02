@@ -12,6 +12,7 @@ import colors, { Colors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { parseHorarioDate } from '@/utils/dateUtils';
+import typography from '@/constants/typography';
 
 const MONTHS = [
   'enero',
@@ -160,14 +161,14 @@ const createStyles = (scheme: 'light' | 'dark') => {
       fontVariant: ['tabular-nums'],
     },
     monthText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       textTransform: 'capitalize',
       color: theme.text,
       lineHeight: 16,
     },
     weekdayText: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '500',
       textTransform: 'capitalize',
       color: isDark ? '#A0A0A5' : '#8A8A8E',

@@ -8,6 +8,7 @@ import { getBrightness } from '@/components/ui/glass';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import type { SurveyIndexEntry } from '@/constants/surveys';
+import typography from '@/constants/typography';
 
 interface SurveyBannerProps {
   entry: SurveyIndexEntry;
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
   ctaTextWrap: { flex: 1 },
   ctaTitle: {
     color: '#fff',
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '800',
     letterSpacing: -0.2,
   },

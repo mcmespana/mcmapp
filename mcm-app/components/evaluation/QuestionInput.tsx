@@ -7,6 +7,7 @@ import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import type { EvalQuestion } from '@/constants/evaluation';
 import ScaleInput from './ScaleInput';
+import typography from '@/constants/typography';
 
 type AnswerValue = number | string | boolean | string[];
 
@@ -190,7 +191,7 @@ const qStyles = StyleSheet.create({
     borderWidth: 1.5,
     borderRadius: 16,
     padding: 16,
-    fontSize: 16,
+    ...typography.body,
     minHeight: 130,
     lineHeight: 23,
   },

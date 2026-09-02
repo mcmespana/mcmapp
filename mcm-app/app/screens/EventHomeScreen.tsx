@@ -46,6 +46,7 @@ import {
 } from '@/constants/events';
 import { themeColors } from '@/constants/colors';
 import { breakpoints } from '@/constants/breakpoints';
+import typography from '@/constants/typography';
 
 /**
  * Hub genérico de un evento (Jubileo, encuentros, retiros, etc.).
@@ -504,7 +505,7 @@ const createStyles = (isDark: boolean) =>
       lineHeight: 30,
     },
     heroSubtitle: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '500',
       lineHeight: 19,
       marginTop: 6,
@@ -544,12 +545,12 @@ const createStyles = (isDark: boolean) =>
       gap: 2,
     },
     suggestTitle: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '700',
       letterSpacing: -0.2,
     },
     suggestSubtitle: {
-      fontSize: 12,
+      ...typography.footnote,
       lineHeight: 16,
     },
     suggestActions: {
@@ -562,7 +563,7 @@ const createStyles = (isDark: boolean) =>
       borderRadius: radii.md,
     },
     suggestBtnText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
     },
     suggestDismiss: {
@@ -570,7 +571,7 @@ const createStyles = (isDark: boolean) =>
       paddingVertical: 2,
     },
     suggestDismissText: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
     },
     motto: {
@@ -587,7 +588,7 @@ const createStyles = (isDark: boolean) =>
       borderRadius: 1,
     },
     mottoText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       fontStyle: 'italic',
       letterSpacing: 0.3,
@@ -633,7 +634,7 @@ const createStyles = (isDark: boolean) =>
       letterSpacing: -0.3,
     },
     cardSubtitle: {
-      fontSize: 12,
+      ...typography.footnote,
       lineHeight: 16,
     },
     arrowPill: {

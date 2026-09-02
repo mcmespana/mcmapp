@@ -15,6 +15,7 @@ import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -243,7 +244,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       color: theme.text,
     },
     itemSubtitle: {
-      fontSize: 12,
+      ...typography.footnote,
       color: isDark ? '#AEAEB2' : '#8E8E93',
       marginTop: 2,
     },
@@ -252,7 +253,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
     },
     emptyText: {
-      fontSize: 14,
+      ...typography.subhead,
       color: themeColors(isDark).textMuted,
       fontStyle: 'italic',
     },
@@ -261,7 +262,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       alignItems: 'center',
     },
     footerHint: {
-      fontSize: 11,
+      ...typography.micro,
       color: isDark ? '#636366' : '#A0A0A8',
       letterSpacing: 0.3,
     },

@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { reaEasings } from '@/constants/animations';
+import typography from '@/constants/typography';
 
 const BREATH_MS = 2100;
 
@@ -130,7 +131,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 13,
+    ...typography.caption,
     color: 'rgba(240,232,216,0.36)',
     marginTop: 8,
   },
@@ -166,7 +167,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   phaseText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
     color: 'rgba(240,232,216,0.65)',
     letterSpacing: 0.4,

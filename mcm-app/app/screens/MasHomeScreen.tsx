@@ -28,6 +28,7 @@ import { splitTabsForBar } from '@/constants/tabsCatalog';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import colors, { themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface NavigationItem {
   label: string;
@@ -380,7 +381,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   cardSubtitle: {
-    fontSize: 13,
+    ...typography.caption,
     lineHeight: 18,
   },
   arrowCircle: {

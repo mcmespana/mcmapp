@@ -34,6 +34,7 @@ import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import { KeyPillColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 export interface PdfExportConfig {
   playlistName: string;
@@ -342,13 +343,13 @@ const createStyles = (isDark: boolean) =>
       color: themeColors(isDark).textStrong,
     },
     subtitle: {
-      fontSize: 12,
+      ...typography.footnote,
       color: themeColors(isDark).textSecondary,
       marginTop: 4,
       marginBottom: 14,
     },
     label: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
@@ -369,7 +370,7 @@ const createStyles = (isDark: boolean) =>
     },
     rowText: { flex: 1 },
     rowTitle: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '600',
       color: themeColors(isDark).textStrong,
     },
@@ -396,7 +397,7 @@ const createStyles = (isDark: boolean) =>
       borderColor: '#0055A4',
     },
     fontChipText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
     },

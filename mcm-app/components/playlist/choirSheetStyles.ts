@@ -6,6 +6,7 @@
 import { StyleSheet } from 'react-native';
 import { radii } from '@/constants/uiStyles';
 import { KeyPillColors, SwipeColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 export const accent = (isDark: boolean) => themeColors(isDark).link;
 
@@ -35,14 +36,14 @@ export const createStyles = (isDark: boolean) =>
     },
     choirTextBlock: { flex: 1 },
     choirLabel: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
       color: themeColors(isDark).textSecondary,
     },
     choirName: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
       color: themeColors(isDark).textStrong,
     },
@@ -52,7 +53,7 @@ export const createStyles = (isDark: boolean) =>
       borderRadius: radii.sm,
     },
     linkBtnText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       color: accent(isDark),
     },
@@ -77,12 +78,12 @@ export const createStyles = (isDark: boolean) =>
     },
     heroTextBlock: { flex: 1 },
     heroTitle: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '800',
       color: '#fff',
     },
     heroSubtitle: {
-      fontSize: 13,
+      ...typography.caption,
       color: 'rgba(255,255,255,0.85)',
       marginTop: 2,
     },
@@ -115,7 +116,7 @@ export const createStyles = (isDark: boolean) =>
       color: themeColors(isDark).textStrong,
     },
     rowDescription: {
-      fontSize: 13,
+      ...typography.caption,
       color: '#8E8E93',
       marginTop: 2,
     },
@@ -140,13 +141,13 @@ export const createStyles = (isDark: boolean) =>
       color: themeColors(isDark).textStrong,
     },
     listMeta: {
-      fontSize: 12,
+      ...typography.footnote,
       color: '#8E8E93',
       marginTop: 2,
     },
     /* El código pasa a ser un detalle pequeñito, no el protagonista. */
     codeChip: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       color: isDark ? '#8E8E93' : '#8A8A8E',
       fontVariant: ['tabular-nums'],
@@ -154,7 +155,7 @@ export const createStyles = (isDark: boolean) =>
 
     /* --- Varios --- */
     sectionTitle: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
@@ -169,19 +170,19 @@ export const createStyles = (isDark: boolean) =>
       marginHorizontal: 12,
     },
     description: {
-      fontSize: 14,
+      ...typography.subhead,
       lineHeight: 20,
       color: themeColors(isDark).textSecondary,
       paddingHorizontal: 12,
     },
     error: {
-      fontSize: 13,
+      ...typography.caption,
       color: SwipeColors.remove,
       paddingHorizontal: 12,
       fontWeight: '600',
     },
     empty: {
-      fontSize: 14,
+      ...typography.subhead,
       color: '#8E8E93',
       textAlign: 'center',
       paddingVertical: 22,
@@ -195,7 +196,7 @@ export const createStyles = (isDark: boolean) =>
       gap: 6,
     },
     fieldLabel: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
       textTransform: 'uppercase',
@@ -231,7 +232,7 @@ export const createStyles = (isDark: boolean) =>
       paddingBottom: 2,
     },
     backText: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '600',
       color: accent(isDark),
     },

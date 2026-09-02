@@ -8,6 +8,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import colors from '@/constants/colors';
+import typography from '@/constants/typography';
 
 // Palanca gigante MUNDANO ↔ ALPHA que activa/desactiva el canal preview.
 // Extraído de PreviewChannelModal.
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
   },
   leverLabel: {
     color: '#FFFFFF',
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '900',
     letterSpacing: 1.6,
     textShadowColor: 'rgba(0,0,0,0.45)',

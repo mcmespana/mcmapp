@@ -3,6 +3,7 @@ import { TextInput, TextInputProps, StyleSheet, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors, SwipeColors, themeColors } from '@/constants/colors';
 import { focusRing, radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 /**
  * Campo de texto unificado (Fase 2 de PLAN_UI_NATIVA).
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === 'ios' ? 12 : 9,
-    fontSize: 16,
+    ...typography.body,
   },
   multiline: {
     minHeight: 96,

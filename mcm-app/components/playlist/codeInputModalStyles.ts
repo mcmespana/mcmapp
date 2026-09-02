@@ -10,6 +10,7 @@ import colors, {
   SwipeColors,
   themeColors,
 } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 export const createStyles = (isDark: boolean) =>
   StyleSheet.create({
@@ -17,7 +18,7 @@ export const createStyles = (isDark: boolean) =>
       paddingBottom: 24,
     },
     description: {
-      fontSize: 14,
+      ...typography.subhead,
       color: themeColors(isDark).textSecondary,
       marginBottom: 18,
       lineHeight: 20,
@@ -33,7 +34,7 @@ export const createStyles = (isDark: boolean) =>
       marginBottom: 8,
     },
     inputLabel: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
       marginBottom: 6,
@@ -108,13 +109,13 @@ export const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     suggestText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: themeColors(isDark).link,
     },
     error: {
       color: SwipeColors.remove,
-      fontSize: 13,
+      ...typography.caption,
       marginBottom: 8,
       textAlign: 'center',
     },

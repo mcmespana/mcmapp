@@ -17,6 +17,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { pushWithRetry, setWithRetry } from '@/services/firebaseWrites';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import typography from '@/constants/typography';
 
 interface SuggestSongModalProps {
   visible: boolean;
@@ -258,18 +259,18 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   fieldLabel: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     marginBottom: 6,
     marginTop: 16,
   },
   fieldSublabel: {
-    fontSize: 12,
+    ...typography.footnote,
     marginBottom: 8,
     marginTop: -4,
   },
   charCount: {
-    fontSize: 11,
+    ...typography.micro,
     textAlign: 'right',
     marginTop: 6,
   },
@@ -292,7 +293,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   categoryPillText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   },
   errorRow: {
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF3B30',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   },
   submitBtn: {
@@ -312,7 +313,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   disclaimer: {
-    fontSize: 12,
+    ...typography.footnote,
     lineHeight: 18,
     textAlign: 'center',
   },

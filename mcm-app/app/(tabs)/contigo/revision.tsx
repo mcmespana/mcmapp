@@ -41,6 +41,7 @@ import {
   fetchContigoRevisions,
 } from '@/utils/authHelpers';
 import { styles } from '@/components/contigo/revisionStyles';
+import typography from '@/constants/typography';
 
 const REVISION_STORAGE = '@contigo_revision_';
 
@@ -537,7 +538,7 @@ function GratefulStep({
             >
               <Text
                 style={{
-                  fontSize: 13,
+                  ...typography.caption,
                   fontWeight: '700',
                   color: active ? purple : W.textMuted,
                 }}

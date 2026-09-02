@@ -21,6 +21,7 @@ import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import { pushWithRetry } from '@/services/firebaseWrites';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
 
 // Apple system color used inside the modal — not part of the MCM brand
 // palette, but matches iOS native conventions for "destructive text".
@@ -290,7 +291,7 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   subtitle: {
-    fontSize: 14,
+    ...typography.subhead,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -329,7 +330,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   charCount: {
-    fontSize: 11,
+    ...typography.micro,
     textAlign: 'right',
     marginTop: 6,
     marginBottom: 16,
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: APPLE_SYSTEM_RED,
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   },
 });

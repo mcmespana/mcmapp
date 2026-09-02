@@ -33,6 +33,7 @@ import { radii } from '@/constants/uiStyles';
 import { hexAlpha } from '@/utils/colorUtils';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { tryRegisterPushToken } from '@/notifications/usePushNotifications';
+import typography from '@/constants/typography';
 
 const DISMISSED_KEY = '@mcm_notif_permission_banner_dismissed_at';
 const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
@@ -237,11 +238,11 @@ const styles = StyleSheet.create({
     gap: 4,
   } as ViewStyle,
   title: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '700',
   } as TextStyle,
   body: {
-    fontSize: 11,
+    ...typography.micro,
     lineHeight: 15,
     opacity: 0.85,
   } as TextStyle,
@@ -256,7 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
   } as ViewStyle,
   ctaText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
   } as TextStyle,
   close: {

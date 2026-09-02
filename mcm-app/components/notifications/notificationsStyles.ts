@@ -42,7 +42,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     },
     emptyTitle: {
       ...(typography.h2 as any),
-      fontSize: 16,
+      ...typography.body,
       marginTop: spacing.lg,
       marginBottom: spacing.sm,
       textAlign: 'center',
@@ -120,10 +120,10 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       color: '#fff',
       fontWeight: '600',
       marginTop: 4,
-      fontSize: 12,
+      ...typography.footnote,
     },
     notificationBody: {
-      fontSize: 13,
+      ...typography.caption,
       color: theme.icon,
       lineHeight: 19,
       marginBottom: 8,
@@ -136,7 +136,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 6,
     },
     notificationDate: {
-      fontSize: 11,
+      ...typography.micro,
       color: theme.icon,
     },
     chipsRow: {

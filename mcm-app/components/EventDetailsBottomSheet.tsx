@@ -21,6 +21,7 @@ import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { CalendarConfig } from '@/hooks/useCalendarConfigs';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -412,7 +413,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pillFull,
   } as ViewStyle,
   calendarName: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
     letterSpacing: 0.2,
   } as TextStyle,
@@ -448,11 +449,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   } as TextStyle,
   infoSecondary: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   } as TextStyle,
   infoLink: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '600',
     marginTop: 2,
   } as TextStyle,
@@ -479,12 +480,12 @@ const styles = StyleSheet.create({
     gap: spacing.xs + 2,
   } as ViewStyle,
   sectionLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.5,
   } as TextStyle,
   descriptionText: {
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 20,
   } as TextStyle,
 
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   } as ViewStyle,
   secondaryBtnLabel: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
   } as TextStyle,
 });

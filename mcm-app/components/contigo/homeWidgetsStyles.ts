@@ -5,6 +5,7 @@
  * 1095 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.
  */
 import { Platform, StyleSheet } from 'react-native';
+import typography from '@/constants/typography';
 
 export const styles = StyleSheet.create({
   // Hero — outer carries the shadow, inner clips the gradient corners.
@@ -51,7 +52,7 @@ export const styles = StyleSheet.create({
     lineHeight: 28,
   },
   heroRingNumSm: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
     color: 'rgba(255,255,255,0.55)',
   },
@@ -70,7 +71,7 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
   },
   heroSubtitle: {
-    fontSize: 12,
+    ...typography.footnote,
     color: 'rgba(255,255,255,0.5)',
     lineHeight: 16,
     marginBottom: 12,
@@ -87,7 +88,7 @@ export const styles = StyleSheet.create({
   },
   heroChipEmoji: { fontSize: 11 },
   heroChipText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     color: 'rgba(255,255,255,0.9)',
   },
@@ -141,7 +142,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tileLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.2,
     textAlign: 'center',
@@ -174,13 +175,13 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
   },
   teaserKicker: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '800',
     letterSpacing: 0.5,
     marginBottom: 3,
   },
   teaserTitle: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '800',
     letterSpacing: -0.3,
     lineHeight: 20,
@@ -193,7 +194,7 @@ export const styles = StyleSheet.create({
   teaserCitaText: { fontSize: 12, fontWeight: '800' },
   teaserPreviewWrap: { position: 'relative', marginBottom: 14 },
   teaserPreview: {
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 22,
     fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
   },

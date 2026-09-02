@@ -28,6 +28,7 @@ import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import ComingSoon from '@/components/ui/ComingSoon';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
 
 interface AppInfo {
   orden: number;
@@ -296,7 +297,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: spacing.md,
     },
     introText: {
-      fontSize: 16,
+      ...typography.body,
       color: theme.text,
       textAlign: 'center',
       lineHeight: 22,
@@ -304,7 +305,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '500',
     },
     introSubtext: {
-      fontSize: 14,
+      ...typography.subhead,
       color: theme.text,
       textAlign: 'center',
       opacity: 0.7,
@@ -347,7 +348,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     description: {
       color: theme.text,
       opacity: 0.7,
-      fontSize: 13,
+      ...typography.caption,
       lineHeight: 18,
     },
     rightContainer: {

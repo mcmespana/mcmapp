@@ -194,22 +194,35 @@ en vez de repetir hex a mano.
 
 ---
 
-## C. Tipografía y pesos
+## 🟡 C. Tipografía y pesos — primera pasada hecha
 
-Ya anotado en `mcm-app/TODO.md` §Inconsistencias; aquí queda el destino.
+**Evidencia.** `constants/typography.ts` existía y **solo lo importaban 6
+ficheros**, con 666 `fontSize` a mano por toda la app.
 
-**Evidencia.** `constants/typography.ts` existe y casi nadie lo importa;
-`fontSize` inline por todas partes. Pesos sin regla: `800` en labels, `700` en
-títulos de card, `500`/`700` en botones.
+> **La causa no era desidia, era que el token no servía.** La escala declaraba
+> siete tamaños (10/13/15/16/22/28/34) y los cinco más usados del repo —12 (100
+> usos), 14 (71), 11 (71), 17 (22), 18 (25)— **no estaban**. Un token que no
+> cubre tu caso no se usa: se rodea. Eso explica los 666 mucho mejor que
+> cualquier regla que se pudiera haber escrito en un documento.
 
-**Destino.** La escala de pesos de `design.md` §4: **800** solo `h0`, kickers y
-badges · **700** títulos de card · **600** secciones · **500** acciones ·
-normal cuerpo.
+**Destino.** Escala completa con los nombres de iOS (de donde vienen los
+tamaños), y un token solo trae `fontWeight` cuando el rol lo implica — así se
+puede sobrescribir sin sorpresas y migrar un `fontSize` suelto no cambia el
+peso.
 
-- [ ] C1 Migrar `fontSize` inline a `typography.*` (por tandas, empezando por
-      `components/ui/`, que es lo que todo lo demás copia)
-- [ ] C2 Aplicar la escala de pesos
-- [ ] C3 Cerrar las dos casillas correspondientes de `TODO.md`
+- [x] C1 Escala ampliada: `h3` 18, `title` 17, `subhead` 14, `footnote` 12,
+      `micro` 11. `h1` normalizado de `'bold'` a `'700'` (idéntico en RN).
+- [x] C2 Migrados 345 `fontSize` (de 666 a 321; de 6 ficheros importando el
+      token a 96). Solo los tokens SIN peso propio, que son
+      byte-equivalentes; los que llevan peso se migraron únicamente donde el
+      peso declarado coincidía.
+- [x] C3 Trinquete de `fontSize` en `__tests__/noNewMagicNumbers.test.ts`.
+- [ ] C4 Quedan 321, casi todos con `fontWeight` declarado al lado que NO
+      coincide con el del token. Hay que mirarlos uno a uno y decidir: o el
+      sitio se equivoca de peso (y se corrige, aplicando la escala de
+      `design.md` §4), o el token no le vale. Es trabajo de revisión, no
+      mecánico.
+- [x] C5 Casillas de `TODO.md` actualizadas.
 
 ---
 
@@ -385,11 +398,19 @@ Ninguna es urgente.
 
 ## Orden sugerido si hay un hueco grande
 
-1. **A4** (5 min) → **A1** (la trampa activa) → **A5** (el volumen)
-2. **D** y **C** (mecánicas, seguras, sin verificación en dispositivo)
-3. **B2** + **H7** (para que no vuelva a desincronizarse)
-4. **G1** (cross-repo: hace falta `mcmpanel` en el scope de la sesión)
-5. **E** y **H3** solo tras preguntar (🔒)
+**Primera pasada hecha el 2026-08-31** (§A1, A2, A4, A5 parcial, A6, B, C
+parcial, D, E1, F1–F3, G1, G2, H1, H3, H7). Lo que queda, en el orden en que lo
+haría:
+
+1. **H9** — verificar en dispositivo lo que ya cambió (sombra de toasts,
+   radios, gris secundario). Es lo único que bloquea dar la pasada por buena.
+2. **H8** — las capas de superficie en modo oscuro. El hallazgo con más
+   impacto visual que queda, y también necesita dispositivo.
+3. **C4** — los 321 `fontSize` que quedan. Revisión, no mecánica.
+4. **A5.4** y **E2** — segunda tanda de hex y los `borderRadius` inline.
+5. **F4** — las cuatro anchuras máximas. Necesita dispositivo.
+6. **A6-ter**, **A2-bis**, **G1.4**, **H1-bis** — sueltos, cortos.
+7. **H2**, **H4**, **H5**, **H6**, **H10** — mejoras, sin prisa.
 
 ---
 

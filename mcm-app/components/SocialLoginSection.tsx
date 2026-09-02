@@ -26,6 +26,7 @@ import { useToast } from '@/contexts/AppToastContext';
 import { authErrorMessage } from '@/utils/authErrors';
 import { isAppleSignInAvailable } from '@/utils/platformAuth';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
 
 /** Pide confirmación para eliminar la cuenta. Multiplataforma: usa Alert en
  *  nativo y window.confirm en web. Devuelve true si el usuario confirma. */
@@ -597,16 +598,16 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   } as TextStyle,
   authName: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     letterSpacing: -0.2,
   } as TextStyle,
   authEmail: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 1,
   } as TextStyle,
   authProvider: {
-    fontSize: 11,
+    ...typography.micro,
     marginTop: 2,
   } as TextStyle,
   signOutBtn: {
@@ -616,7 +617,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   } as ViewStyle,
   signOutLabel: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   } as TextStyle,
 });

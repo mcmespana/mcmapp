@@ -27,6 +27,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import colors, { themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -320,7 +321,7 @@ const createStyles = (isDark: boolean) =>
       }),
     },
     toggleText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
     },
@@ -340,7 +341,7 @@ const createStyles = (isDark: boolean) =>
       paddingHorizontal: 16,
     },
     uploadPromptText: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '600',
       color: isDark ? '#AEAEB2' : '#6B6B70',
       textAlign: 'center',

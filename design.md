@@ -344,7 +344,7 @@ Lo que **no** comparten: paleta, densidad, tipografía de UI, glass, animación.
 
 - [ ] ¿Cero hex y cero números mágicos nuevos? (`grep` tu diff — blanco y negro
       puros son la única excepción). Hay un trinquete que lo comprueba:
-      `__tests__/noNewHardcodedColors.test.ts`. Su tope solo baja.
+      `__tests__/noNewMagicNumbers.test.ts`. Su tope solo baja.
 - [ ] ¿Modo claro **y** oscuro?
 - [ ] ¿`fontScale` grande sin romper ni recortar?
 - [ ] ¿iOS, Android y web? Si diverge, ¿es deliberado y está en §6?
@@ -354,7 +354,7 @@ Lo que **no** comparten: paleta, densidad, tipografía de UI, glass, animación.
 - [ ] ¿Se parece a la pantalla de al lado, o he inventado un dialecto?
 - [ ] ¿Algún componente de §7 que debería haber usado y no usé?
 - [ ] `npx tsc --noEmit && npm run lint && npm test` — y en particular
-      `designTokens.test.ts` y `noNewHardcodedColors.test.ts`, que son este
+      `designTokens.test.ts` y `noNewMagicNumbers.test.ts`, que son este
       documento en verde o en rojo.
 
 ---

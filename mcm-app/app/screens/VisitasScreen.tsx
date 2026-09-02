@@ -23,6 +23,7 @@ import ComingSoon from '@/components/ui/ComingSoon';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { getEventCacheKey, getEventFirebasePath } from '@/constants/events';
+import typography from '@/constants/typography';
 
 interface Visita {
   titulo: string;
@@ -319,14 +320,14 @@ const createStyles = (scheme: 'light' | 'dark') => {
       gap: 12,
     },
     title: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
       letterSpacing: -0.2,
       color: themeColors(isDark).textStrong,
       marginBottom: 4,
     },
     subtitle: {
-      fontSize: 14,
+      ...typography.subhead,
       color: isDark ? '#C7C7CC' : '#3A3A3C',
       marginBottom: 8,
       lineHeight: 19,
@@ -338,7 +339,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       marginTop: 2,
     },
     dateText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
       textTransform: 'capitalize',
@@ -413,7 +414,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       gap: 6,
     },
     modalDateText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
       textTransform: 'capitalize',

@@ -132,7 +132,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       borderRadius: radii.xs,
     },
     chipLabel: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '500',
       color: themeColors(isDark).textSecondary,
     },
@@ -162,7 +162,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       alignSelf: 'flex-start',
     },
     backToTodayLabel: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       color: colors.info,
       letterSpacing: -0.1,
@@ -187,13 +187,13 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       fontVariant: ['tabular-nums'],
     },
     eventSectionWeekday: {
-      fontSize: 14,
+      ...typography.subhead,
       fontWeight: '500',
       color: themeColors(isDark).textSecondary,
       textTransform: 'capitalize',
     },
     eventSectionCount: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '500',
       color: isDark ? '#636366' : '#AEAEB2',
       marginTop: 1,
@@ -241,7 +241,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 8,
     },
     eventTitle: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '600',
       color: themeColors(isDark).textStrong,
       flex: 1,
@@ -262,7 +262,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       borderRadius: 3,
     },
     calendarBadgeText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '600',
     },
     eventMeta: {
@@ -271,12 +271,12 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       gap: 4,
     },
     eventLocation: {
-      fontSize: 13,
+      ...typography.caption,
       color: '#8E8E93',
       flex: 1,
     },
     eventDuration: {
-      fontSize: 13,
+      ...typography.caption,
       color: '#8E8E93',
     },
 
@@ -340,7 +340,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       fontVariant: ['tabular-nums'],
     },
     sectionWeekday: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       color: '#8E8E93',
       textTransform: 'uppercase',
@@ -363,7 +363,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       alignItems: 'center',
     },
     sectionBadgeText: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       color: isDark ? '#8E8E93' : '#636366',
       fontVariant: ['tabular-nums'],

@@ -32,6 +32,7 @@ import {
   UIColors,
   themeColors,
 } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface Song {
   title: string;
@@ -334,7 +335,7 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? '#1A3320' : '#D7F1DA',
     },
     numberText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       color: themeColors(isDark).link,
       fontVariant: ['tabular-nums'],
@@ -350,13 +351,13 @@ const createStyles = (isDark: boolean) =>
       flex: 1,
     },
     songTitle: {
-      fontSize: 16,
+      ...typography.body,
       color: themeColors(isDark).textStrong,
       fontWeight: '500',
       letterSpacing: -0.2,
     },
     authorText: {
-      fontSize: 13,
+      ...typography.caption,
       color: isDark ? '#AEAEB2' : '#8E8E93',
       fontStyle: 'italic',
       marginTop: 3,
@@ -378,7 +379,7 @@ const createStyles = (isDark: boolean) =>
       borderColor: isDark ? '#7A5A00' : UIColors.accentYellow,
     },
     capoText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
@@ -393,7 +394,7 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     keyText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       color: themeColors(isDark).link,
     },
@@ -403,7 +404,7 @@ const createStyles = (isDark: boolean) =>
       gap: 4,
     },
     toneOriginalStriked: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '500',
       color: isDark ? '#636366' : '#A0A0A8',
       textDecorationLine: 'line-through',
@@ -419,12 +420,12 @@ const createStyles = (isDark: boolean) =>
       borderColor: UIColors.accentYellow,
     },
     keyTextTransposed: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       color: '#7A5A00',
     },
     transposeParenLabel: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
@@ -460,7 +461,7 @@ const createStyles = (isDark: boolean) =>
     },
     actionText: {
       color: '#fff',
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       marginTop: 4,
     },

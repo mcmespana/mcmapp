@@ -24,6 +24,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { transposeLabel } from '@/utils/transposeKey';
 import ShareQrModal from '@/components/playlist/ShareQrModal';
 import colors from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface Props {
   /** Si true, el banner se muestra en posición fija arriba (no en flujo). */
@@ -213,13 +214,13 @@ const createStyles = (isDark: boolean) =>
       flex: 1,
     },
     role: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       color: '#fff',
       letterSpacing: 0.2,
     },
     detail: {
-      fontSize: 12,
+      ...typography.footnote,
       color: 'rgba(255,255,255,0.85)',
       marginTop: 1,
     },
@@ -239,7 +240,7 @@ const createStyles = (isDark: boolean) =>
     },
     actionText: {
       color: '#fff',
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '700',
     },
     leaveBtn: {

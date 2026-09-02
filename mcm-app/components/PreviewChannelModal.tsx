@@ -29,6 +29,7 @@ import {
   WobblingTitle,
 } from '@/components/preview-channel/LabDecorations';
 import { LabStatusPanel } from '@/components/preview-channel/LabStatusPanel';
+import typography from '@/constants/typography';
 
 /**
  * Modal "Laboratorio Alpha" — UI deliberadamente exagerada, festiva y opuesta
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: 'rgba(255,255,255,0.75)',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
   },
   statusEyebrow: {
     color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
   },
   scrollBody: {
     color: '#3D2A0E',
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 21,
   },
   scrollMono: {
@@ -349,7 +350,7 @@ const styles = StyleSheet.create({
   },
   scrollFootnote: {
     color: 'rgba(61, 42, 14, 0.75)',
-    fontSize: 12,
+    ...typography.footnote,
     fontStyle: 'italic',
     marginTop: 4,
     lineHeight: 17,
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
     letterSpacing: 1.4,
     textTransform: 'uppercase',

@@ -18,6 +18,38 @@
 
 ---
 
+## 2026-08-31 20:15 — La escala tipográfica ahora cubre los tamaños que la app usa
+
+PLAN_DISENO §C. `constants/typography.ts` existía desde siempre y **solo lo
+importaban 6 ficheros**, con 666 `fontSize` escritos a mano por toda la app.
+
+La causa no era desidia: la escala declaraba siete tamaños (10/13/15/16/22/28/34)
+y los cinco más usados del repo —12 con 100 usos, 14 con 71, 11 con 71, 17 con
+22 y 18 con 25— **no estaban**. Un token que no cubre tu caso no se usa, se
+rodea.
+
+- Escala ampliada con los nombres de iOS, que es de donde vienen los tamaños:
+  `h3` 18, `title` 17, `subhead` 14, `footnote` 12, `micro` 11.
+- Un token solo trae `fontWeight` cuando el rol lo implica, para poder
+  sobrescribirlo sin sorpresas.
+- Migrados 345 `fontSize`: **de 666 a 321**, y de 6 ficheros importando el token
+  a 96. Solo se tocaron los tokens sin peso propio (byte-equivalentes); los que
+  llevan peso, únicamente donde el peso declarado ya coincidía.
+- La escala de pesos queda escrita en `design.md` §4: 800 en `h0`, kickers y
+  badges · 700 en títulos de card · 600 en secciones · 500 en acciones · normal
+  en cuerpo.
+- `__tests__/noNewMagicNumbers.test.ts` (antes `noNewHardcodedColors`) suma un
+  trinquete de `fontSize` al que ya tenía de colores.
+
+Los 321 que quedan llevan un `fontWeight` al lado que no coincide con el del
+token: hay que mirarlos uno a uno y decidir si el sitio se equivoca de peso o si
+el token no le vale. Es revisión, no trabajo mecánico (§C4).
+
+- **Archivos**: `constants/typography.ts`, `__tests__/noNewMagicNumbers.test.ts`
+  y 85 ficheros de `app/` y `components/`.
+
+---
+
 ## 2026-08-31 18:40 — Unificación de tokens de diseño: los nombres ya no mienten
 
 Primera pasada de [`docs/planes/PLAN_DISENO.md`](../docs/planes/PLAN_DISENO.md).

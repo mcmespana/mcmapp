@@ -14,6 +14,7 @@ import type { HighlightRange } from '@/utils/highlightRanges';
 
 import useFontScale from '@/hooks/useFontScale';
 import { WARM_DARK } from '@/components/contigo/theme';
+import typography from '@/constants/typography';
 
 interface ReadingCardProps {
   title: string;
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   citaText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
   },
   body: {

@@ -12,6 +12,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { UIColors, Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
 
 /**
  * Botón CTA unificado (Fase 2 de PLAN_UI_NATIVA).
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
   },
   label: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
   },
 });

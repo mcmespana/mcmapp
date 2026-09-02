@@ -25,6 +25,7 @@ import {
 } from '@/constants/colors';
 import { durations } from '@/constants/animations';
 import { extractSongMedia, mediaKinds } from '@/types/songMedia';
+import typography from '@/constants/typography';
 
 // Type for song data
 interface Song {
@@ -338,7 +339,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
     },
     songTitle: {
-      fontSize: 16,
+      ...typography.body,
       color: themeColors(isDark).textStrong,
       fontWeight: '500',
       letterSpacing: -0.2,
@@ -362,22 +363,22 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderColor: isDark ? '#48484A' : '#D1D1D6',
     },
     categoryPillText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
     },
     numberText: {
-      fontSize: 13,
+      ...typography.caption,
       color: themeColors(isDark).textMuted,
       fontVariant: ['tabular-nums'],
     },
     metaSeparator: {
-      fontSize: 13,
+      ...typography.caption,
       color: isDark ? '#636366' : '#C7C7CC',
     },
     authorText: {
-      fontSize: 13,
+      ...typography.caption,
       color: isDark ? '#AEAEB2' : '#8E8E93',
       fontStyle: 'italic',
       flex: 1,
@@ -400,7 +401,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: isDark ? '#3A3A3C' : '#EBEBEB',
     },
     capoText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '600',
       color: themeColors(isDark).textSecondary,
       fontVariant: ['tabular-nums'],
@@ -412,7 +413,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     keyText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       color: themeColors(isDark).link,
     },
@@ -422,7 +423,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       gap: 4,
     },
     toneOriginalStriked: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '500',
       color: isDark ? '#636366' : '#A0A0A8',
       textDecorationLine: 'line-through',
@@ -438,12 +439,12 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       borderColor: UIColors.accentYellow,
     },
     keyTextTransposed: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       color: '#7A5A00',
     },
     transposeParenLabel: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       color: '#8E8E93',
       fontVariant: ['tabular-nums'],
@@ -466,7 +467,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     actionText: {
       color: '#fff',
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       marginTop: 4,
     },

@@ -1,4 +1,5 @@
 import { StyleSheet, ViewStyle } from 'react-native';
+import typography from '@/constants/typography';
 
 /**
  * Estilos del armazón del wizard de evaluación (topBar, barra de progreso,
@@ -44,7 +45,7 @@ export const createWizardStyles = (isDark: boolean) =>
       paddingVertical: 24,
     },
     stepCount: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '800',
       letterSpacing: 1,
       marginBottom: 10,

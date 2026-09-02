@@ -6,6 +6,7 @@ import colors, { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
 
 export interface ContextMenuAction {
   key: string;
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   label: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '600',
   },
 });

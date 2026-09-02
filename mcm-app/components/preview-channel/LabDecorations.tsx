@@ -10,6 +10,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import typography from '@/constants/typography';
 
 // Adornos de texto animados del "Laboratorio Alpha": el título que se mece,
 // los destellos pulsantes y el ticker de frases rotativas. Extraído de
@@ -143,7 +144,7 @@ const styles = StyleSheet.create({
   },
   phrase: {
     color: 'rgba(255,255,255,0.95)',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
     fontStyle: 'italic',
     textAlign: 'center',

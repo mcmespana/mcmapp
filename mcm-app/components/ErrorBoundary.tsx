@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import colors, { themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface Props {
   children: ReactNode;
@@ -76,7 +77,7 @@ const getDynamicStyles = (isDark: boolean) =>
       backgroundColor: themeColors(isDark).background,
     },
     subtitle: {
-      fontSize: 16,
+      ...typography.body,
       color: isDark ? '#aaa' : '#666',
       textAlign: 'center',
       marginBottom: 24,
@@ -110,11 +111,11 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '600',
   },
   errorText: {
-    fontSize: 12,
+    ...typography.footnote,
     fontFamily: 'monospace',
     color: '#c00',
   },

@@ -10,6 +10,7 @@ import { StyleSheet } from 'react-native';
 import { radii } from '@/constants/uiStyles';
 import { FRAME_SIZE } from './QrScanFrame';
 import colors from '@/constants/colors';
+import typography from '@/constants/typography';
 
 /** Penumbra que rodea el hueco de escaneo. */
 const DIM = 'rgba(0,0,0,0.62)';
@@ -133,7 +134,7 @@ export const styles = StyleSheet.create({
   },
   deniedText: {
     color: '#AEAEB2',
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 20,
     textAlign: 'center',
   },

@@ -16,6 +16,7 @@ import {
 import { h } from '@/utils/haptics';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { WARM_DARK, warm } from '@/components/contigo/theme';
+import typography from '@/constants/typography';
 
 interface HighlightActionBarProps {
   visible: boolean;
@@ -214,7 +215,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     flex: 1,
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '600',
     lineHeight: 16,
   },
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
   },
   doneText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
   },
 });

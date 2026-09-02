@@ -23,6 +23,7 @@ import {
 } from '@/components/contigo/theme';
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
 import { countHighlights } from '@/utils/contigoBookmarks';
+import typography from '@/constants/typography';
 
 export default function BookmarksScreen() {
   // Subruta de Contigo: se registra con la clave del tab (gana el último
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { fontSize: 12, marginTop: 2 },
   countLabel: {
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '600',
     marginBottom: 12,
     paddingHorizontal: 4,
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   preview: {
-    fontSize: 13,
+    ...typography.caption,
     lineHeight: 20,
     fontStyle: 'italic',
     marginBottom: 12,

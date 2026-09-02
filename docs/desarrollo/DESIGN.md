@@ -168,19 +168,31 @@ WARM_DARK: paralelo, fondos #1A1712/#100F0C/#26221C, accent #DAA520
 - **Fuente monoespaciada:** SpaceMono-Regular (solo para código/acordes).
 - **Iconos:** MaterialIcons (`@expo/vector-icons`), SF Symbols en iOS.
 
-| Nivel    | Tamaño | Peso   | Uso                                                        |
-| -------- | ------ | ------ | ---------------------------------------------------------- |
-| h0       | 34px   | 800    | Títulos hero (Contigo, ScreenHero) · letterSpacing -1.4    |
-| h1       | 28px   | bold   | Títulos de pantalla                                        |
-| h2       | 22px   | 600    | Subtítulos, secciones                                      |
-| body     | 16px   | normal | Texto general                                              |
-| caption  | 13px   | normal | Texto auxiliar, metadatos                                  |
-| button   | 15px   | 500    | Botones, labels de acción                                  |
-| overline | 10px   | 600    | Kicker uppercase con tracking 0.5 (SectionHeader, kicker)  |
-| serif    | —      | —      | `Palatino` (iOS) / `serif` (Android) — lecturas litúrgicas |
+| Token      | Tamaño | Peso   | Uso                                                        |
+| ---------- | ------ | ------ | ---------------------------------------------------------- |
+| `h0`       | 34px   | 800    | Títulos hero (Contigo, ScreenHero) · letterSpacing -1.4    |
+| `h1`       | 28px   | 700    | Títulos de pantalla                                        |
+| `h2`       | 22px   | 600    | Subtítulos, secciones                                      |
+| `h3`       | 18px   | 600    | Subsección, título de card grande                          |
+| `title`    | 17px   | 600    | Título de card, cabecera de fila                           |
+| `body`     | 16px   | normal | Texto general                                              |
+| `button`   | 15px   | 500    | Botones, labels de acción                                  |
+| `subhead`  | 14px   | normal | Subtítulo de fila, descripción                             |
+| `caption`  | 13px   | normal | Texto auxiliar, metadatos                                  |
+| `footnote` | 12px   | normal | Pie, nota al margen                                        |
+| `micro`    | 11px   | normal | Etiqueta mínima, contador                                  |
+| `overline` | 10px   | 600    | Kicker uppercase con tracking 0.5                          |
+| `serif`    | —      | —      | `Palatino` (iOS) / `serif` (Android) — lecturas litúrgicas |
+
+> Ampliada en agosto de 2026. Declaraba siete tamaños y los más usados del repo
+> (12, 14, 11, 17, 18) no estaban, así que casi nadie la importaba: había 666
+> `fontSize` a mano y 6 ficheros usando el token. Ahora son 321 y 96.
+> Un token solo trae `fontWeight` cuando el rol lo implica, para que se pueda
+> sobrescribir sin sorpresas.
 
 - El sistema soporta escala de fuente (`fontScale`) que multiplica los tamaños base.
-- Peso extra-bold (`800`) se usa en labels de sección, badges y el logo.
+- Escala de pesos: **800** en `h0`, kickers y badges · **700** en títulos de
+  card · **600** en secciones · **500** en acciones · normal en cuerpo.
 - `letterSpacing` negativo (`-0.4`) en el logo text; positivo (`0.3`–`1.0`) en labels uppercase.
 - `typography.serif` solo se usa en `components/contigo/ReadingCard.tsx` y donde haya texto contemplativo largo — no en UI general.
 

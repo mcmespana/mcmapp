@@ -44,6 +44,7 @@ import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
 import PageContainer from '@/components/ui/PageContainer';
 import ScreenHero from '@/components/ui/ScreenHero';
 import type { EventStackParamList } from './eventStackScreens';
+import typography from '@/constants/typography';
 
 interface Grupo {
   nombre: string;
@@ -679,7 +680,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     cardAuthor: { fontSize: 15, fontWeight: '700', color: theme.text },
     cardDate: { fontSize: 12, color: theme.icon, marginTop: 1 },
     cardTitle: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
       color: theme.text,
       marginBottom: 4,
@@ -699,7 +700,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginTop: 4,
     },
     emptyText: {
-      fontSize: 14,
+      ...typography.subhead,
       color: theme.icon,
       textAlign: 'center',
     },
@@ -725,13 +726,13 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
         scheme === 'dark' ? 'rgba(163,189,49,0.18)' : 'rgba(163,189,49,0.12)',
     },
     sheetSubtitle: {
-      fontSize: 13,
+      ...typography.caption,
       color: theme.icon,
       marginTop: 2,
     },
     field: { marginBottom: spacing.md },
     inputLabel: {
-      fontSize: 12,
+      ...typography.footnote,
       color: colors.green,
       fontWeight: '700',
       letterSpacing: 0.2,
@@ -808,7 +809,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     saveBtnLabel: {
       color: '#fff',
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
       letterSpacing: 0.2,
     },

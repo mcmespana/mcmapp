@@ -27,6 +27,7 @@ import {
   CarismochitoExitConfirm,
 } from '@/components/CarismochitoDialogs';
 import colors from '@/constants/colors';
+import typography from '@/constants/typography';
 
 /* Verdes del HUD del modo (distintos tonos). */
 const G = '#1B9E4B'; // verde principal
@@ -564,7 +565,7 @@ const styles = StyleSheet.create({
   badgeTitle: {
     color: G_LIGHT,
     fontWeight: '900',
-    fontSize: 12,
+    ...typography.footnote,
     letterSpacing: 1.4,
   },
   badgeSubtitle: {
@@ -617,7 +618,7 @@ const styles = StyleSheet.create({
   },
   activatingLabel: {
     color: G_LIGHT,
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     letterSpacing: 4,
     textTransform: 'uppercase',
@@ -658,7 +659,7 @@ const styles = StyleSheet.create({
   },
   subtle: {
     color: '#A3D86E',
-    fontSize: 13,
+    ...typography.caption,
     marginTop: 22,
     marginBottom: 28,
     textAlign: 'center',
@@ -688,7 +689,7 @@ const styles = StyleSheet.create({
   cancelText: {
     color: G_DARK,
     fontWeight: '800',
-    fontSize: 16,
+    ...typography.body,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },

@@ -33,6 +33,7 @@ import BottomSheet from './BottomSheet';
 import NotificationDetail from './notifications/NotificationDetail';
 import NotificationListItem from './notifications/NotificationListItem';
 import { normalizeRoute } from './notifications/notificationDisplay';
+import typography from '@/constants/typography';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_GAP = 80; // space below safe-area (notch / Dynamic Island)
@@ -338,7 +339,7 @@ const sheetStyles = StyleSheet.create({
     borderRadius: radii.md,
   },
   markAllHeaderText: {
-    fontSize: 12,
+    ...typography.footnote,
     color: colors.primary,
     fontWeight: '600',
   },
@@ -350,12 +351,12 @@ const sheetStyles = StyleSheet.create({
     gap: spacing.sm,
   },
   emptyTitle: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    ...typography.subhead,
     textAlign: 'center',
     lineHeight: 22,
     opacity: 0.7,

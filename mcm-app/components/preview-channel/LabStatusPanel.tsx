@@ -11,6 +11,7 @@ import type {
   PreviewChannelStatus,
 } from '@/contexts/PreviewChannelContext';
 import type { UnsupportedReason } from '@/services/previewChannel';
+import typography from '@/constants/typography';
 
 /**
  * Panel de estado del Laboratorio Alpha.
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
   },
   bannerBody: {
     color: 'rgba(255,255,255,0.92)',
-    fontSize: 13,
+    ...typography.caption,
     lineHeight: 19,
   },
   restartButton: {
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
   },
   diagLabel: {
     color: 'rgba(255,255,255,0.6)',
-    fontSize: 11,
+    ...typography.micro,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     fontWeight: '700',
@@ -249,7 +250,7 @@ const styles = StyleSheet.create({
   diagValue: {
     flexShrink: 1,
     color: 'rgba(255,255,255,0.95)',
-    fontSize: 12,
+    ...typography.footnote,
     fontWeight: '700',
     fontFamily: Platform.select({
       ios: 'Menlo',

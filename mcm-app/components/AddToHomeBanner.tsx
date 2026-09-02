@@ -4,6 +4,7 @@ import { PressableFeedback } from 'heroui-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { IconSymbol } from './ui/IconSymbol';
+import typography from '@/constants/typography';
 
 export default function AddToHomeScreenPrompt() {
   const [visible, setVisible] = useState(false);
@@ -124,11 +125,11 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   text: {
-    fontSize: 14,
+    ...typography.subhead,
     marginBottom: 4,
   },
   subtext: {
-    fontSize: 12,
+    ...typography.footnote,
   },
   close: {
     position: 'absolute',

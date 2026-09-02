@@ -34,6 +34,7 @@ import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import useWordleLeaderboard from '@/hooks/useWordleLeaderboard';
 import type { Guess } from '@/hooks/useWordleGame';
+import typography from '@/constants/typography';
 
 const QWERTY = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -731,7 +732,7 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
       textAlign: 'center',
       fontWeight: 'bold',
       color: theme.text,
-      fontSize: 14,
+      ...typography.subhead,
     },
     tabContainer: {
       flexDirection: 'row',
@@ -778,7 +779,7 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
     },
     lockedGameSubtext: {
       color: '#fff',
-      fontSize: 14,
+      ...typography.subhead,
       textAlign: 'center',
       opacity: 0.9,
     },

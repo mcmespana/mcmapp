@@ -12,6 +12,7 @@ import { PressableFeedback } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
 interface AlbumCardProps {
   album: {
     id: string;
@@ -163,7 +164,7 @@ const createStyles = (screenWidth: number) =>
       alignItems: 'center',
     },
     metaText: {
-      fontSize: 13,
+      ...typography.caption,
       color: 'rgba(255,255,255,0.85)',
       fontWeight: '500',
     },

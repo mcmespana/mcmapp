@@ -15,6 +15,7 @@ import { Colors as ThemeColors } from '@/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 // Usando el mismo CSS que funcionó en comunica.tsx
 import iframeStyles from '../../styles/comunica.module.css';
+import typography from '@/constants/typography';
 type Route = RouteProp<MasStackParamList, 'ComidaWeb'>;
 
 export default function ComidaWebScreen() {
@@ -204,7 +205,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       marginBottom: spacing.sm,
     } as any,
     redirectSubtitle: {
-      fontSize: 16,
+      ...typography.body,
       color: theme.text,
       opacity: 0.7,
       textAlign: 'center',
@@ -229,7 +230,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       color: '#fff',
       marginLeft: spacing.sm,
       fontWeight: 'bold',
-      fontSize: 16,
+      ...typography.body,
     } as any,
     backButton: {
       paddingHorizontal: spacing.lg,
@@ -237,7 +238,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     backButtonText: {
       color: scheme === 'dark' ? '#aaa' : '#666',
-      fontSize: 16,
+      ...typography.body,
     } as any,
   });
 };

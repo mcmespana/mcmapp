@@ -29,6 +29,7 @@ import colors, { Colors, themeColors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
 
 interface Contacto {
   nombre: string;
@@ -357,7 +358,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     resultsMeta: {
       paddingHorizontal: 4,
-      fontSize: 12,
+      ...typography.footnote,
       color: themeColors(isDark).textSecondary,
       fontWeight: '500',
     },
@@ -415,13 +416,13 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       minWidth: 0,
     },
     name: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
       color: themeColors(isDark).textStrong,
       letterSpacing: -0.2,
     },
     role: {
-      fontSize: 13,
+      ...typography.caption,
       color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },

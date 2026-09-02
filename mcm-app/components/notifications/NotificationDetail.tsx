@@ -16,6 +16,7 @@ import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { getRouteLabel, normalizeRoute } from './notificationDisplay';
+import typography from '@/constants/typography';
 
 /**
  * Vista "en grande" de una notificación concreta (título, imagen, cuerpo y
@@ -174,7 +175,7 @@ const detailStyles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -196,7 +197,7 @@ const detailStyles = StyleSheet.create({
     lineHeight: 30,
   },
   date: {
-    fontSize: 13,
+    ...typography.caption,
     marginBottom: spacing.lg,
     textTransform: 'capitalize',
   },
@@ -207,7 +208,7 @@ const detailStyles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   body: {
-    fontSize: 16,
+    ...typography.body,
     lineHeight: 26,
     marginBottom: spacing.lg,
   },

@@ -6,6 +6,7 @@
  */
 import { StyleSheet } from 'react-native';
 import { radii, shadows } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 export const styles = StyleSheet.create({
   container: {
@@ -115,12 +116,12 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
   },
   todayMiniLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: -0.1,
   },
   diaLiturgico: {
-    fontSize: 12,
+    ...typography.footnote,
     marginTop: 6,
     fontWeight: '700',
     textAlign: 'center',
@@ -128,7 +129,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   tituloLiturgico: {
-    fontSize: 13,
+    ...typography.caption,
     marginTop: 4,
     fontWeight: '500',
     textAlign: 'center',
@@ -183,7 +184,7 @@ export const styles = StyleSheet.create({
     marginBottom: 20,
   },
   citaText: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '700',
   },
   bodyText: {
@@ -207,7 +208,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sourceText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
     marginRight: 4,
   },
@@ -239,7 +240,7 @@ export const styles = StyleSheet.create({
     marginTop: 8,
   },
   statusChipText: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
@@ -254,7 +255,7 @@ export const styles = StyleSheet.create({
     marginLeft: 10,
   },
   trackerNote: {
-    fontSize: 12,
+    ...typography.footnote,
     textAlign: 'center',
     marginTop: 10,
     paddingHorizontal: 20,

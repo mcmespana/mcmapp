@@ -22,6 +22,7 @@ import {
 } from '@/utils/songUtils';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useResolvedProfileConfig } from '@/hooks/useResolvedProfileConfig';
+import typography from '@/constants/typography';
 
 interface ReportBugsModalProps {
   visible: boolean;
@@ -226,17 +227,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   songBadgeText: {
-    fontSize: 13,
+    ...typography.caption,
     fontStyle: 'italic',
     flex: 1,
   },
   label: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     marginBottom: 4,
   },
   sublabel: {
-    fontSize: 13,
+    ...typography.caption,
     marginBottom: 12,
     lineHeight: 18,
   },
@@ -245,7 +246,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   charCount: {
-    fontSize: 11,
+    ...typography.micro,
     textAlign: 'right',
     marginTop: 6,
     marginBottom: 20,
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
     height: 1,
   },
   dividerLabel: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
   },
   secretBtn: {
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   disclaimer: {
-    fontSize: 12,
+    ...typography.footnote,
     lineHeight: 18,
     textAlign: 'center',
   },

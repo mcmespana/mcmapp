@@ -15,6 +15,7 @@ import BottomSheet from './BottomSheet';
 import { Colors, UIColors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -528,7 +529,7 @@ const styles = StyleSheet.create({
     minHeight: 28,
   },
   cardLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '800',
     letterSpacing: 1.2,
     color: '#8E8E93',
@@ -538,7 +539,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardValue: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   },
   resetIconBtn: {
@@ -553,7 +554,7 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   cardHint: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '500',
     color: '#8E8E93',
   },
@@ -665,7 +666,7 @@ const styles = StyleSheet.create({
     borderColor: '#7A5A00',
   },
   capoDisplayValue: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     letterSpacing: -0.2,
   },

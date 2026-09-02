@@ -1,6 +1,7 @@
 import { Platform, StyleSheet } from 'react-native';
 import colors, { Colors, themeColors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 /**
  * Estilos de la pantalla de Grupos y sus subcomponentes. Extraído de
@@ -34,12 +35,12 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     catLabel: { fontSize: 18, fontWeight: 'bold', color: colors.white },
     catCount: {
       marginTop: 2,
-      fontSize: 12,
+      ...typography.footnote,
       color: 'rgba(255,255,255,0.85)',
       fontWeight: '600',
     },
     sectionHeader: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: 'bold',
       color: theme.text,
       paddingHorizontal: 4,
@@ -70,7 +71,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     searchInput: {
       flex: 1,
-      fontSize: 16,
+      ...typography.body,
       color: theme.text,
       paddingVertical: Platform.OS === 'ios' ? 14 : 10,
     },
@@ -105,7 +106,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     resultsMeta: {
       paddingHorizontal: 18,
       paddingBottom: 6,
-      fontSize: 12,
+      ...typography.footnote,
       color: themeColors(isDark).textSecondary,
       fontWeight: '500',
     },
@@ -118,14 +119,14 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: themeColors(isDark).backgroundSunken,
     },
     searchSectionHeaderText: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '700',
       color: themeColors(isDark).textStrong,
       letterSpacing: 0.3,
       textTransform: 'uppercase',
     },
     searchSectionCount: {
-      fontSize: 12,
+      ...typography.footnote,
       color: themeColors(isDark).textSecondary,
       fontWeight: '600',
     },
@@ -159,7 +160,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       fontWeight: '700',
     },
     hitMeta: {
-      fontSize: 12,
+      ...typography.footnote,
       color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
@@ -191,12 +192,12 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     grupoCardMain: { flex: 1, minWidth: 0 },
     grupoCardTitle: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '700',
       color: theme.text,
     },
     grupoCardSubtitle: {
-      fontSize: 13,
+      ...typography.caption,
       color: themeColors(isDark).textSecondary,
       marginTop: 2,
     },
@@ -207,7 +208,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       flexWrap: 'wrap',
     },
     grupoCardMeta: {
-      fontSize: 12,
+      ...typography.footnote,
       color: themeColors(isDark).textSecondary,
     },
     memberRow: {
@@ -238,7 +239,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     youBadge: {
       backgroundColor: colors.accent,
       color: colors.white,
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '700',
       paddingHorizontal: 8,
       paddingVertical: 2,
@@ -259,7 +260,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     quoteText: {
       flex: 1,
-      fontSize: 16,
+      ...typography.body,
       fontStyle: 'italic',
       color: isDark ? '#CCCCCC' : '#666',
       lineHeight: 22,
@@ -271,7 +272,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
       gap: 4,
     },
     filterCount: {
-      fontSize: 12,
+      ...typography.footnote,
       color: themeColors(isDark).textSecondary,
       paddingHorizontal: 4,
     },

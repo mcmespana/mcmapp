@@ -6,6 +6,7 @@
  */
 import { StyleSheet } from 'react-native';
 import { radii } from '@/constants/uiStyles';
+import typography from '@/constants/typography';
 
 export const styles = StyleSheet.create({
   // Estilos originales
@@ -25,7 +26,7 @@ export const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   songInfo: {
-    fontSize: 14,
+    ...typography.subhead,
     fontStyle: 'italic',
     marginBottom: 20,
     textAlign: 'center',
@@ -43,7 +44,7 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
   },
   mysteriousSubtext: {
-    fontSize: 14,
+    ...typography.subhead,
     textAlign: 'center',
     marginBottom: 30,
     lineHeight: 20,
@@ -52,7 +53,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radii.sm,
     padding: 12,
-    fontSize: 16,
+    ...typography.body,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -66,7 +67,7 @@ export const styles = StyleSheet.create({
   },
   authButtonText: {
     color: '#fff',
-    fontSize: 16,
+    ...typography.body,
     fontWeight: 'bold',
     marginLeft: 8,
   },
@@ -79,7 +80,7 @@ export const styles = StyleSheet.create({
     flexGrow: 1,
   },
   label: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '600',
     marginBottom: 8,
     marginTop: 16,
@@ -88,7 +89,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radii.sm,
     padding: 12,
-    fontSize: 16,
+    ...typography.body,
     marginBottom: 8,
   },
   contentInput: {
@@ -113,12 +114,12 @@ export const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: '#fff',
-    fontSize: 16,
+    ...typography.body,
     fontWeight: 'bold',
     marginLeft: 8,
   },
   disclaimer: {
-    fontSize: 12,
+    ...typography.footnote,
     lineHeight: 16,
     textAlign: 'center',
     marginBottom: 20,
@@ -136,13 +137,13 @@ export const styles = StyleSheet.create({
     marginTop: 12,
   },
   sectionHint: {
-    fontSize: 12,
+    ...typography.footnote,
     lineHeight: 16,
     marginTop: 4,
     marginBottom: 4,
   },
   embedPreview: {
-    fontSize: 12,
+    ...typography.footnote,
     fontStyle: 'italic',
     marginTop: -4,
     marginBottom: 8,
@@ -175,7 +176,7 @@ export const styles = StyleSheet.create({
     marginTop: 4,
   },
   addLinkText: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '600',
     marginLeft: 6,
   },

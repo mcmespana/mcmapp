@@ -21,6 +21,7 @@ import type { MediaLink, SongMedia } from '@/types/songMedia';
 import TagChip from '@/components/song-tags/TagChip';
 import type { ResolvedTag } from '@/utils/songTags';
 import type { FloatingMediaSource } from '@/components/song-media/FloatingMediaPlayer';
+import typography from '@/constants/typography';
 
 interface SongMediaSheetProps {
   visible: boolean;
@@ -370,7 +371,7 @@ const createStyles = (isDark: boolean) =>
       paddingHorizontal: 4,
     },
     secHeadText: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '800',
       letterSpacing: 0.9,
       textTransform: 'uppercase',
@@ -515,7 +516,7 @@ const createStyles = (isDark: boolean) =>
     },
     fichaSourceText: {
       flex: 1,
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: isDark ? '#9FD3F5' : brand.primary,
     },

@@ -5,6 +5,7 @@
  * 892 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.
  */
 import { Platform, StyleSheet, type TextStyle } from 'react-native';
+import typography from '@/constants/typography';
 
 /**
  * Tipografía ÚNICA para todo lo que el usuario escribe (los tres campos de los
@@ -15,7 +16,7 @@ import { Platform, StyleSheet, type TextStyle } from 'react-native';
  */
 export const WRITING_FONT: TextStyle = {
   fontFamily: Platform.OS === 'ios' ? 'Palatino' : 'serif',
-  fontSize: 16,
+  ...typography.body,
   // Android mete un padding vertical fantasma en TextInput que descuadra el
   // centrado; con esto el texto queda donde toca en ambas plataformas.
   includeFontPadding: false,
@@ -67,7 +68,7 @@ export const styles = StyleSheet.create({
     gap: 2,
   },
   navTitleText: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     maxWidth: 200,
   },
@@ -77,7 +78,7 @@ export const styles = StyleSheet.create({
     minWidth: 160,
   },
   dateTitle: {
-    fontSize: 14,
+    ...typography.subhead,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
@@ -99,7 +100,7 @@ export const styles = StyleSheet.create({
   stepDot: { height: 4, borderRadius: 2 },
   stepLabel: {
     textAlign: 'center',
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '600',
     letterSpacing: 0.3,
     marginTop: 2,
@@ -113,7 +114,7 @@ export const styles = StyleSheet.create({
     lineHeight: 26,
   },
   helpText: {
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 22,
     marginBottom: 18,
   },
@@ -139,7 +140,7 @@ export const styles = StyleSheet.create({
     gap: 10,
   },
   gratStar: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '800',
     includeFontPadding: false,
   },

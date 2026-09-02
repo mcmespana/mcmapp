@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
 
 /* Verdes del modo (en línea con CarismochitoOverlay). */
 const G = '#1B9E4B';
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
   },
   teaserText: {
     color: G_LIGHT,
-    fontSize: 14,
+    ...typography.subhead,
     lineHeight: 21,
     textAlign: 'center',
   },
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: '#A3D86E',
-    fontSize: 12,
+    ...typography.footnote,
     textAlign: 'center',
     marginTop: 16,
     opacity: 0.85,
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: G_DARK,
     fontWeight: '900',
-    fontSize: 16,
+    ...typography.body,
     letterSpacing: 0.5,
   },
   row: {

@@ -4,6 +4,7 @@ import liturgicalCalendar from '@/assets/calendario-liturgico.json';
 import { getBrightness } from '@/components/ui/glass';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { LiturgicalColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface LiturgicalBadgeProps {
   dateStr: string; // YYYY-MM-DD
@@ -136,6 +137,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontWeight: '700',
-    fontSize: 12,
+    ...typography.footnote,
   },
 });

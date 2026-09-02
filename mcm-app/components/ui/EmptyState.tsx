@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { radii } from '@/constants/uiStyles';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { hexAlpha } from '@/utils/colorUtils';
+import typography from '@/constants/typography';
 
 type MaterialIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   subtitle: {
-    fontSize: 14,
+    ...typography.subhead,
     textAlign: 'center',
     lineHeight: 20,
     marginTop: 2,

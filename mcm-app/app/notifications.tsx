@@ -52,6 +52,7 @@ import ContextMenuSheet, {
   ContextMenuAction,
 } from '@/components/ContextMenuSheet';
 import { createStyles } from '@/components/notifications/notificationsStyles';
+import typography from '@/constants/typography';
 
 // Mapeo de rutas internas a nombres legibles
 const ROUTE_LABELS: Record<string, { label: string; icon: string }> = {
@@ -1013,7 +1014,7 @@ const dStyles = StyleSheet.create({
   },
   actionButtonTextSecondary: {
     color: colors.primary,
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
   },
 });

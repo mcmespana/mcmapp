@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { SwipeColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 export interface ConfirmChoiceAction {
   label: string;
@@ -125,7 +126,7 @@ const createStyles = (isDark: boolean) =>
       marginBottom: 8,
     },
     description: {
-      fontSize: 14,
+      ...typography.subhead,
       color: themeColors(isDark).textSecondary,
       lineHeight: 20,
       marginBottom: 18,

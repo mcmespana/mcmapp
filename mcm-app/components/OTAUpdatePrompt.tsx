@@ -18,6 +18,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import brand, { Colors } from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import typography from '@/constants/typography';
 
 interface OTAUpdatePromptProps {
   visible: boolean;
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
   },
   primaryLabel: {
     color: '#FFFFFF',
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
@@ -366,7 +367,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fineprint: {
-    fontSize: 12,
+    ...typography.footnote,
     textAlign: 'center',
     marginTop: 4,
     opacity: 0.85,

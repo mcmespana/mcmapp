@@ -44,6 +44,7 @@ import {
   consumePendingOfflinePlaylist,
   consumePendingChoirImport,
 } from '@/utils/pendingCloudPlaylist';
+import typography from '@/constants/typography';
 
 const ALL_SONGS_CATEGORY_ID = '__ALL__';
 const ALL_SONGS_CATEGORY_NAME = '🔎 Buscar una canción...';
@@ -507,7 +508,7 @@ const createStyles = (
       color: themeColors(isDark).textStrong,
     },
     headerSubtitle: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '600',
       color: isDark ? '#A09A8A' : '#7A6550',
       marginTop: 2,
@@ -581,7 +582,7 @@ const createStyles = (
       flex: 1,
     },
     cardTitle: {
-      fontSize: 16,
+      ...typography.body,
       fontWeight: '600',
       color: themeColors(isDark).textStrong,
       letterSpacing: -0.2,
@@ -595,7 +596,7 @@ const createStyles = (
       gap: 4,
     },
     countBadge: {
-      fontSize: 12,
+      ...typography.footnote,
       fontWeight: '600',
       color: isDark ? '#8E8E93' : '#6E6E73',
       backgroundColor: isDark ? '#3A3A3C' : '#F2F2F7',
@@ -616,7 +617,7 @@ const createStyles = (
     },
     // ── iPad: hero + grid ───────────────────────────────────────────────
     sectionLabel: {
-      fontSize: 11,
+      ...typography.micro,
       fontWeight: '800',
       letterSpacing: 1.2,
       color: themeColors(isDark).textMuted,
@@ -658,7 +659,7 @@ const createStyles = (
       marginBottom: 4,
     },
     heroSubtitle: {
-      fontSize: 14,
+      ...typography.subhead,
       color: isDark ? '#9CB7E0' : '#5A6B8A',
       lineHeight: 19,
     },
@@ -697,7 +698,7 @@ const createStyles = (
       marginBottom: 4,
     },
     gridCardCount: {
-      fontSize: 13,
+      ...typography.caption,
       fontWeight: '500',
       color: isDark ? '#8E8E93' : '#8A8A8E',
       fontVariant: ['tabular-nums'],

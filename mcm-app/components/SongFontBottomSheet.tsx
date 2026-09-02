@@ -8,6 +8,7 @@ import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DEFAULT_FONT_SIZE_EM } from '@/contexts/SettingsContext';
 import { getNativeFontFamily } from '@/utils/fontUtils';
+import typography from '@/constants/typography';
 
 interface FontOption {
   name: string;
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
     minHeight: 28,
   },
   cardLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '800',
     letterSpacing: 1.2,
     color: '#8E8E93',
@@ -373,7 +374,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   cardValue: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   },
   resetIconBtn: {
@@ -483,7 +484,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   fontChipLabel: {
-    fontSize: 11,
+    ...typography.micro,
     letterSpacing: 0.1,
     textAlign: 'center',
   },
@@ -501,7 +502,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.dark.card,
   },
   resetAllText: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
   },
 });

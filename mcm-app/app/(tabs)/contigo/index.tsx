@@ -37,6 +37,7 @@ import { useContigoDayMenu } from '@/hooks/useContigoDayMenu';
 import LoginNudgeBanner from '@/components/LoginNudgeBanner';
 import { useAuth } from '@/contexts/AuthContext';
 import { h } from '@/utils/haptics';
+import typography from '@/constants/typography';
 
 export default function ContigoScreen() {
   const insets = useSafeAreaInsets();
@@ -400,7 +401,7 @@ const styles = StyleSheet.create({
     lineHeight: 38,
   },
   subtitle: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
     marginTop: 4,
   },
@@ -416,7 +417,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   dateLine: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '500',
     paddingHorizontal: 20,
     marginBottom: 4,
@@ -444,7 +445,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   smallLabel: {
-    fontSize: 11,
+    ...typography.micro,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 10,

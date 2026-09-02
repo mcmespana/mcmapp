@@ -1,5 +1,5 @@
 /**
- * Trinquete de colores a mano.
+ * Trinquete de números mágicos: colores y tamaños de letra escritos a mano.
  *
  * `design.md` dice que los colores salen de `constants/colors.ts` y que no se
  * escriben hex en componentes. Un documento no impide que nadie lo haga; este
@@ -11,8 +11,10 @@
  *   · Has AÑADIDO un color a mano → no lo hagas. Añádelo a
  *     `constants/colors.ts` con nombre semántico, o usa `themeColors(isDark)`
  *     si lo que quieres es un par claro/oscuro (que es lo que suele ser).
- *   · Has QUITADO colores a mano → gracias: baja el número de abajo al que
- *     diga el error, en el mismo commit.
+ *   · Has AÑADIDO un `fontSize` a mano → usa `typography.*`. La escala cubre
+ *     de 10 a 34; si tu tamaño no está, es que estás inventando un nivel.
+ *   · Has QUITADO alguno → gracias: baja el número de abajo al que diga el
+ *     error, en el mismo commit.
  *
  * Nunca subas los topes. Ese es el trato entero.
  */
@@ -106,4 +108,53 @@ describe('no se añaden colores a mano', () => {
     const { total } = countIn('components/ui');
     expect(total).toBeLessThanOrEqual(36);
   });
+});
+
+/**
+ * Tope de `fontSize` escritos a mano.
+ *
+ * Histórico: 666 antes de ampliar la escala en agosto de 2026 → 321. La escala
+ * vieja solo declaraba siete tamaños y los más usados del repo (12, 14, 11, 17,
+ * 18) no estaban: un token que no cubre tu caso no se usa, se rodea.
+ *
+ * Lo que queda son sobre todo tamaños con peso propio declarado al lado, que
+ * hay que migrar uno a uno porque ahí el spread sí puede cambiar el render.
+ */
+const FONT_SIZE_BUDGET = {
+  app: 93,
+  components: 228,
+};
+
+const INLINE_FONT_SIZE = /fontSize: \d+/g;
+
+describe('no se añaden tamaños de letra a mano', () => {
+  it.each(Object.entries(FONT_SIZE_BUDGET))(
+    '%s se mantiene en su tope o por debajo',
+    (dir, budget) => {
+      let total = 0;
+      const byFile: [string, number][] = [];
+      for (const file of walk(path.join(ROOT, dir))) {
+        const hits = [
+          ...fs.readFileSync(file, 'utf8').matchAll(INLINE_FONT_SIZE),
+        ].length;
+        if (hits > 0) {
+          total += hits;
+          byFile.push([path.relative(ROOT, file), hits]);
+        }
+      }
+      if (total > budget) {
+        byFile.sort((a, b) => b[1] - a[1]);
+        const worst = byFile
+          .slice(0, 5)
+          .map(([f, n]) => `  ${f}: ${n}`)
+          .join('\n');
+        throw new Error(
+          `${dir}/ tiene ${total} fontSize a mano y el tope es ${budget}.\n` +
+            `Usa typography.* (h0/h1/h2/h3/title/body/button/subhead/caption/` +
+            `footnote/micro/overline).\nLos ficheros con más:\n${worst}`,
+        );
+      }
+      expect(total).toBeGreaterThan(budget - 25);
+    },
+  );
 });

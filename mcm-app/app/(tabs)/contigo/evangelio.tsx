@@ -47,6 +47,7 @@ import type { ReadingSelection } from '@/components/contigo/HighlightableReading
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { styles } from '@/components/contigo/evangelioStyles';
 import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import typography from '@/constants/typography';
 
 // ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
@@ -683,7 +684,7 @@ export default function EvangelioScreen() {
                           >
                             <Text
                               style={{
-                                fontSize: 13,
+                                ...typography.caption,
                                 color: warm.accent,
                                 marginRight: 6,
                                 lineHeight: 16,
@@ -782,7 +783,7 @@ export default function EvangelioScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 13,
+                          ...typography.caption,
                           color: warm.accent,
                           marginRight: 6,
                           lineHeight: 16,
@@ -958,7 +959,7 @@ export default function EvangelioScreen() {
               >
                 <Text
                   style={{
-                    fontSize: 13,
+                    ...typography.caption,
                     color: warm.warmGray,
                     textDecorationLine: 'underline',
                   }}

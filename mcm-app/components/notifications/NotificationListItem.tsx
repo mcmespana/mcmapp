@@ -14,6 +14,7 @@ import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
 import { NotificationData, ReceivedNotification } from '@/types/notifications';
 import { getRouteLabel, formatDate } from './notificationDisplay';
+import typography from '@/constants/typography';
 
 type Notification = NotificationData | ReceivedNotification;
 type ActionButton = NonNullable<Notification['actionButton']>;
@@ -241,7 +242,7 @@ const listStyles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   body: {
-    fontSize: 13,
+    ...typography.caption,
     lineHeight: 19,
     marginBottom: 8,
   },
@@ -305,6 +306,6 @@ const listStyles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     marginTop: 4,
-    fontSize: 12,
+    ...typography.footnote,
   },
 });
