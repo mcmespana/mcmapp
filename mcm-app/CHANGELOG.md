@@ -18,6 +18,29 @@
 
 ---
 
+## 2026-08-31 21:50 — Segunda tanda de colores, y un posible bug de contraste anotado
+
+PLAN_DISENO §A5.4 y §A5.5.
+
+- El **destacado ámbar** (la canción o playlist marcada) pasa a `HighlightColors`:
+  27 literales en `PlaylistRow`, `SongListItem`, `TransposeBottomSheet`,
+  `SongFontBottomSheet` y `TagChip`. Unificada de paso la deriva que tenían
+  entre ellos (`#3A2800` en uno, `#3A2D0A` en otro, para el mismo papel).
+- **Aquí se acaba el barrido mecánico** (§A5.5). Lo que queda son hex cuyo VALOR
+  coincide con un token pero cuyo PAPEL no: el mismo `#1C1C1E` es un gris de
+  superficie en un sitio y "texto casi negro" en otro. Cambiarlo por un token
+  mal nombrado es peor que dejarlo, porque el nombre pasa a mentir — que es lo
+  que este plan vino a arreglar. A partir de aquí hay que abrir el fichero.
+
+**Hallazgo pendiente de mirar en dispositivo (§H11)**: tres pares claro/oscuro
+parecen estar del revés — el color de modo oscuro es más oscuro que el de modo
+claro. Afecta al placeholder de búsqueda del cantoral y a texto tenue de
+`PlaylistRow`, `SongListItem` y `CommandPalette`, con contraste por debajo de
+3:1 en ambos modos. Puede ser un tenue deliberado o un ternario intercambiado al
+copiar; no se ha tocado nada.
+
+---
+
 ## 2026-08-31 21:05 — Los radios a mano bajan de 300 a 122
 
 PLAN_DISENO §E2. Complementa el colapso de la escala de radios del commit

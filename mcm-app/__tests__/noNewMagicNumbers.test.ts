@@ -78,7 +78,7 @@ function countIn(relDir: string): {
  */
 const BUDGET = {
   app: 231,
-  components: 436,
+  components: 409,
 };
 
 describe('no se añaden colores a mano', () => {

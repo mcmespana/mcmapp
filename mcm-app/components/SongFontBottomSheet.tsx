@@ -3,7 +3,12 @@ import { View, Text, StyleSheet, Platform } from 'react-native';
 import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
-import { Colors, UIColors, themeColors } from '@/constants/colors';
+import {
+  Colors,
+  HighlightColors,
+  UIColors,
+  themeColors,
+} from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DEFAULT_FONT_SIZE_EM } from '@/contexts/SettingsContext';
@@ -153,7 +158,7 @@ export default function SongFontBottomSheet({
                     color: isSizeModified
                       ? isDark
                         ? UIColors.accentYellow
-                        : '#7A5A00'
+                        : HighlightColors.light.fg
                       : isDark
                         ? '#EBEBF0'
                         : '#1C1C1E',
@@ -285,7 +290,7 @@ export default function SongFontBottomSheet({
                         color: isActive
                           ? isDark
                             ? UIColors.accentYellow
-                            : '#7A5A00'
+                            : HighlightColors.light.fg
                           : isDark
                             ? '#EBEBF0'
                             : '#1C1C1E',
@@ -301,7 +306,7 @@ export default function SongFontBottomSheet({
                         color: isActive
                           ? isDark
                             ? UIColors.accentYellow
-                            : '#7A5A00'
+                            : HighlightColors.light.fg
                           : themeColors(isDark).textSecondary,
                         fontWeight: isActive ? '700' : '500',
                       },
@@ -426,12 +431,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   sizeDisplayActive: {
-    backgroundColor: '#FFF4DA',
+    backgroundColor: HighlightColors.light.bg,
     borderColor: UIColors.accentYellow,
   },
   sizeDisplayActiveDark: {
-    backgroundColor: '#3A2D0A',
-    borderColor: '#7A5A00',
+    backgroundColor: HighlightColors.dark.bg,
+    borderColor: HighlightColors.light.fg,
   },
   sizePercent: {
     fontSize: 20,
@@ -471,12 +476,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   fontChipActive: {
-    backgroundColor: '#FFF4DA',
+    backgroundColor: HighlightColors.light.bg,
     borderColor: UIColors.accentYellow,
   },
   fontChipActiveDark: {
-    backgroundColor: '#3A2D0A',
-    borderColor: '#7A5A00',
+    backgroundColor: HighlightColors.dark.bg,
+    borderColor: HighlightColors.light.fg,
   },
   fontChipPreview: {
     fontSize: 20,

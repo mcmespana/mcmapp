@@ -23,7 +23,7 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { h } from '@/utils/haptics';
 import type { ResolvedTag } from '@/utils/songTags';
-import { UIColors, themeColors } from '@/constants/colors';
+import { HighlightColors, UIColors, themeColors } from '@/constants/colors';
 
 export type TagChipVariant = 'cloud' | 'active' | 'outline';
 
@@ -116,7 +116,7 @@ const createStyles = (isDark: boolean, variant: TagChipVariant) => {
   const background = isActive
     ? isDark
       ? UIColors.accentYellow
-      : '#7A5A00'
+      : HighlightColors.light.fg
     : variant === 'cloud'
       ? themeColors(isDark).background
       : isDark

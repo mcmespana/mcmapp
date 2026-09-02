@@ -153,8 +153,19 @@ que ya era la capa de roles.
       bajar el tope cuando se migra. Verificado que se pone rojo al añadir uno.
       Además `components/ui/` tiene su propio tope, porque es lo que todo lo
       demás copia.
-- [ ] A5.4 Siguiente tanda, por los que más quedan: `SongFontBottomSheet`,
-      `TransposeBottomSheet`, `SelectedSongsScreen`, `onboarding`.
+- [x] A5.4 Segunda tanda: el destacado ámbar (27 literales → `HighlightColors`
+      en `PlaylistRow`, `SongListItem`, `TransposeBottomSheet`,
+      `SongFontBottomSheet` y `TagChip`), con la deriva `#3A2800`/`#3A2D0A`
+      unificada.
+- [ ] **A5.5. Aquí se acaba lo mecánico.** Lo que queda ya NO se puede
+      sustituir a ciegas: son hex cuyo valor coincide con un token pero cuyo
+      PAPEL no (el mismo `#1C1C1E` es `SystemGray.dark.gray6` en una superficie
+      y "texto casi negro" en modo claro). Cambiar un literal por un token con
+      nombre equivocado es peor que dejarlo, porque el nombre miente — que es
+      justo lo que este plan vino a arreglar (§Norte 2). A partir de aquí toca
+      abrir el fichero y decidir. Los que más tienen:
+      `TransposeBottomSheet` (34), `SongFontBottomSheet` (34),
+      `contigo/oracion` (25), `contigo/evangelio` (23), `onboarding` (20).
 
 ### A6. Colores sin nombre y sin dueño
 
@@ -424,6 +435,24 @@ haría:
 ---
 
 ## Hallazgos nuevos (de la pasada del 2026-08-31)
+
+- [ ] **H11. 🔴 Tres pares claro/oscuro parecen estar del revés.** Al barrer los
+      ternarios aparecieron pares donde el color de MODO OSCURO es más OSCURO
+      que el de modo claro, que es justo al revés de lo que pide el modo:
+
+      | Dónde | Par (`isDark ? oscuro : claro`) | Contraste real |
+          | --- | --- | --- |
+          | `SongListScreen` (placeholder de búsqueda, ×4) | `#636366` : `#8E8E93` | oscuro ≈ 2,0:1 · claro ≈ 3,5:1 |
+          | `SongListScreen` (texto tenue, ×3) | `#6C6C70` : `#B0B0B5` | oscuro ≈ 2,2:1 · claro ≈ 2,2:1 |
+          | `PlaylistRow`, `SongListItem`, `CommandPalette` (×3) | `#636366` : `#A0A0A8` | oscuro ≈ 2,0:1 |
+
+          Puede ser deliberado (un placeholder tenue lo es a propósito) o puede ser
+          que alguien intercambiara las ramas del ternario al copiar. Lo que no
+          encaja es que en **los dos** modos quede por debajo de 3:1 y que el modo
+          oscuro salga peor que el claro, cuando el resto de la app hace lo
+          contrario. Está en la pantalla más usada de la app, así que **hay que
+          mirarlo en un dispositivo antes de tocarlo**; no se cambió nada.
+          Si resulta ser un bug, el arreglo es `themeColors(isDark).textMuted`.
 
 Cosas que aparecieron **al ejecutar**, no al planificar. Ninguna es urgente y
 ninguna se tocó, porque todas necesitan verse en un dispositivo.

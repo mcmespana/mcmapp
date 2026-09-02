@@ -17,6 +17,7 @@ import { transposeKey, transposeLabel } from '../utils/transposeKey';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import {
   Colors,
+  HighlightColors,
   KeyPillColors,
   StateColors,
   SwipeColors,
@@ -434,14 +435,16 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       paddingHorizontal: 7,
       paddingVertical: 3,
       borderRadius: 6,
-      backgroundColor: isDark ? '#3A2800' : '#FFF4DA',
+      backgroundColor: isDark
+        ? HighlightColors.dark.bg
+        : HighlightColors.light.bg,
       borderWidth: 1,
       borderColor: UIColors.accentYellow,
     },
     keyTextTransposed: {
       ...typography.caption,
       fontWeight: '700',
-      color: '#7A5A00',
+      color: HighlightColors.light.fg,
     },
     transposeParenLabel: {
       ...typography.micro,

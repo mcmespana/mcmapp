@@ -27,6 +27,7 @@ import { useContextMenu } from '@/hooks/useContextMenu';
 import { convertChord } from '@/utils/chordNotation';
 import { transposeKey, transposeLabel } from '@/utils/transposeKey';
 import {
+  HighlightColors,
   KeyPillColors,
   SwipeColors,
   UIColors,
@@ -375,9 +376,11 @@ const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? '#3A3A3C' : '#EBEBEB',
     },
     capoPillOverridden: {
-      backgroundColor: isDark ? '#3A2D0A' : '#FFF4DA',
+      backgroundColor: isDark
+        ? HighlightColors.dark.bg
+        : HighlightColors.light.bg,
       borderWidth: 1,
-      borderColor: isDark ? '#7A5A00' : UIColors.accentYellow,
+      borderColor: isDark ? HighlightColors.light.fg : UIColors.accentYellow,
     },
     capoText: {
       ...typography.micro,
@@ -386,7 +389,7 @@ const createStyles = (isDark: boolean) =>
       fontVariant: ['tabular-nums'],
     },
     capoTextOverridden: {
-      color: isDark ? UIColors.accentYellow : '#7A5A00',
+      color: isDark ? UIColors.accentYellow : HighlightColors.light.fg,
     },
     keyPill: {
       paddingHorizontal: 8,
@@ -416,14 +419,14 @@ const createStyles = (isDark: boolean) =>
       paddingHorizontal: 8,
       paddingVertical: 3,
       borderRadius: 6,
-      backgroundColor: '#FFF4DA',
+      backgroundColor: HighlightColors.light.bg,
       borderWidth: 1,
       borderColor: UIColors.accentYellow,
     },
     keyTextTransposed: {
       ...typography.caption,
       fontWeight: '700',
-      color: '#7A5A00',
+      color: HighlightColors.light.fg,
     },
     transposeParenLabel: {
       ...typography.micro,

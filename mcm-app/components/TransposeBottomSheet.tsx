@@ -12,7 +12,12 @@ import { PressableFeedback } from 'heroui-native';
 import { h } from '@/utils/haptics';
 import { MaterialIcons } from '@expo/vector-icons';
 import BottomSheet from './BottomSheet';
-import { Colors, UIColors, themeColors } from '@/constants/colors';
+import {
+  Colors,
+  HighlightColors,
+  UIColors,
+  themeColors,
+} from '@/constants/colors';
 import { radii } from '@/constants/uiStyles';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import typography from '@/constants/typography';
@@ -329,7 +334,7 @@ export default function TransposeBottomSheet({
                     color: isTransposed
                       ? isDark
                         ? UIColors.accentYellow
-                        : '#7A5A00'
+                        : HighlightColors.light.fg
                       : isDark
                         ? '#EBEBF0'
                         : '#1C1C1E',
@@ -465,7 +470,7 @@ export default function TransposeBottomSheet({
                       color: isCapoOverridden
                         ? isDark
                           ? UIColors.accentYellow
-                          : '#7A5A00'
+                          : HighlightColors.light.fg
                         : isDark
                           ? '#EBEBF0'
                           : '#1C1C1E',
@@ -603,12 +608,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   toneDisplayActive: {
-    backgroundColor: '#FFF4DA',
+    backgroundColor: HighlightColors.light.bg,
     borderColor: UIColors.accentYellow,
   },
   toneDisplayActiveDark: {
-    backgroundColor: '#3A2D0A',
-    borderColor: '#7A5A00',
+    backgroundColor: HighlightColors.dark.bg,
+    borderColor: HighlightColors.light.fg,
   },
   toneDisplayValue: {
     fontSize: 22,
@@ -658,12 +663,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   capoDisplayOverridden: {
-    backgroundColor: '#FFF4DA',
+    backgroundColor: HighlightColors.light.bg,
     borderColor: UIColors.accentYellow,
   },
   capoDisplayOverriddenDark: {
-    backgroundColor: '#3A2D0A',
-    borderColor: '#7A5A00',
+    backgroundColor: HighlightColors.dark.bg,
+    borderColor: HighlightColors.light.fg,
   },
   capoDisplayValue: {
     ...typography.body,
