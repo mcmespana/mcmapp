@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import colors, { Colors } from '@/constants/colors';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -109,23 +109,29 @@ export default function NotificationDetail({
 
         {notification.internalRoute && (
           <Pressable
-            style={[detailStyles.routeBtn, { borderColor: colors.primary }]}
+            style={[
+              detailStyles.routeBtn,
+              { borderColor: themeColors(scheme === 'dark').link },
+            ]}
             onPress={() => navigateTo(notification.internalRoute!)}
           >
             <MaterialIcons
               name={(routeInfo?.icon ?? 'launch') as any}
               size={20}
-              color={colors.primary}
+              color={themeColors(scheme === 'dark').link}
             />
             <Text
-              style={[detailStyles.routeBtnText, { color: colors.primary }]}
+              style={[
+                detailStyles.routeBtnText,
+                { color: themeColors(scheme === 'dark').link },
+              ]}
             >
               {routeInfo ? `Ir a ${routeInfo.label}` : 'Abrir sección'}
             </Text>
             <MaterialIcons
               name="chevron-right"
               size={20}
-              color={colors.primary}
+              color={themeColors(scheme === 'dark').link}
             />
           </Pressable>
         )}

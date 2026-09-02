@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { TouchableOpacity, Swipeable } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
-import colors, { Colors } from '@/constants/colors';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import { hexAlpha } from '@/utils/colorUtils';
 import spacing from '@/constants/spacing';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -98,7 +98,7 @@ export default function NotificationListItem({
             },
             isUnread && {
               backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
-              borderColor: colors.primary,
+              borderColor: themeColors(isDark).link,
             },
           ]}
           onPress={() => onPress(notification)}
@@ -133,7 +133,7 @@ export default function NotificationListItem({
                     <MaterialIcons
                       name="check-circle-outline"
                       size={20}
-                      color={colors.primary}
+                      color={themeColors(isDark).link}
                     />
                   </Pressable>
                 )}
@@ -154,19 +154,33 @@ export default function NotificationListItem({
               <View style={listStyles.chipsRow}>
                 {routeInfo && notification.internalRoute && (
                   <Pressable
-                    style={listStyles.destChip}
+                    style={[
+                      listStyles.destChip,
+                      {
+                        borderColor: hexAlpha(themeColors(isDark).link, '60'),
+                        backgroundColor: hexAlpha(
+                          themeColors(isDark).link,
+                          '12',
+                        ),
+                      },
+                    ]}
                     onPress={() =>
                       onDestinationPress(notification.internalRoute!)
                     }
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Text style={listStyles.destChipText}>
+                    <Text
+                      style={[
+                        listStyles.destChipText,
+                        { color: themeColors(isDark).link },
+                      ]}
+                    >
                       {routeInfo.label}
                     </Text>
                     <MaterialIcons
                       name="chevron-right"
                       size={13}
-                      color={colors.primary}
+                      color={themeColors(isDark).link}
                     />
                   </Pressable>
                 )}

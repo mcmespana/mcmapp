@@ -5,7 +5,7 @@
  * 1225 del fichero. Mismo patrón que `components/grupos/gruposStyles.ts`.
  */
 import { StyleSheet } from 'react-native';
-import colors, { Colors } from '@/constants/colors';
+import colors, { themeColors, Colors } from '@/constants/colors';
 import spacing from '@/constants/spacing';
 import typography from '@/constants/typography';
 import { radii, shadows } from '@/constants/uiStyles';
@@ -65,7 +65,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     },
     unreadCard: {
       backgroundColor: scheme === 'dark' ? '#1a1a2e' : '#f0f4ff',
-      borderColor: colors.primary,
+      borderColor: themeColors(scheme === 'dark').link,
     },
     notificationIcon: {
       width: 44,
@@ -154,12 +154,12 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       paddingHorizontal: 7,
       borderRadius: radii.xl,
       borderWidth: 1,
-      borderColor: hexAlpha(colors.primary, '60'),
-      backgroundColor: hexAlpha(colors.primary, '12'),
+      borderColor: hexAlpha(themeColors(scheme === 'dark').link, '60'),
+      backgroundColor: hexAlpha(themeColors(scheme === 'dark').link, '12'),
     },
     destinationChipText: {
       fontSize: 10,
-      color: colors.primary,
+      color: themeColors(scheme === 'dark').link,
       fontWeight: '600',
     },
     categoryChip: {

@@ -18,6 +18,39 @@
 
 ---
 
+## 2026-09-01 02:30 — Arreglado: en modo oscuro, Notificaciones tenía los controles invisibles
+
+PLAN_DISENO §H4. Esto empezó como una mejora anotada ("los colores de marca no
+tienen variante oscura") y al medirlo resultó ser un **bug de verdad**.
+
+Sobre el fondo oscuro (`#2C2C2E`), el azul de marca `#253883` da **1,31:1**. No
+es "poco contraste": es invisible. Y ese azul se usaba como color de iconos,
+bordes y etiquetas de botón en **toda la pantalla de Notificaciones**, que sí
+cambia de fondo con el tema. En modo oscuro, el botón de "marcar como leída",
+los chips de destino, los botones de acción y los de "Ir a…" estaban ahí sin
+verse.
+
+- Arreglado en `notifications.tsx`, `NotificationListItem`, `NotificationDetail`
+  y `notificationsStyles` usando `themeColors(isDark).link`: el mismo azul de
+  marca en claro, y `#7AB3FF` en oscuro.
+- **No hizo falta ninguna paleta nueva.** El rol ya existía; solo que se
+  llamaba `link` y nadie lo asociaba con iconos y botones. Ahora está
+  documentado como lo que es: el `tintColor` de iOS, que en el sistema cubre
+  enlaces, iconos de acción y etiquetas de botón con un único color.
+- Los rellenos (`backgroundColor: colors.primary` con texto blanco encima) se
+  quedan: ahí el azul de marca está bien en los dos modos.
+
+La regla queda escrita en `design.md` §3, con la tabla de qué color de marca
+sirve de primer plano en cada fondo: en oscuro valen `secondary` (8,5),
+`yellow` (9,5), `green` (6,6) e `info` (5,3), y NO valen `text` (1,1),
+`primary` (1,3) ni `purple` (1,9).
+
+Queda barrer los usos de marca como primer plano fuera de Notificaciones
+(`ErrorBoundary`, `SongControls`, `FormattedContent`, `GruposScreen`,
+`SurveyScreen`): §H4-bis.
+
+---
+
 ## 2026-09-01 01:40 — EmptyState cumple por fin su contrato, y el foco de los botones
 
 PLAN_DISENO §H2, §H1-bis y §A2-bis.

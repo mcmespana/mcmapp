@@ -159,8 +159,25 @@ de Apple, en sus dos modos).
 
 ### Modo oscuro
 
-**Los colores de marca no tienen variante oscura**: se usan tal cual, así que el
-contraste hay que comprobarlo a mano. Contigo sí tiene su par completo.
+**Los colores de marca NO tienen variante oscura**, y esto ya ha costado una
+pantalla entera: el azul MCM (`#253883`) sobre el fondo oscuro (`#2C2C2E`) da
+**1,31:1** — es invisible. En Notificaciones eso dejaba los iconos y las
+etiquetas de los botones sin ver en modo oscuro.
+
+Medido contra el fondo oscuro:
+
+| Sirve de primer plano en oscuro                           | No sirve                                  |
+| --------------------------------------------------------- | ----------------------------------------- |
+| `secondary` 8,5 · `yellow` 9,5 · `green` 6,6 · `info` 5,3 | `text` 1,1 · `primary` 1,3 · `purple` 1,9 |
+
+Y al revés: `yellow`, `green`, `info` y `secondary` **no** valen como texto
+sobre fondo claro.
+
+**La regla, entonces:** un color de marca vale como **relleno** (con texto
+blanco encima) en cualquier modo, pero como **texto, icono o borde** hay que
+usar el rol adaptado — `themeColors(isDark).link`, que es el azul de marca en
+claro y uno legible en oscuro. Es el `tintColor` de iOS: enlaces, iconos de
+acción y etiquetas de botón, todo el mismo rol.
 
 Todo lo que escribas se comprueba en los dos modos. Un color que solo se define
 dentro de una rama `isDark` es un bug esperando.
