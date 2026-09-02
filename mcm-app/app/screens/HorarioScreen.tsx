@@ -302,7 +302,7 @@ const createDynamicStyles = (
     titleWrapper: {
       backgroundColor: currentColor,
       padding: spacing.md,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       marginBottom: spacing.xs,
       ...Platform.select({
         web: {

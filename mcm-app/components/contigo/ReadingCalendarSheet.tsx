@@ -14,6 +14,7 @@ import { HIGHLIGHT_COLORS } from '@/utils/highlightRanges';
 import { hexAlpha } from '@/utils/colorUtils';
 import { h } from '@/utils/haptics';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface ReadingCalendarSheetProps {
   visible: boolean;
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
   navBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
   legendSquare: {
     width: 11,
     height: 11,
-    borderRadius: 4,
+    borderRadius: radii.xs,
   },
   legend: {
     flexDirection: 'row',
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingHorizontal: 18,
     paddingVertical: 9,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
   },
   todayText: {
     ...typography.caption,

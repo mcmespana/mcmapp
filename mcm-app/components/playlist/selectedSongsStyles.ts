@@ -33,7 +33,7 @@ export const createStyles = (
     headerIconBtn: {
       width: 36,
       height: 36,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -69,7 +69,7 @@ export const createStyles = (
       gap: 4,
       paddingVertical: 5,
       paddingHorizontal: 8,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       backgroundColor: isDark ? '#2C2C2E' : '#EFEFF4',
     },
     clearBtnText: {
@@ -80,7 +80,7 @@ export const createStyles = (
     viewToggle: {
       flexDirection: 'row',
       backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA',
-      borderRadius: 8,
+      borderRadius: radii.sm,
       padding: 2,
     },
     viewToggleBtn: {
@@ -220,7 +220,7 @@ export const createStyles = (
       width: '100%',
       maxWidth: 420,
       backgroundColor: themeColors(isDark).background,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       padding: 22,
       ...Platform.select({
         web: { boxShadow: '0 12px 40px rgba(0,0,0,0.25)' },

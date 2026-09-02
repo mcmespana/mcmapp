@@ -22,6 +22,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 
 /** Lado del hueco transparente por el que se apunta al QR. */
 export const FRAME_SIZE = 250;
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
     width: FRAME_SIZE,
     height: FRAME_SIZE,
     overflow: 'hidden',
-    borderRadius: 28,
+    borderRadius: radii.full,
   },
   corner: {
     position: 'absolute',

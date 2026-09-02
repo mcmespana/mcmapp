@@ -522,7 +522,7 @@ const createStyles = (
     headerFloatingButton: {
       width: 36,
       height: 36,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       borderWidth: 1,
       borderColor: isDark
         ? 'rgba(218, 165, 32, 0.3)'
@@ -640,7 +640,7 @@ const createStyles = (
     heroEmojiWrap: {
       width: 56,
       height: 56,
-      borderRadius: 16,
+      borderRadius: radii.lg,
       backgroundColor: isDark ? colors.primary : '#D4E2FF',
       justifyContent: 'center',
       alignItems: 'center',
@@ -680,7 +680,7 @@ const createStyles = (
     gridCardEmojiWrap: {
       width: 52,
       height: 52,
-      borderRadius: 14,
+      borderRadius: radii.lg,
       backgroundColor: isDark ? Colors.dark.card : '#F7F7FB',
       justifyContent: 'center',
       alignItems: 'center',

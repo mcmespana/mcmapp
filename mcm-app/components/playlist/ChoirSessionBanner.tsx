@@ -25,6 +25,7 @@ import { transposeLabel } from '@/utils/transposeKey';
 import ShareQrModal from '@/components/playlist/ShareQrModal';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface Props {
   /** Si true, el banner se muestra en posición fija arriba (no en flujo). */
@@ -179,7 +180,7 @@ const createStyles = (isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       backgroundColor: colors.primary,
-      borderRadius: 12,
+      borderRadius: radii.md,
       paddingVertical: 8,
       paddingHorizontal: 12,
       marginHorizontal: 12,
@@ -205,7 +206,7 @@ const createStyles = (isDark: boolean) =>
     icon: {
       width: 28,
       height: 28,
-      borderRadius: 14,
+      borderRadius: radii.lg,
       backgroundColor: 'rgba(255,255,255,0.18)',
       alignItems: 'center',
       justifyContent: 'center',
@@ -235,7 +236,7 @@ const createStyles = (isDark: boolean) =>
       gap: 4,
       paddingVertical: 5,
       paddingHorizontal: 9,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       backgroundColor: 'rgba(255,255,255,0.18)',
     },
     actionText: {
@@ -246,7 +247,7 @@ const createStyles = (isDark: boolean) =>
     leaveBtn: {
       width: 28,
       height: 28,
-      borderRadius: 14,
+      borderRadius: radii.lg,
       backgroundColor: 'rgba(255,255,255,0.18)',
       alignItems: 'center',
       justifyContent: 'center',

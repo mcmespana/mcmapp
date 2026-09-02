@@ -191,7 +191,7 @@ const createStyles = (isDark: boolean) =>
     arrowCircle: {
       width: 36,
       height: 36,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       justifyContent: 'center',
       alignItems: 'center',
       flexShrink: 0,

@@ -291,7 +291,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     },
     card: {
       backgroundColor: themeColors(isDark).background,
-      borderRadius: 16,
+      borderRadius: radii.lg,
       overflow: 'hidden',
       ...Platform.select({
         web: {
@@ -347,7 +347,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
     mapBtn: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: radii.xl,
       backgroundColor: isDark ? KeyPillColors.bgDark : '#E8F0FE',
       alignItems: 'center',
       justifyContent: 'center',
@@ -363,7 +363,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       width: '100%',
       maxWidth: 460,
       backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderRadius: 20,
+      borderRadius: radii.xl,
       overflow: 'hidden',
       ...Platform.select({
         web: { boxShadow: '0 14px 44px rgba(0,0,0,0.3)' },
@@ -430,7 +430,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       justifyContent: 'center',
       gap: 8,
       paddingVertical: 12,
-      borderRadius: 12,
+      borderRadius: radii.md,
       marginTop: 4,
     },
     dialogMapBtnText: {

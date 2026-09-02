@@ -28,6 +28,7 @@ import {
 } from '@/components/CarismochitoDialogs';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /* Verdes del HUD del modo (distintos tonos). */
 const G = '#1B9E4B'; // verde principal
@@ -536,7 +537,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: G_DARK,
-    borderRadius: 28,
+    borderRadius: radii.full,
     paddingVertical: 6,
     paddingLeft: 6,
     paddingRight: 16,

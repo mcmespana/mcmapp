@@ -18,6 +18,25 @@
 
 ---
 
+## 2026-08-31 21:05 — Los radios a mano bajan de 300 a 122
+
+PLAN_DISENO §E2. Complementa el colapso de la escala de radios del commit
+anterior.
+
+- 114 sustituciones **byte-idénticas** (4, 8, 12, 16, 20, 28 y 999 ya coincidían
+  con la escala).
+- 64 de los valores que la escala colapsó (14, 18, 22), migrados **a propósito**:
+  dejarlos a mano creaba el peor de los mundos, la misma card con 14 px si el
+  fichero hardcodeaba y 16 si usaba el token. Son 2 px.
+- `__tests__/noNewMagicNumbers.test.ts` suma el tercer trinquete: colores,
+  tamaños de letra y ahora radios.
+
+Los 122 que quedan son valores que no están en la escala (10 con 23 usos, y
+luego 3, 6, 100, 5, 2, 13, 26…): unos son decorativos de un sitio concreto y
+otros son un escalón inventado. Hay que mirarlos uno a uno (§E3).
+
+---
+
 ## 2026-08-31 20:15 — La escala tipográfica ahora cubre los tamaños que la app usa
 
 PLAN_DISENO §C. `constants/typography.ts` existía desde siempre y **solo lo

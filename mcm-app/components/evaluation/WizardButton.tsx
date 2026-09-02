@@ -7,6 +7,7 @@ import Animated, {
 import { MaterialIcons } from '@expo/vector-icons';
 import { hexAlpha } from '@/utils/colorUtils';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /**
  * Botón principal del wizard de evaluación, con micro-animación de pulsación.
@@ -63,7 +64,7 @@ const btnStyles = StyleSheet.create({
     gap: 8,
     width: '100%',
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 14,
     elevation: 4,

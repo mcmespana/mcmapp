@@ -265,7 +265,7 @@ const createStyles = (isDark: boolean) =>
       width: '100%',
       maxWidth: 360,
       backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderRadius: 18,
+      borderRadius: radii.xl,
       padding: 20,
       alignItems: 'center',
       ...Platform.select({
@@ -331,7 +331,7 @@ const createStyles = (isDark: boolean) =>
     qrWrap: {
       backgroundColor: '#FFFFFF',
       padding: 14,
-      borderRadius: 14,
+      borderRadius: radii.lg,
     },
     uploadPrompt: {
       height: 228,

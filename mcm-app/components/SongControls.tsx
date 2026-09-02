@@ -30,6 +30,7 @@ import colors, {
   SwipeColors,
   themeColors,
 } from '@/constants/colors';
+import { radii } from '@/constants/uiStyles';
 
 interface FontOption {
   name: string;
@@ -445,7 +446,7 @@ const styles = StyleSheet.create({
   menuContainer: {
     marginBottom: 12,
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     paddingVertical: 8,
     paddingHorizontal: 4,
     minWidth: 200,

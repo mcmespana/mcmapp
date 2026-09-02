@@ -35,6 +35,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import useWordleLeaderboard from '@/hooks/useWordleLeaderboard';
 import type { Guess } from '@/hooks/useWordleGame';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 const QWERTY = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -640,7 +641,7 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
       height: Platform.OS === 'web' ? 50 : 60,
       marginHorizontal: 3,
       borderWidth: 2,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       justifyContent: 'center',
       alignItems: 'center',
       elevation: 2,
@@ -669,7 +670,7 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
       paddingVertical: Platform.OS === 'web' ? 12 : 16,
       paddingHorizontal: Platform.OS === 'web' ? 8 : 12,
       marginHorizontal: 3,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       backgroundColor: isDark ? '#555' : '#d3d6da',
       minWidth: Platform.OS === 'web' ? 28 : 32,
       justifyContent: 'center',

@@ -9,6 +9,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import type { SurveyIndexEntry } from '@/constants/surveys';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface SurveyBannerProps {
   entry: SurveyIndexEntry;
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     padding: 14,
     shadowColor: '#000',
     shadowOpacity: 0.12,
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
   ctaIcon: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: radii.md,
   },
   ctaBtnText: { fontSize: 13, fontWeight: '800' },
   // Fila compacta (Ajustes)

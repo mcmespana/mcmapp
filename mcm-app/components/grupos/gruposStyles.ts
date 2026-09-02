@@ -27,7 +27,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     },
     catCard: {
       height: 120,
-      borderRadius: 16,
+      borderRadius: radii.lg,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -50,7 +50,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     groupContainer: { paddingHorizontal: 16 },
     iconBtn: {
       padding: 8,
-      borderRadius: 20,
+      borderRadius: radii.xl,
     },
     searchContainer: {
       marginHorizontal: 16,
@@ -226,7 +226,7 @@ export const createStyles = (scheme: 'light' | 'dark' | null) => {
     dot: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: radii.xs,
     },
     memberText: {
       flex: 1,

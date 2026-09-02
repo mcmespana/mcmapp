@@ -47,6 +47,7 @@ import SongMediaSheet from '@/components/song-media/SongMediaSheet';
 import FloatingMediaPlayer, {
   type FloatingMediaSource,
 } from '@/components/song-media/FloatingMediaPlayer';
+import { radii } from '@/constants/uiStyles';
 
 // Apple iOS system green — used as a "selected/done" tint inside the
 // add/remove song button. Not part of the MCM brand palette: it's an
@@ -739,7 +740,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -761,7 +762,7 @@ const styles = StyleSheet.create({
     right: 7,
     width: 7,
     height: 7,
-    borderRadius: 4,
+    borderRadius: radii.xs,
     backgroundColor: brandColors.accent,
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.9)',

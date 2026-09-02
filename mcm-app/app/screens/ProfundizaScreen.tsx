@@ -223,7 +223,7 @@ const createStyles = (scheme: 'light' | 'dark' | null, scale: number) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      borderRadius: 16,
+      borderRadius: radii.lg,
       paddingHorizontal: 16,
       paddingVertical: 14,
     },

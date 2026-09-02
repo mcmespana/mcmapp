@@ -5,6 +5,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/colors';
 import { IconSymbol } from './ui/IconSymbol';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 export default function AddToHomeScreenPrompt() {
   const [visible, setVisible] = useState(false);
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     flexDirection: 'column',
     alignItems: 'center',
     shadowColor: '#000',

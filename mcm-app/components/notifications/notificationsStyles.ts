@@ -70,7 +70,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
     notificationIcon: {
       width: 44,
       height: 44,
-      borderRadius: 22,
+      borderRadius: radii.xl,
       marginRight: spacing.md,
       backgroundColor: colors.border,
       alignSelf: 'flex-start',

@@ -43,6 +43,7 @@ import {
 import type { ProfileType } from '@/types/profileConfig';
 import { setAnalyticsProfile, trackEvent } from '@/utils/analytics';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 type Step = 'welcome' | 'profile' | 'delegation' | 'login' | 'success';
 
@@ -279,7 +280,7 @@ const btnStyles = StyleSheet.create({
     width: '100%',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.primary,
@@ -296,7 +297,7 @@ const btnStyles = StyleSheet.create({
   shimmerWrap: {
     ...StyleSheet.absoluteFill,
     overflow: 'hidden',
-    borderRadius: 16,
+    borderRadius: radii.lg,
   } as ViewStyle,
   shimmer: {
     position: 'absolute',
@@ -342,7 +343,7 @@ const skipBtnStyles = StyleSheet.create({
     gap: 3,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     borderWidth: 1.5,
     borderColor: 'rgba(37,56,131,0.28)',
     backgroundColor: 'rgba(37,56,131,0.06)',
@@ -564,14 +565,14 @@ function WelcomeScreen({
 const welcomeStyles = StyleSheet.create({
   root: { flex: 1, position: 'relative', overflow: 'hidden' } as ViewStyle,
   safeContent: { flex: 1 } as ViewStyle,
-  deco: { position: 'absolute', borderRadius: 999 } as ViewStyle,
+  deco: { position: 'absolute', borderRadius: radii.pillFull } as ViewStyle,
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
@@ -603,7 +604,7 @@ const welcomeStyles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(149,210,242,0.18)',
   } as ViewStyle,
   logoCircle: {
@@ -1137,7 +1138,7 @@ const successStyles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: 'rgba(37,56,131,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(37,56,131,0.10)',
@@ -1182,7 +1183,7 @@ const stepStyles = StyleSheet.create({
   heroIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radii.full,
     backgroundColor: 'rgba(37,56,131,0.09)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1224,7 +1225,7 @@ const cardStyles = StyleSheet.create({
     gap: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 2,
     borderColor: T.border,
     backgroundColor: '#fff',
@@ -1278,7 +1279,7 @@ const delegStyles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 13,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1.5,
     borderColor: T.border,
     backgroundColor: '#fff',
@@ -1523,7 +1524,7 @@ const loginOnbStyles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   } as ViewStyle,
-  deco: { position: 'absolute', borderRadius: 999 } as ViewStyle,
+  deco: { position: 'absolute', borderRadius: radii.pillFull } as ViewStyle,
   backBtn: {
     position: 'absolute',
     top: 16,
@@ -1598,7 +1599,7 @@ const loginOnbStyles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.24)',
@@ -1620,7 +1621,7 @@ const loginOnbStyles = StyleSheet.create({
     gap: 6,
     paddingVertical: 12,
     paddingHorizontal: 22,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.28)',
@@ -1909,7 +1910,7 @@ const shellStyles = StyleSheet.create({
   frame: { flex: 1, alignSelf: 'center' } as ViewStyle,
   frameWide: {
     flex: undefined,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     overflow: 'hidden',
     shadowColor: colors.primary,
     shadowOpacity: 0.14,

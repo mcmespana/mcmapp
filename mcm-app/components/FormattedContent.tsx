@@ -5,6 +5,7 @@ import colors, { Colors } from '@/constants/colors';
 import { formatBBCodeToHtml } from '@/utils/formatText';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import useFontScale from '@/hooks/useFontScale';
+import { radii } from '@/constants/uiStyles';
 
 interface FormattedContentProps {
   text: string;
@@ -106,7 +107,7 @@ export default function FormattedContent({
         color: colors.white,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
-        borderRadius: 8,
+        borderRadius: radii.sm,
         textAlign: 'center' as const,
         marginVertical: 8 * fontScale,
         marginHorizontal: 4 * fontScale,
@@ -131,7 +132,7 @@ export default function FormattedContent({
         color: colors.white,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
-        borderRadius: 8,
+        borderRadius: radii.sm,
         textAlign: 'center' as const,
         marginVertical: 8 * fontScale,
         marginHorizontal: 4 * fontScale,
@@ -161,7 +162,7 @@ export default function FormattedContent({
         color: colors.primary,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
-        borderRadius: 8,
+        borderRadius: radii.sm,
         textAlign: 'center' as const,
         marginVertical: 8 * fontScale,
         marginHorizontal: 4 * fontScale,
@@ -178,7 +179,7 @@ export default function FormattedContent({
         color: colors.accent,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
-        borderRadius: 8,
+        borderRadius: radii.sm,
         textAlign: 'center' as const,
         marginVertical: 8 * fontScale,
         marginHorizontal: 4 * fontScale,
@@ -195,7 +196,7 @@ export default function FormattedContent({
         color: colors.white,
         paddingVertical: 4 * fontScale,
         paddingHorizontal: 8 * fontScale,
-        borderRadius: 12,
+        borderRadius: radii.md,
         fontSize: 12 * fontScale,
         fontWeight: '600' as const,
         display: 'inline-block' as const,
@@ -223,7 +224,7 @@ export default function FormattedContent({
         borderWidth: 1,
         paddingVertical: 12 * fontScale,
         paddingHorizontal: 20 * fontScale,
-        borderRadius: 8,
+        borderRadius: radii.sm,
         marginVertical: 8 * fontScale,
         marginHorizontal: 4 * fontScale,
         minWidth: 120 * fontScale,

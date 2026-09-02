@@ -17,6 +17,7 @@ import {
 import { useColorScheme } from '@/hooks/useColorScheme';
 import colors, { SwipeColors, themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 export interface ConfirmChoiceAction {
   label: string;
@@ -106,7 +107,7 @@ const createStyles = (isDark: boolean) =>
       width: '100%',
       maxWidth: 420,
       backgroundColor: themeColors(isDark).background,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       padding: 22,
       ...Platform.select({
         web: { boxShadow: '0 12px 40px rgba(0,0,0,0.25)' },

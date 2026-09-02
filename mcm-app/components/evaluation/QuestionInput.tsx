@@ -8,6 +8,7 @@ import { h } from '@/utils/haptics';
 import type { EvalQuestion } from '@/constants/evaluation';
 import ScaleInput from './ScaleInput';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 type AnswerValue = number | string | boolean | string[];
 
@@ -189,7 +190,7 @@ const qStyles = StyleSheet.create({
   starsWrap: { alignItems: 'flex-start' },
   input: {
     borderWidth: 1.5,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     padding: 16,
     ...typography.body,
     minHeight: 130,
@@ -203,7 +204,7 @@ const qStyles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
   },
   yesnoText: { fontSize: 16, fontWeight: '700' },
@@ -213,7 +214,7 @@ const qStyles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     marginBottom: 10,
   },

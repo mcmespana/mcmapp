@@ -38,6 +38,7 @@ import LoginNudgeBanner from '@/components/LoginNudgeBanner';
 import { useAuth } from '@/contexts/AuthContext';
 import { h } from '@/utils/haptics';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 export default function ContigoScreen() {
   const insets = useSafeAreaInsets();
@@ -426,7 +427,7 @@ const styles = StyleSheet.create({
   headerBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
   },
   cardSurface: {
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     padding: 16,
   },
   smallLabel: {
@@ -473,7 +474,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   monthBadge: {
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },

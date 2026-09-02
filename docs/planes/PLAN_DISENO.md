@@ -267,8 +267,17 @@ xs 4 · sm 8 · md 12 · lg 16 · xl 20 · full 28 · pillFull 999
 `lg` pasa de 14 a 16, y `xl 18` + `pill 20` + `xxl 22` se funden en `xl 20`.
 
 - [x] E1 Colapsado de nueve escalones a siete y migrados los usos.
-- [ ] E2 Faltan los 69 ficheros con `borderRadius` inline (número anterior a la
-      migración; volver a contar antes de empezar).
+- [x] E2 Migrados **de 300 a 122** en 69 ficheros: 114 que coincidían exacto
+      con la escala (byte-idénticos) y 64 de los valores que la escala colapsó
+      —14, 18, 22—. Estos últimos se migraron a propósito: dejarlos a mano
+      creaba el peor de los mundos, la misma card con 14 px si el fichero
+      hardcodeaba y 16 si usaba el token.
+- [ ] E3 Los 122 que quedan son valores que **no están en la escala**: 10 (23
+      usos), 3, 6, 100, 5, 2, 13, 26, 30, 19. Hay que mirarlos uno a uno —unos
+      son decorativos de un sitio concreto, otros son un escalón inventado que
+      debería caer al de al lado. El `100` es "haz un círculo" y funciona solo
+      porque los elementos son pequeños; `radii.pillFull` (999) es lo correcto.
+      Hay trinquete (`noNewMagicNumbers`) para que no crezcan.
 
 ---
 

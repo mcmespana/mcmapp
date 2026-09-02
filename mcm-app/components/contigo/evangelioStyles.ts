@@ -41,7 +41,7 @@ export const styles = StyleSheet.create({
   frostedBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -53,7 +53,7 @@ export const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     padding: 4,
-    borderRadius: 14,
+    borderRadius: radii.lg,
   },
   segmentButton: {
     flex: 1,
@@ -85,7 +85,7 @@ export const styles = StyleSheet.create({
   },
   dateNavBtn: {
     padding: 10,
-    borderRadius: 14,
+    borderRadius: radii.lg,
   },
   dateDisplay: {
     alignItems: 'center',
@@ -219,7 +219,7 @@ export const styles = StyleSheet.create({
   },
   trackerBtnWrap: {
     width: '100%',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     minHeight: 54,
   },
   trackerGradient: {
@@ -227,7 +227,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
+    borderRadius: radii.lg,
   },
   statusChip: {
     flexDirection: 'row',
@@ -236,7 +236,7 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 11,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     marginTop: 8,
   },
   statusChipText: {

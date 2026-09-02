@@ -13,6 +13,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import spacing from '@/constants/spacing';
 import { parseHorarioDate } from '@/utils/dateUtils';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 const MONTHS = [
   'enero',
@@ -131,7 +132,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       gap: spacing.sm,
       paddingVertical: spacing.sm + 2,
       paddingHorizontal: spacing.md,
-      borderRadius: 16,
+      borderRadius: radii.lg,
       backgroundColor: isDark ? '#2C2C2E' : '#F1F2F4',
       borderWidth: 1,
       borderColor: isDark ? '#3A3A3C' : '#E6E7EA',

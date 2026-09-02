@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import CarismochitoMascot from '@/components/CarismochitoMascot';
 import { h } from '@/utils/haptics';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /* Verdes del modo (en línea con CarismochitoOverlay). */
 const G = '#1B9E4B';
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 380,
-    borderRadius: 28,
+    borderRadius: radii.full,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 24,
@@ -246,7 +247,7 @@ const styles = StyleSheet.create({
   teaser: {
     marginTop: 16,
     backgroundColor: 'rgba(90, 224, 138, 0.12)',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: 'rgba(90, 224, 138, 0.3)',
     paddingHorizontal: 16,

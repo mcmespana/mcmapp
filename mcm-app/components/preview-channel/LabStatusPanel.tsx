@@ -12,6 +12,7 @@ import type {
 } from '@/contexts/PreviewChannelContext';
 import type { UnsupportedReason } from '@/services/previewChannel';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /**
  * Panel de estado del Laboratorio Alpha.
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   banner: {
-    borderRadius: 18,
+    borderRadius: radii.xl,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
@@ -214,7 +215,7 @@ const styles = StyleSheet.create({
   restartButton: {
     alignItems: 'center',
     paddingVertical: 16,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderColor: 'rgba(0,0,0,0.15)',
@@ -226,7 +227,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   diagBox: {
-    borderRadius: 16,
+    borderRadius: radii.lg,
     paddingVertical: 10,
     paddingHorizontal: 14,
     backgroundColor: 'rgba(0,0,0,0.38)',

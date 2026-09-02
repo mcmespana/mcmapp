@@ -34,7 +34,7 @@ export const styles = StyleSheet.create({
   headerBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -330,7 +330,7 @@ export const styles = StyleSheet.create({
   evalCtaIcon: {
     width: 46,
     height: 46,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.22)',
@@ -377,7 +377,7 @@ export const styles = StyleSheet.create({
   eventBannerIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radii.md,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,

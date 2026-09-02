@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   sizeBtn: {
     width: 46,
     height: 46,
-    borderRadius: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   },
   themeSegment: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: radii.md,
     padding: 4,
     gap: 4,
   },

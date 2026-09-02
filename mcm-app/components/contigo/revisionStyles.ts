@@ -6,6 +6,7 @@
  */
 import { Platform, StyleSheet, type TextStyle } from 'react-native';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /**
  * Tipografía ÚNICA para todo lo que el usuario escribe (los tres campos de los
@@ -39,7 +40,7 @@ export const styles = StyleSheet.create({
   headerBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -134,7 +135,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     paddingHorizontal: 14,
     gap: 10,
@@ -156,7 +157,7 @@ export const styles = StyleSheet.create({
   removeBtn: {
     width: 46,
     height: 46,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -165,7 +166,7 @@ export const styles = StyleSheet.create({
   addBtn: {
     flex: 1,
     height: 46,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     flexDirection: 'row',
@@ -175,7 +176,7 @@ export const styles = StyleSheet.create({
   },
   textarea: {
     minHeight: 200,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     padding: 16,
     ...WRITING_FONT,
@@ -198,14 +199,14 @@ export const styles = StyleSheet.create({
   backBtn: {
     width: 52,
     height: 52,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   nextBtn: {
     height: 52,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },

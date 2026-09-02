@@ -5,6 +5,7 @@ import { getBrightness } from '@/components/ui/glass';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { LiturgicalColors, themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface LiturgicalBadgeProps {
   dateStr: string; // YYYY-MM-DD
@@ -128,7 +129,7 @@ const styles = StyleSheet.create({
   pill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     alignSelf: 'flex-start',
   },
   pillPlain: {

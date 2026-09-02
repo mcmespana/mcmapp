@@ -7,6 +7,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import colors from '@/constants/colors';
 import { h } from '@/utils/haptics';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 /**
  * Conmutador de 2-3 opciones (Fase 2 de PLAN_UI_NATIVA).
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   segmentCompact: {
     paddingVertical: 4,

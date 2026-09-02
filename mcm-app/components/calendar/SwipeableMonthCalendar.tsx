@@ -13,6 +13,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { Calendar, CalendarProps } from 'react-native-calendars';
 import colors, { themeColors } from '@/constants/colors';
 import { h } from '@/utils/haptics';
+import { radii } from '@/constants/uiStyles';
 
 interface SwipeableMonthCalendarProps {
   /** Mes visible, en formato `YYYY-MM-DD` (normalmente el día 1). */
@@ -162,10 +163,10 @@ export default function SwipeableMonthCalendar({
 const styles = StyleSheet.create({
   // Recorta la rejilla que sale de cuadro mientras se desliza.
   clip: {
-    borderRadius: 20,
+    borderRadius: radii.xl,
     overflow: 'hidden',
   },
   calendar: {
-    borderRadius: 20,
+    borderRadius: radii.xl,
   },
 });

@@ -17,6 +17,7 @@ import {
   ContentPageItem,
 } from '@/components/materiales/MaterialPageItems';
 import { MasStackParamList } from '../(tabs)/mas';
+import { radii } from '@/constants/uiStyles';
 
 export interface Pagina {
   titulo?: string;
@@ -219,7 +220,7 @@ const createStyles = (
     dot: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: radii.xs,
       backgroundColor: scheme === 'dark' ? '#555' : '#ccc',
     },
     dotActive: {

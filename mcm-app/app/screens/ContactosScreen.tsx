@@ -402,7 +402,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     avatar: {
       width: 44,
       height: 44,
-      borderRadius: 22,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
     },

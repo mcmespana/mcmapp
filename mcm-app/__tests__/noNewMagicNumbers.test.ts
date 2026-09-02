@@ -13,6 +13,8 @@
  *     si lo que quieres es un par claro/oscuro (que es lo que suele ser).
  *   · Has AÑADIDO un `fontSize` a mano → usa `typography.*`. La escala cubre
  *     de 10 a 34; si tu tamaño no está, es que estás inventando un nivel.
+ *   · Has AÑADIDO un `borderRadius` a mano → usa `radii.*`. Si dudas entre dos
+ *     escalones, da igual cuál: coge el de la tabla de `design.md` §5.
  *   · Has QUITADO alguno → gracias: baja el número de abajo al que diga el
  *     error, en el mismo commit.
  *
@@ -154,6 +156,36 @@ describe('no se añaden tamaños de letra a mano', () => {
             `footnote/micro/overline).\nLos ficheros con más:\n${worst}`,
         );
       }
+      expect(total).toBeGreaterThan(budget - 25);
+    },
+  );
+});
+
+/**
+ * Tope de `borderRadius` escritos a mano.
+ *
+ * Histórico: 300 antes de colapsar la escala en agosto de 2026 → 122. Lo que
+ * queda son valores que NO están en la escala (10, 3, 6, 100, 5, 2, 13, 26…) y
+ * que hay que mirar uno a uno: unos son decorativos de un sitio concreto y
+ * otros son un escalón inventado que debería caer al de al lado.
+ */
+const RADIUS_BUDGET = {
+  app: 17,
+  components: 105,
+};
+
+const INLINE_RADIUS = /borderRadius: \d+/g;
+
+describe('no se añaden radios a mano', () => {
+  it.each(Object.entries(RADIUS_BUDGET))(
+    '%s se mantiene en su tope o por debajo',
+    (dir, budget) => {
+      let total = 0;
+      for (const file of walk(path.join(ROOT, dir))) {
+        total += [...fs.readFileSync(file, 'utf8').matchAll(INLINE_RADIUS)]
+          .length;
+      }
+      expect(total).toBeLessThanOrEqual(budget);
       expect(total).toBeGreaterThan(budget - 25);
     },
   );

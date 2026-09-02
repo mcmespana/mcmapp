@@ -24,6 +24,7 @@ import {
 import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
 import { countHighlights } from '@/utils/contigoBookmarks';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 export default function BookmarksScreen() {
   // Subruta de Contigo: se registra con la clave del tab (gana el último
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -281,7 +282,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    borderRadius: 18,
+    borderRadius: radii.xl,
     overflow: 'hidden',
     borderWidth: 1,
   },
@@ -305,7 +306,7 @@ const styles = StyleSheet.create({
   removeBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 10,
@@ -324,7 +325,7 @@ const styles = StyleSheet.create({
   },
   openBtn: {
     alignSelf: 'flex-start',
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,

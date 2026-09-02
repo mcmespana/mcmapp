@@ -719,7 +719,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     sheetIcon: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor:
@@ -745,7 +745,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       marginBottom: spacing.md,
       borderWidth: 1,
       borderColor: scheme === 'dark' ? '#48484A' : '#D8DCC8',
-      borderRadius: 12,
+      borderRadius: radii.md,
       paddingHorizontal: 14,
       paddingVertical: 13,
       backgroundColor: themeColors(scheme === 'dark').background,
@@ -769,7 +769,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       width: '100%',
       maxWidth: 360,
       backgroundColor: theme.background,
-      borderRadius: 20,
+      borderRadius: radii.xl,
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.lg,
       paddingBottom: spacing.md,
@@ -790,7 +790,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
     dateDoneBtn: {
       alignSelf: 'stretch',
       backgroundColor: colors.green,
-      borderRadius: 14,
+      borderRadius: radii.lg,
       paddingVertical: 13,
       alignItems: 'center',
       marginTop: spacing.sm,
@@ -802,7 +802,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       justifyContent: 'center',
       gap: 8,
       backgroundColor: colors.green,
-      borderRadius: 14,
+      borderRadius: radii.lg,
       paddingVertical: 15,
       marginTop: spacing.md,
       marginBottom: spacing.lg,
@@ -817,7 +817,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       backgroundColor: theme.background,
       padding: spacing.lg,
       margin: spacing.md,
-      borderRadius: 8,
+      borderRadius: radii.sm,
       alignItems: 'center',
     },
     savingText: {

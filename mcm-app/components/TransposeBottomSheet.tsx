@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   resetIconBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',

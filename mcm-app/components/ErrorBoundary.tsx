@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import colors, { themeColors } from '@/constants/colors';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface Props {
   children: ReactNode;
@@ -87,7 +88,7 @@ const getDynamicStyles = (isDark: boolean) =>
       maxHeight: 200,
       width: '100%',
       backgroundColor: isDark ? '#3a3a3c' : '#f5f5f5',
-      borderRadius: 8,
+      borderRadius: radii.sm,
       padding: 12,
     },
   });
@@ -107,7 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: radii.sm,
   },
   buttonText: {
     color: '#fff',

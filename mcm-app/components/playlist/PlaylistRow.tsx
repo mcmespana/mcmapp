@@ -33,6 +33,7 @@ import {
   themeColors,
 } from '@/constants/colors';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface Song {
   title: string;
@@ -326,7 +327,7 @@ const createStyles = (isDark: boolean) =>
     numberWrap: {
       width: 28,
       height: 28,
-      borderRadius: 14,
+      borderRadius: radii.lg,
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
       alignItems: 'center',
       justifyContent: 'center',

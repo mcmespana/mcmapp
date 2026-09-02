@@ -17,6 +17,7 @@ import { h } from '@/utils/haptics';
 import { useTabBarClearance } from '@/hooks/useTabBarClearance';
 import { WARM_DARK, warm } from '@/components/contigo/theme';
 import typography from '@/constants/typography';
+import { radii } from '@/constants/uiStyles';
 
 interface HighlightActionBarProps {
   visible: boolean;
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     borderWidth: 1,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.18,
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
   swatch: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1,
   },
   divider: {
@@ -209,7 +210,7 @@ const styles = StyleSheet.create({
   eraseBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
   doneBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: radii.pillFull,
   },
   doneText: {
     color: '#FFFFFF',

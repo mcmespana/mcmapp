@@ -143,7 +143,7 @@ const createStyles = (isDark: boolean) =>
       width: '100%',
       maxWidth: 380,
       backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderRadius: 18,
+      borderRadius: radii.xl,
       padding: 20,
       ...Platform.select({
         web: { boxShadow: '0 10px 30px rgba(0,0,0,0.2)' },

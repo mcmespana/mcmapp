@@ -26,6 +26,7 @@ import {
 import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation';
 import { styles } from '@/components/contigo/oracionStyles';
 import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
+import { radii } from '@/constants/uiStyles';
 
 // ── Screen geometry ──
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -815,7 +816,7 @@ export default function OracionScreen() {
                       {
                         width: CELL_SIZE,
                         height: CELL_SIZE,
-                        borderRadius: 8,
+                        borderRadius: radii.sm,
                         backgroundColor: cellBg,
                         borderWidth: isToday ? 2 : isSelected ? 1.5 : 0,
                         borderColor: isToday

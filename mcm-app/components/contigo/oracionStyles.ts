@@ -28,7 +28,7 @@ export const styles = StyleSheet.create({
   frostedBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -57,7 +57,7 @@ export const styles = StyleSheet.create({
   },
   navBtn: {
     padding: 10,
-    borderRadius: 14,
+    borderRadius: radii.lg,
   },
   dateCenter: {
     flex: 1,
@@ -144,7 +144,7 @@ export const styles = StyleSheet.create({
   bucketPill: {
     paddingHorizontal: 17,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1,
     minWidth: '30%',
     alignItems: 'center',
@@ -176,7 +176,7 @@ export const styles = StyleSheet.create({
   stepperBtn: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radii.full,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

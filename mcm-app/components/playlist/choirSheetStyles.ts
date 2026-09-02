@@ -71,7 +71,7 @@ export const createStyles = (isDark: boolean) =>
     heroIcon: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'rgba(255,255,255,0.2)',
@@ -101,7 +101,7 @@ export const createStyles = (isDark: boolean) =>
     rowIcon: {
       width: 36,
       height: 36,
-      borderRadius: 18,
+      borderRadius: radii.xl,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,

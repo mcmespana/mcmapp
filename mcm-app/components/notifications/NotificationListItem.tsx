@@ -210,7 +210,7 @@ const listStyles = StyleSheet.create({
   icon: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     marginRight: spacing.md,
     backgroundColor: colors.border,
     alignSelf: 'flex-start',
@@ -238,7 +238,7 @@ const listStyles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.xs,
     backgroundColor: colors.primary,
   },
   body: {
