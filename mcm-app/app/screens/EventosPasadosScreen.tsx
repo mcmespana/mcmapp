@@ -23,6 +23,7 @@ import { isEventArchived } from '@/constants/events';
 import { useActiveMeta } from '@/contexts/ActiveEventContext';
 import { MasStackParamList } from '../(tabs)/mas';
 import { themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 /**
  * "Eventos pasados": lista los eventos archivados como tarjetas que abren su
@@ -184,7 +185,7 @@ const createStyles = (isDark: boolean) =>
     },
     cardTitle: {
       flex: 1,
-      fontSize: 18,
+      ...typography.h3,
       fontWeight: '700',
       letterSpacing: -0.3,
     },

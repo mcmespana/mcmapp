@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cancelText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
 });

@@ -38,7 +38,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   mysteriousText: {
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 10,

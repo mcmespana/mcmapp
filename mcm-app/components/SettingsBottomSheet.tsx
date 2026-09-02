@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   } as ViewStyle,
   surfaceLabel: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   } as TextStyle,
   surfaceHint: {

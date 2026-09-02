@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: 'rgba(255,255,255,0.95)',
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     textAlign: 'center',
     paddingHorizontal: 30,

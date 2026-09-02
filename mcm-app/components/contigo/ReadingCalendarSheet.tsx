@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     opacity: 0.28,
   },
   dayText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },

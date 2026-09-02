@@ -19,6 +19,7 @@ import AppTextField from '@/components/ui/AppTextField';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { h } from '@/utils/haptics';
 import colors, { SwipeColors, themeColors } from '@/constants/colors';
+import typography from '@/constants/typography';
 
 interface Props {
   visible: boolean;
@@ -198,7 +199,7 @@ const createStyles = (isDark: boolean) =>
     },
     btnSecondaryText: {
       color: themeColors(isDark).textStrong,
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
     },
     btnDisabled: { opacity: 0.5 },

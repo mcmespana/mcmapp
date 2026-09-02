@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   calName: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     flex: 1,
   } as TextStyle,

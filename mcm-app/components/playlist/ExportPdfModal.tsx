@@ -338,7 +338,7 @@ const createStyles = (isDark: boolean) =>
       gap: 8,
     },
     title: {
-      fontSize: 18,
+      ...typography.h3,
       fontWeight: '700',
       color: themeColors(isDark).textStrong,
     },
@@ -427,7 +427,7 @@ const createStyles = (isDark: boolean) =>
     },
     btnSecondaryText: {
       color: themeColors(isDark).textStrong,
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
     },
     btnDisabled: { opacity: 0.5 },

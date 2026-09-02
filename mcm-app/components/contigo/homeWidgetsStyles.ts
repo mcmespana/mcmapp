@@ -286,7 +286,7 @@ export const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 10,
+    ...typography.overline,
     fontWeight: '600',
     letterSpacing: 0.4,
     textAlign: 'center',

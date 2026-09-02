@@ -988,7 +988,7 @@ const dStyles = StyleSheet.create({
   },
   routeButtonText: {
     flex: 1,
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   actionButton: {

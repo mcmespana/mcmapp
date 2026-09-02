@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   secretBtnText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   disclaimer: {

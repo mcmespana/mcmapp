@@ -191,7 +191,7 @@ const detailStyles = StyleSheet.create({
     alignSelf: 'center',
   },
   title: {
-    fontSize: 22,
+    ...typography.h2,
     fontWeight: '700',
     marginBottom: spacing.sm,
     lineHeight: 30,
@@ -228,7 +228,7 @@ const detailStyles = StyleSheet.create({
   },
   routeBtnText: {
     flex: 1,
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   actionBtn: {

@@ -172,7 +172,7 @@ export const createStyles = (scheme: 'light' | 'dark') => {
       borderWidth: 1,
     },
     categoryChipText: {
-      fontSize: 10,
+      ...typography.overline,
       fontWeight: '600',
     },
     actionChip: {

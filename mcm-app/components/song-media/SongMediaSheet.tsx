@@ -379,7 +379,7 @@ const createStyles = (isDark: boolean) =>
     },
     secHint: {
       marginLeft: 'auto',
-      fontSize: 10,
+      ...typography.overline,
       fontWeight: '600',
       fontStyle: 'italic',
       color: isDark ? '#7C7C80' : '#A8A8AD',

@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   title: {
-    fontSize: 34,
+    ...typography.h0,
     fontWeight: '800',
     letterSpacing: -1.4,
     lineHeight: 38,

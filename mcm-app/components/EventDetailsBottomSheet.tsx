@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   } as TextStyle,
 
   title: {
-    fontSize: 22,
+    ...typography.h2,
     fontWeight: '700',
     letterSpacing: -0.4,
     marginTop: spacing.xs,
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     gap: 2,
   } as ViewStyle,
   infoPrimary: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   } as TextStyle,
   infoSecondary: {

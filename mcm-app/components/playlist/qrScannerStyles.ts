@@ -127,7 +127,7 @@ export const styles = StyleSheet.create({
   // --- Permiso denegado ----------------------------------------------------
   deniedTitle: {
     color: '#F5F5F7',
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '700',
     marginTop: 6,
     textAlign: 'center',

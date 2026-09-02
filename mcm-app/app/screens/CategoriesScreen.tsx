@@ -501,7 +501,7 @@ const createStyles = (
       justifyContent: 'flex-end',
     },
     headerTitle: {
-      fontSize: 34,
+      ...typography.h0,
       fontWeight: '800',
       letterSpacing: -1.4,
       lineHeight: 38,

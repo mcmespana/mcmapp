@@ -111,7 +111,7 @@ export const createStyles = (isDark: boolean) =>
     },
     rowTextBlock: { flex: 1 },
     rowLabel: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
       color: themeColors(isDark).textStrong,
     },
@@ -136,7 +136,7 @@ export const createStyles = (isDark: boolean) =>
       backgroundColor: isDark ? KeyPillColors.bgDark : KeyPillColors.bgLight,
     },
     listTitle: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
       color: themeColors(isDark).textStrong,
     },
@@ -221,7 +221,7 @@ export const createStyles = (isDark: boolean) =>
     btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '700' },
     btnSecondaryText: {
       color: themeColors(isDark).textStrong,
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
     },
     backRow: {

@@ -164,7 +164,7 @@ const createStyles = (isDark: boolean) =>
       flex: 1,
     },
     itemLabel: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
       color: themeColors(isDark).textStrong,
     },

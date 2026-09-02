@@ -121,7 +121,7 @@ const createStyles = (isDark: boolean) =>
       }),
     },
     title: {
-      fontSize: 18,
+      ...typography.h3,
       fontWeight: '700',
       color: themeColors(isDark).textStrong,
       marginBottom: 8,
@@ -143,7 +143,7 @@ const createStyles = (isDark: boolean) =>
       justifyContent: 'center',
     },
     btnText: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
     },
     btnSecondary: {

@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   } as ViewStyle,
   socialBtnLabel: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     letterSpacing: -0.2,
   } as TextStyle,

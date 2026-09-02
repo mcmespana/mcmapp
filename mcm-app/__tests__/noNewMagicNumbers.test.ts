@@ -123,8 +123,8 @@ describe('no se añaden colores a mano', () => {
  * hay que migrar uno a uno porque ahí el spread sí puede cambiar el render.
  */
 const FONT_SIZE_BUDGET = {
-  app: 93,
-  components: 228,
+  app: 86,
+  components: 190,
 };
 
 const INLINE_FONT_SIZE = /fontSize: \d+/g;

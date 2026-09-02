@@ -25,7 +25,7 @@ export const styles = StyleSheet.create({
     borderRadius: radii.sm + 2, // 10
   } as ViewStyle,
   logoText: {
-    fontSize: 34,
+    ...typography.h0,
     fontWeight: '800',
     letterSpacing: -1.4,
     lineHeight: 38,

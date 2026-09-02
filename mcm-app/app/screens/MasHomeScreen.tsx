@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   cardTitle: {
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '700',
     letterSpacing: -0.3,
   },

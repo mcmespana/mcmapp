@@ -239,7 +239,7 @@ const createStyles = (scheme: 'light' | 'dark' | null) => {
       flex: 1,
     },
     itemTitle: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
       color: theme.text,
     },

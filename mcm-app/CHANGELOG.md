@@ -18,6 +18,34 @@
 
 ---
 
+## 2026-09-01 00:30 — Los pesos tipográficos, ajustados a lo que la app hace
+
+PLAN_DISENO §C4. Segunda vez que el token resulta ser el raro y no el código.
+
+La escala de pesos que había escrito —500 para acciones, 600 para secciones— me
+la había inventado yo. Contando: a 15 px la app usa 600 o 700 en **53 sitios**
+y 500 en **3**. Lo mismo con 17 y 18 px, que van a 700. Y había una
+incoherencia de escalera: `h2` (22 px) a 800 pesaba más que `h1` (28 px) a 700,
+o sea peso subiendo al bajar de tamaño.
+
+- Pesos del token ajustados: `h2` y `h3` a 700, `button` a 600. La escalera
+  queda `h0 800 · h1/h2/h3 700 · title/button/overline 600 · resto normal`,
+  bajando con el tamaño y sin superar nunca al nivel de arriba.
+- Con eso, 45 sitios más pasan a token **sin cambiar de aspecto**: de 321
+  `fontSize` a mano a **276**.
+- `design.md` §4 y el inventario corregidos.
+
+**Cambian de peso 5 sitios**, los que heredaban del token sin declarar el suyo:
+`ComidaScreen` (label de acción), `ScreenHero` en modo compacto, el `subtitle`
+de `ThemedText` y la cabecera de notificaciones. De 600 a 700 y de 500 a 600 —
+en la dirección de lo que ya hace el resto de la app.
+
+Los 276 que quedan son tamaños fuera de escala (26, 20, 30, 9, 48…) o
+combinaciones con un peso que no es el del token: ahí ya no hay regla general
+que aplicar (§C6).
+
+---
+
 ## 2026-08-31 23:10 — El texto tenue del cantoral ahora se lee, y tres decisiones cerradas
 
 **Corrijo un diagnóstico mío de la entrada anterior**: dije que tres pares

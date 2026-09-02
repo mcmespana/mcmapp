@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   secondaryLabel: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   fineprint: {

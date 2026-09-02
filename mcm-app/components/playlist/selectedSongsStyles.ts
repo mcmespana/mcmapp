@@ -270,7 +270,7 @@ export const createStyles = (
       backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F2F2F7',
     },
     modalBtnSecondaryText: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
       color: themeColors(isDark).textStrong,
     },

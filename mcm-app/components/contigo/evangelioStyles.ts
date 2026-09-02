@@ -193,7 +193,7 @@ export const styles = StyleSheet.create({
     fontWeight: '400',
   },
   authorText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
     marginTop: 24,
     textAlign: 'right',
@@ -271,7 +271,7 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
   otherReadingsTitle: {
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '700',
     letterSpacing: -0.3,
     marginBottom: 16,

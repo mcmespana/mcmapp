@@ -16,11 +16,15 @@ import { Platform, TextStyle } from 'react-native';
  * ── Pesos ──
  * Un token solo trae `fontWeight` cuando el ROL lo implica; así se puede
  * sobrescribir sin sorpresas y migrar un `fontSize` suelto no cambia el peso.
- * La escala, para cuando lo pongas a mano (`design.md` §4):
  *
- *   800  h0, kickers y badges          600  secciones
- *   700  títulos de card               500  acciones
- *   normal  cuerpo
+ * Los pesos salen de lo que la app HACE, no de una escala inventada: a 15 px
+ * usa 600/700 en 53 sitios y 500 en 3, así que el 500 que ponía este fichero
+ * era el raro. Lo mismo con 17 y 18 px, que van a 700.
+ *
+ * La escalera baja de peso al bajar de tamaño y nunca sube por encima del
+ * nivel de arriba — un `h2` más gordo que un `h1` es la incoherencia que había:
+ *
+ *   h0 800 · h1/h2/h3 700 · title/button/overline 600 · el resto, normal
  *
  * No bajes de `caption` (13) para texto que haya que leer de verdad.
  */
@@ -34,15 +38,15 @@ const typography = {
   /** 28 — título de pantalla. */
   h1: { fontSize: 28, fontWeight: '700' as const },
   /** 22 — sección. */
-  h2: { fontSize: 22, fontWeight: '600' as const },
+  h2: { fontSize: 22, fontWeight: '700' as const },
   /** 18 — subsección, título de card grande. */
-  h3: { fontSize: 18, fontWeight: '600' as const },
+  h3: { fontSize: 18, fontWeight: '700' as const },
   /** 17 — título de card, cabecera de fila. */
   title: { fontSize: 17, fontWeight: '600' as const },
   /** 16 — texto general. */
   body: { fontSize: 16 },
   /** 15 — botones y labels de acción. */
-  button: { fontSize: 15, fontWeight: '500' as const },
+  button: { fontSize: 15, fontWeight: '600' as const },
   /** 14 — texto de apoyo: subtítulos de fila, descripciones. */
   subhead: { fontSize: 14 },
   /** 13 — metadatos, ayuda. El mínimo para texto que hay que leer. */

@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   },
   categoryBtnText: {
     flex: 1,
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   categoryArrow: {
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   selectedCategoryText: {
-    fontSize: 15,
+    ...typography.button,
     fontWeight: '600',
   },
   textArea: {

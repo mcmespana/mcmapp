@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
+    ...typography.h2,
     fontWeight: '700',
     color: colors.primary,
     marginBottom: 8,

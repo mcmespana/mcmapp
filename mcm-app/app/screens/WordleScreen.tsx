@@ -773,7 +773,7 @@ const createStyles = (theme: typeof Colors.light, isDark: boolean) =>
     },
     lockedGameText: {
       color: '#fff',
-      fontSize: 18,
+      ...typography.h3,
       fontWeight: 'bold',
       textAlign: 'center',
       marginBottom: 8,

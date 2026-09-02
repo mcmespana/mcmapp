@@ -434,7 +434,7 @@ const createStyles = (scheme: 'light' | 'dark') => {
       marginTop: 4,
     },
     dialogMapBtnText: {
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
     },
   });

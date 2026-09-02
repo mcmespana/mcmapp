@@ -65,7 +65,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   dateText: {
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '700',
     letterSpacing: -0.3,
     textTransform: 'capitalize',
@@ -234,7 +234,7 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
   calMonthTitle: {
-    fontSize: 18,
+    ...typography.h3,
     fontWeight: '700',
     letterSpacing: -0.4,
     marginTop: 2,

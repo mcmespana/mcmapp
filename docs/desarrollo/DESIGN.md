@@ -172,11 +172,11 @@ WARM_DARK: paralelo, fondos #1A1712/#100F0C/#26221C, accent #DAA520
 | ---------- | ------ | ------ | ---------------------------------------------------------- |
 | `h0`       | 34px   | 800    | Títulos hero (Contigo, ScreenHero) · letterSpacing -1.4    |
 | `h1`       | 28px   | 700    | Títulos de pantalla                                        |
-| `h2`       | 22px   | 600    | Subtítulos, secciones                                      |
-| `h3`       | 18px   | 600    | Subsección, título de card grande                          |
+| `h2`       | 22px   | 700    | Subtítulos, secciones                                      |
+| `h3`       | 18px   | 700    | Subsección, título de card grande                          |
 | `title`    | 17px   | 600    | Título de card, cabecera de fila                           |
 | `body`     | 16px   | normal | Texto general                                              |
-| `button`   | 15px   | 500    | Botones, labels de acción                                  |
+| `button`   | 15px   | 600    | Botones, labels de acción                                  |
 | `subhead`  | 14px   | normal | Subtítulo de fila, descripción                             |
 | `caption`  | 13px   | normal | Texto auxiliar, metadatos                                  |
 | `footnote` | 12px   | normal | Pie, nota al margen                                        |
@@ -191,8 +191,12 @@ WARM_DARK: paralelo, fondos #1A1712/#100F0C/#26221C, accent #DAA520
 > sobrescribir sin sorpresas.
 
 - El sistema soporta escala de fuente (`fontScale`) que multiplica los tamaños base.
-- Escala de pesos: **800** en `h0`, kickers y badges · **700** en títulos de
-  card · **600** en secciones · **500** en acciones · normal en cuerpo.
+- Escala de pesos: **800** en `h0` · **700** en `h1`/`h2`/`h3` · **600** en
+  `title`, `button` y `overline` · normal en el resto. Baja al bajar de tamaño
+  y nunca sube por encima del nivel de arriba.
+  Los pesos se ajustaron en agosto de 2026 a lo que la app usa de verdad: el
+  `500` que declaraba `button` aparecía en 3 sitios, mientras que 600 y 700
+  sumaban 53.
 - `letterSpacing` negativo (`-0.4`) en el logo text; positivo (`0.3`–`1.0`) en labels uppercase.
 - `typography.serif` solo se usa en `components/contigo/ReadingCard.tsx` y donde haya texto contemplativo largo — no en UI general.
 

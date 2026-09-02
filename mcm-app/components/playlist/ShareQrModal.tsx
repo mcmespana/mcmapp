@@ -381,7 +381,7 @@ const createStyles = (isDark: boolean) =>
     },
     btnSecondaryText: {
       color: themeColors(isDark).textStrong,
-      fontSize: 15,
+      ...typography.button,
       fontWeight: '600',
     },
   });
