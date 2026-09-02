@@ -18,6 +18,39 @@
 
 ---
 
+## 2026-09-01 01:40 — EmptyState cumple por fin su contrato, y el foco de los botones
+
+PLAN_DISENO §H2, §H1-bis y §A2-bis.
+
+**`EmptyState` no era agnóstico de paleta**, que es justo lo que `design.md` §2
+exige a todo lo que vive en `components/ui/`. Lo era a medias: `accentColor`
+tocaba el icono y el CTA, pero el título y el subtítulo se cogían del tema
+institucional — o sea que en Contigo salían grises fríos sobre fondo crema. Por
+eso los dos vacíos de Contigo llevaban meses "pendientes de verificar" en el
+plan: no era que hubiera que verlos, es que el componente no servía ahí.
+
+- Añadidos `titleColor` y `subtitleColor`. Por defecto hacen lo de antes, así
+  que los 11 sitios que ya usaban el componente no cambian.
+- Migrados los dos que lo esperaban: **Contigo → marcadores** ("Sin guardados
+  aún") y **Contigo → evangelio** ("No se encontraron lecturas para este día",
+  con su botón de "Volver a hoy"). Los dos con la paleta cálida.
+
+**Foco de teclado** (web y teclado externo):
+
+- `AppPrimaryButton` no tenía ningún indicador. Ahora lleva un borde permanente
+  en transparente que solo cambia de color al enfocar, así el botón no se
+  mueve. Usa el color de su texto, que siempre contrasta con su propio fondo.
+- **Revertido en `AppTextField`**: el engorde a 2 px que había puesto
+  desplazaba el campo 1 px justo al empezar a escribir, y el salto se nota más
+  que la mejora. Su foco sigue siendo el cambio de color de todo el borde.
+
+**Los dos amarillos, documentados**: `brand.yellow` (#FCD200) es el de MARCA
+—estrellas de valoración, categorías, tab de la Visita del Papa— y
+`UIColors.accentYellow` (#f4c11e) el del CANTORAL —su tab, su FAB y el
+destacado ámbar—. Están a cuatro puntos y hacen cosas distintas.
+
+---
+
 ## 2026-09-01 00:30 — Los pesos tipográficos, ajustados a lo que la app hace
 
 PLAN_DISENO §C4. Segunda vez que el token resulta ser el raro y no el código.

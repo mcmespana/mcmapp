@@ -25,6 +25,7 @@ import { useReaderBookmarks } from '@/hooks/useReaderBookmarks';
 import { countHighlights } from '@/utils/contigoBookmarks';
 import typography from '@/constants/typography';
 import { radii } from '@/constants/uiStyles';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function BookmarksScreen() {
   // Subruta de Contigo: se registra con la clave del tab (gana el último
@@ -86,13 +87,14 @@ export default function BookmarksScreen() {
         </View>
       ) : bookmarks.length === 0 ? (
         <View style={styles.center}>
-          <Text style={{ fontSize: 48 }}>🔖</Text>
-          <Text style={[styles.emptyTitle, { color: W.text }]}>
-            Sin guardados aún
-          </Text>
-          <Text style={[styles.emptyText, { color: W.textSec }]}>
-            Guarda evangelios para releerlos cuando quieras
-          </Text>
+          <EmptyState
+            emoji="🔖"
+            title="Sin guardados aún"
+            subtitle="Guarda evangelios para releerlos cuando quieras"
+            accentColor={W.accent}
+            titleColor={W.text}
+            subtitleColor={W.textSec}
+          />
         </View>
       ) : (
         <Animated.ScrollView
@@ -274,8 +276,6 @@ const styles = StyleSheet.create({
     padding: 32,
     gap: 12,
   },
-  emptyTitle: { fontSize: 17, fontWeight: '700' },
-  emptyText: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
 
   listWrap: {
     padding: 16,

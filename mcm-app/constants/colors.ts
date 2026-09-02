@@ -129,6 +129,12 @@ const brand = {
   accent: '#E15C62', // Rojo MIC — acento institucional (CTAs, badges)
   info: '#31AADF', // Celeste — enlaces e informativos
   green: '#A3BD31', // Verde COM — Reflexiones, Conso+, duraciones
+  // Hay DOS amarillos a cuatro puntos de diferencia y hacen cosas distintas:
+  //   · `brand.yellow` (#FCD200) — el de MARCA (amarillo COM). Estrellas de
+  //     valoración, categorías, el tab de la Visita del Papa.
+  //   · `UIColors.accentYellow` (#f4c11e) — el del CANTORAL. Su tab, su FAB y
+  //     el destacado ámbar salen de ahí.
+  // Si estás pintando algo del cantoral, el segundo. Si no, este.
   yellow: '#FCD200', // Amarillo COM — estrellas de valoración, Autobuses
   purple: '#9D1E74', // Morado LC — Comunica
   text: '#002B81', // Azul COM — texto de marca

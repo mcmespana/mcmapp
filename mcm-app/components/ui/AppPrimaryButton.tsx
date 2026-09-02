@@ -10,7 +10,7 @@ import { PressableFeedback } from 'heroui-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { UIColors, Colors, themeColors } from '@/constants/colors';
-import { radii } from '@/constants/uiStyles';
+import { focusRing, radii } from '@/constants/uiStyles';
 import { h } from '@/utils/haptics';
 import typography from '@/constants/typography';
 
@@ -61,6 +61,10 @@ export default function AppPrimaryButton({
   const isDark = useColorScheme() === 'dark';
   const theme = Colors[isDark ? 'dark' : 'light'];
   const isDisabled = disabled || loading;
+  // El foco de teclado solo existe en web y con teclado externo; en móvil esto
+  // nunca se activa. Ver `design.md` §5: el foco no puede distinguirse solo por
+  // color, tiene que verse el grosor.
+  const [focused, setFocused] = React.useState(false);
 
   const bg = isDisabled ? themeColors(isDark).separator : color;
   const fg = isDisabled ? theme.icon : textColor;
@@ -76,7 +80,17 @@ export default function AppPrimaryButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      style={[styles.button, { backgroundColor: bg }, style]}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={[
+        styles.button,
+        { backgroundColor: bg },
+        // El borde existe SIEMPRE en transparente para que enfocar no mueva el
+        // botón: solo cambia de color. Se usa el color del texto, que siempre
+        // contrasta con el fondo del propio botón.
+        focused && { borderColor: fg },
+        style,
+      ]}
     >
       <PressableFeedback.Scale />
       {loading ? (
@@ -101,6 +115,8 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: radii.md,
+    borderWidth: focusRing.borderWidth,
+    borderColor: 'transparent',
   },
   label: {
     ...typography.body,

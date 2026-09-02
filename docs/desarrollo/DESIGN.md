@@ -39,7 +39,11 @@ es. `__tests__/designTokens.test.ts` lo impide.
 - **Accent (`#E15C62`):** Rojo MIC — llamadas a la acción, badges, notificaciones.
 - **Info (`#31AADF`):** Celeste — enlaces, elementos informativos.
 - **Green (`#A3BD31`):** Verde COM — Reflexiones, Conso+, duraciones.
-- **Yellow (`#FCD200`):** Amarillo COM — estrellas de valoración, Autobuses.
+- **Yellow (`#FCD200`):** Amarillo COM — estrellas de valoración, categorías,
+  tab de la Visita del Papa. ⚠️ **No confundir con `UIColors.accentYellow`
+  (`#f4c11e`)**, que es el del cantoral (su tab, su FAB y el destacado ámbar).
+  Están a cuatro puntos y hacen cosas distintas: si pintas algo del cantoral, el
+  segundo; si no, este.
 - **Purple (`#9D1E74`):** Morado LC — Comunica.
 - **Text (`#002B81`):** Azul COM — texto de marca.
 

@@ -48,6 +48,7 @@ import { CelebrationAnimation } from '@/components/contigo/CelebrationAnimation'
 import { styles } from '@/components/contigo/evangelioStyles';
 import { WARM_DARK, WARM_LIGHT } from '@/components/contigo/theme';
 import typography from '@/constants/typography';
+import EmptyState from '@/components/ui/EmptyState';
 
 // ── Contigo warm palette (aligned with redesign tokens) ──
 const WARM = {
@@ -529,21 +530,14 @@ export default function EvangelioScreen() {
             </View>
           ) : error || !readings?.evangelio ? (
             <View style={styles.stateContainer}>
-              <MaterialIcons name="cloud-off" size={48} color={warm.warmGray} />
-              <Text style={[styles.stateText, { color: warm.warmGray }]}>
-                No se encontraron lecturas para este día.
-              </Text>
-              <TouchableOpacity
-                onPress={() => setSelectedDate(todayStr)}
-                style={[
-                  styles.todayBtn,
-                  { backgroundColor: hexAlpha(warm.accent, '15') },
-                ]}
-              >
-                <Text style={[styles.todayBtnText, { color: warm.accent }]}>
-                  Volver a hoy
-                </Text>
-              </TouchableOpacity>
+              <EmptyState
+                icon="cloud-off"
+                title="No se encontraron lecturas para este día."
+                actionLabel="Volver a hoy"
+                onAction={() => setSelectedDate(todayStr)}
+                accentColor={warm.accent}
+                titleColor={warm.warmGray}
+              />
             </View>
           ) : (
             <View style={styles.mainContent}>

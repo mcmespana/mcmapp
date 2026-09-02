@@ -2,7 +2,7 @@ import React, { forwardRef, useState } from 'react';
 import { TextInput, TextInputProps, StyleSheet, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors, SwipeColors, themeColors } from '@/constants/colors';
-import { focusRing, radii } from '@/constants/uiStyles';
+import { radii } from '@/constants/uiStyles';
 import typography from '@/constants/typography';
 
 /**
@@ -72,9 +72,6 @@ const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
         style={[
           styles.base,
           { backgroundColor: bg, color: theme.text, borderColor },
-          // El foco no puede distinguirse SOLO por color: con teclado (web,
-          // iPad) hace falta que se vea el grosor. Ver `design.md` §5.
-          focused && { borderWidth: focusRing.borderWidth },
           multiline && styles.multiline,
           style,
         ]}
