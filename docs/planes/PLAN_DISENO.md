@@ -7,18 +7,18 @@
       ningún ternario intercambiado.
 
       Lo que sí era verdad, y no lo era por el motivo que yo decía: **2,9:1 y
-                          2,2:1 están por debajo del mínimo legible** (4,5:1 para texto), y esto
-                          es el buscador y la leyenda del **cantoral**, la pantalla más usada de
-                          la app, que se lee a menudo a contraluz.
+                              2,2:1 están por debajo del mínimo legible** (4,5:1 para texto), y esto
+                              es el buscador y la leyenda del **cantoral**, la pantalla más usada de
+                              la app, que se lee a menudo a contraluz.
 
-                          Arreglado subiendo `Colors.light.textMuted` de `#8E8E93` a `#6E6E73`, el
-                          primer gris de la escala que pasa (4,54:1 sobre el gris de los campos,
-                          5,07 sobre blanco). En oscuro `#8E8E93` ya pasaba y se queda. Los 10
-                          sitios tenues migrados al token.
+                              Arreglado subiendo `Colors.light.textMuted` de `#8E8E93` a `#6E6E73`, el
+                              primer gris de la escala que pasa (4,54:1 sobre el gris de los campos,
+                              5,07 sobre blanco). En oscuro `#8E8E93` ya pasaba y se queda. Los 10
+                              sitios tenues migrados al token.
 
-                          Blindado con tests de contraste en `designTokens.test.ts`, y con un
-                          aviso en `design.md` §5 para que nadie repita mi error de comparar los
-                          dos hex entre sí.
+                              Blindado con tests de contraste en `designTokens.test.ts`, y con un
+                              aviso en `design.md` §5 para que nadie repita mi error de comparar los
+                              dos hex entre sí.
 
 ## Hallazgos nuevos (de la pasada del 2026-08-31)
 
@@ -263,14 +263,14 @@ peso.
       subiendo al bajar de tamaño.
 
       Ajustados los pesos del token a lo que la app hace (`h2`/`h3` 700,
-                      `button` 600) en vez de reescribir 100 sitios contra una escala que me
-                      había inventado yo. Con eso, 45 sitios más pasaron a token sin cambiar
-                      de aspecto: **de 321 a 276**.
+                          `button` 600) en vez de reescribir 100 sitios contra una escala que me
+                          había inventado yo. Con eso, 45 sitios más pasaron a token sin cambiar
+                          de aspecto: **de 321 a 276**.
 
-                      Cambian de peso 5 sitios que heredaban del token sin declarar el suyo
-                      (`ComidaScreen`, `ScreenHero` compacto, `ThemedText` subtitle,
-                      `notificationsStyles`): 600→700 y 500→600. Van en la dirección de lo que
-                      ya hace el resto de la app.
+                          Cambian de peso 5 sitios que heredaban del token sin declarar el suyo
+                          (`ComidaScreen`, `ScreenHero` compacto, `ThemedText` subtitle,
+                          `notificationsStyles`): 600→700 y 500→600. Van en la dirección de lo que
+                          ya hace el resto de la app.
 
 - [ ] C6 Quedan 276. Son tamaños fuera de escala (26, 20, 30, 9, 48…) o
       combinaciones con un peso que no es el del token. Ahí ya no hay regla
@@ -354,13 +354,13 @@ porque tenía un test. El real es `useResponsiveLayout` (7 pantallas,
       se quedan como están. No lo propongas otra vez.
 
       Enunciado original, para referencia:
-                          **Las dos escaleras de anchura máxima.** `readableMaxWidth`/
-                          `contentMaxWidth` del hook (640/760 y 760/980) conviven con
-                          `maxContentWidth`/`maxContentWidthWide` de `PageContainer` (960/1200):
-                          la misma app limita el contenido a **cuatro anchos distintos** según en
-                          qué pantalla estés. Unificarlas cambia el layout en tablet y web, así que
-                          hay que verlo en un dispositivo. Destino propuesto: una sola escalera, la
-                          del hook, y que `PageContainer` la use.
+                              **Las dos escaleras de anchura máxima.** `readableMaxWidth`/
+                              `contentMaxWidth` del hook (640/760 y 760/980) conviven con
+                              `maxContentWidth`/`maxContentWidthWide` de `PageContainer` (960/1200):
+                              la misma app limita el contenido a **cuatro anchos distintos** según en
+                              qué pantalla estés. Unificarlas cambia el layout en tablet y web, así que
+                              hay que verlo en un dispositivo. Destino propuesto: una sola escalera, la
+                              del hook, y que `PageContainer` la use.
 
 - [ ] F5 Los dos `screenW >= 640` de `onboarding.tsx`.
 
@@ -471,21 +471,21 @@ Ninguna es urgente.
       sobre fondo oscuro:
 
       · `ErrorBoundary` — el título "Algo ha ido mal", o sea que la pantalla de
-            error era ilegible justo cuando más falta hace leerla.
-          · `SurveyScreen` — el spinner de carga.
-          · `NotificationsBottomSheet` — el icono y el texto de "Marcar todo".
-          · `FormattedContent` — la clase `color-primary` del contenido en BBCode,
-            que es un color que **elige quien escribe desde el panel**, así que no
-            podía quedarse fijo.
+                error era ilegible justo cuando más falta hace leerla.
+              · `SurveyScreen` — el spinner de carga.
+              · `NotificationsBottomSheet` — el icono y el texto de "Marcar todo".
+              · `FormattedContent` — la clase `color-primary` del contenido en BBCode,
+                que es un color que **elige quien escribe desde el panel**, así que no
+                podía quedarse fijo.
 
-          `SongControls` no era un bug: ya tenía el par a mano
-          (`#253883`/`#7AB3FF`), que es exactamente `link`. Tokenizado.
-          `GruposScreen` tampoco: ahí el azul es un RELLENO de tarjeta con texto
-          blanco encima, y como relleno está bien.
+              `SongControls` no era un bug: ya tenía el par a mano
+              (`#253883`/`#7AB3FF`), que es exactamente `link`. Tokenizado.
+              `GruposScreen` tampoco: ahí el azul es un RELLENO de tarjeta con texto
+              blanco encima, y como relleno está bien.
 
-          Lo que queda de `colors.primary` en primer plano son estilos estáticos
-          que ya se sobrescriben en línea desde su llamada, con el comentario
-          puesto al lado.
+              Lo que queda de `colors.primary` en primer plano son estilos estáticos
+              que ya se sobrescriben en línea desde su llamada, con el comentario
+              puesto al lado.
 
 - [ ] **H5. Un `Chip` canónico.** Mezcla de `Chip` de heroui y pills custom
       (pendiente en `PLAN_UI_NATIVA.md` §5). Un solo componente con prop de
@@ -536,18 +536,18 @@ dos están decididos que no, con su motivo escrito arriba.
       que el de modo claro, que es justo al revés de lo que pide el modo:
 
       | Dónde | Par (`isDark ? oscuro : claro`) | Contraste real |
-                              | --- | --- | --- |
-                              | `SongListScreen` (placeholder de búsqueda, ×4) | `#636366` : `#8E8E93` | oscuro ≈ 2,0:1 · claro ≈ 3,5:1 |
-                              | `SongListScreen` (texto tenue, ×3) | `#6C6C70` : `#B0B0B5` | oscuro ≈ 2,2:1 · claro ≈ 2,2:1 |
-                              | `PlaylistRow`, `SongListItem`, `CommandPalette` (×3) | `#636366` : `#A0A0A8` | oscuro ≈ 2,0:1 |
+                                  | --- | --- | --- |
+                                  | `SongListScreen` (placeholder de búsqueda, ×4) | `#636366` : `#8E8E93` | oscuro ≈ 2,0:1 · claro ≈ 3,5:1 |
+                                  | `SongListScreen` (texto tenue, ×3) | `#6C6C70` : `#B0B0B5` | oscuro ≈ 2,2:1 · claro ≈ 2,2:1 |
+                                  | `PlaylistRow`, `SongListItem`, `CommandPalette` (×3) | `#636366` : `#A0A0A8` | oscuro ≈ 2,0:1 |
 
-                              Puede ser deliberado (un placeholder tenue lo es a propósito) o puede ser
-                              que alguien intercambiara las ramas del ternario al copiar. Lo que no
-                              encaja es que en **los dos** modos quede por debajo de 3:1 y que el modo
-                              oscuro salga peor que el claro, cuando el resto de la app hace lo
-                              contrario. Está en la pantalla más usada de la app, así que **hay que
-                              mirarlo en un dispositivo antes de tocarlo**; no se cambió nada.
-                              Si resulta ser un bug, el arreglo es `themeColors(isDark).textMuted`.
+                                  Puede ser deliberado (un placeholder tenue lo es a propósito) o puede ser
+                                  que alguien intercambiara las ramas del ternario al copiar. Lo que no
+                                  encaja es que en **los dos** modos quede por debajo de 3:1 y que el modo
+                                  oscuro salga peor que el claro, cuando el resto de la app hace lo
+                                  contrario. Está en la pantalla más usada de la app, así que **hay que
+                                  mirarlo en un dispositivo antes de tocarlo**; no se cambió nada.
+                                  Si resulta ser un bug, el arreglo es `themeColors(isDark).textMuted`.
 
 Cosas que aparecieron **al ejecutar**, no al planificar. Ninguna es urgente y
 ninguna se tocó, porque todas necesitan verse en un dispositivo.
@@ -562,15 +562,15 @@ ninguna se tocó, porque todas necesitan verse en un dispositivo.
       card oscura") para que salte si alguien lo intenta.
 
       Enunciado original, para referencia:
-                          **En modo oscuro no hay capas de superficie.** 38 sitios pintan las
-                          cards con `#2C2C2E`, que es exactamente `Colors.dark.background`: la card
-                          y el fondo son el mismo color, y solo se distinguen por el borde. El token
-                          correcto (`Colors.dark.card`, `#3A3A3C`) existe y no se usa. Cambiarlo es
-                          una línea, pero se ve en media app, así que hay que mirarlo en un
-                          dispositivo. Lo mismo con `backgroundSunken` (`#1C1C1E`), que en la
-                          práctica se escribe como `#2C2C2E`, o sea igual que el fondo.
-                          La migración de agosto se dejó **byte-idéntica** a propósito para no
-                          colar este cambio de tapadillo.
+                              **En modo oscuro no hay capas de superficie.** 38 sitios pintan las
+                              cards con `#2C2C2E`, que es exactamente `Colors.dark.background`: la card
+                              y el fondo son el mismo color, y solo se distinguen por el borde. El token
+                              correcto (`Colors.dark.card`, `#3A3A3C`) existe y no se usa. Cambiarlo es
+                              una línea, pero se ve en media app, así que hay que mirarlo en un
+                              dispositivo. Lo mismo con `backgroundSunken` (`#1C1C1E`), que en la
+                              práctica se escribe como `#2C2C2E`, o sea igual que el fondo.
+                              La migración de agosto se dejó **byte-idéntica** a propósito para no
+                              colar este cambio de tapadillo.
 
 - [ ] **H9. Verificar en dispositivo lo que sí cambió.** Son tres cosas
       pequeñas y deliberadas: la sombra de toasts y FABs (0.30 → 0.22), los

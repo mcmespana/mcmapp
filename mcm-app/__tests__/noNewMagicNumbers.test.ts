@@ -190,3 +190,52 @@ describe('no se añaden radios a mano', () => {
     },
   );
 });
+
+/**
+ * Colores de marca usados como PRIMER PLANO.
+ *
+ * `brand.primary` (#253883) sobre el fondo oscuro (#2C2C2E) da **1,31:1**: es
+ * invisible. `brand.text` da 1,10 y `purple` 1,91. Como RELLENO (con texto
+ * blanco encima) están bien en los dos modos — la diferencia es esa, y es la
+ * que se coló en cinco pantallas hasta agosto de 2026, entre ellas la de
+ * Notificaciones entera y la de error.
+ *
+ * Si esto está en rojo: usa `themeColors(isDark).link`, que es el mismo azul
+ * de marca en claro y uno legible en oscuro. Ver `design.md` §3.
+ */
+const BRAND_FOREGROUND =
+  /(?:color:\s*|color=\{)(?:colors|brandColors)\.(primary|purple|text)\b/g;
+
+/**
+ * Los 3 que quedan están revisados y son correctos:
+ *   · `GruposScreen` — es el color de RELLENO de una tarjeta, no texto.
+ *   · `notifications.tsx` y `NotificationListItem` — estilos estáticos con los
+ *     valores de modo claro, que se sobrescriben en línea desde su llamada.
+ * Cualquiera nuevo hay que mirarlo antes de subir este número.
+ */
+const BRAND_FOREGROUND_BUDGET = 3;
+
+describe('los colores de marca no se usan de primer plano', () => {
+  it('no crecen los usos de brand como color de texto o icono', () => {
+    let total = 0;
+    const offenders: string[] = [];
+    for (const dir of ['app', 'components']) {
+      for (const file of walk(path.join(ROOT, dir))) {
+        const n = [...fs.readFileSync(file, 'utf8').matchAll(BRAND_FOREGROUND)]
+          .length;
+        if (n > 0) {
+          total += n;
+          offenders.push(`  ${path.relative(ROOT, file)}: ${n}`);
+        }
+      }
+    }
+    if (total > BRAND_FOREGROUND_BUDGET) {
+      throw new Error(
+        `${total} usos de un color de marca como primer plano, y el tope es ` +
+          `${BRAND_FOREGROUND_BUDGET}.\nSobre fondo oscuro son invisibles ` +
+          `(1,1–1,9:1). Usa themeColors(isDark).link.\n${offenders.join('\n')}`,
+      );
+    }
+    expect(total).toBe(BRAND_FOREGROUND_BUDGET);
+  });
+});
